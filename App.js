@@ -1,21 +1,33 @@
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+
+import { NavigationContainer } from "@react-navigation/native";
+import AppLoading from "expo-app-loading";
+import {
+  useFonts,
+  Nunito_400Regular,
+  Nunito_700Bold,
+  Nunito_900Black,
+} from "@expo-google-fonts/nunito";
+
+import { Righteous_400Regular } from "@expo-google-fonts/righteous";
+import { HomeNavigation } from "./app/navigation/HomeNavigation";
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+  let [fontsLoaded] = useFonts({
+    Nunito_400Regular,
+    Nunito_700Bold,
+    Nunito_900Black,
+    Righteous_400Regular,
+  });
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+  if (!fontsLoaded) {
+    return <AppLoading />;
+  } else {
+    return (
+      <NavigationContainer>
+        <HomeNavigation />
+      </NavigationContainer>
+    );
+  }
+}
