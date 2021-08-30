@@ -8,14 +8,17 @@
     "splash": {
       "image": "./app/assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#EEECDD"
     },
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ginolee.hero"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,6 +28,7 @@
     },
     "web": {
       "favicon": "./app/assets/favicon.png"
-    }
+    },
+    "description": "A superhero encyclopaedia made in React Native"
   }
 }
