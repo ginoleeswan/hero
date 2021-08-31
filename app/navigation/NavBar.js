@@ -1,6 +1,6 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import HomeScreen from "../screens/HomeScreen";
 import { COLORS } from "../styles/colors";
@@ -28,11 +28,7 @@ const NavBar = () => {
           }
 
           // You can return any component that you like here!
-          if (
-            route.name === "Discover" ||
-            route.name === "Profile" ||
-            route.name === "Search"
-          ) {
+          if (route.name === "Discover" || route.name === "Profile") {
             return (
               <View style={{ position: "absolute", top: "50%" }}>
                 <Ionicons
@@ -43,7 +39,7 @@ const NavBar = () => {
                 />
               </View>
             );
-          } else if (route.name === "New Split") {
+          } else if (route.name === "Search") {
             return (
               <TouchableOpacity
                 style={{
@@ -56,15 +52,15 @@ const NavBar = () => {
                   borderRadius: "50%",
                   borderColor: "grey",
                   borderWidth: 1,
-                  backgroundColor: "#363355",
+                  backgroundColor: COLORS.navy,
                   ...styles.shadow,
                 }}
-                onPress={() => navigation.navigate("New Split")}
+                onPress={() => navigation.navigate("Search")}
               >
                 <Ionicons
                   name={iconName}
                   size={size}
-                  color="white"
+                  color={COLORS.beige}
                   containerStyle={{ textAlignVertical: "center" }}
                 />
               </TouchableOpacity>
@@ -74,6 +70,33 @@ const NavBar = () => {
 
         tabBarActiveTintColor: COLORS.beige,
         tabBarInactiveTintColor: "gray",
+        tabBarLabel: ({ focused }) => {
+          if (route.name === "Discover" || route.name === "Profile") {
+            return focused ? (
+              <Text
+                style={{
+                  fontSize: 10,
+                  fontFamily: "Nunito_700Bold",
+                  top: 15,
+                  color: COLORS.beige,
+                }}
+              >
+                {route.name}
+              </Text>
+            ) : (
+              <Text
+                style={{
+                  fontSize: 10,
+                  fontFamily: "Nunito_700Bold",
+                  top: 15,
+                  color: "gray",
+                }}
+              >
+                {route.name}
+              </Text>
+            );
+          }
+        },
         // tabBarShowLabel: false,
         tabBarLabelStyle: { fontFamily: "Nunito_700Bold", top: 15 },
         headerTitleAlign: "center",
@@ -88,10 +111,11 @@ const NavBar = () => {
           elevation: 0,
           padding: 0,
           backgroundColor: COLORS.black,
+          borderWidth: 0,
           borderTopLeftRadius: 30,
           borderTopRightRadius: 30,
           height: 70,
-          ...styles.shadow,
+          // ...styles.shadow,
         },
       })}
     >
