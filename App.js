@@ -1,6 +1,8 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
+import { PopularHeroesProvider } from "./app/context/PopularHeroesContext";
+
 import { NavigationContainer } from "@react-navigation/native";
 import AppLoading from "expo-app-loading";
 import {
@@ -25,9 +27,11 @@ export default function App() {
     return <AppLoading />;
   } else {
     return (
-      <NavigationContainer>
-        <HomeNavigation />
-      </NavigationContainer>
+      <PopularHeroesProvider>
+        <NavigationContainer>
+          <HomeNavigation />
+        </NavigationContainer>
+      </PopularHeroesProvider>
     );
   }
 }
