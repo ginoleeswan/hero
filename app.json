@@ -29,6 +29,7 @@
     "web": {
       "favicon": "./app/assets/favicon.png"
     },
-    "description": "A superhero encyclopaedia made in React Native"
+    "description": "A superhero encyclopaedia made in React Native",
+    "githubUrl": "https://github.com/ginoleeswan/hero"
   }
 }
