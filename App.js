@@ -14,6 +14,7 @@ import {
 
 import { Righteous_400Regular } from "@expo-google-fonts/righteous";
 import { HomeNavigation } from "./app/navigation/HomeNavigation";
+import { VillainsProvider } from "./app/context/VillainsContext";
 
 export default function App() {
   let [fontsLoaded] = useFonts({
@@ -28,9 +29,11 @@ export default function App() {
   } else {
     return (
       <PopularHeroesProvider>
-        <NavigationContainer>
-          <HomeNavigation />
-        </NavigationContainer>
+        <VillainsProvider>
+          <NavigationContainer>
+            <HomeNavigation />
+          </NavigationContainer>
+        </VillainsProvider>
       </PopularHeroesProvider>
     );
   }
