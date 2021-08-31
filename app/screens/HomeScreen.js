@@ -6,11 +6,17 @@ import {
   View,
   Image,
   Pressable,
+  Animated,
 } from "react-native";
 import { COLORS } from "../styles/colors";
 import Carousel from "react-native-snap-carousel";
 
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import { PopularHeroesContext } from "../context/PopularHeroesContext";
+import { VillainsContext } from "../context/VillainsContext";
+import { ScrollView } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
 const api = {
   key: "4204884039587685",
@@ -27,6 +33,16 @@ let publisher = null;
 
 const HomeScreen = ({ navigation }) => {
   const [popularHeroes, setPopularHeroes] = useContext(PopularHeroesContext);
+  const [villains, setVillains] = useContext(VillainsContext);
+
+  const insets = useSafeAreaInsets();
+
+  const scrollY = new Animated.Value(0);
+  const translateY = scrollY.interpolate({
+    inputRange: [40, 100 + insets.top],
+    outputRange: [40, insets.top - 100],
+    extrapolate: "clamp",
+  });
 
   const search = async (item) => {
     try {
@@ -116,32 +132,77 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={styles.appContainer}>
-      <SafeAreaView>
-        <View style={styles.header}>
-          <View style={{ justifyContent: "flex-end" }}>
-            <Text style={styles.appTitle}>hero</Text>
-            <Text style={{ ...styles.p, fontSize: 9, marginTop: -8, left: 3 }}>
-              the Superhero Encyclopedia
-            </Text>
+      <SafeAreaView style={{ flex: 1 }} forceInset={{ top: "always" }}>
+        <Animated.View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 10,
+            height: 100,
+            transform: [{ translateY: translateY }],
+          }}
+        >
+          <View style={styles.header}>
+            <View style={{ justifyContent: "flex-end" }}>
+              <Text style={styles.appTitle}>hero</Text>
+              <Text
+                style={{ ...styles.p, fontSize: 7, marginTop: -2, left: -2 }}
+              >
+                the Superhero Encyclopedia
+              </Text>
+            </View>
           </View>
-        </View>
-        <View style={styles.popularContainer}>
-          <Text
-            style={{ ...styles.h4, marginBottom: 20, paddingHorizontal: 20 }}
-          >
-            Popular
-          </Text>
+        </Animated.View>
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 80 }}
+          onScroll={(e) => {
+            scrollY.setValue(e.nativeEvent.contentOffset.y);
+          }}
+          scrollEventThrottle={4}
+        >
+          <View style={styles.popularContainer}>
+            <Text
+              style={{ ...styles.h4, marginBottom: 20, paddingHorizontal: 20 }}
+            >
+              Popular
+            </Text>
 
-          <Carousel
-            data={popularHeroes}
-            sliderWidth={380}
-            itemWidth={260}
-            renderItem={_renderItem}
-            loop={true}
-            inactiveSlideShift={-24}
-            inactiveSlideOpacity={0.5}
-          />
-        </View>
+            <Carousel
+              data={popularHeroes}
+              sliderWidth={380}
+              itemWidth={260}
+              renderItem={_renderItem}
+              loop={true}
+              inactiveSlideShift={0}
+              inactiveSlideOpacity={0.5}
+            />
+          </View>
+          <View style={styles.villiansContainer}>
+            <Text
+              style={{ ...styles.h4, marginBottom: 20, paddingHorizontal: 20 }}
+            >
+              Villains
+            </Text>
+
+            <Carousel
+              data={villains}
+              sliderWidth={380}
+              itemWidth={260}
+              renderItem={_renderItem}
+              loop={true}
+              // inactiveSlideShift={-24}
+              inactiveSlideOpacity={0.5}
+            />
+          </View>
+        </ScrollView>
+        {/* <LinearGradient
+          colors={[COLORS.beige, "#ffffff00"]}
+          style={styles.scrollGradient}
+          locations={[0, 1]}
+          pointerEvents={"none"}
+        /> */}
       </SafeAreaView>
     </View>
   );
@@ -158,7 +219,7 @@ const styles = StyleSheet.create({
     fontFamily: "Nunito_900Black",
     fontSize: 28,
     textAlign: "left",
-    color: COLORS.black,
+    color: COLORS.navy,
   },
   p: {
     fontFamily: "Nunito_400Regular",
@@ -169,26 +230,32 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     width: "100%",
+    height: 50,
     justifyContent: "flex-end",
     alignItems: "center",
-    marginBottom: 20,
+    // marginBottom: 20,
     paddingHorizontal: 20,
   },
   appTitle: {
     fontFamily: "Righteous_400Regular",
-    fontSize: 60,
+    fontSize: 40,
     textAlign: "right",
     color: COLORS.black,
   },
   popularContainer: {
     justifyContent: "space-around",
     alignItems: "flex-start",
+    marginTop: 40,
+  },
+  villainsContainer: {
+    justifyContent: "space-around",
+    alignItems: "flex-start",
   },
   heroCard: {
     borderRadius: 20,
     height: 300,
-    marginLeft: 5,
-    marginRight: 5,
+    marginHorizontal: 5,
+    marginBottom: 20,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -198,6 +265,13 @@ const styles = StyleSheet.create({
     shadowRadius: 8.3,
 
     elevation: 13,
+  },
+  scrollGradient: {
+    position: "absolute",
+    top: 94,
+    left: 0,
+    width: "100%",
+    height: 200,
   },
 });
 
