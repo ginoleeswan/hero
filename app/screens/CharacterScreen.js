@@ -109,10 +109,21 @@ const CharacterScreen = ({ route, navigation }) => {
         />
         <ScrollView
           style={{ height: 340 }}
-          contentContainerStyle={{ width: "100%", marginBottom: 150 }}
+          contentContainerStyle={{
+            width: "100%",
+            paddingBottom: 40,
+            marginTop: 5,
+          }}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={{ ...styles.p, fontSize: 12, marginBottom: 5 }}>
+          <Text
+            style={{
+              ...styles.p,
+              fontSize: 12,
+              marginBottom: 10,
+              lineHeight: 18,
+            }}
+          >
             {summary}
           </Text>
           <View
@@ -251,7 +262,7 @@ const styles = StyleSheet.create({
   },
   bottomFadeInfo: {
     position: "absolute",
-    top: 162,
+    top: 170,
     left: 20,
     zIndex: 1,
     width: "100%",
@@ -269,7 +280,7 @@ const styles = StyleSheet.create({
   heroInfoContainer: {
     position: "absolute",
     width: "100%",
-    top: 350,
+    top: 340,
     left: 0,
     padding: 20,
   },
