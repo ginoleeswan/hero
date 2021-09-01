@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import { PopularHeroesProvider } from "./app/context/PopularHeroesContext";
+import { HeroesProvider } from "./app/context/HeroesContext";
 
 import { NavigationContainer } from "@react-navigation/native";
 import AppLoading from "expo-app-loading";
@@ -14,7 +14,6 @@ import {
 
 import { Righteous_400Regular } from "@expo-google-fonts/righteous";
 import { HomeNavigation } from "./app/navigation/HomeNavigation";
-import { VillainsProvider } from "./app/context/VillainsContext";
 
 export default function App() {
   let [fontsLoaded] = useFonts({
@@ -28,13 +27,11 @@ export default function App() {
     return <AppLoading />;
   } else {
     return (
-      <PopularHeroesProvider>
-        <VillainsProvider>
-          <NavigationContainer>
-            <HomeNavigation />
-          </NavigationContainer>
-        </VillainsProvider>
-      </PopularHeroesProvider>
+      <HeroesProvider>
+        <NavigationContainer>
+          <HomeNavigation />
+        </NavigationContainer>
+      </HeroesProvider>
     );
   }
 }
