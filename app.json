@@ -4,11 +4,11 @@
     "slug": "hero",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./app/assets/icon.png",
+    "icon": "./app/assets/hero-icon.png",
     "splash": {
-      "image": "./app/assets/splash.png",
+      "image": "./app/assets/hero-splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#EEECDD"
+      "backgroundColor": "#2C3C44"
     },
     "updates": {
       "fallbackToCacheTimeout": 0
@@ -22,12 +22,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./app/assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
+        "foregroundImage": "./app/assets/hero-icon-android.png",
+        "backgroundColor": "#293C43"
       }
     },
     "web": {
-      "favicon": "./app/assets/favicon.png"
+      "favicon": "./app/assets/hero-favicon.png"
     },
     "description": "A superhero encyclopaedia made in React Native",
     "githubUrl": "https://github.com/ginoleeswan/hero"
