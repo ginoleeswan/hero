@@ -13,8 +13,7 @@ import Carousel from "react-native-snap-carousel";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { PopularHeroesContext } from "../context/PopularHeroesContext";
-import { VillainsContext } from "../context/VillainsContext";
+import { HeroesContext } from "../context/HeroesContext";
 import { ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -32,8 +31,7 @@ let firstIssueURL = null;
 let publisher = null;
 
 const HomeScreen = ({ navigation }) => {
-  const [popularHeroes, setPopularHeroes] = useContext(PopularHeroesContext);
-  const [villains, setVillains] = useContext(VillainsContext);
+  const [XMen, popularHeroes, villains] = useContext(HeroesContext);
 
   const insets = useSafeAreaInsets();
 
@@ -160,7 +158,7 @@ const HomeScreen = ({ navigation }) => {
           onScroll={(e) => {
             scrollY.setValue(e.nativeEvent.contentOffset.y);
           }}
-          scrollEventThrottle={4}
+          scrollEventThrottle={6}
         >
           <View style={styles.popularContainer}>
             <Text
@@ -179,15 +177,36 @@ const HomeScreen = ({ navigation }) => {
               inactiveSlideOpacity={0.5}
             />
           </View>
-          <View style={styles.villiansContainer}>
+          <View style={styles.heroContainer}>
             <Text
-              style={{ ...styles.h4, marginBottom: 20, paddingHorizontal: 20 }}
+              style={{
+                ...styles.h4,
+                marginBottom: 20,
+                paddingHorizontal: 20,
+              }}
             >
               Villains
             </Text>
 
             <Carousel
               data={villains}
+              sliderWidth={380}
+              itemWidth={260}
+              renderItem={_renderItem}
+              loop={true}
+              // inactiveSlideShift={-24}
+              inactiveSlideOpacity={0.5}
+            />
+          </View>
+          <View style={styles.heroContainer}>
+            <Text
+              style={{ ...styles.h4, marginBottom: 20, paddingHorizontal: 20 }}
+            >
+              X-Men
+            </Text>
+
+            <Carousel
+              data={XMen}
               sliderWidth={380}
               itemWidth={260}
               renderItem={_renderItem}
@@ -217,6 +236,7 @@ const styles = StyleSheet.create({
   },
   h4: {
     fontFamily: "Nunito_900Black",
+    width: "100%",
     fontSize: 28,
     textAlign: "left",
     color: COLORS.navy,
@@ -247,7 +267,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginTop: 40,
   },
-  villainsContainer: {
+  heroContainer: {
+    width: "100%",
     justifyContent: "space-around",
     alignItems: "flex-start",
   },
