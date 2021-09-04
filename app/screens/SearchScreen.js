@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     width: "100%",
     justifyContent: "space-between",
     alignItems: "center",
-    // marginBottom: 0,
+    marginBottom: 10,
     paddingHorizontal: 30,
   },
   appTitle: {
