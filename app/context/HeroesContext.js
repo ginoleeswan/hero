@@ -141,6 +141,12 @@ export const HeroesProvider = (props) => {
       image: require("../assets/images/doctor-doom.jpg"),
     },
     {
+      title: "Darth Vader",
+      id: "208",
+      publisher: "Marvel Comics",
+      image: require("../assets/images/darth-vader.jpg"),
+    },
+    {
       title: "Mysterio",
       id: "479",
       publisher: "Marvel Comics",
@@ -157,12 +163,6 @@ export const HeroesProvider = (props) => {
       id: "225",
       publisher: "Marvel Comics",
       image: require("../assets/images/doctor-octopus.jpg"),
-    },
-    {
-      title: "Darth Vader",
-      id: "208",
-      publisher: "Marvel Comics",
-      image: require("../assets/images/darth-vader.jpg"),
     },
     {
       title: "Green Goblin",
