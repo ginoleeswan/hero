@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import {
   SafeAreaView,
   StyleSheet,
@@ -7,9 +7,12 @@ import {
   Image,
   Pressable,
   Animated,
+  ActivityIndicator,
 } from "react-native";
 import { COLORS } from "../styles/colors";
 import Carousel from "react-native-snap-carousel";
+import axios from "axios";
+import * as Progress from "react-native-progress";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -32,6 +35,7 @@ let publisher = null;
 
 const HomeScreen = ({ navigation }) => {
   const [XMen, popularHeroes, villains] = useContext(HeroesContext);
+  const [loading, setLoading] = useState(false);
 
   const insets = useSafeAreaInsets();
 
@@ -42,8 +46,42 @@ const HomeScreen = ({ navigation }) => {
     extrapolate: "clamp",
   });
 
+  // const search = async (item) => {
+  //   try {
+  //     const searchResponse = await fetch(
+  //       `https://superheroapi.com/api/${api.key}/${item.id}/`
+  //     );
+  //     const characterResponse = await fetch(
+  //       `https://comicvine.gamespot.com/api/characters/?api_key=${apiComicVine.key}&filter=name:${item.title},publisher${item.publisher}&field_list=deck,publisher,first_appeared_in_issue&format=json`
+  //     );
+  //     const hero = await searchResponse.json();
+  //     const characterInfo = await characterResponse.json();
+  //     summary = characterInfo.results[0].deck;
+  //     firstIssue = characterInfo.results[0].first_appeared_in_issue;
+  //     publisher = characterInfo.results[0].publisher.name;
+  //     const firstComicResponse = await fetch(
+  //       `https://comicvine.gamespot.com/api/issue/4000-${firstIssue.id}/?api_key=${apiComicVine.key}&format=json`
+  //     );
+  //     const firstComicInfo = await firstComicResponse.json();
+  //     firstIssueURL = firstComicInfo.results.image.original_url;
+  //     navigation.navigate("Character", {
+  //       hero: hero,
+  //       image: item.image,
+  //       // publisher: item.publisher,
+  //       comicPicture: comicPicture,
+  //       summary: summary,
+  //       firstIssue: firstIssue,
+  //       firstIssueURL: firstIssueURL,
+  //       publisher: publisher,
+  //     });
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // };
+
   const search = async (item) => {
     try {
+      setLoading(true);
       const searchResponse = await fetch(
         `https://superheroapi.com/api/${api.key}/${item.id}/`
       );
@@ -70,6 +108,7 @@ const HomeScreen = ({ navigation }) => {
         firstIssueURL: firstIssueURL,
         publisher: publisher,
       });
+      setLoading(false);
     } catch (error) {
       console.error(error);
     }
@@ -128,102 +167,152 @@ const HomeScreen = ({ navigation }) => {
     );
   };
 
+  useEffect(() => {
+    setLoading(false);
+  }, []);
+
   return (
-    <View style={styles.appContainer}>
-      <SafeAreaView style={{ flex: 1 }} forceInset={{ top: "always" }}>
-        <Animated.View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 10,
-            height: 100,
-            transform: [{ translateY: translateY }],
-          }}
-        >
-          <View style={styles.header}>
-            <View style={{ justifyContent: "flex-end" }}>
-              <Text style={styles.appTitle}>hero</Text>
-              <Text
-                style={{ ...styles.p, fontSize: 7, marginTop: -2, left: -2 }}
-              >
-                the Superhero Encyclopedia
-              </Text>
+    <>
+      <View style={styles.appContainer}>
+        <SafeAreaView style={{ flex: 1 }} forceInset={{ top: "always" }}>
+          <Animated.View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              zIndex: 10,
+              height: 100,
+              transform: [{ translateY: translateY }],
+            }}
+          >
+            <View style={styles.header}>
+              <View style={{ justifyContent: "flex-end" }}>
+                <Text style={styles.appTitle}>hero</Text>
+                <Text
+                  style={{ ...styles.p, fontSize: 7, marginTop: -2, left: -2 }}
+                >
+                  the Superhero Encyclopedia
+                </Text>
+              </View>
             </View>
-          </View>
-        </Animated.View>
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: 80 }}
-          onScroll={(e) => {
-            scrollY.setValue(e.nativeEvent.contentOffset.y);
-          }}
-          scrollEventThrottle={6}
-        >
-          <View style={styles.popularContainer}>
-            <Text
-              style={{ ...styles.h4, marginBottom: 20, paddingHorizontal: 20 }}
-            >
-              Popular
-            </Text>
+          </Animated.View>
+          {/* {loading ? (
+          // <ActivityIndicator
+          //   size="large"
+          //   color={COLORS.navy}
+          //   style={styles.loading}
+          // />
 
-            <Carousel
-              data={popularHeroes}
-              sliderWidth={380}
-              itemWidth={260}
-              renderItem={_renderItem}
-              loop={true}
-              inactiveSlideShift={0}
-              inactiveSlideOpacity={0.5}
-            />
-          </View>
-          <View style={styles.heroContainer}>
-            <Text
-              style={{
-                ...styles.h4,
-                marginBottom: 20,
-                paddingHorizontal: 20,
-              }}
-            >
-              Villains
-            </Text>
+          <Progress.CircleSnail
+            color={[COLORS.navy, COLORS.orange, COLORS.blue]}
+            size={80}
+            thickness={10}
+            style={styles.loading}
+            strokeCap={"round"}
+          />
+        ) : ( */}
+          <ScrollView
+            contentContainerStyle={{ paddingBottom: 80 }}
+            onScroll={(e) => {
+              scrollY.setValue(e.nativeEvent.contentOffset.y);
+            }}
+            scrollEventThrottle={6}
+          >
+            <View style={styles.popularContainer}>
+              <Text
+                style={{
+                  ...styles.h4,
+                  marginBottom: 20,
+                  paddingHorizontal: 20,
+                }}
+              >
+                Popular
+              </Text>
 
-            <Carousel
-              data={villains}
-              sliderWidth={380}
-              itemWidth={260}
-              renderItem={_renderItem}
-              loop={true}
-              // inactiveSlideShift={-24}
-              inactiveSlideOpacity={0.5}
-            />
-          </View>
-          <View style={styles.heroContainer}>
-            <Text
-              style={{ ...styles.h4, marginBottom: 20, paddingHorizontal: 20 }}
-            >
-              X-Men
-            </Text>
+              <Carousel
+                data={popularHeroes}
+                sliderWidth={380}
+                itemWidth={260}
+                renderItem={_renderItem}
+                loop={true}
+                inactiveSlideShift={0}
+                inactiveSlideOpacity={0.5}
+              />
+            </View>
+            <View style={styles.heroContainer}>
+              <Text
+                style={{
+                  ...styles.h4,
+                  marginBottom: 20,
+                  paddingHorizontal: 20,
+                }}
+              >
+                Villains
+              </Text>
 
-            <Carousel
-              data={XMen}
-              sliderWidth={380}
-              itemWidth={260}
-              renderItem={_renderItem}
-              loop={true}
-              // inactiveSlideShift={-24}
-              inactiveSlideOpacity={0.5}
-            />
-          </View>
-        </ScrollView>
-        {/* <LinearGradient
+              <Carousel
+                data={villains}
+                sliderWidth={380}
+                itemWidth={260}
+                renderItem={_renderItem}
+                loop={true}
+                // inactiveSlideShift={-24}
+                inactiveSlideOpacity={0.5}
+              />
+            </View>
+            <View style={styles.heroContainer}>
+              <Text
+                style={{
+                  ...styles.h4,
+                  marginBottom: 20,
+                  paddingHorizontal: 20,
+                }}
+              >
+                X-Men
+              </Text>
+
+              <Carousel
+                data={XMen}
+                sliderWidth={380}
+                itemWidth={260}
+                renderItem={_renderItem}
+                loop={true}
+                // inactiveSlideShift={-24}
+                inactiveSlideOpacity={0.5}
+              />
+            </View>
+          </ScrollView>
+          {/* )} */}
+          {/* <LinearGradient
           colors={[COLORS.beige, "#ffffff00"]}
           style={styles.scrollGradient}
           locations={[0, 1]}
           pointerEvents={"none"}
         /> */}
-      </SafeAreaView>
-    </View>
+        </SafeAreaView>
+      </View>
+      {loading && (
+        <View
+          style={{
+            position: "ablsolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: COLORS.beige,
+          }}
+        >
+          <Progress.CircleSnail
+            color={[COLORS.navy, COLORS.orange, COLORS.blue]}
+            size={80}
+            thickness={10}
+            style={styles.loading}
+            strokeCap={"round"}
+          />
+        </View>
+      )}
+    </>
   );
 };
 
@@ -293,6 +382,14 @@ const styles = StyleSheet.create({
     left: 0,
     width: "100%",
     height: 200,
+  },
+  loading: {
+    position: "absolute",
+    top: 300,
+    left: 145,
+    // flex: 1,
+    // width: "100%",
+    // alignSelf: "center",
   },
 });
 
