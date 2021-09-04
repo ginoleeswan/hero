@@ -17,6 +17,9 @@ import { HomeNavigation } from "./app/navigation/HomeNavigation";
 
 export default function App() {
   let [fontsLoaded] = useFonts({
+    "FlameSans-Regular": require("./app/assets/fonts/FlameSans-Regular.ttf"),
+    "Flame-Regular": require("./app/assets/fonts/Flame-Regular.ttf"),
+    "Flame-Bold": require("./app/assets/fonts/Flame-Bold.ttf"),
     Nunito_400Regular,
     Nunito_700Bold,
     Nunito_900Black,

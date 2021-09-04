@@ -2,6 +2,7 @@
 
 module.exports = {
   dependencies: {
-    ...require('expo-dev-client/dependencies'),
+    ...require("expo-dev-client/dependencies"),
   },
+  assets: ["./app/assets/fonts"],
 };

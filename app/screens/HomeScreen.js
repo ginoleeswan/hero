@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.beige,
   },
   h4: {
-    fontFamily: "Nunito_900Black",
+    fontFamily: "Flame-Regular",
     width: "100%",
     fontSize: 28,
     textAlign: "left",
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     fontFamily: "Righteous_400Regular",
     fontSize: 40,
     textAlign: "right",
-    color: COLORS.black,
+    color: COLORS.navy,
   },
   popularContainer: {
     justifyContent: "space-around",

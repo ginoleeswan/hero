@@ -15,6 +15,9 @@
 		96905EF65AED1B983A6B3ABC /* libPods-hero.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 58EEBF8E8E6FB1BC6CAF49B5 /* libPods-hero.a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		9C13E2E26EA043EEA6824EC5 /* noop-file.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43FF4051BA85437DB5E5CA0E /* noop-file.swift */; };
+		AFD33CC881E44CA2B351D642 /* Flame-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6DB6DF73A7D348C3AB8550B6 /* Flame-Bold.ttf */; };
+		26A6BE02C0724C51885EC93A /* Flame-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B26B123A611044BE8E066CF1 /* Flame-Regular.ttf */; };
+		A2350322E6BE4691AA465E7E /* FlameSans-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F8E6DC51D96148C7A367E133 /* FlameSans-Regular.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,6 +38,9 @@
 		ED2971642150620600B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS12.0.sdk/System/Library/Frameworks/JavaScriptCore.framework; sourceTree = DEVELOPER_DIR; };
 		43FF4051BA85437DB5E5CA0E /* noop-file.swift */ = {isa = PBXFileReference; name = "noop-file.swift"; path = "hero/noop-file.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
 		BECA49A8F3194333BA7125FB /* hero-Bridging-Header.h */ = {isa = PBXFileReference; name = "hero-Bridging-Header.h"; path = "hero/hero-Bridging-Header.h"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; explicitFileType = undefined; includeInIndex = 0; };
+		6DB6DF73A7D348C3AB8550B6 /* Flame-Bold.ttf */ = {isa = PBXFileReference; name = "Flame-Bold.ttf"; path = "../app/assets/fonts/Flame-Bold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		B26B123A611044BE8E066CF1 /* Flame-Regular.ttf */ = {isa = PBXFileReference; name = "Flame-Regular.ttf"; path = "../app/assets/fonts/Flame-Regular.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		F8E6DC51D96148C7A367E133 /* FlameSans-Regular.ttf */ = {isa = PBXFileReference; name = "FlameSans-Regular.ttf"; path = "../app/assets/fonts/FlameSans-Regular.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -92,6 +98,7 @@
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				D65327D7A22EEC0BE12398D9 /* Pods */,
+				7F3873899D5943ADB18B42BA /* Resources */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -123,6 +130,17 @@
 			);
 			path = Pods;
 			sourceTree = "<group>";
+		};
+		7F3873899D5943ADB18B42BA /* Resources */ = {
+			isa = "PBXGroup";
+			children = (
+				6DB6DF73A7D348C3AB8550B6 /* Flame-Bold.ttf */,
+				B26B123A611044BE8E066CF1 /* Flame-Regular.ttf */,
+				F8E6DC51D96148C7A367E133 /* FlameSans-Regular.ttf */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+			path = "";
 		};
 /* End PBXGroup section */
 
@@ -189,6 +207,9 @@
 				13B07FBD1A68108700A75B9A /* LaunchScreen.xib in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				D0DD5F1A417040EBBC0B1F3E /* hero-Bridging-Header.h in Resources */,
+				AFD33CC881E44CA2B351D642 /* Flame-Bold.ttf in Resources */,
+				26A6BE02C0724C51885EC93A /* Flame-Regular.ttf in Resources */,
+				A2350322E6BE4691AA465E7E /* FlameSans-Regular.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
