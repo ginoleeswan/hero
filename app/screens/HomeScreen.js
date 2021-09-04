@@ -46,39 +46,6 @@ const HomeScreen = ({ navigation }) => {
     extrapolate: "clamp",
   });
 
-  // const search = async (item) => {
-  //   try {
-  //     const searchResponse = await fetch(
-  //       `https://superheroapi.com/api/${api.key}/${item.id}/`
-  //     );
-  //     const characterResponse = await fetch(
-  //       `https://comicvine.gamespot.com/api/characters/?api_key=${apiComicVine.key}&filter=name:${item.title},publisher${item.publisher}&field_list=deck,publisher,first_appeared_in_issue&format=json`
-  //     );
-  //     const hero = await searchResponse.json();
-  //     const characterInfo = await characterResponse.json();
-  //     summary = characterInfo.results[0].deck;
-  //     firstIssue = characterInfo.results[0].first_appeared_in_issue;
-  //     publisher = characterInfo.results[0].publisher.name;
-  //     const firstComicResponse = await fetch(
-  //       `https://comicvine.gamespot.com/api/issue/4000-${firstIssue.id}/?api_key=${apiComicVine.key}&format=json`
-  //     );
-  //     const firstComicInfo = await firstComicResponse.json();
-  //     firstIssueURL = firstComicInfo.results.image.original_url;
-  //     navigation.navigate("Character", {
-  //       hero: hero,
-  //       image: item.image,
-  //       // publisher: item.publisher,
-  //       comicPicture: comicPicture,
-  //       summary: summary,
-  //       firstIssue: firstIssue,
-  //       firstIssueURL: firstIssueURL,
-  //       publisher: publisher,
-  //     });
-  //   } catch (error) {
-  //     console.error(error);
-  //   }
-  // };
-
   const search = async (item) => {
     try {
       setLoading(true);
@@ -197,21 +164,6 @@ const HomeScreen = ({ navigation }) => {
               </View>
             </View>
           </Animated.View>
-          {/* {loading ? (
-          // <ActivityIndicator
-          //   size="large"
-          //   color={COLORS.navy}
-          //   style={styles.loading}
-          // />
-
-          <Progress.CircleSnail
-            color={[COLORS.navy, COLORS.orange, COLORS.blue]}
-            size={80}
-            thickness={10}
-            style={styles.loading}
-            strokeCap={"round"}
-          />
-        ) : ( */}
           <ScrollView
             contentContainerStyle={{ paddingBottom: 80 }}
             onScroll={(e) => {
@@ -387,9 +339,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 300,
     left: 145,
-    // flex: 1,
-    // width: "100%",
-    // alignSelf: "center",
   },
 });
 
