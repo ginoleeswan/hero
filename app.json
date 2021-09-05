@@ -2,6 +2,7 @@
   "expo": {
     "name": "hero",
     "slug": "hero",
+    "owner": "gl-studio",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./app/assets/hero-icon.png",
