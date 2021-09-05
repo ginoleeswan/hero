@@ -175,8 +175,8 @@ const HomeScreen = ({ navigation }) => {
               <Text
                 style={{
                   ...styles.h4,
-                  marginBottom: 20,
-                  paddingHorizontal: 20,
+                  marginBottom: 10,
+                  paddingHorizontal: 15,
                 }}
               >
                 Popular
@@ -196,8 +196,8 @@ const HomeScreen = ({ navigation }) => {
               <Text
                 style={{
                   ...styles.h4,
-                  marginBottom: 20,
-                  paddingHorizontal: 20,
+                  marginBottom: 10,
+                  paddingHorizontal: 15,
                 }}
               >
                 Villains
@@ -217,8 +217,8 @@ const HomeScreen = ({ navigation }) => {
               <Text
                 style={{
                   ...styles.h4,
-                  marginBottom: 20,
-                  paddingHorizontal: 20,
+                  marginBottom: 10,
+                  paddingHorizontal: 15,
                 }}
               >
                 X-Men
@@ -317,7 +317,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     height: 300,
     marginHorizontal: 5,
-    marginBottom: 20,
+    marginBottom: 25,
+    marginTop: 15,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,

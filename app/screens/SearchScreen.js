@@ -10,11 +10,13 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
+  Image,
 } from "react-native";
 import { COLORS } from "../styles/colors";
 import { Avatar, colors, SearchBar } from "react-native-elements";
 import { HeroesContext } from "../context/HeroesContext";
 import * as Progress from "react-native-progress";
+import { LinearGradient } from "expo-linear-gradient";
 
 const apiComicVine = {
   key: "02dbe748c04865c7601c8c67ffb9a0e95438bbf1",
@@ -47,9 +49,9 @@ const SearchScreen = ({ navigation }) => {
         .then((res) => res.json())
         .then((res) => {
           setHeroNames(res);
-          heroNames.forEach((hero) => {
-            console.log(hero.name);
-          });
+          // heroNames.forEach((hero) => {
+          //   console.log(hero.name);
+          // });
         });
       setLoadingSearch(false);
     } catch (error) {
@@ -79,9 +81,10 @@ const SearchScreen = ({ navigation }) => {
       <View
         style={{
           height: 1,
-          width: "90%",
+          width: "86%",
           backgroundColor: COLORS.navy,
-          marginLeft: "5%",
+          borderRadius: 50,
+          marginLeft: "7%",
         }}
       />
     );
@@ -146,20 +149,27 @@ const SearchScreen = ({ navigation }) => {
         <View style={styles.header}>
           <Text style={styles.appTitle}>search</Text>
         </View>
-        <KeyboardAvoidingView style={{ paddingHorizontal: 30 }}>
-          <SearchBar
-            placeholder="Type Here..."
-            onChangeText={handleSearch}
-            value={query}
-            containerStyle={styles.inputContainer}
-            inputContainerStyle={styles.input}
-            inputStyle={styles.inputText}
-            searchIcon={{ size: 25 }}
-            round={true}
-          />
-        </KeyboardAvoidingView>
+        {/* <KeyboardAvoidingView
+          style={{
+            paddingHorizontal: 15,
+            marginBottom: -20,
+            zIndex: 5,
+            backgroundColor: "transparent",
+          }}
+        > */}
+        <SearchBar
+          placeholder="Search..."
+          onChangeText={handleSearch}
+          value={query}
+          containerStyle={styles.inputContainer}
+          inputContainerStyle={styles.input}
+          inputStyle={styles.inputText}
+          searchIcon={{ size: 25 }}
+          round={true}
+        />
+        {/* </KeyboardAvoidingView> */}
         <FlatList
-          style={{ width: "100%", marginTop: 20, height: 559 }}
+          style={{ width: "100%", marginTop: 20, paddingTop: 10, height: 580 }}
           data={
             filteredHeroNames && filteredHeroNames.length > 0
               ? filteredHeroNames
@@ -170,17 +180,40 @@ const SearchScreen = ({ navigation }) => {
               <View
                 style={{
                   flexDirection: "row",
-                  padding: 16,
+                  padding: 10,
+                  paddingHorizontal: 15,
                   alignItems: "center",
+                  // backgroundColor: COLORS.navy,
+                  // marginBottom: 15,
+                  // marginHorizontal: 10,
+                  borderRadius: 15,
                 }}
               >
                 <Avatar
                   rounded
-                  source={{ uri: item.images.sm }}
+                  source={{ uri: item.images.md }}
                   size="medium"
-                  containerStyle={{ marginRight: 16 }}
+                  containerStyle={{
+                    marginRight: 13,
+                    borderColor: COLORS.navy,
+                    borderWidth: 2,
+                  }}
                 />
-                <Text style={styles.p}>{item.name}</Text>
+                {/* <Image
+                  source={{ uri: item.images.sm }}
+                  style={{ width: "100%", height: 90, borderRadius: 10 }}
+                /> */}
+                <Text
+                  style={{
+                    ...styles.p,
+                    fontFamily: "Flame-Regular",
+                    color: COLORS.navy,
+                    // position: "absolute",
+                    // left: 10,
+                  }}
+                >
+                  {item.name}
+                </Text>
               </View>
             </TouchableOpacity>
           )}
@@ -188,6 +221,12 @@ const SearchScreen = ({ navigation }) => {
           ItemSeparatorComponent={renderSeparator}
           ListFooterComponent={renderFooter}
           // ListHeaderComponent={}
+        />
+        <LinearGradient
+          colors={[COLORS.beige, "#ffffff00"]}
+          style={styles.scrollGradient}
+          locations={[0, 1]}
+          pointerEvents={"none"}
         />
         {loading && (
           <View
@@ -232,32 +271,35 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 10,
-    paddingHorizontal: 30,
+    paddingHorizontal: 20,
   },
   appTitle: {
     fontFamily: "Righteous_400Regular",
     fontSize: 50,
     textAlign: "left",
-    color: COLORS.black,
+    color: COLORS.navy,
   },
   inputContainer: {
-    width: "100%",
-    padding: 0,
+    width: "95%",
+    marginBottom: -25,
+    left: 8,
+    paddingHorizontal: 5,
 
     height: 50,
-    backgroundColor: "transparent",
-    borderColor: COLORS.black,
+    backgroundColor: COLORS.navy,
+    // borderColor: COLORS.black,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 2,
-    borderRadius: 50,
+    // borderWidth: 2,
+    borderRadius: 20,
+    zIndex: 2,
   },
   input: {
-    // backgroundColor: "transparent",
+    backgroundColor: "transparent",
     width: "100%",
-    borderColor: COLORS.black,
+    borderColor: COLORS.navy,
     borderWidth: 2,
-    borderRadius: 50,
+    borderRadius: 20,
   },
   inputText: {
     fontFamily: "Nunito_400Regular",
@@ -268,6 +310,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 200,
     left: 145,
+  },
+  scrollGradient: {
+    position: "absolute",
+    top: 160,
+    left: 0,
+    width: "100%",
+    height: 40,
+    zIndex: 1,
   },
 });
 
