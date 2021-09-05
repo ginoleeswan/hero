@@ -15,7 +15,7 @@
 
 <p align="center">
 
-  <img src="./app/assets/images/screenshots/home.PNG" style="background: none; "  alt="animated" width="20%" />
+  <img src="./app/assets/images/screenshots/home.PNG" style="border-radius: 20 "  alt="animated" width="20%"/>
   <img src="./app/assets/images/screenshots/info1.PNG" style="background: none;"  alt="animated" width="20%"  />
   <img src="./app/assets/images/screenshots/info2.PNG" style="background: none;"  alt="animated" width="20%"  />
   <img src="./app/assets/images/screenshots/search.PNG" style="background: none;"  alt="animated" width="20%"  />
