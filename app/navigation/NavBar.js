@@ -49,7 +49,7 @@ const NavBar = () => {
                   height: 70,
                   justifyContent: "center",
                   alignItems: "center",
-                  borderRadius: "50%",
+                  borderRadius: 70,
                   borderColor: "grey",
                   borderWidth: 1,
                   backgroundColor: COLORS.navy,
