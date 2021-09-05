@@ -13,11 +13,14 @@
 
 <!-- <h2 align="center">☀️ <a href="https://ginoleeswan.github.io/weather-app-basic/">See Live</a> ☀️</h2> -->
 
-<!-- <p align="center">
-  <a href="https://ginoleeswan.github.io/weather-app-basic/">
-    <img src="./images/weather-app.gif" style="background: none;"  alt="animated" />
-  </a>
-</p> -->
+<p align="center">
+
+  <img src="./app/assets/images/screenshots/home.PNG" style="background: none; "  alt="animated" width="20%" />
+  <img src="./app/assets/images/screenshots/info1.PNG" style="background: none;"  alt="animated" width="20%"  />
+  <img src="./app/assets/images/screenshots/info2.PNG" style="background: none;"  alt="animated" width="20%"  />
+  <img src="./app/assets/images/screenshots/search.PNG" style="background: none;"  alt="animated" width="20%"  />
+
+</p>
 
 <h2 align="right">📖 &nbsp; Lessons Learned</h2>
 
