@@ -10,6 +10,7 @@ import {
   Dimensions,
   StatusBar,
 } from "react-native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "../styles/colors";
 import Carousel from "react-native-snap-carousel";
@@ -49,6 +50,24 @@ const HomeScreen = ({ navigation }) => {
     extrapolate: "clamp",
   });
 
+  const animation = new Animated.Value(0);
+  const inputRange = [0, 1];
+  const outputRange = [1, 0.8];
+  const scale = animation.interpolate({ inputRange, outputRange });
+
+  const onPressIn = () => {
+    Animated.spring(animation, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+  const onPressOut = () => {
+    Animated.spring(animation, {
+      toValue: 0,
+      useNativeDriver: true,
+    }).start();
+  };
+
   const search = async (item) => {
     try {
       setLoading(true);
@@ -87,54 +106,68 @@ const HomeScreen = ({ navigation }) => {
 
   const _renderItem = ({ item }) => {
     return (
-      <Pressable
-        activeOpacity={0.8}
-        onPress={() => {
-          search(item);
-        }}
-        style={styles.heroCard}
+      <Animated.View
+        key={item.id}
+        // style={[{ transform: [{ scale }] }]}
       >
-        <View
-          style={{
-            justifyContent: "center",
-            alignItems: "center",
+        <Pressable
+          // unstable_pressDelay={5000}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+          onPress={() => {
+            search(item);
+            console.log(item.id);
           }}
+          style={({ pressed }) => [
+            styles.heroCard,
+            { opacity: pressed ? 0.8 : 1.0 },
+          ]}
+          // style={styles.heroCard}
         >
-          <Image
-            source={item.image}
+          <View
             style={{
+              justifyContent: "center",
+              alignItems: "center",
               width: "100%",
               height: "100%",
-              resizeMode: "cover",
-              borderRadius: 20,
-            }}
-          />
-        </View>
-        <View
-          style={{
-            flex: 1,
-            position: "absolute",
-            bottom: -5,
-            padding: 20,
-            width: "100%",
-            justifyContent: "center",
-            borderRadius: 20,
-          }}
-        >
-          <Text
-            style={{
-              ...styles.h4,
-              fontSize: 20,
-              color: COLORS.beige,
-              textShadowColor: "rgba(0, 0, 0, 1)",
-              textShadowOffset: { width: -1, height: 1 },
-              textShadowRadius: 5,
             }}
           >
-            {item.title}
-          </Text>
-        </View>
-      </Pressable>
+            <Image
+              source={item.image}
+              style={{
+                width: "100%",
+                height: "100%",
+                resizeMode: "cover",
+                borderRadius: 20,
+              }}
+            />
+          </View>
+          <View
+            style={{
+              flex: 1,
+              position: "absolute",
+              bottom: -5,
+              padding: 20,
+              width: "100%",
+              justifyContent: "center",
+              borderRadius: 20,
+            }}
+          >
+            <Text
+              style={{
+                ...styles.h4,
+                fontSize: 20,
+                color: COLORS.beige,
+                textShadowColor: "rgba(0, 0, 0, 1)",
+                textShadowOffset: { width: -1, height: 1 },
+                textShadowRadius: 5,
+              }}
+            >
+              {item.title}
+            </Text>
+          </View>
+        </Pressable>
+      </Animated.View>
     );
   };
 
@@ -207,7 +240,7 @@ const HomeScreen = ({ navigation }) => {
                 renderItem={_renderItem}
                 loop={true}
                 inactiveSlideShift={0}
-                inactiveSlideOpacity={0.5}
+                inactiveSlideOpacity={Platform.OS === "ios" ? 0.5 : 1}
               />
             </View>
             <View style={styles.heroContainer}>
@@ -228,7 +261,7 @@ const HomeScreen = ({ navigation }) => {
                 renderItem={_renderItem}
                 loop={true}
                 // inactiveSlideShift={-24}
-                inactiveSlideOpacity={0.5}
+                inactiveSlideOpacity={Platform.OS === "ios" ? 0.5 : 1}
               />
             </View>
             <View style={styles.heroContainer}>
@@ -249,7 +282,7 @@ const HomeScreen = ({ navigation }) => {
                 renderItem={_renderItem}
                 loop={true}
                 // inactiveSlideShift={-24}
-                inactiveSlideOpacity={0.5}
+                inactiveSlideOpacity={Platform.OS === "ios" ? 0.5 : 1}
               />
             </View>
           </ScrollView>
