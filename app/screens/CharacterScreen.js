@@ -7,6 +7,7 @@ import {
   ScrollView,
   Dimensions,
   Platform,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -93,6 +94,11 @@ const CharacterScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.appContainer}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="dark-content"
+      />
       <SafeAreaView
         style={{ flex: 1, backgroundColor: "transparent" }}
         forceInset={{ top: "always" }}

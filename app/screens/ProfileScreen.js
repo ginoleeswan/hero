@@ -1,11 +1,16 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StatusBar, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "../styles/colors";
 
 const ProfileScreen = () => {
   return (
     <View style={styles.appContainer}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="dark-content"
+      />
       <SafeAreaView>
         <View style={styles.header}>
           <Text style={styles.appTitle}>profile</Text>

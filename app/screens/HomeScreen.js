@@ -7,6 +7,8 @@ import {
   Pressable,
   Animated,
   ActivityIndicator,
+  Dimensions,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "../styles/colors";
@@ -19,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HeroesContext } from "../context/HeroesContext";
 import { ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Modal } from "react-native";
 
 const api = {
   key: "4204884039587685",
@@ -142,7 +145,18 @@ const HomeScreen = ({ navigation }) => {
   return (
     <>
       <View style={styles.appContainer}>
-        <SafeAreaView style={{ flex: 1 }} forceInset={{ top: "always" }}>
+        <StatusBar
+          translucent
+          backgroundColor="transparent"
+          barStyle="dark-content"
+        />
+        <SafeAreaView
+          style={{
+            flex: 1,
+            width: Dimensions.get("window").width,
+          }}
+          forceInset={{ top: "always" }}
+        >
           <Animated.View
             style={{
               position: "absolute",
@@ -166,7 +180,10 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </Animated.View>
           <ScrollView
-            contentContainerStyle={{ paddingBottom: 80 }}
+            contentContainerStyle={{
+              paddingBottom: 80,
+              width: Dimensions.get("window").width,
+            }}
             onScroll={(e) => {
               scrollY.setValue(e.nativeEvent.contentOffset.y);
             }}
@@ -246,24 +263,25 @@ const HomeScreen = ({ navigation }) => {
         </SafeAreaView>
       </View>
       {loading === true ? (
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: COLORS.beige,
-          }}
-        >
-          <Progress.CircleSnail
-            color={[COLORS.navy, COLORS.orange, COLORS.blue]}
-            size={80}
-            thickness={10}
-            style={styles.loading}
-            strokeCap={"round"}
-          />
-        </View>
+        <Modal statusBarTranslucent={true}>
+          <View
+            style={{
+              backgroundColor: COLORS.beige,
+              width: "100%",
+              height: "100%",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Progress.CircleSnail
+              color={[COLORS.navy, COLORS.orange, COLORS.blue]}
+              size={80}
+              thickness={10}
+              style={styles.loading}
+              strokeCap={"round"}
+            />
+          </View>
+        </Modal>
       ) : null}
     </>
   );
@@ -272,6 +290,8 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   appContainer: {
     flex: 1,
+    // height: Dimensions.get("window").height,
+    // width: Dimensions.get("window").width,
     justifyContent: "flex-start",
     alignItems: "flex-start",
     backgroundColor: COLORS.beige,
@@ -337,11 +357,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 200,
   },
-  loading: {
-    position: "absolute",
-    top: 300,
-    left: 145,
-  },
+  loading: { top: -20 },
 });
 
 export default HomeScreen;

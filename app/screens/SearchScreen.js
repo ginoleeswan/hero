@@ -10,6 +10,9 @@ import {
   TouchableOpacity,
   Alert,
   Image,
+  Dimensions,
+  StatusBar,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "../styles/colors";
@@ -162,6 +165,11 @@ const SearchScreen = ({ navigation }) => {
 
   return (
     <View style={styles.appContainer}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="dark-content"
+      />
       <SafeAreaView>
         <View style={styles.header}>
           <Text style={styles.appTitle}>search</Text>
@@ -186,6 +194,8 @@ const SearchScreen = ({ navigation }) => {
         />
         {/* </KeyboardAvoidingView> */}
         <FlatList
+          removeClippedSubviews={true}
+          initialNumToRender={3}
           style={{
             width: "100%",
             marginTop: 20,
@@ -251,25 +261,25 @@ const SearchScreen = ({ navigation }) => {
           pointerEvents={"none"}
         />
         {loading === true ? (
-          <View
-            style={{
-              position: "absolute",
-              top: 50,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              backgroundColor: COLORS.beige,
-              zIndex: 2,
-            }}
-          >
-            <Progress.CircleSnail
-              color={[COLORS.navy, COLORS.orange, COLORS.blue]}
-              size={80}
-              thickness={10}
-              style={styles.loading}
-              strokeCap={"round"}
-            />
-          </View>
+          <Modal statusBarTranslucent={true}>
+            <View
+              style={{
+                backgroundColor: COLORS.beige,
+                width: "100%",
+                height: "100%",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Progress.CircleSnail
+                color={[COLORS.navy, COLORS.orange, COLORS.blue]}
+                size={80}
+                thickness={10}
+                style={styles.loading}
+                strokeCap={"round"}
+              />
+            </View>
+          </Modal>
         ) : null}
       </SafeAreaView>
     </View>
@@ -330,9 +340,7 @@ const styles = StyleSheet.create({
     color: COLORS.beige,
   },
   loading: {
-    position: "absolute",
-    top: 200,
-    left: 145,
+    top: -20,
   },
   scrollGradient: {
     position: "absolute",
