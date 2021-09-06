@@ -8,10 +8,10 @@ import {
   FlatList,
   ActivityIndicator,
   TouchableOpacity,
-  SafeAreaView,
   Alert,
   Image,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "../styles/colors";
 import { Avatar, colors, SearchBar } from "react-native-elements";
 import { HeroesContext } from "../context/HeroesContext";
@@ -40,19 +40,18 @@ const SearchScreen = ({ navigation }) => {
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const fetchHeroes = () => {
+  const fetchHeroes = async () => {
     try {
       setLoadingSearch(true);
-      fetch(
+      const response = await fetch(
         "https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/all.json"
-      )
-        .then((res) => res.json())
-        .then((res) => {
-          setHeroNames(res);
-          // heroNames.forEach((hero) => {
-          //   console.log(hero.name);
-          // });
-        });
+      );
+      const herojson = await response.json();
+
+      setHeroNames(herojson);
+      heroNames.forEach((hero) => {
+        console.log(hero.name);
+      });
       setLoadingSearch(false);
     } catch (error) {
       console.error(error);
@@ -105,20 +104,32 @@ const SearchScreen = ({ navigation }) => {
     try {
       setLoading(true);
       const searchResponse = await fetch(
-        `https://superheroapi.com/api/${api.key}/${item.id}/`
+        `https://superheroapi.com/api/${api.key}/${item.id}/`,
+        {
+          method: "GET",
+        }
       );
       const characterResponse = await fetch(
-        `https://comicvine.gamespot.com/api/characters/?api_key=${apiComicVine.key}&filter=name:${item.name},aliases:${item.biography.aliases},publisher:${item.biography.publisher},real_name:${item.biography.fullName},first_appeared_in_issue:${item.biography.firstAppearance},origin:${item.appearance.race}&field_list=deck,publisher,first_appeared_in_issue&format=json`
+        `https://comicvine.gamespot.com/api/characters/?api_key=${apiComicVine.key}&filter=name:${item.name},aliases:${item.biography.aliases},publisher:${item.biography.publisher},real_name:${item.biography.fullName},first_appeared_in_issue:${item.biography.firstAppearance},origin:${item.appearance.race}&field_list=deck,publisher,first_appeared_in_issue&format=json`,
+        {
+          method: "GET",
+        }
       );
       const hero = await searchResponse.json();
+      // console.log(hero);
       const characterInfo = await characterResponse.json();
+      // console.log(characterInfo);
       summary = characterInfo.results[0].deck;
       firstIssue = characterInfo.results[0].first_appeared_in_issue;
       publisher = characterInfo.results[0].publisher.name;
       const firstComicResponse = await fetch(
-        `https://comicvine.gamespot.com/api/issue/4000-${firstIssue.id}/?api_key=${apiComicVine.key}&format=json`
+        `https://comicvine.gamespot.com/api/issue/4000-${firstIssue.id}/?api_key=${apiComicVine.key}&format=json`,
+        {
+          method: "GET",
+        }
       );
       const firstComicInfo = await firstComicResponse.json();
+      // console.log(firstComicInfo);
       firstIssueURL = firstComicInfo.results.image.original_url;
       navigation.navigate("Character", {
         hero: hero,
@@ -169,7 +180,12 @@ const SearchScreen = ({ navigation }) => {
         />
         {/* </KeyboardAvoidingView> */}
         <FlatList
-          style={{ width: "100%", marginTop: 20, paddingTop: 10, height: 580 }}
+          style={{
+            width: "100%",
+            marginTop: 20,
+            paddingTop: 10,
+            height: Platform.OS === "ios" ? 580 : 590,
+          }}
           data={
             filteredHeroNames && filteredHeroNames.length > 0
               ? filteredHeroNames
@@ -228,15 +244,16 @@ const SearchScreen = ({ navigation }) => {
           locations={[0, 1]}
           pointerEvents={"none"}
         />
-        {loading && (
+        {loading === true ? (
           <View
             style={{
-              position: "ablsolute",
-              top: 0,
+              position: "absolute",
+              top: 50,
               left: 0,
               width: "100%",
               height: "100%",
               backgroundColor: COLORS.beige,
+              zIndex: 2,
             }}
           >
             <Progress.CircleSnail
@@ -247,7 +264,7 @@ const SearchScreen = ({ navigation }) => {
               strokeCap={"round"}
             />
           </View>
-        )}
+        ) : null}
       </SafeAreaView>
     </View>
   );
@@ -313,7 +330,7 @@ const styles = StyleSheet.create({
   },
   scrollGradient: {
     position: "absolute",
-    top: 160,
+    top: Platform.OS === "ios" ? 160 : 140,
     left: 0,
     width: "100%",
     height: 40,

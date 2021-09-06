@@ -1,6 +1,5 @@
 import React, { useState, useContext, useEffect } from "react";
 import {
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
@@ -9,6 +8,7 @@ import {
   Animated,
   ActivityIndicator,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "../styles/colors";
 import Carousel from "react-native-snap-carousel";
 import axios from "axios";
@@ -78,6 +78,7 @@ const HomeScreen = ({ navigation }) => {
       setLoading(false);
     } catch (error) {
       console.error(error);
+      setLoading(false);
     }
   };
 
@@ -244,10 +245,10 @@ const HomeScreen = ({ navigation }) => {
         /> */}
         </SafeAreaView>
       </View>
-      {loading && (
+      {loading === true ? (
         <View
           style={{
-            position: "ablsolute",
+            position: "absolute",
             top: 0,
             left: 0,
             width: "100%",
@@ -263,7 +264,7 @@ const HomeScreen = ({ navigation }) => {
             strokeCap={"round"}
           />
         </View>
-      )}
+      ) : null}
     </>
   );
 };

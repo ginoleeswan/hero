@@ -1,5 +1,14 @@
 import React, { useEffect } from "react";
-import { StyleSheet, View, Text, Image, ScrollView } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Text,
+  Image,
+  ScrollView,
+  Dimensions,
+  Platform,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import Header from "../components/Header";
 import { COLORS } from "../styles/colors";
@@ -84,127 +93,132 @@ const CharacterScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.appContainer}>
-      <Header title={""} backbutton={true} navigation={navigation} />
-      <Image source={image} style={styles.heroImage} />
-      <LinearGradient
-        colors={["#ffffff00", COLORS.beige]}
-        style={styles.bottomFade}
-        locations={[0.3, 1]}
-      />
-      <View style={styles.heroInfoContainer}>
-        <View style={styles.heroTitleContainer}>
-          <Text style={styles.heroTitle}>{hero.name}</Text>
-          <View style={styles.heroHeader}>
-            <Text style={{ ...styles.p, marginLeft: 2 }}>
-              {hero.biography["full-name"]}
-            </Text>
-            <Image source={publisherLogo} style={logoShape} />
-          </View>
-        </View>
-        <Divider
-          orientation="horizontal"
-          width={3}
-          style={styles.divider}
-          color={COLORS.navy}
-        />
-        <ScrollView
-          style={{ height: 340 }}
-          contentContainerStyle={{
-            width: "100%",
-            paddingBottom: 40,
-            marginTop: 5,
-          }}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text
-            style={{
-              ...styles.p,
-              fontSize: 12,
-              marginBottom: 10,
-              lineHeight: 18,
-            }}
-          >
-            {summary}
-          </Text>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            {/* <Text style={styles.h4}>Real Name:</Text> */}
-          </View>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Text style={styles.h4}>Publisher:</Text>
-            <Text style={styles.p}>{publisher}</Text>
-          </View>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <Text style={styles.h4}>Place of Birth:</Text>
-            <Text style={styles.p}>
-              {hero.biography["place-of-birth"] === "-"
-                ? "Unknown"
-                : hero.biography["place-of-birth"]}
-            </Text>
-          </View>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <Text style={styles.h4}>Alignment:</Text>
-            <Text style={{ ...styles.p, textTransform: "capitalize" }}>
-              {hero.biography.alignment}
-            </Text>
-          </View>
-
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <Text style={styles.h4}>First Appearence:</Text>
-            <Text style={styles.p}>{hero.biography["first-appearance"]}</Text>
-          </View>
-          <View style={styles.comicPictureContainer}>
-            {firstIssueURL ? (
-              <Image
-                source={{
-                  uri: firstIssueURL,
-                }}
-                style={styles.comicPicture}
-              />
-            ) : (
-              <Text style={styles.h4}>NO PICTURE</Text>
-            )}
-          </View>
-        </ScrollView>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: "transparent" }}
+        forceInset={{ top: "always" }}
+      >
+        <Header title={""} backbutton={true} navigation={navigation} />
+        <Image source={image} style={styles.heroImage} />
         <LinearGradient
           colors={["#ffffff00", COLORS.beige]}
-          style={styles.bottomFadeInfo}
-          locations={[0.8, 1]}
-          pointerEvents={"none"}
+          style={styles.bottomFade}
+          locations={[0.3, 1]}
         />
-      </View>
+        <View style={styles.heroInfoContainer}>
+          <View style={styles.heroTitleContainer}>
+            <Text style={styles.heroTitle}>{hero.name}</Text>
+            <View style={styles.heroHeader}>
+              <Text style={{ ...styles.p, marginLeft: 2 }}>
+                {hero.biography["full-name"]}
+              </Text>
+              <Image source={publisherLogo} style={logoShape} />
+            </View>
+          </View>
+          <Divider
+            orientation="horizontal"
+            width={3}
+            style={styles.divider}
+            color={COLORS.navy}
+          />
+          <ScrollView
+            style={{ height: 340 }}
+            contentContainerStyle={{
+              width: "100%",
+              paddingBottom: 40,
+              marginTop: 5,
+            }}
+            showsVerticalScrollIndicator={false}
+          >
+            <Text
+              style={{
+                ...styles.p,
+                fontSize: 12,
+                marginBottom: 10,
+                lineHeight: 18,
+              }}
+            >
+              {summary}
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              {/* <Text style={styles.h4}>Real Name:</Text> */}
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Text style={styles.h4}>Publisher:</Text>
+              <Text style={styles.p}>{publisher}</Text>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <Text style={styles.h4}>Place of Birth:</Text>
+              <Text style={styles.p}>
+                {hero.biography["place-of-birth"] === "-"
+                  ? "Unknown"
+                  : hero.biography["place-of-birth"]}
+              </Text>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <Text style={styles.h4}>Alignment:</Text>
+              <Text style={{ ...styles.p, textTransform: "capitalize" }}>
+                {hero.biography.alignment}
+              </Text>
+            </View>
+
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <Text style={styles.h4}>First Appearence:</Text>
+              <Text style={styles.p}>{hero.biography["first-appearance"]}</Text>
+            </View>
+            <View style={styles.comicPictureContainer}>
+              {firstIssueURL ? (
+                <Image
+                  source={{
+                    uri: firstIssueURL,
+                  }}
+                  style={styles.comicPicture}
+                />
+              ) : (
+                <Text style={styles.h4}>NO PICTURE</Text>
+              )}
+            </View>
+          </ScrollView>
+          <LinearGradient
+            colors={["#ffffff00", COLORS.beige]}
+            style={styles.bottomFadeInfo}
+            locations={[0.8, 1]}
+            pointerEvents={"none"}
+          />
+        </View>
+      </SafeAreaView>
     </View>
   );
 };
@@ -245,9 +259,9 @@ const styles = StyleSheet.create({
   },
   heroImage: {
     position: "absolute",
-    top: -160,
+    top: Platform.OS === "ios" ? -120 : -150,
     left: 0,
-    zIndex: -1,
+    zIndex: -2,
     width: "100%",
     height: "100%",
     resizeMode: "contain",
