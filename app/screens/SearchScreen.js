@@ -49,9 +49,9 @@ const SearchScreen = ({ navigation }) => {
       const herojson = await response.json();
 
       setHeroNames(herojson);
-      heroNames.forEach((hero) => {
-        console.log(hero.name);
-      });
+      // heroNames.forEach((hero) => {
+      //   console.log(hero.name);
+      // });
       setLoadingSearch(false);
     } catch (error) {
       console.error(error);
@@ -109,17 +109,23 @@ const SearchScreen = ({ navigation }) => {
           method: "GET",
         }
       );
+      // console.log(item.biography.fullName);
+      // const realName = item.biography.fullName.text();
       const characterResponse = await fetch(
-        `https://comicvine.gamespot.com/api/characters/?api_key=${apiComicVine.key}&filter=name:${item.name},aliases:${item.biography.aliases},publisher:${item.biography.publisher},real_name:${item.biography.fullName},first_appeared_in_issue:${item.biography.firstAppearance},origin:${item.appearance.race}&field_list=deck,publisher,first_appeared_in_issue&format=json`,
+        `https://comicvine.gamespot.com/api/characters/?api_key=${apiComicVine.key}&filter=name:${item.name},publisher:${item.biography.publisher},real_name:${item.biography.fullName},origin:${item.appearance.race}&field_list=deck,publisher,first_appeared_in_issue&format=json`,
         {
           method: "GET",
         }
       );
       const hero = await searchResponse.json();
-      // console.log(hero);
       const characterInfo = await characterResponse.json();
       // console.log(characterInfo);
-      summary = characterInfo.results[0].deck;
+      {
+        characterInfo.results[0].deck == undefined
+          ? (summary = "no summary")
+          : (summary = characterInfo.results[0].deck);
+      }
+      // summary = characterInfo.results[0].deck;
       firstIssue = characterInfo.results[0].first_appeared_in_issue;
       publisher = characterInfo.results[0].publisher.name;
       const firstComicResponse = await fetch(
