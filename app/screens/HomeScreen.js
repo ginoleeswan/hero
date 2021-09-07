@@ -116,7 +116,7 @@ const HomeScreen = ({ navigation }) => {
           onPressOut={onPressOut}
           onPress={() => {
             search(item);
-            console.log(item.id);
+            // console.log(item.id);
           }}
           style={({ pressed }) => [
             styles.heroCard,

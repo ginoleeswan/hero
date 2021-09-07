@@ -175,7 +175,7 @@ const CharacterScreen = ({ route, navigation }) => {
                   fill={Number(hero.powerstats.intelligence)}
                   tintColor={COLORS.red}
                   tintColorSecondary={COLORS.green}
-                  onAnimationComplete={() => console.log("onAnimationComplete")}
+                  // onAnimationComplete={() => console.log("onAnimationComplete")}
                   backgroundColor={COLORS.navy}
                   padding={0}
                   lineCap={"round"}
@@ -221,7 +221,7 @@ const CharacterScreen = ({ route, navigation }) => {
                   fill={Number(hero.powerstats.strength)}
                   tintColor={COLORS.red}
                   tintColorSecondary={COLORS.green}
-                  onAnimationComplete={() => console.log("onAnimationComplete")}
+                  // onAnimationComplete={() => console.log("onAnimationComplete")}
                   backgroundColor={COLORS.navy}
                   padding={0}
                   lineCap={"round"}
@@ -267,7 +267,7 @@ const CharacterScreen = ({ route, navigation }) => {
                   fill={Number(hero.powerstats.speed)}
                   tintColor={COLORS.red}
                   tintColorSecondary={COLORS.green}
-                  onAnimationComplete={() => console.log("onAnimationComplete")}
+                  // onAnimationComplete={() => console.log("onAnimationComplete")}
                   backgroundColor={COLORS.navy}
                   padding={0}
                   lineCap={"round"}
@@ -313,7 +313,7 @@ const CharacterScreen = ({ route, navigation }) => {
                   fill={Number(hero.powerstats.durability)}
                   tintColor={COLORS.red}
                   tintColorSecondary={COLORS.green}
-                  onAnimationComplete={() => console.log("onAnimationComplete")}
+                  // onAnimationComplete={() => console.log("onAnimationComplete")}
                   backgroundColor={COLORS.navy}
                   padding={0}
                   lineCap={"round"}
@@ -359,7 +359,7 @@ const CharacterScreen = ({ route, navigation }) => {
                   fill={Number(hero.powerstats.power)}
                   tintColor={COLORS.red}
                   tintColorSecondary={COLORS.green}
-                  onAnimationComplete={() => console.log("onAnimationComplete")}
+                  // onAnimationComplete={() => console.log("onAnimationComplete")}
                   backgroundColor={COLORS.navy}
                   padding={0}
                   lineCap={"round"}
@@ -405,7 +405,7 @@ const CharacterScreen = ({ route, navigation }) => {
                   fill={Number(hero.powerstats.combat)}
                   tintColor={COLORS.red}
                   tintColorSecondary={COLORS.green}
-                  onAnimationComplete={() => console.log("onAnimationComplete")}
+                  // onAnimationComplete={() => console.log("onAnimationComplete")}
                   backgroundColor={COLORS.navy}
                   padding={0}
                   lineCap={"round"}
