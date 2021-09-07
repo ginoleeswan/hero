@@ -318,7 +318,7 @@ const HomeScreen = ({ navigation }) => {
                 ...styles.p,
                 fontFamily: "Flame-Regular",
                 marginTop: -20,
-                left: 4,
+                left: 3,
               }}
             >
               loading...
