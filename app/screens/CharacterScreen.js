@@ -14,6 +14,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import Header from "../components/Header";
 import { COLORS } from "../styles/colors";
 import { Divider } from "react-native-elements";
+import { AnimatedCircularProgress } from "react-native-circular-progress";
+import { Circle } from "react-native-svg";
 
 const apiComic = {
   key: "02dbe748c04865c7601c8c67ffb9a0e95438bbf1",
@@ -145,6 +147,295 @@ const CharacterScreen = ({ route, navigation }) => {
             >
               {summary}
             </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                justifyContent: "space-around",
+                alignItems: "center",
+                // backgroundColor: COLORS.grey,
+                borderRadius: 20,
+                // padding: 10,
+                marginBottom: 12,
+              }}
+            >
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 5,
+                }}
+              >
+                <AnimatedCircularProgress
+                  size={60}
+                  width={10}
+                  duration={2000}
+                  backgroundWidth={8}
+                  rotation={0}
+                  fill={Number(hero.powerstats.intelligence)}
+                  tintColor={COLORS.red}
+                  tintColorSecondary={COLORS.green}
+                  onAnimationComplete={() => console.log("onAnimationComplete")}
+                  backgroundColor={COLORS.navy}
+                  padding={0}
+                  lineCap={"round"}
+                  // renderCap={({ center }) => (
+                  //   <Circle cx={center.x} cy={center.y} r="10" fill="blue" />
+                  // )}
+                >
+                  {(fill) => (
+                    <Text
+                      style={{
+                        ...styles.p,
+                        fontFamily: "Flame-Regular",
+                        left: 1,
+                      }}
+                    >
+                      {Math.floor(fill)}
+                    </Text>
+                  )}
+                </AnimatedCircularProgress>
+                <Text
+                  style={{
+                    ...styles.p,
+                    fontFamily: "Flame-Regular",
+                    fontSize: 10,
+                  }}
+                >
+                  Intelligence
+                </Text>
+              </View>
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 5,
+                }}
+              >
+                <AnimatedCircularProgress
+                  size={60}
+                  width={10}
+                  duration={2000}
+                  backgroundWidth={8}
+                  rotation={0}
+                  fill={Number(hero.powerstats.strength)}
+                  tintColor={COLORS.red}
+                  tintColorSecondary={COLORS.green}
+                  onAnimationComplete={() => console.log("onAnimationComplete")}
+                  backgroundColor={COLORS.navy}
+                  padding={0}
+                  lineCap={"round"}
+                  // renderCap={({ center }) => (
+                  //   <Circle cx={center.x} cy={center.y} r="10" fill="blue" />
+                  // )}
+                >
+                  {(fill) => (
+                    <Text
+                      style={{
+                        ...styles.p,
+                        fontFamily: "Flame-Regular",
+                        left: 1,
+                      }}
+                    >
+                      {Math.floor(fill)}
+                    </Text>
+                  )}
+                </AnimatedCircularProgress>
+                <Text
+                  style={{
+                    ...styles.p,
+                    fontFamily: "Flame-Regular",
+                    fontSize: 10,
+                  }}
+                >
+                  Strength
+                </Text>
+              </View>
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 5,
+                }}
+              >
+                <AnimatedCircularProgress
+                  size={60}
+                  width={10}
+                  duration={2000}
+                  backgroundWidth={8}
+                  rotation={0}
+                  fill={Number(hero.powerstats.speed)}
+                  tintColor={COLORS.red}
+                  tintColorSecondary={COLORS.green}
+                  onAnimationComplete={() => console.log("onAnimationComplete")}
+                  backgroundColor={COLORS.navy}
+                  padding={0}
+                  lineCap={"round"}
+                  // renderCap={({ center }) => (
+                  //   <Circle cx={center.x} cy={center.y} r="10" fill="blue" />
+                  // )}
+                >
+                  {(fill) => (
+                    <Text
+                      style={{
+                        ...styles.p,
+                        fontFamily: "Flame-Regular",
+                        left: 1,
+                      }}
+                    >
+                      {Math.floor(fill)}
+                    </Text>
+                  )}
+                </AnimatedCircularProgress>
+                <Text
+                  style={{
+                    ...styles.p,
+                    fontFamily: "Flame-Regular",
+                    fontSize: 10,
+                  }}
+                >
+                  Speed
+                </Text>
+              </View>
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 5,
+                }}
+              >
+                <AnimatedCircularProgress
+                  size={60}
+                  width={10}
+                  duration={2000}
+                  backgroundWidth={8}
+                  rotation={0}
+                  fill={Number(hero.powerstats.durability)}
+                  tintColor={COLORS.red}
+                  tintColorSecondary={COLORS.green}
+                  onAnimationComplete={() => console.log("onAnimationComplete")}
+                  backgroundColor={COLORS.navy}
+                  padding={0}
+                  lineCap={"round"}
+                  // renderCap={({ center }) => (
+                  //   <Circle cx={center.x} cy={center.y} r="10" fill="blue" />
+                  // )}
+                >
+                  {(fill) => (
+                    <Text
+                      style={{
+                        ...styles.p,
+                        fontFamily: "Flame-Regular",
+                        left: 1,
+                      }}
+                    >
+                      {Math.floor(fill)}
+                    </Text>
+                  )}
+                </AnimatedCircularProgress>
+                <Text
+                  style={{
+                    ...styles.p,
+                    fontFamily: "Flame-Regular",
+                    fontSize: 10,
+                  }}
+                >
+                  Durability
+                </Text>
+              </View>
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 5,
+                }}
+              >
+                <AnimatedCircularProgress
+                  size={60}
+                  width={10}
+                  duration={2000}
+                  backgroundWidth={8}
+                  rotation={0}
+                  fill={Number(hero.powerstats.power)}
+                  tintColor={COLORS.red}
+                  tintColorSecondary={COLORS.green}
+                  onAnimationComplete={() => console.log("onAnimationComplete")}
+                  backgroundColor={COLORS.navy}
+                  padding={0}
+                  lineCap={"round"}
+                  // renderCap={({ center }) => (
+                  //   <Circle cx={center.x} cy={center.y} r="10" fill="blue" />
+                  // )}
+                >
+                  {(fill) => (
+                    <Text
+                      style={{
+                        ...styles.p,
+                        fontFamily: "Flame-Regular",
+                        left: 1,
+                      }}
+                    >
+                      {Math.floor(fill)}
+                    </Text>
+                  )}
+                </AnimatedCircularProgress>
+                <Text
+                  style={{
+                    ...styles.p,
+                    fontFamily: "Flame-Regular",
+                    fontSize: 10,
+                  }}
+                >
+                  Power
+                </Text>
+              </View>
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 5,
+                }}
+              >
+                <AnimatedCircularProgress
+                  size={60}
+                  width={10}
+                  duration={2000}
+                  backgroundWidth={8}
+                  rotation={0}
+                  fill={Number(hero.powerstats.combat)}
+                  tintColor={COLORS.red}
+                  tintColorSecondary={COLORS.green}
+                  onAnimationComplete={() => console.log("onAnimationComplete")}
+                  backgroundColor={COLORS.navy}
+                  padding={0}
+                  lineCap={"round"}
+                  // renderCap={({ center }) => (
+                  //   <Circle cx={center.x} cy={center.y} r="10" fill="blue" />
+                  // )}
+                >
+                  {(fill) => (
+                    <Text
+                      style={{
+                        ...styles.p,
+                        fontFamily: "Flame-Regular",
+                        left: 1,
+                      }}
+                    >
+                      {Math.floor(fill)}
+                    </Text>
+                  )}
+                </AnimatedCircularProgress>
+                <Text
+                  style={{
+                    ...styles.p,
+                    fontFamily: "Flame-Regular",
+                    fontSize: 10,
+                  }}
+                >
+                  Combat
+                </Text>
+              </View>
+            </View>
             <View
               style={{
                 flexDirection: "row",
