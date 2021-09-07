@@ -195,7 +195,7 @@ const SearchScreen = ({ navigation }) => {
         {/* </KeyboardAvoidingView> */}
         <FlatList
           removeClippedSubviews={true}
-          initialNumToRender={3}
+          initialNumToRender={8}
           style={{
             width: "100%",
             marginTop: 20,
