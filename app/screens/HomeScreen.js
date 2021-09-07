@@ -313,6 +313,16 @@ const HomeScreen = ({ navigation }) => {
               style={styles.loading}
               strokeCap={"round"}
             />
+            <Text
+              style={{
+                ...styles.p,
+                fontFamily: "Flame-Regular",
+                marginTop: -20,
+                left: 4,
+              }}
+            >
+              loading...
+            </Text>
           </View>
         </Modal>
       ) : null}
