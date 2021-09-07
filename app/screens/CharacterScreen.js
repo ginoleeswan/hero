@@ -171,7 +171,8 @@ const CharacterScreen = ({ route, navigation }) => {
                   width={10}
                   duration={2000}
                   backgroundWidth={8}
-                  rotation={0}
+                  rotation={-124}
+                  arcSweepAngle={250}
                   fill={Number(hero.powerstats.intelligence)}
                   tintColor={COLORS.red}
                   tintColorSecondary={COLORS.green}
@@ -200,6 +201,7 @@ const CharacterScreen = ({ route, navigation }) => {
                     ...styles.p,
                     fontFamily: "Flame-Regular",
                     fontSize: 10,
+                    marginTop: -10,
                   }}
                 >
                   Intelligence
@@ -217,7 +219,8 @@ const CharacterScreen = ({ route, navigation }) => {
                   width={10}
                   duration={2000}
                   backgroundWidth={8}
-                  rotation={0}
+                  rotation={-124}
+                  arcSweepAngle={250}
                   fill={Number(hero.powerstats.strength)}
                   tintColor={COLORS.red}
                   tintColorSecondary={COLORS.green}
@@ -246,6 +249,7 @@ const CharacterScreen = ({ route, navigation }) => {
                     ...styles.p,
                     fontFamily: "Flame-Regular",
                     fontSize: 10,
+                    marginTop: -10,
                   }}
                 >
                   Strength
@@ -263,7 +267,8 @@ const CharacterScreen = ({ route, navigation }) => {
                   width={10}
                   duration={2000}
                   backgroundWidth={8}
-                  rotation={0}
+                  rotation={-124}
+                  arcSweepAngle={250}
                   fill={Number(hero.powerstats.speed)}
                   tintColor={COLORS.red}
                   tintColorSecondary={COLORS.green}
@@ -292,6 +297,7 @@ const CharacterScreen = ({ route, navigation }) => {
                     ...styles.p,
                     fontFamily: "Flame-Regular",
                     fontSize: 10,
+                    marginTop: -10,
                   }}
                 >
                   Speed
@@ -309,7 +315,8 @@ const CharacterScreen = ({ route, navigation }) => {
                   width={10}
                   duration={2000}
                   backgroundWidth={8}
-                  rotation={0}
+                  rotation={-124}
+                  arcSweepAngle={250}
                   fill={Number(hero.powerstats.durability)}
                   tintColor={COLORS.red}
                   tintColorSecondary={COLORS.green}
@@ -338,6 +345,7 @@ const CharacterScreen = ({ route, navigation }) => {
                     ...styles.p,
                     fontFamily: "Flame-Regular",
                     fontSize: 10,
+                    marginTop: -10,
                   }}
                 >
                   Durability
@@ -355,7 +363,8 @@ const CharacterScreen = ({ route, navigation }) => {
                   width={10}
                   duration={2000}
                   backgroundWidth={8}
-                  rotation={0}
+                  rotation={-124}
+                  arcSweepAngle={250}
                   fill={Number(hero.powerstats.power)}
                   tintColor={COLORS.red}
                   tintColorSecondary={COLORS.green}
@@ -384,6 +393,7 @@ const CharacterScreen = ({ route, navigation }) => {
                     ...styles.p,
                     fontFamily: "Flame-Regular",
                     fontSize: 10,
+                    marginTop: -10,
                   }}
                 >
                   Power
@@ -401,7 +411,8 @@ const CharacterScreen = ({ route, navigation }) => {
                   width={10}
                   duration={2000}
                   backgroundWidth={8}
-                  rotation={0}
+                  rotation={-124}
+                  arcSweepAngle={250}
                   fill={Number(hero.powerstats.combat)}
                   tintColor={COLORS.red}
                   tintColorSecondary={COLORS.green}
@@ -430,6 +441,7 @@ const CharacterScreen = ({ route, navigation }) => {
                     ...styles.p,
                     fontFamily: "Flame-Regular",
                     fontSize: 10,
+                    marginTop: -10,
                   }}
                 >
                   Combat
