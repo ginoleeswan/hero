@@ -10,6 +10,7 @@ import {
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Lightbox from "react-native-lightbox-v2";
 import { LinearGradient } from "expo-linear-gradient";
 import Header from "../components/Header";
 import { COLORS } from "../styles/colors";
@@ -43,6 +44,13 @@ const CharacterScreen = ({ route, navigation }) => {
     publisherLogo = require(`../assets/images/DC-Logo.png`);
     logoShape = styles.publisherLogoSquare;
   }
+
+  const activeLightboxProps = {
+    resizeMode: "contain",
+    marginHorizontal: 20,
+    flex: 1,
+    width: null,
+  };
 
   //   if (comicPicture) {
   //     comicPictureURL = require(comicPicture);
@@ -509,12 +517,34 @@ const CharacterScreen = ({ route, navigation }) => {
             </View>
             <View style={styles.comicPictureContainer}>
               {firstIssueURL ? (
-                <Image
-                  source={{
-                    uri: firstIssueURL,
-                  }}
-                  style={styles.comicPicture}
-                />
+                <Lightbox
+                  // renderHeader={() => {
+                  //   return (
+                  //     <View
+                  //       style={{
+                  //         justifyContent: "center",
+                  //         alignItems: "flex-start",
+                  //         paddingHorizontal: 15,
+                  //         top: 70,
+                  //       }}
+                  //     >
+                  //       <Text
+                  //         style={{ ...styles.heroTitle, color: COLORS.beige }}
+                  //       >
+                  //         First Issue
+                  //       </Text>
+                  //     </View>
+                  //   );
+                  // }}
+                  activeProps={activeLightboxProps}
+                >
+                  <Image
+                    source={{
+                      uri: firstIssueURL,
+                    }}
+                    style={styles.comicPicture}
+                  />
+                </Lightbox>
               ) : (
                 <Text style={styles.h4}>NO PICTURE</Text>
               )}
