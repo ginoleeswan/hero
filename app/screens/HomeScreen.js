@@ -11,6 +11,10 @@ import {
   StatusBar,
 } from "react-native";
 
+import TouchableScale from "react-native-touchable-scale";
+import { SquircleView } from "react-native-figma-squircle";
+import MaskedView from "@react-native-masked-view/masked-view";
+
 import { useFocusEffect } from "@react-navigation/native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -52,24 +56,6 @@ const HomeScreen = ({ navigation }) => {
     extrapolate: "clamp",
   });
 
-  const animation = new Animated.Value(0);
-  const inputRange = [0, 1];
-  const outputRange = [1, 0.8];
-  const scale = animation.interpolate({ inputRange, outputRange });
-
-  const onPressIn = () => {
-    Animated.spring(animation, {
-      toValue: 1,
-      useNativeDriver: true,
-    }).start();
-  };
-  const onPressOut = () => {
-    Animated.spring(animation, {
-      toValue: 0,
-      useNativeDriver: true,
-    }).start();
-  };
-
   const search = async (item) => {
     try {
       setLoading(true);
@@ -108,68 +94,81 @@ const HomeScreen = ({ navigation }) => {
 
   const _renderItem = ({ item }) => {
     return (
-      <Animated.View
-        key={item.id}
-        // style={[{ transform: [{ scale }] }]}
+      <Pressable
+        style={({ pressed }) => [
+          styles.heroCard,
+          { opacity: pressed ? 0.8 : 1.0 },
+        ]}
+        // style={styles.heroCard}
       >
-        <Pressable
-          // unstable_pressDelay={5000}
-          onPressIn={onPressIn}
-          onPressOut={onPressOut}
+        <TouchableScale
+          delayPressIn={50}
+          activeScale={0.9}
+          tension={160}
+          friction={2}
           onPress={() => {
             search(item);
             // console.log(item.id);
           }}
-          style={({ pressed }) => [
-            styles.heroCard,
-            { opacity: pressed ? 0.8 : 1.0 },
-          ]}
-          // style={styles.heroCard}
         >
-          <View
-            style={{
-              justifyContent: "center",
-              alignItems: "center",
-              width: "100%",
-              height: "100%",
-            }}
+          <MaskedView
+            maskElement={
+              <SquircleView
+                style={StyleSheet.absoluteFill}
+                squircleParams={{
+                  cornerRadius: 50,
+                  cornerSmoothing: 1,
+                  fillColor: "pink",
+                }}
+              />
+            }
           >
-            <Image
-              source={item.image}
+            <View
               style={{
+                justifyContent: "center",
+                alignItems: "center",
                 width: "100%",
                 height: "100%",
-                resizeMode: "cover",
-                borderRadius: 20,
-              }}
-            />
-          </View>
-          <View
-            style={{
-              flex: 1,
-              position: "absolute",
-              bottom: -5,
-              padding: 20,
-              width: "100%",
-              justifyContent: "center",
-              borderRadius: 20,
-            }}
-          >
-            <Text
-              style={{
-                ...styles.h4,
-                fontSize: 20,
-                color: COLORS.beige,
-                textShadowColor: "rgba(0, 0, 0, 1)",
-                textShadowOffset: { width: -1, height: 1 },
-                textShadowRadius: 5,
               }}
             >
-              {item.title}
-            </Text>
-          </View>
-        </Pressable>
-      </Animated.View>
+              <Image
+                source={item.image}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  resizeMode: "cover",
+                  borderRadius: 20,
+                }}
+              />
+            </View>
+            <View
+              style={{
+                flex: 1,
+                position: "absolute",
+                bottom: -5,
+                padding: 20,
+                width: "100%",
+                justifyContent: "center",
+                borderRadius: 20,
+              }}
+            >
+              <Text
+                style={{
+                  ...styles.h4,
+                  fontSize: 20,
+                  color: COLORS.beige,
+                  textShadowColor: "rgba(0, 0, 0, 1)",
+                  textShadowOffset: { width: -1, height: 1 },
+                  textShadowRadius: 5,
+                }}
+              >
+                {item.title}
+              </Text>
+            </View>
+          </MaskedView>
+        </TouchableScale>
+      </Pressable>
+      // </Animated.View>
     );
   };
 
