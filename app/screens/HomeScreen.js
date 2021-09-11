@@ -11,6 +11,8 @@ import {
   StatusBar,
 } from "react-native";
 
+import { useFocusEffect } from "@react-navigation/native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "../styles/colors";
 import Carousel from "react-native-snap-carousel";
@@ -97,7 +99,7 @@ const HomeScreen = ({ navigation }) => {
         firstIssueURL: firstIssueURL,
         publisher: publisher,
       });
-      setLoading(false);
+      // setLoading(false);
     } catch (error) {
       console.error(error);
       setLoading(false);
@@ -174,6 +176,16 @@ const HomeScreen = ({ navigation }) => {
   useEffect(() => {
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("blur", () => {
+      // Screen was blurred
+      // Do something
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <>
