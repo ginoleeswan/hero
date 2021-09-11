@@ -14,9 +14,7 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["./app/assets/images/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ginolee.hero"
