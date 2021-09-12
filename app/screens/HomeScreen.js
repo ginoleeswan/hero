@@ -3,7 +3,6 @@ import {
   StyleSheet,
   Text,
   View,
-  Image,
   Pressable,
   Animated,
   ActivityIndicator,
@@ -14,6 +13,7 @@ import {
 import TouchableScale from "react-native-touchable-scale";
 import { SquircleView } from "react-native-figma-squircle";
 import MaskedView from "@react-native-masked-view/masked-view";
+import { Icon, Image } from "react-native-elements";
 
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -92,14 +92,15 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const _renderItem = ({ item }) => {
+  const _renderItem = ({ item, index }) => {
     return (
       <Pressable
+        key={index}
         style={({ pressed }) => [
           styles.heroCard,
           { opacity: pressed ? 0.8 : 1.0 },
         ]}
-        // style={styles.heroCard}
+        style={styles.heroCard}
       >
         <TouchableScale
           delayPressIn={50}
@@ -123,30 +124,22 @@ const HomeScreen = ({ navigation }) => {
               />
             }
           >
-            <View
+            <Image
+              source={item.image}
+              resizeMode="cover"
+              PlaceholderContent={<ActivityIndicator />}
               style={{
-                justifyContent: "center",
-                alignItems: "center",
                 width: "100%",
                 height: "100%",
               }}
-            >
-              <Image
-                source={item.image}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  resizeMode: "cover",
-                  borderRadius: 20,
-                }}
-              />
-            </View>
+            />
+
             <View
               style={{
                 flex: 1,
                 position: "absolute",
                 bottom: -5,
-                padding: 20,
+                padding: 30,
                 width: "100%",
                 justifyContent: "center",
                 borderRadius: 20,
@@ -234,15 +227,32 @@ const HomeScreen = ({ navigation }) => {
             scrollEventThrottle={6}
           >
             <View style={styles.popularContainer}>
-              <Text
+              <View
                 style={{
-                  ...styles.h4,
-                  marginBottom: 10,
-                  paddingHorizontal: 15,
+                  flexDirection: "row",
+                  flex: 1,
+                  justifyContent: "flex-start",
+                  alignItems: "center",
                 }}
               >
-                Popular
-              </Text>
+                <Text
+                  style={{
+                    ...styles.h4,
+                    marginBottom: 10,
+                    paddingLeft: 15,
+                  }}
+                >
+                  Popular
+                </Text>
+
+                <Icon
+                  name="trending-up"
+                  type="feather"
+                  color={COLORS.navy}
+                  size={30}
+                  iconStyle={{ bottom: 2, paddingLeft: 5 }}
+                />
+              </View>
 
               <Carousel
                 data={popularHeroes}
@@ -255,15 +265,32 @@ const HomeScreen = ({ navigation }) => {
               />
             </View>
             <View style={styles.heroContainer}>
-              <Text
+              <View
                 style={{
-                  ...styles.h4,
-                  marginBottom: 10,
-                  paddingHorizontal: 15,
+                  flexDirection: "row",
+                  flex: 1,
+                  justifyContent: "flex-start",
+                  alignItems: "center",
                 }}
               >
-                Villains
-              </Text>
+                <Text
+                  style={{
+                    ...styles.h4,
+                    marginBottom: 10,
+                    paddingLeft: 15,
+                  }}
+                >
+                  Villians
+                </Text>
+
+                <Icon
+                  name="emoticon-devil"
+                  type="material-community"
+                  color={COLORS.navy}
+                  size={30}
+                  iconStyle={{ bottom: 2, paddingLeft: 5, opacity: 0.9 }}
+                />
+              </View>
 
               <Carousel
                 data={villains}
@@ -298,12 +325,12 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </ScrollView>
           {/* )} */}
-          {/* <LinearGradient
-          colors={[COLORS.beige, "#ffffff00"]}
-          style={styles.scrollGradient}
-          locations={[0, 1]}
-          pointerEvents={"none"}
-        /> */}
+          <LinearGradient
+            colors={[COLORS.beige, "#ffffff00"]}
+            style={styles.scrollGradient}
+            locations={[0, 1]}
+            pointerEvents={"none"}
+          />
         </SafeAreaView>
       </View>
       {loading === true ? (
@@ -328,7 +355,7 @@ const HomeScreen = ({ navigation }) => {
               style={{
                 ...styles.p,
                 fontFamily: "Flame-Regular",
-                marginTop: -20,
+                marginTop: -15,
                 left: 3,
               }}
             >
@@ -352,7 +379,7 @@ const styles = StyleSheet.create({
   },
   h4: {
     fontFamily: "Flame-Regular",
-    width: "100%",
+    // width: "100%",
     fontSize: 28,
     textAlign: "left",
     color: COLORS.navy,
@@ -406,10 +433,10 @@ const styles = StyleSheet.create({
   },
   scrollGradient: {
     position: "absolute",
-    top: 94,
+    top: 44,
     left: 0,
     width: "100%",
-    height: 200,
+    height: 60,
   },
   loading: { top: -20 },
 });
