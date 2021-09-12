@@ -282,7 +282,7 @@ const SearchScreen = ({ navigation }) => {
                 style={{
                   ...styles.p,
                   fontFamily: "Flame-Regular",
-                  marginTop: -20,
+                  marginTop: -15,
                   left: 3,
                 }}
               >
