@@ -124,7 +124,7 @@ const CharacterScreen = ({ route, navigation }) => {
           <View style={styles.heroTitleContainer}>
             <Text style={styles.heroTitle}>{hero.name}</Text>
             <View style={styles.heroHeader}>
-              <Text style={{ ...styles.p, marginLeft: 2 }}>
+              <Text style={{ ...styles.p, marginLeft: 3, fontSize: 16 }}>
                 {hero.biography["full-name"]}
               </Text>
               <Image source={publisherLogo} style={logoShape} />
@@ -133,7 +133,7 @@ const CharacterScreen = ({ route, navigation }) => {
           <Divider
             orientation="horizontal"
             width={3}
-            style={styles.divider}
+            style={{ ...styles.divider, marginBottom: 0 }}
             color={COLORS.navy}
           />
           <ScrollView
@@ -141,7 +141,7 @@ const CharacterScreen = ({ route, navigation }) => {
             contentContainerStyle={{
               width: "100%",
               paddingBottom: 40,
-              marginTop: 5,
+              marginTop: 10,
             }}
             showsVerticalScrollIndicator={false}
           >
@@ -149,7 +149,7 @@ const CharacterScreen = ({ route, navigation }) => {
               style={{
                 ...styles.p,
                 fontSize: 12,
-                marginBottom: 10,
+                marginBottom: 20,
                 lineHeight: 18,
               }}
             >
@@ -164,7 +164,7 @@ const CharacterScreen = ({ route, navigation }) => {
                 // backgroundColor: COLORS.grey,
                 borderRadius: 20,
                 // padding: 10,
-                marginBottom: 12,
+                marginBottom: 10,
               }}
             >
               <View
@@ -456,65 +456,62 @@ const CharacterScreen = ({ route, navigation }) => {
                 </Text>
               </View>
             </View>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              {/* <Text style={styles.h4}>Real Name:</Text> */}
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Text style={styles.h4}>Publisher:</Text>
-              <Text style={styles.p}>{publisher}</Text>
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
-            >
-              <Text style={styles.h4}>Place of Birth:</Text>
-              <Text style={styles.p}>
-                {hero.biography["place-of-birth"] === "-"
-                  ? "Unknown"
-                  : hero.biography["place-of-birth"]}
-              </Text>
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
-            >
-              <Text style={styles.h4}>Alignment:</Text>
-              <Text style={{ ...styles.p, textTransform: "capitalize" }}>
-                {hero.biography.alignment}
-              </Text>
+
+            <View style={styles.heroDetailsContainer}>
+              <Text style={{ ...styles.h2 }}>Biography</Text>
+              <Divider
+                orientation="horizontal"
+                width={2}
+                inset={true}
+                style={styles.divider}
+                color={COLORS.navy}
+              />
+              {Object.entries(hero.biography).map(([key, value, index]) => {
+                // console.log(`${key}: ${value}`);
+
+                let str = value.toString();
+
+                if (
+                  key != "full-name" &&
+                  key != "place-of-birth" &&
+                  key != "alter-egos" &&
+                  "No alter egos found."
+                ) {
+                  str = str.replace(/,\s*(?![^()]*\))/g, "\n\u2022 ");
+                }
+
+                return (
+                  <View
+                    key={index}
+                    style={{
+                      flexDirection: key == "aliases" ? "column" : "row",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      flexWrap: "wrap",
+                      marginBottom: 5,
+                    }}
+                  >
+                    <Text style={styles.h4}>{key}:</Text>
+
+                    {str.split(`/,[s]*/g, ", "`).map((value) => (
+                      <Text
+                        style={{ ...styles.p, textTransform: "capitalize" }}
+                      >
+                        {key != "full-name" &&
+                        key != "place-of-birth" &&
+                        key != "first-appearance" &&
+                        key != "publisher" &&
+                        key != "alignment" &&
+                        "-"
+                          ? "\u2022 " + value
+                          : value}
+                      </Text>
+                    ))}
+                  </View>
+                );
+              })}
             </View>
 
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
-            >
-              <Text style={styles.h4}>First Appearence:</Text>
-              <Text style={styles.p}>{hero.biography["first-appearance"]}</Text>
-            </View>
             <View style={styles.comicPictureContainer}>
               {firstIssueURL ? (
                 <Lightbox
@@ -549,6 +546,127 @@ const CharacterScreen = ({ route, navigation }) => {
                 <Text style={styles.h4}>NO PICTURE</Text>
               )}
             </View>
+
+            <View style={styles.heroDetailsContainer}>
+              <Text style={{ ...styles.h2 }}>Appearence</Text>
+              <Divider
+                orientation="horizontal"
+                width={2}
+                inset={true}
+                style={styles.divider}
+                color={COLORS.navy}
+              />
+              {Object.entries(hero.appearance).map(([key, value, index]) => {
+                // console.log(`${key}: ${value}`);
+                const str = value.toString();
+                return (
+                  <View
+                    key={index}
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <Text style={styles.h4}>{key}:</Text>
+                    <Text style={styles.p}>
+                      {str
+                        .split(`/,[s]*/g, ", "`)
+                        .map((value) =>
+                          str.includes(",") ? (
+                            <Text>{value.replace(/,(?=[^\s])/g, ", ")}</Text>
+                          ) : (
+                            <Text>{value}</Text>
+                          )
+                        )}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+            <View style={styles.heroDetailsContainer}>
+              <Text style={{ ...styles.h2 }}>Work</Text>
+              <Divider
+                orientation="horizontal"
+                width={2}
+                inset={true}
+                style={styles.divider}
+                color={COLORS.navy}
+              />
+              {Object.entries(hero.work).map(([key, value, index]) => {
+                // console.log(`${key}: ${value}`);
+                let str = value;
+
+                if (key != "base") {
+                  str = str.replace(/,\s*(?![^()]*\))/g, "\n\u2022 ");
+                }
+
+                return (
+                  <View
+                    key={index}
+                    style={{
+                      flexDirection: key == "base" ? "row" : "column",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      flexWrap: "wrap",
+                      marginBottom: 5,
+                    }}
+                  >
+                    <Text style={styles.h4}>{key}:</Text>
+
+                    {str.split(`/,[s]*/g, ", "`).map((value) => (
+                      <Text
+                        style={{ ...styles.p, textTransform: "capitalize" }}
+                      >
+                        {key != "base" && "-" ? "\u2022 " + value : "unknown"}
+                      </Text>
+                    ))}
+                  </View>
+                );
+              })}
+            </View>
+            <View style={styles.heroDetailsContainer}>
+              <Text style={{ ...styles.h2 }}>Connections</Text>
+              <Divider
+                orientation="horizontal"
+                width={2}
+                inset={true}
+                style={styles.divider}
+                color={COLORS.navy}
+              />
+              {Object.entries(hero.connections).map(([key, value, index]) => {
+                console.log(`${key}: ${value}`);
+                const str = value.replace(/,\s*(?![^()]*\))/g, "\n\u2022 ");
+                // const firstLetter = str.charAt(0).toUpperCase() + str.slice(1);
+                return (
+                  <View
+                    key={index}
+                    style={{
+                      // flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      flexWrap: "wrap",
+                      marginBottom: 5,
+                    }}
+                  >
+                    <Text style={styles.h4}>{key}:</Text>
+
+                    {str.split(`/,[s]*/g, ", "`).map((value) => (
+                      <Text
+                        style={{
+                          ...styles.p,
+                          textTransform: "capitalize",
+                          lineHeight: 24,
+                        }}
+                      >
+                        {"\u2022 " + value}
+                      </Text>
+                    ))}
+                  </View>
+                );
+              })}
+            </View>
           </ScrollView>
           <LinearGradient
             colors={["#ffffff00", COLORS.beige]}
@@ -572,21 +690,32 @@ const styles = StyleSheet.create({
     // paddingTop: 40,
   },
   h4: {
-    fontFamily: "Nunito_900Black",
+    fontFamily: "Flame-Regular",
     fontSize: 15,
     textAlign: "left",
     color: COLORS.navy,
+    textTransform: "capitalize",
+    paddingVertical: 3,
+  },
+  h2: {
+    fontFamily: "Flame-Regular",
+    fontSize: 20,
+    textAlign: "right",
+    color: COLORS.navy,
+    textTransform: "capitalize",
+    paddingVertical: 3,
   },
   p: {
-    fontFamily: "Nunito_400Regular",
-    fontSize: 15,
+    fontFamily: "FlameSans-Regular",
+    fontSize: 13,
     textAlign: "left",
     color: COLORS.navy,
     flexWrap: "wrap",
+    paddingVertical: 3,
   },
   divider: {
     borderRadius: 30,
-    marginBottom: 10,
+    marginBottom: 15,
   },
   heroTitle: {
     fontFamily: "Righteous_400Regular",
@@ -637,6 +766,9 @@ const styles = StyleSheet.create({
     left: 0,
     padding: 20,
   },
+  heroDetailsContainer: {
+    marginTop: 10,
+  },
   publisherLogoSquare: {
     width: 30,
     left: -2,
@@ -660,7 +792,7 @@ const styles = StyleSheet.create({
     width: "100%",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 10,
+    marginVertical: 20,
     shadowColor: "#000",
 
     shadowOffset: {
