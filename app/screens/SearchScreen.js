@@ -14,6 +14,7 @@ import {
   StatusBar,
   Modal,
 } from "react-native";
+import BigList from "react-native-big-list";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "../styles/colors";
 import { Avatar, colors, SearchBar } from "react-native-elements";
@@ -34,6 +35,8 @@ let summary = null;
 let firstIssue = null;
 let firstIssueURL = null;
 let publisher = null;
+
+const ITEM_HEIGHT = 72;
 
 const SearchScreen = ({ navigation }) => {
   const [query, setQuery] = useState("");
@@ -193,10 +196,12 @@ const SearchScreen = ({ navigation }) => {
           round={true}
         />
         {/* </KeyboardAvoidingView> */}
-        <FlatList
-          // removeClippedSubviews={true}
-          // initialNumToRender={8}
+        <BigList
+          itemHeight={ITEM_HEIGHT}
+          headerHeight={0}
+          footerHeight={0}
           style={{
+            position: "absolute",
             width: "100%",
             marginTop: 20,
             paddingTop: 10,
@@ -213,10 +218,14 @@ const SearchScreen = ({ navigation }) => {
                 style={{
                   flexDirection: "row",
                   padding: 10,
+                  // paddingTop: 30,
                   paddingHorizontal: 15,
                   alignItems: "center",
+                  borderBottomColor: COLORS.navy,
+                  borderBottomWidth: 2,
+
                   // backgroundColor: COLORS.navy,
-                  // marginBottom: 15,
+                  marginBottom: 15,
                   // marginHorizontal: 10,
                   borderRadius: 15,
                 }}
@@ -229,6 +238,7 @@ const SearchScreen = ({ navigation }) => {
                     marginRight: 13,
                     borderColor: COLORS.navy,
                     borderWidth: 2,
+                    top: 0,
                   }}
                 />
                 {/* <Image
@@ -240,8 +250,6 @@ const SearchScreen = ({ navigation }) => {
                     ...styles.p,
                     fontFamily: "Flame-Regular",
                     color: COLORS.navy,
-                    // position: "absolute",
-                    // left: 10,
                   }}
                 >
                   {item.name}
@@ -250,8 +258,8 @@ const SearchScreen = ({ navigation }) => {
             </TouchableOpacity>
           )}
           keyExtractor={(item) => item.id.toString()}
-          ItemSeparatorComponent={renderSeparator}
-          ListFooterComponent={renderFooter}
+          // ItemSeparatorComponent={renderSeparator}
+          renderFooter={renderFooter}
           // ListHeaderComponent={}
         />
         <LinearGradient

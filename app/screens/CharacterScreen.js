@@ -124,7 +124,7 @@ const CharacterScreen = ({ route, navigation }) => {
           <View style={styles.heroTitleContainer}>
             <Text style={styles.heroTitle}>{hero.name}</Text>
             <View style={styles.heroHeader}>
-              <Text style={{ ...styles.p, marginLeft: 3, fontSize: 16 }}>
+              <Text style={{ ...styles.h4, marginLeft: 3, fontSize: 16 }}>
                 {hero.biography["full-name"]}
               </Text>
               <Image source={publisherLogo} style={logoShape} />
@@ -477,7 +477,7 @@ const CharacterScreen = ({ route, navigation }) => {
                   key != "alter-egos" &&
                   "No alter egos found."
                 ) {
-                  str = str.replace(/,\s*(?![^()]*\))/g, "\n\u2022 ");
+                  str = str.replace(/,|;\s*(?![^()]*\))/g, "\n\u2022 ");
                 }
 
                 return (
@@ -565,12 +565,12 @@ const CharacterScreen = ({ route, navigation }) => {
                     style={{
                       flexDirection: "row",
                       justifyContent: "space-between",
-                      alignItems: "center",
+                      alignItems: "stretch",
                       flexWrap: "wrap",
                     }}
                   >
                     <Text style={styles.h4}>{key}:</Text>
-                    <Text style={styles.p}>
+                    <Text style={{ ...styles.p, marginTop: -2 }}>
                       {str
                         .split(`/,[s]*/g, ", "`)
                         .map((value) =>
@@ -599,7 +599,7 @@ const CharacterScreen = ({ route, navigation }) => {
                 let str = value;
 
                 if (key != "base") {
-                  str = str.replace(/,\s*(?![^()]*\))/g, "\n\u2022 ");
+                  str = str.replace(/,|;\s*(?![^()]*\))/g, "\n\u2022 ");
                 }
 
                 return (
@@ -608,16 +608,23 @@ const CharacterScreen = ({ route, navigation }) => {
                     style={{
                       flexDirection: key == "base" ? "row" : "column",
                       justifyContent: "space-between",
-                      alignItems: "flex-start",
+                      alignItems: key == "base" ? "stretch" : "flex-start",
                       flexWrap: "wrap",
                       marginBottom: 5,
                     }}
                   >
-                    <Text style={styles.h4}>{key}:</Text>
+                    <Text style={{ ...styles.h4, marginBottom: 4 }}>
+                      {key}:
+                    </Text>
 
                     {str.split(`/,[s]*/g, ", "`).map((value) => (
                       <Text
-                        style={{ ...styles.p, textTransform: "capitalize" }}
+                        style={{
+                          ...styles.p,
+                          textTransform: "capitalize",
+                          lineHeight: key == "occupation" ? 20 : 0,
+                          marginTop: -2,
+                        }}
                       >
                         {key != "base" && "-" ? "\u2022 " + value : "unknown"}
                       </Text>
@@ -643,7 +650,7 @@ const CharacterScreen = ({ route, navigation }) => {
                   <View
                     key={index}
                     style={{
-                      // flexDirection: "row",
+                      flexDirection: "row",
                       justifyContent: "space-between",
                       alignItems: "flex-start",
                       flexWrap: "wrap",
@@ -695,7 +702,7 @@ const styles = StyleSheet.create({
     textAlign: "left",
     color: COLORS.navy,
     textTransform: "capitalize",
-    paddingVertical: 3,
+    // paddingVertical: 3,
   },
   h2: {
     fontFamily: "Flame-Regular",
@@ -703,15 +710,16 @@ const styles = StyleSheet.create({
     textAlign: "right",
     color: COLORS.navy,
     textTransform: "capitalize",
-    paddingVertical: 3,
+    paddingVertical: 5,
   },
   p: {
     fontFamily: "FlameSans-Regular",
     fontSize: 13,
     textAlign: "left",
     color: COLORS.navy,
+    // lineHeight: ,
     flexWrap: "wrap",
-    paddingVertical: 3,
+    // paddingVertical: 3,
   },
   divider: {
     borderRadius: 30,
@@ -768,6 +776,8 @@ const styles = StyleSheet.create({
   },
   heroDetailsContainer: {
     marginTop: 10,
+    // alignItems: "stretch",
+    // justifyContent: "space-between",
   },
   publisherLogoSquare: {
     width: 30,
