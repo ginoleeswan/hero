@@ -155,6 +155,7 @@ const CharacterScreen = ({ route, navigation }) => {
             >
               {summary}
             </Text>
+            {/********** STATS DETAILS ***************/}
             <View
               style={{
                 flexDirection: "row",
@@ -456,7 +457,7 @@ const CharacterScreen = ({ route, navigation }) => {
                 </Text>
               </View>
             </View>
-
+            {/********** BIOGRAPHY DETAILS ***************/}
             <View style={styles.heroDetailsContainer}>
               <Text style={{ ...styles.h2 }}>Biography</Text>
               <Divider
@@ -474,6 +475,7 @@ const CharacterScreen = ({ route, navigation }) => {
                 if (
                   key != "full-name" &&
                   key != "place-of-birth" &&
+                  key != "first-appearance" &&
                   key != "alter-egos" &&
                   "No alter egos found."
                 ) {
@@ -484,7 +486,10 @@ const CharacterScreen = ({ route, navigation }) => {
                   <View
                     key={index}
                     style={{
-                      flexDirection: key == "aliases" ? "column" : "row",
+                      flexDirection:
+                        key == "aliases" || key == "alter-egos"
+                          ? "column"
+                          : "row",
                       justifyContent: "space-between",
                       alignItems: "flex-start",
                       flexWrap: "wrap",
@@ -497,13 +502,10 @@ const CharacterScreen = ({ route, navigation }) => {
                       <Text
                         style={{ ...styles.p, textTransform: "capitalize" }}
                       >
-                        {key != "full-name" &&
-                        key != "place-of-birth" &&
-                        key != "first-appearance" &&
-                        key != "publisher" &&
-                        key != "alignment" &&
-                        "-"
+                        {key == "alter-egos" || key == "aliases"
                           ? "\u2022 " + value
+                          : value && value == "-"
+                          ? "unknown"
                           : value}
                       </Text>
                     ))}
@@ -511,7 +513,7 @@ const CharacterScreen = ({ route, navigation }) => {
                 );
               })}
             </View>
-
+            {/********** COMIC PICTURE ***************/}
             <View style={styles.comicPictureContainer}>
               {firstIssueURL ? (
                 <Lightbox
@@ -546,7 +548,7 @@ const CharacterScreen = ({ route, navigation }) => {
                 <Text style={styles.h4}>NO PICTURE</Text>
               )}
             </View>
-
+            {/********** APPEARANCE DETAILS ***************/}
             <View style={styles.heroDetailsContainer}>
               <Text style={{ ...styles.h2 }}>Appearence</Text>
               <Divider
@@ -585,6 +587,7 @@ const CharacterScreen = ({ route, navigation }) => {
                 );
               })}
             </View>
+            {/********** WORK DETAILS ***************/}
             <View style={styles.heroDetailsContainer}>
               <Text style={{ ...styles.h2 }}>Work</Text>
               <Divider
@@ -626,13 +629,18 @@ const CharacterScreen = ({ route, navigation }) => {
                           marginTop: -2,
                         }}
                       >
-                        {key != "base" && "-" ? "\u2022 " + value : "unknown"}
+                        {key == "base"
+                          ? value
+                          : "\u2022 " + value && value != "-"
+                          ? "\u2022 " + value
+                          : "unknown"}
                       </Text>
                     ))}
                   </View>
                 );
               })}
             </View>
+            {/********** CONNECTIONS DETAILS ***************/}
             <View style={styles.heroDetailsContainer}>
               <Text style={{ ...styles.h2 }}>Connections</Text>
               <Divider
@@ -643,14 +651,19 @@ const CharacterScreen = ({ route, navigation }) => {
                 color={COLORS.navy}
               />
               {Object.entries(hero.connections).map(([key, value, index]) => {
-                console.log(`${key}: ${value}`);
-                const str = value.replace(/,\s*(?![^()]*\))/g, "\n\u2022 ");
+                // console.log(`${key}: ${value}`);
+                let str = value.toString();
+                if (key == "group-affiliation") {
+                  str = value.replace(/,|;\s*(?![^()]*\))/g, "\n\u2022 ");
+                } else {
+                  str = value.replace(/,|;\s*(?![^()]*\))/g, "\n\u2022 ");
+                }
                 // const firstLetter = str.charAt(0).toUpperCase() + str.slice(1);
                 return (
                   <View
                     key={index}
                     style={{
-                      flexDirection: "row",
+                      flexDirection: "column",
                       justifyContent: "space-between",
                       alignItems: "flex-start",
                       flexWrap: "wrap",
@@ -667,7 +680,7 @@ const CharacterScreen = ({ route, navigation }) => {
                           lineHeight: 24,
                         }}
                       >
-                        {"\u2022 " + value}
+                        {value != "-" ? "\u2022 " + value : "unknown"}
                       </Text>
                     ))}
                   </View>
