@@ -1,6 +1,6 @@
 <div align="center">
 
-<img alt='hero logo' src=".app/assets/hero-githubLogo.png' width='50%" height='50%'/>
+<img alt='hero logo' src="./app/assets/hero-github.png" width="50%" height="50%" />
 
 </div>
 
