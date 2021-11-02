@@ -4,7 +4,6 @@ import {
   Text,
   View,
   Pressable,
-  Animated,
   ActivityIndicator,
   Dimensions,
   StatusBar,
@@ -29,6 +28,7 @@ import { HeroesContext } from "../context/HeroesContext";
 import { ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Modal } from "react-native";
+import Animated from "react-native-reanimated";
 
 const api = {
   key: "4204884039587685",
@@ -50,6 +50,7 @@ const HomeScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
 
   const scrollY = new Animated.Value(0);
+
   const translateY = scrollY.interpolate({
     inputRange: [40, 100 + insets.top],
     outputRange: [40, insets.top - 100],
