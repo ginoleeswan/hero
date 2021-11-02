@@ -1,3 +1,9 @@
+<div align="center">
+
+<img alt='hero logo' src=".app/assets/hero-githubLogo.png' width='50%" height='50%'/>
+
+</div>
+
 <h1 align="center">🦸‍♂️ Superhero Encyclopedia 🦸‍♀️</h1>
 
 <p align="center"> Made in React Native, constructed with Expo CLI, utilizing the superheroAPI and ComicVine API. </p>
