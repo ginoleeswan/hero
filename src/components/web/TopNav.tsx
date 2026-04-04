@@ -1,6 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { COLORS } from '../../constants/colors';
+import { HeroLogo } from './HeroLogo';
 
 const NAV_LINKS = [
   { label: 'Discover', path: '/' },
@@ -15,7 +16,7 @@ export function TopNav() {
   return (
     <View style={styles.nav}>
       <Pressable onPress={() => router.push('/')}>
-        <Text style={styles.logo}>HERO</Text>
+        <HeroLogo iconSize={22} fontSize={18} color={COLORS.orange} gap={7} />
       </Pressable>
       <View style={styles.links}>
         {NAV_LINKS.map(({ label, path }) => {
@@ -41,12 +42,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 32,
   },
-  logo: {
-    fontFamily: 'Flame-Bold',
-    fontSize: 20,
-    color: COLORS.orange,
-    letterSpacing: 2,
-  },
+
   links: {
     flexDirection: 'row',
     gap: 8,

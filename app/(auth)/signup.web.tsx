@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { COLORS } from '../../src/constants/colors';
+import { HeroLogo } from '../../src/components/web/HeroLogo';
 
 export default function WebSignupScreen() {
   const { signUp } = useAuth();
@@ -42,7 +43,7 @@ export default function WebSignupScreen() {
       {/* Left brand panel — desktop only */}
       {isDesktop && (
         <View style={styles.brand}>
-          <Text style={styles.brandLogo}>HERO</Text>
+          <HeroLogo iconSize={56} fontSize={56} color={COLORS.orange} gap={16} />
           <Text style={styles.brandTagline}>The Superhero Encyclopedia</Text>
           <Text style={styles.brandSub}>
             Join and track your favourite heroes{'\n'}across Marvel, DC, and beyond.
@@ -53,7 +54,11 @@ export default function WebSignupScreen() {
 
       {/* Form panel */}
       <View style={[styles.formPanel, isDesktop && styles.formPanelDesktop]}>
-        {!isDesktop && <Text style={styles.mobileLogo}>HERO</Text>}
+        {!isDesktop && (
+          <View style={styles.mobileLogoWrap}>
+            <HeroLogo iconSize={40} fontSize={40} color={COLORS.orange} gap={12} />
+          </View>
+        )}
 
         <View style={styles.formInner}>
           <Text style={styles.heading}>Create account</Text>
@@ -132,10 +137,6 @@ const styles = StyleSheet.create({
     padding: 56,
   },
   brandLogo: {
-    fontFamily: 'Flame-Bold',
-    fontSize: 64,
-    color: COLORS.orange,
-    letterSpacing: 4,
     marginBottom: 16,
   },
   brandTagline: {
@@ -159,12 +160,8 @@ const styles = StyleSheet.create({
   },
 
   // Mobile logo
-  mobileLogo: {
-    fontFamily: 'Flame-Bold',
-    fontSize: 48,
-    color: COLORS.orange,
-    letterSpacing: 4,
-    textAlign: 'center',
+  mobileLogoWrap: {
+    alignItems: 'center',
     marginBottom: 28,
   },
 
