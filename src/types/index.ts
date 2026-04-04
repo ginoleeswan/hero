@@ -1,13 +1,16 @@
-// Hero as stored in Supabase
-export interface Hero {
-  id: string;
-  name: string;
-  publisher: string | null;
-  image_url: string | null;  // local asset key, e.g. 'spiderman'
-  category: 'popular' | 'villain' | 'xmen';
-}
+import type { Tables } from './database.generated';
 
-// SuperheroAPI response
+// ─── DB types (derived from generated schema — do not redefine) ───────────────
+
+export type Hero = Tables<'heroes'>;
+export type UserFavourite = Tables<'user_favourites'>;
+export type UserProfile = Tables<'user_profiles'>;
+
+// Narrowed category type (DB stores as string, but we know the valid values)
+export type HeroCategory = 'popular' | 'villain' | 'xmen';
+
+// ─── SuperheroAPI response types ─────────────────────────────────────────────
+
 export interface HeroStats {
   id: string;
   name: string;
@@ -49,20 +52,21 @@ export interface HeroStats {
   };
 }
 
-// ComicVine character response (parsed)
+// ─── ComicVine response types (parsed) ───────────────────────────────────────
+
 export interface HeroDetails {
   summary: string | null;
   publisher: string | null;
   firstIssueId: string | null;
 }
 
-// ComicVine first issue response (parsed)
 export interface FirstIssue {
   id: string;
   imageUrl: string | null;
 }
 
-// Combined character data for the character screen
+// ─── Combined character screen data ──────────────────────────────────────────
+
 export interface CharacterData {
   stats: HeroStats;
   details: HeroDetails;
