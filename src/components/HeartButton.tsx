@@ -93,7 +93,7 @@ export function HeartButton({ favourited, loading, onPress }: HeartButtonProps) 
     if (favourited) {
       // Heart pop: scale up then settle
       heartScale.value = withSequence(
-        withSpring(1.4, { damping: 4 }),
+        withSpring(1.5, { damping: 4 }),
         withSpring(1, { damping: 10 }),
       );
 
