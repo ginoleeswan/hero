@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
-    "start": "expo start",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
-    "web": "expo start --web",
+    "start": "bunx expo start",
+    "android": "bunx expo run:android",
+    "ios": "bunx expo run:ios",
+    "web": "bunx expo start --web",
     "test": "jest --watchAll",
     "test:ci": "jest --ci"
   },
