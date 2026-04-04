@@ -34,8 +34,10 @@ const STAT_CONFIG = [
   { key: 'combat', label: 'Combat', color: COLORS.brown },
 ];
 
+const JUNK_VALUES = new Set(['-', 'null', 'none', 'no alter egos found.', 'n/a', 'unknown']);
+
 function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
-  if (!value || value === '-' || value === 'null' || value === '') return null;
+  if (!value || value === '' || JUNK_VALUES.has(value.toLowerCase().trim())) return null;
   return (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
@@ -354,7 +356,7 @@ const styles = StyleSheet.create({
   // ── Identity header ──────────────────────────────────────────────────────────
   identityHeader: {
     backgroundColor: COLORS.navy,
-    paddingBottom: 28,
+    paddingBottom: 24,
     position: 'relative',
   },
   publisherCorner: {
@@ -366,7 +368,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   backBtn: {
     flexDirection: 'row',
