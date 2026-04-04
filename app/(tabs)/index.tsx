@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   FlatList,
   ActivityIndicator,
   RefreshControl,
@@ -11,8 +10,8 @@ import {
   Platform,
   Animated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { getHeroesByCategory, type Hero, type HeroesByCategory } from '../../src/lib/db/heroes';
@@ -21,11 +20,14 @@ import { COLORS } from '../../src/constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Match original proportions: itemWidth/sliderWidth = 260/380 ≈ 68%
 const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.6);
 const CARD_HEIGHT = 380;
 const CARD_GAP = 12;
 const SIDE_PADDING = (SCREEN_WIDTH - CARD_WIDTH) / 2;
+
+// Large title fades out over this scroll range (when title scrolls up into the nav bar)
+const TITLE_FADE_START = 20;
+const TITLE_FADE_END = 60;
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -47,17 +49,13 @@ function HeroRow({ heroes, onPress }: { heroes: Hero[]; onPress: (h: Hero) => vo
       showsHorizontalScrollIndicator={false}
       decelerationRate="fast"
       snapToInterval={snapInterval}
-      contentContainerStyle={{
-        paddingLeft: 15,
-        paddingRight: 15,
-      }}
+      contentContainerStyle={{ paddingLeft: 15, paddingRight: 15 }}
       ItemSeparatorComponent={() => <View style={{ width: CARD_GAP }} />}
       onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
         useNativeDriver: true,
       })}
       scrollEventThrottle={16}
       renderItem={({ item, index }) => {
-        // Fade inactive cards to 50% opacity, matching original inactiveSlideOpacity
         const inputRange = [
           (index - 1) * snapInterval,
           index * snapInterval,
@@ -85,9 +83,26 @@ function HeroRow({ heroes, onPress }: { heroes: Hero[]; onPress: (h: Hero) => vo
 
 export default function DiscoverScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [heroes, setHeroes] = useState<HeroesByCategory | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Large title fades out as it scrolls into the nav bar
+  const largeTitleOpacity = scrollY.interpolate({
+    inputRange: [TITLE_FADE_START, TITLE_FADE_END],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+
+  // Small nav bar title fades in as large title fades out
+  const smallTitleOpacity = scrollY.interpolate({
+    inputRange: [TITLE_FADE_START, TITLE_FADE_END],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
 
   const load = useCallback(() => {
     return getHeroesByCategory()
@@ -134,10 +149,29 @@ export default function DiscoverScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView
+    <SafeAreaView style={styles.container} edges={[]}>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerTransparent: true,
+          headerBlurEffect: 'regular',
+          headerShadowVisible: false,
+          headerTitleAlign: 'right',
+          headerTitle: () => (
+            <Animated.Text style={[styles.navTitle, { opacity: smallTitleOpacity }]}>
+              hero
+            </Animated.Text>
+          ),
+        }}
+      />
+
+      <Animated.ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 8 }]}
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+          useNativeDriver: true,
+        })}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -147,11 +181,11 @@ export default function DiscoverScreen() {
           />
         }
       >
-        {/* Header — top right, matches original */}
-        <View style={styles.header}>
+        {/* Large title — fades out as it scrolls into the nav bar */}
+        <Animated.View style={[styles.header, { opacity: largeTitleOpacity }]}>
           <Text style={styles.logoText}>hero</Text>
           <Text style={styles.logoSubtitle}>the Superhero Encyclopedia</Text>
-        </View>
+        </Animated.View>
 
         {/* Sections */}
         {SECTIONS.map(({ key, label, icon }, i) => (
@@ -163,7 +197,7 @@ export default function DiscoverScreen() {
             <HeroRow heroes={heroes[key]} onPress={handlePress} />
           </View>
         ))}
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }
@@ -184,8 +218,8 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'flex-end',
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 4,
+    paddingTop: 4,
+    paddingBottom: 2,
   },
   logoText: {
     fontFamily: 'Righteous_400Regular',
@@ -201,11 +235,16 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginTop: -2,
   },
+  navTitle: {
+    fontFamily: 'Righteous_400Regular',
+    fontSize: 20,
+    color: COLORS.navy,
+  },
   section: {
     alignItems: 'flex-start',
   },
   firstSection: {
-    marginTop: 16,
+    marginTop: 8,
   },
   sectionHeader: {
     flexDirection: 'row',
