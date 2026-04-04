@@ -8,7 +8,7 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,19 +19,22 @@ import { HERO_IMAGES } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const THUMB_SIZE = (SCREEN_WIDTH - 48 - 12) / 3; // 3-column grid, 16px outer padding + 12px gap
+const THUMB_SIZE = (SCREEN_WIDTH - 32 - 8) / 3;
 
-function initials(email: string) {
-  return email.slice(0, 2).toUpperCase();
+function username(email: string) {
+  return email.split('@')[0] ?? email;
 }
 
 function FavouriteThumb({ hero, onPress }: { hero: FavouriteHero; onPress: () => void }) {
-  const src = hero.image_url ? (HERO_IMAGES[hero.image_url] ?? HERO_IMAGES[hero.id]) : HERO_IMAGES[hero.id];
+  const src = hero.image_url
+    ? (HERO_IMAGES[hero.image_url] ?? HERO_IMAGES[hero.id])
+    : HERO_IMAGES[hero.id];
   return (
-    <TouchableOpacity style={styles.thumb} onPress={onPress} activeOpacity={0.8}>
-      <Image source={src} contentFit="cover" style={styles.thumbImage} />
+    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.thumb}>
+      <Image source={src} contentFit="cover" style={StyleSheet.absoluteFill} />
       <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.65)']}
+        colors={['transparent', 'rgba(0,0,0,0.7)']}
+        locations={[0.5, 1]}
         style={StyleSheet.absoluteFill}
       />
       <Text style={styles.thumbName} numberOfLines={1}>{hero.name}</Text>
@@ -41,7 +44,6 @@ function FavouriteThumb({ hero, onPress }: { hero: FavouriteHero; onPress: () =>
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,43 +63,66 @@ export default function ProfileScreen() {
   };
 
   const email = user?.email ?? '';
+  const name = username(email);
 
   return (
-    <View style={styles.container}>
-      {/* Banner */}
-      <LinearGradient
-        colors={[COLORS.navy, '#1e3a45']}
-        style={[styles.banner, { paddingTop: insets.top + 16 }]}
-      >
-        <View style={styles.avatarRing}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials(email)}</Text>
-          </View>
-        </View>
-        <Text style={styles.emailText}>{email}</Text>
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{favourites.length}</Text>
-            <Text style={styles.statLabel}>Favourites</Text>
-          </View>
-        </View>
-      </LinearGradient>
-
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
       >
-        {/* Favourites grid */}
+
+        {/* Page title */}
+        <Text style={styles.pageTitle}>profile</Text>
+
+        {/* Identity card */}
+        <View style={styles.identityCard}>
+          {/* Avatar */}
+          <View style={styles.avatarWrapper}>
+            <LinearGradient
+              colors={[COLORS.orange, '#c04a10']}
+              style={styles.avatar}
+            >
+              <Text style={styles.avatarInitials}>
+                {name.slice(0, 2).toUpperCase()}
+              </Text>
+            </LinearGradient>
+          </View>
+
+          <Text style={styles.username}>{name}</Text>
+          <Text style={styles.email}>{email}</Text>
+
+          {/* Stat pill */}
+          <View style={styles.statPill}>
+            <Ionicons name="heart" size={14} color={COLORS.orange} />
+            <Text style={styles.statPillText}>
+              {loading ? '–' : favourites.length} saved heroes
+            </Text>
+          </View>
+        </View>
+
+        {/* My Favourites */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>My Favourites</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>My Favourites</Text>
+            {!loading && favourites.length > 0 && (
+              <Text style={styles.sectionCount}>{favourites.length}</Text>
+            )}
+          </View>
+
           {loading ? (
-            <ActivityIndicator color={COLORS.orange} style={{ marginTop: 24 }} />
+            <View style={styles.center}>
+              <ActivityIndicator color={COLORS.orange} />
+            </View>
           ) : favourites.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="heart-outline" size={40} color={COLORS.grey} />
-              <Text style={styles.emptyText}>No favourites yet</Text>
-              <Text style={styles.emptySubtext}>Tap the heart on any hero to save them here</Text>
+              <View style={styles.emptyIconWrap}>
+                <Ionicons name="heart-outline" size={32} color={COLORS.orange} />
+              </View>
+              <Text style={styles.emptyTitle}>Nothing saved yet</Text>
+              <Text style={styles.emptyBody}>
+                Open any hero and tap the heart to build your collection
+              </Text>
             </View>
           ) : (
             <View style={styles.grid}>
@@ -112,24 +137,39 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Sign out */}
-        <TouchableOpacity
-          style={styles.signOutButton}
-          onPress={handleSignOut}
-          disabled={signingOut}
-          activeOpacity={0.8}
-        >
-          {signingOut ? (
-            <ActivityIndicator color={COLORS.beige} size="small" />
-          ) : (
-            <>
-              <Ionicons name="log-out-outline" size={18} color={COLORS.beige} style={{ marginRight: 8 }} />
-              <Text style={styles.signOutText}>Sign Out</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        {/* Account section */}
+        <View style={styles.accountSection}>
+          <Text style={styles.accountSectionTitle}>Account</Text>
+
+          <View style={styles.accountCard}>
+            <View style={styles.accountRow}>
+              <Ionicons name="mail-outline" size={18} color={COLORS.navy} />
+              <Text style={styles.accountLabel}>Email</Text>
+              <Text style={styles.accountValue} numberOfLines={1}>{email}</Text>
+            </View>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity
+              style={styles.accountRow}
+              onPress={handleSignOut}
+              disabled={signingOut}
+              activeOpacity={0.7}
+            >
+              {signingOut ? (
+                <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
+              ) : (
+                <Ionicons name="log-out-outline" size={18} color={COLORS.red} />
+              )}
+              <Text style={[styles.accountLabel, { color: COLORS.red }]}>
+                {signingOut ? 'Signing out…' : 'Sign Out'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -138,124 +178,202 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.beige,
   },
-  banner: {
-    alignItems: 'center',
-    paddingBottom: 28,
-    paddingHorizontal: 24,
+  scroll: {
+    paddingHorizontal: 16,
+    paddingBottom: 40,
   },
-  avatarRing: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    borderWidth: 3,
-    borderColor: COLORS.orange,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  avatar: {
-    width: 74,
-    height: 74,
-    borderRadius: 37,
-    backgroundColor: '#2a4a55',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontFamily: 'Flame-Bold',
-    fontSize: 26,
-    color: COLORS.orange,
-  },
-  emailText: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 14,
-    color: 'rgba(245,235,220,0.75)',
+
+  // Header
+  pageTitle: {
+    fontFamily: 'Righteous_400Regular',
+    fontSize: 50,
+    color: COLORS.navy,
+    paddingTop: 8,
+    paddingLeft: 4,
     marginBottom: 20,
   },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 32,
-  },
-  statItem: {
+
+  // Identity card
+  identityCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
     alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  statNumber: {
+  avatarWrapper: {
+    marginBottom: 14,
+    shadowColor: COLORS.orange,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitials: {
     fontFamily: 'Flame-Bold',
     fontSize: 28,
-    color: COLORS.beige,
+    color: '#fff',
   },
-  statLabel: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 12,
-    color: 'rgba(245,235,220,0.6)',
-    marginTop: 2,
+  username: {
+    fontFamily: 'Flame-Bold',
+    fontSize: 22,
+    color: COLORS.navy,
+    marginBottom: 4,
   },
-  scroll: {
-    flex: 1,
+  email: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.grey,
+    marginBottom: 16,
   },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
+  statPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fff5ee',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#fde0cc',
   },
+  statPillText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.orange,
+  },
+
+  // Favourites
   section: {
-    marginBottom: 32,
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   sectionTitle: {
     fontFamily: 'Flame-Bold',
     fontSize: 20,
     color: COLORS.navy,
-    marginBottom: 14,
+    flex: 1,
+  },
+  sectionCount: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.grey,
+    backgroundColor: '#e8ddd0',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  center: {
+    paddingVertical: 32,
+    alignItems: 'center',
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 4,
   },
   thumb: {
     width: THUMB_SIZE,
-    height: THUMB_SIZE * 1.2,
+    height: THUMB_SIZE * 1.25,
     borderRadius: 12,
     overflow: 'hidden',
     justifyContent: 'flex-end',
   },
-  thumbImage: {
-    ...StyleSheet.absoluteFillObject,
-  },
   thumbName: {
     fontFamily: 'Flame-Regular',
-    fontSize: 11,
+    fontSize: 10,
     color: '#fff',
     paddingHorizontal: 6,
-    paddingBottom: 6,
+    paddingBottom: 5,
   },
+
+  // Empty state
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 40,
-    gap: 8,
+    paddingVertical: 36,
+    paddingHorizontal: 24,
   },
-  emptyText: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 16,
-    color: COLORS.grey,
+  emptyIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#fff5ee',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
   },
-  emptySubtext: {
+  emptyTitle: {
+    fontFamily: 'Flame-Bold',
+    fontSize: 17,
+    color: COLORS.navy,
+    marginBottom: 6,
+  },
+  emptyBody: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     color: COLORS.grey,
     textAlign: 'center',
-    paddingHorizontal: 32,
+    lineHeight: 19,
   },
-  signOutButton: {
+
+  // Account section
+  accountSection: {
+    marginBottom: 8,
+  },
+  accountSectionTitle: {
+    fontFamily: 'Flame-Bold',
+    fontSize: 20,
+    color: COLORS.navy,
+    marginBottom: 12,
+  },
+  accountCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  accountRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.navy,
+    paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 14,
+    gap: 12,
   },
-  signOutText: {
+  accountLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 15,
-    color: COLORS.beige,
+    color: COLORS.navy,
+    flex: 1,
+  },
+  accountValue: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.grey,
+    maxWidth: SCREEN_WIDTH * 0.4,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#ede5d8',
+    marginHorizontal: 16,
   },
 });
