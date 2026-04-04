@@ -5,9 +5,9 @@ import {
   TextInput,
   ScrollView,
   StyleSheet,
-  ActivityIndicator,
   Pressable,
 } from 'react-native';
+import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useRouter } from 'expo-router';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { COLORS } from '../../src/constants/colors';
@@ -83,9 +83,7 @@ export default function WebSearchScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={COLORS.orange} size="large" />
-        </View>
+        <SearchSkeleton />
       ) : results.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.emptyText}>
@@ -108,6 +106,19 @@ export default function WebSearchScreen() {
         </ScrollView>
       )}
     </View>
+  );
+}
+
+function SearchSkeleton() {
+  const opacity = useSkeletonAnim();
+  return (
+    <ScrollView contentContainerStyle={styles.resultsContent}>
+      <View style={styles.grid as object}>
+        {Array.from({ length: 24 }).map((_, i) => (
+          <SkeletonBlock key={i} opacity={opacity} height={180} borderRadius={12} />
+        ))}
+      </View>
+    </ScrollView>
   );
 }
 

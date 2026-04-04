@@ -352,6 +352,135 @@ export default function WebCharacterScreen() {
   );
 }
 
+// ── Character page skeleton ──────────────────────────────────────────────────
+function CharacterSkeleton({ isDesktop }: { isDesktop: boolean }) {
+  const opacity = useSkeletonAnim();
+  const statRows = [0, 1, 2, 3, 4, 5];
+  const infoRows = [0, 1, 2, 3];
+
+  const cardDivider = <View style={{ height: 1, backgroundColor: '#ede5da', marginBottom: 14 }} />;
+
+  const statsCard = (
+    <View style={sk.card}>
+      <SkeletonBlock opacity={opacity} width={90} height={11} style={{ marginBottom: 10 }} />
+      {cardDivider}
+      {statRows.map((i) => (
+        <View key={i} style={{ marginBottom: 14 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+            <SkeletonBlock opacity={opacity} width={80} height={11} />
+            <SkeletonBlock opacity={opacity} width={22} height={16} borderRadius={4} />
+          </View>
+          <SkeletonBlock opacity={opacity} height={8} borderRadius={4} />
+        </View>
+      ))}
+    </View>
+  );
+
+  const infoCard = (rows: number) => (
+    <View style={sk.card}>
+      <SkeletonBlock opacity={opacity} width={70} height={11} style={{ marginBottom: 10 }} />
+      {cardDivider}
+      {Array.from({ length: rows }).map((_, j) => (
+        <View
+          key={j}
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            paddingVertical: 7,
+            borderBottomWidth: 1,
+            borderBottomColor: '#f5f0ea',
+          }}
+        >
+          <SkeletonBlock opacity={opacity} width={70} height={12} />
+          <SkeletonBlock opacity={opacity} width={110} height={12} />
+        </View>
+      ))}
+    </View>
+  );
+
+  return (
+    <ScrollView style={sk.scroll} contentContainerStyle={sk.content}>
+      {/* Identity header */}
+      <View style={sk.identityHeader}>
+        <View style={sk.headerTopRow}>
+          <SkeletonBlock opacity={opacity} width={80} height={30} borderRadius={20} dark />
+          <SkeletonBlock opacity={opacity} width={36} height={36} borderRadius={20} dark />
+        </View>
+        <View style={{ paddingHorizontal: 24 }}>
+          <SkeletonBlock
+            opacity={opacity}
+            width={isDesktop ? 320 : 200}
+            height={isDesktop ? 52 : 36}
+            style={{ marginBottom: 10 }}
+            dark
+          />
+          <SkeletonBlock opacity={opacity} width={140} height={14} borderRadius={4} dark />
+        </View>
+        <View style={{ position: 'absolute', bottom: 20, right: 20 }}>
+          <SkeletonBlock opacity={opacity} width={56} height={24} borderRadius={3} dark />
+        </View>
+      </View>
+
+      {isDesktop ? (
+        <View style={sk.bodyDesktop}>
+          <View style={sk.leftCol}>
+            <View style={sk.portraitCard} />
+            {statsCard}
+          </View>
+          <View style={sk.rightCol}>
+            <View style={sk.infoGridDesktop as object}>
+              {[5, 5, 3, 3].map((rows, i) => (
+                <View key={i}>{infoCard(rows)}</View>
+              ))}
+            </View>
+          </View>
+        </View>
+      ) : (
+        <View style={sk.body}>
+          <View style={sk.portraitCardMobile} />
+          {statsCard}
+          {infoRows.map((i) => (
+            <View key={i}>{infoCard(i < 2 ? 5 : 3)}</View>
+          ))}
+        </View>
+      )}
+    </ScrollView>
+  );
+}
+
+const sk = StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: COLORS.beige },
+  content: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 60 },
+  identityHeader: { backgroundColor: COLORS.navy, paddingBottom: 24, position: 'relative' },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  bodyDesktop: { flexDirection: 'row', alignItems: 'flex-start', gap: 18, padding: 20 },
+  leftCol: { width: 280, flexShrink: 0, gap: 14 },
+  rightCol: { flex: 1, gap: 16 },
+  body: { padding: 16, gap: 14 },
+  portraitCard: {
+    width: '100%',
+    height: 380,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#ddd5c8',
+  },
+  portraitCardMobile: {
+    width: '100%',
+    height: 280,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#ddd5c8',
+  },
+  card: { backgroundColor: 'white', borderRadius: 12, padding: 20, borderWidth: 1, borderColor: '#e8ddd0' },
+  infoGridDesktop: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 },
+});
+
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
   content: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 60 },

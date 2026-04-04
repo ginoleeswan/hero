@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { getUserFavouriteHeroes, type FavouriteHero } from '../../src/lib/db/favourites';
@@ -51,9 +52,7 @@ export default function WebProfileScreen() {
       <View style={styles.rightPanel}>
         <Text style={styles.rightTitle}>Favourites</Text>
         {loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={COLORS.orange} />
-          </View>
+          <FavouritesSkeleton />
         ) : favourites.length === 0 ? (
           <View style={styles.center}>
             <Text style={styles.emptyText}>No favourites yet.</Text>
@@ -75,6 +74,17 @@ export default function WebProfileScreen() {
           </View>
         )}
       </View>
+    </View>
+  );
+}
+
+function FavouritesSkeleton() {
+  const opacity = useSkeletonAnim();
+  return (
+    <View style={styles.grid as object}>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <SkeletonBlock key={i} opacity={opacity} height={180} borderRadius={12} />
+      ))}
     </View>
   );
 }
