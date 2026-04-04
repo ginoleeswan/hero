@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -122,6 +122,25 @@ export default function CharacterScreen() {
     extrapolateRight: 'clamp',
   });
 
+  // Image fades out as content scrolls up over it — keeps text readable on beige bg
+  const imageOpacity = scrollY.interpolate({
+    inputRange: [0, HERO_IMAGE_HEIGHT * 0.55],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+
+  // Header button icons: white over image → navy on beige
+  const btnWhiteOp = scrollY.interpolate({
+    inputRange: [0, HERO_IMAGE_HEIGHT * 0.4],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+  const btnDarkOp = scrollY.interpolate({
+    inputRange: [0, HERO_IMAGE_HEIGHT * 0.4],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
   useEffect(() => {
     if (!id) return;
 
@@ -174,12 +193,7 @@ export default function CharacterScreen() {
   if (error) {
     return (
       <View style={[styles.container, styles.center]}>
-        <TouchableOpacity
-          style={[styles.backButton, { top: insets.top + 8 }]}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={22} color={COLORS.black} />
-        </TouchableOpacity>
+        <Stack.Screen options={{ headerShown: true, headerTransparent: true, headerStyle: { backgroundColor: 'transparent' }, headerShadowVisible: false, headerTitle: '', headerBackTitle: '' }} />
         <Text style={styles.errorText}>{error}</Text>
       </View>
     );
@@ -187,11 +201,60 @@ export default function CharacterScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Hero image — parallax + zoom-on-overscroll */}
+      {/* Native header — transparent over image, fades to beige on scroll */}
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerTransparent: true,
+          headerShadowVisible: false,
+          headerTitle: '',
+          headerBackTitle: '',
+          headerStyle: { backgroundColor: 'transparent' },
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => router.back()}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.headerBtn}
+            >
+              <Animated.View style={{ opacity: btnWhiteOp, position: 'absolute' }}>
+                <Ionicons name="arrow-back" size={22} color="#fff" />
+              </Animated.View>
+              <Animated.View style={{ opacity: btnDarkOp, position: 'absolute' }}>
+                <Ionicons name="arrow-back" size={22} color={COLORS.navy} />
+              </Animated.View>
+            </TouchableOpacity>
+          ),
+          headerRight: user ? () => (
+            <TouchableOpacity
+              onPress={toggleFavourite}
+              disabled={favLoading}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.headerBtn}
+            >
+              <Animated.View style={{ opacity: btnWhiteOp, position: 'absolute' }}>
+                <Ionicons
+                  name={favourited ? 'heart' : 'heart-outline'}
+                  size={22}
+                  color={favourited ? COLORS.red : '#fff'}
+                />
+              </Animated.View>
+              <Animated.View style={{ opacity: btnDarkOp, position: 'absolute' }}>
+                <Ionicons
+                  name={favourited ? 'heart' : 'heart-outline'}
+                  size={22}
+                  color={favourited ? COLORS.red : COLORS.navy}
+                />
+              </Animated.View>
+            </TouchableOpacity>
+          ) : undefined,
+        }}
+      />
+
+      {/* Hero image — parallax + zoom-on-overscroll + fade-out on scroll */}
       <Animated.View
         style={[
           styles.heroImageContainer,
-          { transform: [{ translateY: imageTranslateY }, { scale: imageScale }] },
+          { opacity: imageOpacity, transform: [{ translateY: imageTranslateY }, { scale: imageScale }] },
         ]}
       >
         {heroImage ? (
@@ -206,27 +269,6 @@ export default function CharacterScreen() {
         />
       </Animated.View>
 
-      {/* Buttons sit outside the animated view so they don't scale/parallax */}
-      <TouchableOpacity
-        style={[styles.backButton, { top: insets.top + 8 }]}
-        onPress={() => router.back()}
-      >
-        <Ionicons name="arrow-back" size={22} color="#fff" />
-      </TouchableOpacity>
-      {user ? (
-        <TouchableOpacity
-          style={[styles.favButton, { top: insets.top + 8 }]}
-          onPress={toggleFavourite}
-          disabled={favLoading}
-        >
-          <Ionicons
-            name={favourited ? 'heart' : 'heart-outline'}
-            size={22}
-            color={favourited ? COLORS.red : '#fff'}
-          />
-        </TouchableOpacity>
-      ) : null}
-
       {!data ? (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={COLORS.orange} />
@@ -234,7 +276,7 @@ export default function CharacterScreen() {
       ) : (
         <Animated.ScrollView
           style={styles.scroll}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
+          contentContainerStyle={{ paddingTop: HERO_IMAGE_HEIGHT - 60, paddingBottom: insets.bottom + 32 }}
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
           onScroll={Animated.event(
@@ -348,20 +390,12 @@ const styles = StyleSheet.create({
   center:       { alignItems: 'center', justifyContent: 'center' },
   heroImageContainer: { width: SCREEN_WIDTH, height: HERO_IMAGE_HEIGHT, position: 'absolute', top: 0, overflow: 'hidden' },
   heroImage:    { width: '100%', height: '100%' },
-  backButton: {
-    position: 'absolute', left: 16,
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+  headerBtn: {
+    width: 36, height: 36,
     alignItems: 'center', justifyContent: 'center',
   },
-  favButton: {
-    position: 'absolute', right: 16,
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  scroll:        { flex: 1, marginTop: HERO_IMAGE_HEIGHT - 60 },
-  loadingOverlay:{ marginTop: HERO_IMAGE_HEIGHT + 40, alignItems: 'center' },
+  scroll:        { flex: 1 },
+  loadingOverlay:{ paddingTop: HERO_IMAGE_HEIGHT + 40, alignItems: 'center' },
 
   // Name block
   nameBlock:  { paddingHorizontal: 20, paddingBottom: 4 },
