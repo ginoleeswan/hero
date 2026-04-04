@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    background: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 60%)',
+    backgroundImage: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 60%)',
   } as object,
   badge: {
     position: 'absolute',
