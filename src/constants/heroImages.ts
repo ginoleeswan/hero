@@ -47,7 +47,9 @@ const CDN_BASE = 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/ima
 export function heroImageSource(
   id: string | number,
   imageUrl?: string | null,
+  portraitUrl?: string | null,
 ): number | { uri: string } {
+  if (portraitUrl) return { uri: portraitUrl };
   if (imageUrl && HERO_IMAGES[imageUrl]) return HERO_IMAGES[imageUrl];
   const local = HERO_IMAGES[String(id)];
   if (local) return local;
