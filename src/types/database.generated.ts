@@ -7,6 +7,8 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
@@ -14,25 +16,112 @@ export type Database = {
     Tables: {
       heroes: {
         Row: {
+          aliases: string[] | null
+          alignment: string | null
+          alter_egos: string | null
+          base: string | null
           category: string | null
+          combat: number | null
+          comicvine_enriched_at: string | null
+          durability: number | null
+          enriched_at: string | null
+          eye_color: string | null
+          first_appearance: string | null
+          first_issue_image_url: string | null
+          full_name: string | null
+          gender: string | null
+          group_affiliation: string | null
+          hair_color: string | null
+          height_imperial: string | null
+          height_metric: string | null
           id: string
+          image_md_url: string | null
           image_url: string | null
+          intelligence: number | null
           name: string
+          occupation: string | null
+          place_of_birth: string | null
+          power: number | null
           publisher: string | null
+          race: string | null
+          relatives: string | null
+          speed: number | null
+          strength: number | null
+          summary: string | null
+          weight_imperial: string | null
+          weight_metric: string | null
         }
         Insert: {
+          aliases?: string[] | null
+          alignment?: string | null
+          alter_egos?: string | null
+          base?: string | null
           category?: string | null
+          combat?: number | null
+          comicvine_enriched_at?: string | null
+          durability?: number | null
+          enriched_at?: string | null
+          eye_color?: string | null
+          first_appearance?: string | null
+          first_issue_image_url?: string | null
+          full_name?: string | null
+          gender?: string | null
+          group_affiliation?: string | null
+          hair_color?: string | null
+          height_imperial?: string | null
+          height_metric?: string | null
           id: string
+          image_md_url?: string | null
           image_url?: string | null
+          intelligence?: number | null
           name: string
+          occupation?: string | null
+          place_of_birth?: string | null
+          power?: number | null
           publisher?: string | null
+          race?: string | null
+          relatives?: string | null
+          speed?: number | null
+          strength?: number | null
+          summary?: string | null
+          weight_imperial?: string | null
+          weight_metric?: string | null
         }
         Update: {
+          aliases?: string[] | null
+          alignment?: string | null
+          alter_egos?: string | null
+          base?: string | null
           category?: string | null
+          combat?: number | null
+          comicvine_enriched_at?: string | null
+          durability?: number | null
+          enriched_at?: string | null
+          eye_color?: string | null
+          first_appearance?: string | null
+          first_issue_image_url?: string | null
+          full_name?: string | null
+          gender?: string | null
+          group_affiliation?: string | null
+          hair_color?: string | null
+          height_imperial?: string | null
+          height_metric?: string | null
           id?: string
+          image_md_url?: string | null
           image_url?: string | null
+          intelligence?: number | null
           name?: string
+          occupation?: string | null
+          place_of_birth?: string | null
+          power?: number | null
           publisher?: string | null
+          race?: string | null
+          relatives?: string | null
+          speed?: number | null
+          strength?: number | null
+          summary?: string | null
+          weight_imperial?: string | null
+          weight_metric?: string | null
         }
         Relationships: []
       }
@@ -100,6 +189,7 @@ export type Database = {
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
@@ -180,3 +270,43 @@ export type TablesUpdate<
       ? U
       : never
     : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const
