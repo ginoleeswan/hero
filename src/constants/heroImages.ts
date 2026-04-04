@@ -51,5 +51,6 @@ export function heroImageSource(
   if (imageUrl && HERO_IMAGES[imageUrl]) return HERO_IMAGES[imageUrl];
   const local = HERO_IMAGES[String(id)];
   if (local) return local;
+  if (imageUrl && imageUrl.startsWith('http')) return { uri: imageUrl };
   return { uri: `${CDN_BASE}/${id}.jpg` };
 }
