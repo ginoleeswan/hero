@@ -73,7 +73,7 @@ export default function ProfileScreen() {
   const name = username(email);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {/* Cover banner */}
         <LinearGradient
