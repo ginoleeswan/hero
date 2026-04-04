@@ -48,12 +48,14 @@ export default function SearchScreen() {
   const debouncedQuery = useDebounce(query, 150);
 
   useEffect(() => {
+    let cancelled = false;
     setLoadingList(true);
     setError(false);
     searchHeroes(debouncedQuery, publisherFilter)
-      .then(setResults)
-      .catch(() => setError(true))
-      .finally(() => setLoadingList(false));
+      .then((data) => { if (!cancelled) setResults(data); })
+      .catch(() => { if (!cancelled) setError(true); })
+      .finally(() => { if (!cancelled) setLoadingList(false); });
+    return () => { cancelled = true; };
   }, [debouncedQuery, publisherFilter, retryCount]);
 
   const handlePress = useCallback(
@@ -81,11 +83,12 @@ export default function SearchScreen() {
     setPublisherFilter(pill);
   };
 
-  const resultLabel = loadingList
-    ? ''
-    : error
+  const resultLabel =
+    loadingList || error
       ? ''
-      : `${results.length} result${results.length !== 1 ? 's' : ''}`;
+      : debouncedQuery.trim() === '' && publisherFilter === 'All'
+        ? `${results.length} heroes`
+        : `${results.length} result${results.length !== 1 ? 's' : ''}`;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
