@@ -58,6 +58,11 @@
     "prettier": "^3.8.1",
     "typescript": "~5.9.2"
   },
+  "expo": {
+    "autolinking": {
+      "exclude": ["expo-dev-menu", "expo-dev-launcher"]
+    }
+  },
   "private": true,
   "packageManager": "bun@1.3.11",
   "jest": {
