@@ -4,7 +4,6 @@ import {
   Text,
   Animated,
   StyleSheet,
-  ActivityIndicator,
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
@@ -20,6 +19,8 @@ import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/fa
 import { useAuth } from '../../src/hooks/useAuth';
 import { HERO_IMAGES } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
+import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkeleton';
+import { Skeleton } from '../../src/components/ui/Skeleton';
 import type { CharacterData } from '../../src/types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -308,23 +309,22 @@ export default function CharacterScreen() {
         />
       </Animated.View>
 
-      {!data ? (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={COLORS.orange} />
-        </View>
-      ) : (
-        <Animated.ScrollView
-          style={styles.scroll}
-          contentContainerStyle={{
-            paddingTop: HERO_IMAGE_HEIGHT - 160,
-            paddingBottom: insets.bottom + 32,
-          }}
-          showsVerticalScrollIndicator={false}
-          scrollEventThrottle={16}
-          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-            useNativeDriver: true,
-          })}
-        >
+      <Animated.ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{
+          paddingTop: HERO_IMAGE_HEIGHT - 160,
+          paddingBottom: insets.bottom + 32,
+        }}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+          useNativeDriver: true,
+        })}
+      >
+        {!data ? (
+          <CharacterSkeleton />
+        ) : (
+          <>
           {/* Name block */}
           <View style={styles.nameBlock}>
             <Text style={styles.heroName}>{data.stats.name}</Text>
@@ -349,10 +349,12 @@ export default function CharacterScreen() {
             <View style={styles.nameDivider} />
           </View>
 
-          {/* Summary — shows spinner while ComicVine is loading */}
+          {/* Summary — shows skeleton lines while ComicVine is loading */}
           {comicVineLoading ? (
             <View style={styles.summaryBlock}>
-              <ActivityIndicator size="small" color={COLORS.grey} />
+              <Skeleton width="100%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
+              <Skeleton width="88%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
+              <Skeleton width="65%" height={12} borderRadius={5} />
             </View>
           ) : data.details.summary ? (
             <View style={styles.summaryBlock}>
@@ -423,8 +425,9 @@ export default function CharacterScreen() {
             />
             <InfoRow label="Relatives" value={data.stats.connections.relatives} />
           </Section>
-        </Animated.ScrollView>
-      )}
+          </>
+        )}
+      </Animated.ScrollView>
     </View>
   );
 }
@@ -452,7 +455,6 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
   },
   scroll: { flex: 1 },
-  loadingOverlay: { paddingTop: HERO_IMAGE_HEIGHT + 40, alignItems: 'center' },
 
   // Name block
   nameBlock: { paddingHorizontal: 20, paddingBottom: 4 },

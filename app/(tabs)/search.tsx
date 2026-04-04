@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -16,8 +17,12 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
+import { SearchSkeleton } from '../../src/components/skeletons/SearchSkeleton';
 
 const ALL_HEROES_URL = 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/all.json';
+
+const PUBLISHER_PILLS = ['All', 'Marvel', 'DC', 'Other'] as const;
+type PublisherFilter = (typeof PUBLISHER_PILLS)[number];
 
 interface CdnHero {
   id: number;
@@ -26,26 +31,66 @@ interface CdnHero {
   images: { md: string };
 }
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
 export default function SearchScreen() {
   const router = useRouter();
   const inputRef = useRef<TextInput>(null);
+
   const [allHeroes, setAllHeroes] = useState<CdnHero[]>([]);
   const [query, setQuery] = useState('');
   const [loadingList, setLoadingList] = useState(true);
+  const [error, setError] = useState(false);
   const [navigatingId, setNavigatingId] = useState<number | null>(null);
+  const [publisherFilter, setPublisherFilter] = useState<PublisherFilter>('All');
 
-  useEffect(() => {
+  const debouncedQuery = useDebounce(query, 150);
+
+  const loadHeroes = useCallback(() => {
+    setLoadingList(true);
+    setError(false);
     fetch(ALL_HEROES_URL)
       .then((r) => r.json())
       .then((data: CdnHero[]) => setAllHeroes(data))
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoadingList(false));
   }, []);
 
-  const results =
-    query.trim().length === 0
-      ? allHeroes
-      : allHeroes.filter((h) => h.name.toLowerCase().includes(query.toLowerCase()));
+  useEffect(() => {
+    loadHeroes();
+  }, [loadHeroes]);
+
+  const results = useMemo(() => {
+    let filtered = allHeroes;
+
+    if (publisherFilter !== 'All') {
+      filtered = filtered.filter((h) => {
+        const pub = h.biography.publisher ?? '';
+        if (publisherFilter === 'Marvel') return pub.toLowerCase().includes('marvel');
+        if (publisherFilter === 'DC') return pub.toLowerCase().includes('dc');
+        if (publisherFilter === 'Other') {
+          const isMarvel = pub.toLowerCase().includes('marvel');
+          const isDC = pub.toLowerCase().includes('dc');
+          return !isMarvel && !isDC;
+        }
+        return true;
+      });
+    }
+
+    if (debouncedQuery.trim().length > 0) {
+      const q = debouncedQuery.toLowerCase();
+      filtered = filtered.filter((h) => h.name.toLowerCase().includes(q));
+    }
+
+    return filtered;
+  }, [allHeroes, debouncedQuery, publisherFilter]);
 
   const handlePress = useCallback(
     (id: number) => {
@@ -54,7 +99,6 @@ export default function SearchScreen() {
       setNavigatingId(id);
       inputRef.current?.blur();
       router.push(`/character/${id}`);
-      // Reset after navigation so the list is tappable again on back
       setTimeout(() => setNavigatingId(null), 1000);
     },
     [router, navigatingId],
@@ -64,6 +108,21 @@ export default function SearchScreen() {
     setQuery('');
     inputRef.current?.focus();
   };
+
+  const handlePillPress = (pill: PublisherFilter) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setPublisherFilter(pill);
+  };
+
+  const resultLabel = useMemo(() => {
+    if (loadingList) return '';
+    const total = allHeroes.length;
+    const count = results.length;
+    if (debouncedQuery.trim().length === 0 && publisherFilter === 'All') {
+      return `${total} heroes`;
+    }
+    return `${count} result${count !== 1 ? 's' : ''}`;
+  }, [loadingList, allHeroes.length, results.length, debouncedQuery, publisherFilter]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -101,10 +160,44 @@ export default function SearchScreen() {
           )}
         </View>
 
+        {/* Publisher pills */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.pillsContainer}
+          style={styles.pillsScroll}
+          keyboardShouldPersistTaps="handled"
+        >
+          {PUBLISHER_PILLS.map((pill) => {
+            const active = publisherFilter === pill;
+            return (
+              <TouchableOpacity
+                key={pill}
+                style={[styles.pill, active && styles.pillActive]}
+                onPress={() => handlePillPress(pill)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.pillText, active && styles.pillTextActive]}>{pill}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Result count */}
+        {!loadingList && !error && (
+          <Text style={styles.resultCount}>{resultLabel}</Text>
+        )}
+
         {/* Results */}
         {loadingList ? (
+          <SearchSkeleton />
+        ) : error ? (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color={COLORS.orange} />
+            <Ionicons name="wifi-outline" size={40} color={COLORS.grey} />
+            <Text style={styles.errorText}>Couldn't load heroes</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={loadHeroes} activeOpacity={0.8}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <FlatList
@@ -127,6 +220,8 @@ export default function SearchScreen() {
                     source={{ uri: item.images.md }}
                     style={styles.avatar}
                     contentFit="cover"
+                    placeholder="#d4c8b8"
+                    transition={200}
                   />
                   <View style={styles.rowText}>
                     <Text style={styles.heroName}>{item.name}</Text>
@@ -193,6 +288,44 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.beige,
   },
+  pillsScroll: {
+    flexGrow: 0,
+    height: 48,
+    marginBottom: 10,
+  },
+  pillsContainer: {
+    paddingHorizontal: 15,
+    paddingVertical: 4,
+    gap: 8,
+    alignItems: 'center',
+  },
+  pill: {
+    height: 36,
+    paddingHorizontal: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: COLORS.navy,
+  },
+  pillActive: {
+    backgroundColor: COLORS.navy,
+  },
+  pillText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.navy,
+  },
+  pillTextActive: {
+    color: COLORS.beige,
+  },
+  resultCount: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: COLORS.grey,
+    paddingHorizontal: 20,
+    marginBottom: 6,
+  },
   list: {
     paddingHorizontal: 15,
     paddingBottom: 32,
@@ -234,10 +367,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: 60,
+    gap: 12,
   },
   emptyText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 15,
     color: COLORS.grey,
+  },
+  errorText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 15,
+    color: COLORS.grey,
+  },
+  retryBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    backgroundColor: COLORS.navy,
+    borderRadius: 20,
+  },
+  retryText: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 14,
+    color: COLORS.beige,
   },
 });

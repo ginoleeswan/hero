@@ -156,7 +156,7 @@ export default function DiscoverScreen() {
           headerTransparent: true,
           headerBlurEffect: 'regular',
           headerShadowVisible: false,
-          headerTitleAlign: 'right',
+          headerTitleAlign: 'center',
           headerTitle: () => (
             <Animated.Text style={[styles.navTitle, { opacity: smallTitleOpacity }]}>
               hero
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   scroll: {
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   header: {
     alignItems: 'flex-end',
