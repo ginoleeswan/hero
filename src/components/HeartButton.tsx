@@ -127,6 +127,8 @@ export function HeartButton({ favourited, loading, onPress }: HeartButtonProps) 
         withSpring(1, { damping: 12 }),
       );
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Reanimated shared values are stable refs — intentionally omitted from deps
   }, [favourited]);
 
   const heartStyle = useAnimatedStyle(() => ({

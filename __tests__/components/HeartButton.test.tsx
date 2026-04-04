@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, userEvent } from '@testing-library/react-native';
 import { HeartButton } from '../../src/components/HeartButton';
 
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
@@ -31,12 +31,13 @@ describe('HeartButton', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
-  it('does not call onPress when loading', () => {
+  it('does not call onPress when loading', async () => {
+    const user = userEvent.setup();
     const onPress = jest.fn();
     const { getByTestId } = render(
       <HeartButton favourited={false} loading={true} onPress={onPress} />,
     );
-    fireEvent.press(getByTestId('heart-button'));
+    await user.press(getByTestId('heart-button'));
     expect(onPress).not.toHaveBeenCalled();
   });
 });
