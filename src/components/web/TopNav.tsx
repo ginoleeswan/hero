@@ -16,7 +16,7 @@ export function TopNav() {
   return (
     <View style={styles.nav}>
       <Pressable onPress={() => router.push('/')}>
-        <HeroLogo iconSize={22} fontSize={18} color={COLORS.orange} gap={7} />
+        <HeroLogo iconSize={22} fontSize={18} color={COLORS.beige} gap={7} />
       </Pressable>
       <View style={styles.links}>
         {NAV_LINKS.map(({ label, path }) => {

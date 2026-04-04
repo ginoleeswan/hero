@@ -43,7 +43,7 @@ export default function WebSignupScreen() {
       {/* Left brand panel — desktop only */}
       {isDesktop && (
         <View style={styles.brand}>
-          <HeroLogo iconSize={56} fontSize={56} color={COLORS.orange} gap={16} />
+          <HeroLogo iconSize={56} fontSize={56} color={COLORS.beige} gap={16} />
           <Text style={styles.brandTagline}>The Superhero Encyclopedia</Text>
           <Text style={styles.brandSub}>
             Join and track your favourite heroes{'\n'}across Marvel, DC, and beyond.
@@ -56,7 +56,7 @@ export default function WebSignupScreen() {
       <View style={[styles.formPanel, isDesktop && styles.formPanelDesktop]}>
         {!isDesktop && (
           <View style={styles.mobileLogoWrap}>
-            <HeroLogo iconSize={40} fontSize={40} color={COLORS.orange} gap={12} />
+            <HeroLogo iconSize={40} fontSize={40} color={COLORS.navy} gap={12} />
           </View>
         )}
 

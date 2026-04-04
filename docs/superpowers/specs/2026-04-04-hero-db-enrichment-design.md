@@ -90,7 +90,7 @@ Run with: `bun scripts/enrich-heroes.ts`
 4. Set `enriched_at = new Date().toISOString()` on each upserted row
 5. Log batch progress to stdout
 
-**Resumable:** upsert on conflict means re-running is always safe. Supports `--id <heroId>` flag to re-enrich a single hero.
+**Resumable:** upsert on conflict means re-running is always safe. Supports `--id <heroId>` flag to re-enrich a single hero — the script still fetches `all.json` but filters the upsert to the matching hero.
 
 **CDN field mapping:**
 ```
@@ -150,7 +150,7 @@ export async function searchHeroes(query: string, publisher: PublisherFilter) {
 }
 ```
 
-The search screen debounces the query (already 150ms) and calls this on every change. No more CDN blob. Results in ~50ms from Supabase.
+The search screen debounces the query (already 150ms) and calls this on every change. No more CDN blob. Results in ~50ms from Supabase. With an empty query and no publisher filter the function returns the first 100 heroes alphabetically — intentional for mobile (showing 731 rows in a FlatList is not useful).
 
 ### Character detail screen (`app/character/[id].tsx`)
 

@@ -436,7 +436,7 @@ export default function CharacterScreen() {
         )}
       </Animated.ScrollView>
       {user && (
-        <View style={styles.heartButtonContainer}>
+        <View style={[styles.heartButtonContainer, { top: insets.top - 8 }]}>
           <HeartButton
             favourited={favourited}
             loading={favLoading}
@@ -573,8 +573,7 @@ const styles = StyleSheet.create({
 
   heartButtonContainer: {
     position: 'absolute',
-    top: HERO_IMAGE_HEIGHT - 52 - 20,
-    right: 20,
+    right: 12,
   },
   errorText: {
     fontFamily: 'FlameSans-Regular',

@@ -31,32 +31,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - expo-dev-launcher (0.6.7):
-    - expo-dev-launcher/Main (= 0.6.7)
-    - expo-dev-menu-interface
-    - EXUpdatesInterface
-    - React
-  - expo-dev-launcher/Main (0.6.7):
-    - expo-dev-launcher/Unsafe
-    - expo-dev-menu-interface
-    - EXUpdatesInterface
-    - React
-  - expo-dev-launcher/Unsafe (0.6.7):
-    - expo-dev-menu-interface
-    - EXUpdatesInterface
-    - React
-  - expo-dev-menu (0.7.7):
-    - expo-dev-menu-interface
-    - expo-dev-menu/Main (= 0.7.7)
-    - React
   - expo-dev-menu-interface (0.3.4)
-  - expo-dev-menu/Main (0.7.7):
-    - expo-dev-menu-interface
-    - expo-dev-menu/Vendored
-    - React
-  - expo-dev-menu/Vendored (0.7.7):
-    - expo-dev-menu-interface
-    - React
   - ExpoAsset (55.0.12):
     - ExpoModulesCore
   - ExpoDomWebView (55.0.5):
@@ -2342,8 +2317,6 @@ DEPENDENCIES:
   - EXJSONUtils (from `../node_modules/expo-json-utils/ios`)
   - EXManifests (from `../node_modules/expo-manifests/ios`)
   - Expo (from `../node_modules/expo`)
-  - expo-dev-launcher (from `../node_modules/expo-dev-launcher`)
-  - expo-dev-menu (from `../node_modules/expo-dev-menu`)
   - expo-dev-menu-interface (from `../node_modules/expo-dev-menu-interface`)
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
   - "ExpoDomWebView (from `../node_modules/@expo/dom-webview/ios`)"
@@ -2469,10 +2442,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-manifests/ios"
   Expo:
     :path: "../node_modules/expo"
-  expo-dev-launcher:
-    :path: "../node_modules/expo-dev-launcher"
-  expo-dev-menu:
-    :path: "../node_modules/expo-dev-menu"
   expo-dev-menu-interface:
     :path: "../node_modules/expo-dev-menu-interface"
   ExpoAsset:
@@ -2683,8 +2652,6 @@ SPEC CHECKSUMS:
   EXJSONUtils: 04bc3807d351331a5fe154ce1da596ec15d99169
   EXManifests: 529dcd8344c2992013e3c341eab4386a57fb37c7
   Expo: f298f7cafc2bfeb81997ddeae502ce98a672ae7f
-  expo-dev-launcher: e85c5cf05255cdf438c782229a759db2841a8682
-  expo-dev-menu: b7d8b0b4054f548c50b545442dd4c93e9d5791ec
   expo-dev-menu-interface: 145d352ba9edff66b0c1fb13773f0f0dd9d50afd
   ExpoAsset: 63f22b029eb9aa68d5048f77ff9430f42c770d2c
   ExpoDomWebView: 2b2fbd9a07de8790569257cbf9dfdaa31cf95c70
@@ -2795,6 +2762,6 @@ SPEC CHECKSUMS:
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
   Yoga: acd565934addf7423687593ec490bd4491b2a802
 
-PODFILE CHECKSUM: 6a3fae562dfcdb29da13abc4c91871f2d558439b
+PODFILE CHECKSUM: 7538922069eb46394348a56874b23aeddb45b49f
 
 COCOAPODS: 1.16.2
