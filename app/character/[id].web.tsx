@@ -5,13 +5,14 @@ import {
   ScrollView,
   Pressable,
   StyleSheet,
-  ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
+import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchHeroStats, fetchHeroDetails, fetchFirstIssue } from '../../src/lib/api';
+import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
 import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
 import { useAuth } from '../../src/hooks/useAuth';
 import { heroImageSource } from '../../src/constants/heroImages';
@@ -60,23 +61,36 @@ export default function WebCharacterScreen() {
 
   useEffect(() => {
     if (!id) return;
-    fetchHeroStats(id)
-      .then((stats) => {
-        setData({
-          stats,
-          details: { summary: null, publisher: null, firstIssueId: null },
-          firstIssue: null,
-        });
-        fetchHeroDetails(stats.name)
-          .then(async (details) => {
-            const firstIssue = details.firstIssueId
-              ? await fetchFirstIssue(details.firstIssueId).catch(() => null)
-              : null;
-            setData({ stats, details, firstIssue });
-          })
-          .catch(() => {});
+
+    const loadFromApi = () => {
+      fetchHeroStats(id)
+        .then((stats) => {
+          setData({
+            stats,
+            details: { summary: null, publisher: null, firstIssueId: null },
+            firstIssue: null,
+          });
+          fetchHeroDetails(stats.name)
+            .then(async (details) => {
+              const firstIssue = details.firstIssueId
+                ? await fetchFirstIssue(details.firstIssueId).catch(() => null)
+                : null;
+              setData({ stats, details, firstIssue });
+            })
+            .catch(() => {});
+        })
+        .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load'));
+    };
+
+    getHeroById(id)
+      .then((hero) => {
+        if (hero?.enriched_at) {
+          setData(heroRowToCharacterData(hero));
+          return;
+        }
+        loadFromApi();
       })
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load'));
+      .catch(loadFromApi);
   }, [id]);
 
   useEffect(() => {
@@ -111,11 +125,7 @@ export default function WebCharacterScreen() {
   }
 
   if (!data) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={COLORS.orange} size="large" />
-      </View>
-    );
+    return <CharacterSkeleton isDesktop={isDesktop} />;
   }
 
   const { stats, details } = data;
