@@ -1,7 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import TouchableScale from 'react-native-touchable-scale';
-import { SquircleView } from 'react-native-figma-squircle';
-import MaskedView from '@react-native-masked-view/masked-view';
+import { SquircleMask } from './ui/SquircleMask';
 import { Image } from 'expo-image';
 import { COLORS } from '../constants/colors';
 import { heroImageSource } from '../constants/heroImages';
@@ -25,23 +24,12 @@ export function HeroCard({ id, name, imageUrl, onPress }: HeroCardProps) {
         friction={2}
         onPress={onPress}
       >
-        <MaskedView
-          maskElement={
-            <SquircleView
-              style={StyleSheet.absoluteFill}
-              squircleParams={{
-                cornerRadius: 50,
-                cornerSmoothing: 1,
-                fillColor: 'pink',
-              }}
-            />
-          }
-        >
+        <SquircleMask style={styles.squircle} cornerRadius={50}>
           <Image source={imageSource} contentFit="cover" style={styles.image} />
           <View style={styles.nameContainer}>
             <Text style={styles.name}>{name}</Text>
           </View>
-        </MaskedView>
+        </SquircleMask>
       </TouchableScale>
     </View>
   );
@@ -59,6 +47,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.39,
     shadowRadius: 8.3,
     elevation: 13,
+  },
+  squircle: {
+    width: '100%',
+    height: '100%',
   },
   image: {
     width: '100%',
