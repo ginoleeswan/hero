@@ -52,8 +52,6 @@ const config: ExpoConfig = {
     typedRoutes: true,
   },
   extra: {
-    supabaseUrl: process.env.SUPABASE_URL,
-    supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
     superheroApiKey: process.env.SUPERHERO_API_KEY,
     comicvineApiKey: process.env.COMICVINE_API_KEY,
   },
