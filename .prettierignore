@@ -1,0 +1,6 @@
+node_modules/
+.expo/
+web-build/
+dist/
+src/types/database.generated.ts
+bun.lockb

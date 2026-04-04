@@ -28,9 +28,7 @@ describe('fetchHeroStats', () => {
 
     const result = await fetchHeroStats('620');
     expect(result.name).toBe('Spider-Man');
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/620'),
-    );
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/620'));
   });
 
   it('throws when API returns error response', async () => {

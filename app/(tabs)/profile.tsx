@@ -37,7 +37,9 @@ function FavouriteThumb({ hero, onPress }: { hero: FavouriteHero; onPress: () =>
         locations={[0.5, 1]}
         style={StyleSheet.absoluteFill}
       />
-      <Text style={styles.thumbName} numberOfLines={1}>{hero.name}</Text>
+      <Text style={styles.thumbName} numberOfLines={1}>
+        {hero.name}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -67,11 +69,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
-      >
-
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {/* Page title */}
         <Text style={styles.pageTitle}>profile</Text>
 
@@ -79,13 +77,8 @@ export default function ProfileScreen() {
         <View style={styles.identityCard}>
           {/* Avatar */}
           <View style={styles.avatarWrapper}>
-            <LinearGradient
-              colors={[COLORS.orange, '#c04a10']}
-              style={styles.avatar}
-            >
-              <Text style={styles.avatarInitials}>
-                {name.slice(0, 2).toUpperCase()}
-              </Text>
+            <LinearGradient colors={[COLORS.orange, '#c04a10']} style={styles.avatar}>
+              <Text style={styles.avatarInitials}>{name.slice(0, 2).toUpperCase()}</Text>
             </LinearGradient>
           </View>
 
@@ -145,7 +138,9 @@ export default function ProfileScreen() {
             <View style={styles.accountRow}>
               <Ionicons name="mail-outline" size={18} color={COLORS.navy} />
               <Text style={styles.accountLabel}>Email</Text>
-              <Text style={styles.accountValue} numberOfLines={1}>{email}</Text>
+              <Text style={styles.accountValue} numberOfLines={1}>
+                {email}
+              </Text>
             </View>
 
             <View style={styles.divider} />
@@ -167,7 +162,6 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );

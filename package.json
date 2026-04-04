@@ -8,7 +8,10 @@
     "ios": "bunx expo run:ios",
     "web": "bunx expo start --web",
     "test": "jest --watchAll",
-    "test:ci": "jest --ci"
+    "test:ci": "jest --ci",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json}\""
   },
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.2",
@@ -51,6 +54,7 @@
     "@types/node": "^25.5.2",
     "@types/react": "~19.2.10",
     "jest-expo": "^55.0.13",
+    "prettier": "^3.8.1",
     "typescript": "~5.9.2"
   },
   "private": true,

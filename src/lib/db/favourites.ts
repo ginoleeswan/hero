@@ -36,9 +36,7 @@ export async function getUserFavouriteHeroes(userId: string): Promise<FavouriteH
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return (data ?? [])
-    .map((row) => row.heroes)
-    .filter((h): h is FavouriteHero => h !== null);
+  return (data ?? []).map((row) => row.heroes).filter((h): h is FavouriteHero => h !== null);
 }
 
 export async function getFavouriteCount(userId: string): Promise<number> {

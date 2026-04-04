@@ -17,8 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
 
-const ALL_HEROES_URL =
-  'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/all.json';
+const ALL_HEROES_URL = 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/all.json';
 
 interface CdnHero {
   id: number;
@@ -43,11 +42,10 @@ export default function SearchScreen() {
       .finally(() => setLoadingList(false));
   }, []);
 
-  const results = query.trim().length === 0
-    ? allHeroes
-    : allHeroes.filter((h) =>
-        h.name.toLowerCase().includes(query.toLowerCase()),
-      );
+  const results =
+    query.trim().length === 0
+      ? allHeroes
+      : allHeroes.filter((h) => h.name.toLowerCase().includes(query.toLowerCase()));
 
   const handlePress = useCallback(
     (id: number) => {
@@ -94,7 +92,10 @@ export default function SearchScreen() {
             returnKeyType="search"
           />
           {query.length > 0 && (
-            <TouchableOpacity onPress={clearQuery} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity
+              onPress={clearQuery}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
               <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.6)" />
             </TouchableOpacity>
           )}
@@ -133,10 +134,11 @@ export default function SearchScreen() {
                       <Text style={styles.publisher}>{item.biography.publisher}</Text>
                     ) : null}
                   </View>
-                  {isNavigating
-                    ? <ActivityIndicator size="small" color={COLORS.orange} />
-                    : <Ionicons name="chevron-forward" size={16} color={COLORS.grey} />
-                  }
+                  {isNavigating ? (
+                    <ActivityIndicator size="small" color={COLORS.orange} />
+                  ) : (
+                    <Ionicons name="chevron-forward" size={16} color={COLORS.grey} />
+                  )}
                 </TouchableOpacity>
               );
             }}

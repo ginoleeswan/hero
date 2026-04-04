@@ -14,9 +14,7 @@ interface HeroCardProps {
 }
 
 export function HeroCard({ id, name, imageUrl, onPress }: HeroCardProps) {
-  const imageSource = imageUrl
-    ? (HERO_IMAGES[imageUrl] ?? HERO_IMAGES[id])
-    : HERO_IMAGES[id];
+  const imageSource = imageUrl ? (HERO_IMAGES[imageUrl] ?? HERO_IMAGES[id]) : HERO_IMAGES[id];
 
   return (
     <View style={styles.card}>
@@ -39,11 +37,7 @@ export function HeroCard({ id, name, imageUrl, onPress }: HeroCardProps) {
             />
           }
         >
-          <Image
-            source={imageSource}
-            contentFit="cover"
-            style={styles.image}
-          />
+          <Image source={imageSource} contentFit="cover" style={styles.image} />
           <View style={styles.nameContainer}>
             <Text style={styles.name}>{name}</Text>
           </View>

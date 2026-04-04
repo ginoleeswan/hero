@@ -11,10 +11,7 @@ export interface HeroesByCategory {
 }
 
 export async function getHeroesByCategory(): Promise<HeroesByCategory> {
-  const { data, error } = await supabase
-    .from('heroes')
-    .select('*')
-    .order('name');
+  const { data, error } = await supabase.from('heroes').select('*').order('name');
 
   if (error) throw error;
 

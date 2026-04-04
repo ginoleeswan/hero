@@ -17,12 +17,7 @@ jest.mock('expo-image', () => ({
 describe('HeroCard', () => {
   it('renders the hero name', () => {
     const { getByText } = render(
-      <HeroCard
-        id="620"
-        name="Spider-Man"
-        imageUrl="spiderman"
-        onPress={() => {}}
-      />
+      <HeroCard id="620" name="Spider-Man" imageUrl="spiderman" onPress={() => {}} />,
     );
     expect(getByText('Spider-Man')).toBeTruthy();
   });

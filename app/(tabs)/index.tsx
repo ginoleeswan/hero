@@ -22,7 +22,7 @@ import { COLORS } from '../../src/constants/colors';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Match original proportions: itemWidth/sliderWidth = 260/380 ≈ 68%
-const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.60);
+const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.6);
 const CARD_HEIGHT = 380;
 const CARD_GAP = 12;
 const SIDE_PADDING = (SCREEN_WIDTH - CARD_WIDTH) / 2;
@@ -30,9 +30,9 @@ const SIDE_PADDING = (SCREEN_WIDTH - CARD_WIDTH) / 2;
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 const SECTIONS: { key: keyof HeroesByCategory; label: string; icon: IconName }[] = [
-  { key: 'popular', label: 'Popular',  icon: 'trending-up'       },
-  { key: 'villain', label: 'Villians', icon: 'skull-outline'     },
-  { key: 'xmen',    label: 'X-Men',    icon: 'flash-outline'     },
+  { key: 'popular', label: 'Popular', icon: 'trending-up' },
+  { key: 'villain', label: 'Villians', icon: 'skull-outline' },
+  { key: 'xmen', label: 'X-Men', icon: 'flash-outline' },
 ];
 
 function HeroRow({ heroes, onPress }: { heroes: Hero[]; onPress: (h: Hero) => void }) {
@@ -52,10 +52,9 @@ function HeroRow({ heroes, onPress }: { heroes: Hero[]; onPress: (h: Hero) => vo
         paddingRight: 15,
       }}
       ItemSeparatorComponent={() => <View style={{ width: CARD_GAP }} />}
-      onScroll={Animated.event(
-        [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-        { useNativeDriver: true },
-      )}
+      onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
+        useNativeDriver: true,
+      })}
       scrollEventThrottle={16}
       renderItem={({ item, index }) => {
         // Fade inactive cards to 50% opacity, matching original inactiveSlideOpacity
@@ -64,9 +63,10 @@ function HeroRow({ heroes, onPress }: { heroes: Hero[]; onPress: (h: Hero) => vo
           index * snapInterval,
           (index + 1) * snapInterval,
         ];
-        const opacity = Platform.OS === 'ios'
-          ? scrollX.interpolate({ inputRange, outputRange: [0.5, 1, 0.5], extrapolate: 'clamp' })
-          : 1;
+        const opacity =
+          Platform.OS === 'ios'
+            ? scrollX.interpolate({ inputRange, outputRange: [0.5, 1, 0.5], extrapolate: 'clamp' })
+            : 1;
 
         return (
           <Animated.View style={{ width: CARD_WIDTH, opacity }}>
@@ -95,7 +95,9 @@ export default function DiscoverScreen() {
       .catch((e) => setError(e.message ?? 'Failed to load heroes'));
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -145,7 +147,6 @@ export default function DiscoverScreen() {
           />
         }
       >
-
         {/* Header — top right, matches original */}
         <View style={styles.header}>
           <Text style={styles.logoText}>hero</Text>
@@ -162,7 +163,6 @@ export default function DiscoverScreen() {
             <HeroRow heroes={heroes[key]} onPress={handlePress} />
           </View>
         ))}
-
       </ScrollView>
     </SafeAreaView>
   );
