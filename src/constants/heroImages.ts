@@ -1,4 +1,4 @@
-export const HERO_IMAGES: Record<string, ReturnType<typeof require>> = {
+export const HERO_IMAGES: Record<string, number> = {
   '620': require('../../assets/images/spiderman.jpg'),
   '346': require('../../assets/images/ironman.jpg'),
   '70':  require('../../assets/images/batman.jpg'),
