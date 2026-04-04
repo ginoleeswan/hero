@@ -127,7 +127,7 @@ Called in sequence when navigating to CharacterScreen. Errors are caught per-cal
 | `expo-app-loading` | `expo-splash-screen` | Deprecated |
 | `react-native-unimodules` | — | Merged into Expo SDK |
 | `react-native-snap-carousel` | `react-native-reanimated-carousel` | Unmaintained |
-| `react-native-elements` | `@rneui/themed` (React Native Elements UI) | Rebranded + major API changes; `@rneui/themed` is the maintained successor |
+| `react-native-elements` | `expo-image` + `@expo/vector-icons` | App only used Image and Icon; both covered by Expo SDK directly with better performance |
 | `react-native-big-list` | `FlatList` (RN core) | Overkill for dataset size |
 | `react-native-image-gallery`, `lightbox` variants | `react-native-image-viewing` | Consolidate to one |
 | `axios` | native `fetch` | Already using fetch; redundant |
@@ -139,6 +139,8 @@ Called in sequence when navigating to CharacterScreen. Errors are caught per-cal
 - `@supabase/supabase-js`
 - `@react-native-async-storage/async-storage`
 - `react-native-url-polyfill`
+- `expo-image` (replaces react-native-elements Image — caching, blurhash, better perf)
+- `@expo/vector-icons` (replaces react-native-elements Icon — already in Expo SDK)
 
 **Kept:** `react-native-reanimated` (v3), `react-native-gesture-handler`, `react-native-svg`, `expo-linear-gradient`, `react-native-safe-area-context`, `react-native-figma-squircle`, `react-native-touchable-scale`, `@react-native-masked-view/masked-view`, all `@expo-google-fonts/*`
 
