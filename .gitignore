@@ -12,6 +12,9 @@ npm-debug.*
 *.orig.*
 web-build/
 
+# Superpowers brainstorm sessions
+.superpowers/
+
 # macOS
 .DS_Store
 
