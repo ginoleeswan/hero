@@ -89,11 +89,7 @@ export default function WebCharacterScreen() {
     }
   }, [user, id, favourited, favLoading]);
 
-  const heroImage = data?.stats.image.url
-    ? { uri: data.stats.image.url }
-    : id
-    ? heroImageSource(id, null)
-    : null;
+  const heroImage = id ? heroImageSource(id, data?.stats.image.url ?? null) : null;
 
   if (error) {
     return (
