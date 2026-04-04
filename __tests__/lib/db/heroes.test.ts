@@ -156,6 +156,7 @@ describe('heroRowToCharacterData', () => {
     first_issue_image_url: 'https://cdn.example.com/issue.jpg',
     comicvine_enriched_at: '2026-04-04T00:00:00Z',
     enriched_at: '2026-04-04T00:00:00Z',
+    portrait_url: 'https://storage.example.com/portraits/620.jpg',
   } satisfies Hero;
 
   it('maps powerstats to string values', () => {
@@ -193,5 +194,15 @@ describe('heroRowToCharacterData', () => {
   it('returns null firstIssue when first_issue_image_url is null', () => {
     const data = heroRowToCharacterData({ ...hero, first_issue_image_url: null });
     expect(data.firstIssue).toBeNull();
+  });
+
+  it('uses portrait_url as the image url when set', () => {
+    const data = heroRowToCharacterData(hero);
+    expect(data.stats.image.url).toBe('https://storage.example.com/portraits/620.jpg');
+  });
+
+  it('falls back to image_url when portrait_url is null', () => {
+    const data = heroRowToCharacterData({ ...hero, portrait_url: null });
+    expect(data.stats.image.url).toBe('https://cdn.example.com/lg.jpg');
   });
 });

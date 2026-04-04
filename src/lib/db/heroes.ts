@@ -7,7 +7,7 @@ export type HeroCategory = 'popular' | 'villain' | 'xmen';
 export type PublisherFilter = 'All' | 'Marvel' | 'DC' | 'Other';
 export type HeroSearchResult = Pick<
   Hero,
-  'id' | 'name' | 'publisher' | 'image_md_url' | 'image_url'
+  'id' | 'name' | 'publisher' | 'image_md_url' | 'image_url' | 'portrait_url'
 >;
 
 export interface HeroesByCategory {
@@ -44,7 +44,7 @@ export async function searchHeroes(
 ): Promise<HeroSearchResult[]> {
   let q = supabase
     .from('heroes')
-    .select('id, name, publisher, image_md_url, image_url')
+    .select('id, name, publisher, image_md_url, image_url, portrait_url')
     .order('name')
     .limit(100);
 
@@ -103,7 +103,7 @@ export function heroRowToCharacterData(hero: Hero): CharacterData {
         relatives: hero.relatives ?? '',
       },
       image: {
-        url: hero.image_url ?? '',
+        url: hero.portrait_url ?? hero.image_url ?? '',
       },
     },
     details: {
