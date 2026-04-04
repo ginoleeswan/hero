@@ -19,6 +19,12 @@ import { COLORS } from '../../src/constants/colors';
 import { StatBar } from '../../src/components/web/StatBar';
 import type { CharacterData } from '../../src/types';
 
+const PUBLISHER_LOGOS: Record<string, number> = {
+  'Marvel Comics': require('../../assets/images/Marvel-Logo.jpg'),
+  Marvel: require('../../assets/images/Marvel-Logo.jpg'),
+  'DC Comics': require('../../assets/images/DC-Logo.png'),
+};
+
 const STAT_CONFIG = [
   { key: 'intelligence', label: 'Intelligence', color: COLORS.blue },
   { key: 'strength', label: 'Strength', color: COLORS.red },
@@ -143,12 +149,28 @@ export default function WebCharacterScreen() {
         </View>
 
         <View style={styles.heroIdentity}>
-          {stats.biography.publisher ? (
-            <Text style={styles.heroPublisher}>{stats.biography.publisher}</Text>
-          ) : null}
           <Text style={[styles.heroName, { fontSize: isDesktop ? 52 : 34 }]}>{stats.name}</Text>
           {alias ? <Text style={styles.heroAlias}>{alias}</Text> : null}
         </View>
+
+        {/* Publisher logo — bottom-right corner */}
+        {stats.biography.publisher ? (
+          <View style={styles.publisherCorner}>
+            {PUBLISHER_LOGOS[stats.biography.publisher] ? (
+              <Image
+                source={PUBLISHER_LOGOS[stats.biography.publisher]}
+                style={
+                  stats.biography.publisher.startsWith('DC')
+                    ? (styles.logoSquare as object)
+                    : (styles.logoRect as object)
+                }
+                contentFit="contain"
+              />
+            ) : (
+              <Text style={styles.heroPublisher}>{stats.biography.publisher}</Text>
+            )}
+          </View>
+        ) : null}
       </View>
 
       {/* ── Body ── */}
@@ -333,6 +355,12 @@ const styles = StyleSheet.create({
   identityHeader: {
     backgroundColor: COLORS.navy,
     paddingBottom: 28,
+    position: 'relative',
+  },
+  publisherCorner: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
   },
   headerTopRow: {
     flexDirection: 'row',
@@ -366,6 +394,8 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginBottom: 8,
   },
+  logoRect: { width: 56, height: 24, borderRadius: 3 },
+  logoSquare: { width: 32, height: 32, borderRadius: 3 },
   heroName: {
     fontFamily: 'Flame-Regular',
     color: COLORS.beige,
