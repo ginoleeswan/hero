@@ -91,7 +91,7 @@ export default function ProfileScreen() {
           end={{ x: 1, y: 1 }}
           style={styles.cover}
         >
-          <Svg style={StyleSheet.absoluteFill}>
+          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
             <Defs>
               <Pattern id="dots" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
                 <Circle cx="7" cy="7" r="1.5" fill="rgba(231,115,51,0.22)" />
@@ -181,11 +181,11 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
             >
               {signingOut ? (
-                <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
+                <ActivityIndicator size="small" color={COLORS.red} style={styles.signingOutIndicator} />
               ) : (
                 <Ionicons name="log-out-outline" size={18} color={COLORS.red} />
               )}
-              <Text style={[styles.accountLabel, { color: COLORS.red }]}>
+              <Text style={[styles.accountLabel, styles.accountLabelDanger]}>
                 {signingOut ? 'Signing out…' : 'Sign Out'}
               </Text>
             </TouchableOpacity>
@@ -392,6 +392,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.grey,
     maxWidth: SCREEN_WIDTH * 0.4,
+  },
+  signingOutIndicator: {
+    marginRight: 10,
+  },
+  accountLabelDanger: {
+    color: COLORS.red,
   },
   divider: {
     height: StyleSheet.hairlineWidth,
