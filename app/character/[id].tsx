@@ -202,15 +202,16 @@ export default function CharacterScreen() {
   }, [user, id, favourited, favLoading]);
 
   // Priority: local bundled image → API image → passed URI → CDN fallback
-  const heroImage = id && HERO_IMAGES[id]
-    ? HERO_IMAGES[id]
-    : data?.stats.image.url
-      ? { uri: data.stats.image.url }
-      : paramImageUri
-        ? { uri: paramImageUri }
-        : id
-          ? heroImageSource(id)
-          : null;
+  const heroImage =
+    id && HERO_IMAGES[id]
+      ? HERO_IMAGES[id]
+      : data?.stats.image.url
+        ? { uri: data.stats.image.url }
+        : paramImageUri
+          ? { uri: paramImageUri }
+          : id
+            ? heroImageSource(id)
+            : null;
 
   // Show name immediately from params while API loads
   const displayName = data?.stats.name ?? paramName ?? '';
