@@ -10,7 +10,7 @@ import * as Haptics from 'expo-haptics';
 import { fetchHeroStats, fetchHeroDetails, fetchFirstIssue } from '../../src/lib/api';
 import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
 import { useAuth } from '../../src/hooks/useAuth';
-import { heroImageSource } from '../../src/constants/heroImages';
+import { heroImageSource, HERO_IMAGES } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
 import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkeleton';
 import { Skeleton } from '../../src/components/ui/Skeleton';
@@ -201,14 +201,16 @@ export default function CharacterScreen() {
     }
   }, [user, id, favourited, favLoading]);
 
-  // Priority: API image (best) → passed URI (from search) → bundled/CDN fallback
-  const heroImage = data?.stats.image.url
-    ? { uri: data.stats.image.url }
-    : paramImageUri
-      ? { uri: paramImageUri }
-      : id
-        ? heroImageSource(id)
-        : null;
+  // Priority: local bundled image → API image → passed URI → CDN fallback
+  const heroImage = id && HERO_IMAGES[id]
+    ? HERO_IMAGES[id]
+    : data?.stats.image.url
+      ? { uri: data.stats.image.url }
+      : paramImageUri
+        ? { uri: paramImageUri }
+        : id
+          ? heroImageSource(id)
+          : null;
 
   // Show name immediately from params while API loads
   const displayName = data?.stats.name ?? paramName ?? '';
