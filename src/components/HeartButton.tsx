@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { TouchableOpacity, StyleSheet } from 'react-native';
+import { TouchableOpacity, StyleSheet, View } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -136,13 +136,7 @@ export function HeartButton({ favourited, loading, onPress }: HeartButtonProps) 
   }));
 
   return (
-    <TouchableOpacity
-      testID="heart-button"
-      onPress={onPress}
-      disabled={loading}
-      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      style={styles.button}
-    >
+    <View style={styles.burstContainer}>
       <AnimatedRing scale={ringScale} opacity={ringOpacity} />
 
       {dots.map((dot, i) => (
@@ -155,18 +149,32 @@ export function HeartButton({ favourited, loading, onPress }: HeartButtonProps) 
         />
       ))}
 
-      <Animated.View style={heartStyle}>
-        <Ionicons
-          name={favourited ? 'heart' : 'heart-outline'}
-          size={24}
-          color={favourited ? COLORS.red : 'white'}
-        />
-      </Animated.View>
-    </TouchableOpacity>
+      <TouchableOpacity
+        testID="heart-button"
+        onPress={onPress}
+        disabled={loading}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        style={styles.button}
+      >
+        <Animated.View style={heartStyle}>
+          <Ionicons
+            name={favourited ? 'heart' : 'heart-outline'}
+            size={24}
+            color={favourited ? COLORS.red : 'white'}
+          />
+        </Animated.View>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  burstContainer: {
+    width: RING_SIZE,
+    height: RING_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   button: {
     width: BUTTON_SIZE,
     height: BUTTON_SIZE,
@@ -174,7 +182,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.35)',
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'visible',
   },
   ring: {
     position: 'absolute',
