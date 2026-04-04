@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     gap: 32,
   },
   logo: {
-    fontFamily: 'Flame-Regular',
+    fontFamily: 'Flame-Bold',
     fontSize: 20,
     color: COLORS.orange,
     letterSpacing: 2,
@@ -55,6 +55,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     alignItems: 'center',
+    overflow: 'visible',
   },
   link: {
     fontFamily: 'Nunito_400Regular',
@@ -67,7 +68,7 @@ const styles = StyleSheet.create({
   },
   underline: {
     position: 'absolute',
-    bottom: -14,
+    bottom: 0,
     left: 12,
     right: 12,
     height: 2,
