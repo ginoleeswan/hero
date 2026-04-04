@@ -5,7 +5,10 @@ import type { CharacterData } from '../../types';
 export type Hero = Tables<'heroes'>;
 export type HeroCategory = 'popular' | 'villain' | 'xmen';
 export type PublisherFilter = 'All' | 'Marvel' | 'DC' | 'Other';
-export type HeroSearchResult = Pick<Hero, 'id' | 'name' | 'publisher' | 'image_md_url' | 'image_url'>;
+export type HeroSearchResult = Pick<
+  Hero,
+  'id' | 'name' | 'publisher' | 'image_md_url' | 'image_url'
+>;
 
 export interface HeroesByCategory {
   popular: Hero[];
@@ -26,11 +29,7 @@ export async function getHeroesByCategory(): Promise<HeroesByCategory> {
 }
 
 export async function getHeroById(id: string): Promise<Hero | null> {
-  const { data, error } = await supabase
-    .from('heroes')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data, error } = await supabase.from('heroes').select('*').eq('id', id).single();
   // PGRST116 = "no rows found" — hero not yet enriched, caller falls back to API.
   // Log any other error so DB outages are observable.
   if (error && error.code !== 'PGRST116') {

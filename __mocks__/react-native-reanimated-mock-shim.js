@@ -12,10 +12,16 @@ const useSharedValue = (init) => {
     get(target, prop) {
       if (prop === 'value') return target.value;
       if (prop === 'get') return () => target.value;
-      if (prop === 'set') return (v) => { target.value = typeof v === 'function' ? v(target.value) : v; };
+      if (prop === 'set')
+        return (v) => {
+          target.value = typeof v === 'function' ? v(target.value) : v;
+        };
     },
     set(target, prop, newValue) {
-      if (prop === 'value') { target.value = newValue; return true; }
+      if (prop === 'value') {
+        target.value = newValue;
+        return true;
+      }
       return false;
     },
   });
@@ -65,9 +71,17 @@ module.exports = {
   useAnimatedProps: IMMEDIATE_CALLBACK_INVOCATION,
   useAnimatedRef: () => ({ current: null }),
   useAnimatedScrollHandler: () => NOOP,
-  useDerivedValue: (processor) => { const result = processor(); return { value: result, get: () => result }; },
+  useDerivedValue: (processor) => {
+    const result = processor();
+    return { value: result, get: () => result };
+  },
   useAnimatedReaction: NOOP,
-  useAnimatedSensor: () => ({ sensor: { value: {} }, unregister: NOOP, isAvailable: false, config: {} }),
+  useAnimatedSensor: () => ({
+    sensor: { value: {} },
+    unregister: NOOP,
+    isAvailable: false,
+    config: {},
+  }),
   useAnimatedKeyboard: () => ({ height: 0, state: 0 }),
   useScrollViewOffset: () => ({ value: 0 }),
   useScrollOffset: () => ({ value: 0 }),

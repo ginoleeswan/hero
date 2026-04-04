@@ -185,9 +185,7 @@ export default function SearchScreen() {
                   />
                   <View style={styles.rowText}>
                     <Text style={styles.heroName}>{item.name}</Text>
-                    {item.publisher ? (
-                      <Text style={styles.publisher}>{item.publisher}</Text>
-                    ) : null}
+                    {item.publisher ? <Text style={styles.publisher}>{item.publisher}</Text> : null}
                   </View>
                   {isNavigating ? (
                     <ActivityIndicator size="small" color={COLORS.orange} />
@@ -270,6 +268,11 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontFamily: 'FlameSans-Regular', fontSize: 15, color: COLORS.grey },
   errorText: { fontFamily: 'FlameSans-Regular', fontSize: 15, color: COLORS.grey },
-  retryBtn: { paddingHorizontal: 24, paddingVertical: 10, backgroundColor: COLORS.navy, borderRadius: 20 },
+  retryBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    backgroundColor: COLORS.navy,
+    borderRadius: 20,
+  },
   retryText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: COLORS.beige },
 });

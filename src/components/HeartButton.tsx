@@ -74,12 +74,24 @@ export function HeartButton({ favourited, loading, onPress }: HeartButtonProps) 
   const ringOpacity = useSharedValue(0);
 
   // 6 dot shared values — declared individually (React hooks rules)
-  const d0x = useSharedValue(0); const d0y = useSharedValue(0); const d0o = useSharedValue(0);
-  const d1x = useSharedValue(0); const d1y = useSharedValue(0); const d1o = useSharedValue(0);
-  const d2x = useSharedValue(0); const d2y = useSharedValue(0); const d2o = useSharedValue(0);
-  const d3x = useSharedValue(0); const d3y = useSharedValue(0); const d3o = useSharedValue(0);
-  const d4x = useSharedValue(0); const d4y = useSharedValue(0); const d4o = useSharedValue(0);
-  const d5x = useSharedValue(0); const d5y = useSharedValue(0); const d5o = useSharedValue(0);
+  const d0x = useSharedValue(0);
+  const d0y = useSharedValue(0);
+  const d0o = useSharedValue(0);
+  const d1x = useSharedValue(0);
+  const d1y = useSharedValue(0);
+  const d1o = useSharedValue(0);
+  const d2x = useSharedValue(0);
+  const d2y = useSharedValue(0);
+  const d2o = useSharedValue(0);
+  const d3x = useSharedValue(0);
+  const d3y = useSharedValue(0);
+  const d3o = useSharedValue(0);
+  const d4x = useSharedValue(0);
+  const d4y = useSharedValue(0);
+  const d4o = useSharedValue(0);
+  const d5x = useSharedValue(0);
+  const d5y = useSharedValue(0);
+  const d5o = useSharedValue(0);
 
   const dots = [
     { x: d0x, y: d0y, o: d0o },
@@ -126,7 +138,10 @@ export function HeartButton({ favourited, loading, onPress }: HeartButtonProps) 
         dot.y.value = withDelay(i * 15, withSpring(ty, { damping: 15 }));
         dot.o.value = withDelay(
           i * 15,
-          withSequence(withTiming(1, { duration: 50 }), withDelay(200, withTiming(0, { duration: 200 }))),
+          withSequence(
+            withTiming(1, { duration: 50 }),
+            withDelay(200, withTiming(0, { duration: 200 })),
+          ),
         );
       });
     } else {

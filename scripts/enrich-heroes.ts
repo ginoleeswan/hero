@@ -5,8 +5,7 @@ import type { Database } from '../src/types/database.generated';
 // Use service role key to bypass RLS for bulk enrichment writes.
 // Add SUPABASE_SERVICE_ROLE_KEY to .env.local (never prefix with EXPO_PUBLIC_).
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const supabaseKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.EXPO_PUBLIC_SUPABASE_KEY!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.EXPO_PUBLIC_SUPABASE_KEY!;
 
 const supabase = createClient<Database>(supabaseUrl, supabaseKey);
 
@@ -107,9 +106,7 @@ async function main() {
   console.log(`Upserting ${rows.length} heroes in ${batches.length} batches...`);
   let done = 0;
   for (const batch of batches) {
-    const { error } = await supabase
-      .from('heroes')
-      .upsert(batch, { onConflict: 'id' });
+    const { error } = await supabase.from('heroes').upsert(batch, { onConflict: 'id' });
     if (error) throw new Error(`Upsert failed: ${error.message}`);
     done += batch.length;
     console.log(`  ${done}/${rows.length} done`);

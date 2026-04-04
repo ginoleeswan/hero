@@ -19,9 +19,7 @@ export default function WebDiscoverScreen() {
   useEffect(() => {
     getHeroesByCategory()
       .then(setData)
-      .catch((e: unknown) =>
-        setError(e instanceof Error ? e.message : 'Failed to load heroes')
-      );
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load heroes'));
   }, []);
 
   if (error) {
@@ -72,7 +70,12 @@ export default function WebDiscoverScreen() {
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
   content: { padding: 24, maxWidth: 1200, alignSelf: 'center', width: '100%' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.beige },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.beige,
+  },
   errorText: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.red },
   section: { marginBottom: 40 },
   sectionTitle: {

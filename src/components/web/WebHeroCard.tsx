@@ -23,10 +23,7 @@ export function WebHeroCard({
   const source = heroImageSource(id, imageUrl);
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.card, featured && (styles.featured as object)]}
-    >
+    <Pressable onPress={onPress} style={[styles.card, featured && (styles.featured as object)]}>
       <Image source={source} contentFit="cover" style={StyleSheet.absoluteFill} />
       <View style={styles.overlay} />
       {featured && (

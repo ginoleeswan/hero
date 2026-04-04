@@ -76,9 +76,7 @@ export default function WebSearchScreen() {
               onPress={() => setPublisher(f)}
               style={[styles.chip, publisher === f && styles.chipActive]}
             >
-              <Text style={[styles.chipText, publisher === f && styles.chipTextActive]}>
-                {f}
-              </Text>
+              <Text style={[styles.chipText, publisher === f && styles.chipTextActive]}>{f}</Text>
             </Pressable>
           ))}
         </View>

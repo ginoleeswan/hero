@@ -56,7 +56,11 @@ export default function WebCharacterScreen() {
     if (!id) return;
     fetchHeroStats(id)
       .then((stats) => {
-        setData({ stats, details: { summary: null, publisher: null, firstIssueId: null }, firstIssue: null });
+        setData({
+          stats,
+          details: { summary: null, publisher: null, firstIssueId: null },
+          firstIssue: null,
+        });
         fetchHeroDetails(stats.name)
           .then(async (details) => {
             const firstIssue = details.firstIssueId
@@ -72,7 +76,9 @@ export default function WebCharacterScreen() {
 
   useEffect(() => {
     if (!user || !id) return;
-    isFavourited(user.id, id).then(setFavourited).catch(() => {});
+    isFavourited(user.id, id)
+      .then(setFavourited)
+      .catch(() => {});
   }, [user, id]);
 
   const toggleFavourite = useCallback(async () => {
@@ -112,7 +118,10 @@ export default function WebCharacterScreen() {
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
+        <Pressable
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+          style={styles.backBtn}
+        >
           <Ionicons name="arrow-back" size={18} color={COLORS.navy} />
           <Text style={styles.backText}>Back</Text>
         </Pressable>
@@ -138,7 +147,12 @@ export default function WebCharacterScreen() {
           ) : null}
         </View>
         {heroImage && (
-          <Image source={heroImage} contentFit="cover" contentPosition="top" style={styles.bannerImage} />
+          <Image
+            source={heroImage}
+            contentFit="cover"
+            contentPosition="top"
+            style={styles.bannerImage}
+          />
         )}
       </View>
 
@@ -223,7 +237,12 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 60,
   },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.beige },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.beige,
+  },
   errorText: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.red },
 
   topBar: {

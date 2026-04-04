@@ -18,7 +18,9 @@ export function StatBar({ label, value, color }: StatBarProps) {
         <Text style={[styles.value, { color }]}>{numeric}</Text>
       </View>
       <View style={styles.track}>
-        <View style={[styles.fill, { width: `${fill}%` as unknown as number, backgroundColor: color }]} />
+        <View
+          style={[styles.fill, { width: `${fill}%` as unknown as number, backgroundColor: color }]}
+        />
       </View>
     </View>
   );

@@ -61,7 +61,10 @@
   },
   "expo": {
     "autolinking": {
-      "exclude": ["expo-dev-menu", "expo-dev-launcher"]
+      "exclude": [
+        "expo-dev-menu",
+        "expo-dev-launcher"
+      ]
     }
   },
   "private": true,

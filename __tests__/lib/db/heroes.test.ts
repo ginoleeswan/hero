@@ -30,8 +30,7 @@ jest.mock('../../../src/lib/supabase', () => {
 
   // then() makes the whole chain awaitable (used by searchHeroes).
   // References `mockResolveWith` — allowed because it starts with "mock".
-  chain.then = (resolve: (v: unknown) => unknown) =>
-    Promise.resolve(mockResolveWith).then(resolve);
+  chain.then = (resolve: (v: unknown) => unknown) => Promise.resolve(mockResolveWith).then(resolve);
 
   const mockFrom = jest.fn().mockReturnValue(chain);
 
@@ -44,9 +43,10 @@ jest.mock('../../../src/lib/supabase', () => {
 });
 
 // Retrieve mock internals once (these references stay stable across tests)
-const { __chain: chain, __mockFrom: mockFrom } = jest.requireMock(
-  '../../../src/lib/supabase',
-) as { __chain: Record<string, jest.Mock>; __mockFrom: jest.Mock };
+const { __chain: chain, __mockFrom: mockFrom } = jest.requireMock('../../../src/lib/supabase') as {
+  __chain: Record<string, jest.Mock>;
+  __mockFrom: jest.Mock;
+};
 
 const chainMethods = ['select', 'eq', 'ilike', 'not', 'order', 'limit'];
 
@@ -184,7 +184,9 @@ describe('heroRowToCharacterData', () => {
 
   it('maps comicvine fields', () => {
     const data = heroRowToCharacterData(hero);
-    expect(data.details.summary).toBe('A bite from a radioactive spider gave Peter Parker amazing abilities.');
+    expect(data.details.summary).toBe(
+      'A bite from a radioactive spider gave Peter Parker amazing abilities.',
+    );
     expect(data.firstIssue?.imageUrl).toBe('https://cdn.example.com/issue.jpg');
   });
 

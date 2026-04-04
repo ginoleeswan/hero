@@ -43,14 +43,8 @@ export default function WebProfileScreen() {
           <Text style={styles.statLabel}>Favourites</Text>
           <Text style={styles.statValue}>{favourites.length}</Text>
         </View>
-        <Pressable
-          onPress={handleSignOut}
-          disabled={signingOut}
-          style={styles.signOutBtn}
-        >
-          <Text style={styles.signOutText}>
-            {signingOut ? 'Signing out…' : 'Sign out'}
-          </Text>
+        <Pressable onPress={handleSignOut} disabled={signingOut} style={styles.signOutBtn}>
+          <Text style={styles.signOutText}>{signingOut ? 'Signing out…' : 'Sign out'}</Text>
         </Pressable>
       </View>
 
