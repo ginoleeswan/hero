@@ -1,6 +1,6 @@
 <div align="center">
 
-<img alt='hero logo' src="./app/assets/hero-github.png" width="50%" height="50%" />
+<img alt='hero logo' src="./assets/images/hero-github.png" width="50%" height="50%" />
 
 </div>
 
@@ -27,10 +27,10 @@
 
 <p align="center">
 
-  <img src="./app/assets/images/screenshots/home.PNG" style="border-radius: 20 "  alt="animated" width="20%"/>
-  <img src="./app/assets/images/screenshots/info1.PNG" style="background: none;"  alt="animated" width="20%"  />
-  <img src="./app/assets/images/screenshots/info2.PNG" style="background: none;"  alt="animated" width="20%"  />
-  <img src="./app/assets/images/screenshots/search.PNG" style="background: none;"  alt="animated" width="20%"  />
+  <img src="./assets/images/screenshots/home.PNG" style="border-radius: 20 "  alt="animated" width="20%"/>
+  <img src="./assets/images/screenshots/info1.PNG" style="background: none;"  alt="animated" width="20%"  />
+  <img src="./assets/images/screenshots/info2.PNG" style="background: none;"  alt="animated" width="20%"  />
+  <img src="./assets/images/screenshots/search.PNG" style="background: none;"  alt="animated" width="20%"  />
 
 </p>
 
