@@ -93,8 +93,8 @@ export function HeartButton({ favourited, loading, onPress }: HeartButtonProps) 
     if (favourited) {
       // Heart pop: scale up then settle
       heartScale.value = withSequence(
-        withSpring(1.5, { damping: 4 }),
-        withSpring(1, { damping: 10 }),
+        withSpring(1.4, { damping: 20, stiffness: 400, mass: 0.3 }),
+        withSpring(1, { damping: 20, stiffness: 400, mass: 0.3 }),
       );
 
       // Ring: expand from centre and fade out
@@ -123,8 +123,8 @@ export function HeartButton({ favourited, loading, onPress }: HeartButtonProps) 
     } else {
       // Soft deflate on unfavourite — no burst
       heartScale.value = withSequence(
-        withSpring(0.8, { damping: 8 }),
-        withSpring(1, { damping: 12 }),
+        withSpring(0.8, { damping: 20, stiffness: 400, mass: 0.3 }),
+        withSpring(1, { damping: 20, stiffness: 400, mass: 0.3 }),
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
