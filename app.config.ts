@@ -25,7 +25,7 @@ const config: ExpoConfig = {
   },
   web: {
     bundler: 'metro',
-    output: 'static',
+    output: 'single-page-application',
   },
   plugins: [
     'expo-router',

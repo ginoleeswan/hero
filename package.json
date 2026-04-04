@@ -32,6 +32,7 @@
     "expo-status-bar": "~55.0.5",
     "expo-updates": "~55.0.18",
     "react": "19.2.0",
+    "react-dom": "19.2.0",
     "react-native": "0.83.4",
     "react-native-circular-progress": "^1.4.1",
     "react-native-figma-squircle": "^0.4.0",
