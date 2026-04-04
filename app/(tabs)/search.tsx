@@ -183,12 +183,12 @@ export default function SearchScreen() {
               return (
                 <TouchableOpacity
                   style={styles.row}
-                  onPress={() => handlePress(item.id, item.name, item.image_url ?? '')}
+                  onPress={() => handlePress(item.id, item.name, item.portrait_url ?? item.image_url ?? '')}
                   activeOpacity={0.7}
                   disabled={!!navigatingId}
                 >
                   <Image
-                    source={{ uri: item.image_md_url ?? item.image_url ?? undefined }}
+                    source={{ uri: item.portrait_url ?? item.image_md_url ?? item.image_url ?? undefined }}
                     style={styles.avatar}
                     contentFit="cover"
                     placeholder="#d4c8b8"

@@ -31,7 +31,7 @@ function username(email: string) {
 }
 
 function FavouriteThumb({ hero, onPress }: { hero: FavouriteHero; onPress: () => void }) {
-  const src = heroImageSource(hero.id, hero.image_url);
+  const src = heroImageSource(hero.id, hero.image_url, hero.portrait_url);
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.thumb}>
       <SquircleMask style={StyleSheet.absoluteFill} cornerRadius={26}>

@@ -73,6 +73,7 @@ function HeroRow({ heroes, onPress }: { heroes: Hero[]; onPress: (h: Hero) => vo
               id={item.id}
               name={item.name}
               imageUrl={item.image_url}
+              portraitUrl={item.portrait_url}
               onPress={() => onPress(item)}
             />
           </Animated.View>
