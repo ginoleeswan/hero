@@ -54,7 +54,11 @@ export default function WebCharacterScreen() {
     if (!id) return;
     fetchHeroStats(id)
       .then((stats) => {
-        setData({ stats, details: { summary: null, publisher: null, firstIssueId: null }, firstIssue: null });
+        setData({
+          stats,
+          details: { summary: null, publisher: null, firstIssueId: null },
+          firstIssue: null,
+        });
         fetchHeroDetails(stats.name)
           .then(async (details) => {
             const firstIssue = details.firstIssueId
@@ -69,7 +73,9 @@ export default function WebCharacterScreen() {
 
   useEffect(() => {
     if (!user || !id) return;
-    isFavourited(user.id, id).then(setFavourited).catch(() => {});
+    isFavourited(user.id, id)
+      .then(setFavourited)
+      .catch(() => {});
   }, [user, id]);
 
   const toggleFavourite = useCallback(async () => {
@@ -109,27 +115,31 @@ export default function WebCharacterScreen() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-
       {/* Cinematic banner */}
       <View style={[styles.banner, { height: bannerHeight }]}>
         {heroImage && (
           <Image
             source={heroImage}
-            style={{
-              position: 'absolute',
-              top: 0, left: 0, right: 0, bottom: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center 15%',
-            } as object}
+            style={
+              {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center 15%',
+              } as object
+            }
           />
         )}
         <View style={styles.bannerOverlay as object} />
 
         <View style={styles.bannerTopRow}>
           <Pressable
-            onPress={() => router.canGoBack() ? router.back() : router.replace('/')}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
             style={styles.backBtn}
           >
             <Ionicons name="arrow-back" size={16} color={COLORS.beige} />
@@ -169,7 +179,9 @@ export default function WebCharacterScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Power Stats</Text>
           <View style={styles.cardDivider} />
-          <View style={[styles.statsGrid as object, isDesktop && styles.statsGridDesktop as object]}>
+          <View
+            style={[styles.statsGrid as object, isDesktop && (styles.statsGridDesktop as object)]}
+          >
             {STAT_CONFIG.map(({ key, label, color }) => (
               <View key={key} style={[styles.statItem, isDesktop && styles.statItemDesktop]}>
                 <StatBar
@@ -183,7 +195,7 @@ export default function WebCharacterScreen() {
         </View>
 
         {/* Info grid */}
-        <View style={[styles.infoGrid as object, !isDesktop && styles.infoGridMobile as object]}>
+        <View style={[styles.infoGrid as object, !isDesktop && (styles.infoGridMobile as object)]}>
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Biography</Text>
             <View style={styles.cardDivider} />
@@ -223,7 +235,6 @@ export default function WebCharacterScreen() {
           </View>
         </View>
       </View>
-
     </ScrollView>
   );
 }
@@ -231,7 +242,12 @@ export default function WebCharacterScreen() {
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
   content: { maxWidth: 960, alignSelf: 'center', width: '100%', paddingBottom: 60 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.beige },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.beige,
+  },
   errorText: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.red },
 
   // Banner

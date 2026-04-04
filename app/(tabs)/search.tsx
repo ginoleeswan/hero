@@ -52,10 +52,18 @@ export default function SearchScreen() {
     setLoadingList(true);
     setError(false);
     searchHeroes(debouncedQuery, publisherFilter)
-      .then((data) => { if (!cancelled) setResults(data); })
-      .catch(() => { if (!cancelled) setError(true); })
-      .finally(() => { if (!cancelled) setLoadingList(false); });
-    return () => { cancelled = true; };
+      .then((data) => {
+        if (!cancelled) setResults(data);
+      })
+      .catch(() => {
+        if (!cancelled) setError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingList(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [debouncedQuery, publisherFilter, retryCount]);
 
   const handlePress = useCallback(
