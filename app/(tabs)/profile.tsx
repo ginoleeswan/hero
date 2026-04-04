@@ -12,8 +12,7 @@ import Svg, { Defs, Pattern, Circle, Rect, Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SquircleView } from 'react-native-figma-squircle';
-import MaskedView from '@react-native-masked-view/masked-view';
+import { SquircleMask } from '../../src/components/ui/SquircleMask';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
@@ -35,22 +34,14 @@ function FavouriteThumb({ hero, onPress }: { hero: FavouriteHero; onPress: () =>
   const src = heroImageSource(hero.id, hero.image_url);
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.thumb}>
-      <MaskedView
-        style={StyleSheet.absoluteFill}
-        maskElement={
-          <SquircleView
-            style={StyleSheet.absoluteFill}
-            squircleParams={{ cornerRadius: 26, cornerSmoothing: 1, fillColor: 'pink' }}
-          />
-        }
-      >
+      <SquircleMask style={StyleSheet.absoluteFill} cornerRadius={26}>
         <Image source={src} contentFit="cover" style={StyleSheet.absoluteFill} />
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.7)']}
           locations={[0.5, 1]}
           style={StyleSheet.absoluteFill}
         />
-      </MaskedView>
+      </SquircleMask>
       <Text style={styles.thumbName} numberOfLines={1}>
         {hero.name}
       </Text>
@@ -167,7 +158,9 @@ export default function ProfileScreen() {
 
           <View style={styles.accountCard}>
             <View style={styles.accountRow}>
-              <Ionicons name="mail-outline" size={18} color={COLORS.navy} />
+              <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
+                <Ionicons name="mail-outline" size={16} color={COLORS.navy} />
+              </View>
               <Text style={styles.accountLabel}>Email</Text>
               <Text style={styles.accountValue} numberOfLines={1}>
                 {email}
@@ -185,7 +178,9 @@ export default function ProfileScreen() {
               {signingOut ? (
                 <ActivityIndicator size="small" color={COLORS.red} style={styles.signingOutIndicator} />
               ) : (
-                <Ionicons name="log-out-outline" size={18} color={COLORS.red} />
+                <View style={[styles.accountIconBadge, styles.accountIconBadgeRed]}>
+                  <Ionicons name="log-out-outline" size={16} color={COLORS.red} />
+                </View>
               )}
               <Text style={[styles.accountLabel, styles.accountLabelDanger]}>
                 {signingOut ? 'Signing out…' : 'Sign Out'}
@@ -389,9 +384,22 @@ const styles = StyleSheet.create({
   accountRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
     gap: 12,
+  },
+  accountIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  accountIconBadgeNavy: {
+    backgroundColor: '#e8f0f2',
+  },
+  accountIconBadgeRed: {
+    backgroundColor: '#fde8e8',
   },
   accountLabel: {
     fontFamily: 'Nunito_700Bold',
