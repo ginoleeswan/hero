@@ -92,6 +92,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 18,
     color: COLORS.beige,
+    textShadowColor: 'rgba(0,0,0,1)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 5,
   },
   publisher: {
     fontFamily: 'FlameSans-Regular',
