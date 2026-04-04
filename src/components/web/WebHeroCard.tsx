@@ -30,7 +30,7 @@ export function WebHeroCard({
       <Image source={source} contentFit="cover" style={StyleSheet.absoluteFill} />
       <View style={styles.overlay} />
       {featured && (
-        <View style={styles.badge as object}>
+        <View style={styles.badge}>
           <Text style={styles.badgeText}>Featured</Text>
         </View>
       )}
@@ -64,20 +64,16 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 60%)',
+    background: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 60%)',
   } as object,
   badge: {
     position: 'absolute',
     top: 12,
     left: 12,
-    backgroundColor: 'rgba(231,115,51,0.85)',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
+    backgroundColor: COLORS.orange,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
   },
   badgeText: {
     fontFamily: 'Nunito_700Bold',
@@ -88,17 +84,9 @@ const styles = StyleSheet.create({
   },
   nameContainer: {
     position: 'absolute',
-    bottom: 12,
-    left: 12,
-    right: 12,
-    backgroundColor: 'rgba(41,60,67,0.55)',
-    backdropFilter: 'blur(10px)',
-    WebkitBackdropFilter: 'blur(10px)',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.1)',
+    bottom: 14,
+    left: 14,
+    right: 14,
   },
   name: {
     fontFamily: 'Flame-Regular',
