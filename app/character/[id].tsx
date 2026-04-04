@@ -106,18 +106,20 @@ export default function CharacterScreen() {
 
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Parallax: image drifts up at half the scroll speed as content scrolls over it
+  // Parallax: image drifts up at ~0.3x scroll speed as content covers it
+  // Overscroll zoom: when scrollY < 0, translateY tracks half the overscroll
+  // so the scaled image stays anchored at the top edge
   const imageTranslateY = scrollY.interpolate({
-    inputRange: [0, HERO_IMAGE_HEIGHT],
-    outputRange: [0, -HERO_IMAGE_HEIGHT / 2],
+    inputRange: [-HERO_IMAGE_HEIGHT, 0, HERO_IMAGE_HEIGHT],
+    outputRange: [-HERO_IMAGE_HEIGHT / 2, 0, -HERO_IMAGE_HEIGHT / 3],
     extrapolate: 'clamp',
   });
 
-  // Zoom on overscroll: pulling down beyond the top scales the image up
+  // Scale up on overscroll (scrollY < 0). At scrollY = 0 → scale 1.
   const imageScale = scrollY.interpolate({
     inputRange: [-HERO_IMAGE_HEIGHT, 0],
-    outputRange: [2.5, 1],
-    extrapolate: 'clamp',
+    outputRange: [2, 1],
+    extrapolateRight: 'clamp',
   });
 
   useEffect(() => {
@@ -202,26 +204,28 @@ export default function CharacterScreen() {
           locations={[0.45, 0.75, 1]}
           style={StyleSheet.absoluteFill}
         />
-        <TouchableOpacity
-          style={[styles.backButton, { top: insets.top + 8 }]}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </TouchableOpacity>
-        {user ? (
-          <TouchableOpacity
-            style={[styles.favButton, { top: insets.top + 8 }]}
-            onPress={toggleFavourite}
-            disabled={favLoading}
-          >
-            <Ionicons
-              name={favourited ? 'heart' : 'heart-outline'}
-              size={22}
-              color={favourited ? COLORS.red : '#fff'}
-            />
-          </TouchableOpacity>
-        ) : null}
       </Animated.View>
+
+      {/* Buttons sit outside the animated view so they don't scale/parallax */}
+      <TouchableOpacity
+        style={[styles.backButton, { top: insets.top + 8 }]}
+        onPress={() => router.back()}
+      >
+        <Ionicons name="arrow-back" size={22} color="#fff" />
+      </TouchableOpacity>
+      {user ? (
+        <TouchableOpacity
+          style={[styles.favButton, { top: insets.top + 8 }]}
+          onPress={toggleFavourite}
+          disabled={favLoading}
+        >
+          <Ionicons
+            name={favourited ? 'heart' : 'heart-outline'}
+            size={22}
+            color={favourited ? COLORS.red : '#fff'}
+          />
+        </TouchableOpacity>
+      ) : null}
 
       {!data ? (
         <View style={styles.loadingOverlay}>
