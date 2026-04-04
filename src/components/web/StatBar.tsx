@@ -15,7 +15,7 @@ export function StatBar({ label, value, color }: StatBarProps) {
     <View style={styles.container}>
       <View style={styles.labelRow}>
         <Text style={styles.label}>{label}</Text>
-        <Text style={[styles.value, { color }]}>{fill}</Text>
+        <Text style={[styles.value, { color }]}>{numeric}</Text>
       </View>
       <View style={styles.track}>
         <View style={[styles.fill, { width: `${fill}%` as unknown as number, backgroundColor: color }]} />
@@ -39,9 +39,8 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
   },
   value: {
-    fontFamily: 'Flame-Regular',
+    fontFamily: 'Flame-Bold',
     fontSize: 13,
-    fontWeight: '700',
   },
   track: {
     height: 6,
