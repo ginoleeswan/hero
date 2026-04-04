@@ -26,11 +26,16 @@ export async function getHeroesByCategory(): Promise<HeroesByCategory> {
 }
 
 export async function getHeroById(id: string): Promise<Hero | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('heroes')
     .select('*')
     .eq('id', id)
     .single();
+  // PGRST116 = "no rows found" — hero not yet enriched, caller falls back to API.
+  // Log any other error so DB outages are observable.
+  if (error && error.code !== 'PGRST116') {
+    console.warn('[getHeroById] Supabase error:', error.message);
+  }
   return data ?? null;
 }
 

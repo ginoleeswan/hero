@@ -3,6 +3,7 @@ import {
   getHeroById,
   searchHeroes,
   heroRowToCharacterData,
+  type Hero,
 } from '../../../src/lib/db/heroes';
 
 // ─── Mock Supabase ────────────────────────────────────────────────────────────
@@ -155,7 +156,7 @@ describe('heroRowToCharacterData', () => {
     first_issue_image_url: 'https://cdn.example.com/issue.jpg',
     comicvine_enriched_at: '2026-04-04T00:00:00Z',
     enriched_at: '2026-04-04T00:00:00Z',
-  } as any;
+  } satisfies Hero;
 
   it('maps powerstats to string values', () => {
     const data = heroRowToCharacterData(hero);
