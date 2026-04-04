@@ -36,12 +36,16 @@ export function TopNav() {
 const styles = StyleSheet.create({
   nav: {
     height: 52,
-    backgroundColor: COLORS.navy,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     gap: 32,
-  },
+    backgroundColor: 'rgba(41,60,67,0.82)',
+    backdropFilter: 'blur(14px)',
+    WebkitBackdropFilter: 'blur(14px)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(245,235,220,0.06)',
+  } as object,
 
   links: {
     flexDirection: 'row',

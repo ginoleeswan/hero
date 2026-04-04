@@ -42,10 +42,12 @@ export default function WebLoginScreen() {
       {isDesktop && (
         <View style={styles.brand}>
           <HeroLogo iconSize={56} fontSize={56} color={COLORS.beige} gap={16} />
-          <Text style={styles.brandTagline}>The Superhero Encyclopedia</Text>
-          <Text style={styles.brandSub}>
-            Discover the stories, powers, and origins of{'\n'}hundreds of heroes and villains.
-          </Text>
+          <View style={styles.brandGlass as object}>
+            <Text style={styles.brandTagline}>The Superhero Encyclopedia</Text>
+            <Text style={styles.brandSub}>
+              Discover the stories, powers, and origins of{'\n'}hundreds of heroes and villains.
+            </Text>
+          </View>
           <View style={styles.brandAccent} />
         </View>
       )}
@@ -131,17 +133,27 @@ const styles = StyleSheet.create({
   brandLogo: {
     marginBottom: 16,
   },
+  brandGlass: {
+    marginTop: 28,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.1)',
+    padding: 20,
+  },
   brandTagline: {
     fontFamily: 'Flame-Regular',
-    fontSize: 22,
+    fontSize: 18,
     color: COLORS.beige,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   brandSub: {
     fontFamily: 'FlameSans-Regular',
-    fontSize: 14,
+    fontSize: 13,
     color: 'rgba(245,235,220,0.55)',
-    lineHeight: 22,
+    lineHeight: 21,
   },
   brandAccent: {
     marginTop: 40,
