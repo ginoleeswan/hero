@@ -64,10 +64,10 @@ function InfoSectionSkeleton({ rows = 4 }: { rows?: number }) {
   );
 }
 
-export function CharacterSkeleton() {
+export function CharacterSkeleton({ hideNameBlock = false }: { hideNameBlock?: boolean }) {
   return (
     <View style={styles.container}>
-      <NameBlock />
+      {!hideNameBlock && <NameBlock />}
       <SummaryBlock />
       <StatDialsSkeleton />
       <InfoSectionSkeleton rows={5} />

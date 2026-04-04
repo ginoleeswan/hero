@@ -30,13 +30,27 @@ export async function removeFavourite(userId: string, heroId: string): Promise<v
 }
 
 export async function getUserFavouriteHeroes(userId: string): Promise<FavouriteHero[]> {
-  const { data, error } = await supabase
+  const { data: favData, error: favError } = await supabase
     .from('user_favourites')
-    .select('heroes(id, name, image_url)')
+    .select('hero_id')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map((row) => row.heroes).filter((h): h is FavouriteHero => h !== null);
+  if (favError) throw favError;
+
+  const heroIds = (favData ?? [])
+    .map((r) => r.hero_id)
+    .filter((id): id is string => id !== null);
+  if (heroIds.length === 0) return [];
+
+  const { data: heroData, error: heroError } = await supabase
+    .from('heroes')
+    .select('id, name, image_url')
+    .in('id', heroIds);
+  if (heroError) throw heroError;
+
+  // Preserve favourited order
+  const heroMap = new Map((heroData ?? []).map((h) => [h.id, h]));
+  return heroIds.map((id) => heroMap.get(id)).filter((h): h is FavouriteHero => h !== undefined);
 }
 
 export async function getFavouriteCount(userId: string): Promise<number> {

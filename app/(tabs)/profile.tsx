@@ -11,11 +11,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SquircleView } from 'react-native-figma-squircle';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { getUserFavouriteHeroes, type FavouriteHero } from '../../src/lib/db/favourites';
-import { HERO_IMAGES } from '../../src/constants/heroImages';
+import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -26,17 +28,25 @@ function username(email: string) {
 }
 
 function FavouriteThumb({ hero, onPress }: { hero: FavouriteHero; onPress: () => void }) {
-  const src = hero.image_url
-    ? (HERO_IMAGES[hero.image_url] ?? HERO_IMAGES[hero.id])
-    : HERO_IMAGES[hero.id];
+  const src = heroImageSource(hero.id, hero.image_url);
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.thumb}>
-      <Image source={src} contentFit="cover" style={StyleSheet.absoluteFill} />
-      <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.7)']}
-        locations={[0.5, 1]}
+      <MaskedView
         style={StyleSheet.absoluteFill}
-      />
+        maskElement={
+          <SquircleView
+            style={StyleSheet.absoluteFill}
+            squircleParams={{ cornerRadius: 26, cornerSmoothing: 1, fillColor: 'pink' }}
+          />
+        }
+      >
+        <Image source={src} contentFit="cover" style={StyleSheet.absoluteFill} />
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.7)']}
+          locations={[0.5, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+      </MaskedView>
       <Text style={styles.thumbName} numberOfLines={1}>
         {hero.name}
       </Text>
@@ -285,16 +295,15 @@ const styles = StyleSheet.create({
   thumb: {
     width: THUMB_SIZE,
     height: THUMB_SIZE * 1.25,
-    borderRadius: 12,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
   },
   thumbName: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 6,
     fontFamily: 'Flame-Regular',
     fontSize: 10,
     color: '#fff',
-    paddingHorizontal: 6,
-    paddingBottom: 5,
   },
 
   // Empty state

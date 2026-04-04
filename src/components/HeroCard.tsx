@@ -4,7 +4,7 @@ import { SquircleView } from 'react-native-figma-squircle';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { Image } from 'expo-image';
 import { COLORS } from '../constants/colors';
-import { HERO_IMAGES } from '../constants/heroImages';
+import { heroImageSource } from '../constants/heroImages';
 
 interface HeroCardProps {
   id: string;
@@ -14,7 +14,7 @@ interface HeroCardProps {
 }
 
 export function HeroCard({ id, name, imageUrl, onPress }: HeroCardProps) {
-  const imageSource = imageUrl ? (HERO_IMAGES[imageUrl] ?? HERO_IMAGES[id]) : HERO_IMAGES[id];
+  const imageSource = heroImageSource(id, imageUrl);
 
   return (
     <View style={styles.card}>

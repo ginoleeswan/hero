@@ -28,7 +28,7 @@ interface CdnHero {
   id: number;
   name: string;
   biography: { publisher: string };
-  images: { md: string };
+  images: { md: string; lg: string };
 }
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -93,12 +93,15 @@ export default function SearchScreen() {
   }, [allHeroes, debouncedQuery, publisherFilter]);
 
   const handlePress = useCallback(
-    (id: number) => {
+    (id: number, name: string, imageUri: string) => {
       if (navigatingId) return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setNavigatingId(id);
       inputRef.current?.blur();
-      router.push(`/character/${id}`);
+      router.push({
+        pathname: '/character/[id]',
+        params: { id, name, imageUri },
+      });
       setTimeout(() => setNavigatingId(null), 1000);
     },
     [router, navigatingId],
@@ -210,7 +213,7 @@ export default function SearchScreen() {
               return (
                 <TouchableOpacity
                   style={styles.row}
-                  onPress={() => handlePress(item.id)}
+                  onPress={() => handlePress(item.id, item.name, item.images.lg)}
                   activeOpacity={0.7}
                   disabled={!!navigatingId}
                 >

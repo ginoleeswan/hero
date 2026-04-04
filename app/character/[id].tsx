@@ -10,7 +10,7 @@ import * as Haptics from 'expo-haptics';
 import { fetchHeroStats, fetchHeroDetails, fetchFirstIssue } from '../../src/lib/api';
 import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
 import { useAuth } from '../../src/hooks/useAuth';
-import { HERO_IMAGES } from '../../src/constants/heroImages';
+import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
 import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkeleton';
 import { Skeleton } from '../../src/components/ui/Skeleton';
@@ -81,7 +81,11 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
 }
 
 export default function CharacterScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, name: paramName, imageUri: paramImageUri } = useLocalSearchParams<{
+    id: string;
+    name?: string;
+    imageUri?: string;
+  }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -192,7 +196,17 @@ export default function CharacterScreen() {
     }
   }, [user, id, favourited, favLoading]);
 
-  const heroImage = id ? (HERO_IMAGES[id] ?? null) : null;
+  // Priority: API image (best) → passed URI (from search) → bundled/CDN fallback
+  const heroImage = data?.stats.image.url
+    ? { uri: data.stats.image.url }
+    : paramImageUri
+      ? { uri: paramImageUri }
+      : id
+        ? heroImageSource(id)
+        : null;
+
+  // Show name immediately from params while API loads
+  const displayName = data?.stats.name ?? paramName ?? '';
 
   if (error) {
     return (
@@ -234,7 +248,7 @@ export default function CharacterScreen() {
                 },
               ]}
             >
-              {data?.stats.name ?? ''}
+              {displayName}
             </Animated.Text>
           ),
           headerLeft: () => (
@@ -275,16 +289,12 @@ export default function CharacterScreen() {
           },
         ]}
       >
-        {heroImage ? (
-          <Image
-            source={heroImage}
-            contentFit="cover"
-            contentPosition="top"
-            style={styles.heroImage}
-          />
-        ) : (
-          <View style={[styles.heroImage, { backgroundColor: COLORS.navy }]} />
-        )}
+        <Image
+          source={heroImage}
+          contentFit="cover"
+          contentPosition="top"
+          style={styles.heroImage}
+        />
         <LinearGradient
           colors={[
             'transparent',
@@ -314,13 +324,11 @@ export default function CharacterScreen() {
           useNativeDriver: true,
         })}
       >
-        {!data ? (
-          <CharacterSkeleton />
-        ) : (
-          <>
-            {/* Name block */}
-            <View style={styles.nameBlock}>
-              <Text style={styles.heroName}>{data.stats.name}</Text>
+        {/* Name block — renders immediately from params, detail row fills in when API responds */}
+        {displayName ? (
+          <View style={styles.nameBlock}>
+            <Text style={styles.heroName}>{displayName}</Text>
+            {data ? (
               <View style={styles.nameRow}>
                 {data.stats.biography['full-name'] ? (
                   <Text style={styles.heroAlias}>{data.stats.biography['full-name']}</Text>
@@ -339,9 +347,20 @@ export default function CharacterScreen() {
                   <Text style={styles.heroPublisher}>{data.stats.biography.publisher}</Text>
                 )}
               </View>
-              <View style={styles.nameDivider} />
-            </View>
+            ) : (
+              <View style={styles.nameRow}>
+                <Skeleton width="40%" height={14} borderRadius={6} />
+                <Skeleton width={50} height={30} borderRadius={4} />
+              </View>
+            )}
+            <View style={styles.nameDivider} />
+          </View>
+        ) : null}
 
+        {!data ? (
+          <CharacterSkeleton hideNameBlock />
+        ) : (
+          <>
             {/* Summary — shows skeleton lines while ComicVine is loading */}
             {comicVineLoading ? (
               <View style={styles.summaryBlock}>

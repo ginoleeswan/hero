@@ -37,3 +37,19 @@ export const HERO_IMAGES: Record<string, number> = {
   'marvel-logo': require('../../assets/images/Marvel-Logo.jpg'),
   'dc-logo': require('../../assets/images/DC-Logo.png'),
 };
+
+const CDN_BASE = 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/images/md';
+
+/**
+ * Resolves a hero image source.
+ * Tries imageUrl slug first, then numeric id, then falls back to CDN using the numeric id.
+ */
+export function heroImageSource(
+  id: string | number,
+  imageUrl?: string | null,
+): number | { uri: string } {
+  if (imageUrl && HERO_IMAGES[imageUrl]) return HERO_IMAGES[imageUrl];
+  const local = HERO_IMAGES[String(id)];
+  if (local) return local;
+  return { uri: `${CDN_BASE}/${id}.jpg` };
+}
