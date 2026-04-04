@@ -97,7 +97,7 @@ export default function ProfileScreen() {
             <Rect width="100%" height="100%" fill="url(#dots)" />
           </Svg>
           <View style={styles.coverLogo}>
-            <Svg width={48} height={48} viewBox="0 0 1024 1024">
+            <Svg width={72} height={72} viewBox="0 0 1024 1024">
               <Path fill="#ECECDE" d={HERO_LOGO_PATH} />
             </Svg>
           </View>
@@ -225,13 +225,13 @@ const styles = StyleSheet.create({
   // Avatar
   avatarZone: {
     alignItems: 'center',
-    marginTop: -30,
+    marginTop: -45,
     marginBottom: 12,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 4,
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   },
   avatarInitials: {
     fontFamily: 'Flame-Bold',
-    fontSize: 20,
+    fontSize: 28,
     color: '#fff',
   },
 
