@@ -28,30 +28,33 @@ export function StatBar({ label, value, color }: StatBarProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 10,
+    marginBottom: 14,
   },
   labelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    alignItems: 'baseline',
+    marginBottom: 6,
   },
   label: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 12,
-    color: COLORS.navy,
+    color: COLORS.grey,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
   },
   value: {
     fontFamily: 'Flame-Regular',
-    fontSize: 13,
+    fontSize: 16,
   },
   track: {
-    height: 6,
+    height: 8,
     backgroundColor: '#e8ddd0',
-    borderRadius: 3,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   fill: {
     height: '100%' as unknown as number,
-    borderRadius: 3,
+    borderRadius: 4,
   },
 });

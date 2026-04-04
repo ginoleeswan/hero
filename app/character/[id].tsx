@@ -152,36 +152,7 @@ export default function CharacterScreen() {
   useEffect(() => {
     if (!id) return;
 
-    // Try Supabase first — instant if hero is enriched
-    getHeroById(id).then((hero) => {
-      if (hero?.enriched_at) {
-        setData(heroRowToCharacterData(hero));
-        setComicVineLoading(!hero.comicvine_enriched_at);
-
-        // If ComicVine not enriched yet, fetch it in background
-        if (!hero.comicvine_enriched_at) {
-          fetchHeroDetails(hero.name)
-            .then(async (details) => {
-              const firstIssue = details.firstIssueId
-                ? await fetchFirstIssue(details.firstIssueId).catch(() => null)
-                : null;
-              setData((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      details,
-                      firstIssue: firstIssue ?? prev.firstIssue,
-                    }
-                  : prev,
-              );
-            })
-            .catch(() => {})
-            .finally(() => setComicVineLoading(false));
-        }
-        return;
-      }
-
-      // Fallback — hero not enriched yet, use external APIs
+    const loadFromApi = () => {
       fetchHeroStats(id)
         .then((stats) => {
           setData({
@@ -202,7 +173,42 @@ export default function CharacterScreen() {
         .catch((e: unknown) => {
           setError(e instanceof Error ? e.message : 'Failed to load character');
         });
-    });
+    };
+
+    // Try Supabase first — instant if hero is enriched
+    getHeroById(id)
+      .then((hero) => {
+        if (hero?.enriched_at) {
+          setData(heroRowToCharacterData(hero));
+          setComicVineLoading(!hero.comicvine_enriched_at);
+
+          // If ComicVine not enriched yet, fetch it in background
+          if (!hero.comicvine_enriched_at) {
+            fetchHeroDetails(hero.name)
+              .then(async (details) => {
+                const firstIssue = details.firstIssueId
+                  ? await fetchFirstIssue(details.firstIssueId).catch(() => null)
+                  : null;
+                setData((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        details,
+                        firstIssue: firstIssue ?? prev.firstIssue,
+                      }
+                    : prev,
+                );
+              })
+              .catch(() => {})
+              .finally(() => setComicVineLoading(false));
+          }
+          return;
+        }
+
+        // Hero not enriched yet — fall through to external APIs
+        loadFromApi();
+      })
+      .catch(loadFromApi);
   }, [id]);
 
   useEffect(() => {

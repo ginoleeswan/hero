@@ -111,91 +111,173 @@ export default function WebCharacterScreen() {
   }
 
   const { stats, details } = data;
-  const bannerHeight = isDesktop ? 360 : 280;
+
+  const alias =
+    stats.biography['full-name'] &&
+    stats.biography['full-name'] !== stats.name &&
+    stats.biography['full-name'] !== '-'
+      ? stats.biography['full-name']
+      : null;
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-      {/* Cinematic banner */}
-      <View style={[styles.banner, { height: bannerHeight }]}>
-        {heroImage && (
-          <Image
-            source={heroImage}
-            style={
-              {
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center 15%',
-              } as object
-            }
-          />
-        )}
-        <View style={styles.bannerOverlay as object} />
-
-        <View style={styles.bannerTopRow}>
+      {/* ── Identity header — navy strip, no image ── */}
+      <View style={styles.identityHeader}>
+        <View style={styles.headerTopRow}>
           <Pressable
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
             style={styles.backBtn}
           >
-            <Ionicons name="arrow-back" size={16} color={COLORS.beige} />
+            <Ionicons name="arrow-back" size={15} color={COLORS.beige} />
             <Text style={styles.backText}>Back</Text>
           </Pressable>
           {user && (
             <Pressable onPress={toggleFavourite} disabled={favLoading} style={styles.favBtn}>
               <Ionicons
                 name={favourited ? 'heart' : 'heart-outline'}
-                size={22}
-                color={favourited ? COLORS.red : 'white'}
+                size={20}
+                color={favourited ? COLORS.red : 'rgba(245,235,220,0.6)'}
               />
             </Pressable>
           )}
         </View>
 
-        <View style={styles.bannerBottom}>
+        <View style={styles.heroIdentity}>
           {stats.biography.publisher ? (
             <Text style={styles.heroPublisher}>{stats.biography.publisher}</Text>
           ) : null}
-          <Text style={[styles.heroName, { fontSize: isDesktop ? 52 : 36 }]}>{stats.name}</Text>
-          {stats.biography['full-name'] ? (
-            <Text style={styles.heroAlias}>{stats.biography['full-name']}</Text>
-          ) : null}
+          <Text style={[styles.heroName, { fontSize: isDesktop ? 52 : 34 }]}>{stats.name}</Text>
+          {alias ? <Text style={styles.heroAlias}>{alias}</Text> : null}
         </View>
       </View>
 
-      <View style={styles.body}>
-        {/* Summary */}
-        {details.summary ? (
-          <View style={styles.summaryBox}>
-            <Text style={styles.summaryText}>{details.summary}</Text>
-          </View>
-        ) : null}
+      {/* ── Body ── */}
+      {isDesktop ? (
+        <View style={styles.bodyDesktop}>
+          {/* Left column: portrait + power stats */}
+          <View style={styles.leftCol}>
+            {/* Portrait card — lets the image breathe in its natural aspect ratio */}
+            <View style={styles.portraitCard}>
+              {heroImage ? (
+                <Image
+                  source={heroImage}
+                  style={
+                    {
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      objectPosition: 'center top',
+                    } as object
+                  }
+                />
+              ) : (
+                <View style={styles.portraitPlaceholder} />
+              )}
+            </View>
 
-        {/* Power stats — full width */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Power Stats</Text>
-          <View style={styles.cardDivider} />
-          <View
-            style={[styles.statsGrid as object, isDesktop && (styles.statsGridDesktop as object)]}
-          >
-            {STAT_CONFIG.map(({ key, label, color }) => (
-              <View key={key} style={[styles.statItem, isDesktop && styles.statItemDesktop]}>
+            {/* Power stats sit directly below the portrait */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Power Stats</Text>
+              <View style={styles.cardDivider} />
+              {STAT_CONFIG.map(({ key, label, color }) => (
                 <StatBar
+                  key={key}
                   label={label}
                   value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
                   color={color}
                 />
+              ))}
+            </View>
+          </View>
+
+          {/* Right column: summary + 2-col info cards */}
+          <View style={styles.rightCol}>
+            {details.summary ? (
+              <View style={styles.summaryBox}>
+                <Text style={styles.summaryText}>{details.summary}</Text>
               </View>
-            ))}
+            ) : null}
+
+            <View style={styles.infoGridDesktop as object}>
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Biography</Text>
+                <View style={styles.cardDivider} />
+                <InfoRow label="Full name" value={stats.biography['full-name']} />
+                <InfoRow label="Alter egos" value={stats.biography['alter-egos']} />
+                <InfoRow label="Place of birth" value={stats.biography['place-of-birth']} />
+                <InfoRow label="First appearance" value={stats.biography['first-appearance']} />
+                <InfoRow label="Alignment" value={stats.biography.alignment} />
+                {stats.biography.aliases.filter((a) => a && a !== '-').length > 0 && (
+                  <InfoRow label="Aliases" value={stats.biography.aliases.join(', ')} />
+                )}
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Appearance</Text>
+                <View style={styles.cardDivider} />
+                <InfoRow label="Gender" value={stats.appearance.gender} />
+                <InfoRow label="Race" value={stats.appearance.race} />
+                <InfoRow label="Height" value={stats.appearance.height.join(' / ')} />
+                <InfoRow label="Weight" value={stats.appearance.weight.join(' / ')} />
+                <InfoRow label="Eyes" value={stats.appearance['eye-color']} />
+                <InfoRow label="Hair" value={stats.appearance['hair-color']} />
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Work</Text>
+                <View style={styles.cardDivider} />
+                <InfoRow label="Occupation" value={stats.work.occupation} />
+                <InfoRow label="Base" value={stats.work.base} />
+              </View>
+
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Connections</Text>
+                <View style={styles.cardDivider} />
+                <InfoRow label="Group affiliation" value={stats.connections['group-affiliation']} />
+                <InfoRow label="Relatives" value={stats.connections.relatives} />
+              </View>
+            </View>
           </View>
         </View>
+      ) : (
+        /* ── Mobile: stacked ── */
+        <View style={styles.body}>
+          {/* Portrait at natural aspect ratio */}
+          <View style={styles.portraitCardMobile}>
+            {heroImage ? (
+              <Image
+                source={heroImage}
+                style={
+                  {
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    objectPosition: 'center top',
+                  } as object
+                }
+              />
+            ) : null}
+          </View>
 
-        {/* Info grid */}
-        <View style={[styles.infoGrid as object, !isDesktop && (styles.infoGridMobile as object)]}>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Power Stats</Text>
+            <View style={styles.cardDivider} />
+            {STAT_CONFIG.map(({ key, label, color }) => (
+              <StatBar
+                key={key}
+                label={label}
+                value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
+                color={color}
+              />
+            ))}
+          </View>
+
+          {details.summary ? (
+            <View style={styles.summaryBox}>
+              <Text style={styles.summaryText}>{details.summary}</Text>
+            </View>
+          ) : null}
+
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Biography</Text>
             <View style={styles.cardDivider} />
@@ -208,7 +290,6 @@ export default function WebCharacterScreen() {
               <InfoRow label="Aliases" value={stats.biography.aliases.join(', ')} />
             )}
           </View>
-
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Appearance</Text>
             <View style={styles.cardDivider} />
@@ -219,14 +300,12 @@ export default function WebCharacterScreen() {
             <InfoRow label="Eyes" value={stats.appearance['eye-color']} />
             <InfoRow label="Hair" value={stats.appearance['hair-color']} />
           </View>
-
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Work</Text>
             <View style={styles.cardDivider} />
             <InfoRow label="Occupation" value={stats.work.occupation} />
             <InfoRow label="Base" value={stats.work.base} />
           </View>
-
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Connections</Text>
             <View style={styles.cardDivider} />
@@ -234,14 +313,14 @@ export default function WebCharacterScreen() {
             <InfoRow label="Relatives" value={stats.connections.relatives} />
           </View>
         </View>
-      </View>
+      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
-  content: { maxWidth: 960, alignSelf: 'center', width: '100%', paddingBottom: 60 },
+  content: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 60 },
   center: {
     flex: 1,
     alignItems: 'center',
@@ -250,67 +329,101 @@ const styles = StyleSheet.create({
   },
   errorText: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.red },
 
-  // Banner
-  banner: {
-    width: '100%',
+  // ── Identity header ──────────────────────────────────────────────────────────
+  identityHeader: {
     backgroundColor: COLORS.navy,
-    overflow: 'hidden',
-    justifyContent: 'space-between',
+    paddingBottom: 28,
   },
-  bannerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundImage: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(29,45,51,0.95) 100%)',
-  },
-  bannerTopRow: {
+  headerTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    zIndex: 1,
   },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: 20,
   },
   backText: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.beige },
   favBtn: {
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    padding: 8,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    padding: 9,
     borderRadius: 20,
   },
-  bannerBottom: { padding: 24, paddingBottom: 28, zIndex: 1 },
+  heroIdentity: {
+    paddingHorizontal: 24,
+  },
   heroPublisher: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
+    fontSize: 10,
     color: COLORS.orange,
     textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    marginBottom: 6,
+    letterSpacing: 2,
+    marginBottom: 8,
   },
   heroName: {
     fontFamily: 'Flame-Regular',
     color: COLORS.beige,
-    lineHeight: 54,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   heroAlias: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
-    color: 'rgba(245,235,220,0.6)',
+    color: 'rgba(245,235,220,0.45)',
   },
 
-  // Body
+  // ── Desktop two-column body ──────────────────────────────────────────────────
+  bodyDesktop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 18,
+    padding: 20,
+  },
+  leftCol: {
+    width: 280,
+    flexShrink: 0,
+    gap: 14,
+  },
+  rightCol: {
+    flex: 1,
+    gap: 16,
+  },
+
+  // Portrait card — tall enough to display a full portrait image properly
+  portraitCard: {
+    width: '100%',
+    height: 380,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+  },
+  portraitPlaceholder: {
+    flex: 1,
+    backgroundColor: COLORS.navy,
+  },
+
+  // Mobile portrait — wider proportion
+  portraitCardMobile: {
+    width: '100%',
+    height: 280,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+  },
+
+  // Mobile single-column
   body: { padding: 16, gap: 14 },
 
+  // Summary
   summaryBox: {
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 18,
+    padding: 20,
     borderWidth: 1,
     borderColor: '#e8ddd0',
   },
@@ -325,44 +438,33 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 18,
+    padding: 20,
     borderWidth: 1,
     borderColor: '#e8ddd0',
   },
   cardTitle: {
     fontFamily: 'Flame-Regular',
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.orange,
     textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 8,
+    letterSpacing: 1.5,
+    marginBottom: 10,
   },
-  cardDivider: { height: 1, backgroundColor: '#e8ddd0', marginBottom: 12 },
+  cardDivider: { height: 1, backgroundColor: '#ede5da', marginBottom: 14 },
 
-  // Stats
-  statsGrid: { flexDirection: 'column' },
-  statsGridDesktop: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  statItem: { width: '100%' },
-  statItemDesktop: { width: '50%', paddingRight: 20 },
-
-  // Info grid
-  infoGrid: {
+  // Desktop 2-col info grid
+  infoGridDesktop: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: 14,
+    gap: 16,
   },
-  infoGridMobile: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 14,
-  },
+
+  // Info rows
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    alignItems: 'flex-start',
+    paddingVertical: 7,
     borderBottomWidth: 1,
     borderBottomColor: '#f5f0ea',
   },
@@ -370,16 +472,15 @@ const styles = StyleSheet.create({
     fontFamily: 'FlameSans-Regular',
     fontSize: 12,
     color: COLORS.grey,
-    textTransform: 'capitalize',
     flexShrink: 0,
+    marginRight: 8,
   },
   infoValue: {
     fontFamily: 'Flame-Regular',
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.navy,
     textAlign: 'right',
     flex: 1,
-    marginLeft: 12,
     textTransform: 'capitalize',
   },
 });

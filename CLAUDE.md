@@ -68,7 +68,7 @@ src/
 
 supabase/
   migrations/          Version-controlled SQL migrations
-  seed.sql             34 seeded heroes
+  seed.sql             initial seed (DB now has 564 heroes; 34 have categories, ~530 are uncategorised)
 
 __tests__/             Jest tests mirroring src/ structure
 ```
