@@ -15,13 +15,13 @@ const config: ExpoConfig = {
   },
   ios: {
     supportsTablet: false,
-    bundleIdentifier: 'com.hero.app',
+    bundleIdentifier: 'com.ginoswanepoel.hero',
   },
   android: {
     adaptiveIcon: {
       backgroundColor: '#f5ebdc',
     },
-    package: 'com.hero.app',
+    package: 'com.ginoswanepoel.hero',
   },
   web: {
     bundler: 'metro',

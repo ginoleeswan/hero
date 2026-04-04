@@ -28,7 +28,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>hero</string>
-				<string>com.hero.app</string>
+				<string>com.ginoswanepoel.hero</string>
 			</array>
 		</dict>
 		<dict>
