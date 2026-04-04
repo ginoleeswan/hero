@@ -1,0 +1,61 @@
+import 'dotenv/config';
+import { ExpoConfig } from 'expo/config';
+
+const config: ExpoConfig = {
+  name: 'hero',
+  slug: 'hero',
+  scheme: 'hero',
+  version: '1.0.0',
+  orientation: 'portrait',
+  icon: './assets/icon.png',
+  userInterfaceStyle: 'automatic',
+  splash: {
+    resizeMode: 'contain',
+    backgroundColor: '#f5ebdc',
+  },
+  ios: {
+    supportsTablet: false,
+    bundleIdentifier: 'com.hero.app',
+  },
+  android: {
+    adaptiveIcon: {
+      backgroundColor: '#f5ebdc',
+    },
+    package: 'com.hero.app',
+  },
+  web: {
+    bundler: 'metro',
+    output: 'static',
+  },
+  plugins: [
+    'expo-router',
+    [
+      'expo-font',
+      {
+        fonts: [
+          './assets/fonts/FlameSans-Regular.ttf',
+          './assets/fonts/Flame-Regular.ttf',
+          './assets/fonts/Flame-Bold.ttf',
+        ],
+      },
+    ],
+    [
+      'expo-splash-screen',
+      {
+        backgroundColor: '#f5ebdc',
+        resizeMode: 'contain',
+      },
+    ],
+  ],
+  experiments: {
+    typedRoutes: true,
+  },
+  extra: {
+    supabaseUrl: process.env.SUPABASE_URL,
+    supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+    superheroApiKey: process.env.SUPERHERO_API_KEY,
+    comicvineApiKey: process.env.COMICVINE_API_KEY,
+  },
+};
+
+export default config;
