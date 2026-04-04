@@ -13,7 +13,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Progress from 'react-native-progress';
+import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import { fetchHeroStats, fetchHeroDetails, fetchFirstIssue } from '../../src/lib/api';
 import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
 import { useAuth } from '../../src/hooks/useAuth';
@@ -24,39 +24,49 @@ import type { CharacterData } from '../../src/types';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HERO_IMAGE_HEIGHT = 480;
 
-const STAT_COLORS: Record<string, string> = {
-  intelligence: COLORS.blue,
-  strength:     COLORS.red,
-  speed:        COLORS.yellow,
-  durability:   COLORS.green,
-  power:        COLORS.orange,
-  combat:       COLORS.brown,
+// Matches original: tintColor + tintColorSecondary gradient on each dial
+const STAT_CONFIG: { key: string; label: string; tint: string; secondary: string }[] = [
+  { key: 'intelligence', label: 'Intelligence', tint: COLORS.blue,   secondary: COLORS.green  },
+  { key: 'strength',     label: 'Strength',     tint: COLORS.red,    secondary: COLORS.yellow },
+  { key: 'speed',        label: 'Speed',        tint: COLORS.yellow, secondary: COLORS.orange },
+  { key: 'durability',   label: 'Durability',   tint: COLORS.green,  secondary: COLORS.blue   },
+  { key: 'power',        label: 'Power',        tint: COLORS.orange, secondary: COLORS.red    },
+  { key: 'combat',       label: 'Combat',       tint: COLORS.brown,  secondary: COLORS.navy   },
+];
+
+const PUBLISHER_LOGOS: Record<string, ReturnType<typeof require>> = {
+  'Marvel Comics': require('../../assets/images/Marvel-Logo.jpg'),
+  'Marvel':        require('../../assets/images/Marvel-Logo.jpg'),
+  'DC Comics':     require('../../assets/images/DC-Logo.png'),
 };
 
-function StatBar({ label, value }: { label: string; value: string }) {
+function StatDial({ label, value, tint, secondary }: {
+  label: string; value: string; tint: string; secondary: string;
+}) {
   const numeric = parseInt(value, 10);
-  const valid = !isNaN(numeric);
-  const color = STAT_COLORS[label] ?? COLORS.orange;
+  const fill = isNaN(numeric) ? 0 : numeric;
 
   return (
-    <View style={styles.statRow}>
-      <Text style={styles.statLabel}>{label}</Text>
-      <View style={styles.statBarContainer}>
-        {valid ? (
-          <Progress.Bar
-            progress={numeric / 100}
-            width={SCREEN_WIDTH - 140}
-            height={8}
-            color={color}
-            unfilledColor="#e0d5c8"
-            borderWidth={0}
-            borderRadius={4}
-          />
-        ) : (
-          <Text style={styles.statNull}>–</Text>
+    <View style={styles.dialWrap}>
+      <AnimatedCircularProgress
+        size={60}
+        width={10}
+        duration={1800}
+        backgroundWidth={8}
+        rotation={-124}
+        arcSweepAngle={250}
+        fill={fill}
+        tintColor={tint}
+        tintColorSecondary={secondary}
+        backgroundColor={COLORS.navy}
+        padding={0}
+        lineCap="round"
+      >
+        {(f) => (
+          <Text style={styles.dialValue}>{Math.floor(f)}</Text>
         )}
-      </View>
-      {valid && <Text style={[styles.statValue, { color }]}>{numeric}</Text>}
+      </AnimatedCircularProgress>
+      <Text style={styles.dialLabel}>{label}</Text>
     </View>
   );
 }
@@ -65,6 +75,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.divider} />
       {children}
     </View>
   );
@@ -74,7 +85,7 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
   if (!value || value === '-' || value === 'null' || value === '') return null;
   return (
     <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoLabel}>{label}:</Text>
       <Text style={styles.infoValue}>{value}</Text>
     </View>
   );
@@ -92,7 +103,6 @@ export default function CharacterScreen() {
 
   useEffect(() => {
     if (!id) return;
-
     (async () => {
       try {
         const stats = await fetchHeroStats(id);
@@ -116,15 +126,11 @@ export default function CharacterScreen() {
     if (!user || !id || favLoading) return;
     setFavLoading(true);
     const next = !favourited;
-    setFavourited(next); // optimistic
+    setFavourited(next);
     try {
-      if (next) {
-        await addFavourite(user.id, id);
-      } else {
-        await removeFavourite(user.id, id);
-      }
+      await (next ? addFavourite(user.id, id) : removeFavourite(user.id, id));
     } catch {
-      setFavourited(!next); // revert on error
+      setFavourited(!next);
     } finally {
       setFavLoading(false);
     }
@@ -135,7 +141,10 @@ export default function CharacterScreen() {
   if (error) {
     return (
       <View style={[styles.container, styles.center]}>
-        <TouchableOpacity style={[styles.backButton, { top: insets.top + 8 }]} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={[styles.backButton, { top: insets.top + 8 }]}
+          onPress={() => router.back()}
+        >
           <Ionicons name="arrow-back" size={22} color={COLORS.black} />
         </TouchableOpacity>
         <Text style={styles.errorText}>{error}</Text>
@@ -145,7 +154,7 @@ export default function CharacterScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Hero image header */}
+      {/* Hero image */}
       <View style={styles.heroImageContainer}>
         {heroImage ? (
           <Image source={heroImage} contentFit="cover" style={styles.heroImage} />
@@ -157,15 +166,12 @@ export default function CharacterScreen() {
           locations={[0.45, 0.75, 1]}
           style={StyleSheet.absoluteFill}
         />
-        {/* Back button */}
         <TouchableOpacity
           style={[styles.backButton, { top: insets.top + 8 }]}
           onPress={() => router.back()}
         >
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
-
-        {/* Favourite button */}
         {user ? (
           <TouchableOpacity
             style={[styles.favButton, { top: insets.top + 8 }]}
@@ -191,72 +197,97 @@ export default function CharacterScreen() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Name + publisher */}
+          {/* Name block */}
           <View style={styles.nameBlock}>
             <Text style={styles.heroName}>{data.stats.name}</Text>
-            {data.stats.biography['full-name'] ? (
-              <Text style={styles.heroAlias}>{data.stats.biography['full-name']}</Text>
-            ) : null}
-            <Text style={styles.heroPublisher}>{data.stats.biography.publisher}</Text>
+            <View style={styles.nameRow}>
+              {data.stats.biography['full-name'] ? (
+                <Text style={styles.heroAlias}>{data.stats.biography['full-name']}</Text>
+              ) : null}
+              {PUBLISHER_LOGOS[data.stats.biography.publisher] ? (
+                <Image
+                  source={PUBLISHER_LOGOS[data.stats.biography.publisher]}
+                  style={
+                    data.stats.biography.publisher.startsWith('DC')
+                      ? styles.logoSquare
+                      : styles.logoRect
+                  }
+                  contentFit="contain"
+                />
+              ) : (
+                <Text style={styles.heroPublisher}>{data.stats.biography.publisher}</Text>
+              )}
+            </View>
           </View>
 
-          {/* Bio summary */}
+          {/* Summary */}
           {data.details.summary ? (
-            <Section title="About">
+            <View style={styles.summaryBlock}>
               <Text style={styles.summary}>{data.details.summary}</Text>
-            </Section>
+            </View>
           ) : null}
 
-          {/* Power stats */}
+          {/* Power Stats — circular dials, 3×2 grid */}
           <Section title="Power Stats">
-            {(Object.entries(data.stats.powerstats) as [string, string][]).map(([key, val]) => (
-              <StatBar key={key} label={key} value={val} />
-            ))}
-          </Section>
-
-          {/* Appearance */}
-          <Section title="Appearance">
-            <InfoRow label="Gender" value={data.stats.appearance.gender} />
-            <InfoRow label="Race" value={data.stats.appearance.race} />
-            <InfoRow label="Height" value={data.stats.appearance.height.join(' / ')} />
-            <InfoRow label="Weight" value={data.stats.appearance.weight.join(' / ')} />
-            <InfoRow label="Eyes" value={data.stats.appearance['eye-color']} />
-            <InfoRow label="Hair" value={data.stats.appearance['hair-color']} />
+            <View style={styles.statsGrid}>
+              {STAT_CONFIG.map(({ key, label, tint, secondary }) => (
+                <StatDial
+                  key={key}
+                  label={label}
+                  value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
+                  tint={tint}
+                  secondary={secondary}
+                />
+              ))}
+            </View>
           </Section>
 
           {/* Biography */}
           <Section title="Biography">
-            <InfoRow label="Alter egos" value={data.stats.biography['alter-egos']} />
-            <InfoRow label="Place of birth" value={data.stats.biography['place-of-birth']} />
+            <InfoRow label="Full name"        value={data.stats.biography['full-name']} />
+            <InfoRow label="Alter egos"       value={data.stats.biography['alter-egos']} />
+            <InfoRow label="Place of birth"   value={data.stats.biography['place-of-birth']} />
             <InfoRow label="First appearance" value={data.stats.biography['first-appearance']} />
-            <InfoRow label="Alignment" value={data.stats.biography.alignment} />
-            {data.stats.biography.aliases.length > 0 && (
+            <InfoRow label="Alignment"        value={data.stats.biography.alignment} />
+            {data.stats.biography.aliases.filter(a => a && a !== '-').length > 0 && (
               <InfoRow label="Aliases" value={data.stats.biography.aliases.join(', ')} />
             )}
-          </Section>
-
-          {/* Work */}
-          <Section title="Work">
-            <InfoRow label="Occupation" value={data.stats.work.occupation} />
-            <InfoRow label="Base" value={data.stats.work.base} />
-          </Section>
-
-          {/* Connections */}
-          <Section title="Connections">
-            <InfoRow label="Group affiliation" value={data.stats.connections['group-affiliation']} />
-            <InfoRow label="Relatives" value={data.stats.connections.relatives} />
           </Section>
 
           {/* First issue */}
           {data.firstIssue?.imageUrl ? (
             <Section title="First Appearance">
-              <Image
-                source={{ uri: data.firstIssue.imageUrl }}
-                contentFit="cover"
-                style={styles.issueImage}
-              />
+              <View style={styles.comicContainer}>
+                <Image
+                  source={{ uri: data.firstIssue.imageUrl }}
+                  contentFit="contain"
+                  style={styles.comicImage}
+                />
+              </View>
             </Section>
           ) : null}
+
+          {/* Appearance */}
+          <Section title="Appearance">
+            <InfoRow label="Gender" value={data.stats.appearance.gender} />
+            <InfoRow label="Race"   value={data.stats.appearance.race} />
+            <InfoRow label="Height" value={data.stats.appearance.height.join(' / ')} />
+            <InfoRow label="Weight" value={data.stats.appearance.weight.join(' / ')} />
+            <InfoRow label="Eyes"   value={data.stats.appearance['eye-color']} />
+            <InfoRow label="Hair"   value={data.stats.appearance['hair-color']} />
+          </Section>
+
+          {/* Work */}
+          <Section title="Work">
+            <InfoRow label="Occupation" value={data.stats.work.occupation} />
+            <InfoRow label="Base"       value={data.stats.work.base} />
+          </Section>
+
+          {/* Connections */}
+          <Section title="Connections">
+            <InfoRow label="Group affiliation" value={data.stats.connections['group-affiliation']} />
+            <InfoRow label="Relatives"         value={data.stats.connections.relatives} />
+          </Section>
         </ScrollView>
       )}
     </View>
@@ -264,146 +295,89 @@ export default function CharacterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.beige,
-  },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroImageContainer: {
-    width: SCREEN_WIDTH,
-    height: HERO_IMAGE_HEIGHT,
-    position: 'absolute',
-    top: 0,
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-  },
+  container:    { flex: 1, backgroundColor: COLORS.beige },
+  center:       { alignItems: 'center', justifyContent: 'center' },
+  heroImageContainer: { width: SCREEN_WIDTH, height: HERO_IMAGE_HEIGHT, position: 'absolute', top: 0 },
+  heroImage:    { width: '100%', height: '100%' },
   backButton: {
-    position: 'absolute',
-    left: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    position: 'absolute', left: 16,
+    width: 40, height: 40, borderRadius: 20,
     backgroundColor: 'rgba(0,0,0,0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
   favButton: {
-    position: 'absolute',
-    right: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    position: 'absolute', right: 16,
+    width: 40, height: 40, borderRadius: 20,
     backgroundColor: 'rgba(0,0,0,0.35)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
-  scroll: {
-    flex: 1,
-    marginTop: HERO_IMAGE_HEIGHT - 60,
-  },
-  loadingOverlay: {
-    marginTop: HERO_IMAGE_HEIGHT + 40,
-    alignItems: 'center',
-  },
-  nameBlock: {
-    paddingHorizontal: 20,
-    paddingBottom: 8,
-  },
+  scroll:        { flex: 1, marginTop: HERO_IMAGE_HEIGHT - 60 },
+  loadingOverlay:{ marginTop: HERO_IMAGE_HEIGHT + 40, alignItems: 'center' },
+
+  // Name block
+  nameBlock:  { paddingHorizontal: 20, paddingBottom: 4 },
   heroName: {
-    fontFamily: 'Flame-Bold',
-    fontSize: 36,
-    color: COLORS.black,
+    fontFamily: 'Righteous_400Regular',
+    fontSize: 35,
+    color: COLORS.navy,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
   },
   heroAlias: {
-    fontFamily: 'FlameSans-Regular',
+    fontFamily: 'Flame-Regular',
     fontSize: 15,
-    color: COLORS.grey,
-    marginTop: 2,
+    color: COLORS.navy,
+    flex: 1,
+    marginRight: 8,
   },
   heroPublisher: {
     fontFamily: 'FlameSans-Regular',
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.orange,
-    marginTop: 4,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  section: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 4,
-  },
-  sectionTitle: {
-    fontFamily: 'Flame-Bold',
-    fontSize: 18,
-    color: COLORS.black,
-    marginBottom: 12,
-  },
+  logoRect:   { width: 50, height: 30, borderRadius: 4 },
+  logoSquare: { width: 30, height: 30, borderRadius: 4 },
+
+  // Summary
+  summaryBlock: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
   summary: {
     fontFamily: 'FlameSans-Regular',
-    fontSize: 15,
-    color: COLORS.navy,
-    lineHeight: 22,
-  },
-  statRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  statLabel: {
-    fontFamily: 'FlameSans-Regular',
     fontSize: 12,
-    color: COLORS.grey,
-    width: 90,
-    textTransform: 'capitalize',
-  },
-  statBarContainer: {
-    flex: 1,
-  },
-  statValue: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    width: 32,
-    textAlign: 'right',
-  },
-  statNull: {
-    fontFamily: 'FlameSans-Regular',
-    color: COLORS.grey,
-    fontSize: 13,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    paddingVertical: 6,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e0d5c8',
-  },
-  infoLabel: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 13,
-    color: COLORS.grey,
-    width: 120,
-  },
-  infoValue: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 13,
     color: COLORS.navy,
-    flex: 1,
+    lineHeight: 18,
   },
-  issueImage: {
-    width: 160,
-    height: 240,
-    borderRadius: 8,
+
+  // Sections
+  section:      { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
+  sectionTitle: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.navy, textAlign: 'right', paddingVertical: 5 },
+  divider:      { height: 2, backgroundColor: COLORS.navy, borderRadius: 30, marginBottom: 14 },
+
+  // Circular stat dials
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  errorText: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 15,
-    color: COLORS.red,
-    textAlign: 'center',
-    paddingHorizontal: 32,
-  },
+  dialWrap:  { alignItems: 'center', justifyContent: 'center', padding: 5 },
+  dialValue: { fontFamily: 'Flame-Regular', fontSize: 13, color: COLORS.navy, left: 1 },
+  dialLabel: { fontFamily: 'Flame-Regular', fontSize: 10, color: COLORS.navy, marginTop: -10 },
+
+  // Info rows
+  infoRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 5 },
+  infoLabel: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.navy, textTransform: 'capitalize' },
+  infoValue: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.navy, textTransform: 'capitalize', flex: 1, textAlign: 'right' },
+
+  // First issue
+  comicContainer: { width: '100%', alignItems: 'center', marginVertical: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.39, shadowRadius: 8.3, elevation: 13 },
+  comicImage:     { width: 160, height: 240 },
+
+  errorText: { fontFamily: 'FlameSans-Regular', fontSize: 15, color: COLORS.red, textAlign: 'center', paddingHorizontal: 32 },
 });
