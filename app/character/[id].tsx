@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
+import * as Haptics from 'expo-haptics';
 import { fetchHeroStats, fetchHeroDetails, fetchFirstIssue } from '../../src/lib/api';
 import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
 import { useAuth } from '../../src/hooks/useAuth';
@@ -97,6 +98,7 @@ export default function CharacterScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [data, setData] = useState<CharacterData | null>(null);
+  const [comicVineLoading, setComicVineLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [favourited, setFavourited] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
@@ -117,7 +119,8 @@ export default function CharacterScreen() {
               : null;
             setData({ stats, details, firstIssue });
           })
-          .catch(() => {}); // ComicVine failing is non-fatal — stats are already showing
+          .catch(() => {})
+          .finally(() => setComicVineLoading(false));
       })
       .catch((e: unknown) => {
         setError(e instanceof Error ? e.message : 'Failed to load character');
@@ -134,10 +137,14 @@ export default function CharacterScreen() {
     setFavLoading(true);
     const next = !favourited;
     setFavourited(next);
+    Haptics.impactAsync(
+      next ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light,
+    );
     try {
       await (next ? addFavourite(user.id, id) : removeFavourite(user.id, id));
     } catch {
       setFavourited(!next);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setFavLoading(false);
     }
@@ -227,8 +234,12 @@ export default function CharacterScreen() {
             </View>
           </View>
 
-          {/* Summary */}
-          {data.details.summary ? (
+          {/* Summary — shows spinner while ComicVine is loading */}
+          {comicVineLoading ? (
+            <View style={styles.summaryBlock}>
+              <ActivityIndicator size="small" color={COLORS.grey} />
+            </View>
+          ) : data.details.summary ? (
             <View style={styles.summaryBlock}>
               <Text style={styles.summary}>{data.details.summary}</Text>
             </View>

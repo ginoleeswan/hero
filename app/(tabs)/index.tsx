@@ -6,6 +6,7 @@ import {
   ScrollView,
   FlatList,
   ActivityIndicator,
+  RefreshControl,
   Dimensions,
   Platform,
   Animated,
@@ -13,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { getHeroesByCategory, type Hero, type HeroesByCategory } from '../../src/lib/db/heroes';
 import { HeroCard } from '../../src/components/HeroCard';
 import { COLORS } from '../../src/constants/colors';
@@ -85,15 +87,27 @@ export default function DiscoverScreen() {
   const router = useRouter();
   const [heroes, setHeroes] = useState<HeroesByCategory | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    getHeroesByCategory()
+  const load = useCallback(() => {
+    return getHeroesByCategory()
       .then(setHeroes)
       .catch((e) => setError(e.message ?? 'Failed to load heroes'));
   }, []);
 
+  useEffect(() => { load(); }, [load]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
+
   const handlePress = useCallback(
-    (hero: Hero) => router.push(`/character/${hero.id}`),
+    (hero: Hero) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      router.push(`/character/${hero.id}`);
+    },
     [router],
   );
 
@@ -119,7 +133,18 @@ export default function DiscoverScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.orange}
+            colors={[COLORS.orange]}
+          />
+        }
+      >
 
         {/* Header — top right, matches original */}
         <View style={styles.header}>

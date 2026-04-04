@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
 
 const ALL_HEROES_URL =
@@ -32,6 +33,7 @@ export default function SearchScreen() {
   const [allHeroes, setAllHeroes] = useState<CdnHero[]>([]);
   const [query, setQuery] = useState('');
   const [loadingList, setLoadingList] = useState(true);
+  const [navigatingId, setNavigatingId] = useState<number | null>(null);
 
   useEffect(() => {
     fetch(ALL_HEROES_URL)
@@ -48,8 +50,16 @@ export default function SearchScreen() {
       );
 
   const handlePress = useCallback(
-    (id: number) => router.push(`/character/${id}`),
-    [router],
+    (id: number) => {
+      if (navigatingId) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setNavigatingId(id);
+      inputRef.current?.blur();
+      router.push(`/character/${id}`);
+      // Reset after navigation so the list is tappable again on back
+      setTimeout(() => setNavigatingId(null), 1000);
+    },
+    [router, navigatingId],
   );
 
   const clearQuery = () => {
@@ -100,28 +110,36 @@ export default function SearchScreen() {
             data={results}
             keyExtractor={(h) => String(h.id)}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             contentContainerStyle={styles.list}
             ItemSeparatorComponent={() => <View style={styles.separator} />}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.row}
-                onPress={() => handlePress(item.id)}
-                activeOpacity={0.7}
-              >
-                <Image
-                  source={{ uri: item.images.md }}
-                  style={styles.avatar}
-                  contentFit="cover"
-                />
-                <View style={styles.rowText}>
-                  <Text style={styles.heroName}>{item.name}</Text>
-                  {item.biography.publisher ? (
-                    <Text style={styles.publisher}>{item.biography.publisher}</Text>
-                  ) : null}
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={COLORS.grey} />
-              </TouchableOpacity>
-            )}
+            renderItem={({ item }) => {
+              const isNavigating = navigatingId === item.id;
+              return (
+                <TouchableOpacity
+                  style={styles.row}
+                  onPress={() => handlePress(item.id)}
+                  activeOpacity={0.7}
+                  disabled={!!navigatingId}
+                >
+                  <Image
+                    source={{ uri: item.images.md }}
+                    style={styles.avatar}
+                    contentFit="cover"
+                  />
+                  <View style={styles.rowText}>
+                    <Text style={styles.heroName}>{item.name}</Text>
+                    {item.biography.publisher ? (
+                      <Text style={styles.publisher}>{item.biography.publisher}</Text>
+                    ) : null}
+                  </View>
+                  {isNavigating
+                    ? <ActivityIndicator size="small" color={COLORS.orange} />
+                    : <Ionicons name="chevron-forward" size={16} color={COLORS.grey} />
+                  }
+                </TouchableOpacity>
+              );
+            }}
             ListEmptyComponent={
               <View style={styles.center}>
                 <Text style={styles.emptyText}>No heroes found</Text>
