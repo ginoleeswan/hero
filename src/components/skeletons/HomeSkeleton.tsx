@@ -9,14 +9,7 @@ const CARD_GAP = 12;
 const CARDS_PER_ROW = 3;
 
 function HeroCardSkeleton() {
-  return (
-    <Skeleton
-      width={CARD_WIDTH}
-      height={CARD_HEIGHT}
-      borderRadius={36}
-      style={styles.card}
-    />
-  );
+  return <Skeleton width={CARD_WIDTH} height={CARD_HEIGHT} borderRadius={36} style={styles.card} />;
 }
 
 function SectionSkeleton() {
@@ -46,18 +39,18 @@ function SectionSkeleton() {
 export function HomeSkeleton() {
   return (
     <SkeletonProvider>
-    <View>
-      {/* Header */}
-      <View style={styles.header}>
-        <Skeleton width="28%" height={38} borderRadius={8} />
-        <Skeleton width="50%" height={8} borderRadius={4} style={styles.headerSubtitle} />
-      </View>
+      <View>
+        {/* Header */}
+        <View style={styles.header}>
+          <Skeleton width="28%" height={38} borderRadius={8} />
+          <Skeleton width="50%" height={8} borderRadius={4} style={styles.headerSubtitle} />
+        </View>
 
-      {/* 3 sections */}
-      <SectionSkeleton />
-      <SectionSkeleton />
-      <SectionSkeleton />
-    </View>
+        {/* 3 sections */}
+        <SectionSkeleton />
+        <SectionSkeleton />
+        <SectionSkeleton />
+      </View>
     </SkeletonProvider>
   );
 }

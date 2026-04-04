@@ -189,16 +189,16 @@ export default function DiscoverScreen() {
           <HomeSkeleton />
         ) : (
           <>
-        {/* Sections */}
-        {SECTIONS.map(({ key, label, icon }, i) => (
-          <View key={key} style={[styles.section, i === 0 && styles.firstSection]}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{label}</Text>
-              <Ionicons name={icon} size={26} color={COLORS.navy} style={styles.sectionIcon} />
-            </View>
-            <HeroRow heroes={heroes[key]} onPress={handlePress} />
-          </View>
-        ))}
+            {/* Sections */}
+            {SECTIONS.map(({ key, label, icon }, i) => (
+              <View key={key} style={[styles.section, i === 0 && styles.firstSection]}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>{label}</Text>
+                  <Ionicons name={icon} size={26} color={COLORS.navy} style={styles.sectionIcon} />
+                </View>
+                <HeroRow heroes={heroes[key]} onPress={handlePress} />
+              </View>
+            ))}
           </>
         )}
       </Animated.ScrollView>

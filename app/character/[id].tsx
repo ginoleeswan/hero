@@ -82,7 +82,11 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
 }
 
 export default function CharacterScreen() {
-  const { id, name: paramName, imageUri: paramImageUri } = useLocalSearchParams<{
+  const {
+    id,
+    name: paramName,
+    imageUri: paramImageUri,
+  } = useLocalSearchParams<{
     id: string;
     name?: string;
     imageUri?: string;

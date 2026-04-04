@@ -184,7 +184,11 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
             >
               {signingOut ? (
-                <ActivityIndicator size="small" color={COLORS.red} style={styles.signingOutIndicator} />
+                <ActivityIndicator
+                  size="small"
+                  color={COLORS.red}
+                  style={styles.signingOutIndicator}
+                />
               ) : (
                 <View style={[styles.accountIconBadge, styles.accountIconBadgeRed]}>
                   <Ionicons name="log-out-outline" size={16} color={COLORS.red} />

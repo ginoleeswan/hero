@@ -37,9 +37,7 @@ export async function getUserFavouriteHeroes(userId: string): Promise<FavouriteH
     .order('created_at', { ascending: false });
   if (favError) throw favError;
 
-  const heroIds = (favData ?? [])
-    .map((r) => r.hero_id)
-    .filter((id): id is string => id !== null);
+  const heroIds = (favData ?? []).map((r) => r.hero_id).filter((id): id is string => id !== null);
   if (heroIds.length === 0) return [];
 
   const { data: heroData, error: heroError } = await supabase
