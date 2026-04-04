@@ -72,6 +72,9 @@
     ],
     "setupFilesAfterEnv": [
       "@testing-library/jest-native/extend-expect"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^react-native-reanimated/mock$": "<rootDir>/__mocks__/react-native-reanimated-mock-shim.js"
+    }
   }
 }
