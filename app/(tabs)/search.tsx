@@ -184,9 +184,7 @@ export default function SearchScreen() {
         </ScrollView>
 
         {/* Result count */}
-        {!loadingList && !error && (
-          <Text style={styles.resultCount}>{resultLabel}</Text>
-        )}
+        {!loadingList && !error && <Text style={styles.resultCount}>{resultLabel}</Text>}
 
         {/* Results */}
         {loadingList ? (

@@ -36,13 +36,7 @@ export function Skeleton({ width = '100%', height, borderRadius = 8, style }: Sk
   }));
 
   return (
-    <View
-      style={[
-        styles.container,
-        { width, height, borderRadius, overflow: 'hidden' },
-        style,
-      ]}
-    >
+    <View style={[styles.container, { width, height, borderRadius, overflow: 'hidden' }, style]}>
       <Animated.View style={[StyleSheet.absoluteFill, animatedStyle]}>
         <LinearGradient
           colors={[BASE_COLOR, BASE_COLOR, HIGHLIGHT_COLOR, BASE_COLOR, BASE_COLOR]}

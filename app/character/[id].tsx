@@ -1,12 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import {
-  View,
-  Text,
-  Animated,
-  StyleSheet,
-  TouchableOpacity,
-  Dimensions,
-} from 'react-native';
+import { View, Text, Animated, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -325,106 +318,106 @@ export default function CharacterScreen() {
           <CharacterSkeleton />
         ) : (
           <>
-          {/* Name block */}
-          <View style={styles.nameBlock}>
-            <Text style={styles.heroName}>{data.stats.name}</Text>
-            <View style={styles.nameRow}>
-              {data.stats.biography['full-name'] ? (
-                <Text style={styles.heroAlias}>{data.stats.biography['full-name']}</Text>
-              ) : null}
-              {PUBLISHER_LOGOS[data.stats.biography.publisher] ? (
-                <Image
-                  source={PUBLISHER_LOGOS[data.stats.biography.publisher]}
-                  style={
-                    data.stats.biography.publisher.startsWith('DC')
-                      ? styles.logoSquare
-                      : styles.logoRect
-                  }
-                  contentFit="contain"
-                />
-              ) : (
-                <Text style={styles.heroPublisher}>{data.stats.biography.publisher}</Text>
-              )}
+            {/* Name block */}
+            <View style={styles.nameBlock}>
+              <Text style={styles.heroName}>{data.stats.name}</Text>
+              <View style={styles.nameRow}>
+                {data.stats.biography['full-name'] ? (
+                  <Text style={styles.heroAlias}>{data.stats.biography['full-name']}</Text>
+                ) : null}
+                {PUBLISHER_LOGOS[data.stats.biography.publisher] ? (
+                  <Image
+                    source={PUBLISHER_LOGOS[data.stats.biography.publisher]}
+                    style={
+                      data.stats.biography.publisher.startsWith('DC')
+                        ? styles.logoSquare
+                        : styles.logoRect
+                    }
+                    contentFit="contain"
+                  />
+                ) : (
+                  <Text style={styles.heroPublisher}>{data.stats.biography.publisher}</Text>
+                )}
+              </View>
+              <View style={styles.nameDivider} />
             </View>
-            <View style={styles.nameDivider} />
-          </View>
 
-          {/* Summary — shows skeleton lines while ComicVine is loading */}
-          {comicVineLoading ? (
-            <View style={styles.summaryBlock}>
-              <Skeleton width="100%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
-              <Skeleton width="88%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
-              <Skeleton width="65%" height={12} borderRadius={5} />
-            </View>
-          ) : data.details.summary ? (
-            <View style={styles.summaryBlock}>
-              <Text style={styles.summary}>{data.details.summary}</Text>
-            </View>
-          ) : null}
+            {/* Summary — shows skeleton lines while ComicVine is loading */}
+            {comicVineLoading ? (
+              <View style={styles.summaryBlock}>
+                <Skeleton width="100%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
+                <Skeleton width="88%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
+                <Skeleton width="65%" height={12} borderRadius={5} />
+              </View>
+            ) : data.details.summary ? (
+              <View style={styles.summaryBlock}>
+                <Text style={styles.summary}>{data.details.summary}</Text>
+              </View>
+            ) : null}
 
-          {/* Power Stats — circular dials, 3×2 grid */}
-          <Section title="Power Stats">
-            <View style={styles.statsGrid}>
-              {STAT_CONFIG.map(({ key, label, tint }) => (
-                <StatDial
-                  key={key}
-                  label={label}
-                  value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
-                  tint={tint}
-                />
-              ))}
-            </View>
-          </Section>
-
-          {/* Biography */}
-          <Section title="Biography">
-            <InfoRow label="Full name" value={data.stats.biography['full-name']} />
-            <InfoRow label="Alter egos" value={data.stats.biography['alter-egos']} />
-            <InfoRow label="Place of birth" value={data.stats.biography['place-of-birth']} />
-            <InfoRow label="First appearance" value={data.stats.biography['first-appearance']} />
-            <InfoRow label="Alignment" value={data.stats.biography.alignment} />
-            {data.stats.biography.aliases.filter((a) => a && a !== '-').length > 0 && (
-              <InfoRow label="Aliases" value={data.stats.biography.aliases.join(', ')} />
-            )}
-          </Section>
-
-          {/* First issue */}
-          {data.firstIssue?.imageUrl ? (
-            <Section title="First Appearance">
-              <View style={styles.comicContainer}>
-                <Image
-                  source={{ uri: data.firstIssue.imageUrl }}
-                  contentFit="contain"
-                  style={styles.comicImage}
-                />
+            {/* Power Stats — circular dials, 3×2 grid */}
+            <Section title="Power Stats">
+              <View style={styles.statsGrid}>
+                {STAT_CONFIG.map(({ key, label, tint }) => (
+                  <StatDial
+                    key={key}
+                    label={label}
+                    value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
+                    tint={tint}
+                  />
+                ))}
               </View>
             </Section>
-          ) : null}
 
-          {/* Appearance */}
-          <Section title="Appearance">
-            <InfoRow label="Gender" value={data.stats.appearance.gender} />
-            <InfoRow label="Race" value={data.stats.appearance.race} />
-            <InfoRow label="Height" value={data.stats.appearance.height.join(' / ')} />
-            <InfoRow label="Weight" value={data.stats.appearance.weight.join(' / ')} />
-            <InfoRow label="Eyes" value={data.stats.appearance['eye-color']} />
-            <InfoRow label="Hair" value={data.stats.appearance['hair-color']} />
-          </Section>
+            {/* Biography */}
+            <Section title="Biography">
+              <InfoRow label="Full name" value={data.stats.biography['full-name']} />
+              <InfoRow label="Alter egos" value={data.stats.biography['alter-egos']} />
+              <InfoRow label="Place of birth" value={data.stats.biography['place-of-birth']} />
+              <InfoRow label="First appearance" value={data.stats.biography['first-appearance']} />
+              <InfoRow label="Alignment" value={data.stats.biography.alignment} />
+              {data.stats.biography.aliases.filter((a) => a && a !== '-').length > 0 && (
+                <InfoRow label="Aliases" value={data.stats.biography.aliases.join(', ')} />
+              )}
+            </Section>
 
-          {/* Work */}
-          <Section title="Work">
-            <InfoRow label="Occupation" value={data.stats.work.occupation} />
-            <InfoRow label="Base" value={data.stats.work.base} />
-          </Section>
+            {/* First issue */}
+            {data.firstIssue?.imageUrl ? (
+              <Section title="First Appearance">
+                <View style={styles.comicContainer}>
+                  <Image
+                    source={{ uri: data.firstIssue.imageUrl }}
+                    contentFit="contain"
+                    style={styles.comicImage}
+                  />
+                </View>
+              </Section>
+            ) : null}
 
-          {/* Connections */}
-          <Section title="Connections">
-            <InfoRow
-              label="Group affiliation"
-              value={data.stats.connections['group-affiliation']}
-            />
-            <InfoRow label="Relatives" value={data.stats.connections.relatives} />
-          </Section>
+            {/* Appearance */}
+            <Section title="Appearance">
+              <InfoRow label="Gender" value={data.stats.appearance.gender} />
+              <InfoRow label="Race" value={data.stats.appearance.race} />
+              <InfoRow label="Height" value={data.stats.appearance.height.join(' / ')} />
+              <InfoRow label="Weight" value={data.stats.appearance.weight.join(' / ')} />
+              <InfoRow label="Eyes" value={data.stats.appearance['eye-color']} />
+              <InfoRow label="Hair" value={data.stats.appearance['hair-color']} />
+            </Section>
+
+            {/* Work */}
+            <Section title="Work">
+              <InfoRow label="Occupation" value={data.stats.work.occupation} />
+              <InfoRow label="Base" value={data.stats.work.base} />
+            </Section>
+
+            {/* Connections */}
+            <Section title="Connections">
+              <InfoRow
+                label="Group affiliation"
+                value={data.stats.connections['group-affiliation']}
+              />
+              <InfoRow label="Relatives" value={data.stats.connections.relatives} />
+            </Section>
           </>
         )}
       </Animated.ScrollView>
