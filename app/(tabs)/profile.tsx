@@ -9,7 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import Svg, { Defs, Pattern, Circle, Rect, Path } from 'react-native-svg';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SquircleMask } from '../../src/components/ui/SquircleMask';
@@ -51,6 +51,7 @@ function FavouriteThumb({ hero, onPress }: { hero: FavouriteHero; onPress: () =>
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,7 +74,7 @@ export default function ProfileScreen() {
   const name = username(email);
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
@@ -85,7 +86,7 @@ export default function ProfileScreen() {
           colors={['#293C43', '#3d5a66']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.cover}
+          style={[styles.cover, { height: 140 + insets.top }]}
         >
           <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
             <Defs>
@@ -196,7 +197,7 @@ export default function ProfileScreen() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
