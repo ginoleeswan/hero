@@ -123,6 +123,8 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        <View style={styles.hairline} />
+
         {/* My Favourites */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -278,8 +280,17 @@ const styles = StyleSheet.create({
     color: COLORS.orange,
   },
 
+  // Hairline
+  hairline: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#e8ddd0',
+    marginHorizontal: 16,
+    marginBottom: 20,
+  },
+
   // Favourites
   section: {
+    paddingHorizontal: 16,
     marginBottom: 24,
   },
   sectionHeader: {
@@ -356,6 +367,7 @@ const styles = StyleSheet.create({
 
   // Account section
   accountSection: {
+    paddingHorizontal: 16,
     marginBottom: 8,
   },
   accountSectionTitle: {
