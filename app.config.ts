@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { ExpoConfig } from 'expo/config';
+import type { ExpoConfig } from 'expo/config';
 
 const config: ExpoConfig = {
   name: 'hero',
@@ -29,6 +29,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     'expo-router',
+    'expo-image',
     [
       'expo-font',
       {
