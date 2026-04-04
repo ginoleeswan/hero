@@ -9,11 +9,12 @@ interface HeroCardProps {
   id: string;
   name: string;
   imageUrl: string | null;
+  portraitUrl?: string | null;
   onPress: () => void;
 }
 
-export function HeroCard({ id, name, imageUrl, onPress }: HeroCardProps) {
-  const imageSource = heroImageSource(id, imageUrl);
+export function HeroCard({ id, name, imageUrl, portraitUrl, onPress }: HeroCardProps) {
+  const imageSource = heroImageSource(id, imageUrl, portraitUrl);
 
   return (
     <View style={styles.card}>
