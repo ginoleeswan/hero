@@ -103,18 +103,25 @@ export default function CharacterScreen() {
 
   useEffect(() => {
     if (!id) return;
-    (async () => {
-      try {
-        const stats = await fetchHeroStats(id);
-        const details = await fetchHeroDetails(stats.name);
-        const firstIssue = details.firstIssueId
-          ? await fetchFirstIssue(details.firstIssueId).catch(() => null)
-          : null;
-        setData({ stats, details, firstIssue });
-      } catch (e: unknown) {
+
+    // Step 1 — fetch stats from SuperheroAPI (fast). Render immediately.
+    fetchHeroStats(id)
+      .then((stats) => {
+        setData({ stats, details: { summary: null, publisher: null, firstIssueId: null }, firstIssue: null });
+
+        // Step 2 — fetch ComicVine data in the background, update when ready.
+        fetchHeroDetails(stats.name)
+          .then(async (details) => {
+            const firstIssue = details.firstIssueId
+              ? await fetchFirstIssue(details.firstIssueId).catch(() => null)
+              : null;
+            setData({ stats, details, firstIssue });
+          })
+          .catch(() => {}); // ComicVine failing is non-fatal — stats are already showing
+      })
+      .catch((e: unknown) => {
         setError(e instanceof Error ? e.message : 'Failed to load character');
-      }
-    })();
+      });
   }, [id]);
 
   useEffect(() => {
