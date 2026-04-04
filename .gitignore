@@ -1,5 +1,8 @@
 node_modules/
 .expo/
+.worktrees/
+.env.local
+.env*.local
 npm-debug.*
 *.jks
 *.p8
