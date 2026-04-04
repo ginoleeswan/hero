@@ -13,7 +13,6 @@ import { useAuth } from '../../src/hooks/useAuth';
 import { heroImageSource, HERO_IMAGES } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
 import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkeleton';
-import { HeartButton } from '../../src/components/HeartButton';
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import type { CharacterData } from '../../src/types';
@@ -269,6 +268,22 @@ export default function CharacterScreen() {
               <Ionicons name="arrow-back" size={22} />
             </TouchableOpacity>
           ),
+          headerRight: user
+            ? () => (
+                <TouchableOpacity
+                  onPress={toggleFavourite}
+                  disabled={favLoading}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={styles.headerBtn}
+                >
+                  <Ionicons
+                    name={favourited ? 'heart' : 'heart-outline'}
+                    size={22}
+                    color={favourited ? COLORS.red : undefined}
+                  />
+                </TouchableOpacity>
+              )
+            : undefined,
         }}
       />
 
@@ -435,15 +450,6 @@ export default function CharacterScreen() {
           </>
         )}
       </Animated.ScrollView>
-      {user && (
-        <View style={[styles.heartButtonContainer, { top: insets.top - 8 }]}>
-          <HeartButton
-            favourited={favourited}
-            loading={favLoading}
-            onPress={toggleFavourite}
-          />
-        </View>
-      )}
     </View>
   );
 }
@@ -570,11 +576,6 @@ const styles = StyleSheet.create({
     elevation: 13,
   },
   comicImage: { width: 160, height: 240 },
-
-  heartButtonContainer: {
-    position: 'absolute',
-    right: 12,
-  },
   errorText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 15,

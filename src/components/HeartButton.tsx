@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { TouchableOpacity, StyleSheet, View } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -67,6 +67,7 @@ function AnimatedDot({
 }
 
 export function HeartButton({ favourited, loading, onPress }: HeartButtonProps) {
+  const userPressedRef = useRef(false);
   const heartScale = useSharedValue(1);
 
   const ringScale = useSharedValue(0);
@@ -89,7 +90,15 @@ export function HeartButton({ favourited, loading, onPress }: HeartButtonProps) 
     { x: d5x, y: d5y, o: d5o },
   ];
 
+  const handlePress = useCallback(() => {
+    userPressedRef.current = true;
+    onPress();
+  }, [onPress]);
+
   useEffect(() => {
+    if (!userPressedRef.current) return;
+    userPressedRef.current = false;
+
     if (favourited) {
       // Heart pop: scale up then settle
       heartScale.value = withSequence(
@@ -151,7 +160,7 @@ export function HeartButton({ favourited, loading, onPress }: HeartButtonProps) 
 
       <TouchableOpacity
         testID="heart-button"
-        onPress={onPress}
+        onPress={handlePress}
         disabled={loading}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         style={styles.button}
