@@ -74,7 +74,12 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+        automaticallyAdjustContentInsets={false}
+        contentInsetAdjustmentBehavior="never"
+      >
         {/* Cover banner */}
         <LinearGradient
           colors={['#293C43', '#3d5a66']}
@@ -90,9 +95,11 @@ export default function ProfileScreen() {
             </Defs>
             <Rect width="100%" height="100%" fill="url(#dots)" />
           </Svg>
-          <Svg style={styles.coverLogo} width={48} height={48} viewBox="0 0 1024 1024">
-            <Path fill="#ECECDE" d={HERO_LOGO_PATH} />
-          </Svg>
+          <View style={styles.coverLogo}>
+            <Svg width={48} height={48} viewBox="0 0 1024 1024">
+              <Path fill="#ECECDE" d={HERO_LOGO_PATH} />
+            </Svg>
+          </View>
         </LinearGradient>
 
         {/* Avatar overlap */}
@@ -211,7 +218,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: -4,
     right: 8,
-    opacity: 0.10,
+    opacity: 0.18,
   },
 
   // Avatar
