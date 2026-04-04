@@ -9,14 +9,16 @@ import {
 //
 // Supabase's query builder is "thenable" — it can be both chained and awaited.
 // We replicate this by adding a `then` method to the chain object so that
-// `await q` resolves with whatever `resolveWith` was set to last.
+// `await q` resolves with whatever `mockResolveWith` was set to last.
 //
-// Note: babel-preset-expo does not hoist `const mock*` variables into the
-// jest.mock factory scope, so we build the mock inline and expose it through
-// the mock module itself, then retrieve it via jest.requireMock().
+// Note: babel-preset-expo does not hoist `const mock*` variables declared
+// outside the factory, so we build the mock inline and expose internals
+// via the returned module object. Variables accessed inside the factory must
+// either be prefixed with `mock` or be built-ins — hence `mockResolveWith`.
 //
 
-let resolveWith: { data: unknown; error: unknown } = { data: null, error: null };
+// eslint-disable-next-line prefer-const
+let mockResolveWith: { data: unknown; error: unknown } = { data: null, error: null };
 
 jest.mock('../../../src/lib/supabase', () => {
   const chainMethods = ['select', 'eq', 'ilike', 'not', 'order', 'limit', 'single'];
@@ -25,34 +27,34 @@ jest.mock('../../../src/lib/supabase', () => {
     chain[m] = jest.fn().mockReturnValue(chain);
   });
 
-  // then() makes the whole chain awaitable (used by searchHeroes)
+  // then() makes the whole chain awaitable (used by searchHeroes).
+  // References `mockResolveWith` — allowed because it starts with "mock".
   chain.then = (resolve: (v: unknown) => unknown) =>
-    Promise.resolve(resolveWith).then(resolve);
+    Promise.resolve(mockResolveWith).then(resolve);
 
   const mockFrom = jest.fn().mockReturnValue(chain);
 
   return {
     supabase: { from: mockFrom },
-    // Expose internals for test setup
+    // Expose internals so tests can reset mocks without re-building
     __chain: chain,
     __mockFrom: mockFrom,
   };
 });
 
-// Access the chain and mockFrom after the mock is set up
-const { __chain: chain, __mockFrom: mockFrom } = jest.requireMock('../../../src/lib/supabase') as {
-  __chain: Record<string, jest.Mock>;
-  __mockFrom: jest.Mock;
-};
+// Retrieve mock internals once (these references stay stable across tests)
+const { __chain: chain, __mockFrom: mockFrom } = jest.requireMock(
+  '../../../src/lib/supabase',
+) as { __chain: Record<string, jest.Mock>; __mockFrom: jest.Mock };
 
 const chainMethods = ['select', 'eq', 'ilike', 'not', 'order', 'limit'];
 
 beforeEach(() => {
   jest.clearAllMocks();
   chainMethods.forEach((m) => chain[m].mockReturnValue(chain));
-  (chain.single as jest.Mock).mockImplementation(() => Promise.resolve(resolveWith));
+  chain.single.mockImplementation(() => Promise.resolve(mockResolveWith));
   mockFrom.mockReturnValue(chain);
-  resolveWith = { data: null, error: null };
+  mockResolveWith = { data: null, error: null };
 });
 
 // ─── getHeroById ─────────────────────────────────────────────────────────────
@@ -60,7 +62,7 @@ beforeEach(() => {
 describe('getHeroById', () => {
   it('returns the hero when found', async () => {
     const hero = { id: '620', name: 'Spider-Man', enriched_at: '2026-04-04T00:00:00Z' };
-    resolveWith = { data: hero, error: null };
+    mockResolveWith = { data: hero, error: null };
 
     const result = await getHeroById('620');
     expect(result).toEqual(hero);
@@ -69,7 +71,7 @@ describe('getHeroById', () => {
   });
 
   it('returns null when hero not found', async () => {
-    resolveWith = { data: null, error: null };
+    mockResolveWith = { data: null, error: null };
     const result = await getHeroById('999');
     expect(result).toBeNull();
   });
@@ -79,38 +81,38 @@ describe('getHeroById', () => {
 
 describe('searchHeroes', () => {
   it('queries by name when query is non-empty', async () => {
-    resolveWith = { data: [], error: null };
+    mockResolveWith = { data: [], error: null };
     await searchHeroes('spider', 'All');
     expect(chain.ilike).toHaveBeenCalledWith('name', '%spider%');
   });
 
   it('does not add ilike name filter when query is empty', async () => {
-    resolveWith = { data: [], error: null };
+    mockResolveWith = { data: [], error: null };
     await searchHeroes('', 'All');
     expect(chain.ilike).not.toHaveBeenCalled();
   });
 
   it('filters by Marvel publisher', async () => {
-    resolveWith = { data: [], error: null };
+    mockResolveWith = { data: [], error: null };
     await searchHeroes('', 'Marvel');
     expect(chain.ilike).toHaveBeenCalledWith('publisher', '%marvel%');
   });
 
   it('filters by DC publisher', async () => {
-    resolveWith = { data: [], error: null };
+    mockResolveWith = { data: [], error: null };
     await searchHeroes('', 'DC');
     expect(chain.ilike).toHaveBeenCalledWith('publisher', '%dc%');
   });
 
   it('excludes Marvel and DC for Other filter', async () => {
-    resolveWith = { data: [], error: null };
+    mockResolveWith = { data: [], error: null };
     await searchHeroes('', 'Other');
     expect(chain.not).toHaveBeenCalledWith('publisher', 'ilike', '%marvel%');
     expect(chain.not).toHaveBeenCalledWith('publisher', 'ilike', '%dc%');
   });
 
   it('throws on Supabase error', async () => {
-    resolveWith = { data: null, error: { message: 'DB error' } };
+    mockResolveWith = { data: null, error: { message: 'DB error' } };
     await expect(searchHeroes('', 'All')).rejects.toThrow('DB error');
   });
 });
