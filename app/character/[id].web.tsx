@@ -112,7 +112,7 @@ export default function WebCharacterScreen() {
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={18} color={COLORS.navy} />
           <Text style={styles.backText}>Back</Text>
         </Pressable>
