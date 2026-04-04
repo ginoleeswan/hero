@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   ScrollView,
+  Animated,
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
@@ -103,6 +104,22 @@ export default function CharacterScreen() {
   const [favourited, setFavourited] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
 
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Parallax: image drifts up at half the scroll speed as content scrolls over it
+  const imageTranslateY = scrollY.interpolate({
+    inputRange: [0, HERO_IMAGE_HEIGHT],
+    outputRange: [0, -HERO_IMAGE_HEIGHT / 2],
+    extrapolate: 'clamp',
+  });
+
+  // Zoom on overscroll: pulling down beyond the top scales the image up
+  const imageScale = scrollY.interpolate({
+    inputRange: [-HERO_IMAGE_HEIGHT, 0],
+    outputRange: [2.5, 1],
+    extrapolate: 'clamp',
+  });
+
   useEffect(() => {
     if (!id) return;
 
@@ -168,8 +185,13 @@ export default function CharacterScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Hero image */}
-      <View style={styles.heroImageContainer}>
+      {/* Hero image — parallax + zoom-on-overscroll */}
+      <Animated.View
+        style={[
+          styles.heroImageContainer,
+          { transform: [{ translateY: imageTranslateY }, { scale: imageScale }] },
+        ]}
+      >
         {heroImage ? (
           <Image source={heroImage} contentFit="cover" style={styles.heroImage} />
         ) : (
@@ -199,17 +221,22 @@ export default function CharacterScreen() {
             />
           </TouchableOpacity>
         ) : null}
-      </View>
+      </Animated.View>
 
       {!data ? (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={COLORS.orange} />
         </View>
       ) : (
-        <ScrollView
+        <Animated.ScrollView
           style={styles.scroll}
           contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
           showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: true },
+          )}
         >
           {/* Name block */}
           <View style={styles.nameBlock}>
@@ -306,7 +333,7 @@ export default function CharacterScreen() {
             <InfoRow label="Group affiliation" value={data.stats.connections['group-affiliation']} />
             <InfoRow label="Relatives"         value={data.stats.connections.relatives} />
           </Section>
-        </ScrollView>
+        </Animated.ScrollView>
       )}
     </View>
   );
@@ -315,7 +342,7 @@ export default function CharacterScreen() {
 const styles = StyleSheet.create({
   container:    { flex: 1, backgroundColor: COLORS.beige },
   center:       { alignItems: 'center', justifyContent: 'center' },
-  heroImageContainer: { width: SCREEN_WIDTH, height: HERO_IMAGE_HEIGHT, position: 'absolute', top: 0 },
+  heroImageContainer: { width: SCREEN_WIDTH, height: HERO_IMAGE_HEIGHT, position: 'absolute', top: 0, overflow: 'hidden' },
   heroImage:    { width: '100%', height: '100%' },
   backButton: {
     position: 'absolute', left: 16,
