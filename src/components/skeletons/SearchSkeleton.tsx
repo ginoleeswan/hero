@@ -1,5 +1,6 @@
 import { View, StyleSheet } from 'react-native';
 import { Skeleton } from '../ui/Skeleton';
+import { SkeletonProvider } from '../ui/SkeletonProvider';
 
 const AVATAR_SIZE = 48;
 const ROWS = 10;
@@ -18,14 +19,16 @@ function SearchRowSkeleton() {
 
 export function SearchSkeleton() {
   return (
-    <View style={styles.container}>
-      {Array.from({ length: ROWS }).map((_, i) => (
-        <View key={i}>
-          <SearchRowSkeleton />
-          {i < ROWS - 1 && <View style={styles.separator} />}
-        </View>
-      ))}
-    </View>
+    <SkeletonProvider>
+      <View style={styles.container}>
+        {Array.from({ length: ROWS }).map((_, i) => (
+          <View key={i}>
+            <SearchRowSkeleton />
+            {i < ROWS - 1 && <View style={styles.separator} />}
+          </View>
+        ))}
+      </View>
+    </SkeletonProvider>
   );
 }
 

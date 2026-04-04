@@ -14,6 +14,7 @@ import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
 import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkeleton';
 import { Skeleton } from '../../src/components/ui/Skeleton';
+import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import type { CharacterData } from '../../src/types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -363,11 +364,13 @@ export default function CharacterScreen() {
           <>
             {/* Summary — shows skeleton lines while ComicVine is loading */}
             {comicVineLoading ? (
-              <View style={styles.summaryBlock}>
-                <Skeleton width="100%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
-                <Skeleton width="88%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
-                <Skeleton width="65%" height={12} borderRadius={5} />
-              </View>
+              <SkeletonProvider>
+                <View style={styles.summaryBlock}>
+                  <Skeleton width="100%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
+                  <Skeleton width="88%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
+                  <Skeleton width="65%" height={12} borderRadius={5} />
+                </View>
+              </SkeletonProvider>
             ) : data.details.summary ? (
               <View style={styles.summaryBlock}>
                 <Text style={styles.summary}>{data.details.summary}</Text>

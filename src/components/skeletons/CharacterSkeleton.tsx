@@ -1,5 +1,6 @@
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { Skeleton } from '../ui/Skeleton';
+import { SkeletonProvider } from '../ui/SkeletonProvider';
 import { COLORS } from '../../constants/colors';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -66,14 +67,16 @@ function InfoSectionSkeleton({ rows = 4 }: { rows?: number }) {
 
 export function CharacterSkeleton({ hideNameBlock = false }: { hideNameBlock?: boolean }) {
   return (
-    <View style={styles.container}>
-      {!hideNameBlock && <NameBlock />}
-      <SummaryBlock />
-      <StatDialsSkeleton />
-      <InfoSectionSkeleton rows={5} />
-      <InfoSectionSkeleton rows={4} />
-      <InfoSectionSkeleton rows={2} />
-    </View>
+    <SkeletonProvider>
+      <View style={styles.container}>
+        {!hideNameBlock && <NameBlock />}
+        <SummaryBlock />
+        <StatDialsSkeleton />
+        <InfoSectionSkeleton rows={5} />
+        <InfoSectionSkeleton rows={4} />
+        <InfoSectionSkeleton rows={2} />
+      </View>
+    </SkeletonProvider>
   );
 }
 
