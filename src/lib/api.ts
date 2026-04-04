@@ -89,6 +89,8 @@ export async function fetchHeroStats(heroId: string): Promise<HeroStats> {
 }
 
 export async function fetchHeroDetails(heroName: string): Promise<HeroDetails> {
+  if (Platform.OS === 'web') return { summary: null, publisher: null, firstIssueId: null };
+
   const params = new URLSearchParams({
     api_key: COMICVINE_API_KEY,
     format: 'json',
