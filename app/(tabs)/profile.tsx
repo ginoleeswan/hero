@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   username: {
-    fontFamily: 'FlameSans-Regular',
+    fontFamily: 'Flame-Regular',
     fontSize: 22,
     color: COLORS.navy,
     marginBottom: 4,
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontFamily: 'FlameSans-Regular',
+    fontFamily: 'Flame-Regular',
     fontSize: 20,
     color: COLORS.navy,
     flex: 1,
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emptyTitle: {
-    fontFamily: 'FlameSans-Regular',
+    fontFamily: 'Flame-Regular',
     fontSize: 17,
     color: COLORS.navy,
     marginBottom: 6,
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   accountSectionTitle: {
-    fontFamily: 'FlameSans-Regular',
+    fontFamily: 'Flame-Regular',
     fontSize: 20,
     color: COLORS.navy,
     marginBottom: 12,
