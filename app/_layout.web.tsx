@@ -22,7 +22,7 @@ function WebAuthGate() {
     } else if (user && inAuthGroup) {
       router.replace('/');
     }
-  }, [user, loading, segments]);
+  }, [user, loading, segments, router]);
 
   const inAuthGroup = segments[0] === '(auth)';
 
