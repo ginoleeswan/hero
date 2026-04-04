@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   },
 
   heading: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 28,
     color: COLORS.navy,
     marginBottom: 4,

@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   heroName: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     color: COLORS.beige,
     lineHeight: 54,
     marginBottom: 4,
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     borderColor: '#e8ddd0',
   },
   cardTitle: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 12,
     color: COLORS.orange,
     textTransform: 'uppercase',

@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
   },
   value: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 13,
   },
   track: {

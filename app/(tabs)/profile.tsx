@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   avatarInitials: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 28,
     color: '#fff',
   },
