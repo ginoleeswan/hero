@@ -1,4 +1,7 @@
 import { supabase } from '../supabase';
+import type { Tables } from '../../types/database.generated';
+
+export type FavouriteHero = Pick<Tables<'heroes'>, 'id' | 'name' | 'image_url'>;
 
 export async function isFavourited(userId: string, heroId: string): Promise<boolean> {
   const { data } = await supabase
@@ -24,6 +27,18 @@ export async function removeFavourite(userId: string, heroId: string): Promise<v
     .eq('user_id', userId)
     .eq('hero_id', heroId);
   if (error) throw error;
+}
+
+export async function getUserFavouriteHeroes(userId: string): Promise<FavouriteHero[]> {
+  const { data, error } = await supabase
+    .from('user_favourites')
+    .select('heroes(id, name, image_url)')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? [])
+    .map((row) => row.heroes)
+    .filter((h): h is FavouriteHero => h !== null);
 }
 
 export async function getFavouriteCount(userId: string): Promise<number> {
