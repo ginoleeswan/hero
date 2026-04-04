@@ -26,23 +26,21 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HERO_IMAGE_HEIGHT = Math.round(SCREEN_HEIGHT * 0.6);
 
 const STAT_CONFIG: { key: string; label: string; tint: string }[] = [
-  { key: 'intelligence', label: 'Intelligence', tint: COLORS.blue   },
-  { key: 'strength',     label: 'Strength',     tint: COLORS.red    },
-  { key: 'speed',        label: 'Speed',        tint: COLORS.yellow },
-  { key: 'durability',   label: 'Durability',   tint: COLORS.green  },
-  { key: 'power',        label: 'Power',        tint: COLORS.orange },
-  { key: 'combat',       label: 'Combat',       tint: COLORS.brown  },
+  { key: 'intelligence', label: 'Intelligence', tint: COLORS.blue },
+  { key: 'strength', label: 'Strength', tint: COLORS.red },
+  { key: 'speed', label: 'Speed', tint: COLORS.yellow },
+  { key: 'durability', label: 'Durability', tint: COLORS.green },
+  { key: 'power', label: 'Power', tint: COLORS.orange },
+  { key: 'combat', label: 'Combat', tint: COLORS.brown },
 ];
 
 const PUBLISHER_LOGOS: Record<string, number> = {
   'Marvel Comics': require('../../assets/images/Marvel-Logo.jpg'),
-  'Marvel':        require('../../assets/images/Marvel-Logo.jpg'),
-  'DC Comics':     require('../../assets/images/DC-Logo.png'),
+  Marvel: require('../../assets/images/Marvel-Logo.jpg'),
+  'DC Comics': require('../../assets/images/DC-Logo.png'),
 };
 
-function StatDial({ label, value, tint }: {
-  label: string; value: string; tint: string;
-}) {
+function StatDial({ label, value, tint }: { label: string; value: string; tint: string }) {
   const numeric = parseInt(value, 10);
   const fill = isNaN(numeric) ? 0 : numeric;
 
@@ -61,9 +59,7 @@ function StatDial({ label, value, tint }: {
         padding={0}
         lineCap="round"
       >
-        {(f: number) => (
-          <Text style={styles.dialValue}>{Math.floor(f)}</Text>
-        )}
+        {(f: number) => <Text style={styles.dialValue}>{Math.floor(f)}</Text>}
       </AnimatedCircularProgress>
       <Text style={styles.dialLabel}>{label}</Text>
     </View>
@@ -130,7 +126,7 @@ export default function CharacterScreen() {
   // Content name scrolls naturally — the header clips it. No content-side transforms needed.
   const HEADER_H = 100; // approx status bar + nav bar height
   const NAME_TOP = HERO_IMAGE_HEIGHT - 60; // content paddingTop = where name starts
-  const NAME_IN  = NAME_TOP - HEADER_H - 30; // name approaching header bottom
+  const NAME_IN = NAME_TOP - HEADER_H - 30; // name approaching header bottom
   const NAME_OUT = NAME_TOP - HEADER_H + 20; // name fully behind header
 
   const headerNameOpacity = scrollY.interpolate({
@@ -149,25 +145,17 @@ export default function CharacterScreen() {
     extrapolate: 'clamp',
   });
 
-  // Header button icons: white over image → navy on beige
-  const btnWhiteOp = scrollY.interpolate({
-    inputRange: [0, HERO_IMAGE_HEIGHT * 0.4],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  });
-  const btnDarkOp = scrollY.interpolate({
-    inputRange: [0, HERO_IMAGE_HEIGHT * 0.4],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  });
-
   useEffect(() => {
     if (!id) return;
 
     // Step 1 — fetch stats from SuperheroAPI (fast). Render immediately.
     fetchHeroStats(id)
       .then((stats) => {
-        setData({ stats, details: { summary: null, publisher: null, firstIssueId: null }, firstIssue: null });
+        setData({
+          stats,
+          details: { summary: null, publisher: null, firstIssueId: null },
+          firstIssue: null,
+        });
 
         // Step 2 — fetch ComicVine data in the background, update when ready.
         fetchHeroDetails(stats.name)
@@ -187,7 +175,9 @@ export default function CharacterScreen() {
 
   useEffect(() => {
     if (!user || !id) return;
-    isFavourited(user.id, id).then(setFavourited).catch(() => {});
+    isFavourited(user.id, id)
+      .then(setFavourited)
+      .catch(() => {});
   }, [user, id]);
 
   const toggleFavourite = useCallback(async () => {
@@ -213,7 +203,16 @@ export default function CharacterScreen() {
   if (error) {
     return (
       <View style={[styles.container, styles.center]}>
-        <Stack.Screen options={{ headerShown: true, headerTransparent: true, headerStyle: { backgroundColor: 'transparent' }, headerShadowVisible: false, headerTitle: '', headerBackTitle: '' }} />
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            headerTransparent: true,
+            headerStyle: { backgroundColor: 'transparent' },
+            headerShadowVisible: false,
+            headerTitle: '',
+            headerBackTitle: '',
+          }}
+        />
         <Text style={styles.errorText}>{error}</Text>
       </View>
     );
@@ -250,37 +249,25 @@ export default function CharacterScreen() {
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={styles.headerBtn}
             >
-              <Animated.View style={{ opacity: btnWhiteOp, position: 'absolute' }}>
-                <Ionicons name="arrow-back" size={22} color="#fff" />
-              </Animated.View>
-              <Animated.View style={{ opacity: btnDarkOp, position: 'absolute' }}>
-                <Ionicons name="arrow-back" size={22} color={COLORS.navy} />
-              </Animated.View>
+              <Ionicons name="arrow-back" size={22} />
             </TouchableOpacity>
           ),
-          headerRight: user ? () => (
-            <TouchableOpacity
-              onPress={toggleFavourite}
-              disabled={favLoading}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={styles.headerBtn}
-            >
-              <Animated.View style={{ opacity: btnWhiteOp, position: 'absolute' }}>
-                <Ionicons
-                  name={favourited ? 'heart' : 'heart-outline'}
-                  size={22}
-                  color={favourited ? COLORS.red : '#fff'}
-                />
-              </Animated.View>
-              <Animated.View style={{ opacity: btnDarkOp, position: 'absolute' }}>
-                <Ionicons
-                  name={favourited ? 'heart' : 'heart-outline'}
-                  size={22}
-                  color={favourited ? COLORS.red : COLORS.navy}
-                />
-              </Animated.View>
-            </TouchableOpacity>
-          ) : undefined,
+          headerRight: user
+            ? () => (
+                <TouchableOpacity
+                  onPress={toggleFavourite}
+                  disabled={favLoading}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={styles.headerBtn}
+                >
+                  <Ionicons
+                    name={favourited ? 'heart' : 'heart-outline'}
+                    size={22}
+                    color={favourited ? COLORS.red : undefined}
+                  />
+                </TouchableOpacity>
+              )
+            : undefined,
         }}
       />
 
@@ -288,16 +275,34 @@ export default function CharacterScreen() {
       <Animated.View
         style={[
           styles.heroImageContainer,
-          { opacity: imageOpacity, transform: [{ translateY: imageTranslateY }, { scale: imageScale }] },
+          {
+            opacity: imageOpacity,
+            transform: [{ translateY: imageTranslateY }, { scale: imageScale }],
+          },
         ]}
       >
         {heroImage ? (
-          <Image source={heroImage} contentFit="cover" contentPosition="top" style={styles.heroImage} />
+          <Image
+            source={heroImage}
+            contentFit="cover"
+            contentPosition="top"
+            style={styles.heroImage}
+          />
         ) : (
           <View style={[styles.heroImage, { backgroundColor: COLORS.navy }]} />
         )}
         <LinearGradient
-          colors={['transparent', 'rgba(245,235,220,0.03)', 'rgba(245,235,220,0.08)', 'rgba(245,235,220,0.18)', 'rgba(245,235,220,0.32)', 'rgba(245,235,220,0.52)', 'rgba(245,235,220,0.72)', 'rgba(245,235,220,0.9)', COLORS.beige]}
+          colors={[
+            'transparent',
+            'rgba(245,235,220,0.03)',
+            'rgba(245,235,220,0.08)',
+            'rgba(245,235,220,0.18)',
+            'rgba(245,235,220,0.32)',
+            'rgba(245,235,220,0.52)',
+            'rgba(245,235,220,0.72)',
+            'rgba(245,235,220,0.9)',
+            COLORS.beige,
+          ]}
           locations={[0.2, 0.35, 0.48, 0.58, 0.68, 0.78, 0.88, 0.95, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -310,13 +315,15 @@ export default function CharacterScreen() {
       ) : (
         <Animated.ScrollView
           style={styles.scroll}
-          contentContainerStyle={{ paddingTop: HERO_IMAGE_HEIGHT - 160, paddingBottom: insets.bottom + 32 }}
+          contentContainerStyle={{
+            paddingTop: HERO_IMAGE_HEIGHT - 160,
+            paddingBottom: insets.bottom + 32,
+          }}
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: true },
-          )}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+            useNativeDriver: true,
+          })}
         >
           {/* Name block */}
           <View style={styles.nameBlock}>
@@ -369,12 +376,12 @@ export default function CharacterScreen() {
 
           {/* Biography */}
           <Section title="Biography">
-            <InfoRow label="Full name"        value={data.stats.biography['full-name']} />
-            <InfoRow label="Alter egos"       value={data.stats.biography['alter-egos']} />
-            <InfoRow label="Place of birth"   value={data.stats.biography['place-of-birth']} />
+            <InfoRow label="Full name" value={data.stats.biography['full-name']} />
+            <InfoRow label="Alter egos" value={data.stats.biography['alter-egos']} />
+            <InfoRow label="Place of birth" value={data.stats.biography['place-of-birth']} />
             <InfoRow label="First appearance" value={data.stats.biography['first-appearance']} />
-            <InfoRow label="Alignment"        value={data.stats.biography.alignment} />
-            {data.stats.biography.aliases.filter(a => a && a !== '-').length > 0 && (
+            <InfoRow label="Alignment" value={data.stats.biography.alignment} />
+            {data.stats.biography.aliases.filter((a) => a && a !== '-').length > 0 && (
               <InfoRow label="Aliases" value={data.stats.biography.aliases.join(', ')} />
             )}
           </Section>
@@ -395,23 +402,26 @@ export default function CharacterScreen() {
           {/* Appearance */}
           <Section title="Appearance">
             <InfoRow label="Gender" value={data.stats.appearance.gender} />
-            <InfoRow label="Race"   value={data.stats.appearance.race} />
+            <InfoRow label="Race" value={data.stats.appearance.race} />
             <InfoRow label="Height" value={data.stats.appearance.height.join(' / ')} />
             <InfoRow label="Weight" value={data.stats.appearance.weight.join(' / ')} />
-            <InfoRow label="Eyes"   value={data.stats.appearance['eye-color']} />
-            <InfoRow label="Hair"   value={data.stats.appearance['hair-color']} />
+            <InfoRow label="Eyes" value={data.stats.appearance['eye-color']} />
+            <InfoRow label="Hair" value={data.stats.appearance['hair-color']} />
           </Section>
 
           {/* Work */}
           <Section title="Work">
             <InfoRow label="Occupation" value={data.stats.work.occupation} />
-            <InfoRow label="Base"       value={data.stats.work.base} />
+            <InfoRow label="Base" value={data.stats.work.base} />
           </Section>
 
           {/* Connections */}
           <Section title="Connections">
-            <InfoRow label="Group affiliation" value={data.stats.connections['group-affiliation']} />
-            <InfoRow label="Relatives"         value={data.stats.connections.relatives} />
+            <InfoRow
+              label="Group affiliation"
+              value={data.stats.connections['group-affiliation']}
+            />
+            <InfoRow label="Relatives" value={data.stats.connections.relatives} />
           </Section>
         </Animated.ScrollView>
       )}
@@ -420,24 +430,32 @@ export default function CharacterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container:    { flex: 1, backgroundColor: COLORS.beige },
-  center:       { alignItems: 'center', justifyContent: 'center' },
-  heroImageContainer: { width: SCREEN_WIDTH, height: HERO_IMAGE_HEIGHT, position: 'absolute', top: 0, overflow: 'hidden' },
-  heroImage:    { width: '100%', height: '100%' },
+  container: { flex: 1, backgroundColor: COLORS.beige },
+  center: { alignItems: 'center', justifyContent: 'center' },
+  heroImageContainer: {
+    width: SCREEN_WIDTH,
+    height: HERO_IMAGE_HEIGHT,
+    position: 'absolute',
+    top: 0,
+    overflow: 'hidden',
+  },
+  heroImage: { width: '100%', height: '100%' },
   headerBtn: {
-    width: 36, height: 36,
-    alignItems: 'center', justifyContent: 'center',
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 18,
     color: COLORS.navy,
   },
-  scroll:        { flex: 1 },
-  loadingOverlay:{ paddingTop: HERO_IMAGE_HEIGHT + 40, alignItems: 'center' },
+  scroll: { flex: 1 },
+  loadingOverlay: { paddingTop: HERO_IMAGE_HEIGHT + 40, alignItems: 'center' },
 
   // Name block
-  nameBlock:  { paddingHorizontal: 20, paddingBottom: 4 },
+  nameBlock: { paddingHorizontal: 20, paddingBottom: 4 },
   heroName: {
     fontFamily: 'Righteous_400Regular',
     fontSize: 35,
@@ -463,7 +481,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  logoRect:   { width: 50, height: 30, borderRadius: 4 },
+  logoRect: { width: 50, height: 30, borderRadius: 4 },
   logoSquare: { width: 30, height: 30, borderRadius: 4 },
   nameDivider: { height: 2, backgroundColor: COLORS.navy, borderRadius: 30, marginTop: 10 },
 
@@ -477,9 +495,15 @@ const styles = StyleSheet.create({
   },
 
   // Sections
-  section:      { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
-  sectionTitle: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.navy, textAlign: 'right', paddingVertical: 5 },
-  divider:      { height: 2, backgroundColor: COLORS.navy, borderRadius: 30, marginBottom: 14 },
+  section: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
+  sectionTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 20,
+    color: COLORS.navy,
+    textAlign: 'right',
+    paddingVertical: 5,
+  },
+  divider: { height: 2, backgroundColor: COLORS.navy, borderRadius: 30, marginBottom: 14 },
 
   // Circular stat dials
   statsGrid: {
@@ -489,18 +513,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  dialWrap:  { alignItems: 'center', justifyContent: 'center', padding: 5 },
+  dialWrap: { alignItems: 'center', justifyContent: 'center', padding: 5 },
   dialValue: { fontFamily: 'Flame-Regular', fontSize: 13, color: COLORS.navy, left: 1 },
   dialLabel: { fontFamily: 'Flame-Regular', fontSize: 10, color: COLORS.navy, marginTop: -10 },
 
   // Info rows
-  infoRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 5 },
-  infoLabel: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.navy, textTransform: 'capitalize' },
-  infoValue: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.navy, textTransform: 'capitalize', flex: 1, textAlign: 'right' },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    marginBottom: 5,
+  },
+  infoLabel: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 15,
+    color: COLORS.navy,
+    textTransform: 'capitalize',
+  },
+  infoValue: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 13,
+    color: COLORS.navy,
+    textTransform: 'capitalize',
+    flex: 1,
+    textAlign: 'right',
+  },
 
   // First issue
-  comicContainer: { width: '100%', alignItems: 'center', marginVertical: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.39, shadowRadius: 8.3, elevation: 13 },
-  comicImage:     { width: 160, height: 240 },
+  comicContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.39,
+    shadowRadius: 8.3,
+    elevation: 13,
+  },
+  comicImage: { width: 160, height: 240 },
 
-  errorText: { fontFamily: 'FlameSans-Regular', fontSize: 15, color: COLORS.red, textAlign: 'center', paddingHorizontal: 32 },
+  errorText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 15,
+    color: COLORS.red,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
 });
