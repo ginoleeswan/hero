@@ -45,7 +45,7 @@ function StatBattleRow({ stat }: { stat: StatResult }) {
           <View
             style={[
               battle.barLeft,
-              { width: `${stat.valueA}%` as unknown as number, backgroundColor: aWins ? winColor : dimColor },
+              { width: `${stat.valueA}%`, backgroundColor: aWins ? winColor : dimColor } as object,
             ]}
           />
         </View>
@@ -60,7 +60,7 @@ function StatBattleRow({ stat }: { stat: StatResult }) {
           <View
             style={[
               battle.barRight,
-              { width: `${stat.valueB}%` as unknown as number, backgroundColor: bWins ? winColor : dimColor },
+              { width: `${stat.valueB}%`, backgroundColor: bWins ? winColor : dimColor } as object,
             ]}
           />
         </View>
@@ -111,7 +111,7 @@ export default function NativeCompareScreen() {
   const handleShare = () => {
     Share.share({
       message: `${statsA.name} vs ${statsB.name} — ${result.verdict}. Check it out on Hero app!`,
-    });
+    }).catch(() => {});
   };
 
   return (
@@ -127,16 +127,16 @@ export default function NativeCompareScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom }}>
         {/* Portrait cards — side by side, full width */}
         <View style={styles.portraits}>
           <View style={styles.portraitWrap}>
-            <Image source={imageA} contentFit="cover" contentPosition="top" style={StyleSheet.absoluteFill} />
+            <Image source={imageA} contentFit="cover" contentPosition="top" style={styles.portraitImage} />
             <View style={styles.portraitOverlay} />
             <Text style={styles.portraitName} numberOfLines={2}>{statsA.name}</Text>
           </View>
           <View style={styles.portraitWrap}>
-            <Image source={imageB} contentFit="cover" contentPosition="top" style={StyleSheet.absoluteFill} />
+            <Image source={imageB} contentFit="cover" contentPosition="top" style={styles.portraitImage} />
             <View style={styles.portraitOverlay} />
             <Text style={[styles.portraitName, styles.portraitNameRight]} numberOfLines={2}>{statsB.name}</Text>
           </View>
@@ -185,6 +185,9 @@ const styles = StyleSheet.create({
   topBarTitle: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.beige },
   portraits: { flexDirection: 'row', height: PORTRAIT_HEIGHT },
   portraitWrap: { flex: 1, overflow: 'hidden' },
+  portraitImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
   portraitOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(29,45,51,0.28)',
@@ -233,7 +236,6 @@ const styles = StyleSheet.create({
     color: 'rgba(245,235,220,0.65)',
     letterSpacing: 0.3,
   },
-  scrollContent: { paddingBottom: 0 },
 });
 
 const battle = StyleSheet.create({
