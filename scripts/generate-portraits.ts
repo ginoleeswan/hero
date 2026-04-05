@@ -19,6 +19,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { createClient } from '@supabase/supabase-js';
 
+
 import 'dotenv/config';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -28,7 +29,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const GEMINI_API_KEY = process.env.GOOGLE_AI_STUDIO_API_KEY!;
 
 const BUCKET = 'hero-portraits';
-const GEMINI_MODEL = 'gemini-3-pro-image-preview';
+const GEMINI_MODEL = 'gemini-3.1-flash-image-preview';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
 // Style references — Wolverine, Deadpool, Thor: best painterly texture examples (v4 proven)
@@ -39,19 +40,41 @@ const STYLE_REF_PATHS = [
   join(ASSETS_DIR, 'thor.jpg'),
 ];
 
-const STYLE_PROMPT = `The first image is the character to redraw. Images 2, 3, and 4 are style reference illustrations — study every detail and match the style exactly.
+// Vivid background colours cycled by hero ID to ensure variety across portraits
+const BG_PALETTE = [
+  'vivid red',
+  'vivid orange',
+  'vivid yellow',
+  'vivid cobalt blue',
+  'vivid teal',
+  'vivid purple',
+  'vivid hot pink',
+  'vivid lime green',
+  'vivid crimson',
+  'vivid sky blue',
+];
 
-Redraw the character from image 1 as a strict pure side-profile bust portrait facing RIGHT (nose pointing right, pure 90-degree side view, exactly as in the references).
+function bgColorForHero(heroId: string): string {
+  const idx = parseInt(heroId, 10) % BG_PALETTE.length;
+  return BG_PALETTE[idx];
+}
+
+function buildPrompt(heroId: string): string {
+  const bgColor = bgColorForHero(heroId);
+  return `The first image is the character to redraw. Images 2, 3, and 4 are style reference illustrations — study every detail and match the style exactly.
+
+Redraw the character from image 1 as a strict pure side-profile portrait facing RIGHT (nose pointing right, pure 90-degree side view, exactly as in the references).
 
 RENDERING: Painterly digital illustration — rich dimensional depth, visible surface quality. Skin has warm highlights, cool shadows, subtle colour variation. Costume materials feel real: fabric has texture, metal has sheen, leather has gloss. Exactly like the references — NOT flat vector, NOT plain cartoon.
 
-BACKGROUND: A single bold vivid solid colour (choose a strong contrasting colour: orange, yellow, red, blue, teal). The background must be clearly and completely separate from the character — NO gradient into the figure, NO blending, NO grey or neutral tones. The background should pop.
+BACKGROUND: ${bgColor} — bold, vivid, and dominant. Slightly painterly texture, like a brushed wall or canvas, matching the style of the reference images. No gradient fading into the character, no blending at the edges. Clearly distinct from the character with a strong outline separating them.
 
 FRAMING: This is a HEADSHOT — the face and head fill the entire canvas. Think of a passport photo or a coin portrait — nothing but the face, with the very tops of the shoulders just barely visible at the bottom edge. The chin should be roughly 15% from the bottom of the image, the top of the head 10% from the top. Zero chest, zero torso. Portrait orientation (taller than wide).
 
 OUTLINE: Clean strong outline separating character from background.
 
 The character MUST face RIGHT. Preserve costume colours and identity exactly. No text, no logos.`;
+}
 
 // The 34 heroes that already have curated local images (id → local file path)
 const LOCAL_PORTRAITS: Record<string, string> = {
@@ -139,10 +162,12 @@ async function fetchImageAsBase64(url: string): Promise<{ base64: string; mimeTy
 }
 
 
+
 async function generatePortrait(
   sourceBase64: string,
   sourceMime: string,
   heroName: string,
+  heroId: string,
 ): Promise<Uint8Array> {
   const styleRefs = STYLE_REF_PATHS.map((p) => ({
     inline_data: { mime_type: 'image/jpeg', data: readFileSync(p).toString('base64') },
@@ -151,7 +176,7 @@ async function generatePortrait(
   const body = {
     contents: [{
       parts: [
-        { text: `Character name: ${heroName}. ${STYLE_PROMPT}` },
+        { text: `Character name: ${heroName}. ${buildPrompt(heroId)}` },
         { inline_data: { mime_type: sourceMime, data: sourceBase64 } },
         ...styleRefs,
       ],
@@ -176,7 +201,8 @@ async function generatePortrait(
     });
 
     if (res.status === 429) {
-      lastError = new Error('Rate limited');
+      const errText = await res.text();
+      lastError = new Error(`Rate limited: ${errText}`);
       continue;
     }
     if (!res.ok) {
@@ -289,7 +315,7 @@ async function phase2(filterHeroId?: string): Promise<void> {
     try {
       console.log(`  ⟳ ${label}`);
       const { base64, mimeType } = await fetchImageAsBase64(hero.image_url!);
-      const imageBytes = await generatePortrait(base64, mimeType, hero.name);
+      const imageBytes = await generatePortrait(base64, mimeType, hero.name, hero.id);
       const url = await uploadToStorage(hero.id, imageBytes);
       await setPortraitUrl(hero.id, url);
       console.log(`  ✓ ${label} → ${url}`);
