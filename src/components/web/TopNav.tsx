@@ -5,8 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { HeroLogo } from './HeroLogo';
 
 const NAV_LINKS = [
-  { label: 'Discover', path: '/' },
-  { label: 'Search', path: '/search' },
+  { label: 'Explore', path: '/' },
   { label: 'Profile', path: '/profile' },
 ] as const;
 

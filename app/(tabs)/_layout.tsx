@@ -11,16 +11,9 @@ export default function TabLayout() {
     >
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Icon
-          src={<NativeTabs.Trigger.VectorIcon family={Ionicons} name="layers" />}
+          src={<NativeTabs.Trigger.VectorIcon family={Ionicons} name="compass-outline" />}
         />
-        <NativeTabs.Trigger.Label>Discover</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="search">
-        <NativeTabs.Trigger.Icon
-          src={<NativeTabs.Trigger.VectorIcon family={Ionicons} name="search" />}
-        />
-        <NativeTabs.Trigger.Label>Search</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="profile">
