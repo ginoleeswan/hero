@@ -68,6 +68,10 @@ export default function WebCompareScreen() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    if (!id1 || !id2) {
+      setError('Invalid hero IDs.');
+      return;
+    }
     Promise.all([loadHeroStats(id1), loadHeroStats(id2)])
       .then(([a, b]) => { setStatsA(a); setStatsB(b); })
       .catch(() => setError('Could not load hero data.'));
@@ -214,11 +218,13 @@ export default function WebCompareScreen() {
                 <Image source={imageA} contentFit="cover" contentPosition="top" style={StyleSheet.absoluteFill} />
                 <View style={styles.portraitOverlay as object} />
                 <Text style={styles.mobilePortraitName}>{statsA.name}</Text>
+                <Text style={styles.mobileWinsLabel}>{result.winsA} stat{result.winsA !== 1 ? 's' : ''}</Text>
               </View>
               <View style={[styles.mobilePortraitWrap, { height: portraitHeight }]}>
                 <Image source={imageB} contentFit="cover" contentPosition="top" style={StyleSheet.absoluteFill} />
                 <View style={styles.portraitOverlay as object} />
                 <Text style={[styles.mobilePortraitName, styles.textRight]}>{statsB.name}</Text>
+                <Text style={[styles.mobileWinsLabel, styles.textRight]}>{result.winsB} stat{result.winsB !== 1 ? 's' : ''}</Text>
               </View>
             </View>
             <View style={styles.verdictCard}>
@@ -324,8 +330,6 @@ const styles = StyleSheet.create({
   portraitImage: {
     width: '100%',
     height: '100%',
-    objectFit: 'cover',
-    objectPosition: 'center top',
   } as object,
   portraitOverlay: {
     position: 'absolute',
@@ -405,13 +409,24 @@ const styles = StyleSheet.create({
   mobilePortraitWrap: { flex: 1, borderRadius: 10, overflow: 'hidden', backgroundColor: COLORS.navy },
   mobilePortraitName: {
     position: 'absolute',
-    bottom: 10,
+    bottom: 24,
     left: 10,
     right: 6,
     fontFamily: 'Flame-Regular',
     fontSize: 16,
     color: COLORS.beige,
     lineHeight: 19,
+  },
+  mobileWinsLabel: {
+    position: 'absolute',
+    bottom: 8,
+    left: 10,
+    right: 6,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    color: 'rgba(245,235,220,0.5)',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   textRight: { textAlign: 'right' },
 });
