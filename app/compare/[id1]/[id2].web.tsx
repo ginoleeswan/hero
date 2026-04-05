@@ -1,0 +1,465 @@
+import { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+  ActivityIndicator,
+  useWindowDimensions,
+} from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
+import { getHeroById, heroRowToCharacterData } from '../../../src/lib/db/heroes';
+import { fetchHeroStats } from '../../../src/lib/api';
+import { heroImageSource } from '../../../src/constants/heroImages';
+import { compareStats } from '../../../src/lib/compare';
+import type { StatResult } from '../../../src/lib/compare';
+import type { HeroStats } from '../../../src/types';
+import { COLORS } from '../../../src/constants/colors';
+
+async function loadHeroStats(id: string): Promise<HeroStats> {
+  const row = await getHeroById(id);
+  if (row) return heroRowToCharacterData(row).stats;
+  return fetchHeroStats(id);
+}
+
+function StatBattleRow({ stat, isDesktop }: { stat: StatResult; isDesktop: boolean }) {
+  const aWins = stat.winner === 'A';
+  const bWins = stat.winner === 'B';
+  const winColor = stat.color;
+  const dimColor = 'rgba(245,235,220,0.12)';
+
+  return (
+    <View style={wb.row}>
+      <View style={wb.side}>
+        <Text style={[wb.val, aWins && wb.valWin]}>{stat.valueA}</Text>
+        <View style={wb.track}>
+          <View
+            style={[wb.barLeft, { width: `${stat.valueA}%`, backgroundColor: aWins ? winColor : dimColor }] as object}
+          />
+        </View>
+      </View>
+
+      <Text style={[wb.label, isDesktop && (wb.labelDesktop as object)] as object}>{stat.label}</Text>
+
+      <View style={[wb.side, wb.sideRight]}>
+        <View style={wb.track}>
+          <View
+            style={[wb.barRight, { width: `${stat.valueB}%`, backgroundColor: bWins ? winColor : dimColor }] as object}
+          />
+        </View>
+        <Text style={[wb.val, bWins && wb.valWin]}>{stat.valueB}</Text>
+      </View>
+    </View>
+  );
+}
+
+export default function WebCompareScreen() {
+  const { id1, id2 } = useLocalSearchParams<{ id1: string; id2: string }>();
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+
+  const [statsA, setStatsA] = useState<HeroStats | null>(null);
+  const [statsB, setStatsB] = useState<HeroStats | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    Promise.all([loadHeroStats(id1), loadHeroStats(id2)])
+      .then(([a, b]) => { setStatsA(a); setStatsB(b); })
+      .catch(() => setError('Could not load hero data.'));
+  }, [id1, id2]);
+
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorText}>{error}</Text>
+        <Pressable onPress={() => router.back()} style={styles.retryBtn}>
+          <Text style={styles.retryText}>Go back</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (!statsA || !statsB) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={COLORS.orange} size="large" />
+      </View>
+    );
+  }
+
+  const result = compareStats(statsA.name, statsA.powerstats, statsB.name, statsB.powerstats);
+  const imageA = heroImageSource(id1, statsA.image.url);
+  const imageB = heroImageSource(id2, statsB.image.url);
+
+  const handleShare = async () => {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    const shareData = { title: `${statsA.name} vs ${statsB.name}`, url };
+    try {
+      if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare?.(shareData)) {
+        await navigator.share(shareData);
+      } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch {
+      // user cancelled or API unavailable — silent
+    }
+  };
+
+  const portraitHeight = isDesktop ? 520 : 260;
+
+  return (
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.contentOuter}>
+
+      {/* Sub-header */}
+      <View style={styles.subHeader as object}>
+        <View style={styles.subHeaderInner}>
+          <Pressable
+            onPress={() => router.back()}
+            style={({ hovered }: { hovered?: boolean }) =>
+              [styles.backBtn, hovered && (styles.backBtnHover as object)] as object
+            }
+          >
+            <Ionicons name="arrow-back" size={15} color={COLORS.beige} />
+            <Text style={styles.backText}>Back</Text>
+          </Pressable>
+
+          <Text style={styles.subTitle}>
+            {statsA.name} <Text style={styles.vs}>vs</Text> {statsB.name}
+          </Text>
+
+          <Pressable
+            onPress={handleShare}
+            style={({ hovered }: { hovered?: boolean }) =>
+              [styles.shareBtn, hovered && (styles.shareBtnHover as object)] as object
+            }
+          >
+            <Ionicons name="share-outline" size={15} color={COLORS.beige} />
+            <Text style={styles.shareText}>{copied ? 'Copied!' : 'Share'}</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      <View style={styles.body}>
+        {isDesktop ? (
+          /* Desktop: side-by-side portrait panels + center stat column */
+          <View style={styles.desktopLayout as object}>
+            {/* Hero A portrait */}
+            <View style={[styles.portraitWrap, { height: portraitHeight }]}>
+              <Image
+                source={imageA}
+                contentFit="cover"
+                contentPosition="top"
+                style={styles.portraitImage as object}
+              />
+              <View style={styles.portraitOverlay as object} />
+              <View style={styles.portraitLabel}>
+                {statsA.biography.publisher ? (
+                  <Text style={styles.publisher}>{statsA.biography.publisher}</Text>
+                ) : null}
+                <Text style={styles.heroNameLarge as object}>{statsA.name}</Text>
+                <Text style={styles.winsLabel}>{result.winsA} stat{result.winsA !== 1 ? 's' : ''}</Text>
+              </View>
+            </View>
+
+            {/* Center: verdict + stat battle */}
+            <View style={styles.centerCol}>
+              <View style={styles.verdictCard}>
+                <Text style={styles.verdictText}>{result.verdict}</Text>
+              </View>
+              <View style={styles.battleRows}>
+                {result.stats.map((stat) => (
+                  <StatBattleRow key={stat.key} stat={stat} isDesktop={isDesktop} />
+                ))}
+              </View>
+              <Pressable
+                onPress={() => router.push(`/compare/${id1}/pick?name=${encodeURIComponent(statsA.name)}`)}
+                style={({ hovered }: { hovered?: boolean }) =>
+                  [styles.compareAnotherBtn, hovered && (styles.compareAnotherHover as object)] as object
+                }
+              >
+                <Text style={styles.compareAnotherText}>Compare someone else →</Text>
+              </Pressable>
+            </View>
+
+            {/* Hero B portrait */}
+            <View style={[styles.portraitWrap, { height: portraitHeight }]}>
+              <Image
+                source={imageB}
+                contentFit="cover"
+                contentPosition="top"
+                style={styles.portraitImage as object}
+              />
+              <View style={styles.portraitOverlay as object} />
+              <View style={[styles.portraitLabel, styles.portraitLabelRight]}>
+                {statsB.biography.publisher ? (
+                  <Text style={styles.publisher}>{statsB.biography.publisher}</Text>
+                ) : null}
+                <Text style={[styles.heroNameLarge, styles.textRight] as object}>{statsB.name}</Text>
+                <Text style={[styles.winsLabel, styles.textRight]}>{result.winsB} stat{result.winsB !== 1 ? 's' : ''}</Text>
+              </View>
+            </View>
+          </View>
+        ) : (
+          /* Mobile: stacked */
+          <View>
+            <View style={styles.mobilePortraits}>
+              <View style={[styles.mobilePortraitWrap, { height: portraitHeight }]}>
+                <Image source={imageA} contentFit="cover" contentPosition="top" style={StyleSheet.absoluteFill} />
+                <View style={styles.portraitOverlay as object} />
+                <Text style={styles.mobilePortraitName}>{statsA.name}</Text>
+              </View>
+              <View style={[styles.mobilePortraitWrap, { height: portraitHeight }]}>
+                <Image source={imageB} contentFit="cover" contentPosition="top" style={StyleSheet.absoluteFill} />
+                <View style={styles.portraitOverlay as object} />
+                <Text style={[styles.mobilePortraitName, styles.textRight]}>{statsB.name}</Text>
+              </View>
+            </View>
+            <View style={styles.verdictCard}>
+              <Text style={styles.verdictText}>{result.verdict}</Text>
+            </View>
+            <View style={styles.battleRows}>
+              {result.stats.map((stat) => (
+                <StatBattleRow key={stat.key} stat={stat} isDesktop={false} />
+              ))}
+            </View>
+            <Pressable
+              onPress={() => router.push(`/compare/${id1}/pick?name=${encodeURIComponent(statsA.name)}`)}
+              style={({ hovered }: { hovered?: boolean }) =>
+                [styles.compareAnotherBtn, styles.compareAnotherBtnMobile, hovered && (styles.compareAnotherHover as object)] as object
+              }
+            >
+              <Text style={styles.compareAnotherText}>Compare someone else →</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: COLORS.beige },
+  contentOuter: { paddingBottom: 80 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
+  errorText: { fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.navy },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10 },
+  retryText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.orange },
+
+  subHeader: {
+    position: 'sticky',
+    top: 64,
+    zIndex: 50,
+    backgroundColor: COLORS.navy,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(245,235,220,0.08)',
+    paddingVertical: 12,
+  } as object,
+  subHeaderInner: {
+    maxWidth: 1200,
+    alignSelf: 'center',
+    width: '100%',
+    paddingHorizontal: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    cursor: 'pointer',
+  } as object,
+  backBtnHover: { backgroundColor: 'rgba(245,235,220,0.08)' } as object,
+  backText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(245,235,220,0.65)' },
+  subTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 18,
+    color: COLORS.beige,
+    flex: 1,
+    textAlign: 'center',
+    paddingHorizontal: 16,
+  },
+  vs: { color: COLORS.orange },
+  shareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    cursor: 'pointer',
+  } as object,
+  shareBtnHover: { backgroundColor: 'rgba(245,235,220,0.08)' } as object,
+  shareText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(245,235,220,0.65)' },
+
+  body: {
+    maxWidth: 1200,
+    alignSelf: 'center',
+    width: '100%',
+    paddingHorizontal: 20,
+    paddingTop: 32,
+  },
+  desktopLayout: {
+    flexDirection: 'row',
+    gap: 20,
+    alignItems: 'flex-start',
+  } as object,
+
+  portraitWrap: {
+    flex: 3,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+  },
+  portraitImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    objectPosition: 'center top',
+  } as object,
+  portraitOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundImage:
+      'linear-gradient(to top, rgba(29,45,51,0.95) 0%, rgba(29,45,51,0.3) 50%, transparent 100%)',
+  } as object,
+  portraitLabel: {
+    position: 'absolute',
+    bottom: 24,
+    left: 20,
+    right: 20,
+  },
+  portraitLabelRight: { alignItems: 'flex-end' },
+  publisher: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: COLORS.orange,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginBottom: 6,
+  },
+  heroNameLarge: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 32,
+    color: COLORS.beige,
+    lineHeight: 34,
+    marginBottom: 6,
+    textShadow: '0 2px 12px rgba(0,0,0,0.6)',
+  } as object,
+  winsLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: 'rgba(245,235,220,0.5)',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+
+  centerCol: { flex: 2, gap: 16, minWidth: 220 },
+  verdictCard: {
+    backgroundColor: COLORS.navy,
+    borderRadius: 10,
+    padding: 20,
+    marginBottom: 4,
+  },
+  verdictText: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 18,
+    color: COLORS.beige,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  battleRows: { gap: 8 },
+  compareAnotherBtn: {
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.2)',
+    alignItems: 'center',
+    cursor: 'pointer',
+    marginTop: 4,
+  } as object,
+  compareAnotherBtnMobile: {
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  compareAnotherHover: { backgroundColor: 'rgba(41,60,67,0.06)' } as object,
+  compareAnotherText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: COLORS.navy,
+    opacity: 0.5,
+    letterSpacing: 0.3,
+  },
+
+  mobilePortraits: { flexDirection: 'row', gap: 6, marginBottom: 16 },
+  mobilePortraitWrap: { flex: 1, borderRadius: 10, overflow: 'hidden', backgroundColor: COLORS.navy },
+  mobilePortraitName: {
+    position: 'absolute',
+    bottom: 10,
+    left: 10,
+    right: 6,
+    fontFamily: 'Flame-Regular',
+    fontSize: 16,
+    color: COLORS.beige,
+    lineHeight: 19,
+  },
+  textRight: { textAlign: 'right' },
+});
+
+const wb = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  side: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  sideRight: { flexDirection: 'row-reverse' },
+  val: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: 'rgba(41,60,67,0.3)',
+    width: 24,
+    textAlign: 'center',
+    flexShrink: 0,
+  },
+  valWin: { color: COLORS.navy },
+  track: {
+    flex: 1,
+    height: 8,
+    backgroundColor: 'rgba(41,60,67,0.08)',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  barLeft: {
+    position: 'absolute',
+    right: 0, top: 0, bottom: 0,
+    borderRadius: 4,
+  },
+  barRight: {
+    position: 'absolute',
+    left: 0, top: 0, bottom: 0,
+    borderRadius: 4,
+  },
+  label: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    color: COLORS.grey,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    width: 68,
+    textAlign: 'center',
+    flexShrink: 0,
+  },
+  labelDesktop: { width: 90, fontSize: 10 } as object,
+});
