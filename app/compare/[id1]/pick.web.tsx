@@ -47,7 +47,8 @@ export default function WebPickOpponentScreen() {
       .then(setAll)
       .catch((e: unknown) => { console.warn('[WebPickOpponentScreen] Failed to load heroes:', e); })
       .finally(() => setLoading(false));
-    setTimeout(() => inputRef.current?.focus(), 100);
+    const t = setTimeout(() => inputRef.current?.focus(), 100);
+    return () => clearTimeout(t);
   }, []);
 
   const displayed = debouncedQuery.trim()
