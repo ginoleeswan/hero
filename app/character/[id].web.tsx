@@ -216,7 +216,7 @@ export default function WebCharacterScreen() {
 
             <View style={styles.infoGridDesktop as object}>
               <View style={styles.card}>
-                <Text style={styles.cardTitle}>Biography</Text>
+                <Text style={styles.cardTitle}>Overview</Text>
                 <View style={styles.cardDivider} />
                 <InfoRow label="Full name" value={stats.biography['full-name']} />
                 <InfoRow label="Alter egos" value={stats.biography['alter-egos']} />
@@ -295,7 +295,7 @@ export default function WebCharacterScreen() {
           ) : null}
 
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Biography</Text>
+            <Text style={styles.cardTitle}>Overview</Text>
             <View style={styles.cardDivider} />
             <InfoRow label="Full name" value={stats.biography['full-name']} />
             <InfoRow label="Alter egos" value={stats.biography['alter-egos']} />

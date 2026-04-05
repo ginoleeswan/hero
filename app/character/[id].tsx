@@ -416,8 +416,8 @@ export default function CharacterScreen() {
               </View>
             </Section>
 
-            {/* Biography */}
-            <Section title="Biography">
+            {/* Overview */}
+            <Section title="Overview">
               <InfoRow label="Full name" value={data.stats.biography['full-name']} />
               <InfoRow label="Alter egos" value={data.stats.biography['alter-egos']} />
               <InfoRow label="Place of birth" value={data.stats.biography['place-of-birth']} />
