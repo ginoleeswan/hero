@@ -20,12 +20,6 @@ import type { HeroSearchResult, PublisherFilter } from '../../src/lib/db/heroes'
 const PUBLISHER_FILTERS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
 const DISPLAY_LIMIT = 120;
 
-// Publisher logos — matched by checking publisher string
-const MARVEL_LOGO = require('../../assets/images/Marvel-Logo.jpg') as number;
-const DC_LOGO = require('../../assets/images/DC-Logo.png') as number;
-const DARK_HORSE_LOGO = require('../../assets/images/Dark_Horse_Comics_logo.png') as number;
-const STAR_WARS_LOGO = require('../../assets/images/star-wars-logo.png') as number;
-
 // CSS grid must live outside StyleSheet.create
 // Uses auto-fill so it collapses gracefully on tablet/mobile viewports
 const resultsGrid = {
@@ -38,12 +32,6 @@ const resultsGrid = {
 // ── Hero card ─────────────────────────────────────────────────────────────────
 function HeroCard({ item, onPress }: { item: HeroSearchResult; onPress: () => void }) {
   const source = heroImageSource(item.id, item.image_url, item.portrait_url);
-  const pub = (item.publisher ?? '').toLowerCase();
-  const isMarvel = pub.includes('marvel');
-  const isDC = pub.includes('dc');
-  const isDarkHorse = pub.includes('dark horse');
-  const isStarWars = pub.includes('george lucas') || pub.includes('star wars');
-
   return (
     <Pressable
       onPress={onPress}
@@ -64,26 +52,8 @@ function HeroCard({ item, onPress }: { item: HeroSearchResult; onPress: () => vo
       {/* Gradient overlay */}
       <View style={card.overlay as object} />
 
-      {/* Publisher badge — logo if known, text fallback otherwise */}
-      {(isMarvel || isDC || isDarkHorse || isStarWars) ? (
-        <View style={card.logoWrap}>
-          <Image
-            source={
-              isMarvel ? MARVEL_LOGO
-              : isDC ? DC_LOGO
-              : isDarkHorse ? DARK_HORSE_LOGO
-              : STAR_WARS_LOGO
-            }
-            style={
-              isMarvel ? (card.logoMarvel as object)
-              : isDC ? (card.logoDC as object)
-              : isDarkHorse ? (card.logoDarkHorse as object)
-              : (card.logoStarWars as object)
-            }
-            contentFit="contain"
-          />
-        </View>
-      ) : item.publisher ? (
+      {/* Publisher badge */}
+      {item.publisher ? (
         <View style={card.pubTextWrap}>
           <Text style={card.pubTextFallback} numberOfLines={1}>{item.publisher}</Text>
         </View>
@@ -117,11 +87,6 @@ const card = StyleSheet.create({
     backgroundImage:
       'linear-gradient(to top, rgba(29,45,51,0.97) 0%, rgba(29,45,51,0.1) 55%, transparent 100%)',
   } as object,
-  logoWrap: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-  },
   pubTextWrap: {
     position: 'absolute',
     top: 10,
@@ -135,26 +100,6 @@ const card = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  logoMarvel: {
-    width: 38,
-    height: 15,
-    borderRadius: 3,
-  } as object,
-  logoDC: {
-    width: 22,
-    height: 22,
-    borderRadius: 3,
-  } as object,
-  logoDarkHorse: {
-    width: 18,
-    height: 26,
-    borderRadius: 2,
-  } as object,
-  logoStarWars: {
-    width: 36,
-    height: 36,
-    borderRadius: 2,
-  } as object,
   bottom: {
     position: 'absolute',
     bottom: 12,

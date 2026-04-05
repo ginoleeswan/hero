@@ -20,21 +20,6 @@ import { COLORS } from '../../src/constants/colors';
 import { StatBar } from '../../src/components/web/StatBar';
 import type { CharacterData } from '../../src/types';
 
-const PUBLISHER_LOGOS: Record<string, number> = {
-  'Marvel Comics': require('../../assets/images/Marvel-Logo.jpg'),
-  Marvel: require('../../assets/images/Marvel-Logo.jpg'),
-  'DC Comics': require('../../assets/images/DC-Logo.png'),
-  'Dark Horse Comics': require('../../assets/images/Dark_Horse_Comics_logo.png'),
-  'George Lucas': require('../../assets/images/star-wars-logo.png'),
-};
-
-function publisherLogoStyle(publisher: string): object {
-  if (publisher.startsWith('DC')) return styles.logoSquare as object;
-  if (publisher.includes('Dark Horse')) return styles.logoDarkHorse as object;
-  if (publisher.includes('George Lucas')) return styles.logoSquare as object;
-  return styles.logoRect as object;
-}
-
 const STAT_CONFIG = [
   { key: 'intelligence', label: 'Intelligence', color: COLORS.blue },
   { key: 'strength', label: 'Strength', color: COLORS.red },
@@ -174,18 +159,10 @@ export default function WebCharacterScreen() {
           {alias ? <Text style={styles.heroAlias}>{alias}</Text> : null}
         </View>
 
-        {/* Publisher logo — bottom-right corner */}
+        {/* Publisher — bottom-right corner */}
         {stats.biography.publisher ? (
           <View style={styles.publisherCorner}>
-            {PUBLISHER_LOGOS[stats.biography.publisher] ? (
-              <Image
-                source={PUBLISHER_LOGOS[stats.biography.publisher]}
-                style={publisherLogoStyle(stats.biography.publisher)}
-                contentFit="contain"
-              />
-            ) : (
-              <Text style={styles.heroPublisher}>{stats.biography.publisher}</Text>
-            )}
+            <Text style={styles.heroPublisher}>{stats.biography.publisher}</Text>
           </View>
         ) : null}
       </View>
@@ -541,9 +518,6 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginBottom: 8,
   },
-  logoRect: { width: 56, height: 24, borderRadius: 3 },
-  logoSquare: { width: 32, height: 32, borderRadius: 3 },
-  logoDarkHorse: { width: 22, height: 32, borderRadius: 3 },
   heroName: {
     fontFamily: 'Flame-Regular',
     color: COLORS.beige,

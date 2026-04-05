@@ -23,10 +23,6 @@ import { COLORS } from '../../src/constants/colors';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { SearchSkeleton } from '../../src/components/skeletons/SearchSkeleton';
 
-const MARVEL_LOGO = require('../../assets/images/Marvel-Logo.jpg') as number;
-const DC_LOGO = require('../../assets/images/DC-Logo.png') as number;
-const DARK_HORSE_LOGO = require('../../assets/images/Dark_Horse_Comics_logo.png') as number;
-const STAR_WARS_LOGO = require('../../assets/images/star-wars-logo.png') as number;
 import { searchHeroes, rankResults } from '../../src/lib/db/heroes';
 import type { HeroSearchResult, PublisherFilter } from '../../src/lib/db/heroes';
 
@@ -58,11 +54,6 @@ function HeroCard({
 }) {
   const source = heroImageSource(item.id, item.image_url, item.portrait_url);
   const pub = (item.publisher ?? '').toLowerCase();
-  const isMarvel = pub.includes('marvel');
-  const isDC = pub.includes('dc');
-  const isDarkHorse = pub.includes('dark horse');
-  const isStarWars = pub.includes('george lucas') || pub.includes('star wars');
-  const hasLogo = isMarvel || isDC || isDarkHorse || isStarWars;
 
   return (
     <TouchableOpacity
@@ -88,21 +79,8 @@ function HeroCard({
         style={ncard.gradient}
       />
 
-      {/* Publisher logo — top left */}
-      {hasLogo ? (
-        <View style={ncard.logoWrap}>
-          <Image
-            source={isMarvel ? MARVEL_LOGO : isDC ? DC_LOGO : isDarkHorse ? DARK_HORSE_LOGO : STAR_WARS_LOGO}
-            style={
-              isMarvel ? ncard.logoMarvel
-              : isDC ? ncard.logoDC
-              : isDarkHorse ? ncard.logoDarkHorse
-              : ncard.logoStarWars
-            }
-            contentFit="contain"
-          />
-        </View>
-      ) : item.publisher ? (
+      {/* Publisher badge — top left */}
+      {item.publisher ? (
         <View style={ncard.pubTextWrap}>
           <Text style={ncard.pubText} numberOfLines={1}>{item.publisher}</Text>
         </View>
@@ -125,15 +103,6 @@ const ncard = StyleSheet.create({
   gradient: {
     ...StyleSheet.absoluteFillObject,
   },
-  logoWrap: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-  },
-  logoMarvel: { width: 38, height: 15, borderRadius: 3 },
-  logoDC: { width: 22, height: 22, borderRadius: 3 },
-  logoDarkHorse: { width: 18, height: 26, borderRadius: 2 },
-  logoStarWars: { width: 36, height: 36, borderRadius: 2 },
   pubTextWrap: {
     position: 'absolute',
     top: 10,

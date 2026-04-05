@@ -200,6 +200,11 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Disclaimer */}
+        <Text style={styles.disclaimer}>
+          Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics, or any other publisher.
+        </Text>
       </ScrollView>
     </View>
   );
@@ -212,6 +217,15 @@ const styles = StyleSheet.create({
   },
   scroll: {
     paddingBottom: 40,
+  },
+  disclaimer: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 10,
+    color: 'rgba(29,45,51,0.35)',
+    textAlign: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 24,
   },
 
   // Cover

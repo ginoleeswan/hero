@@ -30,11 +30,6 @@ const STAT_CONFIG: { key: string; label: string; tint: string }[] = [
   { key: 'combat', label: 'Combat', tint: COLORS.brown },
 ];
 
-const PUBLISHER_LOGOS: Record<string, number> = {
-  'Marvel Comics': require('../../assets/images/Marvel-Logo.jpg'),
-  Marvel: require('../../assets/images/Marvel-Logo.jpg'),
-  'DC Comics': require('../../assets/images/DC-Logo.png'),
-};
 
 function StatDial({ label, value, tint }: { label: string; value: string; tint: string }) {
   const numeric = parseInt(value, 10);
@@ -376,19 +371,7 @@ export default function CharacterScreen() {
                 {data.stats.biography['full-name'] ? (
                   <Text style={styles.heroAlias}>{data.stats.biography['full-name']}</Text>
                 ) : null}
-                {PUBLISHER_LOGOS[data.stats.biography.publisher] ? (
-                  <Image
-                    source={PUBLISHER_LOGOS[data.stats.biography.publisher]}
-                    style={
-                      data.stats.biography.publisher.startsWith('DC')
-                        ? styles.logoSquare
-                        : styles.logoRect
-                    }
-                    contentFit="contain"
-                  />
-                ) : (
-                  <Text style={styles.heroPublisher}>{data.stats.biography.publisher}</Text>
-                )}
+                <Text style={styles.heroPublisher}>{data.stats.biography.publisher}</Text>
               </View>
             ) : (
               <View style={styles.nameRow}>
@@ -540,8 +523,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  logoRect: { width: 50, height: 30, borderRadius: 4 },
-  logoSquare: { width: 30, height: 30, borderRadius: 4 },
   nameDivider: { height: 2, backgroundColor: COLORS.navy, borderRadius: 30, marginTop: 10 },
 
   // Summary

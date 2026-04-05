@@ -33,9 +33,6 @@ export const HERO_IMAGES: Record<string, number> = {
   '490': require('../../assets/images/nightcrawler.jpg'),
   '710': require('../../assets/images/weapon-x.jpg'),
   '274': require('../../assets/images/gambit.jpg'),
-  // Publisher logos
-  'marvel-logo': require('../../assets/images/Marvel-Logo.jpg'),
-  'dc-logo': require('../../assets/images/DC-Logo.png'),
 };
 
 const CDN_BASE = 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/images/md';
