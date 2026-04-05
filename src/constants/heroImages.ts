@@ -38,18 +38,46 @@ export const HERO_IMAGES: Record<string, number> = {
 const CDN_BASE = 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/images/md';
 
 /**
- * Resolves a hero image source.
- * Tries imageUrl slug first, then numeric id, then falls back to CDN using the numeric id.
+ * Appends Supabase image transform params to a Supabase Storage URL.
+ * Converts /storage/v1/object/public/ → /storage/v1/render/image/public/
+ * No-op for non-Supabase URLs.
+ */
+function supabaseResized(url: string, width: number, quality = 75): string {
+  if (!url.includes('/storage/v1/object/public/')) return url;
+  return url
+    .replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
+    .concat(`?width=${width}&quality=${quality}&resize=cover`);
+}
+
+/**
+ * Full-resolution source for detail screens (character page, featured panels).
+ * Priority: local bundled → Supabase portrait (full-res) → external URL → CDN
  */
 export function heroImageSource(
   id: string | number,
   imageUrl?: string | null,
   portraitUrl?: string | null,
 ): number | { uri: string } {
-  if (portraitUrl) return { uri: portraitUrl };
-  if (imageUrl && HERO_IMAGES[imageUrl]) return HERO_IMAGES[imageUrl];
-  const local = HERO_IMAGES[String(id)];
+  const local = HERO_IMAGES[String(id)] ?? (imageUrl ? HERO_IMAGES[imageUrl] : null);
   if (local) return local;
-  if (imageUrl && imageUrl.startsWith('http')) return { uri: imageUrl };
+  if (portraitUrl) return { uri: portraitUrl };
+  if (imageUrl?.startsWith('http')) return { uri: imageUrl };
+  return { uri: `${CDN_BASE}/${id}.jpg` };
+}
+
+/**
+ * Optimised source for grid cards (~160–200px wide on screen, 2× for retina = 400px).
+ * Always uses Supabase portraits (resized to 400px) when available.
+ * Priority: local bundled → Supabase portrait (resized 400px) → external URL → CDN fallback
+ */
+export function heroGridImageSource(
+  id: string | number,
+  imageUrl?: string | null,
+  portraitUrl?: string | null,
+): number | { uri: string } {
+  const local = HERO_IMAGES[String(id)] ?? (imageUrl ? HERO_IMAGES[imageUrl] : null);
+  if (local) return local;
+  if (portraitUrl) return { uri: supabaseResized(portraitUrl, 400) };
+  if (imageUrl?.startsWith('http')) return { uri: imageUrl };
   return { uri: `${CDN_BASE}/${id}.jpg` };
 }

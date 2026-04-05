@@ -21,7 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../../src/constants/colors';
-import { heroImageSource } from '../../src/constants/heroImages';
+import { heroGridImageSource, heroImageSource } from '../../src/constants/heroImages';
 import { SearchSkeleton } from '../../src/components/skeletons/SearchSkeleton';
 import { HomeSkeleton } from '../../src/components/skeletons/HomeSkeleton';
 import { HeroCard } from '../../src/components/HeroCard';
@@ -82,7 +82,7 @@ function PortraitCard({
   onPress: () => void;
   disabled: boolean;
 }) {
-  const source = heroImageSource(item.id, item.image_url, item.portrait_url);
+  const source = heroGridImageSource(item.id, item.image_url, item.portrait_url);
   const pub = (item.publisher ?? '').toLowerCase();
   const isMarvel = pub.includes('marvel');
   const isDC = pub.includes('dc');
