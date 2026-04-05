@@ -198,7 +198,7 @@ export default function WebCompareScreen() {
                 source={imageB}
                 contentFit="cover"
                 contentPosition="top"
-                style={styles.portraitImage as object}
+                style={[styles.portraitImage as object, { transform: [{ scaleX: -1 }] }]}
               />
               <View style={styles.portraitOverlay as object} />
               <View style={[styles.portraitLabel, styles.portraitLabelRight]}>
@@ -221,7 +221,7 @@ export default function WebCompareScreen() {
                 <Text style={styles.mobileWinsLabel}>{result.winsA} stat{result.winsA !== 1 ? 's' : ''}</Text>
               </View>
               <View style={[styles.mobilePortraitWrap, { height: portraitHeight }]}>
-                <Image source={imageB} contentFit="cover" contentPosition="top" style={StyleSheet.absoluteFill} />
+                <Image source={imageB} contentFit="cover" contentPosition="top" style={[StyleSheet.absoluteFill, { transform: [{ scaleX: -1 }] }]} />
                 <View style={styles.portraitOverlay as object} />
                 <Text style={[styles.mobilePortraitName, styles.textRight]}>{statsB.name}</Text>
                 <Text style={[styles.mobileWinsLabel, styles.textRight]}>{result.winsB} stat{result.winsB !== 1 ? 's' : ''}</Text>
