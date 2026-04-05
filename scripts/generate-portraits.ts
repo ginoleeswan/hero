@@ -27,17 +27,30 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const GEMINI_API_KEY = process.env.GOOGLE_AI_STUDIO_API_KEY!;
 
 const BUCKET = 'hero-portraits';
-const GEMINI_MODEL = 'gemini-2.0-flash-preview-image-generation';
+const GEMINI_MODEL = 'gemini-3-pro-image-preview';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
-// Style reference: the Spider-Man Mike Mitchell portrait
-const STYLE_REF_PATH = join((import.meta as unknown as { dir: string }).dir, '../assets/images/spiderman.jpg');
+// Style references — Wolverine, Deadpool, Thor: best painterly texture examples (v4 proven)
+const ASSETS_DIR = join((import.meta as unknown as { dir: string }).dir, '../assets/images');
+const STYLE_REF_PATHS = [
+  join(ASSETS_DIR, 'wolverine.jpg'),
+  join(ASSETS_DIR, 'deadpool.jpg'),
+  join(ASSETS_DIR, 'thor.jpg'),
+];
 
-const STYLE_PROMPT = `Redraw the character from the first image as a side-profile bust portrait \
-in exactly the style of the second reference image: flat graphic illustration, bold solid \
-background colour, simplified clean shapes, head and shoulders crop, smooth flat shading \
-with subtle gradients, clean outlines, poster art aesthetic. \
-Preserve the character's costume colours and identity. Do not include any text.`;
+const STYLE_PROMPT = `The first image is the character to redraw. Images 2, 3, and 4 are style reference illustrations — study every detail and match the style exactly.
+
+Redraw the character from image 1 as a strict pure side-profile bust portrait facing RIGHT (nose pointing right, pure 90-degree side view, exactly as in the references).
+
+RENDERING: Painterly digital illustration — rich dimensional depth, visible surface quality. Skin has warm highlights, cool shadows, subtle colour variation. Costume materials feel real: fabric has texture, metal has sheen, leather has gloss. Exactly like the references — NOT flat vector, NOT plain cartoon.
+
+BACKGROUND: A single bold vivid solid colour (choose a strong contrasting colour: orange, yellow, red, blue, teal). The background must be clearly and completely separate from the character — NO gradient into the figure, NO blending, NO grey or neutral tones. The background should pop.
+
+FRAMING: Tight portrait crop — head and upper shoulders only, cut off just below the collar/shoulders. No chest, no torso, no arms visible below the shoulders. Head fills at least 60% of the frame height. Portrait orientation (taller than wide).
+
+OUTLINE: Clean strong outline separating character from background.
+
+The character MUST face RIGHT. Preserve costume colours and identity exactly. No text, no logos.`;
 
 // The 34 heroes that already have curated local images (id → local file path)
 const LOCAL_PORTRAITS: Record<string, string> = {
@@ -127,19 +140,20 @@ async function generatePortrait(
   sourceMime: string,
   heroName: string,
 ): Promise<Uint8Array> {
-  const styleRefBytes = readFileSync(STYLE_REF_PATH);
-  const styleRefBase64 = styleRefBytes.toString('base64');
+  const styleRefs = STYLE_REF_PATHS.map((p) => ({
+    inline_data: { mime_type: 'image/jpeg', data: readFileSync(p).toString('base64') },
+  }));
 
   const body = {
     contents: [{
       parts: [
         { text: `Character name: ${heroName}. ${STYLE_PROMPT}` },
         { inline_data: { mime_type: sourceMime, data: sourceBase64 } },
-        { inline_data: { mime_type: 'image/jpeg', data: styleRefBase64 } },
+        ...styleRefs,
       ],
     }],
     generationConfig: {
-      responseModalities: ['image', 'text'],
+      responseModalities: ['IMAGE', 'TEXT'],
     },
   };
 
@@ -168,14 +182,17 @@ async function generatePortrait(
 
     const json = await res.json() as {
       candidates: Array<{
-        content: { parts: Array<{ inline_data?: { data: string } }> }
+        content: { parts: Array<{ inlineData?: { data: string }; inline_data?: { data: string } }> }
       }>
     };
 
-    const imagePart = json.candidates?.[0]?.content?.parts?.find((p) => p.inline_data?.data);
-    if (!imagePart?.inline_data?.data) throw new Error('No image in Gemini response');
+    const imagePart = json.candidates?.[0]?.content?.parts?.find(
+      (p) => p.inlineData?.data ?? p.inline_data?.data,
+    );
+    const imageData = imagePart?.inlineData?.data ?? imagePart?.inline_data?.data;
+    if (!imageData) throw new Error('No image in Gemini response');
 
-    return Buffer.from(imagePart.inline_data.data, 'base64');
+    return Buffer.from(imageData, 'base64');
   }
   throw lastError ?? new Error('Gemini request failed after retries');
 }
