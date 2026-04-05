@@ -18,9 +18,15 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../../src/constants/colors';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { SearchSkeleton } from '../../src/components/skeletons/SearchSkeleton';
+
+const MARVEL_LOGO = require('../../assets/images/Marvel-Logo.jpg') as number;
+const DC_LOGO = require('../../assets/images/DC-Logo.png') as number;
+const DARK_HORSE_LOGO = require('../../assets/images/Dark_Horse_Comics_logo.png') as number;
+const STAR_WARS_LOGO = require('../../assets/images/star-wars-logo.png') as number;
 import { searchHeroes, rankResults } from '../../src/lib/db/heroes';
 import type { HeroSearchResult, PublisherFilter } from '../../src/lib/db/heroes';
 
@@ -52,11 +58,11 @@ function HeroCard({
 }) {
   const source = heroImageSource(item.id, item.image_url, item.portrait_url);
   const pub = (item.publisher ?? '').toLowerCase();
-  const pubLabel = pub.includes('marvel')
-    ? 'Marvel'
-    : pub.includes('dc')
-      ? 'DC'
-      : item.publisher ?? null;
+  const isMarvel = pub.includes('marvel');
+  const isDC = pub.includes('dc');
+  const isDarkHorse = pub.includes('dark horse');
+  const isStarWars = pub.includes('george lucas') || pub.includes('star wars');
+  const hasLogo = isMarvel || isDC || isDarkHorse || isStarWars;
 
   return (
     <TouchableOpacity
@@ -65,6 +71,7 @@ function HeroCard({
       disabled={disabled}
       style={[ncard.wrap, { width: cardWidth, height: Math.round(cardWidth * 1.48) }]}
     >
+      {/* Hero image */}
       <Image
         source={source}
         contentFit="cover"
@@ -73,12 +80,35 @@ function HeroCard({
         placeholder={COLORS.navy}
         transition={200}
       />
-      <View style={ncard.overlay} />
-      {pubLabel ? (
-        <View style={ncard.pubWrap}>
-          <Text style={ncard.pubText} numberOfLines={1}>{pubLabel}</Text>
+
+      {/* Gradient overlay — matches web */}
+      <LinearGradient
+        colors={['transparent', 'rgba(29,45,51,0.18)', 'rgba(29,45,51,0.97)']}
+        locations={[0, 0.45, 1]}
+        style={ncard.gradient}
+      />
+
+      {/* Publisher logo — top left */}
+      {hasLogo ? (
+        <View style={ncard.logoWrap}>
+          <Image
+            source={isMarvel ? MARVEL_LOGO : isDC ? DC_LOGO : isDarkHorse ? DARK_HORSE_LOGO : STAR_WARS_LOGO}
+            style={
+              isMarvel ? ncard.logoMarvel
+              : isDC ? ncard.logoDC
+              : isDarkHorse ? ncard.logoDarkHorse
+              : ncard.logoStarWars
+            }
+            contentFit="contain"
+          />
+        </View>
+      ) : item.publisher ? (
+        <View style={ncard.pubTextWrap}>
+          <Text style={ncard.pubText} numberOfLines={1}>{item.publisher}</Text>
         </View>
       ) : null}
+
+      {/* Hero name — bottom */}
       <View style={ncard.bottom}>
         <Text style={ncard.name} numberOfLines={2}>{item.name}</Text>
       </View>
@@ -92,37 +122,42 @@ const ncard = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
   },
-  overlay: {
+  gradient: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'transparent',
   },
-  pubWrap: {
+  logoWrap: {
     position: 'absolute',
-    top: 8,
-    left: 8,
+    top: 10,
+    left: 10,
+  },
+  logoMarvel: { width: 38, height: 15, borderRadius: 3 },
+  logoDC: { width: 22, height: 22, borderRadius: 3 },
+  logoDarkHorse: { width: 18, height: 26, borderRadius: 2 },
+  logoStarWars: { width: 36, height: 36, borderRadius: 2 },
+  pubTextWrap: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    right: 10,
   },
   pubText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 8,
-    color: COLORS.orange,
+    fontSize: 9,
+    color: 'rgba(245,235,220,0.55)',
     textTransform: 'uppercase',
-    letterSpacing: 1.2,
+    letterSpacing: 1,
   },
   bottom: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 10,
-    paddingBottom: 10,
-    paddingTop: 24,
-    backgroundColor: 'rgba(29,45,51,0.88)',
+    bottom: 12,
+    left: 12,
+    right: 12,
   },
   name: {
     fontFamily: 'Flame-Regular',
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.beige,
-    lineHeight: 17,
+    lineHeight: 18,
   },
 });
 
