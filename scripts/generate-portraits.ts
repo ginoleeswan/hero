@@ -18,6 +18,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { createClient } from '@supabase/supabase-js';
+
 import 'dotenv/config';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -46,7 +47,7 @@ RENDERING: Painterly digital illustration — rich dimensional depth, visible su
 
 BACKGROUND: A single bold vivid solid colour (choose a strong contrasting colour: orange, yellow, red, blue, teal). The background must be clearly and completely separate from the character — NO gradient into the figure, NO blending, NO grey or neutral tones. The background should pop.
 
-FRAMING: Tight portrait crop — head and upper shoulders only, cut off just below the collar/shoulders. No chest, no torso, no arms visible below the shoulders. Head fills at least 60% of the frame height. Portrait orientation (taller than wide).
+FRAMING: This is a HEADSHOT — the face and head fill the entire canvas. Think of a passport photo or a coin portrait — nothing but the face, with the very tops of the shoulders just barely visible at the bottom edge. The chin should be roughly 15% from the bottom of the image, the top of the head 10% from the top. Zero chest, zero torso. Portrait orientation (taller than wide).
 
 OUTLINE: Clean strong outline separating character from background.
 
@@ -97,6 +98,8 @@ const heroIdFlag = args.find((_, i) => args[i - 1] === '--hero-id') ?? null;
 const dryRun = args.includes('--dry-run');
 const concurrencyArg = args.find((_, i) => args[i - 1] === '--concurrency');
 const CONCURRENCY = concurrencyArg ? parseInt(concurrencyArg, 10) : 3;
+const limitArg = args.find((_, i) => args[i - 1] === '--limit');
+const LIMIT = limitArg ? parseInt(limitArg, 10) : null;
 
 // ─── Supabase client (service role — write access to Storage) ─────────────────
 
@@ -134,6 +137,7 @@ async function fetchImageAsBase64(url: string): Promise<{ base64: string; mimeTy
   const mimeType = res.headers.get('content-type') ?? 'image/jpeg';
   return { base64, mimeType };
 }
+
 
 async function generatePortrait(
   sourceBase64: string,
@@ -261,6 +265,9 @@ async function phase2(filterHeroId?: string): Promise<void> {
   if (filterHeroId) {
     query = query.eq('id', filterHeroId) as typeof query;
   }
+  if (LIMIT) {
+    query = query.limit(LIMIT) as typeof query;
+  }
 
   const { data: heroes, error } = await query;
   if (error) throw new Error(`Failed to fetch heroes: ${error.message}`);
@@ -306,6 +313,7 @@ async function main() {
   console.log(`Hero Portrait Generator`);
   console.log(`Mode: ${dryRun ? 'DRY RUN' : 'LIVE'}`);
   if (heroIdFlag) console.log(`Filter: hero ${heroIdFlag} only`);
+  if (LIMIT) console.log(`Limit: ${LIMIT} heroes`);
 
   // Phase 1 only runs when not filtering to a single hero
   if (!heroIdFlag) await phase1();
