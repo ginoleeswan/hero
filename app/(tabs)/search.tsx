@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
 import { SearchSkeleton } from '../../src/components/skeletons/SearchSkeleton';
-import { searchHeroes } from '../../src/lib/db/heroes';
+import { searchHeroes, rankResults } from '../../src/lib/db/heroes';
 import type { HeroSearchResult, PublisherFilter } from '../../src/lib/db/heroes';
 
 const PUBLISHER_PILLS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
@@ -53,7 +53,7 @@ export default function SearchScreen() {
     setError(false);
     searchHeroes(debouncedQuery, publisherFilter)
       .then((data) => {
-        if (!cancelled) setResults(data);
+        if (!cancelled) setResults(rankResults(data, debouncedQuery));
       })
       .catch(() => {
         if (!cancelled) setError(true);

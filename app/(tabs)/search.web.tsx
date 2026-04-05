@@ -13,7 +13,7 @@ import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleto
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../src/constants/colors';
 import { heroImageSource } from '../../src/constants/heroImages';
-import { searchHeroes } from '../../src/lib/db/heroes';
+import { searchHeroes, rankResults } from '../../src/lib/db/heroes';
 import type { HeroSearchResult, PublisherFilter } from '../../src/lib/db/heroes';
 
 const PUBLISHER_FILTERS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
@@ -24,10 +24,11 @@ const MARVEL_LOGO = require('../../assets/images/Marvel-Logo.jpg') as number;
 const DC_LOGO = require('../../assets/images/DC-Logo.png') as number;
 
 // CSS grid must live outside StyleSheet.create
+// Uses auto-fill so it collapses gracefully on tablet/mobile viewports
 const resultsGrid = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(6, 1fr)',
-  gridAutoRows: '240px',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+  gridAutoRows: '220px',
   gap: 10,
 };
 
@@ -180,22 +181,18 @@ export default function WebSearchScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Client-side filter — instant, no network on every keystroke
+  // Client-side smart filter + ranking — instant, no network on every keystroke
   const filtered = useMemo(() => {
-    let list = allHeroes;
-    if (query.trim()) {
-      const q = query.toLowerCase();
-      list = list.filter((h) => h.name.toLowerCase().includes(q));
-    }
-    if (publisher !== 'All') {
-      list = list.filter((h) => {
-        const pub = (h.publisher ?? '').toLowerCase();
-        if (publisher === 'Marvel') return pub.includes('marvel');
-        if (publisher === 'DC') return pub.includes('dc');
-        return !pub.includes('marvel') && !pub.includes('dc');
-      });
-    }
-    return list;
+    // Apply publisher filter first
+    let list = publisher === 'All' ? allHeroes : allHeroes.filter((h) => {
+      const pub = (h.publisher ?? '').toLowerCase();
+      if (publisher === 'Marvel') return pub.includes('marvel');
+      if (publisher === 'DC') return pub.includes('dc');
+      return !pub.includes('marvel') && !pub.includes('dc');
+    });
+
+    // Then rank by relevance (prefix > contains > full_name > alias)
+    return query.trim() ? rankResults(list, query) : list;
   }, [allHeroes, query, publisher]);
 
   const displayed = filtered.slice(0, DISPLAY_LIMIT);
@@ -305,7 +302,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
   scroll: { flex: 1 },
   scrollContent: {
-    padding: 24,
+    padding: 16,
     maxWidth: 1280,
     alignSelf: 'center',
     width: '100%',
@@ -328,22 +325,23 @@ const styles = StyleSheet.create({
     maxWidth: 1280,
     alignSelf: 'center',
     width: '100%',
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     gap: 10,
   },
 
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 18,
+    gap: 14,
   } as object,
 
+  // Hidden on very small screens via fontSize scaling
   commandLabel: {
     fontFamily: 'Flame-Regular',
-    fontSize: 26,
+    fontSize: 22,
     color: COLORS.beige,
     flexShrink: 0,
-    lineHeight: 30,
+    lineHeight: 26,
   } as object,
 
   underlineWrap: {

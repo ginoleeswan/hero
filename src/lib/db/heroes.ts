@@ -5,9 +5,38 @@ import type { CharacterData } from '../../types';
 export type Hero = Tables<'heroes'>;
 export type HeroCategory = 'popular' | 'villain' | 'xmen';
 export type PublisherFilter = 'All' | 'Marvel' | 'DC' | 'Other';
+
+const norm = (s: string) => s.toLowerCase().replace(/[\s\-_.]/g, '');
+
+/** Re-rank Supabase results by relevance: prefix > contains > full_name > alias */
+export function rankResults(list: HeroSearchResult[], query: string): HeroSearchResult[] {
+  if (!query.trim()) return list;
+  const q = query.trim().toLowerCase();
+  const qn = norm(q);
+  return list
+    .map((h) => {
+      const nl = h.name.toLowerCase();
+      const nn = norm(h.name);
+      const fl = (h.full_name ?? '').toLowerCase();
+      const an = (h.aliases ?? []).map(norm);
+      let score: number;
+      if (nl === q)                              score = 0;
+      else if (nl.startsWith(q))                score = 1;
+      else if (nn.startsWith(qn))               score = 2;
+      else if (nl.includes(q))                  score = 3;
+      else if (nn.includes(qn))                 score = 4;
+      else if (fl.startsWith(q))                score = 5;
+      else if (fl.includes(q))                  score = 6;
+      else if (an.some((a) => a.startsWith(qn))) score = 7;
+      else                                       score = 8;
+      return { h, score };
+    })
+    .sort((a, b) => a.score - b.score)
+    .map((s) => s.h);
+}
 export type HeroSearchResult = Pick<
   Hero,
-  'id' | 'name' | 'publisher' | 'image_md_url' | 'image_url' | 'portrait_url'
+  'id' | 'name' | 'publisher' | 'image_md_url' | 'image_url' | 'portrait_url' | 'full_name' | 'aliases'
 >;
 
 export interface HeroesByCategory {
@@ -45,11 +74,13 @@ export async function searchHeroes(
 ): Promise<HeroSearchResult[]> {
   let q = supabase
     .from('heroes')
-    .select('id, name, publisher, image_md_url, image_url, portrait_url')
+    .select('id, name, publisher, image_md_url, image_url, portrait_url, full_name, aliases')
     .order('name')
     .limit(limit);
 
-  if (query.trim()) q = q.ilike('name', `%${query}%`) as typeof q;
+  if (query.trim()) {
+    q = q.or(`name.ilike.%${query}%,full_name.ilike.%${query}%`) as typeof q;
+  }
 
   if (publisher === 'Marvel') {
     q = q.ilike('publisher', '%marvel%') as typeof q;
