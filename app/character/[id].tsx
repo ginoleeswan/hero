@@ -357,7 +357,7 @@ export default function CharacterScreen() {
         style={styles.scroll}
         contentContainerStyle={{
           paddingTop: HERO_IMAGE_HEIGHT - 160,
-          paddingBottom: insets.bottom + 32,
+          paddingBottom: insets.bottom + 96,
         }}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
@@ -474,6 +474,24 @@ export default function CharacterScreen() {
           </>
         )}
       </Animated.ScrollView>
+
+      {/* Compare strip — fixed above safe-area bottom */}
+      {data && (
+        <View style={[styles.compareStrip, { paddingBottom: insets.bottom || 12 }]}>
+          <TouchableOpacity
+            onPress={() =>
+              router.push(
+                `/compare/${id}/pick?name=${encodeURIComponent(data.stats.name)}`
+              )
+            }
+            activeOpacity={0.85}
+            style={styles.compareStripBtn}
+          >
+            <Ionicons name="git-compare-outline" size={18} color={COLORS.beige} />
+            <Text style={styles.compareStripText}>Compare {data.stats.name}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -604,5 +622,31 @@ const styles = StyleSheet.create({
     color: COLORS.red,
     textAlign: 'center',
     paddingHorizontal: 32,
+  },
+
+  // Compare strip
+  compareStrip: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.navy,
+    paddingTop: 12,
+    paddingHorizontal: 16,
+  },
+  compareStripBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(245,235,220,0.08)',
+    borderRadius: 10,
+    paddingVertical: 14,
+  },
+  compareStripText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: COLORS.beige,
+    letterSpacing: 0.3,
   },
 });
