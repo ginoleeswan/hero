@@ -136,7 +136,7 @@ export default function NativeCompareScreen() {
             <Text style={styles.portraitName} numberOfLines={2}>{statsA.name}</Text>
           </View>
           <View style={styles.portraitWrap}>
-            <Image source={imageB} contentFit="cover" contentPosition="top" style={styles.portraitImage} />
+            <Image source={imageB} contentFit="cover" contentPosition="top" style={[styles.portraitImage, { transform: [{ scaleX: -1 }] }]} />
             <View style={styles.portraitOverlay} />
             <Text style={[styles.portraitName, styles.portraitNameRight]} numberOfLines={2}>{statsB.name}</Text>
           </View>
