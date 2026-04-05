@@ -186,8 +186,8 @@ const styles = StyleSheet.create({
   // ── Header ──────────────────────────────────────────────────────────────────
   header: {
     backgroundColor: COLORS.navy,
-    paddingTop: 48,
-    paddingBottom: 36,
+    paddingTop: 36,
+    paddingBottom: 28,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(245,235,220,0.07)',
   } as object,
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
     paddingHorizontal: 32,
-    gap: 20,
+    gap: 16,
   },
 
   titleRow: {
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     color: 'rgba(245,235,220,0.4)',
     textTransform: 'uppercase',
     letterSpacing: 2,
-    marginTop: -12,
+    marginTop: -8,
   } as object,
 
   // ── Input ───────────────────────────────────────────────────────────────────
@@ -240,9 +240,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(245,235,220,0.14)',
     borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    gap: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    gap: 10,
     transition: 'border-color 150ms ease',
   } as object,
 
