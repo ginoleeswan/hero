@@ -89,6 +89,7 @@ export default function CharacterScreen() {
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const compareStripStyle = [styles.compareStrip, { paddingBottom: insets.bottom || 12 }] as const;
   const { user } = useAuth();
   const [data, setData] = useState<CharacterData | null>(null);
   const [comicVineLoading, setComicVineLoading] = useState(true);
@@ -477,7 +478,7 @@ export default function CharacterScreen() {
 
       {/* Compare strip — fixed above safe-area bottom */}
       {data && (
-        <View style={[styles.compareStrip, { paddingBottom: insets.bottom || 12 }]}>
+        <View style={compareStripStyle}>
           <TouchableOpacity
             onPress={() =>
               router.push(
