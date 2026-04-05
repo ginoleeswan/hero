@@ -18,9 +18,14 @@ export function TopNav() {
   const inputRef = useRef<TextInput>(null);
 
   const initial = user?.email?.charAt(0).toUpperCase() ?? '';
-  const isExplore = pathname === EXPLORE_PATH;
   const isDesktop = width >= DESKTOP_BP;
-  const showSearch = isExplore && isDesktop;
+
+  const handleQueryChange = (text: string) => {
+    setQuery(text);
+    if (text.length > 0 && pathname !== EXPLORE_PATH) {
+      router.push('/');
+    }
+  };
 
   return (
     <View style={styles.nav as object}>
@@ -31,8 +36,8 @@ export function TopNav() {
           <HeroLogo iconSize={24} fontSize={19} color={COLORS.beige} gap={8} />
         </Pressable>
 
-        {/* Center — search input on desktop explore, nav links otherwise */}
-        {showSearch ? (
+        {/* Center — search on desktop, empty spacer on mobile */}
+        {isDesktop ? (
           <View style={styles.searchWrap as object}>
             <TextInput
               ref={inputRef}
@@ -40,7 +45,7 @@ export function TopNav() {
               placeholder="Hero or villain name…"
               placeholderTextColor="rgba(245,235,220,0.28)"
               value={query}
-              onChangeText={setQuery}
+              onChangeText={handleQueryChange}
             />
             {query.length > 0 ? (
               <Pressable
@@ -54,48 +59,11 @@ export function TopNav() {
             ) : null}
           </View>
         ) : (
-          <View style={styles.links}>
-            {([{ label: 'Explore', path: '/' }, { label: 'Profile', path: '/profile' }] as const).map(
-              ({ label, path }) => {
-                const active = pathname === path;
-                return (
-                  <Pressable
-                    key={path}
-                    onPress={() => router.push(path)}
-                    style={({ hovered }: { hovered?: boolean }) =>
-                      [styles.pill, (active || hovered) && (styles.pillActive as object)] as object
-                    }
-                  >
-                    {({ hovered }: { hovered?: boolean }) => (
-                      <Text
-                        style={[
-                          styles.link,
-                          hovered && !active && styles.linkHover,
-                          active && styles.linkActive,
-                        ]}
-                      >
-                        {label}
-                      </Text>
-                    )}
-                  </Pressable>
-                );
-              }
-            )}
-          </View>
+          <View style={styles.centerSpacer} />
         )}
 
-        {/* Right slot — Profile link (desktop explore only) + avatar */}
+        {/* Right slot — avatar */}
         <View style={styles.rightSlot}>
-          {showSearch && (
-            <Pressable
-              onPress={() => router.push('/profile')}
-              style={({ hovered }: { hovered?: boolean }) =>
-                [styles.profileLink, hovered && (styles.profileLinkHover as object)] as object
-              }
-            >
-              <Text style={styles.profileLinkText}>Profile</Text>
-            </Pressable>
-          )}
           {user ? (
             <Pressable
               onPress={() => router.push('/profile')}
@@ -141,35 +109,11 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
 
-  // ── Nav links (non-explore pages) ──────────────────────────────────────────
-  links: {
+  centerSpacer: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  pill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  pillActive: {
-    backgroundColor: 'rgba(245,235,220,0.09)',
-  } as object,
-  link: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 14,
-    color: 'rgba(245,235,220,0.45)',
-  },
-  linkHover: {
-    color: 'rgba(245,235,220,0.75)',
-  },
-  linkActive: {
-    fontFamily: 'Nunito_700Bold',
-    color: COLORS.beige,
   },
 
-  // ── Search input (desktop explore) ────────────────────────────────────────
+  // ── Search input ───────────────────────────────────────────────────────────
   searchWrap: {
     flex: 1,
     flexDirection: 'row',
@@ -206,27 +150,13 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  // ── Right slot ────────────────────────────────────────────────────────────
+  // ── Right slot ─────────────────────────────────────────────────────────────
   rightSlot: {
     flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
   },
-  profileLink: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 8,
-    cursor: 'pointer',
-  } as object,
-  profileLinkHover: {
-    backgroundColor: 'rgba(245,235,220,0.09)',
-  } as object,
-  profileLinkText: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 14,
-    color: 'rgba(245,235,220,0.45)',
-  },
+
   avatar: {
     width: 34,
     height: 34,
