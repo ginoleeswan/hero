@@ -20,6 +20,7 @@ import { COLORS } from '../../../src/constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_SIZE = (SCREEN_WIDTH - 12 * 3) / 2;
+const CARD_HEIGHT = Math.round(CARD_SIZE * 1.48);
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -44,7 +45,7 @@ export default function PickOpponentScreen() {
   useEffect(() => {
     searchHeroes('', 'All', 600)
       .then(setAll)
-      .catch(() => {})
+      .catch((e: unknown) => { console.warn('[PickOpponentScreen] Failed to load heroes:', e); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -105,7 +106,7 @@ export default function PickOpponentScreen() {
               <TouchableOpacity
                 onPress={() => handlePick(item)}
                 activeOpacity={0.82}
-                style={[styles.card, { width: CARD_SIZE, height: Math.round(CARD_SIZE * 1.48) }]}
+                style={styles.card}
               >
                 <Image
                   source={source}
@@ -164,6 +165,8 @@ const styles = StyleSheet.create({
   grid: { paddingHorizontal: 12, gap: 8 },
   row: { gap: 8, marginBottom: 0 },
   card: {
+    width: CARD_SIZE,
+    height: CARD_HEIGHT,
     borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
