@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { View, Text, Pressable, TextInput, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { COLORS } from '../../constants/colors';
@@ -12,19 +12,56 @@ const DESKTOP_BP = 768;
 export function TopNav() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { query, setQuery } = useSearch();
   const { width } = useWindowDimensions();
   const inputRef = useRef<TextInput>(null);
+  const containerRef = useRef<View>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const initial = user?.email?.charAt(0).toUpperCase() ?? '';
   const isDesktop = width >= DESKTOP_BP;
+  const avatarActive = menuOpen || pathname === '/profile';
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      const node = containerRef.current as unknown as Element | null;
+      if (node && !node.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen]);
+
+  // Close menu on Escape
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [menuOpen]);
 
   const handleQueryChange = (text: string) => {
     setQuery(text);
-    if (text.length > 0 && pathname !== EXPLORE_PATH) {
+    if (text.length === 1 && pathname !== EXPLORE_PATH) {
       router.push('/');
     }
+  };
+
+  const handleProfile = () => {
+    setMenuOpen(false);
+    router.push('/profile');
+  };
+
+  const handleSignOut = async () => {
+    setMenuOpen(false);
+    await signOut();
+    router.replace('/(auth)/login');
   };
 
   return (
@@ -62,17 +99,45 @@ export function TopNav() {
           <View style={styles.centerSpacer} />
         )}
 
-        {/* Right slot — avatar */}
+        {/* Right slot — avatar + dropdown */}
         <View style={styles.rightSlot}>
           {user ? (
-            <Pressable
-              onPress={() => router.push('/profile')}
-              style={({ hovered }: { hovered?: boolean }) =>
-                [styles.avatar, hovered && (styles.avatarHover as object)] as object
-              }
-            >
-              <Text style={styles.avatarText}>{initial}</Text>
-            </Pressable>
+            <View ref={containerRef} style={styles.menuContainer as object}>
+              <Pressable
+                aria-label="Account"
+                onPress={() => setMenuOpen((o) => !o)}
+                style={({ hovered }: { hovered?: boolean }) =>
+                  [
+                    styles.avatar,
+                    avatarActive && (styles.avatarActive as object),
+                    !avatarActive && hovered && (styles.avatarHover as object),
+                  ] as object
+                }
+              >
+                <Text style={styles.avatarText}>{initial}</Text>
+              </Pressable>
+
+              {menuOpen && (
+                <View style={styles.menu as object}>
+                  <Pressable
+                    onPress={handleProfile}
+                    style={({ hovered }: { hovered?: boolean }) =>
+                      [styles.menuItem, hovered && (styles.menuItemHover as object)] as object
+                    }
+                  >
+                    <Text style={styles.menuItemText}>Profile</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={handleSignOut}
+                    style={({ hovered }: { hovered?: boolean }) =>
+                      [styles.menuItem, hovered && (styles.menuItemHover as object)] as object
+                    }
+                  >
+                    <Text style={[styles.menuItemText, styles.menuItemSignOut]}>Sign out</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
           ) : null}
         </View>
 
@@ -157,6 +222,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  menuContainer: {
+    position: 'relative',
+  } as object,
+
+  // ── Avatar ─────────────────────────────────────────────────────────────────
   avatar: {
     width: 34,
     height: 34,
@@ -165,6 +235,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  } as object,
+  avatarActive: {
+    borderColor: COLORS.orange,
+    backgroundColor: 'rgba(232,98,26,0.65)',
   } as object,
   avatarHover: {
     opacity: 0.85,
@@ -173,5 +249,36 @@ const styles = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 15,
     color: 'white',
+  },
+
+  // ── Dropdown menu ──────────────────────────────────────────────────────────
+  menu: {
+    position: 'absolute',
+    top: 42,
+    right: 0,
+    zIndex: 200,
+    backgroundColor: COLORS.navy,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.1)',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.32)',
+    minWidth: 160,
+    overflow: 'hidden',
+  } as object,
+  menuItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    cursor: 'pointer',
+  } as object,
+  menuItemHover: {
+    backgroundColor: 'rgba(245,235,220,0.07)',
+  } as object,
+  menuItemText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14,
+    color: COLORS.beige,
+  },
+  menuItemSignOut: {
+    color: COLORS.orange,
   },
 });
