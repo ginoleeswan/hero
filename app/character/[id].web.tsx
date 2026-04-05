@@ -143,15 +143,28 @@ export default function WebCharacterScreen() {
             <Ionicons name="arrow-back" size={15} color={COLORS.beige} />
             <Text style={styles.backText}>Back</Text>
           </Pressable>
-          {user && (
-            <Pressable onPress={toggleFavourite} disabled={favLoading} style={styles.favBtn}>
-              <Ionicons
-                name={favourited ? 'heart' : 'heart-outline'}
-                size={20}
-                color={favourited ? COLORS.red : 'rgba(245,235,220,0.6)'}
-              />
+          <View style={styles.headerActions}>
+            {user && (
+              <Pressable onPress={toggleFavourite} disabled={favLoading} style={styles.favBtn}>
+                <Ionicons
+                  name={favourited ? 'heart' : 'heart-outline'}
+                  size={20}
+                  color={favourited ? COLORS.red : 'rgba(245,235,220,0.6)'}
+                />
+              </Pressable>
+            )}
+            <Pressable
+              onPress={() =>
+                router.push(`/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`)
+              }
+              style={({ hovered }: { hovered?: boolean }) =>
+                [styles.compareBtn, hovered && (styles.compareBtnHover as object)] as object
+              }
+            >
+              <Ionicons name="git-compare-outline" size={15} color={COLORS.beige} />
+              <Text style={styles.compareBtnText}>Compare</Text>
             </Pressable>
-          )}
+          </View>
         </View>
 
         <View style={styles.heroIdentity}>
@@ -508,10 +521,35 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   backText: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.beige },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   favBtn: {
     backgroundColor: 'rgba(255,255,255,0.1)',
     padding: 9,
     borderRadius: 20,
+  },
+  compareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.18)',
+    cursor: 'pointer',
+  } as object,
+  compareBtnHover: {
+    backgroundColor: 'rgba(245,235,220,0.08)',
+    borderColor: 'rgba(245,235,220,0.3)',
+  } as object,
+  compareBtnText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: 'rgba(245,235,220,0.75)',
   },
   heroIdentity: {
     paddingHorizontal: 24,
