@@ -91,12 +91,13 @@ export default function SearchScreen() {
     setPublisherFilter(pill);
   };
 
+  const isFiltered = debouncedQuery.trim() !== '' || publisherFilter !== 'All';
   const resultLabel =
     loadingList || error
       ? ''
-      : debouncedQuery.trim() === '' && publisherFilter === 'All'
-        ? `${results.length} heroes`
-        : `${results.length} result${results.length !== 1 ? 's' : ''}`;
+      : isFiltered
+        ? `${results.length} result${results.length !== 1 ? 's' : ''}`
+        : `${results.length} heroes`;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -105,17 +106,23 @@ export default function SearchScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}
       >
+        {/* ── Header ── */}
         <View style={styles.header}>
-          <Text style={styles.title}>search</Text>
+          <View style={styles.headerTop}>
+            <Text style={styles.indexLabel}>01</Text>
+            <Text style={styles.title}>Search</Text>
+          </View>
+          <Text style={styles.subtitle}>Heroes & Villains</Text>
         </View>
 
+        {/* ── Search bar ── */}
         <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color={COLORS.beige} style={styles.searchIcon} />
+          <Ionicons name="search" size={17} color="rgba(245,235,220,0.45)" style={styles.searchIcon} />
           <TextInput
             ref={inputRef}
             style={styles.searchInput}
             placeholder="Search heroes…"
-            placeholderTextColor="rgba(245,235,220,0.5)"
+            placeholderTextColor="rgba(245,235,220,0.35)"
             value={query}
             onChangeText={setQuery}
             autoCorrect={false}
@@ -127,11 +134,12 @@ export default function SearchScreen() {
               onPress={clearQuery}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.6)" />
+              <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.4)" />
             </TouchableOpacity>
           )}
         </View>
 
+        {/* ── Publisher pills ── */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -154,14 +162,21 @@ export default function SearchScreen() {
           })}
         </ScrollView>
 
-        {!loadingList && !error && <Text style={styles.resultCount}>{resultLabel}</Text>}
+        {/* ── Result count ── */}
+        {!loadingList && !error && resultLabel ? (
+          <Text style={styles.resultCount}>{resultLabel}</Text>
+        ) : null}
 
+        {/* ── Content ── */}
         {loadingList ? (
           <SearchSkeleton />
         ) : error ? (
           <View style={styles.center}>
-            <Ionicons name="wifi-outline" size={40} color={COLORS.grey} />
-            <Text style={styles.errorText}>Couldn't load heroes</Text>
+            <View style={styles.errorIcon}>
+              <Ionicons name="wifi-outline" size={28} color="rgba(41,60,67,0.3)" />
+            </View>
+            <Text style={styles.errorHeadline}>Can't load heroes</Text>
+            <Text style={styles.errorSub}>Check your connection and try again</Text>
             <TouchableOpacity
               style={styles.retryBtn}
               onPress={() => setRetryCount((c) => c + 1)}
@@ -180,35 +195,55 @@ export default function SearchScreen() {
             ItemSeparatorComponent={() => <View style={styles.separator} />}
             renderItem={({ item }) => {
               const isNavigating = navigatingId === item.id;
+              const imageUri = item.portrait_url ?? item.image_md_url ?? item.image_url ?? undefined;
               return (
                 <TouchableOpacity
                   style={styles.row}
-                  onPress={() => handlePress(item.id, item.name, item.portrait_url ?? item.image_url ?? '')}
-                  activeOpacity={0.7}
+                  onPress={() =>
+                    handlePress(item.id, item.name, item.portrait_url ?? item.image_url ?? '')
+                  }
+                  activeOpacity={0.75}
                   disabled={!!navigatingId}
                 >
-                  <Image
-                    source={{ uri: item.portrait_url ?? item.image_md_url ?? item.image_url ?? undefined }}
-                    style={styles.avatar}
-                    contentFit="cover"
-                    placeholder="#d4c8b8"
-                    transition={200}
-                  />
-                  <View style={styles.rowText}>
-                    <Text style={styles.heroName}>{item.name}</Text>
-                    {item.publisher ? <Text style={styles.publisher}>{item.publisher}</Text> : null}
+                  {/* Portrait thumbnail */}
+                  <View style={styles.thumbWrap}>
+                    <Image
+                      source={{ uri: imageUri }}
+                      style={styles.thumb}
+                      contentFit="cover"
+                      contentPosition="top"
+                      placeholder="#d4c8b8"
+                      transition={200}
+                    />
                   </View>
+
+                  {/* Text */}
+                  <View style={styles.rowText}>
+                    <Text style={styles.heroName} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    {item.publisher ? (
+                      <View style={styles.publisherRow}>
+                        <Text style={styles.publisherText} numberOfLines={1}>
+                          {item.publisher}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+
+                  {/* Trailing indicator */}
                   {isNavigating ? (
                     <ActivityIndicator size="small" color={COLORS.orange} />
                   ) : (
-                    <Ionicons name="chevron-forward" size={16} color={COLORS.grey} />
+                    <Ionicons name="chevron-forward" size={15} color="rgba(41,60,67,0.25)" />
                   )}
                 </TouchableOpacity>
               );
             }}
             ListEmptyComponent={
               <View style={styles.center}>
-                <Text style={styles.emptyText}>No heroes found</Text>
+                <Text style={styles.emptyHeadline}>No heroes found</Text>
+                <Text style={styles.emptySub}>Try a different search or filter</Text>
               </View>
             }
           />
@@ -218,72 +253,189 @@ export default function SearchScreen() {
   );
 }
 
-const AVATAR_SIZE = 48;
+const THUMB_W = 44;
+const THUMB_H = 58;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.beige },
   flex: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 },
-  title: { fontFamily: 'Righteous_400Regular', fontSize: 50, color: COLORS.navy },
+
+  // ── Header ──────────────────────────────────────────────────────────────────
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(41,60,67,0.08)',
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 10,
+  },
+  indexLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: COLORS.orange,
+    letterSpacing: 2,
+    marginBottom: 2,
+  },
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 44,
+    color: COLORS.navy,
+    lineHeight: 46,
+  },
+  subtitle: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 11,
+    color: COLORS.grey,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginTop: 1,
+  },
+
+  // ── Search bar ──────────────────────────────────────────────────────────────
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.navy,
-    borderRadius: 16,
-    marginHorizontal: 15,
+    borderRadius: 14,
+    marginHorizontal: 16,
+    marginTop: 14,
     marginBottom: 12,
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === 'ios' ? 12 : 8,
+    gap: 8,
   },
-  searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.beige },
-  pillsScroll: { flexGrow: 0, height: 48, marginBottom: 10 },
-  pillsContainer: { paddingHorizontal: 15, paddingVertical: 4, gap: 8, alignItems: 'center' },
+  searchIcon: { marginRight: 2 },
+  searchInput: {
+    flex: 1,
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 15,
+    color: COLORS.beige,
+  },
+
+  // ── Pills ───────────────────────────────────────────────────────────────────
+  pillsScroll: { flexGrow: 0, height: 44, marginBottom: 4 },
+  pillsContainer: { paddingHorizontal: 16, paddingVertical: 2, gap: 8, alignItems: 'center' },
   pill: {
-    height: 36,
-    paddingHorizontal: 18,
+    height: 34,
+    paddingHorizontal: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 18,
+    borderRadius: 17,
     borderWidth: 1.5,
-    borderColor: COLORS.navy,
+    borderColor: 'rgba(41,60,67,0.2)',
   },
-  pillActive: { backgroundColor: COLORS.navy },
-  pillText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
+  pillActive: { backgroundColor: COLORS.navy, borderColor: COLORS.navy },
+  pillText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(41,60,67,0.5)' },
   pillTextActive: { color: COLORS.beige },
+
+  // ── Result count ────────────────────────────────────────────────────────────
   resultCount: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.grey,
     paddingHorizontal: 20,
-    marginBottom: 6,
+    marginBottom: 8,
+    letterSpacing: 0.2,
   },
-  list: { paddingHorizontal: 15, paddingBottom: 32 },
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
-  avatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-    borderWidth: 2,
-    borderColor: COLORS.navy,
-    marginRight: 14,
+
+  // ── List ────────────────────────────────────────────────────────────────────
+  list: { paddingHorizontal: 16, paddingBottom: 40 },
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 11,
+    gap: 14,
   },
-  rowText: { flex: 1 },
-  heroName: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.navy },
-  publisher: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, marginTop: 1 },
+
+  thumbWrap: {
+    width: THUMB_W,
+    height: THUMB_H,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#d4c8b8',
+    flexShrink: 0,
+  },
+  thumb: {
+    width: THUMB_W,
+    height: THUMB_H,
+  },
+
+  rowText: { flex: 1, gap: 3 },
+  heroName: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 16,
+    color: COLORS.navy,
+    lineHeight: 18,
+  },
+  publisherRow: { flexDirection: 'row', alignItems: 'center' },
+  publisherText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11,
+    color: COLORS.grey,
+    letterSpacing: 0.2,
+  },
+
   separator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#d4c8b8',
-    marginLeft: AVATAR_SIZE + 14,
+    backgroundColor: 'rgba(41,60,67,0.1)',
+    marginLeft: THUMB_W + 14,
   },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { fontFamily: 'FlameSans-Regular', fontSize: 15, color: COLORS.grey },
-  errorText: { fontFamily: 'FlameSans-Regular', fontSize: 15, color: COLORS.grey },
+
+  // ── States ──────────────────────────────────────────────────────────────────
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
+    gap: 8,
+  },
+  errorIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(41,60,67,0.07)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  errorHeadline: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 20,
+    color: COLORS.navy,
+  },
+  errorSub: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.grey,
+    textAlign: 'center',
+    paddingHorizontal: 40,
+  },
   retryBtn: {
+    marginTop: 8,
     paddingHorizontal: 24,
     paddingVertical: 10,
     backgroundColor: COLORS.navy,
     borderRadius: 20,
   },
-  retryText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: COLORS.beige },
+  retryText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.beige,
+    letterSpacing: 0.3,
+  },
+  emptyHeadline: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 22,
+    color: COLORS.navy,
+  },
+  emptySub: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.grey,
+  },
 });

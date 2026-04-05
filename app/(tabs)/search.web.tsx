@@ -24,6 +24,18 @@ interface CdnHero {
 const PUBLISHER_FILTERS = ['All', 'Marvel', 'DC', 'Other'] as const;
 type PublisherFilter = (typeof PUBLISHER_FILTERS)[number];
 
+// CSS grid must live outside StyleSheet.create
+const resultsGrid = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+  gap: 14,
+};
+const skeletonGrid = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+  gap: 14,
+};
+
 export default function WebSearchScreen() {
   const router = useRouter();
   const [allHeroes, setAllHeroes] = useState<CdnHero[]>([]);
@@ -56,43 +68,88 @@ export default function WebSearchScreen() {
     return list.slice(0, 60);
   }, [allHeroes, query, publisher]);
 
+  const isFiltered = query.trim().length > 0 || publisher !== 'All';
+  const resultLabel = loading
+    ? ''
+    : isFiltered
+      ? `${results.length} result${results.length !== 1 ? 's' : ''}`
+      : `${allHeroes.length} heroes & villains`;
+
   return (
     <View style={styles.root}>
-      <View style={styles.heroBar}>
-        <View style={styles.inputWrap}>
-          <TextInput
-            style={styles.input as object}
-            placeholder="Search 700+ heroes and villains…"
-            placeholderTextColor="rgba(245,235,220,0.4)"
-            value={query}
-            onChangeText={setQuery}
-            autoFocus
-          />
-        </View>
-        <View style={styles.chips}>
-          {PUBLISHER_FILTERS.map((f) => (
-            <Pressable
-              key={f}
-              onPress={() => setPublisher(f)}
-              style={[styles.chip, publisher === f && styles.chipActive]}
-            >
-              <Text style={[styles.chipText, publisher === f && styles.chipTextActive]}>{f}</Text>
-            </Pressable>
-          ))}
+
+      {/* ── Editorial search header ── */}
+      <View style={styles.header as object}>
+        <View style={styles.headerInner}>
+          <View style={styles.titleRow}>
+            <Text style={styles.indexTag}>01</Text>
+            <Text style={styles.headline}>Search</Text>
+          </View>
+          <Text style={styles.subheadline}>
+            {allHeroes.length > 0 ? `${allHeroes.length}+` : '700+'} heroes & villains
+          </Text>
+
+          {/* Search input */}
+          <View style={styles.inputRow as object}>
+            <View style={styles.inputWrap as object}>
+              <TextInput
+                style={styles.input as object}
+                placeholder="Search by name…"
+                placeholderTextColor="rgba(245,235,220,0.3)"
+                value={query}
+                onChangeText={setQuery}
+                autoFocus
+              />
+              {query.length > 0 ? (
+                <Pressable
+                  onPress={() => setQuery('')}
+                  style={({ hovered }: { hovered?: boolean }) =>
+                    [styles.clearBtn, hovered && (styles.clearBtnHover as object)] as object
+                  }
+                >
+                  <Text style={styles.clearX}>×</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+
+          {/* Publisher filter pills */}
+          <View style={styles.pills}>
+            {PUBLISHER_FILTERS.map((f) => (
+              <Pressable
+                key={f}
+                onPress={() => setPublisher(f)}
+                style={({ hovered }: { hovered?: boolean }) =>
+                  [
+                    styles.pill,
+                    publisher === f && (styles.pillActive as object),
+                    hovered && publisher !== f && (styles.pillHover as object),
+                  ] as object
+                }
+              >
+                <Text style={[styles.pillText, publisher === f && styles.pillTextActive]}>
+                  {f}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
       </View>
 
+      {/* ── Results ── */}
       {loading ? (
         <SearchSkeleton />
       ) : results.length === 0 ? (
-        <View style={styles.center}>
-          <Text style={styles.emptyText}>
-            {query ? `No results for "${query}"` : 'Search for a hero or villain…'}
+        <View style={styles.empty}>
+          <Text style={styles.emptyHeadline}>No results</Text>
+          <Text style={styles.emptySubtext}>
+            {query ? `Nothing matched "${query}"` : 'Try a different filter'}
           </Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.resultsContent}>
-          <View style={styles.grid as object}>
+          {!loading && <Text style={styles.resultCount}>{resultLabel}</Text>}
+          <View style={resultsGrid as object}>
             {results.map((hero) => (
               <WebHeroCard
                 key={hero.id}
@@ -105,6 +162,7 @@ export default function WebSearchScreen() {
           </View>
         </ScrollView>
       )}
+
     </View>
   );
 }
@@ -113,7 +171,7 @@ function SearchSkeleton() {
   const opacity = useSkeletonAnim();
   return (
     <ScrollView contentContainerStyle={styles.resultsContent}>
-      <View style={styles.grid as object}>
+      <View style={skeletonGrid as object}>
         {Array.from({ length: 24 }).map((_, i) => (
           <SkeletonBlock key={i} opacity={opacity} height={180} borderRadius={12} />
         ))}
@@ -124,56 +182,163 @@ function SearchSkeleton() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
-  heroBar: {
+
+  // ── Header ──────────────────────────────────────────────────────────────────
+  header: {
     backgroundColor: COLORS.navy,
-    paddingVertical: 24,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    gap: 14,
-  },
-  inputWrap: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 30,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingTop: 48,
+    paddingBottom: 36,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(245,235,220,0.07)',
+  } as object,
+
+  headerInner: {
+    maxWidth: 680,
+    alignSelf: 'center',
     width: '100%',
-    maxWidth: 560,
+    paddingHorizontal: 32,
+    gap: 20,
   },
+
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 12,
+  },
+  indexTag: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.orange,
+    letterSpacing: 2,
+  },
+  headline: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 52,
+    color: COLORS.beige,
+    lineHeight: 54,
+  } as object,
+  subheadline: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.4)',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginTop: -12,
+  } as object,
+
+  // ── Input ───────────────────────────────────────────────────────────────────
+  inputRow: {
+    flexDirection: 'row',
+    gap: 12,
+  } as object,
+
+  inputWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(245,235,220,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.14)',
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    gap: 12,
+    transition: 'border-color 150ms ease',
+  } as object,
+
   input: {
+    flex: 1,
     fontFamily: 'Nunito_400Regular',
-    fontSize: 15,
+    fontSize: 16,
     color: COLORS.beige,
     outlineStyle: 'none',
-  },
-  chips: { flexDirection: 'row', gap: 8 },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  chipActive: { backgroundColor: COLORS.orange },
-  chipText: {
+  } as object,
+
+  clearBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(245,235,220,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+  } as object,
+  clearBtnHover: {
+    backgroundColor: 'rgba(245,235,220,0.2)',
+  } as object,
+  clearX: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 12,
-    color: 'rgba(245,235,220,0.6)',
-  },
-  chipTextActive: { color: 'white', fontFamily: 'Nunito_700Bold' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyText: {
-    fontFamily: 'FlameSans-Regular',
     fontSize: 15,
-    color: COLORS.grey,
+    color: 'rgba(245,235,220,0.6)',
+    lineHeight: 17,
+    marginTop: -1,
+  } as object,
+
+  // ── Filter pills ────────────────────────────────────────────────────────────
+  pills: {
+    flexDirection: 'row',
+    gap: 8,
   },
+
+  pill: {
+    paddingHorizontal: 18,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.18)',
+    cursor: 'pointer',
+    transition: 'all 150ms ease',
+  } as object,
+  pillActive: {
+    backgroundColor: COLORS.orange,
+    borderColor: COLORS.orange,
+  } as object,
+  pillHover: {
+    borderColor: 'rgba(245,235,220,0.45)',
+  } as object,
+  pillText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.45)',
+    letterSpacing: 0.5,
+  },
+  pillTextActive: {
+    color: 'white',
+  },
+
+  // ── Results area ────────────────────────────────────────────────────────────
   resultsContent: {
-    padding: 24,
+    paddingHorizontal: 32,
+    paddingTop: 32,
+    paddingBottom: 80,
     maxWidth: 1200,
     alignSelf: 'center',
     width: '100%',
   },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-    gap: 14,
+
+  resultCount: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: COLORS.grey,
+    letterSpacing: 0.3,
+    marginBottom: 18,
+  },
+
+  // ── Empty state ─────────────────────────────────────────────────────────────
+  empty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  emptyHeadline: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 32,
+    color: COLORS.navy,
+  },
+  emptySubtext: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14,
+    color: COLORS.grey,
   },
 });
