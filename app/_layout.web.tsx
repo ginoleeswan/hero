@@ -7,6 +7,7 @@ import { Nunito_400Regular, Nunito_700Bold, Nunito_900Black } from '@expo-google
 import { Righteous_400Regular } from '@expo-google-fonts/righteous';
 import { useAuth } from '../src/hooks/useAuth';
 import { TopNav } from '../src/components/web/TopNav';
+import { SearchProvider } from '../src/contexts/SearchContext';
 import { COLORS } from '../src/constants/colors';
 
 function WebAuthGate() {
@@ -27,12 +28,14 @@ function WebAuthGate() {
   const inAuthGroup = segments[0] === '(auth)';
 
   return (
-    <View style={styles.root}>
-      {!inAuthGroup && <TopNav />}
-      <View style={styles.content}>
-        <Stack screenOptions={{ headerShown: false }} />
+    <SearchProvider>
+      <View style={styles.root}>
+        {!inAuthGroup && <TopNav />}
+        <View style={styles.content}>
+          <Stack screenOptions={{ headerShown: false }} />
+        </View>
       </View>
-    </View>
+    </SearchProvider>
   );
 }
 
