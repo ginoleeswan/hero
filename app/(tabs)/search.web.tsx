@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useWindowDimensions } from 'react-native';
 import {
   View,
   Text,
@@ -59,7 +60,7 @@ function HeroCard({ item, onPress }: { item: HeroSearchResult; onPress: () => vo
       {/* Gradient overlay */}
       <View style={card.overlay as object} />
 
-      {/* Publisher logo — top left */}
+      {/* Publisher badge — logo if Marvel/DC, text otherwise */}
       {(isMarvel || isDC) ? (
         <View style={card.logoWrap}>
           <Image
@@ -67,6 +68,10 @@ function HeroCard({ item, onPress }: { item: HeroSearchResult; onPress: () => vo
             style={isMarvel ? (card.logoMarvel as object) : (card.logoDC as object)}
             contentFit="contain"
           />
+        </View>
+      ) : item.publisher ? (
+        <View style={card.pubTextWrap}>
+          <Text style={card.pubTextFallback} numberOfLines={1}>{item.publisher}</Text>
         </View>
       ) : null}
 
@@ -102,6 +107,19 @@ const card = StyleSheet.create({
     position: 'absolute',
     top: 10,
     left: 10,
+  },
+  pubTextWrap: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    right: 10,
+  },
+  pubTextFallback: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    color: 'rgba(245,235,220,0.55)',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   logoMarvel: {
     width: 38,
@@ -167,6 +185,8 @@ function EmptyState({ query, onClear }: { query: string; onClear: () => void }) 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function WebSearchScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 640;
 
   // Load all heroes ONCE on mount — filter client-side for instant results
   const [allHeroes, setAllHeroes] = useState<HeroSearchResult[]>([]);
@@ -218,11 +238,11 @@ export default function WebSearchScreen() {
 
           {/* Row 1: label + underline input + count */}
           <View style={styles.inputRow as object}>
-            <Text style={styles.commandLabel}>Search</Text>
+            {!isMobile && <Text style={styles.commandLabel}>Search</Text>}
             <View style={styles.underlineWrap as object}>
               <TextInput
-                style={styles.input as object}
-                placeholder="Hero or villain name…"
+                style={[styles.input, isMobile && (styles.inputMobile as object)] as object}
+                placeholder={isMobile ? 'Search heroes…' : 'Hero or villain name…'}
                 placeholderTextColor="rgba(245,235,220,0.28)"
                 value={query}
                 onChangeText={setQuery}
@@ -362,6 +382,7 @@ const styles = StyleSheet.create({
     outlineStyle: 'none',
     paddingVertical: 2,
   } as object,
+  inputMobile: { fontSize: 16 } as object,
 
   clearBtn: {
     width: 24,
