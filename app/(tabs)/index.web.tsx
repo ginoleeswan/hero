@@ -108,8 +108,7 @@ function PortraitCard({ item, onPress }: { item: HeroSearchResult; onPress: () =
         style={StyleSheet.absoluteFill}
         cachePolicy="memory-disk"
         recyclingKey={item.id}
-        transition={typeof source === 'object' && 'uri' in source ? 200 : null}
-        placeholder={COLORS.navy}
+        transition={null}
       />
       <View style={gcard.overlay as object} />
       <View style={gcard.logoWrap}>

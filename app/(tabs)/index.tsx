@@ -104,8 +104,7 @@ function PortraitCard({
         style={StyleSheet.absoluteFill}
         cachePolicy="memory-disk"
         recyclingKey={item.id}
-        transition={typeof source === 'object' && 'uri' in source ? 200 : null}
-        placeholder={COLORS.navy}
+        transition={null}
       />
       <LinearGradient
         colors={['transparent', 'rgba(29,45,51,0.18)', 'rgba(29,45,51,0.97)']}
