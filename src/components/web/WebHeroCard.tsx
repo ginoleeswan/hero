@@ -33,7 +33,14 @@ export function WebHeroCard({
         ] as object
       }
     >
-      <Image source={source} contentFit="cover" style={StyleSheet.absoluteFill} />
+      <Image
+        source={source}
+        contentFit="cover"
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        cachePolicy="memory-disk"
+        recyclingKey={id}
+        transition={typeof source === 'object' && 'uri' in source ? 200 : null}
+      />
       <View style={[styles.overlay, featured && (styles.overlayFeatured as object)] as object} />
       {featured && (
         <View style={styles.badge}>
@@ -78,7 +85,7 @@ const styles = StyleSheet.create({
     minHeight: 380,
   } as object,
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundImage: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 60%)',
   } as object,
   overlayFeatured: {

@@ -26,7 +26,14 @@ export function HeroCard({ id, name, imageUrl, portraitUrl, onPress }: HeroCardP
         onPress={onPress}
       >
         <SquircleMask style={styles.squircle} cornerRadius={50}>
-          <Image source={imageSource} contentFit="cover" style={styles.image} />
+          <Image
+            source={imageSource}
+            contentFit="cover"
+            style={styles.image}
+            cachePolicy="memory-disk"
+            recyclingKey={id}
+            transition={typeof imageSource === 'object' && 'uri' in imageSource ? 200 : null}
+          />
           <View style={styles.nameContainer}>
             <Text style={styles.name}>{name}</Text>
           </View>

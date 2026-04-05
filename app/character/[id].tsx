@@ -332,6 +332,9 @@ export default function CharacterScreen() {
           contentFit="cover"
           contentPosition="top"
           style={styles.heroImage}
+          cachePolicy="memory-disk"
+          recyclingKey={id ?? 'hero'}
+          transition={heroImage !== null && typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}
         />
         <LinearGradient
           colors={[
@@ -436,6 +439,9 @@ export default function CharacterScreen() {
                     source={{ uri: data.firstIssue.imageUrl }}
                     contentFit="contain"
                     style={styles.comicImage}
+                    cachePolicy="memory-disk"
+                    recyclingKey={`comic-${id}`}
+                    transition={200}
                   />
                 </View>
               </Section>

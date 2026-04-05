@@ -106,7 +106,9 @@ function PortraitCard({ item, onPress }: { item: HeroSearchResult; onPress: () =
         contentFit="cover"
         contentPosition="top center"
         style={StyleSheet.absoluteFill}
-        transition={200}
+        cachePolicy="memory-disk"
+        recyclingKey={item.id}
+        transition={typeof source === 'object' && 'uri' in source ? 200 : null}
         placeholder={COLORS.navy}
       />
       <View style={gcard.overlay as object} />
@@ -164,6 +166,9 @@ function SupportingCard({ hero, onPress }: { hero: Hero; onPress: () => void }) 
         contentFit="cover"
         contentPosition="top"
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
+        cachePolicy="memory-disk"
+        recyclingKey={String(hero.id)}
+        transition={typeof source === 'object' && 'uri' in source ? 200 : null}
       />
       <View style={sc.overlay as object} />
       <View style={sc.logoWrap}>
@@ -221,6 +226,9 @@ function FeaturedHeroPanel({ hero, onPress }: { hero: Hero; onPress: () => void 
         contentFit="cover"
         contentPosition="top"
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
+        cachePolicy="memory-disk"
+        recyclingKey={String(hero.id)}
+        transition={typeof source === 'object' && 'uri' in source ? 200 : null}
       />
       <View style={feat.overlay as object} />
       <View style={feat.content}>
@@ -446,7 +454,15 @@ export default function WebExploreScreen() {
   useEffect(() => {
     getHeroesByCategory().then(setCategories).catch(() => {});
     searchHeroes('', 'All', 600)
-      .then(setAllHeroes)
+      .then((heroes) => {
+        setAllHeroes(heroes);
+        // Prefetch remote portrait/image URLs into disk cache immediately
+        const remoteUrls = heroes
+          .slice(0, 200)
+          .map((h) => h.portrait_url ?? (h.image_url?.startsWith('http') ? h.image_url : null))
+          .filter((u): u is string => u !== null);
+        if (remoteUrls.length > 0) Image.prefetch(remoteUrls, 'memory-disk').catch(() => {});
+      })
       .catch(() => {})
       .finally(() => setLoadingAll(false));
   }, []);

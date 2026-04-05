@@ -185,6 +185,9 @@ export default function WebCharacterScreen() {
                       objectPosition: 'center top',
                     } as object
                   }
+                  cachePolicy="memory-disk"
+                  recyclingKey={id}
+                  transition={typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}
                 />
               ) : (
                 <View style={styles.portraitPlaceholder} />
@@ -271,6 +274,9 @@ export default function WebCharacterScreen() {
                     objectPosition: 'center top',
                   } as object
                 }
+                cachePolicy="memory-disk"
+                recyclingKey={id}
+                transition={typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}
               />
             ) : null}
           </View>
