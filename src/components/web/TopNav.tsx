@@ -27,6 +27,7 @@ export function TopNav() {
   useEffect(() => {
     if (!menuOpen) return;
     const handler = (e: MouseEvent) => {
+      // RNW renders View as a DOM element at runtime; the TS type doesn't reflect this.
       const node = containerRef.current as unknown as Element | null;
       if (node && !node.contains(e.target as Node)) {
         setMenuOpen(false);
