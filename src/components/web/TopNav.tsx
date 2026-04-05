@@ -14,20 +14,45 @@ export function TopNav() {
   const pathname = usePathname();
 
   return (
-    <View style={styles.nav}>
-      <Pressable onPress={() => router.push('/')}>
-        <HeroLogo iconSize={22} fontSize={18} color={COLORS.beige} gap={7} />
-      </Pressable>
-      <View style={styles.links}>
-        {NAV_LINKS.map(({ label, path }) => {
-          const active = pathname === path;
-          return (
-            <Pressable key={path} onPress={() => router.push(path)} style={styles.linkWrap}>
-              <Text style={[styles.link, active && styles.linkActive]}>{label}</Text>
-              {active && <View style={styles.underline} />}
-            </Pressable>
-          );
-        })}
+    <View style={styles.nav as object}>
+      {/* Inner container — matches page content max-width so logo aligns with cards */}
+      <View style={styles.inner}>
+        {/* Logo — left */}
+        <Pressable onPress={() => router.push('/')} style={styles.logoWrap}>
+          <HeroLogo iconSize={22} fontSize={18} color={COLORS.beige} gap={7} />
+        </Pressable>
+
+        {/* Links — center */}
+        <View style={styles.links}>
+          {NAV_LINKS.map(({ label, path }) => {
+            const active = pathname === path;
+            return (
+              <Pressable
+                key={path}
+                onPress={() => router.push(path)}
+                style={styles.linkWrap}
+              >
+                {({ hovered }: { hovered?: boolean }) => (
+                  <View style={styles.linkInner}>
+                    <Text
+                      style={[
+                        styles.link,
+                        hovered && !active && (styles.linkHover as object),
+                        active && styles.linkActive,
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                    {active && <View style={styles.activeDot} />}
+                  </View>
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* Right slot — mirrors logo width for symmetry */}
+        <View style={styles.rightSlot} />
       </View>
     </View>
   );
@@ -35,43 +60,75 @@ export function TopNav() {
 
 const styles = StyleSheet.create({
   nav: {
-    height: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    gap: 32,
-    backgroundColor: 'rgba(41,60,67,0.82)',
-    backdropFilter: 'blur(14px)',
-    WebkitBackdropFilter: 'blur(14px)',
+    position: 'sticky',
+    top: 0,
+    zIndex: 100,
+    height: 58,
+    backgroundColor: 'rgba(41,60,67,0.88)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(245,235,220,0.06)',
+    borderBottomColor: 'rgba(245,235,220,0.07)',
+    justifyContent: 'center',
   } as object,
 
+  // Constrained inner — aligns logo/links with page content (maxWidth: 1200)
+  inner: {
+    maxWidth: 1200,
+    width: '100%',
+    alignSelf: 'center',
+    paddingHorizontal: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  logoWrap: {
+    flex: 1,
+  },
+
+  // Links centered between logo and right slot
   links: {
     flexDirection: 'row',
-    gap: 8,
-  },
-  linkWrap: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
     alignItems: 'center',
-    overflow: 'visible',
+    gap: 4,
   },
+
+  linkWrap: {
+    paddingHorizontal: 14,
+    paddingVertical: 8, // ~44px total tap target with nav height
+  },
+
+  linkInner: {
+    alignItems: 'center',
+    gap: 5,
+  },
+
   link: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    color: 'rgba(245,235,220,0.55)',
+    fontSize: 14,
+    color: 'rgba(245,235,220,0.45)',
+    transition: 'color 150ms ease',
+  } as object,
+
+  linkHover: {
+    color: 'rgba(245,235,220,0.82)',
   },
+
   linkActive: {
-    color: COLORS.beige,
     fontFamily: 'Nunito_700Bold',
+    color: COLORS.beige,
   },
-  underline: {
-    position: 'absolute',
-    bottom: 0,
-    left: 12,
-    right: 12,
-    height: 2,
+
+  // Small orange dot replaces the chunky underline
+  activeDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: COLORS.orange,
+  },
+
+  // Same flex weight as logoWrap — keeps links visually centered
+  rightSlot: {
+    flex: 1,
   },
 });
