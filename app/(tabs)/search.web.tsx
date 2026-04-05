@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,11 @@ import { searchHeroes } from '../../src/lib/db/heroes';
 import type { HeroSearchResult, PublisherFilter } from '../../src/lib/db/heroes';
 
 const PUBLISHER_FILTERS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
+const DISPLAY_LIMIT = 120;
+
+// Publisher logos — matched by checking publisher string
+const MARVEL_LOGO = require('../../assets/images/Marvel-Logo.jpg') as number;
+const DC_LOGO = require('../../assets/images/DC-Logo.png') as number;
 
 // CSS grid must live outside StyleSheet.create
 const resultsGrid = {
@@ -26,23 +31,12 @@ const resultsGrid = {
   gap: 10,
 };
 
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return debounced;
-}
-
 // ── Hero card ─────────────────────────────────────────────────────────────────
 function HeroCard({ item, onPress }: { item: HeroSearchResult; onPress: () => void }) {
   const source = heroImageSource(item.id, item.image_url, item.portrait_url);
-  const pub = item.publisher?.toLowerCase().includes('marvel')
-    ? 'Marvel'
-    : item.publisher?.toLowerCase().includes('dc')
-      ? 'DC'
-      : null;
+  const pub = (item.publisher ?? '').toLowerCase();
+  const isMarvel = pub.includes('marvel');
+  const isDC = pub.includes('dc');
 
   return (
     <Pressable
@@ -51,19 +45,31 @@ function HeroCard({ item, onPress }: { item: HeroSearchResult; onPress: () => vo
         [card.wrap, hovered && (card.wrapHover as object)] as object
       }
     >
+      {/* Hero image */}
       <Image
         source={source}
         contentFit="cover"
         contentPosition="top center"
         style={StyleSheet.absoluteFill}
-        transition={180}
+        transition={200}
+        placeholder={COLORS.navy}
       />
+
+      {/* Gradient overlay */}
       <View style={card.overlay as object} />
-      {pub ? (
-        <View style={card.pubWrap}>
-          <Text style={card.pubText}>{pub}</Text>
+
+      {/* Publisher logo — top left */}
+      {(isMarvel || isDC) ? (
+        <View style={card.logoWrap}>
+          <Image
+            source={isMarvel ? MARVEL_LOGO : DC_LOGO}
+            style={isMarvel ? (card.logoMarvel as object) : (card.logoDC as object)}
+            contentFit="contain"
+          />
         </View>
       ) : null}
+
+      {/* Hero name — bottom */}
       <View style={card.bottom}>
         <Text style={card.name} numberOfLines={2}>
           {item.name}
@@ -83,26 +89,29 @@ const card = StyleSheet.create({
   } as object,
   wrapHover: {
     transform: [{ scale: 1.04 }],
-    boxShadow: '0 20px 56px rgba(0,0,0,0.3)',
+    boxShadow: '0 20px 56px rgba(0,0,0,0.32)',
     zIndex: 2,
   } as object,
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundImage:
-      'linear-gradient(to top, rgba(29,45,51,0.97) 0%, rgba(29,45,51,0.15) 55%, transparent 100%)',
+      'linear-gradient(to top, rgba(29,45,51,0.97) 0%, rgba(29,45,51,0.1) 55%, transparent 100%)',
   } as object,
-  pubWrap: {
+  logoWrap: {
     position: 'absolute',
     top: 10,
     left: 10,
   },
-  pubText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: COLORS.orange,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-  },
+  logoMarvel: {
+    width: 38,
+    height: 15,
+    borderRadius: 3,
+  } as object,
+  logoDC: {
+    width: 22,
+    height: 22,
+    borderRadius: 3,
+  } as object,
   bottom: {
     position: 'absolute',
     bottom: 12,
@@ -111,9 +120,9 @@ const card = StyleSheet.create({
   },
   name: {
     fontFamily: 'Flame-Regular',
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.beige,
-    lineHeight: 19,
+    lineHeight: 18,
     textShadow: '0 1px 10px rgba(0,0,0,0.9)',
   } as object,
 });
@@ -157,29 +166,51 @@ function EmptyState({ query, onClear }: { query: string; onClear: () => void }) 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function WebSearchScreen() {
   const router = useRouter();
-  const [results, setResults] = useState<HeroSearchResult[]>([]);
+
+  // Load all heroes ONCE on mount — filter client-side for instant results
+  const [allHeroes, setAllHeroes] = useState<HeroSearchResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [publisher, setPublisher] = useState<PublisherFilter>('All');
 
-  const debouncedQuery = useDebounce(query, 180);
-
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    searchHeroes(debouncedQuery, publisher, 600)
-      .then((data) => { if (!cancelled) setResults(data); })
+    searchHeroes('', 'All', 600)
+      .then(setAllHeroes)
       .catch(() => {})
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [debouncedQuery, publisher]);
+      .finally(() => setLoading(false));
+  }, []);
 
-  const isFiltered = query.trim().length > 0 || publisher !== 'All';
+  // Client-side filter — instant, no network on every keystroke
+  const filtered = useMemo(() => {
+    let list = allHeroes;
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      list = list.filter((h) => h.name.toLowerCase().includes(q));
+    }
+    if (publisher !== 'All') {
+      list = list.filter((h) => {
+        const pub = (h.publisher ?? '').toLowerCase();
+        if (publisher === 'Marvel') return pub.includes('marvel');
+        if (publisher === 'DC') return pub.includes('dc');
+        return !pub.includes('marvel') && !pub.includes('dc');
+      });
+    }
+    return list;
+  }, [allHeroes, query, publisher]);
+
+  const displayed = filtered.slice(0, DISPLAY_LIMIT);
+  const hasMore = filtered.length > DISPLAY_LIMIT;
+
   const countLabel = loading
     ? '—'
-    : isFiltered
-      ? `${results.length} result${results.length !== 1 ? 's' : ''}`
-      : `${results.length} heroes`;
+    : hasMore
+      ? `Showing ${DISPLAY_LIMIT} of ${filtered.length}`
+      : `${filtered.length} hero${filtered.length !== 1 ? 'es' : ''}`;
+
+  const handleClear = useCallback(() => {
+    setQuery('');
+    setPublisher('All');
+  }, []);
 
   return (
     <View style={styles.root}>
@@ -188,7 +219,7 @@ export default function WebSearchScreen() {
       <View style={styles.commandBar as object}>
         <View style={styles.commandInner}>
 
-          {/* Row 1: "Search" label + underline input + count */}
+          {/* Row 1: label + underline input + count */}
           <View style={styles.inputRow as object}>
             <Text style={styles.commandLabel}>Search</Text>
             <View style={styles.underlineWrap as object}>
@@ -211,10 +242,14 @@ export default function WebSearchScreen() {
                 </Pressable>
               ) : null}
             </View>
-            <Text style={styles.countBadge}>{countLabel}</Text>
+            {loading ? (
+              <ActivityIndicator size="small" color={COLORS.orange} />
+            ) : (
+              <Text style={styles.countBadge}>{countLabel}</Text>
+            )}
           </View>
 
-          {/* Row 2: publisher pills + loading indicator */}
+          {/* Row 2: publisher pills */}
           <View style={styles.filtersRow}>
             {PUBLISHER_FILTERS.map((f) => (
               <Pressable
@@ -233,9 +268,6 @@ export default function WebSearchScreen() {
                 </Text>
               </Pressable>
             ))}
-            {loading ? (
-              <ActivityIndicator size="small" color={COLORS.orange} style={styles.loader} />
-            ) : null}
           </View>
 
         </View>
@@ -244,15 +276,12 @@ export default function WebSearchScreen() {
       {/* ── Results ──────────────────────────────────────────────────────────── */}
       {loading ? (
         <SearchSkeleton />
-      ) : results.length === 0 ? (
-        <EmptyState
-          query={query}
-          onClear={() => { setQuery(''); setPublisher('All'); }}
-        />
+      ) : filtered.length === 0 ? (
+        <EmptyState query={query} onClear={handleClear} />
       ) : (
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
           <View style={resultsGrid as object}>
-            {results.map((item) => (
+            {displayed.map((item) => (
               <HeroCard
                 key={item.id}
                 item={item}
@@ -260,6 +289,11 @@ export default function WebSearchScreen() {
               />
             ))}
           </View>
+          {hasMore && (
+            <Text style={styles.moreHint}>
+              Refine your search to see more results
+            </Text>
+          )}
         </ScrollView>
       )}
 
@@ -355,7 +389,7 @@ const styles = StyleSheet.create({
     color: 'rgba(245,235,220,0.3)',
     letterSpacing: 0.5,
     flexShrink: 0,
-    minWidth: 72,
+    minWidth: 100,
     textAlign: 'right',
   } as object,
 
@@ -390,7 +424,15 @@ const styles = StyleSheet.create({
   },
   pillTextActive: { color: 'white' },
 
-  loader: { marginLeft: 8 },
+  // ── "More" hint ─────────────────────────────────────────────────────────────
+  moreHint: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: COLORS.grey,
+    textAlign: 'center',
+    marginTop: 28,
+    letterSpacing: 0.3,
+  },
 
   // ── Empty state ─────────────────────────────────────────────────────────────
   empty: {
@@ -422,9 +464,7 @@ const styles = StyleSheet.create({
     cursor: 'pointer',
     transition: 'background-color 150ms ease',
   } as object,
-  clearFilterHover: {
-    backgroundColor: COLORS.navy,
-  } as object,
+  clearFilterHover: { backgroundColor: COLORS.navy } as object,
   clearFilterText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
