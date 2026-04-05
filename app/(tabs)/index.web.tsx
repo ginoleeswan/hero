@@ -569,7 +569,7 @@ export default function WebExploreScreen() {
                 <Text style={styles.resultsQuery as object}>
                   {query.trim() ? `"${query}"` : publisher}
                 </Text>
-                {query.trim() && (
+                {query.trim().length > 0 && (
                   <Text style={styles.resultsMeta}>
                     {hasMore ? `Showing ${DISPLAY_LIMIT} of ${filtered.length} results` : `${filtered.length} result${filtered.length !== 1 ? 's' : ''}`}
                   </Text>
