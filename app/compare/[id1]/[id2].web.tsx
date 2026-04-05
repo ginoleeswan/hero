@@ -260,7 +260,6 @@ const styles = StyleSheet.create({
 
   subHeader: {
     position: 'sticky',
-    top: 64,
     zIndex: 50,
     backgroundColor: COLORS.navy,
     borderBottomWidth: 1,
@@ -312,8 +311,8 @@ const styles = StyleSheet.create({
     maxWidth: 1200,
     alignSelf: 'center',
     width: '100%',
-    paddingHorizontal: 20,
-    paddingTop: 32,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   desktopLayout: {
     flexDirection: 'row',
