@@ -167,7 +167,7 @@ export default function WebSearchScreen() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    searchHeroes(debouncedQuery, publisher)
+    searchHeroes(debouncedQuery, publisher, 600)
       .then((data) => { if (!cancelled) setResults(data); })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoading(false); });

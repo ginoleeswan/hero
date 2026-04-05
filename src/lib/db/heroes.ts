@@ -41,12 +41,13 @@ export async function getHeroById(id: string): Promise<Hero | null> {
 export async function searchHeroes(
   query: string,
   publisher: PublisherFilter,
+  limit = 100,
 ): Promise<HeroSearchResult[]> {
   let q = supabase
     .from('heroes')
     .select('id, name, publisher, image_md_url, image_url, portrait_url')
     .order('name')
-    .limit(100);
+    .limit(limit);
 
   if (query.trim()) q = q.ilike('name', `%${query}%`) as typeof q;
 
