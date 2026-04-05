@@ -23,6 +23,8 @@ const DISPLAY_LIMIT = 120;
 // Publisher logos — matched by checking publisher string
 const MARVEL_LOGO = require('../../assets/images/Marvel-Logo.jpg') as number;
 const DC_LOGO = require('../../assets/images/DC-Logo.png') as number;
+const DARK_HORSE_LOGO = require('../../assets/images/Dark_Horse_Comics_logo.png') as number;
+const STAR_WARS_LOGO = require('../../assets/images/star-wars-logo.png') as number;
 
 // CSS grid must live outside StyleSheet.create
 // Uses auto-fill so it collapses gracefully on tablet/mobile viewports
@@ -39,6 +41,8 @@ function HeroCard({ item, onPress }: { item: HeroSearchResult; onPress: () => vo
   const pub = (item.publisher ?? '').toLowerCase();
   const isMarvel = pub.includes('marvel');
   const isDC = pub.includes('dc');
+  const isDarkHorse = pub.includes('dark horse');
+  const isStarWars = pub.includes('george lucas') || pub.includes('star wars');
 
   return (
     <Pressable
@@ -60,12 +64,22 @@ function HeroCard({ item, onPress }: { item: HeroSearchResult; onPress: () => vo
       {/* Gradient overlay */}
       <View style={card.overlay as object} />
 
-      {/* Publisher badge — logo if Marvel/DC, text otherwise */}
-      {(isMarvel || isDC) ? (
+      {/* Publisher badge — logo if known, text fallback otherwise */}
+      {(isMarvel || isDC || isDarkHorse || isStarWars) ? (
         <View style={card.logoWrap}>
           <Image
-            source={isMarvel ? MARVEL_LOGO : DC_LOGO}
-            style={isMarvel ? (card.logoMarvel as object) : (card.logoDC as object)}
+            source={
+              isMarvel ? MARVEL_LOGO
+              : isDC ? DC_LOGO
+              : isDarkHorse ? DARK_HORSE_LOGO
+              : STAR_WARS_LOGO
+            }
+            style={
+              isMarvel ? (card.logoMarvel as object)
+              : isDC ? (card.logoDC as object)
+              : isDarkHorse ? (card.logoDarkHorse as object)
+              : (card.logoStarWars as object)
+            }
             contentFit="contain"
           />
         </View>
@@ -130,6 +144,16 @@ const card = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 3,
+  } as object,
+  logoDarkHorse: {
+    width: 18,
+    height: 26,
+    borderRadius: 2,
+  } as object,
+  logoStarWars: {
+    width: 36,
+    height: 36,
+    borderRadius: 2,
   } as object,
   bottom: {
     position: 'absolute',

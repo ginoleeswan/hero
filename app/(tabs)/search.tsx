@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -18,11 +19,15 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
+import { heroImageSource } from '../../src/constants/heroImages';
 import { SearchSkeleton } from '../../src/components/skeletons/SearchSkeleton';
 import { searchHeroes, rankResults } from '../../src/lib/db/heroes';
 import type { HeroSearchResult, PublisherFilter } from '../../src/lib/db/heroes';
 
 const PUBLISHER_PILLS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
+const COLUMNS = 2;
+const H_PAD = 12;
+const GAP = 8;
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -33,15 +38,106 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
+// ── Portrait card ─────────────────────────────────────────────────────────────
+function HeroCard({
+  item,
+  cardWidth,
+  onPress,
+  disabled,
+}: {
+  item: HeroSearchResult;
+  cardWidth: number;
+  onPress: () => void;
+  disabled: boolean;
+}) {
+  const source = heroImageSource(item.id, item.image_url, item.portrait_url);
+  const pub = (item.publisher ?? '').toLowerCase();
+  const pubLabel = pub.includes('marvel')
+    ? 'Marvel'
+    : pub.includes('dc')
+      ? 'DC'
+      : item.publisher ?? null;
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.82}
+      disabled={disabled}
+      style={[ncard.wrap, { width: cardWidth, height: Math.round(cardWidth * 1.48) }]}
+    >
+      <Image
+        source={source}
+        contentFit="cover"
+        contentPosition="top"
+        style={StyleSheet.absoluteFill}
+        placeholder={COLORS.navy}
+        transition={200}
+      />
+      <View style={ncard.overlay} />
+      {pubLabel ? (
+        <View style={ncard.pubWrap}>
+          <Text style={ncard.pubText} numberOfLines={1}>{pubLabel}</Text>
+        </View>
+      ) : null}
+      <View style={ncard.bottom}>
+        <Text style={ncard.name} numberOfLines={2}>{item.name}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+const ncard = StyleSheet.create({
+  wrap: {
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+  },
+  pubWrap: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+  },
+  pubText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 8,
+    color: COLORS.orange,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+  },
+  bottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+    paddingTop: 24,
+    backgroundColor: 'rgba(29,45,51,0.88)',
+  },
+  name: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 14,
+    color: COLORS.beige,
+    lineHeight: 17,
+  },
+});
+
+// ── Screen ────────────────────────────────────────────────────────────────────
 export default function SearchScreen() {
   const router = useRouter();
   const inputRef = useRef<TextInput>(null);
+  const { width } = useWindowDimensions();
+  const cardWidth = (width - H_PAD * 2 - GAP * (COLUMNS - 1)) / COLUMNS;
 
   const [results, setResults] = useState<HeroSearchResult[]>([]);
   const [query, setQuery] = useState('');
   const [loadingList, setLoadingList] = useState(true);
   const [error, setError] = useState(false);
-  const [navigatingId, setNavigatingId] = useState<string | null>(null);
+  const [navigating, setNavigating] = useState(false);
   const [publisherFilter, setPublisherFilter] = useState<PublisherFilter>('All');
   const [retryCount, setRetryCount] = useState(0);
 
@@ -61,34 +157,31 @@ export default function SearchScreen() {
       .finally(() => {
         if (!cancelled) setLoadingList(false);
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [debouncedQuery, publisherFilter, retryCount]);
 
   const handlePress = useCallback(
-    (id: string, name: string, imageUri: string) => {
-      if (navigatingId) return;
+    (item: HeroSearchResult) => {
+      if (navigating) return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setNavigatingId(id);
+      setNavigating(true);
       inputRef.current?.blur();
       router.push({
         pathname: '/character/[id]',
-        params: { id, name, imageUri },
+        params: {
+          id: item.id,
+          name: item.name,
+          imageUri: item.portrait_url ?? item.image_url ?? '',
+        },
       });
-      setTimeout(() => setNavigatingId(null), 1000);
+      setTimeout(() => setNavigating(false), 1000);
     },
-    [router, navigatingId],
+    [router, navigating],
   );
 
   const clearQuery = () => {
     setQuery('');
     inputRef.current?.focus();
-  };
-
-  const handlePillPress = (pill: PublisherFilter) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setPublisherFilter(pill);
   };
 
   const isFiltered = debouncedQuery.trim() !== '' || publisherFilter !== 'All';
@@ -121,7 +214,7 @@ export default function SearchScreen() {
           <TextInput
             ref={inputRef}
             style={styles.searchInput}
-            placeholder="Search heroes…"
+            placeholder="Hero, villain, or real name…"
             placeholderTextColor="rgba(245,235,220,0.35)"
             value={query}
             onChangeText={setQuery}
@@ -130,10 +223,7 @@ export default function SearchScreen() {
             returnKeyType="search"
           />
           {query.length > 0 && (
-            <TouchableOpacity
-              onPress={clearQuery}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
+            <TouchableOpacity onPress={clearQuery} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.4)" />
             </TouchableOpacity>
           )}
@@ -153,7 +243,10 @@ export default function SearchScreen() {
               <TouchableOpacity
                 key={pill}
                 style={[styles.pill, active && styles.pillActive]}
-                onPress={() => handlePillPress(pill)}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setPublisherFilter(pill);
+                }}
                 activeOpacity={0.7}
               >
                 <Text style={[styles.pillText, active && styles.pillTextActive]}>{pill}</Text>
@@ -185,76 +278,35 @@ export default function SearchScreen() {
               <Text style={styles.retryText}>Retry</Text>
             </TouchableOpacity>
           </View>
+        ) : results.length === 0 ? (
+          <View style={styles.center}>
+            <Text style={styles.emptyHeadline}>No heroes found</Text>
+            <Text style={styles.emptySub}>Try a different search or filter</Text>
+          </View>
         ) : (
           <FlatList
             data={results}
             keyExtractor={(h) => h.id}
+            numColumns={COLUMNS}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            contentContainerStyle={styles.list}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
-            renderItem={({ item }) => {
-              const isNavigating = navigatingId === item.id;
-              const imageUri = item.portrait_url ?? item.image_md_url ?? item.image_url ?? undefined;
-              return (
-                <TouchableOpacity
-                  style={styles.row}
-                  onPress={() =>
-                    handlePress(item.id, item.name, item.portrait_url ?? item.image_url ?? '')
-                  }
-                  activeOpacity={0.75}
-                  disabled={!!navigatingId}
-                >
-                  {/* Portrait thumbnail */}
-                  <View style={styles.thumbWrap}>
-                    <Image
-                      source={{ uri: imageUri }}
-                      style={styles.thumb}
-                      contentFit="cover"
-                      contentPosition="top"
-                      placeholder="#d4c8b8"
-                      transition={200}
-                    />
-                  </View>
-
-                  {/* Text */}
-                  <View style={styles.rowText}>
-                    <Text style={styles.heroName} numberOfLines={1}>
-                      {item.name}
-                    </Text>
-                    {item.publisher ? (
-                      <View style={styles.publisherRow}>
-                        <Text style={styles.publisherText} numberOfLines={1}>
-                          {item.publisher}
-                        </Text>
-                      </View>
-                    ) : null}
-                  </View>
-
-                  {/* Trailing indicator */}
-                  {isNavigating ? (
-                    <ActivityIndicator size="small" color={COLORS.orange} />
-                  ) : (
-                    <Ionicons name="chevron-forward" size={15} color="rgba(41,60,67,0.25)" />
-                  )}
-                </TouchableOpacity>
-              );
-            }}
-            ListEmptyComponent={
-              <View style={styles.center}>
-                <Text style={styles.emptyHeadline}>No heroes found</Text>
-                <Text style={styles.emptySub}>Try a different search or filter</Text>
-              </View>
-            }
+            contentContainerStyle={styles.grid}
+            columnWrapperStyle={styles.row}
+            ItemSeparatorComponent={() => <View style={{ height: GAP }} />}
+            renderItem={({ item }) => (
+              <HeroCard
+                item={item}
+                cardWidth={cardWidth}
+                onPress={() => handlePress(item)}
+                disabled={navigating}
+              />
+            )}
           />
         )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const THUMB_W = 44;
-const THUMB_H = 58;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.beige },
@@ -268,11 +320,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(41,60,67,0.08)',
   },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 10,
-  },
+  headerTop: { flexDirection: 'row', alignItems: 'baseline', gap: 10 },
   indexLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
@@ -280,12 +328,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginBottom: 2,
   },
-  title: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 44,
-    color: COLORS.navy,
-    lineHeight: 46,
-  },
+  title: { fontFamily: 'Flame-Regular', fontSize: 44, color: COLORS.navy, lineHeight: 46 },
   subtitle: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
@@ -309,12 +352,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   searchIcon: { marginRight: 2 },
-  searchInput: {
-    flex: 1,
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 15,
-    color: COLORS.beige,
-  },
+  searchInput: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.beige },
 
   // ── Pills ───────────────────────────────────────────────────────────────────
   pillsScroll: { flexGrow: 0, height: 44, marginBottom: 4 },
@@ -337,63 +375,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
     color: COLORS.grey,
-    paddingHorizontal: 20,
+    paddingHorizontal: H_PAD,
     marginBottom: 8,
     letterSpacing: 0.2,
   },
 
-  // ── List ────────────────────────────────────────────────────────────────────
-  list: { paddingHorizontal: 16, paddingBottom: 40 },
-
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 11,
-    gap: 14,
-  },
-
-  thumbWrap: {
-    width: THUMB_W,
-    height: THUMB_H,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#d4c8b8',
-    flexShrink: 0,
-  },
-  thumb: {
-    width: THUMB_W,
-    height: THUMB_H,
-  },
-
-  rowText: { flex: 1, gap: 3 },
-  heroName: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 16,
-    color: COLORS.navy,
-    lineHeight: 18,
-  },
-  publisherRow: { flexDirection: 'row', alignItems: 'center' },
-  publisherText: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 11,
-    color: COLORS.grey,
-    letterSpacing: 0.2,
-  },
-
-  separator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(41,60,67,0.1)',
-    marginLeft: THUMB_W + 14,
-  },
+  // ── Grid ────────────────────────────────────────────────────────────────────
+  grid: { paddingHorizontal: H_PAD, paddingBottom: 40 },
+  row: { gap: GAP },
 
   // ── States ──────────────────────────────────────────────────────────────────
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 60,
-    gap: 8,
-  },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 60 },
   errorIcon: {
     width: 56,
     height: 56,
@@ -403,11 +395,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 4,
   },
-  errorHeadline: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 20,
-    color: COLORS.navy,
-  },
+  errorHeadline: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.navy },
   errorSub: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
@@ -422,20 +410,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.navy,
     borderRadius: 20,
   },
-  retryText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: COLORS.beige,
-    letterSpacing: 0.3,
-  },
-  emptyHeadline: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 22,
-    color: COLORS.navy,
-  },
-  emptySub: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    color: COLORS.grey,
-  },
+  retryText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.beige, letterSpacing: 0.3 },
+  emptyHeadline: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.navy },
+  emptySub: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
 });

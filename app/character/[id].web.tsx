@@ -24,7 +24,16 @@ const PUBLISHER_LOGOS: Record<string, number> = {
   'Marvel Comics': require('../../assets/images/Marvel-Logo.jpg'),
   Marvel: require('../../assets/images/Marvel-Logo.jpg'),
   'DC Comics': require('../../assets/images/DC-Logo.png'),
+  'Dark Horse Comics': require('../../assets/images/Dark_Horse_Comics_logo.png'),
+  'George Lucas': require('../../assets/images/star-wars-logo.png'),
 };
+
+function publisherLogoStyle(publisher: string): object {
+  if (publisher.startsWith('DC')) return styles.logoSquare as object;
+  if (publisher.includes('Dark Horse')) return styles.logoDarkHorse as object;
+  if (publisher.includes('George Lucas')) return styles.logoSquare as object;
+  return styles.logoRect as object;
+}
 
 const STAT_CONFIG = [
   { key: 'intelligence', label: 'Intelligence', color: COLORS.blue },
@@ -171,11 +180,7 @@ export default function WebCharacterScreen() {
             {PUBLISHER_LOGOS[stats.biography.publisher] ? (
               <Image
                 source={PUBLISHER_LOGOS[stats.biography.publisher]}
-                style={
-                  stats.biography.publisher.startsWith('DC')
-                    ? (styles.logoSquare as object)
-                    : (styles.logoRect as object)
-                }
+                style={publisherLogoStyle(stats.biography.publisher)}
                 contentFit="contain"
               />
             ) : (
@@ -538,6 +543,7 @@ const styles = StyleSheet.create({
   },
   logoRect: { width: 56, height: 24, borderRadius: 3 },
   logoSquare: { width: 32, height: 32, borderRadius: 3 },
+  logoDarkHorse: { width: 22, height: 32, borderRadius: 3 },
   heroName: {
     fontFamily: 'Flame-Regular',
     color: COLORS.beige,
