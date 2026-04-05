@@ -1,6 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { COLORS } from '../../constants/colors';
+import { useAuth } from '../../hooks/useAuth';
 import { HeroLogo } from './HeroLogo';
 
 const NAV_LINKS = [
@@ -12,17 +13,20 @@ const NAV_LINKS = [
 export function TopNav() {
   const router = useRouter();
   const pathname = usePathname();
+  const { user } = useAuth();
+
+  const initial = user?.email?.charAt(0).toUpperCase() ?? '';
 
   return (
     <View style={styles.nav as object}>
-      {/* Inner container — matches page content max-width so logo aligns with cards */}
       <View style={styles.inner}>
-        {/* Logo — left */}
+
+        {/* Logo */}
         <Pressable onPress={() => router.push('/')} style={styles.logoWrap}>
-          <HeroLogo iconSize={22} fontSize={18} color={COLORS.beige} gap={7} />
+          <HeroLogo iconSize={24} fontSize={19} color={COLORS.beige} gap={8} />
         </Pressable>
 
-        {/* Links — center */}
+        {/* Links — centered */}
         <View style={styles.links}>
           {NAV_LINKS.map(({ label, path }) => {
             const active = pathname === path;
@@ -30,29 +34,40 @@ export function TopNav() {
               <Pressable
                 key={path}
                 onPress={() => router.push(path)}
-                style={styles.linkWrap}
+                style={({ hovered }: { hovered?: boolean }) =>
+                  [styles.pill, (active || hovered) && (styles.pillActive as object)] as object
+                }
               >
                 {({ hovered }: { hovered?: boolean }) => (
-                  <View style={styles.linkInner}>
-                    <Text
-                      style={[
-                        styles.link,
-                        hovered && !active && (styles.linkHover as object),
-                        active && styles.linkActive,
-                      ]}
-                    >
-                      {label}
-                    </Text>
-                    {active && <View style={styles.activeDot} />}
-                  </View>
+                  <Text
+                    style={[
+                      styles.link,
+                      hovered && !active && styles.linkHover,
+                      active && styles.linkActive,
+                    ]}
+                  >
+                    {label}
+                  </Text>
                 )}
               </Pressable>
             );
           })}
         </View>
 
-        {/* Right slot — mirrors logo width for symmetry */}
-        <View style={styles.rightSlot} />
+        {/* Right — user avatar */}
+        <View style={styles.rightSlot}>
+          {user ? (
+            <Pressable
+              onPress={() => router.push('/profile')}
+              style={({ hovered }: { hovered?: boolean }) =>
+                [styles.avatar, hovered && (styles.avatarHover as object)] as object
+              }
+            >
+              <Text style={styles.avatarText}>{initial}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
       </View>
     </View>
   );
@@ -63,16 +78,15 @@ const styles = StyleSheet.create({
     position: 'sticky',
     top: 0,
     zIndex: 100,
-    height: 58,
-    backgroundColor: 'rgba(41,60,67,0.88)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
+    height: 64,
+    backgroundColor: 'rgba(41,60,67,0.92)',
+    backdropFilter: 'blur(24px)',
+    WebkitBackdropFilter: 'blur(24px)',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(245,235,220,0.07)',
+    borderBottomColor: 'rgba(245,235,220,0.08)',
     justifyContent: 'center',
   } as object,
 
-  // Constrained inner — aligns logo/links with page content (maxWidth: 1200)
   inner: {
     maxWidth: 1200,
     width: '100%',
@@ -86,49 +100,57 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Links centered between logo and right slot
+  // ── Nav links ──────────────────────────────────────────────────────────────
   links: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
   },
 
-  linkWrap: {
-    paddingHorizontal: 14,
-    paddingVertical: 8, // ~44px total tap target with nav height
+  // Pill wraps each link — fills on active/hover
+  pill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
-
-  linkInner: {
-    alignItems: 'center',
-    gap: 5,
-  },
+  pillActive: {
+    backgroundColor: 'rgba(245,235,220,0.09)',
+  } as object,
 
   link: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
     color: 'rgba(245,235,220,0.45)',
-    transition: 'color 150ms ease',
-  } as object,
-
-  linkHover: {
-    color: 'rgba(245,235,220,0.82)',
   },
-
+  linkHover: {
+    color: 'rgba(245,235,220,0.75)',
+  },
   linkActive: {
     fontFamily: 'Nunito_700Bold',
     color: COLORS.beige,
   },
 
-  // Small orange dot replaces the chunky underline
-  activeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.orange,
-  },
-
-  // Same flex weight as logoWrap — keeps links visually centered
+  // ── Right slot — user avatar ───────────────────────────────────────────────
   rightSlot: {
     flex: 1,
+    alignItems: 'flex-end',
+  },
+
+  avatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: COLORS.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+  } as object,
+  avatarHover: {
+    opacity: 0.85,
+  } as object,
+  avatarText: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 15,
+    color: 'white',
   },
 });
