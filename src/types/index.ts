@@ -9,6 +9,9 @@ export type UserProfile = Tables<'user_profiles'>;
 // Narrowed category type (DB stores as string, but we know the valid values)
 export type HeroCategory = 'popular' | 'villain' | 'xmen';
 
+// Shared hero projection used by favourites and view history
+export type FavouriteHero = Pick<Hero, 'id' | 'name' | 'image_url' | 'portrait_url'>;
+
 // ─── SuperheroAPI response types ─────────────────────────────────────────────
 
 export interface HeroStats {

@@ -1,7 +1,7 @@
 import { supabase } from '../supabase';
-import type { Tables } from '../../types/database.generated';
+import type { FavouriteHero } from '../../types';
 
-export type FavouriteHero = Pick<Tables<'heroes'>, 'id' | 'name' | 'image_url' | 'portrait_url'>;
+export type { FavouriteHero };
 
 export async function isFavourited(userId: string, heroId: string): Promise<boolean> {
   const { data } = await supabase

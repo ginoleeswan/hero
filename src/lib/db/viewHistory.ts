@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import type { FavouriteHero } from './favourites';
+import type { FavouriteHero } from '../../types';
 
 export async function recordView(userId: string, heroId: string): Promise<void> {
   await supabase
@@ -24,7 +24,7 @@ export async function getRecentlyViewed(
 
   if (historyError) throw historyError;
 
-  const heroIds = (historyData ?? []).map((r) => r.hero_id as string);
+  const heroIds = (historyData ?? []).map((r) => r.hero_id).filter((id): id is string => id !== null);
   if (heroIds.length === 0) return [];
 
   const { data: heroData, error: heroError } = await supabase
@@ -34,6 +34,11 @@ export async function getRecentlyViewed(
 
   if (heroError) throw heroError;
 
-  const heroMap = new Map((heroData ?? []).map((h) => [h.id as string, h as FavouriteHero]));
+  const heroMap = new Map(
+    (heroData ?? []).map((h) => [
+      h.id as string,
+      { id: h.id, name: h.name, image_url: h.image_url, portrait_url: h.portrait_url } as FavouriteHero,
+    ]),
+  );
   return heroIds.map((id) => heroMap.get(id)).filter((h): h is FavouriteHero => h !== undefined);
 }
