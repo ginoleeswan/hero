@@ -224,37 +224,91 @@ function WebSpotlight({
   onPress: () => void;
   onDotPress: (i: number) => void;
 }) {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
   const source = heroImageSource(String(hero.id), hero.image_url, hero.portrait_url);
+
+  if (isDesktop) {
+    // Desktop: left text panel + right hero image
+    return (
+      <Pressable
+        onPress={onPress}
+        style={({ hovered }: { hovered?: boolean }) =>
+          [spot.wrapDesktop, hovered && (spot.wrapDesktopHover as object)] as object
+        }
+      >
+        {/* Left: text content */}
+        <View style={spot.leftPanel as object}>
+          <View style={spot.logoRow}>
+            <PublisherLogo publisher={hero.publisher} />
+          </View>
+          <Text style={spot.label as object}>Featured Hero</Text>
+          <Text style={spot.name as object} numberOfLines={3}>{hero.name}</Text>
+          <View style={spot.cta}>
+            <Text style={spot.ctaText}>View profile</Text>
+            <Text style={spot.ctaArrow}> →</Text>
+          </View>
+          {total > 1 && (
+            <View style={spot.dotsLeft as object}>
+              {Array.from({ length: total }).map((_, i) => (
+                <Pressable
+                  key={i}
+                  onPress={(e) => { e.stopPropagation?.(); onDotPress(i); }}
+                  style={[spot.dot, i === index && (spot.dotActive as object)] as object}
+                />
+              ))}
+            </View>
+          )}
+        </View>
+        {/* Right: hero image */}
+        <View style={spot.rightPanel as object}>
+          <Image
+            source={source}
+            contentFit="cover"
+            contentPosition="top center"
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
+            cachePolicy="memory-disk"
+            recyclingKey={String(hero.id)}
+            transition={200}
+          />
+          {/* Fade left edge into the left panel */}
+          <View style={spot.rightFade as object} />
+        </View>
+      </Pressable>
+    );
+  }
+
+  // Mobile web: full-bleed with centered image
   return (
     <Pressable
       onPress={onPress}
       style={({ hovered }: { hovered?: boolean }) =>
-        [spot.wrap, hovered && (spot.wrapHover as object)] as object
+        [spot.wrapMobile, hovered && (spot.wrapMobileHover as object)] as object
       }
     >
       <Image
         source={source}
         contentFit="cover"
-        contentPosition="top"
+        contentPosition="center"
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
         cachePolicy="memory-disk"
         recyclingKey={String(hero.id)}
         transition={200}
       />
-      <View style={spot.overlay as object} />
-      <View style={spot.content}>
+      <View style={spot.overlayMobile as object} />
+      <View style={spot.contentMobile}>
         <View style={spot.logoRow}>
           <PublisherLogo publisher={hero.publisher} />
         </View>
         <Text style={spot.label as object}>Featured Hero</Text>
-        <Text style={spot.name as object} numberOfLines={2}>{hero.name}</Text>
+        <Text style={spot.nameMobile as object} numberOfLines={2}>{hero.name}</Text>
         <View style={spot.cta}>
           <Text style={spot.ctaText}>View profile</Text>
           <Text style={spot.ctaArrow}> →</Text>
         </View>
       </View>
       {total > 1 && (
-        <View style={spot.dots as object}>
+        <View style={spot.dotsMobile as object}>
           {Array.from({ length: total }).map((_, i) => (
             <Pressable
               key={i}
@@ -269,26 +323,82 @@ function WebSpotlight({
 }
 
 const spot = StyleSheet.create({
-  wrap: {
-    height: 480,
+  // Desktop
+  wrapDesktop: {
+    height: 460,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+    flexDirection: 'row',
+    cursor: 'pointer',
+    transition: 'box-shadow 220ms ease',
+    marginBottom: 48,
+  } as object,
+  wrapDesktopHover: {
+    boxShadow: '0 32px 80px rgba(0,0,0,0.3)',
+  } as object,
+  leftPanel: {
+    width: '42%',
+    backgroundColor: COLORS.navy,
+    justifyContent: 'flex-end',
+    padding: 40,
+    zIndex: 1,
+  } as object,
+  rightPanel: {
+    flex: 1,
+    position: 'relative',
+    overflow: 'hidden',
+  } as object,
+  rightFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: 80,
+    backgroundImage: `linear-gradient(to right, ${COLORS.navy}, transparent)`,
+    zIndex: 1,
+  } as object,
+  dotsLeft: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 24,
+  } as object,
+  // Mobile
+  wrapMobile: {
+    height: 340,
     borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
     cursor: 'pointer',
-    transition: 'transform 220ms ease, box-shadow 220ms ease',
-    marginBottom: 48,
+    transition: 'box-shadow 220ms ease',
+    marginBottom: 32,
   } as object,
-  wrapHover: {
-    transform: [{ scale: 1.008 }],
-    boxShadow: '0 32px 80px rgba(0,0,0,0.3)',
+  wrapMobileHover: {
+    boxShadow: '0 20px 56px rgba(0,0,0,0.3)',
   } as object,
-  overlay: {
+  overlayMobile: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundImage:
-      'linear-gradient(to top, rgba(29,45,51,0.98) 0%, rgba(29,45,51,0.4) 45%, transparent 100%)',
+      'linear-gradient(to top, rgba(29,45,51,0.97) 0%, rgba(29,45,51,0.3) 50%, transparent 100%)',
   } as object,
-  content: { position: 'absolute', bottom: 36, left: 36, right: 36 },
-  logoRow: { marginBottom: 12 },
+  contentMobile: { position: 'absolute', bottom: 28, left: 24, right: 24 },
+  nameMobile: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 34,
+    color: COLORS.beige,
+    lineHeight: 38,
+    marginBottom: 16,
+    textShadow: '0 2px 12px rgba(0,0,0,0.8)',
+  } as object,
+  dotsMobile: {
+    position: 'absolute',
+    bottom: 14,
+    right: 24,
+    flexDirection: 'row',
+    gap: 6,
+  } as object,
+  // Shared
+  logoRow: { marginBottom: 10 },
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
@@ -299,18 +409,17 @@ const spot = StyleSheet.create({
   } as object,
   name: {
     fontFamily: 'Flame-Regular',
-    fontSize: 52,
+    fontSize: 48,
     color: COLORS.beige,
-    lineHeight: 54,
+    lineHeight: 50,
     marginBottom: 20,
-    textShadow: '0 2px 16px rgba(0,0,0,0.7)',
   } as object,
   cta: {
     flexDirection: 'row',
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: 'rgba(245,235,220,0.15)',
-    paddingTop: 16,
+    paddingTop: 14,
   },
   ctaText: {
     fontFamily: 'Nunito_700Bold',
@@ -324,13 +433,6 @@ const spot = StyleSheet.create({
     fontSize: 14,
     color: 'rgba(245,235,220,0.4)',
   },
-  dots: {
-    position: 'absolute',
-    bottom: 16,
-    right: 36,
-    flexDirection: 'row',
-    gap: 6,
-  } as object,
   dot: {
     width: 6,
     height: 6,
