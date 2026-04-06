@@ -9,6 +9,9 @@ const SUPERHERO_BASE = 'https://superheroapi.com/api';
 const COMICVINE_BASE = 'https://comicvine.gamespot.com/api';
 const CDN_BASE = 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/id';
 
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '';
+
 // CDN response shape (camelCase, numeric powerstats)
 interface CdnHeroStats {
   id: number;
@@ -144,36 +147,34 @@ export interface VerdictInput {
 
 function verdictFallback(input: VerdictInput): string {
   const { heroA, heroB, winsA, winsB } = input;
-  if (winsA === winsB) return `${heroA} and ${heroB} are evenly matched — 3 stats each.`;
+  if (winsA === winsB) return `${heroA} and ${heroB} are evenly matched — ${winsA} stats each.`;
   const winner = winsA > winsB ? heroA : heroB;
   const wins   = Math.max(winsA, winsB);
   return `${winner} takes it — ${wins} of 6 stats.`;
 }
 
 export async function generateVerdict(input: VerdictInput): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3000);
+
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
-
-    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-    const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '';
-
-    const res = await fetch(`${supabaseUrl}/functions/v1/generate-verdict`, {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/generate-verdict`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
       },
       body: JSON.stringify(input),
       signal: controller.signal,
     });
 
-    clearTimeout(timeout);
     if (!res.ok) return verdictFallback(input);
 
     const data = await res.json() as { verdict?: string };
     return data.verdict?.trim() || verdictFallback(input);
   } catch {
     return verdictFallback(input);
+  } finally {
+    clearTimeout(timeout);
   }
 }
