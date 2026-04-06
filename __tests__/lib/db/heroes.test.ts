@@ -3,6 +3,9 @@ import {
   getHeroById,
   searchHeroes,
   heroRowToCharacterData,
+  getAntiHeroes,
+  getHeroesByPublisher,
+  getHeroesByStatRanking,
   type Hero,
 } from '../../../src/lib/db/heroes';
 
@@ -204,5 +207,74 @@ describe('heroRowToCharacterData', () => {
   it('falls back to image_url when portrait_url is null', () => {
     const data = heroRowToCharacterData({ ...hero, portrait_url: null });
     expect(data.stats.image.url).toBe('https://cdn.example.com/lg.jpg');
+  });
+});
+
+// ─── getAntiHeroes ────────────────────────────────────────────────────────────
+
+describe('getAntiHeroes', () => {
+  it('filters by neutral alignment', async () => {
+    mockResolveWith = { data: [], error: null };
+    await getAntiHeroes();
+    expect(chain.ilike).toHaveBeenCalledWith('alignment', '%neutral%');
+  });
+
+  it('applies limit', async () => {
+    mockResolveWith = { data: [], error: null };
+    await getAntiHeroes(5);
+    expect(chain.limit).toHaveBeenCalledWith(5);
+  });
+
+  it('throws on error', async () => {
+    mockResolveWith = { data: null, error: { message: 'fail' } };
+    await expect(getAntiHeroes()).rejects.toThrow('fail');
+  });
+});
+
+// ─── getHeroesByPublisher ──────────────────────────────────────────────────────
+
+describe('getHeroesByPublisher', () => {
+  it('filters by marvel publisher', async () => {
+    mockResolveWith = { data: [], error: null };
+    await getHeroesByPublisher('marvel');
+    expect(chain.ilike).toHaveBeenCalledWith('publisher', '%marvel%');
+  });
+
+  it('filters by dc publisher', async () => {
+    mockResolveWith = { data: [], error: null };
+    await getHeroesByPublisher('dc');
+    expect(chain.ilike).toHaveBeenCalledWith('publisher', '%dc%');
+  });
+
+  it('throws on error', async () => {
+    mockResolveWith = { data: null, error: { message: 'fail' } };
+    await expect(getHeroesByPublisher('marvel')).rejects.toThrow('fail');
+  });
+});
+
+// ─── getHeroesByStatRanking ───────────────────────────────────────────────────
+
+describe('getHeroesByStatRanking', () => {
+  it('orders by strength descending', async () => {
+    mockResolveWith = { data: [], error: null };
+    await getHeroesByStatRanking('strength');
+    expect(chain.order).toHaveBeenCalledWith('strength', { ascending: false });
+  });
+
+  it('orders by intelligence descending', async () => {
+    mockResolveWith = { data: [], error: null };
+    await getHeroesByStatRanking('intelligence');
+    expect(chain.order).toHaveBeenCalledWith('intelligence', { ascending: false });
+  });
+
+  it('excludes null stat values', async () => {
+    mockResolveWith = { data: [], error: null };
+    await getHeroesByStatRanking('strength');
+    expect(chain.not).toHaveBeenCalledWith('strength', 'is', null);
+  });
+
+  it('throws on error', async () => {
+    mockResolveWith = { data: null, error: { message: 'fail' } };
+    await expect(getHeroesByStatRanking('strength')).rejects.toThrow('fail');
   });
 });

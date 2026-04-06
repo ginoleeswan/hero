@@ -95,6 +95,45 @@ export async function searchHeroes(
   return (data ?? []) as HeroSearchResult[];
 }
 
+export async function getAntiHeroes(limit = 20): Promise<Hero[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('*')
+    .ilike('alignment', '%neutral%')
+    .order('name')
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function getHeroesByPublisher(
+  publisher: 'marvel' | 'dc',
+  limit = 20,
+): Promise<Hero[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('*')
+    .ilike('publisher', `%${publisher}%`)
+    .order('name')
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function getHeroesByStatRanking(
+  stat: 'strength' | 'intelligence',
+  limit = 20,
+): Promise<Hero[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('*')
+    .not(stat, 'is', null)
+    .order(stat, { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 export function heroRowToCharacterData(hero: Hero): CharacterData {
   const stat = (v: number | null) => String(v ?? 0);
   return {
