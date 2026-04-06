@@ -12,7 +12,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { getHeroById, heroRowToCharacterData } from '../../../src/lib/db/heroes';
-import { fetchHeroStats } from '../../../src/lib/api';
+import { fetchHeroStats, generateVerdict } from '../../../src/lib/api';
 import { heroImageSource } from '../../../src/constants/heroImages';
 import { compareStats } from '../../../src/lib/compare';
 import type { StatResult } from '../../../src/lib/compare';
@@ -64,6 +64,7 @@ export default function WebCompareScreen() {
 
   const [statsA, setStatsA] = useState<HeroStats | null>(null);
   const [statsB, setStatsB] = useState<HeroStats | null>(null);
+  const [verdict, setVerdict] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -73,7 +74,14 @@ export default function WebCompareScreen() {
       return;
     }
     Promise.all([loadHeroStats(hero), loadHeroStats(opponent)])
-      .then(([a, b]) => { setStatsA(a); setStatsB(b); })
+      .then(([a, b]) => {
+        setStatsA(a);
+        setStatsB(b);
+        const result = compareStats(a.name, a.powerstats, b.name, b.powerstats);
+        const psA = Object.fromEntries(Object.entries(a.powerstats).map(([k, v]) => [k, parseInt(v, 10) || 0]));
+        const psB = Object.fromEntries(Object.entries(b.powerstats).map(([k, v]) => [k, parseInt(v, 10) || 0]));
+        generateVerdict({ heroA: a.name, heroB: b.name, winsA: result.winsA, winsB: result.winsB, statsA: psA, statsB: psB }).then(setVerdict);
+      })
       .catch(() => setError('Could not load hero data.'));
   }, [hero, opponent]);
 
@@ -175,7 +183,7 @@ export default function WebCompareScreen() {
             {/* Center: verdict + stat battle */}
             <View style={styles.centerCol}>
               <View style={styles.verdictCard}>
-                <Text style={styles.verdictText}>{result.verdict}</Text>
+                <Text style={styles.verdictText}>{verdict ?? result.verdict}</Text>
               </View>
               <View style={styles.battleRows}>
                 {result.stats.map((stat) => (
