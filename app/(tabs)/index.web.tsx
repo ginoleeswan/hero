@@ -10,7 +10,6 @@ import {
   Pressable,
   ActivityIndicator,
   useWindowDimensions,
-  Animated,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -451,23 +450,6 @@ export default function WebExploreScreen() {
 
   const isSearchActive = query.trim() !== '' || publisher !== 'All';
 
-  // Animate grid on filter/query change so cards don't appear to "reload"
-  const gridOpacity = useRef(new Animated.Value(1)).current;
-  const animateFilter = useCallback((fn: () => void) => {
-    Animated.timing(gridOpacity, {
-      toValue: 0,
-      duration: 80,
-      useNativeDriver: true,
-    }).start(() => {
-      fn();
-      Animated.timing(gridOpacity, {
-        toValue: 1,
-        duration: 140,
-        useNativeDriver: true,
-      }).start();
-    });
-  }, [gridOpacity]);
-
   useEffect(() => {
     getHeroesByCategory().then(setCategories).catch(() => {});
     searchHeroes('', 'All', 600)
@@ -517,7 +499,7 @@ export default function WebExploreScreen() {
               {PUBLISHER_FILTERS.map((f) => (
                 <Pressable
                   key={f}
-                  onPress={() => animateFilter(() => setPublisher(f))}
+                  onPress={() => setPublisher(f)}
                   style={({ hovered }: { hovered?: boolean }) =>
                     [
                       styles.filterTab,
@@ -577,7 +559,7 @@ export default function WebExploreScreen() {
               {PUBLISHER_FILTERS.map((f) => (
                 <Pressable
                   key={f}
-                  onPress={() => animateFilter(() => setPublisher(f))}
+                  onPress={() => setPublisher(f)}
                   style={({ hovered }: { hovered?: boolean }) =>
                     [styles.pill, publisher === f && (styles.pillActive as object), hovered && publisher !== f && (styles.pillHover as object)] as object
                   }
@@ -596,7 +578,6 @@ export default function WebExploreScreen() {
         loadingAll ? <GridSkeleton /> : filtered.length === 0 ? (
           <EmptyState query={query} onClear={handleClear} />
         ) : (
-          <Animated.View style={[styles.scroll, { opacity: gridOpacity }]}>
           <ScrollView style={styles.scroll}>
             <View style={styles.resultsHeader}>
               <View style={styles.resultsHeaderInner}>
@@ -623,7 +604,6 @@ export default function WebExploreScreen() {
               {hasMore && <Text style={styles.moreHint}>Refine your search to see more results</Text>}
             </View>
           </ScrollView>
-          </Animated.View>
         )
 
       ) : (
