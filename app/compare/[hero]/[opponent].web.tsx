@@ -57,7 +57,7 @@ function StatBattleRow({ stat, isDesktop }: { stat: StatResult; isDesktop: boole
 }
 
 export default function WebCompareScreen() {
-  const { id1, id2 } = useLocalSearchParams<{ id1: string; id2: string }>();
+  const { heroId, opponent } = useLocalSearchParams<{ heroId: string; opponent: string }>();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
@@ -68,14 +68,14 @@ export default function WebCompareScreen() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!id1 || !id2) {
+    if (!heroId || !opponent) {
       setError('Invalid hero IDs.');
       return;
     }
-    Promise.all([loadHeroStats(id1), loadHeroStats(id2)])
+    Promise.all([loadHeroStats(heroId), loadHeroStats(opponent)])
       .then(([a, b]) => { setStatsA(a); setStatsB(b); })
       .catch(() => setError('Could not load hero data.'));
-  }, [id1, id2]);
+  }, [heroId, opponent]);
 
   if (error) {
     return (
@@ -97,8 +97,8 @@ export default function WebCompareScreen() {
   }
 
   const result = compareStats(statsA.name, statsA.powerstats, statsB.name, statsB.powerstats);
-  const imageA = heroImageSource(id1, statsA.image.url);
-  const imageB = heroImageSource(id2, statsB.image.url);
+  const imageA = heroImageSource(heroId, statsA.image.url);
+  const imageB = heroImageSource(opponent, statsB.image.url);
 
   const handleShare = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : '';
@@ -183,7 +183,7 @@ export default function WebCompareScreen() {
                 ))}
               </View>
               <Pressable
-                onPress={() => router.push(`/compare/${id1}/pick?name=${encodeURIComponent(statsA.name)}`)}
+                onPress={() => router.push(`/compare/${heroId}/pick?name=${encodeURIComponent(statsA.name)}`)}
                 style={({ hovered }: { hovered?: boolean }) =>
                   [styles.compareAnotherBtn, hovered && (styles.compareAnotherHover as object)] as object
                 }
@@ -236,7 +236,7 @@ export default function WebCompareScreen() {
               ))}
             </View>
             <Pressable
-              onPress={() => router.push(`/compare/${id1}/pick?name=${encodeURIComponent(statsA.name)}`)}
+              onPress={() => router.push(`/compare/${heroId}/pick?name=${encodeURIComponent(statsA.name)}`)}
               style={({ hovered }: { hovered?: boolean }) =>
                 [styles.compareAnotherBtn, styles.compareAnotherBtnMobile, hovered && (styles.compareAnotherHover as object)] as object
               }

@@ -33,7 +33,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function WebPickOpponentScreen() {
-  const { id1, name } = useLocalSearchParams<{ id1: string; name: string }>();
+  const { heroId, name } = useLocalSearchParams<{ heroId: string; name: string }>();
   const router = useRouter();
   const inputRef = useRef<TextInput>(null);
 
@@ -101,7 +101,7 @@ export default function WebPickOpponentScreen() {
               return (
                 <Pressable
                   key={item.id}
-                  onPress={() => router.replace(`/compare/${id1}/${item.id}`)}
+                  onPress={() => router.replace(`/compare/${heroId}/${item.id}`)}
                   style={({ hovered }: { hovered?: boolean }) =>
                     [card.wrap, hovered && (card.wrapHover as object)] as object
                   }

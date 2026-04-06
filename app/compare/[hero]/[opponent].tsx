@@ -71,7 +71,7 @@ function StatBattleRow({ stat }: { stat: StatResult }) {
 }
 
 export default function NativeCompareScreen() {
-  const { id1, id2 } = useLocalSearchParams<{ id1: string; id2: string }>();
+  const { heroId, opponent } = useLocalSearchParams<{ heroId: string; opponent: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -80,10 +80,10 @@ export default function NativeCompareScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([loadHeroStats(id1), loadHeroStats(id2)])
+    Promise.all([loadHeroStats(heroId), loadHeroStats(opponent)])
       .then(([a, b]) => { setStatsA(a); setStatsB(b); })
       .catch(() => setError('Could not load hero data.'));
-  }, [id1, id2]);
+  }, [heroId, opponent]);
 
   if (error) {
     return (
@@ -105,8 +105,8 @@ export default function NativeCompareScreen() {
   }
 
   const result = compareStats(statsA.name, statsA.powerstats, statsB.name, statsB.powerstats);
-  const imageA = heroImageSource(id1, statsA.image.url);
-  const imageB = heroImageSource(id2, statsB.image.url);
+  const imageA = heroImageSource(heroId, statsA.image.url);
+  const imageB = heroImageSource(opponent, statsB.image.url);
 
   const handleShare = () => {
     Share.share({
@@ -136,7 +136,7 @@ export default function NativeCompareScreen() {
             <Text style={styles.portraitName} numberOfLines={2}>{statsA.name}</Text>
           </View>
           <View style={styles.portraitWrap}>
-            <Image source={imageB} contentFit="cover" contentPosition="top" style={[styles.portraitImage, { transform: [{ scaleX: -1 }] }]} />
+            <Image source={imageB} contentFit="cover" contentPosition="top" style={[styles.portraitImage, styles.flippedImage]} />
             <View style={styles.portraitOverlay} />
             <Text style={[styles.portraitName, styles.portraitNameRight]} numberOfLines={2}>{statsB.name}</Text>
           </View>
@@ -156,7 +156,7 @@ export default function NativeCompareScreen() {
 
         {/* Compare another */}
         <TouchableOpacity
-          onPress={() => router.push(`/compare/${id1}/pick?name=${encodeURIComponent(statsA.name)}`)}
+          onPress={() => router.push(`/compare/${heroId}/pick?name=${encodeURIComponent(statsA.name)}`)}
           activeOpacity={0.8}
           style={styles.compareAnotherBtn}
         >
@@ -187,6 +187,9 @@ const styles = StyleSheet.create({
   portraitWrap: { flex: 1, overflow: 'hidden' },
   portraitImage: {
     ...StyleSheet.absoluteFillObject,
+  },
+  flippedImage: {
+    transform: [{ scaleX: -1 }],
   },
   portraitOverlay: {
     ...StyleSheet.absoluteFillObject,
