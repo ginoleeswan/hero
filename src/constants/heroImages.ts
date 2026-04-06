@@ -46,9 +46,9 @@ export function heroImageSource(
   imageUrl?: string | null,
   portraitUrl?: string | null,
 ): number | { uri: string } {
+  if (portraitUrl) return { uri: portraitUrl };
   const local = HERO_IMAGES[String(id)] ?? (imageUrl ? HERO_IMAGES[imageUrl] : null);
   if (local) return local;
-  if (portraitUrl) return { uri: portraitUrl };
   if (imageUrl?.startsWith('http')) return { uri: imageUrl };
   return { uri: `${CDN_BASE}/${id}.jpg` };
 }
