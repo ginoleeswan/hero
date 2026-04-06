@@ -125,4 +125,17 @@ describe('generateVerdict', () => {
     expect(result).toContain('Batman');
     expect(result).toContain('4');
   });
+
+  it('returns tie fallback when winsA equals winsB', async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error('network error'));
+    const result = await generateVerdict({
+      heroA: 'Batman', heroB: 'Spider-Man',
+      winsA: 3, winsB: 3,
+      statsA: { intelligence: 81, strength: 26, speed: 27, durability: 64, power: 47, combat: 64 },
+      statsB: { intelligence: 75, strength: 55, speed: 23, durability: 42, power: 36, combat: 42 },
+    });
+    expect(result).toContain('Batman');
+    expect(result).toContain('Spider-Man');
+    expect(result).toContain('3');
+  });
 });
