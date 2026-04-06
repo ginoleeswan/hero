@@ -11,6 +11,7 @@ import { fetchHeroStats, fetchHeroDetails, fetchFirstIssue } from '../../src/lib
 import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
 import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
 import { useAuth } from '../../src/hooks/useAuth';
+import { useRecordView } from '../../src/hooks/useViewHistory';
 import { heroImageSource, HERO_IMAGES } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
 import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkeleton';
@@ -91,6 +92,7 @@ export default function CharacterScreen() {
   const insets = useSafeAreaInsets();
   const compareStripStyle = [styles.compareStrip, { paddingBottom: insets.bottom || 12 }] as const;
   const { user } = useAuth();
+  useRecordView(user?.id, id);
   const [data, setData] = useState<CharacterData | null>(null);
   const [comicVineLoading, setComicVineLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
