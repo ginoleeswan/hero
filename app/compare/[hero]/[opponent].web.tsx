@@ -67,6 +67,8 @@ export default function WebCompareScreen() {
   const [verdict, setVerdict] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { const t = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(t); }, []);
 
   useEffect(() => {
     if (!hero || !opponent) {
@@ -163,7 +165,7 @@ export default function WebCompareScreen() {
           /* Desktop: side-by-side portrait panels + center stat column */
           <View style={styles.desktopLayout as object}>
             {/* Hero A portrait */}
-            <View style={[styles.portraitWrap, { height: portraitHeight }]}>
+            <View style={[styles.portraitWrap, { height: portraitHeight }, { opacity: mounted ? 1 : 0, transform: [{ translateX: mounted ? 0 : -60 }], transition: 'opacity 0.45s ease-out, transform 0.45s cubic-bezier(0.22,1,0.36,1)' } as object]}>
               <Image
                 source={imageA}
                 contentFit="cover"
@@ -183,7 +185,14 @@ export default function WebCompareScreen() {
             {/* Center: verdict + stat battle */}
             <View style={styles.centerCol}>
               <View style={styles.verdictCard}>
-                <Text style={styles.verdictText}>{verdict ?? result.verdict}</Text>
+                {verdict ? (
+                  <Text style={styles.verdictText}>{verdict}</Text>
+                ) : (
+                  <View style={{ gap: 6 }}>
+                    <View style={[styles.shimmer, { width: '85%' }] as object} />
+                    <View style={[styles.shimmer, { width: '55%', alignSelf: 'center' }] as object} />
+                  </View>
+                )}
               </View>
               <View style={styles.battleRows}>
                 {result.stats.map((stat) => (
@@ -201,7 +210,7 @@ export default function WebCompareScreen() {
             </View>
 
             {/* Hero B portrait */}
-            <View style={[styles.portraitWrap, { height: portraitHeight }]}>
+            <View style={[styles.portraitWrap, { height: portraitHeight }, { opacity: mounted ? 1 : 0, transform: [{ translateX: mounted ? 0 : 60 }], transition: 'opacity 0.45s ease-out, transform 0.45s cubic-bezier(0.22,1,0.36,1)' } as object]}>
               <Image
                 source={imageB}
                 contentFit="cover"
@@ -382,6 +391,12 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 4,
   },
+  shimmer: {
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(245,235,220,0.1)',
+    animation: 'pulse 1.4s ease-in-out infinite',
+  } as object,
   verdictText: {
     fontFamily: 'Flame-Regular',
     fontSize: 18,

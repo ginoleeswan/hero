@@ -150,7 +150,7 @@ export default function NativeCompareScreen() {
         </View>
 
         <TouchableOpacity
-          onPress={() => router.push(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)}
+          onPress={() => router.replace(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)}
           activeOpacity={0.8}
           style={styles.compareAnotherBtn}
         >
