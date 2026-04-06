@@ -71,7 +71,7 @@ function StatBattleRow({ stat }: { stat: StatResult }) {
 }
 
 export default function NativeCompareScreen() {
-  const { heroId, opponent } = useLocalSearchParams<{ heroId: string; opponent: string }>();
+  const { hero, opponent } = useLocalSearchParams<{ hero: string; opponent: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -80,10 +80,10 @@ export default function NativeCompareScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([loadHeroStats(heroId), loadHeroStats(opponent)])
+    Promise.all([loadHeroStats(hero), loadHeroStats(opponent)])
       .then(([a, b]) => { setStatsA(a); setStatsB(b); })
       .catch(() => setError('Could not load hero data.'));
-  }, [heroId, opponent]);
+  }, [hero, opponent]);
 
   if (error) {
     return (
@@ -105,7 +105,7 @@ export default function NativeCompareScreen() {
   }
 
   const result = compareStats(statsA.name, statsA.powerstats, statsB.name, statsB.powerstats);
-  const imageA = heroImageSource(heroId, statsA.image.url);
+  const imageA = heroImageSource(hero, statsA.image.url);
   const imageB = heroImageSource(opponent, statsB.image.url);
 
   const handleShare = () => {
@@ -156,7 +156,7 @@ export default function NativeCompareScreen() {
 
         {/* Compare another */}
         <TouchableOpacity
-          onPress={() => router.push(`/compare/${heroId}/pick?name=${encodeURIComponent(statsA.name)}`)}
+          onPress={() => router.push(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)}
           activeOpacity={0.8}
           style={styles.compareAnotherBtn}
         >

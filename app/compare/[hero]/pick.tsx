@@ -32,7 +32,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function PickOpponentScreen() {
-  const { heroId, name } = useLocalSearchParams<{ heroId: string; name: string }>();
+  const { hero, name } = useLocalSearchParams<{ hero: string; name: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const inputRef = useRef<TextInput>(null);
@@ -54,7 +54,7 @@ export default function PickOpponentScreen() {
     : all.slice(0, 80);
 
   const handlePick = (item: HeroSearchResult) => {
-    router.replace(`/compare/${heroId}/${item.id}`);
+    router.replace(`/compare/${hero}/${item.id}`);
   };
 
   return (
