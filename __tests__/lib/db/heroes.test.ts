@@ -25,7 +25,7 @@ import {
 let mockResolveWith: { data: unknown; error: unknown } = { data: null, error: null };
 
 jest.mock('../../../src/lib/supabase', () => {
-  const chainMethods = ['select', 'eq', 'ilike', 'not', 'order', 'limit', 'single'];
+  const chainMethods = ['select', 'eq', 'gte', 'lte', 'neq', 'or', 'ilike', 'not', 'order', 'limit', 'single'];
   const chain: Record<string, unknown> = {};
   chainMethods.forEach((m) => {
     chain[m] = jest.fn().mockReturnValue(chain);
@@ -51,7 +51,7 @@ const { __chain: chain, __mockFrom: mockFrom } = jest.requireMock('../../../src/
   __mockFrom: jest.Mock;
 };
 
-const chainMethods = ['select', 'eq', 'ilike', 'not', 'order', 'limit'];
+const chainMethods = ['select', 'eq', 'gte', 'lte', 'neq', 'or', 'ilike', 'not', 'order', 'limit'];
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -87,7 +87,7 @@ describe('searchHeroes', () => {
   it('queries by name when query is non-empty', async () => {
     mockResolveWith = { data: [], error: null };
     await searchHeroes('spider', 'All');
-    expect(chain.ilike).toHaveBeenCalledWith('name', '%spider%');
+    expect(chain.or).toHaveBeenCalledWith('name.ilike.%spider%,full_name.ilike.%spider%');
   });
 
   it('does not add ilike name filter when query is empty', async () => {
@@ -276,5 +276,16 @@ describe('getHeroesByStatRanking', () => {
   it('throws on error', async () => {
     mockResolveWith = { data: null, error: { message: 'fail' } };
     await expect(getHeroesByStatRanking('strength')).rejects.toThrow('fail');
+  });
+});
+
+// ─── getHeroesByPowerRange ────────────────────────────────────────────────────
+
+import { getHeroesByPowerRange } from '../../../src/lib/db/heroes';
+
+describe('getHeroesByPowerRange', () => {
+  it('returns an array (even empty) without throwing', async () => {
+    const result = await getHeroesByPowerRange(200, 350, '70');
+    expect(Array.isArray(result)).toBe(true);
   });
 });

@@ -134,6 +134,33 @@ export async function getHeroesByStatRanking(
   return data ?? [];
 }
 
+export type HeroPowerResult = Pick<
+  Hero,
+  'id' | 'name' | 'publisher' | 'image_url' | 'portrait_url'
+>;
+
+export async function getHeroesByPowerRange(
+  min: number,
+  max: number,
+  excludeId: string,
+  limit = 8,
+): Promise<HeroPowerResult[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('id, name, publisher, image_url, portrait_url')
+    .gte('powerstats_total', min)
+    .lte('powerstats_total', max)
+    .neq('id', excludeId)
+    .order('powerstats_total')
+    .limit(limit);
+
+  if (error) {
+    console.warn('[getHeroesByPowerRange] error:', error.message);
+    return [];
+  }
+  return (data ?? []) as HeroPowerResult[];
+}
+
 export function heroRowToCharacterData(hero: Hero): CharacterData {
   const stat = (v: number | null) => String(v ?? 0);
   return {
