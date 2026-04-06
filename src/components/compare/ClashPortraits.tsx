@@ -122,7 +122,7 @@ export function ClashPortraits({
         <View style={styles.panelOverlayRight} />
         <View style={styles.bottomGrad} />
         <Animated.View style={[styles.labelsRight, labelsStyle]}>
-          <View style={[styles.statusPill, isWinB ? styles.pillWin : styles.pillLoss]}>
+          <View style={[styles.statusPill, styles.statusPillRight, isWinB ? styles.pillWin : styles.pillLoss]}>
             <Text style={styles.statusText}>{labelB}</Text>
           </View>
           <Text style={[styles.heroName, styles.heroNameRight]}>{nameB}</Text>
@@ -162,23 +162,21 @@ const styles = StyleSheet.create({
   panelBg: {
     ...StyleSheet.absoluteFillObject,
   },
-  panelBgLeft:  { backgroundColor: '#0a1628' },
-  panelBgRight: { backgroundColor: '#280a0a' },
+  panelBgLeft:  {},
+  panelBgRight: {},
   panelOverlayLeft: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(20,60,140,0.35)',
   },
   panelOverlayRight: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(140,20,20,0.35)',
   },
   bottomGrad: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: 100,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    height: 56,
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   flipped: {
     transform: [{ scaleX: -1 }],
@@ -195,6 +193,9 @@ const styles = StyleSheet.create({
     right: 10,
     left: 30,
     alignItems: 'flex-end',
+  },
+  statusPillRight: {
+    alignSelf: 'flex-end',
   },
   statusPill: {
     alignSelf: 'flex-start',

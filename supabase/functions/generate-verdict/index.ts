@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 
-const GEMINI_KEY = Deno.env.get('GEMINI_API_KEY') ?? '';
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const GEMINI_KEY = Deno.env.get('GOOGLE_AI_STUDIO_API_KEY') ?? '';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent';
 
 interface VerdictRequest {
   heroA: string;

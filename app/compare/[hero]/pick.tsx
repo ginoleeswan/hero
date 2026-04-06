@@ -60,20 +60,36 @@ export default function PickOpponentScreen() {
   const [query, setQuery] = useState('');
   const [all, setAll] = useState<HeroSearchResult[]>([]);
   const [rivals, setRivals] = useState<HeroSearchResult[]>([]);
+  const [sameUniverse, setSameUniverse] = useState<HeroSearchResult[]>([]);
   const [similar, setSimilar] = useState<HeroPowerResult[]>([]);
   const [loading, setLoading] = useState(true);
   const debouncedQuery = useDebounce(query, 200);
 
   useEffect(() => {
-    const rivalIds = getRivals(hero ?? '');
+    const rivalIds = new Set(getRivals(hero ?? ''));
 
     searchHeroes('', 'All', 600)
       .then((allHeroes) => {
         const filtered = allHeroes.filter((h) => h.id !== hero);
-        setAll(filtered);
-        if (rivalIds.length > 0) {
-          const rivalMap = new Map(allHeroes.map((h) => [h.id, h]));
-          setRivals(rivalIds.map((id) => rivalMap.get(id)).filter(Boolean) as HeroSearchResult[]);
+        // Sort: portrait first, then image, then neither
+        const sorted = [...filtered].sort((a, b) => {
+          const scoreA = a.portrait_url ? 2 : a.image_url ? 1 : 0;
+          const scoreB = b.portrait_url ? 2 : b.image_url ? 1 : 0;
+          return scoreB - scoreA;
+        });
+        setAll(sorted);
+
+        const heroRow = allHeroes.find((h) => h.id === hero);
+        const publisher = heroRow?.publisher;
+
+        if (rivalIds.size > 0) {
+          const heroMap = new Map(allHeroes.map((h) => [h.id, h]));
+          setRivals(Array.from(rivalIds).map((id) => heroMap.get(id)).filter(Boolean) as HeroSearchResult[]);
+        }
+        if (publisher) {
+          setSameUniverse(
+            filtered.filter((h) => h.publisher === publisher && !rivalIds.has(h.id)).slice(0, 8),
+          );
         }
       })
       .catch((e: unknown) => { console.warn('[PickOpponentScreen] Failed to load heroes:', e); })
@@ -84,7 +100,9 @@ export default function PickOpponentScreen() {
       const total = (row.intelligence ?? 0) + (row.strength ?? 0) + (row.speed ?? 0)
         + (row.durability ?? 0) + (row.power ?? 0) + (row.combat ?? 0);
       const margin = Math.round(total * 0.18);
-      getHeroesByPowerRange(total - margin, total + margin, hero ?? '').then(setSimilar);
+      getHeroesByPowerRange(total - margin, total + margin, hero ?? '').then((results) => {
+        setSimilar(results.filter((r) => !rivalIds.has(r.id)));
+      });
     }).catch(() => {});
   }, [hero]);
 
@@ -96,7 +114,7 @@ export default function PickOpponentScreen() {
     router.replace(`/compare/${hero}/${id}`);
   };
 
-  const showSuggestions = !debouncedQuery.trim() && (rivals.length > 0 || similar.length > 0);
+  const showSuggestions = !debouncedQuery.trim() && (rivals.length > 0 || sameUniverse.length > 0 || similar.length > 0);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -141,6 +159,16 @@ export default function PickOpponentScreen() {
                   <Text style={styles.sectionLabel}>Classic Rivals</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestRow}>
                     {rivals.map((item) => (
+                      <SuggestCard key={item.id} item={item} onPress={() => handlePick(item.id)} />
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+              {sameUniverse.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>Same Universe</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestRow}>
+                    {sameUniverse.map((item) => (
                       <SuggestCard key={item.id} item={item} onPress={() => handlePick(item.id)} />
                     ))}
                   </ScrollView>
