@@ -1,89 +1,83 @@
+// src/components/skeletons/HomeSkeleton.tsx
 import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.6);
 const CARD_HEIGHT = 300;
 const CARD_GAP = 12;
-const CARDS_PER_ROW = 3;
 
-function HeroCardSkeleton() {
-  return <Skeleton width={CARD_WIDTH} height={CARD_HEIGHT} borderRadius={36} style={styles.card} />;
+function SpotlightSkeleton({ insetTop }: { insetTop: number }) {
+  const height = insetTop + Math.round(SCREEN_HEIGHT * 0.42);
+  return <Skeleton width="100%" height={height} borderRadius={0} />;
 }
 
-function SectionSkeleton() {
+function ThumbRowSkeleton() {
   return (
     <View style={styles.section}>
-      {/* Section title + icon */}
       <View style={styles.sectionHeader}>
-        <Skeleton width="38%" height={24} borderRadius={8} />
-        <Skeleton width={26} height={26} borderRadius={13} style={styles.sectionIcon} />
+        <Skeleton width="20%" height={10} borderRadius={4} />
+        <Skeleton width="35%" height={22} borderRadius={6} style={styles.titleSkeleton} />
       </View>
+      <View style={styles.thumbRow}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} width={90} height={58} borderRadius={8} />
+        ))}
+      </View>
+    </View>
+  );
+}
 
-      {/* Horizontal card row */}
+function PortraitRowSkeleton() {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <Skeleton width="40%" height={22} borderRadius={6} />
+      </View>
       <ScrollView
         horizontal
         scrollEnabled={false}
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.cardRow}
+        contentContainerStyle={styles.portraitRow}
       >
-        {Array.from({ length: CARDS_PER_ROW }).map((_, i) => (
-          <HeroCardSkeleton key={i} />
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} width={CARD_WIDTH} height={CARD_HEIGHT} borderRadius={36} />
         ))}
       </ScrollView>
     </View>
   );
 }
 
-export function HomeSkeleton() {
+interface HomeSkeletonProps {
+  insets: { top: number };
+}
+
+export function HomeSkeleton({ insets }: HomeSkeletonProps) {
   return (
     <SkeletonProvider>
-      <View>
-        {/* Header */}
-        <View style={styles.header}>
-          <Skeleton width="28%" height={38} borderRadius={8} />
-          <Skeleton width="50%" height={8} borderRadius={4} style={styles.headerSubtitle} />
-        </View>
-
-        {/* 3 sections */}
-        <SectionSkeleton />
-        <SectionSkeleton />
-        <SectionSkeleton />
-      </View>
+      <ScrollView scrollEnabled={false} showsVerticalScrollIndicator={false}>
+        <SpotlightSkeleton insetTop={insets.top} />
+        <ThumbRowSkeleton />
+        <PortraitRowSkeleton />
+        <PortraitRowSkeleton />
+        <PortraitRowSkeleton />
+      </ScrollView>
     </SkeletonProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    alignItems: 'flex-end',
-    paddingHorizontal: 20,
-    paddingTop: 4,
-    paddingBottom: 2,
-    gap: 6,
-  },
-  headerSubtitle: {
-    marginTop: -2,
-  },
-  section: {
-    marginTop: 16,
-  },
-  sectionHeader: {
+  section: { paddingTop: 14, paddingBottom: 4 },
+  sectionHeader: { paddingHorizontal: 15, marginBottom: 10, gap: 4 },
+  titleSkeleton: { marginTop: 2 },
+  thumbRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: 15,
-    marginBottom: 10,
     gap: 8,
+    paddingHorizontal: 15,
   },
-  sectionIcon: {},
-  cardRow: {
-    paddingLeft: 15,
-    paddingRight: 15,
+  portraitRow: {
+    paddingHorizontal: 15,
     gap: CARD_GAP,
-  },
-  card: {
-    marginBottom: 16,
-    marginTop: 8,
   },
 });
