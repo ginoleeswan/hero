@@ -90,7 +90,7 @@ export function LightningBolt({ height, width = 52 }: LightningBoltProps) {
     <Svg
       width={width}
       height={height}
-      viewBox={`0 0 ${W} ${H}`}
+      viewBox="0 0 56 280"
       preserveAspectRatio="none"
     >
       <Defs>
@@ -100,7 +100,7 @@ export function LightningBolt({ height, width = 52 }: LightningBoltProps) {
           <Stop offset="1" stopColor="#e8890a" />
         </LinearGradient>
       </Defs>
-      <Path d={shadowPath} fill="rgba(0,0,0,0.35)" translateX={2} translateY={3} />
+      <Path d={shadowPath} fill="rgba(0,0,0,0.35)" transform="translate(2, 3)" />
       <Path d={boltPath} fill="url(#boltGrad)" stroke="#1a1a1a" strokeWidth={2} />
       <Path d={highlightPath} fill="rgba(255,240,180,0.45)" />
     </Svg>
