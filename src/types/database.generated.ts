@@ -175,6 +175,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_view_history: {
+        Row: {
+          hero_id: string
+          id: string
+          user_id: string
+          viewed_at: string
+        }
+        Insert: {
+          hero_id: string
+          id?: string
+          user_id: string
+          viewed_at?: string
+        }
+        Update: {
+          hero_id?: string
+          id?: string
+          user_id?: string
+          viewed_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
