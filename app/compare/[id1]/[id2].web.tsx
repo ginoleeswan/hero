@@ -21,7 +21,7 @@ import { COLORS } from '../../../src/constants/colors';
 
 async function loadHeroStats(id: string): Promise<HeroStats> {
   const row = await getHeroById(id);
-  if (row) return heroRowToCharacterData(row).stats;
+  if (row?.enriched_at) return heroRowToCharacterData(row).stats;
   return fetchHeroStats(id);
 }
 

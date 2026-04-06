@@ -26,7 +26,7 @@ const PORTRAIT_HEIGHT = Math.round(SCREEN_WIDTH * 0.72);
 
 async function loadHeroStats(id: string): Promise<HeroStats> {
   const row = await getHeroById(id);
-  if (row) return heroRowToCharacterData(row).stats;
+  if (row?.enriched_at) return heroRowToCharacterData(row).stats;
   return fetchHeroStats(id);
 }
 
