@@ -132,3 +132,48 @@ export async function fetchFirstIssue(issueId: string): Promise<FirstIssue> {
     imageUrl: result?.image?.medium_url ?? null,
   };
 }
+
+export interface VerdictInput {
+  heroA: string;
+  heroB: string;
+  winsA: number;
+  winsB: number;
+  statsA: Record<string, number>;
+  statsB: Record<string, number>;
+}
+
+function verdictFallback(input: VerdictInput): string {
+  const { heroA, heroB, winsA, winsB } = input;
+  if (winsA === winsB) return `${heroA} and ${heroB} are evenly matched — 3 stats each.`;
+  const winner = winsA > winsB ? heroA : heroB;
+  const wins   = Math.max(winsA, winsB);
+  return `${winner} takes it — ${wins} of 6 stats.`;
+}
+
+export async function generateVerdict(input: VerdictInput): Promise<string> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+    const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '';
+
+    const res = await fetch(`${supabaseUrl}/functions/v1/generate-verdict`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`,
+      },
+      body: JSON.stringify(input),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+    if (!res.ok) return verdictFallback(input);
+
+    const data = await res.json() as { verdict?: string };
+    return data.verdict?.trim() || verdictFallback(input);
+  } catch {
+    return verdictFallback(input);
+  }
+}
