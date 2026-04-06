@@ -7,22 +7,18 @@ import {
   StyleSheet,
   ActivityIndicator,
   Share,
-  Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getHeroById, heroRowToCharacterData } from '../../../src/lib/db/heroes';
-import { fetchHeroStats } from '../../../src/lib/api';
+import { fetchHeroStats, generateVerdict } from '../../../src/lib/api';
 import { heroImageSource } from '../../../src/constants/heroImages';
 import { compareStats } from '../../../src/lib/compare';
 import type { StatResult } from '../../../src/lib/compare';
 import type { HeroStats } from '../../../src/types';
 import { COLORS } from '../../../src/constants/colors';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const PORTRAIT_HEIGHT = Math.round(SCREEN_WIDTH * 0.72);
+import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
 
 async function loadHeroStats(id: string): Promise<HeroStats> {
   const row = await getHeroById(id);
@@ -38,31 +34,16 @@ function StatBattleRow({ stat }: { stat: StatResult }) {
 
   return (
     <View style={battle.row}>
-      {/* Left value + bar */}
       <View style={battle.side}>
         <Text style={[battle.val, aWins && battle.valWin]}>{stat.valueA}</Text>
         <View style={battle.track}>
-          <View
-            style={[
-              battle.barLeft,
-              { width: `${stat.valueA}%`, backgroundColor: aWins ? winColor : dimColor } as object,
-            ]}
-          />
+          <View style={[battle.barLeft, { width: `${stat.valueA}%`, backgroundColor: aWins ? winColor : dimColor } as object]} />
         </View>
       </View>
-
-      {/* Stat label in center */}
       <Text style={battle.label}>{stat.label}</Text>
-
-      {/* Right bar + value */}
       <View style={[battle.side, battle.sideRight]}>
         <View style={battle.track}>
-          <View
-            style={[
-              battle.barRight,
-              { width: `${stat.valueB}%`, backgroundColor: bWins ? winColor : dimColor } as object,
-            ]}
-          />
+          <View style={[battle.barRight, { width: `${stat.valueB}%`, backgroundColor: bWins ? winColor : dimColor } as object]} />
         </View>
         <Text style={[battle.val, bWins && battle.valWin]}>{stat.valueB}</Text>
       </View>
@@ -77,11 +58,27 @@ export default function NativeCompareScreen() {
 
   const [statsA, setStatsA] = useState<HeroStats | null>(null);
   const [statsB, setStatsB] = useState<HeroStats | null>(null);
+  const [verdict, setVerdict] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([loadHeroStats(hero), loadHeroStats(opponent)])
-      .then(([a, b]) => { setStatsA(a); setStatsB(b); })
+      .then(([a, b]) => {
+        setStatsA(a);
+        setStatsB(b);
+        const result = compareStats(a.name, a.powerstats, b.name, b.powerstats);
+        const psA = Object.fromEntries(
+          Object.entries(a.powerstats).map(([k, v]) => [k, parseInt(v, 10) || 0]),
+        );
+        const psB = Object.fromEntries(
+          Object.entries(b.powerstats).map(([k, v]) => [k, parseInt(v, 10) || 0]),
+        );
+        generateVerdict({
+          heroA: a.name, heroB: b.name,
+          winsA: result.winsA, winsB: result.winsB,
+          statsA: psA, statsB: psB,
+        }).then(setVerdict);
+      })
       .catch(() => setError('Could not load hero data.'));
   }, [hero, opponent]);
 
@@ -107,16 +104,17 @@ export default function NativeCompareScreen() {
   const result = compareStats(statsA.name, statsA.powerstats, statsB.name, statsB.powerstats);
   const imageA = heroImageSource(hero, statsA.image.url);
   const imageB = heroImageSource(opponent, statsB.image.url);
+  const overallWinner: 'A' | 'B' | 'tie' =
+    result.winsA > result.winsB ? 'A' : result.winsB > result.winsA ? 'B' : 'tie';
 
   const handleShare = () => {
     Share.share({
-      message: `${statsA.name} vs ${statsB.name} — ${result.verdict}. Check it out on Hero app!`,
+      message: `${statsA.name} vs ${statsB.name} — ${verdict ?? result.verdict}. Check it out on Hero app!`,
     }).catch(() => {});
   };
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      {/* Back + Share header */}
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={styles.iconBtn}>
           <Ionicons name="arrow-back" size={20} color={COLORS.beige} />
@@ -128,33 +126,29 @@ export default function NativeCompareScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom }}>
-        {/* Portrait cards — side by side, full width */}
-        <View style={styles.portraits}>
-          <View style={styles.portraitWrap}>
-            <Image source={imageA} contentFit="cover" contentPosition="top" style={styles.portraitImage} />
-            <View style={styles.portraitOverlay} />
-            <Text style={styles.portraitName} numberOfLines={2}>{statsA.name}</Text>
-          </View>
-          <View style={styles.portraitWrap}>
-            <Image source={imageB} contentFit="cover" contentPosition="top" style={[styles.portraitImage, styles.flippedImage]} />
-            <View style={styles.portraitOverlay} />
-            <Text style={[styles.portraitName, styles.portraitNameRight]} numberOfLines={2}>{statsB.name}</Text>
-          </View>
-        </View>
+        <ClashPortraits
+          imageA={imageA}
+          imageB={imageB}
+          nameA={statsA.name}
+          nameB={statsB.name}
+          winner={overallWinner}
+          height={280}
+        />
 
-        {/* Verdict */}
         <View style={styles.verdictWrap}>
-          <Text style={styles.verdict}>{result.verdict}</Text>
+          {verdict ? (
+            <Text style={styles.verdict}>{verdict}</Text>
+          ) : (
+            <Text style={styles.verdictPlaceholder}>{result.verdict}</Text>
+          )}
         </View>
 
-        {/* Stat battle */}
         <View style={styles.battleWrap}>
           {result.stats.map((stat) => (
             <StatBattleRow key={stat.key} stat={stat} />
           ))}
         </View>
 
-        {/* Compare another */}
         <TouchableOpacity
           onPress={() => router.push(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)}
           activeOpacity={0.8}
@@ -183,29 +177,6 @@ const styles = StyleSheet.create({
   },
   iconBtn: { padding: 6 },
   topBarTitle: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.beige },
-  portraits: { flexDirection: 'row', height: PORTRAIT_HEIGHT },
-  portraitWrap: { flex: 1, overflow: 'hidden' },
-  portraitImage: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  flippedImage: {
-    transform: [{ scaleX: -1 }],
-  },
-  portraitOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(29,45,51,0.28)',
-  },
-  portraitName: {
-    position: 'absolute',
-    bottom: 12,
-    left: 12,
-    right: 6,
-    fontFamily: 'Flame-Regular',
-    fontSize: 18,
-    color: COLORS.beige,
-    lineHeight: 21,
-  },
-  portraitNameRight: { left: 6, right: 12, textAlign: 'right' },
   verdictWrap: {
     backgroundColor: COLORS.navy,
     paddingVertical: 18,
@@ -213,10 +184,18 @@ const styles = StyleSheet.create({
   },
   verdict: {
     fontFamily: 'Flame-Regular',
-    fontSize: 20,
+    fontSize: 18,
     color: COLORS.beige,
     textAlign: 'center',
     lineHeight: 26,
+  },
+  verdictPlaceholder: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14,
+    color: 'rgba(245,235,220,0.5)',
+    textAlign: 'center',
+    lineHeight: 22,
+    fontStyle: 'italic',
   },
   battleWrap: {
     paddingHorizontal: 16,
@@ -242,18 +221,8 @@ const styles = StyleSheet.create({
 });
 
 const battle = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 6,
-  },
-  side: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
+  side: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
   sideRight: { flexDirection: 'row-reverse' },
   val: {
     fontFamily: 'Nunito_700Bold',
@@ -271,20 +240,8 @@ const battle = StyleSheet.create({
     borderRadius: 4,
     overflow: 'hidden',
   },
-  barLeft: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    borderRadius: 4,
-  },
-  barRight: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    borderRadius: 4,
-  },
+  barLeft:  { position: 'absolute', right: 0, top: 0, bottom: 0, borderRadius: 4 },
+  barRight: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 4 },
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
