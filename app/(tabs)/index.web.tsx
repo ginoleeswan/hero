@@ -1,5 +1,5 @@
-// app/(tabs)/index.web.tsx — Unified Explore screen for web
-// Default state: editorial discover. Active state: portrait card grid.
+// app/(tabs)/index.web.tsx — Home screen for web
+// Search mode: full-screen grid (unchanged). Home mode: spotlight + horizontal scroll rows.
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
@@ -17,22 +17,28 @@ import { COLORS } from '../../src/constants/colors';
 import { heroGridImageSource, heroImageSource } from '../../src/constants/heroImages';
 import { useSearch } from '../../src/contexts/SearchContext';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
-import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import {
   getHeroesByCategory,
+  getAntiHeroes,
+  getHeroesByPublisher,
+  getHeroesByStatRanking,
   searchHeroes,
   rankResults,
+  type Hero,
+  type HeroSearchResult,
+  type PublisherFilter,
 } from '../../src/lib/db/heroes';
-import type {
-  Hero,
-  HeroesByCategory,
-  HeroSearchResult,
-  PublisherFilter,
-} from '../../src/lib/db/heroes';
+import { getUserFavouriteHeroes } from '../../src/lib/db/favourites';
+import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
+import { useAuth } from '../../src/hooks/useAuth';
+import type { FavouriteHero } from '../../src/types';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const PUBLISHER_FILTERS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
 const DISPLAY_LIMIT = 120;
+const SPOTLIGHT_POOL = 5;
+const ROW_CARD_HEIGHT = 260;
+const ROW_CARD_WIDTH = 180;
 
 // Publisher logos
 const MARVEL_LOGO = require('../../assets/images/Marvel-Logo.jpg') as number;
@@ -40,24 +46,20 @@ const DC_LOGO = require('../../assets/images/DC-Logo.png') as number;
 const DARK_HORSE_LOGO = require('../../assets/images/Dark_Horse_Comics_logo.png') as number;
 const STAR_WARS_LOGO = require('../../assets/images/star-wars-logo.png') as number;
 
-// ── CSS grid layouts (outside StyleSheet.create) ──────────────────────────────
-const villainsGrid = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-  gridAutoRows: '240px',
-  gap: 16,
-};
-const xmenGrid = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(3, 1fr)',
-  gridAutoRows: '320px',
-  gap: 16,
-};
+// ── CSS grid / scroll layouts ─────────────────────────────────────────────────
 const resultsGrid = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
   gridAutoRows: '240px',
   gap: 12,
+};
+const rowScrollStyle = {
+  display: 'flex',
+  flexDirection: 'row',
+  gap: 12,
+  overflowX: 'auto',
+  paddingBottom: 12,
+  scrollbarWidth: 'none',
 };
 
 // ── Publisher logo helper ─────────────────────────────────────────────────────
@@ -150,14 +152,14 @@ const gcard = StyleSheet.create({
   } as object,
 });
 
-// ── Supporting card (Popular right column) ────────────────────────────────────
-function SupportingCard({ hero, onPress }: { hero: Hero; onPress: () => void }) {
+// ── Row card (home carousel rows) ────────────────────────────────────────────
+function RowCard({ hero, onPress }: { hero: Hero | FavouriteHero; onPress: () => void }) {
   const source = heroImageSource(String(hero.id), hero.image_url, hero.portrait_url);
   return (
     <Pressable
       onPress={onPress}
       style={({ hovered }: { hovered?: boolean }) =>
-        [sc.wrap, hovered && (sc.wrapHover as object)] as object
+        [rc.wrap, hovered && (rc.wrapHover as object)] as object
       }
     >
       <Image
@@ -169,55 +171,65 @@ function SupportingCard({ hero, onPress }: { hero: Hero; onPress: () => void }) 
         recyclingKey={String(hero.id)}
         transition={typeof source === 'object' && 'uri' in source ? 200 : null}
       />
-      <View style={sc.overlay as object} />
-      <View style={sc.logoWrap}>
-        <PublisherLogo publisher={hero.publisher} />
-      </View>
-      <View style={sc.bottom}>
-        <Text style={sc.name as object} numberOfLines={2}>{hero.name}</Text>
+      <View style={rc.overlay as object} />
+      <View style={rc.bottom}>
+        <Text style={rc.name as object} numberOfLines={2}>{hero.name}</Text>
       </View>
     </Pressable>
   );
 }
 
-const sc = StyleSheet.create({
+const rc = StyleSheet.create({
   wrap: {
-    flex: 1,
-    borderRadius: 12,
+    width: ROW_CARD_WIDTH,
+    height: ROW_CARD_HEIGHT,
+    borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
+    flexShrink: 0,
     cursor: 'pointer',
     transition: 'transform 200ms ease, box-shadow 200ms ease',
   } as object,
   wrapHover: {
-    transform: [{ scale: 1.02 }],
+    transform: [{ scale: 1.04 }],
     boxShadow: '0 16px 48px rgba(0,0,0,0.28)',
-    zIndex: 1,
+    zIndex: 2,
   } as object,
   overlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundImage:
-      'linear-gradient(to top, rgba(29,45,51,0.95) 0%, rgba(29,45,51,0.2) 50%, transparent 100%)',
+      'linear-gradient(to top, rgba(29,45,51,0.97) 0%, rgba(29,45,51,0.08) 55%, transparent 100%)',
   } as object,
-  logoWrap: { position: 'absolute', top: 12, left: 14 },
-  bottom: { position: 'absolute', bottom: 14, left: 14, right: 14 },
+  bottom: { position: 'absolute', bottom: 10, left: 10, right: 10 },
   name: {
     fontFamily: 'Flame-Regular',
-    fontSize: 18,
+    fontSize: 14,
     color: COLORS.beige,
-    lineHeight: 21,
-    textShadow: '0 1px 8px rgba(0,0,0,0.9)',
+    lineHeight: 16,
+    textShadow: '0 1px 6px rgba(0,0,0,0.9)',
   } as object,
 });
 
-// ── Featured hero panel ────────────────────────────────────────────────────────
-function FeaturedHeroPanel({ hero, onPress }: { hero: Hero; onPress: () => void }) {
+// ── Spotlight banner ──────────────────────────────────────────────────────────
+function WebSpotlight({
+  hero,
+  index,
+  total,
+  onPress,
+  onDotPress,
+}: {
+  hero: Hero;
+  index: number;
+  total: number;
+  onPress: () => void;
+  onDotPress: (i: number) => void;
+}) {
   const source = heroImageSource(String(hero.id), hero.image_url, hero.portrait_url);
   return (
     <Pressable
       onPress={onPress}
       style={({ hovered }: { hovered?: boolean }) =>
-        [feat.panel, hovered && (feat.panelHover as object)] as object
+        [spot.wrap, hovered && (spot.wrapHover as object)] as object
       }
     >
       <Image
@@ -227,49 +239,69 @@ function FeaturedHeroPanel({ hero, onPress }: { hero: Hero; onPress: () => void 
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
         cachePolicy="memory-disk"
         recyclingKey={String(hero.id)}
-        transition={typeof source === 'object' && 'uri' in source ? 200 : null}
+        transition={200}
       />
-      <View style={feat.overlay as object} />
-      <View style={feat.content}>
-        <View style={feat.logoRow}>
+      <View style={spot.overlay as object} />
+      <View style={spot.content}>
+        <View style={spot.logoRow}>
           <PublisherLogo publisher={hero.publisher} />
         </View>
-        <Text style={feat.name as object} numberOfLines={2}>{hero.name}</Text>
-        <View style={feat.cta}>
-          <Text style={feat.ctaText}>View profile</Text>
-          <Text style={feat.ctaArrow}> →</Text>
+        <Text style={spot.label as object}>Featured Hero</Text>
+        <Text style={spot.name as object} numberOfLines={2}>{hero.name}</Text>
+        <View style={spot.cta}>
+          <Text style={spot.ctaText}>View profile</Text>
+          <Text style={spot.ctaArrow}> →</Text>
         </View>
       </View>
+      {total > 1 && (
+        <View style={spot.dots as object}>
+          {Array.from({ length: total }).map((_, i) => (
+            <Pressable
+              key={i}
+              onPress={(e) => { e.stopPropagation?.(); onDotPress(i); }}
+              style={[spot.dot, i === index && (spot.dotActive as object)] as object}
+            />
+          ))}
+        </View>
+      )}
     </Pressable>
   );
 }
 
-const feat = StyleSheet.create({
-  panel: {
-    flex: 1,
-    borderRadius: 12,
+const spot = StyleSheet.create({
+  wrap: {
+    height: 480,
+    borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
     cursor: 'pointer',
     transition: 'transform 220ms ease, box-shadow 220ms ease',
+    marginBottom: 48,
   } as object,
-  panelHover: {
-    transform: [{ scale: 1.015 }],
-    boxShadow: '0 24px 64px rgba(0,0,0,0.32)',
-    zIndex: 1,
+  wrapHover: {
+    transform: [{ scale: 1.008 }],
+    boxShadow: '0 32px 80px rgba(0,0,0,0.3)',
   } as object,
   overlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundImage:
-      'linear-gradient(to top, rgba(29,45,51,0.98) 0%, rgba(29,45,51,0.45) 42%, transparent 100%)',
+      'linear-gradient(to top, rgba(29,45,51,0.98) 0%, rgba(29,45,51,0.4) 45%, transparent 100%)',
   } as object,
-  content: { position: 'absolute', bottom: 32, left: 32, right: 32 },
-  logoRow: { marginBottom: 14 },
+  content: { position: 'absolute', bottom: 36, left: 36, right: 36 },
+  logoRow: { marginBottom: 12 },
+  label: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: COLORS.orange,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  } as object,
   name: {
     fontFamily: 'Flame-Regular',
-    fontSize: 38,
+    fontSize: 52,
     color: COLORS.beige,
-    lineHeight: 40,
+    lineHeight: 54,
     marginBottom: 20,
     textShadow: '0 2px 16px rgba(0,0,0,0.7)',
   } as object,
@@ -292,106 +324,77 @@ const feat = StyleSheet.create({
     fontSize: 14,
     color: 'rgba(245,235,220,0.4)',
   },
+  dots: {
+    position: 'absolute',
+    bottom: 16,
+    right: 36,
+    flexDirection: 'row',
+    gap: 6,
+  } as object,
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(245,235,220,0.3)',
+    cursor: 'pointer',
+    transition: 'all 150ms ease',
+  } as object,
+  dotActive: { width: 18, backgroundColor: COLORS.orange } as object,
 });
 
-// ── Editorial section header ───────────────────────────────────────────────────
-function SectionHeader({ index, label, category }: {
-  index: number;
-  label: string;
-  category: string;
+// ── Home row section ──────────────────────────────────────────────────────────
+function HomeRow({
+  label,
+  title,
+  heroes,
+  onPress,
+}: {
+  label?: string;
+  title: string;
+  heroes: (Hero | FavouriteHero)[];
+  onPress: (id: string) => void;
 }) {
+  if (heroes.length === 0) return null;
   return (
-    <View style={sh.wrap}>
-      <Text style={sh.watermark as object}>{String(index + 1).padStart(2, '0')}</Text>
-      <Text style={sh.index}>{String(index + 1).padStart(2, '0')}</Text>
-      <Text style={sh.title}>{label}</Text>
-      <Text style={sh.category}>{category}</Text>
-      <View style={sh.rule} />
+    <View style={row.section}>
+      <View style={row.header}>
+        {!!label && <Text style={row.label}>{label}</Text>}
+        <Text style={row.title}>{title}</Text>
+      </View>
+      <View style={rowScrollStyle as object}>
+        {heroes.map((h) => (
+          <RowCard key={h.id} hero={h} onPress={() => onPress(String(h.id))} />
+        ))}
+      </View>
     </View>
   );
 }
 
-const sh = StyleSheet.create({
-  wrap: {
-    position: 'relative',
-    marginBottom: 28,
-    paddingTop: 12,
-  },
-  watermark: {
-    position: 'absolute',
-    bottom: -16,
-    left: -12,
-    fontFamily: 'Flame-Regular',
-    fontSize: 168,
-    color: COLORS.navy,
-    opacity: 0.04,
-    lineHeight: 140,
-    userSelect: 'none',
-    pointerEvents: 'none',
-  } as object,
-  index: {
+const row = StyleSheet.create({
+  section: { marginBottom: 40 },
+  header: { marginBottom: 14, gap: 2 },
+  label: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
+    fontSize: 9,
     color: COLORS.orange,
-    letterSpacing: 3,
-    marginBottom: 6,
-  },
-  title: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 52,
-    color: COLORS.navy,
-    lineHeight: 54,
-  },
-  category: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 11,
-    color: 'rgba(41,60,67,0.38)',
+    letterSpacing: 2,
     textTransform: 'uppercase',
-    letterSpacing: 2.5,
-    marginTop: 5,
   },
-  rule: {
-    height: 1,
-    backgroundColor: COLORS.navy,
-    opacity: 0.1,
-    marginTop: 22,
-  },
+  title: { fontFamily: 'Flame-Regular', fontSize: 28, color: COLORS.navy },
 });
 
-// ── Discover skeleton ─────────────────────────────────────────────────────────
-function DiscoverSkeleton() {
+// ── Home skeleton ─────────────────────────────────────────────────────────────
+function HomeSkeleton() {
   const opacity = useSkeletonAnim();
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.discoverContent}>
-      <View style={styles.section}>
-        <View style={{ gap: 6, marginBottom: 28 } as object}>
-          <SkeletonBlock opacity={opacity} width={28} height={11} borderRadius={3} />
-          <SkeletonBlock opacity={opacity} width={200} height={48} borderRadius={6} />
-          <SkeletonBlock opacity={opacity} width={80} height={11} borderRadius={3} />
-          <SkeletonBlock opacity={opacity} height={1} borderRadius={0} style={{ marginTop: 14 }} />
-        </View>
-        <View style={{ flexDirection: 'row', gap: 16, height: 540 } as object}>
-          <SkeletonBlock opacity={opacity} height={540} borderRadius={12} style={{ flex: 1 }} />
-          <View style={{ flex: 0.75, gap: 14, flexDirection: 'column' } as object}>
-            <SkeletonBlock opacity={opacity} height={0} borderRadius={12} style={{ flex: 7 }} />
-            <View style={{ flex: 5, flexDirection: 'row', gap: 14 } as object}>
-              <SkeletonBlock opacity={opacity} height={0} borderRadius={12} style={{ flex: 1 }} />
-              <SkeletonBlock opacity={opacity} height={0} borderRadius={12} style={{ flex: 1 }} />
-            </View>
-          </View>
-        </View>
-      </View>
-      {[{ cols: 5, h: 240 }, { cols: 3, h: 320 }].map((c, si) => (
-        <View key={si} style={styles.section}>
-          <View style={{ gap: 6, marginBottom: 28 } as object}>
-            <SkeletonBlock opacity={opacity} width={28} height={11} borderRadius={3} />
-            <SkeletonBlock opacity={opacity} width={160} height={48} borderRadius={6} />
-            <SkeletonBlock opacity={opacity} width={80} height={11} borderRadius={3} />
-            <SkeletonBlock opacity={opacity} height={1} borderRadius={0} style={{ marginTop: 14 }} />
-          </View>
-          <View style={{ display: 'grid', gridTemplateColumns: `repeat(${c.cols}, 1fr)`, gridAutoRows: `${c.h}px`, gap: 16 } as object}>
-            {Array.from({ length: c.cols }).map((_, i) => (
-              <SkeletonBlock key={i} opacity={opacity} height={c.h} borderRadius={12} />
+      <SkeletonBlock opacity={opacity} height={480} borderRadius={16} style={{ marginBottom: 48 }} />
+      {[1, 2, 3].map((i) => (
+        <View key={i} style={{ marginBottom: 40 } as object}>
+          <SkeletonBlock opacity={opacity} width={160} height={28} borderRadius={6} style={{ marginBottom: 14 }} />
+          <View style={{ flexDirection: 'row', gap: 12 } as object}>
+            {Array.from({ length: 6 }).map((_, j) => (
+              <SkeletonBlock key={j} opacity={opacity} width={ROW_CARD_WIDTH} height={ROW_CARD_HEIGHT} borderRadius={10} />
             ))}
           </View>
         </View>
@@ -435,7 +438,7 @@ function EmptyState({ query, onClear }: { query: string; onClear: () => void }) 
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
-export default function WebExploreScreen() {
+export default function WebHomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
@@ -443,19 +446,35 @@ export default function WebExploreScreen() {
   const inputRef = useRef<TextInput>(null);
 
   const { query, setQuery, publisher, setPublisher } = useSearch();
+  const { user } = useAuth();
 
-  const [categories, setCategories] = useState<HeroesByCategory | null>(null);
+  // Search data
   const [allHeroes, setAllHeroes] = useState<HeroSearchResult[]>([]);
   const [loadingAll, setLoadingAll] = useState(true);
 
+  // Home data
+  interface HomeData {
+    popular: Hero[];
+    villain: Hero[];
+    xmen: Hero[];
+    antiHeroes: Hero[];
+    marvel: Hero[];
+    dc: Hero[];
+    strongest: Hero[];
+    mostIntelligent: Hero[];
+  }
+  const [homeData, setHomeData] = useState<HomeData | null>(null);
+  const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
+  const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
+  const [spotlightIndex, setSpotlightIndex] = useState(0);
+
   const isSearchActive = query.trim() !== '' || publisher !== 'All';
 
+  // Load search heroes + home data in parallel
   useEffect(() => {
-    getHeroesByCategory().then(setCategories).catch(() => {});
     searchHeroes('', 'All', 600)
       .then((heroes) => {
         setAllHeroes(heroes);
-        // Prefetch remote portrait/image URLs into disk cache immediately
         const remoteUrls = heroes
           .slice(0, 200)
           .map((h) => h.portrait_url ?? (h.image_url?.startsWith('http') ? h.image_url : null))
@@ -464,7 +483,43 @@ export default function WebExploreScreen() {
       })
       .catch(() => {})
       .finally(() => setLoadingAll(false));
+
+    Promise.all([
+      getHeroesByCategory(),
+      getAntiHeroes(),
+      getHeroesByPublisher('marvel'),
+      getHeroesByPublisher('dc'),
+      getHeroesByStatRanking('strength'),
+      getHeroesByStatRanking('intelligence'),
+    ]).then(([cats, antiHeroes, marvel, dc, strongest, mostIntelligent]) => {
+      setHomeData({
+        popular: cats.popular,
+        villain: cats.villain,
+        xmen: cats.xmen,
+        antiHeroes,
+        marvel,
+        dc,
+        strongest,
+        mostIntelligent,
+      });
+    }).catch(() => {});
   }, []);
+
+  // Personal rows
+  useEffect(() => {
+    if (!user?.id) return;
+    getRecentlyViewed(user.id).then(setRecentlyViewed).catch(() => {});
+    getUserFavouriteHeroes(user.id).then(setFavourites).catch(() => {});
+  }, [user?.id]);
+
+  // Auto-advance spotlight
+  useEffect(() => {
+    if (!homeData?.popular.length) return;
+    const total = Math.min(SPOTLIGHT_POOL, homeData.popular.length);
+    if (total <= 1) return;
+    const timer = setInterval(() => setSpotlightIndex((i) => (i + 1) % total), 6000);
+    return () => clearInterval(timer);
+  }, [homeData?.popular]);
 
   const filtered = useMemo(() => {
     let list =
@@ -487,6 +542,13 @@ export default function WebExploreScreen() {
     setQuery('');
     setPublisher('All');
   }, [setQuery, setPublisher]);
+
+  const handlePress = useCallback((id: string) => {
+    router.push(`/character/${id}`);
+  }, [router]);
+
+  const spotlightHero = homeData?.popular[spotlightIndex] ?? null;
+  const spotlightTotal = homeData ? Math.min(SPOTLIGHT_POOL, homeData.popular.length) : 0;
 
   return (
     <View style={styles.root}>
@@ -597,7 +659,7 @@ export default function WebExploreScreen() {
                   <PortraitCard
                     key={item.id}
                     item={item}
-                    onPress={() => router.push(`/character/${item.id}`)}
+                    onPress={() => handlePress(item.id)}
                   />
                 ))}
               </View>
@@ -608,83 +670,43 @@ export default function WebExploreScreen() {
 
       ) : (
 
-        !categories ? <DiscoverSkeleton /> : (
+        !homeData ? <HomeSkeleton /> : (
           <ScrollView style={styles.scroll} contentContainerStyle={styles.discoverContent}>
 
-            {/* 01 — POPULAR */}
-            {categories.popular.length > 0 && (
-              <View style={styles.section}>
-                <SectionHeader index={0} label="Popular" category="Heroes" />
-                <View style={{ flexDirection: 'row', gap: 16, height: 540 } as object}>
-                  <View style={{ flex: 1 } as object}>
-                    <FeaturedHeroPanel
-                      hero={categories.popular[0]}
-                      onPress={() => router.push(`/character/${categories.popular[0].id}`)}
-                    />
-                  </View>
-                  <View style={{ flex: 0.75, gap: 14, flexDirection: 'column' } as object}>
-                    <View style={{ flex: 7 } as object}>
-                      {categories.popular[1] && (
-                        <SupportingCard
-                          hero={categories.popular[1]}
-                          onPress={() => router.push(`/character/${categories.popular[1].id}`)}
-                        />
-                      )}
-                    </View>
-                    <View style={{ flex: 5, flexDirection: 'row', gap: 14 } as object}>
-                      {categories.popular[2] && (
-                        <SupportingCard
-                          hero={categories.popular[2]}
-                          onPress={() => router.push(`/character/${categories.popular[2].id}`)}
-                        />
-                      )}
-                      {categories.popular[3] && (
-                        <SupportingCard
-                          hero={categories.popular[3]}
-                          onPress={() => router.push(`/character/${categories.popular[3].id}`)}
-                        />
-                      )}
-                    </View>
-                  </View>
-                </View>
-              </View>
+            {/* Spotlight */}
+            {spotlightHero && (
+              <WebSpotlight
+                hero={spotlightHero}
+                index={spotlightIndex}
+                total={spotlightTotal}
+                onPress={() => handlePress(String(spotlightHero.id))}
+                onDotPress={setSpotlightIndex}
+              />
             )}
 
-            {/* 02 — VILLAINS */}
-            {categories.villain.length > 0 && (
-              <View style={styles.section}>
-                <SectionHeader index={1} label="Villains" category="Rogues Gallery" />
-                <View style={villainsGrid as object}>
-                  {categories.villain.map((hero) => (
-                    <WebHeroCard
-                      key={hero.id}
-                      id={String(hero.id)}
-                      name={hero.name}
-                      imageUrl={hero.image_url}
-                      onPress={() => router.push(`/character/${hero.id}`)}
-                    />
-                  ))}
-                </View>
-              </View>
-            )}
+            {/* Personal rows */}
+            <HomeRow
+              label="Personal"
+              title="Jump Back In"
+              heroes={recentlyViewed}
+              onPress={handlePress}
+            />
+            <HomeRow
+              label="Personal"
+              title="Your Favourites"
+              heroes={favourites}
+              onPress={handlePress}
+            />
 
-            {/* 03 — X-MEN */}
-            {categories.xmen.length > 0 && (
-              <View style={styles.section}>
-                <SectionHeader index={2} label="X-Men" category="Mutants" />
-                <View style={xmenGrid as object}>
-                  {categories.xmen.map((hero) => (
-                    <WebHeroCard
-                      key={hero.id}
-                      id={String(hero.id)}
-                      name={hero.name}
-                      imageUrl={hero.image_url}
-                      onPress={() => router.push(`/character/${hero.id}`)}
-                    />
-                  ))}
-                </View>
-              </View>
-            )}
+            {/* Curated rows */}
+            <HomeRow title="Popular" heroes={homeData.popular} onPress={handlePress} />
+            <HomeRow title="Villains" heroes={homeData.villain} onPress={handlePress} />
+            <HomeRow title="X-Men" heroes={homeData.xmen} onPress={handlePress} />
+            <HomeRow title="Anti-Heroes" heroes={homeData.antiHeroes} onPress={handlePress} />
+            <HomeRow title="Marvel Universe" heroes={homeData.marvel} onPress={handlePress} />
+            <HomeRow title="DC Universe" heroes={homeData.dc} onPress={handlePress} />
+            <HomeRow title="Strongest Heroes" heroes={homeData.strongest} onPress={handlePress} />
+            <HomeRow title="Most Intelligent" heroes={homeData.mostIntelligent} onPress={handlePress} />
 
             <View style={styles.footerRule} />
           </ScrollView>
@@ -811,17 +833,16 @@ const styles = StyleSheet.create({
   },
   pillTextActive: { color: 'white' },
 
-  // ── Discover editorial layout ────────────────────────────────────────────────
+  // ── Home layout ──────────────────────────────────────────────────────────────
   discoverContent: {
     paddingHorizontal: 32,
-    paddingTop: 56,
+    paddingTop: 48,
     paddingBottom: 100,
     maxWidth: 1200,
     alignSelf: 'center',
     width: '100%',
   },
-  section: { marginBottom: 96 },
-  footerRule: { height: 1, backgroundColor: COLORS.navy, opacity: 0.08 },
+  footerRule: { height: 1, backgroundColor: COLORS.navy, opacity: 0.08, marginTop: 16 },
 
   // ── Search results layout ────────────────────────────────────────────────────
   resultsHeader: {
