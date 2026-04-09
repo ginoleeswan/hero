@@ -79,3 +79,12 @@ web-build/
 
 expo-env.d.ts
 # @end expo-cli
+
+# iOS
+ios/Pods/
+ios/build/
+
+# Android
+android/.gradle/
+android/app/build/
+android/build/
