@@ -7,6 +7,10 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "prebuildCommand": "expo prebuild --clean",
+      "env": {
+        "APP_VARIANT": "development"
+      },
       "android": {
         "image": "ubuntu-22.04-jdk-17-ndk-r25b"
       },

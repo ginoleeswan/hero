@@ -33,6 +33,7 @@ const config: ExpoConfig = {
     favicon: './assets/favicon.png',
   },
   plugins: [
+    './plugins/withAndroidIconPadding',
     'expo-router',
     'expo-image',
     [
