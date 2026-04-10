@@ -1,8 +1,10 @@
 import 'dotenv/config';
 import type { ExpoConfig } from 'expo/config';
 
+const IS_DEV = process.env.APP_VARIANT === 'development';
+
 const config: ExpoConfig = {
-  name: 'hero',
+  name: IS_DEV ? 'hero (dev)' : 'hero',
   slug: 'hero',
   scheme: 'hero',
   version: '1.0.0',
@@ -15,14 +17,14 @@ const config: ExpoConfig = {
   },
   ios: {
     supportsTablet: false,
-    bundleIdentifier: 'com.ginoswanepoel.hero',
+    bundleIdentifier: IS_DEV ? 'com.ginoswanepoel.hero.dev' : 'com.ginoswanepoel.hero',
   },
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#f5ebdc',
+      backgroundColor: '#293c43',
     },
-    package: 'com.ginoswanepoel.hero',
+    package: IS_DEV ? 'com.ginoswanepoel.hero.dev' : 'com.ginoswanepoel.hero',
   },
   web: {
     bundler: 'metro',
