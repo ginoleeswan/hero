@@ -7,14 +7,14 @@ Targets iOS, Android, and Web.
 
 ## Package manager
 
-Always use **bun**. Never use npm or yarn.
+Always use **yarn**. Never use npm or bun.
 
 ```sh
-bun install
-bun add <package>
-bunx expo install <expo-package>   # use for Expo-managed packages (pins correct version)
-bun start                          # dev server
-bun run test:ci                    # run all tests once (CI mode)
+yarn install
+yarn add <package>
+yarn expo install <expo-package>   # use for Expo-managed packages (pins correct version)
+yarn start                         # dev server
+yarn test:ci                       # run all tests once (CI mode)
 ```
 
 ## Tech stack
@@ -109,7 +109,7 @@ Stored in `.env.local` (gitignored). See `.env.example` for required keys.
 
 ## Testing
 
-Tests live in `__tests__/` mirroring the source tree. Run with `bun run test:ci`.
+Tests live in `__tests__/` mirroring the source tree. Run with `yarn test:ci`.
 
 - Unit-test pure logic and hooks with mocked Supabase/fetch.
 - Do not test navigation or rendering of full screens — keep tests fast and focused.
