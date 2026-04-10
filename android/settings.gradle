@@ -1,39 +1,56 @@
 pluginManagement {
-  def reactNativeGradlePlugin = new File(
-    providers.exec {
-      workingDir(rootDir)
-      commandLine("node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })")
-    }.standardOutput.asText.get().trim()
-  ).getParentFile().absolutePath
-  includeBuild(reactNativeGradlePlugin)
-  
-  def expoPluginsPath = new File(
-    providers.exec {
-      workingDir(rootDir)
-      commandLine("node", "--print", "require.resolve('expo-modules-autolinking/package.json', { paths: [require.resolve('expo/package.json')] })")
-    }.standardOutput.asText.get().trim(),
-    "../android/expo-gradle-plugin"
-  ).absolutePath
-  includeBuild(expoPluginsPath)
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+
+    // Include react-native gradle plugin from node_modules
+    def reactNativeGradlePlugin = new File(
+        providers.exec {
+            workingDir(rootDir)
+            commandLine("node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })")
+        }.standardOutput.asText.get().trim()
+    ).getParentFile().absolutePath
+    includeBuild(reactNativeGradlePlugin)
+
+    // Include Expo modules gradle plugin
+    def expoPluginsPath = new File(
+        providers.exec {
+            workingDir(rootDir)
+            commandLine("node", "--print", "require.resolve('expo-modules-autolinking/package.json', { paths: [require.resolve('expo/package.json')] })")
+        }.standardOutput.asText.get().trim(),
+        "../android/expo-gradle-plugin"
+    ).absolutePath
+    includeBuild(expoPluginsPath)
 }
 
 plugins {
-  id("com.facebook.react.settings")
-  id("expo-autolinking-settings")
+    id("com.facebook.react.settings")
+    id("expo-autolinking-settings")
 }
 
+// Re-include @react-native/gradle-plugin outside pluginManagement so its artifacts
+// (com.facebook.react:react-native-gradle-plugin) are available for dependency substitution
+// in expo module gradle plugins (expo-module-gradle-plugin, expo-updates-gradle-plugin).
+includeBuild(new File(
+    providers.exec {
+        workingDir(rootDir)
+        commandLine("node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })")
+    }.standardOutput.asText.get().trim()
+).parentFile.absolutePath)
+
 extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
-  if (System.getenv('EXPO_USE_COMMUNITY_AUTOLINKING') == '1') {
-    ex.autolinkLibrariesFromCommand()
-  } else {
-    ex.autolinkLibrariesFromCommand(expoAutolinking.rnConfigCommand)
-  }
+    if (System.getenv('EXPO_USE_COMMUNITY_AUTOLINKING') == '1') {
+        ex.autolinkLibrariesFromCommand()
+    } else {
+        ex.autolinkLibrariesFromCommand(expoAutolinking.rnConfigCommand)
+    }
 }
+
 expoAutolinking.useExpoModules()
+expoAutolinking.useExpoVersionCatalog()
 
 rootProject.name = 'hero'
 
-expoAutolinking.useExpoVersionCatalog()
-
 include ':app'
-includeBuild(expoAutolinking.reactNativeGradlePlugin)

@@ -25,6 +25,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="hero"/>
+        <data android:scheme="exp+hero"/>
       </intent-filter>
     </activity>
   </application>
