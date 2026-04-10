@@ -12,8 +12,9 @@ const config: ExpoConfig = {
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
   splash: {
+    image: './assets/splash.png',
     resizeMode: 'contain',
-    backgroundColor: '#f5ebdc',
+    backgroundColor: '#293c43',
   },
   ios: {
     supportsTablet: false,
@@ -47,7 +48,8 @@ const config: ExpoConfig = {
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#f5ebdc',
+        image: './assets/splash.png',
+        backgroundColor: '#293c43',
         resizeMode: 'contain',
       },
     ],
