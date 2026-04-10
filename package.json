@@ -11,7 +11,8 @@
     "test:ci": "jest --ci",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,js,json}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,json}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json}\"",
+    "eas-build-pre-install": "corepack enable && yarn set version 4"
   },
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.2",
