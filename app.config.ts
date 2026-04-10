@@ -19,6 +19,7 @@ const config: ExpoConfig = {
   },
   android: {
     adaptiveIcon: {
+      foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#f5ebdc',
     },
     package: 'com.ginoswanepoel.hero',
