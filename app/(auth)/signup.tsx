@@ -105,6 +105,8 @@ export default function SignupScreen() {
               },
             ]}
           >
+            <View style={styles.cardAccent} />
+
             {pendingEmail ? (
               /* ── Confirmation pending state ── */
               <View style={styles.pendingWrap}>
@@ -277,6 +279,15 @@ const styles = StyleSheet.create({
     height: '55%',
   },
 
+  cardAccent: {
+    width: 40,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: COLORS.orange,
+    alignSelf: 'center',
+    marginBottom: 24,
+    opacity: 0.7,
+  },
   card: {
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 28,

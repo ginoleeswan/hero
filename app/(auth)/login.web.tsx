@@ -14,12 +14,14 @@ import { COLORS } from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { SocialDivider } from '../../src/components/ui/SocialDivider';
+import { GoogleSignInButton } from '../../src/components/ui/GoogleSignInButton';
 
 const LOGIN_HERO = require('../../assets/images/login-hero.webp');
 const HERO_ASPECT = LOGIN_HERO.width / LOGIN_HERO.height;
 
 export default function WebLoginScreen() {
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
@@ -28,6 +30,7 @@ export default function WebLoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
@@ -48,20 +51,25 @@ export default function WebLoginScreen() {
 
   const formContent = (
     <>
-      <View style={styles.headingRow}>
-        <View style={styles.headingAccent} />
-        <View style={styles.headingText}>
-          <Text style={styles.heading}>Welcome back</Text>
-          <Text style={styles.subheading}>Sign in to your account</Text>
-        </View>
-      </View>
-
       {error && (
         <View style={styles.errorBox}>
           <Ionicons name="alert-circle-outline" size={15} color={COLORS.red} />
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
+
+      <GoogleSignInButton
+        onPress={async () => {
+          setGoogleLoading(true);
+          setError(null);
+          const { error } = await signInWithGoogle();
+          if (error) setError(error.message);
+          setGoogleLoading(false);
+        }}
+        loading={googleLoading}
+      />
+
+      <SocialDivider label="or continue with email" />
 
       <Text style={styles.label}>Email</Text>
       <TextInput
@@ -161,7 +169,7 @@ export default function WebLoginScreen() {
 
         {/* Form card — rises from bottom */}
         <View style={styles.mobileCard}>
-          <View style={styles.mobileCardHandle} />
+          <View style={styles.cardAccent} />
           {formContent}
         </View>
       </View>
@@ -237,6 +245,15 @@ const styles = StyleSheet.create({
     left: 20,
     zIndex: 10,
   },
+  cardAccent: {
+    width: 40,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: COLORS.orange,
+    alignSelf: 'center',
+    marginBottom: 24,
+    opacity: 0.7,
+  },
   mobileCard: {
     position: 'absolute',
     bottom: 0,
@@ -250,15 +267,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 48,
   },
-  mobileCardHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(41,60,67,0.15)',
-    alignSelf: 'center',
-    marginBottom: 24,
-  },
-
   // ── Desktop ────────────────────────────────────────────────────────────
   desktopRoot: {
     flex: 1,
@@ -342,36 +350,6 @@ const styles = StyleSheet.create({
   },
 
   // ── Shared form styles ─────────────────────────────────────────────────
-  headingRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 14,
-    marginBottom: 28,
-  },
-  headingAccent: {
-    width: 4,
-    height: 56,
-    backgroundColor: COLORS.orange,
-    borderRadius: 2,
-    marginTop: 3,
-    flexShrink: 0,
-  },
-  headingText: {
-    flex: 1,
-  },
-  heading: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 32,
-    color: COLORS.navy,
-    lineHeight: 38,
-    marginBottom: 4,
-  },
-  subheading: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 14,
-    color: COLORS.grey,
-    lineHeight: 20,
-  },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',

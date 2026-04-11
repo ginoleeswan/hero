@@ -105,6 +105,8 @@ export default function LoginScreen() {
               },
             ]}
           >
+            <View style={styles.cardAccent} />
+
             {error && (
               <View style={styles.errorBox}>
                 <Ionicons name="alert-circle-outline" size={15} color={COLORS.red} />
@@ -252,6 +254,15 @@ const styles = StyleSheet.create({
   },
 
   // Card — overlaps illustration via marginTop, beige fills to bottom
+  cardAccent: {
+    width: 40,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: COLORS.orange,
+    alignSelf: 'center',
+    marginBottom: 24,
+    opacity: 0.7,
+  },
   card: {
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 28,
