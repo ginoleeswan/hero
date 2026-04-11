@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  Animated,
   useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -52,6 +53,24 @@ function StatBattleRow({ stat, isDesktop }: { stat: StatResult; isDesktop: boole
         </View>
         <Text style={[wb.val, bWins && wb.valWin]}>{stat.valueB}</Text>
       </View>
+    </View>
+  );
+}
+
+function VerdictShimmer() {
+  const opacity = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.3, duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+  return (
+    <View style={{ gap: 8, paddingVertical: 4 }}>
+      <Animated.View style={{ opacity, height: 18, borderRadius: 9, backgroundColor: 'rgba(245,235,220,0.15)', width: '80%', alignSelf: 'center' }} />
+      <Animated.View style={{ opacity, height: 18, borderRadius: 9, backgroundColor: 'rgba(245,235,220,0.15)', width: '55%', alignSelf: 'center' }} />
     </View>
   );
 }
@@ -185,14 +204,7 @@ export default function WebCompareScreen() {
             {/* Center: verdict + stat battle */}
             <View style={styles.centerCol}>
               <View style={styles.verdictCard}>
-                {verdict ? (
-                  <Text style={styles.verdictText}>{verdict}</Text>
-                ) : (
-                  <View style={{ gap: 6 }}>
-                    <View style={[styles.shimmer, { width: '85%' }] as object} />
-                    <View style={[styles.shimmer, { width: '55%', alignSelf: 'center' }] as object} />
-                  </View>
-                )}
+                {verdict ? <Text style={styles.verdictText}>{verdict}</Text> : <VerdictShimmer />}
               </View>
               <View style={styles.battleRows}>
                 {result.stats.map((stat) => (
@@ -245,7 +257,7 @@ export default function WebCompareScreen() {
               </View>
             </View>
             <View style={styles.verdictCard}>
-              <Text style={styles.verdictText}>{result.verdict}</Text>
+              {verdict ? <Text style={styles.verdictText}>{verdict}</Text> : <VerdictShimmer />}
             </View>
             <View style={styles.battleRows}>
               {result.stats.map((stat) => (
@@ -391,13 +403,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 4,
   },
-  shimmer: {
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: 'rgba(245,235,220,0.1)',
-    animation: 'pulse 1.4s ease-in-out infinite',
-  } as object,
-  verdictText: {
+verdictText: {
     fontFamily: 'Flame-Regular',
     fontSize: 18,
     color: COLORS.beige,
