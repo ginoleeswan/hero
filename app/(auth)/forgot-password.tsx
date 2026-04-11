@@ -87,6 +87,7 @@ export default function ForgotPasswordScreen() {
       <KeyboardAvoidingView
         style={styles.kav}
         behavior="padding"
+        keyboardVerticalOffset={80}
       >
         <ScrollView
           contentContainerStyle={styles.scroll}
