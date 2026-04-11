@@ -26,11 +26,16 @@ const CSS = `
     --orange:#E77333; --yellow:#F9B222; --beige:#f5ebdc;
     --muted:#7a93a3; --border:#253d50; --radius:16px;
   }
-  html { scroll-behavior: smooth; }
+  html {
+    scroll-behavior: smooth;
+    background: var(--bg); /* iOS Safari overscroll top area */
+  }
   body {
     background: var(--bg); color: var(--beige);
     font-family: 'Poppins', sans-serif;
     overflow-x: hidden; -webkit-font-smoothing: antialiased;
+    /* iOS Safari overscroll bottom area */
+    overscroll-behavior-y: none;
   }
   nav {
     position: fixed; top:0; left:0; right:0; z-index:100;
