@@ -30,7 +30,7 @@ export function ThumbCard({ item, onPress, disabled = false }: ThumbCardProps) {
       <Image
         source={source}
         contentFit="cover"
-        contentPosition="top"
+        contentPosition="center"
         style={StyleSheet.absoluteFill}
         cachePolicy="memory-disk"
         recyclingKey={item.id}
