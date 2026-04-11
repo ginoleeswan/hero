@@ -32,10 +32,17 @@ export function useAuth(): AuthState {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      // Sync Google profile on web OAuth redirect (and any platform on first sign-in)
+      if (event === 'SIGNED_IN' && session?.user) {
+        const provider = session.user.app_metadata?.provider;
+        if (provider === 'google') {
+          syncGoogleProfile(session.user);
+        }
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -92,11 +99,10 @@ export function useAuth(): AuthState {
       const idToken = googleData?.idToken;
       if (!idToken) return { error: new Error('No ID token returned from Google') };
 
-      const { data, error } = await supabase.auth.signInWithIdToken({
+      const { error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
         token: idToken,
       });
-      if (!error && data.user) await syncGoogleProfile(data.user);
       return { error };
     } catch (err: unknown) {
       return { error: err instanceof Error ? err : new Error('Google sign-in failed') };

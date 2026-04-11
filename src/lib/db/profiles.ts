@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import { decode } from 'base64-arraybuffer';
 import { supabase } from '../supabase';
@@ -29,22 +30,32 @@ export async function upsertProfile(
   if (error) throw error;
 }
 
-async function uploadMedia(userId: string, localUri: string, path: string): Promise<string> {
-  const base64 = await FileSystem.readAsStringAsync(localUri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-  const arrayBuffer = decode(base64);
+async function uriToArrayBuffer(localUri: string): Promise<{ buffer: ArrayBuffer; contentType: string }> {
   const ext = localUri.split('.').pop()?.toLowerCase() ?? 'jpg';
   const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';
 
+  if (Platform.OS === 'web') {
+    const response = await fetch(localUri);
+    const buffer = await response.arrayBuffer();
+    return { buffer, contentType };
+  }
+
+  const base64 = await FileSystem.readAsStringAsync(localUri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  return { buffer: decode(base64), contentType };
+}
+
+async function uploadMedia(userId: string, localUri: string, path: string): Promise<string> {
+  const { buffer, contentType } = await uriToArrayBuffer(localUri);
+
   const { error } = await supabase.storage
     .from('user-media')
-    .upload(path, arrayBuffer, { contentType, upsert: true });
+    .upload(path, buffer, { contentType, upsert: true });
 
   if (error) throw error;
 
   const { data } = supabase.storage.from('user-media').getPublicUrl(path);
-  // Bust cache by appending a timestamp
   return `${data.publicUrl}?t=${Date.now()}`;
 }
 
