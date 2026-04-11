@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hero — The Universe's Greatest Heroes</title>
+  <meta name="description" content="Discover 500+ superheroes from Marvel, DC, and beyond. Stats, stories, and secrets — all in your pocket." />
+  <link rel="icon" href="../assets/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0b1820;
+      --surface: #142130;
+      --card:    #1a2d3e;
+      --orange:  #E77333;
+      --yellow:  #F9B222;
+      --beige:   #f5ebdc;
+      --muted:   #7a93a3;
+      --border:  #253d50;
+      --radius:  16px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--beige);
+      font-family: 'Poppins', sans-serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 40px;
+      background: linear-gradient(to bottom, rgba(11,24,32,0.95) 0%, transparent 100%);
+      backdrop-filter: blur(0px);
+    }
+    .nav-wordmark {
+      height: 28px;
+      width: auto;
+    }
+    .nav-cta {
+      background: var(--orange);
+      color: #fff;
+      font-family: 'Righteous', sans-serif;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+      padding: 10px 22px;
+      border-radius: 100px;
+      text-decoration: none;
+      transition: background 200ms ease, transform 150ms ease;
+      border: none;
+      cursor: pointer;
+    }
+    .nav-cta:hover { background: #f2813e; transform: translateY(-1px); }
+
+    /* ── HERO SECTION ── */
+    .hero {
+      position: relative;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      overflow: hidden;
+    }
+
+    /* Gradient orbs */
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 60%, rgba(231,115,51,0.18) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 40%, rgba(21,161,171,0.15) 0%, transparent 70%),
+        radial-gradient(ellipse 80% 80% at 50% 50%, rgba(249,178,34,0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* Floating hero card grid */
+    .hero-collage {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .hero-card {
+      position: absolute;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+      animation: float 6s ease-in-out infinite;
+    }
+    .hero-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .hero-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 40%, rgba(11,24,32,0.6) 100%);
+    }
+
+    /* card positions & sizes */
+    .hc1 { width:120px;height:160px; top:14%;left:3%;  transform:rotate(-8deg); animation-delay:0s; }
+    .hc2 { width:100px;height:140px; top:55%;left:1%;  transform:rotate(5deg);  animation-delay:1.2s; }
+    .hc3 { width:140px;height:190px; top:8%; left:12%; transform:rotate(4deg);  animation-delay:0.6s; }
+    .hc4 { width:110px;height:150px; top:62%;left:11%; transform:rotate(-6deg); animation-delay:2s; }
+    .hc5 { width:100px;height:140px; top:30%;left:5%;  transform:rotate(7deg);  animation-delay:3s; }
+
+    .hc6  { width:120px;height:160px; top:14%;right:3%;  transform:rotate(8deg);  animation-delay:0.4s; }
+    .hc7  { width:100px;height:140px; top:55%;right:1%;  transform:rotate(-5deg); animation-delay:1.6s; }
+    .hc8  { width:140px;height:190px; top:8%; right:12%; transform:rotate(-4deg); animation-delay:1s; }
+    .hc9  { width:110px;height:150px; top:62%;right:11%; transform:rotate(6deg);  animation-delay:2.4s; }
+    .hc10 { width:100px;height:140px; top:30%;right:5%;  transform:rotate(-7deg); animation-delay:3.4s; }
+
+    @keyframes float {
+      0%,100% { transform: var(--rot,rotate(0deg)) translateY(0); }
+      50%      { transform: var(--rot,rotate(0deg)) translateY(-12px); }
+    }
+    /* Preserve rotation during float */
+    .hc1  { --rot: rotate(-8deg); }
+    .hc2  { --rot: rotate(5deg);  }
+    .hc3  { --rot: rotate(4deg);  }
+    .hc4  { --rot: rotate(-6deg); }
+    .hc5  { --rot: rotate(7deg);  }
+    .hc6  { --rot: rotate(8deg);  }
+    .hc7  { --rot: rotate(-5deg); }
+    .hc8  { --rot: rotate(-4deg); }
+    .hc9  { --rot: rotate(6deg);  }
+    .hc10 { --rot: rotate(-7deg); }
+
+    .hero-content { position: relative; z-index: 2; max-width: 700px; }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(249,178,34,0.12);
+      border: 1px solid rgba(249,178,34,0.3);
+      color: var(--yellow);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 100px;
+      margin-bottom: 32px;
+    }
+    .hero-badge svg { width:14px; height:14px; }
+
+    .hero-wordmark-large {
+      width: min(520px, 80vw);
+      height: auto;
+      margin-bottom: 24px;
+      filter: drop-shadow(0 4px 32px rgba(231,115,51,0.3));
+    }
+
+    .hero-tagline {
+      font-family: 'Righteous', sans-serif;
+      font-size: clamp(18px, 3vw, 26px);
+      color: var(--muted);
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+
+    .hero-sub {
+      font-size: clamp(15px, 2vw, 17px);
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 480px;
+      margin: 0 auto 40px;
+      font-weight: 300;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--orange);
+      color: #fff;
+      font-family: 'Righteous', sans-serif;
+      font-size: 16px;
+      padding: 14px 28px;
+      border-radius: 100px;
+      text-decoration: none;
+      transition: background 200ms, transform 150ms, box-shadow 200ms;
+      box-shadow: 0 4px 24px rgba(231,115,51,0.4);
+    }
+    .btn-primary:hover { background: #f2813e; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(231,115,51,0.5); }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: transparent;
+      color: var(--beige);
+      font-family: 'Righteous', sans-serif;
+      font-size: 16px;
+      padding: 14px 28px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      text-decoration: none;
+      transition: border-color 200ms, transform 150ms, background 200ms;
+    }
+    .btn-secondary:hover { border-color: var(--beige); background: rgba(245,235,220,0.06); transform: translateY(-2px); }
+    .btn-icon { width:20px; height:20px; flex-shrink:0; }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      animation: bounce 2s ease-in-out infinite;
+      z-index: 2;
+    }
+    @keyframes bounce { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(6px); } }
+
+    /* ── STATS BAR ── */
+    .stats {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 40px;
+      display: flex;
+      justify-content: center;
+      gap: 0;
+    }
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 48px;
+      border-right: 1px solid var(--border);
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-num {
+      font-family: 'Righteous', sans-serif;
+      font-size: 32px;
+      color: var(--yellow);
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    /* ── MARQUEE ── */
+    .marquee-wrapper {
+      overflow: hidden;
+      padding: 18px 0;
+      background: var(--orange);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      border-bottom: 1px solid rgba(0,0,0,0.2);
+    }
+    .marquee-track {
+      display: flex;
+      gap: 48px;
+      animation: marquee 30s linear infinite;
+      width: max-content;
+    }
+    .marquee-track:hover { animation-play-state: paused; }
+    .marquee-item {
+      font-family: 'Righteous', sans-serif;
+      font-size: 14px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.85);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 48px;
+    }
+    .marquee-dot {
+      width: 6px; height: 6px;
+      background: rgba(255,255,255,0.5);
+      border-radius: 50%;
+    }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    /* ── FEATURES ── */
+    .section { padding: 100px 40px; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+
+    .section-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 16px;
+    }
+    .section-heading {
+      font-family: 'Righteous', sans-serif;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1.15;
+      margin-bottom: 20px;
+    }
+    .section-sub {
+      font-size: 16px;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 520px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 64px;
+    }
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 28px;
+      transition: border-color 250ms, transform 200ms;
+    }
+    .feature-card:hover { border-color: var(--orange); transform: translateY(-4px); }
+    .feature-icon {
+      width: 48px; height: 48px;
+      background: rgba(231,115,51,0.12);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .feature-icon svg { width:24px; height:24px; stroke: var(--orange); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    .feature-title {
+      font-family: 'Righteous', sans-serif;
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+    .feature-desc {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    /* ── SCREENSHOTS ── */
+    .screenshots { background: var(--surface); padding: 100px 40px; }
+    .screenshots-inner { max-width: 1100px; margin: 0 auto; }
+
+    .screenshots-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+      margin-top: 64px;
+    }
+    .screenshots-phones {
+      display: flex;
+      gap: -20px;
+      justify-content: center;
+      align-items: flex-end;
+    }
+    .phone-frame {
+      border-radius: 38px;
+      overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.1);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+      flex-shrink: 0;
+    }
+    .phone-frame img { display:block; width:100%; height:auto; }
+    .phone-main   { width: 220px; transform: rotate(-3deg); z-index:2; position:relative; }
+    .phone-second { width: 190px; transform: rotate(5deg) translateX(-20px); opacity:0.85; }
+
+    .screenshots-text .section-sub { margin-bottom: 32px; }
+
+    .feature-list { list-style: none; display: flex; flex-direction: column; gap: 16px; }
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      font-size: 15px;
+      color: var(--beige);
+      line-height: 1.5;
+    }
+    .check {
+      width: 22px; height: 22px;
+      background: rgba(99,169,54,0.15);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .check svg { width:12px; height:12px; stroke:#63A936; stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+
+    /* ── HERO SHOWCASE ── */
+    .showcase { padding: 100px 40px; }
+    .showcase-inner { max-width: 1100px; margin: 0 auto; }
+
+    .hero-mosaic {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-top: 56px;
+    }
+    .mosaic-card {
+      border-radius: 14px;
+      overflow: hidden;
+      aspect-ratio: 2/3;
+      position: relative;
+      cursor: pointer;
+      transition: transform 250ms ease, box-shadow 250ms ease;
+    }
+    .mosaic-card:hover { transform: scale(1.04); box-shadow: 0 16px 48px rgba(0,0,0,0.7); z-index:1; }
+    .mosaic-card img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
+    .mosaic-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 50%, rgba(11,24,32,0.85) 100%);
+    }
+    .mosaic-name {
+      position: absolute;
+      bottom: 12px; left: 0; right: 0;
+      text-align: center;
+      font-family: 'Righteous', sans-serif;
+      font-size: 13px;
+      color: var(--beige);
+      z-index: 1;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── FINAL CTA ── */
+    .cta-section {
+      padding: 100px 40px;
+      text-align: center;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+    }
+    .cta-inner { max-width: 600px; margin: 0 auto; }
+    .cta-glow {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--orange) 0%, var(--yellow) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-family: 'Righteous', sans-serif;
+      font-size: clamp(36px, 6vw, 60px);
+      line-height: 1.1;
+      margin-bottom: 20px;
+    }
+    .cta-sub {
+      font-size: 17px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 40px;
+    }
+    .cta-buttons { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+
+    .app-store-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--beige);
+      padding: 14px 24px;
+      border-radius: 14px;
+      text-decoration: none;
+      transition: border-color 200ms, transform 150ms;
+      min-width: 160px;
+    }
+    .app-store-badge:hover { border-color: var(--muted); transform: translateY(-2px); }
+    .badge-text { display:flex; flex-direction:column; text-align:left; }
+    .badge-text span:first-child { font-size:10px; color:var(--muted); letter-spacing:0.5px; }
+    .badge-text span:last-child  { font-family:'Righteous',sans-serif; font-size:16px; }
+    .badge-icon { width:28px; height:28px; flex-shrink:0; }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 40px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    footer img { height: 22px; opacity: 0.7; }
+    footer p { font-size: 13px; color: var(--muted); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1024px) {
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+      .hero-mosaic { grid-template-columns: repeat(4, 1fr); }
+      .hero-mosaic .mosaic-card:last-child { display:none; }
+      .stat-item { padding: 0 28px; }
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 16px 20px; }
+      .section, .screenshots, .showcase, .cta-section { padding: 72px 20px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .screenshots-layout { grid-template-columns: 1fr; }
+      .screenshots-phones { order: -1; }
+      .phone-second { display: none; }
+      .phone-main { width: min(240px, 60vw); transform: none; }
+      .hero-mosaic { grid-template-columns: repeat(3, 1fr); }
+      .hero-mosaic .mosaic-card:nth-child(n+4):not(:nth-child(-n+3)) { display:none; }
+      .stats { flex-wrap: wrap; gap: 24px; }
+      .stat-item { border-right: none; padding: 0 24px; }
+      /* Hide most floating cards on mobile */
+      .hc1,.hc2,.hc3,.hc4,.hc5,.hc6,.hc7,.hc8,.hc9,.hc10 { display:none; }
+    }
+
+    @media (max-width: 480px) {
+      .hero-ctas { flex-direction: column; align-items: center; }
+      .hero-mosaic { grid-template-columns: repeat(2, 1fr); }
+      .hero-mosaic .mosaic-card:nth-child(n+3):not(:nth-child(-n+2)) { display:none; }
+      footer { justify-content: center; text-align:center; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-card, .scroll-hint, .marquee-track { animation: none; }
+      .hero-card { transform: var(--rot, none) !important; }
+      * { transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <img
+      class="nav-wordmark"
+      src="../assets/hero-wordmark.svg"
+      alt="Hero"
+    />
+    <a href="#download" class="nav-cta">Get the App</a>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section class="hero">
+    <div class="hero-collage" aria-hidden="true">
+      <div class="hero-card hc1"><img src="../assets/images/spiderman.jpg"     alt="" loading="lazy" /></div>
+      <div class="hero-card hc2"><img src="../assets/images/batman.jpg"        alt="" loading="lazy" /></div>
+      <div class="hero-card hc3"><img src="../assets/images/ironman.jpg"       alt="" loading="lazy" /></div>
+      <div class="hero-card hc4"><img src="../assets/images/deadpool.jpg"      alt="" loading="lazy" /></div>
+      <div class="hero-card hc5"><img src="../assets/images/wolverine.jpg"     alt="" loading="lazy" /></div>
+      <div class="hero-card hc6"><img src="../assets/images/wonder-woman.jpg"  alt="" loading="lazy" /></div>
+      <div class="hero-card hc7"><img src="../assets/images/thor.jpg"          alt="" loading="lazy" /></div>
+      <div class="hero-card hc8"><img src="../assets/images/black-panther.jpg" alt="" loading="lazy" /></div>
+      <div class="hero-card hc9"><img src="../assets/images/doctor-strange.jpg"alt="" loading="lazy" /></div>
+      <div class="hero-card hc10"><img src="../assets/images/hulk.jpg"         alt="" loading="lazy" /></div>
+    </div>
+
+    <div class="hero-content">
+      <div class="hero-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        500+ Heroes &amp; Villains
+      </div>
+
+      <img
+        class="hero-wordmark-large"
+        src="../assets/hero-wordmark.svg"
+        alt="Hero"
+      />
+
+      <p class="hero-tagline">The Universe's Greatest Heroes</p>
+
+      <p class="hero-sub">
+        Discover the powers, origins, and stories of 500+ characters from Marvel, DC, and beyond — all in your pocket.
+      </p>
+
+      <div class="hero-ctas">
+        <a href="#download" class="btn-primary">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          App Store
+        </a>
+        <a href="#download" class="btn-secondary">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.18 23.76c.28.16.6.22.93.17l12.81-7.4-2.79-2.79-10.95 10zM.29 1.52A1.5 1.5 0 0 0 0 2.39v19.22c0 .31.09.6.29.87l.09.09 10.77-10.77v-.25L.38 1.43l-.09.09zM20.9 10.77l-2.71-1.56-3.07 3.08 3.07 3.07 2.74-1.58c.78-.45.78-1.58-.03-2.01zM4.11.24L16.92 7.63l-2.79 2.79L3.18.24A1.08 1.08 0 0 1 4.11.24z"/></svg>
+          Google Play
+        </a>
+      </div>
+    </div>
+
+    <div class="scroll-hint" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      <span>Scroll</span>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats" role="list" aria-label="App statistics">
+    <div class="stat-item" role="listitem">
+      <span class="stat-num">500+</span>
+      <span class="stat-label">Heroes &amp; Villains</span>
+    </div>
+    <div class="stat-item" role="listitem">
+      <span class="stat-num">Marvel &amp; DC</span>
+      <span class="stat-label">Universes</span>
+    </div>
+    <div class="stat-item" role="listitem">
+      <span class="stat-num">Free</span>
+      <span class="stat-label">To Download</span>
+    </div>
+    <div class="stat-item" role="listitem">
+      <span class="stat-num">iOS &amp; Android</span>
+      <span class="stat-label">Platforms</span>
+    </div>
+  </div>
+
+  <!-- MARQUEE -->
+  <div class="marquee-wrapper" aria-hidden="true">
+    <div class="marquee-track">
+      <!-- repeated twice for seamless loop -->
+      <div class="marquee-item">Spider-Man<span class="marquee-dot"></span>Batman<span class="marquee-dot"></span>Iron Man<span class="marquee-dot"></span>Wonder Woman<span class="marquee-dot"></span>Black Panther<span class="marquee-dot"></span>Thor<span class="marquee-dot"></span>Deadpool<span class="marquee-dot"></span>Wolverine<span class="marquee-dot"></span>Doctor Strange<span class="marquee-dot"></span>Hulk<span class="marquee-dot"></span>Magneto<span class="marquee-dot"></span>Joker<span class="marquee-dot"></span>Loki<span class="marquee-dot"></span>Venom<span class="marquee-dot"></span>Storm<span class="marquee-dot"></span>Captain America<span class="marquee-dot"></span></div>
+      <div class="marquee-item">Spider-Man<span class="marquee-dot"></span>Batman<span class="marquee-dot"></span>Iron Man<span class="marquee-dot"></span>Wonder Woman<span class="marquee-dot"></span>Black Panther<span class="marquee-dot"></span>Thor<span class="marquee-dot"></span>Deadpool<span class="marquee-dot"></span>Wolverine<span class="marquee-dot"></span>Doctor Strange<span class="marquee-dot"></span>Hulk<span class="marquee-dot"></span>Magneto<span class="marquee-dot"></span>Joker<span class="marquee-dot"></span>Loki<span class="marquee-dot"></span>Venom<span class="marquee-dot"></span>Storm<span class="marquee-dot"></span>Captain America<span class="marquee-dot"></span></div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="section-inner">
+      <p class="section-eyebrow">What's inside</p>
+      <h2 class="section-heading">Everything you need to<br />know your heroes</h2>
+      <p class="section-sub">From first appearances to power stats — the most complete superhero companion app on the planet.</p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </div>
+          <h3 class="feature-title">Discover Heroes</h3>
+          <p class="feature-desc">Browse curated collections of heroes by universe, team, or power set. New favourites await every scroll.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <h3 class="feature-title">Instant Search</h3>
+          <p class="feature-desc">Find any of 500+ characters in seconds. Search by name, power, publisher, or team affiliation.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <h3 class="feature-title">Save Favourites</h3>
+          <p class="feature-desc">Build your personal hero roster. Track your favourite characters and revisit them any time.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h3 class="feature-title">Power Stats</h3>
+          <p class="feature-desc">Dive deep into intelligence, strength, speed, durability, power, and combat ratings for every hero.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </div>
+          <h3 class="feature-title">Origin Stories</h3>
+          <p class="feature-desc">First issue data, publisher history, and real names — the complete origin story behind every icon.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+          </div>
+          <h3 class="feature-title">Universe Browser</h3>
+          <p class="feature-desc">Explore Marvel, DC, Dark Horse and more. Organised by publisher, team, and comic era.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREENSHOTS -->
+  <section class="screenshots" id="screenshots">
+    <div class="screenshots-inner">
+      <div class="screenshots-layout">
+        <div class="screenshots-phones">
+          <div class="phone-frame phone-main">
+            <img src="../assets/images/screenshots/home.PNG" alt="Hero app home screen showing hero carousels" width="220" />
+          </div>
+          <div class="phone-frame phone-second">
+            <img src="../assets/images/screenshots/search.PNG" alt="Hero app search screen" width="190" loading="lazy" />
+          </div>
+        </div>
+
+        <div class="screenshots-text">
+          <p class="section-eyebrow">The app</p>
+          <h2 class="section-heading">Designed for<br />true fans</h2>
+          <p class="section-sub">A beautiful, fast, and intuitive experience — built by fans, for fans.</p>
+
+          <ul class="feature-list" aria-label="App highlights">
+            <li>
+              <span class="check" aria-hidden="true"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>
+              Curated hero carousels updated regularly
+            </li>
+            <li>
+              <span class="check" aria-hidden="true"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>
+              Detailed character info from trusted sources
+            </li>
+            <li>
+              <span class="check" aria-hidden="true"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>
+              Beautiful card UI with squircle artwork
+            </li>
+            <li>
+              <span class="check" aria-hidden="true"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>
+              Works offline — your heroes, always available
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HERO MOSAIC -->
+  <section class="showcase" id="universe">
+    <div class="showcase-inner">
+      <p class="section-eyebrow">The roster</p>
+      <h2 class="section-heading">From every universe</h2>
+      <p class="section-sub">Marvel. DC. Dark Horse. If they wear a cape (or don't), we've got them covered.</p>
+
+      <div class="hero-mosaic" role="list" aria-label="Featured heroes">
+        <div class="mosaic-card" role="listitem"><img src="../assets/images/spiderman.jpg"      alt="Spider-Man" loading="lazy" /><span class="mosaic-name">Spider-Man</span></div>
+        <div class="mosaic-card" role="listitem"><img src="../assets/images/batman.jpg"         alt="Batman"     loading="lazy" /><span class="mosaic-name">Batman</span></div>
+        <div class="mosaic-card" role="listitem"><img src="../assets/images/ironman.jpg"        alt="Iron Man"   loading="lazy" /><span class="mosaic-name">Iron Man</span></div>
+        <div class="mosaic-card" role="listitem"><img src="../assets/images/wonder-woman.jpg"   alt="Wonder Woman" loading="lazy" /><span class="mosaic-name">Wonder Woman</span></div>
+        <div class="mosaic-card" role="listitem"><img src="../assets/images/black-panther.jpg"  alt="Black Panther" loading="lazy" /><span class="mosaic-name">Black Panther</span></div>
+        <div class="mosaic-card" role="listitem"><img src="../assets/images/deadpool.jpg"       alt="Deadpool"   loading="lazy" /><span class="mosaic-name">Deadpool</span></div>
+        <div class="mosaic-card" role="listitem"><img src="../assets/images/wolverine.jpg"      alt="Wolverine"  loading="lazy" /><span class="mosaic-name">Wolverine</span></div>
+        <div class="mosaic-card" role="listitem"><img src="../assets/images/thor.jpg"           alt="Thor"       loading="lazy" /><span class="mosaic-name">Thor</span></div>
+        <div class="mosaic-card" role="listitem"><img src="../assets/images/doctor-strange.jpg" alt="Doctor Strange" loading="lazy" /><span class="mosaic-name">Doctor Strange</span></div>
+        <div class="mosaic-card" role="listitem"><img src="../assets/images/hulk.jpg"           alt="Hulk"       loading="lazy" /><span class="mosaic-name">Hulk</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="cta-section" id="download">
+    <div class="cta-inner">
+      <p class="section-eyebrow">Download now</p>
+      <h2 class="cta-glow">Your heroes await.</h2>
+      <p class="cta-sub">Free to download. No ads. Just the greatest heroes ever created — right in your pocket.</p>
+
+      <div class="cta-buttons">
+        <a href="#" class="app-store-badge" aria-label="Download on the App Store">
+          <svg class="badge-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          <div class="badge-text">
+            <span>Download on the</span>
+            <span>App Store</span>
+          </div>
+        </a>
+        <a href="#" class="app-store-badge" aria-label="Get it on Google Play">
+          <svg class="badge-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.18 23.76c.28.16.6.22.93.17l12.81-7.4-2.79-2.79-10.95 10zM.29 1.52A1.5 1.5 0 0 0 0 2.39v19.22c0 .31.09.6.29.87l.09.09 10.77-10.77v-.25L.38 1.43l-.09.09zM20.9 10.77l-2.71-1.56-3.07 3.08 3.07 3.07 2.74-1.58c.78-.45.78-1.58-.03-2.01zM4.11.24L16.92 7.63l-2.79 2.79L3.18.24A1.08 1.08 0 0 1 4.11.24z"/></svg>
+          <div class="badge-text">
+            <span>Get it on</span>
+            <span>Google Play</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <img src="../assets/hero-wordmark.svg" alt="Hero" />
+    <p>&copy; 2025 Hero App. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>
