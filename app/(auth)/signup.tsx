@@ -41,6 +41,9 @@ export default function SignupScreen() {
 
   const passwordRef = useRef<TextInput>(null);
 
+  const illustrationH = screenHeight * 0.46;
+  const cardMinHeight = screenHeight - illustrationH + 40;
+
   const handleSignup = async () => {
     setLoading(true);
     setError(null);
@@ -55,29 +58,32 @@ export default function SignupScreen() {
 
   return (
     <View style={styles.root}>
-      {/* Logo — safe-area aware, floats over illustration */}
+      {/* Logo — floats over illustration, pinned to safe area */}
       <View style={[styles.logoWrap, { top: insets.top + 16 }]}>
         <HeroLogo iconSize={36} fontSize={28} color={COLORS.beige} gap={10} />
       </View>
 
       <KeyboardAvoidingView
         style={styles.kav}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          bounces={false}
+          keyboardDismissMode="interactive"
           showsVerticalScrollIndicator={false}
+          contentInsetAdjustmentBehavior="never"
+          bounces={false}
         >
-          {/* Illustration — top portion */}
-          <View style={[styles.illustrationWrap, { height: screenHeight * 0.56 }]}>
+          {/* Illustration — scrolls away naturally when keyboard opens */}
+          <View style={[styles.illustrationWrap, { height: illustrationH }]}>
             <DotGrid />
             <Image
               source={LOGIN_HERO}
               style={StyleSheet.absoluteFill}
               contentFit="contain"
-              contentPosition={{ x: '50%', y: '0%' }}
+              contentPosition="top"
             />
             <LinearGradient
               colors={['transparent', COLORS.navy]}
@@ -86,8 +92,16 @@ export default function SignupScreen() {
             />
           </View>
 
-          {/* Form card — overlaps illustration */}
-          <View style={[styles.card, { paddingBottom: Math.max(insets.bottom + 16, 32) }]}>
+          {/* Card — overlaps illustration, fills remaining space */}
+          <View
+            style={[
+              styles.card,
+              {
+                minHeight: cardMinHeight,
+                paddingBottom: Math.max(insets.bottom + 12, 20),
+              },
+            ]}
+          >
             <View style={styles.cardHandle} />
 
             {pendingEmail ? (
@@ -233,14 +247,18 @@ const styles = StyleSheet.create({
     left: 20,
     zIndex: 10,
   },
+
   kav: {
     flex: 1,
+    backgroundColor: COLORS.beige,
   },
   scroll: {
+    flex: 1,
+  },
+  scrollContent: {
     flexGrow: 1,
   },
 
-  // Illustration
   illustrationWrap: {
     backgroundColor: COLORS.navy,
     overflow: 'hidden',
@@ -253,15 +271,13 @@ const styles = StyleSheet.create({
     height: '55%',
   },
 
-  // Card
   card: {
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    marginTop: -40,
     paddingHorizontal: 28,
-    paddingTop: 16,
-    flex: 1,
+    paddingTop: 20,
+    marginTop: -40,
   },
   cardHandle: {
     width: 36,
@@ -312,12 +328,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: 'rgba(41,60,67,0.45)',
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 28,
   },
   pendingCta: {
     backgroundColor: COLORS.orange,
     borderRadius: 12,
-    paddingVertical: 17,
+    paddingVertical: 16,
     alignItems: 'center',
     width: '100%',
     marginBottom: 12,
@@ -348,7 +364,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 14,
-    marginBottom: 28,
+    marginBottom: 22,
   },
   headingAccent: {
     width: 4,
@@ -384,7 +400,7 @@ const styles = StyleSheet.create({
     borderLeftColor: COLORS.red,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   errorText: {
     flex: 1,
@@ -405,7 +421,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 14,
-    marginBottom: 14,
+    marginBottom: 12,
     fontFamily: 'Nunito_400Regular',
     fontSize: 15,
     color: COLORS.navy,
@@ -439,9 +455,9 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: COLORS.orange,
     borderRadius: 12,
-    paddingVertical: 17,
+    paddingVertical: 16,
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: 14,
     shadowColor: COLORS.orange,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,

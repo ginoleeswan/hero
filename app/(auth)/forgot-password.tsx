@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
   ScrollView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -72,29 +71,31 @@ export default function ForgotPasswordScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      {/* Back button — pinned at top, never scrolls away */}
+      <Pressable
+        onPress={() => router.back()}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        style={styles.back}
+        accessibilityRole="button"
+        accessibilityLabel="Go back to sign in"
+      >
+        <Ionicons name="chevron-back" size={20} color={COLORS.beige} />
+        <Text style={styles.backText}>Sign In</Text>
+      </Pressable>
+
+      {/* Keyboard-aware scrollable content */}
       <KeyboardAvoidingView
         style={styles.kav}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
       >
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
           bounces={false}
           showsVerticalScrollIndicator={false}
         >
-          {/* Back button */}
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={styles.back}
-            accessibilityRole="button"
-            accessibilityLabel="Go back to sign in"
-          >
-            <Ionicons name="chevron-back" size={20} color={COLORS.beige} />
-            <Text style={styles.backText}>Sign In</Text>
-          </Pressable>
-
-          <View style={styles.centered}>
+          <View style={[styles.centered, { paddingBottom: Math.max(insets.bottom + 16, 32) }]}>
             {sent ? (
               /* ── Sent state ── */
               <>
@@ -194,18 +195,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.navy,
   },
-  kav: {
-    flex: 1,
-  },
-  scroll: {
-    flexGrow: 1,
-    paddingHorizontal: 28,
-  },
   back: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingVertical: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     alignSelf: 'flex-start',
   },
   backText: {
@@ -213,11 +208,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: 'rgba(245,235,220,0.6)',
   },
+  kav: {
+    flex: 1,
+  },
+  scroll: {
+    flexGrow: 1,
+  },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 32,
+    paddingHorizontal: 28,
   },
   iconWrap: {
     width: 64,
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
     color: 'rgba(245,235,220,0.55)',
     textAlign: 'center',
     lineHeight: 21,
-    marginBottom: 32,
+    marginBottom: 28,
   },
   emailHighlight: {
     fontFamily: 'Nunito_700Bold',
@@ -300,7 +301,7 @@ const styles = StyleSheet.create({
   cta: {
     backgroundColor: COLORS.orange,
     borderRadius: 12,
-    paddingVertical: 17,
+    paddingVertical: 16,
     alignItems: 'center',
     shadowColor: COLORS.orange,
     shadowOffset: { width: 0, height: 4 },
