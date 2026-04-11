@@ -17,20 +17,26 @@ function WebAuthGate() {
 
   useEffect(() => {
     if (loading) return;
-    const inAuthGroup = segments[0] === '(auth)';
-    if (!user && !inAuthGroup) {
+    const segs = segments as string[];
+    const inAuthGroup = segs[0] === '(auth)';
+    const isRoot = segs.length === 0;
+
+    if (user && (inAuthGroup || isRoot)) {
+      router.replace('/(tabs)');
+    } else if (!user && !inAuthGroup && !isRoot) {
       router.replace('/(auth)/login');
-    } else if (user && inAuthGroup) {
-      router.replace('/');
     }
+    // !user && isRoot → show landing page, no redirect
   }, [user, loading, segments, router]);
 
-  const inAuthGroup = segments[0] === '(auth)';
+  const segs = segments as string[];
+  const inAuthGroup = segs[0] === '(auth)';
+  const isRoot = segs.length === 0;
 
   return (
     <SearchProvider>
       <View style={styles.root}>
-        {!inAuthGroup && <TopNav />}
+        {!inAuthGroup && !isRoot && <TopNav />}
         <View style={styles.content}>
           <Stack screenOptions={{ headerShown: false }} />
         </View>
