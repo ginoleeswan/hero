@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { Session, User } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../lib/supabase';
 
 interface AuthState {
@@ -10,6 +13,7 @@ interface AuthState {
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
 }
 
 export function useAuth(): AuthState {
@@ -54,5 +58,28 @@ export function useAuth(): AuthState {
     return { error };
   };
 
-  return { user, session, loading, signIn, signUp, signOut, resetPassword };
+  const signInWithGoogle = async (): Promise<{ error: Error | null }> => {
+    if (Platform.OS === 'web') {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin },
+      });
+      return { error };
+    }
+
+    const redirectTo = Linking.createURL('auth/callback');
+    const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo, skipBrowserRedirect: true },
+    });
+    if (oauthError || !data.url) return { error: oauthError };
+
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    if (result.type !== 'success') return { error: null };
+
+    const { error: sessionError } = await supabase.auth.exchangeCodeForSession(result.url);
+    return { error: sessionError };
+  };
+
+  return { user, session, loading, signIn, signUp, signOut, resetPassword, signInWithGoogle };
 }

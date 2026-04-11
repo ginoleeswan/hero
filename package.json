@@ -35,6 +35,7 @@
     "expo-status-bar": "~55.0.5",
     "expo-system-ui": "~55.0.14",
     "expo-updates": "~55.0.19",
+    "expo-web-browser": "~55.0.14",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-native": "0.83.4",
