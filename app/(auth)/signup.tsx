@@ -66,6 +66,7 @@ export default function SignupScreen() {
       <KeyboardAvoidingView
         style={styles.kav}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={-24}
       >
         <ScrollView
           style={styles.scroll}
