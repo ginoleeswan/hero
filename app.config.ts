@@ -34,6 +34,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     './plugins/withAndroidIconPadding',
+    '@react-native-google-signin/google-signin',
     'expo-router',
     'expo-image',
     [

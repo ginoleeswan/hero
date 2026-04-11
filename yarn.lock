@@ -2797,6 +2797,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-google-signin/google-signin@npm:^16.1.2":
+  version: 16.1.2
+  resolution: "@react-native-google-signin/google-signin@npm:16.1.2"
+  peerDependencies:
+    expo: ">=52.0.40"
+    react: "*"
+    react-native: "*"
+  peerDependenciesMeta:
+    expo:
+      optional: true
+  checksum: 10c0/91f8f8c4ed5311e7cd7c2977696624d857abb18b7bedfec0a126d8cca38cd56d48d8e0976ba01cf75db385bdd0a054e51148b5a3c64476305ccfdd79370f57af
+  languageName: node
+  linkType: hard
+
 "@react-native-masked-view/masked-view@npm:^0.3.2":
   version: 0.3.2
   resolution: "@react-native-masked-view/masked-view@npm:0.3.2"
@@ -3941,6 +3955,13 @@ __metadata:
   version: 4.0.4
   resolution: "balanced-match@npm:4.0.4"
   checksum: 10c0/07e86102a3eb2ee2a6a1a89164f29d0dbaebd28f2ca3f5ca786f36b8b23d9e417eb3be45a4acf754f837be5ac0a2317de90d3fcb7f4f4dc95720a1f36b26a17b
+  languageName: node
+  linkType: hard
+
+"base64-arraybuffer@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "base64-arraybuffer@npm:1.0.2"
+  checksum: 10c0/3acac95c70f9406e87a41073558ba85b6be9dbffb013a3d2a710e3f2d534d506c911847d5d9be4de458af6362c676de0a5c4c2d7bdf4def502d00b313368e72f
   languageName: node
   linkType: hard
 
@@ -5215,6 +5236,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"expo-image-loader@npm:~55.0.0":
+  version: 55.0.0
+  resolution: "expo-image-loader@npm:55.0.0"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/4e8d9a7cd69af109f818639afd1f2106825950b4d7eaa304645939710a84bec59b70fd7dc4a7543ee2f31fc517b9ed23afc750e4c20ed4f7cf114d3686efece3
+  languageName: node
+  linkType: hard
+
+"expo-image-picker@npm:~55.0.18":
+  version: 55.0.18
+  resolution: "expo-image-picker@npm:55.0.18"
+  dependencies:
+    expo-image-loader: "npm:~55.0.0"
+  peerDependencies:
+    expo: "*"
+  checksum: 10c0/684d4f44b3c4cfcde7714683cb1e18f70f2b4c0feca6c94be7cf39e28c8370116d2c1becb77c48976b90c8839f89f5b3d9c7c788d2020ce20574161b70add5bc
+  languageName: node
+  linkType: hard
+
 "expo-image@npm:^55.0.8, expo-image@npm:~55.0.8":
   version: 55.0.8
   resolution: "expo-image@npm:55.0.8"
@@ -6040,6 +6081,7 @@ __metadata:
     "@expo-google-fonts/righteous": "npm:^0.4.1"
     "@react-native-async-storage/async-storage": "npm:2.2.0"
     "@react-native-community/cli": "npm:^20.1.3"
+    "@react-native-google-signin/google-signin": "npm:^16.1.2"
     "@react-native-masked-view/masked-view": "npm:^0.3.2"
     "@supabase/supabase-js": "npm:^2.101.1"
     "@testing-library/jest-native": "npm:^5.4.3"
@@ -6048,6 +6090,7 @@ __metadata:
     "@types/node": "npm:^25.5.2"
     "@types/react": "npm:~19.2.10"
     "@types/sharp": "npm:^0.32.0"
+    base64-arraybuffer: "npm:^1.0.2"
     dotenv: "npm:^17.4.1"
     expo: "npm:~55.0.12"
     expo-constants: "npm:~55.0.12"
@@ -6056,6 +6099,7 @@ __metadata:
     expo-font: "npm:~55.0.6"
     expo-haptics: "npm:~55.0.13"
     expo-image: "npm:~55.0.8"
+    expo-image-picker: "npm:~55.0.18"
     expo-linear-gradient: "npm:~55.0.12"
     expo-linking: "npm:~55.0.11"
     expo-router: "npm:~55.0.11"

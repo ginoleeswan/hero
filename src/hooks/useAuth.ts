@@ -3,7 +3,9 @@ import { Platform } from 'react-native';
 import { Session, User } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { supabase } from '../lib/supabase';
+import { getProfile, upsertProfile } from '../lib/db/profiles';
 
 interface AuthState {
   user: User | null;
@@ -58,6 +60,23 @@ export function useAuth(): AuthState {
     return { error };
   };
 
+  const syncGoogleProfile = async (user: User) => {
+    try {
+      const meta = user.user_metadata ?? {};
+      const existing = await getProfile(user.id);
+      const supabaseHost = process.env.EXPO_PUBLIC_SUPABASE_URL?.replace('https://', '') ?? '';
+      const hasOwnAvatar = !!existing?.avatar_url?.includes(supabaseHost);
+      await upsertProfile(user.id, {
+        display_name: (meta.full_name as string | undefined) ?? existing?.display_name ?? undefined,
+        avatar_url: hasOwnAvatar
+          ? existing!.avatar_url!
+          : ((meta.avatar_url as string | undefined) ?? existing?.avatar_url ?? undefined),
+      });
+    } catch {
+      // non-fatal — profile sync failure shouldn't block sign-in
+    }
+  };
+
   const signInWithGoogle = async (): Promise<{ error: Error | null }> => {
     if (Platform.OS === 'web') {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -67,18 +86,21 @@ export function useAuth(): AuthState {
       return { error };
     }
 
-    const redirectTo = Linking.createURL('auth/callback');
-    const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo, skipBrowserRedirect: true },
-    });
-    if (oauthError || !data.url) return { error: oauthError };
+    try {
+      await GoogleSignin.hasPlayServices();
+      const { data: googleData } = await GoogleSignin.signIn();
+      const idToken = googleData?.idToken;
+      if (!idToken) return { error: new Error('No ID token returned from Google') };
 
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (result.type !== 'success') return { error: null };
-
-    const { error: sessionError } = await supabase.auth.exchangeCodeForSession(result.url);
-    return { error: sessionError };
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: idToken,
+      });
+      if (!error && data.user) await syncGoogleProfile(data.user);
+      return { error };
+    } catch (err: unknown) {
+      return { error: err instanceof Error ? err : new Error('Google sign-in failed') };
+    }
   };
 
   return { user, session, loading, signIn, signUp, signOut, resetPassword, signInWithGoogle };

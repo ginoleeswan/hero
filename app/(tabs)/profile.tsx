@@ -16,6 +16,7 @@ import { SquircleMask } from '../../src/components/ui/SquircleMask';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
+import { useProfile } from '../../src/hooks/useProfile';
 import { getUserFavouriteHeroes, type FavouriteHero } from '../../src/lib/db/favourites';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
@@ -53,6 +54,14 @@ export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
+  const {
+    profile,
+    avatarUploading,
+    coverUploading,
+    error: uploadError,
+    pickAndUploadAvatar,
+    pickAndUploadCover,
+  } = useProfile(user?.id);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
@@ -71,7 +80,7 @@ export default function ProfileScreen() {
   };
 
   const email = user?.email ?? '';
-  const name = username(email);
+  const name = profile?.display_name ?? username(email);
 
   return (
     <View style={styles.container}>
@@ -82,33 +91,80 @@ export default function ProfileScreen() {
         contentInsetAdjustmentBehavior="never"
       >
         {/* Cover banner */}
-        <LinearGradient
-          colors={['#293C43', '#3d5a66']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.cover, { height: 140 + insets.top }]}
-        >
-          <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
-            <Defs>
-              <Pattern id="dots" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
-                <Circle cx="7" cy="7" r="1.5" fill="rgba(231,115,51,0.22)" />
-              </Pattern>
-            </Defs>
-            <Rect width="100%" height="100%" fill="url(#dots)" />
-          </Svg>
-          <View style={styles.coverLogo}>
-            <Svg width={72} height={72} viewBox="0 0 1024 1024">
-              <Path fill="#ECECDE" d={HERO_LOGO_PATH} />
-            </Svg>
-          </View>
-        </LinearGradient>
+        <View style={[styles.cover, { height: 140 + insets.top }]}>
+          {profile?.cover_url ? (
+            <Image source={{ uri: profile.cover_url }} style={StyleSheet.absoluteFill} contentFit="cover" />
+          ) : (
+            <LinearGradient
+              colors={['#293C43', '#3d5a66']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            >
+              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+                <Defs>
+                  <Pattern id="dots" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+                    <Circle cx="7" cy="7" r="1.5" fill="rgba(231,115,51,0.22)" />
+                  </Pattern>
+                </Defs>
+                <Rect width="100%" height="100%" fill="url(#dots)" />
+              </Svg>
+              <View style={styles.coverLogo}>
+                <Svg width={72} height={72} viewBox="0 0 1024 1024">
+                  <Path fill="#ECECDE" d={HERO_LOGO_PATH} />
+                </Svg>
+              </View>
+            </LinearGradient>
+          )}
+          {coverUploading && (
+            <View style={styles.coverUploadOverlay}>
+              <ActivityIndicator color="white" />
+            </View>
+          )}
+          <TouchableOpacity
+            style={[styles.editCoverPill, { bottom: 52 }]}
+            onPress={pickAndUploadCover}
+            disabled={coverUploading}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="camera-outline" size={13} color="white" />
+            <Text style={styles.editCoverText}>Edit cover</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Avatar overlap */}
         <View style={styles.avatarZone}>
-          <LinearGradient colors={[COLORS.orange, '#c04a10']} style={styles.avatar}>
-            <Text style={styles.avatarInitials}>{name.slice(0, 2).toUpperCase()}</Text>
-          </LinearGradient>
+          <TouchableOpacity onPress={pickAndUploadAvatar} disabled={avatarUploading} activeOpacity={0.85}>
+            {profile?.avatar_url ? (
+              <View style={styles.avatar}>
+                <Image source={{ uri: profile.avatar_url }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                {avatarUploading && (
+                  <View style={styles.avatarUploadOverlay}>
+                    <ActivityIndicator color="white" />
+                  </View>
+                )}
+              </View>
+            ) : (
+              <LinearGradient colors={[COLORS.orange, '#c04a10']} style={styles.avatar}>
+                {avatarUploading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={styles.avatarInitials}>{name.slice(0, 2).toUpperCase()}</Text>
+                )}
+              </LinearGradient>
+            )}
+            <View style={styles.cameraBadge}>
+              <Ionicons name="camera" size={13} color="white" />
+            </View>
+          </TouchableOpacity>
         </View>
+
+        {uploadError && (
+          <View style={styles.uploadErrorBox}>
+            <Ionicons name="alert-circle-outline" size={14} color={COLORS.red} />
+            <Text style={styles.uploadErrorText}>{uploadError}</Text>
+          </View>
+        )}
 
         {/* Identity */}
         <View style={styles.identityBlock}>
@@ -239,6 +295,31 @@ const styles = StyleSheet.create({
     right: 8,
     opacity: 0.18,
   },
+  coverUploadOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editCoverPill: {
+    position: 'absolute',
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  editCoverText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: 'white',
+    letterSpacing: 0.2,
+  },
 
   // Avatar
   avatarZone: {
@@ -254,6 +335,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 4,
     borderColor: COLORS.beige,
+    overflow: 'hidden',
     shadowColor: COLORS.orange,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
@@ -264,6 +346,44 @@ const styles = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 28,
     color: '#fff',
+  },
+  avatarUploadOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: COLORS.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.beige,
+  },
+  uploadErrorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(181,48,43,0.08)',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.red,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginHorizontal: 16,
+    marginBottom: 8,
+  },
+  uploadErrorText: {
+    flex: 1,
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.red,
   },
 
   // Identity
