@@ -5,7 +5,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { COLORS } from '../constants/colors';
+import { COLORS } from '../../constants/colors';
 
 type Props = {
   isFocused: boolean;
