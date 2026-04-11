@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import LandingPage from '../src/components/landing/LandingPage';
+import LandingPage from '../src/components/landing/LandingPage.dom';
 
 export default function Index() {
   // On native, the AuthGate in _layout.tsx redirects unauthenticated users
