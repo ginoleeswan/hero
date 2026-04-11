@@ -16,6 +16,9 @@ interface UseProfileResult {
   error: string | null;
   pickAndUploadAvatar: () => Promise<void>;
   pickAndUploadCover: () => Promise<void>;
+  removeAvatar: () => Promise<void>;
+  removeCover: () => Promise<void>;
+  updateDisplayName: (name: string) => Promise<void>;
 }
 
 export function useProfile(userId: string | undefined): UseProfileResult {
@@ -87,5 +90,48 @@ export function useProfile(userId: string | undefined): UseProfileResult {
     }
   }, [userId, profile]);
 
-  return { profile, loading, avatarUploading, coverUploading, error, pickAndUploadAvatar, pickAndUploadCover };
+  const removeAvatar = useCallback(async () => {
+    if (!userId) return;
+    const prev = profile?.avatar_url ?? null;
+    setProfile((p) => p ? { ...p, avatar_url: null } : p);
+    try {
+      await upsertProfile(userId, { avatar_url: null });
+    } catch {
+      setProfile((p) => p ? { ...p, avatar_url: prev } : p);
+      setError('Failed to remove photo. Please try again.');
+      setTimeout(() => setError(null), 3000);
+    }
+  }, [userId, profile]);
+
+  const removeCover = useCallback(async () => {
+    if (!userId) return;
+    const prev = profile?.cover_url ?? null;
+    setProfile((p) => p ? { ...p, cover_url: null } : p);
+    try {
+      await upsertProfile(userId, { cover_url: null });
+    } catch {
+      setProfile((p) => p ? { ...p, cover_url: prev } : p);
+      setError('Failed to remove cover. Please try again.');
+      setTimeout(() => setError(null), 3000);
+    }
+  }, [userId, profile]);
+
+  const updateDisplayName = useCallback(async (name: string) => {
+    if (!userId) return;
+    const prev = profile?.display_name ?? null;
+    setProfile((p) => p ? { ...p, display_name: name } : p);
+    try {
+      await upsertProfile(userId, { display_name: name });
+    } catch {
+      setProfile((p) => p ? { ...p, display_name: prev } : p);
+      setError('Failed to save name. Please try again.');
+      setTimeout(() => setError(null), 3000);
+    }
+  }, [userId, profile]);
+
+  return {
+    profile, loading, avatarUploading, coverUploading, error,
+    pickAndUploadAvatar, pickAndUploadCover,
+    removeAvatar, removeCover, updateDisplayName,
+  };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,10 @@ import {
   ActivityIndicator,
   ScrollView,
   Dimensions,
+  Alert,
+  TextInput,
+  ActionSheetIOS,
+  Platform,
 } from 'react-native';
 import Svg, { Defs, Pattern, Circle, Rect, Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
+import { ChangePasswordModal } from '../../src/components/ui/ChangePasswordModal';
 import { getUserFavouriteHeroes, type FavouriteHero } from '../../src/lib/db/favourites';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
@@ -53,7 +58,7 @@ function FavouriteThumb({ hero, onPress }: { hero: FavouriteHero; onPress: () =>
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user, signOut } = useAuth();
+  const { user, signOut, changePassword, deleteAccount } = useAuth();
   const {
     profile,
     avatarUploading,
@@ -61,10 +66,19 @@ export default function ProfileScreen() {
     error: uploadError,
     pickAndUploadAvatar,
     pickAndUploadCover,
+    removeAvatar,
+    removeCover,
+    updateDisplayName,
   } = useProfile(user?.id);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  const nameInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -79,8 +93,82 @@ export default function ProfileScreen() {
     await signOut();
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all your data. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingAccount(true);
+            const { error } = await deleteAccount();
+            if (error) {
+              setDeletingAccount(false);
+              Alert.alert('Error', error.message);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleAvatarLongPress = () => {
+    if (!profile?.avatar_url) return;
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: ['Cancel', 'Remove Photo'], destructiveButtonIndex: 1, cancelButtonIndex: 0 },
+        (idx) => { if (idx === 1) removeAvatar(); }
+      );
+    } else {
+      Alert.alert('Profile Photo', 'Remove your profile photo?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove Photo', style: 'destructive', onPress: removeAvatar },
+      ]);
+    }
+  };
+
+  const handleCoverLongPress = () => {
+    if (!profile?.cover_url) return;
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: ['Cancel', 'Remove Cover'], destructiveButtonIndex: 1, cancelButtonIndex: 0 },
+        (idx) => { if (idx === 1) removeCover(); }
+      );
+    } else {
+      Alert.alert('Cover Photo', 'Remove your cover photo?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove Cover', style: 'destructive', onPress: removeCover },
+      ]);
+    }
+  };
+
+  const startEditingName = () => {
+    const current = profile?.display_name ?? username(email);
+    setNameValue(current);
+    setEditingName(true);
+    setTimeout(() => nameInputRef.current?.focus(), 50);
+  };
+
+  const handleSaveName = async () => {
+    const trimmed = nameValue.trim();
+    if (!trimmed) { setEditingName(false); return; }
+    setSavingName(true);
+    await updateDisplayName(trimmed);
+    setSavingName(false);
+    setEditingName(false);
+  };
+
+  const handleCancelName = () => {
+    setEditingName(false);
+    setNameValue('');
+  };
+
   const email = user?.email ?? '';
   const name = profile?.display_name ?? username(email);
+  const isEmailUser = user?.app_metadata?.provider === 'email' || !user?.app_metadata?.provider;
 
   return (
     <View style={styles.container}>
@@ -89,9 +177,16 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scroll}
         automaticallyAdjustContentInsets={false}
         contentInsetAdjustmentBehavior="never"
+        keyboardShouldPersistTaps="handled"
       >
         {/* Cover banner */}
-        <View style={[styles.cover, { height: 140 + insets.top }]}>
+        <TouchableOpacity
+          activeOpacity={profile?.cover_url ? 0.9 : 1}
+          onPress={pickAndUploadCover}
+          onLongPress={handleCoverLongPress}
+          disabled={coverUploading}
+          style={[styles.cover, { height: 140 + insets.top }]}
+        >
           {profile?.cover_url ? (
             <Image source={{ uri: profile.cover_url }} style={StyleSheet.absoluteFill} contentFit="cover" />
           ) : (
@@ -121,20 +216,22 @@ export default function ProfileScreen() {
               <ActivityIndicator color="white" />
             </View>
           )}
-          <TouchableOpacity
-            style={[styles.editCoverPill, { bottom: 52 }]}
-            onPress={pickAndUploadCover}
-            disabled={coverUploading}
-            activeOpacity={0.8}
-          >
+          <View style={[styles.editCoverPill, { bottom: 52 }]}>
             <Ionicons name="camera-outline" size={13} color="white" />
-            <Text style={styles.editCoverText}>Edit cover</Text>
-          </TouchableOpacity>
-        </View>
+            <Text style={styles.editCoverText}>
+              {profile?.cover_url ? 'Edit cover' : 'Add cover'}
+            </Text>
+          </View>
+        </TouchableOpacity>
 
         {/* Avatar overlap */}
         <View style={styles.avatarZone}>
-          <TouchableOpacity onPress={pickAndUploadAvatar} disabled={avatarUploading} activeOpacity={0.85}>
+          <TouchableOpacity
+            onPress={pickAndUploadAvatar}
+            onLongPress={handleAvatarLongPress}
+            disabled={avatarUploading}
+            activeOpacity={0.85}
+          >
             {profile?.avatar_url ? (
               <View style={styles.avatar}>
                 <Image source={{ uri: profile.avatar_url }} style={StyleSheet.absoluteFill} contentFit="cover" />
@@ -168,7 +265,34 @@ export default function ProfileScreen() {
 
         {/* Identity */}
         <View style={styles.identityBlock}>
-          <Text style={styles.username}>{name}</Text>
+          {editingName ? (
+            <View style={styles.nameEditRow}>
+              <TextInput
+                ref={nameInputRef}
+                style={styles.nameInput}
+                value={nameValue}
+                onChangeText={setNameValue}
+                returnKeyType="done"
+                onSubmitEditing={handleSaveName}
+                autoCapitalize="words"
+                maxLength={40}
+                placeholderTextColor="rgba(41,60,67,0.3)"
+              />
+              <TouchableOpacity onPress={handleSaveName} disabled={savingName} style={styles.nameAction} activeOpacity={0.7}>
+                {savingName
+                  ? <ActivityIndicator size="small" color={COLORS.orange} />
+                  : <Ionicons name="checkmark" size={20} color={COLORS.orange} />}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleCancelName} style={styles.nameAction} activeOpacity={0.7}>
+                <Ionicons name="close" size={20} color={COLORS.grey} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity onPress={startEditingName} activeOpacity={0.7} style={styles.nameRow}>
+              <Text style={styles.username}>{name}</Text>
+              <Ionicons name="pencil-outline" size={14} color={COLORS.grey} style={styles.pencilIcon} />
+            </TouchableOpacity>
+          )}
           <Text style={styles.email}>{email}</Text>
           <View style={styles.statPill}>
             <Ionicons name="heart" size={14} color={COLORS.orange} />
@@ -231,6 +355,23 @@ export default function ProfileScreen() {
               </Text>
             </View>
 
+            {isEmailUser && (
+              <>
+                <View style={styles.divider} />
+                <TouchableOpacity
+                  style={styles.accountRow}
+                  onPress={() => setShowChangePassword(true)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
+                    <Ionicons name="lock-closed-outline" size={16} color={COLORS.navy} />
+                  </View>
+                  <Text style={styles.accountLabel}>Change Password</Text>
+                  <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+                </TouchableOpacity>
+              </>
+            )}
+
             <View style={styles.divider} />
 
             <TouchableOpacity
@@ -254,6 +395,30 @@ export default function ProfileScreen() {
                 {signingOut ? 'Signing out…' : 'Sign Out'}
               </Text>
             </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity
+              style={styles.accountRow}
+              onPress={handleDeleteAccount}
+              disabled={deletingAccount}
+              activeOpacity={0.7}
+            >
+              {deletingAccount ? (
+                <ActivityIndicator
+                  size="small"
+                  color={COLORS.red}
+                  style={styles.signingOutIndicator}
+                />
+              ) : (
+                <View style={[styles.accountIconBadge, styles.accountIconBadgeRed]}>
+                  <Ionicons name="trash-outline" size={16} color={COLORS.red} />
+                </View>
+              )}
+              <Text style={[styles.accountLabel, styles.accountLabelDanger]}>
+                {deletingAccount ? 'Deleting account…' : 'Delete Account'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -262,6 +427,12 @@ export default function ProfileScreen() {
           Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics, or any other publisher.
         </Text>
       </ScrollView>
+
+      <ChangePasswordModal
+        visible={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+        onSubmit={changePassword}
+      />
     </View>
   );
 }
@@ -392,11 +563,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 20,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   username: {
     fontFamily: 'Flame-Regular',
     fontSize: 22,
     color: COLORS.navy,
+  },
+  pencilIcon: {
+    marginLeft: 6,
+    marginTop: 2,
+  },
+  nameEditRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 4,
+    gap: 4,
+  },
+  nameInput: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 22,
+    color: COLORS.navy,
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.orange,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    minWidth: 120,
+    maxWidth: SCREEN_WIDTH * 0.55,
+  },
+  nameAction: {
+    padding: 6,
   },
   email: {
     fontFamily: 'Nunito_400Regular',
