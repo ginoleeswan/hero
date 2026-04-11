@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -15,10 +15,12 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/hooks/useAuth';
 import { COLORS } from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
 import { DotGrid } from '../../src/components/ui/DotGrid';
+import { AnimatedInput } from '../../src/components/ui/AnimatedInput';
 
 const LOGIN_HERO = require('../../assets/images/login-hero.webp');
 
@@ -33,6 +35,10 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+
+  const passwordRef = useRef<TextInput>(null);
 
   const handleLogin = async () => {
     setLoading(true);
@@ -93,45 +99,80 @@ export default function LoginScreen() {
 
             {error && (
               <View style={styles.errorBox}>
+                <Ionicons name="alert-circle-outline" size={15} color={COLORS.red} />
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             )}
 
             <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="you@example.com"
-              placeholderTextColor="rgba(41,60,67,0.3)"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
-            />
+            <AnimatedInput isFocused={emailFocused}>
+              <TextInput
+                style={[styles.input, emailFocused && styles.inputFocused]}
+                placeholder="you@example.com"
+                placeholderTextColor="rgba(41,60,67,0.3)"
+                value={email}
+                onChangeText={setEmail}
+                onFocus={() => setEmailFocused(true)}
+                onBlur={() => setEmailFocused(false)}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+                textContentType="emailAddress"
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                accessibilityLabel="Email address"
+              />
+            </AnimatedInput>
 
             <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordRow}>
-              <TextInput
-                style={[styles.input, styles.passwordInput]}
-                placeholder="••••••••"
-                placeholderTextColor="rgba(41,60,67,0.3)"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoComplete="password"
-              />
-              <Pressable
-                style={styles.passwordToggle}
-                onPress={() => setShowPassword((v) => !v)}
-              >
-                <Text style={styles.passwordToggleText}>
-                  {showPassword ? 'Hide' : 'Show'}
-                </Text>
-              </Pressable>
-            </View>
+            <AnimatedInput isFocused={passwordFocused}>
+              <View style={[styles.passwordWrapper, passwordFocused && styles.inputFocused]}>
+                <TextInput
+                  ref={passwordRef}
+                  style={styles.passwordInput}
+                  placeholder="••••••••"
+                  placeholderTextColor="rgba(41,60,67,0.3)"
+                  value={password}
+                  onChangeText={setPassword}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  secureTextEntry={!showPassword}
+                  autoComplete="password"
+                  textContentType="password"
+                  returnKeyType="go"
+                  onSubmitEditing={handleLogin}
+                  accessibilityLabel="Password"
+                />
+                <Pressable
+                  onPress={() => setShowPassword((v) => !v)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  style={styles.eyeToggle}
+                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                  accessibilityRole="button"
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color="rgba(41,60,67,0.4)"
+                  />
+                </Pressable>
+              </View>
+            </AnimatedInput>
 
             <Pressable
-              style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+              onPress={() => router.push('/(auth)/forgot-password')}
+              style={styles.forgotWrap}
+              accessibilityRole="link"
+            >
+              <Text style={styles.forgotText}>Forgot password?</Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.button,
+                (pressed || loading) && styles.buttonPressed,
+                loading && styles.buttonLoading,
+              ]}
               onPress={handleLogin}
               disabled={loading}
             >
@@ -234,6 +275,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     backgroundColor: 'rgba(181,48,43,0.08)',
     borderRadius: 8,
     borderLeftWidth: 3,
@@ -243,6 +287,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorText: {
+    flex: 1,
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     color: COLORS.red,
@@ -267,31 +312,46 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0d6ca',
   },
-  passwordRow: {
-    position: 'relative',
+  inputFocused: {
+    borderColor: COLORS.orange,
+  },
+  passwordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e0d6ca',
   },
   passwordInput: {
-    paddingRight: 64,
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 15,
+    color: COLORS.navy,
   },
-  passwordToggle: {
-    position: 'absolute',
-    right: 14,
-    top: 0,
-    bottom: 14,
-    justifyContent: 'center',
+  eyeToggle: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
   },
-  passwordToggleText: {
+  forgotWrap: {
+    alignSelf: 'flex-end',
+    marginBottom: 16,
+    paddingVertical: 4,
+  },
+  forgotText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.orange,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   button: {
     backgroundColor: COLORS.orange,
     borderRadius: 12,
     paddingVertical: 17,
     alignItems: 'center',
-    marginTop: 4,
     marginBottom: 18,
     shadowColor: COLORS.orange,
     shadowOffset: { width: 0, height: 4 },
@@ -301,6 +361,9 @@ const styles = StyleSheet.create({
   },
   buttonPressed: {
     opacity: 0.88,
+  },
+  buttonLoading: {
+    opacity: 0.55,
   },
   buttonText: {
     fontFamily: 'Nunito_700Bold',

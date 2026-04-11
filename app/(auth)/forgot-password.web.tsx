@@ -8,84 +8,120 @@ import {
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/hooks/useAuth';
 import { COLORS } from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
 
 const LOGIN_HERO = require('../../assets/images/login-hero.webp');
 const HERO_ASPECT = LOGIN_HERO.width / LOGIN_HERO.height;
 
-export default function WebSignupScreen() {
-  const { signUp } = useAuth();
+export default function WebForgotPasswordScreen() {
+  const { resetPassword } = useAuth();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
+  const { email: prefillEmail } = useLocalSearchParams<{ email?: string }>();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState(prefillEmail ?? '');
   const [loading, setLoading] = useState(false);
-  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailFocused, setEmailFocused] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
-  const passwordRef = useRef<TextInput>(null);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const handleSignup = async () => {
+  function startCooldown(seconds: number) {
+    setResendCooldown(seconds);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownRef.current!);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }
+
+  async function handleReset() {
+    if (!email.trim()) {
+      setError('Please enter your email address.');
+      return;
+    }
     setLoading(true);
     setError(null);
-    const { error } = await signUp(email, password);
+    const { error } = await resetPassword(email.trim());
+    setLoading(false);
     if (error) {
       setError(error.message);
     } else {
-      setPendingEmail(email.trim());
+      setSent(true);
+      startCooldown(30);
     }
+  }
+
+  async function handleResend() {
+    if (resendCooldown > 0 || loading) return;
+    setLoading(true);
+    await resetPassword(email.trim());
     setLoading(false);
-  };
+    startCooldown(30);
+  }
 
-  const pendingContent = (
+  const formContent = sent ? (
+    /* ── Sent state ── */
     <View style={styles.pendingWrap}>
-      <View style={styles.pendingIconWrap}>
-        <Ionicons name="mail-outline" size={28} color={COLORS.orange} />
+      <View style={styles.iconWrap}>
+        <Ionicons name="checkmark-circle-outline" size={28} color={COLORS.orange} />
       </View>
-      <Text style={styles.pendingTitle}>Check your inbox</Text>
-      <Text style={styles.pendingBody}>
-        A confirmation link was sent to{'\n'}
-        <Text style={styles.pendingEmail}>{pendingEmail}</Text>
+      <Text style={styles.heading}>Check your inbox</Text>
+      <Text style={styles.subheading}>
+        A reset link was sent to{'\n'}
+        <Text style={styles.emailHighlight}>{email}</Text>
       </Text>
-      <Text style={styles.pendingHint}>
-        Can't find it? Check your Spam or Junk folder.
+      <Text style={styles.hint}>
+        Check spam · link expires in 1 hour ·{' '}
+        <Text style={styles.hintLink} onPress={() => setSent(false)}>
+          wrong email?
+        </Text>
       </Text>
       <Pressable
-        onPress={() => router.push('/(auth)/login')}
-        style={styles.pendingCta as object}
+        onPress={() => router.replace('/(auth)/login')}
+        style={styles.button as object}
       >
-        <Text style={styles.pendingCtaText}>Back to Sign In</Text>
+        <Text style={styles.buttonText}>Back to Sign In</Text>
       </Pressable>
-      <Pressable
-        onPress={() => {
-          setPendingEmail(null);
-          setEmail('');
-          setPassword('');
-        }}
-        style={styles.pendingBack as object}
-      >
-        <Text style={styles.pendingBackText}>Wrong email? Go back</Text>
-      </Pressable>
+      <View style={styles.resendRow}>
+        {resendCooldown > 0 ? (
+          <Text style={styles.resendCooldown}>Resend in {resendCooldown}s…</Text>
+        ) : (
+          <Pressable onPress={handleResend} disabled={loading} style={styles.resendLink as object}>
+            <Text style={styles.resendLinkText}>Didn't get it? Resend</Text>
+          </Pressable>
+        )}
+      </View>
     </View>
-  );
-
-  const formContent = pendingEmail ? pendingContent : (
+  ) : (
+    /* ── Form ── */
     <>
+      <Pressable
+        onPress={() => router.back()}
+        style={styles.back as object}
+        accessibilityRole="link"
+      >
+        <Ionicons name="chevron-back" size={18} color="rgba(41,60,67,0.5)" />
+        <Text style={styles.backText}>Back to Sign In</Text>
+      </Pressable>
+
       <View style={styles.headingRow}>
         <View style={styles.headingAccent} />
         <View style={styles.headingText}>
-          <Text style={styles.heading}>Create account</Text>
-          <Text style={styles.subheading}>Free to join, no credit card required</Text>
+          <Text style={styles.heading}>Reset password</Text>
+          <Text style={styles.subheading}>We'll email you a link to get back in.</Text>
         </View>
       </View>
 
@@ -108,66 +144,29 @@ export default function WebSignupScreen() {
         autoCapitalize="none"
         keyboardType="email-address"
         autoComplete="email"
-        returnKeyType="next"
-        onSubmitEditing={() => passwordRef.current?.focus()}
+        returnKeyType="send"
+        onSubmitEditing={handleReset}
         accessibilityLabel="Email address"
       />
 
-      <Text style={styles.label}>Password</Text>
-      <View style={[styles.passwordWrapper, passwordFocused && styles.inputFocused] as object}>
-        <TextInput
-          ref={passwordRef}
-          style={styles.passwordInput as object}
-          placeholder="••••••••"
-          placeholderTextColor="rgba(41,60,67,0.3)"
-          value={password}
-          onChangeText={setPassword}
-          onFocus={() => setPasswordFocused(true)}
-          onBlur={() => setPasswordFocused(false)}
-          secureTextEntry={!showPassword}
-          autoComplete="new-password"
-          returnKeyType="go"
-          onSubmitEditing={handleSignup}
-          accessibilityLabel="Password"
-        />
-        <Pressable
-          onPress={() => setShowPassword((v) => !v)}
-          style={styles.eyeToggle as object}
-          accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-          accessibilityRole="button"
-        >
-          <Ionicons
-            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-            size={20}
-            color="rgba(41,60,67,0.4)"
-          />
-        </Pressable>
-      </View>
-
       <Pressable
-        style={({ pressed }) => [styles.button, (pressed || loading) && styles.buttonPressed, loading && styles.buttonLoading] as object}
-        onPress={handleSignup}
-        disabled={loading}
+        style={({ pressed }) => [styles.button, (pressed || loading || !email.trim()) && styles.buttonDisabled] as object}
+        onPress={handleReset}
+        disabled={loading || !email.trim()}
       >
         {loading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text style={styles.buttonText}>Create Account</Text>
+          <Text style={styles.buttonText}>Send Reset Link</Text>
         )}
-      </Pressable>
-
-      <Pressable onPress={() => router.push('/(auth)/login')} style={styles.switchRow as object}>
-        <Text style={styles.switchText}>Already have an account? </Text>
-        <Text style={styles.switchLink}>Sign in</Text>
       </Pressable>
     </>
   );
 
-  // ── Mobile layout: full-bleed illustration + bottom card ───────────────
+  // ── Mobile web ─────────────────────────────────────────────────────────
   if (!isDesktop) {
     return (
       <View style={styles.mobileRoot}>
-        {/* Hero illustration — contained in top region */}
         <View style={styles.mobileIllustrationWrap}>
           <Image
             source={LOGIN_HERO}
@@ -175,16 +174,11 @@ export default function WebSignupScreen() {
             contentFit="contain"
             contentPosition={{ x: '50%', y: '0%' }}
           />
-          {/* Scrim fades bottom of illustration into card */}
           <View style={styles.mobileScrim as object} pointerEvents="none" />
         </View>
-
-        {/* Logo — floats top-left over illustration */}
         <View style={styles.mobileLogo}>
           <HeroLogo iconSize={36} fontSize={28} color={COLORS.beige} gap={10} />
         </View>
-
-        {/* Form card — rises from bottom */}
         <View style={styles.mobileCard}>
           <View style={styles.mobileCardHandle} />
           {formContent}
@@ -193,38 +187,30 @@ export default function WebSignupScreen() {
     );
   }
 
-  // ── Desktop layout: split panel ────────────────────────────────────────
+  // ── Desktop split panel ────────────────────────────────────────────────
   return (
     <View style={styles.desktopRoot}>
-      {/* Left brand panel */}
       <View style={styles.brand}>
         <View style={styles.brandDots as object} pointerEvents="none" />
         <View style={styles.brandGlow as object} pointerEvents="none" />
-
         <View style={styles.brandLogoWrap}>
           <HeroLogo iconSize={48} fontSize={36} color={COLORS.beige} gap={12} />
         </View>
-
         <Image
           source={LOGIN_HERO}
           style={styles.illustration as object}
           contentFit="cover"
         />
-
         <View style={styles.brandBottom}>
-          <Text style={styles.brandTagline}>Join the{'\n'}Universe</Text>
+          <Text style={styles.brandTagline}>The Superhero{'\n'}Encyclopedia</Text>
           <Text style={styles.brandSub}>
-            Track your favourite heroes across{'\n'}Marvel, DC, and beyond.
+            Forgot your password?{'\n'}We've got you covered.
           </Text>
           <View style={styles.brandAccent} />
         </View>
       </View>
-
-      {/* Right form panel */}
       <View style={styles.formPanelDesktop}>
-        <View style={styles.formInner}>
-          {formContent}
-        </View>
+        <View style={styles.formInner}>{formContent}</View>
       </View>
     </View>
   );
@@ -367,6 +353,20 @@ const styles = StyleSheet.create({
   },
 
   // ── Shared form styles ─────────────────────────────────────────────────
+  back: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    marginBottom: 28,
+    paddingVertical: 4,
+    cursor: 'pointer',
+  },
+  backText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14,
+    color: 'rgba(41,60,67,0.5)',
+  },
   headingRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -390,12 +390,31 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
     lineHeight: 38,
     marginBottom: 4,
+    textAlign: 'center',
   },
   subheading: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
     color: COLORS.grey,
     lineHeight: 20,
+    textAlign: 'center',
+  },
+  emailHighlight: {
+    fontFamily: 'Nunito_700Bold',
+    color: COLORS.navy,
+  },
+  hint: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: 'rgba(41,60,67,0.4)',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 28,
+    marginTop: 4,
+  },
+  hintLink: {
+    color: COLORS.orange,
+    textDecorationLine: 'underline',
   },
   errorBox: {
     flexDirection: 'row',
@@ -440,30 +459,6 @@ const styles = StyleSheet.create({
   inputFocused: {
     borderColor: COLORS.orange,
   },
-  passwordWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#e0d6ca',
-    transition: 'border-color 0.15s ease',
-  },
-  passwordInput: {
-    flex: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 15,
-    color: COLORS.navy,
-    outlineStyle: 'none',
-  },
-  eyeToggle: {
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    cursor: 'pointer',
-  } as object,
   button: {
     backgroundColor: COLORS.orange,
     borderRadius: 12,
@@ -474,41 +469,23 @@ const styles = StyleSheet.create({
     cursor: 'pointer',
     transition: 'opacity 0.15s ease',
   } as object,
-  buttonPressed: {
-    opacity: 0.88,
-  },
-  buttonLoading: {
-    opacity: 0.55,
-  },
+  buttonDisabled: {
+    opacity: 0.45,
+    cursor: 'not-allowed',
+  } as object,
   buttonText: {
     fontFamily: 'Nunito_700Bold',
     color: 'white',
     fontSize: 16,
     letterSpacing: 0.3,
   },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    cursor: 'pointer',
-  } as object,
-  switchText: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    color: COLORS.grey,
-  },
-  switchLink: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: COLORS.navy,
-    textDecorationLine: 'underline',
-  },
 
-  // ── Confirmation pending ────────────────────────────────────────────────
+  // ── Pending / success state ────────────────────────────────────────────
   pendingWrap: {
     alignItems: 'center',
     paddingTop: 8,
   },
-  pendingIconWrap: {
+  iconWrap: {
     width: 64,
     height: 64,
     borderRadius: 18,
@@ -519,56 +496,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
   },
-  pendingTitle: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 28,
-    color: COLORS.navy,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  pendingBody: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 15,
-    color: COLORS.grey,
-    textAlign: 'center',
-    lineHeight: 23,
-    marginBottom: 8,
-  },
-  pendingEmail: {
-    fontFamily: 'Nunito_700Bold',
-    color: COLORS.navy,
-  },
-  pendingHint: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    color: 'rgba(41,60,67,0.45)',
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  pendingCta: {
-    backgroundColor: COLORS.orange,
-    borderRadius: 12,
-    paddingVertical: 17,
+  resendRow: {
+    marginTop: 16,
     alignItems: 'center',
-    width: '100%',
-    marginBottom: 12,
-    boxShadow: '0 4px 18px rgba(231,115,51,0.32)',
+  },
+  resendLink: {
     cursor: 'pointer',
   },
-  pendingCtaText: {
-    fontFamily: 'Nunito_700Bold',
-    color: 'white',
-    fontSize: 16,
-    letterSpacing: 0.3,
-  },
-  pendingBack: {
-    paddingVertical: 8,
-    cursor: 'pointer',
-  },
-  pendingBackText: {
+  resendLinkText: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: COLORS.orange,
     textDecorationLine: 'underline',
+  },
+  resendCooldown: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: 'rgba(41,60,67,0.4)',
   },
 });

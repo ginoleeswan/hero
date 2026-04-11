@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { useAuth } from '../../src/hooks/useAuth';
 import { COLORS } from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 
 const LOGIN_HERO = require('../../assets/images/login-hero.webp');
 const HERO_ASPECT = LOGIN_HERO.width / LOGIN_HERO.height;
@@ -28,6 +29,10 @@ export default function WebLoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+
+  const passwordRef = useRef<TextInput>(null);
 
   const handleLogin = async () => {
     setLoading(true);
@@ -40,6 +45,98 @@ export default function WebLoginScreen() {
       router.replace('/');
     }
   };
+
+  const formContent = (
+    <>
+      <View style={styles.headingRow}>
+        <View style={styles.headingAccent} />
+        <View style={styles.headingText}>
+          <Text style={styles.heading}>Welcome back</Text>
+          <Text style={styles.subheading}>Sign in to your account</Text>
+        </View>
+      </View>
+
+      {error && (
+        <View style={styles.errorBox}>
+          <Ionicons name="alert-circle-outline" size={15} color={COLORS.red} />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
+      <Text style={styles.label}>Email</Text>
+      <TextInput
+        style={[styles.input, emailFocused && styles.inputFocused] as object}
+        placeholder="you@example.com"
+        placeholderTextColor="rgba(41,60,67,0.3)"
+        value={email}
+        onChangeText={setEmail}
+        onFocus={() => setEmailFocused(true)}
+        onBlur={() => setEmailFocused(false)}
+        autoCapitalize="none"
+        keyboardType="email-address"
+        autoComplete="email"
+        returnKeyType="next"
+        onSubmitEditing={() => passwordRef.current?.focus()}
+        accessibilityLabel="Email address"
+      />
+
+      <Text style={styles.label}>Password</Text>
+      <View style={[styles.passwordWrapper, passwordFocused && styles.inputFocused] as object}>
+        <TextInput
+          ref={passwordRef}
+          style={styles.passwordInput as object}
+          placeholder="••••••••"
+          placeholderTextColor="rgba(41,60,67,0.3)"
+          value={password}
+          onChangeText={setPassword}
+          onFocus={() => setPasswordFocused(true)}
+          onBlur={() => setPasswordFocused(false)}
+          secureTextEntry={!showPassword}
+          autoComplete="password"
+          returnKeyType="go"
+          onSubmitEditing={handleLogin}
+          accessibilityLabel="Password"
+        />
+        <Pressable
+          onPress={() => setShowPassword((v) => !v)}
+          style={styles.eyeToggle}
+          accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+          accessibilityRole="button"
+        >
+          <Ionicons
+            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+            size={20}
+            color="rgba(41,60,67,0.4)"
+          />
+        </Pressable>
+      </View>
+
+      <Pressable
+        onPress={() => router.push('/(auth)/forgot-password')}
+        style={styles.forgotWrap as object}
+        accessibilityRole="link"
+      >
+        <Text style={styles.forgotText}>Forgot password?</Text>
+      </Pressable>
+
+      <Pressable
+        style={({ pressed }) => [styles.button, (pressed || loading) && styles.buttonPressed, loading && styles.buttonLoading] as object}
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text style={styles.buttonText}>Sign In</Text>
+        )}
+      </Pressable>
+
+      <Pressable onPress={() => router.push('/(auth)/signup')} style={styles.switchRow as object}>
+        <Text style={styles.switchText}>Don't have an account? </Text>
+        <Text style={styles.switchLink}>Sign up</Text>
+      </Pressable>
+    </>
+  );
 
   // ── Mobile layout: full-bleed illustration + bottom card ───────────────
   if (!isDesktop) {
@@ -65,68 +162,7 @@ export default function WebLoginScreen() {
         {/* Form card — rises from bottom */}
         <View style={styles.mobileCard}>
           <View style={styles.mobileCardHandle} />
-
-          <View style={styles.headingRow}>
-            <View style={styles.headingAccent} />
-            <View style={styles.headingText}>
-              <Text style={styles.heading}>Welcome back</Text>
-              <Text style={styles.subheading}>Sign in to your account</Text>
-            </View>
-          </View>
-
-          {error && (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
-
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input as object}
-            placeholder="you@example.com"
-            placeholderTextColor="rgba(41,60,67,0.3)"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-
-          <Text style={styles.label}>Password</Text>
-          <View style={styles.passwordRow}>
-            <TextInput
-              style={[styles.input, styles.passwordInput] as object}
-              placeholder="••••••••"
-              placeholderTextColor="rgba(41,60,67,0.3)"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-            />
-            <Pressable
-              style={styles.passwordToggle}
-              onPress={() => setShowPassword((v) => !v)}
-            >
-              <Text style={styles.passwordToggleText}>
-                {showPassword ? 'Hide' : 'Show'}
-              </Text>
-            </Pressable>
-          </View>
-
-          <Pressable
-            style={({ pressed }) => [styles.button, pressed && (styles.buttonPressed as object)]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
-            )}
-          </Pressable>
-
-          <Pressable onPress={() => router.push('/(auth)/signup')} style={styles.switchRow}>
-            <Text style={styles.switchText}>Don't have an account? </Text>
-            <Text style={styles.switchLink}>Sign up</Text>
-          </Pressable>
+          {formContent}
         </View>
       </View>
     );
@@ -162,67 +198,7 @@ export default function WebLoginScreen() {
       {/* Right form panel */}
       <View style={styles.formPanelDesktop}>
         <View style={styles.formInner}>
-          <View style={styles.headingRow}>
-            <View style={styles.headingAccent} />
-            <View style={styles.headingText}>
-              <Text style={styles.heading}>Welcome back</Text>
-              <Text style={styles.subheading}>Sign in to your account</Text>
-            </View>
-          </View>
-
-          {error && (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
-
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input as object}
-            placeholder="you@example.com"
-            placeholderTextColor="rgba(41,60,67,0.3)"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-
-          <Text style={styles.label}>Password</Text>
-          <View style={styles.passwordRow}>
-            <TextInput
-              style={[styles.input, styles.passwordInput] as object}
-              placeholder="••••••••"
-              placeholderTextColor="rgba(41,60,67,0.3)"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-            />
-            <Pressable
-              style={styles.passwordToggle}
-              onPress={() => setShowPassword((v) => !v)}
-            >
-              <Text style={styles.passwordToggleText}>
-                {showPassword ? 'Hide' : 'Show'}
-              </Text>
-            </Pressable>
-          </View>
-
-          <Pressable
-            style={({ pressed }) => [styles.button, pressed && (styles.buttonPressed as object)]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
-            )}
-          </Pressable>
-
-          <Pressable onPress={() => router.push('/(auth)/signup')} style={styles.switchRow}>
-            <Text style={styles.switchText}>Don't have an account? </Text>
-            <Text style={styles.switchLink}>Sign up</Text>
-          </Pressable>
+          {formContent}
         </View>
       </View>
     </View>
@@ -397,6 +373,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     backgroundColor: 'rgba(181,48,43,0.08)',
     borderRadius: 8,
     borderLeftWidth: 3,
@@ -406,6 +385,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorText: {
+    flex: 1,
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     color: COLORS.red,
@@ -430,40 +410,62 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0d6ca',
     outlineStyle: 'none',
+    transition: 'border-color 0.15s ease',
   },
-  passwordRow: {
-    position: 'relative',
+  inputFocused: {
+    borderColor: COLORS.orange,
+  },
+  passwordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e0d6ca',
+    transition: 'border-color 0.15s ease',
   },
   passwordInput: {
-    paddingRight: 64,
-    marginBottom: 14,
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 15,
+    color: COLORS.navy,
+    outlineStyle: 'none',
   },
-  passwordToggle: {
-    position: 'absolute',
-    right: 14,
-    top: 0,
-    bottom: 14,
-    justifyContent: 'center',
+  eyeToggle: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    cursor: 'pointer',
+  } as object,
+  forgotWrap: {
+    alignSelf: 'flex-end',
+    marginBottom: 16,
+    paddingVertical: 4,
+    cursor: 'pointer',
   },
-  passwordToggleText: {
+  forgotText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.orange,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   button: {
     backgroundColor: COLORS.orange,
     borderRadius: 12,
     paddingVertical: 17,
     alignItems: 'center',
-    marginTop: 4,
     marginBottom: 18,
     boxShadow: '0 4px 18px rgba(231,115,51,0.32)',
     cursor: 'pointer',
+    transition: 'opacity 0.15s ease',
   } as object,
   buttonPressed: {
     opacity: 0.88,
-    boxShadow: '0 2px 8px rgba(231,115,51,0.2)',
+  },
+  buttonLoading: {
+    opacity: 0.55,
   },
   buttonText: {
     fontFamily: 'Nunito_700Bold',

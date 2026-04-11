@@ -9,6 +9,7 @@ interface AuthState {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
 }
 
 export function useAuth(): AuthState {
@@ -48,5 +49,10 @@ export function useAuth(): AuthState {
     await supabase.auth.signOut();
   };
 
-  return { user, session, loading, signIn, signUp, signOut };
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    return { error };
+  };
+
+  return { user, session, loading, signIn, signUp, signOut, resetPassword };
 }

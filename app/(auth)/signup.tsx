@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -15,10 +15,12 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/hooks/useAuth';
 import { COLORS } from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
 import { DotGrid } from '../../src/components/ui/DotGrid';
+import { AnimatedInput } from '../../src/components/ui/AnimatedInput';
 
 const LOGIN_HERO = require('../../assets/images/login-hero.webp');
 
@@ -32,18 +34,21 @@ export default function SignupScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+
+  const passwordRef = useRef<TextInput>(null);
 
   const handleSignup = async () => {
     setLoading(true);
     setError(null);
-    setMessage(null);
     const { error } = await signUp(email, password);
     if (error) {
       setError(error.message);
     } else {
-      setMessage('Check your email to confirm your account.');
+      setPendingEmail(email.trim());
     }
     setLoading(false);
   };
@@ -85,75 +90,132 @@ export default function SignupScreen() {
           <View style={[styles.card, { paddingBottom: Math.max(insets.bottom + 16, 32) }]}>
             <View style={styles.cardHandle} />
 
-            <View style={styles.headingRow}>
-              <View style={styles.headingAccent} />
-              <View style={styles.headingText}>
-                <Text style={styles.heading}>Create account</Text>
-                <Text style={styles.subheading}>Free to join, no credit card required</Text>
-              </View>
-            </View>
-
-            {error && (
-              <View style={styles.errorBox}>
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            )}
-
-            {message && (
-              <View style={styles.successBox}>
-                <Text style={styles.successText}>{message}</Text>
-              </View>
-            )}
-
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="you@example.com"
-              placeholderTextColor="rgba(41,60,67,0.3)"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
-            />
-
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordRow}>
-              <TextInput
-                style={[styles.input, styles.passwordInput]}
-                placeholder="••••••••"
-                placeholderTextColor="rgba(41,60,67,0.3)"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoComplete="new-password"
-              />
-              <Pressable
-                style={styles.passwordToggle}
-                onPress={() => setShowPassword((v) => !v)}
-              >
-                <Text style={styles.passwordToggleText}>
-                  {showPassword ? 'Hide' : 'Show'}
+            {pendingEmail ? (
+              /* ── Confirmation pending state ── */
+              <View style={styles.pendingWrap}>
+                <View style={styles.pendingIconWrap}>
+                  <Ionicons name="mail-outline" size={28} color={COLORS.orange} />
+                </View>
+                <Text style={styles.pendingTitle}>Check your inbox</Text>
+                <Text style={styles.pendingBody}>
+                  A confirmation link was sent to{'\n'}
+                  <Text style={styles.pendingEmail}>{pendingEmail}</Text>
                 </Text>
-              </Pressable>
-            </View>
+                <Text style={styles.pendingHint}>
+                  Can't find it? Check your Spam or Junk folder.
+                </Text>
+                <Pressable
+                  onPress={() => router.push('/(auth)/login')}
+                  style={styles.pendingCta}
+                >
+                  <Text style={styles.pendingCtaText}>Back to Sign In</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    setPendingEmail(null);
+                    setEmail('');
+                    setPassword('');
+                  }}
+                  style={styles.pendingBack}
+                >
+                  <Text style={styles.pendingBackText}>Wrong email? Go back</Text>
+                </Pressable>
+              </View>
+            ) : (
+              /* ── Sign up form ── */
+              <>
+                <View style={styles.headingRow}>
+                  <View style={styles.headingAccent} />
+                  <View style={styles.headingText}>
+                    <Text style={styles.heading}>Create account</Text>
+                    <Text style={styles.subheading}>Free to join, no credit card required</Text>
+                  </View>
+                </View>
 
-            <Pressable
-              style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-              onPress={handleSignup}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.buttonText}>Create Account</Text>
-              )}
-            </Pressable>
+                {error && (
+                  <View style={styles.errorBox}>
+                    <Ionicons name="alert-circle-outline" size={15} color={COLORS.red} />
+                    <Text style={styles.errorText}>{error}</Text>
+                  </View>
+                )}
 
-            <Pressable onPress={() => router.push('/(auth)/login')} style={styles.switchRow}>
-              <Text style={styles.switchText}>Already have an account? </Text>
-              <Text style={styles.switchLink}>Sign in</Text>
-            </Pressable>
+                <Text style={styles.label}>Email</Text>
+                <AnimatedInput isFocused={emailFocused}>
+                  <TextInput
+                    style={[styles.input, emailFocused && styles.inputFocused]}
+                    placeholder="you@example.com"
+                    placeholderTextColor="rgba(41,60,67,0.3)"
+                    value={email}
+                    onChangeText={setEmail}
+                    onFocus={() => setEmailFocused(true)}
+                    onBlur={() => setEmailFocused(false)}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    autoComplete="email"
+                    textContentType="emailAddress"
+                    returnKeyType="next"
+                    onSubmitEditing={() => passwordRef.current?.focus()}
+                    accessibilityLabel="Email address"
+                  />
+                </AnimatedInput>
+
+                <Text style={styles.label}>Password</Text>
+                <AnimatedInput isFocused={passwordFocused}>
+                  <View style={[styles.passwordWrapper, passwordFocused && styles.inputFocused]}>
+                    <TextInput
+                      ref={passwordRef}
+                      style={styles.passwordInput}
+                      placeholder="••••••••"
+                      placeholderTextColor="rgba(41,60,67,0.3)"
+                      value={password}
+                      onChangeText={setPassword}
+                      onFocus={() => setPasswordFocused(true)}
+                      onBlur={() => setPasswordFocused(false)}
+                      secureTextEntry={!showPassword}
+                      autoComplete="new-password"
+                      textContentType="newPassword"
+                      returnKeyType="go"
+                      onSubmitEditing={handleSignup}
+                      accessibilityLabel="Password"
+                    />
+                    <Pressable
+                      onPress={() => setShowPassword((v) => !v)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={styles.eyeToggle}
+                      accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                      accessibilityRole="button"
+                    >
+                      <Ionicons
+                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                        size={20}
+                        color="rgba(41,60,67,0.4)"
+                      />
+                    </Pressable>
+                  </View>
+                </AnimatedInput>
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.button,
+                    (pressed || loading) && styles.buttonPressed,
+                    loading && styles.buttonLoading,
+                  ]}
+                  onPress={handleSignup}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="white" />
+                  ) : (
+                    <Text style={styles.buttonText}>Create Account</Text>
+                  )}
+                </Pressable>
+
+                <Pressable onPress={() => router.push('/(auth)/login')} style={styles.switchRow}>
+                  <Text style={styles.switchText}>Already have an account? </Text>
+                  <Text style={styles.switchLink}>Sign in</Text>
+                </Pressable>
+              </>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -210,6 +272,77 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
 
+  // Confirmation pending
+  pendingWrap: {
+    alignItems: 'center',
+    paddingTop: 8,
+  },
+  pendingIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    backgroundColor: 'rgba(231,115,51,0.1)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(231,115,51,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  pendingTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 28,
+    color: COLORS.navy,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  pendingBody: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 15,
+    color: COLORS.grey,
+    textAlign: 'center',
+    lineHeight: 23,
+    marginBottom: 8,
+  },
+  pendingEmail: {
+    fontFamily: 'Nunito_700Bold',
+    color: COLORS.navy,
+  },
+  pendingHint: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: 'rgba(41,60,67,0.45)',
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  pendingCta: {
+    backgroundColor: COLORS.orange,
+    borderRadius: 12,
+    paddingVertical: 17,
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 12,
+    shadowColor: COLORS.orange,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  pendingCtaText: {
+    fontFamily: 'Nunito_700Bold',
+    color: 'white',
+    fontSize: 16,
+    letterSpacing: 0.3,
+  },
+  pendingBack: {
+    paddingVertical: 8,
+  },
+  pendingBackText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.grey,
+    textDecorationLine: 'underline',
+  },
+
   // Form
   headingRow: {
     flexDirection: 'row',
@@ -242,6 +375,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     backgroundColor: 'rgba(181,48,43,0.08)',
     borderRadius: 8,
     borderLeftWidth: 3,
@@ -251,23 +387,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorText: {
+    flex: 1,
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     color: COLORS.red,
-  },
-  successBox: {
-    backgroundColor: 'rgba(99,169,54,0.1)',
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.green,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 16,
-  },
-  successText: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    color: COLORS.green,
   },
   label: {
     fontFamily: 'Nunito_700Bold',
@@ -289,31 +412,35 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0d6ca',
   },
-  passwordRow: {
-    position: 'relative',
+  inputFocused: {
+    borderColor: COLORS.orange,
+  },
+  passwordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#e0d6ca',
   },
   passwordInput: {
-    paddingRight: 64,
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 15,
+    color: COLORS.navy,
   },
-  passwordToggle: {
-    position: 'absolute',
-    right: 14,
-    top: 0,
-    bottom: 14,
-    justifyContent: 'center',
-  },
-  passwordToggleText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    color: COLORS.orange,
-    letterSpacing: 0.3,
+  eyeToggle: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
   },
   button: {
     backgroundColor: COLORS.orange,
     borderRadius: 12,
     paddingVertical: 17,
     alignItems: 'center',
-    marginTop: 4,
     marginBottom: 18,
     shadowColor: COLORS.orange,
     shadowOffset: { width: 0, height: 4 },
@@ -323,6 +450,9 @@ const styles = StyleSheet.create({
   },
   buttonPressed: {
     opacity: 0.88,
+  },
+  buttonLoading: {
+    opacity: 0.55,
   },
   buttonText: {
     fontFamily: 'Nunito_700Bold',
