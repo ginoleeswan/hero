@@ -3,7 +3,6 @@ import { Platform } from 'react-native';
 import { Session, User } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { supabase } from '../lib/supabase';
 import { getProfile, upsertProfile } from '../lib/db/profiles';
 
@@ -96,6 +95,7 @@ export function useAuth(): AuthState {
     }
 
     try {
+      const { GoogleSignin } = require('@react-native-google-signin/google-signin');
       await GoogleSignin.hasPlayServices();
       const { data: googleData } = await GoogleSignin.signIn();
       const idToken = googleData?.idToken;
