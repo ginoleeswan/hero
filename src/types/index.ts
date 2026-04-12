@@ -67,6 +67,9 @@ export interface HeroDetails {
 export interface FirstIssue {
   id: string;
   imageUrl: string | null;
+  name: string | null;
+  coverDate: string | null;
+  issueNumber: string | null;
 }
 
 // ─── Combined character screen data ──────────────────────────────────────────
