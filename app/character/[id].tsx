@@ -693,6 +693,26 @@ export default function CharacterScreen() {
               </Section>
             ) : null}
 
+            {/* On Screen */}
+            {data.details.movies?.length ? (
+              <Section title="On Screen">
+                {data.details.movies.map((entry, i) => {
+                  const match = entry.match(/^(.+?)\s*\((\d{4})\)$/);
+                  const title = match ? match[1] : entry;
+                  const year = match ? match[2] : null;
+                  return (
+                    <View key={i} style={styles.movieRow}>
+                      <Text style={styles.movieIcon}>🎬</Text>
+                      <View style={styles.movieMeta}>
+                        <Text style={styles.movieTitle}>{title}</Text>
+                        {year ? <Text style={styles.movieYear}>{year}</Text> : null}
+                      </View>
+                    </View>
+                  );
+                })}
+              </Section>
+            ) : null}
+
             {/* Appearance */}
             <Section title="Appearance">
               <InfoRow label="Gender" value={data.stats.appearance.gender} />
@@ -1035,5 +1055,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.beige,
     letterSpacing: 0.3,
+  },
+
+  // On Screen
+  movieRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 10,
+  },
+  movieIcon: { fontSize: 20 },
+  movieMeta: { flex: 1 },
+  movieTitle: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 13,
+    color: COLORS.navy,
+  },
+  movieYear: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 11,
+    color: COLORS.grey,
+    marginTop: 1,
   },
 });
