@@ -123,6 +123,35 @@ function AffiliationChips({ value }: { value: string | null | undefined }) {
   );
 }
 
+function RelativesList({ value }: { value: string | null | undefined }) {
+  if (!value || value === '-' || value === 'null' || value === '') return null;
+  const entries = value
+    .split(';')
+    .map((s) => s.trim())
+    .filter((s) => s && s !== '-' && s !== 'null');
+  if (entries.length === 0) return null;
+  if (entries.length === 1) {
+    return <InfoRow label="Relatives" value={entries[0]} />;
+  }
+  return (
+    <View style={styles.infoRow}>
+      <Text style={[styles.infoLabel, { alignSelf: 'flex-start', paddingTop: 1 }]}>
+        Relatives:
+      </Text>
+      <View style={{ flex: 1 }}>
+        {entries.map((entry, i) => (
+          <Text
+            key={i}
+            style={[styles.infoValue, i < entries.length - 1 && { marginBottom: 5 }]}
+          >
+            {entry}
+          </Text>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 export default function CharacterScreen() {
   const {
     id,
@@ -552,7 +581,7 @@ export default function CharacterScreen() {
             {/* Connections */}
             <Section title="Connections">
               <AffiliationChips value={data.stats.connections['group-affiliation']} />
-              <InfoRow label="Relatives" value={data.stats.connections.relatives} />
+              <RelativesList value={data.stats.connections.relatives} />
             </Section>
           </>
         )}
