@@ -78,6 +78,23 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
   );
 }
 
+const ALIGNMENT_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
+  good: { label: 'Hero', bg: 'rgba(39,174,96,0.15)', color: COLORS.green },
+  bad: { label: 'Villain', bg: 'rgba(231,76,60,0.15)', color: COLORS.red },
+  neutral: { label: 'Neutral', bg: 'rgba(100,100,100,0.12)', color: COLORS.grey },
+};
+
+function AlignmentBadge({ alignment }: { alignment: string | null | undefined }) {
+  if (!alignment) return null;
+  const config = ALIGNMENT_CONFIG[alignment.toLowerCase().trim()];
+  if (!config) return null;
+  return (
+    <View style={[styles.alignmentBadge, { backgroundColor: config.bg }]}>
+      <Text style={[styles.alignmentBadgeText, { color: config.color }]}>{config.label}</Text>
+    </View>
+  );
+}
+
 export default function CharacterScreen() {
   const {
     id,
@@ -380,7 +397,10 @@ export default function CharacterScreen() {
                 {data.stats.biography['full-name'] ? (
                   <Text style={styles.heroAlias}>{data.stats.biography['full-name']}</Text>
                 ) : null}
-                <Text style={styles.heroPublisher}>{data.stats.biography.publisher}</Text>
+                <View style={styles.nameRowRight}>
+                  <AlignmentBadge alignment={data.stats.biography.alignment} />
+                  <Text style={styles.heroPublisher}>{data.stats.biography.publisher}</Text>
+                </View>
               </View>
             ) : (
               <View style={styles.nameRow}>
@@ -436,7 +456,6 @@ export default function CharacterScreen() {
               <InfoRow label="Alter egos" value={data.stats.biography['alter-egos']} />
               <InfoRow label="Place of birth" value={data.stats.biography['place-of-birth']} />
               <InfoRow label="First appearance" value={data.stats.biography['first-appearance']} />
-              <InfoRow label="Alignment" value={data.stats.biography.alignment} />
               {data.stats.biography.aliases.filter((a) => a && a !== '-').length > 0 && (
                 <InfoRow label="Aliases" value={data.stats.biography.aliases.join(', ')} />
               )}
@@ -555,6 +574,23 @@ const styles = StyleSheet.create({
     color: COLORS.orange,
     textTransform: 'uppercase',
     letterSpacing: 1,
+  },
+  nameRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  alignmentBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 20,
+  },
+  alignmentBadgeText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   nameDivider: { height: 2, backgroundColor: COLORS.navy, borderRadius: 30, marginTop: 10 },
 
