@@ -21,7 +21,7 @@
 | `src/lib/db/heroes.ts` | Map new columns in `heroRowToCharacterData` |
 | `supabase/functions/get-comicvine-hero/index.ts` | Expand field_list, extract new fields, update DB write |
 | `__tests__/lib/db/heroes.test.ts` | Add new `heroRowToCharacterData` tests + update `baseHero` fixture |
-| `app/character/[id].tsx` | All UI: origin badge, issue count, creators, About block, Enemies & Allies, On Screen, cv_teams |
+| `app/character/[id].tsx` | All UI: origin badge, issue count, creators, About block, Enemies & Allies, On Screen, teams |
 
 ---
 
@@ -43,7 +43,7 @@ ALTER TABLE heroes
   ADD COLUMN IF NOT EXISTS enemies text[],
   ADD COLUMN IF NOT EXISTS friends text[],
   ADD COLUMN IF NOT EXISTS movies text[],
-  ADD COLUMN IF NOT EXISTS cv_teams text[];
+  ADD COLUMN IF NOT EXISTS teams text[];
 ```
 
 - [ ] **Step 2: Apply the migration via Supabase MCP**
@@ -54,7 +54,7 @@ Use the `mcp__supabase__apply_migration` tool with the SQL above. Name it `comic
 
 Use the `mcp__supabase__generate_typescript_types` tool. Overwrite `src/types/database.generated.ts` with the result.
 
-Verify the new columns appear in the generated type for the `heroes` table — look for `description`, `origin`, `issue_count`, `creators`, `enemies`, `friends`, `movies`, `cv_teams`.
+Verify the new columns appear in the generated type for the `heroes` table — look for `description`, `origin`, `issue_count`, `creators`, `enemies`, `friends`, `movies`, `teams`.
 
 - [ ] **Step 4: Commit**
 
@@ -126,7 +126,7 @@ const baseHero: HeroRow = {
   enemies: null,
   friends: null,
   movies: null,
-  cv_teams: null,
+  teams: null,
 };
 ```
 
@@ -183,8 +183,8 @@ describe('heroRowToCharacterData — v2 comicvine fields', () => {
     expect(result.details.movies).toEqual(['Spider-Man: No Way Home (2021)']);
   });
 
-  it('maps cv_teams array to details.teams', () => {
-    const hero: HeroRow = { ...baseHero, cv_teams: ['Avengers', 'S.H.I.E.L.D.'] };
+  it('maps teams array to details.teams', () => {
+    const hero: HeroRow = { ...baseHero, teams: ['Avengers', 'S.H.I.E.L.D.'] };
     const result = heroRowToCharacterData(hero);
     expect(result.details.teams).toEqual(['Avengers', 'S.H.I.E.L.D.']);
   });
@@ -316,7 +316,7 @@ details: {
   enemies: (hero.enemies as string[] | null) ?? null,
   friends: (hero.friends as string[] | null) ?? null,
   movies: (hero.movies as string[] | null) ?? null,
-  teams: (hero.cv_teams as string[] | null) ?? null,
+  teams: (hero.teams as string[] | null) ?? null,
 },
 ```
 
@@ -594,7 +594,7 @@ serve(async (req: Request) => {
         enemies,
         friends,
         movies,
-        cv_teams: teams,
+        teams,
         comicvine_enriched_at: new Date().toISOString(),
       })
       .eq('id', heroId);
@@ -987,7 +987,7 @@ git commit -m "feat(character): add On Screen section listing movie and TV appea
 
 ---
 
-## Task 8: Connections — use cv_teams when available
+## Task 8: Connections — use teams when available
 
 **Files:**
 - Modify: `app/character/[id].tsx`

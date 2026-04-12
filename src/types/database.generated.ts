@@ -24,7 +24,6 @@ export type Database = {
           combat: number | null
           comicvine_enriched_at: string | null
           creators: string[] | null
-          cv_teams: string[] | null
           description: string | null
           durability: number | null
           enemies: string[] | null
@@ -58,6 +57,7 @@ export type Database = {
           speed: number | null
           strength: number | null
           summary: string | null
+          teams: string[] | null
           weight_imperial: string | null
           weight_metric: string | null
         }
@@ -70,7 +70,6 @@ export type Database = {
           combat?: number | null
           comicvine_enriched_at?: string | null
           creators?: string[] | null
-          cv_teams?: string[] | null
           description?: string | null
           durability?: number | null
           enemies?: string[] | null
@@ -104,6 +103,7 @@ export type Database = {
           speed?: number | null
           strength?: number | null
           summary?: string | null
+          teams?: string[] | null
           weight_imperial?: string | null
           weight_metric?: string | null
         }
@@ -116,7 +116,6 @@ export type Database = {
           combat?: number | null
           comicvine_enriched_at?: string | null
           creators?: string[] | null
-          cv_teams?: string[] | null
           description?: string | null
           durability?: number | null
           enemies?: string[] | null
@@ -150,6 +149,7 @@ export type Database = {
           speed?: number | null
           strength?: number | null
           summary?: string | null
+          teams?: string[] | null
           weight_imperial?: string | null
           weight_metric?: string | null
         }
