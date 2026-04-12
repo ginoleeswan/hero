@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { useAuth } from '../../src/hooks/useAuth';
 import { COLORS } from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
@@ -22,6 +23,10 @@ import { DotGrid } from '../../src/components/ui/DotGrid';
 import { AnimatedInput } from '../../src/components/ui/AnimatedInput';
 import { SocialDivider } from '../../src/components/ui/SocialDivider';
 import { GoogleSignInButton } from '../../src/components/ui/GoogleSignInButton';
+
+// Google Sign-In requires the OAuth URL scheme registered at native build time.
+// Expo Go / dev client builds don't have it — hide the button in those environments.
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 const LOGIN_HERO = require('../../assets/images/login-hero.webp');
 
@@ -141,18 +146,21 @@ export default function SignupScreen() {
                   </View>
                 )}
 
-                <GoogleSignInButton
-                  onPress={async () => {
-                    setGoogleLoading(true);
-                    setError(null);
-                    const { error } = await signInWithGoogle();
-                    if (error) setError(error.message);
-                    setGoogleLoading(false);
-                  }}
-                  loading={googleLoading}
-                />
-
-                <SocialDivider label="or continue with email" />
+                {!isExpoGo && (
+                  <>
+                    <GoogleSignInButton
+                      onPress={async () => {
+                        setGoogleLoading(true);
+                        setError(null);
+                        const { error } = await signInWithGoogle();
+                        if (error) setError(error.message);
+                        setGoogleLoading(false);
+                      }}
+                      loading={googleLoading}
+                    />
+                    <SocialDivider label="or continue with email" />
+                  </>
+                )}
 
                 <Text style={styles.label}>Email</Text>
                 <AnimatedInput isFocused={emailFocused}>
