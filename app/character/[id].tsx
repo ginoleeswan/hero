@@ -95,6 +95,34 @@ function AlignmentBadge({ alignment }: { alignment: string | null | undefined })
   );
 }
 
+function AffiliationChips({ value }: { value: string | null | undefined }) {
+  if (!value || value === '-' || value === 'null' || value === '') return null;
+  const chips = value
+    .split(/[,;]/)
+    .map((s) => s.trim())
+    .filter((s) => s && s !== '-' && s !== 'null' && s !== 'none');
+  if (chips.length === 0) return null;
+  const visible = chips.slice(0, 8);
+  const remainder = chips.length - 8;
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>Affiliations:</Text>
+      <View style={styles.chipsWrap}>
+        {visible.map((chip, i) => (
+          <View key={i} style={styles.chip}>
+            <Text style={styles.chipText}>{chip}</Text>
+          </View>
+        ))}
+        {remainder > 0 && (
+          <View style={styles.chip}>
+            <Text style={styles.chipText}>+{remainder} more</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
 export default function CharacterScreen() {
   const {
     id,
@@ -523,10 +551,7 @@ export default function CharacterScreen() {
 
             {/* Connections */}
             <Section title="Connections">
-              <InfoRow
-                label="Group affiliation"
-                value={data.stats.connections['group-affiliation']}
-              />
+              <AffiliationChips value={data.stats.connections['group-affiliation']} />
               <InfoRow label="Relatives" value={data.stats.connections.relatives} />
             </Section>
           </>
@@ -690,6 +715,26 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
     flex: 1,
     textAlign: 'right',
+  },
+
+  // Affiliation chips
+  chipsWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+    justifyContent: 'flex-end',
+  },
+  chip: {
+    backgroundColor: 'rgba(42,45,90,0.07)',
+    borderRadius: 16,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+  },
+  chipText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 11,
+    color: COLORS.navy,
   },
 
   // First issue
