@@ -129,6 +129,25 @@ describe('fetchHeroDetails', () => {
     const result = await fetchHeroDetails('Nobody');
     expect(result.powers).toBeNull();
   });
+
+  it('filters out powers entries without a name string', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        results: [
+          {
+            deck: null,
+            publisher: null,
+            first_appeared_in_issue: null,
+            powers: [{ name: 'Flight' }, { id: 99 }, null, { name: 'Super Strength' }],
+          },
+        ],
+      }),
+    });
+
+    const result = await fetchHeroDetails('Test Hero');
+    expect(result.powers).toEqual(['Flight', 'Super Strength']);
+  });
 });
 
 describe('fetchFirstIssue', () => {

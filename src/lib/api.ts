@@ -109,9 +109,13 @@ export async function fetchHeroDetails(heroName: string): Promise<HeroDetails> {
 
   if (!result) return { summary: null, publisher: null, firstIssueId: null, powers: null };
 
-  const powers: string[] | null = Array.isArray(result.powers) && result.powers.length > 0
-    ? result.powers.map((p: { name: string }) => p.name)
-    : null;
+  const rawPowers = Array.isArray(result.powers)
+    ? result.powers
+        .map((p: unknown) => (p && typeof (p as Record<string, unknown>).name === 'string' ? (p as Record<string, unknown>).name as string : null))
+        .filter((n): n is string => n !== null)
+    : [];
+
+  const powers: string[] | null = rawPowers.length > 0 ? rawPowers : null;
 
   return {
     summary: result.deck ?? null,
