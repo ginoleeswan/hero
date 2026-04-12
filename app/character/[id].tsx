@@ -95,6 +95,29 @@ function AlignmentBadge({ alignment }: { alignment: string | null | undefined })
   );
 }
 
+const ORIGIN_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
+  mutant:        { label: 'Mutant',    bg: 'rgba(139,92,246,0.15)',  color: '#7c3aed' },
+  alien:         { label: 'Alien',     bg: 'rgba(21,161,171,0.15)',  color: COLORS.blue },
+  human:         { label: 'Human',     bg: 'rgba(162,161,155,0.15)', color: COLORS.grey },
+  'god/eternal': { label: 'Eternal',   bg: 'rgba(249,178,34,0.18)',  color: '#b07d00' },
+  radiation:     { label: 'Radiation', bg: 'rgba(231,115,51,0.15)',  color: COLORS.orange },
+  cyborg:        { label: 'Cyborg',    bg: 'rgba(45,45,45,0.12)',    color: COLORS.black },
+  robot:         { label: 'Robot',     bg: 'rgba(45,45,45,0.12)',    color: COLORS.black },
+  training:      { label: 'Training',  bg: 'rgba(80,35,20,0.12)',    color: COLORS.brown },
+  inhuman:       { label: 'Inhuman',   bg: 'rgba(21,161,171,0.15)',  color: COLORS.blue },
+};
+
+function OriginBadge({ origin }: { origin: string | null | undefined }) {
+  if (!origin) return null;
+  const config = ORIGIN_CONFIG[origin.toLowerCase().trim()];
+  if (!config) return null;
+  return (
+    <View style={[styles.alignmentBadge, { backgroundColor: config.bg }]}>
+      <Text style={[styles.alignmentBadgeText, { color: config.color }]}>{config.label}</Text>
+    </View>
+  );
+}
+
 function AffiliationChips({ value }: { value: string | null | undefined }) {
   if (!value || value === '-' || value === 'null' || value === '') return null;
   const chips = value
@@ -266,7 +289,7 @@ export default function CharacterScreen() {
       .then((hero) => {
         if (hero?.enriched_at) {
           setData(heroRowToCharacterData(hero));
-          const needsComicVine = !hero.comicvine_enriched_at || hero.powers === null;
+          const needsComicVine = !hero.comicvine_enriched_at || hero.powers === null || hero.origin === null;
           setComicVineLoading(needsComicVine);
 
           // If ComicVine not enriched yet, or powers column not yet populated, fetch in background
@@ -481,6 +504,7 @@ export default function CharacterScreen() {
                 ) : null}
                 <View style={styles.nameRowRight}>
                   <AlignmentBadge alignment={data.stats.biography.alignment} />
+                  <OriginBadge origin={data.details.origin} />
                   <Text style={styles.heroPublisher}>{data.stats.biography.publisher}</Text>
                 </View>
               </View>
@@ -490,6 +514,20 @@ export default function CharacterScreen() {
                 <Skeleton width={50} height={30} borderRadius={4} />
               </View>
             )}
+            {data && ((data.details.issueCount ?? 0) > 0 || (data.details.creators?.length ?? 0) > 0) ? (
+              <View style={styles.heroMeta}>
+                {(data.details.issueCount ?? 0) > 0 ? (
+                  <Text style={styles.heroMetaText}>
+                    Featured in {data.details.issueCount!.toLocaleString()} issues
+                  </Text>
+                ) : null}
+                {data.details.creators?.length ? (
+                  <Text style={styles.heroMetaText}>
+                    Created by {data.details.creators.join(' & ')}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
             <View style={styles.nameDivider} />
           </View>
         ) : null}
@@ -699,6 +737,16 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   nameDivider: { height: 2, backgroundColor: COLORS.navy, borderRadius: 30, marginTop: 10 },
+  heroMeta: {
+    marginTop: 6,
+    gap: 2,
+  },
+  heroMetaText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 11,
+    color: COLORS.navy,
+    opacity: 0.5,
+  },
 
   // Summary
   summaryBlock: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 6 },
