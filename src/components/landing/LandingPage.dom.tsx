@@ -260,38 +260,104 @@ const CSS = `
   footer img { height:22px; opacity:0.7; }
   footer p { font-size:13px; color:var(--muted); }
 
+  /* Hero strip — mobile only */
+  .hero-strip { display:none; }
+
   @media (max-width:1024px) {
     .features-grid { grid-template-columns:repeat(2,1fr); }
     .hero-mosaic { grid-template-columns:repeat(4,1fr); }
     .hero-mosaic .mosaic-card:last-child { display:none; }
     .stat-item { padding:0 28px; }
   }
+
   @media (max-width:768px) {
-    nav { padding:16px 20px; }
-    .section,.screenshots,.showcase,.cta-section { padding:72px 20px; }
-    .features-grid { grid-template-columns:1fr; }
-    .screenshots-layout { grid-template-columns:1fr; }
-    .screenshots-phones { order:-1; }
-    .phone-second { display:none; }
-    .phone-main { width:min(240px,60vw); transform:none; }
-    .hero-mosaic { grid-template-columns:repeat(3,1fr); }
-    .hero-mosaic .mosaic-card:nth-child(n+4) { display:none; }
-    .stats { flex-wrap:wrap; gap:24px; }
-    .stat-item { border-right:none; padding:0 24px; }
+    /* Nav */
+    nav { padding:14px 20px; }
+
+    /* Hero — tighter, no min-height */
+    .hero { padding:88px 20px 52px; min-height:auto; }
     .hc1,.hc2,.hc3,.hc4,.hc5,.hc6,.hc7,.hc8,.hc9,.hc10 { display:none; }
+    .scroll-hint { display:none; }
+
+    /* Hero strip — bleeds to viewport edges */
+    .hero-strip {
+      display:flex; overflow-x:auto; gap:10px;
+      margin: 28px -20px 0; padding: 0 20px;
+      scrollbar-width:none;
+    }
+    .hero-strip::-webkit-scrollbar { display:none; }
+    .hero-strip-card {
+      flex-shrink:0; width:88px; height:124px; border-radius:12px;
+      overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.5);
+    }
+    .hero-strip-card img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
+
+    /* Stats — 2×2 grid */
+    .stats { display:grid; grid-template-columns:1fr 1fr; padding:0; gap:0; }
+    .stat-item { border-right:none; border-bottom:1px solid var(--border); padding:24px 16px; align-items:center; }
+    .stat-item:nth-child(odd)  { border-right:1px solid var(--border); }
+    .stat-item:nth-child(3),
+    .stat-item:nth-child(4)    { border-bottom:none; }
+    .stat-num  { font-size:22px; }
+    .stat-label { font-size:11px; }
+
+    /* Sections */
+    .section,.screenshots,.showcase,.cta-section { padding:64px 20px; }
+    .section-heading { font-size:clamp(24px,6vw,34px); margin-bottom:16px; }
+    .section-sub { font-size:15px; }
+
+    /* Features — grid layout: icon left, title+desc right */
+    .features-grid { grid-template-columns:1fr; gap:10px; margin-top:36px; }
+    .feature-card {
+      display:grid; grid-template-columns:40px 1fr;
+      grid-template-rows:auto auto; column-gap:14px; row-gap:4px; padding:18px;
+    }
+    .feature-icon {
+      grid-row:1/3; align-self:start; margin-bottom:0;
+      width:40px; height:40px; border-radius:10px;
+    }
+    .feature-title { grid-column:2; font-size:15px; margin-bottom:0; align-self:end; }
+    .feature-desc  { grid-column:2; font-size:13px; align-self:start; }
+
+    /* Screenshots */
+    .screenshots-layout { grid-template-columns:1fr; gap:36px; }
+    .screenshots-phones { order:-1; justify-content:center; }
+    .phone-second { display:none; }
+    .phone-main { width:min(240px,62vw); transform:none; }
+    .screenshots-text { text-align:center; }
+    .screenshots-text .section-sub { margin-bottom:24px; }
+    .feature-list li { justify-content:center; }
+
+    /* Mosaic — 3 cols, 2 rows */
+    .hero-mosaic { grid-template-columns:repeat(3,1fr); gap:8px; margin-top:36px; }
+    .hero-mosaic .mosaic-card { display:block; }
+    .hero-mosaic .mosaic-card:nth-child(n+7) { display:none; }
+    .mosaic-name { font-size:11px; bottom:8px; }
+
+    /* Final CTA */
+    .cta-sub { font-size:15px; }
   }
+
   @media (max-width:480px) {
-    .hero-ctas { flex-direction:column; align-items:center; }
-    .hero-mosaic { grid-template-columns:repeat(2,1fr); }
-    footer { justify-content:center; text-align:center; }
+    /* Full-width hero CTAs */
+    .hero-ctas { flex-direction:column; align-items:stretch; width:100%; max-width:300px; margin:0 auto; }
+    .btn-primary,.btn-secondary { justify-content:center; }
+
+    /* Store badges */
+    .cta-buttons { flex-direction:column; align-items:center; width:100%; }
+    .app-store-badge { width:100%; max-width:260px; justify-content:center; }
+
+    /* Footer */
+    footer { justify-content:center; text-align:center; flex-direction:column; align-items:center; }
   }
+
   @media (prefers-reduced-motion:reduce) {
     .hero-card,.scroll-hint,.marquee-track { animation:none; }
     * { transition-duration:0.01ms !important; }
   }
 `;
 
-export default function LandingPage({ dom }: { dom?: import('expo/dom').DOMProps }) {
+export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DOMProps }) {
   const router = useRouter();
 
   return (
@@ -394,6 +460,15 @@ export default function LandingPage({ dom }: { dom?: import('expo/dom').DOMProps
               Try on Web →
             </button>
           </div>
+        </div>
+
+        {/* Mobile hero strip */}
+        <div className="hero-strip" aria-hidden="true">
+          {[spiderman, ironman, batman, deadpool, wonderWoman, thor, wolverine, blackPanther].map((src, i) => (
+            <div key={i} className="hero-strip-card">
+              <img src={src} alt="" loading="lazy" />
+            </div>
+          ))}
         </div>
 
         <div className="scroll-hint" aria-hidden="true">
