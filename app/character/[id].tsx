@@ -201,13 +201,14 @@ function CharacterChips({
   chips: string[];
   chipStyle: 'enemy' | 'ally';
 }) {
+  if (chips.length === 0) return null;
   const visible = chips.slice(0, 8);
   const remainder = chips.length - 8;
   const isEnemy = chipStyle === 'enemy';
   return (
     <View style={styles.characterChipsBlock}>
       <Text style={styles.characterChipsLabel}>{label}</Text>
-      <View style={styles.chipsWrap}>
+      <View style={styles.characterChipsWrap}>
         {visible.map((name, i) => (
           <View
             key={i}
@@ -931,6 +932,13 @@ const styles = StyleSheet.create({
   },
   chipTextEnemy: { color: COLORS.red },
   chipTextAlly: { color: COLORS.green },
+
+  // Character enemy/ally chips
+  characterChipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
 
   // Affiliation chips
   chipsWrap: {
