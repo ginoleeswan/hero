@@ -175,6 +175,23 @@ function RelativesList({ value }: { value: string | null | undefined }) {
   );
 }
 
+function AboutBlock({ description }: { description: string }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <View style={styles.aboutBlock}>
+      <Text style={styles.aboutText} numberOfLines={expanded ? undefined : 4}>
+        {description}
+      </Text>
+      <TouchableOpacity
+        onPress={() => setExpanded((v) => !v)}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Text style={styles.aboutToggle}>{expanded ? 'Show less' : 'Read more'}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export default function CharacterScreen() {
   const {
     id,
@@ -551,6 +568,10 @@ export default function CharacterScreen() {
               </View>
             ) : null}
 
+            {!comicVineLoading && data.details.description ? (
+              <AboutBlock description={data.details.description} />
+            ) : null}
+
             {/* Power Stats — circular dials, 3×2 grid */}
             <Section title="Power Stats">
               <View style={styles.statsCard}>
@@ -750,6 +771,23 @@ const styles = StyleSheet.create({
 
   // Summary
   summaryBlock: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 6 },
+  aboutBlock: {
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+  },
+  aboutText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 13,
+    color: COLORS.navy,
+    lineHeight: 20,
+    opacity: 0.8,
+  },
+  aboutToggle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 12,
+    color: COLORS.orange,
+    marginTop: 6,
+  },
   summary: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
