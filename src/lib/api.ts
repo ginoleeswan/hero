@@ -96,16 +96,47 @@ export async function fetchHeroDetails(heroId: string, heroName: string): Promis
     publisher: string | null;
     firstIssueId: string | null;
     powers: string[] | null;
+    description: string | null;
+    origin: string | null;
+    issueCount: number | null;
+    creators: string[] | null;
+    enemies: string[] | null;
+    friends: string[] | null;
+    movies: string[] | null;
+    teams: string[] | null;
   }>('get-comicvine-hero', { body: { heroId, heroName } });
 
   if (error) console.warn('[fetchHeroDetails] error:', error.message, error);
-  if (error || !data) return { summary: null, publisher: null, firstIssueId: null, powers: null };
+  if (error || !data) {
+    return {
+      summary: null,
+      publisher: null,
+      firstIssueId: null,
+      powers: null,
+      description: null,
+      origin: null,
+      issueCount: null,
+      creators: null,
+      enemies: null,
+      friends: null,
+      movies: null,
+      teams: null,
+    };
+  }
 
   return {
     summary: data.summary ?? null,
     publisher: data.publisher ?? null,
     firstIssueId: data.firstIssueId ?? null,
     powers: data.powers ?? null,
+    description: data.description ?? null,
+    origin: data.origin ?? null,
+    issueCount: data.issueCount ?? null,
+    creators: data.creators ?? null,
+    enemies: data.enemies ?? null,
+    friends: data.friends ?? null,
+    movies: data.movies ?? null,
+    teams: data.teams ?? null,
   };
 }
 

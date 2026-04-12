@@ -216,7 +216,15 @@ export function heroRowToCharacterData(hero: Hero): CharacterData {
       summary: hero.summary ?? null,
       publisher: hero.publisher ?? null,
       firstIssueId: null,
-      powers: hero.powers ?? null,
+      powers: (hero.powers as string[] | null) ?? null,
+      description: hero.description ?? null,
+      origin: hero.origin ?? null,
+      issueCount: hero.issue_count ?? null,
+      creators: (hero.creators as string[] | null) ?? null,
+      enemies: (hero.enemies as string[] | null) ?? null,
+      friends: (hero.friends as string[] | null) ?? null,
+      movies: (hero.movies as string[] | null) ?? null,
+      teams: (hero.teams as string[] | null) ?? null,
     },
     firstIssue: hero.first_issue_image_url
       ? { id: '', imageUrl: hero.first_issue_image_url, name: null, coverDate: null }

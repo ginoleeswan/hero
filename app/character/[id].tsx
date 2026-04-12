@@ -230,7 +230,20 @@ export default function CharacterScreen() {
         .then((stats) => {
           setData({
             stats,
-            details: { summary: null, publisher: null, firstIssueId: null, powers: null },
+            details: {
+              summary: null,
+              publisher: null,
+              firstIssueId: null,
+              powers: null,
+              description: null,
+              origin: null,
+              issueCount: null,
+              creators: null,
+              enemies: null,
+              friends: null,
+              movies: null,
+              teams: null,
+            },
             firstIssue: null,
           });
           fetchHeroDetails(stats.id, stats.name)

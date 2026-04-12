@@ -172,6 +172,14 @@ describe('heroRowToCharacterData', () => {
     comicvine_enriched_at: '2026-04-04T00:00:00Z',
     enriched_at: '2026-04-04T00:00:00Z',
     portrait_url: 'https://storage.example.com/portraits/620.jpg',
+    description: null,
+    origin: null,
+    issue_count: null,
+    creators: null,
+    enemies: null,
+    friends: null,
+    movies: null,
+    teams: null,
   } satisfies Hero;
 
   it('maps powerstats to string values', () => {
@@ -334,6 +342,14 @@ const baseHero: HeroRow = {
   category: null,
   enriched_at: null,
   comicvine_enriched_at: null,
+  description: null,
+  origin: null,
+  issue_count: null,
+  creators: null,
+  enemies: null,
+  friends: null,
+  movies: null,
+  teams: null,
 };
 
 describe('heroRowToCharacterData — powers mapping', () => {
@@ -347,6 +363,75 @@ describe('heroRowToCharacterData — powers mapping', () => {
     const hero: HeroRow = { ...baseHero, powers: null };
     const result = heroRowToCharacterData(hero);
     expect(result.details.powers).toBeNull();
+  });
+});
+
+// ─── heroRowToCharacterData — v2 comicvine fields ────────────────────────────
+
+describe('heroRowToCharacterData — v2 comicvine fields', () => {
+  it('maps description to details.description', () => {
+    const hero: HeroRow = { ...baseHero, description: 'A bitten spider gave him powers.' };
+    const result = heroRowToCharacterData(hero);
+    expect(result.details.description).toBe('A bitten spider gave him powers.');
+  });
+
+  it('maps null description to null', () => {
+    const result = heroRowToCharacterData({ ...baseHero, description: null });
+    expect(result.details.description).toBeNull();
+  });
+
+  it('maps origin to details.origin', () => {
+    const hero: HeroRow = { ...baseHero, origin: 'Mutant' };
+    const result = heroRowToCharacterData(hero);
+    expect(result.details.origin).toBe('Mutant');
+  });
+
+  it('maps issue_count to details.issueCount', () => {
+    const hero: HeroRow = { ...baseHero, issue_count: 4891 };
+    const result = heroRowToCharacterData(hero);
+    expect(result.details.issueCount).toBe(4891);
+  });
+
+  it('maps creators array to details.creators', () => {
+    const hero: HeroRow = { ...baseHero, creators: ['Stan Lee', 'Steve Ditko'] };
+    const result = heroRowToCharacterData(hero);
+    expect(result.details.creators).toEqual(['Stan Lee', 'Steve Ditko']);
+  });
+
+  it('maps enemies array to details.enemies', () => {
+    const hero: HeroRow = { ...baseHero, enemies: ['Green Goblin', 'Venom'] };
+    const result = heroRowToCharacterData(hero);
+    expect(result.details.enemies).toEqual(['Green Goblin', 'Venom']);
+  });
+
+  it('maps friends array to details.friends', () => {
+    const hero: HeroRow = { ...baseHero, friends: ['Iron Man', 'Captain America'] };
+    const result = heroRowToCharacterData(hero);
+    expect(result.details.friends).toEqual(['Iron Man', 'Captain America']);
+  });
+
+  it('maps movies array to details.movies', () => {
+    const hero: HeroRow = { ...baseHero, movies: ['Spider-Man: No Way Home (2021)'] };
+    const result = heroRowToCharacterData(hero);
+    expect(result.details.movies).toEqual(['Spider-Man: No Way Home (2021)']);
+  });
+
+  it('maps teams array to details.teams', () => {
+    const hero: HeroRow = { ...baseHero, teams: ['Avengers', 'S.H.I.E.L.D.'] };
+    const result = heroRowToCharacterData(hero);
+    expect(result.details.teams).toEqual(['Avengers', 'S.H.I.E.L.D.']);
+  });
+
+  it('maps all null v2 fields to null', () => {
+    const result = heroRowToCharacterData(baseHero);
+    expect(result.details.description).toBeNull();
+    expect(result.details.origin).toBeNull();
+    expect(result.details.issueCount).toBeNull();
+    expect(result.details.creators).toBeNull();
+    expect(result.details.enemies).toBeNull();
+    expect(result.details.friends).toBeNull();
+    expect(result.details.movies).toBeNull();
+    expect(result.details.teams).toBeNull();
   });
 });
 

@@ -62,6 +62,14 @@ export interface HeroDetails {
   publisher: string | null;
   firstIssueId: string | null;
   powers: string[] | null;
+  description: string | null;
+  origin: string | null;
+  issueCount: number | null;
+  creators: string[] | null;
+  enemies: string[] | null;
+  friends: string[] | null;
+  movies: string[] | null;
+  teams: string[] | null;
 }
 
 export interface FirstIssue {
