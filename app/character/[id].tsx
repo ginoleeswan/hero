@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, Animated, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, Animated, StyleSheet, TouchableOpacity, Dimensions, useWindowDimensions } from 'react-native';
+import RenderHTML from 'react-native-render-html';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -175,13 +176,31 @@ function RelativesList({ value }: { value: string | null | undefined }) {
   );
 }
 
+const ABOUT_HTML_STYLES = {
+  p:  { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.navy, lineHeight: 20, marginBottom: 6, opacity: 0.85 },
+  h4: { fontFamily: 'Flame-Regular',     fontSize: 13, color: COLORS.navy, marginTop: 10, marginBottom: 4 },
+  h3: { fontFamily: 'Flame-Regular',     fontSize: 14, color: COLORS.navy, marginTop: 12, marginBottom: 4 },
+  li: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.navy, lineHeight: 20, opacity: 0.85 },
+  a:  { color: COLORS.orange },
+};
+const ABOUT_SYSTEM_FONTS = ['FlameSans-Regular', 'Flame-Regular'];
+const COLLAPSED_HEIGHT = 120; // ~4 lines
+
 function AboutBlock({ description }: { description: string }) {
   const [expanded, setExpanded] = useState(false);
+  const { width } = useWindowDimensions();
+  const contentWidth = width - 40; // 20px padding each side
   return (
     <View style={styles.aboutBlock}>
-      <Text style={styles.aboutText} numberOfLines={expanded ? undefined : 4}>
-        {description}
-      </Text>
+      <View style={expanded ? undefined : styles.aboutCollapsed}>
+        <RenderHTML
+          contentWidth={contentWidth}
+          source={{ html: description }}
+          tagsStyles={ABOUT_HTML_STYLES}
+          systemFonts={ABOUT_SYSTEM_FONTS}
+          enableExperimentalBRCollapsing
+        />
+      </View>
       <TouchableOpacity
         onPress={() => setExpanded((v) => !v)}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -570,7 +589,14 @@ export default function CharacterScreen() {
                 <Skeleton width={50} height={30} borderRadius={4} />
               </View>
             )}
-            {data && ((data.details.issueCount ?? 0) > 0 || (data.details.creators?.length ?? 0) > 0) ? (
+            {data && comicVineLoading ? (
+              <SkeletonProvider>
+                <View style={styles.heroMeta}>
+                  <Skeleton width={160} height={10} borderRadius={4} />
+                </View>
+              </SkeletonProvider>
+            ) : null}
+            {data && !comicVineLoading && ((data.details.issueCount ?? 0) > 0 || (data.details.creators?.length ?? 0) > 0) ? (
               <View style={styles.heroMeta}>
                 {(data.details.issueCount ?? 0) > 0 ? (
                   <Text style={styles.heroMetaText}>
@@ -607,7 +633,16 @@ export default function CharacterScreen() {
               </View>
             ) : null}
 
-            {!comicVineLoading && data.details.description ? (
+            {comicVineLoading ? (
+              <SkeletonProvider>
+                <View style={styles.aboutBlock}>
+                  <Skeleton width="100%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
+                  <Skeleton width="92%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
+                  <Skeleton width="80%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
+                  <Skeleton width="70%" height={12} borderRadius={5} />
+                </View>
+              </SkeletonProvider>
+            ) : data.details.description ? (
               <AboutBlock description={data.details.description} />
             ) : null}
 
@@ -682,7 +717,24 @@ export default function CharacterScreen() {
             </Section>
 
             {/* Enemies & Allies */}
-            {(data.details.enemies?.length || data.details.friends?.length) ? (
+            {comicVineLoading ? (
+              <SkeletonProvider>
+                <Section title="Enemies & Allies">
+                  <Skeleton width={50} height={9} borderRadius={4} style={{ marginBottom: 8 }} />
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                    {[72, 54, 90, 66, 80].map((w, i) => (
+                      <Skeleton key={i} width={w} height={28} borderRadius={14} />
+                    ))}
+                  </View>
+                  <Skeleton width={40} height={9} borderRadius={4} style={{ marginBottom: 8 }} />
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                    {[60, 88, 70, 50, 76].map((w, i) => (
+                      <Skeleton key={i} width={w} height={28} borderRadius={14} />
+                    ))}
+                  </View>
+                </Section>
+              </SkeletonProvider>
+            ) : (data.details.enemies?.length || data.details.friends?.length) ? (
               <Section title="Enemies & Allies">
                 {data.details.enemies?.length ? (
                   <CharacterChips label="Enemies" chips={data.details.enemies} chipStyle="enemy" />
@@ -694,7 +746,21 @@ export default function CharacterScreen() {
             ) : null}
 
             {/* On Screen */}
-            {data.details.movies?.length ? (
+            {comicVineLoading ? (
+              <SkeletonProvider>
+                <Section title="On Screen">
+                  {[0, 1, 2].map((i) => (
+                    <View key={i} style={[styles.movieRow, { alignItems: 'center' }]}>
+                      <Skeleton width={28} height={28} borderRadius={6} />
+                      <View style={{ gap: 5 }}>
+                        <Skeleton width={140} height={12} borderRadius={4} />
+                        <Skeleton width={36} height={10} borderRadius={4} />
+                      </View>
+                    </View>
+                  ))}
+                </Section>
+              </SkeletonProvider>
+            ) : data.details.movies?.length ? (
               <Section title="On Screen">
                 {data.details.movies.map((entry, i) => {
                   const match = entry.match(/^(.+?)\s*\((\d{4})\)$/);
@@ -851,6 +917,10 @@ const styles = StyleSheet.create({
   aboutBlock: {
     paddingHorizontal: 20,
     paddingBottom: 8,
+  },
+  aboutCollapsed: {
+    maxHeight: 120,
+    overflow: 'hidden',
   },
   aboutText: {
     fontFamily: 'FlameSans-Regular',

@@ -15,17 +15,9 @@ const json = (data: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
   });
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+// Description is stored and returned as raw HTML so clients can render
+// it with formatting (headers, paragraphs, lists from ComicVine).
+// Trim surrounding whitespace only.
 
 const NULL_RESPONSE = {
   summary: null,
@@ -116,10 +108,9 @@ serve(async (req: Request) => {
           : [];
         powers = rawPowers.length > 0 ? rawPowers : null;
 
-        // description — strip HTML
-        const rawDesc: string = typeof d.description === 'string' ? d.description : '';
-        const stripped = rawDesc ? stripHtml(rawDesc) : '';
-        description = stripped.length > 0 ? stripped : null;
+        // description — raw HTML, trimmed (clients render with their own HTML renderer)
+        const rawDesc: string = typeof d.description === 'string' ? d.description.trim() : '';
+        description = rawDesc.length > 0 ? rawDesc : null;
 
         // origin
         origin = typeof d.origin?.name === 'string' ? d.origin.name : null;
