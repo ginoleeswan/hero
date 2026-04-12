@@ -9,7 +9,7 @@ import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import * as Haptics from 'expo-haptics';
 import { fetchHeroStats, fetchHeroDetails, fetchFirstIssue } from '../../src/lib/api';
 import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
-import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
+import { isFavourited, addFavourite, removeFavourite, getHeroFavouriteCount } from '../../src/lib/db/favourites';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useRecordView } from '../../src/hooks/useViewHistory';
 import { heroImageSource, HERO_IMAGES } from '../../src/constants/heroImages';
@@ -115,6 +115,7 @@ export default function CharacterScreen() {
   const [error, setError] = useState<string | null>(null);
   const [favourited, setFavourited] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
+  const [favCount, setFavCount] = useState<number>(0);
 
   const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -234,6 +235,13 @@ export default function CharacterScreen() {
       .catch(() => {});
   }, [user, id]);
 
+  useEffect(() => {
+    if (!id) return;
+    getHeroFavouriteCount(id)
+      .then(setFavCount)
+      .catch(() => {});
+  }, [id]);
+
   const toggleFavourite = useCallback(async () => {
     if (!user || !id || favLoading) return;
     setFavLoading(true);
@@ -244,6 +252,7 @@ export default function CharacterScreen() {
     );
     try {
       await (next ? addFavourite(user.id, id) : removeFavourite(user.id, id));
+      getHeroFavouriteCount(id).then(setFavCount).catch(() => {});
     } catch {
       setFavourited(!next);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -329,9 +338,12 @@ export default function CharacterScreen() {
                 >
                   <Ionicons
                     name={favourited ? 'heart' : 'heart-outline'}
-                    size={22}
+                    size={20}
                     color={favourited ? COLORS.red : undefined}
                   />
+                  {favCount > 0 ? (
+                    <Text style={styles.favCount}>{favCount > 999 ? '999+' : String(favCount)}</Text>
+                  ) : null}
                 </TouchableOpacity>
               )
             : undefined,
@@ -537,9 +549,16 @@ const styles = StyleSheet.create({
   heroImage: { width: '100%', height: '100%' },
   headerBtn: {
     width: 36,
-    height: 36,
+    minHeight: 36,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  favCount: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 9,
+    color: COLORS.grey,
+    textAlign: 'center',
+    lineHeight: 10,
   },
   headerTitle: {
     fontFamily: 'Flame-Regular',
