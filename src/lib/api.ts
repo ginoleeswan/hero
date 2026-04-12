@@ -92,14 +92,13 @@ export async function fetchHeroStats(heroId: string): Promise<HeroStats> {
 }
 
 export async function fetchHeroDetails(heroName: string): Promise<HeroDetails> {
-  if (Platform.OS === 'web')
-    return { summary: null, publisher: null, firstIssueId: null, powers: null };
+  if (Platform.OS === 'web') return { summary: null, publisher: null, firstIssueId: null, powers: null };
 
   const params = new URLSearchParams({
     api_key: COMICVINE_API_KEY,
     format: 'json',
     filter: `name:${heroName}`,
-    field_list: 'deck,publisher,first_appeared_in_issue',
+    field_list: 'deck,publisher,first_appeared_in_issue,powers',
     limit: '1',
   });
 
@@ -110,13 +109,17 @@ export async function fetchHeroDetails(heroName: string): Promise<HeroDetails> {
 
   if (!result) return { summary: null, publisher: null, firstIssueId: null, powers: null };
 
+  const powers: string[] | null = Array.isArray(result.powers) && result.powers.length > 0
+    ? result.powers.map((p: { name: string }) => p.name)
+    : null;
+
   return {
     summary: result.deck ?? null,
     publisher: result.publisher?.name ?? null,
     firstIssueId: result.first_appeared_in_issue?.id
       ? String(result.first_appeared_in_issue.id)
       : null,
-    powers: null,
+    powers,
   };
 }
 

@@ -81,6 +81,54 @@ describe('fetchHeroDetails', () => {
     const result = await fetchHeroDetails('Unknown');
     expect(result).toEqual({ summary: null, publisher: null, firstIssueId: null, powers: null });
   });
+
+  it('parses powers array from ComicVine response', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        results: [
+          {
+            deck: 'A hero of great power.',
+            publisher: { name: 'Marvel' },
+            first_appeared_in_issue: null,
+            powers: [{ name: 'Flight' }, { name: 'Super Strength' }, { name: 'Telepathy' }],
+          },
+        ],
+      }),
+    });
+
+    const result = await fetchHeroDetails('Spider-Man');
+    expect(result.powers).toEqual(['Flight', 'Super Strength', 'Telepathy']);
+  });
+
+  it('returns null powers when ComicVine returns no powers array', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        results: [
+          {
+            deck: null,
+            publisher: null,
+            first_appeared_in_issue: null,
+            powers: null,
+          },
+        ],
+      }),
+    });
+
+    const result = await fetchHeroDetails('Unknown Hero');
+    expect(result.powers).toBeNull();
+  });
+
+  it('returns null powers when no results', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ results: [] }),
+    });
+
+    const result = await fetchHeroDetails('Nobody');
+    expect(result.powers).toBeNull();
+  });
 });
 
 describe('fetchFirstIssue', () => {
