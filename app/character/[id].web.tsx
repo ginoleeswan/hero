@@ -54,7 +54,7 @@ export default function WebCharacterScreen() {
         .then((stats) => {
           setData({
             stats,
-            details: { summary: null, publisher: null, firstIssueId: null },
+            details: { summary: null, publisher: null, firstIssueId: null, powers: null },
             firstIssue: null,
           });
           fetchHeroDetails(stats.name)
