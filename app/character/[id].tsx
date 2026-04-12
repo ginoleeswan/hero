@@ -192,6 +192,44 @@ function AboutBlock({ description }: { description: string }) {
   );
 }
 
+function CharacterChips({
+  label,
+  chips,
+  chipStyle,
+}: {
+  label: string;
+  chips: string[];
+  chipStyle: 'enemy' | 'ally';
+}) {
+  const visible = chips.slice(0, 8);
+  const remainder = chips.length - 8;
+  const isEnemy = chipStyle === 'enemy';
+  return (
+    <View style={styles.characterChipsBlock}>
+      <Text style={styles.characterChipsLabel}>{label}</Text>
+      <View style={styles.chipsWrap}>
+        {visible.map((name, i) => (
+          <View
+            key={i}
+            style={[styles.chip, isEnemy ? styles.chipEnemy : styles.chipAlly]}
+          >
+            <Text style={[styles.chipText, isEnemy ? styles.chipTextEnemy : styles.chipTextAlly]}>
+              {name}
+            </Text>
+          </View>
+        ))}
+        {remainder > 0 && (
+          <View style={[styles.chip, isEnemy ? styles.chipEnemy : styles.chipAlly]}>
+            <Text style={[styles.chipText, isEnemy ? styles.chipTextEnemy : styles.chipTextAlly]}>
+              +{remainder} more
+            </Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
 export default function CharacterScreen() {
   const {
     id,
@@ -642,6 +680,18 @@ export default function CharacterScreen() {
               )}
             </Section>
 
+            {/* Enemies & Allies */}
+            {(data.details.enemies?.length || data.details.friends?.length) ? (
+              <Section title="Enemies & Allies">
+                {data.details.enemies?.length ? (
+                  <CharacterChips label="Enemies" chips={data.details.enemies} chipStyle="enemy" />
+                ) : null}
+                {data.details.friends?.length ? (
+                  <CharacterChips label="Allies" chips={data.details.friends} chipStyle="ally" />
+                ) : null}
+              </Section>
+            ) : null}
+
             {/* Appearance */}
             <Section title="Appearance">
               <InfoRow label="Gender" value={data.stats.appearance.gender} />
@@ -857,6 +907,30 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'right',
   },
+
+  // Character chips (Enemies & Allies)
+  characterChipsBlock: {
+    marginBottom: 10,
+  },
+  characterChipsLabel: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 10,
+    color: COLORS.navy,
+    opacity: 0.5,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  chipEnemy: {
+    backgroundColor: 'rgba(181,48,43,0.08)',
+    borderColor: 'rgba(181,48,43,0.2)',
+  },
+  chipAlly: {
+    backgroundColor: 'rgba(99,169,54,0.08)',
+    borderColor: 'rgba(99,169,54,0.2)',
+  },
+  chipTextEnemy: { color: COLORS.red },
+  chipTextAlly: { color: COLORS.green },
 
   // Affiliation chips
   chipsWrap: {
