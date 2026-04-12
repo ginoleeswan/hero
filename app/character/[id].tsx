@@ -470,18 +470,7 @@ export default function CharacterScreen() {
               loading={comicVineLoading}
             />
 
-            {/* Overview */}
-            <Section title="Overview">
-              <InfoRow label="Full name" value={data.stats.biography['full-name']} />
-              <InfoRow label="Alter egos" value={data.stats.biography['alter-egos']} />
-              <InfoRow label="Place of birth" value={data.stats.biography['place-of-birth']} />
-              <InfoRow label="First appearance" value={data.stats.biography['first-appearance']} />
-              {data.stats.biography.aliases.filter((a) => a && a !== '-').length > 0 && (
-                <InfoRow label="Aliases" value={data.stats.biography.aliases.join(', ')} />
-              )}
-            </Section>
-
-            {/* First issue */}
+            {/* First Appearance — moved before Overview */}
             {data.firstIssue?.imageUrl ? (
               <Section title="First Appearance">
                 <View style={styles.comicContainer}>
@@ -494,8 +483,27 @@ export default function CharacterScreen() {
                     transition={200}
                   />
                 </View>
+                {data.firstIssue.name ? (
+                  <Text style={styles.comicTitle}>{data.firstIssue.name}</Text>
+                ) : null}
+                {data.firstIssue.coverDate ? (
+                  <Text style={styles.comicYear}>
+                    {new Date(data.firstIssue.coverDate).getFullYear()}
+                  </Text>
+                ) : null}
               </Section>
             ) : null}
+
+            {/* Overview */}
+            <Section title="Overview">
+              <InfoRow label="Full name" value={data.stats.biography['full-name']} />
+              <InfoRow label="Alter egos" value={data.stats.biography['alter-egos']} />
+              <InfoRow label="Place of birth" value={data.stats.biography['place-of-birth']} />
+              <InfoRow label="First appearance" value={data.stats.biography['first-appearance']} />
+              {data.stats.biography.aliases.filter((a) => a && a !== '-').length > 0 && (
+                <InfoRow label="Aliases" value={data.stats.biography.aliases.join(', ')} />
+              )}
+            </Section>
 
             {/* Appearance */}
             <Section title="Appearance">
@@ -696,6 +704,20 @@ const styles = StyleSheet.create({
     elevation: 13,
   },
   comicImage: { width: 160, height: 240 },
+  comicTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 13,
+    color: COLORS.navy,
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  comicYear: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 11,
+    color: COLORS.grey,
+    textAlign: 'center',
+    marginTop: 3,
+  },
   errorText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 15,
