@@ -783,7 +783,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   aboutToggle: {
-    fontFamily: 'Flame-Regular',
+    fontFamily: 'FlameSans-Regular',
     fontSize: 12,
     color: COLORS.orange,
     marginTop: 6,
