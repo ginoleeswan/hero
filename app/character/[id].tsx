@@ -176,15 +176,18 @@ function RelativesList({ value }: { value: string | null | undefined }) {
   );
 }
 
-const ABOUT_HTML_STYLES = {
-  p:  { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.navy, lineHeight: 20, marginBottom: 6, opacity: 0.85 },
-  h4: { fontFamily: 'Flame-Regular',     fontSize: 13, color: COLORS.navy, marginTop: 10, marginBottom: 4 },
-  h3: { fontFamily: 'Flame-Regular',     fontSize: 14, color: COLORS.navy, marginTop: 12, marginBottom: 4 },
-  li: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.navy, lineHeight: 20, opacity: 0.85 },
+const ABOUT_TAG_STYLES = {
+  p:  { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.navy, lineHeight: 20, marginBottom: 6 },
+  h4: { fontFamily: 'Flame-Regular',     fontSize: 13, color: COLORS.navy, marginTop: 10, marginBottom: 2 },
+  h3: { fontFamily: 'Flame-Regular',     fontSize: 14, color: COLORS.navy, marginTop: 12, marginBottom: 2 },
+  h2: { fontFamily: 'Flame-Regular',     fontSize: 15, color: COLORS.navy, marginTop: 14, marginBottom: 2 },
+  li: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.navy, lineHeight: 20 },
   a:  { color: COLORS.orange },
 };
 const ABOUT_SYSTEM_FONTS = ['FlameSans-Regular', 'Flame-Regular'];
-const COLLAPSED_HEIGHT = 120; // ~4 lines
+// Drop tags that can't render in React Native
+const ABOUT_IGNORED_TAGS = ['img', 'figure', 'figcaption', 'table', 'thead', 'tbody', 'tr', 'td', 'th'];
+const COLLAPSED_HEIGHT = 220;
 
 function AboutBlock({ description }: { description: string }) {
   const [expanded, setExpanded] = useState(false);
@@ -196,16 +199,16 @@ function AboutBlock({ description }: { description: string }) {
         <RenderHTML
           contentWidth={contentWidth}
           source={{ html: description }}
-          tagsStyles={ABOUT_HTML_STYLES}
+          tagsStyles={ABOUT_TAG_STYLES}
           systemFonts={ABOUT_SYSTEM_FONTS}
-          enableExperimentalBRCollapsing
+          ignoredDomTags={ABOUT_IGNORED_TAGS}
         />
       </View>
       <TouchableOpacity
         onPress={() => setExpanded((v) => !v)}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Text style={styles.aboutToggle}>{expanded ? 'Show less' : 'Read more'}</Text>
+        <Text style={styles.aboutToggle}>{expanded ? 'Show less ↑' : 'Read more ↓'}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -919,7 +922,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   aboutCollapsed: {
-    maxHeight: 120,
+    maxHeight: COLLAPSED_HEIGHT,
     overflow: 'hidden',
   },
   aboutText: {

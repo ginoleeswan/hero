@@ -286,20 +286,7 @@ export default function WebCharacterScreen() {
             ) : null}
 
             {!comicVineLoading && details.description ? (
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>About</Text>
-                <View style={styles.cardDivider} />
-                <div
-                  dangerouslySetInnerHTML={{ __html: details.description }}
-                  style={{
-                    fontFamily: 'FlameSans-Regular',
-                    fontSize: 13,
-                    color: COLORS.navy,
-                    lineHeight: '1.7',
-                    opacity: 0.85,
-                  }}
-                />
-              </View>
+              <WebAboutCard description={details.description} />
             ) : null}
 
             <WebAbilitiesCard powers={details.powers} loading={comicVineLoading} skeletonOpacity={skeletonOpacity} />
@@ -473,20 +460,7 @@ export default function WebCharacterScreen() {
           ) : null}
 
           {!comicVineLoading && details.description ? (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>About</Text>
-              <View style={styles.cardDivider} />
-              <div
-                dangerouslySetInnerHTML={{ __html: details.description }}
-                style={{
-                  fontFamily: 'FlameSans-Regular',
-                  fontSize: 13,
-                  color: COLORS.navy,
-                  lineHeight: '1.7',
-                  opacity: 0.85,
-                }}
-              />
-            </View>
+            <WebAboutCard description={details.description} />
           ) : null}
 
           <WebAbilitiesCard powers={details.powers} loading={comicVineLoading} skeletonOpacity={skeletonOpacity} />
@@ -602,6 +576,48 @@ export default function WebCharacterScreen() {
 }
 
 const ABILITIES_COLLAPSED = 12;
+
+// ── Web about card (expandable HTML description) ─────────────────────────────
+function WebAboutCard({ description }: { description: string }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>About</Text>
+      <View style={styles.cardDivider} />
+      <View style={expanded ? undefined : (styles.aboutCollapsed as object)}>
+        <div
+          dangerouslySetInnerHTML={{ __html: description }}
+          style={{
+            fontFamily: 'FlameSans-Regular',
+            fontSize: 13,
+            color: COLORS.navy,
+            lineHeight: '1.7',
+            opacity: 0.85,
+          }}
+        />
+        {!expanded && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 60,
+              background: `linear-gradient(to bottom, rgba(249,245,242,0), ${COLORS.beige})`,
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+      </View>
+      <Pressable
+        onPress={() => setExpanded((v) => !v)}
+        style={styles.aboutToggleBtn}
+      >
+        <Text style={styles.aboutToggleText}>{expanded ? 'Show less ↑' : 'Read more ↓'}</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 // ── Web abilities card ───────────────────────────────────────────────────────
 function WebAbilitiesCard({
@@ -906,6 +922,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: 'rgba(245,235,220,0.5)',
     marginTop: 4,
+  },
+  aboutCollapsed: {
+    maxHeight: 220,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  aboutToggleBtn: {
+    marginTop: 10,
+  },
+  aboutToggleText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: COLORS.orange,
   },
 
   // ── Desktop two-column body ──────────────────────────────────────────────────

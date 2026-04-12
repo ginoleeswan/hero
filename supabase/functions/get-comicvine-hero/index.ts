@@ -15,9 +15,7 @@ const json = (data: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
   });
 
-// Description is stored and returned as raw HTML so clients can render
-// it with formatting (headers, paragraphs, lists from ComicVine).
-// Trim surrounding whitespace only.
+// Description is returned as raw HTML — clients render it with their own HTML renderer.
 
 const NULL_RESPONSE = {
   summary: null,
@@ -108,7 +106,7 @@ serve(async (req: Request) => {
           : [];
         powers = rawPowers.length > 0 ? rawPowers : null;
 
-        // description — raw HTML, trimmed (clients render with their own HTML renderer)
+        // description — raw HTML trimmed
         const rawDesc: string = typeof d.description === 'string' ? d.description.trim() : '';
         description = rawDesc.length > 0 ? rawDesc : null;
 
