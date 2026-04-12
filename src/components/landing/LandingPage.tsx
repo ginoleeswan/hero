@@ -29,16 +29,16 @@ const PAD_H_MOBILE = 20;
 const GAP = 16;
 
 const MOSAIC = [
-  { src: require('../../../assets/images/spiderman.jpg'),      name: 'Spider-Man' },
-  { src: require('../../../assets/images/batman.jpg'),         name: 'Batman' },
-  { src: require('../../../assets/images/ironman.jpg'),        name: 'Iron Man' },
-  { src: require('../../../assets/images/wonder-woman.jpg'),   name: 'Wonder Woman' },
-  { src: require('../../../assets/images/black-panther.jpg'),  name: 'Black Panther' },
-  { src: require('../../../assets/images/deadpool.jpg'),       name: 'Deadpool' },
-  { src: require('../../../assets/images/wolverine.jpg'),      name: 'Wolverine' },
-  { src: require('../../../assets/images/thor.jpg'),           name: 'Thor' },
+  { src: require('../../../assets/images/spiderman.jpg'), name: 'Spider-Man' },
+  { src: require('../../../assets/images/batman.jpg'), name: 'Batman' },
+  { src: require('../../../assets/images/ironman.jpg'), name: 'Iron Man' },
+  { src: require('../../../assets/images/wonder-woman.jpg'), name: 'Wonder Woman' },
+  { src: require('../../../assets/images/black-panther.jpg'), name: 'Black Panther' },
+  { src: require('../../../assets/images/deadpool.jpg'), name: 'Deadpool' },
+  { src: require('../../../assets/images/wolverine.jpg'), name: 'Wolverine' },
+  { src: require('../../../assets/images/thor.jpg'), name: 'Thor' },
   { src: require('../../../assets/images/doctor-strange.jpg'), name: 'Doctor Strange' },
-  { src: require('../../../assets/images/hulk.jpg'),           name: 'Hulk' },
+  { src: require('../../../assets/images/hulk.jpg'), name: 'Hulk' },
 ];
 
 const SIDE_HEROES = [
@@ -51,15 +51,40 @@ const SIDE_HEROES = [
 ];
 
 const FEATURES = [
-  { icon: 'eye-outline' as const,         title: 'Discover Heroes',   desc: 'Browse curated collections by universe, team, or power set.' },
-  { icon: 'search-outline' as const,      title: 'Instant Search',    desc: 'Find any of 500+ characters by name, power, or publisher.' },
-  { icon: 'heart-outline' as const,       title: 'Save Favourites',   desc: 'Build your personal roster and revisit it any time.' },
-  { icon: 'stats-chart-outline' as const, title: 'Power Stats',       desc: 'Intelligence, strength, speed and more — full ratings for every hero.' },
-  { icon: 'book-outline' as const,        title: 'Origin Stories',    desc: 'First issue, publisher history, and the real name behind every icon.' },
-  { icon: 'grid-outline' as const,        title: 'Universe Browser',  desc: 'Explore Marvel, DC, Dark Horse and more by publisher, team, or era.' },
+  {
+    icon: 'eye-outline' as const,
+    title: 'Discover Heroes',
+    desc: 'Browse curated collections by universe, team, or power set.',
+  },
+  {
+    icon: 'search-outline' as const,
+    title: 'Instant Search',
+    desc: 'Find any of 500+ characters by name, power, or publisher.',
+  },
+  {
+    icon: 'heart-outline' as const,
+    title: 'Save Favourites',
+    desc: 'Build your personal roster and revisit it any time.',
+  },
+  {
+    icon: 'stats-chart-outline' as const,
+    title: 'Power Stats',
+    desc: 'Intelligence, strength, speed and more — full ratings for every hero.',
+  },
+  {
+    icon: 'book-outline' as const,
+    title: 'Origin Stories',
+    desc: 'First issue, publisher history, and the real name behind every icon.',
+  },
+  {
+    icon: 'grid-outline' as const,
+    title: 'Universe Browser',
+    desc: 'Explore Marvel, DC, Dark Horse and more by publisher, team, or era.',
+  },
 ];
 
-const MARQUEE = 'Spider-Man  ·  Batman  ·  Iron Man  ·  Wonder Woman  ·  Black Panther  ·  Thor  ·  Deadpool  ·  Wolverine  ·  Doctor Strange  ·  Hulk  ·  Magneto  ·  Joker  ·  Loki  ·  Venom  ·  Storm  ·  Captain America  ·  ';
+const MARQUEE =
+  'Spider-Man  ·  Batman  ·  Iron Man  ·  Wonder Woman  ·  Black Panther  ·  Thor  ·  Deadpool  ·  Wolverine  ·  Doctor Strange  ·  Hulk  ·  Magneto  ·  Joker  ·  Loki  ·  Venom  ·  Storm  ·  Captain America  ·  ';
 const MARQUEE_CHAR_W = 9.2;
 
 export default function LandingPage() {
@@ -74,7 +99,7 @@ export default function LandingPage() {
         toValue: -marqueeW,
         duration: 28000,
         useNativeDriver: true,
-      })
+      }),
     ).start();
   }, [marqueeW]);
 
@@ -82,10 +107,10 @@ export default function LandingPage() {
   const isTablet = width >= 768 && width < 1024;
   const pad = isMobile ? PAD_H_MOBILE : PAD_H;
   const featureCols = isMobile ? 1 : isTablet ? 2 : 3;
-  const mosaicCols  = isMobile ? 3 : isTablet ? 4 : 5;
+  const mosaicCols = isMobile ? 3 : isTablet ? 4 : 5;
 
   const featureW = (width - pad * 2 - GAP * (featureCols - 1)) / featureCols;
-  const mosaicW  = (width - pad * 2 - GAP * (mosaicCols  - 1)) / mosaicCols;
+  const mosaicW = (width - pad * 2 - GAP * (mosaicCols - 1)) / mosaicCols;
 
   return (
     <ScrollView
@@ -113,23 +138,43 @@ export default function LandingPage() {
       {/* ── HERO ─────────────────────────────────────────── */}
       <View style={s.heroSection}>
         {/* Orbs */}
-        <View style={[s.orb, { left: '5%', top: '20%', backgroundColor: 'rgba(231,115,51,0.15)' }]} />
-        <View style={[s.orb, { right: '5%', top: '30%', backgroundColor: 'rgba(21,161,171,0.12)' }]} />
+        <View
+          style={[s.orb, { left: '5%', top: '20%', backgroundColor: 'rgba(231,115,51,0.15)' }]}
+        />
+        <View
+          style={[s.orb, { right: '5%', top: '30%', backgroundColor: 'rgba(21,161,171,0.12)' }]}
+        />
 
         {/* Side hero portraits — desktop only */}
         {!isMobile && (
           <>
             <View style={[s.sideCol, { left: pad }]}>
               {SIDE_HEROES.slice(0, 3).map((src, i) => (
-                <View key={i} style={[s.sideCard, { transform: [{ rotate: `${i % 2 === 0 ? -6 : 5}deg` }] }]}>
-                  <Image source={src} style={s.sideCardImg} contentFit="cover" contentPosition="top" />
+                <View
+                  key={i}
+                  style={[s.sideCard, { transform: [{ rotate: `${i % 2 === 0 ? -6 : 5}deg` }] }]}
+                >
+                  <Image
+                    source={src}
+                    style={s.sideCardImg}
+                    contentFit="cover"
+                    contentPosition="top"
+                  />
                 </View>
               ))}
             </View>
             <View style={[s.sideCol, { right: pad }]}>
               {SIDE_HEROES.slice(3).map((src, i) => (
-                <View key={i} style={[s.sideCard, { transform: [{ rotate: `${i % 2 === 0 ? 6 : -5}deg` }] }]}>
-                  <Image source={src} style={s.sideCardImg} contentFit="cover" contentPosition="top" />
+                <View
+                  key={i}
+                  style={[s.sideCard, { transform: [{ rotate: `${i % 2 === 0 ? 6 : -5}deg` }] }]}
+                >
+                  <Image
+                    source={src}
+                    style={s.sideCardImg}
+                    contentFit="cover"
+                    contentPosition="top"
+                  />
                 </View>
               ))}
             </View>
@@ -153,11 +198,16 @@ export default function LandingPage() {
             The Universe's Greatest Heroes
           </Text>
           <Text style={[s.heroSub, isMobile && s.heroSubSm]}>
-            Discover the powers, origins, and stories of 500+ characters from Marvel, DC, and beyond.
+            Discover the powers, origins, and stories of 500+ characters from Marvel, DC, and
+            beyond.
           </Text>
 
           <View style={[s.ctaRow, isMobile && s.ctaRowMobile]}>
-            <Pressable style={s.btnPrimary} accessibilityRole="button" accessibilityLabel="Download on the App Store">
+            <Pressable
+              style={s.btnPrimary}
+              accessibilityRole="button"
+              accessibilityLabel="Download on the App Store"
+            >
               <Ionicons name="logo-apple" size={20} color="#fff" />
               <Text style={s.btnPrimaryText}>App Store</Text>
             </Pressable>
@@ -176,9 +226,9 @@ export default function LandingPage() {
       {/* ── STATS ────────────────────────────────────────── */}
       <View style={[s.statsBar, isMobile && s.statsBarMobile]}>
         {[
-          { num: '500+',        label: 'Heroes & Villains' },
+          { num: '500+', label: 'Heroes & Villains' },
           { num: 'Marvel & DC', label: 'Universes' },
-          { num: 'Free',        label: 'To Download' },
+          { num: 'Free', label: 'To Download' },
           { num: 'iOS & Android', label: 'Platforms' },
         ].map((item, i) => (
           <View key={i} style={[s.statItem, i > 0 && !isMobile && s.statBorder]}>
@@ -194,7 +244,8 @@ export default function LandingPage() {
           style={[s.marqueeText, { transform: [{ translateX: marqueeAnim }] }]}
           numberOfLines={1}
         >
-          {MARQUEE}{MARQUEE}
+          {MARQUEE}
+          {MARQUEE}
         </Animated.Text>
       </View>
 
@@ -205,7 +256,8 @@ export default function LandingPage() {
           Everything you need to{'\n'}know your heroes
         </Text>
         <Text style={s.sectionSub}>
-          From first appearances to power stats — the most complete superhero companion on the planet.
+          From first appearances to power stats — the most complete superhero companion on the
+          planet.
         </Text>
         <View style={s.grid}>
           {FEATURES.map((f, i) => (
@@ -223,9 +275,7 @@ export default function LandingPage() {
       {/* ── SCREENSHOTS ──────────────────────────────────── */}
       <View style={[s.section, s.sectionSurface, { paddingHorizontal: pad }]}>
         <Text style={s.eyebrow}>The app</Text>
-        <Text style={[s.heading, isMobile && s.headingSm]}>
-          Designed for{'\n'}true fans
-        </Text>
+        <Text style={[s.heading, isMobile && s.headingSm]}>Designed for{'\n'}true fans</Text>
         <View style={[s.screenshotsRow, isMobile && { flexDirection: 'column', gap: 32 }]}>
           <View style={s.phonesWrap}>
             <View style={s.phoneMain}>
@@ -290,21 +340,27 @@ export default function LandingPage() {
       {/* ── FINAL CTA ────────────────────────────────────── */}
       <View style={[s.section, s.sectionSurface, s.ctaSection, { paddingHorizontal: pad }]}>
         <Text style={s.eyebrow}>Download now</Text>
-        <Text style={[s.ctaHeading, isMobile && s.ctaHeadingSm]}>
-          Your heroes await.
-        </Text>
+        <Text style={[s.ctaHeading, isMobile && s.ctaHeadingSm]}>Your heroes await.</Text>
         <Text style={s.ctaSub}>
           Free to download. No ads. Just the greatest heroes ever created — right in your pocket.
         </Text>
         <View style={[s.ctaRow, isMobile && s.ctaRowMobile]}>
-          <Pressable style={s.storeBadge} accessibilityRole="button" accessibilityLabel="Download on the App Store">
+          <Pressable
+            style={s.storeBadge}
+            accessibilityRole="button"
+            accessibilityLabel="Download on the App Store"
+          >
             <Ionicons name="logo-apple" size={28} color={C.beige} />
             <View>
               <Text style={s.badgeSmall}>Download on the</Text>
               <Text style={s.badgeLarge}>App Store</Text>
             </View>
           </Pressable>
-          <Pressable style={s.storeBadge} accessibilityRole="button" accessibilityLabel="Get it on Google Play">
+          <Pressable
+            style={s.storeBadge}
+            accessibilityRole="button"
+            accessibilityLabel="Get it on Google Play"
+          >
             <Ionicons name="logo-google-playstore" size={28} color={C.beige} />
             <View>
               <Text style={s.badgeSmall}>Get it on</Text>
@@ -328,7 +384,7 @@ export default function LandingPage() {
 }
 
 const s = StyleSheet.create({
-  root:    { flex: 1, backgroundColor: C.bg },
+  root: { flex: 1, backgroundColor: C.bg },
   content: { flexGrow: 1 },
 
   // Nav
@@ -396,9 +452,21 @@ const s = StyleSheet.create({
   },
   heroBadgeText: { color: C.yellow, fontSize: 12, fontWeight: '600', letterSpacing: 1 },
   heroWordmark: { height: 130, marginBottom: 20 },
-  heroTagline: { fontFamily: 'Righteous_400Regular', fontSize: 22, color: C.muted, marginBottom: 12 },
+  heroTagline: {
+    fontFamily: 'Righteous_400Regular',
+    fontSize: 22,
+    color: C.muted,
+    marginBottom: 12,
+  },
   heroTaglineSm: { fontSize: 17 },
-  heroSub: { fontSize: 17, color: C.muted, lineHeight: 26, textAlign: 'center', maxWidth: 460, marginBottom: 36 },
+  heroSub: {
+    fontSize: 17,
+    color: C.muted,
+    lineHeight: 26,
+    textAlign: 'center',
+    maxWidth: 460,
+    marginBottom: 36,
+  },
   heroSubSm: { fontSize: 15 },
 
   ctaRow: { flexDirection: 'row', gap: 14, flexWrap: 'wrap', justifyContent: 'center' },
@@ -439,7 +507,7 @@ const s = StyleSheet.create({
   statsBarMobile: { flexWrap: 'wrap', gap: 20, paddingHorizontal: 20 },
   statItem: { alignItems: 'center', paddingHorizontal: 40 },
   statBorder: { borderLeftWidth: 1, borderColor: C.border },
-  statNum:   { fontFamily: 'Righteous_400Regular', fontSize: 28, color: C.yellow },
+  statNum: { fontFamily: 'Righteous_400Regular', fontSize: 28, color: C.yellow },
   statLabel: { fontSize: 12, color: C.muted, marginTop: 4 },
 
   // Marquee
@@ -470,7 +538,13 @@ const s = StyleSheet.create({
     color: C.orange,
     marginBottom: 14,
   },
-  heading:   { fontFamily: 'Righteous_400Regular', fontSize: 40, color: C.beige, lineHeight: 48, marginBottom: 16 },
+  heading: {
+    fontFamily: 'Righteous_400Regular',
+    fontSize: 40,
+    color: C.beige,
+    lineHeight: 48,
+    marginBottom: 16,
+  },
   headingSm: { fontSize: 28, lineHeight: 36 },
   sectionSub: { fontSize: 16, color: C.muted, lineHeight: 26, maxWidth: 520, marginBottom: 52 },
 
@@ -492,8 +566,13 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 18,
   },
-  featureTitle: { fontFamily: 'Righteous_400Regular', fontSize: 17, color: C.beige, marginBottom: 10 },
-  featureDesc:  { fontSize: 14, color: C.muted, lineHeight: 22 },
+  featureTitle: {
+    fontFamily: 'Righteous_400Regular',
+    fontSize: 17,
+    color: C.beige,
+    marginBottom: 10,
+  },
+  featureDesc: { fontSize: 14, color: C.muted, lineHeight: 22 },
 
   // Screenshots
   screenshotsRow: { flexDirection: 'row', gap: 48, alignItems: 'center', marginTop: 8 },
@@ -525,7 +604,8 @@ const s = StyleSheet.create({
   screenshotsText: { flex: 1, gap: 16 },
   checkRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
   checkCircle: {
-    width: 22, height: 22,
+    width: 22,
+    height: 22,
     borderRadius: 11,
     backgroundColor: 'rgba(99,169,54,0.15)',
     alignItems: 'center',
@@ -563,7 +643,14 @@ const s = StyleSheet.create({
     textAlign: 'center',
   },
   ctaHeadingSm: { fontSize: 36, lineHeight: 44 },
-  ctaSub: { fontSize: 17, color: C.muted, lineHeight: 28, textAlign: 'center', maxWidth: 480, marginBottom: 36 },
+  ctaSub: {
+    fontSize: 17,
+    color: C.muted,
+    lineHeight: 28,
+    textAlign: 'center',
+    maxWidth: 480,
+    marginBottom: 36,
+  },
   storeBadge: {
     flexDirection: 'row',
     alignItems: 'center',

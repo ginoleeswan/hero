@@ -89,10 +89,7 @@ export default function WebForgotPasswordScreen() {
           wrong email?
         </Text>
       </Text>
-      <Pressable
-        onPress={() => router.replace('/(auth)/login')}
-        style={styles.button as object}
-      >
+      <Pressable onPress={() => router.replace('/(auth)/login')} style={styles.button as object}>
         <Text style={styles.buttonText}>Back to Sign In</Text>
       </Pressable>
       <View style={styles.resendRow}>
@@ -150,7 +147,9 @@ export default function WebForgotPasswordScreen() {
       />
 
       <Pressable
-        style={({ pressed }) => [styles.button, (pressed || loading || !email.trim()) && styles.buttonDisabled] as object}
+        style={({ pressed }) =>
+          [styles.button, (pressed || loading || !email.trim()) && styles.buttonDisabled] as object
+        }
         onPress={handleReset}
         disabled={loading || !email.trim()}
       >
@@ -196,16 +195,10 @@ export default function WebForgotPasswordScreen() {
         <View style={styles.brandLogoWrap}>
           <HeroLogo iconSize={48} fontSize={36} color={COLORS.beige} gap={12} />
         </View>
-        <Image
-          source={LOGIN_HERO}
-          style={styles.illustration as object}
-          contentFit="cover"
-        />
+        <Image source={LOGIN_HERO} style={styles.illustration as object} contentFit="cover" />
         <View style={styles.brandBottom}>
           <Text style={styles.brandTagline}>The Superhero{'\n'}Encyclopedia</Text>
-          <Text style={styles.brandSub}>
-            Forgot your password?{'\n'}We've got you covered.
-          </Text>
+          <Text style={styles.brandSub}>Forgot your password?{'\n'}We've got you covered.</Text>
           <View style={styles.brandAccent} />
         </View>
       </View>
@@ -217,7 +210,6 @@ export default function WebForgotPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-
   // ── Mobile ─────────────────────────────────────────────────────────────
   mobileRoot: {
     flex: 1,
@@ -230,8 +222,7 @@ const styles = StyleSheet.create({
     right: 0,
     height: '58%',
     backgroundColor: COLORS.navy,
-    backgroundImage:
-      'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
+    backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
     backgroundSize: '24px 24px',
   } as object,
   mobileScrim: {
@@ -288,8 +279,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundImage:
-      'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
+    backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
     backgroundSize: '24px 24px',
   },
   brandGlow: {

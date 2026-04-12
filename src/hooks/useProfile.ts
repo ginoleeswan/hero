@@ -29,7 +29,10 @@ export function useProfile(userId: string | undefined): UseProfileResult {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!userId) { setLoading(false); return; }
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
     getProfile(userId)
       .then(setProfile)
       .catch(() => {})
@@ -48,14 +51,14 @@ export function useProfile(userId: string | undefined): UseProfileResult {
 
     const uri = result.assets[0].uri;
     const prev = profile?.avatar_url ?? null;
-    setProfile((p) => p ? { ...p, avatar_url: uri } : p);
+    setProfile((p) => (p ? { ...p, avatar_url: uri } : p));
     setAvatarUploading(true);
     try {
       const url = await uploadAvatar(userId, uri);
       await upsertProfile(userId, { avatar_url: url });
-      setProfile((p) => p ? { ...p, avatar_url: url } : p);
+      setProfile((p) => (p ? { ...p, avatar_url: url } : p));
     } catch {
-      setProfile((p) => p ? { ...p, avatar_url: prev } : p);
+      setProfile((p) => (p ? { ...p, avatar_url: prev } : p));
       setError('Failed to upload photo. Please try again.');
       setTimeout(() => setError(null), 3000);
     } finally {
@@ -75,14 +78,14 @@ export function useProfile(userId: string | undefined): UseProfileResult {
 
     const uri = result.assets[0].uri;
     const prev = profile?.cover_url ?? null;
-    setProfile((p) => p ? { ...p, cover_url: uri } : p);
+    setProfile((p) => (p ? { ...p, cover_url: uri } : p));
     setCoverUploading(true);
     try {
       const url = await uploadCover(userId, uri);
       await upsertProfile(userId, { cover_url: url });
-      setProfile((p) => p ? { ...p, cover_url: url } : p);
+      setProfile((p) => (p ? { ...p, cover_url: url } : p));
     } catch {
-      setProfile((p) => p ? { ...p, cover_url: prev } : p);
+      setProfile((p) => (p ? { ...p, cover_url: prev } : p));
       setError('Failed to upload cover. Please try again.');
       setTimeout(() => setError(null), 3000);
     } finally {
@@ -93,11 +96,11 @@ export function useProfile(userId: string | undefined): UseProfileResult {
   const removeAvatar = useCallback(async () => {
     if (!userId) return;
     const prev = profile?.avatar_url ?? null;
-    setProfile((p) => p ? { ...p, avatar_url: null } : p);
+    setProfile((p) => (p ? { ...p, avatar_url: null } : p));
     try {
       await upsertProfile(userId, { avatar_url: null });
     } catch {
-      setProfile((p) => p ? { ...p, avatar_url: prev } : p);
+      setProfile((p) => (p ? { ...p, avatar_url: prev } : p));
       setError('Failed to remove photo. Please try again.');
       setTimeout(() => setError(null), 3000);
     }
@@ -106,32 +109,42 @@ export function useProfile(userId: string | undefined): UseProfileResult {
   const removeCover = useCallback(async () => {
     if (!userId) return;
     const prev = profile?.cover_url ?? null;
-    setProfile((p) => p ? { ...p, cover_url: null } : p);
+    setProfile((p) => (p ? { ...p, cover_url: null } : p));
     try {
       await upsertProfile(userId, { cover_url: null });
     } catch {
-      setProfile((p) => p ? { ...p, cover_url: prev } : p);
+      setProfile((p) => (p ? { ...p, cover_url: prev } : p));
       setError('Failed to remove cover. Please try again.');
       setTimeout(() => setError(null), 3000);
     }
   }, [userId, profile]);
 
-  const updateDisplayName = useCallback(async (name: string) => {
-    if (!userId) return;
-    const prev = profile?.display_name ?? null;
-    setProfile((p) => p ? { ...p, display_name: name } : p);
-    try {
-      await upsertProfile(userId, { display_name: name });
-    } catch {
-      setProfile((p) => p ? { ...p, display_name: prev } : p);
-      setError('Failed to save name. Please try again.');
-      setTimeout(() => setError(null), 3000);
-    }
-  }, [userId, profile]);
+  const updateDisplayName = useCallback(
+    async (name: string) => {
+      if (!userId) return;
+      const prev = profile?.display_name ?? null;
+      setProfile((p) => (p ? { ...p, display_name: name } : p));
+      try {
+        await upsertProfile(userId, { display_name: name });
+      } catch {
+        setProfile((p) => (p ? { ...p, display_name: prev } : p));
+        setError('Failed to save name. Please try again.');
+        setTimeout(() => setError(null), 3000);
+      }
+    },
+    [userId, profile],
+  );
 
   return {
-    profile, loading, avatarUploading, coverUploading, error,
-    pickAndUploadAvatar, pickAndUploadCover,
-    removeAvatar, removeCover, updateDisplayName,
+    profile,
+    loading,
+    avatarUploading,
+    coverUploading,
+    error,
+    pickAndUploadAvatar,
+    pickAndUploadCover,
+    removeAvatar,
+    removeCover,
+    updateDisplayName,
   };
 }

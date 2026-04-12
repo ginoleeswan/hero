@@ -20,15 +20,15 @@ export function rankResults(list: HeroSearchResult[], query: string): HeroSearch
       const fl = (h.full_name ?? '').toLowerCase();
       const an = (h.aliases ?? []).map(norm);
       let score: number;
-      if (nl === q)                              score = 0;
-      else if (nl.startsWith(q))                score = 1;
-      else if (nn.startsWith(qn))               score = 2;
-      else if (nl.includes(q))                  score = 3;
-      else if (nn.includes(qn))                 score = 4;
-      else if (fl.startsWith(q))                score = 5;
-      else if (fl.includes(q))                  score = 6;
+      if (nl === q) score = 0;
+      else if (nl.startsWith(q)) score = 1;
+      else if (nn.startsWith(qn)) score = 2;
+      else if (nl.includes(q)) score = 3;
+      else if (nn.includes(qn)) score = 4;
+      else if (fl.startsWith(q)) score = 5;
+      else if (fl.includes(q)) score = 6;
       else if (an.some((a) => a.startsWith(qn))) score = 7;
-      else                                       score = 8;
+      else score = 8;
       return { h, score };
     })
     .sort((a, b) => a.score - b.score)
@@ -36,7 +36,14 @@ export function rankResults(list: HeroSearchResult[], query: string): HeroSearch
 }
 export type HeroSearchResult = Pick<
   Hero,
-  'id' | 'name' | 'publisher' | 'image_md_url' | 'image_url' | 'portrait_url' | 'full_name' | 'aliases'
+  | 'id'
+  | 'name'
+  | 'publisher'
+  | 'image_md_url'
+  | 'image_url'
+  | 'portrait_url'
+  | 'full_name'
+  | 'aliases'
 >;
 
 export interface HeroesByCategory {

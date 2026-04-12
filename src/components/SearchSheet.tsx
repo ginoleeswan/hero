@@ -1,11 +1,5 @@
 // src/components/SearchSheet.tsx
-import {
-  useEffect,
-  useState,
-  useRef,
-  useMemo,
-  useCallback,
-} from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -94,27 +88,37 @@ function PortraitCard({
         <View style={pcard.logoWrap}>
           <Image
             source={
-              isMarvel ? MARVEL_LOGO
-              : isDC ? DC_LOGO
-              : isDarkHorse ? DARK_HORSE_LOGO
-              : STAR_WARS_LOGO
+              isMarvel
+                ? MARVEL_LOGO
+                : isDC
+                  ? DC_LOGO
+                  : isDarkHorse
+                    ? DARK_HORSE_LOGO
+                    : STAR_WARS_LOGO
             }
             style={
-              isMarvel ? pcard.logoMarvel
-              : isDC ? pcard.logoDC
-              : isDarkHorse ? pcard.logoDarkHorse
-              : pcard.logoStarWars
+              isMarvel
+                ? pcard.logoMarvel
+                : isDC
+                  ? pcard.logoDC
+                  : isDarkHorse
+                    ? pcard.logoDarkHorse
+                    : pcard.logoStarWars
             }
             contentFit="contain"
           />
         </View>
       ) : item.publisher ? (
         <View style={pcard.pubTextWrap}>
-          <Text style={pcard.pubText} numberOfLines={1}>{item.publisher}</Text>
+          <Text style={pcard.pubText} numberOfLines={1}>
+            {item.publisher}
+          </Text>
         </View>
       ) : null}
       <View style={pcard.bottom}>
-        <Text style={pcard.name} numberOfLines={2}>{item.name}</Text>
+        <Text style={pcard.name} numberOfLines={2}>
+          {item.name}
+        </Text>
       </View>
     </TouchableOpacity>
   );

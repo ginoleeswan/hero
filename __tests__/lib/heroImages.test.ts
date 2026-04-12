@@ -28,6 +28,8 @@ describe('heroImageSource', () => {
 
   it('falls back to CDN when nothing else is available', () => {
     const result = heroImageSource('999', null, null);
-    expect(result).toEqual({ uri: 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/images/md/999.jpg' });
+    expect(result).toEqual({
+      uri: 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/images/md/999.jpg',
+    });
   });
 });

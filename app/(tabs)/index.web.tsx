@@ -72,15 +72,43 @@ function PublisherLogo({ publisher }: { publisher?: string | null }) {
   const isStarWars = pub.includes('george lucas') || pub.includes('star wars');
 
   if (isMarvel)
-    return <Image source={MARVEL_LOGO} style={{ width: 38, height: 15, borderRadius: 2 } as object} contentFit="contain" />;
+    return (
+      <Image
+        source={MARVEL_LOGO}
+        style={{ width: 38, height: 15, borderRadius: 2 } as object}
+        contentFit="contain"
+      />
+    );
   if (isDC)
-    return <Image source={DC_LOGO} style={{ width: 22, height: 22, borderRadius: 2 } as object} contentFit="contain" />;
+    return (
+      <Image
+        source={DC_LOGO}
+        style={{ width: 22, height: 22, borderRadius: 2 } as object}
+        contentFit="contain"
+      />
+    );
   if (isDarkHorse)
-    return <Image source={DARK_HORSE_LOGO} style={{ width: 18, height: 26, borderRadius: 2 } as object} contentFit="contain" />;
+    return (
+      <Image
+        source={DARK_HORSE_LOGO}
+        style={{ width: 18, height: 26, borderRadius: 2 } as object}
+        contentFit="contain"
+      />
+    );
   if (isStarWars)
-    return <Image source={STAR_WARS_LOGO} style={{ width: 32, height: 32, borderRadius: 2 } as object} contentFit="contain" />;
+    return (
+      <Image
+        source={STAR_WARS_LOGO}
+        style={{ width: 32, height: 32, borderRadius: 2 } as object}
+        contentFit="contain"
+      />
+    );
 
-  return <Text style={logo.text} numberOfLines={1}>{publisher}</Text>;
+  return (
+    <Text style={logo.text} numberOfLines={1}>
+      {publisher}
+    </Text>
+  );
 }
 
 const logo = StyleSheet.create({
@@ -117,7 +145,9 @@ function PortraitCard({ item, onPress }: { item: HeroSearchResult; onPress: () =
         <PublisherLogo publisher={item.publisher} />
       </View>
       <View style={gcard.bottom}>
-        <Text style={gcard.name as object} numberOfLines={2}>{item.name}</Text>
+        <Text style={gcard.name as object} numberOfLines={2}>
+          {item.name}
+        </Text>
       </View>
     </Pressable>
   );
@@ -137,7 +167,11 @@ const gcard = StyleSheet.create({
     zIndex: 2,
   } as object,
   overlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundImage:
       'linear-gradient(to top, rgba(29,45,51,0.97) 0%, rgba(29,45,51,0.08) 55%, transparent 100%)',
   } as object,
@@ -173,7 +207,9 @@ function RowCard({ hero, onPress }: { hero: Hero | FavouriteHero; onPress: () =>
       />
       <View style={rc.overlay as object} />
       <View style={rc.bottom}>
-        <Text style={rc.name as object} numberOfLines={2}>{hero.name}</Text>
+        <Text style={rc.name as object} numberOfLines={2}>
+          {hero.name}
+        </Text>
       </View>
     </Pressable>
   );
@@ -196,7 +232,11 @@ const rc = StyleSheet.create({
     zIndex: 2,
   } as object,
   overlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundImage:
       'linear-gradient(to top, rgba(29,45,51,0.97) 0%, rgba(29,45,51,0.08) 55%, transparent 100%)',
   } as object,
@@ -244,7 +284,7 @@ function WebSpotlight({
       <Image
         source={source}
         contentFit="cover"
-        contentPosition={"center 15%" as any}
+        contentPosition={'center 15%' as any}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
         cachePolicy="memory-disk"
         recyclingKey={String(hero.id)}
@@ -256,7 +296,12 @@ function WebSpotlight({
           <PublisherLogo publisher={hero.publisher} />
         </View>
         <Text style={spot.label as object}>Featured Hero</Text>
-        <Text style={[spot.name, { fontSize: nameFontSize, lineHeight: nameLineHeight }] as object} numberOfLines={2}>{hero.name}</Text>
+        <Text
+          style={[spot.name, { fontSize: nameFontSize, lineHeight: nameLineHeight }] as object}
+          numberOfLines={2}
+        >
+          {hero.name}
+        </Text>
         <View style={spot.cta}>
           <Text style={spot.ctaText}>View profile</Text>
           <Text style={spot.ctaArrow}> →</Text>
@@ -267,7 +312,10 @@ function WebSpotlight({
           {Array.from({ length: total }).map((_, i) => (
             <Pressable
               key={i}
-              onPress={(e) => { e.stopPropagation?.(); onDotPress(i); }}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                onDotPress(i);
+              }}
               style={[spot.dot, i === index && (spot.dotActive as object)] as object}
             />
           ))}
@@ -290,7 +338,11 @@ const spot = StyleSheet.create({
     boxShadow: '0 32px 80px rgba(0,0,0,0.3)',
   } as object,
   overlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundImage:
       'linear-gradient(to top, rgba(29,45,51,0.98) 0%, rgba(29,45,51,0.5) 40%, rgba(29,45,51,0.1) 70%, transparent 100%)',
   } as object,
@@ -392,13 +444,30 @@ function HomeSkeleton() {
   const opacity = useSkeletonAnim();
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.discoverContent}>
-      <SkeletonBlock opacity={opacity} height={480} borderRadius={16} style={{ marginBottom: 48 }} />
+      <SkeletonBlock
+        opacity={opacity}
+        height={480}
+        borderRadius={16}
+        style={{ marginBottom: 48 }}
+      />
       {[1, 2, 3].map((i) => (
         <View key={i} style={{ marginBottom: 40 } as object}>
-          <SkeletonBlock opacity={opacity} width={160} height={28} borderRadius={6} style={{ marginBottom: 14 }} />
+          <SkeletonBlock
+            opacity={opacity}
+            width={160}
+            height={28}
+            borderRadius={6}
+            style={{ marginBottom: 14 }}
+          />
           <View style={{ flexDirection: 'row', gap: 12 } as object}>
             {Array.from({ length: 6 }).map((_, j) => (
-              <SkeletonBlock key={j} opacity={opacity} width={ROW_CARD_WIDTH} height={ROW_CARD_HEIGHT} borderRadius={10} />
+              <SkeletonBlock
+                key={j}
+                opacity={opacity}
+                width={ROW_CARD_WIDTH}
+                height={ROW_CARD_HEIGHT}
+                borderRadius={10}
+              />
             ))}
           </View>
         </View>
@@ -495,25 +564,31 @@ export default function WebHomeScreen() {
       getHeroesByPublisher('dc'),
       getHeroesByStatRanking('strength'),
       getHeroesByStatRanking('intelligence'),
-    ]).then(([cats, antiHeroes, marvel, dc, strongest, mostIntelligent]) => {
-      setHomeData({
-        popular: cats.popular,
-        villain: cats.villain,
-        xmen: cats.xmen,
-        antiHeroes,
-        marvel,
-        dc,
-        strongest,
-        mostIntelligent,
-      });
-    }).catch(() => {});
+    ])
+      .then(([cats, antiHeroes, marvel, dc, strongest, mostIntelligent]) => {
+        setHomeData({
+          popular: cats.popular,
+          villain: cats.villain,
+          xmen: cats.xmen,
+          antiHeroes,
+          marvel,
+          dc,
+          strongest,
+          mostIntelligent,
+        });
+      })
+      .catch(() => {});
   }, []);
 
   // Personal rows
   useEffect(() => {
     if (!user?.id) return;
-    getRecentlyViewed(user.id).then(setRecentlyViewed).catch(() => {});
-    getUserFavouriteHeroes(user.id).then(setFavourites).catch(() => {});
+    getRecentlyViewed(user.id)
+      .then(setRecentlyViewed)
+      .catch(() => {});
+    getUserFavouriteHeroes(user.id)
+      .then(setFavourites)
+      .catch(() => {});
   }, [user?.id]);
 
   // Auto-advance spotlight
@@ -547,16 +622,18 @@ export default function WebHomeScreen() {
     setPublisher('All');
   }, [setQuery, setPublisher]);
 
-  const handlePress = useCallback((id: string) => {
-    router.push(`/character/${id}`);
-  }, [router]);
+  const handlePress = useCallback(
+    (id: string) => {
+      router.push(`/character/${id}`);
+    },
+    [router],
+  );
 
   const spotlightHero = homeData?.popular[spotlightIndex] ?? null;
   const spotlightTotal = homeData ? Math.min(SPOTLIGHT_POOL, homeData.popular.length) : 0;
 
   return (
     <View style={styles.root}>
-
       {/* ── Desktop: editorial beige filter strip ────────────────────────────── */}
       {isDesktop && (
         <View style={styles.filterStrip as object}>
@@ -574,16 +651,24 @@ export default function WebHomeScreen() {
                     ] as object
                   }
                 >
-                  <Text style={[styles.filterTabText, publisher === f && styles.filterTabTextActive]}>
+                  <Text
+                    style={[styles.filterTabText, publisher === f && styles.filterTabTextActive]}
+                  >
                     {f}
                   </Text>
                 </Pressable>
               ))}
             </View>
             <Text style={styles.filterCount as object}>
-              {loadingAll ? '' : isSearchActive
-                ? (hasMore ? `${DISPLAY_LIMIT} of ${filtered.length} heroes` : `${filtered.length} hero${filtered.length !== 1 ? 'es' : ''}`)
-                : heroCount !== null ? `${heroCount} heroes in the encyclopedia` : ''}
+              {loadingAll
+                ? ''
+                : isSearchActive
+                  ? hasMore
+                    ? `${DISPLAY_LIMIT} of ${filtered.length} heroes`
+                    : `${filtered.length} hero${filtered.length !== 1 ? 'es' : ''}`
+                  : heroCount !== null
+                    ? `${heroCount} heroes in the encyclopedia`
+                    : ''}
             </Text>
           </View>
         </View>
@@ -614,12 +699,17 @@ export default function WebHomeScreen() {
                   </Pressable>
                 )}
               </View>
-              {loadingAll
-                ? <ActivityIndicator size="small" color={COLORS.orange} />
-                : <Text style={styles.countBadge as object}>
-                    {isSearchActive ? `${filtered.length} heroes` : heroCount !== null ? `${heroCount} heroes` : ''}
-                  </Text>
-              }
+              {loadingAll ? (
+                <ActivityIndicator size="small" color={COLORS.orange} />
+              ) : (
+                <Text style={styles.countBadge as object}>
+                  {isSearchActive
+                    ? `${filtered.length} heroes`
+                    : heroCount !== null
+                      ? `${heroCount} heroes`
+                      : ''}
+                </Text>
+              )}
             </View>
             <View style={styles.pillsRow}>
               {PUBLISHER_FILTERS.map((f) => (
@@ -627,10 +717,16 @@ export default function WebHomeScreen() {
                   key={f}
                   onPress={() => setPublisher(f)}
                   style={({ hovered }: { hovered?: boolean }) =>
-                    [styles.pill, publisher === f && (styles.pillActive as object), hovered && publisher !== f && (styles.pillHover as object)] as object
+                    [
+                      styles.pill,
+                      publisher === f && (styles.pillActive as object),
+                      hovered && publisher !== f && (styles.pillHover as object),
+                    ] as object
                   }
                 >
-                  <Text style={[styles.pillText, publisher === f && styles.pillTextActive]}>{f}</Text>
+                  <Text style={[styles.pillText, publisher === f && styles.pillTextActive]}>
+                    {f}
+                  </Text>
                 </Pressable>
               ))}
             </View>
@@ -640,8 +736,9 @@ export default function WebHomeScreen() {
 
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       {isSearchActive ? (
-
-        loadingAll ? <GridSkeleton /> : filtered.length === 0 ? (
+        loadingAll ? (
+          <GridSkeleton />
+        ) : filtered.length === 0 ? (
           <EmptyState query={query} onClear={handleClear} />
         ) : (
           <ScrollView style={styles.scroll}>
@@ -652,7 +749,9 @@ export default function WebHomeScreen() {
                 </Text>
                 {query.trim().length > 0 && (
                   <Text style={styles.resultsMeta}>
-                    {hasMore ? `Showing ${DISPLAY_LIMIT} of ${filtered.length} results` : `${filtered.length} result${filtered.length !== 1 ? 's' : ''}`}
+                    {hasMore
+                      ? `Showing ${DISPLAY_LIMIT} of ${filtered.length} results`
+                      : `${filtered.length} result${filtered.length !== 1 ? 's' : ''}`}
                   </Text>
                 )}
               </View>
@@ -660,62 +759,60 @@ export default function WebHomeScreen() {
             <View style={styles.scrollContent}>
               <View style={resultsGrid as object}>
                 {displayed.map((item) => (
-                  <PortraitCard
-                    key={item.id}
-                    item={item}
-                    onPress={() => handlePress(item.id)}
-                  />
+                  <PortraitCard key={item.id} item={item} onPress={() => handlePress(item.id)} />
                 ))}
               </View>
-              {hasMore && <Text style={styles.moreHint}>Refine your search to see more results</Text>}
+              {hasMore && (
+                <Text style={styles.moreHint}>Refine your search to see more results</Text>
+              )}
             </View>
           </ScrollView>
         )
-
+      ) : !homeData ? (
+        <HomeSkeleton />
       ) : (
-
-        !homeData ? <HomeSkeleton /> : (
-          <ScrollView style={styles.scroll} contentContainerStyle={styles.discoverContent}>
-
-            {/* Spotlight */}
-            {spotlightHero && (
-              <WebSpotlight
-                hero={spotlightHero}
-                index={spotlightIndex}
-                total={spotlightTotal}
-                onPress={() => handlePress(String(spotlightHero.id))}
-                onDotPress={setSpotlightIndex}
-              />
-            )}
-
-            {/* Personal rows */}
-            <HomeRow
-              label="Personal"
-              title="Jump Back In"
-              heroes={recentlyViewed}
-              onPress={handlePress}
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.discoverContent}>
+          {/* Spotlight */}
+          {spotlightHero && (
+            <WebSpotlight
+              hero={spotlightHero}
+              index={spotlightIndex}
+              total={spotlightTotal}
+              onPress={() => handlePress(String(spotlightHero.id))}
+              onDotPress={setSpotlightIndex}
             />
-            <HomeRow
-              label="Personal"
-              title="Your Favourites"
-              heroes={favourites}
-              onPress={handlePress}
-            />
+          )}
 
-            {/* Curated rows */}
-            <HomeRow title="Popular" heroes={homeData.popular} onPress={handlePress} />
-            <HomeRow title="Villains" heroes={homeData.villain} onPress={handlePress} />
-            <HomeRow title="X-Men" heroes={homeData.xmen} onPress={handlePress} />
-            <HomeRow title="Anti-Heroes" heroes={homeData.antiHeroes} onPress={handlePress} />
-            <HomeRow title="Marvel Universe" heroes={homeData.marvel} onPress={handlePress} />
-            <HomeRow title="DC Universe" heroes={homeData.dc} onPress={handlePress} />
-            <HomeRow title="Strongest Heroes" heroes={homeData.strongest} onPress={handlePress} />
-            <HomeRow title="Most Intelligent" heroes={homeData.mostIntelligent} onPress={handlePress} />
+          {/* Personal rows */}
+          <HomeRow
+            label="Personal"
+            title="Jump Back In"
+            heroes={recentlyViewed}
+            onPress={handlePress}
+          />
+          <HomeRow
+            label="Personal"
+            title="Your Favourites"
+            heroes={favourites}
+            onPress={handlePress}
+          />
 
-            <View style={styles.footerRule} />
-          </ScrollView>
-        )
+          {/* Curated rows */}
+          <HomeRow title="Popular" heroes={homeData.popular} onPress={handlePress} />
+          <HomeRow title="Villains" heroes={homeData.villain} onPress={handlePress} />
+          <HomeRow title="X-Men" heroes={homeData.xmen} onPress={handlePress} />
+          <HomeRow title="Anti-Heroes" heroes={homeData.antiHeroes} onPress={handlePress} />
+          <HomeRow title="Marvel Universe" heroes={homeData.marvel} onPress={handlePress} />
+          <HomeRow title="DC Universe" heroes={homeData.dc} onPress={handlePress} />
+          <HomeRow title="Strongest Heroes" heroes={homeData.strongest} onPress={handlePress} />
+          <HomeRow
+            title="Most Intelligent"
+            heroes={homeData.mostIntelligent}
+            onPress={handlePress}
+          />
 
+          <View style={styles.footerRule} />
+        </ScrollView>
       )}
     </View>
   );
@@ -809,31 +906,46 @@ const styles = StyleSheet.create({
   } as object,
   inputMobile: { fontSize: 16 } as object,
   clearBtn: {
-    width: 24, height: 24, borderRadius: 12,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: 'rgba(245,235,220,0.1)',
-    alignItems: 'center', justifyContent: 'center',
-    cursor: 'pointer', flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    flexShrink: 0,
   } as object,
   clearBtnHover: { backgroundColor: 'rgba(245,235,220,0.18)' } as object,
   clearX: {
-    fontFamily: 'Nunito_400Regular', fontSize: 16,
-    color: 'rgba(245,235,220,0.65)', lineHeight: 18,
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 16,
+    color: 'rgba(245,235,220,0.65)',
+    lineHeight: 18,
   } as object,
   countBadge: {
-    fontFamily: 'Nunito_400Regular', fontSize: 11,
-    color: 'rgba(245,235,220,0.3)', letterSpacing: 0.3, flexShrink: 0,
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11,
+    color: 'rgba(245,235,220,0.3)',
+    letterSpacing: 0.3,
+    flexShrink: 0,
   } as object,
   pillsRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   pill: {
-    paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20,
-    borderWidth: 1, borderColor: 'rgba(245,235,220,0.15)',
-    cursor: 'pointer', transition: 'all 150ms ease',
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.15)',
+    cursor: 'pointer',
+    transition: 'all 150ms ease',
   } as object,
   pillActive: { backgroundColor: COLORS.orange, borderColor: COLORS.orange } as object,
   pillHover: { borderColor: 'rgba(245,235,220,0.4)' } as object,
   pillText: {
-    fontFamily: 'Nunito_700Bold', fontSize: 11,
-    color: 'rgba(245,235,220,0.38)', letterSpacing: 0.4,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: 'rgba(245,235,220,0.38)',
+    letterSpacing: 0.4,
   },
   pillTextActive: { color: 'white' },
 
@@ -875,30 +987,45 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   scrollContent: {
-    padding: 16, paddingTop: 24,
-    maxWidth: 1280, alignSelf: 'center',
-    width: '100%', paddingBottom: 100,
+    padding: 16,
+    paddingTop: 24,
+    maxWidth: 1280,
+    alignSelf: 'center',
+    width: '100%',
+    paddingBottom: 100,
   },
   moreHint: {
-    fontFamily: 'Nunito_400Regular', fontSize: 12,
-    color: COLORS.grey, textAlign: 'center',
-    marginTop: 32, letterSpacing: 0.3,
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: COLORS.grey,
+    textAlign: 'center',
+    marginTop: 32,
+    letterSpacing: 0.3,
   },
 
   // ── Empty state ─────────────────────────────────────────────────────────────
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 120, gap: 14 },
   emptyHeadline: {
-    fontFamily: 'Flame-Regular', fontSize: 52,
-    color: COLORS.navy, textAlign: 'center',
+    fontFamily: 'Flame-Regular',
+    fontSize: 52,
+    color: COLORS.navy,
+    textAlign: 'center',
   } as object,
   emptySub: {
-    fontFamily: 'Nunito_400Regular', fontSize: 15,
-    color: COLORS.grey, textAlign: 'center',
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 15,
+    color: COLORS.grey,
+    textAlign: 'center',
   } as object,
   clearFilter: {
-    marginTop: 8, paddingHorizontal: 28, paddingVertical: 11,
-    borderRadius: 24, borderWidth: 1.5, borderColor: COLORS.navy,
-    cursor: 'pointer', transition: 'all 150ms ease',
+    marginTop: 8,
+    paddingHorizontal: 28,
+    paddingVertical: 11,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: COLORS.navy,
+    cursor: 'pointer',
+    transition: 'all 150ms ease',
   } as object,
   clearFilterHover: { backgroundColor: COLORS.navy } as object,
   clearFilterText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },

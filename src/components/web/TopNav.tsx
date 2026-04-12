@@ -68,7 +68,6 @@ export function TopNav() {
   return (
     <View style={styles.nav as object}>
       <View style={styles.inner}>
-
         {/* Logo */}
         <Pressable onPress={() => router.push('/')} style={styles.logoWrap}>
           <HeroLogo iconSize={24} fontSize={19} color={COLORS.beige} gap={8} />
@@ -141,7 +140,6 @@ export function TopNav() {
             </View>
           ) : null}
         </View>
-
       </View>
     </View>
   );

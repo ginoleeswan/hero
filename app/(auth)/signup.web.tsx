@@ -60,13 +60,8 @@ export default function WebSignupScreen() {
         A confirmation link was sent to{'\n'}
         <Text style={styles.pendingEmail}>{pendingEmail}</Text>
       </Text>
-      <Text style={styles.pendingHint}>
-        Can't find it? Check your Spam or Junk folder.
-      </Text>
-      <Pressable
-        onPress={() => router.push('/(auth)/login')}
-        style={styles.pendingCta as object}
-      >
+      <Text style={styles.pendingHint}>Can't find it? Check your Spam or Junk folder.</Text>
+      <Pressable onPress={() => router.push('/(auth)/login')} style={styles.pendingCta as object}>
         <Text style={styles.pendingCtaText}>Back to Sign In</Text>
       </Pressable>
       <Pressable
@@ -82,7 +77,9 @@ export default function WebSignupScreen() {
     </View>
   );
 
-  const formContent = pendingEmail ? pendingContent : (
+  const formContent = pendingEmail ? (
+    pendingContent
+  ) : (
     <>
       {error && (
         <View style={styles.errorBox}>
@@ -153,7 +150,13 @@ export default function WebSignupScreen() {
       </View>
 
       <Pressable
-        style={({ pressed }) => [styles.button, (pressed || loading) && styles.buttonPressed, loading && styles.buttonLoading] as object}
+        style={({ pressed }) =>
+          [
+            styles.button,
+            (pressed || loading) && styles.buttonPressed,
+            loading && styles.buttonLoading,
+          ] as object
+        }
         onPress={handleSignup}
         disabled={loading}
       >
@@ -213,11 +216,7 @@ export default function WebSignupScreen() {
           <HeroLogo iconSize={48} fontSize={36} color={COLORS.beige} gap={12} />
         </View>
 
-        <Image
-          source={LOGIN_HERO}
-          style={styles.illustration as object}
-          contentFit="cover"
-        />
+        <Image source={LOGIN_HERO} style={styles.illustration as object} contentFit="cover" />
 
         <View style={styles.brandBottom}>
           <Text style={styles.brandTagline}>Join the{'\n'}Universe</Text>
@@ -230,16 +229,13 @@ export default function WebSignupScreen() {
 
       {/* Right form panel */}
       <View style={styles.formPanelDesktop}>
-        <View style={styles.formInner}>
-          {formContent}
-        </View>
+        <View style={styles.formInner}>{formContent}</View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-
   // ── Mobile ─────────────────────────────────────────────────────────────
   mobileRoot: {
     flex: 1,
@@ -252,8 +248,7 @@ const styles = StyleSheet.create({
     right: 0,
     height: '58%',
     backgroundColor: COLORS.navy,
-    backgroundImage:
-      'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
+    backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
     backgroundSize: '24px 24px',
   } as object,
   mobileScrim: {
@@ -310,8 +305,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundImage:
-      'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
+    backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
     backgroundSize: '24px 24px',
   },
   brandGlow: {

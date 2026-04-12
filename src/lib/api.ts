@@ -92,7 +92,8 @@ export async function fetchHeroStats(heroId: string): Promise<HeroStats> {
 }
 
 export async function fetchHeroDetails(heroName: string): Promise<HeroDetails> {
-  if (Platform.OS === 'web') return { summary: null, publisher: null, firstIssueId: null, powers: null };
+  if (Platform.OS === 'web')
+    return { summary: null, publisher: null, firstIssueId: null, powers: null };
 
   const params = new URLSearchParams({
     api_key: COMICVINE_API_KEY,
@@ -150,7 +151,7 @@ function verdictFallback(input: VerdictInput): string {
   const { heroA, heroB, winsA, winsB } = input;
   if (winsA === winsB) return `${heroA} and ${heroB} are evenly matched — ${winsA} stats each.`;
   const winner = winsA > winsB ? heroA : heroB;
-  const wins   = Math.max(winsA, winsB);
+  const wins = Math.max(winsA, winsB);
   return `${winner} takes it — ${wins} of 6 stats.`;
 }
 
@@ -163,7 +164,7 @@ export async function generateVerdict(input: VerdictInput): Promise<string> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
       },
       body: JSON.stringify(input),
       signal: controller.signal,
@@ -171,7 +172,7 @@ export async function generateVerdict(input: VerdictInput): Promise<string> {
 
     if (!res.ok) return verdictFallback(input);
 
-    const data = await res.json() as { verdict?: string };
+    const data = (await res.json()) as { verdict?: string };
     return data.verdict?.trim() || verdictFallback(input);
   } catch {
     return verdictFallback(input);

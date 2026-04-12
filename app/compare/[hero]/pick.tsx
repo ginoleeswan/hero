@@ -40,13 +40,28 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-function SuggestCard({ item, onPress }: { item: HeroSearchResult | HeroPowerResult; onPress: () => void }) {
+function SuggestCard({
+  item,
+  onPress,
+}: {
+  item: HeroSearchResult | HeroPowerResult;
+  onPress: () => void;
+}) {
   const source = heroImageSource(item.id, item.image_url, item.portrait_url);
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.82} style={suggest.card}>
-      <Image source={source} contentFit="cover" contentPosition="top" style={StyleSheet.absoluteFill} placeholder={COLORS.navy} transition={150} />
+      <Image
+        source={source}
+        contentFit="cover"
+        contentPosition="top"
+        style={StyleSheet.absoluteFill}
+        placeholder={COLORS.navy}
+        transition={150}
+      />
       <View style={suggest.overlay} />
-      <Text style={suggest.name} numberOfLines={2}>{item.name}</Text>
+      <Text style={suggest.name} numberOfLines={2}>
+        {item.name}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -84,7 +99,11 @@ export default function PickOpponentScreen() {
 
         if (rivalIds.size > 0) {
           const heroMap = new Map(allHeroes.map((h) => [h.id, h]));
-          setRivals(Array.from(rivalIds).map((id) => heroMap.get(id)).filter(Boolean) as HeroSearchResult[]);
+          setRivals(
+            Array.from(rivalIds)
+              .map((id) => heroMap.get(id))
+              .filter(Boolean) as HeroSearchResult[],
+          );
         }
         if (publisher) {
           setSameUniverse(
@@ -92,18 +111,27 @@ export default function PickOpponentScreen() {
           );
         }
       })
-      .catch((e: unknown) => { console.warn('[PickOpponentScreen] Failed to load heroes:', e); })
+      .catch((e: unknown) => {
+        console.warn('[PickOpponentScreen] Failed to load heroes:', e);
+      })
       .finally(() => setLoading(false));
 
-    getHeroById(hero ?? '').then((row) => {
-      if (!row?.enriched_at) return;
-      const total = (row.intelligence ?? 0) + (row.strength ?? 0) + (row.speed ?? 0)
-        + (row.durability ?? 0) + (row.power ?? 0) + (row.combat ?? 0);
-      const margin = Math.round(total * 0.18);
-      getHeroesByPowerRange(total - margin, total + margin, hero ?? '').then((results) => {
-        setSimilar(results.filter((r) => !rivalIds.has(r.id)));
-      });
-    }).catch(() => {});
+    getHeroById(hero ?? '')
+      .then((row) => {
+        if (!row?.enriched_at) return;
+        const total =
+          (row.intelligence ?? 0) +
+          (row.strength ?? 0) +
+          (row.speed ?? 0) +
+          (row.durability ?? 0) +
+          (row.power ?? 0) +
+          (row.combat ?? 0);
+        const margin = Math.round(total * 0.18);
+        getHeroesByPowerRange(total - margin, total + margin, hero ?? '').then((results) => {
+          setSimilar(results.filter((r) => !rivalIds.has(r.id)));
+        });
+      })
+      .catch(() => {});
   }, [hero]);
 
   const displayed = debouncedQuery.trim()
@@ -114,7 +142,8 @@ export default function PickOpponentScreen() {
     router.replace(`/compare/${hero}/${id}`);
   };
 
-  const showSuggestions = !debouncedQuery.trim() && (rivals.length > 0 || sameUniverse.length > 0 || similar.length > 0);
+  const showSuggestions =
+    !debouncedQuery.trim() && (rivals.length > 0 || sameUniverse.length > 0 || similar.length > 0);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -122,7 +151,9 @@ export default function PickOpponentScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={20} color={COLORS.beige} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>Who does {name ?? 'this hero'} face?</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          Who does {name ?? 'this hero'} face?
+        </Text>
       </View>
 
       <View style={styles.searchRow}>
@@ -144,7 +175,9 @@ export default function PickOpponentScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.center}><ActivityIndicator color={COLORS.orange} /></View>
+        <View style={styles.center}>
+          <ActivityIndicator color={COLORS.orange} />
+        </View>
       ) : (
         <FlatList
           data={displayed}
@@ -152,48 +185,87 @@ export default function PickOpponentScreen() {
           numColumns={2}
           columnWrapperStyle={styles.row}
           contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: insets.bottom + 16 }}
-          ListHeaderComponent={showSuggestions ? (
-            <View>
-              {rivals.length > 0 && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>Classic Rivals</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestRow}>
-                    {rivals.map((item) => (
-                      <SuggestCard key={item.id} item={item} onPress={() => handlePick(item.id)} />
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-              {sameUniverse.length > 0 && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>Same Universe</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestRow}>
-                    {sameUniverse.map((item) => (
-                      <SuggestCard key={item.id} item={item} onPress={() => handlePick(item.id)} />
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-              {similar.length > 0 && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>Similar Power Level</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestRow}>
-                    {similar.map((item) => (
-                      <SuggestCard key={item.id} item={item} onPress={() => handlePick(item.id)} />
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-              <Text style={styles.sectionLabel}>All Heroes</Text>
-            </View>
-          ) : null}
+          ListHeaderComponent={
+            showSuggestions ? (
+              <View>
+                {rivals.length > 0 && (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>Classic Rivals</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.suggestRow}
+                    >
+                      {rivals.map((item) => (
+                        <SuggestCard
+                          key={item.id}
+                          item={item}
+                          onPress={() => handlePick(item.id)}
+                        />
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+                {sameUniverse.length > 0 && (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>Same Universe</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.suggestRow}
+                    >
+                      {sameUniverse.map((item) => (
+                        <SuggestCard
+                          key={item.id}
+                          item={item}
+                          onPress={() => handlePick(item.id)}
+                        />
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+                {similar.length > 0 && (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>Similar Power Level</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.suggestRow}
+                    >
+                      {similar.map((item) => (
+                        <SuggestCard
+                          key={item.id}
+                          item={item}
+                          onPress={() => handlePick(item.id)}
+                        />
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+                <Text style={styles.sectionLabel}>All Heroes</Text>
+              </View>
+            ) : null
+          }
           renderItem={({ item }) => {
             const source = heroImageSource(item.id, item.image_url, item.portrait_url);
             return (
-              <TouchableOpacity onPress={() => handlePick(item.id)} activeOpacity={0.82} style={styles.card}>
-                <Image source={source} contentFit="cover" contentPosition="top" style={StyleSheet.absoluteFill} placeholder={COLORS.navy} transition={150} />
+              <TouchableOpacity
+                onPress={() => handlePick(item.id)}
+                activeOpacity={0.82}
+                style={styles.card}
+              >
+                <Image
+                  source={source}
+                  contentFit="cover"
+                  contentPosition="top"
+                  style={StyleSheet.absoluteFill}
+                  placeholder={COLORS.navy}
+                  transition={150}
+                />
                 <View style={styles.cardOverlay} />
-                <Text style={styles.cardName} numberOfLines={2}>{item.name}</Text>
+                <Text style={styles.cardName} numberOfLines={2}>
+                  {item.name}
+                </Text>
               </TouchableOpacity>
             );
           }}
@@ -206,7 +278,13 @@ export default function PickOpponentScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.navy },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
   backBtn: { padding: 4 },
   headerTitle: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.beige, flex: 1 },
   searchRow: {

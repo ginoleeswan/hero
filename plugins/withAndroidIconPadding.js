@@ -12,21 +12,21 @@ const path = require('path');
 const sharp = require('sharp');
 const fs = require('fs');
 
-const SCALE = 0.60;
+const SCALE = 0.6;
 
 const FOREGROUND_SIZES = {
-  'mipmap-mdpi':    108,
-  'mipmap-hdpi':    162,
-  'mipmap-xhdpi':   216,
-  'mipmap-xxhdpi':  324,
+  'mipmap-mdpi': 108,
+  'mipmap-hdpi': 162,
+  'mipmap-xhdpi': 216,
+  'mipmap-xxhdpi': 324,
   'mipmap-xxxhdpi': 432,
 };
 
 const SPLASH_SIZES = {
-  'drawable-mdpi':    288,
-  'drawable-hdpi':    432,
-  'drawable-xhdpi':   576,
-  'drawable-xxhdpi':  864,
+  'drawable-mdpi': 288,
+  'drawable-hdpi': 432,
+  'drawable-xhdpi': 576,
+  'drawable-xxhdpi': 864,
   'drawable-xxxhdpi': 1152,
 };
 
@@ -45,7 +45,13 @@ async function repadImages(projectRoot) {
 
     await sharp(adaptiveSrc)
       .resize(contentSize, contentSize)
-      .extend({ top: pad, bottom: canvas - contentSize - pad, left: pad, right: canvas - contentSize - pad, background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .extend({
+        top: pad,
+        bottom: canvas - contentSize - pad,
+        left: pad,
+        right: canvas - contentSize - pad,
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      })
       .webp({ quality: 100 })
       .toFile(outPath);
   }
@@ -61,7 +67,13 @@ async function repadImages(projectRoot) {
     // Composite padded adaptive icon over dark background
     const fg = await sharp(adaptiveSrc)
       .resize(contentSize, contentSize)
-      .extend({ top: pad, bottom: canvas - contentSize - pad, left: pad, right: canvas - contentSize - pad, background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .extend({
+        top: pad,
+        bottom: canvas - contentSize - pad,
+        left: pad,
+        right: canvas - contentSize - pad,
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      })
       .toBuffer();
 
     await sharp({ create: { width: canvas, height: canvas, channels: 4, background: SPLASH_BG } })

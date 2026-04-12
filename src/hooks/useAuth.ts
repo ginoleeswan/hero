@@ -15,7 +15,10 @@ interface AuthState {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
-  changePassword: (currentPassword: string, newPassword: string) => Promise<{ error: Error | null }>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string,
+  ) => Promise<{ error: Error | null }>;
   deleteAccount: () => Promise<{ error: Error | null }>;
 }
 
@@ -111,17 +114,25 @@ export function useAuth(): AuthState {
     }
   };
 
-  const changePassword = async (currentPassword: string, newPassword: string): Promise<{ error: Error | null }> => {
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ error: Error | null }> => {
     // Re-authenticate first to ensure the session is fresh
     const email = (await supabase.auth.getUser()).data.user?.email ?? '';
-    const { error: reAuthError } = await supabase.auth.signInWithPassword({ email, password: currentPassword });
+    const { error: reAuthError } = await supabase.auth.signInWithPassword({
+      email,
+      password: currentPassword,
+    });
     if (reAuthError) return { error: reAuthError };
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     return { error };
   };
 
   const deleteAccount = async (): Promise<{ error: Error | null }> => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     const token = session?.access_token;
     if (!token) return { error: new Error('Not authenticated') };
 
@@ -138,5 +149,16 @@ export function useAuth(): AuthState {
     return { error: null };
   };
 
-  return { user, session, loading, signIn, signUp, signOut, resetPassword, signInWithGoogle, changePassword, deleteAccount };
+  return {
+    user,
+    session,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+    resetPassword,
+    signInWithGoogle,
+    changePassword,
+    deleteAccount,
+  };
 }

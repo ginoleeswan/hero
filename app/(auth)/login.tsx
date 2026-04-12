@@ -65,11 +65,7 @@ export default function LoginScreen() {
         <HeroLogo iconSize={36} fontSize={28} color={COLORS.beige} gap={10} />
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.kav}
-        behavior="padding"
-        keyboardVerticalOffset={80}
-      >
+      <KeyboardAvoidingView style={styles.kav} behavior="padding" keyboardVerticalOffset={80}>
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}

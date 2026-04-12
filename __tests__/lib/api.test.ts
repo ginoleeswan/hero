@@ -1,4 +1,9 @@
-import { fetchHeroStats, fetchHeroDetails, fetchFirstIssue, generateVerdict } from '../../src/lib/api';
+import {
+  fetchHeroStats,
+  fetchHeroDetails,
+  fetchFirstIssue,
+  generateVerdict,
+} from '../../src/lib/api';
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -95,7 +100,9 @@ describe('fetchFirstIssue', () => {
 
 // generateVerdict uses its own fetch mocking — restore after each test
 const originalFetch = global.fetch;
-afterEach(() => { global.fetch = originalFetch; });
+afterEach(() => {
+  global.fetch = originalFetch;
+});
 
 describe('generateVerdict', () => {
   it('returns AI verdict on success', async () => {
@@ -105,8 +112,10 @@ describe('generateVerdict', () => {
     } as Response);
 
     const result = await generateVerdict({
-      heroA: 'Batman', heroB: 'Spider-Man',
-      winsA: 4, winsB: 2,
+      heroA: 'Batman',
+      heroB: 'Spider-Man',
+      winsA: 4,
+      winsB: 2,
       statsA: { intelligence: 81, strength: 26, speed: 27, durability: 64, power: 47, combat: 64 },
       statsB: { intelligence: 75, strength: 55, speed: 23, durability: 42, power: 36, combat: 42 },
     });
@@ -117,8 +126,10 @@ describe('generateVerdict', () => {
     global.fetch = jest.fn().mockRejectedValue(new Error('network error'));
 
     const result = await generateVerdict({
-      heroA: 'Batman', heroB: 'Spider-Man',
-      winsA: 4, winsB: 2,
+      heroA: 'Batman',
+      heroB: 'Spider-Man',
+      winsA: 4,
+      winsB: 2,
       statsA: { intelligence: 81, strength: 26, speed: 27, durability: 64, power: 47, combat: 64 },
       statsB: { intelligence: 75, strength: 55, speed: 23, durability: 42, power: 36, combat: 42 },
     });
@@ -129,8 +140,10 @@ describe('generateVerdict', () => {
   it('returns tie fallback when winsA equals winsB', async () => {
     global.fetch = jest.fn().mockRejectedValue(new Error('network error'));
     const result = await generateVerdict({
-      heroA: 'Batman', heroB: 'Spider-Man',
-      winsA: 3, winsB: 3,
+      heroA: 'Batman',
+      heroB: 'Spider-Man',
+      winsA: 3,
+      winsB: 3,
       statsA: { intelligence: 81, strength: 26, speed: 27, durability: 64, power: 47, combat: 64 },
       statsB: { intelligence: 75, strength: 55, speed: 23, durability: 42, power: 36, combat: 42 },
     });

@@ -41,10 +41,7 @@ export function HomeHeroRow({
         showsHorizontalScrollIndicator={false}
         decelerationRate={isPortrait ? 'fast' : 'normal'}
         snapToInterval={isPortrait ? PORTRAIT_CARD_WIDTH + 12 : undefined}
-        contentContainerStyle={[
-          styles.listContent,
-          { gap: isPortrait ? 12 : 8 },
-        ]}
+        contentContainerStyle={[styles.listContent, { gap: isPortrait ? 12 : 8 }]}
         renderItem={({ item }) =>
           isPortrait ? (
             <View style={{ width: PORTRAIT_CARD_WIDTH }}>

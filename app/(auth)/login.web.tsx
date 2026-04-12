@@ -128,7 +128,13 @@ export default function WebLoginScreen() {
       </Pressable>
 
       <Pressable
-        style={({ pressed }) => [styles.button, (pressed || loading) && styles.buttonPressed, loading && styles.buttonLoading] as object}
+        style={({ pressed }) =>
+          [
+            styles.button,
+            (pressed || loading) && styles.buttonPressed,
+            loading && styles.buttonLoading,
+          ] as object
+        }
         onPress={handleLogin}
         disabled={loading}
       >
@@ -188,11 +194,7 @@ export default function WebLoginScreen() {
           <HeroLogo iconSize={48} fontSize={36} color={COLORS.beige} gap={12} />
         </View>
 
-        <Image
-          source={LOGIN_HERO}
-          style={styles.illustration as object}
-          contentFit="cover"
-        />
+        <Image source={LOGIN_HERO} style={styles.illustration as object} contentFit="cover" />
 
         <View style={styles.brandBottom}>
           <Text style={styles.brandTagline}>The Superhero{'\n'}Encyclopedia</Text>
@@ -205,16 +207,13 @@ export default function WebLoginScreen() {
 
       {/* Right form panel */}
       <View style={styles.formPanelDesktop}>
-        <View style={styles.formInner}>
-          {formContent}
-        </View>
+        <View style={styles.formInner}>{formContent}</View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-
   // ── Mobile ─────────────────────────────────────────────────────────────
   mobileRoot: {
     flex: 1,
@@ -227,8 +226,7 @@ const styles = StyleSheet.create({
     right: 0,
     height: '58%',
     backgroundColor: COLORS.navy,
-    backgroundImage:
-      'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
+    backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
     backgroundSize: '24px 24px',
   } as object,
   mobileScrim: {
@@ -285,8 +283,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundImage:
-      'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
+    backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
     backgroundSize: '24px 24px',
   },
   brandGlow: {

@@ -82,7 +82,7 @@ export default function WebProfileScreen() {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -103,7 +103,10 @@ export default function WebProfileScreen() {
 
   const handleSaveName = async () => {
     const trimmed = nameValue.trim();
-    if (!trimmed) { setEditingName(false); return; }
+    if (!trimmed) {
+      setEditingName(false);
+      return;
+    }
     setSavingName(true);
     await updateDisplayName(trimmed);
     setSavingName(false);
@@ -124,7 +127,11 @@ export default function WebProfileScreen() {
       >
         {profile?.avatar_url ? (
           <View style={[styles.avatar, isMobile && styles.avatarMobile]}>
-            <Image source={{ uri: profile.avatar_url }} style={StyleSheet.absoluteFill} contentFit="cover" />
+            <Image
+              source={{ uri: profile.avatar_url }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+            />
             {avatarUploading && (
               <View style={styles.avatarOverlay}>
                 <ActivityIndicator color="white" size="small" />
@@ -132,10 +139,17 @@ export default function WebProfileScreen() {
             )}
           </View>
         ) : (
-          <LinearGradient colors={[COLORS.orange, '#c04a10']} style={[styles.avatar, isMobile && styles.avatarMobile]}>
-            {avatarUploading
-              ? <ActivityIndicator color="white" />
-              : <Text style={[styles.avatarText, isMobile && styles.avatarTextMobile]}>{name.slice(0, 2).toUpperCase()}</Text>}
+          <LinearGradient
+            colors={[COLORS.orange, '#c04a10']}
+            style={[styles.avatar, isMobile && styles.avatarMobile]}
+          >
+            {avatarUploading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={[styles.avatarText, isMobile && styles.avatarTextMobile]}>
+                {name.slice(0, 2).toUpperCase()}
+              </Text>
+            )}
           </LinearGradient>
         )}
         <View style={[styles.cameraBadge, isMobile && styles.cameraBadgeMobile]}>
@@ -159,16 +173,25 @@ export default function WebProfileScreen() {
             maxLength={40}
           />
           <Pressable onPress={handleSaveName} disabled={savingName} style={styles.nameBtn}>
-            {savingName
-              ? <ActivityIndicator size="small" color={isMobile ? COLORS.orange : COLORS.orange} />
-              : <Ionicons name="checkmark" size={16} color={COLORS.orange} />}
+            {savingName ? (
+              <ActivityIndicator size="small" color={isMobile ? COLORS.orange : COLORS.orange} />
+            ) : (
+              <Ionicons name="checkmark" size={16} color={COLORS.orange} />
+            )}
           </Pressable>
           <Pressable onPress={() => setEditingName(false)} style={styles.nameBtn}>
-            <Ionicons name="close" size={16} color={isMobile ? COLORS.grey : 'rgba(245,235,220,0.5)'} />
+            <Ionicons
+              name="close"
+              size={16}
+              color={isMobile ? COLORS.grey : 'rgba(245,235,220,0.5)'}
+            />
           </Pressable>
         </View>
       ) : (
-        <Pressable onPress={startEditingName} style={[styles.nameRow, isMobile && styles.nameRowMobile]}>
+        <Pressable
+          onPress={startEditingName}
+          style={[styles.nameRow, isMobile && styles.nameRowMobile]}
+        >
           <Text style={[styles.username, isMobile && styles.usernameMobile]}>{name}</Text>
           <Ionicons
             name="pencil-outline"
@@ -185,7 +208,9 @@ export default function WebProfileScreen() {
 
       <View style={[styles.statRow, isMobile && styles.statRowMobile]}>
         <Text style={[styles.statLabel, isMobile && styles.statLabelMobile]}>Favourites</Text>
-        <Text style={[styles.statValue, isMobile && styles.statValueMobile]}>{favourites.length}</Text>
+        <Text style={[styles.statValue, isMobile && styles.statValueMobile]}>
+          {favourites.length}
+        </Text>
       </View>
 
       <View style={[styles.panelDivider, isMobile && styles.panelDividerMobile]} />

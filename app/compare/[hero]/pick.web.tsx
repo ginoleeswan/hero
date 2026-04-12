@@ -11,7 +11,12 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { searchHeroes, rankResults, getHeroById, getHeroesByPowerRange } from '../../../src/lib/db/heroes';
+import {
+  searchHeroes,
+  rankResults,
+  getHeroById,
+  getHeroesByPowerRange,
+} from '../../../src/lib/db/heroes';
 import type { HeroSearchResult, HeroPowerResult } from '../../../src/lib/db/heroes';
 import { heroImageSource } from '../../../src/constants/heroImages';
 import { getRivals } from '../../../src/constants/rivals';
@@ -33,11 +38,23 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-function SuggestRow({ label, items, onPick }: { label: string; items: (HeroSearchResult | HeroPowerResult)[]; onPick: (id: string) => void }) {
+function SuggestRow({
+  label,
+  items,
+  onPick,
+}: {
+  label: string;
+  items: (HeroSearchResult | HeroPowerResult)[];
+  onPick: (id: string) => void;
+}) {
   return (
     <View style={suggest.section}>
       <Text style={suggest.sectionLabel}>{label}</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={suggest.row as object}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={suggest.row as object}
+      >
         {items.map((item) => {
           const source = heroImageSource(item.id, item.image_url, item.portrait_url);
           return (
@@ -48,9 +65,18 @@ function SuggestRow({ label, items, onPick }: { label: string; items: (HeroSearc
                 [suggest.card, hovered && (suggest.cardHover as object)] as object
               }
             >
-              <Image source={source} contentFit="cover" contentPosition="top" style={StyleSheet.absoluteFill} placeholder={COLORS.navy} transition={150} />
+              <Image
+                source={source}
+                contentFit="cover"
+                contentPosition="top"
+                style={StyleSheet.absoluteFill}
+                placeholder={COLORS.navy}
+                transition={150}
+              />
               <View style={suggest.overlay as object} />
-              <Text style={suggest.name as object} numberOfLines={2}>{item.name}</Text>
+              <Text style={suggest.name as object} numberOfLines={2}>
+                {item.name}
+              </Text>
             </Pressable>
           );
         })}
@@ -86,32 +112,50 @@ export default function WebPickOpponentScreen() {
         setAll(sorted);
         if (rivalIds.size > 0) {
           const heroMap = new Map(allHeroes.map((h) => [h.id, h]));
-          setRivals(Array.from(rivalIds).map((id) => heroMap.get(id)).filter(Boolean) as HeroSearchResult[]);
+          setRivals(
+            Array.from(rivalIds)
+              .map((id) => heroMap.get(id))
+              .filter(Boolean) as HeroSearchResult[],
+          );
         }
         const heroRow = allHeroes.find((h) => h.id === hero);
         if (heroRow?.publisher) {
-          setSameUniverse(filtered.filter((h) => h.publisher === heroRow.publisher && !rivalIds.has(h.id)).slice(0, 8));
+          setSameUniverse(
+            filtered
+              .filter((h) => h.publisher === heroRow.publisher && !rivalIds.has(h.id))
+              .slice(0, 8),
+          );
         }
       })
-      .catch((e: unknown) => { console.warn('[WebPickOpponentScreen] Failed to load heroes:', e); })
+      .catch((e: unknown) => {
+        console.warn('[WebPickOpponentScreen] Failed to load heroes:', e);
+      })
       .finally(() => setLoading(false));
 
-    getHeroById(hero ?? '').then((row) => {
-      if (!row?.enriched_at) return;
-      const total = (row.intelligence ?? 0) + (row.strength ?? 0) + (row.speed ?? 0)
-        + (row.durability ?? 0) + (row.power ?? 0) + (row.combat ?? 0);
-      const margin = Math.round(total * 0.18);
-      getHeroesByPowerRange(total - margin, total + margin, hero ?? '').then((results) => {
-        const rivalIds2 = new Set(getRivals(hero ?? ''));
-        setSimilar(results.filter((r) => !rivalIds2.has(r.id)));
-      });
-    }).catch(() => {});
+    getHeroById(hero ?? '')
+      .then((row) => {
+        if (!row?.enriched_at) return;
+        const total =
+          (row.intelligence ?? 0) +
+          (row.strength ?? 0) +
+          (row.speed ?? 0) +
+          (row.durability ?? 0) +
+          (row.power ?? 0) +
+          (row.combat ?? 0);
+        const margin = Math.round(total * 0.18);
+        getHeroesByPowerRange(total - margin, total + margin, hero ?? '').then((results) => {
+          const rivalIds2 = new Set(getRivals(hero ?? ''));
+          setSimilar(results.filter((r) => !rivalIds2.has(r.id)));
+        });
+      })
+      .catch(() => {});
 
     const t = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(t);
   }, [hero]);
 
-  const showSuggestions = !debouncedQuery.trim() && (rivals.length > 0 || sameUniverse.length > 0 || similar.length > 0);
+  const showSuggestions =
+    !debouncedQuery.trim() && (rivals.length > 0 || sameUniverse.length > 0 || similar.length > 0);
   const displayed = debouncedQuery.trim()
     ? rankResults(all, debouncedQuery).slice(0, 120)
     : all.slice(0, 120);
@@ -158,9 +202,27 @@ export default function WebPickOpponentScreen() {
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
           {showSuggestions && (
             <View style={suggest.sections as object}>
-              {rivals.length > 0 && <SuggestRow label="Classic Rivals" items={rivals} onPick={(id) => router.replace(`/compare/${hero}/${id}`)} />}
-              {sameUniverse.length > 0 && <SuggestRow label="Same Universe" items={sameUniverse} onPick={(id) => router.replace(`/compare/${hero}/${id}`)} />}
-              {similar.length > 0 && <SuggestRow label="Similar Power Level" items={similar} onPick={(id) => router.replace(`/compare/${hero}/${id}`)} />}
+              {rivals.length > 0 && (
+                <SuggestRow
+                  label="Classic Rivals"
+                  items={rivals}
+                  onPick={(id) => router.replace(`/compare/${hero}/${id}`)}
+                />
+              )}
+              {sameUniverse.length > 0 && (
+                <SuggestRow
+                  label="Same Universe"
+                  items={sameUniverse}
+                  onPick={(id) => router.replace(`/compare/${hero}/${id}`)}
+                />
+              )}
+              {similar.length > 0 && (
+                <SuggestRow
+                  label="Similar Power Level"
+                  items={similar}
+                  onPick={(id) => router.replace(`/compare/${hero}/${id}`)}
+                />
+              )}
               <Text style={suggest.sectionLabel}>All Heroes</Text>
             </View>
           )}
@@ -184,7 +246,9 @@ export default function WebPickOpponentScreen() {
                     transition={150}
                   />
                   <View style={card.overlay as object} />
-                  <Text style={card.name as object} numberOfLines={2}>{item.name}</Text>
+                  <Text style={card.name as object} numberOfLines={2}>
+                    {item.name}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -289,12 +353,17 @@ const suggest = {
   cardHover: { transform: [{ scale: 1.04 }] },
   overlay: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundImage: 'linear-gradient(to top, rgba(29,45,51,0.9) 0%, transparent 60%)',
   },
   name: {
     position: 'absolute',
-    bottom: 8, left: 8, right: 8,
+    bottom: 8,
+    left: 8,
+    right: 8,
     fontFamily: 'Flame-Regular',
     fontSize: 12,
     color: COLORS.beige,
@@ -318,7 +387,10 @@ const card = StyleSheet.create({
   } as object,
   overlay: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundImage:
       'linear-gradient(to top, rgba(29,45,51,0.9) 0%, rgba(29,45,51,0.1) 55%, transparent 100%)',
   } as object,

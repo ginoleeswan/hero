@@ -38,17 +38,29 @@ function StatBattleRow({ stat, isDesktop }: { stat: StatResult; isDesktop: boole
         <Text style={[wb.val, aWins && wb.valWin]}>{stat.valueA}</Text>
         <View style={wb.track}>
           <View
-            style={[wb.barLeft, { width: `${stat.valueA}%`, backgroundColor: aWins ? winColor : dimColor }] as object}
+            style={
+              [
+                wb.barLeft,
+                { width: `${stat.valueA}%`, backgroundColor: aWins ? winColor : dimColor },
+              ] as object
+            }
           />
         </View>
       </View>
 
-      <Text style={[wb.label, isDesktop && (wb.labelDesktop as object)] as object}>{stat.label}</Text>
+      <Text style={[wb.label, isDesktop && (wb.labelDesktop as object)] as object}>
+        {stat.label}
+      </Text>
 
       <View style={[wb.side, wb.sideRight]}>
         <View style={wb.track}>
           <View
-            style={[wb.barRight, { width: `${stat.valueB}%`, backgroundColor: bWins ? winColor : dimColor }] as object}
+            style={
+              [
+                wb.barRight,
+                { width: `${stat.valueB}%`, backgroundColor: bWins ? winColor : dimColor },
+              ] as object
+            }
           />
         </View>
         <Text style={[wb.val, bWins && wb.valWin]}>{stat.valueB}</Text>
@@ -64,13 +76,31 @@ function VerdictShimmer() {
       Animated.sequence([
         Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
         Animated.timing(opacity, { toValue: 0.3, duration: 700, useNativeDriver: true }),
-      ])
+      ]),
     ).start();
   }, []);
   return (
     <View style={{ gap: 8, paddingVertical: 4 }}>
-      <Animated.View style={{ opacity, height: 18, borderRadius: 9, backgroundColor: 'rgba(245,235,220,0.15)', width: '80%', alignSelf: 'center' }} />
-      <Animated.View style={{ opacity, height: 18, borderRadius: 9, backgroundColor: 'rgba(245,235,220,0.15)', width: '55%', alignSelf: 'center' }} />
+      <Animated.View
+        style={{
+          opacity,
+          height: 18,
+          borderRadius: 9,
+          backgroundColor: 'rgba(245,235,220,0.15)',
+          width: '80%',
+          alignSelf: 'center',
+        }}
+      />
+      <Animated.View
+        style={{
+          opacity,
+          height: 18,
+          borderRadius: 9,
+          backgroundColor: 'rgba(245,235,220,0.15)',
+          width: '55%',
+          alignSelf: 'center',
+        }}
+      />
     </View>
   );
 }
@@ -87,7 +117,10 @@ export default function WebCompareScreen() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { const t = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(t); }, []);
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(t);
+  }, []);
 
   useEffect(() => {
     if (!hero || !opponent) {
@@ -99,9 +132,20 @@ export default function WebCompareScreen() {
         setStatsA(a);
         setStatsB(b);
         const result = compareStats(a.name, a.powerstats, b.name, b.powerstats);
-        const psA = Object.fromEntries(Object.entries(a.powerstats).map(([k, v]) => [k, parseInt(v, 10) || 0]));
-        const psB = Object.fromEntries(Object.entries(b.powerstats).map(([k, v]) => [k, parseInt(v, 10) || 0]));
-        generateVerdict({ heroA: a.name, heroB: b.name, winsA: result.winsA, winsB: result.winsB, statsA: psA, statsB: psB }).then(setVerdict);
+        const psA = Object.fromEntries(
+          Object.entries(a.powerstats).map(([k, v]) => [k, parseInt(v, 10) || 0]),
+        );
+        const psB = Object.fromEntries(
+          Object.entries(b.powerstats).map(([k, v]) => [k, parseInt(v, 10) || 0]),
+        );
+        generateVerdict({
+          heroA: a.name,
+          heroB: b.name,
+          winsA: result.winsA,
+          winsB: result.winsB,
+          statsA: psA,
+          statsB: psB,
+        }).then(setVerdict);
       })
       .catch(() => setError('Could not load hero data.'));
   }, [hero, opponent]);
@@ -149,7 +193,6 @@ export default function WebCompareScreen() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.contentOuter}>
-
       {/* Sub-header */}
       <View style={styles.subHeader as object}>
         <View style={styles.subHeaderInner}>
@@ -184,7 +227,17 @@ export default function WebCompareScreen() {
           /* Desktop: side-by-side portrait panels + center stat column */
           <View style={styles.desktopLayout as object}>
             {/* Hero A portrait */}
-            <View style={[styles.portraitWrap, { height: portraitHeight }, { opacity: mounted ? 1 : 0, transform: [{ translateX: mounted ? 0 : -60 }], transition: 'opacity 0.45s ease-out, transform 0.45s cubic-bezier(0.22,1,0.36,1)' } as object]}>
+            <View
+              style={[
+                styles.portraitWrap,
+                { height: portraitHeight },
+                {
+                  opacity: mounted ? 1 : 0,
+                  transform: [{ translateX: mounted ? 0 : -60 }],
+                  transition: 'opacity 0.45s ease-out, transform 0.45s cubic-bezier(0.22,1,0.36,1)',
+                } as object,
+              ]}
+            >
               <Image
                 source={imageA}
                 contentFit="cover"
@@ -197,7 +250,9 @@ export default function WebCompareScreen() {
                   <Text style={styles.publisher}>{statsA.biography.publisher}</Text>
                 ) : null}
                 <Text style={styles.heroNameLarge as object}>{statsA.name}</Text>
-                <Text style={styles.winsLabel}>{result.winsA} stat{result.winsA !== 1 ? 's' : ''}</Text>
+                <Text style={styles.winsLabel}>
+                  {result.winsA} stat{result.winsA !== 1 ? 's' : ''}
+                </Text>
               </View>
             </View>
 
@@ -212,9 +267,14 @@ export default function WebCompareScreen() {
                 ))}
               </View>
               <Pressable
-                onPress={() => router.push(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)}
+                onPress={() =>
+                  router.push(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)
+                }
                 style={({ hovered }: { hovered?: boolean }) =>
-                  [styles.compareAnotherBtn, hovered && (styles.compareAnotherHover as object)] as object
+                  [
+                    styles.compareAnotherBtn,
+                    hovered && (styles.compareAnotherHover as object),
+                  ] as object
                 }
               >
                 <Text style={styles.compareAnotherText}>Compare someone else →</Text>
@@ -222,7 +282,17 @@ export default function WebCompareScreen() {
             </View>
 
             {/* Hero B portrait */}
-            <View style={[styles.portraitWrap, { height: portraitHeight }, { opacity: mounted ? 1 : 0, transform: [{ translateX: mounted ? 0 : 60 }], transition: 'opacity 0.45s ease-out, transform 0.45s cubic-bezier(0.22,1,0.36,1)' } as object]}>
+            <View
+              style={[
+                styles.portraitWrap,
+                { height: portraitHeight },
+                {
+                  opacity: mounted ? 1 : 0,
+                  transform: [{ translateX: mounted ? 0 : 60 }],
+                  transition: 'opacity 0.45s ease-out, transform 0.45s cubic-bezier(0.22,1,0.36,1)',
+                } as object,
+              ]}
+            >
               <Image
                 source={imageB}
                 contentFit="cover"
@@ -234,8 +304,12 @@ export default function WebCompareScreen() {
                 {statsB.biography.publisher ? (
                   <Text style={styles.publisher}>{statsB.biography.publisher}</Text>
                 ) : null}
-                <Text style={[styles.heroNameLarge, styles.textRight] as object}>{statsB.name}</Text>
-                <Text style={[styles.winsLabel, styles.textRight]}>{result.winsB} stat{result.winsB !== 1 ? 's' : ''}</Text>
+                <Text style={[styles.heroNameLarge, styles.textRight] as object}>
+                  {statsB.name}
+                </Text>
+                <Text style={[styles.winsLabel, styles.textRight]}>
+                  {result.winsB} stat{result.winsB !== 1 ? 's' : ''}
+                </Text>
               </View>
             </View>
           </View>
@@ -244,16 +318,30 @@ export default function WebCompareScreen() {
           <View>
             <View style={styles.mobilePortraits}>
               <View style={[styles.mobilePortraitWrap, { height: portraitHeight }]}>
-                <Image source={imageA} contentFit="cover" contentPosition="top" style={StyleSheet.absoluteFill} />
+                <Image
+                  source={imageA}
+                  contentFit="cover"
+                  contentPosition="top"
+                  style={StyleSheet.absoluteFill}
+                />
                 <View style={styles.portraitOverlay as object} />
                 <Text style={styles.mobilePortraitName}>{statsA.name}</Text>
-                <Text style={styles.mobileWinsLabel}>{result.winsA} stat{result.winsA !== 1 ? 's' : ''}</Text>
+                <Text style={styles.mobileWinsLabel}>
+                  {result.winsA} stat{result.winsA !== 1 ? 's' : ''}
+                </Text>
               </View>
               <View style={[styles.mobilePortraitWrap, { height: portraitHeight }]}>
-                <Image source={imageB} contentFit="cover" contentPosition="top" style={[StyleSheet.absoluteFill, { transform: [{ scaleX: -1 }] }]} />
+                <Image
+                  source={imageB}
+                  contentFit="cover"
+                  contentPosition="top"
+                  style={[StyleSheet.absoluteFill, { transform: [{ scaleX: -1 }] }]}
+                />
                 <View style={styles.portraitOverlay as object} />
                 <Text style={[styles.mobilePortraitName, styles.textRight]}>{statsB.name}</Text>
-                <Text style={[styles.mobileWinsLabel, styles.textRight]}>{result.winsB} stat{result.winsB !== 1 ? 's' : ''}</Text>
+                <Text style={[styles.mobileWinsLabel, styles.textRight]}>
+                  {result.winsB} stat{result.winsB !== 1 ? 's' : ''}
+                </Text>
               </View>
             </View>
             <View style={styles.verdictCard}>
@@ -265,9 +353,15 @@ export default function WebCompareScreen() {
               ))}
             </View>
             <Pressable
-              onPress={() => router.push(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)}
+              onPress={() =>
+                router.push(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)
+              }
               style={({ hovered }: { hovered?: boolean }) =>
-                [styles.compareAnotherBtn, styles.compareAnotherBtnMobile, hovered && (styles.compareAnotherHover as object)] as object
+                [
+                  styles.compareAnotherBtn,
+                  styles.compareAnotherBtnMobile,
+                  hovered && (styles.compareAnotherHover as object),
+                ] as object
               }
             >
               <Text style={styles.compareAnotherText}>Compare someone else →</Text>
@@ -361,7 +455,10 @@ const styles = StyleSheet.create({
   } as object,
   portraitOverlay: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundImage:
       'linear-gradient(to top, rgba(29,45,51,0.95) 0%, rgba(29,45,51,0.3) 50%, transparent 100%)',
   } as object,
@@ -403,7 +500,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 4,
   },
-verdictText: {
+  verdictText: {
     fontFamily: 'Flame-Regular',
     fontSize: 18,
     color: COLORS.beige,
@@ -434,7 +531,12 @@ verdictText: {
   },
 
   mobilePortraits: { flexDirection: 'row', gap: 6, marginBottom: 16 },
-  mobilePortraitWrap: { flex: 1, borderRadius: 10, overflow: 'hidden', backgroundColor: COLORS.navy },
+  mobilePortraitWrap: {
+    flex: 1,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+  },
   mobilePortraitName: {
     position: 'absolute',
     bottom: 24,
@@ -486,12 +588,16 @@ const wb = StyleSheet.create({
   },
   barLeft: {
     position: 'absolute',
-    right: 0, top: 0, bottom: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     borderRadius: 4,
   },
   barRight: {
     position: 'absolute',
-    left: 0, top: 0, bottom: 0,
+    left: 0,
+    top: 0,
+    bottom: 0,
     borderRadius: 4,
   },
   label: {

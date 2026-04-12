@@ -14,9 +14,11 @@ jest.mock('../../../src/lib/supabase', () => {
     });
     c.then = (resolve: (v: unknown) => unknown) =>
       Promise.resolve(mockResolvers[tableName] ?? { data: null, error: null }).then(resolve);
-    c.upsert = jest.fn().mockImplementation(() =>
-      Promise.resolve(mockResolvers[tableName] ?? { data: null, error: null }),
-    );
+    c.upsert = jest
+      .fn()
+      .mockImplementation(() =>
+        Promise.resolve(mockResolvers[tableName] ?? { data: null, error: null }),
+      );
     return c;
   };
 
@@ -53,9 +55,11 @@ beforeEach(() => {
       });
       c.then = (resolve: (v: unknown) => unknown) =>
         Promise.resolve(mockResolvers[tableName] ?? { data: null, error: null }).then(resolve);
-      c.upsert = jest.fn().mockImplementation(() =>
-        Promise.resolve(mockResolvers[tableName] ?? { data: null, error: null }),
-      );
+      c.upsert = jest
+        .fn()
+        .mockImplementation(() =>
+          Promise.resolve(mockResolvers[tableName] ?? { data: null, error: null }),
+        );
       chains[tableName] = c as Record<string, jest.Mock>;
     }
     return chains[tableName];

@@ -65,11 +65,7 @@ export default function SignupScreen() {
         <HeroLogo iconSize={36} fontSize={28} color={COLORS.beige} gap={10} />
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.kav}
-        behavior="padding"
-        keyboardVerticalOffset={80}
-      >
+      <KeyboardAvoidingView style={styles.kav} behavior="padding" keyboardVerticalOffset={80}>
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
@@ -121,10 +117,7 @@ export default function SignupScreen() {
                 <Text style={styles.pendingHint}>
                   Can't find it? Check your Spam or Junk folder.
                 </Text>
-                <Pressable
-                  onPress={() => router.push('/(auth)/login')}
-                  style={styles.pendingCta}
-                >
+                <Pressable onPress={() => router.push('/(auth)/login')} style={styles.pendingCta}>
                   <Text style={styles.pendingCtaText}>Back to Sign In</Text>
                 </Pressable>
                 <Pressable

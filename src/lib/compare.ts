@@ -18,11 +18,11 @@ export interface CompareResult {
 
 const STAT_CONFIG: { key: string; label: string; color: string }[] = [
   { key: 'intelligence', label: 'Intelligence', color: COLORS.blue },
-  { key: 'strength',     label: 'Strength',     color: COLORS.red },
-  { key: 'speed',        label: 'Speed',         color: COLORS.yellow },
-  { key: 'durability',   label: 'Durability',    color: COLORS.green },
-  { key: 'power',        label: 'Power',         color: COLORS.orange },
-  { key: 'combat',       label: 'Combat',        color: COLORS.brown },
+  { key: 'strength', label: 'Strength', color: COLORS.red },
+  { key: 'speed', label: 'Speed', color: COLORS.yellow },
+  { key: 'durability', label: 'Durability', color: COLORS.green },
+  { key: 'power', label: 'Power', color: COLORS.orange },
+  { key: 'combat', label: 'Combat', color: COLORS.brown },
 ];
 
 export function compareStats(
@@ -45,8 +45,8 @@ export function compareStats(
     winsA > winsB
       ? `${nameA} has the edge on ${winsA} of 6 stats`
       : winsB > winsA
-      ? `${nameB} has the edge on ${winsB} of 6 stats`
-      : 'These two are evenly matched';
+        ? `${nameB} has the edge on ${winsB} of 6 stats`
+        : 'These two are evenly matched';
 
   return { stats, winsA, winsB, verdict };
 }

@@ -2,19 +2,19 @@
 
 import { useRouter } from 'expo-router';
 
-const wordmark    = require('../../../assets/hero-wordmark.svg');
-const logoMark    = require('../../../assets/hero-logo.svg');
-const spiderman   = require('../../../assets/images/spiderman.jpg');
-const batman      = require('../../../assets/images/batman.jpg');
-const ironman     = require('../../../assets/images/ironman.jpg');
-const deadpool    = require('../../../assets/images/deadpool.jpg');
-const wolverine   = require('../../../assets/images/wolverine.jpg');
+const wordmark = require('../../../assets/hero-wordmark.svg');
+const logoMark = require('../../../assets/hero-logo.svg');
+const spiderman = require('../../../assets/images/spiderman.jpg');
+const batman = require('../../../assets/images/batman.jpg');
+const ironman = require('../../../assets/images/ironman.jpg');
+const deadpool = require('../../../assets/images/deadpool.jpg');
+const wolverine = require('../../../assets/images/wolverine.jpg');
 const wonderWoman = require('../../../assets/images/wonder-woman.jpg');
-const thor        = require('../../../assets/images/thor.jpg');
-const blackPanther= require('../../../assets/images/black-panther.jpg');
-const docStrange  = require('../../../assets/images/doctor-strange.jpg');
-const hulk        = require('../../../assets/images/hulk.jpg');
-const screenshotHome   = require('../../../assets/images/screenshots/home.PNG');
+const thor = require('../../../assets/images/thor.jpg');
+const blackPanther = require('../../../assets/images/black-panther.jpg');
+const docStrange = require('../../../assets/images/doctor-strange.jpg');
+const hulk = require('../../../assets/images/hulk.jpg');
+const screenshotHome = require('../../../assets/images/screenshots/home.PNG');
 const screenshotSearch = require('../../../assets/images/screenshots/search.PNG');
 
 const CSS = `
@@ -295,7 +295,20 @@ export default function LandingPage({ dom }: { dom?: import('expo/dom').DOMProps
   const router = useRouter();
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflowY: 'auto', overflowX: 'hidden', zIndex: 999, backgroundColor: '#0b1820', color: '#f5ebdc' }}>
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        zIndex: 999,
+        backgroundColor: '#0b1820',
+        color: '#f5ebdc',
+      }}
+    >
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
       <nav>
@@ -311,33 +324,70 @@ export default function LandingPage({ dom }: { dom?: import('expo/dom').DOMProps
       {/* HERO */}
       <section className="hero">
         <div className="hero-collage" aria-hidden="true">
-          <div className="hero-card hc1"><img src={spiderman}    alt="" loading="lazy" /></div>
-          <div className="hero-card hc2"><img src={batman}       alt="" loading="lazy" /></div>
-          <div className="hero-card hc3"><img src={ironman}      alt="" loading="lazy" /></div>
-          <div className="hero-card hc4"><img src={deadpool}     alt="" loading="lazy" /></div>
-          <div className="hero-card hc5"><img src={wolverine}    alt="" loading="lazy" /></div>
-          <div className="hero-card hc6"><img src={wonderWoman}  alt="" loading="lazy" /></div>
-          <div className="hero-card hc7"><img src={thor}         alt="" loading="lazy" /></div>
-          <div className="hero-card hc8"><img src={blackPanther} alt="" loading="lazy" /></div>
-          <div className="hero-card hc9"><img src={docStrange}   alt="" loading="lazy" /></div>
-          <div className="hero-card hc10"><img src={hulk}        alt="" loading="lazy" /></div>
+          <div className="hero-card hc1">
+            <img src={spiderman} alt="" loading="lazy" />
+          </div>
+          <div className="hero-card hc2">
+            <img src={batman} alt="" loading="lazy" />
+          </div>
+          <div className="hero-card hc3">
+            <img src={ironman} alt="" loading="lazy" />
+          </div>
+          <div className="hero-card hc4">
+            <img src={deadpool} alt="" loading="lazy" />
+          </div>
+          <div className="hero-card hc5">
+            <img src={wolverine} alt="" loading="lazy" />
+          </div>
+          <div className="hero-card hc6">
+            <img src={wonderWoman} alt="" loading="lazy" />
+          </div>
+          <div className="hero-card hc7">
+            <img src={thor} alt="" loading="lazy" />
+          </div>
+          <div className="hero-card hc8">
+            <img src={blackPanther} alt="" loading="lazy" />
+          </div>
+          <div className="hero-card hc9">
+            <img src={docStrange} alt="" loading="lazy" />
+          </div>
+          <div className="hero-card hc10">
+            <img src={hulk} alt="" loading="lazy" />
+          </div>
         </div>
 
         <div className="hero-content">
           <div className="hero-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
             500+ Heroes &amp; Villains
           </div>
           <img className="hero-wordmark-large" src={wordmark} alt="Hero" />
           <p className="hero-tagline">The Universe's Greatest Heroes</p>
-          <p className="hero-sub">Discover the powers, origins, and stories of 500+ characters from Marvel, DC, and beyond — all in your pocket.</p>
+          <p className="hero-sub">
+            Discover the powers, origins, and stories of 500+ characters from Marvel, DC, and beyond
+            — all in your pocket.
+          </p>
           <div className="hero-ctas">
             <button className="btn-primary">
-              <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+              <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+              </svg>
               App Store
             </button>
             <button className="btn-secondary" onClick={() => router.push('/(auth)/signup')}>
-              <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.18 23.76c.28.16.6.22.93.17l12.81-7.4-2.79-2.79-10.95 10zM.29 1.52A1.5 1.5 0 0 0 0 2.39v19.22c0 .31.09.6.29.87l.09.09 10.77-10.77v-.25L.38 1.43l-.09.09zM20.9 10.77l-2.71-1.56-3.07 3.08 3.07 3.07 2.74-1.58c.78-.45.78-1.58-.03-2.01zM4.11.24L16.92 7.63l-2.79 2.79L3.18.24A1.08 1.08 0 0 1 4.11.24z"/></svg>
+              <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M3.18 23.76c.28.16.6.22.93.17l12.81-7.4-2.79-2.79-10.95 10zM.29 1.52A1.5 1.5 0 0 0 0 2.39v19.22c0 .31.09.6.29.87l.09.09 10.77-10.77v-.25L.38 1.43l-.09.09zM20.9 10.77l-2.71-1.56-3.07 3.08 3.07 3.07 2.74-1.58c.78-.45.78-1.58-.03-2.01zM4.11.24L16.92 7.63l-2.79 2.79L3.18.24A1.08 1.08 0 0 1 4.11.24z" />
+              </svg>
               Google Play
             </button>
             <button className="btn-secondary" onClick={() => router.push('/(auth)/login')}>
@@ -347,26 +397,72 @@ export default function LandingPage({ dom }: { dom?: import('expo/dom').DOMProps
         </div>
 
         <div className="scroll-hint" aria-hidden="true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
           <span>Scroll</span>
         </div>
       </section>
 
       {/* STATS */}
       <div className="stats">
-        <div className="stat-item"><span className="stat-num">500+</span><span className="stat-label">Heroes &amp; Villains</span></div>
-        <div className="stat-item"><span className="stat-num">Marvel &amp; DC</span><span className="stat-label">Universes</span></div>
-        <div className="stat-item"><span className="stat-num">Free</span><span className="stat-label">To Download</span></div>
-        <div className="stat-item"><span className="stat-num">iOS &amp; Android</span><span className="stat-label">Platforms</span></div>
+        <div className="stat-item">
+          <span className="stat-num">500+</span>
+          <span className="stat-label">Heroes &amp; Villains</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-num">Marvel &amp; DC</span>
+          <span className="stat-label">Universes</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-num">Free</span>
+          <span className="stat-label">To Download</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-num">iOS &amp; Android</span>
+          <span className="stat-label">Platforms</span>
+        </div>
       </div>
 
       {/* MARQUEE */}
       <div className="marquee-wrapper" aria-hidden="true">
         <div className="marquee-track">
-          {[0, 1].map(i => (
+          {[0, 1].map((i) => (
             <div key={i} className="marquee-item">
-              {['Spider-Man','Batman','Iron Man','Wonder Woman','Black Panther','Thor','Deadpool','Wolverine','Doctor Strange','Hulk','Magneto','Joker','Loki','Venom','Storm','Captain America'].map((name, j) => (
-                <span key={j}>{name}<span className="marquee-dot" style={{display:'inline-block',marginLeft:48}} /></span>
+              {[
+                'Spider-Man',
+                'Batman',
+                'Iron Man',
+                'Wonder Woman',
+                'Black Panther',
+                'Thor',
+                'Deadpool',
+                'Wolverine',
+                'Doctor Strange',
+                'Hulk',
+                'Magneto',
+                'Joker',
+                'Loki',
+                'Venom',
+                'Storm',
+                'Captain America',
+              ].map((name, j) => (
+                <span key={j}>
+                  {name}
+                  <span
+                    className="marquee-dot"
+                    style={{ display: 'inline-block', marginLeft: 48 }}
+                  />
+                </span>
               ))}
             </div>
           ))}
@@ -377,19 +473,82 @@ export default function LandingPage({ dom }: { dom?: import('expo/dom').DOMProps
       <section className="section">
         <div className="section-inner">
           <p className="section-eyebrow">What's inside</p>
-          <h2 className="section-heading">Everything you need to<br />know your heroes</h2>
-          <p className="section-sub">From first appearances to power stats — the most complete superhero companion app on the planet.</p>
+          <h2 className="section-heading">
+            Everything you need to
+            <br />
+            know your heroes
+          </h2>
+          <p className="section-sub">
+            From first appearances to power stats — the most complete superhero companion app on the
+            planet.
+          </p>
           <div className="features-grid">
             {[
-              { title:'Discover Heroes',   desc:'Browse curated collections of heroes by universe, team, or power set. New favourites await every scroll.',     icon:<><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></> },
-              { title:'Instant Search',    desc:'Find any of 500+ characters in seconds. Search by name, power, publisher, or team affiliation.',                icon:<><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></> },
-              { title:'Save Favourites',   desc:'Build your personal hero roster. Track your favourite characters and revisit them any time.',                    icon:<><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></> },
-              { title:'Power Stats',       desc:'Dive deep into intelligence, strength, speed, durability, power, and combat ratings for every hero.',           icon:<><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></> },
-              { title:'Origin Stories',   desc:'First issue data, publisher history, and real names — the complete origin story behind every icon.',            icon:<><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></> },
-              { title:'Universe Browser', desc:'Explore Marvel, DC, Dark Horse and more. Organised by publisher, team, and comic era.',                         icon:<><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></> },
+              {
+                title: 'Discover Heroes',
+                desc: 'Browse curated collections of heroes by universe, team, or power set. New favourites await every scroll.',
+                icon: (
+                  <>
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </>
+                ),
+              },
+              {
+                title: 'Instant Search',
+                desc: 'Find any of 500+ characters in seconds. Search by name, power, publisher, or team affiliation.',
+                icon: (
+                  <>
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </>
+                ),
+              },
+              {
+                title: 'Save Favourites',
+                desc: 'Build your personal hero roster. Track your favourite characters and revisit them any time.',
+                icon: (
+                  <>
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </>
+                ),
+              },
+              {
+                title: 'Power Stats',
+                desc: 'Dive deep into intelligence, strength, speed, durability, power, and combat ratings for every hero.',
+                icon: (
+                  <>
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </>
+                ),
+              },
+              {
+                title: 'Origin Stories',
+                desc: 'First issue data, publisher history, and real names — the complete origin story behind every icon.',
+                icon: (
+                  <>
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                  </>
+                ),
+              },
+              {
+                title: 'Universe Browser',
+                desc: 'Explore Marvel, DC, Dark Horse and more. Organised by publisher, team, and comic era.',
+                icon: (
+                  <>
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <path d="M3 9h18M3 15h18M9 3v18" />
+                  </>
+                ),
+              },
             ].map((f, i) => (
               <div key={i} className="feature-card">
-                <div className="feature-icon"><svg viewBox="0 0 24 24" aria-hidden="true">{f.icon}</svg></div>
+                <div className="feature-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    {f.icon}
+                  </svg>
+                </div>
                 <h3 className="feature-title">{f.title}</h3>
                 <p className="feature-desc">{f.desc}</p>
               </div>
@@ -407,13 +566,24 @@ export default function LandingPage({ dom }: { dom?: import('expo/dom').DOMProps
                 <img src={screenshotHome} alt="Hero app home screen" width={220} />
               </div>
               <div className="phone-frame phone-second">
-                <img src={screenshotSearch} alt="Hero app search screen" width={190} loading="lazy" />
+                <img
+                  src={screenshotSearch}
+                  alt="Hero app search screen"
+                  width={190}
+                  loading="lazy"
+                />
               </div>
             </div>
             <div className="screenshots-text">
               <p className="section-eyebrow">The app</p>
-              <h2 className="section-heading">Designed for<br />true fans</h2>
-              <p className="section-sub">A beautiful, fast, and intuitive experience — built by fans, for fans.</p>
+              <h2 className="section-heading">
+                Designed for
+                <br />
+                true fans
+              </h2>
+              <p className="section-sub">
+                A beautiful, fast, and intuitive experience — built by fans, for fans.
+              </p>
               <ul className="feature-list">
                 {[
                   'Curated hero carousels updated regularly',
@@ -422,7 +592,11 @@ export default function LandingPage({ dom }: { dom?: import('expo/dom').DOMProps
                   'Works offline — your heroes, always available',
                 ].map((item, i) => (
                   <li key={i}>
-                    <span className="check" aria-hidden="true"><svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg></span>
+                    <span className="check" aria-hidden="true">
+                      <svg viewBox="0 0 12 12">
+                        <polyline points="2 6 5 9 10 3" />
+                      </svg>
+                    </span>
                     {item}
                   </li>
                 ))}
@@ -437,13 +611,21 @@ export default function LandingPage({ dom }: { dom?: import('expo/dom').DOMProps
         <div className="showcase-inner">
           <p className="section-eyebrow">The roster</p>
           <h2 className="section-heading">From every universe</h2>
-          <p className="section-sub">Marvel. DC. Dark Horse. If they wear a cape (or don't), we've got them covered.</p>
+          <p className="section-sub">
+            Marvel. DC. Dark Horse. If they wear a cape (or don't), we've got them covered.
+          </p>
           <div className="hero-mosaic">
             {[
-              [spiderman,'Spider-Man'],[batman,'Batman'],[ironman,'Iron Man'],
-              [wonderWoman,'Wonder Woman'],[blackPanther,'Black Panther'],
-              [deadpool,'Deadpool'],[wolverine,'Wolverine'],[thor,'Thor'],
-              [docStrange,'Doctor Strange'],[hulk,'Hulk'],
+              [spiderman, 'Spider-Man'],
+              [batman, 'Batman'],
+              [ironman, 'Iron Man'],
+              [wonderWoman, 'Wonder Woman'],
+              [blackPanther, 'Black Panther'],
+              [deadpool, 'Deadpool'],
+              [wolverine, 'Wolverine'],
+              [thor, 'Thor'],
+              [docStrange, 'Doctor Strange'],
+              [hulk, 'Hulk'],
             ].map(([src, name], i) => (
               <div key={i} className="mosaic-card">
                 <img src={src as string} alt={name as string} loading="lazy" />
@@ -459,15 +641,37 @@ export default function LandingPage({ dom }: { dom?: import('expo/dom').DOMProps
         <div className="cta-inner">
           <p className="section-eyebrow">Download now</p>
           <h2 className="cta-glow">Your heroes await.</h2>
-          <p className="cta-sub">Free to download. No ads. Just the greatest heroes ever created — right in your pocket.</p>
+          <p className="cta-sub">
+            Free to download. No ads. Just the greatest heroes ever created — right in your pocket.
+          </p>
           <div className="cta-buttons">
             <button className="app-store-badge" aria-label="Download on the App Store">
-              <svg className="badge-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-              <div className="badge-text"><span>Download on the</span><span>App Store</span></div>
+              <svg
+                className="badge-icon"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+              </svg>
+              <div className="badge-text">
+                <span>Download on the</span>
+                <span>App Store</span>
+              </div>
             </button>
             <button className="app-store-badge" aria-label="Get it on Google Play">
-              <svg className="badge-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.18 23.76c.28.16.6.22.93.17l12.81-7.4-2.79-2.79-10.95 10zM.29 1.52A1.5 1.5 0 0 0 0 2.39v19.22c0 .31.09.6.29.87l.09.09 10.77-10.77v-.25L.38 1.43l-.09.09zM20.9 10.77l-2.71-1.56-3.07 3.08 3.07 3.07 2.74-1.58c.78-.45.78-1.58-.03-2.01zM4.11.24L16.92 7.63l-2.79 2.79L3.18.24A1.08 1.08 0 0 1 4.11.24z"/></svg>
-              <div className="badge-text"><span>Get it on</span><span>Google Play</span></div>
+              <svg
+                className="badge-icon"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M3.18 23.76c.28.16.6.22.93.17l12.81-7.4-2.79-2.79-10.95 10zM.29 1.52A1.5 1.5 0 0 0 0 2.39v19.22c0 .31.09.6.29.87l.09.09 10.77-10.77v-.25L.38 1.43l-.09.09zM20.9 10.77l-2.71-1.56-3.07 3.08 3.07 3.07 2.74-1.58c.78-.45.78-1.58-.03-2.01zM4.11.24L16.92 7.63l-2.79 2.79L3.18.24A1.08 1.08 0 0 1 4.11.24z" />
+              </svg>
+              <div className="badge-text">
+                <span>Get it on</span>
+                <span>Google Play</span>
+              </div>
             </button>
           </div>
         </div>

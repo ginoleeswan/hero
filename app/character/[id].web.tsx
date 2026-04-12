@@ -1,12 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -478,7 +471,13 @@ const sk = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#ddd5c8',
   },
-  card: { backgroundColor: 'white', borderRadius: 12, padding: 20, borderWidth: 1, borderColor: '#e8ddd0' },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#e8ddd0',
+  },
   infoGridDesktop: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 },
 });
 

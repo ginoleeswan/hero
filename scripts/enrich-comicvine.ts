@@ -19,8 +19,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../src/types/database.generated';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const supabaseKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.EXPO_PUBLIC_SUPABASE_KEY!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.EXPO_PUBLIC_SUPABASE_KEY!;
 
 const supabase = createClient<Database>(supabaseUrl, supabaseKey);
 

@@ -111,7 +111,7 @@ export default function ProfileScreen() {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -120,7 +120,9 @@ export default function ProfileScreen() {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         { options: ['Cancel', 'Remove Photo'], destructiveButtonIndex: 1, cancelButtonIndex: 0 },
-        (idx) => { if (idx === 1) removeAvatar(); }
+        (idx) => {
+          if (idx === 1) removeAvatar();
+        },
       );
     } else {
       Alert.alert('Profile Photo', 'Remove your profile photo?', [
@@ -135,7 +137,9 @@ export default function ProfileScreen() {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         { options: ['Cancel', 'Remove Cover'], destructiveButtonIndex: 1, cancelButtonIndex: 0 },
-        (idx) => { if (idx === 1) removeCover(); }
+        (idx) => {
+          if (idx === 1) removeCover();
+        },
       );
     } else {
       Alert.alert('Cover Photo', 'Remove your cover photo?', [
@@ -154,7 +158,10 @@ export default function ProfileScreen() {
 
   const handleSaveName = async () => {
     const trimmed = nameValue.trim();
-    if (!trimmed) { setEditingName(false); return; }
+    if (!trimmed) {
+      setEditingName(false);
+      return;
+    }
     setSavingName(true);
     await updateDisplayName(trimmed);
     setSavingName(false);
@@ -188,7 +195,11 @@ export default function ProfileScreen() {
           style={[styles.cover, { height: 140 + insets.top }]}
         >
           {profile?.cover_url ? (
-            <Image source={{ uri: profile.cover_url }} style={StyleSheet.absoluteFill} contentFit="cover" />
+            <Image
+              source={{ uri: profile.cover_url }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+            />
           ) : (
             <LinearGradient
               colors={['#293C43', '#3d5a66']}
@@ -198,7 +209,14 @@ export default function ProfileScreen() {
             >
               <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
                 <Defs>
-                  <Pattern id="dots" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+                  <Pattern
+                    id="dots"
+                    x="0"
+                    y="0"
+                    width="14"
+                    height="14"
+                    patternUnits="userSpaceOnUse"
+                  >
                     <Circle cx="7" cy="7" r="1.5" fill="rgba(231,115,51,0.22)" />
                   </Pattern>
                 </Defs>
@@ -234,7 +252,11 @@ export default function ProfileScreen() {
           >
             {profile?.avatar_url ? (
               <View style={styles.avatar}>
-                <Image source={{ uri: profile.avatar_url }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                <Image
+                  source={{ uri: profile.avatar_url }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                />
                 {avatarUploading && (
                   <View style={styles.avatarUploadOverlay}>
                     <ActivityIndicator color="white" />
@@ -278,19 +300,35 @@ export default function ProfileScreen() {
                 maxLength={40}
                 placeholderTextColor="rgba(41,60,67,0.3)"
               />
-              <TouchableOpacity onPress={handleSaveName} disabled={savingName} style={styles.nameAction} activeOpacity={0.7}>
-                {savingName
-                  ? <ActivityIndicator size="small" color={COLORS.orange} />
-                  : <Ionicons name="checkmark" size={20} color={COLORS.orange} />}
+              <TouchableOpacity
+                onPress={handleSaveName}
+                disabled={savingName}
+                style={styles.nameAction}
+                activeOpacity={0.7}
+              >
+                {savingName ? (
+                  <ActivityIndicator size="small" color={COLORS.orange} />
+                ) : (
+                  <Ionicons name="checkmark" size={20} color={COLORS.orange} />
+                )}
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleCancelName} style={styles.nameAction} activeOpacity={0.7}>
+              <TouchableOpacity
+                onPress={handleCancelName}
+                style={styles.nameAction}
+                activeOpacity={0.7}
+              >
                 <Ionicons name="close" size={20} color={COLORS.grey} />
               </TouchableOpacity>
             </View>
           ) : (
             <TouchableOpacity onPress={startEditingName} activeOpacity={0.7} style={styles.nameRow}>
               <Text style={styles.username}>{name}</Text>
-              <Ionicons name="pencil-outline" size={14} color={COLORS.grey} style={styles.pencilIcon} />
+              <Ionicons
+                name="pencil-outline"
+                size={14}
+                color={COLORS.grey}
+                style={styles.pencilIcon}
+              />
             </TouchableOpacity>
           )}
           <Text style={styles.email}>{email}</Text>
@@ -424,7 +462,8 @@ export default function ProfileScreen() {
 
         {/* Disclaimer */}
         <Text style={styles.disclaimer}>
-          Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics, or any other publisher.
+          Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics, or
+          any other publisher.
         </Text>
       </ScrollView>
 

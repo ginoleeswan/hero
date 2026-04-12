@@ -84,11 +84,7 @@ export default function ForgotPasswordScreen() {
       </Pressable>
 
       {/* Keyboard-aware scrollable content */}
-      <KeyboardAvoidingView
-        style={styles.kav}
-        behavior="padding"
-        keyboardVerticalOffset={80}
-      >
+      <KeyboardAvoidingView style={styles.kav} behavior="padding" keyboardVerticalOffset={80}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
@@ -114,10 +110,7 @@ export default function ForgotPasswordScreen() {
                     wrong email?
                   </Text>
                 </Text>
-                <Pressable
-                  onPress={() => router.replace('/(auth)/login')}
-                  style={styles.cta}
-                >
+                <Pressable onPress={() => router.replace('/(auth)/login')} style={styles.cta}>
                   <Text style={styles.ctaText}>Back to Sign In</Text>
                 </Pressable>
                 <View style={styles.resendRow}>

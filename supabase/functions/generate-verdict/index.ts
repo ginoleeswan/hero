@@ -1,7 +1,8 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 
 const GEMINI_KEY = Deno.env.get('GOOGLE_AI_STUDIO_API_KEY') ?? '';
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent';
+const GEMINI_URL =
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent';
 
 interface VerdictRequest {
   heroA: string;
@@ -27,20 +28,21 @@ serve(async (req: Request) => {
     const { heroA, heroB, winsA, winsB, statsA, statsB } = body;
 
     const winner = winsA >= winsB ? heroA : heroB;
-    const loser  = winsA >= winsB ? heroB : heroA;
+    const loser = winsA >= winsB ? heroB : heroA;
     const winnerWins = Math.max(winsA, winsB);
-    const loserWins  = Math.min(winsA, winsB);
+    const loserWins = Math.min(winsA, winsB);
 
     const winnerStats = winsA >= winsB ? statsA : statsB;
-    const loserStats  = winsA >= winsB ? statsB : statsA;
+    const loserStats = winsA >= winsB ? statsB : statsA;
 
     const statNames = ['intelligence', 'strength', 'speed', 'durability', 'power', 'combat'];
-    const wonStats  = statNames.filter((s) => (winnerStats[s] ?? 0) > (loserStats[s] ?? 0));
+    const wonStats = statNames.filter((s) => (winnerStats[s] ?? 0) > (loserStats[s] ?? 0));
     const lostStats = statNames.filter((s) => (loserStats[s] ?? 0) > (winnerStats[s] ?? 0));
 
-    const prompt = winsA === winsB
-      ? `${heroA} and ${heroB} tied 3-3 in a superhero stat battle. Write one punchy sentence declaring it a draw. Be dramatic. Max 15 words. No hashtags. No emoji.`
-      : `${winner} beat ${loser} ${winnerWins}-${loserWins} in a superhero stat battle. ${winner} won: ${wonStats.join(', ')}. ${loser} won: ${lostStats.join(', ') || 'none'}. Write one punchy sentence declaring ${winner} the winner. Be dramatic. Max 15 words. No hashtags. No emoji.`;
+    const prompt =
+      winsA === winsB
+        ? `${heroA} and ${heroB} tied 3-3 in a superhero stat battle. Write one punchy sentence declaring it a draw. Be dramatic. Max 15 words. No hashtags. No emoji.`
+        : `${winner} beat ${loser} ${winnerWins}-${loserWins} in a superhero stat battle. ${winner} won: ${wonStats.join(', ')}. ${loser} won: ${lostStats.join(', ') || 'none'}. Write one punchy sentence declaring ${winner} the winner. Be dramatic. Max 15 words. No hashtags. No emoji.`;
 
     const geminiRes = await fetch(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
       method: 'POST',
@@ -54,8 +56,7 @@ serve(async (req: Request) => {
     if (!geminiRes.ok) throw new Error(`Gemini error: ${geminiRes.status}`);
 
     const geminiData = await geminiRes.json();
-    const verdict: string =
-      geminiData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? '';
+    const verdict: string = geminiData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? '';
 
     if (!verdict) throw new Error('Empty Gemini response');
 

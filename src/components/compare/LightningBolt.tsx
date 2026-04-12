@@ -18,8 +18,8 @@ export function LightningBolt({ height, width = 52 }: LightningBoltProps) {
     M 28 0
     L 38 ${H * 0.19}
     L 50 ${H * 0.19}
-    L 33 ${H * 0.40}
-    L 47 ${H * 0.40}
+    L 33 ${H * 0.4}
+    L 47 ${H * 0.4}
     L 20 ${H * 0.64}
     L 36 ${H * 0.64}
     L 13 ${H * 0.86}
@@ -30,8 +30,8 @@ export function LightningBolt({ height, width = 52 }: LightningBoltProps) {
     L 16 ${H * 0.86}
     L 39 ${H * 0.64}
     L 23 ${H * 0.64}
-    L 50 ${H * 0.40}
-    L 36 ${H * 0.40}
+    L 50 ${H * 0.4}
+    L 36 ${H * 0.4}
     L 53 ${H * 0.19}
     L 41 ${H * 0.19}
     L 31 0
@@ -42,8 +42,8 @@ export function LightningBolt({ height, width = 52 }: LightningBoltProps) {
     M 26 0
     L 36 ${H * 0.19}
     L 48 ${H * 0.19}
-    L 31 ${H * 0.40}
-    L 45 ${H * 0.40}
+    L 31 ${H * 0.4}
+    L 45 ${H * 0.4}
     L 18 ${H * 0.64}
     L 34 ${H * 0.64}
     L 11 ${H * 0.86}
@@ -54,8 +54,8 @@ export function LightningBolt({ height, width = 52 }: LightningBoltProps) {
     L 14 ${H * 0.86}
     L 37 ${H * 0.64}
     L 21 ${H * 0.64}
-    L 48 ${H * 0.40}
-    L 34 ${H * 0.40}
+    L 48 ${H * 0.4}
+    L 34 ${H * 0.4}
     L 51 ${H * 0.19}
     L 39 ${H * 0.19}
     L 29 0
@@ -87,12 +87,7 @@ export function LightningBolt({ height, width = 52 }: LightningBoltProps) {
   `;
 
   return (
-    <Svg
-      width={width}
-      height={height}
-      viewBox="0 0 56 280"
-      preserveAspectRatio="none"
-    >
+    <Svg width={width} height={height} viewBox="0 0 56 280" preserveAspectRatio="none">
       <Defs>
         <LinearGradient id="boltGrad" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor="#ffe066" />

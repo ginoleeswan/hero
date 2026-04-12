@@ -26,8 +26,10 @@ export function SpeedLines({ side, width, height, opacity = 0.18 }: SpeedLinesPr
     return { x2: cx + dx, y2: cy + dy };
   });
 
-  const strokeWidths = [1.5, 1, 1.5, 0.8, 1.2, 1.5, 1, 0.8, 1.2, 1.5, 1, 1.5, 0.8,
-                        1.2, 1.5, 1, 0.8, 1.2, 1.5, 1, 1.5, 0.8, 1.2, 1.5];
+  const strokeWidths = [
+    1.5, 1, 1.5, 0.8, 1.2, 1.5, 1, 0.8, 1.2, 1.5, 1, 1.5, 0.8, 1.2, 1.5, 1, 0.8, 1.2, 1.5, 1, 1.5,
+    0.8, 1.2, 1.5,
+  ];
 
   return (
     <Svg

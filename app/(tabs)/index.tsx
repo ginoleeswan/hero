@@ -58,24 +58,30 @@ export default function HomeScreen() {
       getHeroesByPublisher('dc'),
       getHeroesByStatRanking('strength'),
       getHeroesByStatRanking('intelligence'),
-    ]).then(([cats, antiHeroes, marvel, dc, strongest, mostIntelligent]) => {
-      setData({
-        popular: cats.popular,
-        villain: cats.villain,
-        xmen: cats.xmen,
-        antiHeroes,
-        marvel,
-        dc,
-        strongest,
-        mostIntelligent,
-      });
-    }).catch(() => {});
+    ])
+      .then(([cats, antiHeroes, marvel, dc, strongest, mostIntelligent]) => {
+        setData({
+          popular: cats.popular,
+          villain: cats.villain,
+          xmen: cats.xmen,
+          antiHeroes,
+          marvel,
+          dc,
+          strongest,
+          mostIntelligent,
+        });
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
     if (!user?.id) return;
-    getRecentlyViewed(user.id).then(setRecentlyViewed).catch(() => {});
-    getUserFavouriteHeroes(user.id).then(setFavourites).catch(() => {});
+    getRecentlyViewed(user.id)
+      .then(setRecentlyViewed)
+      .catch(() => {});
+    getUserFavouriteHeroes(user.id)
+      .then(setFavourites)
+      .catch(() => {});
   }, [user?.id]);
 
   useEffect(() => {

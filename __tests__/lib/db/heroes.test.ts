@@ -25,7 +25,19 @@ import {
 let mockResolveWith: { data: unknown; error: unknown } = { data: null, error: null };
 
 jest.mock('../../../src/lib/supabase', () => {
-  const chainMethods = ['select', 'eq', 'gte', 'lte', 'neq', 'or', 'ilike', 'not', 'order', 'limit', 'single'];
+  const chainMethods = [
+    'select',
+    'eq',
+    'gte',
+    'lte',
+    'neq',
+    'or',
+    'ilike',
+    'not',
+    'order',
+    'limit',
+    'single',
+  ];
   const chain: Record<string, unknown> = {};
   chainMethods.forEach((m) => {
     chain[m] = jest.fn().mockReturnValue(chain);
@@ -304,7 +316,7 @@ const baseHero: HeroRow = {
   alignment: 'good',
   gender: 'Male',
   race: 'Human',
-  height_imperial: "6'2\"",
+  height_imperial: '6\'2"',
   height_metric: '188 cm',
   weight_imperial: '200 lb',
   weight_metric: '91 kg',

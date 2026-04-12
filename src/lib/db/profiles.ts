@@ -12,17 +12,13 @@ export interface UserProfile {
 }
 
 export async function getProfile(userId: string): Promise<UserProfile | null> {
-  const { data } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .eq('id', userId)
-    .maybeSingle();
+  const { data } = await supabase.from('user_profiles').select('*').eq('id', userId).maybeSingle();
   return data ?? null;
 }
 
 export async function upsertProfile(
   userId: string,
-  data: Partial<Pick<UserProfile, 'display_name' | 'avatar_url' | 'cover_url'>>
+  data: Partial<Pick<UserProfile, 'display_name' | 'avatar_url' | 'cover_url'>>,
 ): Promise<void> {
   const { error } = await supabase
     .from('user_profiles')
@@ -30,7 +26,9 @@ export async function upsertProfile(
   if (error) throw error;
 }
 
-async function uriToArrayBuffer(localUri: string): Promise<{ buffer: ArrayBuffer; contentType: string }> {
+async function uriToArrayBuffer(
+  localUri: string,
+): Promise<{ buffer: ArrayBuffer; contentType: string }> {
   const ext = localUri.split('.').pop()?.toLowerCase() ?? 'jpg';
   const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';
 

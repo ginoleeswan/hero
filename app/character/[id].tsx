@@ -31,7 +31,6 @@ const STAT_CONFIG: { key: string; label: string; tint: string }[] = [
   { key: 'combat', label: 'Combat', tint: COLORS.brown },
 ];
 
-
 function StatDial({ label, value, tint }: { label: string; value: string; tint: string }) {
   const numeric = parseInt(value, 10);
   const fill = isNaN(numeric) ? 0 : numeric;
@@ -337,7 +336,9 @@ export default function CharacterScreen() {
           style={styles.heroImage}
           cachePolicy="memory-disk"
           recyclingKey={id ?? 'hero'}
-          transition={heroImage !== null && typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}
+          transition={
+            heroImage !== null && typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null
+          }
         />
         <LinearGradient
           colors={[
@@ -483,9 +484,7 @@ export default function CharacterScreen() {
         <View style={compareStripStyle}>
           <TouchableOpacity
             onPress={() =>
-              router.push(
-                `/compare/${id}/pick?name=${encodeURIComponent(data.stats.name)}`
-              )
+              router.push(`/compare/${id}/pick?name=${encodeURIComponent(data.stats.name)}`)
             }
             activeOpacity={0.85}
             style={styles.compareStripBtn}

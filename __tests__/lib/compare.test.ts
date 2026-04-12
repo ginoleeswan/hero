@@ -1,7 +1,21 @@
 import { compareStats } from '../../src/lib/compare';
 
-const statsA = { intelligence: '88', strength: '55', speed: '67', durability: '75', power: '74', combat: '85' };
-const statsB = { intelligence: '56', strength: '26', speed: '27', durability: '44', power: '35', combat: '76' };
+const statsA = {
+  intelligence: '88',
+  strength: '55',
+  speed: '67',
+  durability: '75',
+  power: '74',
+  combat: '85',
+};
+const statsB = {
+  intelligence: '56',
+  strength: '26',
+  speed: '27',
+  durability: '44',
+  power: '35',
+  combat: '76',
+};
 
 describe('compareStats', () => {
   it('returns a result with 6 stat rows', () => {
@@ -27,7 +41,14 @@ describe('compareStats', () => {
   });
 
   it('returns an even verdict on equal stats', () => {
-    const equal = { intelligence: '50', strength: '50', speed: '50', durability: '50', power: '50', combat: '50' };
+    const equal = {
+      intelligence: '50',
+      strength: '50',
+      speed: '50',
+      durability: '50',
+      power: '50',
+      combat: '50',
+    };
     const result = compareStats('A', equal, 'B', equal);
     expect(result.verdict).toBe('These two are evenly matched');
   });

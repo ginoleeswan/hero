@@ -19,7 +19,6 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { createClient } from '@supabase/supabase-js';
 
-
 import 'dotenv/config';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -132,12 +131,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 async function uploadToStorage(heroId: string, imageBytes: Uint8Array): Promise<string> {
   const fileName = `${heroId}.jpg`;
-  const { error } = await supabase.storage
-    .from(BUCKET)
-    .upload(fileName, imageBytes, {
-      contentType: 'image/jpeg',
-      upsert: true,
-    });
+  const { error } = await supabase.storage.from(BUCKET).upload(fileName, imageBytes, {
+    contentType: 'image/jpeg',
+    upsert: true,
+  });
   if (error) throw new Error(`Storage upload failed for ${heroId}: ${error.message}`);
 
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(fileName);
@@ -145,10 +142,7 @@ async function uploadToStorage(heroId: string, imageBytes: Uint8Array): Promise<
 }
 
 async function setPortraitUrl(heroId: string, url: string): Promise<void> {
-  const { error } = await supabase
-    .from('heroes')
-    .update({ portrait_url: url })
-    .eq('id', heroId);
+  const { error } = await supabase.from('heroes').update({ portrait_url: url }).eq('id', heroId);
   if (error) throw new Error(`DB update failed for ${heroId}: ${error.message}`);
 }
 
@@ -161,8 +155,6 @@ async function fetchImageAsBase64(url: string): Promise<{ base64: string; mimeTy
   return { base64, mimeType };
 }
 
-
-
 async function generatePortrait(
   sourceBase64: string,
   sourceMime: string,
@@ -174,13 +166,15 @@ async function generatePortrait(
   }));
 
   const body = {
-    contents: [{
-      parts: [
-        { text: `Character name: ${heroName}. ${buildPrompt(heroId)}` },
-        { inline_data: { mime_type: sourceMime, data: sourceBase64 } },
-        ...styleRefs,
-      ],
-    }],
+    contents: [
+      {
+        parts: [
+          { text: `Character name: ${heroName}. ${buildPrompt(heroId)}` },
+          { inline_data: { mime_type: sourceMime, data: sourceBase64 } },
+          ...styleRefs,
+        ],
+      },
+    ],
     generationConfig: {
       responseModalities: ['IMAGE', 'TEXT'],
     },
@@ -210,10 +204,12 @@ async function generatePortrait(
       throw new Error(`Gemini API error ${res.status}: ${text}`);
     }
 
-    const json = await res.json() as {
+    const json = (await res.json()) as {
       candidates: Array<{
-        content: { parts: Array<{ inlineData?: { data: string }; inline_data?: { data: string } }> }
-      }>
+        content: {
+          parts: Array<{ inlineData?: { data: string }; inline_data?: { data: string } }>;
+        };
+      }>;
     };
 
     const imagePart = json.candidates?.[0]?.content?.parts?.find(
@@ -330,7 +326,9 @@ async function phase2(filterHeroId?: string): Promise<void> {
 
 async function main() {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-    throw new Error('EXPO_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env.local');
+    throw new Error(
+      'EXPO_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env.local',
+    );
   }
   if (!GEMINI_API_KEY) {
     throw new Error('GOOGLE_AI_STUDIO_API_KEY must be set in .env.local');

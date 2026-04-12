@@ -85,7 +85,11 @@ const styles = StyleSheet.create({
     minHeight: 380,
   } as object,
   overlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundImage: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 60%)',
   } as object,
   overlayFeatured: {

@@ -37,13 +37,23 @@ function StatBattleRow({ stat }: { stat: StatResult }) {
       <View style={battle.side}>
         <Text style={[battle.val, aWins && battle.valWin]}>{stat.valueA}</Text>
         <View style={battle.track}>
-          <View style={[battle.barLeft, { width: `${stat.valueA}%`, backgroundColor: aWins ? winColor : dimColor } as object]} />
+          <View
+            style={[
+              battle.barLeft,
+              { width: `${stat.valueA}%`, backgroundColor: aWins ? winColor : dimColor } as object,
+            ]}
+          />
         </View>
       </View>
       <Text style={battle.label}>{stat.label}</Text>
       <View style={[battle.side, battle.sideRight]}>
         <View style={battle.track}>
-          <View style={[battle.barRight, { width: `${stat.valueB}%`, backgroundColor: bWins ? winColor : dimColor } as object]} />
+          <View
+            style={[
+              battle.barRight,
+              { width: `${stat.valueB}%`, backgroundColor: bWins ? winColor : dimColor } as object,
+            ]}
+          />
         </View>
         <Text style={[battle.val, bWins && battle.valWin]}>{stat.valueB}</Text>
       </View>
@@ -74,9 +84,12 @@ export default function NativeCompareScreen() {
           Object.entries(b.powerstats).map(([k, v]) => [k, parseInt(v, 10) || 0]),
         );
         generateVerdict({
-          heroA: a.name, heroB: b.name,
-          winsA: result.winsA, winsB: result.winsB,
-          statsA: psA, statsB: psB,
+          heroA: a.name,
+          heroB: b.name,
+          winsA: result.winsA,
+          winsB: result.winsB,
+          statsA: psA,
+          statsB: psB,
         }).then(setVerdict);
       })
       .catch(() => setError('Could not load hero data.'));
@@ -150,7 +163,9 @@ export default function NativeCompareScreen() {
         </View>
 
         <TouchableOpacity
-          onPress={() => router.replace(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)}
+          onPress={() =>
+            router.replace(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)
+          }
           activeOpacity={0.8}
           style={styles.compareAnotherBtn}
         >
@@ -240,7 +255,7 @@ const battle = StyleSheet.create({
     borderRadius: 4,
     overflow: 'hidden',
   },
-  barLeft:  { position: 'absolute', right: 0, top: 0, bottom: 0, borderRadius: 4 },
+  barLeft: { position: 'absolute', right: 0, top: 0, bottom: 0, borderRadius: 4 },
   barRight: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 4 },
   label: {
     fontFamily: 'Nunito_700Bold',

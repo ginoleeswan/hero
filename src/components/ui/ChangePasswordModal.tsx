@@ -31,22 +31,41 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
   const confirmRef = useRef<TextInput>(null);
 
   const reset = () => {
-    setCurrent(''); setNext(''); setConfirm('');
-    setError(null); setLoading(false);
-    setShowCurrent(false); setShowNext(false);
+    setCurrent('');
+    setNext('');
+    setConfirm('');
+    setError(null);
+    setLoading(false);
+    setShowCurrent(false);
+    setShowNext(false);
   };
 
-  const handleClose = () => { reset(); onClose(); };
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
 
   const handleSubmit = async () => {
-    if (!current || !next || !confirm) { setError('All fields are required.'); return; }
-    if (next.length < 6) { setError('New password must be at least 6 characters.'); return; }
-    if (next !== confirm) { setError('Passwords don\'t match.'); return; }
+    if (!current || !next || !confirm) {
+      setError('All fields are required.');
+      return;
+    }
+    if (next.length < 6) {
+      setError('New password must be at least 6 characters.');
+      return;
+    }
+    if (next !== confirm) {
+      setError("Passwords don't match.");
+      return;
+    }
     setLoading(true);
     setError(null);
     const { error } = await onSubmit(current, next);
     setLoading(false);
-    if (error) { setError(error.message); return; }
+    if (error) {
+      setError(error.message);
+      return;
+    }
     reset();
     onClose();
   };
@@ -88,8 +107,12 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
               placeholderTextColor="rgba(41,60,67,0.3)"
               placeholder="••••••••"
             />
-            <Pressable onPress={() => setShowCurrent(v => !v)} style={styles.eye}>
-              <Ionicons name={showCurrent ? 'eye-off-outline' : 'eye-outline'} size={18} color="rgba(41,60,67,0.4)" />
+            <Pressable onPress={() => setShowCurrent((v) => !v)} style={styles.eye}>
+              <Ionicons
+                name={showCurrent ? 'eye-off-outline' : 'eye-outline'}
+                size={18}
+                color="rgba(41,60,67,0.4)"
+              />
             </Pressable>
           </View>
 
@@ -107,8 +130,12 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
               placeholderTextColor="rgba(41,60,67,0.3)"
               placeholder="••••••••"
             />
-            <Pressable onPress={() => setShowNext(v => !v)} style={styles.eye}>
-              <Ionicons name={showNext ? 'eye-off-outline' : 'eye-outline'} size={18} color="rgba(41,60,67,0.4)" />
+            <Pressable onPress={() => setShowNext((v) => !v)} style={styles.eye}>
+              <Ionicons
+                name={showNext ? 'eye-off-outline' : 'eye-outline'}
+                size={18}
+                color="rgba(41,60,67,0.4)"
+              />
             </Pressable>
           </View>
 
@@ -130,7 +157,11 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
             onPress={handleSubmit}
             disabled={loading}
           >
-            {loading ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>Update Password</Text>}
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.buttonText}>Update Password</Text>
+            )}
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -150,45 +181,78 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   handle: {
-    width: 36, height: 4, borderRadius: 2,
+    width: 36,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: 'rgba(41,60,67,0.15)',
-    alignSelf: 'center', marginBottom: 20,
+    alignSelf: 'center',
+    marginBottom: 20,
   },
   header: {
-    flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between', marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
   },
   title: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.navy },
   errorBox: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: 'rgba(181,48,43,0.08)', borderRadius: 8,
-    borderLeftWidth: 3, borderLeftColor: COLORS.red,
-    paddingHorizontal: 12, paddingVertical: 8, marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(181,48,43,0.08)',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.red,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 14,
   },
   errorText: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.red },
   label: {
-    fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.navy,
-    marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.8, opacity: 0.55,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.navy,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    opacity: 0.55,
   },
   inputRow: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: 'white', borderRadius: 10,
-    borderWidth: 1, borderColor: '#e0d6ca', marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e0d6ca',
+    marginBottom: 14,
   },
   input: {
-    flex: 1, paddingHorizontal: 14, paddingVertical: 13,
-    fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.navy,
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 15,
+    color: COLORS.navy,
   },
   inputStandalone: {
-    paddingHorizontal: 14, paddingVertical: 13,
-    fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.navy,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 15,
+    color: COLORS.navy,
   },
   eye: { paddingHorizontal: 12, paddingVertical: 13 },
   button: {
-    backgroundColor: COLORS.orange, borderRadius: 12,
-    paddingVertical: 16, alignItems: 'center', marginTop: 4,
-    shadowColor: COLORS.orange, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 10, elevation: 5,
+    backgroundColor: COLORS.orange,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 4,
+    shadowColor: COLORS.orange,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
   buttonPressed: { opacity: 0.85 },
   buttonText: { fontFamily: 'Nunito_700Bold', color: 'white', fontSize: 16 },
