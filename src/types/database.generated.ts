@@ -23,11 +23,16 @@ export type Database = {
           category: string | null
           combat: number | null
           comicvine_enriched_at: string | null
+          creators: string[] | null
+          cv_teams: string[] | null
+          description: string | null
           durability: number | null
+          enemies: string[] | null
           enriched_at: string | null
           eye_color: string | null
           first_appearance: string | null
           first_issue_image_url: string | null
+          friends: string[] | null
           full_name: string | null
           gender: string | null
           group_affiliation: string | null
@@ -38,8 +43,11 @@ export type Database = {
           image_md_url: string | null
           image_url: string | null
           intelligence: number | null
+          issue_count: number | null
+          movies: string[] | null
           name: string
           occupation: string | null
+          origin: string | null
           place_of_birth: string | null
           portrait_url: string | null
           power: number | null
@@ -61,11 +69,16 @@ export type Database = {
           category?: string | null
           combat?: number | null
           comicvine_enriched_at?: string | null
+          creators?: string[] | null
+          cv_teams?: string[] | null
+          description?: string | null
           durability?: number | null
+          enemies?: string[] | null
           enriched_at?: string | null
           eye_color?: string | null
           first_appearance?: string | null
           first_issue_image_url?: string | null
+          friends?: string[] | null
           full_name?: string | null
           gender?: string | null
           group_affiliation?: string | null
@@ -76,8 +89,11 @@ export type Database = {
           image_md_url?: string | null
           image_url?: string | null
           intelligence?: number | null
+          issue_count?: number | null
+          movies?: string[] | null
           name: string
           occupation?: string | null
+          origin?: string | null
           place_of_birth?: string | null
           portrait_url?: string | null
           power?: number | null
@@ -99,11 +115,16 @@ export type Database = {
           category?: string | null
           combat?: number | null
           comicvine_enriched_at?: string | null
+          creators?: string[] | null
+          cv_teams?: string[] | null
+          description?: string | null
           durability?: number | null
+          enemies?: string[] | null
           enriched_at?: string | null
           eye_color?: string | null
           first_appearance?: string | null
           first_issue_image_url?: string | null
+          friends?: string[] | null
           full_name?: string | null
           gender?: string | null
           group_affiliation?: string | null
@@ -114,8 +135,11 @@ export type Database = {
           image_md_url?: string | null
           image_url?: string | null
           intelligence?: number | null
+          issue_count?: number | null
+          movies?: string[] | null
           name?: string
           occupation?: string | null
+          origin?: string | null
           place_of_birth?: string | null
           portrait_url?: string | null
           power?: number | null
@@ -210,7 +234,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cache_hero_comicvine_data: {
+        Args: { p_id: string; p_powers: string[]; p_summary: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
