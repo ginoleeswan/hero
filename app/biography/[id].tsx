@@ -44,7 +44,6 @@ const TAG_STYLES = {
   strong: { fontFamily: 'Flame-Regular' },
 };
 const SYSTEM_FONTS = ['FlameSans-Regular', 'Flame-Regular'];
-const IGNORED_TAGS = ['figure', 'figcaption', 'table', 'thead'];
 
 export default function BiographyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -94,7 +93,6 @@ export default function BiographyScreen() {
                 source={{ html: hero.description }}
                 tagsStyles={TAG_STYLES}
                 systemFonts={SYSTEM_FONTS}
-                ignoredDomTags={IGNORED_TAGS}
               />
             ) : (
               <Text style={styles.empty}>No biography available.</Text>
