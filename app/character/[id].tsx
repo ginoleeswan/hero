@@ -572,14 +572,10 @@ export default function CharacterScreen() {
               <InfoRow label="Hair" value={data.stats.appearance['hair-color']} />
             </Section>
 
-            {/* Work */}
-            <Section title="Work">
+            {/* Connections (includes work) */}
+            <Section title="Connections">
               <InfoRow label="Occupation" value={data.stats.work.occupation} />
               <InfoRow label="Base" value={data.stats.work.base} />
-            </Section>
-
-            {/* Connections */}
-            <Section title="Connections">
               <AffiliationChips value={data.stats.connections['group-affiliation']} />
               <RelativesList value={data.stats.connections.relatives} />
             </Section>
