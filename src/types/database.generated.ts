@@ -43,6 +43,7 @@ export type Database = {
           place_of_birth: string | null
           portrait_url: string | null
           power: number | null
+          powers: string[] | null
           publisher: string | null
           race: string | null
           relatives: string | null
@@ -80,6 +81,7 @@ export type Database = {
           place_of_birth?: string | null
           portrait_url?: string | null
           power?: number | null
+          powers?: string[] | null
           publisher?: string | null
           race?: string | null
           relatives?: string | null
@@ -117,6 +119,7 @@ export type Database = {
           place_of_birth?: string | null
           portrait_url?: string | null
           power?: number | null
+          powers?: string[] | null
           publisher?: string | null
           race?: string | null
           relatives?: string | null
