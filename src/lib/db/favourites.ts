@@ -59,3 +59,12 @@ export async function getFavouriteCount(userId: string): Promise<number> {
   if (error) throw error;
   return count ?? 0;
 }
+
+export async function getHeroFavouriteCount(heroId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('user_favourites')
+    .select('id', { count: 'exact', head: true })
+    .eq('hero_id', heroId);
+  if (error) throw error;
+  return count ?? 0;
+}
