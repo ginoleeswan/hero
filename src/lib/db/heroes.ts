@@ -168,6 +168,20 @@ export async function getHeroesByPowerRange(
   return (data ?? []) as HeroPowerResult[];
 }
 
+export async function updateHeroComicVineData(
+  id: string,
+  data: { summary: string | null; powers: string[] | null },
+): Promise<void> {
+  await supabase
+    .from('heroes')
+    .update({
+      summary: data.summary,
+      powers: data.powers,
+      comicvine_enriched_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+}
+
 export function heroRowToCharacterData(hero: Hero): CharacterData {
   const stat = (v: number | null) => String(v ?? 0);
   return {

@@ -98,7 +98,7 @@ export async function fetchHeroDetails(heroName: string): Promise<HeroDetails> {
     api_key: COMICVINE_API_KEY,
     format: 'json',
     filter: `name:${heroName}`,
-    field_list: 'deck,publisher,first_appeared_in_issue,powers',
+    field_list: 'id,deck,publisher,first_appeared_in_issue',
     limit: '1',
   });
 
@@ -109,13 +109,25 @@ export async function fetchHeroDetails(heroName: string): Promise<HeroDetails> {
 
   if (!result) return { summary: null, publisher: null, firstIssueId: null, powers: null };
 
-  const rawPowers = Array.isArray(result.powers)
-    ? result.powers
-        .map((p: unknown) => (p && typeof (p as Record<string, unknown>).name === 'string' ? (p as Record<string, unknown>).name as string : null))
-        .filter((n): n is string => n !== null)
-    : [];
-
-  const powers: string[] | null = rawPowers.length > 0 ? rawPowers : null;
+  // Fetch powers from the detail endpoint — the list endpoint doesn't return associations
+  let powers: string[] | null = null;
+  if (result.id) {
+    const detailParams = new URLSearchParams({
+      api_key: COMICVINE_API_KEY,
+      format: 'json',
+      field_list: 'powers',
+    });
+    const detailRes = await fetch(`${COMICVINE_BASE}/character/4005-${result.id}/?${detailParams}`);
+    if (detailRes.ok) {
+      const detailJson = await detailRes.json();
+      const rawPowers = Array.isArray(detailJson.results?.powers)
+        ? detailJson.results.powers
+            .map((p: unknown) => (p && typeof (p as Record<string, unknown>).name === 'string' ? (p as Record<string, unknown>).name as string : null))
+            .filter((n): n is string => n !== null)
+        : [];
+      powers = rawPowers.length > 0 ? rawPowers : null;
+    }
+  }
 
   return {
     summary: result.deck ?? null,
