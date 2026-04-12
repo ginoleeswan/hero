@@ -203,6 +203,20 @@ export default function WebCharacterScreen() {
             <Text style={styles.heroPublisher}>{stats.biography.publisher}</Text>
           </View>
         ) : null}
+
+        {/* Origin badge + issue count + creator credit */}
+        <View style={styles.heroIdentityMeta}>
+          {details.origin ? (
+            <Text style={styles.originBadge}>{details.origin}</Text>
+          ) : null}
+          {((details.issueCount ?? 0) > 0 || (details.creators?.length ?? 0) > 0) ? (
+            <Text style={styles.heroMeta}>
+              {(details.issueCount ?? 0) > 0 ? `Featured in ${details.issueCount!.toLocaleString()} issues` : ''}
+              {(details.issueCount ?? 0) > 0 && details.creators?.length ? '  ·  ' : ''}
+              {details.creators?.length ? `Created by ${details.creators.join(' & ')}` : ''}
+            </Text>
+          ) : null}
+        </View>
       </View>
 
       {/* ── Body ── */}
@@ -261,6 +275,33 @@ export default function WebCharacterScreen() {
               </View>
             ) : null}
 
+            {comicVineLoading ? (
+              <View style={styles.card}>
+                <SkeletonBlock opacity={skeletonOpacity} width={50} height={11} style={{ marginBottom: 10 }} />
+                <View style={{ height: 1, backgroundColor: '#ede5da', marginBottom: 14 }} />
+                {[0, 1, 2, 3].map((i) => (
+                  <SkeletonBlock key={i} opacity={skeletonOpacity} height={11} width={i % 2 === 0 ? '100%' : '80%'} style={{ marginBottom: 8 }} />
+                ))}
+              </View>
+            ) : null}
+
+            {!comicVineLoading && details.description ? (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>About</Text>
+                <View style={styles.cardDivider} />
+                <div
+                  dangerouslySetInnerHTML={{ __html: details.description }}
+                  style={{
+                    fontFamily: 'FlameSans-Regular',
+                    fontSize: 13,
+                    color: COLORS.navy,
+                    lineHeight: '1.7',
+                    opacity: 0.85,
+                  }}
+                />
+              </View>
+            ) : null}
+
             <WebAbilitiesCard powers={details.powers} loading={comicVineLoading} skeletonOpacity={skeletonOpacity} />
 
             <View style={styles.infoGridDesktop as object}>
@@ -298,10 +339,79 @@ export default function WebCharacterScreen() {
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>Connections</Text>
                 <View style={styles.cardDivider} />
-                <InfoRow label="Group affiliation" value={stats.connections['group-affiliation']} />
+                <InfoRow
+                  label="Group affiliation"
+                  value={
+                    details.teams?.length
+                      ? details.teams.join(', ')
+                      : stats.connections['group-affiliation']
+                  }
+                />
                 <InfoRow label="Relatives" value={stats.connections.relatives} />
               </View>
             </View>
+
+            {(details.enemies?.length || details.friends?.length) ? (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Enemies &amp; Allies</Text>
+                <View style={styles.cardDivider} />
+                {details.enemies?.length ? (
+                  <View style={styles.chipGroup}>
+                    <Text style={styles.chipGroupLabel}>Enemies</Text>
+                    <View style={styles.chipRow}>
+                      {details.enemies.slice(0, 10).map((name, i) => (
+                        <View key={i} style={styles.chipEnemy}>
+                          <Text style={styles.chipTextEnemy}>{name}</Text>
+                        </View>
+                      ))}
+                      {details.enemies.length > 10 ? (
+                        <View style={styles.chipEnemy}>
+                          <Text style={styles.chipTextEnemy}>+{details.enemies.length - 10} more</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  </View>
+                ) : null}
+                {details.friends?.length ? (
+                  <View style={styles.chipGroup}>
+                    <Text style={styles.chipGroupLabel}>Allies</Text>
+                    <View style={styles.chipRow}>
+                      {details.friends.slice(0, 10).map((name, i) => (
+                        <View key={i} style={styles.chipAlly}>
+                          <Text style={styles.chipTextAlly}>{name}</Text>
+                        </View>
+                      ))}
+                      {details.friends.length > 10 ? (
+                        <View style={styles.chipAlly}>
+                          <Text style={styles.chipTextAlly}>+{details.friends.length - 10} more</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+
+            {details.movies?.length ? (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>On Screen</Text>
+                <View style={styles.cardDivider} />
+                {details.movies.map((entry, i) => {
+                  const match = entry.match(/^(.+?)\s*\((\d{4})\)$/);
+                  const title = match ? match[1] : entry;
+                  const year = match ? match[2] : null;
+                  return (
+                    <View key={i} style={styles.movieRow}>
+                      <Text style={styles.movieIcon}>🎬</Text>
+                      <View>
+                        <Text style={styles.movieTitle}>{title}</Text>
+                        {year ? <Text style={styles.movieYear}>{year}</Text> : null}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : null}
           </View>
         </View>
       ) : (
@@ -352,6 +462,33 @@ export default function WebCharacterScreen() {
             </View>
           ) : null}
 
+          {comicVineLoading ? (
+            <View style={styles.card}>
+              <SkeletonBlock opacity={skeletonOpacity} width={50} height={11} style={{ marginBottom: 10 }} />
+              <View style={{ height: 1, backgroundColor: '#ede5da', marginBottom: 14 }} />
+              {[0, 1, 2, 3].map((i) => (
+                <SkeletonBlock key={i} opacity={skeletonOpacity} height={11} width={i % 2 === 0 ? '100%' : '80%'} style={{ marginBottom: 8 }} />
+              ))}
+            </View>
+          ) : null}
+
+          {!comicVineLoading && details.description ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>About</Text>
+              <View style={styles.cardDivider} />
+              <div
+                dangerouslySetInnerHTML={{ __html: details.description }}
+                style={{
+                  fontFamily: 'FlameSans-Regular',
+                  fontSize: 13,
+                  color: COLORS.navy,
+                  lineHeight: '1.7',
+                  opacity: 0.85,
+                }}
+              />
+            </View>
+          ) : null}
+
           <WebAbilitiesCard powers={details.powers} loading={comicVineLoading} skeletonOpacity={skeletonOpacity} />
 
           <View style={styles.card}>
@@ -366,6 +503,69 @@ export default function WebCharacterScreen() {
               <InfoRow label="Aliases" value={stats.biography.aliases.join(', ')} />
             )}
           </View>
+
+          {(details.enemies?.length || details.friends?.length) ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Enemies &amp; Allies</Text>
+              <View style={styles.cardDivider} />
+              {details.enemies?.length ? (
+                <View style={styles.chipGroup}>
+                  <Text style={styles.chipGroupLabel}>Enemies</Text>
+                  <View style={styles.chipRow}>
+                    {details.enemies.slice(0, 10).map((name, i) => (
+                      <View key={i} style={styles.chipEnemy}>
+                        <Text style={styles.chipTextEnemy}>{name}</Text>
+                      </View>
+                    ))}
+                    {details.enemies.length > 10 ? (
+                      <View style={styles.chipEnemy}>
+                        <Text style={styles.chipTextEnemy}>+{details.enemies.length - 10} more</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+              ) : null}
+              {details.friends?.length ? (
+                <View style={styles.chipGroup}>
+                  <Text style={styles.chipGroupLabel}>Allies</Text>
+                  <View style={styles.chipRow}>
+                    {details.friends.slice(0, 10).map((name, i) => (
+                      <View key={i} style={styles.chipAlly}>
+                        <Text style={styles.chipTextAlly}>{name}</Text>
+                      </View>
+                    ))}
+                    {details.friends.length > 10 ? (
+                      <View style={styles.chipAlly}>
+                        <Text style={styles.chipTextAlly}>+{details.friends.length - 10} more</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+
+          {details.movies?.length ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>On Screen</Text>
+              <View style={styles.cardDivider} />
+              {details.movies.map((entry, i) => {
+                const match = entry.match(/^(.+?)\s*\((\d{4})\)$/);
+                const title = match ? match[1] : entry;
+                const year = match ? match[2] : null;
+                return (
+                  <View key={i} style={styles.movieRow}>
+                    <Text style={styles.movieIcon}>🎬</Text>
+                    <View>
+                      <Text style={styles.movieTitle}>{title}</Text>
+                      {year ? <Text style={styles.movieYear}>{year}</Text> : null}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ) : null}
+
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Appearance</Text>
             <View style={styles.cardDivider} />
@@ -385,7 +585,14 @@ export default function WebCharacterScreen() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Connections</Text>
             <View style={styles.cardDivider} />
-            <InfoRow label="Group affiliation" value={stats.connections['group-affiliation']} />
+            <InfoRow
+              label="Group affiliation"
+              value={
+                details.teams?.length
+                  ? details.teams.join(', ')
+                  : stats.connections['group-affiliation']
+              }
+            />
             <InfoRow label="Relatives" value={stats.connections.relatives} />
           </View>
         </View>
@@ -682,6 +889,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'rgba(245,235,220,0.45)',
   },
+  heroIdentityMeta: {
+    paddingHorizontal: 24,
+    paddingTop: 6,
+  },
+  originBadge: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 10,
+    color: 'rgba(245,235,220,0.6)',
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1.5,
+    marginTop: 4,
+  },
+  heroMeta: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 11,
+    color: 'rgba(245,235,220,0.5)',
+    marginTop: 4,
+  },
 
   // ── Desktop two-column body ──────────────────────────────────────────────────
   bodyDesktop: {
@@ -836,4 +1061,41 @@ const styles = StyleSheet.create({
     flex: 1,
     textTransform: 'capitalize',
   },
+
+  // Enemies & Allies chips
+  chipGroup: { marginBottom: 12 },
+  chipGroupLabel: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 10,
+    color: COLORS.navy,
+    opacity: 0.5,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chipEnemy: {
+    backgroundColor: 'rgba(181,48,43,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(181,48,43,0.2)',
+    borderRadius: 20,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+  chipAlly: {
+    backgroundColor: 'rgba(99,169,54,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(99,169,54,0.2)',
+    borderRadius: 20,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+  chipTextEnemy: { fontFamily: 'FlameSans-Regular', fontSize: 11, color: COLORS.red },
+  chipTextAlly: { fontFamily: 'FlameSans-Regular', fontSize: 11, color: COLORS.green },
+
+  // On Screen movies
+  movieRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  movieIcon: { fontSize: 18 },
+  movieTitle: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.navy },
+  movieYear: { fontFamily: 'FlameSans-Regular', fontSize: 11, color: COLORS.grey, marginTop: 1 },
 });
