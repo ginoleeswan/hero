@@ -17,6 +17,7 @@ import { COLORS } from '../../src/constants/colors';
 import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkeleton';
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
+import { AbilitiesSection } from '../../src/components/AbilitiesSection';
 import type { CharacterData } from '../../src/types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -422,6 +423,11 @@ export default function CharacterScreen() {
                 ))}
               </View>
             </Section>
+
+            <AbilitiesSection
+              powers={data.details.powers}
+              loading={comicVineLoading}
+            />
 
             {/* Overview */}
             <Section title="Overview">
