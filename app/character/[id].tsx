@@ -39,15 +39,15 @@ function StatDial({ label, value, tint }: { label: string; value: string; tint: 
   return (
     <View style={styles.dialWrap}>
       <AnimatedCircularProgress
-        size={60}
-        width={10}
+        size={72}
+        width={11}
         duration={1800}
-        backgroundWidth={8}
+        backgroundWidth={9}
         rotation={-124}
         arcSweepAngle={250}
         fill={fill}
         tintColor={tint}
-        backgroundColor={COLORS.navy}
+        backgroundColor={'rgba(41,60,67,0.12)'}
         padding={0}
         lineCap="round"
       >
@@ -502,24 +502,26 @@ export default function CharacterScreen() {
 
             {/* Power Stats — circular dials, 3×2 grid */}
             <Section title="Power Stats">
-              <View style={styles.statsGrid}>
-                {STAT_CONFIG.map(({ key, label, tint }) => (
-                  <StatDial
-                    key={key}
-                    label={label}
-                    value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
-                    tint={tint}
-                  />
-                ))}
+              <View style={styles.statsCard}>
+                <View style={styles.statsGrid}>
+                  {STAT_CONFIG.map(({ key, label, tint }) => (
+                    <StatDial
+                      key={key}
+                      label={label}
+                      value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
+                      tint={tint}
+                    />
+                  ))}
+                </View>
+                {(() => {
+                  const values = STAT_CONFIG.map(({ key }) =>
+                    parseInt((data.stats.powerstats as Record<string, string>)[key] ?? '0', 10),
+                  ).filter((n) => !isNaN(n) && n > 0);
+                  if (values.length === 0) return null;
+                  const total = values.reduce((sum, n) => sum + n, 0);
+                  return <Text style={styles.statTotal}>Total {total} / 600</Text>;
+                })()}
               </View>
-              {(() => {
-                const values = STAT_CONFIG.map(({ key }) =>
-                  parseInt((data.stats.powerstats as Record<string, string>)[key] ?? '0', 10),
-                ).filter((n) => !isNaN(n) && n > 0);
-                if (values.length === 0) return null;
-                const total = values.reduce((sum, n) => sum + n, 0);
-                return <Text style={styles.statTotal}>Total {total} / 600</Text>;
-              })()}
             </Section>
 
             <AbilitiesSection
@@ -531,23 +533,29 @@ export default function CharacterScreen() {
             {data.firstIssue?.imageUrl ? (
               <Section title="First Appearance">
                 <View style={styles.comicContainer}>
-                  <Image
-                    source={{ uri: data.firstIssue.imageUrl }}
-                    contentFit="contain"
-                    style={styles.comicImage}
-                    cachePolicy="memory-disk"
-                    recyclingKey={`comic-${id}`}
-                    transition={200}
-                  />
+                  <View style={styles.comicPanel}>
+                    <Image
+                      source={{ uri: data.firstIssue.imageUrl }}
+                      contentFit="contain"
+                      style={styles.comicImage}
+                      cachePolicy="memory-disk"
+                      recyclingKey={`comic-${id}`}
+                      transition={200}
+                    />
+                    {(data.firstIssue.name || data.firstIssue.coverDate) ? (
+                      <View style={styles.comicMeta}>
+                        {data.firstIssue.name ? (
+                          <Text style={styles.comicTitle}>{data.firstIssue.name}</Text>
+                        ) : null}
+                        {data.firstIssue.coverDate ? (
+                          <Text style={styles.comicYear}>
+                            {data.firstIssue.coverDate.slice(0, 4)}
+                          </Text>
+                        ) : null}
+                      </View>
+                    ) : null}
+                  </View>
                 </View>
-                {data.firstIssue.name ? (
-                  <Text style={styles.comicTitle}>{data.firstIssue.name}</Text>
-                ) : null}
-                {data.firstIssue.coverDate ? (
-                  <Text style={styles.comicYear}>
-                    {data.firstIssue.coverDate.slice(0, 4)}
-                  </Text>
-                ) : null}
               </Section>
             ) : null}
 
@@ -680,16 +688,17 @@ const styles = StyleSheet.create({
   nameDivider: { height: 2, backgroundColor: COLORS.navy, borderRadius: 30, marginTop: 10 },
 
   // Summary
-  summaryBlock: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
+  summaryBlock: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 6 },
   summary: {
     fontFamily: 'FlameSans-Regular',
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.navy,
-    lineHeight: 18,
+    lineHeight: 22,
+    opacity: 0.85,
   },
 
   // Sections
-  section: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
+  section: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
   sectionTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 20,
@@ -697,26 +706,33 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     paddingVertical: 5,
   },
-  divider: { height: 2, backgroundColor: COLORS.navy, borderRadius: 30, marginBottom: 14 },
+  divider: { height: 2, backgroundColor: COLORS.navy, borderRadius: 30, marginBottom: 16 },
 
   // Circular stat dials
+  statsCard: {
+    backgroundColor: 'rgba(41,60,67,0.05)',
+    borderRadius: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 4,
+  },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-around',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  dialWrap: { alignItems: 'center', justifyContent: 'center', padding: 5 },
-  dialValue: { fontFamily: 'Flame-Regular', fontSize: 13, color: COLORS.navy, left: 1 },
-  dialLabel: { fontFamily: 'Flame-Regular', fontSize: 10, color: COLORS.navy, marginTop: -10 },
+  dialWrap: { alignItems: 'center', justifyContent: 'center', padding: 6 },
+  dialValue: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.navy, left: 1 },
+  dialLabel: { fontFamily: 'Flame-Regular', fontSize: 11, color: COLORS.navy, marginTop: -8, opacity: 0.75 },
   statTotal: {
-    fontFamily: 'Flame-Regular',
+    fontFamily: 'FlameSans-Regular',
     fontSize: 12,
     color: COLORS.navy,
     opacity: 0.45,
     textAlign: 'right',
-    marginTop: 6,
+    paddingHorizontal: 12,
+    letterSpacing: 0.3,
   },
 
   // Info rows
@@ -725,12 +741,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     flexWrap: 'wrap',
-    marginBottom: 5,
+    marginBottom: 9,
   },
   infoLabel: {
     fontFamily: 'Flame-Regular',
-    fontSize: 15,
+    fontSize: 14,
     color: COLORS.navy,
+    opacity: 0.6,
     textTransform: 'capitalize',
   },
   infoValue: {
@@ -747,46 +764,63 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 5,
+    gap: 6,
     justifyContent: 'flex-end',
   },
   chip: {
-    backgroundColor: 'rgba(42,45,90,0.07)',
-    borderRadius: 16,
-    paddingHorizontal: 9,
-    paddingVertical: 3,
+    backgroundColor: 'rgba(41,60,67,0.06)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.14)',
+    paddingHorizontal: 11,
+    paddingVertical: 5,
   },
   chipText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
     color: COLORS.navy,
+    letterSpacing: 0.2,
   },
 
   // First issue
   comicContainer: {
     width: '100%',
     alignItems: 'center',
-    marginVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.39,
-    shadowRadius: 8.3,
-    elevation: 13,
   },
-  comicImage: { width: 160, height: 240 },
+  comicPanel: {
+    backgroundColor: COLORS.navy,
+    borderRadius: 16,
+    padding: 16,
+    paddingBottom: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 16,
+  },
+  comicImage: { width: 160, height: 240, borderRadius: 4, overflow: 'hidden' },
+  comicMeta: {
+    paddingTop: 14,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    width: 192,
+  },
   comicTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 13,
-    color: COLORS.navy,
+    color: COLORS.beige,
     textAlign: 'center',
-    marginTop: 10,
+    lineHeight: 18,
   },
   comicYear: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
-    color: COLORS.grey,
+    color: 'rgba(245,235,220,0.5)',
     textAlign: 'center',
-    marginTop: 3,
+    marginTop: 4,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
   },
   errorText: {
     fontFamily: 'FlameSans-Regular',
