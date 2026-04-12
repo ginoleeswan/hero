@@ -18,7 +18,7 @@ const HTML_STYLES = `
   a { color: ${COLORS.orange}; text-decoration: none; }
   ul, ol { padding-left: 20px; margin-bottom: 10px; }
   li { margin-bottom: 4px; }
-  img, figure, table { display: none; }
+  img, figure, table { max-width: 100%; height: auto; margin: 12px 0; border-radius: 8px; }
 `;
 
 export default function WebBiographyScreen() {

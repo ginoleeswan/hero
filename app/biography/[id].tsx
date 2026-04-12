@@ -42,6 +42,15 @@ const TAG_STYLES = {
   a: { color: COLORS.orange },
   b: { fontFamily: 'Flame-Regular' },
   strong: { fontFamily: 'Flame-Regular' },
+  figure: { marginVertical: 12, borderRadius: 8 },
+  img: { width: '100%', height: 300, borderRadius: 8 },
+  figcaption: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: COLORS.navy,
+    opacity: 0.6,
+    marginTop: 4,
+  },
 };
 const SYSTEM_FONTS = ['FlameSans-Regular', 'Flame-Regular'];
 
