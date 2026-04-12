@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import * as Haptics from 'expo-haptics';
 import { fetchHeroStats, fetchHeroDetails, fetchFirstIssue } from '../../src/lib/api';
-import { getHeroById, heroRowToCharacterData, updateHeroComicVineData } from '../../src/lib/db/heroes';
+import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
 import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useRecordView } from '../../src/hooks/useViewHistory';
@@ -158,13 +158,12 @@ export default function CharacterScreen() {
             details: { summary: null, publisher: null, firstIssueId: null, powers: null },
             firstIssue: null,
           });
-          fetchHeroDetails(stats.name)
+          fetchHeroDetails(stats.id, stats.name)
             .then(async (details) => {
               const firstIssue = details.firstIssueId
                 ? await fetchFirstIssue(details.firstIssueId).catch(() => null)
                 : null;
               setData({ stats, details, firstIssue });
-              updateHeroComicVineData(stats.id, { summary: details.summary, powers: details.powers }).catch(() => {});
             })
             .catch(() => {})
             .finally(() => setComicVineLoading(false));
@@ -184,7 +183,7 @@ export default function CharacterScreen() {
 
           // If ComicVine not enriched yet, or powers column not yet populated, fetch in background
           if (needsComicVine) {
-            fetchHeroDetails(hero.name)
+            fetchHeroDetails(hero.id, hero.name)
               .then(async (details) => {
                 const firstIssue = details.firstIssueId
                   ? await fetchFirstIssue(details.firstIssueId).catch(() => null)
@@ -198,7 +197,6 @@ export default function CharacterScreen() {
                       }
                     : prev,
                 );
-                updateHeroComicVineData(hero.id, { summary: details.summary, powers: details.powers }).catch(() => {});
               })
               .catch(() => {})
               .finally(() => setComicVineLoading(false));

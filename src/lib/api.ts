@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import type { HeroStats, HeroDetails, FirstIssue } from '../types';
+import { supabase } from './supabase';
 
 const SUPERHERO_API_KEY = Constants.expoConfig?.extra?.superheroApiKey as string;
 const COMICVINE_API_KEY = Constants.expoConfig?.extra?.comicvineApiKey as string;
@@ -9,8 +10,6 @@ const SUPERHERO_BASE = 'https://superheroapi.com/api';
 const COMICVINE_BASE = 'https://comicvine.gamespot.com/api';
 const CDN_BASE = 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/id';
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '';
 
 // CDN response shape (camelCase, numeric powerstats)
 interface CdnHeroStats {
@@ -91,51 +90,22 @@ export async function fetchHeroStats(heroId: string): Promise<HeroStats> {
   return data as HeroStats;
 }
 
-export async function fetchHeroDetails(heroName: string): Promise<HeroDetails> {
-  if (Platform.OS === 'web') return { summary: null, publisher: null, firstIssueId: null, powers: null };
+export async function fetchHeroDetails(heroId: string, heroName: string): Promise<HeroDetails> {
+  const { data, error } = await supabase.functions.invoke<{
+    summary: string | null;
+    publisher: string | null;
+    firstIssueId: string | null;
+    powers: string[] | null;
+  }>('get-comicvine-hero', { body: { heroId, heroName } });
 
-  const params = new URLSearchParams({
-    api_key: COMICVINE_API_KEY,
-    format: 'json',
-    filter: `name:${heroName}`,
-    field_list: 'id,deck,publisher,first_appeared_in_issue',
-    limit: '1',
-  });
-
-  const res = await fetch(`${COMICVINE_BASE}/characters/?${params}`);
-  if (!res.ok) throw new Error(`ComicVine error: ${res.status}`);
-  const json = await res.json();
-  const result = json.results?.[0];
-
-  if (!result) return { summary: null, publisher: null, firstIssueId: null, powers: null };
-
-  // Fetch powers from the detail endpoint — the list endpoint doesn't return associations
-  let powers: string[] | null = null;
-  if (result.id) {
-    const detailParams = new URLSearchParams({
-      api_key: COMICVINE_API_KEY,
-      format: 'json',
-      field_list: 'powers',
-    });
-    const detailRes = await fetch(`${COMICVINE_BASE}/character/4005-${result.id}/?${detailParams}`);
-    if (detailRes.ok) {
-      const detailJson = await detailRes.json();
-      const rawPowers = Array.isArray(detailJson.results?.powers)
-        ? detailJson.results.powers
-            .map((p: unknown) => (p && typeof (p as Record<string, unknown>).name === 'string' ? (p as Record<string, unknown>).name as string : null))
-            .filter((n): n is string => n !== null)
-        : [];
-      powers = rawPowers.length > 0 ? rawPowers : null;
-    }
-  }
+  if (error) console.warn('[fetchHeroDetails] error:', error.message, error);
+  if (error || !data) return { summary: null, publisher: null, firstIssueId: null, powers: null };
 
   return {
-    summary: result.deck ?? null,
-    publisher: result.publisher?.name ?? null,
-    firstIssueId: result.first_appeared_in_issue?.id
-      ? String(result.first_appeared_in_issue.id)
-      : null,
-    powers,
+    summary: data.summary ?? null,
+    publisher: data.publisher ?? null,
+    firstIssueId: data.firstIssueId ?? null,
+    powers: data.powers ?? null,
   };
 }
 
@@ -175,27 +145,14 @@ function verdictFallback(input: VerdictInput): string {
 }
 
 export async function generateVerdict(input: VerdictInput): Promise<string> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 3000);
-
   try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/generate-verdict`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-      },
-      body: JSON.stringify(input),
-      signal: controller.signal,
-    });
-
-    if (!res.ok) return verdictFallback(input);
-
-    const data = (await res.json()) as { verdict?: string };
+    const { data, error } = await Promise.race([
+      supabase.functions.invoke<{ verdict?: string }>('generate-verdict', { body: input }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
+    ]);
+    if (error || !data) return verdictFallback(input);
     return data.verdict?.trim() || verdictFallback(input);
   } catch {
     return verdictFallback(input);
-  } finally {
-    clearTimeout(timeout);
   }
 }

@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { fetchHeroStats, fetchHeroDetails, fetchFirstIssue } from '../../src/lib/api';
 import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
 import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
+import { getPowerIcon } from '../../src/constants/powerIcons';
 import { useAuth } from '../../src/hooks/useAuth';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
@@ -41,7 +42,9 @@ export default function WebCharacterScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 700;
 
+  const skeletonOpacity = useSkeletonAnim();
   const [data, setData] = useState<CharacterData | null>(null);
+  const [comicVineLoading, setComicVineLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [favourited, setFavourited] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
@@ -57,14 +60,15 @@ export default function WebCharacterScreen() {
             details: { summary: null, publisher: null, firstIssueId: null, powers: null },
             firstIssue: null,
           });
-          fetchHeroDetails(stats.name)
+          fetchHeroDetails(stats.id, stats.name)
             .then(async (details) => {
               const firstIssue = details.firstIssueId
                 ? await fetchFirstIssue(details.firstIssueId).catch(() => null)
                 : null;
               setData({ stats, details, firstIssue });
             })
-            .catch(() => {});
+            .catch(() => {})
+            .finally(() => setComicVineLoading(false));
         })
         .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load'));
     };
@@ -73,6 +77,21 @@ export default function WebCharacterScreen() {
       .then((hero) => {
         if (hero?.enriched_at) {
           setData(heroRowToCharacterData(hero));
+          const needsComicVine = !hero.comicvine_enriched_at || hero.powers === null;
+          setComicVineLoading(needsComicVine);
+          if (needsComicVine) {
+            fetchHeroDetails(hero.id, hero.name)
+              .then(async (details) => {
+                const firstIssue = details.firstIssueId
+                  ? await fetchFirstIssue(details.firstIssueId).catch(() => null)
+                  : null;
+                setData((prev) =>
+                  prev ? { ...prev, details, firstIssue: firstIssue ?? prev.firstIssue } : prev,
+                );
+              })
+              .catch(() => {})
+              .finally(() => setComicVineLoading(false));
+          }
           return;
         }
         loadFromApi();
@@ -215,13 +234,21 @@ export default function WebCharacterScreen() {
             </View>
           </View>
 
-          {/* Right column: summary + 2-col info cards */}
+          {/* Right column: summary + abilities + 2-col info cards */}
           <View style={styles.rightCol}>
-            {details.summary ? (
+            {comicVineLoading && !details.summary ? (
+              <View style={styles.summaryBox}>
+                <SkeletonBlock opacity={skeletonOpacity} height={12} style={{ marginBottom: 10 }} />
+                <SkeletonBlock opacity={skeletonOpacity} height={12} width="85%" style={{ marginBottom: 10 }} />
+                <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
+              </View>
+            ) : details.summary ? (
               <View style={styles.summaryBox}>
                 <Text style={styles.summaryText}>{details.summary}</Text>
               </View>
             ) : null}
+
+            <WebAbilitiesCard powers={details.powers} loading={comicVineLoading} skeletonOpacity={skeletonOpacity} />
 
             <View style={styles.infoGridDesktop as object}>
               <View style={styles.card}>
@@ -300,11 +327,19 @@ export default function WebCharacterScreen() {
             ))}
           </View>
 
-          {details.summary ? (
+          {comicVineLoading && !details.summary ? (
+            <View style={styles.summaryBox}>
+              <SkeletonBlock opacity={skeletonOpacity} height={12} style={{ marginBottom: 10 }} />
+              <SkeletonBlock opacity={skeletonOpacity} height={12} width="85%" style={{ marginBottom: 10 }} />
+              <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
+            </View>
+          ) : details.summary ? (
             <View style={styles.summaryBox}>
               <Text style={styles.summaryText}>{details.summary}</Text>
             </View>
           ) : null}
+
+          <WebAbilitiesCard powers={details.powers} loading={comicVineLoading} skeletonOpacity={skeletonOpacity} />
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Overview</Text>
@@ -343,6 +378,69 @@ export default function WebCharacterScreen() {
         </View>
       )}
     </ScrollView>
+  );
+}
+
+const ABILITIES_COLLAPSED = 12;
+
+// ── Web abilities card ───────────────────────────────────────────────────────
+function WebAbilitiesCard({
+  powers,
+  loading,
+  skeletonOpacity,
+}: {
+  powers: string[] | null;
+  loading: boolean;
+  skeletonOpacity: ReturnType<typeof useSkeletonAnim>;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  if (!loading && (!powers || powers.length === 0)) return null;
+
+  const visible = powers
+    ? expanded ? powers : powers.slice(0, ABILITIES_COLLAPSED)
+    : [];
+  const overflow = powers ? Math.max(0, powers.length - ABILITIES_COLLAPSED) : 0;
+
+  return (
+    <View style={styles.card}>
+      {loading && !powers ? (
+        <>
+          <SkeletonBlock opacity={skeletonOpacity} width={80} height={11} style={{ marginBottom: 10 }} />
+          <View style={{ height: 1, backgroundColor: '#ede5da', marginBottom: 14 }} />
+          <View style={styles.powerTagRow}>
+            {[90, 70, 110, 80, 95, 75, 100, 85].map((w, i) => (
+              <SkeletonBlock key={i} opacity={skeletonOpacity} width={w} height={28} borderRadius={14} />
+            ))}
+          </View>
+        </>
+      ) : powers && powers.length > 0 ? (
+        <>
+          <Text style={styles.cardTitle}>Abilities</Text>
+          <View style={styles.cardDivider} />
+          <View style={styles.powerTagRow}>
+            {visible.map((power, i) => {
+              const { icon, gradientEnd } = getPowerIcon(power);
+              return (
+                <View key={i} style={[styles.powerTag, { borderColor: gradientEnd + '40' }]}>
+                  <Ionicons name={icon as any} size={12} color={gradientEnd} />
+                  <Text style={styles.powerTagText}>{power}</Text>
+                </View>
+              );
+            })}
+            {!expanded && overflow > 0 && (
+              <Pressable onPress={() => setExpanded(true)} style={styles.powerTagMore}>
+                <Text style={styles.powerTagMoreText}>+{overflow} more</Text>
+              </Pressable>
+            )}
+          </View>
+          {expanded && (
+            <Pressable onPress={() => setExpanded(false)} style={styles.showLess}>
+              <Text style={styles.showLessText}>Show less</Text>
+            </Pressable>
+          )}
+        </>
+      ) : null}
+    </View>
   );
 }
 
@@ -646,6 +744,53 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   cardDivider: { height: 1, backgroundColor: '#ede5da', marginBottom: 14 },
+
+  // Abilities
+  powerTagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  powerTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+    backgroundColor: '#faf7f3',
+  },
+  powerTagText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: COLORS.navy,
+  },
+  powerTagMore: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#ddd5c8',
+    backgroundColor: '#faf7f3',
+    cursor: 'pointer',
+  } as object,
+  powerTagMoreText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: COLORS.grey,
+  },
+  showLess: {
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    cursor: 'pointer',
+  } as object,
+  showLessText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: COLORS.grey,
+    textDecorationLine: 'underline',
+  },
 
   // Desktop 2-col info grid
   infoGridDesktop: {
