@@ -172,6 +172,7 @@ describe('heroRowToCharacterData', () => {
     comicvine_enriched_at: '2026-04-04T00:00:00Z',
     enriched_at: '2026-04-04T00:00:00Z',
     portrait_url: 'https://storage.example.com/portraits/620.jpg',
+    powers: null,
     description: null,
     origin: null,
     issue_count: null,
