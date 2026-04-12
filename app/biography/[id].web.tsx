@@ -28,7 +28,9 @@ export default function WebBiographyScreen() {
 
   useEffect(() => {
     if (!id) return;
-    getHeroById(id).then(setHero).catch(() => {});
+    getHeroById(id)
+      .then(setHero)
+      .catch(() => {});
   }, [id]);
 
   return (
@@ -63,7 +65,13 @@ export default function WebBiographyScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
-  content: { maxWidth: 720, width: '100%', alignSelf: 'center' as const, paddingHorizontal: 24, paddingVertical: 32 },
+  content: {
+    maxWidth: 720,
+    width: '100%',
+    alignSelf: 'center' as const,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+  },
   header: { marginBottom: 24 },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   backText: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.navy },

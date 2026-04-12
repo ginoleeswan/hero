@@ -36,7 +36,7 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
 
   try {
-    const { heroId, heroName } = await req.json() as { heroId: string; heroName: string };
+    const { heroId, heroName } = (await req.json()) as { heroId: string; heroName: string };
     if (!heroId || !heroName) return json({ error: 'heroId and heroName required' }, 400);
 
     // List endpoint — character id, deck, publisher, first issue
@@ -90,7 +90,9 @@ serve(async (req: Request) => {
         ].join(','),
       });
 
-      const detailRes = await fetch(`${COMICVINE_BASE}/character/4005-${result.id}/?${detailParams}`);
+      const detailRes = await fetch(
+        `${COMICVINE_BASE}/character/4005-${result.id}/?${detailParams}`,
+      );
       if (detailRes.ok) {
         const d = (await detailRes.json()).results ?? {};
 
@@ -114,9 +116,8 @@ serve(async (req: Request) => {
         origin = typeof d.origin?.name === 'string' ? d.origin.name : null;
 
         // issue count
-        issueCount = typeof d.count_of_issue_appearances === 'number'
-          ? d.count_of_issue_appearances
-          : null;
+        issueCount =
+          typeof d.count_of_issue_appearances === 'number' ? d.count_of_issue_appearances : null;
 
         // creators — names only, capped at 5
         creators = Array.isArray(d.creators)
@@ -208,7 +209,20 @@ serve(async (req: Request) => {
       })
       .eq('id', heroId);
 
-    return json({ summary, publisher, firstIssueId, powers, description, origin, issueCount, creators, enemies, friends, movies, teams });
+    return json({
+      summary,
+      publisher,
+      firstIssueId,
+      powers,
+      description,
+      origin,
+      issueCount,
+      creators,
+      enemies,
+      friends,
+      movies,
+      teams,
+    });
   } catch (err) {
     console.error('[get-comicvine-hero]', err);
     return json(NULL_RESPONSE, 500);

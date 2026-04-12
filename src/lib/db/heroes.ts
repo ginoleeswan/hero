@@ -168,7 +168,6 @@ export async function getHeroesByPowerRange(
   return (data ?? []) as HeroPowerResult[];
 }
 
-
 export function heroRowToCharacterData(hero: Hero): CharacterData {
   const stat = (v: number | null) => String(v ?? 0);
   return {

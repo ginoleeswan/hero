@@ -81,9 +81,7 @@ export function AbilitiesSection({ powers, loading }: Props) {
           {visible.map((name, index) => (
             <PowerPill key={`${index}-${name}`} name={name} />
           ))}
-          {overflow > 0 && (
-            <MorePill count={overflow} onPress={() => setExpanded(true)} />
-          )}
+          {overflow > 0 && <MorePill count={overflow} onPress={() => setExpanded(true)} />}
         </ScrollView>
       )}
     </View>

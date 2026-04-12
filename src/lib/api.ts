@@ -10,7 +10,6 @@ const SUPERHERO_BASE = 'https://superheroapi.com/api';
 const COMICVINE_BASE = 'https://comicvine.gamespot.com/api';
 const CDN_BASE = 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/id';
 
-
 // CDN response shape (camelCase, numeric powerstats)
 interface CdnHeroStats {
   id: number;

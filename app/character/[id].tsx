@@ -9,7 +9,12 @@ import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import * as Haptics from 'expo-haptics';
 import { fetchHeroStats, fetchHeroDetails, fetchFirstIssue } from '../../src/lib/api';
 import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
-import { isFavourited, addFavourite, removeFavourite, getHeroFavouriteCount } from '../../src/lib/db/favourites';
+import {
+  isFavourited,
+  addFavourite,
+  removeFavourite,
+  getHeroFavouriteCount,
+} from '../../src/lib/db/favourites';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useRecordView } from '../../src/hooks/useViewHistory';
 import { heroImageSource, HERO_IMAGES } from '../../src/constants/heroImages';
@@ -96,15 +101,15 @@ function AlignmentBadge({ alignment }: { alignment: string | null | undefined })
 }
 
 const ORIGIN_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
-  mutant:        { label: 'Mutant',    bg: 'rgba(139,92,246,0.15)',  color: COLORS.purple },
-  alien:         { label: 'Alien',     bg: 'rgba(21,161,171,0.15)',  color: COLORS.blue },
-  human:         { label: 'Human',     bg: 'rgba(162,161,155,0.15)', color: COLORS.grey },
-  'god/eternal': { label: 'Eternal',   bg: 'rgba(249,178,34,0.18)',  color: COLORS.gold },
-  radiation:     { label: 'Radiation', bg: 'rgba(231,115,51,0.15)',  color: COLORS.orange },
-  cyborg:        { label: 'Cyborg',    bg: 'rgba(45,45,45,0.12)',    color: COLORS.black },
-  robot:         { label: 'Robot',     bg: 'rgba(45,45,45,0.12)',    color: COLORS.black },
-  training:      { label: 'Training',  bg: 'rgba(80,35,20,0.12)',    color: COLORS.brown },
-  inhuman:       { label: 'Inhuman',   bg: 'rgba(21,161,171,0.15)',  color: COLORS.blue },
+  mutant: { label: 'Mutant', bg: 'rgba(139,92,246,0.15)', color: COLORS.purple },
+  alien: { label: 'Alien', bg: 'rgba(21,161,171,0.15)', color: COLORS.blue },
+  human: { label: 'Human', bg: 'rgba(162,161,155,0.15)', color: COLORS.grey },
+  'god/eternal': { label: 'Eternal', bg: 'rgba(249,178,34,0.18)', color: COLORS.gold },
+  radiation: { label: 'Radiation', bg: 'rgba(231,115,51,0.15)', color: COLORS.orange },
+  cyborg: { label: 'Cyborg', bg: 'rgba(45,45,45,0.12)', color: COLORS.black },
+  robot: { label: 'Robot', bg: 'rgba(45,45,45,0.12)', color: COLORS.black },
+  training: { label: 'Training', bg: 'rgba(80,35,20,0.12)', color: COLORS.brown },
+  inhuman: { label: 'Inhuman', bg: 'rgba(21,161,171,0.15)', color: COLORS.blue },
 };
 
 function OriginBadge({ origin }: { origin: string | null | undefined }) {
@@ -158,15 +163,10 @@ function RelativesList({ value }: { value: string | null | undefined }) {
   }
   return (
     <View style={styles.infoRow}>
-      <Text style={[styles.infoLabel, { alignSelf: 'flex-start', paddingTop: 1 }]}>
-        Relatives:
-      </Text>
+      <Text style={[styles.infoLabel, { alignSelf: 'flex-start', paddingTop: 1 }]}>Relatives:</Text>
       <View style={{ flex: 1 }}>
         {entries.map((entry, i) => (
-          <Text
-            key={i}
-            style={[styles.infoValue, i < entries.length - 1 && { marginBottom: 5 }]}
-          >
+          <Text key={i} style={[styles.infoValue, i < entries.length - 1 && { marginBottom: 5 }]}>
             {entry}
           </Text>
         ))}
@@ -193,10 +193,7 @@ function CharacterChips({
       <Text style={styles.characterChipsLabel}>{label}</Text>
       <View style={styles.characterChipsWrap}>
         {visible.map((name, i) => (
-          <View
-            key={i}
-            style={[styles.chip, isEnemy ? styles.chipEnemy : styles.chipAlly]}
-          >
+          <View key={i} style={[styles.chip, isEnemy ? styles.chipEnemy : styles.chipAlly]}>
             <Text style={[styles.chipText, isEnemy ? styles.chipTextEnemy : styles.chipTextAlly]}>
               {name}
             </Text>
@@ -384,7 +381,9 @@ export default function CharacterScreen() {
     );
     try {
       await (next ? addFavourite(user.id, id) : removeFavourite(user.id, id));
-      getHeroFavouriteCount(id).then(setFavCount).catch(() => {});
+      getHeroFavouriteCount(id)
+        .then(setFavCount)
+        .catch(() => {});
     } catch {
       setFavourited(!next);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -474,7 +473,9 @@ export default function CharacterScreen() {
                     color={favourited ? COLORS.red : undefined}
                   />
                   {favCount > 0 ? (
-                    <Text style={styles.favCount}>{favCount > 999 ? '999+' : String(favCount)}</Text>
+                    <Text style={styles.favCount}>
+                      {favCount > 999 ? '999+' : String(favCount)}
+                    </Text>
                   ) : null}
                 </TouchableOpacity>
               )
@@ -560,7 +561,9 @@ export default function CharacterScreen() {
                 </View>
               </SkeletonProvider>
             ) : null}
-            {data && !comicVineLoading && ((data.details.issueCount ?? 0) > 0 || (data.details.creators?.length ?? 0) > 0) ? (
+            {data &&
+            !comicVineLoading &&
+            ((data.details.issueCount ?? 0) > 0 || (data.details.creators?.length ?? 0) > 0) ? (
               <View style={styles.heroMeta}>
                 {(data.details.issueCount ?? 0) > 0 ? (
                   <Text style={styles.heroMetaText}>
@@ -632,10 +635,7 @@ export default function CharacterScreen() {
               </View>
             </Section>
 
-            <AbilitiesSection
-              powers={data.details.powers}
-              loading={comicVineLoading}
-            />
+            <AbilitiesSection powers={data.details.powers} loading={comicVineLoading} />
 
             {/* First Appearance — moved before Overview */}
             {data.firstIssue?.imageUrl ? (
@@ -650,7 +650,7 @@ export default function CharacterScreen() {
                       recyclingKey={`comic-${id}`}
                       transition={200}
                     />
-                    {(data.firstIssue.name || data.firstIssue.coverDate) ? (
+                    {data.firstIssue.name || data.firstIssue.coverDate ? (
                       <View style={styles.comicMeta}>
                         {data.firstIssue.name ? (
                           <Text style={styles.comicTitle}>{data.firstIssue.name}</Text>
@@ -683,7 +683,9 @@ export default function CharacterScreen() {
               <SkeletonProvider>
                 <Section title="Enemies & Allies">
                   <Skeleton width={50} height={9} borderRadius={4} style={{ marginBottom: 8 }} />
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                  <View
+                    style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}
+                  >
                     {[72, 54, 90, 66, 80].map((w, i) => (
                       <Skeleton key={i} width={w} height={28} borderRadius={14} />
                     ))}
@@ -696,7 +698,7 @@ export default function CharacterScreen() {
                   </View>
                 </Section>
               </SkeletonProvider>
-            ) : (data.details.enemies?.length || data.details.friends?.length) ? (
+            ) : data.details.enemies?.length || data.details.friends?.length ? (
               <Section title="Enemies & Allies">
                 {data.details.enemies?.length ? (
                   <CharacterChips label="Enemies" chips={data.details.enemies} chipStyle="enemy" />
@@ -923,7 +925,13 @@ const styles = StyleSheet.create({
   },
   dialWrap: { alignItems: 'center', justifyContent: 'center', padding: 6 },
   dialValue: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.navy, left: 1 },
-  dialLabel: { fontFamily: 'Flame-Regular', fontSize: 11, color: COLORS.navy, marginTop: -8, opacity: 0.75 },
+  dialLabel: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 11,
+    color: COLORS.navy,
+    marginTop: -8,
+    opacity: 0.75,
+  },
   statTotal: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 12,

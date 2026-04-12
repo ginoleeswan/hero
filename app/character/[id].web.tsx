@@ -206,12 +206,12 @@ export default function WebCharacterScreen() {
 
         {/* Origin badge + issue count + creator credit */}
         <View style={styles.heroIdentityMeta}>
-          {details.origin ? (
-            <Text style={styles.originBadge}>{details.origin}</Text>
-          ) : null}
-          {((details.issueCount ?? 0) > 0 || (details.creators?.length ?? 0) > 0) ? (
+          {details.origin ? <Text style={styles.originBadge}>{details.origin}</Text> : null}
+          {(details.issueCount ?? 0) > 0 || (details.creators?.length ?? 0) > 0 ? (
             <Text style={styles.heroMeta}>
-              {(details.issueCount ?? 0) > 0 ? `Featured in ${details.issueCount!.toLocaleString()} issues` : ''}
+              {(details.issueCount ?? 0) > 0
+                ? `Featured in ${details.issueCount!.toLocaleString()} issues`
+                : ''}
               {(details.issueCount ?? 0) > 0 && details.creators?.length ? '  ·  ' : ''}
               {details.creators?.length ? `Created by ${details.creators.join(' & ')}` : ''}
             </Text>
@@ -266,7 +266,12 @@ export default function WebCharacterScreen() {
             {comicVineLoading && !details.summary ? (
               <View style={styles.summaryBox}>
                 <SkeletonBlock opacity={skeletonOpacity} height={12} style={{ marginBottom: 10 }} />
-                <SkeletonBlock opacity={skeletonOpacity} height={12} width="85%" style={{ marginBottom: 10 }} />
+                <SkeletonBlock
+                  opacity={skeletonOpacity}
+                  height={12}
+                  width="85%"
+                  style={{ marginBottom: 10 }}
+                />
                 <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
               </View>
             ) : details.summary ? (
@@ -287,7 +292,11 @@ export default function WebCharacterScreen() {
               </Pressable>
             ) : null}
 
-            <WebAbilitiesCard powers={details.powers} loading={comicVineLoading} skeletonOpacity={skeletonOpacity} />
+            <WebAbilitiesCard
+              powers={details.powers}
+              loading={comicVineLoading}
+              skeletonOpacity={skeletonOpacity}
+            />
 
             <View style={styles.infoGridDesktop as object}>
               <View style={styles.card}>
@@ -336,7 +345,7 @@ export default function WebCharacterScreen() {
               </View>
             </View>
 
-            {(details.enemies?.length || details.friends?.length) ? (
+            {details.enemies?.length || details.friends?.length ? (
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>Enemies &amp; Allies</Text>
                 <View style={styles.cardDivider} />
@@ -351,7 +360,9 @@ export default function WebCharacterScreen() {
                       ))}
                       {details.enemies.length > 10 ? (
                         <View style={styles.chipEnemy}>
-                          <Text style={styles.chipTextEnemy}>+{details.enemies.length - 10} more</Text>
+                          <Text style={styles.chipTextEnemy}>
+                            +{details.enemies.length - 10} more
+                          </Text>
                         </View>
                       ) : null}
                     </View>
@@ -368,7 +379,9 @@ export default function WebCharacterScreen() {
                       ))}
                       {details.friends.length > 10 ? (
                         <View style={styles.chipAlly}>
-                          <Text style={styles.chipTextAlly}>+{details.friends.length - 10} more</Text>
+                          <Text style={styles.chipTextAlly}>
+                            +{details.friends.length - 10} more
+                          </Text>
                         </View>
                       ) : null}
                     </View>
@@ -438,7 +451,12 @@ export default function WebCharacterScreen() {
           {comicVineLoading && !details.summary ? (
             <View style={styles.summaryBox}>
               <SkeletonBlock opacity={skeletonOpacity} height={12} style={{ marginBottom: 10 }} />
-              <SkeletonBlock opacity={skeletonOpacity} height={12} width="85%" style={{ marginBottom: 10 }} />
+              <SkeletonBlock
+                opacity={skeletonOpacity}
+                height={12}
+                width="85%"
+                style={{ marginBottom: 10 }}
+              />
               <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
             </View>
           ) : details.summary ? (
@@ -459,7 +477,11 @@ export default function WebCharacterScreen() {
             </Pressable>
           ) : null}
 
-          <WebAbilitiesCard powers={details.powers} loading={comicVineLoading} skeletonOpacity={skeletonOpacity} />
+          <WebAbilitiesCard
+            powers={details.powers}
+            loading={comicVineLoading}
+            skeletonOpacity={skeletonOpacity}
+          />
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Overview</Text>
@@ -474,7 +496,7 @@ export default function WebCharacterScreen() {
             )}
           </View>
 
-          {(details.enemies?.length || details.friends?.length) ? (
+          {details.enemies?.length || details.friends?.length ? (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Enemies &amp; Allies</Text>
               <View style={styles.cardDivider} />
@@ -489,7 +511,9 @@ export default function WebCharacterScreen() {
                     ))}
                     {details.enemies.length > 10 ? (
                       <View style={styles.chipEnemy}>
-                        <Text style={styles.chipTextEnemy}>+{details.enemies.length - 10} more</Text>
+                        <Text style={styles.chipTextEnemy}>
+                          +{details.enemies.length - 10} more
+                        </Text>
                       </View>
                     ) : null}
                   </View>
@@ -586,20 +610,29 @@ function WebAbilitiesCard({
   const [expanded, setExpanded] = useState(false);
   if (!loading && (!powers || powers.length === 0)) return null;
 
-  const visible = powers
-    ? expanded ? powers : powers.slice(0, ABILITIES_COLLAPSED)
-    : [];
+  const visible = powers ? (expanded ? powers : powers.slice(0, ABILITIES_COLLAPSED)) : [];
   const overflow = powers ? Math.max(0, powers.length - ABILITIES_COLLAPSED) : 0;
 
   return (
     <View style={styles.card}>
       {loading && !powers ? (
         <>
-          <SkeletonBlock opacity={skeletonOpacity} width={80} height={11} style={{ marginBottom: 10 }} />
+          <SkeletonBlock
+            opacity={skeletonOpacity}
+            width={80}
+            height={11}
+            style={{ marginBottom: 10 }}
+          />
           <View style={{ height: 1, backgroundColor: '#ede5da', marginBottom: 14 }} />
           <View style={styles.powerTagRow}>
             {[90, 70, 110, 80, 95, 75, 100, 85].map((w, i) => (
-              <SkeletonBlock key={i} opacity={skeletonOpacity} width={w} height={28} borderRadius={14} />
+              <SkeletonBlock
+                key={i}
+                opacity={skeletonOpacity}
+                width={w}
+                height={28}
+                borderRadius={14}
+              />
             ))}
           </View>
         </>

@@ -10,15 +10,12 @@ jest.mock('../../../src/lib/supabase', () => {
   ['select', 'eq'].forEach((m) => {
     chain[m] = jest.fn().mockReturnValue(chain);
   });
-  chain.then = (resolve: (v: unknown) => unknown) =>
-    Promise.resolve(mockResolveWith).then(resolve);
+  chain.then = (resolve: (v: unknown) => unknown) => Promise.resolve(mockResolveWith).then(resolve);
   const mockFrom = jest.fn().mockReturnValue(chain);
   return { supabase: { from: mockFrom }, __chain: chain, __mockFrom: mockFrom };
 });
 
-const { __chain: chain, __mockFrom: mockFrom } = jest.requireMock(
-  '../../../src/lib/supabase',
-);
+const { __chain: chain, __mockFrom: mockFrom } = jest.requireMock('../../../src/lib/supabase');
 
 describe('getHeroFavouriteCount', () => {
   beforeEach(() => {

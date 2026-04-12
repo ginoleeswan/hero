@@ -10,13 +10,37 @@ import type { Tables } from '../../src/types/database.generated';
 type HeroRow = Tables<'heroes'>;
 
 const TAG_STYLES = {
-  p:  { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.navy, lineHeight: 22, marginBottom: 8 },
-  h2: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.navy, marginTop: 20, marginBottom: 6 },
-  h3: { fontFamily: 'Flame-Regular', fontSize: 17, color: COLORS.navy, marginTop: 16, marginBottom: 4 },
-  h4: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.navy, marginTop: 12, marginBottom: 4 },
+  p: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 14,
+    color: COLORS.navy,
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  h2: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 20,
+    color: COLORS.navy,
+    marginTop: 20,
+    marginBottom: 6,
+  },
+  h3: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 17,
+    color: COLORS.navy,
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  h4: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 15,
+    color: COLORS.navy,
+    marginTop: 12,
+    marginBottom: 4,
+  },
   li: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.navy, lineHeight: 22 },
-  a:  { color: COLORS.orange },
-  b:  { fontFamily: 'Flame-Regular' },
+  a: { color: COLORS.orange },
+  b: { fontFamily: 'Flame-Regular' },
   strong: { fontFamily: 'Flame-Regular' },
 };
 const SYSTEM_FONTS = ['FlameSans-Regular', 'Flame-Regular'];
@@ -30,7 +54,9 @@ export default function BiographyScreen() {
 
   useEffect(() => {
     if (!id) return;
-    getHeroById(id).then(setHero).catch(() => {});
+    getHeroById(id)
+      .then(setHero)
+      .catch(() => {});
   }, [id]);
 
   const contentWidth = width - 40;
