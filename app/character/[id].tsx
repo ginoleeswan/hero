@@ -96,10 +96,10 @@ function AlignmentBadge({ alignment }: { alignment: string | null | undefined })
 }
 
 const ORIGIN_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
-  mutant:        { label: 'Mutant',    bg: 'rgba(139,92,246,0.15)',  color: '#7c3aed' },
+  mutant:        { label: 'Mutant',    bg: 'rgba(139,92,246,0.15)',  color: COLORS.purple },
   alien:         { label: 'Alien',     bg: 'rgba(21,161,171,0.15)',  color: COLORS.blue },
   human:         { label: 'Human',     bg: 'rgba(162,161,155,0.15)', color: COLORS.grey },
-  'god/eternal': { label: 'Eternal',   bg: 'rgba(249,178,34,0.18)',  color: '#b07d00' },
+  'god/eternal': { label: 'Eternal',   bg: 'rgba(249,178,34,0.18)',  color: COLORS.gold },
   radiation:     { label: 'Radiation', bg: 'rgba(231,115,51,0.15)',  color: COLORS.orange },
   cyborg:        { label: 'Cyborg',    bg: 'rgba(45,45,45,0.12)',    color: COLORS.black },
   robot:         { label: 'Robot',     bg: 'rgba(45,45,45,0.12)',    color: COLORS.black },
@@ -289,7 +289,7 @@ export default function CharacterScreen() {
       .then((hero) => {
         if (hero?.enriched_at) {
           setData(heroRowToCharacterData(hero));
-          const needsComicVine = !hero.comicvine_enriched_at || hero.powers === null || hero.origin === null;
+          const needsComicVine = !hero.comicvine_enriched_at || hero.powers === null;
           setComicVineLoading(needsComicVine);
 
           // If ComicVine not enriched yet, or powers column not yet populated, fetch in background

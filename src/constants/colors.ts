@@ -10,4 +10,6 @@ export const COLORS = {
   blue: '#15A1AB',
   black: '#2D2D2D',
   brown: '#502314',
+  purple: '#7c3aed',
+  gold: '#b07d00',
 } as const;
