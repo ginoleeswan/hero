@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, Animated, StyleSheet, TouchableOpacity, Dimensions, useWindowDimensions } from 'react-native';
-import RenderHTML from 'react-native-render-html';
+import { View, Text, Animated, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -172,44 +171,6 @@ function RelativesList({ value }: { value: string | null | undefined }) {
           </Text>
         ))}
       </View>
-    </View>
-  );
-}
-
-const ABOUT_TAG_STYLES = {
-  p:  { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.navy, lineHeight: 20, marginBottom: 6 },
-  h4: { fontFamily: 'Flame-Regular',     fontSize: 13, color: COLORS.navy, marginTop: 10, marginBottom: 2 },
-  h3: { fontFamily: 'Flame-Regular',     fontSize: 14, color: COLORS.navy, marginTop: 12, marginBottom: 2 },
-  h2: { fontFamily: 'Flame-Regular',     fontSize: 15, color: COLORS.navy, marginTop: 14, marginBottom: 2 },
-  li: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.navy, lineHeight: 20 },
-  a:  { color: COLORS.orange },
-};
-const ABOUT_SYSTEM_FONTS = ['FlameSans-Regular', 'Flame-Regular'];
-// Drop tags that can't render in React Native
-const ABOUT_IGNORED_TAGS = ['img', 'figure', 'figcaption', 'table', 'thead', 'tbody', 'tr', 'td', 'th'];
-const COLLAPSED_HEIGHT = 220;
-
-function AboutBlock({ description }: { description: string }) {
-  const [expanded, setExpanded] = useState(false);
-  const { width } = useWindowDimensions();
-  const contentWidth = width - 40; // 20px padding each side
-  return (
-    <View style={styles.aboutBlock}>
-      <View style={expanded ? undefined : styles.aboutCollapsed}>
-        <RenderHTML
-          contentWidth={contentWidth}
-          source={{ html: description }}
-          tagsStyles={ABOUT_TAG_STYLES}
-          systemFonts={ABOUT_SYSTEM_FONTS}
-          ignoredDomTags={ABOUT_IGNORED_TAGS}
-        />
-      </View>
-      <TouchableOpacity
-        onPress={() => setExpanded((v) => !v)}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Text style={styles.aboutToggle}>{expanded ? 'Show less ↑' : 'Read more ↓'}</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -636,17 +597,15 @@ export default function CharacterScreen() {
               </View>
             ) : null}
 
-            {comicVineLoading ? (
-              <SkeletonProvider>
-                <View style={styles.aboutBlock}>
-                  <Skeleton width="100%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
-                  <Skeleton width="92%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
-                  <Skeleton width="80%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
-                  <Skeleton width="70%" height={12} borderRadius={5} />
-                </View>
-              </SkeletonProvider>
-            ) : data.details.description ? (
-              <AboutBlock description={data.details.description} />
+            {!comicVineLoading && data.details.description ? (
+              <TouchableOpacity
+                style={styles.biographyLink}
+                onPress={() => router.push(`/biography/${id}`)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.biographyLinkText}>Read biography</Text>
+                <Ionicons name="chevron-forward" size={14} color={COLORS.orange} />
+              </TouchableOpacity>
             ) : null}
 
             {/* Power Stats — circular dials, 3×2 grid */}
@@ -917,26 +876,17 @@ const styles = StyleSheet.create({
 
   // Summary
   summaryBlock: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 6 },
-  aboutBlock: {
+  biographyLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingVertical: 10,
+    gap: 4,
   },
-  aboutCollapsed: {
-    maxHeight: COLLAPSED_HEIGHT,
-    overflow: 'hidden',
-  },
-  aboutText: {
+  biographyLinkText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13,
-    color: COLORS.navy,
-    lineHeight: 20,
-    opacity: 0.8,
-  },
-  aboutToggle: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 12,
     color: COLORS.orange,
-    marginTop: 6,
   },
   summary: {
     fontFamily: 'FlameSans-Regular',

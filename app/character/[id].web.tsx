@@ -275,18 +275,16 @@ export default function WebCharacterScreen() {
               </View>
             ) : null}
 
-            {comicVineLoading ? (
-              <View style={styles.card}>
-                <SkeletonBlock opacity={skeletonOpacity} width={50} height={11} style={{ marginBottom: 10 }} />
-                <View style={{ height: 1, backgroundColor: '#ede5da', marginBottom: 14 }} />
-                {[0, 1, 2, 3].map((i) => (
-                  <SkeletonBlock key={i} opacity={skeletonOpacity} height={11} width={i % 2 === 0 ? '100%' : '80%'} style={{ marginBottom: 8 }} />
-                ))}
-              </View>
-            ) : null}
-
             {!comicVineLoading && details.description ? (
-              <WebAboutCard description={details.description} />
+              <Pressable
+                onPress={() => router.push(`/biography/${id}`)}
+                style={({ hovered }: { hovered?: boolean }) =>
+                  [styles.biographyLink, hovered && (styles.biographyLinkHover as object)] as object
+                }
+              >
+                <Text style={styles.biographyLinkText}>Read biography</Text>
+                <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
+              </Pressable>
             ) : null}
 
             <WebAbilitiesCard powers={details.powers} loading={comicVineLoading} skeletonOpacity={skeletonOpacity} />
@@ -449,18 +447,16 @@ export default function WebCharacterScreen() {
             </View>
           ) : null}
 
-          {comicVineLoading ? (
-            <View style={styles.card}>
-              <SkeletonBlock opacity={skeletonOpacity} width={50} height={11} style={{ marginBottom: 10 }} />
-              <View style={{ height: 1, backgroundColor: '#ede5da', marginBottom: 14 }} />
-              {[0, 1, 2, 3].map((i) => (
-                <SkeletonBlock key={i} opacity={skeletonOpacity} height={11} width={i % 2 === 0 ? '100%' : '80%'} style={{ marginBottom: 8 }} />
-              ))}
-            </View>
-          ) : null}
-
           {!comicVineLoading && details.description ? (
-            <WebAboutCard description={details.description} />
+            <Pressable
+              onPress={() => router.push(`/biography/${id}`)}
+              style={({ hovered }: { hovered?: boolean }) =>
+                [styles.biographyLink, hovered && (styles.biographyLinkHover as object)] as object
+              }
+            >
+              <Text style={styles.biographyLinkText}>Read biography</Text>
+              <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
+            </Pressable>
           ) : null}
 
           <WebAbilitiesCard powers={details.powers} loading={comicVineLoading} skeletonOpacity={skeletonOpacity} />
@@ -576,48 +572,6 @@ export default function WebCharacterScreen() {
 }
 
 const ABILITIES_COLLAPSED = 12;
-
-// ── Web about card (expandable HTML description) ─────────────────────────────
-function WebAboutCard({ description }: { description: string }) {
-  const [expanded, setExpanded] = useState(false);
-  return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>About</Text>
-      <View style={styles.cardDivider} />
-      <View style={expanded ? undefined : (styles.aboutCollapsed as object)}>
-        <div
-          dangerouslySetInnerHTML={{ __html: description }}
-          style={{
-            fontFamily: 'FlameSans-Regular',
-            fontSize: 13,
-            color: COLORS.navy,
-            lineHeight: '1.7',
-            opacity: 0.85,
-          }}
-        />
-        {!expanded && (
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: 60,
-              background: `linear-gradient(to bottom, rgba(249,245,242,0), ${COLORS.beige})`,
-              pointerEvents: 'none',
-            }}
-          />
-        )}
-      </View>
-      <Pressable
-        onPress={() => setExpanded((v) => !v)}
-        style={styles.aboutToggleBtn}
-      >
-        <Text style={styles.aboutToggleText}>{expanded ? 'Show less ↑' : 'Read more ↓'}</Text>
-      </Pressable>
-    </View>
-  );
-}
 
 // ── Web abilities card ───────────────────────────────────────────────────────
 function WebAbilitiesCard({
@@ -923,17 +877,17 @@ const styles = StyleSheet.create({
     color: 'rgba(245,235,220,0.5)',
     marginTop: 4,
   },
-  aboutCollapsed: {
-    maxHeight: 220,
-    overflow: 'hidden',
-    position: 'relative',
+  biographyLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 8,
+    marginBottom: 8,
   },
-  aboutToggleBtn: {
-    marginTop: 10,
-  },
-  aboutToggleText: {
+  biographyLinkHover: { opacity: 0.7 },
+  biographyLinkText: {
     fontFamily: 'FlameSans-Regular',
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.orange,
   },
 
