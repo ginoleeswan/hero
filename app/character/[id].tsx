@@ -727,7 +727,13 @@ export default function CharacterScreen() {
             <Section title="Connections">
               <InfoRow label="Occupation" value={data.stats.work.occupation} />
               <InfoRow label="Base" value={data.stats.work.base} />
-              <AffiliationChips value={data.stats.connections['group-affiliation']} />
+              <AffiliationChips
+                value={
+                  data.details.teams?.length
+                    ? data.details.teams.join(', ')
+                    : data.stats.connections['group-affiliation']
+                }
+              />
               <RelativesList value={data.stats.connections.relatives} />
             </Section>
           </>
