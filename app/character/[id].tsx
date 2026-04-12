@@ -455,6 +455,14 @@ export default function CharacterScreen() {
                   />
                 ))}
               </View>
+              {(() => {
+                const values = STAT_CONFIG.map(({ key }) =>
+                  parseInt((data.stats.powerstats as Record<string, string>)[key] ?? '0', 10),
+                ).filter((n) => !isNaN(n) && n > 0);
+                if (values.length === 0) return null;
+                const total = values.reduce((sum, n) => sum + n, 0);
+                return <Text style={styles.statTotal}>Total {total} / 600</Text>;
+              })()}
             </Section>
 
             <AbilitiesSection
@@ -644,6 +652,14 @@ const styles = StyleSheet.create({
   dialWrap: { alignItems: 'center', justifyContent: 'center', padding: 5 },
   dialValue: { fontFamily: 'Flame-Regular', fontSize: 13, color: COLORS.navy, left: 1 },
   dialLabel: { fontFamily: 'Flame-Regular', fontSize: 10, color: COLORS.navy, marginTop: -10 },
+  statTotal: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 12,
+    color: COLORS.navy,
+    opacity: 0.45,
+    textAlign: 'right',
+    marginTop: 6,
+  },
 
   // Info rows
   infoRow: {
