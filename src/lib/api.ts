@@ -113,7 +113,7 @@ export async function fetchFirstIssue(issueId: string): Promise<FirstIssue> {
   const params = new URLSearchParams({
     api_key: COMICVINE_API_KEY,
     format: 'json',
-    field_list: 'id,image,name,cover_date,issue_number',
+    field_list: 'id,image,name,cover_date',
   });
 
   const res = await fetch(`${COMICVINE_BASE}/issue/4000-${issueId}/?${params}`);
@@ -126,7 +126,6 @@ export async function fetchFirstIssue(issueId: string): Promise<FirstIssue> {
     imageUrl: result?.image?.medium_url ?? null,
     name: result?.name ?? null,
     coverDate: result?.cover_date ?? null,
-    issueNumber: result?.issue_number ?? null,
   };
 }
 

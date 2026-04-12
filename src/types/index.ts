@@ -69,7 +69,6 @@ export interface FirstIssue {
   imageUrl: string | null;
   name: string | null;
   coverDate: string | null;
-  issueNumber: string | null;
 }
 
 // ─── Combined character screen data ──────────────────────────────────────────

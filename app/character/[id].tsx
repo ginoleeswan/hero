@@ -126,7 +126,7 @@ function AffiliationChips({ value }: { value: string | null | undefined }) {
 function RelativesList({ value }: { value: string | null | undefined }) {
   if (!value || value === '-' || value === 'null' || value === '') return null;
   const entries = value
-    .split(';')
+    .split(/[,;]/)
     .map((s) => s.trim())
     .filter((s) => s && s !== '-' && s !== 'null');
   if (entries.length === 0) return null;
@@ -545,7 +545,7 @@ export default function CharacterScreen() {
                 ) : null}
                 {data.firstIssue.coverDate ? (
                   <Text style={styles.comicYear}>
-                    {new Date(data.firstIssue.coverDate).getFullYear()}
+                    {data.firstIssue.coverDate.slice(0, 4)}
                   </Text>
                 ) : null}
               </Section>
