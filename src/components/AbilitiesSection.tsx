@@ -73,7 +73,7 @@ export function AbilitiesSection({ powers, loading }: Props) {
             {[0, 1, 2, 3].map((i) => (
               <View key={i} style={styles.orbItem}>
                 <Skeleton width={ORB_SIZE} height={ORB_SIZE} borderRadius={ORB_SIZE / 2} />
-                <Skeleton width={52} height={10} borderRadius={4} style={{ marginTop: 6 }} />
+                <Skeleton width={52} height={10} borderRadius={4} style={styles.skeletonLabel} />
               </View>
             ))}
           </ScrollView>
@@ -81,8 +81,8 @@ export function AbilitiesSection({ powers, loading }: Props) {
       ) : expanded ? (
         <>
           <View style={styles.expandedGrid}>
-            {visible.map((name) => (
-              <PowerOrb key={name} name={name} />
+            {visible.map((name, index) => (
+              <PowerOrb key={`${index}-${name}`} name={name} />
             ))}
           </View>
           <TouchableOpacity onPress={() => setExpanded(false)} style={styles.showLess}>
@@ -96,8 +96,8 @@ export function AbilitiesSection({ powers, loading }: Props) {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
         >
-          {visible.map((name) => (
-            <PowerOrb key={name} name={name} />
+          {visible.map((name, index) => (
+            <PowerOrb key={`${index}-${name}`} name={name} />
           ))}
           {overflow > 0 && (
             <MoreOrb count={overflow} onPress={() => setExpanded(true)} />
@@ -203,5 +203,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.navy,
     textDecorationLine: 'underline',
+  },
+  skeletonLabel: {
+    marginTop: 6,
   },
 });
