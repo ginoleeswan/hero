@@ -20,7 +20,7 @@ const TAG_STYLES = {
   strong: { fontFamily: 'Flame-Regular' },
 };
 const SYSTEM_FONTS = ['FlameSans-Regular', 'Flame-Regular'];
-const IGNORED_TAGS = ['img', 'figure', 'figcaption', 'table', 'thead', 'tbody', 'tr', 'td', 'th'];
+const IGNORED_TAGS = ['figure', 'figcaption', 'table', 'thead'];
 
 export default function BiographyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
