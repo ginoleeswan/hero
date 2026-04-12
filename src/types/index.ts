@@ -61,6 +61,7 @@ export interface HeroDetails {
   summary: string | null;
   publisher: string | null;
   firstIssueId: string | null;
+  powers: string[] | null;
 }
 
 export interface FirstIssue {

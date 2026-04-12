@@ -92,7 +92,7 @@ export async function fetchHeroStats(heroId: string): Promise<HeroStats> {
 }
 
 export async function fetchHeroDetails(heroName: string): Promise<HeroDetails> {
-  if (Platform.OS === 'web') return { summary: null, publisher: null, firstIssueId: null };
+  if (Platform.OS === 'web') return { summary: null, publisher: null, firstIssueId: null, powers: null };
 
   const params = new URLSearchParams({
     api_key: COMICVINE_API_KEY,
@@ -107,7 +107,7 @@ export async function fetchHeroDetails(heroName: string): Promise<HeroDetails> {
   const json = await res.json();
   const result = json.results?.[0];
 
-  if (!result) return { summary: null, publisher: null, firstIssueId: null };
+  if (!result) return { summary: null, publisher: null, firstIssueId: null, powers: null };
 
   return {
     summary: result.deck ?? null,
@@ -115,6 +115,7 @@ export async function fetchHeroDetails(heroName: string): Promise<HeroDetails> {
     firstIssueId: result.first_appeared_in_issue?.id
       ? String(result.first_appeared_in_issue.id)
       : null,
+    powers: null,
   };
 }
 

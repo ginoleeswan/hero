@@ -74,7 +74,7 @@ describe('fetchHeroDetails', () => {
     });
 
     const result = await fetchHeroDetails('Unknown');
-    expect(result).toEqual({ summary: null, publisher: null, firstIssueId: null });
+    expect(result).toEqual({ summary: null, publisher: null, firstIssueId: null, powers: null });
   });
 });
 

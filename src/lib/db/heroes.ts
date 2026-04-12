@@ -208,6 +208,7 @@ export function heroRowToCharacterData(hero: Hero): CharacterData {
       summary: hero.summary ?? null,
       publisher: hero.publisher ?? null,
       firstIssueId: null,
+      powers: hero.powers ?? null,
     },
     firstIssue: hero.first_issue_image_url
       ? { id: '', imageUrl: hero.first_issue_image_url }

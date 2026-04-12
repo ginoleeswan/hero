@@ -279,6 +279,65 @@ describe('getHeroesByStatRanking', () => {
   });
 });
 
+// ─── heroRowToCharacterData — powers mapping ──────────────────────────────────
+
+import type { Tables } from '../../../src/types/database.generated';
+
+type HeroRow = Tables<'heroes'>;
+
+const baseHero: HeroRow = {
+  id: '1',
+  name: 'Test Hero',
+  powers: null,
+  intelligence: 80,
+  strength: 90,
+  speed: 70,
+  durability: 85,
+  power: 75,
+  combat: 80,
+  full_name: 'Test T. Hero',
+  alter_egos: null,
+  aliases: [],
+  place_of_birth: null,
+  first_appearance: null,
+  publisher: 'Marvel',
+  alignment: 'good',
+  gender: 'Male',
+  race: 'Human',
+  height_imperial: "6'2\"",
+  height_metric: '188 cm',
+  weight_imperial: '200 lb',
+  weight_metric: '91 kg',
+  eye_color: 'Blue',
+  hair_color: 'Black',
+  occupation: 'Hero',
+  base: 'New York',
+  group_affiliation: null,
+  relatives: null,
+  summary: null,
+  image_url: null,
+  image_md_url: null,
+  portrait_url: null,
+  first_issue_image_url: null,
+  category: null,
+  enriched_at: null,
+  comicvine_enriched_at: null,
+};
+
+describe('heroRowToCharacterData — powers mapping', () => {
+  it('maps powers array to details.powers', () => {
+    const hero: HeroRow = { ...baseHero, powers: ['Flight', 'Super Strength'] };
+    const result = heroRowToCharacterData(hero);
+    expect(result.details.powers).toEqual(['Flight', 'Super Strength']);
+  });
+
+  it('maps null powers to null', () => {
+    const hero: HeroRow = { ...baseHero, powers: null };
+    const result = heroRowToCharacterData(hero);
+    expect(result.details.powers).toBeNull();
+  });
+});
+
 // ─── getHeroesByPowerRange ────────────────────────────────────────────────────
 
 import { getHeroesByPowerRange } from '../../../src/lib/db/heroes';
