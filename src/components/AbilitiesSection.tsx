@@ -1,7 +1,5 @@
-// src/components/AbilitiesSection.tsx
 import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { getPowerIcon } from '../constants/powerIcons';
@@ -9,38 +7,26 @@ import { Skeleton } from './ui/Skeleton';
 import { SkeletonProvider } from './ui/SkeletonProvider';
 
 const COLLAPSED_COUNT = 8;
-const ORB_SIZE = 64;
-const ITEM_WIDTH = 76;
 
 interface Props {
   powers: string[] | null;
   loading: boolean;
 }
 
-function PowerOrb({ name }: { name: string }) {
-  const { icon, gradientStart, gradientEnd } = getPowerIcon(name);
+function PowerPill({ name }: { name: string }) {
+  const { icon, gradientEnd } = getPowerIcon(name);
   return (
-    <View style={styles.orbItem}>
-      <LinearGradient
-        colors={[gradientStart, gradientEnd]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.orb}
-      >
-        <Ionicons name={icon as any} size={26} color="white" style={styles.orbIcon} />
-      </LinearGradient>
-      <Text style={styles.orbName} numberOfLines={2}>{name}</Text>
+    <View style={[styles.pill, { borderColor: gradientEnd + '40' }]}>
+      <Ionicons name={icon as any} size={13} color={gradientEnd} />
+      <Text style={styles.pillText}>{name}</Text>
     </View>
   );
 }
 
-function MoreOrb({ count, onPress }: { count: number; onPress: () => void }) {
+function MorePill({ count, onPress }: { count: number; onPress: () => void }) {
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={styles.orbItem}>
-      <View style={[styles.orb, styles.moreOrb]}>
-        <Text style={styles.moreOrbText}>+{count}</Text>
-      </View>
-      <Text style={styles.orbName}>more</Text>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.morePill}>
+      <Text style={styles.morePillText}>+{count} more</Text>
     </TouchableOpacity>
   );
 }
@@ -55,13 +41,12 @@ export function AbilitiesSection({ powers, loading }: Props) {
 
   return (
     <View style={styles.container}>
-      {/* Section header — matches the app's existing Section pattern */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Abilities</Text>
         <View style={styles.divider} />
       </View>
 
-      {loading ? (
+      {loading && !powers ? (
         <SkeletonProvider>
           <ScrollView
             horizontal
@@ -70,11 +55,8 @@ export function AbilitiesSection({ powers, loading }: Props) {
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
           >
-            {[0, 1, 2, 3].map((i) => (
-              <View key={i} style={styles.orbItem}>
-                <Skeleton width={ORB_SIZE} height={ORB_SIZE} borderRadius={ORB_SIZE / 2} />
-                <Skeleton width={52} height={10} borderRadius={4} style={styles.skeletonLabel} />
-              </View>
+            {[80, 100, 70, 95, 85].map((w, i) => (
+              <Skeleton key={i} width={w} height={34} borderRadius={17} />
             ))}
           </ScrollView>
         </SkeletonProvider>
@@ -82,7 +64,7 @@ export function AbilitiesSection({ powers, loading }: Props) {
         <>
           <View style={styles.expandedGrid}>
             {visible.map((name, index) => (
-              <PowerOrb key={`${index}-${name}`} name={name} />
+              <PowerPill key={`${index}-${name}`} name={name} />
             ))}
           </View>
           <TouchableOpacity onPress={() => setExpanded(false)} style={styles.showLess}>
@@ -97,10 +79,10 @@ export function AbilitiesSection({ powers, loading }: Props) {
           contentContainerStyle={styles.scrollContent}
         >
           {visible.map((name, index) => (
-            <PowerOrb key={`${index}-${name}`} name={name} />
+            <PowerPill key={`${index}-${name}`} name={name} />
           ))}
           {overflow > 0 && (
-            <MoreOrb count={overflow} onPress={() => setExpanded(true)} />
+            <MorePill count={overflow} onPress={() => setExpanded(true)} />
           )}
         </ScrollView>
       )}
@@ -114,7 +96,6 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
 
-  // Section header — mirrors the app's existing Section component style
   sectionHeader: {
     paddingHorizontal: 20,
   },
@@ -132,66 +113,52 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
-  // Scroll view — padding goes on contentContainerStyle, NOT style, to avoid clipping
   scrollView: {},
   scrollContent: {
     paddingLeft: 20,
     paddingRight: 20,
-    gap: 10,
+    gap: 8,
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
 
-  // Orb item
-  orbItem: {
-    width: ITEM_WIDTH,
+  pill: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    backgroundColor: '#faf7f3',
   },
-  orb: {
-    width: ORB_SIZE,
-    height: ORB_SIZE,
-    borderRadius: ORB_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  orbIcon: {
-    // drop-shadow via shadow props on the orb itself
-  },
-  orbName: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 9,
+  pillText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
     color: COLORS.navy,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    lineHeight: 12,
   },
 
-  // "+N more" orb
-  moreOrb: {
-    backgroundColor: COLORS.navy,
+  morePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ddd5c8',
+    backgroundColor: '#faf7f3',
   },
-  moreOrbText: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 16,
-    color: COLORS.beige,
+  morePillText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: COLORS.grey,
   },
 
-  // Expanded grid
   expandedGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 20,
-    gap: 10,
+    gap: 8,
   },
 
-  // Show less
   showLess: {
     alignSelf: 'center',
     marginTop: 12,
@@ -203,8 +170,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.navy,
     textDecorationLine: 'underline',
-  },
-  skeletonLabel: {
-    marginTop: 6,
   },
 });
