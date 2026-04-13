@@ -287,9 +287,9 @@ function WebSpotlight({
 
   const height = isDesktop ? 580 : 420;
   const nameFontSize = isDesktop ? 68 : 44;
-  const nameLineHeight = isDesktop ? 72 : 48;
+  const nameLineHeight = isDesktop ? 82 : 54;
   const contentPad = isDesktop ? 52 : 24;
-  const bottomPad = isDesktop ? 48 : 32;
+  const bottomPad = isDesktop ? 72 : 48;
 
   return (
     <Pressable
@@ -387,7 +387,7 @@ const spot = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     color: COLORS.beige,
     marginBottom: 14,
-    textShadow: '0 2px 20px rgba(0,0,0,0.9)',
+    textShadow: '0 2px 12px rgba(0,0,0,0.85)',
   } as object,
   summary: {
     fontFamily: 'Nunito_400Regular',
@@ -1195,9 +1195,9 @@ const styles = StyleSheet.create({
     position: 'sticky',
     top: 64,
     zIndex: 50,
-    backgroundColor: COLORS.beige,
+    backgroundColor: COLORS.navy,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(41,60,67,0.1)',
+    borderBottomColor: 'rgba(245,235,220,0.08)',
     height: 46,
     justifyContent: 'center',
   } as object,
@@ -1224,20 +1224,20 @@ const styles = StyleSheet.create({
     cursor: 'pointer',
     transition: 'border-color 150ms ease',
   } as object,
-  filterTabActive: { borderBottomColor: COLORS.navy } as object,
-  filterTabHover: { borderBottomColor: 'rgba(41,60,67,0.22)' } as object,
+  filterTabActive: { borderBottomColor: COLORS.orange } as object,
+  filterTabHover: { borderBottomColor: 'rgba(245,235,220,0.25)' } as object,
   filterTabText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: 'rgba(41,60,67,0.35)',
+    color: 'rgba(245,235,220,0.38)',
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
-  filterTabTextActive: { color: COLORS.navy },
+  filterTabTextActive: { color: COLORS.beige },
   filterCount: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
-    color: 'rgba(41,60,67,0.28)',
+    color: 'rgba(245,235,220,0.28)',
     letterSpacing: 0.3,
   },
 
