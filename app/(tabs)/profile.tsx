@@ -286,7 +286,7 @@ export default function ProfileScreen() {
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
             >
-              <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+              <Svg style={StyleSheet.absoluteFill} width={SCREEN_WIDTH} height={280}>
                 <Defs>
                   <Pattern
                     id="dots"
@@ -299,7 +299,7 @@ export default function ProfileScreen() {
                     <Circle cx="7" cy="7" r="1.5" fill="rgba(231,115,51,0.22)" />
                   </Pattern>
                 </Defs>
-                <Rect width="100%" height="100%" fill="url(#dots)" />
+                <Rect width={SCREEN_WIDTH} height={280} fill="url(#dots)" />
               </Svg>
               <View style={styles.coverLogo}>
                 <Svg width={72} height={72} viewBox="0 0 1024 1024">
@@ -313,7 +313,7 @@ export default function ProfileScreen() {
               <ActivityIndicator color="white" />
             </View>
           )}
-          <View style={[styles.editCoverPill, { bottom: 52 }]}>
+          <View style={[styles.editCoverPill, { bottom: 16 }]}>
             <Ionicons name="camera-outline" size={13} color="white" />
             <Text style={styles.editCoverText}>
               {profile?.cover_url ? 'Edit cover' : 'Add cover'}
