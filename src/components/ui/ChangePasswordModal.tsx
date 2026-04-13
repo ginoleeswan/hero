@@ -13,6 +13,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 
+const isWeb = Platform.OS === 'web';
+
 interface Props {
   visible: boolean;
   onClose: () => void;
@@ -71,14 +73,14 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+    <Modal visible={visible} animationType={isWeb ? 'fade' : 'slide'} transparent onRequestClose={handleClose}>
       <KeyboardAvoidingView
-        style={styles.overlay}
+        style={isWeb ? styles.overlayWeb : styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Pressable style={styles.backdrop} onPress={handleClose} />
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
+        <View style={isWeb ? (styles.dialog as object) : styles.sheet}>
+          {!isWeb && <View style={styles.handle} />}
 
           <View style={styles.header}>
             <Text style={styles.title}>Change Password</Text>
@@ -171,6 +173,7 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end' },
+  overlayWeb: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: {
     backgroundColor: COLORS.beige,
@@ -179,6 +182,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 40,
     paddingTop: 12,
+  },
+  dialog: {
+    backgroundColor: COLORS.beige,
+    borderRadius: 20,
+    paddingHorizontal: 28,
+    paddingBottom: 28,
+    paddingTop: 24,
+    width: 420,
+    maxWidth: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 12,
   },
   handle: {
     width: 36,

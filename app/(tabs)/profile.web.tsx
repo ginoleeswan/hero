@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,10 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  TextInput,
   ScrollView,
   useWindowDimensions,
 } from 'react-native';
+import { EditDisplayNameModal } from '../../src/components/ui/EditDisplayNameModal';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -48,10 +48,7 @@ export default function WebProfileScreen() {
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const [editingName, setEditingName] = useState(false);
-  const [nameValue, setNameValue] = useState('');
-  const [savingName, setSavingName] = useState(false);
-  const nameInputRef = useRef<TextInput>(null);
+  const [showEditName, setShowEditName] = useState(false);
 
   const fetchFavourites = useCallback(() => {
     if (!user) return;
@@ -113,24 +110,6 @@ export default function WebProfileScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Remove Photo', style: 'destructive', onPress: removeCover },
     ]);
-  };
-
-  const startEditingName = () => {
-    setNameValue(profile?.display_name ?? username(email));
-    setEditingName(true);
-    setTimeout(() => nameInputRef.current?.focus(), 50);
-  };
-
-  const handleSaveName = async () => {
-    const trimmed = nameValue.trim();
-    if (!trimmed) {
-      setEditingName(false);
-      return;
-    }
-    setSavingName(true);
-    await updateDisplayName(trimmed);
-    setSavingName(false);
-    setEditingName(false);
   };
 
   const email = user?.email ?? '';
@@ -215,37 +194,10 @@ export default function WebProfileScreen() {
 
           {/* ── Identity ── */}
           <View style={mob.identityBlock}>
-            {editingName ? (
-              <>
-                <View style={mob.nameEditRow}>
-                  <TextInput
-                    ref={nameInputRef}
-                    style={mob.nameInput as object}
-                    value={nameValue}
-                    onChangeText={setNameValue}
-                    returnKeyType="done"
-                    onSubmitEditing={handleSaveName}
-                    autoCapitalize="words"
-                    maxLength={40}
-                  />
-                  <Pressable onPress={handleSaveName} disabled={savingName} style={mob.nameAction}>
-                    {savingName
-                      ? <ActivityIndicator size="small" color={COLORS.orange} />
-                      : <Ionicons name="checkmark" size={20} color={COLORS.orange} />
-                    }
-                  </Pressable>
-                  <Pressable onPress={() => { setEditingName(false); setNameValue(''); }} style={mob.nameAction}>
-                    <Ionicons name="close" size={20} color={COLORS.grey} />
-                  </Pressable>
-                </View>
-                <Text style={mob.nameCharCount}>{nameValue.length}/40</Text>
-              </>
-            ) : (
-              <Pressable onPress={startEditingName} style={mob.nameRow}>
-                <Text style={mob.username}>{name}</Text>
-                <Ionicons name="pencil-outline" size={14} color={COLORS.grey} style={mob.pencilIcon} />
-              </Pressable>
-            )}
+            <Pressable onPress={() => setShowEditName(true)} style={mob.nameRow}>
+              <Text style={mob.username}>{name}</Text>
+              <Ionicons name="pencil-outline" size={14} color={COLORS.grey} style={mob.pencilIcon} />
+            </Pressable>
             <Text style={mob.email}>{email}</Text>
             <View style={mob.statPill}>
               <Ionicons name="heart" size={14} color={COLORS.orange} />
@@ -390,6 +342,12 @@ export default function WebProfileScreen() {
           onClose={() => setShowChangePassword(false)}
           onSubmit={changePassword}
         />
+        <EditDisplayNameModal
+          visible={showEditName}
+          currentName={name}
+          onClose={() => setShowEditName(false)}
+          onSubmit={updateDisplayName}
+        />
       </View>
     );
   }
@@ -471,34 +429,10 @@ export default function WebProfileScreen() {
                 </View>
               )}
 
-              {editingName ? (
-                <View style={desk.nameEditRow as object}>
-                  <TextInput
-                    ref={nameInputRef}
-                    style={desk.nameInput as object}
-                    value={nameValue}
-                    onChangeText={setNameValue}
-                    returnKeyType="done"
-                    onSubmitEditing={handleSaveName}
-                    autoCapitalize="words"
-                    maxLength={40}
-                  />
-                  <Pressable onPress={handleSaveName} disabled={savingName} style={desk.nameAction}>
-                    {savingName
-                      ? <ActivityIndicator size="small" color={COLORS.orange} />
-                      : <Ionicons name="checkmark" size={20} color={COLORS.orange} />
-                    }
-                  </Pressable>
-                  <Pressable onPress={() => { setEditingName(false); setNameValue(''); }} style={desk.nameAction}>
-                    <Ionicons name="close" size={20} color={COLORS.grey} />
-                  </Pressable>
-                </View>
-              ) : (
-                <Pressable onPress={startEditingName} style={desk.nameRow as object}>
-                  <Text style={desk.username}>{name}</Text>
-                  <Ionicons name="pencil-outline" size={14} color={COLORS.grey} style={desk.pencilIcon} />
-                </Pressable>
-              )}
+              <Pressable onPress={() => setShowEditName(true)} style={desk.nameRow as object}>
+                <Text style={desk.username}>{name}</Text>
+                <Ionicons name="pencil-outline" size={14} color={COLORS.grey} style={desk.pencilIcon} />
+              </Pressable>
 
               <Text style={desk.email as object}>{email}</Text>
 
@@ -634,6 +568,12 @@ export default function WebProfileScreen() {
         visible={showChangePassword}
         onClose={() => setShowChangePassword(false)}
         onSubmit={changePassword}
+      />
+      <EditDisplayNameModal
+        visible={showEditName}
+        currentName={name}
+        onClose={() => setShowEditName(false)}
+        onSubmit={updateDisplayName}
       />
     </ScrollView>
   );

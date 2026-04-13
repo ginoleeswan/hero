@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   RefreshControl,
   Dimensions,
   Alert,
-  TextInput,
   ActionSheetIOS,
   Platform,
 } from 'react-native';
@@ -23,6 +22,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { ChangePasswordModal } from '../../src/components/ui/ChangePasswordModal';
+import { EditDisplayNameModal } from '../../src/components/ui/EditDisplayNameModal';
 import { getUserFavouriteHeroes, type FavouriteHero } from '../../src/lib/db/favourites';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
@@ -77,10 +77,7 @@ export default function ProfileScreen() {
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const [editingName, setEditingName] = useState(false);
-  const [nameValue, setNameValue] = useState('');
-  const [savingName, setSavingName] = useState(false);
-  const nameInputRef = useRef<TextInput>(null);
+  const [showEditName, setShowEditName] = useState(false);
 
   const fetchFavourites = useCallback(() => {
     if (!user) return;
@@ -156,30 +153,6 @@ export default function ProfileScreen() {
         { text: 'Remove Cover', style: 'destructive', onPress: removeCover },
       ]);
     }
-  };
-
-  const startEditingName = () => {
-    const current = profile?.display_name ?? username(email);
-    setNameValue(current);
-    setEditingName(true);
-    setTimeout(() => nameInputRef.current?.focus(), 50);
-  };
-
-  const handleSaveName = async () => {
-    const trimmed = nameValue.trim();
-    if (!trimmed) {
-      setEditingName(false);
-      return;
-    }
-    setSavingName(true);
-    await updateDisplayName(trimmed);
-    setSavingName(false);
-    setEditingName(false);
-  };
-
-  const handleCancelName = () => {
-    setEditingName(false);
-    setNameValue('');
   };
 
   const email = user?.email ?? '';
@@ -304,53 +277,10 @@ export default function ProfileScreen() {
 
         {/* Identity */}
         <View style={styles.identityBlock}>
-          {editingName ? (
-            <>
-              <View style={styles.nameEditRow}>
-                <TextInput
-                  ref={nameInputRef}
-                  style={styles.nameInput}
-                  value={nameValue}
-                  onChangeText={setNameValue}
-                  returnKeyType="done"
-                  onSubmitEditing={handleSaveName}
-                  autoCapitalize="words"
-                  maxLength={40}
-                  placeholderTextColor="rgba(41,60,67,0.3)"
-                />
-                <TouchableOpacity
-                  onPress={handleSaveName}
-                  disabled={savingName}
-                  style={styles.nameAction}
-                  activeOpacity={0.7}
-                >
-                  {savingName ? (
-                    <ActivityIndicator size="small" color={COLORS.orange} />
-                  ) : (
-                    <Ionicons name="checkmark" size={20} color={COLORS.orange} />
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleCancelName}
-                  style={styles.nameAction}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="close" size={20} color={COLORS.grey} />
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.nameCharCount}>{nameValue.length}/40</Text>
-            </>
-          ) : (
-            <TouchableOpacity onPress={startEditingName} activeOpacity={0.7} style={styles.nameRow}>
-              <Text style={styles.username}>{name}</Text>
-              <Ionicons
-                name="pencil-outline"
-                size={14}
-                color={COLORS.grey}
-                style={styles.pencilIcon}
-              />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity onPress={() => setShowEditName(true)} activeOpacity={0.7} style={styles.nameRow}>
+            <Text style={styles.username}>{name}</Text>
+            <Ionicons name="pencil-outline" size={14} color={COLORS.grey} style={styles.pencilIcon} />
+          </TouchableOpacity>
           <Text style={styles.email}>{email}</Text>
           <View style={styles.statPill}>
             <Ionicons name="heart" size={14} color={COLORS.orange} />
@@ -498,6 +428,12 @@ export default function ProfileScreen() {
         visible={showChangePassword}
         onClose={() => setShowChangePassword(false)}
         onSubmit={changePassword}
+      />
+      <EditDisplayNameModal
+        visible={showEditName}
+        currentName={name}
+        onClose={() => setShowEditName(false)}
+        onSubmit={updateDisplayName}
       />
     </View>
   );
