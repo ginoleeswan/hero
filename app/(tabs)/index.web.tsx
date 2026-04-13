@@ -544,19 +544,6 @@ const arr = StyleSheet.create({
   } as object,
 });
 
-/** Edge-fade overlay — passive affordance that there's more content off-screen.
- *  Left side always extends -16 (scroll container marginLeft offset).
- *  Right side: pass contained=true for dark rows (scroll extends -16 past wrapper),
- *  or omit/false for light rows where scroll track extends to viewport edge (right:0). */
-const makeFade = (bgColor: string, side: 'left' | 'right', contained = false) => ({
-  position: 'absolute' as const,
-  top: 0,
-  [side]: side === 'left' ? -16 : contained ? -16 : 0,
-  bottom: 0,
-  width: 64,
-  zIndex: 10,
-  backgroundImage: `linear-gradient(to ${side}, transparent, ${bgColor})`,
-});
 
 // ── Home row section ──────────────────────────────────────────────────────────
 function HomeRow({
@@ -607,9 +594,6 @@ function HomeRow({
             <RowCard key={h.id} hero={h} onPress={() => onPress(String(h.id))} />
           ))}
         </View>
-        {/* Fades always visible — passive affordance. Arrows appear on hover. */}
-        {canScrollLeft && <View pointerEvents="none" style={makeFade(COLORS.beige, 'left') as object} />}
-        {canScrollRight && <View pointerEvents="none" style={makeFade(COLORS.beige, 'right') as object} />}
         {isHovered && canScrollLeft && <CarouselArrow direction="left" onPress={doScrollLeft} />}
         {isHovered && canScrollRight && <CarouselArrow direction="right" onPress={doScrollRight} />}
       </View>
@@ -704,9 +688,6 @@ function DarkHomeRow({
             <RowCard key={h.id} hero={h} onPress={() => onPress(String(h.id))} />
           ))}
         </View>
-        {/* Fades always visible — passive affordance. Arrows appear on hover. */}
-        {canScrollLeft && <View pointerEvents="none" style={makeFade(COLORS.navy, 'left', true) as object} />}
-        {canScrollRight && <View pointerEvents="none" style={makeFade(COLORS.navy, 'right', true) as object} />}
         {isHovered && canScrollLeft && <CarouselArrow direction="left" onPress={doScrollLeft} contained />}
         {isHovered && canScrollRight && <CarouselArrow direction="right" onPress={doScrollRight} contained />}
       </View>
