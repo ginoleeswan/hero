@@ -20,6 +20,10 @@ import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleto
 import {
   getHeroesByCategory,
   getAntiHeroes,
+  getVillains,
+  getIconicHeroes,
+  getSpotlightHeroes,
+  getNewlyAddedCV,
   getHeroesByPublisher,
   getHeroesByStatRanking,
   searchHeroes,
@@ -36,7 +40,7 @@ import type { FavouriteHero } from '../../src/types';
 // ── Constants ─────────────────────────────────────────────────────────────────
 const PUBLISHER_FILTERS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
 const DISPLAY_LIMIT = 120;
-const SPOTLIGHT_POOL = 5;
+const SPOTLIGHT_POOL = 10;
 const ROW_CARD_HEIGHT = 260;
 const ROW_CARD_WIDTH = 180;
 
@@ -571,14 +575,16 @@ export default function WebHomeScreen() {
 
   // Home data
   interface HomeData {
-    popular: Hero[];
-    villain: Hero[];
+    spotlight: Hero[];
+    iconic: Hero[];
     xmen: Hero[];
+    villains: Hero[];
     antiHeroes: Hero[];
     marvel: Hero[];
     dc: Hero[];
     strongest: Hero[];
     mostIntelligent: Hero[];
+    newlyAdded: Hero[];
   }
   const [homeData, setHomeData] = useState<HomeData | null>(null);
   const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
@@ -602,23 +608,29 @@ export default function WebHomeScreen() {
       .finally(() => setLoadingAll(false));
 
     Promise.all([
+      getSpotlightHeroes(10),
+      getIconicHeroes(25),
       getHeroesByCategory(),
-      getAntiHeroes(),
-      getHeroesByPublisher('marvel'),
-      getHeroesByPublisher('dc'),
-      getHeroesByStatRanking('strength'),
-      getHeroesByStatRanking('intelligence'),
+      getAntiHeroes(20),
+      getVillains(25),
+      getHeroesByPublisher('marvel', 25),
+      getHeroesByPublisher('dc', 25),
+      getHeroesByStatRanking('strength', 20),
+      getHeroesByStatRanking('intelligence', 20),
+      getNewlyAddedCV(25),
     ])
-      .then(([cats, antiHeroes, marvel, dc, strongest, mostIntelligent]) => {
+      .then(([spotlight, iconic, cats, antiHeroes, villains, marvel, dc, strongest, mostIntelligent, newlyAdded]) => {
         setHomeData({
-          popular: cats.popular,
-          villain: cats.villain,
+          spotlight,
+          iconic,
           xmen: cats.xmen,
           antiHeroes,
+          villains,
           marvel,
           dc,
           strongest,
           mostIntelligent,
+          newlyAdded,
         });
       })
       .catch(() => {});
@@ -637,12 +649,12 @@ export default function WebHomeScreen() {
 
   // Auto-advance spotlight
   useEffect(() => {
-    if (!homeData?.popular.length) return;
-    const total = Math.min(SPOTLIGHT_POOL, homeData.popular.length);
+    if (!homeData?.spotlight.length) return;
+    const total = Math.min(SPOTLIGHT_POOL, homeData.spotlight.length);
     if (total <= 1) return;
     const timer = setInterval(() => setSpotlightIndex((i) => (i + 1) % total), 6000);
     return () => clearInterval(timer);
-  }, [homeData?.popular]);
+  }, [homeData?.spotlight]);
 
   const filtered = useMemo(() => {
     let list =
@@ -673,8 +685,8 @@ export default function WebHomeScreen() {
     [router],
   );
 
-  const spotlightHero = homeData?.popular[spotlightIndex] ?? null;
-  const spotlightTotal = homeData ? Math.min(SPOTLIGHT_POOL, homeData.popular.length) : 0;
+  const spotlightHero = homeData?.spotlight[spotlightIndex] ?? null;
+  const spotlightTotal = homeData ? Math.min(SPOTLIGHT_POOL, homeData.spotlight.length) : 0;
 
   return (
     <View style={styles.root}>
@@ -843,52 +855,66 @@ export default function WebHomeScreen() {
 
           {/* Curated rows */}
           <HomeRow
-            title="Popular"
-            heroes={homeData.popular}
+            label="By Appearances"
+            title="Most Iconic"
+            heroes={homeData.iconic}
             onPress={handlePress}
-            onViewAll={() => router.push('/category/popular')}
+            onViewAll={() => router.push('/category/strongest')}
           />
           <HomeRow
-            title="Villains"
-            heroes={homeData.villain}
-            onPress={handlePress}
-            onViewAll={() => router.push('/category/villain')}
-          />
-          <HomeRow
-            title="X-Men"
-            heroes={homeData.xmen}
-            onPress={handlePress}
-            onViewAll={() => router.push('/category/xmen')}
-          />
-          <HomeRow
-            title="Anti-Heroes"
-            heroes={homeData.antiHeroes}
-            onPress={handlePress}
-            onViewAll={() => router.push('/category/anti-heroes')}
-          />
-          <HomeRow
+            label="Marvel Comics"
             title="Marvel Universe"
             heroes={homeData.marvel}
             onPress={handlePress}
             onViewAll={() => router.push('/category/marvel')}
           />
           <HomeRow
+            label="DC Comics"
             title="DC Universe"
             heroes={homeData.dc}
             onPress={handlePress}
             onViewAll={() => router.push('/category/dc')}
           />
           <HomeRow
+            label="The Dark Side"
+            title="Villains"
+            heroes={homeData.villains}
+            onPress={handlePress}
+            onViewAll={() => router.push('/category/villain')}
+          />
+          <HomeRow
+            label="Neither Good Nor Evil"
+            title="Anti-Heroes"
+            heroes={homeData.antiHeroes}
+            onPress={handlePress}
+            onViewAll={() => router.push('/category/anti-heroes')}
+          />
+          <HomeRow
+            label="Charles Xavier's School"
+            title="X-Men"
+            heroes={homeData.xmen}
+            onPress={handlePress}
+            onViewAll={() => router.push('/category/xmen')}
+          />
+          <HomeRow
+            label="By Power Stats"
             title="Strongest Heroes"
             heroes={homeData.strongest}
             onPress={handlePress}
             onViewAll={() => router.push('/category/strongest')}
           />
           <HomeRow
-            title="Most Intelligent"
+            label="By Power Stats"
+            title="Brightest Minds"
             heroes={homeData.mostIntelligent}
             onPress={handlePress}
             onViewAll={() => router.push('/category/most-intelligent')}
+          />
+          <HomeRow
+            label="New to the Encyclopedia"
+            title="Recently Added"
+            heroes={homeData.newlyAdded}
+            onPress={handlePress}
           />
 
           <View style={styles.footerRule} />

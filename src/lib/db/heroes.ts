@@ -119,7 +119,54 @@ export async function getAntiHeroes(limit = 20): Promise<Hero[]> {
     .from('heroes')
     .select('*')
     .ilike('alignment', '%neutral%')
-    .order('name')
+    .order('issue_count', { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function getVillains(limit = 25): Promise<Hero[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('*')
+    .eq('alignment', 'bad')
+    .not('publisher', 'in', '("Non-Fictional","In the Public Domain")')
+    .order('issue_count', { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function getIconicHeroes(limit = 25): Promise<Hero[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('*')
+    .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
+    .order('issue_count', { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function getSpotlightHeroes(limit = 10): Promise<Hero[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('*')
+    .not('portrait_url', 'is', null)
+    .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
+    .order('issue_count', { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function getNewlyAddedCV(limit = 25): Promise<Hero[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('*')
+    .like('id', 'cv-%')
+    .not('publisher', 'in', '("Non-Fictional","In the Public Domain")')
+    .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
   return data ?? [];
@@ -127,13 +174,13 @@ export async function getAntiHeroes(limit = 20): Promise<Hero[]> {
 
 export async function getHeroesByPublisher(
   publisher: 'marvel' | 'dc',
-  limit = 20,
+  limit = 25,
 ): Promise<Hero[]> {
   const { data, error } = await supabase
     .from('heroes')
     .select('*')
     .ilike('publisher', `%${publisher}%`)
-    .order('name')
+    .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
   return data ?? [];
