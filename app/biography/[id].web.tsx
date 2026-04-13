@@ -21,12 +21,13 @@ const HTML_STYLES = `
   }
   h2 {
     font-family: Flame-Regular, serif;
-    font-size: 20px;
+    font-size: 22px;
     color: ${COLORS.navy};
-    margin: 36px 0 10px;
+    margin: 40px 0 10px;
     padding-bottom: 8px;
-    border-bottom: 2px solid rgba(41,60,67,0.1);
+    border-bottom: 2px solid rgba(231,115,51,0.3);
     scroll-margin-top: 32px;
+    font-weight: normal;
   }
   h2:first-child { margin-top: 0; }
   h3 {
@@ -34,6 +35,9 @@ const HTML_STYLES = `
     font-size: 16px;
     color: ${COLORS.navy};
     margin: 24px 0 6px;
+    padding-left: 10px;
+    border-left: 3px solid rgba(231,115,51,0.45);
+    font-weight: normal;
   }
   h4 {
     font-family: FlameSans-Regular, sans-serif;
@@ -45,8 +49,21 @@ const HTML_STYLES = `
     opacity: 0.5;
   }
   p { margin: 0 0 14px; }
-  a { color: ${COLORS.orange}; text-decoration: none; }
-  a:hover { text-decoration: underline; }
+  /* Slightly larger opening paragraph */
+  p:first-of-type { font-size: 16px; line-height: 1.9; }
+  /* Drop cap on the opening word */
+  p:first-of-type::first-letter {
+    font-family: Flame-Regular, serif;
+    font-size: 3.8em;
+    line-height: 0.82;
+    float: left;
+    margin: 3px 9px -2px 0;
+    color: ${COLORS.orange};
+  }
+  strong, b { font-weight: 600; }
+  /* Wiki-style links: persistent subtle underline, full colour on hover */
+  a { color: ${COLORS.orange}; text-decoration: none; border-bottom: 1px solid rgba(231,115,51,0.35); }
+  a:hover { border-bottom-color: ${COLORS.orange}; }
   ul, ol { padding-left: 22px; margin: 0 0 14px; }
   li { margin-bottom: 5px; }
   blockquote {
@@ -325,6 +342,9 @@ export default function WebBiographyScreen() {
             <View style={styles.heroTitleBlock}>
               <Text style={[styles.heroName, { fontSize: isDesktop ? 42 : 30 }]}>{hero.name}</Text>
               <Text style={styles.subtitle}>Biography</Text>
+              {hero.summary ? (
+                <Text style={styles.heroDeck} numberOfLines={2}>{hero.summary}</Text>
+              ) : null}
             </View>
           ) : null}
         </View>
@@ -360,7 +380,10 @@ export default function WebBiographyScreen() {
                       [styles.tocItem, hovered && (styles.tocItemHovered as object)] as object
                     }
                   >
-                    <Text style={styles.tocText} numberOfLines={2}>{heading}</Text>
+                    <View style={styles.tocRow}>
+                      <Text style={styles.tocNum}>{i + 1}</Text>
+                      <Text style={styles.tocText} numberOfLines={2}>{heading}</Text>
+                    </View>
                   </Pressable>
                 ))}
               </View>
@@ -430,6 +453,15 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase' as const,
     letterSpacing: 2,
   },
+  heroDeck: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 14,
+    color: COLORS.beige,
+    opacity: 0.6,
+    lineHeight: 20,
+    marginTop: 8,
+    maxWidth: 560,
+  },
 
   // Desktop two-column layout
   desktopBody: {
@@ -475,11 +507,24 @@ const styles = StyleSheet.create({
   tocItemHovered: {
     backgroundColor: 'rgba(41,60,67,0.06)',
   },
+  tocRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 7,
+  },
+  tocNum: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 11,
+    color: COLORS.orange,
+    lineHeight: 18,
+    width: 16,
+  },
   tocText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13,
     color: COLORS.navy,
     lineHeight: 18,
+    flex: 1,
   },
   desktopContent: {
     flex: 1,
