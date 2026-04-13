@@ -3,6 +3,8 @@ import { View, Text, ScrollView, StyleSheet, useWindowDimensions } from 'react-n
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RenderHTML from 'react-native-render-html';
+import { Skeleton } from '../../src/components/ui/Skeleton';
+import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { getHeroById } from '../../src/lib/db/heroes';
 import { COLORS } from '../../src/constants/colors';
 import type { Tables } from '../../src/types/database.generated';
@@ -42,8 +44,8 @@ const TAG_STYLES = {
   a: { color: COLORS.orange },
   b: { fontFamily: 'Flame-Regular' },
   strong: { fontFamily: 'Flame-Regular' },
-  figure: { marginVertical: 12, borderRadius: 8 },
-  img: { width: '100%', height: 300, borderRadius: 8 },
+  figure: { marginVertical: 12 },
+  img: { borderRadius: 8 },
   figcaption: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 12,
@@ -53,6 +55,7 @@ const TAG_STYLES = {
   },
 };
 const SYSTEM_FONTS = ['FlameSans-Regular', 'Flame-Regular'];
+const IGNORED_TAGS = ['table', 'thead', 'tbody', 'tr', 'td', 'th'];
 
 export default function BiographyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -102,12 +105,27 @@ export default function BiographyScreen() {
                 source={{ html: hero.description }}
                 tagsStyles={TAG_STYLES}
                 systemFonts={SYSTEM_FONTS}
+                ignoredDomTags={IGNORED_TAGS}
               />
             ) : (
               <Text style={styles.empty}>No biography available.</Text>
             )}
           </>
-        ) : null}
+        ) : (
+          <SkeletonProvider>
+            <Skeleton width="60%" height={32} borderRadius={6} style={{ marginBottom: 6 }} />
+            <Skeleton width="30%" height={12} borderRadius={4} style={{ marginBottom: 16 }} />
+            <View style={styles.divider} />
+            <Skeleton width="100%" height={12} borderRadius={4} style={{ marginBottom: 8 }} />
+            <Skeleton width="95%" height={12} borderRadius={4} style={{ marginBottom: 8 }} />
+            <Skeleton width="88%" height={12} borderRadius={4} style={{ marginBottom: 8 }} />
+            <Skeleton width="92%" height={12} borderRadius={4} style={{ marginBottom: 8 }} />
+            <Skeleton width="70%" height={12} borderRadius={4} style={{ marginBottom: 24 }} />
+            <Skeleton width="100%" height={12} borderRadius={4} style={{ marginBottom: 8 }} />
+            <Skeleton width="90%" height={12} borderRadius={4} style={{ marginBottom: 8 }} />
+            <Skeleton width="75%" height={12} borderRadius={4} style={{ marginBottom: 8 }} />
+          </SkeletonProvider>
+        )}
       </ScrollView>
     </View>
   );

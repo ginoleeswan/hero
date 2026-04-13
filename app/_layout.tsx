@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Nunito_400Regular, Nunito_700Bold, Nunito_900Black } from '@expo-google-fonts/nunito';
 import { Righteous_400Regular } from '@expo-google-fonts/righteous';
 import { useAuth } from '../src/hooks/useAuth';
+import { LogoLoader } from '../src/components/ui/LogoLoader';
 
 if (Platform.OS !== 'web') {
   try {
@@ -32,7 +33,6 @@ function AuthGate() {
     if (loading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-
     const atRoot = segments.length === 0;
 
     if (!user && !inAuthGroup) {
@@ -41,6 +41,8 @@ function AuthGate() {
       router.replace('/(tabs)');
     }
   }, [user, loading, segments]);
+
+  if (loading) return <LogoLoader />;
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
@@ -63,7 +65,7 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) {
-    return null;
+    return <LogoLoader />;
   }
 
   return (

@@ -594,21 +594,21 @@ export default function CharacterScreen() {
                   <Skeleton width="65%" height={12} borderRadius={5} />
                 </View>
               </SkeletonProvider>
-            ) : data.details.summary ? (
+            ) : data.details.summary || data.details.description ? (
               <View style={styles.summaryBlock}>
-                <Text style={styles.summary}>{data.details.summary}</Text>
+                {data.details.summary ? (
+                  <Text style={styles.summary}>{data.details.summary}</Text>
+                ) : null}
+                {data.details.description ? (
+                  <TouchableOpacity
+                    style={styles.biographyLink}
+                    onPress={() => router.push(`/biography/${id}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.biographyLinkText}>Full biography →</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
-            ) : null}
-
-            {!comicVineLoading && data.details.description ? (
-              <TouchableOpacity
-                style={styles.biographyLink}
-                onPress={() => router.push(`/biography/${id}`)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.biographyLinkText}>Read biography</Text>
-                <Ionicons name="chevron-forward" size={14} color={COLORS.orange} />
-              </TouchableOpacity>
             ) : null}
 
             {/* Power Stats — circular dials, 3×2 grid */}
@@ -877,14 +877,8 @@ const styles = StyleSheet.create({
   },
 
   // Summary
-  summaryBlock: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 6 },
-  biographyLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    gap: 4,
-  },
+  summaryBlock: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10 },
+  biographyLink: { alignSelf: 'flex-end', paddingTop: 8 },
   biographyLinkText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13,

@@ -62,6 +62,23 @@ serve(async (req: Request) => {
       ? String(result.first_appeared_in_issue.id)
       : null;
 
+    // First issue image — resolve the issue ID to a cover URL so it can be persisted
+    let firstIssueImageUrl: string | null = null;
+    if (firstIssueId) {
+      const issueParams = new URLSearchParams({
+        api_key: COMICVINE_API_KEY,
+        format: 'json',
+        field_list: 'image',
+      });
+      const issueRes = await fetch(
+        `${COMICVINE_BASE}/issue/4000-${firstIssueId}/?${issueParams}`,
+      );
+      if (issueRes.ok) {
+        const issueJson = await issueRes.json();
+        firstIssueImageUrl = issueJson.results?.image?.medium_url ?? null;
+      }
+    }
+
     // Detail endpoint — powers + all v2 fields
     let powers: string[] | null = null;
     let description: string | null = null;
@@ -205,6 +222,7 @@ serve(async (req: Request) => {
         friends,
         movies,
         teams,
+        first_issue_image_url: firstIssueImageUrl,
         comicvine_enriched_at: new Date().toISOString(),
       })
       .eq('id', heroId);

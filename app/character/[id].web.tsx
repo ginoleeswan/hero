@@ -206,16 +206,25 @@ export default function WebCharacterScreen() {
 
         {/* Origin badge + issue count + creator credit */}
         <View style={styles.heroIdentityMeta}>
-          {details.origin ? <Text style={styles.originBadge}>{details.origin}</Text> : null}
-          {(details.issueCount ?? 0) > 0 || (details.creators?.length ?? 0) > 0 ? (
-            <Text style={styles.heroMeta}>
-              {(details.issueCount ?? 0) > 0
-                ? `Featured in ${details.issueCount!.toLocaleString()} issues`
-                : ''}
-              {(details.issueCount ?? 0) > 0 && details.creators?.length ? '  ·  ' : ''}
-              {details.creators?.length ? `Created by ${details.creators.join(' & ')}` : ''}
-            </Text>
-          ) : null}
+          {comicVineLoading ? (
+            <>
+              <SkeletonBlock opacity={skeletonOpacity} width={60} height={18} borderRadius={4} dark />
+              <SkeletonBlock opacity={skeletonOpacity} width={200} height={11} borderRadius={4} dark style={{ marginTop: 6 }} />
+            </>
+          ) : (
+            <>
+              {details.origin ? <Text style={styles.originBadge}>{details.origin}</Text> : null}
+              {(details.issueCount ?? 0) > 0 || (details.creators?.length ?? 0) > 0 ? (
+                <Text style={styles.heroMeta}>
+                  {(details.issueCount ?? 0) > 0
+                    ? `Featured in ${details.issueCount!.toLocaleString()} issues`
+                    : ''}
+                  {(details.issueCount ?? 0) > 0 && details.creators?.length ? '  ·  ' : ''}
+                  {details.creators?.length ? `Created by ${details.creators.join(' & ')}` : ''}
+                </Text>
+              ) : null}
+            </>
+          )}
         </View>
       </View>
 
@@ -224,7 +233,6 @@ export default function WebCharacterScreen() {
         <View style={styles.bodyDesktop}>
           {/* Left column: portrait + power stats */}
           <View style={styles.leftCol}>
-            {/* Portrait card — lets the image breathe in its natural aspect ratio */}
             <View style={styles.portraitCard}>
               {heroImage ? (
                 <Image
@@ -246,7 +254,6 @@ export default function WebCharacterScreen() {
               )}
             </View>
 
-            {/* Power stats sit directly below the portrait */}
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Power Stats</Text>
               <View style={styles.cardDivider} />
@@ -261,43 +268,40 @@ export default function WebCharacterScreen() {
             </View>
           </View>
 
-          {/* Right column: summary + abilities + 2-col info cards */}
+          {/* Right column: summary → abilities → info grid → first appearance → enemies → on screen */}
           <View style={styles.rightCol}>
+            {/* Summary */}
             {comicVineLoading && !details.summary ? (
               <View style={styles.summaryBox}>
                 <SkeletonBlock opacity={skeletonOpacity} height={12} style={{ marginBottom: 10 }} />
-                <SkeletonBlock
-                  opacity={skeletonOpacity}
-                  height={12}
-                  width="85%"
-                  style={{ marginBottom: 10 }}
-                />
+                <SkeletonBlock opacity={skeletonOpacity} height={12} width="85%" style={{ marginBottom: 10 }} />
                 <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
               </View>
-            ) : details.summary ? (
+            ) : details.summary || details.description ? (
               <View style={styles.summaryBox}>
-                <Text style={styles.summaryText}>{details.summary}</Text>
+                {details.summary ? <Text style={styles.summaryText}>{details.summary}</Text> : null}
+                {details.description ? (
+                  <Pressable
+                    onPress={() => router.push(`/biography/${id}`)}
+                    style={({ hovered }: { hovered?: boolean }) =>
+                      [styles.biographyLink, hovered && (styles.biographyLinkHover as object)] as object
+                    }
+                  >
+                    <Text style={styles.biographyLinkText}>Read biography</Text>
+                    <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
+                  </Pressable>
+                ) : null}
               </View>
             ) : null}
 
-            {!comicVineLoading && details.description ? (
-              <Pressable
-                onPress={() => router.push(`/biography/${id}`)}
-                style={({ hovered }: { hovered?: boolean }) =>
-                  [styles.biographyLink, hovered && (styles.biographyLinkHover as object)] as object
-                }
-              >
-                <Text style={styles.biographyLinkText}>Read biography</Text>
-                <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
-              </Pressable>
-            ) : null}
-
+            {/* Abilities */}
             <WebAbilitiesCard
               powers={details.powers}
               loading={comicVineLoading}
               skeletonOpacity={skeletonOpacity}
             />
 
+            {/* 3-col info grid: Overview | Appearance | Work & Connections */}
             <View style={styles.infoGridDesktop as object}>
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>Overview</Text>
@@ -305,13 +309,11 @@ export default function WebCharacterScreen() {
                 <InfoRow label="Full name" value={stats.biography['full-name']} />
                 <InfoRow label="Alter egos" value={stats.biography['alter-egos']} />
                 <InfoRow label="Place of birth" value={stats.biography['place-of-birth']} />
-                <InfoRow label="First appearance" value={stats.biography['first-appearance']} />
                 <InfoRow label="Alignment" value={stats.biography.alignment} />
                 {stats.biography.aliases.filter((a) => a && a !== '-').length > 0 && (
                   <InfoRow label="Aliases" value={stats.biography.aliases.join(', ')} />
                 )}
               </View>
-
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>Appearance</Text>
                 <View style={styles.cardDivider} />
@@ -322,30 +324,78 @@ export default function WebCharacterScreen() {
                 <InfoRow label="Eyes" value={stats.appearance['eye-color']} />
                 <InfoRow label="Hair" value={stats.appearance['hair-color']} />
               </View>
-
               <View style={styles.card}>
-                <Text style={styles.cardTitle}>Work</Text>
+                <Text style={styles.cardTitle}>Work &amp; Connections</Text>
                 <View style={styles.cardDivider} />
                 <InfoRow label="Occupation" value={stats.work.occupation} />
                 <InfoRow label="Base" value={stats.work.base} />
-              </View>
-
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>Connections</Text>
-                <View style={styles.cardDivider} />
+                <InfoRow label="Relatives" value={stats.connections.relatives} />
+                {/* Show first 2 teams only to keep this card compact */}
                 <InfoRow
-                  label="Group affiliation"
+                  label="Affiliations"
                   value={
                     details.teams?.length
-                      ? details.teams.join(', ')
+                      ? details.teams.slice(0, 2).join(', ') + (details.teams.length > 2 ? ` +${details.teams.length - 2} more` : '')
                       : stats.connections['group-affiliation']
                   }
                 />
-                <InfoRow label="Relatives" value={stats.connections.relatives} />
               </View>
             </View>
 
-            {details.enemies?.length || details.friends?.length ? (
+            {/* First Appearance — horizontal card: cover on left, year + title on right */}
+            {comicVineLoading ? (
+              <View style={styles.card}>
+                <View style={styles.firstAppearanceRow}>
+                  <SkeletonBlock opacity={skeletonOpacity} width={90} height={130} borderRadius={6} />
+                  <View style={{ flex: 1, gap: 10 }}>
+                    <SkeletonBlock opacity={skeletonOpacity} width="40%" height={10} borderRadius={4} />
+                    <SkeletonBlock opacity={skeletonOpacity} width="55%" height={36} borderRadius={5} />
+                    <SkeletonBlock opacity={skeletonOpacity} width="70%" height={12} borderRadius={4} />
+                  </View>
+                </View>
+              </View>
+            ) : data.firstIssue?.imageUrl ? (
+              <View style={styles.card}>
+                <View style={styles.firstAppearanceRow}>
+                  <img
+                    src={data.firstIssue.imageUrl}
+                    style={{
+                      width: 90,
+                      height: 130,
+                      objectFit: 'cover',
+                      borderRadius: 6,
+                      flexShrink: 0,
+                      display: 'block',
+                    }}
+                  />
+                  <View style={styles.firstAppearanceMeta}>
+                    <Text style={styles.firstAppearanceLabel}>First Appearance</Text>
+                    {data.firstIssue.coverDate ? (
+                      <Text style={styles.firstAppearanceYear}>
+                        {data.firstIssue.coverDate.slice(0, 4)}
+                      </Text>
+                    ) : null}
+                    {data.firstIssue.name ? (
+                      <Text style={styles.firstAppearanceName}>{data.firstIssue.name}</Text>
+                    ) : null}
+                  </View>
+                </View>
+              </View>
+            ) : null}
+
+            {/* Enemies & Allies */}
+            {comicVineLoading ? (
+              <View style={styles.card}>
+                <SkeletonBlock opacity={skeletonOpacity} width="45%" height={11} borderRadius={4} style={{ marginBottom: 10 }} />
+                <View style={styles.cardDivider} />
+                <SkeletonBlock opacity={skeletonOpacity} width="25%" height={10} borderRadius={4} style={{ marginBottom: 8 }} />
+                <View style={styles.chipRow}>
+                  {[72, 90, 60, 80, 68].map((w, i) => (
+                    <SkeletonBlock key={i} opacity={skeletonOpacity} width={w} height={26} borderRadius={20} />
+                  ))}
+                </View>
+              </View>
+            ) : details.enemies?.length || details.friends?.length ? (
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>Enemies &amp; Allies</Text>
                 <View style={styles.cardDivider} />
@@ -359,10 +409,8 @@ export default function WebCharacterScreen() {
                         </View>
                       ))}
                       {details.enemies.length > 10 ? (
-                        <View style={styles.chipEnemy}>
-                          <Text style={styles.chipTextEnemy}>
-                            +{details.enemies.length - 10} more
-                          </Text>
+                        <View key="more-e" style={styles.chipEnemy}>
+                          <Text style={styles.chipTextEnemy}>+{details.enemies.length - 10} more</Text>
                         </View>
                       ) : null}
                     </View>
@@ -378,10 +426,8 @@ export default function WebCharacterScreen() {
                         </View>
                       ))}
                       {details.friends.length > 10 ? (
-                        <View style={styles.chipAlly}>
-                          <Text style={styles.chipTextAlly}>
-                            +{details.friends.length - 10} more
-                          </Text>
+                        <View key="more-f" style={styles.chipAlly}>
+                          <Text style={styles.chipTextAlly}>+{details.friends.length - 10} more</Text>
                         </View>
                       ) : null}
                     </View>
@@ -390,7 +436,22 @@ export default function WebCharacterScreen() {
               </View>
             ) : null}
 
-            {details.movies?.length ? (
+            {/* On Screen */}
+            {comicVineLoading ? (
+              <View style={styles.card}>
+                <SkeletonBlock opacity={skeletonOpacity} width="30%" height={11} borderRadius={4} style={{ marginBottom: 10 }} />
+                <View style={styles.cardDivider} />
+                {[0, 1, 2].map((i) => (
+                  <View key={i} style={[styles.movieRow, { alignItems: 'center' }]}>
+                    <SkeletonBlock opacity={skeletonOpacity} width={22} height={22} borderRadius={4} />
+                    <View style={{ gap: 4 }}>
+                      <SkeletonBlock opacity={skeletonOpacity} width={160} height={12} borderRadius={4} />
+                      <SkeletonBlock opacity={skeletonOpacity} width={40} height={10} borderRadius={4} />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : details.movies?.length ? (
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>On Screen</Text>
                 <View style={styles.cardDivider} />
@@ -459,22 +520,23 @@ export default function WebCharacterScreen() {
               />
               <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
             </View>
-          ) : details.summary ? (
+          ) : details.summary || details.description ? (
             <View style={styles.summaryBox}>
-              <Text style={styles.summaryText}>{details.summary}</Text>
+              {details.summary ? (
+                <Text style={styles.summaryText}>{details.summary}</Text>
+              ) : null}
+              {details.description ? (
+                <Pressable
+                  onPress={() => router.push(`/biography/${id}`)}
+                  style={({ hovered }: { hovered?: boolean }) =>
+                    [styles.biographyLink, hovered && (styles.biographyLinkHover as object)] as object
+                  }
+                >
+                  <Text style={styles.biographyLinkText}>Read biography</Text>
+                  <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
+                </Pressable>
+              ) : null}
             </View>
-          ) : null}
-
-          {!comicVineLoading && details.description ? (
-            <Pressable
-              onPress={() => router.push(`/biography/${id}`)}
-              style={({ hovered }: { hovered?: boolean }) =>
-                [styles.biographyLink, hovered && (styles.biographyLinkHover as object)] as object
-              }
-            >
-              <Text style={styles.biographyLinkText}>Read biography</Text>
-              <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
-            </Pressable>
           ) : null}
 
           <WebAbilitiesCard
@@ -482,6 +544,43 @@ export default function WebCharacterScreen() {
             loading={comicVineLoading}
             skeletonOpacity={skeletonOpacity}
           />
+
+          {comicVineLoading ? (
+            <View style={styles.card}>
+              <SkeletonBlock opacity={skeletonOpacity} width="40%" height={11} borderRadius={4} style={{ marginBottom: 10 }} />
+              <View style={styles.cardDivider} />
+              <View style={styles.firstIssueRow}>
+                <SkeletonBlock opacity={skeletonOpacity} width={80} height={120} borderRadius={6} />
+                <View style={{ flex: 1, gap: 8, justifyContent: 'flex-end' as const }}>
+                  <SkeletonBlock opacity={skeletonOpacity} width="80%" height={13} borderRadius={4} />
+                  <SkeletonBlock opacity={skeletonOpacity} width="30%" height={11} borderRadius={4} />
+                </View>
+              </View>
+            </View>
+          ) : data.firstIssue?.imageUrl ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>First Appearance</Text>
+              <View style={styles.cardDivider} />
+              <View style={styles.firstIssueRow}>
+                <Image
+                  source={{ uri: data.firstIssue.imageUrl }}
+                  style={styles.firstIssueCover as object}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                />
+                <View style={styles.firstIssueMeta}>
+                  {data.firstIssue.name ? (
+                    <Text style={styles.firstIssueTitle}>{data.firstIssue.name}</Text>
+                  ) : null}
+                  {data.firstIssue.coverDate ? (
+                    <Text style={styles.firstIssueYear}>
+                      {data.firstIssue.coverDate.slice(0, 4)}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            </View>
+          ) : null}
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Overview</Text>
@@ -496,7 +595,18 @@ export default function WebCharacterScreen() {
             )}
           </View>
 
-          {details.enemies?.length || details.friends?.length ? (
+          {comicVineLoading ? (
+            <View style={styles.card}>
+              <SkeletonBlock opacity={skeletonOpacity} width="45%" height={11} borderRadius={4} style={{ marginBottom: 10 }} />
+              <View style={styles.cardDivider} />
+              <SkeletonBlock opacity={skeletonOpacity} width="25%" height={10} borderRadius={4} style={{ marginBottom: 8 }} />
+              <View style={styles.chipRow}>
+                {[72, 90, 60, 80, 68].map((w, i) => (
+                  <SkeletonBlock key={i} opacity={skeletonOpacity} width={w} height={26} borderRadius={20} />
+                ))}
+              </View>
+            </View>
+          ) : details.enemies?.length || details.friends?.length ? (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Enemies &amp; Allies</Text>
               <View style={styles.cardDivider} />
@@ -539,7 +649,21 @@ export default function WebCharacterScreen() {
             </View>
           ) : null}
 
-          {details.movies?.length ? (
+          {comicVineLoading ? (
+            <View style={styles.card}>
+              <SkeletonBlock opacity={skeletonOpacity} width="30%" height={11} borderRadius={4} style={{ marginBottom: 10 }} />
+              <View style={styles.cardDivider} />
+              {[0, 1, 2].map((i) => (
+                <View key={i} style={[styles.movieRow, { alignItems: 'center' }]}>
+                  <SkeletonBlock opacity={skeletonOpacity} width={22} height={22} borderRadius={4} />
+                  <View style={{ gap: 4 }}>
+                    <SkeletonBlock opacity={skeletonOpacity} width={160} height={12} borderRadius={4} />
+                    <SkeletonBlock opacity={skeletonOpacity} width={40} height={10} borderRadius={4} />
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : details.movies?.length ? (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>On Screen</Text>
               <View style={styles.cardDivider} />
@@ -774,8 +898,8 @@ const sk = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  bodyDesktop: { flexDirection: 'row', alignItems: 'flex-start', gap: 18, padding: 20 },
-  leftCol: { width: 280, flexShrink: 0, gap: 14 },
+  bodyDesktop: { flexDirection: 'row', alignItems: 'flex-start', gap: 20, padding: 24 },
+  leftCol: { width: 260, flexShrink: 0, gap: 12 },
   rightCol: { flex: 1, gap: 16 },
   body: { padding: 16, gap: 14 },
   portraitCard: {
@@ -799,7 +923,18 @@ const sk = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e8ddd0',
   },
-  infoGridDesktop: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 },
+  infoGridDesktop: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 },
+
+  // First Appearance — left column cinematic cover
+  firstAppearanceCard: { gap: 8 },
+  firstAppearanceLabel: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 10,
+    color: COLORS.navy,
+    opacity: 0.45,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1.4,
+  },
 });
 
 const styles = StyleSheet.create({
@@ -913,9 +1048,9 @@ const styles = StyleSheet.create({
   biographyLink: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-end',
     gap: 4,
-    paddingVertical: 8,
-    marginBottom: 8,
+    paddingTop: 10,
   },
   biographyLinkHover: { opacity: 0.7 },
   biographyLinkText: {
@@ -928,13 +1063,13 @@ const styles = StyleSheet.create({
   bodyDesktop: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 18,
-    padding: 20,
+    gap: 20,
+    padding: 24,
   },
   leftCol: {
-    width: 280,
+    width: 260,
     flexShrink: 0,
-    gap: 14,
+    gap: 12,
   },
   rightCol: {
     flex: 1,
@@ -1049,7 +1184,7 @@ const styles = StyleSheet.create({
   // Desktop 2-col info grid
   infoGridDesktop: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: '1fr 1fr 1fr',
     gap: 16,
   },
 
@@ -1114,4 +1249,42 @@ const styles = StyleSheet.create({
   movieIcon: { fontSize: 18 },
   movieTitle: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.navy },
   movieYear: { fontFamily: 'FlameSans-Regular', fontSize: 11, color: COLORS.grey, marginTop: 1 },
+
+  // First Appearance — mobile card
+  firstIssueRow: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
+  firstIssueCover: { width: 80, height: 120, borderRadius: 6 },
+  firstIssueMeta: { flex: 1, justifyContent: 'flex-end' as const, paddingBottom: 4 },
+  firstIssueTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 14,
+    color: COLORS.navy,
+    marginBottom: 4,
+  },
+  firstIssueYear: { fontFamily: 'FlameSans-Regular', fontSize: 12, color: COLORS.grey },
+
+  // First Appearance — desktop horizontal card
+  firstAppearanceRow: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
+  firstAppearanceMeta: { flex: 1, justifyContent: 'flex-end' as const, paddingBottom: 4 },
+  firstAppearanceLabel: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 10,
+    color: COLORS.navy,
+    opacity: 0.45,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1.4,
+    marginBottom: 6,
+  },
+  firstAppearanceYear: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 48,
+    color: COLORS.navy,
+    lineHeight: 52,
+    marginBottom: 4,
+  },
+  firstAppearanceName: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 13,
+    color: COLORS.navy,
+    opacity: 0.65,
+  },
 });
