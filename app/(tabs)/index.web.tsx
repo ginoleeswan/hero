@@ -58,7 +58,16 @@ const rowScrollStyle = {
   flexDirection: 'row',
   gap: 12,
   overflowX: 'auto',
-  paddingBottom: 12,
+  // Extra padding gives box-shadows room to render inside the overflow container
+  // on all four sides. Negative margins compensate so layout spacing is unchanged.
+  paddingTop: 16,
+  paddingBottom: 64,
+  paddingLeft: 48,
+  paddingRight: 48,
+  marginTop: -16,
+  marginBottom: -52, // net: 64 - 52 = 12 (same as original paddingBottom)
+  marginLeft: -48,
+  marginRight: -48,
   scrollbarWidth: 'none',
 };
 
