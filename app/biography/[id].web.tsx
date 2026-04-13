@@ -105,6 +105,29 @@ const HTML_STYLES = `
     vertical-align: top;
   }
   tr:last-child td { border-bottom: none; }
+
+  /* ── Fix ComicVine fluid-height image embeds ── */
+  /* Outer figure has inline style="width: 1340px" and align="right" */
+  [data-embed-type="image"] {
+    float: none !important;
+    width: auto !important;
+    max-width: 100% !important;
+    margin: 16px 0 !important;
+  }
+  /* The anchor uses padding-bottom % to fake aspect ratio — collapses without CV stylesheet */
+  a.fluid-height {
+    display: block !important;
+    height: auto !important;
+    padding-bottom: 0 !important;
+    position: static !important;
+  }
+  a.fluid-height img {
+    position: static !important;
+    width: auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
+  }
 `;
 
 const SHIMMER_CSS = `
