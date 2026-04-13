@@ -88,6 +88,8 @@ export function EditDisplayNameModal({ visible, currentName, onClose, onSubmit }
             },
           ]}
         >
+          {/* Fills the gap behind the keyboard, covers iOS keyboard border-radius corners */}
+          {!isWeb && <View style={styles.keyboardFill} />}
           {!isWeb && <View style={styles.handle} />}
 
           <View style={styles.header}>
@@ -142,6 +144,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 40,
     paddingTop: 12,
+  },
+  keyboardFill: {
+    position: 'absolute',
+    bottom: -400,
+    left: 0,
+    right: 0,
+    height: 400,
+    backgroundColor: COLORS.beige,
   },
   dialog: {
     backgroundColor: COLORS.beige,
