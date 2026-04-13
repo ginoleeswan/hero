@@ -35,9 +35,12 @@ export default function WebProfileScreen() {
   const {
     profile,
     avatarUploading,
+    coverUploading,
     error: uploadError,
     pickAndUploadAvatar,
+    pickAndUploadCover,
     removeAvatar,
+    removeCover,
     updateDisplayName,
   } = useProfile(user?.id);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
@@ -92,6 +95,15 @@ export default function WebProfileScreen() {
     Alert.alert('Profile Photo', 'Remove your profile photo?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Remove Photo', style: 'destructive', onPress: removeAvatar },
+    ]);
+  };
+
+  const handleCoverRightClick = (e: { preventDefault: () => void }) => {
+    e.preventDefault();
+    if (!profile?.cover_url) return;
+    Alert.alert('Cover Photo', 'Remove your cover photo?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove Photo', style: 'destructive', onPress: removeCover },
     ]);
   };
 
@@ -216,20 +228,33 @@ export default function WebProfileScreen() {
       <View style={[styles.panelDivider, isMobile && styles.panelDividerMobile]} />
 
       {isEmailUser && (
-        <Pressable onPress={() => setShowChangePassword(true)} style={styles.actionRow}>
+        <Pressable
+          onPress={() => setShowChangePassword(true)}
+          style={[styles.actionRow, isMobile && styles.actionRowMobile]}
+        >
           <Ionicons name="lock-closed-outline" size={14} color="rgba(245,235,220,0.55)" />
-          <Text style={styles.actionText}>Change Password</Text>
+          <Text style={[styles.actionText, isMobile && styles.actionTextMobile]}>
+            Change Password
+          </Text>
         </Pressable>
       )}
 
-      <Pressable onPress={handleSignOut} disabled={signingOut} style={styles.actionRow}>
+      <Pressable
+        onPress={handleSignOut}
+        disabled={signingOut}
+        style={[styles.actionRow, isMobile && styles.actionRowMobile]}
+      >
         <Ionicons name="log-out-outline" size={14} color={COLORS.orange} />
         <Text style={[styles.actionText, styles.actionTextOrange]}>
           {signingOut ? 'Signing out…' : 'Sign out'}
         </Text>
       </Pressable>
 
-      <Pressable onPress={handleDeleteAccount} disabled={deletingAccount} style={styles.actionRow}>
+      <Pressable
+        onPress={handleDeleteAccount}
+        disabled={deletingAccount}
+        style={[styles.actionRow, isMobile && styles.actionRowMobile]}
+      >
         <Ionicons name="trash-outline" size={14} color="rgba(181,48,43,0.8)" />
         <Text style={[styles.actionText, styles.actionTextRed]}>
           {deletingAccount ? 'Deleting…' : 'Delete Account'}
@@ -238,43 +263,241 @@ export default function WebProfileScreen() {
     </View>
   );
 
+  const thumbSize = (width - 32 - 8) / 3;
+
   if (isMobile) {
     return (
-      <View style={styles.root}>
+      <View style={mob.root}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.mobileScroll}
+          contentContainerStyle={mob.scroll}
           keyboardShouldPersistTaps="handled"
         >
-          {profilePanel}
-
-          <View style={styles.mobileContentSection}>
-            <Text style={styles.rightTitle}>Favourites</Text>
-            {loading ? (
-              <View style={styles.center}>
-                <ActivityIndicator color={COLORS.orange} />
+          {/* ── Cover banner ── */}
+          <Pressable
+            onPress={pickAndUploadCover}
+            onContextMenu={handleCoverRightClick as unknown as () => void}
+            style={mob.cover as object}
+          >
+            {profile?.cover_url ? (
+              <Image source={{ uri: profile.cover_url }} style={StyleSheet.absoluteFill} contentFit="cover" />
+            ) : (
+              <LinearGradient
+                colors={['#293C43', '#3d5a66']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              >
+                <View style={mob.coverDots as object} />
+              </LinearGradient>
+            )}
+            {coverUploading && (
+              <View style={mob.coverOverlay}>
+                <ActivityIndicator color="white" />
               </View>
-            ) : favourites.length === 0 ? (
-              <View style={styles.center}>
-                <Text style={styles.emptyText}>No favourites yet.</Text>
-                <Pressable onPress={() => router.push('/')} style={styles.browseBtn}>
-                  <Text style={styles.browseBtnText}>Browse heroes</Text>
+            )}
+            <View style={mob.editCoverPill}>
+              <Ionicons name="camera-outline" size={13} color="white" />
+              <Text style={mob.editCoverText}>{profile?.cover_url ? 'Edit cover' : 'Add cover'}</Text>
+            </View>
+          </Pressable>
+
+          {/* ── Avatar overlap ── */}
+          <View style={mob.avatarZone}>
+            <Pressable
+              onPress={pickAndUploadAvatar}
+              onContextMenu={handleAvatarRightClick as unknown as () => void}
+            >
+              {profile?.avatar_url ? (
+                <View style={mob.avatar}>
+                  <Image source={{ uri: profile.avatar_url }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                  {avatarUploading && (
+                    <View style={mob.avatarOverlay}>
+                      <ActivityIndicator color="white" />
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <LinearGradient colors={[COLORS.orange, '#c04a10']} style={mob.avatar}>
+                  {avatarUploading
+                    ? <ActivityIndicator color="white" />
+                    : <Text style={mob.avatarInitials}>{name.slice(0, 2).toUpperCase()}</Text>
+                  }
+                </LinearGradient>
+              )}
+              <View style={mob.cameraBadge}>
+                <Ionicons name="camera" size={13} color="white" />
+              </View>
+            </Pressable>
+          </View>
+
+          {/* Upload error */}
+          {uploadError && (
+            <View style={mob.uploadErrorBox}>
+              <Ionicons name="alert-circle-outline" size={14} color={COLORS.red} />
+              <Text style={mob.uploadErrorText}>{uploadError}</Text>
+            </View>
+          )}
+
+          {/* ── Identity ── */}
+          <View style={mob.identityBlock}>
+            {editingName ? (
+              <View style={mob.nameEditRow}>
+                <TextInput
+                  ref={nameInputRef}
+                  style={mob.nameInput as object}
+                  value={nameValue}
+                  onChangeText={setNameValue}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSaveName}
+                  autoCapitalize="words"
+                  maxLength={40}
+                />
+                <Pressable onPress={handleSaveName} disabled={savingName} style={mob.nameAction}>
+                  {savingName
+                    ? <ActivityIndicator size="small" color={COLORS.orange} />
+                    : <Ionicons name="checkmark" size={20} color={COLORS.orange} />
+                  }
+                </Pressable>
+                <Pressable onPress={() => { setEditingName(false); setNameValue(''); }} style={mob.nameAction}>
+                  <Ionicons name="close" size={20} color={COLORS.grey} />
                 </Pressable>
               </View>
             ) : (
-              <View style={styles.mobileGrid as object}>
+              <Pressable onPress={startEditingName} style={mob.nameRow}>
+                <Text style={mob.username}>{name}</Text>
+                <Ionicons name="pencil-outline" size={14} color={COLORS.grey} style={mob.pencilIcon} />
+              </Pressable>
+            )}
+            <Text style={mob.email}>{email}</Text>
+            <View style={mob.statPill}>
+              <Ionicons name="heart" size={14} color={COLORS.orange} />
+              <Text style={mob.statPillText}>
+                {loading ? '–' : favourites.length} saved heroes
+              </Text>
+            </View>
+          </View>
+
+          <View style={mob.hairline} />
+
+          {/* ── My Favourites ── */}
+          <View style={mob.section}>
+            <View style={mob.sectionHeader}>
+              <Text style={mob.sectionTitle}>My Favourites</Text>
+              {!loading && favourites.length > 0 && (
+                <Text style={mob.sectionCount}>{favourites.length}</Text>
+              )}
+            </View>
+            {loading ? (
+              <View style={mob.center}>
+                <ActivityIndicator color={COLORS.orange} />
+              </View>
+            ) : favourites.length === 0 ? (
+              <View style={mob.emptyState}>
+                <View style={mob.emptyIconWrap}>
+                  <Ionicons name="heart-outline" size={32} color={COLORS.orange} />
+                </View>
+                <Text style={mob.emptyTitle}>Nothing saved yet</Text>
+                <Text style={mob.emptyBody}>
+                  Open any hero and tap the heart to build your collection
+                </Text>
+              </View>
+            ) : (
+              <View style={mob.grid}>
                 {favourites.map((hero) => (
-                  <WebHeroCard
+                  <Pressable
                     key={hero.id}
-                    id={hero.id}
-                    name={hero.name}
-                    imageUrl={hero.image_url}
                     onPress={() => router.push(`/character/${hero.id}`)}
-                  />
+                    style={[mob.thumb, { width: thumbSize, height: thumbSize * 1.25 }]}
+                  >
+                    <WebHeroCard
+                      id={hero.id}
+                      name={hero.name}
+                      imageUrl={hero.image_url}
+                      onPress={() => router.push(`/character/${hero.id}`)}
+                    />
+                  </Pressable>
                 ))}
               </View>
             )}
           </View>
+
+          {/* ── Account ── */}
+          <View style={mob.accountSection}>
+            <Text style={mob.accountSectionTitle}>Account</Text>
+            <View style={mob.accountCard}>
+              <View style={mob.accountRow}>
+                <View style={[mob.accountIconBadge, mob.accountIconBadgeNavy]}>
+                  <Ionicons name="mail-outline" size={16} color={COLORS.navy} />
+                </View>
+                <Text style={mob.accountLabel}>Email</Text>
+                <Text style={[mob.accountValue, { maxWidth: width * 0.4 }]} numberOfLines={1}>
+                  {email}
+                </Text>
+              </View>
+
+              {isEmailUser && (
+                <>
+                  <View style={mob.divider} />
+                  <Pressable
+                    onPress={() => setShowChangePassword(true)}
+                    style={({ hovered }: { hovered?: boolean }) =>
+                      [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
+                    }
+                  >
+                    <View style={[mob.accountIconBadge, mob.accountIconBadgeNavy]}>
+                      <Ionicons name="lock-closed-outline" size={16} color={COLORS.navy} />
+                    </View>
+                    <Text style={mob.accountLabel}>Change Password</Text>
+                    <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+                  </Pressable>
+                </>
+              )}
+
+              <View style={mob.divider} />
+              <Pressable
+                onPress={handleSignOut}
+                disabled={signingOut}
+                style={({ hovered }: { hovered?: boolean }) =>
+                  [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
+                }
+              >
+                {signingOut
+                  ? <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
+                  : <View style={[mob.accountIconBadge, mob.accountIconBadgeRed]}>
+                      <Ionicons name="log-out-outline" size={16} color={COLORS.red} />
+                    </View>
+                }
+                <Text style={[mob.accountLabel, mob.accountLabelDanger]}>
+                  {signingOut ? 'Signing out…' : 'Sign Out'}
+                </Text>
+              </Pressable>
+
+              <View style={mob.divider} />
+              <Pressable
+                onPress={handleDeleteAccount}
+                disabled={deletingAccount}
+                style={({ hovered }: { hovered?: boolean }) =>
+                  [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
+                }
+              >
+                {deletingAccount
+                  ? <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
+                  : <View style={[mob.accountIconBadge, mob.accountIconBadgeRed]}>
+                      <Ionicons name="trash-outline" size={16} color={COLORS.red} />
+                    </View>
+                }
+                <Text style={[mob.accountLabel, mob.accountLabelDanger]}>
+                  {deletingAccount ? 'Deleting account…' : 'Delete Account'}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+
+          <Text style={mob.disclaimer}>
+            Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics,
+            or any other publisher.
+          </Text>
         </ScrollView>
 
         <ChangePasswordModal
@@ -332,11 +555,11 @@ const styles = StyleSheet.create({
   rootDesktop: { flexDirection: 'row' },
 
   // Mobile scroll
-  mobileScroll: { paddingBottom: 40 },
+  mobileScroll: { paddingBottom: 80 },
   mobileContentSection: { padding: 16 },
   mobileGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
     gap: 12,
   },
 
@@ -479,6 +702,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     paddingVertical: 8,
   },
+  actionRowMobile: { paddingVertical: 13 },
   actionText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
@@ -516,5 +740,283 @@ const styles = StyleSheet.create({
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
     gap: 14,
+  },
+});
+
+// ── Mobile-only styles (native parity) ───────────────────────────────────────
+const mob = StyleSheet.create({
+  root: { flex: 1, backgroundColor: COLORS.beige },
+  scroll: { paddingBottom: 80 },
+
+  // Cover
+  cover: {
+    height: 160,
+    overflow: 'hidden',
+    cursor: 'pointer',
+  } as object,
+  coverDots: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundImage: 'radial-gradient(circle, rgba(231,115,51,0.22) 1.5px, transparent 1.5px)',
+    backgroundSize: '14px 14px',
+  } as object,
+  coverOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editCoverPill: {
+    position: 'absolute',
+    bottom: 44,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  editCoverText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: 'white',
+    letterSpacing: 0.2,
+  },
+
+  // Avatar
+  avatarZone: {
+    alignItems: 'center',
+    marginTop: -45,
+    marginBottom: 12,
+  },
+  avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 4,
+    borderColor: COLORS.beige,
+    overflow: 'hidden',
+    shadowColor: COLORS.orange,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  avatarInitials: { fontFamily: 'Flame-Regular', fontSize: 28, color: '#fff' },
+  avatarOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: COLORS.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.beige,
+  },
+
+  uploadErrorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(181,48,43,0.08)',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.red,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginHorizontal: 16,
+    marginBottom: 8,
+  },
+  uploadErrorText: {
+    flex: 1,
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.red,
+  },
+
+  // Identity
+  identityBlock: {
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 20,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+    cursor: 'pointer',
+  } as object,
+  username: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.navy },
+  pencilIcon: { marginLeft: 6, marginTop: 2 },
+  nameEditRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+    gap: 4,
+  },
+  nameInput: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 22,
+    color: COLORS.navy,
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.orange,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    minWidth: 120,
+    outlineStyle: 'none',
+  } as object,
+  nameAction: { padding: 6 },
+  email: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.grey,
+    marginBottom: 16,
+  },
+  statPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fff5ee',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#fde0cc',
+  },
+  statPillText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.orange,
+  },
+
+  hairline: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#e8ddd0',
+    marginHorizontal: 16,
+    marginBottom: 20,
+  },
+
+  // Favourites
+  section: { paddingHorizontal: 16, marginBottom: 24 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  sectionTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 20,
+    color: COLORS.navy,
+    flex: 1,
+  },
+  sectionCount: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.grey,
+    backgroundColor: '#e8ddd0',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  thumb: { overflow: 'hidden' },
+  center: { paddingVertical: 32, alignItems: 'center' },
+  emptyState: { alignItems: 'center', paddingVertical: 36, paddingHorizontal: 24 },
+  emptyIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#fff5ee',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 17,
+    color: COLORS.navy,
+    marginBottom: 6,
+  },
+  emptyBody: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.grey,
+    textAlign: 'center',
+    lineHeight: 19,
+  },
+
+  // Account
+  accountSection: { paddingHorizontal: 16, marginBottom: 8 },
+  accountSectionTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 20,
+    color: COLORS.navy,
+    marginBottom: 12,
+  },
+  accountCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  accountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    gap: 12,
+    cursor: 'pointer',
+  } as object,
+  accountRowHover: { backgroundColor: 'rgba(41,60,67,0.04)' } as object,
+  accountIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  accountIconBadgeNavy: { backgroundColor: '#e8f0f2' },
+  accountIconBadgeRed: { backgroundColor: '#fde8e8' },
+  accountLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 15,
+    color: COLORS.navy,
+    flex: 1,
+  },
+  accountValue: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.grey,
+  },
+  accountLabelDanger: { color: COLORS.red },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#ede5d8',
+    marginHorizontal: 16,
+  },
+
+  disclaimer: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 10,
+    color: 'rgba(29,45,51,0.35)',
+    textAlign: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 24,
   },
 });
