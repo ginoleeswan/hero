@@ -156,10 +156,29 @@ export default function WebCharacterScreen() {
       ? stats.biography['full-name']
       : null;
 
+  const alignmentColor = (() => {
+    const a = (stats.biography.alignment ?? '').toLowerCase();
+    if (a === 'good') return COLORS.blue;
+    if (a === 'bad') return COLORS.red;
+    return COLORS.orange;
+  })();
+
+  const statValues = STAT_CONFIG
+    .map(({ key }) => parseInt((stats.powerstats as Record<string, string>)[key] ?? '0', 10))
+    .filter((n) => !isNaN(n) && n > 0);
+  const powerScore = statValues.length > 0
+    ? Math.round(statValues.reduce((a, b) => a + b, 0) / statValues.length)
+    : null;
+
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       {/* ── Identity header — navy strip, no image ── */}
-      <View style={styles.identityHeader}>
+      <View style={[styles.identityHeader, { borderBottomWidth: 3, borderBottomColor: alignmentColor }]}>
+        {/* Subtle alignment-based tint — gives each character a distinct mood */}
+        <View
+          style={[styles.headerAlignmentOverlay, { backgroundColor: alignmentColor }]}
+          pointerEvents="none"
+        />
         <View style={styles.headerTopRow}>
           <Pressable
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
@@ -255,7 +274,14 @@ export default function WebCharacterScreen() {
             </View>
 
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Power Stats</Text>
+              <View style={styles.statCardHeader}>
+                <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
+                {powerScore !== null ? (
+                  <View style={[styles.powerScorePill, { backgroundColor: alignmentColor + '22' }]}>
+                    <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>{powerScore}</Text>
+                  </View>
+                ) : null}
+              </View>
               <View style={styles.cardDivider} />
               {STAT_CONFIG.map(({ key, label, color }) => (
                 <StatBar
@@ -355,7 +381,7 @@ export default function WebCharacterScreen() {
                 </View>
               </View>
             ) : data.firstIssue?.imageUrl ? (
-              <View style={styles.card}>
+              <View style={[styles.card, styles.firstAppearanceDesktopCard]}>
                 <View style={styles.firstAppearanceRow}>
                   <img
                     src={data.firstIssue.imageUrl}
@@ -461,7 +487,7 @@ export default function WebCharacterScreen() {
                   const year = match ? match[2] : null;
                   return (
                     <View key={i} style={styles.movieRow}>
-                      <Text style={styles.movieIcon}>🎬</Text>
+                      <Ionicons name="film-outline" size={16} color={COLORS.grey} style={{ marginTop: 1 }} />
                       <View>
                         <Text style={styles.movieTitle}>{title}</Text>
                         {year ? <Text style={styles.movieYear}>{year}</Text> : null}
@@ -497,7 +523,14 @@ export default function WebCharacterScreen() {
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Power Stats</Text>
+            <View style={styles.statCardHeader}>
+              <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
+              {powerScore !== null ? (
+                <View style={[styles.powerScorePill, { backgroundColor: alignmentColor + '22' }]}>
+                  <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>{powerScore}</Text>
+                </View>
+              ) : null}
+            </View>
             <View style={styles.cardDivider} />
             {STAT_CONFIG.map(({ key, label, color }) => (
               <StatBar
@@ -673,7 +706,7 @@ export default function WebCharacterScreen() {
                 const year = match ? match[2] : null;
                 return (
                   <View key={i} style={styles.movieRow}>
-                    <Text style={styles.movieIcon}>🎬</Text>
+                    <Ionicons name="film-outline" size={16} color={COLORS.grey} style={{ marginTop: 1 }} />
                     <View>
                       <Text style={styles.movieTitle}>{title}</Text>
                       {year ? <Text style={styles.movieYear}>{year}</Text> : null}
@@ -953,6 +986,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.navy,
     paddingBottom: 24,
     position: 'relative',
+    overflow: 'hidden',
+  },
+  headerAlignmentOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.07,
   },
   publisherCorner: {
     position: 'absolute',
@@ -1108,12 +1150,31 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1,
     borderColor: '#e8ddd0',
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.orange,
   },
   summaryText: {
     fontFamily: 'FlameSans-Regular',
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.navy,
-    lineHeight: 22,
+    lineHeight: 24,
+  },
+
+  // Power stats card header with score pill
+  statCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  powerScorePill: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 20,
+  },
+  powerScoreValue: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 17,
   },
 
   // Cards
@@ -1246,9 +1307,14 @@ const styles = StyleSheet.create({
 
   // On Screen movies
   movieRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  movieIcon: { fontSize: 18 },
   movieTitle: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.navy },
   movieYear: { fontFamily: 'FlameSans-Regular', fontSize: 11, color: COLORS.grey, marginTop: 1 },
+
+  // First Appearance — desktop card (distinct tinted background)
+  firstAppearanceDesktopCard: {
+    backgroundColor: '#eef4f5',
+    borderColor: '#cddde0',
+  },
 
   // First Appearance — mobile card
   firstIssueRow: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },

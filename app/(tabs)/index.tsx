@@ -157,6 +157,7 @@ export default function HomeScreen() {
               title="Popular"
               heroes={data.popular.map(toRowHero)}
               onPress={handlePress}
+              onViewAll={() => router.push('/category/popular')}
               disabled={navigating}
             />
           )}
@@ -165,6 +166,7 @@ export default function HomeScreen() {
               title="Villains"
               heroes={data.villain.map(toRowHero)}
               onPress={handlePress}
+              onViewAll={() => router.push('/category/villain')}
               disabled={navigating}
             />
           )}
@@ -173,6 +175,7 @@ export default function HomeScreen() {
               title="X-Men"
               heroes={data.xmen.map(toRowHero)}
               onPress={handlePress}
+              onViewAll={() => router.push('/category/xmen')}
               disabled={navigating}
             />
           )}
@@ -181,6 +184,7 @@ export default function HomeScreen() {
               title="Anti-Heroes"
               heroes={data.antiHeroes.map(toRowHero)}
               onPress={handlePress}
+              onViewAll={() => router.push('/category/anti-heroes')}
               disabled={navigating}
             />
           )}
@@ -189,6 +193,7 @@ export default function HomeScreen() {
               title="Marvel Universe"
               heroes={data.marvel.map(toRowHero)}
               onPress={handlePress}
+              onViewAll={() => router.push('/category/marvel')}
               disabled={navigating}
             />
           )}
@@ -197,6 +202,7 @@ export default function HomeScreen() {
               title="DC Universe"
               heroes={data.dc.map(toRowHero)}
               onPress={handlePress}
+              onViewAll={() => router.push('/category/dc')}
               disabled={navigating}
             />
           )}
@@ -205,6 +211,7 @@ export default function HomeScreen() {
               title="Strongest Heroes"
               heroes={data.strongest.map(toRowHero)}
               onPress={handlePress}
+              onViewAll={() => router.push('/category/strongest')}
               disabled={navigating}
             />
           )}
@@ -213,6 +220,7 @@ export default function HomeScreen() {
               title="Most Intelligent"
               heroes={data.mostIntelligent.map(toRowHero)}
               onPress={handlePress}
+              onViewAll={() => router.push('/category/most-intelligent')}
               disabled={navigating}
             />
           )}

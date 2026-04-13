@@ -141,6 +141,88 @@ export async function getHeroesByStatRanking(
   return data ?? [];
 }
 
+export type CategorySlug =
+  | 'popular'
+  | 'villain'
+  | 'xmen'
+  | 'anti-heroes'
+  | 'marvel'
+  | 'dc'
+  | 'strongest'
+  | 'most-intelligent';
+
+export const CATEGORY_LABELS: Record<CategorySlug, string> = {
+  popular: 'Popular',
+  villain: 'Villains',
+  xmen: 'X-Men',
+  'anti-heroes': 'Anti-Heroes',
+  marvel: 'Marvel Universe',
+  dc: 'DC Universe',
+  strongest: 'Strongest Heroes',
+  'most-intelligent': 'Most Intelligent',
+};
+
+export async function getAllHeroesBySlug(slug: CategorySlug): Promise<Hero[]> {
+  switch (slug) {
+    case 'popular':
+    case 'villain':
+    case 'xmen': {
+      const { data, error } = await supabase
+        .from('heroes')
+        .select('*')
+        .eq('category', slug)
+        .order('name');
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    }
+    case 'anti-heroes': {
+      const { data, error } = await supabase
+        .from('heroes')
+        .select('*')
+        .ilike('alignment', '%neutral%')
+        .order('name');
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    }
+    case 'marvel': {
+      const { data, error } = await supabase
+        .from('heroes')
+        .select('*')
+        .ilike('publisher', '%marvel%')
+        .order('name');
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    }
+    case 'dc': {
+      const { data, error } = await supabase
+        .from('heroes')
+        .select('*')
+        .ilike('publisher', '%dc%')
+        .order('name');
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    }
+    case 'strongest': {
+      const { data, error } = await supabase
+        .from('heroes')
+        .select('*')
+        .not('strength', 'is', null)
+        .order('strength', { ascending: false });
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    }
+    case 'most-intelligent': {
+      const { data, error } = await supabase
+        .from('heroes')
+        .select('*')
+        .not('intelligence', 'is', null)
+        .order('intelligence', { ascending: false });
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    }
+  }
+}
+
 export type HeroPowerResult = Pick<
   Hero,
   'id' | 'name' | 'publisher' | 'image_url' | 'portrait_url'

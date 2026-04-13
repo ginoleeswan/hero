@@ -404,18 +404,32 @@ function HomeRow({
   title,
   heroes,
   onPress,
+  onViewAll,
 }: {
   label?: string;
   title: string;
   heroes: (Hero | FavouriteHero)[];
   onPress: (id: string) => void;
+  onViewAll?: () => void;
 }) {
   if (heroes.length === 0) return null;
   return (
     <View style={row.section}>
       <View style={row.header}>
-        {!!label && <Text style={row.label}>{label}</Text>}
-        <Text style={row.title}>{title}</Text>
+        <View style={row.headerLeft}>
+          {!!label && <Text style={row.label}>{label}</Text>}
+          <Text style={row.title}>{title}</Text>
+        </View>
+        {!!onViewAll && (
+          <Pressable
+            onPress={onViewAll}
+            style={({ hovered }: { hovered?: boolean }) =>
+              [row.seeAll, hovered && (row.seeAllHover as object)] as object
+            }
+          >
+            <Text style={row.seeAllText as object}>See All →</Text>
+          </Pressable>
+        )}
       </View>
       <View style={rowScrollStyle as object}>
         {heroes.map((h) => (
@@ -428,7 +442,13 @@ function HomeRow({
 
 const row = StyleSheet.create({
   section: { marginBottom: 40 },
-  header: { marginBottom: 14, gap: 2 },
+  header: {
+    marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  headerLeft: { gap: 2 },
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
@@ -437,6 +457,19 @@ const row = StyleSheet.create({
     textTransform: 'uppercase',
   },
   title: { fontFamily: 'Flame-Regular', fontSize: 28, color: COLORS.navy },
+  seeAll: {
+    paddingBottom: 4,
+    paddingLeft: 12,
+    cursor: 'pointer',
+    transition: 'opacity 150ms ease',
+  } as object,
+  seeAllHover: { opacity: 0.7 } as object,
+  seeAllText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.orange,
+    letterSpacing: 0.3,
+  } as object,
 });
 
 // ── Home skeleton ─────────────────────────────────────────────────────────────
@@ -798,17 +831,53 @@ export default function WebHomeScreen() {
           />
 
           {/* Curated rows */}
-          <HomeRow title="Popular" heroes={homeData.popular} onPress={handlePress} />
-          <HomeRow title="Villains" heroes={homeData.villain} onPress={handlePress} />
-          <HomeRow title="X-Men" heroes={homeData.xmen} onPress={handlePress} />
-          <HomeRow title="Anti-Heroes" heroes={homeData.antiHeroes} onPress={handlePress} />
-          <HomeRow title="Marvel Universe" heroes={homeData.marvel} onPress={handlePress} />
-          <HomeRow title="DC Universe" heroes={homeData.dc} onPress={handlePress} />
-          <HomeRow title="Strongest Heroes" heroes={homeData.strongest} onPress={handlePress} />
+          <HomeRow
+            title="Popular"
+            heroes={homeData.popular}
+            onPress={handlePress}
+            onViewAll={() => router.push('/category/popular')}
+          />
+          <HomeRow
+            title="Villains"
+            heroes={homeData.villain}
+            onPress={handlePress}
+            onViewAll={() => router.push('/category/villain')}
+          />
+          <HomeRow
+            title="X-Men"
+            heroes={homeData.xmen}
+            onPress={handlePress}
+            onViewAll={() => router.push('/category/xmen')}
+          />
+          <HomeRow
+            title="Anti-Heroes"
+            heroes={homeData.antiHeroes}
+            onPress={handlePress}
+            onViewAll={() => router.push('/category/anti-heroes')}
+          />
+          <HomeRow
+            title="Marvel Universe"
+            heroes={homeData.marvel}
+            onPress={handlePress}
+            onViewAll={() => router.push('/category/marvel')}
+          />
+          <HomeRow
+            title="DC Universe"
+            heroes={homeData.dc}
+            onPress={handlePress}
+            onViewAll={() => router.push('/category/dc')}
+          />
+          <HomeRow
+            title="Strongest Heroes"
+            heroes={homeData.strongest}
+            onPress={handlePress}
+            onViewAll={() => router.push('/category/strongest')}
+          />
           <HomeRow
             title="Most Intelligent"
             heroes={homeData.mostIntelligent}
             onPress={handlePress}
+            onViewAll={() => router.push('/category/most-intelligent')}
           />
 
           <View style={styles.footerRule} />

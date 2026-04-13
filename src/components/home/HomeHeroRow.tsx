@@ -1,5 +1,5 @@
 // src/components/home/HomeHeroRow.tsx
-import { View, Text, FlatList, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Dimensions, Pressable } from 'react-native';
 import { HeroCard } from '../HeroCard';
 import { ThumbCard, type ThumbHero } from './ThumbCard';
 import { COLORS } from '../../constants/colors';
@@ -15,6 +15,7 @@ interface HomeHeroRowProps {
   heroes: RowHero[];
   variant?: 'portrait' | 'thumb';
   onPress: (item: RowHero) => void;
+  onViewAll?: () => void;
   disabled?: boolean;
 }
 
@@ -24,6 +25,7 @@ export function HomeHeroRow({
   heroes,
   variant = 'portrait',
   onPress,
+  onViewAll,
   disabled = false,
 }: HomeHeroRowProps) {
   const isPortrait = variant === 'portrait';
@@ -31,8 +33,15 @@ export function HomeHeroRow({
   return (
     <View style={styles.section}>
       <View style={styles.header}>
-        {!!label && <Text style={styles.label}>{label}</Text>}
-        <Text style={styles.title}>{title}</Text>
+        <View style={styles.headerLeft}>
+          {!!label && <Text style={styles.label}>{label}</Text>}
+          <Text style={styles.title}>{title}</Text>
+        </View>
+        {!!onViewAll && (
+          <Pressable onPress={onViewAll} style={styles.seeAll}>
+            <Text style={styles.seeAllText}>See All</Text>
+          </Pressable>
+        )}
       </View>
       <FlatList
         horizontal
@@ -64,7 +73,14 @@ export function HomeHeroRow({
 
 const styles = StyleSheet.create({
   section: { paddingTop: 14, paddingBottom: 4 },
-  header: { paddingHorizontal: 15, marginBottom: 10, gap: 2 },
+  header: {
+    paddingHorizontal: 15,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  headerLeft: { gap: 2 },
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
@@ -73,5 +89,12 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   title: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.navy },
+  seeAll: { paddingBottom: 2 },
+  seeAllText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.orange,
+    letterSpacing: 0.3,
+  },
   listContent: { paddingHorizontal: 15 },
 });
