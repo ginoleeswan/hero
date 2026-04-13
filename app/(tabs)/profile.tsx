@@ -23,9 +23,10 @@ import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { ChangePasswordModal } from '../../src/components/ui/ChangePasswordModal';
 import { EditDisplayNameModal } from '../../src/components/ui/EditDisplayNameModal';
-import { getUserFavouriteHeroes, type FavouriteHero } from '../../src/lib/db/favourites';
+import { getUserFavouriteHeroes, removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
+import { Toast, useToast } from '../../src/components/ui/Toast';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const THUMB_SIZE = (SCREEN_WIDTH - 32 - 8) / 3;
@@ -37,10 +38,18 @@ function username(email: string) {
   return email.split('@')[0] ?? email;
 }
 
-function FavouriteThumb({ hero, onPress }: { hero: FavouriteHero; onPress: () => void }) {
+function FavouriteThumb({
+  hero,
+  onPress,
+  onLongPress,
+}: {
+  hero: FavouriteHero;
+  onPress: () => void;
+  onLongPress: () => void;
+}) {
   const src = heroImageSource(hero.id, hero.image_url, hero.portrait_url);
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.thumb}>
+    <TouchableOpacity onPress={onPress} onLongPress={onLongPress} activeOpacity={0.85} style={styles.thumb}>
       <SquircleMask style={StyleSheet.absoluteFill} cornerRadius={26}>
         <Image source={src} contentFit="cover" style={StyleSheet.absoluteFill} />
         <LinearGradient
@@ -78,6 +87,7 @@ export default function ProfileScreen() {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showEditName, setShowEditName] = useState(false);
+  const { toast, showToast } = useToast();
 
   const fetchFavourites = useCallback(() => {
     if (!user) return;
@@ -164,7 +174,42 @@ export default function ProfileScreen() {
 
   const email = user?.email ?? '';
   const name = profile?.display_name ?? username(email);
-  const isEmailUser = user?.app_metadata?.provider === 'email' || !user?.app_metadata?.provider;
+  const provider = user?.app_metadata?.provider ?? 'email';
+  const isEmailUser = provider === 'email' || !user?.app_metadata?.provider;
+  const joinedDate = user?.created_at
+    ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    : null;
+
+  const handleUnfavourite = (hero: FavouriteHero) => {
+    if (!user) return;
+    const confirm = () => {
+      removeFavourite(user.id, hero.id).catch(() => {});
+      setFavourites((prev) => prev.filter((h) => h.id !== hero.id));
+      showToast(`Removed ${hero.name}`);
+    };
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: ['Cancel', 'Remove from Favourites'], destructiveButtonIndex: 1, cancelButtonIndex: 0 },
+        (idx) => { if (idx === 1) confirm(); },
+      );
+    } else {
+      Alert.alert('Remove Favourite', `Remove ${hero.name} from your favourites?`, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: confirm },
+      ]);
+    }
+  };
+
+  const handleUpdateName = async (newName: string) => {
+    await updateDisplayName(newName);
+    showToast('Display name updated');
+  };
+
+  const handleChangePassword = async (current: string, next: string) => {
+    const result = await changePassword(current, next);
+    if (!result.error) showToast('Password updated');
+    return result;
+  };
 
   return (
     <View style={styles.container}>
@@ -345,6 +390,7 @@ export default function ProfileScreen() {
                   key={hero.id}
                   hero={hero}
                   onPress={() => router.push(`/character/${hero.id}`)}
+                  onLongPress={() => handleUnfavourite(hero)}
                 />
               ))}
             </View>
@@ -366,6 +412,21 @@ export default function ProfileScreen() {
               </Text>
             </View>
 
+            {!isEmailUser && (
+              <>
+                <View style={styles.divider} />
+                <View style={styles.accountRow}>
+                  <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
+                    <Ionicons name="logo-google" size={16} color={COLORS.navy} />
+                  </View>
+                  <Text style={styles.accountLabel}>Signed in with</Text>
+                  <Text style={styles.accountValue}>
+                    {provider.charAt(0).toUpperCase() + provider.slice(1)}
+                  </Text>
+                </View>
+              </>
+            )}
+
             {isEmailUser && (
               <>
                 <View style={styles.divider} />
@@ -380,6 +441,19 @@ export default function ProfileScreen() {
                   <Text style={styles.accountLabel}>Change Password</Text>
                   <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
                 </TouchableOpacity>
+              </>
+            )}
+
+            {joinedDate && (
+              <>
+                <View style={styles.divider} />
+                <View style={styles.accountRow}>
+                  <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
+                    <Ionicons name="calendar-outline" size={16} color={COLORS.navy} />
+                  </View>
+                  <Text style={styles.accountLabel}>Member since</Text>
+                  <Text style={styles.accountValue}>{joinedDate}</Text>
+                </View>
               </>
             )}
 
@@ -443,14 +517,15 @@ export default function ProfileScreen() {
       <ChangePasswordModal
         visible={showChangePassword}
         onClose={() => setShowChangePassword(false)}
-        onSubmit={changePassword}
+        onSubmit={handleChangePassword}
       />
       <EditDisplayNameModal
         visible={showEditName}
         currentName={name}
         onClose={() => setShowEditName(false)}
-        onSubmit={updateDisplayName}
+        onSubmit={handleUpdateName}
       />
+      <Toast message={toast.message} visible={toast.visible} />
     </View>
   );
 }
@@ -461,7 +536,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.beige,
   },
   scroll: {
-    paddingBottom: 40,
+    paddingBottom: 100,
   },
   disclaimer: {
     fontFamily: 'Nunito_400Regular',

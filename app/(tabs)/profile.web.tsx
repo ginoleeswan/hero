@@ -17,9 +17,10 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { ChangePasswordModal } from '../../src/components/ui/ChangePasswordModal';
-import { getUserFavouriteHeroes, type FavouriteHero } from '../../src/lib/db/favourites';
+import { getUserFavouriteHeroes, removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { COLORS } from '../../src/constants/colors';
+import { Toast, useToast } from '../../src/components/ui/Toast';
 
 const SIDEBAR_BREAKPOINT = 640;
 
@@ -49,6 +50,7 @@ export default function WebProfileScreen() {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showEditName, setShowEditName] = useState(false);
+  const { toast, showToast } = useToast();
 
   const fetchFavourites = useCallback(() => {
     if (!user) return;
@@ -118,7 +120,38 @@ export default function WebProfileScreen() {
 
   const email = user?.email ?? '';
   const name = profile?.display_name ?? username(email);
-  const isEmailUser = user?.app_metadata?.provider === 'email' || !user?.app_metadata?.provider;
+  const provider = user?.app_metadata?.provider ?? 'email';
+  const isEmailUser = provider === 'email' || !user?.app_metadata?.provider;
+  const joinedDate = user?.created_at
+    ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    : null;
+
+  const handleUpdateName = async (newName: string) => {
+    await updateDisplayName(newName);
+    showToast('Display name updated');
+  };
+
+  const handleChangePassword = async (current: string, next: string) => {
+    const result = await changePassword(current, next);
+    if (!result.error) showToast('Password updated');
+    return result;
+  };
+
+  const handleUnfavourite = (hero: FavouriteHero) => {
+    if (!user) return;
+    Alert.alert('Remove Favourite', `Remove ${hero.name} from your favourites?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => {
+          removeFavourite(user.id, hero.id).catch(() => {});
+          setFavourites((prev) => prev.filter((h) => h.id !== hero.id));
+          showToast(`Removed ${hero.name}`);
+        },
+      },
+    ]);
+  };
 
   const thumbSize = (width - 32 - 8) / 3;
 
@@ -263,6 +296,7 @@ export default function WebProfileScreen() {
                   <Pressable
                     key={hero.id}
                     onPress={() => router.push(`/character/${hero.id}`)}
+                    onLongPress={() => handleUnfavourite(hero)}
                     style={[mob.thumb, { width: thumbSize, height: thumbSize * 1.25 }]}
                   >
                     <WebHeroCard
@@ -291,6 +325,21 @@ export default function WebProfileScreen() {
                 </Text>
               </View>
 
+              {!isEmailUser && (
+                <>
+                  <View style={mob.divider} />
+                  <View style={mob.accountRow as object}>
+                    <View style={[mob.accountIconBadge, mob.accountIconBadgeNavy]}>
+                      <Ionicons name="logo-google" size={16} color={COLORS.navy} />
+                    </View>
+                    <Text style={mob.accountLabel}>Signed in with</Text>
+                    <Text style={mob.accountValue}>
+                      {provider.charAt(0).toUpperCase() + provider.slice(1)}
+                    </Text>
+                  </View>
+                </>
+              )}
+
               {isEmailUser && (
                 <>
                   <View style={mob.divider} />
@@ -306,6 +355,19 @@ export default function WebProfileScreen() {
                     <Text style={mob.accountLabel}>Change Password</Text>
                     <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
                   </Pressable>
+                </>
+              )}
+
+              {joinedDate && (
+                <>
+                  <View style={mob.divider} />
+                  <View style={mob.accountRow as object}>
+                    <View style={[mob.accountIconBadge, mob.accountIconBadgeNavy]}>
+                      <Ionicons name="calendar-outline" size={16} color={COLORS.navy} />
+                    </View>
+                    <Text style={mob.accountLabel}>Member since</Text>
+                    <Text style={mob.accountValue}>{joinedDate}</Text>
+                  </View>
                 </>
               )}
 
@@ -360,14 +422,15 @@ export default function WebProfileScreen() {
         <ChangePasswordModal
           visible={showChangePassword}
           onClose={() => setShowChangePassword(false)}
-          onSubmit={changePassword}
+          onSubmit={handleChangePassword}
         />
         <EditDisplayNameModal
           visible={showEditName}
           currentName={name}
           onClose={() => setShowEditName(false)}
-          onSubmit={updateDisplayName}
+          onSubmit={handleUpdateName}
         />
+        <Toast message={toast.message} visible={toast.visible} />
       </View>
     );
   }
@@ -488,6 +551,21 @@ export default function WebProfileScreen() {
                 </Text>
               </View>
 
+              {!isEmailUser && (
+                <>
+                  <View style={desk.divider} />
+                  <View style={desk.accountRow as object}>
+                    <View style={[desk.accountIconBadge, desk.accountIconBadgeNavy]}>
+                      <Ionicons name="logo-google" size={16} color={COLORS.navy} />
+                    </View>
+                    <Text style={desk.accountLabel}>Signed in with</Text>
+                    <Text style={desk.accountValue}>
+                      {provider.charAt(0).toUpperCase() + provider.slice(1)}
+                    </Text>
+                  </View>
+                </>
+              )}
+
               {isEmailUser && (
                 <>
                   <View style={desk.divider} />
@@ -503,6 +581,19 @@ export default function WebProfileScreen() {
                     <Text style={desk.accountLabel}>Change Password</Text>
                     <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
                   </Pressable>
+                </>
+              )}
+
+              {joinedDate && (
+                <>
+                  <View style={desk.divider} />
+                  <View style={desk.accountRow as object}>
+                    <View style={[desk.accountIconBadge, desk.accountIconBadgeNavy]}>
+                      <Ionicons name="calendar-outline" size={16} color={COLORS.navy} />
+                    </View>
+                    <Text style={desk.accountLabel}>Member since</Text>
+                    <Text style={desk.accountValue}>{joinedDate}</Text>
+                  </View>
                 </>
               )}
 
@@ -587,13 +678,18 @@ export default function WebProfileScreen() {
             ) : (
               <View style={deskGrid as object}>
                 {favourites.map((hero) => (
-                  <WebHeroCard
+                  <Pressable
                     key={hero.id}
-                    id={hero.id}
-                    name={hero.name}
-                    imageUrl={hero.image_url}
                     onPress={() => router.push(`/character/${hero.id}`)}
-                  />
+                    onLongPress={() => handleUnfavourite(hero)}
+                  >
+                    <WebHeroCard
+                      id={hero.id}
+                      name={hero.name}
+                      imageUrl={hero.image_url}
+                      onPress={() => router.push(`/character/${hero.id}`)}
+                    />
+                  </Pressable>
                 ))}
               </View>
             )}
@@ -604,14 +700,15 @@ export default function WebProfileScreen() {
       <ChangePasswordModal
         visible={showChangePassword}
         onClose={() => setShowChangePassword(false)}
-        onSubmit={changePassword}
+        onSubmit={handleChangePassword}
       />
       <EditDisplayNameModal
         visible={showEditName}
         currentName={name}
         onClose={() => setShowEditName(false)}
-        onSubmit={updateDisplayName}
+        onSubmit={handleUpdateName}
       />
+      <Toast message={toast.message} visible={toast.visible} />
     </ScrollView>
   );
 }
