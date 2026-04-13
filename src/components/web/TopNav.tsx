@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { View, Text, Pressable, TextInput, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { useSearch } from '../../contexts/SearchContext';
@@ -76,10 +77,11 @@ export function TopNav() {
         {/* Center — search on desktop, empty spacer on mobile */}
         {isDesktop ? (
           <View style={styles.searchWrap as object}>
+            <Ionicons name="search" size={14} color="rgba(245,235,220,0.28)" />
             <TextInput
               ref={inputRef}
               style={styles.searchInput as object}
-              placeholder="Hero or villain name…"
+              placeholder="Search heroes…"
               placeholderTextColor="rgba(245,235,220,0.28)"
               value={query}
               onChangeText={handleQueryChange}
