@@ -71,9 +71,7 @@ serve(async (req: Request) => {
         format: 'json',
         field_list: 'image',
       });
-      const issueRes = await fetch(
-        `${COMICVINE_BASE}/issue/4000-${firstIssueId}/?${issueParams}`,
-      );
+      const issueRes = await fetch(`${COMICVINE_BASE}/issue/4000-${firstIssueId}/?${issueParams}`);
       if (issueRes.ok) {
         const issueJson = await issueRes.json();
         firstIssueImageUrl = issueJson.results?.image?.medium_url ?? null;
@@ -178,23 +176,23 @@ serve(async (req: Request) => {
         friends = rawFriends.length > 0 ? rawFriends : null;
 
         // movies — fetch poster images for first 10, store as { name, year, imageUrl }
-        const rawMovieItems: Array<{ name: string; year: string | null; apiDetailUrl: string | null }> =
-          Array.isArray(d.movies)
-            ? d.movies
-                .filter(
-                  (m: unknown) =>
-                    m && typeof (m as Record<string, unknown>).name === 'string',
-                )
-                .map((m: unknown) => {
-                  const mo = m as Record<string, unknown>;
-                  const name = mo.name as string;
-                  const date = typeof mo.date === 'string' ? mo.date : null;
-                  const year = date ? date.slice(0, 4) : null;
-                  const apiDetailUrl =
-                    typeof mo.api_detail_url === 'string' ? mo.api_detail_url : null;
-                  return { name, year, apiDetailUrl };
-                })
-            : [];
+        const rawMovieItems: Array<{
+          name: string;
+          year: string | null;
+          apiDetailUrl: string | null;
+        }> = Array.isArray(d.movies)
+          ? d.movies
+              .filter((m: unknown) => m && typeof (m as Record<string, unknown>).name === 'string')
+              .map((m: unknown) => {
+                const mo = m as Record<string, unknown>;
+                const name = mo.name as string;
+                const date = typeof mo.date === 'string' ? mo.date : null;
+                const year = date ? date.slice(0, 4) : null;
+                const apiDetailUrl =
+                  typeof mo.api_detail_url === 'string' ? mo.api_detail_url : null;
+                return { name, year, apiDetailUrl };
+              })
+          : [];
 
         movieCount = rawMovieItems.length > 0 ? rawMovieItems.length : null;
 

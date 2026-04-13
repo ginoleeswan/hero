@@ -93,7 +93,8 @@ export default function WebCharacterScreen() {
       .then((hero) => {
         if (hero?.enriched_at) {
           setData(heroRowToCharacterData(hero));
-          const needsComicVine = !hero.comicvine_enriched_at || hero.powers === null || !hero.movies?.length;
+          const needsComicVine =
+            !hero.comicvine_enriched_at || hero.powers === null || !hero.movies?.length;
           setComicVineLoading(needsComicVine);
           if (needsComicVine) {
             fetchHeroDetails(hero.id, hero.name)
@@ -166,17 +167,27 @@ export default function WebCharacterScreen() {
     return COLORS.orange;
   })();
 
-  const statValues = STAT_CONFIG
-    .map(({ key }) => parseInt((stats.powerstats as Record<string, string>)[key] ?? '0', 10))
-    .filter((n) => !isNaN(n) && n > 0);
-  const powerScore = statValues.length > 0
-    ? Math.round(statValues.reduce((a, b) => a + b, 0) / statValues.length)
-    : null;
+  const statValues = STAT_CONFIG.map(({ key }) =>
+    parseInt((stats.powerstats as Record<string, string>)[key] ?? '0', 10),
+  ).filter((n) => !isNaN(n) && n > 0);
+  const powerScore =
+    statValues.length > 0
+      ? Math.round(statValues.reduce((a, b) => a + b, 0) / statValues.length)
+      : null;
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       {/* ── Identity header — navy strip, no image ── */}
-      <View style={[styles.identityHeader, { borderBottomWidth: 3, borderBottomColor: alignmentColor, paddingBottom: isDesktop ? 24 : 14 }]}>
+      <View
+        style={[
+          styles.identityHeader,
+          {
+            borderBottomWidth: 3,
+            borderBottomColor: alignmentColor,
+            paddingBottom: isDesktop ? 24 : 14,
+          },
+        ]}
+      >
         {/* Subtle alignment-based tint — gives each character a distinct mood */}
         <View
           style={[styles.headerAlignmentOverlay, { backgroundColor: alignmentColor }]}
@@ -220,7 +231,7 @@ export default function WebCharacterScreen() {
         </View>
 
         {/* Publisher + meta — bottom-right corner */}
-        {(stats.biography.publisher || isDesktop) ? (
+        {stats.biography.publisher || isDesktop ? (
           <View style={styles.publisherCorner}>
             {stats.biography.publisher ? (
               <Text style={styles.heroPublisher}>{stats.biography.publisher}</Text>
@@ -241,9 +252,7 @@ export default function WebCharacterScreen() {
                     (details.issueCount ?? 0) > 0
                       ? `Featured in ${details.issueCount!.toLocaleString()} issues`
                       : null,
-                    details.creators?.length
-                      ? `Created by ${details.creators.join(' & ')}`
-                      : null,
+                    details.creators?.length ? `Created by ${details.creators.join(' & ')}` : null,
                   ]
                     .filter(Boolean)
                     .join('\n')}
@@ -285,7 +294,9 @@ export default function WebCharacterScreen() {
                 <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
                 {powerScore !== null ? (
                   <View style={[styles.powerScorePill, { backgroundColor: alignmentColor + '22' }]}>
-                    <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>{powerScore}</Text>
+                    <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
+                      {powerScore}
+                    </Text>
                   </View>
                 ) : null}
               </View>
@@ -309,7 +320,9 @@ export default function WebCharacterScreen() {
                 <Pressable
                   key={tab}
                   onPress={() => setActiveTab(tab)}
-                  style={[styles.tabBtn, activeTab === tab && (styles.tabBtnActive as object)] as object}
+                  style={
+                    [styles.tabBtn, activeTab === tab && (styles.tabBtnActive as object)] as object
+                  }
                 >
                   <Text style={[styles.tabLabel, activeTab === tab && styles.tabLabelActive]}>
                     {tab === 'overview' ? 'Overview' : tab === 'details' ? 'Details' : 'Universe'}
@@ -323,18 +336,32 @@ export default function WebCharacterScreen() {
               <View style={styles.tabContent}>
                 {comicVineLoading && !details.summary ? (
                   <View style={styles.summaryBox}>
-                    <SkeletonBlock opacity={skeletonOpacity} height={12} style={{ marginBottom: 10 }} />
-                    <SkeletonBlock opacity={skeletonOpacity} height={12} width="85%" style={{ marginBottom: 10 }} />
+                    <SkeletonBlock
+                      opacity={skeletonOpacity}
+                      height={12}
+                      style={{ marginBottom: 10 }}
+                    />
+                    <SkeletonBlock
+                      opacity={skeletonOpacity}
+                      height={12}
+                      width="85%"
+                      style={{ marginBottom: 10 }}
+                    />
                     <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
                   </View>
                 ) : details.summary || details.description ? (
                   <View style={styles.summaryBox}>
-                    {details.summary ? <Text style={styles.summaryText}>{details.summary}</Text> : null}
+                    {details.summary ? (
+                      <Text style={styles.summaryText}>{details.summary}</Text>
+                    ) : null}
                     {details.description ? (
                       <Pressable
                         onPress={() => router.push(`/biography/${id}`)}
                         style={({ hovered }: { hovered?: boolean }) =>
-                          [styles.biographyLink, hovered && (styles.biographyLinkHover as object)] as object
+                          [
+                            styles.biographyLink,
+                            hovered && (styles.biographyLinkHover as object),
+                          ] as object
                         }
                       >
                         <Text style={styles.biographyLinkText}>Read biography</Text>
@@ -353,12 +380,37 @@ export default function WebCharacterScreen() {
                 {comicVineLoading ? (
                   <View style={styles.card}>
                     <View style={styles.firstAppearanceRow}>
-                      <SkeletonBlock opacity={skeletonOpacity} width={130} height={190} borderRadius={8} />
+                      <SkeletonBlock
+                        opacity={skeletonOpacity}
+                        width={130}
+                        height={190}
+                        borderRadius={8}
+                      />
                       <View style={{ flex: 1, gap: 10 }}>
-                        <SkeletonBlock opacity={skeletonOpacity} width="40%" height={10} borderRadius={4} />
-                        <SkeletonBlock opacity={skeletonOpacity} width={80} height={2} borderRadius={1} />
-                        <SkeletonBlock opacity={skeletonOpacity} width="55%" height={36} borderRadius={5} />
-                        <SkeletonBlock opacity={skeletonOpacity} width="80%" height={12} borderRadius={4} />
+                        <SkeletonBlock
+                          opacity={skeletonOpacity}
+                          width="40%"
+                          height={10}
+                          borderRadius={4}
+                        />
+                        <SkeletonBlock
+                          opacity={skeletonOpacity}
+                          width={80}
+                          height={2}
+                          borderRadius={1}
+                        />
+                        <SkeletonBlock
+                          opacity={skeletonOpacity}
+                          width="55%"
+                          height={36}
+                          borderRadius={5}
+                        />
+                        <SkeletonBlock
+                          opacity={skeletonOpacity}
+                          width="80%"
+                          height={12}
+                          borderRadius={4}
+                        />
                       </View>
                     </View>
                   </View>
@@ -367,13 +419,23 @@ export default function WebCharacterScreen() {
                     <View style={styles.firstAppearanceRow}>
                       <img
                         src={data.firstIssue.imageUrl}
-                        style={{ width: 130, height: 190, objectFit: 'cover', borderRadius: 8, flexShrink: 0, display: 'block', boxShadow: '0 6px 20px rgba(41,60,67,0.22)' }}
+                        style={{
+                          width: 130,
+                          height: 190,
+                          objectFit: 'cover',
+                          borderRadius: 8,
+                          flexShrink: 0,
+                          display: 'block',
+                          boxShadow: '0 6px 20px rgba(41,60,67,0.22)',
+                        }}
                       />
                       <View style={styles.firstAppearanceMeta}>
                         <Text style={styles.firstAppearanceLabel}>First Appearance</Text>
                         <View style={styles.firstAppearanceDivider} />
                         {data.firstIssue.coverDate ? (
-                          <Text style={styles.firstAppearanceYear}>{data.firstIssue.coverDate.slice(0, 4)}</Text>
+                          <Text style={styles.firstAppearanceYear}>
+                            {data.firstIssue.coverDate.slice(0, 4)}
+                          </Text>
                         ) : null}
                         {data.firstIssue.name ? (
                           <Text style={styles.firstAppearanceName}>{data.firstIssue.name}</Text>
@@ -420,7 +482,8 @@ export default function WebCharacterScreen() {
                     label="Affiliations"
                     value={
                       details.teams?.length
-                        ? details.teams.slice(0, 2).join(', ') + (details.teams.length > 2 ? ` +${details.teams.length - 2} more` : '')
+                        ? details.teams.slice(0, 2).join(', ') +
+                          (details.teams.length > 2 ? ` +${details.teams.length - 2} more` : '')
                         : stats.connections['group-affiliation']
                     }
                   />
@@ -433,12 +496,30 @@ export default function WebCharacterScreen() {
               <View style={styles.tabContent}>
                 {comicVineLoading ? (
                   <View style={styles.card}>
-                    <SkeletonBlock opacity={skeletonOpacity} width="45%" height={11} borderRadius={4} style={{ marginBottom: 10 }} />
+                    <SkeletonBlock
+                      opacity={skeletonOpacity}
+                      width="45%"
+                      height={11}
+                      borderRadius={4}
+                      style={{ marginBottom: 10 }}
+                    />
                     <View style={styles.cardDivider} />
-                    <SkeletonBlock opacity={skeletonOpacity} width="25%" height={10} borderRadius={4} style={{ marginBottom: 8 }} />
+                    <SkeletonBlock
+                      opacity={skeletonOpacity}
+                      width="25%"
+                      height={10}
+                      borderRadius={4}
+                      style={{ marginBottom: 8 }}
+                    />
                     <View style={styles.chipRow}>
                       {[72, 90, 60, 80, 68].map((w, i) => (
-                        <SkeletonBlock key={i} opacity={skeletonOpacity} width={w} height={26} borderRadius={20} />
+                        <SkeletonBlock
+                          key={i}
+                          opacity={skeletonOpacity}
+                          width={w}
+                          height={26}
+                          borderRadius={20}
+                        />
                       ))}
                     </View>
                   </View>
@@ -457,7 +538,9 @@ export default function WebCharacterScreen() {
                           ))}
                           {details.enemies.length > 10 ? (
                             <View key="more-e" style={styles.chipEnemy}>
-                              <Text style={styles.chipTextEnemy}>+{details.enemies.length - 10} more</Text>
+                              <Text style={styles.chipTextEnemy}>
+                                +{details.enemies.length - 10} more
+                              </Text>
                             </View>
                           ) : null}
                         </View>
@@ -474,7 +557,9 @@ export default function WebCharacterScreen() {
                           ))}
                           {details.friends.length > 10 ? (
                             <View key="more-f" style={styles.chipAlly}>
-                              <Text style={styles.chipTextAlly}>+{details.friends.length - 10} more</Text>
+                              <Text style={styles.chipTextAlly}>
+                                +{details.friends.length - 10} more
+                              </Text>
                             </View>
                           ) : null}
                         </View>
@@ -485,13 +570,29 @@ export default function WebCharacterScreen() {
 
                 {comicVineLoading ? (
                   <View style={styles.card}>
-                    <SkeletonBlock opacity={skeletonOpacity} width="30%" height={11} borderRadius={4} style={{ marginBottom: 10 }} />
+                    <SkeletonBlock
+                      opacity={skeletonOpacity}
+                      width="30%"
+                      height={11}
+                      borderRadius={4}
+                      style={{ marginBottom: 10 }}
+                    />
                     <View style={styles.cardDivider} />
                     <View style={{ flexDirection: 'row', gap: 10 }}>
                       {[0, 1, 2].map((i) => (
                         <View key={i} style={{ alignItems: 'center', gap: 6 }}>
-                          <SkeletonBlock opacity={skeletonOpacity} width={80} height={120} borderRadius={8} />
-                          <SkeletonBlock opacity={skeletonOpacity} width={60} height={10} borderRadius={4} />
+                          <SkeletonBlock
+                            opacity={skeletonOpacity}
+                            width={80}
+                            height={120}
+                            borderRadius={8}
+                          />
+                          <SkeletonBlock
+                            opacity={skeletonOpacity}
+                            width={60}
+                            height={10}
+                            borderRadius={4}
+                          />
                         </View>
                       ))}
                     </View>
@@ -517,7 +618,14 @@ export default function WebCharacterScreen() {
             {heroImage ? (
               <Image
                 source={heroImage}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' } as object}
+                style={
+                  {
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    objectPosition: 'center top',
+                  } as object
+                }
                 cachePolicy="memory-disk"
                 recyclingKey={id}
                 transition={typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}
@@ -530,13 +638,20 @@ export default function WebCharacterScreen() {
               <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
               {powerScore !== null ? (
                 <View style={[styles.powerScorePill, { backgroundColor: alignmentColor + '22' }]}>
-                  <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>{powerScore}</Text>
+                  <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
+                    {powerScore}
+                  </Text>
                 </View>
               ) : null}
             </View>
             <View style={styles.cardDivider} />
             {STAT_CONFIG.map(({ key, label, color }) => (
-              <StatBar key={key} label={label} value={(stats.powerstats as Record<string, string>)[key] ?? '0'} color={color} />
+              <StatBar
+                key={key}
+                label={label}
+                value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
+                color={color}
+              />
             ))}
           </View>
 
@@ -546,7 +661,9 @@ export default function WebCharacterScreen() {
               <Pressable
                 key={tab}
                 onPress={() => setActiveTab(tab)}
-                style={[styles.tabBtn, activeTab === tab && (styles.tabBtnActive as object)] as object}
+                style={
+                  [styles.tabBtn, activeTab === tab && (styles.tabBtnActive as object)] as object
+                }
               >
                 <Text style={[styles.tabLabel, activeTab === tab && styles.tabLabelActive]}>
                   {tab === 'overview' ? 'Overview' : tab === 'details' ? 'Details' : 'Universe'}
@@ -560,18 +677,32 @@ export default function WebCharacterScreen() {
             <>
               {comicVineLoading && !details.summary ? (
                 <View style={styles.summaryBox}>
-                  <SkeletonBlock opacity={skeletonOpacity} height={12} style={{ marginBottom: 10 }} />
-                  <SkeletonBlock opacity={skeletonOpacity} height={12} width="85%" style={{ marginBottom: 10 }} />
+                  <SkeletonBlock
+                    opacity={skeletonOpacity}
+                    height={12}
+                    style={{ marginBottom: 10 }}
+                  />
+                  <SkeletonBlock
+                    opacity={skeletonOpacity}
+                    height={12}
+                    width="85%"
+                    style={{ marginBottom: 10 }}
+                  />
                   <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
                 </View>
               ) : details.summary || details.description ? (
                 <View style={styles.summaryBox}>
-                  {details.summary ? <Text style={styles.summaryText}>{details.summary}</Text> : null}
+                  {details.summary ? (
+                    <Text style={styles.summaryText}>{details.summary}</Text>
+                  ) : null}
                   {details.description ? (
                     <Pressable
                       onPress={() => router.push(`/biography/${id}`)}
                       style={({ hovered }: { hovered?: boolean }) =>
-                        [styles.biographyLink, hovered && (styles.biographyLinkHover as object)] as object
+                        [
+                          styles.biographyLink,
+                          hovered && (styles.biographyLinkHover as object),
+                        ] as object
                       }
                     >
                       <Text style={styles.biographyLinkText}>Read biography</Text>
@@ -581,17 +712,42 @@ export default function WebCharacterScreen() {
                 </View>
               ) : null}
 
-              <WebAbilitiesCard powers={details.powers} loading={comicVineLoading} skeletonOpacity={skeletonOpacity} />
+              <WebAbilitiesCard
+                powers={details.powers}
+                loading={comicVineLoading}
+                skeletonOpacity={skeletonOpacity}
+              />
 
               {comicVineLoading ? (
                 <View style={styles.card}>
-                  <SkeletonBlock opacity={skeletonOpacity} width="40%" height={11} borderRadius={4} style={{ marginBottom: 10 }} />
+                  <SkeletonBlock
+                    opacity={skeletonOpacity}
+                    width="40%"
+                    height={11}
+                    borderRadius={4}
+                    style={{ marginBottom: 10 }}
+                  />
                   <View style={styles.cardDivider} />
                   <View style={styles.firstIssueRow}>
-                    <SkeletonBlock opacity={skeletonOpacity} width={80} height={120} borderRadius={6} />
+                    <SkeletonBlock
+                      opacity={skeletonOpacity}
+                      width={80}
+                      height={120}
+                      borderRadius={6}
+                    />
                     <View style={{ flex: 1, gap: 8, justifyContent: 'flex-end' as const }}>
-                      <SkeletonBlock opacity={skeletonOpacity} width="80%" height={13} borderRadius={4} />
-                      <SkeletonBlock opacity={skeletonOpacity} width="30%" height={11} borderRadius={4} />
+                      <SkeletonBlock
+                        opacity={skeletonOpacity}
+                        width="80%"
+                        height={13}
+                        borderRadius={4}
+                      />
+                      <SkeletonBlock
+                        opacity={skeletonOpacity}
+                        width="30%"
+                        height={11}
+                        borderRadius={4}
+                      />
                     </View>
                   </View>
                 </View>
@@ -600,10 +756,21 @@ export default function WebCharacterScreen() {
                   <Text style={styles.cardTitle}>First Appearance</Text>
                   <View style={styles.cardDivider} />
                   <View style={styles.firstIssueRow}>
-                    <Image source={{ uri: data.firstIssue.imageUrl }} style={styles.firstIssueCover as object} contentFit="cover" cachePolicy="memory-disk" />
+                    <Image
+                      source={{ uri: data.firstIssue.imageUrl }}
+                      style={styles.firstIssueCover as object}
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                    />
                     <View style={styles.firstIssueMeta}>
-                      {data.firstIssue.name ? <Text style={styles.firstIssueTitle}>{data.firstIssue.name}</Text> : null}
-                      {data.firstIssue.coverDate ? <Text style={styles.firstIssueYear}>{data.firstIssue.coverDate.slice(0, 4)}</Text> : null}
+                      {data.firstIssue.name ? (
+                        <Text style={styles.firstIssueTitle}>{data.firstIssue.name}</Text>
+                      ) : null}
+                      {data.firstIssue.coverDate ? (
+                        <Text style={styles.firstIssueYear}>
+                          {data.firstIssue.coverDate.slice(0, 4)}
+                        </Text>
+                      ) : null}
                     </View>
                   </View>
                 </View>
@@ -642,7 +809,14 @@ export default function WebCharacterScreen() {
                 <View style={styles.cardDivider} />
                 <InfoRow label="Occupation" value={stats.work.occupation} />
                 <InfoRow label="Base" value={stats.work.base} />
-                <InfoRow label="Group affiliation" value={details.teams?.length ? details.teams.join(', ') : stats.connections['group-affiliation']} />
+                <InfoRow
+                  label="Group affiliation"
+                  value={
+                    details.teams?.length
+                      ? details.teams.join(', ')
+                      : stats.connections['group-affiliation']
+                  }
+                />
                 <InfoRow label="Relatives" value={stats.connections.relatives} />
               </View>
             </>
@@ -653,12 +827,30 @@ export default function WebCharacterScreen() {
             <>
               {comicVineLoading ? (
                 <View style={styles.card}>
-                  <SkeletonBlock opacity={skeletonOpacity} width="45%" height={11} borderRadius={4} style={{ marginBottom: 10 }} />
+                  <SkeletonBlock
+                    opacity={skeletonOpacity}
+                    width="45%"
+                    height={11}
+                    borderRadius={4}
+                    style={{ marginBottom: 10 }}
+                  />
                   <View style={styles.cardDivider} />
-                  <SkeletonBlock opacity={skeletonOpacity} width="25%" height={10} borderRadius={4} style={{ marginBottom: 8 }} />
+                  <SkeletonBlock
+                    opacity={skeletonOpacity}
+                    width="25%"
+                    height={10}
+                    borderRadius={4}
+                    style={{ marginBottom: 8 }}
+                  />
                   <View style={styles.chipRow}>
                     {[72, 90, 60, 80, 68].map((w, i) => (
-                      <SkeletonBlock key={i} opacity={skeletonOpacity} width={w} height={26} borderRadius={20} />
+                      <SkeletonBlock
+                        key={i}
+                        opacity={skeletonOpacity}
+                        width={w}
+                        height={26}
+                        borderRadius={20}
+                      />
                     ))}
                   </View>
                 </View>
@@ -671,10 +863,16 @@ export default function WebCharacterScreen() {
                       <Text style={styles.chipGroupLabel}>Enemies</Text>
                       <View style={styles.chipRow}>
                         {details.enemies.slice(0, 10).map((name, i) => (
-                          <View key={i} style={styles.chipEnemy}><Text style={styles.chipTextEnemy}>{name}</Text></View>
+                          <View key={i} style={styles.chipEnemy}>
+                            <Text style={styles.chipTextEnemy}>{name}</Text>
+                          </View>
                         ))}
                         {details.enemies.length > 10 ? (
-                          <View style={styles.chipEnemy}><Text style={styles.chipTextEnemy}>+{details.enemies.length - 10} more</Text></View>
+                          <View style={styles.chipEnemy}>
+                            <Text style={styles.chipTextEnemy}>
+                              +{details.enemies.length - 10} more
+                            </Text>
+                          </View>
                         ) : null}
                       </View>
                     </View>
@@ -684,10 +882,16 @@ export default function WebCharacterScreen() {
                       <Text style={styles.chipGroupLabel}>Allies</Text>
                       <View style={styles.chipRow}>
                         {details.friends.slice(0, 10).map((name, i) => (
-                          <View key={i} style={styles.chipAlly}><Text style={styles.chipTextAlly}>{name}</Text></View>
+                          <View key={i} style={styles.chipAlly}>
+                            <Text style={styles.chipTextAlly}>{name}</Text>
+                          </View>
                         ))}
                         {details.friends.length > 10 ? (
-                          <View style={styles.chipAlly}><Text style={styles.chipTextAlly}>+{details.friends.length - 10} more</Text></View>
+                          <View style={styles.chipAlly}>
+                            <Text style={styles.chipTextAlly}>
+                              +{details.friends.length - 10} more
+                            </Text>
+                          </View>
                         ) : null}
                       </View>
                     </View>
@@ -697,13 +901,29 @@ export default function WebCharacterScreen() {
 
               {comicVineLoading ? (
                 <View style={styles.card}>
-                  <SkeletonBlock opacity={skeletonOpacity} width="30%" height={11} borderRadius={4} style={{ marginBottom: 10 }} />
+                  <SkeletonBlock
+                    opacity={skeletonOpacity}
+                    width="30%"
+                    height={11}
+                    borderRadius={4}
+                    style={{ marginBottom: 10 }}
+                  />
                   <View style={styles.cardDivider} />
                   <View style={{ flexDirection: 'row', gap: 10 }}>
                     {[0, 1, 2].map((i) => (
                       <View key={i} style={{ alignItems: 'center', gap: 6 }}>
-                        <SkeletonBlock opacity={skeletonOpacity} width={80} height={120} borderRadius={8} />
-                        <SkeletonBlock opacity={skeletonOpacity} width={60} height={10} borderRadius={4} />
+                        <SkeletonBlock
+                          opacity={skeletonOpacity}
+                          width={80}
+                          height={120}
+                          borderRadius={8}
+                        />
+                        <SkeletonBlock
+                          opacity={skeletonOpacity}
+                          width={60}
+                          height={10}
+                          borderRadius={4}
+                        />
                       </View>
                     ))}
                   </View>

@@ -41,7 +41,10 @@ export function EditDisplayNameModal({ visible, currentName, onClose, onSubmit }
 
   const handleSubmit = async () => {
     const trimmed = value.trim();
-    if (!trimmed) { onClose(); return; }
+    if (!trimmed) {
+      onClose();
+      return;
+    }
     setLoading(true);
     await onSubmit(trimmed);
     setLoading(false);
@@ -49,7 +52,12 @@ export function EditDisplayNameModal({ visible, currentName, onClose, onSubmit }
   };
 
   return (
-    <Modal visible={visible} animationType={isWeb ? 'fade' : 'slide'} transparent onRequestClose={handleClose}>
+    <Modal
+      visible={visible}
+      animationType={isWeb ? 'fade' : 'slide'}
+      transparent
+      onRequestClose={handleClose}
+    >
       <KeyboardAvoidingView
         style={isWeb ? styles.overlayWeb : styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -87,10 +95,11 @@ export function EditDisplayNameModal({ visible, currentName, onClose, onSubmit }
             onPress={handleSubmit}
             disabled={loading || !value.trim()}
           >
-            {loading
-              ? <ActivityIndicator color="white" />
-              : <Text style={styles.buttonText}>Save</Text>
-            }
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.buttonText}>Save</Text>
+            )}
           </Pressable>
         </View>
       </KeyboardAvoidingView>

@@ -84,10 +84,17 @@ export default function ProfileScreen() {
     getUserFavouriteHeroes(user.id)
       .then(setFavourites)
       .catch(() => setFavourites([]))
-      .finally(() => { setLoading(false); setRefreshing(false); });
+      .finally(() => {
+        setLoading(false);
+        setRefreshing(false);
+      });
   }, [user]);
 
-  useFocusEffect(useCallback(() => { fetchFavourites(); }, [fetchFavourites]));
+  useFocusEffect(
+    useCallback(() => {
+      fetchFavourites();
+    }, [fetchFavourites]),
+  );
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -277,9 +284,18 @@ export default function ProfileScreen() {
 
         {/* Identity */}
         <View style={styles.identityBlock}>
-          <TouchableOpacity onPress={() => setShowEditName(true)} activeOpacity={0.7} style={styles.nameRow}>
+          <TouchableOpacity
+            onPress={() => setShowEditName(true)}
+            activeOpacity={0.7}
+            style={styles.nameRow}
+          >
             <Text style={styles.username}>{name}</Text>
-            <Ionicons name="pencil-outline" size={14} color={COLORS.grey} style={styles.pencilIcon} />
+            <Ionicons
+              name="pencil-outline"
+              size={14}
+              color={COLORS.grey}
+              style={styles.pencilIcon}
+            />
           </TouchableOpacity>
           <Text style={styles.email}>{email}</Text>
           <View style={styles.statPill}>

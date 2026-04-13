@@ -83,7 +83,7 @@ export default function CategoryScreen() {
   const [navigating, setNavigating] = useState(false);
 
   const categorySlug = VALID_SLUGS.has(slug as CategorySlug) ? (slug as CategorySlug) : null;
-  const title = categorySlug ? CATEGORY_LABELS[categorySlug] : slug ?? 'Heroes';
+  const title = categorySlug ? CATEGORY_LABELS[categorySlug] : (slug ?? 'Heroes');
 
   useEffect(() => {
     if (!categorySlug) {
@@ -124,9 +124,7 @@ export default function CategoryScreen() {
           <Ionicons name="arrow-back" size={22} color={COLORS.navy} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{title}</Text>
-        {heroes.length > 0 && (
-          <Text style={styles.count}>{heroes.length}</Text>
-        )}
+        {heroes.length > 0 && <Text style={styles.count}>{heroes.length}</Text>}
       </View>
 
       {loading ? (
@@ -146,10 +144,7 @@ export default function CategoryScreen() {
           contentContainerStyle={[styles.grid, { paddingBottom: insets.bottom + 20 }]}
           columnWrapperStyle={styles.row}
           renderItem={({ item }) => (
-            <HeroGridCard
-              hero={item}
-              onPress={() => handlePress(item.id)}
-            />
+            <HeroGridCard hero={item} onPress={() => handlePress(item.id)} />
           )}
         />
       )}

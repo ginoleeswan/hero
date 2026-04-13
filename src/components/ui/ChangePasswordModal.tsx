@@ -73,7 +73,12 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
   };
 
   return (
-    <Modal visible={visible} animationType={isWeb ? 'fade' : 'slide'} transparent onRequestClose={handleClose}>
+    <Modal
+      visible={visible}
+      animationType={isWeb ? 'fade' : 'slide'}
+      transparent
+      onRequestClose={handleClose}
+    >
       <KeyboardAvoidingView
         style={isWeb ? styles.overlayWeb : styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

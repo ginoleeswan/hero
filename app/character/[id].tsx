@@ -327,7 +327,8 @@ export default function CharacterScreen() {
       .then((hero) => {
         if (hero?.enriched_at) {
           setData(heroRowToCharacterData(hero));
-          const needsComicVine = !hero.comicvine_enriched_at || hero.powers === null || !hero.movies?.length;
+          const needsComicVine =
+            !hero.comicvine_enriched_at || hero.powers === null || !hero.movies?.length;
           setComicVineLoading(needsComicVine);
 
           // If ComicVine not enriched yet, or powers column not yet populated, fetch in background
@@ -1078,5 +1079,4 @@ const styles = StyleSheet.create({
     color: COLORS.beige,
     letterSpacing: 0.3,
   },
-
 });

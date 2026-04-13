@@ -58,10 +58,14 @@ export default function WebProfileScreen() {
       .finally(() => setLoading(false));
   }, [user]);
 
-  useEffect(() => { fetchFavourites(); }, [fetchFavourites]);
+  useEffect(() => {
+    fetchFavourites();
+  }, [fetchFavourites]);
 
   useEffect(() => {
-    const handler = () => { if (!document.hidden) fetchFavourites(); };
+    const handler = () => {
+      if (!document.hidden) fetchFavourites();
+    };
     document.addEventListener('visibilitychange', handler);
     return () => document.removeEventListener('visibilitychange', handler);
   }, [fetchFavourites]);
@@ -133,7 +137,11 @@ export default function WebProfileScreen() {
             style={mob.cover as object}
           >
             {profile?.cover_url ? (
-              <Image source={{ uri: profile.cover_url }} style={StyleSheet.absoluteFill} contentFit="cover" />
+              <Image
+                source={{ uri: profile.cover_url }}
+                style={StyleSheet.absoluteFill}
+                contentFit="cover"
+              />
             ) : (
               <LinearGradient
                 colors={['#293C43', '#3d5a66']}
@@ -151,7 +159,9 @@ export default function WebProfileScreen() {
             )}
             <View style={mob.editCoverPill}>
               <Ionicons name="camera-outline" size={13} color="white" />
-              <Text style={mob.editCoverText}>{profile?.cover_url ? 'Edit cover' : 'Add cover'}</Text>
+              <Text style={mob.editCoverText}>
+                {profile?.cover_url ? 'Edit cover' : 'Add cover'}
+              </Text>
             </View>
           </Pressable>
 
@@ -163,7 +173,11 @@ export default function WebProfileScreen() {
             >
               {profile?.avatar_url ? (
                 <View style={mob.avatar}>
-                  <Image source={{ uri: profile.avatar_url }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                  <Image
+                    source={{ uri: profile.avatar_url }}
+                    style={StyleSheet.absoluteFill}
+                    contentFit="cover"
+                  />
                   {avatarUploading && (
                     <View style={mob.avatarOverlay}>
                       <ActivityIndicator color="white" />
@@ -172,10 +186,11 @@ export default function WebProfileScreen() {
                 </View>
               ) : (
                 <LinearGradient colors={[COLORS.orange, '#c04a10']} style={mob.avatar}>
-                  {avatarUploading
-                    ? <ActivityIndicator color="white" />
-                    : <Text style={mob.avatarInitials}>{name.slice(0, 2).toUpperCase()}</Text>
-                  }
+                  {avatarUploading ? (
+                    <ActivityIndicator color="white" />
+                  ) : (
+                    <Text style={mob.avatarInitials}>{name.slice(0, 2).toUpperCase()}</Text>
+                  )}
                 </LinearGradient>
               )}
               <View style={mob.cameraBadge}>
@@ -196,14 +211,17 @@ export default function WebProfileScreen() {
           <View style={mob.identityBlock}>
             <Pressable onPress={() => setShowEditName(true)} style={mob.nameRow}>
               <Text style={mob.username}>{name}</Text>
-              <Ionicons name="pencil-outline" size={14} color={COLORS.grey} style={mob.pencilIcon} />
+              <Ionicons
+                name="pencil-outline"
+                size={14}
+                color={COLORS.grey}
+                style={mob.pencilIcon}
+              />
             </Pressable>
             <Text style={mob.email}>{email}</Text>
             <View style={mob.statPill}>
               <Ionicons name="heart" size={14} color={COLORS.orange} />
-              <Text style={mob.statPillText}>
-                {loading ? '–' : favourites.length} saved heroes
-              </Text>
+              <Text style={mob.statPillText}>{loading ? '–' : favourites.length} saved heroes</Text>
             </View>
           </View>
 
@@ -299,12 +317,13 @@ export default function WebProfileScreen() {
                   [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
                 }
               >
-                {signingOut
-                  ? <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
-                  : <View style={[mob.accountIconBadge, mob.accountIconBadgeRed]}>
-                      <Ionicons name="log-out-outline" size={16} color={COLORS.red} />
-                    </View>
-                }
+                {signingOut ? (
+                  <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
+                ) : (
+                  <View style={[mob.accountIconBadge, mob.accountIconBadgeRed]}>
+                    <Ionicons name="log-out-outline" size={16} color={COLORS.red} />
+                  </View>
+                )}
                 <Text style={[mob.accountLabel, mob.accountLabelDanger]}>
                   {signingOut ? 'Signing out…' : 'Sign Out'}
                 </Text>
@@ -318,12 +337,13 @@ export default function WebProfileScreen() {
                   [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
                 }
               >
-                {deletingAccount
-                  ? <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
-                  : <View style={[mob.accountIconBadge, mob.accountIconBadgeRed]}>
-                      <Ionicons name="trash-outline" size={16} color={COLORS.red} />
-                    </View>
-                }
+                {deletingAccount ? (
+                  <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
+                ) : (
+                  <View style={[mob.accountIconBadge, mob.accountIconBadgeRed]}>
+                    <Ionicons name="trash-outline" size={16} color={COLORS.red} />
+                  </View>
+                )}
                 <Text style={[mob.accountLabel, mob.accountLabelDanger]}>
                   {deletingAccount ? 'Deleting account…' : 'Delete Account'}
                 </Text>
@@ -362,7 +382,11 @@ export default function WebProfileScreen() {
         style={desk.cover as object}
       >
         {profile?.cover_url ? (
-          <Image source={{ uri: profile.cover_url }} style={StyleSheet.absoluteFill} contentFit="cover" />
+          <Image
+            source={{ uri: profile.cover_url }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+          />
         ) : (
           <LinearGradient
             colors={['#293C43', '#3d5a66']}
@@ -387,10 +411,8 @@ export default function WebProfileScreen() {
       {/* Content — max 1200px */}
       <View style={desk.contentOuter as object}>
         <View style={desk.contentRow as object}>
-
           {/* ── Sidebar ── */}
           <View style={desk.sidebar as object}>
-
             {/* Avatar floating over cover */}
             <View style={desk.avatarZone}>
               <Pressable
@@ -399,7 +421,11 @@ export default function WebProfileScreen() {
               >
                 {profile?.avatar_url ? (
                   <View style={desk.avatar}>
-                    <Image source={{ uri: profile.avatar_url }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                    <Image
+                      source={{ uri: profile.avatar_url }}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="cover"
+                    />
                     {avatarUploading && (
                       <View style={desk.avatarOverlay}>
                         <ActivityIndicator color="white" />
@@ -408,10 +434,11 @@ export default function WebProfileScreen() {
                   </View>
                 ) : (
                   <LinearGradient colors={[COLORS.orange, '#c04a10']} style={desk.avatar}>
-                    {avatarUploading
-                      ? <ActivityIndicator color="white" />
-                      : <Text style={desk.avatarInitials}>{name.slice(0, 2).toUpperCase()}</Text>
-                    }
+                    {avatarUploading ? (
+                      <ActivityIndicator color="white" />
+                    ) : (
+                      <Text style={desk.avatarInitials}>{name.slice(0, 2).toUpperCase()}</Text>
+                    )}
                   </LinearGradient>
                 )}
                 <View style={desk.cameraBadge}>
@@ -431,7 +458,12 @@ export default function WebProfileScreen() {
 
               <Pressable onPress={() => setShowEditName(true)} style={desk.nameRow as object}>
                 <Text style={desk.username}>{name}</Text>
-                <Ionicons name="pencil-outline" size={14} color={COLORS.grey} style={desk.pencilIcon} />
+                <Ionicons
+                  name="pencil-outline"
+                  size={14}
+                  color={COLORS.grey}
+                  style={desk.pencilIcon}
+                />
               </Pressable>
 
               <Text style={desk.email as object}>{email}</Text>
@@ -451,7 +483,9 @@ export default function WebProfileScreen() {
                   <Ionicons name="mail-outline" size={16} color={COLORS.navy} />
                 </View>
                 <Text style={desk.accountLabel}>Email</Text>
-                <Text style={desk.accountValue} numberOfLines={1}>{email}</Text>
+                <Text style={desk.accountValue} numberOfLines={1}>
+                  {email}
+                </Text>
               </View>
 
               {isEmailUser && (
@@ -480,12 +514,13 @@ export default function WebProfileScreen() {
                   [desk.accountRow, hovered && (desk.accountRowHover as object)] as object
                 }
               >
-                {signingOut
-                  ? <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
-                  : <View style={[desk.accountIconBadge, desk.accountIconBadgeRed]}>
-                      <Ionicons name="log-out-outline" size={16} color={COLORS.red} />
-                    </View>
-                }
+                {signingOut ? (
+                  <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
+                ) : (
+                  <View style={[desk.accountIconBadge, desk.accountIconBadgeRed]}>
+                    <Ionicons name="log-out-outline" size={16} color={COLORS.red} />
+                  </View>
+                )}
                 <Text style={[desk.accountLabel, desk.accountLabelDanger]}>
                   {signingOut ? 'Signing out…' : 'Sign Out'}
                 </Text>
@@ -499,12 +534,13 @@ export default function WebProfileScreen() {
                   [desk.accountRow, hovered && (desk.accountRowHover as object)] as object
                 }
               >
-                {deletingAccount
-                  ? <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
-                  : <View style={[desk.accountIconBadge, desk.accountIconBadgeRed]}>
-                      <Ionicons name="trash-outline" size={16} color={COLORS.red} />
-                    </View>
-                }
+                {deletingAccount ? (
+                  <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
+                ) : (
+                  <View style={[desk.accountIconBadge, desk.accountIconBadgeRed]}>
+                    <Ionicons name="trash-outline" size={16} color={COLORS.red} />
+                  </View>
+                )}
                 <Text style={[desk.accountLabel, desk.accountLabelDanger]}>
                   {deletingAccount ? 'Deleting account…' : 'Delete Account'}
                 </Text>
@@ -512,7 +548,8 @@ export default function WebProfileScreen() {
             </View>
 
             <Text style={desk.disclaimer}>
-              Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics, or any other publisher.
+              Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC
+              Comics, or any other publisher.
             </Text>
           </View>
 
@@ -592,7 +629,10 @@ const mob = StyleSheet.create({
   } as object,
   coverDots: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundImage: 'radial-gradient(circle, rgba(231,115,51,0.22) 1.5px, transparent 1.5px)',
     backgroundSize: '14px 14px',
   } as object,
@@ -894,7 +934,10 @@ const desk = StyleSheet.create({
   } as object,
   coverDots: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundImage: 'radial-gradient(circle, rgba(231,115,51,0.22) 1.5px, transparent 1.5px)',
     backgroundSize: '14px 14px',
   } as object,

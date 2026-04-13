@@ -198,12 +198,19 @@ const SHIMMER_CSS = `
   }
 `;
 
-function Sk({ w = '100%', h, r = 6, mb = 0 }: { w?: string | number; h: number; r?: number; mb?: number }) {
+function Sk({
+  w = '100%',
+  h,
+  r = 6,
+  mb = 0,
+}: {
+  w?: string | number;
+  h: number;
+  r?: number;
+  mb?: number;
+}) {
   return (
-    <div
-      className="bio-sk"
-      style={{ width: w, height: h, borderRadius: r, marginBottom: mb }}
-    />
+    <div className="bio-sk" style={{ width: w, height: h, borderRadius: r, marginBottom: mb }} />
   );
 }
 
@@ -271,15 +278,17 @@ function SidebarSkeleton() {
 }
 
 function preprocessHtml(html: string): string {
-  return html
-    // Remove noscript blocks — they contain a duplicate real <img> that renders via innerHTML
-    .replace(/<noscript>[\s\S]*?<\/noscript>/gi, '')
-    // Swap lazy-load placeholder src with the real data-src
-    .replace(/\ssrc="data:image\/gif;base64,[^"]*"/gi, '')
-    .replace(/\sdata-src="/gi, ' src="')
-    .replace(/\sdata-srcset="/gi, ' srcset="')
-    // Strip hard-coded sizes — let browser pick the right srcset variant by display size
-    .replace(/\ssizes="[^"]*"/gi, '');
+  return (
+    html
+      // Remove noscript blocks — they contain a duplicate real <img> that renders via innerHTML
+      .replace(/<noscript>[\s\S]*?<\/noscript>/gi, '')
+      // Swap lazy-load placeholder src with the real data-src
+      .replace(/\ssrc="data:image\/gif;base64,[^"]*"/gi, '')
+      .replace(/\sdata-src="/gi, ' src="')
+      .replace(/\sdata-srcset="/gi, ' srcset="')
+      // Strip hard-coded sizes — let browser pick the right srcset variant by display size
+      .replace(/\ssizes="[^"]*"/gi, '')
+  );
 }
 
 function extractHeadings(html: string): { processedHtml: string; toc: string[] } {
@@ -312,7 +321,9 @@ export default function WebBiographyScreen() {
       .then((h) => {
         setHero(h);
         if (h?.description) {
-          const { processedHtml: html, toc: headings } = extractHeadings(preprocessHtml(h.description));
+          const { processedHtml: html, toc: headings } = extractHeadings(
+            preprocessHtml(h.description),
+          );
           setProcessedHtml(html);
           setToc(headings);
         }
@@ -323,7 +334,9 @@ export default function WebBiographyScreen() {
   const heroImage = id ? heroImageSource(String(id), hero?.image_url) : null;
 
   const scrollToSection = (index: number) => {
-    document.getElementById(`bio-s${index}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document
+      .getElementById(`bio-s${index}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   return (
@@ -343,7 +356,9 @@ export default function WebBiographyScreen() {
               <Text style={[styles.heroName, { fontSize: isDesktop ? 42 : 30 }]}>{hero.name}</Text>
               <Text style={styles.subtitle}>Biography</Text>
               {hero.summary ? (
-                <Text style={styles.heroDeck} numberOfLines={2}>{hero.summary}</Text>
+                <Text style={styles.heroDeck} numberOfLines={2}>
+                  {hero.summary}
+                </Text>
               ) : null}
             </View>
           ) : null}
@@ -382,7 +397,9 @@ export default function WebBiographyScreen() {
                   >
                     <View style={styles.tocRow}>
                       <Text style={styles.tocNum}>{i + 1}</Text>
-                      <Text style={styles.tocText} numberOfLines={2}>{heading}</Text>
+                      <Text style={styles.tocText} numberOfLines={2}>
+                        {heading}
+                      </Text>
                     </View>
                   </Pressable>
                 ))}

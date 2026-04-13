@@ -169,9 +169,7 @@ export default function WebCategoryScreen() {
         </View>
       ) : (
         <ScrollView style={styles.scroll}>
-          <View
-            style={[styles.gridWrap, { paddingHorizontal: contentPad, paddingBottom: 60 }]}
-          >
+          <View style={[styles.gridWrap, { paddingHorizontal: contentPad, paddingBottom: 60 }]}>
             <View style={gridStyle as object}>
               {heroes.map((hero) => (
                 <HeroCard key={hero.id} hero={hero} onPress={() => handlePress(String(hero.id))} />
