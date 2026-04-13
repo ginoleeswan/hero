@@ -472,30 +472,27 @@ export default function WebProfileScreen() {
               )}
 
               {editingName ? (
-                <>
-                  <View style={desk.nameEditRow}>
-                    <TextInput
-                      ref={nameInputRef}
-                      style={desk.nameInput as object}
-                      value={nameValue}
-                      onChangeText={setNameValue}
-                      returnKeyType="done"
-                      onSubmitEditing={handleSaveName}
-                      autoCapitalize="words"
-                      maxLength={40}
-                    />
-                    <Pressable onPress={handleSaveName} disabled={savingName} style={desk.nameAction}>
-                      {savingName
-                        ? <ActivityIndicator size="small" color={COLORS.orange} />
-                        : <Ionicons name="checkmark" size={20} color={COLORS.orange} />
-                      }
-                    </Pressable>
-                    <Pressable onPress={() => { setEditingName(false); setNameValue(''); }} style={desk.nameAction}>
-                      <Ionicons name="close" size={20} color={COLORS.grey} />
-                    </Pressable>
-                  </View>
-                  <Text style={desk.nameCharCount}>{nameValue.length}/40</Text>
-                </>
+                <View style={desk.nameEditRow as object}>
+                  <TextInput
+                    ref={nameInputRef}
+                    style={desk.nameInput as object}
+                    value={nameValue}
+                    onChangeText={setNameValue}
+                    returnKeyType="done"
+                    onSubmitEditing={handleSaveName}
+                    autoCapitalize="words"
+                    maxLength={40}
+                  />
+                  <Pressable onPress={handleSaveName} disabled={savingName} style={desk.nameAction}>
+                    {savingName
+                      ? <ActivityIndicator size="small" color={COLORS.orange} />
+                      : <Ionicons name="checkmark" size={20} color={COLORS.orange} />
+                    }
+                  </Pressable>
+                  <Pressable onPress={() => { setEditingName(false); setNameValue(''); }} style={desk.nameAction}>
+                    <Ionicons name="close" size={20} color={COLORS.grey} />
+                  </Pressable>
+                </View>
               ) : (
                 <Pressable onPress={startEditingName} style={desk.nameRow as object}>
                   <Text style={desk.username}>{name}</Text>
@@ -765,10 +762,12 @@ const mob = StyleSheet.create({
   nameEditRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'stretch',
     marginBottom: 4,
     gap: 4,
   },
   nameInput: {
+    flex: 1,
     fontFamily: 'Flame-Regular',
     fontSize: 22,
     color: COLORS.navy,
@@ -776,7 +775,6 @@ const mob = StyleSheet.create({
     borderBottomColor: COLORS.orange,
     paddingVertical: 2,
     paddingHorizontal: 4,
-    minWidth: 120,
     outlineStyle: 'none',
   } as object,
   nameAction: { padding: 6 },
@@ -784,7 +782,8 @@ const mob = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
     color: 'rgba(41,60,67,0.35)',
-    alignSelf: 'flex-end',
+    alignSelf: 'stretch',
+    textAlign: 'right',
     marginTop: 2,
     marginBottom: 4,
   },
@@ -1094,18 +1093,19 @@ const desk = StyleSheet.create({
   nameEditRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    width: '100%',
+    marginBottom: 8,
     gap: 4,
-  },
+  } as object,
   nameInput: {
+    flex: 1,
     fontFamily: 'Flame-Regular',
-    fontSize: 20,
+    fontSize: 18,
     color: COLORS.navy,
     borderBottomWidth: 2,
     borderBottomColor: COLORS.orange,
     paddingVertical: 2,
     paddingHorizontal: 4,
-    minWidth: 100,
     outlineStyle: 'none',
   } as object,
   nameAction: { padding: 6 },
@@ -1113,7 +1113,8 @@ const desk = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
     color: 'rgba(41,60,67,0.35)',
-    alignSelf: 'flex-end',
+    alignSelf: 'stretch',
+    textAlign: 'right',
     marginTop: 2,
     marginBottom: 4,
   },

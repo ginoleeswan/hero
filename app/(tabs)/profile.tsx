@@ -646,10 +646,12 @@ const styles = StyleSheet.create({
   nameEditRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'stretch',
     marginBottom: 4,
     gap: 4,
   },
   nameInput: {
+    flex: 1,
     fontFamily: 'Flame-Regular',
     fontSize: 22,
     color: COLORS.navy,
@@ -657,8 +659,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.orange,
     paddingVertical: 2,
     paddingHorizontal: 4,
-    minWidth: 120,
-    maxWidth: SCREEN_WIDTH * 0.55,
+    maxWidth: SCREEN_WIDTH * 0.65,
   },
   nameAction: {
     padding: 6,
@@ -667,7 +668,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
     color: 'rgba(41,60,67,0.35)',
-    alignSelf: 'flex-end',
+    alignSelf: 'stretch',
+    textAlign: 'right',
     marginTop: 2,
     marginBottom: 4,
   },
