@@ -9,6 +9,7 @@ import { Nunito_400Regular, Nunito_700Bold, Nunito_900Black } from '@expo-google
 import { Righteous_400Regular } from '@expo-google-fonts/righteous';
 import { useAuth } from '../src/hooks/useAuth';
 import { LogoLoader } from '../src/components/ui/LogoLoader';
+import AnalyticsProvider from '../src/components/Analytics';
 
 if (Platform.OS !== 'web') {
   try {
@@ -74,6 +75,7 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style="dark" />
+      <AnalyticsProvider />
       <AuthGate />
     </>
   );
