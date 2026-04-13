@@ -574,19 +574,21 @@ function HomeRow({
           <View style={row.accentBar} />
           <View style={row.headerText}>
             {!!label && <Text style={row.label}>{label}</Text>}
-            <Text style={row.title}>{title}</Text>
+            {onViewAll ? (
+              <Pressable
+                onPress={onViewAll}
+                style={({ hovered }: { hovered?: boolean }) =>
+                  [row.titleRow, hovered && (row.titleRowHover as object)] as object
+                }
+              >
+                <Text style={row.title}>{title}</Text>
+                <Text style={row.titleChevron as object}>›</Text>
+              </Pressable>
+            ) : (
+              <Text style={row.title}>{title}</Text>
+            )}
           </View>
         </View>
-        {!!onViewAll && (
-          <Pressable
-            onPress={onViewAll}
-            style={({ hovered }: { hovered?: boolean }) =>
-              [row.seeAll, hovered && (row.seeAllHover as object)] as object
-            }
-          >
-            <Text style={row.seeAllText as object}>See All →</Text>
-          </Pressable>
-        )}
       </View>
       {/* Scroll track extends to viewport right edge — no right constraint on parent. */}
       <View style={{ position: 'relative', minHeight: ROW_CARD_HEIGHT } as object}>
@@ -626,18 +628,21 @@ const row = StyleSheet.create({
     textTransform: 'uppercase',
   },
   title: { fontFamily: 'Flame-Regular', fontSize: 36, color: COLORS.navy, lineHeight: 38 },
-  seeAll: {
-    paddingBottom: 4,
-    paddingLeft: 12,
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     cursor: 'pointer',
     transition: 'opacity 150ms ease',
+    alignSelf: 'flex-start',
   } as object,
-  seeAllHover: { opacity: 0.7 } as object,
-  seeAllText: {
+  titleRowHover: { opacity: 0.7 } as object,
+  titleChevron: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: COLORS.orange,
-    letterSpacing: 0.3,
+    fontSize: 22,
+    color: COLORS.navy,
+    lineHeight: 38,
+    opacity: 0.5,
   } as object,
 });
 
@@ -668,19 +673,21 @@ function DarkHomeRow({
           <View style={drow.accentBar} />
           <View style={drow.headerText}>
             {!!label && <Text style={drow.label}>{label}</Text>}
-            <Text style={drow.title}>{title}</Text>
+            {onViewAll ? (
+              <Pressable
+                onPress={onViewAll}
+                style={({ hovered }: { hovered?: boolean }) =>
+                  [drow.titleRow, hovered && (drow.titleRowHover as object)] as object
+                }
+              >
+                <Text style={drow.title}>{title}</Text>
+                <Text style={drow.titleChevron as object}>›</Text>
+              </Pressable>
+            ) : (
+              <Text style={drow.title}>{title}</Text>
+            )}
           </View>
         </View>
-        {!!onViewAll && (
-          <Pressable
-            onPress={onViewAll}
-            style={({ hovered }: { hovered?: boolean }) =>
-              [drow.seeAll, hovered && (drow.seeAllHover as object)] as object
-            }
-          >
-            <Text style={drow.seeAllText as object}>See All →</Text>
-          </Pressable>
-        )}
       </View>
       {/* Scroll track + arrow overlays */}
       <View style={{ position: 'relative', minHeight: ROW_CARD_HEIGHT } as object}>
@@ -732,18 +739,21 @@ const drow = StyleSheet.create({
     color: COLORS.beige,
     lineHeight: 38,
   },
-  seeAll: {
-    paddingBottom: 4,
-    paddingLeft: 12,
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     cursor: 'pointer',
     transition: 'opacity 150ms ease',
+    alignSelf: 'flex-start',
   } as object,
-  seeAllHover: { opacity: 0.65 } as object,
-  seeAllText: {
+  titleRowHover: { opacity: 0.7 } as object,
+  titleChevron: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: COLORS.orange,
-    letterSpacing: 0.3,
+    fontSize: 22,
+    color: COLORS.beige,
+    lineHeight: 38,
+    opacity: 0.5,
   } as object,
 });
 
