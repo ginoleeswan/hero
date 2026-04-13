@@ -41,8 +41,8 @@ import type { FavouriteHero } from '../../src/types';
 const PUBLISHER_FILTERS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
 const DISPLAY_LIMIT = 120;
 const SPOTLIGHT_POOL = 10;
-const ROW_CARD_HEIGHT = 260;
-const ROW_CARD_WIDTH = 180;
+const ROW_CARD_HEIGHT = 310;
+const ROW_CARD_WIDTH = 220;
 
 // Publisher logos
 const MARVEL_LOGO = require('../../assets/images/Marvel-Logo.jpg') as number;
@@ -57,21 +57,25 @@ const resultsGrid = {
   gridAutoRows: '240px',
   gap: 12,
 };
+// The scroll container uses padding + negative margins on all sides so box-shadows
+// have room to render inside the overflow:auto boundary.
+// Horizontal: paddingLeft/Right 16 + marginLeft/Right -16 → cards appear flush with
+// the wrapper edge but the scroll container extends 16px past each side for shadows.
+// The fades/arrows must account for this 16px offset (right:-16 / left:-16).
+// No paddingRight / marginRight — the scroll track extends to the viewport right edge
+// (the wrapper gets a dynamic negative marginRight calculated per row).
+// Left side keeps the shadow buffer so the first card's shadow isn't clipped.
 const rowScrollStyle = {
   display: 'flex',
   flexDirection: 'row',
-  gap: 12,
+  gap: 16,
   overflowX: 'auto',
-  // Extra padding gives box-shadows room to render inside the overflow container
-  // on all four sides. Negative margins compensate so layout spacing is unchanged.
-  paddingTop: 16,
-  paddingBottom: 64,
+  paddingTop: 40,
+  paddingBottom: 72,
   paddingLeft: 16,
-  paddingRight: 16,
-  marginTop: -16,
-  marginBottom: -52, // net: 64 - 52 = 12 (same as original paddingBottom)
+  marginTop: -40,
+  marginBottom: -60, // net: 72 - 60 = 12
   marginLeft: -16,
-  marginRight: -16,
   scrollbarWidth: 'none',
 };
 
@@ -240,8 +244,8 @@ const rc = StyleSheet.create({
     transition: 'transform 200ms ease, box-shadow 200ms ease',
   } as object,
   wrapHover: {
-    transform: [{ scale: 1.04 }],
-    boxShadow: '0 16px 48px rgba(0,0,0,0.28)',
+    transform: [{ translateY: -6 }],
+    boxShadow: '0 20px 52px rgba(0,0,0,0.38)',
     zIndex: 2,
   } as object,
   overlay: {
@@ -281,11 +285,11 @@ function WebSpotlight({
   const isDesktop = width >= 768;
   const source = heroImageSource(String(hero.id), hero.image_url, hero.portrait_url);
 
-  const height = isDesktop ? 500 : 340;
-  const nameFontSize = isDesktop ? 52 : 34;
-  const nameLineHeight = isDesktop ? 54 : 38;
-  const contentPad = isDesktop ? 44 : 24;
-  const bottomPad = isDesktop ? 40 : 28;
+  const height = isDesktop ? 580 : 420;
+  const nameFontSize = isDesktop ? 68 : 44;
+  const nameLineHeight = isDesktop ? 72 : 48;
+  const contentPad = isDesktop ? 52 : 24;
+  const bottomPad = isDesktop ? 48 : 32;
 
   return (
     <Pressable
@@ -294,14 +298,16 @@ function WebSpotlight({
         [spot.wrap, { height } as object, hovered && (spot.wrapHover as object)] as object
       }
     >
+      {/* Image with fade-in on hero change */}
       <Image
+        key={String(hero.id)}
         source={source}
         contentFit="cover"
         contentPosition={'center 15%' as any}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
         cachePolicy="memory-disk"
         recyclingKey={String(hero.id)}
-        transition={200}
+        transition={450}
       />
       <View style={spot.overlay as object} />
       <View style={[spot.content, { left: contentPad, right: contentPad, bottom: bottomPad }]}>
@@ -315,9 +321,16 @@ function WebSpotlight({
         >
           {hero.name}
         </Text>
-        <View style={spot.cta}>
-          <Text style={spot.ctaText}>View profile</Text>
-          <Text style={spot.ctaArrow}> →</Text>
+        {hero.summary ? (
+          <Text style={spot.summary as object} numberOfLines={2}>
+            {hero.summary}
+          </Text>
+        ) : null}
+        <View style={spot.ctaRow}>
+          <View style={spot.ctaBtn as object}>
+            <Text style={spot.ctaBtnText}>View Profile</Text>
+            <Text style={spot.ctaBtnArrow}> →</Text>
+          </View>
         </View>
       </View>
       {total > 1 && (
@@ -340,15 +353,16 @@ function WebSpotlight({
 
 const spot = StyleSheet.create({
   wrap: {
-    borderRadius: 16,
+    borderRadius: 0,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
     cursor: 'pointer',
-    transition: 'box-shadow 220ms ease',
+    transition: 'transform 280ms ease, box-shadow 280ms ease',
     marginBottom: 48,
   } as object,
   wrapHover: {
-    boxShadow: '0 32px 80px rgba(0,0,0,0.3)',
+    transform: [{ scale: 1.005 }],
+    boxShadow: '0 40px 100px rgba(0,0,0,0.35)',
   } as object,
   overlay: {
     position: 'absolute',
@@ -357,58 +371,191 @@ const spot = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundImage:
-      'linear-gradient(to top, rgba(29,45,51,0.98) 0%, rgba(29,45,51,0.5) 40%, rgba(29,45,51,0.1) 70%, transparent 100%)',
+      'linear-gradient(to top, rgba(15,20,24,0.99) 0%, rgba(15,20,24,0.75) 28%, rgba(15,20,24,0.25) 55%, transparent 100%)',
   } as object,
   content: { position: 'absolute' },
-  logoRow: { marginBottom: 10 },
+  logoRow: { marginBottom: 12 },
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
     color: COLORS.orange,
-    letterSpacing: 2,
+    letterSpacing: 2.5,
     textTransform: 'uppercase',
-    marginBottom: 8,
+    marginBottom: 10,
   } as object,
   name: {
     fontFamily: 'Flame-Regular',
     color: COLORS.beige,
-    marginBottom: 20,
-    textShadow: '0 2px 16px rgba(0,0,0,0.8)',
+    marginBottom: 14,
+    textShadow: '0 2px 20px rgba(0,0,0,0.9)',
   } as object,
-  cta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(245,235,220,0.15)',
-    paddingTop: 14,
-  },
-  ctaText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: 'rgba(245,235,220,0.6)',
-    textTransform: 'uppercase',
-    letterSpacing: 1.4,
-  },
-  ctaArrow: {
+  summary: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
-    color: 'rgba(245,235,220,0.4)',
+    color: 'rgba(245,235,220,0.55)',
+    lineHeight: 20,
+    marginBottom: 24,
+    maxWidth: 520,
+  } as object,
+  ctaRow: { flexDirection: 'row', alignItems: 'center' },
+  ctaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.orange,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 24,
+    gap: 2,
+  } as object,
+  ctaBtnText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  ctaBtnArrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: '#fff',
   },
   dots: {
     position: 'absolute',
-    bottom: 14,
+    bottom: 20,
     flexDirection: 'row',
-    gap: 6,
+    gap: 7,
   } as object,
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(245,235,220,0.3)',
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: 'rgba(245,235,220,0.28)',
     cursor: 'pointer',
-    transition: 'all 150ms ease',
+    transition: 'all 200ms ease',
   } as object,
-  dotActive: { width: 18, backgroundColor: COLORS.orange } as object,
+  dotActive: { width: 22, backgroundColor: COLORS.orange } as object,
+});
+
+// ── Carousel scroll hook (web desktop) ───────────────────────────────────────
+function useCarouselScroll(heroCount: number) {
+  const sectionRef = useRef<View>(null);
+  const scrollRef = useRef<View>(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  // Hover via native DOM events — avoids Pressable nesting issues
+  useEffect(() => {
+    const section = sectionRef.current as any;
+    if (!section) return;
+    const enter = () => setIsHovered(true);
+    const leave = () => setIsHovered(false);
+    section.addEventListener('mouseenter', enter);
+    section.addEventListener('mouseleave', leave);
+    return () => {
+      section.removeEventListener('mouseenter', enter);
+      section.removeEventListener('mouseleave', leave);
+    };
+  }, []);
+
+  // Scroll position tracking
+  useEffect(() => {
+    const node = scrollRef.current as any;
+    if (!node) return;
+    const update = () => {
+      setCanScrollLeft(node.scrollLeft > 8);
+      setCanScrollRight(node.scrollLeft < node.scrollWidth - node.clientWidth - 8);
+    };
+    node.addEventListener('scroll', update, { passive: true });
+    const t = setTimeout(update, 100);
+    return () => {
+      node.removeEventListener('scroll', update);
+      clearTimeout(t);
+    };
+  }, [heroCount]);
+
+  const doScrollLeft = useCallback(() => {
+    (scrollRef.current as any)?.scrollBy({ left: -720, behavior: 'smooth' });
+  }, []);
+
+  const doScrollRight = useCallback(() => {
+    (scrollRef.current as any)?.scrollBy({ left: 720, behavior: 'smooth' });
+  }, []);
+
+  return { sectionRef, scrollRef, isHovered, canScrollLeft, canScrollRight, doScrollLeft, doScrollRight };
+}
+
+// ── Carousel arrow button ─────────────────────────────────────────────────────
+const ARROW_SIZE = 44;
+
+function CarouselArrow({
+  direction,
+  onPress,
+  contained = false,
+}: {
+  direction: 'left' | 'right';
+  onPress: () => void;
+  contained?: boolean;
+}) {
+  const rightStyle = contained ? arr.rightContained : arr.right;
+  return (
+    <Pressable
+      onPress={(e) => { e.stopPropagation?.(); onPress(); }}
+      style={({ hovered }: { hovered?: boolean }) =>
+        [arr.btn, direction === 'left' ? arr.left : rightStyle, hovered && (arr.btnHover as object)] as object
+      }
+    >
+      <Text style={arr.chevron as object}>{direction === 'left' ? '‹' : '›'}</Text>
+    </Pressable>
+  );
+}
+
+const arr = StyleSheet.create({
+  btn: {
+    position: 'absolute',
+    zIndex: 20,
+    top: ROW_CARD_HEIGHT / 2 - ARROW_SIZE / 2,
+    width: ARROW_SIZE,
+    height: ARROW_SIZE,
+    borderRadius: ARROW_SIZE / 2,
+    backgroundColor: COLORS.beige,
+    boxShadow: '0 4px 20px rgba(0,0,0,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'transform 150ms ease, box-shadow 150ms ease',
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.12)',
+  } as object,
+  btnHover: {
+    transform: [{ scale: 1.12 }],
+    boxShadow: '0 8px 28px rgba(0,0,0,0.3)',
+  } as object,
+  left: { left: -12 } as object,           // -16 (scroll margin) + 4 inset
+  right: { right: 8 } as object,            // viewport-breakout row: 8px from viewport edge
+  rightContained: { right: -12 } as object, // contained dark row: -16 (scroll margin) + 4 inset
+  chevron: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 24,
+    color: COLORS.navy,
+    lineHeight: 26,
+    textAlign: 'center',
+    marginTop: -1,
+  } as object,
+});
+
+/** Edge-fade overlay — passive affordance that there's more content off-screen.
+ *  Left side always extends -16 (scroll container marginLeft offset).
+ *  Right side: pass contained=true for dark rows (scroll extends -16 past wrapper),
+ *  or omit/false for light rows where scroll track extends to viewport edge (right:0). */
+const makeFade = (bgColor: string, side: 'left' | 'right', contained = false) => ({
+  position: 'absolute' as const,
+  top: 0,
+  [side]: side === 'left' ? -16 : contained ? -16 : 0,
+  bottom: 0,
+  width: 64,
+  zIndex: 10,
+  backgroundImage: `linear-gradient(to ${side}, transparent, ${bgColor})`,
 });
 
 // ── Home row section ──────────────────────────────────────────────────────────
@@ -425,13 +572,22 @@ function HomeRow({
   onPress: (id: string) => void;
   onViewAll?: () => void;
 }) {
+  const { sectionRef, scrollRef, isHovered, canScrollLeft, canScrollRight, doScrollLeft, doScrollRight } =
+    useCarouselScroll(heroes.length);
+
+  const { width: winWidth } = useWindowDimensions();
+  const pagePad = winWidth < 640 ? 16 : 32;
+
   if (heroes.length === 0) return null;
   return (
-    <View style={row.section}>
+    <View ref={sectionRef} style={[row.section, { paddingLeft: pagePad }]}>
       <View style={row.header}>
         <View style={row.headerLeft}>
-          {!!label && <Text style={row.label}>{label}</Text>}
-          <Text style={row.title}>{title}</Text>
+          <View style={row.accentBar} />
+          <View style={row.headerText}>
+            {!!label && <Text style={row.label}>{label}</Text>}
+            <Text style={row.title}>{title}</Text>
+          </View>
         </View>
         {!!onViewAll && (
           <Pressable
@@ -444,24 +600,39 @@ function HomeRow({
           </Pressable>
         )}
       </View>
-      <View style={rowScrollStyle as object}>
-        {heroes.map((h) => (
-          <RowCard key={h.id} hero={h} onPress={() => onPress(String(h.id))} />
-        ))}
+      {/* Scroll track extends to viewport right edge — no right constraint on parent. */}
+      <View style={{ position: 'relative', minHeight: ROW_CARD_HEIGHT } as object}>
+        <View ref={scrollRef} style={rowScrollStyle as object}>
+          {heroes.map((h) => (
+            <RowCard key={h.id} hero={h} onPress={() => onPress(String(h.id))} />
+          ))}
+        </View>
+        {/* Fades always visible — passive affordance. Arrows appear on hover. */}
+        {canScrollLeft && <View pointerEvents="none" style={makeFade(COLORS.beige, 'left') as object} />}
+        {canScrollRight && <View pointerEvents="none" style={makeFade(COLORS.beige, 'right') as object} />}
+        {isHovered && canScrollLeft && <CarouselArrow direction="left" onPress={doScrollLeft} />}
+        {isHovered && canScrollRight && <CarouselArrow direction="right" onPress={doScrollRight} />}
       </View>
     </View>
   );
 }
 
 const row = StyleSheet.create({
-  section: { marginBottom: 40 },
+  section: { marginBottom: 52 },
   header: {
-    marginBottom: 14,
+    marginBottom: 16,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     justifyContent: 'space-between',
   },
-  headerLeft: { gap: 2 },
+  headerLeft: { flexDirection: 'row', alignItems: 'stretch', gap: 14 },
+  accentBar: {
+    width: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.orange,
+    minHeight: 38,
+  },
+  headerText: { gap: 2, justifyContent: 'center' },
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
@@ -469,7 +640,7 @@ const row = StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
-  title: { fontFamily: 'Flame-Regular', fontSize: 28, color: COLORS.navy },
+  title: { fontFamily: 'Flame-Regular', fontSize: 36, color: COLORS.navy, lineHeight: 38 },
   seeAll: {
     paddingBottom: 4,
     paddingLeft: 12,
@@ -485,17 +656,126 @@ const row = StyleSheet.create({
   } as object,
 });
 
+// ── Dark editorial row section ────────────────────────────────────────────────
+function DarkHomeRow({
+  label,
+  title,
+  heroes,
+  onPress,
+  onViewAll,
+}: {
+  label?: string;
+  title: string;
+  heroes: (Hero | FavouriteHero)[];
+  onPress: (id: string) => void;
+  onViewAll?: () => void;
+}) {
+  const { sectionRef, scrollRef, isHovered, canScrollLeft, canScrollRight, doScrollLeft, doScrollRight } =
+    useCarouselScroll(heroes.length);
+  const { width: winWidth } = useWindowDimensions();
+  const pagePad = winWidth < 640 ? 16 : 32;
+
+  if (heroes.length === 0) return null;
+  return (
+    <View ref={sectionRef} style={[drow.section, { marginHorizontal: pagePad }] as object}>
+      <View style={drow.header}>
+        <View style={drow.headerLeft}>
+          <View style={drow.accentBar} />
+          <View style={drow.headerText}>
+            {!!label && <Text style={drow.label}>{label}</Text>}
+            <Text style={drow.title}>{title}</Text>
+          </View>
+        </View>
+        {!!onViewAll && (
+          <Pressable
+            onPress={onViewAll}
+            style={({ hovered }: { hovered?: boolean }) =>
+              [drow.seeAll, hovered && (drow.seeAllHover as object)] as object
+            }
+          >
+            <Text style={drow.seeAllText as object}>See All →</Text>
+          </Pressable>
+        )}
+      </View>
+      {/* Scroll track + arrow overlays */}
+      <View style={{ position: 'relative', minHeight: ROW_CARD_HEIGHT } as object}>
+        <View ref={scrollRef} style={rowScrollStyle as object}>
+          {heroes.map((h) => (
+            <RowCard key={h.id} hero={h} onPress={() => onPress(String(h.id))} />
+          ))}
+        </View>
+        {/* Fades always visible — passive affordance. Arrows appear on hover. */}
+        {canScrollLeft && <View pointerEvents="none" style={makeFade(COLORS.navy, 'left', true) as object} />}
+        {canScrollRight && <View pointerEvents="none" style={makeFade(COLORS.navy, 'right', true) as object} />}
+        {isHovered && canScrollLeft && <CarouselArrow direction="left" onPress={doScrollLeft} contained />}
+        {isHovered && canScrollRight && <CarouselArrow direction="right" onPress={doScrollRight} contained />}
+      </View>
+    </View>
+  );
+}
+
+const drow = StyleSheet.create({
+  section: {
+    backgroundColor: COLORS.navy,
+    borderRadius: 20,
+    paddingHorizontal: 28,
+    paddingTop: 28,
+    paddingBottom: 8,
+    marginBottom: 52,
+  } as object,
+  header: {
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerLeft: { flexDirection: 'row', alignItems: 'stretch', gap: 14 },
+  accentBar: {
+    width: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.orange,
+    minHeight: 38,
+  },
+  headerText: { gap: 2, justifyContent: 'center' },
+  label: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    color: COLORS.orange,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 36,
+    color: COLORS.beige,
+    lineHeight: 38,
+  },
+  seeAll: {
+    paddingBottom: 4,
+    paddingLeft: 12,
+    cursor: 'pointer',
+    transition: 'opacity 150ms ease',
+  } as object,
+  seeAllHover: { opacity: 0.65 } as object,
+  seeAllText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.orange,
+    letterSpacing: 0.3,
+  } as object,
+});
+
 // ── Home skeleton ─────────────────────────────────────────────────────────────
 function HomeSkeleton() {
   const opacity = useSkeletonAnim();
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={[styles.discoverContent, isMobile && { paddingHorizontal: 16, paddingTop: 20 }] as object}>
+    <ScrollView style={styles.scroll} contentContainerStyle={[styles.discoverContent, isMobile && { paddingTop: 0 }] as object}>
       <SkeletonBlock
         opacity={opacity}
         height={480}
-        borderRadius={16}
+        borderRadius={0}
         style={{ marginBottom: 48 }}
       />
       {[1, 2, 3].map((i) => (
@@ -827,7 +1107,7 @@ export default function WebHomeScreen() {
       ) : !homeData ? (
         <HomeSkeleton />
       ) : (
-        <ScrollView style={styles.scroll} contentContainerStyle={[styles.discoverContent, isMobile && { paddingHorizontal: 16, paddingTop: 20 }] as object}>
+        <ScrollView style={styles.scroll} contentContainerStyle={[styles.discoverContent, isMobile && { paddingTop: 0 }] as object}>
           {/* Spotlight */}
           {spotlightHero && (
             <WebSpotlight
@@ -875,22 +1155,22 @@ export default function WebHomeScreen() {
             onPress={handlePress}
             onViewAll={() => router.push('/category/dc')}
           />
-          <HomeRow
+          <DarkHomeRow
             label="The Dark Side"
             title="Villains"
             heroes={homeData.villains}
             onPress={handlePress}
             onViewAll={() => router.push('/category/villain')}
           />
-          <HomeRow
+          <DarkHomeRow
             label="Neither Good Nor Evil"
             title="Anti-Heroes"
             heroes={homeData.antiHeroes}
             onPress={handlePress}
             onViewAll={() => router.push('/category/anti-heroes')}
           />
-          <HomeRow
-            label="Charles Xavier's School"
+          <DarkHomeRow
+            label="Charles Xavier's School for Gifted Youngsters"
             title="X-Men"
             heroes={homeData.xmen}
             onPress={handlePress}
@@ -1057,11 +1337,8 @@ const styles = StyleSheet.create({
 
   // ── Home layout ──────────────────────────────────────────────────────────────
   discoverContent: {
-    paddingHorizontal: 32,
-    paddingTop: 48,
+    paddingTop: 0,
     paddingBottom: 100,
-    maxWidth: 1200,
-    alignSelf: 'center',
     width: '100%',
   },
   footerRule: { height: 1, backgroundColor: COLORS.navy, opacity: 0.08, marginTop: 16 },
