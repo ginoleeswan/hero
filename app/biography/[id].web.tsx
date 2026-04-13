@@ -223,6 +223,14 @@ function SidebarSkeleton() {
   );
 }
 
+function preprocessHtml(html: string): string {
+  return html
+    // Swap lazy-load placeholder src with the real data-src
+    .replace(/\ssrc="data:image\/gif;base64,[^"]*"/gi, '')
+    .replace(/\sdata-src="/gi, ' src="')
+    .replace(/\sdata-srcset="/gi, ' srcset="');
+}
+
 function extractHeadings(html: string): { processedHtml: string; toc: string[] } {
   const toc: string[] = [];
   let i = 0;
@@ -253,7 +261,7 @@ export default function WebBiographyScreen() {
       .then((h) => {
         setHero(h);
         if (h?.description) {
-          const { processedHtml: html, toc: headings } = extractHeadings(h.description);
+          const { processedHtml: html, toc: headings } = extractHeadings(preprocessHtml(h.description));
           setProcessedHtml(html);
           setToc(headings);
         }
