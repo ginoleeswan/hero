@@ -114,6 +114,17 @@ export async function searchHeroes(
   return (data ?? []) as HeroSearchResult[];
 }
 
+export async function getXMen(limit = 25): Promise<Hero[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('*')
+    .or('group_affiliation.ilike.%x-men%,group_affiliation.ilike.%xmen%')
+    .order('issue_count', { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 export async function getAntiHeroes(limit = 20): Promise<Hero[]> {
   const { data, error } = await supabase
     .from('heroes')

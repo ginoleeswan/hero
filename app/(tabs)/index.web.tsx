@@ -18,7 +18,7 @@ import { heroGridImageSource, heroImageSource } from '../../src/constants/heroIm
 import { useSearch } from '../../src/contexts/SearchContext';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import {
-  getHeroesByCategory,
+  getXMen,
   getAntiHeroes,
   getVillains,
   getIconicHeroes,
@@ -890,7 +890,7 @@ export default function WebHomeScreen() {
     Promise.all([
       getSpotlightHeroes(10),
       getIconicHeroes(25),
-      getHeroesByCategory(),
+      getXMen(25),
       getAntiHeroes(20),
       getVillains(25),
       getHeroesByPublisher('marvel', 25),
@@ -899,11 +899,11 @@ export default function WebHomeScreen() {
       getHeroesByStatRanking('intelligence', 20),
       getNewlyAddedCV(25),
     ])
-      .then(([spotlight, iconic, cats, antiHeroes, villains, marvel, dc, strongest, mostIntelligent, newlyAdded]) => {
+      .then(([spotlight, iconic, xmen, antiHeroes, villains, marvel, dc, strongest, mostIntelligent, newlyAdded]) => {
         setHomeData({
           spotlight,
           iconic,
-          xmen: cats.xmen,
+          xmen,
           antiHeroes,
           villains,
           marvel,
