@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { getHeroById } from '../../src/lib/db/heroes';
+import { getHeroById, getHeroByComicvineId } from '../../src/lib/db/heroes';
 import { COLORS } from '../../src/constants/colors';
 import { heroImageSource } from '../../src/constants/heroImages';
 import type { Tables } from '../../src/types/database.generated';
@@ -339,6 +339,42 @@ export default function WebBiographyScreen() {
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  // Delegated click handler for biography links
+  const bioContentRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (!node) return;
+
+      const handleClick = async (e: MouseEvent) => {
+        const anchor = (e.target as Element).closest('a');
+        if (!anchor) return;
+        const href = anchor.getAttribute('href') ?? '';
+
+        // Character link: /slug/4005-{cvId}/
+        const charMatch = href.match(/\/slug\/4005-(\d+)\//);
+        if (charMatch) {
+          e.preventDefault();
+          const found = await getHeroByComicvineId(charMatch[1]);
+          if (found) {
+            router.push(`/character/${found.id}` as never);
+          } else {
+            window.open(`https://comicvine.gamespot.com${href}`, '_blank', 'noopener');
+          }
+          return;
+        }
+
+        // Any other relative /slug/ link — open externally
+        if (href.startsWith('/slug/')) {
+          e.preventDefault();
+          window.open(`https://comicvine.gamespot.com${href}`, '_blank', 'noopener');
+        }
+      };
+
+      node.addEventListener('click', handleClick as unknown as EventListener);
+      return () => node.removeEventListener('click', handleClick as unknown as EventListener);
+    },
+    [router],
+  );
+
   return (
     <ScrollView style={styles.scroll}>
       {/* Identity header strip */}
@@ -413,7 +449,7 @@ export default function WebBiographyScreen() {
               hero.description ? (
                 <>
                   <style>{HTML_STYLES}</style>
-                  <div dangerouslySetInnerHTML={{ __html: processedHtml }} />
+                  <div ref={bioContentRef} dangerouslySetInnerHTML={{ __html: processedHtml }} />
                 </>
               ) : (
                 <Text style={styles.empty}>No biography available.</Text>
@@ -429,7 +465,7 @@ export default function WebBiographyScreen() {
             hero.description ? (
               <>
                 <style>{HTML_STYLES}</style>
-                <div dangerouslySetInnerHTML={{ __html: processedHtml }} />
+                <div ref={bioContentRef} dangerouslySetInnerHTML={{ __html: processedHtml }} />
               </>
             ) : (
               <Text style={styles.empty}>No biography available.</Text>

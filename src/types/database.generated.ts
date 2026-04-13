@@ -14,8 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      cv_ingestion_state: {
+        Row: {
+          error: string | null
+          id: number
+          last_offset: number
+          last_run_at: string | null
+          status: string
+          target: number
+          total_ingested: number
+        }
+        Insert: {
+          error?: string | null
+          id?: number
+          last_offset?: number
+          last_run_at?: string | null
+          status?: string
+          target?: number
+          total_ingested?: number
+        }
+        Update: {
+          error?: string | null
+          id?: number
+          last_offset?: number
+          last_run_at?: string | null
+          status?: string
+          target?: number
+          total_ingested?: number
+        }
+        Relationships: []
+      }
       heroes: {
         Row: {
+          ai_stats_status: string | null
           aliases: string[] | null
           alignment: string | null
           alter_egos: string | null
@@ -23,6 +54,7 @@ export type Database = {
           category: string | null
           combat: number | null
           comicvine_enriched_at: string | null
+          comicvine_id: string | null
           creators: string[] | null
           description: string | null
           durability: number | null
@@ -56,6 +88,7 @@ export type Database = {
           race: string | null
           relatives: string | null
           speed: number | null
+          stats_source: string | null
           strength: number | null
           summary: string | null
           teams: string[] | null
@@ -63,6 +96,7 @@ export type Database = {
           weight_metric: string | null
         }
         Insert: {
+          ai_stats_status?: string | null
           aliases?: string[] | null
           alignment?: string | null
           alter_egos?: string | null
@@ -70,6 +104,7 @@ export type Database = {
           category?: string | null
           combat?: number | null
           comicvine_enriched_at?: string | null
+          comicvine_id?: string | null
           creators?: string[] | null
           description?: string | null
           durability?: number | null
@@ -103,6 +138,7 @@ export type Database = {
           race?: string | null
           relatives?: string | null
           speed?: number | null
+          stats_source?: string | null
           strength?: number | null
           summary?: string | null
           teams?: string[] | null
@@ -110,6 +146,7 @@ export type Database = {
           weight_metric?: string | null
         }
         Update: {
+          ai_stats_status?: string | null
           aliases?: string[] | null
           alignment?: string | null
           alter_egos?: string | null
@@ -117,6 +154,7 @@ export type Database = {
           category?: string | null
           combat?: number | null
           comicvine_enriched_at?: string | null
+          comicvine_id?: string | null
           creators?: string[] | null
           description?: string | null
           durability?: number | null
@@ -150,6 +188,7 @@ export type Database = {
           race?: string | null
           relatives?: string | null
           speed?: number | null
+          stats_source?: string | null
           strength?: number | null
           summary?: string | null
           teams?: string[] | null

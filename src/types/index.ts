@@ -88,8 +88,11 @@ export interface FirstIssue {
 
 // ─── Combined character screen data ──────────────────────────────────────────
 
+export type StatsSource = 'superheroapi' | 'ai' | null;
+
 export interface CharacterData {
   stats: HeroStats;
   details: HeroDetails;
   firstIssue: FirstIssue | null;
+  statsSource?: StatsSource;
 }

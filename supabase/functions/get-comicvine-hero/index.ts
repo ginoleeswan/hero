@@ -254,6 +254,7 @@ serve(async (req: Request) => {
         teams,
         first_issue_image_url: firstIssueImageUrl,
         comicvine_enriched_at: new Date().toISOString(),
+        comicvine_id: result.id ? String(result.id) : undefined,
       })
       .eq('id', heroId);
 

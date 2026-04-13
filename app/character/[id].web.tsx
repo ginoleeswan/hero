@@ -6,6 +6,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchHeroStats, fetchHeroDetails, fetchFirstIssue } from '../../src/lib/api';
 import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
+import { supabase } from '../../src/lib/supabase';
 import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
 import { getPowerIcon } from '../../src/constants/powerIcons';
 import { useAuth } from '../../src/hooks/useAuth';
@@ -46,6 +47,7 @@ export default function WebCharacterScreen() {
   const skeletonOpacity = useSkeletonAnim();
   const [data, setData] = useState<CharacterData | null>(null);
   const [comicVineLoading, setComicVineLoading] = useState(true);
+  const [statsGenerating, setStatsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [favourited, setFavourited] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
@@ -108,6 +110,37 @@ export default function WebCharacterScreen() {
               })
               .catch(() => {})
               .finally(() => setComicVineLoading(false));
+          }
+
+          // Lazy AI stat generation for CV characters with no stats yet
+          if (hero.intelligence === null && hero.ai_stats_status === 'pending') {
+            setStatsGenerating(true);
+            supabase.functions
+              .invoke<Record<string, number>>('generate-hero-stats', { body: { heroId: hero.id } })
+              .then(({ data: stats }) => {
+                if (stats && typeof stats.intelligence === 'number') {
+                  setData((prev) => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      statsSource: 'ai',
+                      stats: {
+                        ...prev.stats,
+                        powerstats: {
+                          intelligence: String(stats.intelligence),
+                          strength: String(stats.strength),
+                          speed: String(stats.speed),
+                          durability: String(stats.durability),
+                          power: String(stats.power),
+                          combat: String(stats.combat),
+                        },
+                      },
+                    };
+                  });
+                }
+              })
+              .catch(() => {})
+              .finally(() => setStatsGenerating(false));
           }
           return;
         }
@@ -211,17 +244,29 @@ export default function WebCharacterScreen() {
                 />
               </Pressable>
             )}
-            <Pressable
-              onPress={() =>
-                router.push(`/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`)
-              }
-              style={({ hovered }: { hovered?: boolean }) =>
-                [styles.compareBtn, hovered && (styles.compareBtnHover as object)] as object
-              }
-            >
-              <Ionicons name="git-compare-outline" size={15} color={COLORS.beige} />
-              <Text style={styles.compareBtnText}>Compare</Text>
-            </Pressable>
+            {powerScore !== null || statsGenerating ? (
+              <Pressable
+                onPress={() =>
+                  !statsGenerating &&
+                  router.push(`/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`)
+                }
+                style={({ hovered }: { hovered?: boolean }) =>
+                  [
+                    styles.compareBtn,
+                    hovered && !statsGenerating && (styles.compareBtnHover as object),
+                    statsGenerating && { opacity: 0.5 },
+                  ] as object
+                }
+              >
+                <Ionicons name="git-compare-outline" size={15} color={COLORS.beige} />
+                <Text style={styles.compareBtnText}>Compare</Text>
+              </Pressable>
+            ) : (
+              <View style={[styles.compareBtn, { opacity: 0.4 }]}>
+                <Ionicons name="git-compare-outline" size={15} color={COLORS.beige} />
+                <Text style={styles.compareBtnText}>No stats</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -291,7 +336,14 @@ export default function WebCharacterScreen() {
 
             <View style={styles.card}>
               <View style={styles.statCardHeader}>
-                <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
+                  {data.statsSource === 'ai' ? (
+                    <View style={styles.aiBadge}>
+                      <Text style={styles.aiBadgeText}>AI</Text>
+                    </View>
+                  ) : null}
+                </View>
                 {powerScore !== null ? (
                   <View style={[styles.powerScorePill, { backgroundColor: alignmentColor + '22' }]}>
                     <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
@@ -301,14 +353,26 @@ export default function WebCharacterScreen() {
                 ) : null}
               </View>
               <View style={styles.cardDivider} />
-              {STAT_CONFIG.map(({ key, label, color }) => (
-                <StatBar
-                  key={key}
-                  label={label}
-                  value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
-                  color={color}
-                />
-              ))}
+              {statsGenerating ? (
+                STAT_CONFIG.map(({ key }) => (
+                  <SkeletonBlock
+                    key={key}
+                    opacity={skeletonOpacity}
+                    height={10}
+                    borderRadius={5}
+                    style={{ marginBottom: 14 }}
+                  />
+                ))
+              ) : (
+                STAT_CONFIG.map(({ key, label, color }) => (
+                  <StatBar
+                    key={key}
+                    label={label}
+                    value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
+                    color={color}
+                  />
+                ))
+              )}
             </View>
           </View>
 
@@ -635,7 +699,14 @@ export default function WebCharacterScreen() {
 
           <View style={styles.card}>
             <View style={styles.statCardHeader}>
-              <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
+                {data.statsSource === 'ai' ? (
+                  <View style={styles.aiBadge}>
+                    <Text style={styles.aiBadgeText}>AI</Text>
+                  </View>
+                ) : null}
+              </View>
               {powerScore !== null ? (
                 <View style={[styles.powerScorePill, { backgroundColor: alignmentColor + '22' }]}>
                   <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
@@ -645,14 +716,26 @@ export default function WebCharacterScreen() {
               ) : null}
             </View>
             <View style={styles.cardDivider} />
-            {STAT_CONFIG.map(({ key, label, color }) => (
-              <StatBar
-                key={key}
-                label={label}
-                value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
-                color={color}
-              />
-            ))}
+            {statsGenerating ? (
+              STAT_CONFIG.map(({ key }) => (
+                <SkeletonBlock
+                  key={key}
+                  opacity={skeletonOpacity}
+                  height={10}
+                  borderRadius={5}
+                  style={{ marginBottom: 14 }}
+                />
+              ))
+            ) : (
+              STAT_CONFIG.map(({ key, label, color }) => (
+                <StatBar
+                  key={key}
+                  label={label}
+                  value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
+                  color={color}
+                />
+              ))
+            )}
           </View>
 
           {/* Segmented tab bar */}
@@ -1392,6 +1475,20 @@ const styles = StyleSheet.create({
   powerScoreValue: {
     fontFamily: 'Flame-Regular',
     fontSize: 17,
+  },
+  aiBadge: {
+    backgroundColor: 'rgba(41,60,67,0.08)',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  aiBadgeText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 9,
+    color: COLORS.navy,
+    opacity: 0.5,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
   },
 
   // Cards

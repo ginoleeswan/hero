@@ -1,6 +1,6 @@
 import { supabase } from '../supabase';
 import type { Tables } from '../../types/database.generated';
-import type { CharacterData, MovieAppearance } from '../../types';
+import type { CharacterData, MovieAppearance, StatsSource } from '../../types';
 
 export type Hero = Tables<'heroes'>;
 export type HeroCategory = 'popular' | 'villain' | 'xmen';
@@ -62,6 +62,18 @@ export async function getHeroesByCategory(): Promise<HeroesByCategory> {
     villain: data.filter((h) => h.category === 'villain'),
     xmen: data.filter((h) => h.category === 'xmen'),
   };
+}
+
+export async function getHeroByComicvineId(cvId: string): Promise<Hero | null> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('*')
+    .eq('comicvine_id', cvId)
+    .single();
+  if (error && error.code !== 'PGRST116') {
+    console.warn('[getHeroByComicvineId] Supabase error:', error.message);
+  }
+  return data ?? null;
 }
 
 export async function getHeroById(id: string): Promise<Hero | null> {
@@ -311,5 +323,6 @@ export function heroRowToCharacterData(hero: Hero): CharacterData {
     firstIssue: hero.first_issue_image_url
       ? { id: '', imageUrl: hero.first_issue_image_url, name: null, coverDate: null }
       : null,
+    statsSource: (hero.stats_source as StatsSource) ?? null,
   };
 }
