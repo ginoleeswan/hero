@@ -62,12 +62,12 @@ const rowScrollStyle = {
   // on all four sides. Negative margins compensate so layout spacing is unchanged.
   paddingTop: 16,
   paddingBottom: 64,
-  paddingLeft: 48,
-  paddingRight: 48,
+  paddingLeft: 16,
+  paddingRight: 16,
   marginTop: -16,
   marginBottom: -52, // net: 64 - 52 = 12 (same as original paddingBottom)
-  marginLeft: -48,
-  marginRight: -48,
+  marginLeft: -16,
+  marginRight: -16,
   scrollbarWidth: 'none',
 };
 
@@ -484,8 +484,10 @@ const row = StyleSheet.create({
 // ── Home skeleton ─────────────────────────────────────────────────────────────
 function HomeSkeleton() {
   const opacity = useSkeletonAnim();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 640;
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.discoverContent}>
+    <ScrollView style={styles.scroll} contentContainerStyle={[styles.discoverContent, isMobile && { paddingHorizontal: 16, paddingTop: 20 }] as object}>
       <SkeletonBlock
         opacity={opacity}
         height={480}
@@ -813,7 +815,7 @@ export default function WebHomeScreen() {
       ) : !homeData ? (
         <HomeSkeleton />
       ) : (
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.discoverContent}>
+        <ScrollView style={styles.scroll} contentContainerStyle={[styles.discoverContent, isMobile && { paddingHorizontal: 16, paddingTop: 20 }] as object}>
           {/* Spotlight */}
           {spotlightHero && (
             <WebSpotlight
