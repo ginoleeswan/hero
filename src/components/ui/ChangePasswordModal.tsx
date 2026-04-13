@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
@@ -31,6 +32,17 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
   const [error, setError] = useState<string | null>(null);
   const nextRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
+  const slideAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isWeb) return;
+    Animated.spring(slideAnim, {
+      toValue: visible ? 1 : 0,
+      useNativeDriver: true,
+      bounciness: 0,
+      speed: 14,
+    }).start();
+  }, [visible, slideAnim]);
 
   const reset = () => {
     setCurrent('');
@@ -75,7 +87,7 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
   return (
     <Modal
       visible={visible}
-      animationType={isWeb ? 'fade' : 'slide'}
+      animationType="fade"
       transparent
       onRequestClose={handleClose}
     >
@@ -84,7 +96,19 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Pressable style={styles.backdrop} onPress={handleClose} />
-        <View style={isWeb ? (styles.dialog as object) : styles.sheet}>
+        <Animated.View
+          style={[
+            isWeb ? (styles.dialog as object) : styles.sheet,
+            !isWeb && {
+              transform: [{
+                translateY: slideAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [600, 0],
+                }),
+              }],
+            },
+          ]}
+        >
           {!isWeb && <View style={styles.handle} />}
 
           <View style={styles.header}>
@@ -170,7 +194,7 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
               <Text style={styles.buttonText}>Update Password</Text>
             )}
           </Pressable>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );

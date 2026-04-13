@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
@@ -26,6 +27,17 @@ export function EditDisplayNameModal({ visible, currentName, onClose, onSubmit }
   const [value, setValue] = useState(currentName);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<TextInput>(null);
+  const slideAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isWeb) return;
+    Animated.spring(slideAnim, {
+      toValue: visible ? 1 : 0,
+      useNativeDriver: true,
+      bounciness: 0,
+      speed: 14,
+    }).start();
+  }, [visible, slideAnim]);
 
   useEffect(() => {
     if (visible) {
@@ -54,7 +66,7 @@ export function EditDisplayNameModal({ visible, currentName, onClose, onSubmit }
   return (
     <Modal
       visible={visible}
-      animationType={isWeb ? 'fade' : 'slide'}
+      animationType="fade"
       transparent
       onRequestClose={handleClose}
     >
@@ -63,7 +75,19 @@ export function EditDisplayNameModal({ visible, currentName, onClose, onSubmit }
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Pressable style={styles.backdrop} onPress={handleClose} />
-        <View style={isWeb ? (styles.dialog as object) : styles.sheet}>
+        <Animated.View
+          style={[
+            isWeb ? (styles.dialog as object) : styles.sheet,
+            !isWeb && {
+              transform: [{
+                translateY: slideAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [600, 0],
+                }),
+              }],
+            },
+          ]}
+        >
           {!isWeb && <View style={styles.handle} />}
 
           <View style={styles.header}>
@@ -101,7 +125,7 @@ export function EditDisplayNameModal({ visible, currentName, onClose, onSubmit }
               <Text style={styles.buttonText}>Save</Text>
             )}
           </Pressable>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );
