@@ -66,22 +66,20 @@ const HTML_STYLES = `
   img {
     max-width: 100%;
     height: auto;
-    border-radius: 10px;
-    box-shadow: 0 4px 16px rgba(41,60,67,0.12);
+    border-radius: 8px;
+    box-shadow: 0 3px 12px rgba(41,60,67,0.14);
     margin: 16px 0;
     display: block;
   }
-  figure {
-    max-width: 100%;
-    margin: 20px 0;
-  }
+  figure { max-width: 100%; margin: 0; }
   figcaption {
-    font-size: 12px;
+    font-size: 11px;
     color: ${COLORS.navy};
     opacity: 0.5;
     text-align: center;
-    margin-top: 6px;
+    margin-top: 5px;
     font-style: italic;
+    line-height: 1.4;
   }
   table {
     width: 100%;
@@ -106,27 +104,59 @@ const HTML_STYLES = `
   }
   tr:last-child td { border-bottom: none; }
 
-  /* ── Fix ComicVine fluid-height image embeds ── */
-  /* Outer figure has inline style="width: 1340px" and align="right" */
-  [data-embed-type="image"] {
-    float: none !important;
-    width: auto !important;
-    max-width: 100% !important;
-    margin: 16px 0 !important;
+  /* ── ComicVine image embeds — editorial float layout ── */
+
+  /* Right-aligned: float into text column */
+  [data-embed-type="image"][data-align="right"] {
+    float: right !important;
+    width: 42% !important;
+    min-width: 140px !important;
+    margin: 2px 0 16px 22px !important;
   }
-  /* The anchor uses padding-bottom % to fake aspect ratio — collapses without CV stylesheet */
+  /* Left-aligned: float left */
+  [data-embed-type="image"][data-align="left"] {
+    float: left !important;
+    width: 42% !important;
+    min-width: 140px !important;
+    margin: 2px 22px 16px 0 !important;
+  }
+  /* Center or unset: full-width block */
+  [data-embed-type="image"][data-align="center"],
+  [data-embed-type="image"]:not([data-align="right"]):not([data-align="left"]) {
+    float: none !important;
+    width: 100% !important;
+    margin: 20px 0 !important;
+  }
+  /* Headings clear floats so they never sit beside an image */
+  h2, h3 { clear: both; }
+
+  /* Collapse the fluid-height anchor */
   a.fluid-height {
     display: block !important;
     height: auto !important;
     padding-bottom: 0 !important;
     position: static !important;
   }
+  /* Image fills the figure box */
   a.fluid-height img {
     position: static !important;
-    width: auto !important;
+    width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
     display: block !important;
+    margin: 0 !important;
+    border-radius: 8px;
+    box-shadow: 0 3px 12px rgba(41,60,67,0.14);
+  }
+
+  /* Mobile: collapse all floats to full-width */
+  @media (max-width: 600px) {
+    [data-embed-type="image"][data-align="right"],
+    [data-embed-type="image"][data-align="left"] {
+      float: none !important;
+      width: 100% !important;
+      margin: 16px 0 !important;
+    }
   }
 `;
 
@@ -225,10 +255,14 @@ function SidebarSkeleton() {
 
 function preprocessHtml(html: string): string {
   return html
+    // Remove noscript blocks — they contain a duplicate real <img> that renders via innerHTML
+    .replace(/<noscript>[\s\S]*?<\/noscript>/gi, '')
     // Swap lazy-load placeholder src with the real data-src
     .replace(/\ssrc="data:image\/gif;base64,[^"]*"/gi, '')
     .replace(/\sdata-src="/gi, ' src="')
-    .replace(/\sdata-srcset="/gi, ' srcset="');
+    .replace(/\sdata-srcset="/gi, ' srcset="')
+    // Strip hard-coded sizes — let browser pick the right srcset variant by display size
+    .replace(/\ssizes="[^"]*"/gi, '');
 }
 
 function extractHeadings(html: string): { processedHtml: string; toc: string[] } {
