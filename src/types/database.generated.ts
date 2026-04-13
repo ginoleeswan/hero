@@ -43,7 +43,8 @@ export type Database = {
           image_url: string | null
           intelligence: number | null
           issue_count: number | null
-          movies: string[] | null
+          movie_count: number | null
+          movies: Json[] | null
           name: string
           occupation: string | null
           origin: string | null
@@ -89,7 +90,8 @@ export type Database = {
           image_url?: string | null
           intelligence?: number | null
           issue_count?: number | null
-          movies?: string[] | null
+          movie_count?: number | null
+          movies?: Json[] | null
           name: string
           occupation?: string | null
           origin?: string | null
@@ -135,7 +137,8 @@ export type Database = {
           image_url?: string | null
           intelligence?: number | null
           issue_count?: number | null
-          movies?: string[] | null
+          movie_count?: number | null
+          movies?: Json[] | null
           name?: string
           occupation?: string | null
           origin?: string | null

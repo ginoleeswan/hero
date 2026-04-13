@@ -57,6 +57,12 @@ export interface HeroStats {
 
 // ─── ComicVine response types (parsed) ───────────────────────────────────────
 
+export interface MovieAppearance {
+  name: string;
+  year: string | null;
+  imageUrl: string | null;
+}
+
 export interface HeroDetails {
   summary: string | null;
   publisher: string | null;
@@ -68,7 +74,8 @@ export interface HeroDetails {
   creators: string[] | null;
   enemies: string[] | null;
   friends: string[] | null;
-  movies: string[] | null;
+  movies: MovieAppearance[] | null;
+  movieCount: number | null;
   teams: string[] | null;
 }
 

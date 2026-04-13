@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import type { HeroStats, HeroDetails, FirstIssue } from '../types';
+import type { HeroStats, HeroDetails, FirstIssue, MovieAppearance } from '../types';
 import { supabase } from './supabase';
 
 const SUPERHERO_API_KEY = Constants.expoConfig?.extra?.superheroApiKey as string;
@@ -101,7 +101,8 @@ export async function fetchHeroDetails(heroId: string, heroName: string): Promis
     creators: string[] | null;
     enemies: string[] | null;
     friends: string[] | null;
-    movies: string[] | null;
+    movies: MovieAppearance[] | null;
+    movieCount: number | null;
     teams: string[] | null;
   }>('get-comicvine-hero', { body: { heroId, heroName } });
 
@@ -119,6 +120,7 @@ export async function fetchHeroDetails(heroId: string, heroName: string): Promis
       enemies: null,
       friends: null,
       movies: null,
+      movieCount: null,
       teams: null,
     };
   }
@@ -135,6 +137,7 @@ export async function fetchHeroDetails(heroId: string, heroName: string): Promis
     enemies: data.enemies ?? null,
     friends: data.friends ?? null,
     movies: data.movies ?? null,
+    movieCount: data.movieCount ?? null,
     teams: data.teams ?? null,
   };
 }

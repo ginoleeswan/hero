@@ -29,6 +29,7 @@ const NULL_RESPONSE = {
   enemies: null,
   friends: null,
   movies: null,
+  movieCount: null,
   teams: null,
 };
 
@@ -87,7 +88,8 @@ serve(async (req: Request) => {
     let creators: string[] | null = null;
     let enemies: string[] | null = null;
     let friends: string[] | null = null;
-    let movies: string[] | null = null;
+    let movies: Array<{ name: string; year: string | null; imageUrl: string | null }> | null = null;
+    let movieCount: number | null = null;
     let teams: string[] | null = null;
 
     if (result.id) {
@@ -175,19 +177,48 @@ serve(async (req: Request) => {
           : [];
         friends = rawFriends.length > 0 ? rawFriends : null;
 
-        // movies — "Title (YYYY)" formatted strings
-        const rawMovies: string[] = Array.isArray(d.movies)
-          ? d.movies
-              .map((m: unknown) => {
-                if (!m || typeof (m as Record<string, unknown>).name !== 'string') return null;
-                const name = (m as Record<string, unknown>).name as string;
-                const date = (m as Record<string, unknown>).date;
-                const year = typeof date === 'string' ? date.slice(0, 4) : null;
-                return year ? `${name} (${year})` : name;
-              })
-              .filter((s: string | null): s is string => s !== null)
-          : [];
-        movies = rawMovies.length > 0 ? rawMovies : null;
+        // movies — fetch poster images for first 10, store as { name, year, imageUrl }
+        const rawMovieItems: Array<{ name: string; year: string | null; apiDetailUrl: string | null }> =
+          Array.isArray(d.movies)
+            ? d.movies
+                .filter(
+                  (m: unknown) =>
+                    m && typeof (m as Record<string, unknown>).name === 'string',
+                )
+                .map((m: unknown) => {
+                  const mo = m as Record<string, unknown>;
+                  const name = mo.name as string;
+                  const date = typeof mo.date === 'string' ? mo.date : null;
+                  const year = date ? date.slice(0, 4) : null;
+                  const apiDetailUrl =
+                    typeof mo.api_detail_url === 'string' ? mo.api_detail_url : null;
+                  return { name, year, apiDetailUrl };
+                })
+            : [];
+
+        movieCount = rawMovieItems.length > 0 ? rawMovieItems.length : null;
+
+        const itemsToEnrich = rawMovieItems.slice(0, 10);
+        const enriched = await Promise.all(
+          itemsToEnrich.map(async ({ name, year, apiDetailUrl }) => {
+            if (!apiDetailUrl) return { name, year, imageUrl: null };
+            try {
+              const params = new URLSearchParams({
+                api_key: COMICVINE_API_KEY,
+                format: 'json',
+                field_list: 'image',
+              });
+              const res = await fetch(`${apiDetailUrl}?${params}`);
+              if (!res.ok) return { name, year, imageUrl: null };
+              const json = await res.json();
+              const imageUrl: string | null = json.results?.image?.medium_url ?? null;
+              return { name, year, imageUrl };
+            } catch {
+              return { name, year, imageUrl: null };
+            }
+          }),
+        );
+        movies = enriched.length > 0 ? enriched : null;
 
         // teams — names, capped at 20
         const rawTeams: string[] = Array.isArray(d.teams)
@@ -220,7 +251,8 @@ serve(async (req: Request) => {
         creators,
         enemies,
         friends,
-        movies,
+        movies: movies as unknown as Record<string, unknown>[],
+        movie_count: movieCount,
         teams,
         first_issue_image_url: firstIssueImageUrl,
         comicvine_enriched_at: new Date().toISOString(),
@@ -239,6 +271,7 @@ serve(async (req: Request) => {
       enemies,
       friends,
       movies,
+      movieCount,
       teams,
     });
   } catch (err) {

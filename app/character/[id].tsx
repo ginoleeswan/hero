@@ -23,6 +23,7 @@ import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkele
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
+import { MovieStrip } from '../../src/components/MovieStrip';
 import type { CharacterData } from '../../src/types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -301,6 +302,7 @@ export default function CharacterScreen() {
               enemies: null,
               friends: null,
               movies: null,
+              movieCount: null,
               teams: null,
             },
             firstIssue: null,
@@ -325,7 +327,7 @@ export default function CharacterScreen() {
       .then((hero) => {
         if (hero?.enriched_at) {
           setData(heroRowToCharacterData(hero));
-          const needsComicVine = !hero.comicvine_enriched_at || hero.powers === null;
+          const needsComicVine = !hero.comicvine_enriched_at || hero.powers === null || !hero.movies?.length;
           setComicVineLoading(needsComicVine);
 
           // If ComicVine not enriched yet, or powers column not yet populated, fetch in background
@@ -713,33 +715,22 @@ export default function CharacterScreen() {
             {comicVineLoading ? (
               <SkeletonProvider>
                 <Section title="On Screen">
-                  {[0, 1, 2].map((i) => (
-                    <View key={i} style={[styles.movieRow, { alignItems: 'center' }]}>
-                      <Skeleton width={28} height={28} borderRadius={6} />
-                      <View style={{ gap: 5 }}>
-                        <Skeleton width={140} height={12} borderRadius={4} />
-                        <Skeleton width={36} height={10} borderRadius={4} />
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    {[0, 1, 2].map((i) => (
+                      <View key={i} style={{ alignItems: 'center', gap: 6 }}>
+                        <Skeleton width={80} height={120} borderRadius={8} />
+                        <Skeleton width={60} height={10} borderRadius={4} />
                       </View>
-                    </View>
-                  ))}
+                    ))}
+                  </View>
                 </Section>
               </SkeletonProvider>
             ) : data.details.movies?.length ? (
               <Section title="On Screen">
-                {data.details.movies.map((entry, i) => {
-                  const match = entry.match(/^(.+?)\s*\((\d{4})\)$/);
-                  const title = match ? match[1] : entry;
-                  const year = match ? match[2] : null;
-                  return (
-                    <View key={i} style={styles.movieRow}>
-                      <Text style={styles.movieIcon}>🎬</Text>
-                      <View style={styles.movieMeta}>
-                        <Text style={styles.movieTitle}>{title}</Text>
-                        {year ? <Text style={styles.movieYear}>{year}</Text> : null}
-                      </View>
-                    </View>
-                  );
-                })}
+                <MovieStrip
+                  movies={data.details.movies}
+                  totalCount={data.details.movieCount ?? data.details.movies.length}
+                />
               </Section>
             ) : null}
 
@@ -1088,24 +1079,4 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // On Screen
-  movieRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 10,
-  },
-  movieIcon: { fontSize: 20 },
-  movieMeta: { flex: 1 },
-  movieTitle: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 13,
-    color: COLORS.navy,
-  },
-  movieYear: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 11,
-    color: COLORS.grey,
-    marginTop: 1,
-  },
 });

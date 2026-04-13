@@ -1,6 +1,6 @@
 import { supabase } from '../supabase';
 import type { Tables } from '../../types/database.generated';
-import type { CharacterData } from '../../types';
+import type { CharacterData, MovieAppearance } from '../../types';
 
 export type Hero = Tables<'heroes'>;
 export type HeroCategory = 'popular' | 'villain' | 'xmen';
@@ -304,7 +304,8 @@ export function heroRowToCharacterData(hero: Hero): CharacterData {
       creators: hero.creators ?? null,
       enemies: hero.enemies ?? null,
       friends: hero.friends ?? null,
-      movies: hero.movies ?? null,
+      movies: hero.movies ? (hero.movies as unknown as MovieAppearance[]) : null,
+      movieCount: hero.movie_count ?? null,
       teams: hero.teams ?? null,
     },
     firstIssue: hero.first_issue_image_url
