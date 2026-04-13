@@ -114,6 +114,14 @@ export async function searchHeroes(
   return (data ?? []) as HeroSearchResult[];
 }
 
+export async function getHeroCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from('heroes')
+    .select('*', { count: 'exact', head: true });
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
 export async function getXMen(limit = 25): Promise<Hero[]> {
   const { data, error } = await supabase
     .from('heroes')

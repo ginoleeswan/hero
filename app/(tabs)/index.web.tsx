@@ -18,6 +18,7 @@ import { heroGridImageSource, heroImageSource } from '../../src/constants/heroIm
 import { useSearch } from '../../src/contexts/SearchContext';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import {
+  getHeroCount,
   getXMen,
   getAntiHeroes,
   getVillains,
@@ -851,11 +852,14 @@ export default function WebHomeScreen() {
   const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
   const [spotlightIndex, setSpotlightIndex] = useState(0);
+  const [totalHeroCount, setTotalHeroCount] = useState<number | null>(null);
 
   const isSearchActive = query.trim() !== '' || publisher !== 'All';
 
   // Load search heroes + home data in parallel
   useEffect(() => {
+    getHeroCount().then(setTotalHeroCount).catch(() => {});
+
     searchHeroes('', 'All', 600)
       .then((heroes) => {
         setAllHeroes(heroes);
@@ -932,8 +936,6 @@ export default function WebHomeScreen() {
 
   const displayed = filtered.slice(0, DISPLAY_LIMIT);
   const hasMore = filtered.length > DISPLAY_LIMIT;
-  const heroCount = loadingAll ? null : allHeroes.length;
-
   const handleClear = useCallback(() => {
     setQuery('');
     setPublisher('All');
@@ -983,8 +985,8 @@ export default function WebHomeScreen() {
                   ? hasMore
                     ? `${DISPLAY_LIMIT} of ${filtered.length} heroes`
                     : `${filtered.length} hero${filtered.length !== 1 ? 'es' : ''}`
-                  : heroCount !== null
-                    ? `${heroCount} heroes in the encyclopedia`
+                  : totalHeroCount !== null
+                    ? `${totalHeroCount.toLocaleString()} heroes in the encyclopedia`
                     : ''}
             </Text>
           </View>
@@ -1022,8 +1024,8 @@ export default function WebHomeScreen() {
                 <Text style={styles.countBadge as object}>
                   {isSearchActive
                     ? `${filtered.length} heroes`
-                    : heroCount !== null
-                      ? `${heroCount} heroes`
+                    : totalHeroCount !== null
+                      ? `${totalHeroCount.toLocaleString()} heroes`
                       : ''}
                 </Text>
               )}
