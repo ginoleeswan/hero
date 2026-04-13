@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  RefreshControl,
   Dimensions,
   Alert,
   TextInput,
@@ -18,7 +19,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SquircleMask } from '../../src/components/ui/SquircleMask';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { ChangePasswordModal } from '../../src/components/ui/ChangePasswordModal';
@@ -72,6 +73,7 @@ export default function ProfileScreen() {
   } = useProfile(user?.id);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -80,13 +82,20 @@ export default function ProfileScreen() {
   const [savingName, setSavingName] = useState(false);
   const nameInputRef = useRef<TextInput>(null);
 
-  useEffect(() => {
+  const fetchFavourites = useCallback(() => {
     if (!user) return;
     getUserFavouriteHeroes(user.id)
       .then(setFavourites)
       .catch(() => setFavourites([]))
-      .finally(() => setLoading(false));
+      .finally(() => { setLoading(false); setRefreshing(false); });
   }, [user]);
+
+  useFocusEffect(useCallback(() => { fetchFavourites(); }, [fetchFavourites]));
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchFavourites();
+  }, [fetchFavourites]);
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -185,6 +194,14 @@ export default function ProfileScreen() {
         automaticallyAdjustContentInsets={false}
         contentInsetAdjustmentBehavior="never"
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={COLORS.orange}
+            colors={[COLORS.orange]}
+          />
+        }
       >
         {/* Cover banner */}
         <TouchableOpacity
@@ -288,38 +305,41 @@ export default function ProfileScreen() {
         {/* Identity */}
         <View style={styles.identityBlock}>
           {editingName ? (
-            <View style={styles.nameEditRow}>
-              <TextInput
-                ref={nameInputRef}
-                style={styles.nameInput}
-                value={nameValue}
-                onChangeText={setNameValue}
-                returnKeyType="done"
-                onSubmitEditing={handleSaveName}
-                autoCapitalize="words"
-                maxLength={40}
-                placeholderTextColor="rgba(41,60,67,0.3)"
-              />
-              <TouchableOpacity
-                onPress={handleSaveName}
-                disabled={savingName}
-                style={styles.nameAction}
-                activeOpacity={0.7}
-              >
-                {savingName ? (
-                  <ActivityIndicator size="small" color={COLORS.orange} />
-                ) : (
-                  <Ionicons name="checkmark" size={20} color={COLORS.orange} />
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleCancelName}
-                style={styles.nameAction}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="close" size={20} color={COLORS.grey} />
-              </TouchableOpacity>
-            </View>
+            <>
+              <View style={styles.nameEditRow}>
+                <TextInput
+                  ref={nameInputRef}
+                  style={styles.nameInput}
+                  value={nameValue}
+                  onChangeText={setNameValue}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSaveName}
+                  autoCapitalize="words"
+                  maxLength={40}
+                  placeholderTextColor="rgba(41,60,67,0.3)"
+                />
+                <TouchableOpacity
+                  onPress={handleSaveName}
+                  disabled={savingName}
+                  style={styles.nameAction}
+                  activeOpacity={0.7}
+                >
+                  {savingName ? (
+                    <ActivityIndicator size="small" color={COLORS.orange} />
+                  ) : (
+                    <Ionicons name="checkmark" size={20} color={COLORS.orange} />
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleCancelName}
+                  style={styles.nameAction}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close" size={20} color={COLORS.grey} />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.nameCharCount}>{nameValue.length}/40</Text>
+            </>
           ) : (
             <TouchableOpacity onPress={startEditingName} activeOpacity={0.7} style={styles.nameRow}>
               <Text style={styles.username}>{name}</Text>
@@ -364,6 +384,13 @@ export default function ProfileScreen() {
               <Text style={styles.emptyBody}>
                 Open any hero and tap the heart to build your collection
               </Text>
+              <TouchableOpacity
+                onPress={() => router.push('/')}
+                style={styles.browseBtn}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.browseBtnText}>Browse heroes</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.grid}>
@@ -636,6 +663,14 @@ const styles = StyleSheet.create({
   nameAction: {
     padding: 6,
   },
+  nameCharCount: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11,
+    color: 'rgba(41,60,67,0.35)',
+    alignSelf: 'flex-end',
+    marginTop: 2,
+    marginBottom: 4,
+  },
   email: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
@@ -742,6 +777,18 @@ const styles = StyleSheet.create({
     color: COLORS.grey,
     textAlign: 'center',
     lineHeight: 19,
+    marginBottom: 20,
+  },
+  browseBtn: {
+    backgroundColor: COLORS.navy,
+    borderRadius: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  browseBtnText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: COLORS.beige,
   },
 
   // Account section

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -53,13 +53,21 @@ export default function WebProfileScreen() {
   const [savingName, setSavingName] = useState(false);
   const nameInputRef = useRef<TextInput>(null);
 
-  useEffect(() => {
+  const fetchFavourites = useCallback(() => {
     if (!user) return;
     getUserFavouriteHeroes(user.id)
       .then(setFavourites)
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [user]);
+
+  useEffect(() => { fetchFavourites(); }, [fetchFavourites]);
+
+  useEffect(() => {
+    const handler = () => { if (!document.hidden) fetchFavourites(); };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, [fetchFavourites]);
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -208,27 +216,30 @@ export default function WebProfileScreen() {
           {/* ── Identity ── */}
           <View style={mob.identityBlock}>
             {editingName ? (
-              <View style={mob.nameEditRow}>
-                <TextInput
-                  ref={nameInputRef}
-                  style={mob.nameInput as object}
-                  value={nameValue}
-                  onChangeText={setNameValue}
-                  returnKeyType="done"
-                  onSubmitEditing={handleSaveName}
-                  autoCapitalize="words"
-                  maxLength={40}
-                />
-                <Pressable onPress={handleSaveName} disabled={savingName} style={mob.nameAction}>
-                  {savingName
-                    ? <ActivityIndicator size="small" color={COLORS.orange} />
-                    : <Ionicons name="checkmark" size={20} color={COLORS.orange} />
-                  }
-                </Pressable>
-                <Pressable onPress={() => { setEditingName(false); setNameValue(''); }} style={mob.nameAction}>
-                  <Ionicons name="close" size={20} color={COLORS.grey} />
-                </Pressable>
-              </View>
+              <>
+                <View style={mob.nameEditRow}>
+                  <TextInput
+                    ref={nameInputRef}
+                    style={mob.nameInput as object}
+                    value={nameValue}
+                    onChangeText={setNameValue}
+                    returnKeyType="done"
+                    onSubmitEditing={handleSaveName}
+                    autoCapitalize="words"
+                    maxLength={40}
+                  />
+                  <Pressable onPress={handleSaveName} disabled={savingName} style={mob.nameAction}>
+                    {savingName
+                      ? <ActivityIndicator size="small" color={COLORS.orange} />
+                      : <Ionicons name="checkmark" size={20} color={COLORS.orange} />
+                    }
+                  </Pressable>
+                  <Pressable onPress={() => { setEditingName(false); setNameValue(''); }} style={mob.nameAction}>
+                    <Ionicons name="close" size={20} color={COLORS.grey} />
+                  </Pressable>
+                </View>
+                <Text style={mob.nameCharCount}>{nameValue.length}/40</Text>
+              </>
             ) : (
               <Pressable onPress={startEditingName} style={mob.nameRow}>
                 <Text style={mob.username}>{name}</Text>
@@ -267,6 +278,14 @@ export default function WebProfileScreen() {
                 <Text style={mob.emptyBody}>
                   Open any hero and tap the heart to build your collection
                 </Text>
+                <Pressable
+                  onPress={() => router.push('/')}
+                  style={({ hovered }: { hovered?: boolean }) =>
+                    [mob.browseBtn, hovered && (mob.browseBtnHover as object)] as object
+                  }
+                >
+                  <Text style={mob.browseBtnText}>Browse heroes</Text>
+                </Pressable>
               </View>
             ) : (
               <View style={mob.grid}>
@@ -453,27 +472,30 @@ export default function WebProfileScreen() {
               )}
 
               {editingName ? (
-                <View style={desk.nameEditRow}>
-                  <TextInput
-                    ref={nameInputRef}
-                    style={desk.nameInput as object}
-                    value={nameValue}
-                    onChangeText={setNameValue}
-                    returnKeyType="done"
-                    onSubmitEditing={handleSaveName}
-                    autoCapitalize="words"
-                    maxLength={40}
-                  />
-                  <Pressable onPress={handleSaveName} disabled={savingName} style={desk.nameAction}>
-                    {savingName
-                      ? <ActivityIndicator size="small" color={COLORS.orange} />
-                      : <Ionicons name="checkmark" size={20} color={COLORS.orange} />
-                    }
-                  </Pressable>
-                  <Pressable onPress={() => { setEditingName(false); setNameValue(''); }} style={desk.nameAction}>
-                    <Ionicons name="close" size={20} color={COLORS.grey} />
-                  </Pressable>
-                </View>
+                <>
+                  <View style={desk.nameEditRow}>
+                    <TextInput
+                      ref={nameInputRef}
+                      style={desk.nameInput as object}
+                      value={nameValue}
+                      onChangeText={setNameValue}
+                      returnKeyType="done"
+                      onSubmitEditing={handleSaveName}
+                      autoCapitalize="words"
+                      maxLength={40}
+                    />
+                    <Pressable onPress={handleSaveName} disabled={savingName} style={desk.nameAction}>
+                      {savingName
+                        ? <ActivityIndicator size="small" color={COLORS.orange} />
+                        : <Ionicons name="checkmark" size={20} color={COLORS.orange} />
+                      }
+                    </Pressable>
+                    <Pressable onPress={() => { setEditingName(false); setNameValue(''); }} style={desk.nameAction}>
+                      <Ionicons name="close" size={20} color={COLORS.grey} />
+                    </Pressable>
+                  </View>
+                  <Text style={desk.nameCharCount}>{nameValue.length}/40</Text>
+                </>
               ) : (
                 <Pressable onPress={startEditingName} style={desk.nameRow as object}>
                   <Text style={desk.username}>{name}</Text>
@@ -758,6 +780,14 @@ const mob = StyleSheet.create({
     outlineStyle: 'none',
   } as object,
   nameAction: { padding: 6 },
+  nameCharCount: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11,
+    color: 'rgba(41,60,67,0.35)',
+    alignSelf: 'flex-end',
+    marginTop: 2,
+    marginBottom: 4,
+  },
   email: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
@@ -831,6 +861,21 @@ const mob = StyleSheet.create({
     color: COLORS.grey,
     textAlign: 'center',
     lineHeight: 19,
+    marginBottom: 20,
+  },
+  browseBtn: {
+    backgroundColor: COLORS.navy,
+    borderRadius: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    cursor: 'pointer',
+    transition: 'opacity 150ms ease',
+  } as object,
+  browseBtnHover: { opacity: 0.8 } as object,
+  browseBtnText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: COLORS.beige,
   },
 
   // Account
@@ -1064,6 +1109,14 @@ const desk = StyleSheet.create({
     outlineStyle: 'none',
   } as object,
   nameAction: { padding: 6 },
+  nameCharCount: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11,
+    color: 'rgba(41,60,67,0.35)',
+    alignSelf: 'flex-end',
+    marginTop: 2,
+    marginBottom: 4,
+  },
   email: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
