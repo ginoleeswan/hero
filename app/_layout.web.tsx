@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Nunito_400Regular, Nunito_700Bold, Nunito_900Black } from '@expo-google-fonts/nunito';
 import { Righteous_400Regular } from '@expo-google-fonts/righteous';
 import { useAuth } from '../src/hooks/useAuth';
+import { LogoLoader } from '../src/components/ui/LogoLoader';
 import { TopNav } from '../src/components/web/TopNav';
 import { SearchProvider } from '../src/contexts/SearchContext';
 import { COLORS } from '../src/constants/colors';
@@ -14,6 +15,7 @@ function WebAuthGate() {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const [settled, setSettled] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -25,9 +27,13 @@ function WebAuthGate() {
       router.replace('/(tabs)');
     } else if (!user && !inAuthGroup && !isRoot) {
       router.replace('/(auth)/login');
+    } else {
+      // Already on the correct screen — no redirect needed
+      setSettled(true);
     }
-    // !user && isRoot → show landing page, no redirect
   }, [user, loading, segments, router]);
+
+  if (loading || !settled) return <LogoLoader />;
 
   const segs = segments as string[];
   const inAuthGroup = segs[0] === '(auth)';
@@ -56,7 +62,7 @@ export default function WebRootLayout() {
     Righteous_400Regular,
   });
 
-  if (!fontsLoaded && !fontError) return null;
+  if (!fontsLoaded && !fontError) return <LogoLoader />;
 
   return (
     <>

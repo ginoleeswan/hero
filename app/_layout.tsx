@@ -1,5 +1,5 @@
 import 'react-native-url-polyfill/auto';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
@@ -28,6 +28,7 @@ function AuthGate() {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const [settled, setSettled] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -39,10 +40,12 @@ function AuthGate() {
       router.replace('/(auth)/login');
     } else if (user && (inAuthGroup || atRoot)) {
       router.replace('/(tabs)');
+    } else {
+      setSettled(true);
     }
   }, [user, loading, segments]);
 
-  if (loading) return <LogoLoader />;
+  if (loading || !settled) return <LogoLoader />;
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
