@@ -1,5 +1,5 @@
 // app/category/[slug].tsx — Category full-list: featured banner + search + sort/filter + infinite scroll
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -30,7 +30,14 @@ import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
 
 const VALID_SLUGS = new Set<CategorySlug>([
-  'popular', 'villain', 'xmen', 'anti-heroes', 'marvel', 'dc', 'strongest', 'most-intelligent',
+  'popular',
+  'villain',
+  'xmen',
+  'anti-heroes',
+  'marvel',
+  'dc',
+  'strongest',
+  'most-intelligent',
 ]);
 const PAGE_SIZE = 30;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -59,7 +66,9 @@ function HeroGridCard({ hero, onPress }: { hero: Hero; onPress: () => void }) {
         locations={[0.4, 1]}
         style={StyleSheet.absoluteFill}
       />
-      <Text style={styles.cardName} numberOfLines={2}>{hero.name}</Text>
+      <Text style={styles.cardName} numberOfLines={2}>
+        {hero.name}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -68,27 +77,37 @@ function HeroGridCard({ hero, onPress }: { hero: Hero; onPress: () => void }) {
 function FeaturedBanner({ hero, onPress }: { hero: Hero; onPress: () => void }) {
   const source = heroImageSource(hero.id, hero.image_url, hero.portrait_url);
   return (
-    <TouchableOpacity style={styles.featured} onPress={onPress} activeOpacity={0.9}>
+    <TouchableOpacity style={styles.featured} onPress={onPress} activeOpacity={0.88}>
+      {/* Hero image pinned to right half */}
       <Image
         source={source}
         contentFit="cover"
         contentPosition="top center"
-        style={StyleSheet.absoluteFill}
+        style={styles.featuredImage}
         cachePolicy="memory-disk"
       />
+      {/* Horizontal gradient: solid dark on left → transparent on right */}
       <LinearGradient
-        colors={['transparent', 'rgba(13,30,38,0.96)']}
-        locations={[0.25, 1]}
+        colors={['#0d1e26', '#0d1e26', 'transparent']}
+        locations={[0, 0.44, 0.76]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
         style={StyleSheet.absoluteFill}
       />
+      {/* Text content sits on the dark left side */}
       <View style={styles.featuredContent}>
         <View style={styles.featuredBadge}>
           <Text style={styles.featuredBadgeText}>FEATURED</Text>
         </View>
-        <Text style={styles.featuredName} numberOfLines={1}>{hero.name}</Text>
+        <Text style={styles.featuredName} numberOfLines={1}>
+          {hero.name}
+        </Text>
         {(hero.publisher || hero.issue_count) && (
           <Text style={styles.featuredSub}>
-            {[hero.publisher, hero.issue_count ? `${hero.issue_count.toLocaleString()} issues` : null]
+            {[
+              hero.publisher,
+              hero.issue_count ? `${hero.issue_count.toLocaleString()} issues` : null,
+            ]
               .filter(Boolean)
               .join(' · ')}
           </Text>
@@ -182,6 +201,7 @@ export default function CategoryScreen() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [navigating, setNavigating] = useState(false);
   const [featuredHero, setFeaturedHero] = useState<Hero | null>(null);
+  const [searchFocused, setSearchFocused] = useState(false);
 
   const currentPage = useRef(0);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -299,55 +319,70 @@ export default function CategoryScreen() {
 
   const showFeatured = !search.trim() && !!featuredHero;
 
-  const listHeader = (
-    <>
-      {showFeatured && (
-        <FeaturedBanner hero={featuredHero!} onPress={() => handleHeroPress(String(featuredHero!.id))} />
-      )}
-      <View style={styles.searchRow}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search-outline" size={15} color={COLORS.grey} />
+  const listHeader = useMemo(
+    () => (
+      <>
+        {showFeatured && (
+          <FeaturedBanner
+            hero={featuredHero!}
+            onPress={() => handleHeroPress(String(featuredHero!.id))}
+          />
+        )}
+        <View style={[styles.searchBar, searchFocused && styles.searchBarFocused]}>
+          <Ionicons
+            name="search-outline"
+            size={15}
+            color={searchFocused ? COLORS.orange : COLORS.grey}
+          />
           <TextInput
             style={styles.searchInput}
             placeholder={`Search ${title.toLowerCase()}…`}
             placeholderTextColor={COLORS.grey}
             value={search}
             onChangeText={handleSearchChange}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
             returnKeyType="search"
             clearButtonMode="while-editing"
             autoCorrect={false}
           />
         </View>
-      </View>
-      <View style={styles.controlsRow}>
-        <View style={styles.segmented}>
-          {(['popular', 'az'] as SortOption[]).map((s, i) => (
-            <TouchableOpacity
-              key={s}
-              style={[
-                styles.segBtn,
-                i === 0 && styles.segBtnLeft,
-                i === 1 && styles.segBtnRight,
-                sort === s && styles.segBtnActive,
-              ]}
-              onPress={() => handleSortChange(s)}
-            >
-              <Text style={[styles.segBtnText, sort === s && styles.segBtnTextActive]}>
-                {s === 'popular' ? 'Popular' : 'A–Z'}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.controlsRow}>
+          <View style={styles.segmented}>
+            {(['popular', 'az'] as SortOption[]).map((s, i) => (
+              <TouchableOpacity
+                key={s}
+                style={[
+                  styles.segBtn,
+                  i === 0 && styles.segBtnLeft,
+                  i === 1 && styles.segBtnRight,
+                  sort === s && styles.segBtnActive,
+                ]}
+                onPress={() => handleSortChange(s)}
+              >
+                <Text style={[styles.segBtnText, sort === s && styles.segBtnTextActive]}>
+                  {s === 'popular' ? 'Popular' : 'A–Z'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <TouchableOpacity
+            style={[styles.filterBtn, publisher !== 'all' && styles.filterBtnActive]}
+            onPress={() => setFilterOpen(true)}
+          >
+            <Ionicons
+              name="funnel-outline"
+              size={15}
+              color={publisher !== 'all' ? COLORS.beige : COLORS.navy}
+            />
+            {publisher !== 'all' && <View style={styles.filterDot} />}
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={[styles.filterBtn, publisher !== 'all' && styles.filterBtnActive]}
-          onPress={() => setFilterOpen(true)}
-        >
-          <Ionicons name="options-outline" size={16} color={publisher !== 'all' ? COLORS.beige : COLORS.navy} />
-          {publisher !== 'all' && <View style={styles.filterDot} />}
-        </TouchableOpacity>
-      </View>
-      <Text style={styles.countLabel}>{countLabel}</Text>
-    </>
+        <Text style={styles.countLabel}>{countLabel}</Text>
+      </>
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [showFeatured, featuredHero, search, searchFocused, sort, publisher, countLabel],
   );
 
   return (
@@ -397,8 +432,12 @@ export default function CategoryScreen() {
         visible={filterOpen}
         sort={sort}
         publisher={publisher}
-        onSortChange={(s) => { handleSortChange(s); }}
-        onPublisherChange={(p) => { handlePublisherChange(p); }}
+        onSortChange={(s) => {
+          handleSortChange(s);
+        }}
+        onPublisherChange={(p) => {
+          handlePublisherChange(p);
+        }}
         onClose={() => setFilterOpen(false)}
         bottomInset={insets.bottom}
       />
@@ -424,17 +463,24 @@ const styles = StyleSheet.create({
 
   // Featured banner
   featured: {
-    height: 150,
+    height: 140,
     borderRadius: 14,
     overflow: 'hidden',
     marginBottom: 12,
-    backgroundColor: COLORS.navy,
+    backgroundColor: '#0d1e26',
+  },
+  // Image pinned to right ~58% of the banner
+  featuredImage: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: '58%',
   },
   featuredContent: {
     position: 'absolute',
     bottom: 14,
     left: 14,
-    right: 14,
   },
   featuredBadge: {
     alignSelf: 'flex-start',
@@ -459,20 +505,26 @@ const styles = StyleSheet.create({
   featuredSub: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
-    color: 'rgba(255,255,255,0.55)',
-    marginTop: 2,
+    color: 'rgba(255,255,255,0.5)',
+    marginTop: 3,
   },
 
   // Search
-  searchRow: { marginBottom: 8 },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     backgroundColor: 'rgba(29,45,51,0.08)',
     borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
     paddingHorizontal: 10,
-    height: 36,
+    height: 38,
+    marginBottom: 8,
+  },
+  searchBarFocused: {
+    backgroundColor: '#fff',
+    borderColor: COLORS.orange,
   },
   searchInput: {
     flex: 1,
@@ -503,7 +555,13 @@ const styles = StyleSheet.create({
   },
   segBtnLeft: { borderTopLeftRadius: 6, borderBottomLeftRadius: 6 },
   segBtnRight: { borderTopRightRadius: 6, borderBottomRightRadius: 6 },
-  segBtnActive: { backgroundColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },
+  segBtnActive: {
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
   segBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.grey },
   segBtnTextActive: { color: COLORS.navy },
   filterBtn: {
