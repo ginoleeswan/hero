@@ -389,7 +389,7 @@ export default function CategoryScreen() {
     <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* Fixed header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')}>
           <Ionicons name="arrow-back" size={22} color={COLORS.navy} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{title}</Text>

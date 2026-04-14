@@ -74,10 +74,15 @@ function FeaturedBannerWeb({
         <View style={feat.badge}>
           <Text style={feat.badgeText}>FEATURED</Text>
         </View>
-        <Text style={feat.name as object} numberOfLines={1}>{hero.name}</Text>
+        <Text style={feat.name as object} numberOfLines={1}>
+          {hero.name}
+        </Text>
         {(hero.publisher || hero.issue_count) && (
           <Text style={feat.sub as object}>
-            {[hero.publisher, hero.issue_count ? `${hero.issue_count.toLocaleString()} issues` : null]
+            {[
+              hero.publisher,
+              hero.issue_count ? `${hero.issue_count.toLocaleString()} issues` : null,
+            ]
               .filter(Boolean)
               .join(' · ')}
           </Text>
@@ -246,7 +251,11 @@ export default function WebCategoryScreen() {
       if (!categorySlug) return;
       try {
         const result = await getCategoryPage(categorySlug, {
-          page: 0, pageSize: 1, sort: 'popular', publisher: pub, search: '',
+          page: 0,
+          pageSize: 1,
+          sort: 'popular',
+          publisher: pub,
+          search: '',
         });
         setFeaturedHero(result.heroes[0] ?? null);
       } catch {
@@ -333,7 +342,7 @@ export default function WebCategoryScreen() {
       <View style={[styles.header, isDesktop && (styles.headerDesktop as object)] as object}>
         <View style={[styles.headerInner, { paddingHorizontal: contentPad }]}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')}
             style={({ hovered }: { hovered?: boolean }) =>
               [styles.backBtn, hovered && (styles.backBtnHover as object)] as object
             }
@@ -347,8 +356,16 @@ export default function WebCategoryScreen() {
           </View>
           {/* Search + filters */}
           <View style={styles.controls as object}>
-            <View style={[styles.searchBar, searchFocused && (styles.searchBarFocused as object)] as object}>
-              <Ionicons name="search-outline" size={14} color={searchFocused ? COLORS.orange : COLORS.grey} />
+            <View
+              style={
+                [styles.searchBar, searchFocused && (styles.searchBarFocused as object)] as object
+              }
+            >
+              <Ionicons
+                name="search-outline"
+                size={14}
+                color={searchFocused ? COLORS.orange : COLORS.grey}
+              />
               <TextInput
                 style={styles.searchInput as object}
                 placeholder={`Search ${title.toLowerCase()}…`}
