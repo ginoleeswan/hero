@@ -582,7 +582,7 @@ function HomeRow({
                 }
               >
                 <Text style={row.title}>{title}</Text>
-                <Text style={row.titleChevron as object}>›</Text>
+                <Text style={{ fontFamily: 'Flame-Regular', fontSize: 44, color: COLORS.navy, marginTop: 4, marginLeft: 4 } as object}>›</Text>
               </Pressable>
             ) : (
               <Text style={row.title}>{title}</Text>
@@ -611,7 +611,9 @@ const row = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
+    position: 'relative',
+    zIndex: 2,
+  } as object,
   headerLeft: { flexDirection: 'row', alignItems: 'stretch', gap: 14 },
   accentBar: {
     width: 4,
@@ -631,19 +633,12 @@ const row = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     cursor: 'pointer',
     transition: 'opacity 150ms ease',
     alignSelf: 'flex-start',
   } as object,
   titleRowHover: { opacity: 0.7 } as object,
-  titleChevron: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 22,
-    color: COLORS.navy,
-    lineHeight: 38,
-    opacity: 0.5,
-  } as object,
 });
 
 // ── Dark editorial row section ────────────────────────────────────────────────
@@ -681,7 +676,7 @@ function DarkHomeRow({
                 }
               >
                 <Text style={drow.title}>{title}</Text>
-                <Text style={drow.titleChevron as object}>›</Text>
+                <Text style={{ fontFamily: 'Flame-Regular', fontSize: 44, color: COLORS.beige, marginTop: 4, marginLeft: 4 }  as object}>›</Text>
               </Pressable>
             ) : (
               <Text style={drow.title}>{title}</Text>
@@ -717,7 +712,9 @@ const drow = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
+    position: 'relative',
+    zIndex: 2,
+  } as object,
   headerLeft: { flexDirection: 'row', alignItems: 'stretch', gap: 14 },
   accentBar: {
     width: 4,
@@ -733,61 +730,43 @@ const drow = StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
-  title: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 36,
-    color: COLORS.beige,
-    lineHeight: 38,
-  },
+  title: { fontFamily: 'Flame-Regular', fontSize: 36, color: COLORS.beige, lineHeight: 38 },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     cursor: 'pointer',
     transition: 'opacity 150ms ease',
     alignSelf: 'flex-start',
   } as object,
   titleRowHover: { opacity: 0.7 } as object,
-  titleChevron: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 22,
-    color: COLORS.beige,
-    lineHeight: 38,
-    opacity: 0.5,
-  } as object,
 });
 
 // ── Home skeleton ─────────────────────────────────────────────────────────────
 function HomeSkeleton() {
   const opacity = useSkeletonAnim();
   const { width } = useWindowDimensions();
-  const isMobile = width < 640;
+  const pagePad = width < 640 ? 16 : 32;
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={[styles.discoverContent, isMobile && { paddingTop: 0 }] as object}>
-      <SkeletonBlock
-        opacity={opacity}
-        height={480}
-        borderRadius={0}
-        style={{ marginBottom: 48 }}
-      />
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.discoverContent as object}>
+      {/* Spotlight — full-bleed, no padding */}
+      <SkeletonBlock opacity={opacity} height={width < 640 ? 420 : 580} borderRadius={0} style={{ marginBottom: 48 }} />
+
+      {/* Carousel rows — match HomeRow layout */}
       {[1, 2, 3].map((i) => (
-        <View key={i} style={{ marginBottom: 40 } as object}>
-          <SkeletonBlock
-            opacity={opacity}
-            width={160}
-            height={28}
-            borderRadius={6}
-            style={{ marginBottom: 14 }}
-          />
-          <View style={{ flexDirection: 'row', gap: 12 } as object}>
+        <View key={i} style={{ marginBottom: 52, paddingLeft: pagePad } as object}>
+          {/* Header: accent bar + label stub + title stub */}
+          <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 14, marginBottom: 16 } as object}>
+            <SkeletonBlock opacity={opacity} width={4} height={44} borderRadius={2} />
+            <View style={{ gap: 4, justifyContent: 'center' } as object}>
+              <SkeletonBlock opacity={opacity} width={60} height={9} borderRadius={3} />
+              <SkeletonBlock opacity={opacity} width={160} height={32} borderRadius={4} />
+            </View>
+          </View>
+          {/* Cards row */}
+          <View style={{ flexDirection: 'row', gap: 16 } as object}>
             {Array.from({ length: 6 }).map((_, j) => (
-              <SkeletonBlock
-                key={j}
-                opacity={opacity}
-                width={ROW_CARD_WIDTH}
-                height={ROW_CARD_HEIGHT}
-                borderRadius={10}
-              />
+              <SkeletonBlock key={j} opacity={opacity} width={ROW_CARD_WIDTH} height={ROW_CARD_HEIGHT} borderRadius={10} />
             ))}
           </View>
         </View>
