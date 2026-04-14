@@ -17,7 +17,10 @@ const json = (data: unknown, status = 200) =>
 
 /** Strip HTML tags and collapse whitespace */
 const stripHtml = (html: string): string =>
-  html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  html
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 interface HeroStats {
   intelligence: number;
@@ -30,7 +33,14 @@ interface HeroStats {
 
 function isValidStats(obj: unknown): obj is HeroStats {
   if (!obj || typeof obj !== 'object') return false;
-  const keys: (keyof HeroStats)[] = ['intelligence', 'strength', 'speed', 'durability', 'power', 'combat'];
+  const keys: (keyof HeroStats)[] = [
+    'intelligence',
+    'strength',
+    'speed',
+    'durability',
+    'power',
+    'combat',
+  ];
   return keys.every((k) => {
     const v = (obj as Record<string, unknown>)[k];
     return typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 100;
@@ -67,9 +77,7 @@ serve(async (req: Request) => {
     }
 
     // Build prompt
-    const descriptionSnippet = hero.description
-      ? stripHtml(hero.description).slice(0, 800)
-      : '';
+    const descriptionSnippet = hero.description ? stripHtml(hero.description).slice(0, 800) : '';
     const powersText = Array.isArray(hero.powers) ? (hero.powers as string[]).join(', ') : '';
 
     const prompt = `You are a comic book analyst. Based only on the character data below, estimate their combat stats on a scale of 0–100.
@@ -113,16 +121,19 @@ Return ONLY valid JSON with these exact keys, no explanation:
     }
 
     // Write to DB
-    await sb.from('heroes').update({
-      intelligence: stats.intelligence,
-      strength: stats.strength,
-      speed: stats.speed,
-      durability: stats.durability,
-      power: stats.power,
-      combat: stats.combat,
-      stats_source: 'ai',
-      ai_stats_status: 'done',
-    }).eq('id', heroId);
+    await sb
+      .from('heroes')
+      .update({
+        intelligence: stats.intelligence,
+        strength: stats.strength,
+        speed: stats.speed,
+        durability: stats.durability,
+        power: stats.power,
+        combat: stats.combat,
+        stats_source: 'ai',
+        ai_stats_status: 'done',
+      })
+      .eq('id', heroId);
 
     return json(stats);
   } catch (err) {

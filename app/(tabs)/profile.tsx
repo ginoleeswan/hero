@@ -24,7 +24,11 @@ import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { ChangePasswordModal } from '../../src/components/ui/ChangePasswordModal';
 import { EditDisplayNameModal } from '../../src/components/ui/EditDisplayNameModal';
-import { getUserFavouriteHeroes, removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
+import {
+  getUserFavouriteHeroes,
+  removeFavourite,
+  type FavouriteHero,
+} from '../../src/lib/db/favourites';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
@@ -226,8 +230,14 @@ export default function ProfileScreen() {
     };
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
-        { options: ['Cancel', 'Remove from Favourites'], destructiveButtonIndex: 1, cancelButtonIndex: 0 },
-        (idx) => { if (idx === 1) confirm(); },
+        {
+          options: ['Cancel', 'Remove from Favourites'],
+          destructiveButtonIndex: 1,
+          cancelButtonIndex: 0,
+        },
+        (idx) => {
+          if (idx === 1) confirm();
+        },
       );
     } else {
       Alert.alert('Remove Favourite', `Remove ${hero.name} from your favourites?`, [

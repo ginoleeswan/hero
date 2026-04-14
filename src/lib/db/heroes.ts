@@ -245,7 +245,12 @@ export const CATEGORY_LABELS: Record<CategorySlug, string> = {
 
 /** Fetches all rows from a query that may exceed Supabase's 1000-row default cap. */
 async function fetchAllPages(
-  buildQuery: () => { range(from: number, to: number): PromiseLike<{ data: Hero[] | null; error: { message: string } | null }> },
+  buildQuery: () => {
+    range(
+      from: number,
+      to: number,
+    ): PromiseLike<{ data: Hero[] | null; error: { message: string } | null }>;
+  },
 ): Promise<Hero[]> {
   const PAGE = 1000;
   const all: Hero[] = [];

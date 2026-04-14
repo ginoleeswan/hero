@@ -35,7 +35,9 @@ serve(async (req: Request) => {
   try {
     const body = await req.json().catch(() => ({}));
     if (typeof body?.batches === 'number') batches = Math.min(Math.max(1, body.batches), 20);
-  } catch { /* no body is fine */ }
+  } catch {
+    /* no body is fine */
+  }
 
   const sb = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
@@ -44,12 +46,8 @@ serve(async (req: Request) => {
 
   // Load existing rows once for the whole run (dedup across all batches)
   const { data: existing } = await sb.from('heroes').select('id, name, comicvine_id');
-  const existingCvIds = new Set(
-    (existing ?? []).map((h) => h.comicvine_id).filter(Boolean),
-  );
-  const existingByNorm = new Map(
-    (existing ?? []).map((h) => [norm(h.name), h.id]),
-  );
+  const existingCvIds = new Set((existing ?? []).map((h) => h.comicvine_id).filter(Boolean));
+  const existingByNorm = new Map((existing ?? []).map((h) => [norm(h.name), h.id]));
 
   let totalInserted = 0;
   let totalMerged = 0;
@@ -99,7 +97,10 @@ serve(async (req: Request) => {
     for (const char of characters) {
       const cvId = String(char.id);
 
-      if (existingCvIds.has(cvId)) { skipped++; continue; }
+      if (existingCvIds.has(cvId)) {
+        skipped++;
+        continue;
+      }
 
       const normalised = norm(char.name);
       const existingId = existingByNorm.get(normalised);
@@ -130,13 +131,16 @@ serve(async (req: Request) => {
     const newOffset = state.last_offset + 100;
     finalStatus = newTotal >= state.target ? 'complete' : 'idle';
 
-    await sb.from('cv_ingestion_state').update({
-      last_offset: newOffset,
-      total_ingested: newTotal,
-      status: finalStatus,
-      last_run_at: new Date().toISOString(),
-      error: null,
-    }).eq('id', 1);
+    await sb
+      .from('cv_ingestion_state')
+      .update({
+        last_offset: newOffset,
+        total_ingested: newTotal,
+        status: finalStatus,
+        last_run_at: new Date().toISOString(),
+        error: null,
+      })
+      .eq('id', 1);
 
     totalInserted += inserted;
     totalMerged += merged;

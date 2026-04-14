@@ -39,7 +39,13 @@ export function Toast({ message, visible }: Props) {
   if (!message) return null;
 
   return (
-    <Animated.View style={[styles.toast, { opacity }, Platform.OS === 'web' ? (styles.toastWeb as object) : styles.toastNative]}>
+    <Animated.View
+      style={[
+        styles.toast,
+        { opacity },
+        Platform.OS === 'web' ? (styles.toastWeb as object) : styles.toastNative,
+      ]}
+    >
       <Text style={styles.text}>{message}</Text>
     </Animated.View>
   );

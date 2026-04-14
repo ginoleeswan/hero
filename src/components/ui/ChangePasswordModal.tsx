@@ -85,12 +85,7 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="fade"
-      transparent
-      onRequestClose={handleClose}
-    >
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={handleClose}>
       <KeyboardAvoidingView
         style={isWeb ? styles.overlayWeb : styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -100,12 +95,14 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
           style={[
             isWeb ? (styles.dialog as object) : styles.sheet,
             !isWeb && {
-              transform: [{
-                translateY: slideAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [600, 0],
-                }),
-              }],
+              transform: [
+                {
+                  translateY: slideAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [600, 0],
+                  }),
+                },
+              ],
             },
           ]}
         >

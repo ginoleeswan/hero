@@ -17,7 +17,11 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { ChangePasswordModal } from '../../src/components/ui/ChangePasswordModal';
-import { getUserFavouriteHeroes, removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
+import {
+  getUserFavouriteHeroes,
+  removeFavourite,
+  type FavouriteHero,
+} from '../../src/lib/db/favourites';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { COLORS } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';

@@ -353,26 +353,24 @@ export default function WebCharacterScreen() {
                 ) : null}
               </View>
               <View style={styles.cardDivider} />
-              {statsGenerating ? (
-                STAT_CONFIG.map(({ key }) => (
-                  <SkeletonBlock
-                    key={key}
-                    opacity={skeletonOpacity}
-                    height={10}
-                    borderRadius={5}
-                    style={{ marginBottom: 14 }}
-                  />
-                ))
-              ) : (
-                STAT_CONFIG.map(({ key, label, color }) => (
-                  <StatBar
-                    key={key}
-                    label={label}
-                    value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
-                    color={color}
-                  />
-                ))
-              )}
+              {statsGenerating
+                ? STAT_CONFIG.map(({ key }) => (
+                    <SkeletonBlock
+                      key={key}
+                      opacity={skeletonOpacity}
+                      height={10}
+                      borderRadius={5}
+                      style={{ marginBottom: 14 }}
+                    />
+                  ))
+                : STAT_CONFIG.map(({ key, label, color }) => (
+                    <StatBar
+                      key={key}
+                      label={label}
+                      value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
+                      color={color}
+                    />
+                  ))}
             </View>
           </View>
 
@@ -716,26 +714,24 @@ export default function WebCharacterScreen() {
               ) : null}
             </View>
             <View style={styles.cardDivider} />
-            {statsGenerating ? (
-              STAT_CONFIG.map(({ key }) => (
-                <SkeletonBlock
-                  key={key}
-                  opacity={skeletonOpacity}
-                  height={10}
-                  borderRadius={5}
-                  style={{ marginBottom: 14 }}
-                />
-              ))
-            ) : (
-              STAT_CONFIG.map(({ key, label, color }) => (
-                <StatBar
-                  key={key}
-                  label={label}
-                  value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
-                  color={color}
-                />
-              ))
-            )}
+            {statsGenerating
+              ? STAT_CONFIG.map(({ key }) => (
+                  <SkeletonBlock
+                    key={key}
+                    opacity={skeletonOpacity}
+                    height={10}
+                    borderRadius={5}
+                    style={{ marginBottom: 14 }}
+                  />
+                ))
+              : STAT_CONFIG.map(({ key, label, color }) => (
+                  <StatBar
+                    key={key}
+                    label={label}
+                    value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
+                    color={color}
+                  />
+                ))}
           </View>
 
           {/* Segmented tab bar */}
