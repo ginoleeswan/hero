@@ -662,8 +662,8 @@ function DarkHomeRow({
 
   if (heroes.length === 0) return null;
   return (
-    <View ref={sectionRef} style={[drow.section, { marginHorizontal: pagePad }] as object}>
-      <View style={drow.header}>
+    <View ref={sectionRef} style={drow.section}>
+      <View style={[drow.header, { paddingLeft: pagePad }]}>
         <View style={drow.headerLeft}>
           <View style={drow.accentBar} />
           <View style={drow.headerText}>
@@ -684,9 +684,9 @@ function DarkHomeRow({
           </View>
         </View>
       </View>
-      {/* Scroll track + arrow overlays */}
+      {/* Scroll track starts at viewport left edge — cards bleed off sides when scrolling. */}
       <View style={{ position: 'relative', minHeight: ROW_CARD_HEIGHT } as object}>
-        <View ref={scrollRef} style={rowScrollStyle as object}>
+        <View ref={scrollRef} style={[rowScrollStyle, { paddingLeft: pagePad, marginLeft: 0 }] as object}>
           {heroes.map((h) => (
             <RowCard key={h.id} hero={h} onPress={() => onPress(String(h.id))} />
           ))}
@@ -701,8 +701,6 @@ function DarkHomeRow({
 const drow = StyleSheet.create({
   section: {
     backgroundColor: COLORS.navy,
-    borderRadius: 20,
-    paddingHorizontal: 28,
     paddingTop: 28,
     paddingBottom: 8,
     marginBottom: 52,
@@ -1113,6 +1111,13 @@ export default function WebHomeScreen() {
             onPress={handlePress}
             onViewAll={() => router.push('/category/strongest')}
           />
+          <DarkHomeRow
+            label="The Dark Side"
+            title="Villains"
+            heroes={homeData.villains}
+            onPress={handlePress}
+            onViewAll={() => router.push('/category/villain')}
+          />
           <HomeRow
             label="Marvel Comics"
             title="Marvel Universe"
@@ -1128,25 +1133,11 @@ export default function WebHomeScreen() {
             onViewAll={() => router.push('/category/dc')}
           />
           <DarkHomeRow
-            label="The Dark Side"
-            title="Villains"
-            heroes={homeData.villains}
-            onPress={handlePress}
-            onViewAll={() => router.push('/category/villain')}
-          />
-          <DarkHomeRow
             label="Neither Good Nor Evil"
             title="Anti-Heroes"
             heroes={homeData.antiHeroes}
             onPress={handlePress}
             onViewAll={() => router.push('/category/anti-heroes')}
-          />
-          <DarkHomeRow
-            label="Charles Xavier's School for Gifted Youngsters"
-            title="X-Men"
-            heroes={homeData.xmen}
-            onPress={handlePress}
-            onViewAll={() => router.push('/category/xmen')}
           />
           <HomeRow
             label="By Power Stats"
@@ -1154,6 +1145,13 @@ export default function WebHomeScreen() {
             heroes={homeData.strongest}
             onPress={handlePress}
             onViewAll={() => router.push('/category/strongest')}
+          />
+          <DarkHomeRow
+            label="Charles Xavier's School for Gifted Youngsters"
+            title="X-Men"
+            heroes={homeData.xmen}
+            onPress={handlePress}
+            onViewAll={() => router.push('/category/xmen')}
           />
           <HomeRow
             label="By Power Stats"
