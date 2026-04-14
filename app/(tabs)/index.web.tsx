@@ -271,18 +271,30 @@ const rc = StyleSheet.create({
 const ACCORDION_SCALES = {
   // Ultra-wide displays (1200px+)
   large: [
-    { w: 280, o: 1 }, { w: 140, o: 0.8 }, { w: 100, o: 0.6 }, { w: 76, o: 0.5 }, 
-    { w: 54, o: 0.4 }, { w: 40, o: 0.3 }, { w: 28, o: 0.2 }, { w: 20, o: 0.1 }
+    { w: 280, o: 1 },
+    { w: 140, o: 0.8 },
+    { w: 100, o: 0.6 },
+    { w: 76, o: 0.5 },
+    { w: 54, o: 0.4 },
+    { w: 40, o: 0.3 },
+    { w: 28, o: 0.2 },
+    { w: 20, o: 0.1 },
   ],
   // Standard desktop (900px - 1199px)
   medium: [
-    { w: 180, o: 1 }, { w: 100, o: 0.8 }, { w: 76, o: 0.5 }, { w: 54, o: 0.3 }, 
-    { w: 38, o: 0.2 }, { w: 20, o: 0.1 }
+    { w: 180, o: 1 },
+    { w: 100, o: 0.8 },
+    { w: 76, o: 0.5 },
+    { w: 54, o: 0.3 },
+    { w: 38, o: 0.2 },
+    { w: 20, o: 0.1 },
   ],
   // Tablet / Small desktop (768px - 899px)
   small: [
-    { w: 160, o: 1 }, { w: 80, o: 0.7 }, { w: 40, o: 0.3 }
-  ]
+    { w: 160, o: 1 },
+    { w: 80, o: 0.7 },
+    { w: 40, o: 0.3 },
+  ],
 };
 
 function PortraitStripSpotlight({
@@ -306,10 +318,12 @@ function PortraitStripSpotlight({
 
   const pagePad = width < 640 ? 16 : 32;
 
-  const activeScale = 
-    width >= 1280 ? ACCORDION_SCALES.large : 
-    width >= 900 ? ACCORDION_SCALES.medium : 
-    ACCORDION_SCALES.small;
+  const activeScale =
+    width >= 1280
+      ? ACCORDION_SCALES.large
+      : width >= 900
+        ? ACCORDION_SCALES.medium
+        : ACCORDION_SCALES.small;
 
   if (isDesktop) {
     // 2. Now just do the math here, no Hooks inside the if block!
@@ -509,13 +523,17 @@ const pss = StyleSheet.create({
   } as object,
   cardOverlay: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundImage:
       'linear-gradient(to top, rgba(15,20,24,0.95) 0%, rgba(15,20,24,0.15) 50%, transparent 100%)',
   } as object,
   cardBadge: {
     position: 'absolute',
-    top: 14, left: 14,
+    top: 14,
+    left: 14,
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
     color: COLORS.orange,
@@ -525,7 +543,9 @@ const pss = StyleSheet.create({
   } as object,
   cardName: {
     position: 'absolute',
-    bottom: 14, left: 14, right: 14,
+    bottom: 14,
+    left: 14,
+    right: 14,
     fontFamily: 'Nunito_700Bold',
     fontSize: 18,
     color: COLORS.beige,
@@ -535,13 +555,14 @@ const pss = StyleSheet.create({
   } as object,
   cardNameNext: {
     fontSize: 11,
-    bottom: 10, left: 10,
+    bottom: 10,
+    left: 10,
   } as object,
 
   // Info Panel
   panel: {
-    flex: 1,           
-    minWidth: 260,     
+    flex: 1,
+    minWidth: 260,
     backgroundColor: COLORS.navy,
     borderRadius: 14,
     padding: 24,
@@ -600,7 +621,9 @@ const pss = StyleSheet.create({
   },
   dots: { flexDirection: 'row', gap: 6 },
   dot: {
-    width: 6, height: 6, borderRadius: 3,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: 'rgba(245,235,220,0.2)',
     cursor: 'pointer',
     transition: 'all 200ms ease',
@@ -609,10 +632,33 @@ const pss = StyleSheet.create({
 
   // Mobile Web overrides
   wrapMobile: { flexDirection: 'row', gap: 10, height: 240, marginVertical: 20 },
-  singlePortrait: { width: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: COLORS.navy, position: 'relative' },
-  panelMobile: { flex: 1, backgroundColor: COLORS.navy, borderRadius: 10, padding: 14, justifyContent: 'space-between' },
-  panelNameMobile: { fontFamily: 'Flame-Regular', fontSize: 18, color: COLORS.beige, lineHeight: 22, marginBottom: 4 } as object,
-  panelSummaryMobile: { fontFamily: 'Nunito_400Regular', fontSize: 10, color: 'rgba(245,235,220,0.5)', lineHeight: 15 } as object,
+  singlePortrait: {
+    width: 150,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+    position: 'relative',
+  },
+  panelMobile: {
+    flex: 1,
+    backgroundColor: COLORS.navy,
+    borderRadius: 10,
+    padding: 14,
+    justifyContent: 'space-between',
+  },
+  panelNameMobile: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 18,
+    color: COLORS.beige,
+    lineHeight: 22,
+    marginBottom: 4,
+  } as object,
+  panelSummaryMobile: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 10,
+    color: 'rgba(245,235,220,0.5)',
+    lineHeight: 15,
+  } as object,
 });
 
 // ── Carousel scroll hook (web desktop) ───────────────────────────────────────
@@ -1178,10 +1224,10 @@ export default function WebHomeScreen() {
       .catch(() => {});
   }, [user?.id]);
 
-// Auto-advance spotlight
+  // Auto-advance spotlight
   useEffect(() => {
     if (!homeData?.spotlight.length) return;
-    
+
     const total = Math.min(optimalPoolSize, homeData.spotlight.length);
     if (total <= 1) return;
 
@@ -1366,7 +1412,10 @@ export default function WebHomeScreen() {
           {homeData.spotlight.length > 0 && (
             <PortraitStripSpotlight
               // Dynamically chop the array to match the screen!
-              heroes={homeData.spotlight.slice(0, Math.min(optimalPoolSize, homeData.spotlight.length))}
+              heroes={homeData.spotlight.slice(
+                0,
+                Math.min(optimalPoolSize, homeData.spotlight.length),
+              )}
               activeIndex={spotlightIndex}
               onCardPress={setSpotlightIndex}
               onDotPress={setSpotlightIndex}
