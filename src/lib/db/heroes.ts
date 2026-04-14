@@ -229,6 +229,9 @@ export type CategorySlug =
   | 'strongest'
   | 'most-intelligent';
 
+export type SortOption = 'popular' | 'az';
+export type CategoryPublisher = 'all' | 'marvel' | 'dc';
+
 export const CATEGORY_LABELS: Record<CategorySlug, string> = {
   popular: 'Popular',
   villain: 'Villains',
@@ -310,6 +313,74 @@ export async function getAllHeroesBySlug(slug: CategorySlug): Promise<Hero[]> {
           .order('intelligence', { ascending: false }),
       );
   }
+}
+
+export async function getCategoryPage(
+  slug: CategorySlug,
+  options: {
+    page: number;
+    pageSize?: number;
+    sort: SortOption;
+    publisher: CategoryPublisher;
+    search: string;
+  },
+): Promise<{ heroes: Hero[]; total: number }> {
+  const { page, pageSize = 30, sort, publisher, search } = options;
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q: any = supabase.from('heroes').select('*', { count: 'exact' });
+
+  switch (slug) {
+    case 'popular':
+      q = q.eq('category', 'popular');
+      break;
+    case 'villain':
+      q = q
+        .eq('alignment', 'bad')
+        .not('publisher', 'in', '("Non-Fictional","In the Public Domain")');
+      break;
+    case 'xmen':
+      q = q.or('group_affiliation.ilike.%x-men%,group_affiliation.ilike.%xmen%');
+      break;
+    case 'anti-heroes':
+      q = q.ilike('alignment', '%neutral%');
+      break;
+    case 'marvel':
+      q = q.ilike('publisher', '%marvel%');
+      break;
+    case 'dc':
+      q = q.ilike('publisher', '%dc%');
+      break;
+    case 'strongest':
+      q = q.not('strength', 'is', null);
+      break;
+    case 'most-intelligent':
+      q = q.not('intelligence', 'is', null);
+      break;
+  }
+
+  if (publisher === 'marvel') q = q.ilike('publisher', '%marvel%');
+  else if (publisher === 'dc') q = q.ilike('publisher', '%dc%');
+
+  if (search.trim()) {
+    q = q.or(`name.ilike.%${search.trim()}%,full_name.ilike.%${search.trim()}%`);
+  }
+
+  if (sort === 'az') {
+    q = q.order('name');
+  } else if (slug === 'strongest') {
+    q = q.order('strength', { ascending: false, nullsFirst: false });
+  } else if (slug === 'most-intelligent') {
+    q = q.order('intelligence', { ascending: false, nullsFirst: false });
+  } else {
+    q = q.order('issue_count', { ascending: false, nullsFirst: false });
+  }
+
+  const { data, error, count } = await q.range(from, to);
+  if (error) throw new Error(error.message);
+  return { heroes: (data ?? []) as Hero[], total: count ?? 0 };
 }
 
 export type HeroPowerResult = Pick<
