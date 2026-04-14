@@ -568,8 +568,8 @@ function HomeRow({
 
   if (heroes.length === 0) return null;
   return (
-    <View ref={sectionRef} style={[row.section, { paddingLeft: pagePad }]}>
-      <View style={row.header}>
+    <View ref={sectionRef} style={row.section}>
+      <View style={[row.header, { paddingLeft: pagePad }]}>
         <View style={row.headerLeft}>
           <View style={row.accentBar} />
           <View style={row.headerText}>
@@ -590,9 +590,9 @@ function HomeRow({
           </View>
         </View>
       </View>
-      {/* Scroll track extends to viewport right edge — no right constraint on parent. */}
+      {/* Scroll track starts at viewport left edge — cards bleed off left when scrolling. */}
       <View style={{ position: 'relative', minHeight: ROW_CARD_HEIGHT } as object}>
-        <View ref={scrollRef} style={rowScrollStyle as object}>
+        <View ref={scrollRef} style={[rowScrollStyle, { paddingLeft: pagePad, marginLeft: 0 }] as object}>
           {heroes.map((h) => (
             <RowCard key={h.id} hero={h} onPress={() => onPress(String(h.id))} />
           ))}
@@ -754,17 +754,17 @@ function HomeSkeleton() {
 
       {/* Carousel rows — match HomeRow layout */}
       {[1, 2, 3].map((i) => (
-        <View key={i} style={{ marginBottom: 52, paddingLeft: pagePad } as object}>
-          {/* Header: accent bar + label stub + title stub */}
-          <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 14, marginBottom: 16 } as object}>
+        <View key={i} style={{ marginBottom: 52 } as object}>
+          {/* Header: accent bar + label stub + title stub — inset like real header */}
+          <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 14, marginBottom: 16, paddingLeft: pagePad } as object}>
             <SkeletonBlock opacity={opacity} width={4} height={44} borderRadius={2} />
             <View style={{ gap: 4, justifyContent: 'center' } as object}>
               <SkeletonBlock opacity={opacity} width={60} height={9} borderRadius={3} />
               <SkeletonBlock opacity={opacity} width={160} height={32} borderRadius={4} />
             </View>
           </View>
-          {/* Cards row */}
-          <View style={{ flexDirection: 'row', gap: 16 } as object}>
+          {/* Cards row — starts at viewport left edge to match carousel bleed */}
+          <View style={{ flexDirection: 'row', gap: 16, paddingLeft: pagePad } as object}>
             {Array.from({ length: 6 }).map((_, j) => (
               <SkeletonBlock key={j} opacity={opacity} width={ROW_CARD_WIDTH} height={ROW_CARD_HEIGHT} borderRadius={10} />
             ))}
