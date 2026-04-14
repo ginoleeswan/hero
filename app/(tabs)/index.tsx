@@ -12,6 +12,8 @@ import { SearchSheet } from '../../src/components/SearchSheet';
 import {
   getHeroesByCategory,
   getAntiHeroes,
+  getVillains,
+  getXMen,
   getHeroesByPublisher,
   getHeroesByStatRanking,
   type Hero,
@@ -53,17 +55,19 @@ export default function HomeScreen() {
   useEffect(() => {
     Promise.all([
       getHeroesByCategory(),
+      getVillains(),
+      getXMen(),
       getAntiHeroes(),
       getHeroesByPublisher('marvel'),
       getHeroesByPublisher('dc'),
       getHeroesByStatRanking('strength'),
       getHeroesByStatRanking('intelligence'),
     ])
-      .then(([cats, antiHeroes, marvel, dc, strongest, mostIntelligent]) => {
+      .then(([cats, villain, xmen, antiHeroes, marvel, dc, strongest, mostIntelligent]) => {
         setData({
           popular: cats.popular,
-          villain: cats.villain,
-          xmen: cats.xmen,
+          villain,
+          xmen,
           antiHeroes,
           marvel,
           dc,

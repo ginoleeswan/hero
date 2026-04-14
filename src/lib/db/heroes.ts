@@ -240,64 +240,75 @@ export const CATEGORY_LABELS: Record<CategorySlug, string> = {
   'most-intelligent': 'Most Intelligent',
 };
 
+/** Fetches all rows from a query that may exceed Supabase's 1000-row default cap. */
+async function fetchAllPages(
+  buildQuery: () => { range(from: number, to: number): PromiseLike<{ data: Hero[] | null; error: { message: string } | null }> },
+): Promise<Hero[]> {
+  const PAGE = 1000;
+  const all: Hero[] = [];
+  let from = 0;
+  for (;;) {
+    const { data, error } = await buildQuery().range(from, from + PAGE - 1);
+    if (error) throw new Error(error.message);
+    if (!data?.length) break;
+    all.push(...data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
+}
+
 export async function getAllHeroesBySlug(slug: CategorySlug): Promise<Hero[]> {
   switch (slug) {
     case 'popular':
+      return fetchAllPages(() =>
+        supabase.from('heroes').select('*').eq('category', 'popular').order('name'),
+      );
     case 'villain':
-    case 'xmen': {
-      const { data, error } = await supabase
-        .from('heroes')
-        .select('*')
-        .eq('category', slug)
-        .order('name');
-      if (error) throw new Error(error.message);
-      return data ?? [];
-    }
-    case 'anti-heroes': {
-      const { data, error } = await supabase
-        .from('heroes')
-        .select('*')
-        .ilike('alignment', '%neutral%')
-        .order('name');
-      if (error) throw new Error(error.message);
-      return data ?? [];
-    }
-    case 'marvel': {
-      const { data, error } = await supabase
-        .from('heroes')
-        .select('*')
-        .ilike('publisher', '%marvel%')
-        .order('name');
-      if (error) throw new Error(error.message);
-      return data ?? [];
-    }
-    case 'dc': {
-      const { data, error } = await supabase
-        .from('heroes')
-        .select('*')
-        .ilike('publisher', '%dc%')
-        .order('name');
-      if (error) throw new Error(error.message);
-      return data ?? [];
-    }
-    case 'strongest': {
-      const { data, error } = await supabase
-        .from('heroes')
-        .select('*')
-        .not('strength', 'is', null)
-        .order('strength', { ascending: false });
-      if (error) throw new Error(error.message);
-      return data ?? [];
-    }
-    case 'most-intelligent': {
-      const { data, error } = await supabase
-        .from('heroes')
-        .select('*')
-        .not('intelligence', 'is', null)
-        .order('intelligence', { ascending: false });
-      if (error) throw new Error(error.message);
-      return data ?? [];
-    }
+      return fetchAllPages(() =>
+        supabase
+          .from('heroes')
+          .select('*')
+          .eq('alignment', 'bad')
+          .not('publisher', 'in', '("Non-Fictional","In the Public Domain")')
+          .order('name'),
+      );
+    case 'xmen':
+      return fetchAllPages(() =>
+        supabase
+          .from('heroes')
+          .select('*')
+          .or('group_affiliation.ilike.%x-men%,group_affiliation.ilike.%xmen%')
+          .order('name'),
+      );
+    case 'anti-heroes':
+      return fetchAllPages(() =>
+        supabase.from('heroes').select('*').ilike('alignment', '%neutral%').order('name'),
+      );
+    case 'marvel':
+      return fetchAllPages(() =>
+        supabase.from('heroes').select('*').ilike('publisher', '%marvel%').order('name'),
+      );
+    case 'dc':
+      return fetchAllPages(() =>
+        supabase.from('heroes').select('*').ilike('publisher', '%dc%').order('name'),
+      );
+    case 'strongest':
+      return fetchAllPages(() =>
+        supabase
+          .from('heroes')
+          .select('*')
+          .not('strength', 'is', null)
+          .order('strength', { ascending: false }),
+      );
+    case 'most-intelligent':
+      return fetchAllPages(() =>
+        supabase
+          .from('heroes')
+          .select('*')
+          .not('intelligence', 'is', null)
+          .order('intelligence', { ascending: false }),
+      );
   }
 }
 

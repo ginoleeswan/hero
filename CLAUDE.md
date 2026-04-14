@@ -68,7 +68,7 @@ src/
 
 supabase/
   migrations/          Version-controlled SQL migrations
-  seed.sql             initial seed (DB now has 564 heroes; 34 have categories, ~530 are uncategorised)
+  seed.sql             initial seed (DB has grown to 3,000+ heroes)
 
 __tests__/             Jest tests mirroring src/ structure
 ```
@@ -82,6 +82,7 @@ __tests__/             Jest tests mirroring src/ structure
 ### Query layer
 - Screens **never** import `supabase` directly. All DB access goes through `src/lib/db/`.
 - `src/lib/api.ts` handles external REST APIs (SuperheroAPI, ComicVine).
+- Supabase/PostgREST has a default 1000-row cap — always add `.limit()` or use `.range()` for pagination on large tables. The `heroes` table has 3,000+ rows.
 
 ### Migrations
 - All schema changes must be a new SQL file in `supabase/migrations/` named `YYYYMMDDHHMMSS_description.sql`.
