@@ -41,7 +41,6 @@ import type { FavouriteHero } from '../../src/types';
 // ── Constants ─────────────────────────────────────────────────────────────────
 const PUBLISHER_FILTERS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
 const DISPLAY_LIMIT = 120;
-const SPOTLIGHT_POOL = 10;
 const ROW_CARD_HEIGHT = 310;
 const ROW_CARD_WIDTH = 220;
 
@@ -268,173 +267,352 @@ const rc = StyleSheet.create({
   } as object,
 });
 
-// ── Spotlight banner ──────────────────────────────────────────────────────────
-function WebSpotlight({
-  hero,
-  index,
-  total,
-  onPress,
+// ── Portrait strip spotlight ──────────────────────────────────────────────────
+const ACCORDION_SCALES = {
+  // Ultra-wide displays (1200px+)
+  large: [
+    { w: 280, o: 1 }, { w: 140, o: 0.8 }, { w: 100, o: 0.6 }, { w: 76, o: 0.5 }, 
+    { w: 54, o: 0.4 }, { w: 40, o: 0.3 }, { w: 28, o: 0.2 }, { w: 20, o: 0.1 }
+  ],
+  // Standard desktop (900px - 1199px)
+  medium: [
+    { w: 180, o: 1 }, { w: 100, o: 0.8 }, { w: 76, o: 0.5 }, { w: 54, o: 0.3 }, 
+    { w: 38, o: 0.2 }, { w: 20, o: 0.1 }
+  ],
+  // Tablet / Small desktop (768px - 899px)
+  small: [
+    { w: 160, o: 1 }, { w: 80, o: 0.7 }, { w: 40, o: 0.3 }
+  ]
+};
+
+function PortraitStripSpotlight({
+  heroes,
+  activeIndex,
+  onCardPress,
   onDotPress,
+  onViewProfile,
 }: {
-  hero: Hero;
-  index: number;
-  total: number;
-  onPress: () => void;
+  heroes: Hero[];
+  activeIndex: number;
+  onCardPress: (i: number) => void;
   onDotPress: (i: number) => void;
+  onViewProfile: () => void;
 }) {
-  const { width } = useWindowDimensions();
+  // 1. Grab both width AND height unconditionally at the top level
+  const { width, height: windowHeight } = useWindowDimensions();
   const isDesktop = width >= 768;
-  const source = heroImageSource(String(hero.id), hero.image_url, hero.portrait_url);
+  const hero = heroes[activeIndex];
+  if (!hero) return null;
 
-  const height = isDesktop ? 580 : 420;
-  const nameFontSize = isDesktop ? 68 : 44;
-  const nameLineHeight = isDesktop ? 82 : 54;
-  const contentPad = isDesktop ? 52 : 24;
-  const bottomPad = isDesktop ? 72 : 48;
+  const pagePad = width < 640 ? 16 : 32;
 
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ hovered }: { hovered?: boolean }) =>
-        [spot.wrap, { height } as object, hovered && (spot.wrapHover as object)] as object
-      }
-    >
-      {/* Image with fade-in on hero change */}
-      <Image
-        key={String(hero.id)}
-        source={source}
-        contentFit="cover"
-        contentPosition={'center 15%' as any}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
-        cachePolicy="memory-disk"
-        recyclingKey={String(hero.id)}
-        transition={450}
-      />
-      <View style={spot.overlay as object} />
-      <View style={[spot.content, { left: contentPad, right: contentPad, bottom: bottomPad }]}>
-        <View style={spot.logoRow}>
-          <PublisherLogo publisher={hero.publisher} />
+  const activeScale = 
+    width >= 1280 ? ACCORDION_SCALES.large : 
+    width >= 900 ? ACCORDION_SCALES.medium : 
+    ACCORDION_SCALES.small;
+
+  if (isDesktop) {
+    // 2. Now just do the math here, no Hooks inside the if block!
+    const dynamicHeight = Math.min(320, windowHeight * 0.6);
+
+    return (
+      <View style={[pss.wrap, { paddingHorizontal: pagePad, height: dynamicHeight }]}>
+        <View style={pss.strip}>
+          {heroes.map((h, index) => {
+            const offset = (index - activeIndex + heroes.length) % heroes.length;
+            const isActive = offset === 0;
+            const isNext = offset === 1;
+
+            const isVisible = offset < activeScale.length;
+            const cardWidth = isVisible ? activeScale[offset].w : 0;
+            const opacity = isVisible ? activeScale[offset].o : 0;
+
+            const source = heroImageSource(String(h.id), h.image_url, h.portrait_url);
+
+            return (
+              <Pressable
+                key={h.id}
+                onPress={() => onCardPress(index)}
+                style={[
+                  pss.card,
+                  {
+                    width: cardWidth,
+                    opacity: opacity,
+                    borderWidth: cardWidth === 0 ? 0 : undefined,
+                  } as object,
+                  isActive && (pss.cardActive as object),
+                ]}
+              >
+                <Image
+                  source={source}
+                  contentFit="cover"
+                  contentPosition="top center"
+                  style={[
+                    StyleSheet.absoluteFill,
+                    {
+                      opacity: isActive ? 1 : 0.4,
+                      transition: 'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1)',
+                    } as any,
+                  ]}
+                  cachePolicy="memory-disk"
+                  recyclingKey={String(h.id)}
+                />
+                <View style={pss.cardOverlay as object} />
+
+                <Text
+                  style={[
+                    pss.cardBadge as object,
+                    { opacity: isActive ? 1 : 0, transition: 'opacity 250ms ease' } as object,
+                  ]}
+                >
+                  Featured
+                </Text>
+
+                <Text
+                  style={[
+                    pss.cardName as object,
+                    isNext && (pss.cardNameNext as object),
+                    {
+                      opacity: isActive ? 1 : isNext ? 0.7 : 0,
+                      transition: 'opacity 250ms ease',
+                    } as object,
+                  ]}
+                  numberOfLines={2}
+                >
+                  {h.name}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
-        <Text style={spot.label as object}>Featured Hero</Text>
-        <Text
-          style={[spot.name, { fontSize: nameFontSize, lineHeight: nameLineHeight }] as object}
-          numberOfLines={2}
-        >
-          {hero.name}
-        </Text>
-        {hero.summary ? (
-          <Text style={spot.summary as object} numberOfLines={2}>
-            {hero.summary}
-          </Text>
-        ) : null}
-        <View style={spot.ctaRow}>
-          <View style={spot.ctaBtn as object}>
-            <Text style={spot.ctaBtnText}>View Profile</Text>
-            <Text style={spot.ctaBtnArrow}> →</Text>
+
+        {/* Info panel */}
+        <View style={pss.panel}>
+          <View>
+            <Text style={pss.panelLabel as object}>Featured Hero</Text>
+            <Text style={pss.panelName as object} numberOfLines={2}>
+              {hero.name}
+            </Text>
+            {!!hero.publisher && (
+              <Text style={pss.panelPub as object} numberOfLines={1}>
+                {hero.publisher}
+              </Text>
+            )}
+            {!!hero.summary && (
+              <Text style={pss.panelSummary as object} numberOfLines={4}>
+                {hero.summary}
+              </Text>
+            )}
+          </View>
+          <View style={pss.panelFooter}>
+            <Pressable
+              onPress={onViewProfile}
+              style={({ hovered }: { hovered?: boolean }) =>
+                [pss.ctaBtn, hovered && (pss.ctaBtnHover as object)] as object
+              }
+            >
+              <Text style={pss.ctaBtnText}>View Profile →</Text>
+            </Pressable>
+            <View style={pss.dots}>
+              {heroes.slice(0, activeScale.length).map((_, i) => (
+                <Pressable
+                  key={i}
+                  onPress={() => onDotPress(i)}
+                  style={[pss.dot, i === activeIndex && (pss.dotActive as object)] as object}
+                />
+              ))}
+            </View>
           </View>
         </View>
       </View>
-      {total > 1 && (
-        <View style={[spot.dots, { right: contentPad }] as object}>
-          {Array.from({ length: total }).map((_, i) => (
-            <Pressable
-              key={i}
-              onPress={(e) => {
-                e.stopPropagation?.();
-                onDotPress(i);
-              }}
-              style={[spot.dot, i === index && (spot.dotActive as object)] as object}
-            />
-          ))}
+    );
+  }
+
+  // Mobile web: single portrait + info panel
+  const source = heroImageSource(String(hero.id), hero.image_url, hero.portrait_url);
+  return (
+    <View style={[pss.wrapMobile, { paddingHorizontal: pagePad }]}>
+      <View style={pss.singlePortrait}>
+        <Image
+          source={source}
+          contentFit="cover"
+          contentPosition="top"
+          style={StyleSheet.absoluteFill}
+          cachePolicy="memory-disk"
+          recyclingKey={String(hero.id)}
+          transition={200}
+        />
+        <View style={pss.cardOverlay as object} />
+        <Text style={pss.cardBadge as object}>Featured</Text>
+        <Text style={pss.cardName as object} numberOfLines={2}>
+          {hero.name}
+        </Text>
+      </View>
+      <View style={pss.panelMobile}>
+        <View>
+          <Text style={pss.panelLabel as object}>Featured Hero</Text>
+          <Text style={pss.panelNameMobile as object} numberOfLines={2}>
+            {hero.name}
+          </Text>
+          {!!hero.publisher && (
+            <Text style={pss.panelPub as object} numberOfLines={1}>
+              {hero.publisher}
+            </Text>
+          )}
+          {!!hero.summary && (
+            <Text style={pss.panelSummaryMobile as object} numberOfLines={5}>
+              {hero.summary}
+            </Text>
+          )}
         </View>
-      )}
-    </Pressable>
+        <View style={pss.panelFooter}>
+          <Pressable onPress={onViewProfile} style={pss.ctaBtn as object}>
+            <Text style={pss.ctaBtnText}>View →</Text>
+          </Pressable>
+          <View style={pss.dots}>
+            {heroes.slice(0, 8).map((_, i) => (
+              <Pressable
+                key={i}
+                onPress={() => onDotPress(i)}
+                style={[pss.dot, i === activeIndex && (pss.dotActive as object)] as object}
+              />
+            ))}
+          </View>
+        </View>
+      </View>
+    </View>
   );
 }
 
-const spot = StyleSheet.create({
+const pss = StyleSheet.create({
+  // Desktop
   wrap: {
-    borderRadius: 0,
+    width: '100%',
+    alignSelf: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    marginVertical: 32,
+    gap: 12,
+  },
+  strip: { flexDirection: 'row', alignItems: 'stretch', gap: 12 },
+  card: {
+    borderRadius: 14,
     overflow: 'hidden',
-    backgroundColor: COLORS.navy,
+    backgroundColor: '#2c4a56',
+    position: 'relative',
     cursor: 'pointer',
-    transition: 'transform 280ms ease, box-shadow 280ms ease',
-    marginBottom: 48,
+    transition:
+      'width 400ms cubic-bezier(0.16, 1, 0.3, 1), opacity 400ms cubic-bezier(0.16, 1, 0.3, 1), margin 400ms cubic-bezier(0.16, 1, 0.3, 1)',
   } as object,
-  wrapHover: {
-    transform: [{ scale: 1.005 }],
-    boxShadow: '0 40px 100px rgba(0,0,0,0.35)',
+  cardActive: {
+    boxShadow: '0 20px 40px rgba(0,0,0,0.3), 0 8px 16px rgba(0,0,0,0.2)',
   } as object,
-  overlay: {
+  cardOverlay: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 0, left: 0, right: 0, bottom: 0,
     backgroundImage:
-      'linear-gradient(to top, rgba(15,20,24,0.99) 0%, rgba(15,20,24,0.75) 28%, rgba(15,20,24,0.25) 55%, transparent 100%)',
+      'linear-gradient(to top, rgba(15,20,24,0.95) 0%, rgba(15,20,24,0.15) 50%, transparent 100%)',
   } as object,
-  content: { position: 'absolute' },
-  logoRow: { marginBottom: 12 },
-  label: {
+  cardBadge: {
+    position: 'absolute',
+    top: 14, left: 14,
     fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
+    fontSize: 9,
     color: COLORS.orange,
     letterSpacing: 2.5,
     textTransform: 'uppercase',
-    marginBottom: 10,
+    zIndex: 2,
   } as object,
-  name: {
-    fontFamily: 'Flame-Regular',
+  cardName: {
+    position: 'absolute',
+    bottom: 14, left: 14, right: 14,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 18,
     color: COLORS.beige,
+    lineHeight: 22,
+    textShadow: '0 2px 8px rgba(0,0,0,0.9)',
+    zIndex: 2,
+  } as object,
+  cardNameNext: {
+    fontSize: 11,
+    bottom: 10, left: 10,
+  } as object,
+
+  // Info Panel
+  panel: {
+    flex: 1,           
+    minWidth: 260,     
+    backgroundColor: COLORS.navy,
+    borderRadius: 14,
+    padding: 24,
+    justifyContent: 'space-between',
+  },
+  panelLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    color: COLORS.orange,
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  } as object,
+  panelName: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 34,
+    color: COLORS.beige,
+    lineHeight: 38,
+    marginBottom: 6,
+    transition: 'opacity 200ms ease',
+  } as object,
+  panelPub: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: 'rgba(245,235,220,0.4)',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
     marginBottom: 14,
-    textShadow: '0 2px 12px rgba(0,0,0,0.85)',
   } as object,
-  summary: {
+  panelSummary: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 14,
-    color: 'rgba(245,235,220,0.55)',
+    fontSize: 13,
+    color: 'rgba(245,235,220,0.6)',
     lineHeight: 20,
-    marginBottom: 24,
-    maxWidth: 520,
   } as object,
-  ctaRow: { flexDirection: 'row', alignItems: 'center' },
-  ctaBtn: {
+  panelFooter: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  ctaBtn: {
     backgroundColor: COLORS.orange,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 24,
-    gap: 2,
+    transition: 'opacity 150ms ease',
   } as object,
+  ctaBtnHover: { opacity: 0.85 } as object,
   ctaBtnText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
+    fontSize: 11,
     color: '#fff',
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
-  ctaBtnArrow: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 14,
-    color: '#fff',
-  },
-  dots: {
-    position: 'absolute',
-    bottom: 20,
-    flexDirection: 'row',
-    gap: 7,
-  } as object,
+  dots: { flexDirection: 'row', gap: 6 },
   dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: 'rgba(245,235,220,0.28)',
+    width: 6, height: 6, borderRadius: 3,
+    backgroundColor: 'rgba(245,235,220,0.2)',
     cursor: 'pointer',
     transition: 'all 200ms ease',
   } as object,
-  dotActive: { width: 22, backgroundColor: COLORS.orange } as object,
+  dotActive: { width: 20, backgroundColor: COLORS.orange } as object,
+
+  // Mobile Web overrides
+  wrapMobile: { flexDirection: 'row', gap: 10, height: 240, marginVertical: 20 },
+  singlePortrait: { width: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: COLORS.navy, position: 'relative' },
+  panelMobile: { flex: 1, backgroundColor: COLORS.navy, borderRadius: 10, padding: 14, justifyContent: 'space-between' },
+  panelNameMobile: { fontFamily: 'Flame-Regular', fontSize: 18, color: COLORS.beige, lineHeight: 22, marginBottom: 4 } as object,
+  panelSummaryMobile: { fontFamily: 'Nunito_400Regular', fontSize: 10, color: 'rgba(245,235,220,0.5)', lineHeight: 15 } as object,
 });
 
 // ── Carousel scroll hook (web desktop) ───────────────────────────────────────
@@ -483,7 +661,15 @@ function useCarouselScroll(heroCount: number) {
     (scrollRef.current as any)?.scrollBy({ left: 720, behavior: 'smooth' });
   }, []);
 
-  return { sectionRef, scrollRef, isHovered, canScrollLeft, canScrollRight, doScrollLeft, doScrollRight };
+  return {
+    sectionRef,
+    scrollRef,
+    isHovered,
+    canScrollLeft,
+    canScrollRight,
+    doScrollLeft,
+    doScrollRight,
+  };
 }
 
 // ── Carousel arrow button ─────────────────────────────────────────────────────
@@ -501,9 +687,16 @@ function CarouselArrow({
   const rightStyle = contained ? arr.rightContained : arr.right;
   return (
     <Pressable
-      onPress={(e) => { e.stopPropagation?.(); onPress(); }}
+      onPress={(e) => {
+        e.stopPropagation?.();
+        onPress();
+      }}
       style={({ hovered }: { hovered?: boolean }) =>
-        [arr.btn, direction === 'left' ? arr.left : rightStyle, hovered && (arr.btnHover as object)] as object
+        [
+          arr.btn,
+          direction === 'left' ? arr.left : rightStyle,
+          hovered && (arr.btnHover as object),
+        ] as object
       }
     >
       <Text style={arr.chevron as object}>{direction === 'left' ? '‹' : '›'}</Text>
@@ -532,8 +725,8 @@ const arr = StyleSheet.create({
     transform: [{ scale: 1.12 }],
     boxShadow: '0 8px 28px rgba(0,0,0,0.3)',
   } as object,
-  left: { left: -12 } as object,           // -16 (scroll margin) + 4 inset
-  right: { right: 8 } as object,            // viewport-breakout row: 8px from viewport edge
+  left: { left: -12 } as object, // -16 (scroll margin) + 4 inset
+  right: { right: 8 } as object, // viewport-breakout row: 8px from viewport edge
   rightContained: { right: -12 } as object, // contained dark row: -16 (scroll margin) + 4 inset
   chevron: {
     fontFamily: 'Nunito_700Bold',
@@ -544,7 +737,6 @@ const arr = StyleSheet.create({
     marginTop: -1,
   } as object,
 });
-
 
 // ── Home row section ──────────────────────────────────────────────────────────
 function HomeRow({
@@ -560,8 +752,15 @@ function HomeRow({
   onPress: (id: string) => void;
   onViewAll?: () => void;
 }) {
-  const { sectionRef, scrollRef, isHovered, canScrollLeft, canScrollRight, doScrollLeft, doScrollRight } =
-    useCarouselScroll(heroes.length);
+  const {
+    sectionRef,
+    scrollRef,
+    isHovered,
+    canScrollLeft,
+    canScrollRight,
+    doScrollLeft,
+    doScrollRight,
+  } = useCarouselScroll(heroes.length);
 
   const { width: winWidth } = useWindowDimensions();
   const pagePad = winWidth < 640 ? 16 : 32;
@@ -582,7 +781,19 @@ function HomeRow({
                 }
               >
                 <Text style={row.title}>{title}</Text>
-                <Text style={{ fontFamily: 'Flame-Regular', fontSize: 44, color: COLORS.navy, marginTop: 4, marginLeft: 4 } as object}>›</Text>
+                <Text
+                  style={
+                    {
+                      fontFamily: 'Flame-Regular',
+                      fontSize: 44,
+                      color: COLORS.navy,
+                      marginTop: 4,
+                      marginLeft: 4,
+                    } as object
+                  }
+                >
+                  ›
+                </Text>
               </Pressable>
             ) : (
               <Text style={row.title}>{title}</Text>
@@ -592,7 +803,10 @@ function HomeRow({
       </View>
       {/* Scroll track starts at viewport left edge — cards bleed off left when scrolling. */}
       <View style={{ position: 'relative', minHeight: ROW_CARD_HEIGHT } as object}>
-        <View ref={scrollRef} style={[rowScrollStyle, { paddingLeft: pagePad, marginLeft: 0 }] as object}>
+        <View
+          ref={scrollRef}
+          style={[rowScrollStyle, { paddingLeft: pagePad, marginLeft: 0 }] as object}
+        >
           {heroes.map((h) => (
             <RowCard key={h.id} hero={h} onPress={() => onPress(String(h.id))} />
           ))}
@@ -655,8 +869,15 @@ function DarkHomeRow({
   onPress: (id: string) => void;
   onViewAll?: () => void;
 }) {
-  const { sectionRef, scrollRef, isHovered, canScrollLeft, canScrollRight, doScrollLeft, doScrollRight } =
-    useCarouselScroll(heroes.length);
+  const {
+    sectionRef,
+    scrollRef,
+    isHovered,
+    canScrollLeft,
+    canScrollRight,
+    doScrollLeft,
+    doScrollRight,
+  } = useCarouselScroll(heroes.length);
   const { width: winWidth } = useWindowDimensions();
   const pagePad = winWidth < 640 ? 16 : 32;
 
@@ -676,7 +897,19 @@ function DarkHomeRow({
                 }
               >
                 <Text style={drow.title}>{title}</Text>
-                <Text style={{ fontFamily: 'Flame-Regular', fontSize: 44, color: COLORS.beige, marginTop: 4, marginLeft: 4 }  as object}>›</Text>
+                <Text
+                  style={
+                    {
+                      fontFamily: 'Flame-Regular',
+                      fontSize: 44,
+                      color: COLORS.beige,
+                      marginTop: 4,
+                      marginLeft: 4,
+                    } as object
+                  }
+                >
+                  ›
+                </Text>
               </Pressable>
             ) : (
               <Text style={drow.title}>{title}</Text>
@@ -686,13 +919,20 @@ function DarkHomeRow({
       </View>
       {/* Scroll track starts at viewport left edge — cards bleed off sides when scrolling. */}
       <View style={{ position: 'relative', minHeight: ROW_CARD_HEIGHT } as object}>
-        <View ref={scrollRef} style={[rowScrollStyle, { paddingLeft: pagePad, marginLeft: 0 }] as object}>
+        <View
+          ref={scrollRef}
+          style={[rowScrollStyle, { paddingLeft: pagePad, marginLeft: 0 }] as object}
+        >
           {heroes.map((h) => (
             <RowCard key={h.id} hero={h} onPress={() => onPress(String(h.id))} />
           ))}
         </View>
-        {isHovered && canScrollLeft && <CarouselArrow direction="left" onPress={doScrollLeft} contained />}
-        {isHovered && canScrollRight && <CarouselArrow direction="right" onPress={doScrollRight} contained />}
+        {isHovered && canScrollLeft && (
+          <CarouselArrow direction="left" onPress={doScrollLeft} contained />
+        )}
+        {isHovered && canScrollRight && (
+          <CarouselArrow direction="right" onPress={doScrollRight} contained />
+        )}
       </View>
     </View>
   );
@@ -748,13 +988,28 @@ function HomeSkeleton() {
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.discoverContent as object}>
       {/* Spotlight — full-bleed, no padding */}
-      <SkeletonBlock opacity={opacity} height={width < 640 ? 420 : 580} borderRadius={0} style={{ marginBottom: 48 }} />
+      <SkeletonBlock
+        opacity={opacity}
+        height={width < 640 ? 420 : 580}
+        borderRadius={0}
+        style={{ marginBottom: 48 }}
+      />
 
       {/* Carousel rows — match HomeRow layout */}
       {[1, 2, 3].map((i) => (
         <View key={i} style={{ marginBottom: 52 } as object}>
           {/* Header: accent bar + label stub + title stub — inset like real header */}
-          <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 14, marginBottom: 16, paddingLeft: pagePad } as object}>
+          <View
+            style={
+              {
+                flexDirection: 'row',
+                alignItems: 'stretch',
+                gap: 14,
+                marginBottom: 16,
+                paddingLeft: pagePad,
+              } as object
+            }
+          >
             <SkeletonBlock opacity={opacity} width={4} height={44} borderRadius={2} />
             <View style={{ gap: 4, justifyContent: 'center' } as object}>
               <SkeletonBlock opacity={opacity} width={60} height={9} borderRadius={3} />
@@ -764,7 +1019,13 @@ function HomeSkeleton() {
           {/* Cards row — starts at viewport left edge to match carousel bleed */}
           <View style={{ flexDirection: 'row', gap: 16, paddingLeft: pagePad } as object}>
             {Array.from({ length: 6 }).map((_, j) => (
-              <SkeletonBlock key={j} opacity={opacity} width={ROW_CARD_WIDTH} height={ROW_CARD_HEIGHT} borderRadius={10} />
+              <SkeletonBlock
+                key={j}
+                opacity={opacity}
+                width={ROW_CARD_WIDTH}
+                height={ROW_CARD_HEIGHT}
+                borderRadius={10}
+              />
             ))}
           </View>
         </View>
@@ -815,6 +1076,9 @@ export default function WebHomeScreen() {
   const isDesktop = width >= 768;
   const inputRef = useRef<TextInput>(null);
 
+  // 1. MATCH THE ACCORDION_SCALES EXACTLY
+  const optimalPoolSize = width >= 1280 ? 8 : width >= 900 ? 6 : 3;
+
   const { query, setQuery, publisher, setPublisher } = useSearch();
   const { user } = useAuth();
 
@@ -845,7 +1109,9 @@ export default function WebHomeScreen() {
 
   // Load search heroes + home data in parallel
   useEffect(() => {
-    getHeroCount().then(setTotalHeroCount).catch(() => {});
+    getHeroCount()
+      .then(setTotalHeroCount)
+      .catch(() => {});
 
     searchHeroes('', 'All', 600)
       .then((heroes) => {
@@ -871,8 +1137,8 @@ export default function WebHomeScreen() {
       getHeroesByStatRanking('intelligence', 20),
       getNewlyAddedCV(25),
     ])
-      .then(([spotlight, iconic, xmen, antiHeroes, villains, marvel, dc, strongest, mostIntelligent, newlyAdded]) => {
-        setHomeData({
+      .then(
+        ([
           spotlight,
           iconic,
           xmen,
@@ -883,8 +1149,21 @@ export default function WebHomeScreen() {
           strongest,
           mostIntelligent,
           newlyAdded,
-        });
-      })
+        ]) => {
+          setHomeData({
+            spotlight,
+            iconic,
+            xmen,
+            antiHeroes,
+            villains,
+            marvel,
+            dc,
+            strongest,
+            mostIntelligent,
+            newlyAdded,
+          });
+        },
+      )
       .catch(() => {});
   }, []);
 
@@ -899,14 +1178,19 @@ export default function WebHomeScreen() {
       .catch(() => {});
   }, [user?.id]);
 
-  // Auto-advance spotlight
+// Auto-advance spotlight
   useEffect(() => {
     if (!homeData?.spotlight.length) return;
-    const total = Math.min(SPOTLIGHT_POOL, homeData.spotlight.length);
+    
+    const total = Math.min(optimalPoolSize, homeData.spotlight.length);
     if (total <= 1) return;
+
+    // Safety: If the window shrinks, ensure the active index resets so it doesn't crash
+    setSpotlightIndex((prev) => (prev >= total ? 0 : prev));
+
     const timer = setInterval(() => setSpotlightIndex((i) => (i + 1) % total), 6000);
     return () => clearInterval(timer);
-  }, [homeData?.spotlight]);
+  }, [homeData?.spotlight, optimalPoolSize]); // <-- Add optimalPoolSize to dependency array
 
   const filtered = useMemo(() => {
     let list =
@@ -934,9 +1218,6 @@ export default function WebHomeScreen() {
     },
     [router],
   );
-
-  const spotlightHero = homeData?.spotlight[spotlightIndex] ?? null;
-  const spotlightTotal = homeData ? Math.min(SPOTLIGHT_POOL, homeData.spotlight.length) : 0;
 
   return (
     <View style={styles.root}>
@@ -1077,15 +1358,19 @@ export default function WebHomeScreen() {
       ) : !homeData ? (
         <HomeSkeleton />
       ) : (
-        <ScrollView style={styles.scroll} contentContainerStyle={[styles.discoverContent, isMobile && { paddingTop: 0 }] as object}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[styles.discoverContent, isMobile && { paddingTop: 0 }] as object}
+        >
           {/* Spotlight */}
-          {spotlightHero && (
-            <WebSpotlight
-              hero={spotlightHero}
-              index={spotlightIndex}
-              total={spotlightTotal}
-              onPress={() => handlePress(String(spotlightHero.id))}
+          {homeData.spotlight.length > 0 && (
+            <PortraitStripSpotlight
+              // Dynamically chop the array to match the screen!
+              heroes={homeData.spotlight.slice(0, Math.min(optimalPoolSize, homeData.spotlight.length))}
+              activeIndex={spotlightIndex}
+              onCardPress={setSpotlightIndex}
               onDotPress={setSpotlightIndex}
+              onViewProfile={() => handlePress(String(homeData.spotlight[spotlightIndex].id))}
             />
           )}
 

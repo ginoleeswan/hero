@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portrait Strip Carousel — Interactive Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #1a1a2e;
+    color: #f5ebdc;
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f5ebdc;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: rgba(245,235,220,0.5);
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+
+  /* Browser chrome */
+  .browser {
+    background: #f5ebdc;
+    border-radius: 14px;
+    overflow: hidden;
+    max-width: 860px;
+    margin: 0 auto;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+  }
+  .nav-bar {
+    background: #1d2d33;
+    padding: 11px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-logo {
+    font-size: 15px;
+    font-weight: 900;
+    color: #f5ebdc;
+    letter-spacing: 2px;
+  }
+  .nav-search {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: rgba(245,235,220,0.12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; cursor: pointer;
+  }
+
+  /* ── Portrait Strip ── */
+  .spotlight-section {
+    padding: 16px 16px 0;
+    background: #f5ebdc;
+  }
+  .strip-layout {
+    display: flex;
+    gap: 12px;
+    height: 260px;
+    align-items: stretch;
+  }
+
+  /* Portrait carousel area */
+  .portrait-carousel {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .pcard {
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+    background: #2c4a56;
+  }
+  .pcard::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(15,20,24,0.95) 0%, rgba(15,20,24,0.2) 55%, transparent 100%);
+  }
+  .pcard.active {
+    width: 160px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+  .pcard.next { width: 110px; opacity: 0.8; }
+  .pcard.far  { width: 80px;  opacity: 0.5; }
+  .pcard.farther { width: 60px; opacity: 0.3; }
+
+  .pcard-img {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 64px;
+    opacity: 0.25;
+    position: absolute;
+    top: 0; left: 0;
+  }
+  .pcard.active .pcard-img { opacity: 0.35; font-size: 80px; }
+
+  .pcard-badge {
+    position: absolute;
+    top: 10px; left: 10px;
+    z-index: 2;
+    font-size: 7px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #e8724a;
+    opacity: 0;
+    transition: opacity 200ms;
+  }
+  .pcard.active .pcard-badge { opacity: 1; }
+
+  .pcard-name {
+    position: absolute;
+    bottom: 10px;
+    left: 10px; right: 10px;
+    z-index: 2;
+    font-size: 11px;
+    font-weight: 700;
+    color: #f5ebdc;
+    line-height: 1.2;
+    opacity: 0;
+    transition: opacity 200ms;
+  }
+  .pcard.active .pcard-name { font-size: 14px; opacity: 1; }
+  .pcard.next .pcard-name { opacity: 0.7; font-size: 10px; }
+
+  /* Info panel */
+  .info-panel {
+    flex: 1;
+    background: #1d2d33;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
+  }
+  .info-label {
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #e8724a;
+    margin-bottom: 8px;
+  }
+  .info-name {
+    font-size: 28px;
+    font-weight: 900;
+    color: #f5ebdc;
+    line-height: 1.1;
+    margin-bottom: 8px;
+    transition: opacity 200ms;
+  }
+  .info-publisher {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(245,235,220,0.35);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .info-summary {
+    font-size: 12px;
+    color: rgba(245,235,220,0.5);
+    line-height: 1.6;
+    flex: 1;
+  }
+  .info-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+  }
+  .info-btn {
+    background: #e8724a;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 18px;
+    font-size: 10px;
+    font-weight: 800;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: opacity 150ms;
+  }
+  .info-btn:hover { opacity: 0.85; }
+  .info-dots {
+    display: flex;
+    gap: 5px;
+  }
+  .idot {
+    width: 6px; height: 6px;
+    border-radius: 3px;
+    background: rgba(245,235,220,0.2);
+    transition: all 200ms;
+    cursor: pointer;
+  }
+  .idot.active { width: 18px; background: #e8724a; }
+
+  /* Row below */
+  .row-section {
+    padding: 16px 16px 16px;
+    background: #f5ebdc;
+  }
+  .row-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .row-title { font-size: 20px; font-weight: 700; color: #1d2d33; }
+  .row-see { font-size: 11px; font-weight: 700; color: #e8724a; }
+  .row-cards { display: flex; gap: 10px; overflow: hidden; }
+  .row-card {
+    width: 110px; height: 155px; border-radius: 10px;
+    background: linear-gradient(135deg, #2c4a56, #1d2d33);
+    flex-shrink: 0; opacity: 0.45;
+  }
+
+  /* Nav arrows hint */
+  .nav-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: rgba(245,235,220,0.4);
+    margin-top: 10px;
+    justify-content: center;
+  }
+  .arrow-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(245,235,220,0.08);
+    border: 1px solid rgba(245,235,220,0.15);
+    color: #f5ebdc;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 150ms;
+  }
+  .arrow-btn:hover { background: rgba(245,235,220,0.15); }
+</style>
+</head>
+<body>
+
+<h2>Portrait Strip Carousel — Interactive Preview</h2>
+<p class="subtitle">Click any portrait card (or use the arrows) to cycle through featured heroes. The info panel updates on the right.</p>
+
+<div class="browser">
+  <div class="nav-bar">
+    <span class="nav-logo">HERO</span>
+    <div class="nav-search">🔍</div>
+  </div>
+
+  <div class="spotlight-section">
+    <div class="strip-layout">
+      <!-- Portrait carousel -->
+      <div class="portrait-carousel" id="carousel">
+        <div class="pcard active" data-index="0" onclick="setActive(0)">
+          <div class="pcard-img">🦸‍♂️</div>
+          <div class="pcard-badge">Featured</div>
+          <div class="pcard-name">Spider-Man</div>
+        </div>
+        <div class="pcard next" data-index="1" onclick="setActive(1)">
+          <div class="pcard-img">⚡</div>
+          <div class="pcard-name">The Flash</div>
+        </div>
+        <div class="pcard far" data-index="2" onclick="setActive(2)">
+          <div class="pcard-img">🦇</div>
+          <div class="pcard-name">Batman</div>
+        </div>
+        <div class="pcard farther" data-index="3" onclick="setActive(3)">
+          <div class="pcard-img">🔱</div>
+          <div class="pcard-name">Aquaman</div>
+        </div>
+        <div class="pcard farther" data-index="4" onclick="setActive(4)" style="width:44px;opacity:0.2">
+          <div class="pcard-img" style="font-size:28px">🌟</div>
+        </div>
+      </div>
+
+      <!-- Info panel -->
+      <div class="info-panel">
+        <div>
+          <div class="info-label">Featured Hero</div>
+          <div class="info-name" id="info-name">Spider-Man</div>
+          <div class="info-publisher" id="info-pub">Marvel Comics</div>
+          <div class="info-summary" id="info-summary">
+            Bitten by a radioactive spider, high school student Peter Parker gained the proportionate strength and agility of a spider. He now swings through New York City as its greatest protector.
+          </div>
+        </div>
+        <div class="info-footer">
+          <button class="info-btn">View Profile →</button>
+          <div class="info-dots" id="dots">
+            <div class="idot active" onclick="setActive(0)"></div>
+            <div class="idot" onclick="setActive(1)"></div>
+            <div class="idot" onclick="setActive(2)"></div>
+            <div class="idot" onclick="setActive(3)"></div>
+            <div class="idot" onclick="setActive(4)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row-section">
+    <div class="row-header">
+      <span class="row-title">Popular</span>
+      <span class="row-see">See All</span>
+    </div>
+    <div class="row-cards">
+      <div class="row-card"></div>
+      <div class="row-card"></div>
+      <div class="row-card"></div>
+      <div class="row-card"></div>
+      <div class="row-card"></div>
+    </div>
+  </div>
+</div>
+
+<div class="nav-hint">
+  <button class="arrow-btn" onclick="prev()">←</button>
+  <span>Click portraits or use arrows to cycle · Info panel updates on the right</span>
+  <button class="arrow-btn" onclick="next()">→</button>
+</div>
+
+<script>
+  const heroes = [
+    { name: 'Spider-Man',  pub: 'Marvel Comics',  summary: 'Bitten by a radioactive spider, high school student Peter Parker gained the proportionate strength and agility of a spider. He now swings through New York City as its greatest protector.', icon: '🦸‍♂️' },
+    { name: 'The Flash',   pub: 'DC Comics',       summary: 'Barry Allen was a forensic scientist struck by lightning and doused in chemicals, granting him the power of superhuman speed. He protects Central City as the Scarlet Speedster.', icon: '⚡' },
+    { name: 'Batman',      pub: 'DC Comics',       summary: 'Driven by the murder of his parents, billionaire Bruce Wayne trained to the peak of human ability. Donning a cape and cowl, he protects Gotham City from the shadows.', icon: '🦇' },
+    { name: 'Aquaman',     pub: 'DC Comics',       summary: 'Arthur Curry is the half-human, half-Atlantean king of the seas. He commands all marine life and wields a trident capable of channeling vast magical energies.', icon: '🔱' },
+    { name: 'Captain Marvel', pub: 'Marvel Comics', summary: 'Air Force pilot Carol Danvers was exposed to an alien energy core, giving her incredible strength, flight, and the ability to absorb and project energy blasts.', icon: '🌟' },
+  ];
+
+  let current = 0;
+
+  function setActive(i) {
+    current = i;
+    render();
+  }
+
+  function next() { setActive((current + 1) % heroes.length); }
+  function prev() { setActive((current - 1 + heroes.length) % heroes.length); }
+
+  function render() {
+    const cards = document.querySelectorAll('.pcard');
+    cards.forEach((card, idx) => {
+      const offset = (idx - current + heroes.length) % heroes.length;
+      card.className = 'pcard';
+      if (offset === 0) card.classList.add('active');
+      else if (offset === 1) card.classList.add('next');
+      else if (offset === 2) card.classList.add('far');
+      else card.classList.add('farther');
+
+      // update icon
+      const wrapped = (idx) % heroes.length;
+      const imgEl = card.querySelector('.pcard-img');
+      const nameEl = card.querySelector('.pcard-name');
+      if (imgEl) imgEl.textContent = heroes[wrapped].icon;
+      if (nameEl) nameEl.textContent = heroes[wrapped].name;
+    });
+
+    // update last card width for true fade-out
+    const lastCard = cards[cards.length - 1];
+    const lastOffset = (cards.length - 1 - current + heroes.length) % heroes.length;
+    if (lastOffset >= 4) { lastCard.style.width = '44px'; lastCard.style.opacity = '0.2'; }
+    else { lastCard.style.width = ''; lastCard.style.opacity = ''; }
+
+    // update info panel
+    const h = heroes[current];
+    document.getElementById('info-name').textContent = h.name;
+    document.getElementById('info-pub').textContent = h.pub;
+    document.getElementById('info-summary').textContent = h.summary;
+
+    // update dots
+    document.querySelectorAll('.idot').forEach((d, i) => {
+      d.className = 'idot' + (i === current ? ' active' : '');
+    });
+  }
+
+  // keyboard nav
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') next();
+    if (e.key === 'ArrowLeft') prev();
+  });
+
+  // auto-advance
+  setInterval(next, 5000);
+
+  render();
+</script>
+</body>
+</html>
