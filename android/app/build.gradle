@@ -89,7 +89,7 @@ android {
 
     namespace 'com.ginoswanepoel.hero'
     defaultConfig {
-        applicationId 'com.ginoswanepoel.hero'
+        applicationId System.getenv("APPLICATION_ID") ?: 'com.ginoswanepoel.hero'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
