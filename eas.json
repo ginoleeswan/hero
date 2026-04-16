@@ -7,6 +7,7 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "node": "20.19.4",
       "env": {
         "APP_VARIANT": "development",
         "APPLICATION_ID": "com.ginoswanepoel.hero.dev"
@@ -20,13 +21,15 @@
     },
     "preview": {
       "distribution": "internal",
+      "node": "20.19.4",
       "android": {
         "image": "ubuntu-22.04-jdk-17-ndk-r25b",
         "buildType": "apk"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "node": "20.19.4"
     }
   },
   "submit": {
