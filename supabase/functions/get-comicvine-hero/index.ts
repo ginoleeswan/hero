@@ -216,7 +216,8 @@ serve(async (req: Request) => {
             }
           }),
         );
-        movies = enriched.length > 0 ? enriched : null;
+        const overflow = rawMovieItems.slice(10).map(({ name, year }) => ({ name, year, imageUrl: null }));
+        movies = enriched.length > 0 ? [...enriched, ...overflow] : null;
 
         // teams — names, capped at 20
         const rawTeams: string[] = Array.isArray(d.teams)

@@ -1,4 +1,5 @@
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { ScrollView, View, Text, StyleSheet, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import type { MovieAppearance } from '../types';
@@ -6,6 +7,7 @@ import { COLORS } from '../constants/colors';
 
 const CARD_W = 80;
 const CARD_H = 120;
+const INITIAL_COUNT = 10;
 
 interface Props {
   movies: MovieAppearance[];
@@ -13,7 +15,9 @@ interface Props {
 }
 
 export function MovieStrip({ movies, totalCount }: Props) {
-  const overflow = totalCount - movies.length;
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? movies : movies.slice(0, INITIAL_COUNT);
+  const overflow = totalCount - visible.length;
 
   return (
     <ScrollView
@@ -21,7 +25,7 @@ export function MovieStrip({ movies, totalCount }: Props) {
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.container}
     >
-      {movies.map((movie, i) => (
+      {visible.map((movie, i) => (
         <View key={i} style={styles.card}>
           {movie.imageUrl ? (
             <Image
@@ -42,11 +46,11 @@ export function MovieStrip({ movies, totalCount }: Props) {
         </View>
       ))}
 
-      {overflow > 0 ? (
-        <View style={[styles.card, styles.overflowCard]}>
+      {!expanded && overflow > 0 ? (
+        <Pressable style={[styles.card, styles.overflowCard]} onPress={() => setExpanded(true)}>
           <Text style={styles.overflowCount}>+{overflow}</Text>
           <Text style={styles.overflowLabel}>more</Text>
-        </View>
+        </Pressable>
       ) : null}
     </ScrollView>
   );

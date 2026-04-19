@@ -157,7 +157,12 @@ export default function WebCharacterScreen() {
         if (hero?.enriched_at) {
           setData(heroRowToCharacterData(hero));
           const needsComicVine =
-            !hero.comicvine_enriched_at || hero.powers === null || !hero.movies?.length;
+            !hero.comicvine_enriched_at ||
+            hero.powers === null ||
+            !hero.movies?.length ||
+            (hero.movie_count != null &&
+              hero.movies != null &&
+              hero.movie_count > (hero.movies as unknown[]).length);
           setComicVineLoading(needsComicVine);
           if (needsComicVine) {
             fetchHeroDetails(hero.id, hero.name)
