@@ -37,6 +37,67 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
   );
 }
 
+function ExpandableTeamsRow({
+  teams,
+  fallback,
+}: {
+  teams: string[] | null | undefined;
+  fallback: string | null | undefined;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  if (teams?.length) {
+    if (teams.length <= 2 || expanded) {
+      return <InfoRow label="Affiliations" value={teams.join(', ')} />;
+    }
+    const remainder = teams.length - 2;
+    return (
+      <View style={styles.infoRow}>
+        <Text style={styles.infoLabel}>Affiliations</Text>
+        <Text style={styles.infoValue}>
+          {teams.slice(0, 2).join(', ')}{' '}
+          <Text onPress={() => setExpanded(true)} style={{ color: COLORS.blue }}>
+            +{remainder} more
+          </Text>
+        </Text>
+      </View>
+    );
+  }
+  return <InfoRow label="Affiliations" value={fallback} />;
+}
+
+function ExpandableChipGroup({
+  label,
+  chips,
+  chipStyle,
+  chipTextStyle,
+}: {
+  label: string;
+  chips: string[];
+  chipStyle: object;
+  chipTextStyle: object;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? chips : chips.slice(0, 10);
+  const remainder = chips.length - 10;
+  return (
+    <View style={styles.chipGroup}>
+      <Text style={styles.chipGroupLabel}>{label}</Text>
+      <View style={styles.chipRow}>
+        {visible.map((name, i) => (
+          <View key={i} style={chipStyle as object}>
+            <Text style={chipTextStyle as object}>{name}</Text>
+          </View>
+        ))}
+        {!expanded && remainder > 0 ? (
+          <Pressable onPress={() => setExpanded(true)} style={chipStyle as object}>
+            <Text style={chipTextStyle as object}>+{remainder} more</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
 export default function WebCharacterScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -540,14 +601,9 @@ export default function WebCharacterScreen() {
                   <InfoRow label="Occupation" value={stats.work.occupation} />
                   <InfoRow label="Base" value={stats.work.base} />
                   <InfoRow label="Relatives" value={stats.connections.relatives} />
-                  <InfoRow
-                    label="Affiliations"
-                    value={
-                      details.teams?.length
-                        ? details.teams.slice(0, 2).join(', ') +
-                          (details.teams.length > 2 ? ` +${details.teams.length - 2} more` : '')
-                        : stats.connections['group-affiliation']
-                    }
+                  <ExpandableTeamsRow
+                    teams={details.teams}
+                    fallback={stats.connections['group-affiliation']}
                   />
                 </View>
               </View>
@@ -590,42 +646,20 @@ export default function WebCharacterScreen() {
                     <Text style={styles.cardTitle}>Enemies &amp; Allies</Text>
                     <View style={styles.cardDivider} />
                     {details.enemies?.length ? (
-                      <View style={styles.chipGroup}>
-                        <Text style={styles.chipGroupLabel}>Enemies</Text>
-                        <View style={styles.chipRow}>
-                          {details.enemies.slice(0, 10).map((name, i) => (
-                            <View key={i} style={styles.chipEnemy}>
-                              <Text style={styles.chipTextEnemy}>{name}</Text>
-                            </View>
-                          ))}
-                          {details.enemies.length > 10 ? (
-                            <View key="more-e" style={styles.chipEnemy}>
-                              <Text style={styles.chipTextEnemy}>
-                                +{details.enemies.length - 10} more
-                              </Text>
-                            </View>
-                          ) : null}
-                        </View>
-                      </View>
+                      <ExpandableChipGroup
+                        label="Enemies"
+                        chips={details.enemies}
+                        chipStyle={styles.chipEnemy}
+                        chipTextStyle={styles.chipTextEnemy}
+                      />
                     ) : null}
                     {details.friends?.length ? (
-                      <View style={styles.chipGroup}>
-                        <Text style={styles.chipGroupLabel}>Allies</Text>
-                        <View style={styles.chipRow}>
-                          {details.friends.slice(0, 10).map((name, i) => (
-                            <View key={i} style={styles.chipAlly}>
-                              <Text style={styles.chipTextAlly}>{name}</Text>
-                            </View>
-                          ))}
-                          {details.friends.length > 10 ? (
-                            <View key="more-f" style={styles.chipAlly}>
-                              <Text style={styles.chipTextAlly}>
-                                +{details.friends.length - 10} more
-                              </Text>
-                            </View>
-                          ) : null}
-                        </View>
-                      </View>
+                      <ExpandableChipGroup
+                        label="Allies"
+                        chips={details.friends}
+                        chipStyle={styles.chipAlly}
+                        chipTextStyle={styles.chipTextAlly}
+                      />
                     ) : null}
                   </View>
                 ) : null}
@@ -938,42 +972,20 @@ export default function WebCharacterScreen() {
                   <Text style={styles.cardTitle}>Enemies &amp; Allies</Text>
                   <View style={styles.cardDivider} />
                   {details.enemies?.length ? (
-                    <View style={styles.chipGroup}>
-                      <Text style={styles.chipGroupLabel}>Enemies</Text>
-                      <View style={styles.chipRow}>
-                        {details.enemies.slice(0, 10).map((name, i) => (
-                          <View key={i} style={styles.chipEnemy}>
-                            <Text style={styles.chipTextEnemy}>{name}</Text>
-                          </View>
-                        ))}
-                        {details.enemies.length > 10 ? (
-                          <View style={styles.chipEnemy}>
-                            <Text style={styles.chipTextEnemy}>
-                              +{details.enemies.length - 10} more
-                            </Text>
-                          </View>
-                        ) : null}
-                      </View>
-                    </View>
+                    <ExpandableChipGroup
+                      label="Enemies"
+                      chips={details.enemies}
+                      chipStyle={styles.chipEnemy}
+                      chipTextStyle={styles.chipTextEnemy}
+                    />
                   ) : null}
                   {details.friends?.length ? (
-                    <View style={styles.chipGroup}>
-                      <Text style={styles.chipGroupLabel}>Allies</Text>
-                      <View style={styles.chipRow}>
-                        {details.friends.slice(0, 10).map((name, i) => (
-                          <View key={i} style={styles.chipAlly}>
-                            <Text style={styles.chipTextAlly}>{name}</Text>
-                          </View>
-                        ))}
-                        {details.friends.length > 10 ? (
-                          <View style={styles.chipAlly}>
-                            <Text style={styles.chipTextAlly}>
-                              +{details.friends.length - 10} more
-                            </Text>
-                          </View>
-                        ) : null}
-                      </View>
-                    </View>
+                    <ExpandableChipGroup
+                      label="Allies"
+                      chips={details.friends}
+                      chipStyle={styles.chipAlly}
+                      chipTextStyle={styles.chipTextAlly}
+                    />
                   ) : null}
                 </View>
               ) : null}

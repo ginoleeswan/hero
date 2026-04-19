@@ -125,13 +125,14 @@ function OriginBadge({ origin }: { origin: string | null | undefined }) {
 }
 
 function AffiliationChips({ value }: { value: string | null | undefined }) {
+  const [expanded, setExpanded] = useState(false);
   if (!value || value === '-' || value === 'null' || value === '') return null;
   const chips = value
     .split(/[,;]/)
     .map((s) => s.trim())
     .filter((s) => s && s !== '-' && s !== 'null' && s !== 'none');
   if (chips.length === 0) return null;
-  const visible = chips.slice(0, 8);
+  const visible = expanded ? chips : chips.slice(0, 8);
   const remainder = chips.length - 8;
   return (
     <View style={styles.infoRow}>
@@ -142,10 +143,10 @@ function AffiliationChips({ value }: { value: string | null | undefined }) {
             <Text style={styles.chipText}>{chip}</Text>
           </View>
         ))}
-        {remainder > 0 && (
-          <View style={styles.chip}>
+        {!expanded && remainder > 0 && (
+          <TouchableOpacity onPress={() => setExpanded(true)} style={styles.chip}>
             <Text style={styles.chipText}>+{remainder} more</Text>
-          </View>
+          </TouchableOpacity>
         )}
       </View>
     </View>
@@ -185,8 +186,9 @@ function CharacterChips({
   chips: string[];
   chipStyle: 'enemy' | 'ally';
 }) {
+  const [expanded, setExpanded] = useState(false);
   if (chips.length === 0) return null;
-  const visible = chips.slice(0, 8);
+  const visible = expanded ? chips : chips.slice(0, 8);
   const remainder = chips.length - 8;
   const isEnemy = chipStyle === 'enemy';
   return (
@@ -200,12 +202,15 @@ function CharacterChips({
             </Text>
           </View>
         ))}
-        {remainder > 0 && (
-          <View style={[styles.chip, isEnemy ? styles.chipEnemy : styles.chipAlly]}>
+        {!expanded && remainder > 0 && (
+          <TouchableOpacity
+            onPress={() => setExpanded(true)}
+            style={[styles.chip, isEnemy ? styles.chipEnemy : styles.chipAlly]}
+          >
             <Text style={[styles.chipText, isEnemy ? styles.chipTextEnemy : styles.chipTextAlly]}>
               +{remainder} more
             </Text>
-          </View>
+          </TouchableOpacity>
         )}
       </View>
     </View>
