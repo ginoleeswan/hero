@@ -1,6 +1,6 @@
 // app/(tabs)/index.web.tsx — Home screen for web
 // Search mode: full-screen grid (unchanged). Home mode: spotlight + horizontal scroll rows.
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -297,22 +297,24 @@ const ACCORDION_SCALES = {
   ],
 };
 
-function PortraitStripSpotlight({
+const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
   heroes,
-  activeIndex,
-  onCardPress,
-  onDotPress,
   onViewProfile,
 }: {
   heroes: Hero[];
-  activeIndex: number;
-  onCardPress: (i: number) => void;
-  onDotPress: (i: number) => void;
-  onViewProfile: () => void;
+  onViewProfile: (heroId: string) => void;
 }) {
-  // 1. Grab both width AND height unconditionally at the top level
   const { width, height: windowHeight } = useWindowDimensions();
   const isDesktop = width >= 768;
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Auto-advance lives here — only re-renders this component, not the whole page
+  useEffect(() => {
+    if (heroes.length <= 1) return;
+    const timer = setInterval(() => setActiveIndex((i) => (i + 1) % heroes.length), 6000);
+    return () => clearInterval(timer);
+  }, [heroes.length]);
+
   const hero = heroes[activeIndex];
   if (!hero) return null;
 
@@ -326,7 +328,6 @@ function PortraitStripSpotlight({
         : ACCORDION_SCALES.small;
 
   if (isDesktop) {
-    // 2. Now just do the math here, no Hooks inside the if block!
     const dynamicHeight = Math.min(320, windowHeight * 0.6);
 
     return (
@@ -346,7 +347,7 @@ function PortraitStripSpotlight({
             return (
               <Pressable
                 key={h.id}
-                onPress={() => onCardPress(index)}
+                onPress={() => setActiveIndex(index)}
                 style={[
                   pss.card,
                   {
@@ -420,7 +421,7 @@ function PortraitStripSpotlight({
           </View>
           <View style={pss.panelFooter}>
             <Pressable
-              onPress={onViewProfile}
+              onPress={() => onViewProfile(String(hero.id))}
               style={({ hovered }: { hovered?: boolean }) =>
                 [pss.ctaBtn, hovered && (pss.ctaBtnHover as object)] as object
               }
@@ -431,7 +432,7 @@ function PortraitStripSpotlight({
               {heroes.slice(0, activeScale.length).map((_, i) => (
                 <Pressable
                   key={i}
-                  onPress={() => onDotPress(i)}
+                  onPress={() => setActiveIndex(i)}
                   style={[pss.dot, i === activeIndex && (pss.dotActive as object)] as object}
                 />
               ))}
@@ -480,14 +481,14 @@ function PortraitStripSpotlight({
           )}
         </View>
         <View style={pss.panelFooter}>
-          <Pressable onPress={onViewProfile} style={pss.ctaBtn as object}>
+          <Pressable onPress={() => onViewProfile(String(hero.id))} style={pss.ctaBtn as object}>
             <Text style={pss.ctaBtnText}>View →</Text>
           </Pressable>
           <View style={pss.dots}>
             {heroes.slice(0, 8).map((_, i) => (
               <Pressable
                 key={i}
-                onPress={() => onDotPress(i)}
+                onPress={() => setActiveIndex(i)}
                 style={[pss.dot, i === activeIndex && (pss.dotActive as object)] as object}
               />
             ))}
@@ -496,7 +497,7 @@ function PortraitStripSpotlight({
       </View>
     </View>
   );
-}
+});
 
 const pss = StyleSheet.create({
   // Desktop
@@ -508,7 +509,7 @@ const pss = StyleSheet.create({
     marginVertical: 32,
     gap: 12,
   },
-  strip: { flexDirection: 'row', alignItems: 'stretch', gap: 12 },
+  strip: { flexDirection: 'row', alignItems: 'stretch', gap: 12, contain: 'layout style' } as object,
   card: {
     borderRadius: 14,
     overflow: 'hidden',
@@ -517,6 +518,7 @@ const pss = StyleSheet.create({
     cursor: 'pointer',
     transition:
       'width 400ms cubic-bezier(0.16, 1, 0.3, 1), opacity 400ms cubic-bezier(0.16, 1, 0.3, 1), margin 400ms cubic-bezier(0.16, 1, 0.3, 1)',
+    willChange: 'width, opacity',
   } as object,
   cardActive: {
     boxShadow: '0 20px 40px rgba(0,0,0,0.3), 0 8px 16px rgba(0,0,0,0.2)',
@@ -1148,7 +1150,6 @@ export default function WebHomeScreen() {
   const [homeData, setHomeData] = useState<HomeData | null>(null);
   const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
-  const [spotlightIndex, setSpotlightIndex] = useState(0);
   const [totalHeroCount, setTotalHeroCount] = useState<number | null>(null);
 
   const isSearchActive = query.trim() !== '' || publisher !== 'All';
@@ -1224,19 +1225,6 @@ export default function WebHomeScreen() {
       .catch(() => {});
   }, [user?.id]);
 
-  // Auto-advance spotlight
-  useEffect(() => {
-    if (!homeData?.spotlight.length) return;
-
-    const total = Math.min(optimalPoolSize, homeData.spotlight.length);
-    if (total <= 1) return;
-
-    // Safety: If the window shrinks, ensure the active index resets so it doesn't crash
-    setSpotlightIndex((prev) => (prev >= total ? 0 : prev));
-
-    const timer = setInterval(() => setSpotlightIndex((i) => (i + 1) % total), 6000);
-    return () => clearInterval(timer);
-  }, [homeData?.spotlight, optimalPoolSize]); // <-- Add optimalPoolSize to dependency array
 
   const filtered = useMemo(() => {
     let list =
@@ -1411,15 +1399,8 @@ export default function WebHomeScreen() {
           {/* Spotlight */}
           {homeData.spotlight.length > 0 && (
             <PortraitStripSpotlight
-              // Dynamically chop the array to match the screen!
-              heroes={homeData.spotlight.slice(
-                0,
-                Math.min(optimalPoolSize, homeData.spotlight.length),
-              )}
-              activeIndex={spotlightIndex}
-              onCardPress={setSpotlightIndex}
-              onDotPress={setSpotlightIndex}
-              onViewProfile={() => handlePress(String(homeData.spotlight[spotlightIndex].id))}
+              heroes={homeData.spotlight.slice(0, Math.min(optimalPoolSize, homeData.spotlight.length))}
+              onViewProfile={handlePress}
             />
           )}
 
