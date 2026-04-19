@@ -2,114 +2,81 @@
 
 <img alt='hero logo' src="./assets/images/hero-github.png" width="50%" height="50%" />
 
-</div>
+<h1>🦸‍♂️ Superhero Encyclopedia 🦸‍♀️</h1>
 
-<h1 align="center">🦸‍♂️ Superhero Encyclopedia 🦸‍♀️</h1>
+<p>A superhero encyclopedia app built with Expo and React Native, targeting iOS, Android, and Web.</p>
 
-<p align="center"> Made in React Native, constructed with Expo CLI, utilizing the superheroAPI and ComicVine API. </p>
-<p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.1.0-blue.svg?cacheSeconds=2592000" />
-  <a href="#" target="_blank">
-    <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
-  </a>
-    <a href="#" target="_blank">
-    <img alt="Runs With Expo" src="https://img.shields.io/badge/Runs%20With%20Expo-000.svg?style=flat&logo=EXPO&labelColor=f3f3f3&logoColor=000" />
-  </a>
-  <a href="#" target="_blank">
-    <img alt="Runs With Expo" src="https://img.shields.io/badge/Platforms-Native-4630EB.svg?style=flat&logo=EXPO&labelColor=000&logoColor=fff" />
-  </a>
-  <a href="https://twitter.com/mrginolee" target="_blank">
-    <img alt="Twitter: mrginolee" src="https://img.shields.io/twitter/follow/mrginolee.svg?style=social" />
-  </a>
+<p>
+  <img alt="Version" src="https://img.shields.io/badge/version-1.0.0-blue.svg?cacheSeconds=2592000" />
+  <a href="#"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" /></a>
+  <a href="#"><img alt="Runs With Expo" src="https://img.shields.io/badge/Runs%20With%20Expo-000.svg?style=flat&logo=EXPO&labelColor=f3f3f3&logoColor=000" /></a>
+  <a href="#"><img alt="Platforms" src="https://img.shields.io/badge/Platforms-iOS%20%7C%20Android%20%7C%20Web-4630EB.svg?style=flat&logo=EXPO&labelColor=000&logoColor=fff" /></a>
+  <a href="https://twitter.com/mrginolee"><img alt="Twitter: mrginolee" src="https://img.shields.io/twitter/follow/mrginolee.svg?style=social" /></a>
 </p>
 
-<!-- <h2 align="center">☀️ <a href="https://ginoleeswan.github.io/weather-app-basic/">See Live</a> ☀️</h2> -->
-
-<p align="center">
-
-  <img src="./assets/images/screenshots/home.PNG" style="border-radius: 20 "  alt="animated" width="20%"/>
-  <img src="./assets/images/screenshots/info1.PNG" style="background: none;"  alt="animated" width="20%"  />
-  <img src="./assets/images/screenshots/info2.PNG" style="background: none;"  alt="animated" width="20%"  />
-  <img src="./assets/images/screenshots/search.PNG" style="background: none;"  alt="animated" width="20%"  />
-
+<p>
+  <img src="./assets/images/screenshots/home.PNG" alt="Home screen" width="20%"/>
+  <img src="./assets/images/screenshots/info1.PNG" alt="Character detail" width="20%"/>
+  <img src="./assets/images/screenshots/info2.PNG" alt="Character stats" width="20%"/>
+  <img src="./assets/images/screenshots/search.PNG" alt="Search screen" width="20%"/>
 </p>
 
-<h2 align="right">📖 &nbsp; Lessons Learned</h2>
-
-<div align="right">
-
-&nbsp; My first React Native project!\
-&nbsp; The main focus here was to make **external API calls** to pull superhero infomation from a third party site.
-
 </div>
 
-## 🔮 &nbsp; Future Features
+## Tech Stack
 
-- 📊 &nbsp; Stats Graph
-- 🎥 &nbsp; List of Movies
-- 📅 &nbsp; Timeline of Appearances
-- 🎞 &nbsp; Streaming Links
+| Concern | Library |
+|---|---|
+| Navigation | expo-router 4 (file-based) |
+| Auth + DB | Supabase |
+| External APIs | SuperheroAPI, ComicVine API |
+| Animations | react-native-reanimated 4 |
+| Carousel | react-native-reanimated-carousel |
+| Card shape | react-native-figma-squircle |
+| Testing | jest-expo + @testing-library/react-native |
 
-<h2 align="right">🚀 &nbsp; Deployment</h2>
-<div align="right">
+## Get Started
 
-No current Deployment
-
-<!-- Deployed with [Github Pages](https://ginoleeswan.github.io/weather-app-basic/) -->
-
-</div>
-
-## 🔨 &nbsp; Get Started
-
-From your command line, first clone this repo:
+Requires [Node.js](https://nodejs.org/en/download/) and [Yarn](https://yarnpkg.com/).
 
 ```sh
-# Clone this repository
-$ git clone https://github.com/ginoleeswan/hero
-
-# Go into the repository
-$ cd hero
-
-# Remove current origin repository
-$ git remote remove origin
+git clone https://github.com/ginoleeswan/hero
+cd hero
+yarn install
 ```
 
-### 💻 &nbsp; Install
-
-First you need to install Nodejs and npm, this is different depending on the OS you are running so it is easier to check the node [page](https://nodejs.org/en/download/)
-
-Install [expo](https://expo.io/learn), if it fails run you might need to run this with sudo
+Copy `.env.example` to `.env.local` and fill in your keys:
 
 ```sh
-npm install expo-cli --global
+cp .env.example .env.local
 ```
 
-Install the needed packages while in the root folder of the project
+| Variable | Description |
+|---|---|
+| `EXPO_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `EXPO_PUBLIC_SUPABASE_KEY` | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only) |
+| `SUPERHERO_API_KEY` | [SuperheroAPI](https://superheroapi.com/) key |
+| `COMICVINE_API_KEY` | [ComicVine API](https://comicvine.gamespot.com/api/) key |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Google OAuth web client ID |
+| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | Google OAuth iOS client ID |
+
+Then start the dev server:
 
 ```sh
-npm install
+yarn start
 ```
 
-### 📱 &nbsp; Usage
-
-To Start expo all you have to do is run this line
+Run tests:
 
 ```sh
-expo start
+yarn test:ci
 ```
 
-<div align="right">
+## Author
 
-## ✍️ &nbsp; Author
+👤 **Gino Swanepoel** &nbsp; [Twitter](https://twitter.com/mrginolee) · [GitHub](https://github.com/ginoleeswan) · [LinkedIn](https://linkedin.com/in/ginoswanepoel)
 
-👤 **Gino Swanepoel**
-
-&nbsp; Twitter: [@mrginolee](https://twitter.com/mrginolee)\
- &nbsp; Github: [@ginoleeswan](https://github.com/ginoleeswan)\
- &nbsp; LinkedIn: [@ginoswanepoel](https://linkedin.com/in/ginoswanepoel)
-
-</div>
-
-## ❤️ &nbsp; Show your support
+## ❤️ Show your support
 
 Give a ⭐️ if this project helped you!
