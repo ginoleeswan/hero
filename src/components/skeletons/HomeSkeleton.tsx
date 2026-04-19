@@ -17,8 +17,10 @@ function ThumbRowSkeleton() {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Skeleton width="20%" height={10} borderRadius={4} />
-        <Skeleton width="35%" height={22} borderRadius={6} style={styles.titleSkeleton} />
+        <View style={styles.headerLeft}>
+          <Skeleton width="20%" height={10} borderRadius={4} />
+          <Skeleton width="35%" height={22} borderRadius={6} style={styles.titleSkeleton} />
+        </View>
       </View>
       <View style={styles.thumbRow}>
         {Array.from({ length: 4 }).map((_, i) => (
@@ -33,7 +35,8 @@ function PortraitRowSkeleton() {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Skeleton width="40%" height={22} borderRadius={6} />
+        <Skeleton width="42%" height={22} borderRadius={6} />
+        <Skeleton width={46} height={13} borderRadius={4} style={styles.seeAllSkeleton} />
       </View>
       <ScrollView
         horizontal
@@ -62,6 +65,11 @@ export function HomeSkeleton({ insets }: HomeSkeletonProps) {
         <PortraitRowSkeleton />
         <PortraitRowSkeleton />
         <PortraitRowSkeleton />
+        <PortraitRowSkeleton />
+        <PortraitRowSkeleton />
+        <PortraitRowSkeleton />
+        <PortraitRowSkeleton />
+        <PortraitRowSkeleton />
       </ScrollView>
     </SkeletonProvider>
   );
@@ -69,8 +77,16 @@ export function HomeSkeleton({ insets }: HomeSkeletonProps) {
 
 const styles = StyleSheet.create({
   section: { paddingTop: 14, paddingBottom: 4 },
-  sectionHeader: { paddingHorizontal: 15, marginBottom: 10, gap: 4 },
+  sectionHeader: {
+    paddingHorizontal: 15,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  headerLeft: { gap: 2 },
   titleSkeleton: { marginTop: 2 },
+  seeAllSkeleton: { marginBottom: 4 },
   thumbRow: {
     flexDirection: 'row',
     gap: 8,

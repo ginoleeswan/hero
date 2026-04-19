@@ -17,6 +17,7 @@ import { COLORS } from '../../src/constants/colors';
 import { heroGridImageSource, heroImageSource } from '../../src/constants/heroImages';
 import { useSearch } from '../../src/contexts/SearchContext';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
+import { WebHomeSkeleton } from '../../src/components/web/HomeSkeleton';
 import {
   getHeroCount,
   getXMen,
@@ -1028,60 +1029,6 @@ const drow = StyleSheet.create({
   titleRowHover: { opacity: 0.7 } as object,
 });
 
-// ── Home skeleton ─────────────────────────────────────────────────────────────
-function HomeSkeleton() {
-  const opacity = useSkeletonAnim();
-  const { width } = useWindowDimensions();
-  const pagePad = width < 640 ? 16 : 32;
-  return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.discoverContent as object}>
-      {/* Spotlight — full-bleed, no padding */}
-      <SkeletonBlock
-        opacity={opacity}
-        height={width < 640 ? 420 : 580}
-        borderRadius={0}
-        style={{ marginBottom: 48 }}
-      />
-
-      {/* Carousel rows — match HomeRow layout */}
-      {[1, 2, 3].map((i) => (
-        <View key={i} style={{ marginBottom: 52 } as object}>
-          {/* Header: accent bar + label stub + title stub — inset like real header */}
-          <View
-            style={
-              {
-                flexDirection: 'row',
-                alignItems: 'stretch',
-                gap: 14,
-                marginBottom: 16,
-                paddingLeft: pagePad,
-              } as object
-            }
-          >
-            <SkeletonBlock opacity={opacity} width={4} height={44} borderRadius={2} />
-            <View style={{ gap: 4, justifyContent: 'center' } as object}>
-              <SkeletonBlock opacity={opacity} width={60} height={9} borderRadius={3} />
-              <SkeletonBlock opacity={opacity} width={160} height={32} borderRadius={4} />
-            </View>
-          </View>
-          {/* Cards row — starts at viewport left edge to match carousel bleed */}
-          <View style={{ flexDirection: 'row', gap: 16, paddingLeft: pagePad } as object}>
-            {Array.from({ length: 6 }).map((_, j) => (
-              <SkeletonBlock
-                key={j}
-                opacity={opacity}
-                width={ROW_CARD_WIDTH}
-                height={ROW_CARD_HEIGHT}
-                borderRadius={10}
-              />
-            ))}
-          </View>
-        </View>
-      ))}
-    </ScrollView>
-  );
-}
-
 // ── Grid skeleton (search mode) ───────────────────────────────────────────────
 function GridSkeleton() {
   const opacity = useSkeletonAnim();
@@ -1390,7 +1337,7 @@ export default function WebHomeScreen() {
           </ScrollView>
         )
       ) : !homeData ? (
-        <HomeSkeleton />
+        <WebHomeSkeleton />
       ) : (
         <ScrollView
           style={styles.scroll}
