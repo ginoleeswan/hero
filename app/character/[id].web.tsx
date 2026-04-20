@@ -14,6 +14,7 @@ import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
 import { StatBar } from '../../src/components/web/StatBar';
 import { MovieStrip } from '../../src/components/MovieStrip';
+import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import type { CharacterData } from '../../src/types';
 
 const STAT_CONFIG = [
@@ -107,6 +108,7 @@ export default function WebCharacterScreen() {
 
   const skeletonOpacity = useSkeletonAnim();
   const [data, setData] = useState<CharacterData | null>(null);
+  const [showIssueModal, setShowIssueModal] = useState(false);
   const [comicVineLoading, setComicVineLoading] = useState(true);
   const [statsGenerating, setStatsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -275,6 +277,7 @@ export default function WebCharacterScreen() {
       : null;
 
   return (
+    <>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       {/* ── Identity header — navy strip, no image ── */}
       <View
@@ -543,34 +546,36 @@ export default function WebCharacterScreen() {
                     </View>
                   </View>
                 ) : data.firstIssue?.imageUrl ? (
-                  <View style={[styles.card, styles.firstAppearanceDesktopCard]}>
-                    <View style={styles.firstAppearanceRow}>
-                      <img
-                        src={data.firstIssue.imageUrl}
-                        style={{
-                          width: 130,
-                          height: 190,
-                          objectFit: 'cover',
-                          borderRadius: 8,
-                          flexShrink: 0,
-                          display: 'block',
-                          boxShadow: '0 6px 20px rgba(41,60,67,0.22)',
-                        }}
-                      />
-                      <View style={styles.firstAppearanceMeta}>
-                        <Text style={styles.firstAppearanceLabel}>First Appearance</Text>
-                        <View style={styles.firstAppearanceDivider} />
-                        {data.firstIssue.coverDate ? (
-                          <Text style={styles.firstAppearanceYear}>
-                            {data.firstIssue.coverDate.slice(0, 4)}
-                          </Text>
-                        ) : null}
-                        {data.firstIssue.name ? (
-                          <Text style={styles.firstAppearanceName}>{data.firstIssue.name}</Text>
-                        ) : null}
+                  <Pressable onPress={() => setShowIssueModal(true)}>
+                    <View style={[styles.card, styles.firstAppearanceDesktopCard]}>
+                      <View style={styles.firstAppearanceRow}>
+                        <img
+                          src={data.firstIssue.imageUrl}
+                          style={{
+                            width: 130,
+                            height: 190,
+                            objectFit: 'cover',
+                            borderRadius: 8,
+                            flexShrink: 0,
+                            display: 'block',
+                            boxShadow: '0 6px 20px rgba(41,60,67,0.22)',
+                          }}
+                        />
+                        <View style={styles.firstAppearanceMeta}>
+                          <Text style={styles.firstAppearanceLabel}>First Appearance</Text>
+                          <View style={styles.firstAppearanceDivider} />
+                          {data.firstIssue.coverDate ? (
+                            <Text style={styles.firstAppearanceYear}>
+                              {data.firstIssue.coverDate.slice(0, 4)}
+                            </Text>
+                          ) : null}
+                          {data.firstIssue.name ? (
+                            <Text style={styles.firstAppearanceName}>{data.firstIssue.name}</Text>
+                          ) : null}
+                        </View>
                       </View>
                     </View>
-                  </View>
+                  </Pressable>
                 ) : null}
               </View>
             )}
@@ -870,28 +875,30 @@ export default function WebCharacterScreen() {
                   </View>
                 </View>
               ) : data.firstIssue?.imageUrl ? (
-                <View style={styles.card}>
-                  <Text style={styles.cardTitle}>First Appearance</Text>
-                  <View style={styles.cardDivider} />
-                  <View style={styles.firstIssueRow}>
-                    <Image
-                      source={{ uri: data.firstIssue.imageUrl }}
-                      style={styles.firstIssueCover as object}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                    />
-                    <View style={styles.firstIssueMeta}>
-                      {data.firstIssue.name ? (
-                        <Text style={styles.firstIssueTitle}>{data.firstIssue.name}</Text>
-                      ) : null}
-                      {data.firstIssue.coverDate ? (
-                        <Text style={styles.firstIssueYear}>
-                          {data.firstIssue.coverDate.slice(0, 4)}
-                        </Text>
-                      ) : null}
+                <Pressable onPress={() => setShowIssueModal(true)}>
+                  <View style={styles.card}>
+                    <Text style={styles.cardTitle}>First Appearance</Text>
+                    <View style={styles.cardDivider} />
+                    <View style={styles.firstIssueRow}>
+                      <Image
+                        source={{ uri: data.firstIssue.imageUrl }}
+                        style={styles.firstIssueCover as object}
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                      />
+                      <View style={styles.firstIssueMeta}>
+                        {data.firstIssue.name ? (
+                          <Text style={styles.firstIssueTitle}>{data.firstIssue.name}</Text>
+                        ) : null}
+                        {data.firstIssue.coverDate ? (
+                          <Text style={styles.firstIssueYear}>
+                            {data.firstIssue.coverDate.slice(0, 4)}
+                          </Text>
+                        ) : null}
+                      </View>
                     </View>
                   </View>
-                </View>
+                </Pressable>
               ) : null}
             </>
           )}
@@ -1039,6 +1046,13 @@ export default function WebCharacterScreen() {
         </View>
       )}
     </ScrollView>
+    {showIssueModal && data?.firstIssue ? (
+      <FirstIssueModal
+        firstIssue={data.firstIssue}
+        onClose={() => setShowIssueModal(false)}
+      />
+    ) : null}
+    </>
   );
 }
 

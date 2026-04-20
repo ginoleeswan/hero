@@ -62,6 +62,10 @@ export interface MovieAppearance {
   year: string | null;
   imageUrl: string | null;
   url?: string | null;
+  rating?: string | null;
+  runtime?: string | null;
+  deck?: string | null;
+  totalRevenue?: string | null;
 }
 
 export interface HeroDetails {
@@ -85,6 +89,12 @@ export interface FirstIssue {
   imageUrl: string | null;
   name: string | null;
   coverDate: string | null;
+  storeDate: string | null;
+  issueNumber: string | null;
+  deck: string | null;
+  seriesName: string | null;
+  personCredits: string[] | null;
+  debutCharacters: string[] | null;
 }
 
 // ─── Combined character screen data ──────────────────────────────────────────

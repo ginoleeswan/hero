@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { ScrollView, View, Text, StyleSheet, Pressable, Platform, Linking } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import type { MovieAppearance } from '../types';
 import { COLORS } from '../constants/colors';
+import { MovieDetailSheet } from './MovieDetailSheet';
+import { MovieGridModal } from './MovieGridModal';
 
 const FEATURED_W = 120;
 const FEATURED_H = 180;
@@ -25,17 +27,18 @@ function sortByYear(movies: MovieAppearance[]): MovieAppearance[] {
   });
 }
 
-function MovieCard({ movie, featured }: { movie: MovieAppearance; featured?: boolean }) {
+function MovieCard({
+  movie,
+  featured,
+  onPress,
+}: {
+  movie: MovieAppearance;
+  featured?: boolean;
+  onPress: () => void;
+}) {
   const [hovered, setHovered] = useState(false);
   const w = featured ? FEATURED_W : CARD_W;
   const h = featured ? FEATURED_H : CARD_H;
-
-  const handlePress = () => {
-    const url =
-      movie.url ??
-      `https://www.google.com/search?q=${encodeURIComponent(movie.name + ' film')}`;
-    Linking.openURL(url);
-  };
 
   const webHoverProps =
     Platform.OS === 'web'
@@ -52,7 +55,7 @@ function MovieCard({ movie, featured }: { movie: MovieAppearance; featured?: boo
         featured && styles.featuredCard,
         (pressed || hovered) && styles.cardActive,
       ]}
-      onPress={handlePress}
+      onPress={onPress}
       {...webHoverProps}
     >
       <View style={[styles.posterWrapper, featured && styles.featuredPosterWrapper, { width: w, height: h }]}>
@@ -86,29 +89,43 @@ function MovieCard({ movie, featured }: { movie: MovieAppearance; featured?: boo
 }
 
 export function MovieStrip({ movies, totalCount }: Props) {
-  const [expanded, setExpanded] = useState(false);
+  const [selectedMovie, setSelectedMovie] = useState<MovieAppearance | null>(null);
+  const [gridVisible, setGridVisible] = useState(false);
+
   const sorted = sortByYear(movies);
-  const visible = expanded ? sorted : sorted.slice(0, INITIAL_COUNT);
+  const visible = sorted.slice(0, INITIAL_COUNT);
   const overflow = totalCount - visible.length;
   const [featured, ...rest] = visible;
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.container}
-    >
-      {featured ? <MovieCard key="featured" movie={featured} featured /> : null}
-      {rest.map((movie, i) => (
-        <MovieCard key={i} movie={movie} />
-      ))}
-      {!expanded && overflow > 0 ? (
-        <Pressable style={[styles.card, styles.overflowCard]} onPress={() => setExpanded(true)}>
-          <Text style={styles.overflowCount}>+{overflow}</Text>
-          <Text style={styles.overflowLabel}>more</Text>
-        </Pressable>
+    <>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.container}
+      >
+        {featured ? (
+          <MovieCard key="featured" movie={featured} featured onPress={() => setSelectedMovie(featured)} />
+        ) : null}
+        {rest.map((movie, i) => (
+          <MovieCard key={i} movie={movie} onPress={() => setSelectedMovie(movie)} />
+        ))}
+        {overflow > 0 ? (
+          <Pressable style={[styles.card, styles.overflowCard]} onPress={() => setGridVisible(true)}>
+            <Text style={styles.overflowCount}>+{overflow}</Text>
+            <Text style={styles.overflowLabel}>more</Text>
+          </Pressable>
+        ) : null}
+      </ScrollView>
+
+      {selectedMovie ? (
+        <MovieDetailSheet movie={selectedMovie} onClose={() => setSelectedMovie(null)} />
       ) : null}
-    </ScrollView>
+
+      {gridVisible ? (
+        <MovieGridModal movies={sorted} onClose={() => setGridVisible(false)} />
+      ) : null}
+    </>
   );
 }
 

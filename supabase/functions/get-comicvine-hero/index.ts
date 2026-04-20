@@ -86,7 +86,7 @@ serve(async (req: Request) => {
     let creators: string[] | null = null;
     let enemies: string[] | null = null;
     let friends: string[] | null = null;
-    let movies: Array<{ name: string; year: string | null; imageUrl: string | null }> | null = null;
+    let movies: Array<{ name: string; year: string | null; imageUrl: string | null; url: string | null; rating: string | null; runtime: string | null; deck: string | null; totalRevenue: string | null }> | null = null;
     let movieCount: number | null = null;
     let teams: string[] | null = null;
 
@@ -207,19 +207,24 @@ serve(async (req: Request) => {
               const params = new URLSearchParams({
                 api_key: COMICVINE_API_KEY,
                 format: 'json',
-                field_list: 'image',
+                field_list: 'image,rating,runtime,deck,total_revenue',
               });
               const res = await fetch(`${apiDetailUrl}?${params}`);
-              if (!res.ok) return { name, year, imageUrl: null, url };
+              if (!res.ok) return { name, year, imageUrl: null, url, rating: null, runtime: null, deck: null, totalRevenue: null };
               const json = await res.json();
-              const imageUrl: string | null = json.results?.image?.medium_url ?? null;
-              return { name, year, imageUrl, url };
+              const r = json.results ?? {};
+              const imageUrl: string | null = r.image?.medium_url ?? null;
+              const rating: string | null = typeof r.rating === 'string' ? r.rating : null;
+              const runtime: string | null = r.runtime != null ? String(r.runtime) : null;
+              const deck: string | null = typeof r.deck === 'string' && r.deck.trim() ? r.deck.trim() : null;
+              const totalRevenue: string | null = r.total_revenue != null ? String(r.total_revenue) : null;
+              return { name, year, imageUrl, url, rating, runtime, deck, totalRevenue };
             } catch {
-              return { name, year, imageUrl: null, url };
+              return { name, year, imageUrl: null, url, rating: null, runtime: null, deck: null, totalRevenue: null };
             }
           }),
         );
-        const overflow = rawMovieItems.slice(10).map(({ name, year, url }) => ({ name, year, imageUrl: null, url }));
+        const overflow = rawMovieItems.slice(10).map(({ name, year, url }) => ({ name, year, imageUrl: null, url, rating: null, runtime: null, deck: null, totalRevenue: null }));
         movies = enriched.length > 0 ? [...enriched, ...overflow] : null;
 
         // teams — names, capped at 20

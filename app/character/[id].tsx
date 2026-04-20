@@ -24,6 +24,7 @@ import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
 import { MovieStrip } from '../../src/components/MovieStrip';
+import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import type { CharacterData } from '../../src/types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -234,6 +235,7 @@ export default function CharacterScreen() {
   useRecordView(user?.id, id);
   const [data, setData] = useState<CharacterData | null>(null);
   const [comicVineLoading, setComicVineLoading] = useState(true);
+  const [showIssueModal, setShowIssueModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [favourited, setFavourited] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
@@ -653,31 +655,43 @@ export default function CharacterScreen() {
             {/* First Appearance — moved before Overview */}
             {data.firstIssue?.imageUrl ? (
               <Section title="First Appearance">
-                <View style={styles.comicContainer}>
-                  <View style={styles.comicPanel}>
-                    <Image
-                      source={{ uri: data.firstIssue.imageUrl }}
-                      contentFit="contain"
-                      style={styles.comicImage}
-                      cachePolicy="memory-disk"
-                      recyclingKey={`comic-${id}`}
-                      transition={200}
-                    />
-                    {data.firstIssue.name || data.firstIssue.coverDate ? (
-                      <View style={styles.comicMeta}>
-                        {data.firstIssue.name ? (
-                          <Text style={styles.comicTitle}>{data.firstIssue.name}</Text>
-                        ) : null}
-                        {data.firstIssue.coverDate ? (
-                          <Text style={styles.comicYear}>
-                            {data.firstIssue.coverDate.slice(0, 4)}
-                          </Text>
-                        ) : null}
-                      </View>
-                    ) : null}
+                <TouchableOpacity
+                  onPress={() => setShowIssueModal(true)}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.comicContainer}>
+                    <View style={styles.comicPanel}>
+                      <Image
+                        source={{ uri: data.firstIssue.imageUrl }}
+                        contentFit="contain"
+                        style={styles.comicImage}
+                        cachePolicy="memory-disk"
+                        recyclingKey={`comic-${id}`}
+                        transition={200}
+                      />
+                      {data.firstIssue.name || data.firstIssue.coverDate ? (
+                        <View style={styles.comicMeta}>
+                          {data.firstIssue.name ? (
+                            <Text style={styles.comicTitle}>{data.firstIssue.name}</Text>
+                          ) : null}
+                          {data.firstIssue.coverDate ? (
+                            <Text style={styles.comicYear}>
+                              {data.firstIssue.coverDate.slice(0, 4)}
+                            </Text>
+                          ) : null}
+                        </View>
+                      ) : null}
+                    </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               </Section>
+            ) : null}
+
+            {showIssueModal && data.firstIssue ? (
+              <FirstIssueModal
+                firstIssue={data.firstIssue}
+                onClose={() => setShowIssueModal(false)}
+              />
             ) : null}
 
             {/* Overview */}

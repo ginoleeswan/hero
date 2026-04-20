@@ -146,19 +146,47 @@ export async function fetchFirstIssue(issueId: string): Promise<FirstIssue> {
   const params = new URLSearchParams({
     api_key: COMICVINE_API_KEY,
     format: 'json',
-    field_list: 'id,image,name,cover_date',
+    field_list: 'id,image,name,cover_date,store_date,issue_number,deck,volume,person_credits,first_appearance_characters',
   });
 
   const res = await fetch(`${COMICVINE_BASE}/issue/4000-${issueId}/?${params}`);
   if (!res.ok) throw new Error(`ComicVine issue error: ${res.status}`);
   const json = await res.json();
-  const result = json.results;
+  const r = json.results;
+
+  const personCredits: string[] = Array.isArray(r?.person_credits)
+    ? r.person_credits
+        .map((p: unknown) =>
+          p && typeof (p as Record<string, unknown>).name === 'string'
+            ? ((p as Record<string, unknown>).name as string)
+            : null,
+        )
+        .filter((n: string | null): n is string => n !== null)
+        .slice(0, 5)
+    : [];
+
+  const debutCharacters: string[] = Array.isArray(r?.first_appearance_characters)
+    ? r.first_appearance_characters
+        .map((c: unknown) =>
+          c && typeof (c as Record<string, unknown>).name === 'string'
+            ? ((c as Record<string, unknown>).name as string)
+            : null,
+        )
+        .filter((n: string | null): n is string => n !== null)
+        .slice(0, 8)
+    : [];
 
   return {
     id: issueId,
-    imageUrl: result?.image?.medium_url ?? null,
-    name: result?.name ?? null,
-    coverDate: result?.cover_date ?? null,
+    imageUrl: r?.image?.medium_url ?? null,
+    name: r?.name ?? null,
+    coverDate: r?.cover_date ?? null,
+    storeDate: r?.store_date ?? null,
+    issueNumber: r?.issue_number != null ? String(r.issue_number) : null,
+    deck: r?.deck ?? null,
+    seriesName: r?.volume?.name ?? null,
+    personCredits: personCredits.length > 0 ? personCredits : null,
+    debutCharacters: debutCharacters.length > 0 ? debutCharacters : null,
   };
 }
 
