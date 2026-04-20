@@ -573,7 +573,7 @@ export default function WebCharacterScreen() {
                             </Text>
                           ) : null}
                           {data.firstIssue.name ? (
-                            <Text style={styles.firstAppearanceName}>{data.firstIssue.name}</Text>
+                            <Text style={styles.firstAppearanceName}>{data.firstIssue.name.split(';')[0].trim()}</Text>
                           ) : null}
                         </View>
                       </View>
@@ -891,7 +891,7 @@ export default function WebCharacterScreen() {
                       />
                       <View style={styles.firstIssueMeta}>
                         {data.firstIssue.name ? (
-                          <Text style={styles.firstIssueTitle}>{data.firstIssue.name}</Text>
+                          <Text style={styles.firstIssueTitle}>{data.firstIssue.name.split(';')[0].trim()}</Text>
                         ) : null}
                         {data.firstIssue.coverDate ? (
                           <Text style={styles.firstIssueYear}>

@@ -670,7 +670,7 @@ export default function CharacterScreen() {
                       {data.firstIssue.name || data.firstIssue.coverDate ? (
                         <View style={styles.comicMeta}>
                           {data.firstIssue.name ? (
-                            <Text style={styles.comicTitle}>{data.firstIssue.name}</Text>
+                            <Text style={styles.comicTitle}>{data.firstIssue.name.split(';')[0].trim()}</Text>
                           ) : null}
                           {data.firstIssue.coverDate ? (
                             <Text style={styles.comicYear}>
@@ -683,13 +683,6 @@ export default function CharacterScreen() {
                   </View>
                 </TouchableOpacity>
               </Section>
-            ) : null}
-
-            {showIssueModal && data.firstIssue ? (
-              <FirstIssueModal
-                firstIssue={data.firstIssue}
-                onClose={() => setShowIssueModal(false)}
-              />
             ) : null}
 
             {/* Overview */}
@@ -783,6 +776,13 @@ export default function CharacterScreen() {
           </>
         )}
       </Animated.ScrollView>
+
+      {showIssueModal && data?.firstIssue ? (
+        <FirstIssueModal
+          firstIssue={data.firstIssue}
+          onClose={() => setShowIssueModal(false)}
+        />
+      ) : null}
 
       {/* Compare strip — fixed above safe-area bottom */}
       {data && (
