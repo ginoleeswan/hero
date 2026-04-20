@@ -21,6 +21,7 @@ const NULL_RESPONSE = {
   summary: null,
   publisher: null,
   firstIssueId: null,
+  firstIssueData: null,
   powers: null,
   description: null,
   origin: null,
@@ -296,6 +297,8 @@ serve(async (req: Request) => {
         movie_count: movieCount,
         teams,
         first_issue_image_url: firstIssueImageUrl,
+        first_issue_id: firstIssueId,
+        first_issue_data: firstIssueData,
         comicvine_enriched_at: new Date().toISOString(),
         comicvine_id: result.id ? String(result.id) : undefined,
       })
