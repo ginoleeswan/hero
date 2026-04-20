@@ -1,5 +1,6 @@
 // src/components/home/SpotlightBanner.tsx
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { PressScale } from '../ui/PressScale';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,11 +35,7 @@ export function SpotlightBanner({
   const source = heroImageSource(hero.id, hero.image_url, hero.portrait_url);
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.88}
-      onPress={onHeroPress}
-      style={[styles.container, { height }]}
-    >
+    <PressScale onPress={onHeroPress} scale={0.97} style={[styles.container, { height }]}>
       <Image
         source={source}
         contentFit="cover"
@@ -78,7 +75,7 @@ export function SpotlightBanner({
           ))}
         </View>
       )}
-    </TouchableOpacity>
+    </PressScale>
   );
 }
 

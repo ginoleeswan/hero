@@ -1,7 +1,8 @@
 // src/components/home/ThumbCard.tsx
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { PressScale } from '../ui/PressScale';
 import { heroImageSource } from '../../constants/heroImages';
 import { COLORS } from '../../constants/colors';
 
@@ -21,12 +22,7 @@ interface ThumbCardProps {
 export function ThumbCard({ item, onPress, disabled = false }: ThumbCardProps) {
   const source = heroImageSource(item.id, item.image_url, item.portrait_url);
   return (
-    <TouchableOpacity
-      style={styles.wrap}
-      onPress={onPress}
-      disabled={disabled}
-      activeOpacity={0.82}
-    >
+    <PressScale onPress={onPress} disabled={disabled} scale={0.93} style={styles.wrap}>
       <Image
         source={source}
         contentFit="cover"
@@ -44,7 +40,7 @@ export function ThumbCard({ item, onPress, disabled = false }: ThumbCardProps) {
       <Text style={styles.name} numberOfLines={2}>
         {item.name}
       </Text>
-    </TouchableOpacity>
+    </PressScale>
   );
 }
 

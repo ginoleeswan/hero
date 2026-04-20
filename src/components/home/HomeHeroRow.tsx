@@ -60,6 +60,7 @@ export function HomeHeroRow({
                 imageUrl={item.image_url}
                 portraitUrl={item.portrait_url}
                 onPress={() => onPress(item)}
+                disabled={disabled}
               />
             </View>
           ) : (

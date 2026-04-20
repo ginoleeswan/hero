@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import TouchableScale from 'react-native-touchable-scale';
+import { PressScale } from './ui/PressScale';
 import { SquircleMask } from './ui/SquircleMask';
 import { Image } from 'expo-image';
 import { COLORS } from '../constants/colors';
@@ -11,20 +11,15 @@ interface HeroCardProps {
   imageUrl: string | null;
   portraitUrl?: string | null;
   onPress: () => void;
+  disabled?: boolean;
 }
 
-export function HeroCard({ id, name, imageUrl, portraitUrl, onPress }: HeroCardProps) {
+export function HeroCard({ id, name, imageUrl, portraitUrl, onPress, disabled = false }: HeroCardProps) {
   const imageSource = heroImageSource(id, imageUrl, portraitUrl);
 
   return (
     <View style={styles.card}>
-      <TouchableScale
-        delayPressIn={50}
-        activeScale={0.9}
-        tension={160}
-        friction={2}
-        onPress={onPress}
-      >
+      <PressScale onPress={onPress} scale={0.95} disabled={disabled} style={StyleSheet.absoluteFill}>
         <SquircleMask style={styles.squircle} cornerRadius={50}>
           <Image
             source={imageSource}
@@ -38,7 +33,7 @@ export function HeroCard({ id, name, imageUrl, portraitUrl, onPress }: HeroCardP
             <Text style={styles.name}>{name}</Text>
           </View>
         </SquircleMask>
-      </TouchableScale>
+      </PressScale>
     </View>
   );
 }
