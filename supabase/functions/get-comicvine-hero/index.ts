@@ -199,10 +199,9 @@ serve(async (req: Request) => {
 
         movieCount = rawMovieItems.length > 0 ? rawMovieItems.length : null;
 
-        const itemsToEnrich = rawMovieItems.slice(0, 10);
         const enriched = await Promise.all(
-          itemsToEnrich.map(async ({ name, year, apiDetailUrl, url }) => {
-            if (!apiDetailUrl) return { name, year, imageUrl: null, url };
+          rawMovieItems.map(async ({ name, year, apiDetailUrl, url }) => {
+            if (!apiDetailUrl) return { name, year, imageUrl: null, url, rating: null, runtime: null, deck: null, totalRevenue: null };
             try {
               const params = new URLSearchParams({
                 api_key: COMICVINE_API_KEY,
@@ -224,8 +223,7 @@ serve(async (req: Request) => {
             }
           }),
         );
-        const overflow = rawMovieItems.slice(10).map(({ name, year, url }) => ({ name, year, imageUrl: null, url, rating: null, runtime: null, deck: null, totalRevenue: null }));
-        movies = enriched.length > 0 ? [...enriched, ...overflow] : null;
+        movies = enriched.length > 0 ? enriched : null;
 
         // teams — names, capped at 20
         const rawTeams: string[] = Array.isArray(d.teams)

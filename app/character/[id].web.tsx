@@ -159,14 +159,22 @@ export default function WebCharacterScreen() {
         if (hero?.enriched_at) {
           setData(heroRowToCharacterData(hero));
           const needsComicVine =
-            !hero.comicvine_enriched_at || hero.powers === null || !hero.movies?.length;
+            !hero.comicvine_enriched_at || hero.powers === null || !hero.movies?.length || !hero.first_issue_id;
           const moviesIncomplete =
             !needsComicVine &&
             hero.movie_count != null &&
             hero.movies != null &&
             hero.movie_count > (hero.movies as unknown[]).length;
+          const moviesLackDetail =
+            !needsComicVine &&
+            !moviesIncomplete &&
+            hero.movies != null &&
+            (hero.movies as unknown[]).length > 0 &&
+            (hero.movies as Array<{ deck?: string | null; rating?: string | null; runtime?: string | null }>)
+              .slice(0, 5)
+              .every((m) => m.deck === null && m.rating === null && m.runtime === null);
           setComicVineLoading(needsComicVine);
-          if (needsComicVine || moviesIncomplete) {
+          if (needsComicVine || moviesIncomplete || moviesLackDetail) {
             fetchHeroDetails(hero.id, hero.name)
               .then(async (details) => {
                 const firstIssue = details.firstIssueId
@@ -178,6 +186,10 @@ export default function WebCharacterScreen() {
               })
               .catch(() => {})
               .finally(() => { if (needsComicVine) setComicVineLoading(false); });
+          } else if (hero.first_issue_id) {
+            fetchFirstIssue(hero.first_issue_id)
+              .then((fi) => setData((prev) => (prev ? { ...prev, firstIssue: fi } : prev)))
+              .catch(() => {});
           }
 
           // Lazy AI stat generation for CV characters with no stats yet
