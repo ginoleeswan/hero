@@ -72,6 +72,7 @@ export interface HeroDetails {
   summary: string | null;
   publisher: string | null;
   firstIssueId: string | null;
+  firstIssueData: FirstIssue | null;
   powers: string[] | null;
   description: string | null;
   origin: string | null;

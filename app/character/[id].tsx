@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import * as Haptics from 'expo-haptics';
-import { fetchHeroStats, fetchHeroDetails, fetchFirstIssue } from '../../src/lib/api';
+import { fetchHeroStats, fetchHeroDetails } from '../../src/lib/api';
 import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
 import {
   isFavourited,
@@ -301,6 +301,7 @@ export default function CharacterScreen() {
               summary: null,
               publisher: null,
               firstIssueId: null,
+              firstIssueData: null,
               powers: null,
               description: null,
               origin: null,
@@ -315,11 +316,8 @@ export default function CharacterScreen() {
             firstIssue: null,
           });
           fetchHeroDetails(stats.id, stats.name)
-            .then(async (details) => {
-              const firstIssue = details.firstIssueId
-                ? await fetchFirstIssue(details.firstIssueId).catch(() => null)
-                : null;
-              setData({ stats, details, firstIssue });
+            .then((details) => {
+              setData({ stats, details, firstIssue: details.firstIssueData });
             })
             .catch(() => {})
             .finally(() => setComicVineLoading(false));
@@ -353,26 +351,15 @@ export default function CharacterScreen() {
 
           if (needsComicVine || moviesIncomplete || moviesLackDetail) {
             fetchHeroDetails(hero.id, hero.name)
-              .then(async (details) => {
-                const firstIssue = details.firstIssueId
-                  ? await fetchFirstIssue(details.firstIssueId).catch(() => null)
-                  : null;
+              .then((details) => {
                 setData((prev) =>
                   prev
-                    ? {
-                        ...prev,
-                        details,
-                        firstIssue: firstIssue ?? prev.firstIssue,
-                      }
+                    ? { ...prev, details, firstIssue: details.firstIssueData ?? prev.firstIssue }
                     : prev,
                 );
               })
               .catch(() => {})
               .finally(() => { if (needsComicVine) setComicVineLoading(false); });
-          } else if (hero.first_issue_id) {
-            fetchFirstIssue(hero.first_issue_id)
-              .then((fi) => setData((prev) => (prev ? { ...prev, firstIssue: fi } : prev)))
-              .catch(() => {});
           }
           return;
         }

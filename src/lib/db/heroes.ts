@@ -461,7 +461,8 @@ export function heroRowToCharacterData(hero: Hero): CharacterData {
     details: {
       summary: hero.summary ?? null,
       publisher: hero.publisher ?? null,
-      firstIssueId: null,
+      firstIssueId: hero.first_issue_id ?? null,
+      firstIssueData: (hero.first_issue_data as unknown as import('../../types').FirstIssue | null) ?? null,
       powers: hero.powers ?? null,
       description: hero.description ?? null,
       origin: hero.origin ?? null,
@@ -473,9 +474,22 @@ export function heroRowToCharacterData(hero: Hero): CharacterData {
       movieCount: hero.movie_count ?? null,
       teams: hero.teams ?? null,
     },
-    firstIssue: hero.first_issue_image_url
-      ? { id: '', imageUrl: hero.first_issue_image_url, name: null, coverDate: null }
-      : null,
+    firstIssue: hero.first_issue_data
+      ? (hero.first_issue_data as unknown as import('../../types').FirstIssue)
+      : hero.first_issue_image_url
+        ? {
+            id: hero.first_issue_id ?? '',
+            imageUrl: hero.first_issue_image_url,
+            name: null,
+            coverDate: null,
+            storeDate: null,
+            issueNumber: null,
+            deck: null,
+            seriesName: null,
+            personCredits: null,
+            debutCharacters: null,
+          }
+        : null,
     statsSource: (hero.stats_source as StatsSource) ?? null,
   };
 }

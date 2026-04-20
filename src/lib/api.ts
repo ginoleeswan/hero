@@ -94,6 +94,7 @@ export async function fetchHeroDetails(heroId: string, heroName: string): Promis
     summary: string | null;
     publisher: string | null;
     firstIssueId: string | null;
+    firstIssueData: FirstIssue | null;
     powers: string[] | null;
     description: string | null;
     origin: string | null;
@@ -112,6 +113,7 @@ export async function fetchHeroDetails(heroId: string, heroName: string): Promis
       summary: null,
       publisher: null,
       firstIssueId: null,
+      firstIssueData: null,
       powers: null,
       description: null,
       origin: null,
@@ -129,6 +131,7 @@ export async function fetchHeroDetails(heroId: string, heroName: string): Promis
     summary: data.summary ?? null,
     publisher: data.publisher ?? null,
     firstIssueId: data.firstIssueId ?? null,
+    firstIssueData: data.firstIssueData ?? null,
     powers: data.powers ?? null,
     description: data.description ?? null,
     origin: data.origin ?? null,

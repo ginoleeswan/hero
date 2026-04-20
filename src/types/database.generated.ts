@@ -62,6 +62,8 @@ export type Database = {
           enriched_at: string | null
           eye_color: string | null
           first_appearance: string | null
+          first_issue_data: Json | null
+          first_issue_id: string | null
           first_issue_image_url: string | null
           friends: string[] | null
           full_name: string | null
@@ -112,6 +114,8 @@ export type Database = {
           enriched_at?: string | null
           eye_color?: string | null
           first_appearance?: string | null
+          first_issue_data?: Json | null
+          first_issue_id?: string | null
           first_issue_image_url?: string | null
           friends?: string[] | null
           full_name?: string | null
@@ -162,6 +166,8 @@ export type Database = {
           enriched_at?: string | null
           eye_color?: string | null
           first_appearance?: string | null
+          first_issue_data?: Json | null
+          first_issue_id?: string | null
           first_issue_image_url?: string | null
           friends?: string[] | null
           full_name?: string | null
@@ -357,21 +363,20 @@ export type TablesUpdate<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+> = DefaultSchemaTableNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals
+  }
+    ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
         Update: infer U
       }
       ? U
       : never
-    : never
+    : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+      ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+          Update: infer U
+        }
+        ? U
+        : never
+      : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
