@@ -1,26 +1,30 @@
-import { useState } from 'react';
 import { Modal, View, Text, FlatList, Pressable, StyleSheet, useWindowDimensions, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useState } from 'react';
 import type { MovieAppearance } from '../types';
 import { COLORS } from '../constants/colors';
-import { MovieDetailSheet } from './MovieDetailSheet';
 
 interface Props {
   movies: MovieAppearance[];
   onClose: () => void;
+  onSelectMovie: (movie: MovieAppearance) => void;
 }
 
 const COLS = 3;
 const CARD_GAP = 10;
 
-function GridCard({ movie, onPress }: { movie: MovieAppearance; onPress: () => void }) {
+function GridCard({
+  movie,
+  cardW,
+  onPress,
+}: {
+  movie: MovieAppearance;
+  cardW: number;
+  onPress: () => void;
+}) {
   const [hovered, setHovered] = useState(false);
-  const { width } = useWindowDimensions();
-  const isDesktop = Platform.OS === 'web' && width >= 700;
-  const gridWidth = isDesktop ? Math.min(width * 0.85, 600) : width;
-  const cardW = (gridWidth - 32 - CARD_GAP * (COLS - 1)) / COLS;
   const cardH = cardW * 1.5;
 
   const webHoverProps =
@@ -44,7 +48,7 @@ function GridCard({ movie, onPress }: { movie: MovieAppearance; onPress: () => v
           />
         ) : (
           <View style={[styles.posterPlaceholder, { width: cardW, height: cardH }]}>
-            <Ionicons name="film-outline" size={22} color={COLORS.grey} />
+            <Ionicons name="film-outline" size={20} color={COLORS.grey} />
           </View>
         )}
       </View>
@@ -56,54 +60,56 @@ function GridCard({ movie, onPress }: { movie: MovieAppearance; onPress: () => v
   );
 }
 
-export function MovieGridModal({ movies, onClose }: Props) {
-  const [selected, setSelected] = useState<MovieAppearance | null>(null);
+export function MovieGridModal({ movies, onClose, onSelectMovie }: Props) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === 'web' && width >= 700;
 
+  const sheetWidth = isDesktop ? Math.min(width * 0.85, 600) : width;
+  const cardW = (sheetWidth - 32 - CARD_GAP * (COLS - 1)) / COLS;
+
   return (
-    <>
-      <Modal
-        visible
-        transparent
-        animationType={Platform.OS === 'web' ? 'fade' : 'slide'}
-        onRequestClose={onClose}
-        statusBarTranslucent
+    <Modal
+      visible
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <Pressable
+        style={[styles.backdrop, isDesktop && styles.backdropDesktop]}
+        onPress={onClose}
       >
-        <Pressable style={styles.backdrop} onPress={onClose}>
-          <Pressable
-            style={[styles.sheet, isDesktop && styles.sheetDesktop, { paddingBottom: insets.bottom || 16 }]}
-            onPress={(e) => e.stopPropagation()}
-          >
-            {Platform.OS !== 'web' ? <View style={styles.handle} /> : null}
+        <Pressable
+          style={[
+            styles.sheet,
+            isDesktop ? styles.sheetDesktop : { paddingBottom: Math.max(insets.bottom, 16) },
+          ]}
+          onPress={(e) => e.stopPropagation()}
+        >
+          {!isDesktop ? <View style={styles.handle} /> : null}
 
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>All Appearances</Text>
-              <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={8}>
-                <Text style={styles.closeBtnText}>✕</Text>
-              </Pressable>
-            </View>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>All Appearances</Text>
+            <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={8}>
+              <Text style={styles.closeBtnText}>✕</Text>
+            </Pressable>
+          </View>
 
-            <FlatList
-              data={movies}
-              numColumns={COLS}
-              keyExtractor={(_, i) => String(i)}
-              contentContainerStyle={styles.grid}
-              columnWrapperStyle={styles.columnWrapper}
-              showsVerticalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <GridCard movie={item} onPress={() => setSelected(item)} />
-              )}
-            />
-          </Pressable>
+          <FlatList
+            data={movies}
+            numColumns={COLS}
+            keyExtractor={(_, i) => String(i)}
+            contentContainerStyle={styles.grid}
+            columnWrapperStyle={styles.columnWrapper}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <GridCard movie={item} cardW={cardW} onPress={() => onSelectMovie(item)} />
+            )}
+          />
         </Pressable>
-      </Modal>
-
-      {selected ? (
-        <MovieDetailSheet movie={selected} onClose={() => setSelected(null)} />
-      ) : null}
-    </>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -112,25 +118,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
+  },
+  backdropDesktop: {
+    justifyContent: 'center',
     alignItems: 'center',
   },
   sheet: {
-    width: '100%',
-    maxHeight: '85%',
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingTop: 12,
-    overflow: 'hidden',
+    maxHeight: '85%',
   },
   sheetDesktop: {
     width: '85%',
     maxWidth: 600,
     maxHeight: '90%',
     borderRadius: 16,
-    marginBottom: 0,
-    alignSelf: 'center',
     paddingTop: 16,
+    paddingBottom: 8,
   },
   handle: {
     width: 36,

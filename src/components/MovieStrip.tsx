@@ -123,7 +123,14 @@ export function MovieStrip({ movies, totalCount }: Props) {
       ) : null}
 
       {gridVisible ? (
-        <MovieGridModal movies={sorted} onClose={() => setGridVisible(false)} />
+        <MovieGridModal
+          movies={sorted}
+          onClose={() => setGridVisible(false)}
+          onSelectMovie={(movie) => {
+            setGridVisible(false);
+            setSelectedMovie(movie);
+          }}
+        />
       ) : null}
     </>
   );

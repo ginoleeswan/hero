@@ -1,6 +1,7 @@
 import { Modal, View, Text, ScrollView, Pressable, StyleSheet, useWindowDimensions, Platform, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { MovieAppearance } from '../types';
 import { COLORS } from '../constants/colors';
 
@@ -26,7 +27,10 @@ function Badge({ label, color }: { label: string; color: string }) {
   );
 }
 
-function SheetContent({ movie }: { movie: MovieAppearance }) {
+export function MovieDetailSheet({ movie, onClose }: Props) {
+  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const isDesktop = Platform.OS === 'web' && width >= 700;
   const revenue = formatRevenue(movie.totalRevenue);
 
   const handleOpenUrl = () => {
@@ -36,82 +40,73 @@ function SheetContent({ movie }: { movie: MovieAppearance }) {
   };
 
   return (
-    <View style={styles.content}>
-      <View style={styles.posterRow}>
-        <View style={styles.posterWrapper}>
-          {movie.imageUrl ? (
-            <Image
-              source={{ uri: movie.imageUrl }}
-              style={styles.poster}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-            />
-          ) : (
-            <View style={styles.posterPlaceholder}>
-              <Ionicons name="film-outline" size={32} color={COLORS.grey} />
-            </View>
-          )}
-        </View>
-
-        <View style={styles.posterMeta}>
-          <Text style={styles.label}>On Screen</Text>
-          <Text style={styles.title}>{movie.name}</Text>
-          {movie.year ? <Text style={styles.year}>{movie.year}</Text> : null}
-          <View style={styles.badgeRow}>
-            {movie.rating ? <Badge label={movie.rating} color={COLORS.orange} /> : null}
-            {movie.runtime ? <Badge label={`${movie.runtime} min`} color={COLORS.navy} /> : null}
-          </View>
-          {revenue ? (
-            <View style={styles.revenueRow}>
-              <Ionicons name="trending-up-outline" size={13} color={COLORS.green} />
-              <Text style={styles.revenue}>{revenue} box office</Text>
-            </View>
-          ) : null}
-        </View>
-      </View>
-
-      {movie.deck ? (
-        <Text style={styles.deck}>{movie.deck}</Text>
-      ) : null}
-
-      <Pressable style={styles.linkBtn} onPress={handleOpenUrl}>
-        <Ionicons name="open-outline" size={14} color={COLORS.orange} />
-        <Text style={styles.linkBtnText}>View on ComicVine</Text>
-      </Pressable>
-    </View>
-  );
-}
-
-export function MovieDetailSheet({ movie, onClose }: Props) {
-  const { width } = useWindowDimensions();
-  const isDesktop = Platform.OS === 'web' && width >= 700;
-
-  return (
     <Modal
       visible
       transparent
-      animationType={Platform.OS === 'web' ? 'fade' : 'slide'}
+      animationType="fade"
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <Pressable style={styles.backdrop} onPress={onClose}>
+      <Pressable
+        style={[styles.backdrop, isDesktop && styles.backdropDesktop]}
+        onPress={onClose}
+      >
         <Pressable
-          style={[styles.sheet, isDesktop && styles.sheetDesktop]}
+          style={[
+            styles.sheet,
+            isDesktop ? styles.sheetDesktop : { paddingBottom: Math.max(insets.bottom, 20) },
+          ]}
           onPress={(e) => e.stopPropagation()}
         >
-          {Platform.OS !== 'web' ? <View style={styles.handle} /> : null}
-          {Platform.OS === 'web' ? (
+          {!isDesktop ? <View style={styles.handle} /> : (
             <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={8}>
               <Text style={styles.closeBtnText}>✕</Text>
             </Pressable>
-          ) : null}
+          )}
 
           <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
           >
-            <SheetContent movie={movie} />
+            <View style={styles.posterRow}>
+              <View style={styles.posterWrapper}>
+                {movie.imageUrl ? (
+                  <Image
+                    source={{ uri: movie.imageUrl }}
+                    style={styles.poster}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                  />
+                ) : (
+                  <View style={styles.posterPlaceholder}>
+                    <Ionicons name="film-outline" size={32} color={COLORS.grey} />
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.posterMeta}>
+                <Text style={styles.label}>On Screen</Text>
+                <Text style={styles.title}>{movie.name}</Text>
+                {movie.year ? <Text style={styles.year}>{movie.year}</Text> : null}
+                <View style={styles.badgeRow}>
+                  {movie.rating ? <Badge label={movie.rating} color={COLORS.orange} /> : null}
+                  {movie.runtime ? <Badge label={`${movie.runtime} min`} color={COLORS.navy} /> : null}
+                </View>
+                {revenue ? (
+                  <View style={styles.revenueRow}>
+                    <Ionicons name="trending-up-outline" size={13} color={COLORS.green} />
+                    <Text style={styles.revenue}>{revenue} box office</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+
+            {movie.deck ? <Text style={styles.deck}>{movie.deck}</Text> : null}
+
+            <Pressable style={styles.linkBtn} onPress={handleOpenUrl}>
+              <Ionicons name="open-outline" size={14} color={COLORS.orange} />
+              <Text style={styles.linkBtnText}>View on ComicVine</Text>
+            </Pressable>
           </ScrollView>
         </Pressable>
       </Pressable>
@@ -124,24 +119,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
+  },
+  backdropDesktop: {
+    justifyContent: 'center',
     alignItems: 'center',
   },
   sheet: {
-    width: '100%',
-    maxHeight: '70%',
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingTop: 12,
-    overflow: 'hidden',
+    maxHeight: '80%',
   },
   sheetDesktop: {
     width: 480,
     maxHeight: '85%',
     borderRadius: 16,
-    marginBottom: 0,
-    alignSelf: 'center',
-    paddingTop: 16,
+    paddingTop: 48,
+    paddingBottom: 24,
   },
   handle: {
     width: 36,
@@ -168,10 +163,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.navy,
   },
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 32 },
-  content: { paddingHorizontal: 20, paddingTop: 4 },
-
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 4,
+  },
   posterRow: {
     flexDirection: 'row',
     gap: 16,
@@ -261,6 +256,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.orange + '18',
     borderRadius: 10,
     alignSelf: 'flex-start',
+    marginBottom: 4,
   },
   linkBtnText: {
     fontFamily: 'FlameSans-Regular',
