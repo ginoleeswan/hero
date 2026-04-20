@@ -700,7 +700,7 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : details.movies?.length ? (
                   <View style={styles.card}>
-                    <Text style={styles.cardTitle}>On Screen</Text>
+                    <Text style={styles.cardTitle}>On Screen ({details.movieCount ?? details.movies.length})</Text>
                     <View style={styles.cardDivider} />
                     <MovieStrip
                       movies={details.movies}
@@ -1026,7 +1026,7 @@ export default function WebCharacterScreen() {
                 </View>
               ) : details.movies?.length ? (
                 <View style={styles.card}>
-                  <Text style={styles.cardTitle}>On Screen</Text>
+                  <Text style={styles.cardTitle}>On Screen ({details.movieCount ?? details.movies.length})</Text>
                   <View style={styles.cardDivider} />
                   <MovieStrip
                     movies={details.movies}

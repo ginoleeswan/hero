@@ -175,11 +175,12 @@ serve(async (req: Request) => {
           : [];
         friends = rawFriends.length > 0 ? rawFriends : null;
 
-        // movies — fetch poster images for first 10, store as { name, year, imageUrl }
+        // movies — fetch poster images for first 10, store all as { name, year, imageUrl, url }
         const rawMovieItems: Array<{
           name: string;
           year: string | null;
           apiDetailUrl: string | null;
+          url: string | null;
         }> = Array.isArray(d.movies)
           ? d.movies
               .filter((m: unknown) => m && typeof (m as Record<string, unknown>).name === 'string')
@@ -190,7 +191,9 @@ serve(async (req: Request) => {
                 const year = date ? date.slice(0, 4) : null;
                 const apiDetailUrl =
                   typeof mo.api_detail_url === 'string' ? mo.api_detail_url : null;
-                return { name, year, apiDetailUrl };
+                const url =
+                  typeof mo.site_detail_url === 'string' ? mo.site_detail_url : null;
+                return { name, year, apiDetailUrl, url };
               })
           : [];
 
@@ -198,8 +201,8 @@ serve(async (req: Request) => {
 
         const itemsToEnrich = rawMovieItems.slice(0, 10);
         const enriched = await Promise.all(
-          itemsToEnrich.map(async ({ name, year, apiDetailUrl }) => {
-            if (!apiDetailUrl) return { name, year, imageUrl: null };
+          itemsToEnrich.map(async ({ name, year, apiDetailUrl, url }) => {
+            if (!apiDetailUrl) return { name, year, imageUrl: null, url };
             try {
               const params = new URLSearchParams({
                 api_key: COMICVINE_API_KEY,
@@ -207,16 +210,16 @@ serve(async (req: Request) => {
                 field_list: 'image',
               });
               const res = await fetch(`${apiDetailUrl}?${params}`);
-              if (!res.ok) return { name, year, imageUrl: null };
+              if (!res.ok) return { name, year, imageUrl: null, url };
               const json = await res.json();
               const imageUrl: string | null = json.results?.image?.medium_url ?? null;
-              return { name, year, imageUrl };
+              return { name, year, imageUrl, url };
             } catch {
-              return { name, year, imageUrl: null };
+              return { name, year, imageUrl: null, url };
             }
           }),
         );
-        const overflow = rawMovieItems.slice(10).map(({ name, year }) => ({ name, year, imageUrl: null }));
+        const overflow = rawMovieItems.slice(10).map(({ name, year, url }) => ({ name, year, imageUrl: null, url }));
         movies = enriched.length > 0 ? [...enriched, ...overflow] : null;
 
         // teams — names, capped at 20

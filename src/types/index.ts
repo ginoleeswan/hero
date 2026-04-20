@@ -61,6 +61,7 @@ export interface MovieAppearance {
   name: string;
   year: string | null;
   imageUrl: string | null;
+  url?: string | null;
 }
 
 export interface HeroDetails {

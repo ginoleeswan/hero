@@ -737,7 +737,7 @@ export default function CharacterScreen() {
                 </Section>
               </SkeletonProvider>
             ) : data.details.movies?.length ? (
-              <Section title="On Screen">
+              <Section title={`On Screen (${data.details.movieCount ?? data.details.movies.length})`}>
                 <MovieStrip
                   movies={data.details.movies}
                   totalCount={data.details.movieCount ?? data.details.movies.length}
