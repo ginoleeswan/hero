@@ -89,15 +89,15 @@ export function WebHomeSkeleton() {
     <ScrollView style={skel.scroll} contentContainerStyle={skel.content}>
       <SpotlightSkeleton opacity={opacity} />
       {/* Mirrors the curated row order in index.web.tsx */}
-      <RowSkeleton opacity={opacity} pagePad={pagePad} />       {/* Most Iconic */}
-      <DarkRowSkeleton opacity={opacity} pagePad={pagePad} />   {/* Villains */}
-      <RowSkeleton opacity={opacity} pagePad={pagePad} />       {/* Marvel Universe */}
-      <RowSkeleton opacity={opacity} pagePad={pagePad} />       {/* DC Universe */}
-      <DarkRowSkeleton opacity={opacity} pagePad={pagePad} />   {/* Anti-Heroes */}
-      <RowSkeleton opacity={opacity} pagePad={pagePad} />       {/* Strongest Heroes */}
-      <DarkRowSkeleton opacity={opacity} pagePad={pagePad} />   {/* X-Men */}
-      <RowSkeleton opacity={opacity} pagePad={pagePad} />       {/* Brightest Minds */}
-      <RowSkeleton opacity={opacity} pagePad={pagePad} />       {/* Recently Added */}
+      <RowSkeleton opacity={opacity} pagePad={pagePad} />
+      <DarkRowSkeleton opacity={opacity} pagePad={pagePad} />
+      <RowSkeleton opacity={opacity} pagePad={pagePad} />
+      <RowSkeleton opacity={opacity} pagePad={pagePad} />
+      <DarkRowSkeleton opacity={opacity} pagePad={pagePad} />
+      <RowSkeleton opacity={opacity} pagePad={pagePad} />
+      <DarkRowSkeleton opacity={opacity} pagePad={pagePad} />
+      <RowSkeleton opacity={opacity} pagePad={pagePad} />
+      <RowSkeleton opacity={opacity} pagePad={pagePad} />
     </ScrollView>
   );
 }
