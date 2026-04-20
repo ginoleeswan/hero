@@ -100,16 +100,12 @@ export function MovieDetailSheet({ movie, onClose }: Props) {
                     <Text style={styles.revenue}>{revenue} box office</Text>
                   </View>
                 ) : null}
+
+                {movie.deck ? (
+                  <Text style={styles.deck} numberOfLines={6}>{movie.deck}</Text>
+                ) : null}
               </View>
             </View>
-
-            {/* Synopsis */}
-            {movie.deck ? (
-              <>
-                <View style={styles.divider} />
-                <Text style={styles.deck}>{movie.deck}</Text>
-              </>
-            ) : null}
 
             {/* CTA */}
             <Pressable style={styles.linkBtn} onPress={handleOpenUrl}>
@@ -239,17 +235,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.green,
   },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.navy + '14',
-    marginVertical: 14,
-  },
   deck: {
     fontFamily: 'FlameSans-Regular',
-    fontSize: 14,
-    color: COLORS.navy + 'cc',
-    lineHeight: 21,
-    marginBottom: 18,
+    fontSize: 13,
+    color: COLORS.navy + 'aa',
+    lineHeight: 19,
+    marginTop: 8,
   },
   linkBtn: {
     flexDirection: 'row',
