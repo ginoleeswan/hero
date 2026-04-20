@@ -21,7 +21,7 @@ function sortByYear(movies: MovieAppearance[]): MovieAppearance[] {
     if (!a.year && !b.year) return 0;
     if (!a.year) return 1;
     if (!b.year) return -1;
-    return parseInt(a.year) - parseInt(b.year);
+    return parseInt(b.year) - parseInt(a.year);
   });
 }
 
@@ -73,7 +73,7 @@ function MovieCard({ movie, featured }: { movie: MovieAppearance; featured?: boo
         )}
         {featured ? (
           <View style={styles.firstBadge}>
-            <Text style={styles.firstBadgeText}>FIRST</Text>
+            <Text style={styles.firstBadgeText}>LATEST</Text>
           </View>
         ) : null}
       </View>
