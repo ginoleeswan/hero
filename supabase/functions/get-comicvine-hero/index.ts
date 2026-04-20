@@ -63,18 +63,54 @@ serve(async (req: Request) => {
       ? String(result.first_appeared_in_issue.id)
       : null;
 
-    // First issue image — resolve the issue ID to a cover URL so it can be persisted
+    // First issue — fetch full data so client never needs to call ComicVine directly
     let firstIssueImageUrl: string | null = null;
+    let firstIssueData: Record<string, unknown> | null = null;
     if (firstIssueId) {
       const issueParams = new URLSearchParams({
         api_key: COMICVINE_API_KEY,
         format: 'json',
-        field_list: 'image',
+        field_list: 'id,image,name,cover_date,store_date,issue_number,deck,volume,person_credits,first_appearance_characters',
       });
       const issueRes = await fetch(`${COMICVINE_BASE}/issue/4000-${firstIssueId}/?${issueParams}`);
       if (issueRes.ok) {
         const issueJson = await issueRes.json();
-        firstIssueImageUrl = issueJson.results?.image?.medium_url ?? null;
+        const r = issueJson.results ?? {};
+        firstIssueImageUrl = r.image?.medium_url ?? null;
+
+        const personCredits: string[] = Array.isArray(r.person_credits)
+          ? r.person_credits
+              .map((p: unknown) =>
+                p && typeof (p as Record<string, unknown>).name === 'string'
+                  ? ((p as Record<string, unknown>).name as string)
+                  : null,
+              )
+              .filter((n: string | null): n is string => n !== null)
+              .slice(0, 5)
+          : [];
+        const debutCharacters: string[] = Array.isArray(r.first_appearance_characters)
+          ? r.first_appearance_characters
+              .map((c: unknown) =>
+                c && typeof (c as Record<string, unknown>).name === 'string'
+                  ? ((c as Record<string, unknown>).name as string)
+                  : null,
+              )
+              .filter((n: string | null): n is string => n !== null)
+              .slice(0, 8)
+          : [];
+
+        firstIssueData = {
+          id: firstIssueId,
+          imageUrl: firstIssueImageUrl,
+          name: r.name ?? null,
+          coverDate: r.cover_date ?? null,
+          storeDate: r.store_date ?? null,
+          issueNumber: r.issue_number != null ? String(r.issue_number) : null,
+          deck: r.deck ?? null,
+          seriesName: r.volume?.name ?? null,
+          personCredits: personCredits.length > 0 ? personCredits : null,
+          debutCharacters: debutCharacters.length > 0 ? debutCharacters : null,
+        };
       }
     }
 
@@ -269,6 +305,7 @@ serve(async (req: Request) => {
       summary,
       publisher,
       firstIssueId,
+      firstIssueData,
       powers,
       description,
       origin,

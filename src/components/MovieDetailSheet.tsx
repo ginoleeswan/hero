@@ -13,18 +13,10 @@ interface Props {
 function formatRevenue(raw: string | null | undefined): string | null {
   if (!raw) return null;
   const n = parseInt(raw, 10);
-  if (isNaN(n)) return null;
+  if (isNaN(n) || n <= 0) return null;
   if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1)}B`;
   if (n >= 1_000_000) return `$${Math.round(n / 1_000_000)}M`;
   return `$${n.toLocaleString()}`;
-}
-
-function Badge({ label, color }: { label: string; color: string }) {
-  return (
-    <View style={[styles.badge, { backgroundColor: color + '22' }]}>
-      <Text style={[styles.badgeText, { color }]}>{label}</Text>
-    </View>
-  );
 }
 
 export function MovieDetailSheet({ movie, onClose }: Props) {
@@ -32,6 +24,12 @@ export function MovieDetailSheet({ movie, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const isDesktop = Platform.OS === 'web' && width >= 700;
   const revenue = formatRevenue(movie.totalRevenue);
+
+  const metaPills: string[] = [
+    movie.year ?? null,
+    movie.rating ?? null,
+    movie.runtime ? `${movie.runtime} min` : null,
+  ].filter((v): v is string => v !== null);
 
   const handleOpenUrl = () => {
     const url =
@@ -54,21 +52,20 @@ export function MovieDetailSheet({ movie, onClose }: Props) {
         <Pressable
           style={[
             styles.sheet,
-            isDesktop ? styles.sheetDesktop : { paddingBottom: Math.max(insets.bottom, 20) },
+            isDesktop ? styles.sheetDesktop : { paddingBottom: Math.max(insets.bottom, 24) },
           ]}
           onPress={(e) => e.stopPropagation()}
         >
+          {/* Handle / close */}
           {!isDesktop ? <View style={styles.handle} /> : (
             <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={8}>
               <Text style={styles.closeBtnText}>✕</Text>
             </Pressable>
           )}
 
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
-          >
-            <View style={styles.posterRow}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+            {/* Poster + primary meta */}
+            <View style={styles.topRow}>
               <View style={styles.posterWrapper}>
                 {movie.imageUrl ? (
                   <Image
@@ -79,32 +76,44 @@ export function MovieDetailSheet({ movie, onClose }: Props) {
                   />
                 ) : (
                   <View style={styles.posterPlaceholder}>
-                    <Ionicons name="film-outline" size={32} color={COLORS.grey} />
+                    <Ionicons name="film-outline" size={28} color={COLORS.grey} />
                   </View>
                 )}
               </View>
 
-              <View style={styles.posterMeta}>
-                <Text style={styles.label}>On Screen</Text>
-                <Text style={styles.title}>{movie.name}</Text>
-                {movie.year ? <Text style={styles.year}>{movie.year}</Text> : null}
-                <View style={styles.badgeRow}>
-                  {movie.rating ? <Badge label={movie.rating} color={COLORS.orange} /> : null}
-                  {movie.runtime ? <Badge label={`${movie.runtime} min`} color={COLORS.navy} /> : null}
-                </View>
+              <View style={styles.meta}>
+                <Text style={styles.title} numberOfLines={4}>{movie.name}</Text>
+
+                {metaPills.length > 0 ? (
+                  <View style={styles.pillRow}>
+                    {metaPills.map((p, i) => (
+                      <View key={i} style={styles.pill}>
+                        <Text style={styles.pillText}>{p}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+
                 {revenue ? (
                   <View style={styles.revenueRow}>
-                    <Ionicons name="trending-up-outline" size={13} color={COLORS.green} />
+                    <Ionicons name="trending-up-outline" size={12} color={COLORS.green} />
                     <Text style={styles.revenue}>{revenue} box office</Text>
                   </View>
                 ) : null}
               </View>
             </View>
 
-            {movie.deck ? <Text style={styles.deck}>{movie.deck}</Text> : null}
+            {/* Synopsis */}
+            {movie.deck ? (
+              <>
+                <View style={styles.divider} />
+                <Text style={styles.deck}>{movie.deck}</Text>
+              </>
+            ) : null}
 
+            {/* CTA */}
             <Pressable style={styles.linkBtn} onPress={handleOpenUrl}>
-              <Ionicons name="open-outline" size={14} color={COLORS.orange} />
+              <Ionicons name="open-outline" size={14} color="#fff" />
               <Text style={styles.linkBtnText}>View on ComicVine</Text>
             </Pressable>
           </ScrollView>
@@ -132,11 +141,11 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
   },
   sheetDesktop: {
-    width: 480,
+    width: 440,
     maxHeight: '85%',
     borderRadius: 16,
     paddingTop: 48,
-    paddingBottom: 24,
+    paddingBottom: 8,
   },
   handle: {
     width: 36,
@@ -163,72 +172,62 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.navy,
   },
-  scrollContent: {
+  scroll: {
     paddingHorizontal: 20,
-    paddingTop: 4,
+    paddingBottom: 8,
   },
-  posterRow: {
+  topRow: {
     flexDirection: 'row',
     gap: 16,
-    marginBottom: 16,
     alignItems: 'flex-start',
+    marginBottom: 4,
   },
   posterWrapper: {
-    borderRadius: 8,
+    borderRadius: 10,
     overflow: 'hidden',
     flexShrink: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   poster: {
-    width: 100,
-    height: 150,
+    width: 90,
+    height: 135,
   },
   posterPlaceholder: {
-    width: 100,
-    height: 150,
+    width: 90,
+    height: 135,
     backgroundColor: COLORS.navy + '18',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  posterMeta: {
+  meta: {
     flex: 1,
-    paddingTop: 2,
-  },
-  label: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 10,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    color: COLORS.grey,
-    marginBottom: 6,
+    paddingTop: 4,
+    gap: 8,
   },
   title: {
     fontFamily: 'Flame-Bold',
-    fontSize: 17,
+    fontSize: 19,
     color: COLORS.navy,
-    lineHeight: 22,
-    marginBottom: 3,
+    lineHeight: 24,
   },
-  year: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 13,
-    color: COLORS.grey,
-    marginBottom: 8,
-  },
-  badgeRow: {
+  pillRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    marginBottom: 8,
   },
-  badge: {
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+  pill: {
+    backgroundColor: COLORS.navy + '14',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  badgeText: {
+  pillText: {
     fontFamily: 'FlameSans-Regular',
-    fontSize: 11,
-    letterSpacing: 0.3,
+    fontSize: 12,
+    color: COLORS.navy,
   },
   revenueRow: {
     flexDirection: 'row',
@@ -240,27 +239,31 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.green,
   },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.navy + '14',
+    marginVertical: 14,
+  },
   deck: {
     fontFamily: 'FlameSans-Regular',
-    fontSize: 13,
-    color: COLORS.navy + 'bb',
-    lineHeight: 20,
-    marginBottom: 20,
+    fontSize: 14,
+    color: COLORS.navy + 'cc',
+    lineHeight: 21,
+    marginBottom: 18,
   },
   linkBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    backgroundColor: COLORS.orange + '18',
-    borderRadius: 10,
-    alignSelf: 'flex-start',
-    marginBottom: 4,
+    justifyContent: 'center',
+    gap: 7,
+    paddingVertical: 12,
+    backgroundColor: COLORS.orange,
+    borderRadius: 12,
+    marginTop: 4,
   },
   linkBtnText: {
     fontFamily: 'FlameSans-Regular',
-    fontSize: 13,
-    color: COLORS.orange,
+    fontSize: 14,
+    color: '#fff',
   },
 });

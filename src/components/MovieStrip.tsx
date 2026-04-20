@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ScrollView, View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -93,6 +93,15 @@ export function MovieStrip({ movies, totalCount }: Props) {
   const [gridVisible, setGridVisible] = useState(false);
 
   const sorted = sortByYear(movies);
+
+  // Keep selectedMovie in sync when movies prop updates (re-enrichment)
+  useEffect(() => {
+    if (!selectedMovie) return;
+    const updated = movies.find(
+      (m) => m.name === selectedMovie.name && m.year === selectedMovie.year,
+    );
+    if (updated && updated !== selectedMovie) setSelectedMovie(updated);
+  }, [movies]);
   const visible = sorted.slice(0, INITIAL_COUNT);
   const overflow = totalCount - visible.length;
   const [featured, ...rest] = visible;
