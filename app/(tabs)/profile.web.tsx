@@ -8,6 +8,7 @@ import {
   Alert,
   ScrollView,
   useWindowDimensions,
+  Linking,
 } from 'react-native';
 import { EditDisplayNameModal } from '../../src/components/ui/EditDisplayNameModal';
 import { Image } from 'expo-image';
@@ -29,6 +30,8 @@ import Svg, { Path } from 'react-native-svg';
 
 const HERO_LOGO_PATH =
   'M771.83 359.726C790.233 359.157 809.038 360.561 827.217 363.687C860.194 368.791 880.58 384.832 899.577 411.588C952.323 485.882 910.478 588.451 840.684 635.156C777.716 677.292 684.759 672.267 615.599 648.433C606.232 645.205 596.363 641.14 587.513 636.51C560.951 620.256 539.813 614.985 508.598 616.581C476.925 618.201 457.215 629.785 428.71 641.463C378.199 662.157 312.618 674.016 258.384 663.281C223.369 657.798 188.002 641.874 162.23 617.635C99.3027 558.45 73.5282 462.814 138.958 393.848C166.265 365.064 197.584 361.227 235.229 360.28C291.337 358.869 345.958 367.328 400.078 381.829C413.535 385.43 426.897 389.376 440.151 393.665C470.511 403.519 493.246 412.119 526.372 410.492C544.544 409.599 556.786 403.601 573.782 397.773C584.487 394.125 595.271 390.711 606.126 387.535C659.036 371.973 716.754 361.015 771.83 359.726ZM379.43 580.576C404.316 570.739 422.585 557.516 434.848 532.384C439.037 523.799 439.936 512.178 436.403 503.212C428.365 482.815 393.689 466.137 374.256 457.991C346.125 446.198 312.018 435.868 281.435 435.007C275.287 434.834 268.989 434.216 262.784 434.713C226.343 436.857 209.334 467.83 211.588 501.699C213.173 525.52 224.795 548.661 242.631 564.609C267.287 585.96 306.277 591.723 337.967 589.297C352.112 588.232 366.054 585.299 379.43 580.576ZM669.618 585.812C703.165 593.579 746.514 591.622 776.102 573.056C796.619 559.96 811.158 539.317 816.578 515.588C826.183 473.57 805.637 434.865 760.026 435.926C754.894 436.045 749.642 435.782 744.496 436.282C698.168 440.71 646.68 454.898 608.343 482.267C576.199 505.214 594.861 542.717 619.664 562.508C634.433 574.519 651.324 581.316 669.618 585.812Z';
+
+const KO_FI_URL = 'https://ko-fi.com/glstudio';
 
 const SIDEBAR_BREAKPOINT = 640;
 
@@ -386,6 +389,21 @@ export default function WebProfileScreen() {
 
               <View style={mob.divider} />
               <Pressable
+                onPress={() => Linking.openURL(KO_FI_URL)}
+                style={({ hovered }: { hovered?: boolean }) =>
+                  [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
+                }
+              >
+                <View style={[mob.accountIconBadge, mob.accountIconBadgeOrange]}>
+                  <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
+                </View>
+                <Text style={mob.accountLabel}>Support this project</Text>
+                <Text style={mob.accountValue}>Ko-fi</Text>
+                <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+              </Pressable>
+
+              <View style={mob.divider} />
+              <Pressable
                 onPress={handleSignOut}
                 disabled={signingOut}
                 style={({ hovered }: { hovered?: boolean }) =>
@@ -614,6 +632,21 @@ export default function WebProfileScreen() {
                   </View>
                 </>
               )}
+
+              <View style={desk.divider} />
+              <Pressable
+                onPress={() => Linking.openURL(KO_FI_URL)}
+                style={({ hovered }: { hovered?: boolean }) =>
+                  [desk.accountRow, hovered && (desk.accountRowHover as object)] as object
+                }
+              >
+                <View style={[desk.accountIconBadge, desk.accountIconBadgeOrange]}>
+                  <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
+                </View>
+                <Text style={desk.accountLabel}>Support this project</Text>
+                <Text style={desk.accountValue}>Ko-fi</Text>
+                <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+              </Pressable>
 
               <View style={desk.divider} />
               <Pressable
@@ -1014,6 +1047,7 @@ const mob = StyleSheet.create({
   },
   accountIconBadgeNavy: { backgroundColor: '#e8f0f2' },
   accountIconBadgeRed: { backgroundColor: '#fde8e8' },
+  accountIconBadgeOrange: { backgroundColor: '#fff5ee' },
   accountLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 15,
