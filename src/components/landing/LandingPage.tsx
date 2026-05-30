@@ -120,11 +120,7 @@ export default function LandingPage() {
     >
       {/* ── NAV ─────────────────────────────────────────── */}
       <View style={[s.nav, { paddingHorizontal: pad }]}>
-        <Image
-          source={require('../../../assets/hero-wordmark.svg')}
-          style={s.navWordmark}
-          contentFit="contain"
-        />
+        <Text style={s.navWordmark}>mythique</Text>
         <Pressable
           style={s.navCta}
           onPress={() => router.push('/(auth)/login')}
@@ -188,11 +184,7 @@ export default function LandingPage() {
             <Text style={s.heroBadgeText}>500+ Heroes &amp; Villains</Text>
           </View>
 
-          <Image
-            source={require('../../../assets/hero-wordmark.svg')}
-            style={[s.heroWordmark, { width: Math.min(500, width * 0.75) }]}
-            contentFit="contain"
-          />
+          <Text style={[s.heroWordmark, { fontSize: Math.min(100, width * 0.18) }]}>mythique</Text>
 
           <Text style={[s.heroTagline, isMobile && s.heroTaglineSm]}>
             The Universe's Greatest Heroes
@@ -372,12 +364,8 @@ export default function LandingPage() {
 
       {/* ── FOOTER ───────────────────────────────────────── */}
       <View style={[s.footer, { paddingHorizontal: pad }]}>
-        <Image
-          source={require('../../../assets/hero-wordmark.svg')}
-          style={s.footerWordmark}
-          contentFit="contain"
-        />
-        <Text style={s.footerText}>© 2025 Hero App. All rights reserved.</Text>
+        <Text style={s.footerWordmark}>mythique</Text>
+        <Text style={s.footerText}>© 2026 Mythique. All rights reserved.</Text>
       </View>
     </ScrollView>
   );
@@ -396,7 +384,7 @@ const s = StyleSheet.create({
     backgroundColor: C.bg,
     zIndex: 10,
   },
-  navWordmark: { width: 120, height: 28 },
+  navWordmark: { fontFamily: 'Righteous_400Regular', fontSize: 22, color: C.beige, letterSpacing: -0.5 },
   navCta: {
     backgroundColor: C.orange,
     paddingHorizontal: 20,
@@ -451,7 +439,7 @@ const s = StyleSheet.create({
     marginBottom: 28,
   },
   heroBadgeText: { color: C.yellow, fontSize: 12, fontWeight: '600', letterSpacing: 1 },
-  heroWordmark: { height: 130, marginBottom: 20 },
+  heroWordmark: { fontFamily: 'Righteous_400Regular', color: C.beige, letterSpacing: -3, lineHeight: 1.05, marginBottom: 20 },
   heroTagline: {
     fontFamily: 'Righteous_400Regular',
     fontSize: 22,
@@ -677,6 +665,6 @@ const s = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
   },
-  footerWordmark: { width: 100, height: 22, opacity: 0.6 },
+  footerWordmark: { fontFamily: 'Righteous_400Regular', fontSize: 18, color: C.beige, opacity: 0.6, letterSpacing: -0.5 },
   footerText: { fontSize: 13, color: C.muted },
 });

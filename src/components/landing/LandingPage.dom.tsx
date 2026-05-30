@@ -45,7 +45,7 @@ const CSS = `
   }
   .nav-brand { display:flex; align-items:center; gap:10px; }
   .nav-logo { height:32px; width:32px; }
-  .nav-wordmark { height:22px; width:auto; }
+  .nav-wordmark { font-family:'Righteous',sans-serif; font-size:22px; color:var(--beige); letter-spacing:-0.5px; }
   .nav-cta {
     background:var(--orange); color:#fff; font-family:'Righteous',sans-serif;
     font-size:14px; letter-spacing:0.5px; padding:10px 22px; border-radius:100px;
@@ -99,8 +99,13 @@ const CSS = `
   }
   .hero-badge svg { width:14px; height:14px; }
   .hero-wordmark-large {
-    width:min(520px,80vw); height:auto; margin-bottom:24px;
-    filter:drop-shadow(0 4px 32px rgba(231,115,51,0.3));
+    font-family:'Righteous',sans-serif;
+    font-size:clamp(64px,13vw,128px);
+    color:var(--beige);
+    letter-spacing:-3px;
+    line-height:1;
+    margin-bottom:24px;
+    text-shadow:0 4px 40px rgba(231,115,51,0.35);
   }
   .hero-tagline {
     font-family:'Righteous',sans-serif; font-size:clamp(18px,3vw,26px);
@@ -380,7 +385,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       <nav>
         <div className="nav-brand">
           <img className="nav-logo" src={logoMark} alt="" aria-hidden="true" />
-          <img className="nav-wordmark" src={wordmark} alt="Hero" />
+          <span className="nav-wordmark">mythique</span>
         </div>
         <button className="nav-cta" onClick={() => router.push('/(auth)/login')}>
           Sign In
@@ -437,7 +442,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             </svg>
             500+ Heroes &amp; Villains
           </div>
-          <img className="hero-wordmark-large" src={wordmark} alt="Hero" />
+          <span className="hero-wordmark-large">mythique</span>
           <p className="hero-tagline">The Universe's Greatest Heroes</p>
           <p className="hero-sub">
             Discover the powers, origins, and stories of 500+ characters from Marvel, DC, and beyond
@@ -756,8 +761,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
 
       {/* FOOTER */}
       <footer>
-        <img src={wordmark} alt="Hero" />
-        <p>© 2025 Hero App. All rights reserved.</p>
+        <span className="nav-wordmark" style={{opacity: 0.6}}>mythique</span>
+        <p>© 2026 Mythique. All rights reserved.</p>
       </footer>
     </div>
   );
