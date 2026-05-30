@@ -253,8 +253,16 @@ export default function WebCategoryScreen() {
   return (
     <View style={styles.root}>
       {/* ── Hero zone — navy, scrolls away ───────────────────────────────────── */}
-      <View style={[styles.heroZone, { paddingHorizontal: contentPad }]}>
-        <View style={styles.heroZoneInner}>
+      <View
+        style={[
+          styles.heroZone,
+          isDesktop && (styles.heroZoneDesktop as object),
+          { paddingHorizontal: contentPad },
+        ] as object}
+      >
+        <View
+          style={[styles.heroZoneInner, isDesktop && (styles.heroZoneInnerDesktop as object)] as object}
+        >
           <Pressable
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
             style={({ hovered }: { hovered?: boolean }) =>
@@ -266,7 +274,7 @@ export default function WebCategoryScreen() {
           </Pressable>
 
           <View style={styles.titleRow}>
-            <View style={styles.accentBar} />
+            <View style={[styles.accentBar, isDesktop && (styles.accentBarDesktop as object)] as object} />
             <Text style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object}>
               {title}
             </Text>
@@ -279,12 +287,8 @@ export default function WebCategoryScreen() {
         </View>
       </View>
 
-      {/* ── Controls bar — beige, sticky on desktop ──────────────────────────── */}
-      <View
-        style={
-          [styles.controlsBar, isDesktop && (styles.controlsBarDesktop as object)] as object
-        }
-      >
+      {/* ── Controls bar — beige, sticky on all viewports ───────────────────── */}
+      <View style={styles.controlsBar}>
         <View
           style={[
             styles.controlsInner,
@@ -403,10 +407,15 @@ const styles = StyleSheet.create({
   // ── Hero zone (navy, scrolls away) ─────────────────────────────────────────
   heroZone: {
     backgroundColor: COLORS.navy,
+    paddingTop: 12,
+    paddingBottom: 16,
+  },
+  heroZoneDesktop: {
     paddingTop: 20,
     paddingBottom: 28,
-  },
-  heroZoneInner: { maxWidth: 1200, width: '100%', alignSelf: 'center', gap: 14 },
+  } as object,
+  heroZoneInner: { maxWidth: 1200, width: '100%', alignSelf: 'center', gap: 10 },
+  heroZoneInnerDesktop: { gap: 14 } as object,
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -430,17 +439,18 @@ const styles = StyleSheet.create({
   },
   accentBar: {
     width: 4,
-    height: 44,
+    height: 34,
     borderRadius: 2,
     backgroundColor: COLORS.orange,
     flexShrink: 0,
   },
+  accentBarDesktop: { height: 60 } as object,
   title: {
     fontFamily: 'Flame-Regular',
-    fontSize: 40,
+    fontSize: 30,
     color: COLORS.beige,
     flex: 1,
-    lineHeight: 44,
+    lineHeight: 34,
   } as object,
   titleDesktop: { fontSize: 56, lineHeight: 60 } as object,
   countPill: {
@@ -465,8 +475,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(41,60,67,0.12)',
     paddingVertical: 12,
-  },
-  controlsBarDesktop: {
     position: 'sticky',
     top: 64,
     zIndex: 40,
