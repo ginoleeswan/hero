@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import {
   getCategoryPage,
@@ -37,103 +36,6 @@ const VALID_SLUGS = new Set<CategorySlug>([
   'most-iconic',
 ]);
 
-// ── Featured hero banner (web) ────────────────────────────────────────────────
-function FeaturedBannerWeb({
-  hero,
-  onPress,
-  contentPad,
-}: {
-  hero: Hero;
-  onPress: () => void;
-  contentPad: number;
-}) {
-  const source = heroGridImageSource(String(hero.id), hero.image_url, hero.portrait_url, hero.image_md_url);
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ hovered }: { hovered?: boolean }) =>
-        [feat.wrap, hovered && (feat.wrapHover as object)] as object
-      }
-    >
-      {/* Full-bleed image — shows hero properly */}
-      <Image
-        source={source}
-        contentFit="cover"
-        contentPosition="center"
-        style={StyleSheet.absoluteFill}
-        cachePolicy="memory-disk"
-      />
-      {/* Strong gradient: opaque dark on left, fades to semi-dark on right */}
-      <LinearGradient
-        colors={['rgba(13,30,38,0.98)', 'rgba(13,30,38,0.85)', 'rgba(13,30,38,0.2)']}
-        locations={[0, 0.4, 1]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={[feat.content, { paddingHorizontal: contentPad }]}>
-        <View style={feat.badge}>
-          <Text style={feat.badgeText}>FEATURED</Text>
-        </View>
-        <Text style={feat.name as object} numberOfLines={1}>
-          {hero.name}
-        </Text>
-        {(hero.publisher || hero.issue_count) && (
-          <Text style={feat.sub as object}>
-            {[
-              hero.publisher,
-              hero.issue_count ? `${hero.issue_count.toLocaleString()} issues` : null,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </Text>
-        )}
-      </View>
-    </Pressable>
-  );
-}
-
-const feat = StyleSheet.create({
-  wrap: {
-    height: 240,
-    backgroundColor: '#0d1e26',
-    overflow: 'hidden',
-    cursor: 'pointer',
-    transition: 'opacity 150ms ease',
-    justifyContent: 'flex-end',
-  } as object,
-  wrapHover: { opacity: 0.88 } as object,
-  content: {
-    paddingBottom: 28,
-    maxWidth: '52%',
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    backgroundColor: COLORS.orange,
-    borderRadius: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    marginBottom: 8,
-  },
-  badgeText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
-    color: '#fff',
-    letterSpacing: 1.2,
-  },
-  name: {
-    fontFamily: 'Flame-Bold',
-    fontSize: 40,
-    color: '#fff',
-    lineHeight: 46,
-  } as object,
-  sub: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.55)',
-    marginTop: 4,
-  } as object,
-});
 
 // ── Card ──────────────────────────────────────────────────────────────────────
 function HeroCard({ hero, onPress }: { hero: Hero; onPress: () => void }) {
@@ -213,7 +115,6 @@ export default function WebCategoryScreen() {
   const [sort, setSort] = useState<SortOption>('popular');
   const [publisher, setPublisher] = useState<CategoryPublisher>('all');
   const [search, setSearch] = useState('');
-  const [featuredHero, setFeaturedHero] = useState<Hero | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
   const currentPage = useRef(0);
   const hasMore = useRef(true);
@@ -251,28 +152,8 @@ export default function WebCategoryScreen() {
     [categorySlug],
   );
 
-  const fetchFeatured = useCallback(
-    async (pub: CategoryPublisher) => {
-      if (!categorySlug) return;
-      try {
-        const result = await getCategoryPage(categorySlug, {
-          page: 0,
-          pageSize: 1,
-          sort: 'popular',
-          publisher: pub,
-          search: '',
-        });
-        setFeaturedHero(result.heroes[0] ?? null);
-      } catch {
-        setFeaturedHero(null);
-      }
-    },
-    [categorySlug],
-  );
-
   useEffect(() => {
     fetchPage(0, { sort, publisher, search });
-    fetchFeatured(publisher);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePress = useCallback(
@@ -303,9 +184,8 @@ export default function WebCategoryScreen() {
     (p: CategoryPublisher) => {
       setPublisher(p);
       fetchPage(0, { sort, publisher: p, search });
-      fetchFeatured(p);
     },
-    [fetchPage, fetchFeatured, sort, search],
+    [fetchPage, sort, search],
   );
 
   const handleLoadMore = useCallback(() => {
@@ -343,91 +223,106 @@ export default function WebCategoryScreen() {
 
   return (
     <View style={styles.root}>
-      {/* Header */}
-      <View style={[styles.header, isDesktop && (styles.headerDesktop as object)] as object}>
-        <View style={[styles.headerInner, { paddingHorizontal: contentPad }]}>
+      {/* ── Hero zone — navy, scrolls away ───────────────────────────────────── */}
+      <View style={[styles.heroZone, { paddingHorizontal: contentPad }]}>
+        <View style={styles.heroZoneInner}>
           <Pressable
-            onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
             style={({ hovered }: { hovered?: boolean }) =>
               [styles.backBtn, hovered && (styles.backBtnHover as object)] as object
             }
           >
-            <Ionicons name="arrow-back" size={18} color={COLORS.navy} />
+            <Ionicons name="arrow-back" size={15} color="rgba(245,235,220,0.55)" />
             <Text style={styles.backText as object}>Back</Text>
           </Pressable>
+
           <View style={styles.titleRow}>
-            <Text style={styles.title as object}>{title}</Text>
-            {!loading && <Text style={styles.count as object}>{countLabel}</Text>}
-          </View>
-          {/* Search + filters */}
-          <View style={styles.controls as object}>
-            <View
-              style={
-                [styles.searchBar, searchFocused && (styles.searchBarFocused as object)] as object
-              }
-            >
-              <Ionicons
-                name="search-outline"
-                size={14}
-                color={searchFocused ? COLORS.orange : COLORS.grey}
-              />
-              <TextInput
-                style={styles.searchInput as object}
-                placeholder={`Search ${title.toLowerCase()}…`}
-                placeholderTextColor={COLORS.grey}
-                value={search}
-                onChangeText={handleSearch}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                autoCorrect={false}
-              />
-            </View>
-            <View style={styles.pills as object}>
-              {SORT_OPTS.map((o) => (
-                <Pressable
-                  key={o.key}
-                  onPress={() => handleSort(o.key)}
-                  style={[styles.pill, sort === o.key && (styles.pillActive as object)] as object}
-                >
-                  <Text
-                    style={
-                      [
-                        styles.pillText,
-                        sort === o.key && (styles.pillTextActive as object),
-                      ] as object
-                    }
-                  >
-                    {o.label}
-                  </Text>
-                </Pressable>
-              ))}
-              <View style={styles.pillDivider as object} />
-              {PUB_OPTS.map((o) => (
-                <Pressable
-                  key={o.key}
-                  onPress={() => handlePublisher(o.key)}
-                  style={
-                    [styles.pill, publisher === o.key && (styles.pillActive as object)] as object
-                  }
-                >
-                  <Text
-                    style={
-                      [
-                        styles.pillText,
-                        publisher === o.key && (styles.pillTextActive as object),
-                      ] as object
-                    }
-                  >
-                    {o.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            <View style={styles.accentBar} />
+            <Text style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object}>
+              {title}
+            </Text>
+            {!loading && total > 0 && (
+              <View style={styles.countPill}>
+                <Text style={styles.countText as object}>{total.toLocaleString()}</Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
 
-      {/* Content */}
+      {/* ── Controls bar — beige, sticky on desktop ──────────────────────────── */}
+      <View
+        style={
+          [styles.controlsBar, isDesktop && (styles.controlsBarDesktop as object)] as object
+        }
+      >
+        <View style={[styles.controlsInner, { paddingHorizontal: contentPad }]}>
+          <View
+            style={
+              [styles.searchBar, searchFocused && (styles.searchBarFocused as object)] as object
+            }
+          >
+            <Ionicons
+              name="search-outline"
+              size={14}
+              color={searchFocused ? COLORS.orange : COLORS.grey}
+            />
+            <TextInput
+              style={styles.searchInput as object}
+              placeholder={`Search ${title.toLowerCase()}…`}
+              placeholderTextColor={COLORS.grey}
+              value={search}
+              onChangeText={handleSearch}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              autoCorrect={false}
+            />
+          </View>
+          <View style={styles.pills as object}>
+            {SORT_OPTS.map((o) => (
+              <Pressable
+                key={o.key}
+                onPress={() => handleSort(o.key)}
+                style={[styles.pill, sort === o.key && (styles.pillActive as object)] as object}
+              >
+                <Text
+                  style={
+                    [styles.pillText, sort === o.key && (styles.pillTextActive as object)] as object
+                  }
+                >
+                  {o.label}
+                </Text>
+              </Pressable>
+            ))}
+            <View style={styles.pillDivider as object} />
+            {PUB_OPTS.map((o) => (
+              <Pressable
+                key={o.key}
+                onPress={() => handlePublisher(o.key)}
+                style={
+                  [styles.pill, publisher === o.key && (styles.pillActive as object)] as object
+                }
+              >
+                <Text
+                  style={
+                    [
+                      styles.pillText,
+                      publisher === o.key && (styles.pillTextActive as object),
+                    ] as object
+                  }
+                >
+                  {o.label}
+                </Text>
+              </Pressable>
+            ))}
+            {!loading && (
+              <Text style={styles.countLabel as object}>{countLabel}</Text>
+            )}
+          </View>
+        </View>
+      </View>
+
+      {/* ── Content ──────────────────────────────────────────────────────────── */}
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={COLORS.orange} />
@@ -438,13 +333,6 @@ export default function WebCategoryScreen() {
         </View>
       ) : (
         <ScrollView style={styles.scroll}>
-          {!search.trim() && featuredHero && (
-            <FeaturedBannerWeb
-              hero={featuredHero}
-              onPress={() => handlePress(String(featuredHero.id))}
-              contentPad={contentPad}
-            />
-          )}
           <View style={[styles.gridWrap, { paddingHorizontal: contentPad, paddingBottom: 60 }]}>
             <View style={gridStyle as object}>
               {heroes.map((hero) => (
@@ -474,56 +362,96 @@ export default function WebCategoryScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
-  header: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(41,60,67,0.12)',
-    backgroundColor: COLORS.beige,
-    paddingVertical: 14,
+
+  // ── Hero zone (navy, scrolls away) ─────────────────────────────────────────
+  heroZone: {
+    backgroundColor: COLORS.navy,
+    paddingTop: 20,
+    paddingBottom: 28,
   },
-  headerDesktop: {
-    position: 'sticky',
-    top: 64,
-    zIndex: 40,
-  } as object,
-  headerInner: { maxWidth: 1200, width: '100%', alignSelf: 'center', gap: 6 },
+  heroZoneInner: { maxWidth: 1200, width: '100%', alignSelf: 'center', gap: 14 },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
     alignSelf: 'flex-start',
     cursor: 'pointer',
-    opacity: 1,
     transition: 'opacity 150ms ease',
   } as object,
-  backBtnHover: { opacity: 0.55 } as object,
+  backBtnHover: { opacity: 0.5 } as object,
   backText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    color: COLORS.navy,
-    letterSpacing: 0.3,
+    fontSize: 11,
+    color: 'rgba(245,235,220,0.55)',
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   } as object,
   titleRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 16,
+  },
+  accentBar: {
+    width: 4,
+    height: 44,
+    borderRadius: 2,
+    backgroundColor: COLORS.orange,
+    flexShrink: 0,
   },
   title: {
     fontFamily: 'Flame-Regular',
-    fontSize: 32,
-    color: COLORS.navy,
+    fontSize: 40,
+    color: COLORS.beige,
+    flex: 1,
+    lineHeight: 44,
   } as object,
-  count: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    color: COLORS.grey,
+  titleDesktop: { fontSize: 56, lineHeight: 60 } as object,
+  countPill: {
+    backgroundColor: 'rgba(232,98,26,0.18)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(232,98,26,0.35)',
+    flexShrink: 0,
+  },
+  countText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: COLORS.orange,
     letterSpacing: 0.3,
   } as object,
-  scroll: { flex: 1 },
-  gridWrap: { paddingTop: 24, maxWidth: 1200, width: '100%', alignSelf: 'center' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
-  controls: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' } as object,
+
+  // ── Controls bar (beige, sticky on desktop) ─────────────────────────────────
+  controlsBar: {
+    backgroundColor: COLORS.beige,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(41,60,67,0.12)',
+    paddingVertical: 10,
+  },
+  controlsBarDesktop: {
+    position: 'sticky',
+    top: 64,
+    zIndex: 40,
+  } as object,
+  controlsInner: {
+    maxWidth: 1200,
+    width: '100%',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flexWrap: 'wrap',
+  } as object,
+  countLabel: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: COLORS.grey,
+    marginLeft: 4,
+    letterSpacing: 0.2,
+  } as object,
+
+  // ── Shared ──────────────────────────────────────────────────────────────────
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -534,30 +462,33 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     paddingHorizontal: 10,
     height: 34,
-    minWidth: 200,
+    minWidth: 180,
   } as object,
-  searchBarFocused: {
-    backgroundColor: '#fff',
-    borderColor: COLORS.orange,
-  } as object,
+  searchBarFocused: { backgroundColor: '#fff', borderColor: COLORS.orange } as object,
   searchInput: {
     flex: 1,
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     color: COLORS.navy,
+    outlineStyle: 'none',
   } as object,
-  pills: { flexDirection: 'row', gap: 6, alignItems: 'center' } as object,
+  pills: { flexDirection: 'row', gap: 6, alignItems: 'center', flex: 1 } as object,
   pill: {
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
     backgroundColor: 'rgba(29,45,51,0.07)',
     cursor: 'pointer',
+    transition: 'background-color 150ms ease',
   } as object,
   pillActive: { backgroundColor: COLORS.navy } as object,
   pillText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy } as object,
   pillTextActive: { color: COLORS.beige } as object,
   pillDivider: { width: 1, height: 16, backgroundColor: 'rgba(29,45,51,0.15)' } as object,
+  scroll: { flex: 1 },
+  gridWrap: { paddingTop: 20, maxWidth: 1200, width: '100%', alignSelf: 'center' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
   loadMore: {
     marginTop: 32,
     alignSelf: 'center',
