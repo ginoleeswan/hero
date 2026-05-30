@@ -147,7 +147,7 @@ function GuestProfileScreen() {
             <Ionicons name="person-outline" size={36} color="white" />
           </LinearGradient>
 
-          <Text style={styles.guestTitle}>Join the hero community</Text>
+          <Text style={styles.guestTitle}>Join the Mythique community</Text>
           <Text style={styles.guestBody}>
             Sign in to save your favourite heroes, customise your profile, and sync across devices.
           </Text>

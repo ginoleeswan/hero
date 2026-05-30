@@ -27,7 +27,7 @@ export function HeroLogo({
       <Svg width={iconSize} height={iconSize} viewBox="0 0 1024 1024">
         <Path fill={resolvedIconColor} d={LOGO_PATH} />
       </Svg>
-      <Text style={[styles.wordmark, { fontSize, color }]}>hero</Text>
+      <Text style={[styles.wordmark, { fontSize, color }]}>mythique</Text>
     </View>
   );
 }

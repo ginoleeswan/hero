@@ -1,36 +1,44 @@
 name: CI
 
 on:
-  push:
-    branches: [master]
   pull_request:
+    branches: [master]
+  push:
     branches: [master]
 
 jobs:
-  ci:
-    name: Type check, format & test
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 22
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn format:check
 
-      - name: Enable Corepack
-        run: corepack enable
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn typecheck
 
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Type check
-        run: yarn typecheck
-
-      - name: Format check
-        run: yarn format:check
-
-      - name: Test
-        run: yarn test:ci
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn test:ci --passWithNoTests

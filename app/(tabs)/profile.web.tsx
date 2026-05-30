@@ -49,7 +49,7 @@ function GuestWebProfileScreen() {
       <LinearGradient colors={[COLORS.orange, '#c04a10']} style={guest.avatar}>
         <Ionicons name="person-outline" size={isMobile ? 32 : 40} color="white" />
       </LinearGradient>
-      <Text style={guest.title}>Join the hero community</Text>
+      <Text style={guest.title}>Join the Mythique community</Text>
       <Text style={guest.body}>
         Sign in to save your favourite heroes, customise your profile, and sync across devices.
       </Text>
