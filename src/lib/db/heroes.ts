@@ -227,7 +227,8 @@ export type CategorySlug =
   | 'marvel'
   | 'dc'
   | 'strongest'
-  | 'most-intelligent';
+  | 'most-intelligent'
+  | 'most-iconic';
 
 export type SortOption = 'popular' | 'az';
 export type CategoryPublisher = 'all' | 'marvel' | 'dc';
@@ -241,6 +242,7 @@ export const CATEGORY_LABELS: Record<CategorySlug, string> = {
   dc: 'DC Universe',
   strongest: 'Strongest Heroes',
   'most-intelligent': 'Most Intelligent',
+  'most-iconic': 'Most Iconic',
 };
 
 /** Fetches all rows from a query that may exceed Supabase's 1000-row default cap. */
@@ -317,6 +319,14 @@ export async function getAllHeroesBySlug(slug: CategorySlug): Promise<Hero[]> {
           .not('intelligence', 'is', null)
           .order('intelligence', { ascending: false }),
       );
+    case 'most-iconic':
+      return fetchAllPages(() =>
+        supabase
+          .from('heroes')
+          .select('*')
+          .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
+          .order('issue_count', { ascending: false, nullsFirst: false }),
+      );
   }
 }
 
@@ -364,6 +374,9 @@ export async function getCategoryPage(
     case 'most-intelligent':
       q = q.not('intelligence', 'is', null);
       break;
+    case 'most-iconic':
+      q = q.not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")');
+      break;
   }
 
   if (publisher === 'marvel') q = q.ilike('publisher', '%marvel%');
@@ -379,6 +392,8 @@ export async function getCategoryPage(
     q = q.order('strength', { ascending: false, nullsFirst: false });
   } else if (slug === 'most-intelligent') {
     q = q.order('intelligence', { ascending: false, nullsFirst: false });
+  } else if (slug === 'most-iconic') {
+    q = q.order('issue_count', { ascending: false, nullsFirst: false });
   } else {
     q = q.order('issue_count', { ascending: false, nullsFirst: false });
   }

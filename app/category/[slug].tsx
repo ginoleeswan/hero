@@ -38,6 +38,7 @@ const VALID_SLUGS = new Set<CategorySlug>([
   'dc',
   'strongest',
   'most-intelligent',
+  'most-iconic',
 ]);
 const PAGE_SIZE = 30;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');

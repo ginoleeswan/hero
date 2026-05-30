@@ -1371,7 +1371,7 @@ export default function WebHomeScreen() {
             title="Most Iconic"
             heroes={homeData.iconic}
             onPress={handlePress}
-            onViewAll={() => router.push('/category/strongest')}
+            onViewAll={() => router.push('/category/most-iconic')}
           />
           <DarkHomeRow
             label="The Dark Side"
