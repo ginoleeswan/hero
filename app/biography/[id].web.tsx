@@ -331,7 +331,7 @@ export default function WebBiographyScreen() {
       .catch(() => {});
   }, [id]);
 
-  const heroImage = id ? heroImageSource(String(id), hero?.image_url) : null;
+  const heroImage = id ? heroImageSource(String(id), hero?.image_url, hero?.portrait_url) : null;
 
   const scrollToSection = (index: number) => {
     document
@@ -411,6 +411,8 @@ export default function WebBiographyScreen() {
                 <View style={styles.sidebarPortrait}>
                   <Image
                     source={heroImage}
+                    contentFit="cover"
+                    contentPosition={{ top: 0, left: '50%' }}
                     style={{ width: '100%', aspectRatio: 3 / 4, borderRadius: 10 } as object}
                     cachePolicy="memory-disk"
                     recyclingKey={id}
