@@ -348,10 +348,13 @@ export default function WebCharacterScreen() {
         <View style={styles.heroIdentity}>
           <Text style={[styles.heroName, { fontSize: isDesktop ? 52 : 30 }]}>{stats.name}</Text>
           {alias ? <Text style={styles.heroAlias}>{alias}</Text> : null}
+          {!isDesktop && stats.biography.publisher ? (
+            <Text style={[styles.heroPublisher, { marginTop: 6 }]}>{stats.biography.publisher}</Text>
+          ) : null}
         </View>
 
-        {/* Publisher + meta — bottom-right corner */}
-        {stats.biography.publisher || isDesktop ? (
+        {/* Publisher + meta — desktop only; on mobile it overlaps the hero name */}
+        {isDesktop ? (
           <View style={styles.publisherCorner}>
             {stats.biography.publisher ? (
               <Text style={styles.heroPublisher}>{stats.biography.publisher}</Text>
@@ -1431,14 +1434,14 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.navy,
   },
 
-  // Mobile portrait — wider proportion
+  // Mobile portrait — aspect ratio 2:3 so portrait images display naturally
   portraitCardMobile: {
     width: '100%',
-    height: 280,
+    aspectRatio: '2 / 3',
     borderRadius: 12,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
-  },
+  } as object,
 
   // Mobile single-column
   body: { padding: 16, gap: 14 },

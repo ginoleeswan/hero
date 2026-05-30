@@ -286,9 +286,14 @@ export default function WebCategoryScreen() {
         }
       >
         <View style={[styles.controlsInner, { paddingHorizontal: contentPad }]}>
+          {/* Search — full-width on mobile, inline on desktop */}
           <View
             style={
-              [styles.searchBar, searchFocused && (styles.searchBarFocused as object)] as object
+              [
+                styles.searchBar,
+                !isDesktop && (styles.searchBarMobile as object),
+                searchFocused && (styles.searchBarFocused as object),
+              ] as object
             }
           >
             <Ionicons
@@ -307,6 +312,7 @@ export default function WebCategoryScreen() {
               autoCorrect={false}
             />
           </View>
+          {/* Pills row — wraps to its own line on mobile */}
           <View style={styles.pills as object}>
             {SORT_OPTS.map((o) => (
               <Pressable
@@ -344,7 +350,8 @@ export default function WebCategoryScreen() {
                 </Text>
               </Pressable>
             ))}
-            {!loading && (
+            {/* Count label only on desktop — hero zone already shows it on mobile */}
+            {isDesktop && !loading && (
               <Text style={styles.countLabel as object}>{countLabel}</Text>
             )}
           </View>
@@ -468,8 +475,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    flexWrap: 'wrap',
+    gap: 8,
+    flexWrap: 'wrap', // search on line 1, pills wrap to line 2 on mobile
   } as object,
   countLabel: {
     fontFamily: 'Nunito_400Regular',
@@ -492,6 +499,8 @@ const styles = StyleSheet.create({
     height: 34,
     minWidth: 180,
   } as object,
+  // On mobile, search fills the full width so pills have their own row below
+  searchBarMobile: { flex: 1, minWidth: 0 } as object,
   searchBarFocused: { backgroundColor: '#fff', borderColor: COLORS.orange } as object,
   searchInput: {
     flex: 1,
@@ -500,7 +509,7 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
     outlineStyle: 'none',
   } as object,
-  pills: { flexDirection: 'row', gap: 6, alignItems: 'center', flex: 1 } as object,
+  pills: { flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' } as object,
   pill: {
     paddingHorizontal: 12,
     paddingVertical: 5,
