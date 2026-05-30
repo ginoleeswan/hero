@@ -2,20 +2,23 @@
 
 import { useRouter } from 'expo-router';
 
-const wordmark = require('../../../assets/hero-wordmark.svg');
 const logoMark = require('../../../assets/hero-logo.svg');
-const spiderman = require('../../../assets/images/spiderman.jpg');
-const batman = require('../../../assets/images/batman.jpg');
-const ironman = require('../../../assets/images/ironman.jpg');
-const deadpool = require('../../../assets/images/deadpool.jpg');
-const wolverine = require('../../../assets/images/wolverine.jpg');
-const wonderWoman = require('../../../assets/images/wonder-woman.jpg');
-const thor = require('../../../assets/images/thor.jpg');
-const blackPanther = require('../../../assets/images/black-panther.jpg');
-const docStrange = require('../../../assets/images/doctor-strange.jpg');
-const hulk = require('../../../assets/images/hulk.jpg');
 const screenshotHome = require('../../../assets/images/screenshots/home.PNG');
 const screenshotSearch = require('../../../assets/images/screenshots/search.PNG');
+
+const P = (id: string) =>
+  `https://rpvgqfaeiowisdubgxkg.supabase.co/storage/v1/object/public/hero-portraits/${id}.jpg`;
+
+const spiderman = P('620');
+const batman = P('70');
+const ironman = P('346');
+const deadpool = P('213');
+const wolverine = P('717');
+const wonderWoman = P('720');
+const thor = P('659');
+const blackPanther = P('106');
+const docStrange = P('226');
+const hulk = P('332');
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap');

@@ -28,26 +28,29 @@ const PAD_H = 40;
 const PAD_H_MOBILE = 20;
 const GAP = 16;
 
+const P = (id: string) =>
+  `https://rpvgqfaeiowisdubgxkg.supabase.co/storage/v1/object/public/hero-portraits/${id}.jpg`;
+
 const MOSAIC = [
-  { src: require('../../../assets/images/spiderman.jpg'), name: 'Spider-Man' },
-  { src: require('../../../assets/images/batman.jpg'), name: 'Batman' },
-  { src: require('../../../assets/images/ironman.jpg'), name: 'Iron Man' },
-  { src: require('../../../assets/images/wonder-woman.jpg'), name: 'Wonder Woman' },
-  { src: require('../../../assets/images/black-panther.jpg'), name: 'Black Panther' },
-  { src: require('../../../assets/images/deadpool.jpg'), name: 'Deadpool' },
-  { src: require('../../../assets/images/wolverine.jpg'), name: 'Wolverine' },
-  { src: require('../../../assets/images/thor.jpg'), name: 'Thor' },
-  { src: require('../../../assets/images/doctor-strange.jpg'), name: 'Doctor Strange' },
-  { src: require('../../../assets/images/hulk.jpg'), name: 'Hulk' },
+  { src: P('620'), name: 'Spider-Man' },
+  { src: P('70'), name: 'Batman' },
+  { src: P('346'), name: 'Iron Man' },
+  { src: P('720'), name: 'Wonder Woman' },
+  { src: P('106'), name: 'Black Panther' },
+  { src: P('213'), name: 'Deadpool' },
+  { src: P('717'), name: 'Wolverine' },
+  { src: P('659'), name: 'Thor' },
+  { src: P('226'), name: 'Doctor Strange' },
+  { src: P('332'), name: 'Hulk' },
 ];
 
 const SIDE_HEROES = [
-  require('../../../assets/images/spiderman.jpg'),
-  require('../../../assets/images/ironman.jpg'),
-  require('../../../assets/images/deadpool.jpg'),
-  require('../../../assets/images/wonder-woman.jpg'),
-  require('../../../assets/images/thor.jpg'),
-  require('../../../assets/images/wolverine.jpg'),
+  P('620'),
+  P('346'),
+  P('213'),
+  P('720'),
+  P('659'),
+  P('717'),
 ];
 
 const FEATURES = [
