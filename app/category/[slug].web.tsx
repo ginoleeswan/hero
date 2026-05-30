@@ -6,10 +6,11 @@ import {
   ScrollView,
   Pressable,
   StyleSheet,
-  ActivityIndicator,
+  Animated,
   TextInput,
   useWindowDimensions,
 } from 'react-native';
+import { useSkeletonAnim } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +37,19 @@ const VALID_SLUGS = new Set<CategorySlug>([
   'most-iconic',
 ]);
 
+
+// ── Skeleton card (matches HeroCard layout) ───────────────────────────────────
+function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
+  return <Animated.View style={[sk.wrap as object, { opacity }]} />;
+}
+
+const sk = StyleSheet.create({
+  wrap: {
+    borderRadius: 10,
+    aspectRatio: '3 / 4',
+    backgroundColor: '#ddd5c8',
+  } as object,
+});
 
 // ── Card ──────────────────────────────────────────────────────────────────────
 function HeroCard({ hero, onPress }: { hero: Hero; onPress: () => void }) {
@@ -119,6 +133,9 @@ export default function WebCategoryScreen() {
   const currentPage = useRef(0);
   const hasMore = useRef(true);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const sentinelRef = useRef<View>(null);
+  const loadingMoreRef = useRef(false);
+  const skeletonOpacity = useSkeletonAnim();
 
   const categorySlug = VALID_SLUGS.has(slug as CategorySlug) ? (slug as CategorySlug) : null;
   const title = categorySlug ? CATEGORY_LABELS[categorySlug] : (slug ?? 'Heroes');
@@ -188,10 +205,24 @@ export default function WebCategoryScreen() {
     [fetchPage, sort, search],
   );
 
-  const handleLoadMore = useCallback(() => {
-    if (!hasMore.current || loadingMore) return;
-    fetchPage(currentPage.current + 1, { sort, publisher, search }, true);
-  }, [fetchPage, loadingMore, sort, publisher, search]);
+  // Keep ref in sync so the IntersectionObserver callback always reads current state
+  useEffect(() => { loadingMoreRef.current = loadingMore; }, [loadingMore]);
+
+  // IntersectionObserver — triggers next page automatically as user scrolls near sentinel
+  useEffect(() => {
+    const node = sentinelRef.current as unknown as Element | null;
+    if (!node || typeof window === 'undefined' || !('IntersectionObserver' in window)) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting && hasMore.current && !loadingMoreRef.current) {
+          fetchPage(currentPage.current + 1, { sort, publisher, search }, true);
+        }
+      },
+      { rootMargin: '400px' },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [fetchPage, sort, publisher, search]);
 
   const countLabel = (() => {
     const s = total !== 1 ? 's' : '';
@@ -324,8 +355,13 @@ export default function WebCategoryScreen() {
 
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.orange} />
+        // Initial skeleton grid — same layout as real cards, no layout shift on load
+        <View style={[styles.gridWrap, { paddingHorizontal: contentPad }]}>
+          <View style={gridStyle as object}>
+            {Array.from({ length: 24 }).map((_, i) => (
+              <SkeletonCard key={i} opacity={skeletonOpacity} />
+            ))}
+          </View>
         </View>
       ) : heroes.length === 0 ? (
         <View style={styles.center}>
@@ -338,21 +374,13 @@ export default function WebCategoryScreen() {
               {heroes.map((hero) => (
                 <HeroCard key={hero.id} hero={hero} onPress={() => handlePress(String(hero.id))} />
               ))}
+              {/* Skeleton cards appended while next page loads */}
+              {loadingMore && Array.from({ length: 12 }).map((_, i) => (
+                <SkeletonCard key={`sk-${i}`} opacity={skeletonOpacity} />
+              ))}
             </View>
-            {hasMore.current && (
-              <Pressable
-                onPress={handleLoadMore}
-                style={({ hovered }: { hovered?: boolean }) =>
-                  [styles.loadMore, hovered && (styles.loadMoreHover as object)] as object
-                }
-              >
-                {loadingMore ? (
-                  <ActivityIndicator color={COLORS.navy} />
-                ) : (
-                  <Text style={styles.loadMoreText as object}>Load more</Text>
-                )}
-              </Pressable>
-            )}
+            {/* Sentinel — IntersectionObserver watches this to trigger the next page */}
+            <View ref={sentinelRef} style={styles.sentinel} />
           </View>
         </ScrollView>
       )}
@@ -489,15 +517,5 @@ const styles = StyleSheet.create({
   gridWrap: { paddingTop: 20, maxWidth: 1200, width: '100%', alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
-  loadMore: {
-    marginTop: 32,
-    alignSelf: 'center',
-    paddingHorizontal: 28,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: 'rgba(29,45,51,0.08)',
-    cursor: 'pointer',
-  } as object,
-  loadMoreHover: { backgroundColor: 'rgba(29,45,51,0.14)' } as object,
-  loadMoreText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy } as object,
+  sentinel: { height: 1 },
 });
