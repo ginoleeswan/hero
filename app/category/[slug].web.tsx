@@ -133,7 +133,6 @@ export default function WebCategoryScreen() {
   const currentPage = useRef(0);
   const hasMore = useRef(true);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const sentinelRef = useRef<View>(null);
   const loadingMoreRef = useRef(false);
   const skeletonOpacity = useSkeletonAnim();
 
@@ -205,24 +204,23 @@ export default function WebCategoryScreen() {
     [fetchPage, sort, search],
   );
 
-  // Keep ref in sync so the IntersectionObserver callback always reads current state
+  // Keep ref in sync — scroll handler reads this to avoid firing multiple fetches
   useEffect(() => { loadingMoreRef.current = loadingMore; }, [loadingMore]);
 
-  // IntersectionObserver — triggers next page automatically as user scrolls near sentinel
-  useEffect(() => {
-    const node = sentinelRef.current as unknown as Element | null;
-    if (!node || typeof window === 'undefined' || !('IntersectionObserver' in window)) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting && hasMore.current && !loadingMoreRef.current) {
-          fetchPage(currentPage.current + 1, { sort, publisher, search }, true);
-        }
-      },
-      { rootMargin: '400px' },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [fetchPage, sort, publisher, search]);
+  // onScroll handler — fires when the user scrolls within the ScrollView container.
+  // IntersectionObserver doesn't work here because RNW's ScrollView is a scrollable
+  // div, not the document — the observer sees the sentinel as always visible.
+  const handleScroll = useCallback(
+    ({ nativeEvent: { contentOffset, contentSize, layoutMeasurement } }: {
+      nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } };
+    }) => {
+      const distanceFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
+      if (distanceFromBottom < 400 && hasMore.current && !loadingMoreRef.current) {
+        fetchPage(currentPage.current + 1, { sort, publisher, search }, true);
+      }
+    },
+    [fetchPage, sort, publisher, search],
+  );
 
   const countLabel = (() => {
     const s = total !== 1 ? 's' : '';
@@ -368,19 +366,21 @@ export default function WebCategoryScreen() {
           <Text style={styles.empty}>No heroes found</Text>
         </View>
       ) : (
-        <ScrollView style={styles.scroll}>
+        <ScrollView
+          style={styles.scroll}
+          onScroll={handleScroll}
+          scrollEventThrottle={200}
+        >
           <View style={[styles.gridWrap, { paddingHorizontal: contentPad, paddingBottom: 60 }]}>
             <View style={gridStyle as object}>
               {heroes.map((hero) => (
                 <HeroCard key={hero.id} hero={hero} onPress={() => handlePress(String(hero.id))} />
               ))}
-              {/* Skeleton cards appended while next page loads */}
+              {/* Skeleton cards appended inline while next page loads */}
               {loadingMore && Array.from({ length: 12 }).map((_, i) => (
                 <SkeletonCard key={`sk-${i}`} opacity={skeletonOpacity} />
               ))}
             </View>
-            {/* Sentinel — IntersectionObserver watches this to trigger the next page */}
-            <View ref={sentinelRef} style={styles.sentinel} />
           </View>
         </ScrollView>
       )}
@@ -517,5 +517,4 @@ const styles = StyleSheet.create({
   gridWrap: { paddingTop: 20, maxWidth: 1200, width: '100%', alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
-  sentinel: { height: 1 },
 });
