@@ -285,15 +285,17 @@ export default function WebCategoryScreen() {
           [styles.controlsBar, isDesktop && (styles.controlsBarDesktop as object)] as object
         }
       >
-        <View style={[styles.controlsInner, { paddingHorizontal: contentPad }]}>
-          {/* Search — full-width on mobile, inline on desktop */}
+        <View
+          style={[
+            styles.controlsInner,
+            !isDesktop && (styles.controlsInnerMobile as object),
+            { paddingHorizontal: contentPad },
+          ] as object}
+        >
+          {/* Search — full width on mobile (column layout), inline on desktop */}
           <View
             style={
-              [
-                styles.searchBar,
-                !isDesktop && (styles.searchBarMobile as object),
-                searchFocused && (styles.searchBarFocused as object),
-              ] as object
+              [styles.searchBar, searchFocused && (styles.searchBarFocused as object)] as object
             }
           >
             <Ionicons
@@ -462,7 +464,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.beige,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(41,60,67,0.12)',
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   controlsBarDesktop: {
     position: 'sticky',
@@ -476,7 +478,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    flexWrap: 'wrap', // search on line 1, pills wrap to line 2 on mobile
+  } as object,
+  controlsInnerMobile: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 8,
   } as object,
   countLabel: {
     fontFamily: 'Nunito_400Regular',
@@ -496,11 +502,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'transparent',
     paddingHorizontal: 10,
-    height: 34,
+    height: 38,
     minWidth: 180,
   } as object,
-  // On mobile, search fills the full width so pills have their own row below
-  searchBarMobile: { flex: 1, minWidth: 0 } as object,
   searchBarFocused: { backgroundColor: '#fff', borderColor: COLORS.orange } as object,
   searchInput: {
     flex: 1,
