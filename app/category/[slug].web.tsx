@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   },
   heroZoneDesktop: {
     paddingTop: 20,
-    paddingBottom: 28,
+    paddingBottom: 22,
   } as object,
   heroZoneInner: { maxWidth: 1200, width: '100%', alignSelf: 'center', gap: 10 },
   heroZoneInnerDesktop: { gap: 14 } as object,
@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
   pillTextActive: { color: COLORS.beige } as object,
   pillDivider: { width: 1, height: 16, backgroundColor: 'rgba(29,45,51,0.15)' } as object,
   scroll: { flex: 1 },
-  gridWrap: { paddingTop: 20, maxWidth: 1200, width: '100%', alignSelf: 'center' },
+  gridWrap: { paddingTop: 28, maxWidth: 1200, width: '100%', alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
 });
