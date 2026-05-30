@@ -4,13 +4,20 @@ import type { ExpoConfig } from 'expo/config';
 const IS_DEV = process.env.APP_VARIANT === 'development';
 
 const config: ExpoConfig = {
-  name: IS_DEV ? 'hero (dev)' : 'hero',
-  slug: 'hero',
-  scheme: 'hero',
+  name: IS_DEV ? 'Mythique (Dev)' : 'Mythique',
+  slug: 'mythique',
+  scheme: IS_DEV ? 'mythique-dev' : 'mythique',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
+  owner: 'ginolee',
+  updates: {
+    url: 'https://u.expo.dev/129c7437-8d73-4224-bda5-74f69f85a523',
+  },
+  runtimeVersion: {
+    policy: 'appVersion',
+  },
   splash: {
     image: './assets/splash.png',
     resizeMode: 'contain',
@@ -18,14 +25,17 @@ const config: ExpoConfig = {
   },
   ios: {
     supportsTablet: false,
-    bundleIdentifier: IS_DEV ? 'com.ginoswanepoel.hero.dev' : 'com.ginoswanepoel.hero',
+    bundleIdentifier: IS_DEV ? 'com.ginoswanepoel.mythique.dev' : 'com.ginoswanepoel.mythique',
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#293c43',
     },
-    package: IS_DEV ? 'com.ginoswanepoel.hero.dev' : 'com.ginoswanepoel.hero',
+    package: IS_DEV ? 'com.ginoswanepoel.mythique.dev' : 'com.ginoswanepoel.mythique',
   },
   web: {
     bundler: 'metro',

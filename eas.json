@@ -10,7 +10,7 @@
       "node": "20.19.4",
       "env": {
         "APP_VARIANT": "development",
-        "APPLICATION_ID": "com.ginoswanepoel.hero.dev"
+        "APPLICATION_ID": "com.ginoswanepoel.mythique.dev"
       },
       "android": {
         "image": "ubuntu-22.04-jdk-17-ndk-r25b"
@@ -19,20 +19,48 @@
         "simulator": true
       }
     },
-    "preview": {
+    "development:simulator": {
+      "developmentClient": true,
       "distribution": "internal",
+      "node": "20.19.4",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "autoIncrement": true,
+      "distribution": "store",
+      "channel": "preview",
       "node": "20.19.4",
       "android": {
         "image": "ubuntu-22.04-jdk-17-ndk-r25b",
         "buildType": "apk"
+      },
+      "ios": {
+        "buildConfiguration": "Release"
       }
     },
     "production": {
       "autoIncrement": true,
-      "node": "20.19.4"
+      "channel": "default",
+      "node": "20.19.4",
+      "ios": {
+        "resourceClass": "m-medium"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "ginoswan21@gmail.com",
+        "ascAppId": "YOUR_ASC_APP_ID"
+      }
+    },
+    "preview": {
+      "ios": {
+        "appleId": "ginoswan21@gmail.com",
+        "ascAppId": "YOUR_ASC_APP_ID"
+      }
+    }
   }
 }
