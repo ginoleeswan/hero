@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   getCategoryPage,
   CATEGORY_LABELS,
+  CATEGORY_DESCRIPTIONS,
   type CategorySlug,
   type Hero,
   type SortOption,
@@ -138,6 +139,7 @@ export default function WebCategoryScreen() {
 
   const categorySlug = VALID_SLUGS.has(slug as CategorySlug) ? (slug as CategorySlug) : null;
   const title = categorySlug ? CATEGORY_LABELS[categorySlug] : (slug ?? 'Heroes');
+  const description = categorySlug ? CATEGORY_DESCRIPTIONS[categorySlug] : null;
 
   const fetchPage = useCallback(
     async (
@@ -275,9 +277,16 @@ export default function WebCategoryScreen() {
 
           <View style={styles.titleRow}>
             <View style={[styles.accentBar, isDesktop && (styles.accentBarDesktop as object)] as object} />
-            <Text style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object}>
-              {title}
-            </Text>
+            <View style={styles.titleBlock}>
+              <Text style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object}>
+                {title}
+              </Text>
+              {description ? (
+                <Text style={[styles.description, isDesktop && (styles.descriptionDesktop as object)] as object}>
+                  {description}
+                </Text>
+              ) : null}
+            </View>
             {!loading && total > 0 && (
               <View style={styles.countPill}>
                 <Text style={styles.countText as object}>{total.toLocaleString()}</Text>
@@ -445,14 +454,21 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   accentBarDesktop: { height: 60 } as object,
+  titleBlock: { flex: 1, gap: 4 },
   title: {
     fontFamily: 'Flame-Regular',
     fontSize: 30,
     color: COLORS.beige,
-    flex: 1,
     lineHeight: 34,
   } as object,
-  titleDesktop: { fontSize: 56, lineHeight: 60 } as object,
+  titleDesktop: { fontSize: 52, lineHeight: 56 } as object,
+  description: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: 'rgba(245,235,220,0.5)',
+    lineHeight: 18,
+  } as object,
+  descriptionDesktop: { fontSize: 15, lineHeight: 21 } as object,
   countPill: {
     backgroundColor: 'rgba(232,98,26,0.18)',
     borderRadius: 20,

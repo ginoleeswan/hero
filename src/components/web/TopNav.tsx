@@ -74,8 +74,8 @@ export function TopNav() {
           <HeroLogo iconSize={24} fontSize={19} color={COLORS.beige} gap={8} />
         </Pressable>
 
-        {/* Center — search on desktop, empty spacer on mobile */}
-        {isDesktop ? (
+        {/* Center — global search only on explore page; spacer elsewhere */}
+        {isDesktop && pathname === EXPLORE_PATH ? (
           <View style={styles.searchWrap as object}>
             <Ionicons name="search" size={14} color="rgba(245,235,220,0.28)" />
             <TextInput

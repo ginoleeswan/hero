@@ -261,6 +261,18 @@ export const CATEGORY_LABELS: Record<CategorySlug, string> = {
   'most-iconic': 'Most Iconic',
 };
 
+export const CATEGORY_DESCRIPTIONS: Record<CategorySlug, string> = {
+  popular: 'The most beloved heroes across all of comics',
+  villain: 'The forces of darkness across Marvel, DC, and beyond',
+  xmen: "Charles Xavier's School for Gifted Youngsters",
+  'anti-heroes': 'Characters who walk the line between good and evil',
+  marvel: 'From the pages of Marvel Comics',
+  dc: 'Heroes and villains of the DC Universe',
+  strongest: 'Ranked by raw physical power',
+  'most-intelligent': 'The greatest minds in all of comics',
+  'most-iconic': 'Ranked by total comic book appearances',
+};
+
 /** Fetches all rows from a query that may exceed Supabase's 1000-row default cap. */
 async function fetchAllPages(
   buildQuery: () => {
