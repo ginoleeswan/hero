@@ -45,7 +45,7 @@ export default function WebLoginScreen() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.replace('/');
+      router.replace('/explore');
     }
   };
 
@@ -148,6 +148,10 @@ export default function WebLoginScreen() {
       <Pressable onPress={() => router.push('/(auth)/signup')} style={styles.switchRow as object}>
         <Text style={styles.switchText}>Don't have an account? </Text>
         <Text style={styles.switchLink}>Sign up</Text>
+      </Pressable>
+
+      <Pressable onPress={() => router.replace('/explore')} style={styles.guestRow as object}>
+        <Text style={styles.guestText}>Browse without signing in</Text>
       </Pressable>
     </>
   );
@@ -462,6 +466,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
     color: COLORS.navy,
+    textDecorationLine: 'underline',
+  },
+  guestRow: {
+    marginTop: 16,
+    alignItems: 'center',
+    cursor: 'pointer',
+  } as object,
+  guestText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: 'rgba(41,60,67,0.45)',
     textDecorationLine: 'underline',
   },
 });

@@ -37,10 +37,8 @@ function AuthGate() {
     const inAuthGroup = segments[0] === '(auth)';
     const atRoot = segments.length === 0;
 
-    if (!user && !inAuthGroup) {
-      router.replace('/(auth)/login');
-    } else if (user && (inAuthGroup || atRoot)) {
-      router.replace('/(tabs)');
+    if (user && (inAuthGroup || atRoot)) {
+      router.replace('/explore');
     } else {
       setSettled(true);
     }

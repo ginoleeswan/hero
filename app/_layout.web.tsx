@@ -24,11 +24,8 @@ function WebAuthGate() {
     const isRoot = segs.length === 0;
 
     if (user && (inAuthGroup || isRoot)) {
-      router.replace('/(tabs)');
-    } else if (!user && !inAuthGroup && !isRoot) {
-      router.replace('/(auth)/login');
+      router.replace('/explore');
     } else {
-      // Already on the correct screen — no redirect needed
       setSettled(true);
     }
   }, [user, loading, segments, router]);

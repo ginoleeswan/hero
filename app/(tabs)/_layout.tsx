@@ -9,7 +9,7 @@ export default function TabLayout() {
       iconColor={{ default: '#666', selected: '#e8621a' }}
       labelStyle={{ default: { color: '#666' }, selected: { color: '#e8621a' } }}
     >
-      <NativeTabs.Trigger name="index">
+      <NativeTabs.Trigger name="explore">
         <NativeTabs.Trigger.Icon
           src={<NativeTabs.Trigger.VectorIcon family={Ionicons} name="compass-outline" />}
         />

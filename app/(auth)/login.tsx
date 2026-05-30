@@ -59,7 +59,7 @@ export default function LoginScreen() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.replace('/(tabs)');
+      router.replace('/explore');
     }
   };
 
@@ -213,6 +213,10 @@ export default function LoginScreen() {
             <Pressable onPress={() => router.push('/(auth)/signup')} style={styles.switchRow}>
               <Text style={styles.switchText}>Don't have an account? </Text>
               <Text style={styles.switchLink}>Sign up</Text>
+            </Pressable>
+
+            <Pressable onPress={() => router.replace('/explore')} style={styles.guestRow}>
+              <Text style={styles.guestText}>Browse without signing in</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -386,6 +390,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
     color: COLORS.navy,
+    textDecorationLine: 'underline',
+  },
+  guestRow: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  guestText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: 'rgba(41,60,67,0.45)',
     textDecorationLine: 'underline',
   },
 });

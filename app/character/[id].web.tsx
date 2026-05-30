@@ -300,7 +300,7 @@ export default function WebCharacterScreen() {
         />
         <View style={styles.headerTopRow}>
           <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
             style={styles.backBtn}
           >
             <Ionicons name="arrow-back" size={15} color={COLORS.beige} />

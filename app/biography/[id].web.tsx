@@ -381,7 +381,7 @@ export default function WebBiographyScreen() {
       <View style={styles.identityHeader}>
         <View style={styles.headerInner}>
           <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
             style={styles.backBtn}
           >
             <Ionicons name="arrow-back" size={15} color={COLORS.beige} />

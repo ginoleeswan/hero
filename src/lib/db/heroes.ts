@@ -122,73 +122,89 @@ export async function getHeroCount(): Promise<number> {
   return count ?? 0;
 }
 
+// Minimal column sets for home page queries — cards only need image + name.
+// Spotlight panel also shows publisher and summary.
+const HOME_ROW = 'id, name, image_url, portrait_url';
+const HOME_SPOT = 'id, name, image_url, portrait_url, publisher, summary';
+
+export async function getPopularHeroes(limit = 25): Promise<Hero[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select(HOME_SPOT)
+    .eq('category', 'popular')
+    .order('name')
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as Hero[];
+}
+
 export async function getXMen(limit = 25): Promise<Hero[]> {
   const { data, error } = await supabase
     .from('heroes')
-    .select('*')
+    .select(HOME_ROW)
     .or('group_affiliation.ilike.%x-men%,group_affiliation.ilike.%xmen%')
     .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []) as unknown as Hero[];
 }
 
 export async function getAntiHeroes(limit = 20): Promise<Hero[]> {
   const { data, error } = await supabase
     .from('heroes')
-    .select('*')
+    .select(HOME_ROW)
     .ilike('alignment', '%neutral%')
     .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []) as unknown as Hero[];
 }
 
 export async function getVillains(limit = 25): Promise<Hero[]> {
   const { data, error } = await supabase
     .from('heroes')
-    .select('*')
+    .select(HOME_ROW)
     .eq('alignment', 'bad')
     .not('publisher', 'in', '("Non-Fictional","In the Public Domain")')
     .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []) as unknown as Hero[];
 }
 
 export async function getIconicHeroes(limit = 25): Promise<Hero[]> {
   const { data, error } = await supabase
     .from('heroes')
-    .select('*')
+    .select(HOME_SPOT)
     .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
     .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []) as unknown as Hero[];
 }
 
 export async function getSpotlightHeroes(limit = 10): Promise<Hero[]> {
   const { data, error } = await supabase
     .from('heroes')
-    .select('*')
+    .select(HOME_SPOT)
     .not('portrait_url', 'is', null)
     .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
     .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []) as unknown as Hero[];
 }
 
 export async function getNewlyAddedCV(limit = 25): Promise<Hero[]> {
   const { data, error } = await supabase
     .from('heroes')
-    .select('*')
+    .select(HOME_ROW)
     .like('id', 'cv-%')
     .not('publisher', 'in', '("Non-Fictional","In the Public Domain")')
     .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []) as unknown as Hero[];
 }
 
 export async function getHeroesByPublisher(
@@ -197,12 +213,12 @@ export async function getHeroesByPublisher(
 ): Promise<Hero[]> {
   const { data, error } = await supabase
     .from('heroes')
-    .select('*')
+    .select(HOME_ROW)
     .ilike('publisher', `%${publisher}%`)
     .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []) as unknown as Hero[];
 }
 
 export async function getHeroesByStatRanking(
@@ -211,12 +227,12 @@ export async function getHeroesByStatRanking(
 ): Promise<Hero[]> {
   const { data, error } = await supabase
     .from('heroes')
-    .select('*')
+    .select(HOME_ROW)
     .not(stat, 'is', null)
     .order(stat, { ascending: false })
     .limit(limit);
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []) as unknown as Hero[];
 }
 
 export type CategorySlug =

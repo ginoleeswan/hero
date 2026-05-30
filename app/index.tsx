@@ -1,9 +1,8 @@
 import { Platform } from 'react-native';
+import { Redirect } from 'expo-router';
 import LandingPage from '../src/components/landing/LandingPage.dom';
 
 export default function Index() {
-  // On native, the AuthGate in _layout.tsx redirects unauthenticated users
-  // to /(auth)/login. Nothing to render here.
-  if (Platform.OS !== 'web') return null;
+  if (Platform.OS !== 'web') return <Redirect href="/explore" />;
   return <LandingPage />;
 }

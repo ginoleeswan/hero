@@ -109,6 +109,92 @@ function FavouriteThumb({
   );
 }
 
+function GuestProfileScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#293C43', '#3d5a66']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.cover, { height: 140 + insets.top }]}
+      >
+        <Svg style={StyleSheet.absoluteFill} width={SCREEN_WIDTH} height={280}>
+          <Defs>
+            <Pattern id="dots" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+              <Circle cx="7" cy="7" r="1.5" fill="rgba(231,115,51,0.22)" />
+            </Pattern>
+          </Defs>
+          <Rect width={SCREEN_WIDTH} height={280} fill="url(#dots)" />
+        </Svg>
+        <View style={styles.coverLogo}>
+          <Svg width={72} height={72} viewBox="0 0 1024 1024">
+            <Path fill="#ECECDE" d={HERO_LOGO_PATH} />
+          </Svg>
+        </View>
+      </LinearGradient>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+        automaticallyAdjustContentInsets={false}
+        contentInsetAdjustmentBehavior="never"
+      >
+        <View style={styles.guestContent}>
+          <LinearGradient colors={[COLORS.orange, '#c04a10']} style={styles.guestAvatar}>
+            <Ionicons name="person-outline" size={36} color="white" />
+          </LinearGradient>
+
+          <Text style={styles.guestTitle}>Join the hero community</Text>
+          <Text style={styles.guestBody}>
+            Sign in to save your favourite heroes, customise your profile, and sync across devices.
+          </Text>
+
+          <TouchableOpacity
+            onPress={() => router.push('/(auth)/login')}
+            style={styles.guestSignInBtn}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.guestSignInText}>Sign In</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push('/(auth)/signup')}
+            style={styles.guestSignUpBtn}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.guestSignUpText}>Create Account</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.accountSection}>
+          <View style={styles.accountCard}>
+            <TouchableOpacity
+              style={styles.accountRow}
+              onPress={() => Linking.openURL(KO_FI_URL)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.accountIconBadge, styles.accountIconBadgeOrange]}>
+                <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
+              </View>
+              <Text style={styles.accountLabel}>Support this project</Text>
+              <Text style={styles.accountValue}>Ko-fi</Text>
+              <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <Text style={styles.disclaimer}>
+          Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics, or
+          any other publisher.
+        </Text>
+      </ScrollView>
+    </View>
+  );
+}
+
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -155,9 +241,12 @@ export default function ProfileScreen() {
     fetchFavourites();
   }, [fetchFavourites]);
 
+  if (!user) return <GuestProfileScreen />;
+
   const handleSignOut = async () => {
     setSigningOut(true);
     await signOut();
+    router.replace('/explore');
   };
 
   const handleDeleteAccount = () => {
@@ -426,7 +515,7 @@ export default function ProfileScreen() {
                 Open any hero and tap the heart to build your collection
               </Text>
               <TouchableOpacity
-                onPress={() => router.push('/')}
+                onPress={() => router.push('/explore')}
                 style={styles.browseBtn}
                 activeOpacity={0.8}
               >
@@ -611,6 +700,78 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 8,
     paddingBottom: 24,
+  },
+
+  // Guest state
+  guestContent: {
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingTop: 36,
+    paddingBottom: 32,
+  },
+  guestAvatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    shadowColor: COLORS.orange,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  guestTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 22,
+    color: COLORS.navy,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  guestBody: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14,
+    color: COLORS.grey,
+    textAlign: 'center',
+    lineHeight: 21,
+    marginBottom: 28,
+  },
+  guestSignInBtn: {
+    backgroundColor: COLORS.orange,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 48,
+    alignItems: 'center',
+    marginBottom: 12,
+    width: '100%',
+    shadowColor: COLORS.orange,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  guestSignInText: {
+    fontFamily: 'Nunito_700Bold',
+    color: 'white',
+    fontSize: 16,
+    letterSpacing: 0.3,
+  },
+  guestSignUpBtn: {
+    backgroundColor: 'transparent',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 48,
+    alignItems: 'center',
+    width: '100%',
+    borderWidth: 1.5,
+    borderColor: COLORS.navy,
+  },
+  guestSignUpText: {
+    fontFamily: 'Nunito_700Bold',
+    color: COLORS.navy,
+    fontSize: 16,
+    letterSpacing: 0.3,
   },
 
   // Cover

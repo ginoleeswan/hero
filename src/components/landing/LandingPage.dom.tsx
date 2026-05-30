@@ -456,7 +456,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
               </svg>
               Google Play
             </button>
-            <button className="btn-secondary" onClick={() => router.push('/(auth)/login')}>
+            <button className="btn-secondary" onClick={() => router.push('/explore')}>
               Try on Web →
             </button>
           </div>

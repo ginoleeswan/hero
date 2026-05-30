@@ -39,6 +39,194 @@ function username(email: string) {
   return email.split('@')[0] ?? email;
 }
 
+function GuestWebProfileScreen() {
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isMobile = width < SIDEBAR_BREAKPOINT;
+
+  const inner = (
+    <View style={guest.content}>
+      <LinearGradient colors={[COLORS.orange, '#c04a10']} style={guest.avatar}>
+        <Ionicons name="person-outline" size={isMobile ? 32 : 40} color="white" />
+      </LinearGradient>
+      <Text style={guest.title}>Join the hero community</Text>
+      <Text style={guest.body}>
+        Sign in to save your favourite heroes, customise your profile, and sync across devices.
+      </Text>
+      <Pressable
+        onPress={() => router.push('/(auth)/login')}
+        style={({ hovered }: { hovered?: boolean }) =>
+          [guest.signInBtn, hovered && (guest.signInBtnHover as object)] as object
+        }
+      >
+        <Text style={guest.signInText}>Sign In</Text>
+      </Pressable>
+      <Pressable
+        onPress={() => router.push('/(auth)/signup')}
+        style={({ hovered }: { hovered?: boolean }) =>
+          [guest.signUpBtn, hovered && (guest.signUpBtnHover as object)] as object
+        }
+      >
+        <Text style={guest.signUpText}>Create Account</Text>
+      </Pressable>
+
+      <View style={guest.kofiCard}>
+        <Pressable
+          onPress={() => Linking.openURL(KO_FI_URL)}
+          style={({ hovered }: { hovered?: boolean }) =>
+            [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
+          }
+        >
+          <View style={[mob.accountIconBadge, mob.accountIconBadgeOrange]}>
+            <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
+          </View>
+          <Text style={mob.accountLabel}>Support this project</Text>
+          <Text style={mob.accountValue}>Ko-fi</Text>
+          <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+        </Pressable>
+      </View>
+
+      <Text style={mob.disclaimer}>
+        Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics, or
+        any other publisher.
+      </Text>
+    </View>
+  );
+
+  if (isMobile) {
+    return (
+      <View style={mob.root}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={mob.scroll}>
+          <LinearGradient
+            colors={['#293C43', '#3d5a66']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[mob.cover, { height: 160, cursor: 'default' } as object]}
+          >
+            <View style={mob.coverDots as object} />
+            <View style={mob.coverLogo}>
+              <Svg width={72} height={72} viewBox="0 0 1024 1024">
+                <Path fill="#ECECDE" d={HERO_LOGO_PATH} />
+              </Svg>
+            </View>
+          </LinearGradient>
+          {inner}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView style={desk.root} showsVerticalScrollIndicator={false}>
+      <LinearGradient
+        colors={['#293C43', '#3d5a66']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[desk.cover, { cursor: 'default' } as object]}
+      >
+        <View style={desk.coverDots as object} />
+        <View style={desk.coverLogo}>
+          <Svg width={96} height={96} viewBox="0 0 1024 1024">
+            <Path fill="#ECECDE" d={HERO_LOGO_PATH} />
+          </Svg>
+        </View>
+      </LinearGradient>
+      <View style={desk.contentOuter as object}>
+        {inner}
+      </View>
+    </ScrollView>
+  );
+}
+
+const guest = StyleSheet.create({
+  content: {
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingTop: 48,
+    paddingBottom: 40,
+    maxWidth: 480,
+    alignSelf: 'center',
+    width: '100%',
+  } as object,
+  avatar: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    shadowColor: COLORS.orange,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 24,
+    color: COLORS.navy,
+    marginBottom: 12,
+    textAlign: 'center',
+  } as object,
+  body: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 15,
+    color: COLORS.grey,
+    textAlign: 'center',
+    lineHeight: 23,
+    marginBottom: 32,
+  } as object,
+  signInBtn: {
+    backgroundColor: COLORS.orange,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 12,
+    boxShadow: '0 4px 18px rgba(231,115,51,0.32)',
+    cursor: 'pointer',
+    transition: 'opacity 150ms ease',
+  } as object,
+  signInBtnHover: { opacity: 0.88 } as object,
+  signInText: {
+    fontFamily: 'Nunito_700Bold',
+    color: 'white',
+    fontSize: 16,
+    letterSpacing: 0.3,
+  },
+  signUpBtn: {
+    backgroundColor: 'transparent',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 32,
+    borderWidth: 1.5,
+    borderColor: COLORS.navy,
+    cursor: 'pointer',
+    transition: 'opacity 150ms ease',
+  } as object,
+  signUpBtnHover: { opacity: 0.7 } as object,
+  signUpText: {
+    fontFamily: 'Nunito_700Bold',
+    color: COLORS.navy,
+    fontSize: 16,
+    letterSpacing: 0.3,
+  },
+  kofiCard: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    overflow: 'hidden',
+    width: '100%',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+});
+
 export default function WebProfileScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -83,10 +271,12 @@ export default function WebProfileScreen() {
     return () => document.removeEventListener('visibilitychange', handler);
   }, [fetchFavourites]);
 
+  if (!user) return <GuestWebProfileScreen />;
+
   const handleSignOut = async () => {
     setSigningOut(true);
     await signOut();
-    router.replace('/(auth)/login');
+    router.replace('/explore');
   };
 
   const handleDeleteAccount = () => {
@@ -298,7 +488,7 @@ export default function WebProfileScreen() {
                   Open any hero and tap the heart to build your collection
                 </Text>
                 <Pressable
-                  onPress={() => router.push('/')}
+                  onPress={() => router.push('/explore')}
                   style={({ hovered }: { hovered?: boolean }) =>
                     [mob.browseBtn, hovered && (mob.browseBtnHover as object)] as object
                   }
@@ -718,7 +908,7 @@ export default function WebProfileScreen() {
                   Open any hero and tap the heart to build your collection
                 </Text>
                 <Pressable
-                  onPress={() => router.push('/')}
+                  onPress={() => router.push('/explore')}
                   style={({ hovered }: { hovered?: boolean }) =>
                     [desk.browseBtn, hovered && (desk.browseBtnHover as object)] as object
                   }

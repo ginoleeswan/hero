@@ -7,7 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useSearch } from '../../contexts/SearchContext';
 import { HeroLogo } from './HeroLogo';
 
-const EXPLORE_PATH = '/';
+const EXPLORE_PATH = '/explore';
 const DESKTOP_BP = 768;
 
 export function TopNav() {
@@ -51,7 +51,7 @@ export function TopNav() {
   const handleQueryChange = (text: string) => {
     setQuery(text);
     if (text.length === 1 && pathname !== EXPLORE_PATH) {
-      router.push('/');
+      router.push('/explore');
     }
   };
 
@@ -63,14 +63,14 @@ export function TopNav() {
   const handleSignOut = async () => {
     setMenuOpen(false);
     await signOut();
-    router.replace('/(auth)/login');
+    router.replace('/explore');
   };
 
   return (
     <View style={styles.nav as object}>
       <View style={styles.inner}>
         {/* Logo */}
-        <Pressable onPress={() => router.push('/')} style={styles.logoWrap}>
+        <Pressable onPress={() => router.push('/explore')} style={styles.logoWrap}>
           <HeroLogo iconSize={24} fontSize={19} color={COLORS.beige} gap={8} />
         </Pressable>
 
@@ -101,7 +101,7 @@ export function TopNav() {
           <View style={styles.centerSpacer} />
         )}
 
-        {/* Right slot — avatar + dropdown */}
+        {/* Right slot — avatar + dropdown (auth) or sign-in button (guest) */}
         <View style={styles.rightSlot}>
           {user ? (
             <View ref={containerRef} style={styles.menuContainer as object}>
@@ -140,7 +140,16 @@ export function TopNav() {
                 </View>
               )}
             </View>
-          ) : null}
+          ) : (
+            <Pressable
+              onPress={() => router.push('/(auth)/login')}
+              style={({ hovered }: { hovered?: boolean }) =>
+                [styles.signInBtn, hovered && (styles.signInBtnHover as object)] as object
+              }
+            >
+              <Text style={styles.signInText}>Sign In</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </View>
@@ -281,5 +290,22 @@ const styles = StyleSheet.create({
   },
   menuItemSignOut: {
     color: COLORS.orange,
+  },
+
+  // ── Guest sign-in button ────────────────────────────────────────────────────
+  signInBtn: {
+    backgroundColor: COLORS.orange,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 20,
+    cursor: 'pointer',
+    transition: 'opacity 150ms ease',
+  } as object,
+  signInBtnHover: { opacity: 0.85 } as object,
+  signInText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: 'white',
+    letterSpacing: 0.3,
   },
 });
