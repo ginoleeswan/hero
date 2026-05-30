@@ -52,6 +52,7 @@ export interface HeroStats {
   };
   image: {
     url: string;
+    portraitUrl: string | null;
   };
 }
 

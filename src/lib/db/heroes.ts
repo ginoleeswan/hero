@@ -487,6 +487,7 @@ export function heroRowToCharacterData(hero: Hero): CharacterData {
       },
       image: {
         url: hero.portrait_url ?? hero.image_url ?? '',
+        portraitUrl: hero.portrait_url ?? null,
       },
     },
     details: {

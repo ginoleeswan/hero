@@ -55,7 +55,7 @@ function PortraitCard({
   onPress: () => void;
   disabled: boolean;
 }) {
-  const source = heroGridImageSource(item.id, item.image_url, item.portrait_url);
+  const source = heroGridImageSource(item.id, item.image_url, item.portrait_url, item.image_md_url);
   const pub = (item.publisher ?? '').toLowerCase();
   const isMarvel = pub.includes('marvel');
   const isDC = pub.includes('dc');

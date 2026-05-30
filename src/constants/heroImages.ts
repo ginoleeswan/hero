@@ -37,9 +37,12 @@ export const HERO_IMAGES: Record<string, number> = {
 
 const CDN_BASE = 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/images/md';
 
+// CDN only has images for numeric SuperheroAPI IDs — ComicVine (cv-*) IDs will 404.
+const isNumericId = (id: string | number) => /^\d+$/.test(String(id));
+
 /**
- * Full-resolution source — detail screens, featured panels, carousels.
- * Priority: local bundled → Supabase portrait → external URL → CDN
+ * Full-resolution source for detail screens, featured panels, and carousels.
+ * Priority: Supabase portrait → local bundled → external URL → CDN (numeric IDs only)
  */
 export function heroImageSource(
   id: string | number,
@@ -47,21 +50,28 @@ export function heroImageSource(
   portraitUrl?: string | null,
 ): number | { uri: string } {
   if (portraitUrl) return { uri: portraitUrl };
-  const local = HERO_IMAGES[String(id)] ?? (imageUrl ? HERO_IMAGES[imageUrl] : null);
+  const local = HERO_IMAGES[String(id)];
   if (local) return local;
   if (imageUrl?.startsWith('http')) return { uri: imageUrl };
-  return { uri: `${CDN_BASE}/${id}.jpg` };
+  if (isNumericId(id)) return { uri: `${CDN_BASE}/${id}.jpg` };
+  return { uri: '' };
 }
 
 /**
- * Grid card source — same priority as heroImageSource.
- * Supabase Storage image transforms require the Pro plan so we serve
- * the portrait as-is; the disk cache means subsequent loads are instant.
+ * Grid card source — uses the medium image URL for smaller thumbnails,
+ * falling back to the same priority chain as heroImageSource.
  */
 export function heroGridImageSource(
   id: string | number,
   imageUrl?: string | null,
   portraitUrl?: string | null,
+  imageMdUrl?: string | null,
 ): number | { uri: string } {
-  return heroImageSource(id, imageUrl, portraitUrl);
+  if (portraitUrl) return { uri: portraitUrl };
+  const local = HERO_IMAGES[String(id)];
+  if (local) return local;
+  if (imageMdUrl?.startsWith('http')) return { uri: imageMdUrl };
+  if (imageUrl?.startsWith('http')) return { uri: imageUrl };
+  if (isNumericId(id)) return { uri: `${CDN_BASE}/${id}.jpg` };
+  return { uri: '' };
 }

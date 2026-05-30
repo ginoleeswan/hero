@@ -71,7 +71,7 @@ function cdnToHeroStats(d: CdnHeroStats): HeroStats {
       'group-affiliation': d.connections.groupAffiliation,
       relatives: d.connections.relatives,
     },
-    image: { url: d.images.md },
+    image: { url: d.images.md, portraitUrl: null },
   };
 }
 

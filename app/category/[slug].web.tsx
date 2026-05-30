@@ -46,7 +46,7 @@ function FeaturedBannerWeb({
   onPress: () => void;
   contentPad: number;
 }) {
-  const source = heroGridImageSource(String(hero.id), hero.image_url, hero.portrait_url);
+  const source = heroGridImageSource(String(hero.id), hero.image_url, hero.portrait_url, hero.image_md_url);
   return (
     <Pressable
       onPress={onPress}
@@ -136,7 +136,7 @@ const feat = StyleSheet.create({
 
 // ── Card ──────────────────────────────────────────────────────────────────────
 function HeroCard({ hero, onPress }: { hero: Hero; onPress: () => void }) {
-  const source = heroGridImageSource(String(hero.id), hero.image_url, hero.portrait_url);
+  const source = heroGridImageSource(String(hero.id), hero.image_url, hero.portrait_url, hero.image_md_url);
   return (
     <Pressable
       onPress={onPress}

@@ -141,7 +141,7 @@ const logo = StyleSheet.create({
 
 // ── Portrait grid card (search mode) ─────────────────────────────────────────
 function PortraitCard({ item, onPress }: { item: HeroSearchResult; onPress: () => void }) {
-  const source = heroGridImageSource(item.id, item.image_url, item.portrait_url);
+  const source = heroGridImageSource(item.id, item.image_url, item.portrait_url, item.image_md_url);
   return (
     <Pressable
       onPress={onPress}

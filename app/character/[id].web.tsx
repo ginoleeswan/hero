@@ -241,7 +241,10 @@ export default function WebCharacterScreen() {
     }
   }, [user, id, favourited, favLoading]);
 
-  const heroImage = id ? heroImageSource(id, data?.stats.image.url ?? null) : null;
+  // Priority: Supabase portrait → local bundled → API image → CDN
+  const heroImage = id
+    ? heroImageSource(id, data?.stats.image.url ?? null, data?.stats.image.portraitUrl ?? null)
+    : null;
 
   if (error) {
     return (
