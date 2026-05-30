@@ -29,21 +29,22 @@ function SummaryBlock() {
   );
 }
 
-function StatDialsSkeleton() {
+function StatBarsSkeleton() {
   return (
     <View style={styles.section}>
       <View style={styles.sectionTitleRow}>
         <Skeleton width="30%" height={18} borderRadius={6} style={styles.sectionTitleSkeleton} />
       </View>
       <View style={styles.sectionDivider} />
-      <View style={styles.statsGrid}>
-        {Array.from({ length: 6 }).map((_, i) => (
-          <View key={i} style={styles.dialWrap}>
-            <Skeleton width={60} height={60} borderRadius={30} />
-            <Skeleton width={48} height={10} borderRadius={4} style={styles.dialLabel} />
+      {Array.from({ length: 6 }).map((_, i) => (
+        <View key={i} style={styles.statBarRow}>
+          <View style={styles.statBarHeader}>
+            <Skeleton width={70} height={11} borderRadius={4} />
+            <Skeleton width={24} height={18} borderRadius={4} />
           </View>
-        ))}
-      </View>
+          <Skeleton width="100%" height={8} borderRadius={4} style={styles.statBarTrack} />
+        </View>
+      ))}
     </View>
   );
 }
@@ -71,7 +72,7 @@ export function CharacterSkeleton({ hideNameBlock = false }: { hideNameBlock?: b
       <View style={styles.container}>
         {!hideNameBlock && <NameBlock />}
         <SummaryBlock />
-        <StatDialsSkeleton />
+        <StatBarsSkeleton />
         <InfoSectionSkeleton rows={5} />
         <InfoSectionSkeleton rows={4} />
         <InfoSectionSkeleton rows={2} />
@@ -130,22 +131,17 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
-  // Stat dials
-  statsGrid: {
+  // Stat bars (matches real StatBar layout)
+  statBarRow: {
+    marginBottom: 14,
+  },
+  statBarHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  dialWrap: {
-    alignItems: 'center',
-    padding: 5,
-    gap: 8,
-  },
-  dialLabel: {
-    marginTop: 2,
-  },
+  statBarTrack: {},
 
   // Info rows
   infoRow: {

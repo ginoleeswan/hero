@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -1209,7 +1209,7 @@ function CharacterSkeleton({ isDesktop }: { isDesktop: boolean }) {
       {isDesktop ? (
         <View style={sk.bodyDesktop}>
           <View style={sk.leftCol}>
-            <View style={sk.portraitCard} />
+            <Animated.View style={[sk.portraitCard as object, { opacity }]} />
             {statsCard}
           </View>
           <View style={sk.rightCol}>
@@ -1222,7 +1222,13 @@ function CharacterSkeleton({ isDesktop }: { isDesktop: boolean }) {
         </View>
       ) : (
         <View style={sk.body}>
-          <View style={sk.portraitCardMobile} />
+          <Animated.View style={[sk.portraitCardMobile as object, { opacity }]} />
+          {/* Tab bar skeleton */}
+          <View style={sk.tabBar}>
+            {[1, 2, 3].map((i) => (
+              <SkeletonBlock key={i} opacity={opacity} height={34} borderRadius={7} style={{ flex: 1 }} />
+            ))}
+          </View>
           {statsCard}
           {infoRows.map((i) => (
             <View key={i}>{infoCard(i < 2 ? 5 : 3)}</View>
@@ -1257,10 +1263,19 @@ const sk = StyleSheet.create({
   },
   portraitCardMobile: {
     width: '100%',
-    height: 280,
+    aspectRatio: '2 / 3',
     borderRadius: 12,
     overflow: 'hidden',
     backgroundColor: '#ddd5c8',
+  } as object,
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: '#e8ddd0',
+    gap: 4,
   },
   card: {
     backgroundColor: 'white',
