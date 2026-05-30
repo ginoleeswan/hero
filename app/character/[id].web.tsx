@@ -728,14 +728,9 @@ export default function WebCharacterScreen() {
             {heroImage ? (
               <Image
                 source={heroImage}
-                style={
-                  {
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    objectPosition: 'center top',
-                  } as object
-                }
+                contentFit="cover"
+                contentPosition={{ top: 0, left: '50%' }}
+                style={StyleSheet.absoluteFill}
                 cachePolicy="memory-disk"
                 recyclingKey={id}
                 transition={typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}
@@ -1135,16 +1130,14 @@ function WebAbilitiesCard({
 // ── Character page skeleton ──────────────────────────────────────────────────
 function CharacterSkeleton({ isDesktop }: { isDesktop: boolean }) {
   const opacity = useSkeletonAnim();
-  const statRows = [0, 1, 2, 3, 4, 5];
-  const infoRows = [0, 1, 2, 3];
+  const divider = <View style={{ height: 1, backgroundColor: '#ede5da', marginBottom: 14 }} />;
 
-  const cardDivider = <View style={{ height: 1, backgroundColor: '#ede5da', marginBottom: 14 }} />;
-
+  // Stats card — 6 horizontal bar rows matching real StatBar layout
   const statsCard = (
     <View style={sk.card}>
       <SkeletonBlock opacity={opacity} width={90} height={11} style={{ marginBottom: 10 }} />
-      {cardDivider}
-      {statRows.map((i) => (
+      {divider}
+      {[0, 1, 2, 3, 4, 5].map((i) => (
         <View key={i} style={{ marginBottom: 14 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
             <SkeletonBlock opacity={opacity} width={80} height={11} />
@@ -1156,35 +1149,58 @@ function CharacterSkeleton({ isDesktop }: { isDesktop: boolean }) {
     </View>
   );
 
-  const infoCard = (rows: number) => (
-    <View style={sk.card}>
-      <SkeletonBlock opacity={opacity} width={70} height={11} style={{ marginBottom: 10 }} />
-      {cardDivider}
-      {Array.from({ length: rows }).map((_, j) => (
-        <View
-          key={j}
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            paddingVertical: 7,
-            borderBottomWidth: 1,
-            borderBottomColor: '#f5f0ea',
-          }}
-        >
-          <SkeletonBlock opacity={opacity} width={70} height={12} />
-          <SkeletonBlock opacity={opacity} width={110} height={12} />
-        </View>
+  // Tab bar — mirrors real [Overview] [Details] [Universe] bar
+  const tabBar = (
+    <View style={sk.tabBar}>
+      {[1, 2, 3].map((i) => (
+        <SkeletonBlock key={i} opacity={opacity} height={34} borderRadius={7} style={{ flex: 1 }} />
       ))}
     </View>
   );
 
+  // Overview tab content — what's visible on the default tab
+  // Summary (3 text lines), Abilities (chip cluster), First Appearance (cover + meta)
+  const overviewContent = (
+    <>
+      <View style={sk.card}>
+        <SkeletonBlock opacity={opacity} height={12} style={{ marginBottom: 8 }} />
+        <SkeletonBlock opacity={opacity} width="88%" height={12} style={{ marginBottom: 8 }} />
+        <SkeletonBlock opacity={opacity} width="65%" height={12} />
+      </View>
+      <View style={sk.card}>
+        <SkeletonBlock opacity={opacity} width={80} height={11} style={{ marginBottom: 10 }} />
+        {divider}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {[72, 90, 60, 80, 68, 55].map((w, i) => (
+            <SkeletonBlock key={i} opacity={opacity} width={w} height={26} borderRadius={20} />
+          ))}
+        </View>
+      </View>
+      <View style={sk.card}>
+        <SkeletonBlock opacity={opacity} width={110} height={11} style={{ marginBottom: 10 }} />
+        {divider}
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <SkeletonBlock opacity={opacity} width={isDesktop ? 130 : 80} height={isDesktop ? 190 : 120} borderRadius={8} />
+          <View style={{ flex: 1, gap: 10 }}>
+            <SkeletonBlock opacity={opacity} width="40%" height={10} borderRadius={4} />
+            <SkeletonBlock opacity={opacity} width="55%" height={36} borderRadius={5} />
+            <SkeletonBlock opacity={opacity} width="75%" height={12} borderRadius={4} />
+          </View>
+        </View>
+      </View>
+    </>
+  );
+
   return (
     <ScrollView style={sk.scroll} contentContainerStyle={sk.content}>
-      {/* Identity header */}
+      {/* Identity header — navy, matches real header structure */}
       <View style={sk.identityHeader}>
         <View style={sk.headerTopRow}>
           <SkeletonBlock opacity={opacity} width={80} height={30} borderRadius={20} dark />
-          <SkeletonBlock opacity={opacity} width={36} height={36} borderRadius={20} dark />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <SkeletonBlock opacity={opacity} width={36} height={36} borderRadius={20} dark />
+            <SkeletonBlock opacity={opacity} width={80} height={36} borderRadius={8} dark />
+          </View>
         </View>
         <View style={{ paddingHorizontal: 24 }}>
           <SkeletonBlock
@@ -1194,40 +1210,29 @@ function CharacterSkeleton({ isDesktop }: { isDesktop: boolean }) {
             style={{ marginBottom: 10 }}
             dark
           />
-          <SkeletonBlock opacity={opacity} width={140} height={14} borderRadius={4} dark />
-        </View>
-        <View style={{ position: 'absolute', bottom: 20, right: 20 }}>
-          <SkeletonBlock opacity={opacity} width={56} height={24} borderRadius={3} dark />
+          <SkeletonBlock opacity={opacity} width={120} height={12} borderRadius={4} dark />
         </View>
       </View>
 
       {isDesktop ? (
+        // Desktop: portrait + stats in left col, tab bar + overview in right col
         <View style={sk.bodyDesktop}>
           <View style={sk.leftCol}>
             <Animated.View style={[sk.portraitCard as object, { opacity }]} />
             {statsCard}
           </View>
           <View style={sk.rightCol}>
-            <View style={sk.infoGridDesktop as object}>
-              {[5, 5, 3, 3].map((rows, i) => (
-                <View key={i}>{infoCard(rows)}</View>
-              ))}
-            </View>
+            {tabBar}
+            {overviewContent}
           </View>
         </View>
       ) : (
+        // Mobile: portrait → stats → tab bar → overview content (matches real page order)
         <View style={sk.body}>
           <Animated.View style={[sk.portraitCardMobile as object, { opacity }]} />
-          {/* Tab bar skeleton */}
-          <View style={sk.tabBar}>
-            {[1, 2, 3].map((i) => (
-              <SkeletonBlock key={i} opacity={opacity} height={34} borderRadius={7} style={{ flex: 1 }} />
-            ))}
-          </View>
           {statsCard}
-          {infoRows.map((i) => (
-            <View key={i}>{infoCard(i < 2 ? 5 : 3)}</View>
-          ))}
+          {tabBar}
+          {overviewContent}
         </View>
       )}
     </ScrollView>
@@ -1279,8 +1284,6 @@ const sk = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e8ddd0',
   },
-  infoGridDesktop: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 },
-
   // First Appearance — left column cinematic cover
   firstAppearanceCard: { gap: 8 },
   firstAppearanceLabel: {
