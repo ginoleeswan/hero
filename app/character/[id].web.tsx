@@ -395,14 +395,9 @@ export default function WebCharacterScreen() {
               {heroImage ? (
                 <Image
                   source={heroImage}
-                  style={
-                    {
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      objectPosition: 'center top',
-                    } as object
-                  }
+                  contentFit="cover"
+                  contentPosition={{ top: 0, left: '50%' }}
+                  style={StyleSheet.absoluteFill}
                   cachePolicy="memory-disk"
                   recyclingKey={id}
                   transition={typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}

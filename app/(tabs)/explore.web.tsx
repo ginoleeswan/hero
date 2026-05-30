@@ -152,7 +152,7 @@ function PortraitCard({ item, onPress }: { item: HeroSearchResult; onPress: () =
       <Image
         source={source}
         contentFit="cover"
-        contentPosition="top center"
+        contentPosition={{ top: 0, left: '50%' }}
         style={StyleSheet.absoluteFill}
         cachePolicy="memory-disk"
         recyclingKey={item.id}
@@ -362,7 +362,7 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
                 <Image
                   source={source}
                   contentFit="cover"
-                  contentPosition="top center"
+                  contentPosition={{ top: 0, left: '50%' }}
                   style={[
                     StyleSheet.absoluteFill,
                     {

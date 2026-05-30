@@ -65,7 +65,7 @@ function HeroCard({ hero, onPress }: { hero: Hero; onPress: () => void }) {
       <Image
         source={source}
         contentFit="cover"
-        contentPosition="top center"
+        contentPosition={{ top: 0, left: '50%' }}
         style={StyleSheet.absoluteFill}
         cachePolicy="memory-disk"
         recyclingKey={String(hero.id)}
