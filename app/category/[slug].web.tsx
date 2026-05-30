@@ -34,6 +34,7 @@ const VALID_SLUGS = new Set<CategorySlug>([
   'dc',
   'strongest',
   'most-intelligent',
+  'most-iconic',
 ]);
 
 // ── Featured hero banner (web) ────────────────────────────────────────────────
@@ -232,7 +233,11 @@ export default function WebCategoryScreen() {
       else setLoadingMore(true);
       try {
         const result = await getCategoryPage(categorySlug, { page, pageSize: PAGE_SIZE, ...opts });
-        setHeroes((prev) => (append ? [...prev, ...result.heroes] : result.heroes));
+        setHeroes((prev) => {
+          if (!append) return result.heroes;
+          const seen = new Set(prev.map((h) => h.id));
+          return [...prev, ...result.heroes.filter((h) => !seen.has(h.id))];
+        });
         setTotal(result.total);
         currentPage.current = page;
         hasMore.current = (page + 1) * PAGE_SIZE < result.total;
