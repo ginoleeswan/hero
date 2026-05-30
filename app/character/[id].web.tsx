@@ -255,7 +255,7 @@ export default function WebCharacterScreen() {
   }
 
   if (!data) {
-    return <CharacterSkeleton isDesktop={isDesktop} />;
+    return <CharacterSkeleton isDesktop={isDesktop} showHeart={!!user} />;
   }
 
   const { stats, details } = data;
@@ -1128,14 +1128,17 @@ function WebAbilitiesCard({
 }
 
 // ── Character page skeleton ──────────────────────────────────────────────────
-function CharacterSkeleton({ isDesktop }: { isDesktop: boolean }) {
+function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showHeart: boolean }) {
   const opacity = useSkeletonAnim();
   const divider = <View style={{ height: 1, backgroundColor: '#ede5da', marginBottom: 14 }} />;
 
-  // Stats card — 6 horizontal bar rows matching real StatBar layout
+  // Stats card — matches real layout: title + power score pill row, then 6 bar rows
   const statsCard = (
     <View style={sk.card}>
-      <SkeletonBlock opacity={opacity} width={90} height={11} style={{ marginBottom: 10 }} />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <SkeletonBlock opacity={opacity} width={90} height={11} />
+        <SkeletonBlock opacity={opacity} width={36} height={22} borderRadius={11} />
+      </View>
       {divider}
       {[0, 1, 2, 3, 4, 5].map((i) => (
         <View key={i} style={{ marginBottom: 14 }}>
@@ -1170,9 +1173,10 @@ function CharacterSkeleton({ isDesktop }: { isDesktop: boolean }) {
       <View style={sk.card}>
         <SkeletonBlock opacity={opacity} width={80} height={11} style={{ marginBottom: 10 }} />
         {divider}
+        {/* Match WebAbilitiesCard's loading skeleton exactly: 8 chips, h28, r14 */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {[72, 90, 60, 80, 68, 55].map((w, i) => (
-            <SkeletonBlock key={i} opacity={opacity} width={w} height={26} borderRadius={20} />
+          {[90, 70, 110, 80, 95, 75, 100, 85].map((w, i) => (
+            <SkeletonBlock key={i} opacity={opacity} width={w} height={28} borderRadius={14} />
           ))}
         </View>
       </View>
@@ -1198,7 +1202,11 @@ function CharacterSkeleton({ isDesktop }: { isDesktop: boolean }) {
         <View style={sk.headerTopRow}>
           <SkeletonBlock opacity={opacity} width={80} height={30} borderRadius={20} dark />
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <SkeletonBlock opacity={opacity} width={36} height={36} borderRadius={20} dark />
+            {/* Heart only for authenticated users — don't skeleton it for guests */}
+            {showHeart && (
+              <SkeletonBlock opacity={opacity} width={36} height={36} borderRadius={20} dark />
+            )}
+            {/* Compare button is always shown (active or disabled) */}
             <SkeletonBlock opacity={opacity} width={80} height={36} borderRadius={8} dark />
           </View>
         </View>
