@@ -265,15 +265,18 @@ export default function WebCategoryScreen() {
         <View
           style={[styles.heroZoneInner, isDesktop && (styles.heroZoneInnerDesktop as object)] as object}
         >
-          <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
-            style={({ hovered }: { hovered?: boolean }) =>
-              [styles.backBtn, hovered && (styles.backBtnHover as object)] as object
-            }
-          >
-            <Ionicons name="arrow-back" size={15} color="rgba(245,235,220,0.55)" />
-            <Text style={styles.backText as object}>Back</Text>
-          </Pressable>
+          {/* Back button — desktop only; on mobile the OS/browser handles back */}
+          {isDesktop && (
+            <Pressable
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
+              style={({ hovered }: { hovered?: boolean }) =>
+                [styles.backBtn, hovered && (styles.backBtnHover as object)] as object
+              }
+            >
+              <Ionicons name="arrow-back" size={15} color="rgba(245,235,220,0.55)" />
+              <Text style={styles.backText as object}>Back</Text>
+            </Pressable>
+          )}
 
           <View style={styles.titleRow}>
             <View style={[styles.accentBar, isDesktop && (styles.accentBarDesktop as object)] as object} />
@@ -281,8 +284,9 @@ export default function WebCategoryScreen() {
               <Text style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object}>
                 {title}
               </Text>
-              {description ? (
-                <Text style={[styles.description, isDesktop && (styles.descriptionDesktop as object)] as object}>
+              {/* Description — desktop only; mobile needs vertical space for the grid */}
+              {isDesktop && description ? (
+                <Text style={[styles.description, styles.descriptionDesktop as object] as object}>
                   {description}
                 </Text>
               ) : null}
@@ -416,14 +420,14 @@ const styles = StyleSheet.create({
   // ── Hero zone (navy, scrolls away) ─────────────────────────────────────────
   heroZone: {
     backgroundColor: COLORS.navy,
-    paddingTop: 12,
-    paddingBottom: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
   heroZoneDesktop: {
     paddingTop: 20,
     paddingBottom: 22,
   } as object,
-  heroZoneInner: { maxWidth: 1200, width: '100%', alignSelf: 'center', gap: 10 },
+  heroZoneInner: { maxWidth: 1200, width: '100%', alignSelf: 'center', gap: 8 },
   heroZoneInnerDesktop: { gap: 14 } as object,
   backBtn: {
     flexDirection: 'row',
@@ -447,19 +451,19 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   accentBar: {
-    width: 4,
-    height: 34,
+    width: 3,
+    height: 26,
     borderRadius: 2,
     backgroundColor: COLORS.orange,
     flexShrink: 0,
   },
-  accentBarDesktop: { height: 60 } as object,
-  titleBlock: { flex: 1, gap: 4 },
+  accentBarDesktop: { width: 4, height: 60 } as object,
+  titleBlock: { flex: 1, gap: 2 },
   title: {
     fontFamily: 'Flame-Regular',
-    fontSize: 30,
+    fontSize: 24,
     color: COLORS.beige,
-    lineHeight: 34,
+    lineHeight: 28,
   } as object,
   titleDesktop: { fontSize: 52, lineHeight: 56 } as object,
   description: {
