@@ -1079,7 +1079,7 @@ export default function WebHomeScreen() {
 
   // Search data
   const [allHeroes, setAllHeroes] = useState<HeroSearchResult[]>([]);
-  const [loadingAll, setLoadingAll] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Home data — partial so rows render as each query resolves
   interface HomeData {
@@ -1102,22 +1102,15 @@ export default function WebHomeScreen() {
 
   const isSearchActive = query.trim() !== '' || publisher !== 'All';
 
+  // Debounce search queries
+  const debouncedQuery = useRef<string>('');
+  const debouncedPublisher = useRef<PublisherFilter>('All');
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
   // Fire every query independently — rows appear as each resolves.
   // Spotlight fires first since it's above the fold.
   useEffect(() => {
     getHeroCount().then(setTotalHeroCount).catch(() => {});
-
-    searchHeroes('', 'All', 600)
-      .then((heroes) => {
-        setAllHeroes(heroes);
-        const remoteUrls = heroes
-          .slice(0, 200)
-          .map((h) => h.portrait_url ?? (h.image_url?.startsWith('http') ? h.image_url : null))
-          .filter((u): u is string => u !== null);
-        if (remoteUrls.length > 0) Image.prefetch(remoteUrls, 'memory-disk').catch(() => {});
-      })
-      .catch(() => {})
-      .finally(() => setLoadingAll(false));
 
     const set = <K extends keyof HomeData>(key: K) => (val: HomeData[K]) =>
       setHomeData((d) => ({ ...d, [key]: val }));
@@ -1137,6 +1130,41 @@ export default function WebHomeScreen() {
     getNewlyAddedCV(25).then(set('newlyAdded')).catch(() => {});
   }, []);
 
+  // Live search effect with debounce
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+
+    if (!query.trim()) {
+      debouncedQuery.current = '';
+      debouncedPublisher.current = publisher;
+      setAllHeroes([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    debounceTimer.current = setTimeout(() => {
+      debouncedQuery.current = query;
+      debouncedPublisher.current = publisher;
+
+      searchHeroes(query, publisher, 500)
+        .then((heroes) => {
+          setAllHeroes(rankResults(heroes, query));
+          const remoteUrls = heroes
+            .slice(0, 100)
+            .map((h) => h.portrait_url ?? (h.image_url?.startsWith('http') ? h.image_url : null))
+            .filter((u): u is string => u !== null);
+          if (remoteUrls.length > 0) Image.prefetch(remoteUrls, 'memory-disk').catch(() => {});
+        })
+        .catch(() => setAllHeroes([]))
+        .finally(() => setIsSearching(false));
+    }, 300);
+
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [query, publisher]);
+
   // Personal rows
   useEffect(() => {
     if (!user?.id) return;
@@ -1150,17 +1178,9 @@ export default function WebHomeScreen() {
 
 
   const filtered = useMemo(() => {
-    let list =
-      publisher === 'All'
-        ? allHeroes
-        : allHeroes.filter((h) => {
-            const pub = (h.publisher ?? '').toLowerCase();
-            if (publisher === 'Marvel') return pub.includes('marvel');
-            if (publisher === 'DC') return pub.includes('dc');
-            return !pub.includes('marvel') && !pub.includes('dc');
-          });
-    return query.trim() ? rankResults(list, query) : list;
-  }, [allHeroes, query, publisher]);
+    // Results are already ranked and filtered by server search above
+    return allHeroes;
+  }, [allHeroes]);
 
   const displayed = filtered.slice(0, DISPLAY_LIMIT);
   const hasMore = filtered.length > DISPLAY_LIMIT;
