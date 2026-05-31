@@ -9,7 +9,11 @@ import type { HeroSearchResult } from '../../lib/db/heroes';
 
 const DESKTOP_BP = 768;
 const EXPLORE_PATH = '/explore';
-const MAX_SUGGESTIONS = 10;
+const MAX_SUGGESTIONS = 8;
+
+// Publisher logos
+const MARVEL_LOGO = require('../../../assets/images/Marvel-Logo.jpg') as number;
+const DC_LOGO = require('../../../assets/images/DC-Logo.png') as number;
 
 export function SearchSuggestions() {
   const router = useRouter();
@@ -128,6 +132,14 @@ function SearchSuggestionsContent() {
 
   return (
     <>
+      {resultCount > 0 && !isLoading && (
+        <View style={styles.resultHeader}>
+          <Text style={styles.resultCountBadge}>
+            {resultCount === 1 ? '1 result' : `${resultCount} results`}
+          </Text>
+        </View>
+      )}
+
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color={COLORS.orange} />
@@ -166,6 +178,40 @@ function SearchSuggestionsContent() {
   );
 }
 
+function PublisherBadge({ publisher }: { publisher?: string | null }) {
+  if (!publisher) return null;
+
+  const pub = publisher.toLowerCase();
+  const isMarvel = pub.includes('marvel');
+  const isDC = pub.includes('dc');
+
+  if (isMarvel) {
+    return (
+      <Image
+        source={MARVEL_LOGO}
+        style={styles.publisherLogo as object}
+        contentFit="contain"
+      />
+    );
+  }
+
+  if (isDC) {
+    return (
+      <Image
+        source={DC_LOGO}
+        style={[styles.publisherLogo, styles.publisherLogoDC] as object}
+        contentFit="contain"
+      />
+    );
+  }
+
+  return (
+    <Text style={styles.publisherText} numberOfLines={1}>
+      {publisher}
+    </Text>
+  );
+}
+
 function SuggestionItem({
   hero,
   onPress,
@@ -192,11 +238,9 @@ function SuggestionItem({
         <Text style={styles.suggestionName} numberOfLines={1}>
           {hero.name}
         </Text>
-        {hero.publisher && (
-          <Text style={styles.suggestionPublisher} numberOfLines={1}>
-            {hero.publisher}
-          </Text>
-        )}
+        <View style={styles.publisherRow}>
+          <PublisherBadge publisher={hero.publisher} />
+        </View>
       </View>
     </Pressable>
   );
@@ -213,10 +257,10 @@ const styles = StyleSheet.create({
 
   dropdown: {
     backgroundColor: COLORS.navy,
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.1)',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.32)',
+    borderColor: 'rgba(245,235,220,0.12)',
+    boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
     marginTop: 8,
     maxHeight: 420,
     overflow: 'hidden',
@@ -224,13 +268,13 @@ const styles = StyleSheet.create({
   } as object,
 
   loadingContainer: {
-    paddingVertical: 24,
+    paddingVertical: 28,
     alignItems: 'center',
     justifyContent: 'center',
   } as object,
 
   emptyContainer: {
-    paddingVertical: 20,
+    paddingVertical: 24,
     paddingHorizontal: 16,
     alignItems: 'center',
   } as object,
@@ -240,6 +284,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'rgba(245,235,220,0.55)',
     textAlign: 'center',
+  },
+
+  resultHeader: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(245,235,220,0.08)',
+  } as object,
+
+  resultCountBadge: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.orange,
+    backgroundColor: 'rgba(231,115,51,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
   },
 
   suggestionsList: {
@@ -252,18 +314,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    gap: 10,
+    gap: 12,
+    height: 72,
     cursor: 'pointer',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(245,235,220,0.05)',
+    transition: 'background-color 150ms ease, transform 150ms ease',
   } as object,
 
   suggestionItemHover: {
-    backgroundColor: 'rgba(245,235,220,0.07)',
+    backgroundColor: 'rgba(245,235,220,0.08)',
   } as object,
 
   suggestionImage: {
-    width: 48,
-    height: 64,
-    borderRadius: 6,
+    width: 56,
+    height: 74,
+    borderRadius: 8,
     backgroundColor: 'rgba(245,235,220,0.08)',
     flexShrink: 0,
   } as object,
@@ -271,19 +337,43 @@ const styles = StyleSheet.create({
   suggestionContent: {
     flex: 1,
     minWidth: 0,
+    justifyContent: 'center',
+    gap: 4,
   } as object,
 
   suggestionName: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
+    fontSize: 14,
     color: COLORS.beige,
-    marginBottom: 2,
+    lineHeight: 16,
   },
 
-  suggestionPublisher: {
+  publisherRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 20,
+  } as object,
+
+  publisherLogo: {
+    width: 24,
+    height: 10,
+    borderRadius: 2,
+  } as object,
+
+  publisherLogoDC: {
+    width: 22,
+    height: 22,
+  } as object,
+
+  publisherText: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 11,
+    fontSize: 10,
     color: 'rgba(245,235,220,0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.15)',
+    borderRadius: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
 
   viewAllButton: {
@@ -293,11 +383,11 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(245,235,220,0.08)',
     alignItems: 'center',
     cursor: 'pointer',
-    transition: 'backgroundColor 150ms ease',
+    transition: 'background-color 150ms ease',
   } as object,
 
   viewAllButtonHover: {
-    backgroundColor: 'rgba(245,235,220,0.06)',
+    backgroundColor: 'rgba(245,235,220,0.05)',
   } as object,
 
   viewAllText: {
