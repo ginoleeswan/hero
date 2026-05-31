@@ -1011,21 +1011,6 @@ export default function WebHomeScreen() {
               <Ionicons name="search" size={16} color="rgba(245,235,220,0.5)" />
               <Text style={styles.searchEntryText as object}>Search heroes…</Text>
             </Pressable>
-            <View style={styles.pillsRow}>
-              {PUBLISHER_FILTERS.map((f) => (
-                <Pressable
-                  key={f}
-                  onPress={() =>
-                    router.push(f === 'All' ? '/search' : `/search?publisher=${f}`)
-                  }
-                  style={({ hovered }: { hovered?: boolean }) =>
-                    [styles.pill, hovered && (styles.pillHover as object)] as object
-                  }
-                >
-                  <Text style={styles.pillText}>{f}</Text>
-                </Pressable>
-              ))}
-            </View>
           </View>
         </View>
       )}
@@ -1252,26 +1237,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     flexShrink: 0,
   } as object,
-  pillsRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  pill: {
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.15)',
-    cursor: 'pointer',
-    transition: 'all 150ms ease',
-  } as object,
-  pillActive: { backgroundColor: COLORS.orange, borderColor: COLORS.orange } as object,
-  pillHover: { borderColor: 'rgba(245,235,220,0.4)' } as object,
-  pillText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: 'rgba(245,235,220,0.38)',
-    letterSpacing: 0.4,
-  },
-  pillTextActive: { color: 'white' },
-
   // ── Home layout ──────────────────────────────────────────────────────────────
   discoverContent: {
     paddingTop: 0,
