@@ -10,7 +10,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../src/constants/colors';
 import { heroImageSource } from '../../src/constants/heroImages';
@@ -999,22 +998,6 @@ export default function WebHomeScreen() {
         </View>
       )}
 
-      {/* ── Mobile: navy command bar ──────────────────────────────────────────── */}
-      {!isDesktop && (
-        <View style={styles.commandBar as object}>
-          <View style={styles.commandInner}>
-            {/* Tappable search entry — opens the dedicated /search screen */}
-            <Pressable
-              onPress={() => router.push('/search')}
-              style={styles.searchEntry as object}
-            >
-              <Ionicons name="search" size={16} color="rgba(245,235,220,0.5)" />
-              <Text style={styles.searchEntryText as object}>Search heroes…</Text>
-            </Pressable>
-          </View>
-        </View>
-      )}
-
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       {!homeStarted ? (
         <WebHomeSkeleton />
@@ -1165,78 +1148,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // ── Mobile command bar ───────────────────────────────────────────────────────
-  commandBar: {
-    position: 'sticky',
-    top: 64,
-    zIndex: 50,
-    backgroundColor: COLORS.navy,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(245,235,220,0.07)',
-    paddingTop: 16,
-    paddingBottom: 12,
-  } as object,
-  commandInner: { paddingHorizontal: 16, gap: 10 },
-  searchEntry: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-    backgroundColor: 'rgba(245,235,220,0.08)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.14)',
-    paddingHorizontal: 14,
-    height: 44,
-    cursor: 'pointer',
-  } as object,
-  searchEntryText: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 15,
-    color: 'rgba(245,235,220,0.5)',
-  } as object,
-  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 12 } as object,
-  underlineWrap: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1.5,
-    borderBottomColor: 'rgba(245,235,220,0.2)',
-    paddingBottom: 4,
-    gap: 8,
-  } as object,
-  input: {
-    flex: 1,
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 18,
-    color: COLORS.beige,
-    outlineStyle: 'none',
-    paddingVertical: 2,
-  } as object,
-  inputMobile: { fontSize: 16 } as object,
-  clearBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(245,235,220,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    flexShrink: 0,
-  } as object,
-  clearBtnHover: { backgroundColor: 'rgba(245,235,220,0.18)' } as object,
-  clearX: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 16,
-    color: 'rgba(245,235,220,0.65)',
-    lineHeight: 18,
-  } as object,
-  countBadge: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 11,
-    color: 'rgba(245,235,220,0.3)',
-    letterSpacing: 0.3,
-    flexShrink: 0,
-  } as object,
   // ── Home layout ──────────────────────────────────────────────────────────────
   discoverContent: {
     paddingTop: 0,

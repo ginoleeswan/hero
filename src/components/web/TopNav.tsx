@@ -26,6 +26,10 @@ export function TopNav() {
   const isDesktop = width >= DESKTOP_BP;
   const avatarActive = menuOpen || pathname === '/profile';
   const showSearch = isDesktop && (pathname === EXPLORE_PATH || pathname === SEARCH_PATH);
+  // Mobile: a tappable search entry sits inline in the nav row (logo + search +
+  // avatar). It opens the dedicated /search screen. Not shown on /search itself,
+  // which has its own input.
+  const showMobileSearch = !isDesktop && pathname === EXPLORE_PATH;
 
   // Close menu on outside click
   useEffect(() => {
@@ -77,13 +81,13 @@ export function TopNav() {
 
   return (
     <View style={styles.nav as object}>
-      <View style={styles.inner}>
+      <View style={[styles.inner, !isDesktop && (styles.innerMobile as object)] as object}>
         {/* Logo */}
         <Pressable onPress={() => router.push('/explore')} style={styles.logoWrap}>
           <HeroLogo iconSize={24} fontSize={19} color={COLORS.beige} gap={8} />
         </Pressable>
 
-        {/* Center — global search on explore + search pages; spacer elsewhere */}
+        {/* Center — search field on desktop; spacer otherwise (mobile uses an icon) */}
         {showSearch ? (
           <View style={styles.searchContainer as object}>
             <View
@@ -123,8 +127,19 @@ export function TopNav() {
           <View style={styles.centerSpacer} />
         )}
 
-        {/* Right slot — avatar + dropdown (auth) or sign-in button (guest) */}
+        {/* Right slot — search icon (mobile) + avatar/dropdown or sign-in button */}
         <View style={styles.rightSlot}>
+          {showMobileSearch && (
+            <Pressable
+              aria-label="Search"
+              onPress={() => router.push('/search')}
+              style={({ hovered }: { hovered?: boolean }) =>
+                [styles.iconBtn, hovered && (styles.iconBtnHover as object)] as object
+              }
+            >
+              <Ionicons name="search" size={22} color={COLORS.beige} />
+            </Pressable>
+          )}
           {user ? (
             <View ref={containerRef} style={styles.menuContainer as object}>
               <Pressable
@@ -201,6 +216,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 16,
   },
+  innerMobile: { paddingHorizontal: 16, gap: 10 } as object,
 
   logoWrap: {
     flexShrink: 0,
@@ -209,6 +225,18 @@ const styles = StyleSheet.create({
   centerSpacer: {
     flex: 1,
   },
+
+  // ── Mobile search icon (tappable → /search) ──────────────────────────────────
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'background-color 150ms ease',
+  } as object,
+  iconBtnHover: { backgroundColor: 'rgba(245,235,220,0.1)' } as object,
 
   // ── Search input ───────────────────────────────────────────────────────────
   searchContainer: {
@@ -266,6 +294,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
   },
 
   menuContainer: {
