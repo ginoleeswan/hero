@@ -1321,7 +1321,7 @@ export default function WebHomeScreen() {
               </View>
             </View>
             <View style={styles.scrollContent}>
-              <View style={resultsGrid as object}>
+              <View style={resultsGrid as object} id="search-results-grid">
                 {displayed.map((item) => (
                   <PortraitCard key={item.id} item={item} onPress={() => handlePress(item.id)} />
                 ))}

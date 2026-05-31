@@ -6,6 +6,7 @@ import { COLORS } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { useSearch } from '../../contexts/SearchContext';
 import { HeroLogo } from './HeroLogo';
+import { SearchSuggestions } from './SearchSuggestions';
 
 const EXPLORE_PATH = '/explore';
 const DESKTOP_BP = 768;
@@ -76,26 +77,29 @@ export function TopNav() {
 
         {/* Center — global search only on explore page; spacer elsewhere */}
         {isDesktop && pathname === EXPLORE_PATH ? (
-          <View style={styles.searchWrap as object}>
-            <Ionicons name="search" size={14} color="rgba(245,235,220,0.28)" />
-            <TextInput
-              ref={inputRef}
-              style={styles.searchInput as object}
-              placeholder="Search heroes…"
-              placeholderTextColor="rgba(245,235,220,0.28)"
-              value={query}
-              onChangeText={handleQueryChange}
-            />
-            {query.length > 0 ? (
-              <Pressable
-                onPress={() => setQuery('')}
-                style={({ hovered }: { hovered?: boolean }) =>
-                  [styles.clearBtn, hovered && (styles.clearBtnHover as object)] as object
-                }
-              >
-                <Text style={styles.clearX as object}>×</Text>
-              </Pressable>
-            ) : null}
+          <View style={styles.searchContainer as object}>
+            <View style={styles.searchWrap as object}>
+              <Ionicons name="search" size={14} color="rgba(245,235,220,0.28)" />
+              <TextInput
+                ref={inputRef}
+                style={styles.searchInput as object}
+                placeholder="Search heroes…"
+                placeholderTextColor="rgba(245,235,220,0.28)"
+                value={query}
+                onChangeText={handleQueryChange}
+              />
+              {query.length > 0 ? (
+                <Pressable
+                  onPress={() => setQuery('')}
+                  style={({ hovered }: { hovered?: boolean }) =>
+                    [styles.clearBtn, hovered && (styles.clearBtnHover as object)] as object
+                  }
+                >
+                  <Text style={styles.clearX as object}>×</Text>
+                </Pressable>
+              ) : null}
+            </View>
+            <SearchSuggestions />
           </View>
         ) : (
           <View style={styles.centerSpacer} />
@@ -189,6 +193,11 @@ const styles = StyleSheet.create({
   },
 
   // ── Search input ───────────────────────────────────────────────────────────
+  searchContainer: {
+    flex: 1,
+    position: 'relative',
+  } as object,
+
   searchWrap: {
     flex: 1,
     flexDirection: 'row',
