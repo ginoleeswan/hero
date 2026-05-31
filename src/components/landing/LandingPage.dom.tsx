@@ -48,7 +48,7 @@ const CSS = `
   }
   .nav-brand { display:flex; align-items:center; gap:10px; }
   .nav-logo { height:32px; width:32px; }
-  .nav-wordmark { font-family:'Righteous',sans-serif; font-size:22px; color:var(--beige); letter-spacing:-0.5px; }
+  .nav-wordmark { font-family:'Righteous',sans-serif; font-size:22px; color:var(--beige); letter-spacing:-0.5px; position:relative; top:-2px; }
   .nav-cta {
     background:var(--orange); color:#fff; font-family:'Righteous',sans-serif;
     font-size:14px; letter-spacing:0.5px; padding:10px 22px; border-radius:100px;
@@ -102,12 +102,13 @@ const CSS = `
   }
   .hero-badge svg { width:14px; height:14px; }
   .hero-wordmark-large {
+    display:block;
     font-family:'Righteous',sans-serif;
     font-size:clamp(64px,13vw,128px);
     color:var(--beige);
     letter-spacing:-3px;
     line-height:1;
-    margin-bottom:24px;
+    margin-bottom:40px;
     text-shadow:0 4px 40px rgba(231,115,51,0.35);
   }
   .hero-tagline {
