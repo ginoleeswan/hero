@@ -2,6 +2,7 @@
 import {
   getHeroById,
   searchHeroes,
+  getSearchIdleHeroes,
   heroRowToCharacterData,
   getAntiHeroes,
   getHeroesByPublisher,
@@ -433,6 +434,54 @@ describe('heroRowToCharacterData — v2 comicvine fields', () => {
     expect(result.details.friends).toBeNull();
     expect(result.details.movies).toBeNull();
     expect(result.details.teams).toBeNull();
+  });
+});
+
+// ─── getSearchIdleHeroes ──────────────────────────────────────────────────────
+
+describe('getSearchIdleHeroes', () => {
+  it('returns up to 30 heroes', async () => {
+    const fakeHeroes = Array.from({ length: 30 }, (_, i) => ({
+      id: String(i + 1),
+      name: `Hero ${i + 1}`,
+      publisher: 'Marvel Comics',
+      image_md_url: null,
+      image_url: null,
+      portrait_url: null,
+      full_name: null,
+      aliases: [],
+    }));
+    mockResolveWith = { data: fakeHeroes, error: null };
+    const heroes = await getSearchIdleHeroes();
+    expect(heroes.length).toBeGreaterThan(0);
+    expect(heroes.length).toBeLessThanOrEqual(30);
+  });
+
+  it('returns HeroSearchResult shape (has portrait_url, full_name, aliases)', async () => {
+    mockResolveWith = {
+      data: [{ id: '620', name: 'Spider-Man', publisher: 'Marvel Comics', image_md_url: null, image_url: null, portrait_url: null, full_name: 'Peter Parker', aliases: [] }],
+      error: null,
+    };
+    const heroes = await getSearchIdleHeroes();
+    if (heroes.length > 0) {
+      expect(heroes[0]).toHaveProperty('id');
+      expect(heroes[0]).toHaveProperty('name');
+      expect(heroes[0]).toHaveProperty('portrait_url');
+    }
+  });
+});
+
+// ─── searchHeroes ordering ────────────────────────────────────────────────────
+
+describe('searchHeroes ordering', () => {
+  it('returns spider-man before spider-woman when searching spider', async () => {
+    const results = await searchHeroes('spider', 'All', 20);
+    const names = results.map(h => h.name.toLowerCase());
+    const spiderManIdx = names.findIndex(n => n === 'spider-man');
+    const spiderWomanIdx = names.findIndex(n => n === 'spider-woman');
+    if (spiderManIdx !== -1 && spiderWomanIdx !== -1) {
+      expect(spiderManIdx).toBeLessThan(spiderWomanIdx);
+    }
   });
 });
 

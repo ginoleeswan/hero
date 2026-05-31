@@ -94,7 +94,7 @@ export async function searchHeroes(
   let q = supabase
     .from('heroes')
     .select('id, name, publisher, image_md_url, image_url, portrait_url, full_name, aliases')
-    .order('name')
+    .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
 
   if (query.trim()) {
@@ -110,6 +110,17 @@ export async function searchHeroes(
   }
 
   const { data, error } = await q;
+  if (error) throw new Error(error.message);
+  return (data ?? []) as HeroSearchResult[];
+}
+
+export async function getSearchIdleHeroes(limit = 30): Promise<HeroSearchResult[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('id, name, publisher, image_md_url, image_url, portrait_url, full_name, aliases')
+    .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
+    .order('issue_count', { ascending: false, nullsFirst: false })
+    .limit(limit);
   if (error) throw new Error(error.message);
   return (data ?? []) as HeroSearchResult[];
 }
