@@ -1299,40 +1299,7 @@ export default function WebHomeScreen() {
       )}
 
       {/* ── Content ──────────────────────────────────────────────────────────── */}
-      {isSearchActive ? (
-        isSearching ? (
-          <GridSkeleton />
-        ) : filtered.length === 0 ? (
-          <EmptyState query={query} onClear={handleClear} />
-        ) : (
-          <ScrollView style={styles.scroll}>
-            <View style={styles.resultsHeader}>
-              <View style={styles.resultsHeaderInner}>
-                <Text style={styles.resultsQuery as object}>
-                  {query.trim() ? `"${query}"` : publisher}
-                </Text>
-                {query.trim().length > 0 && (
-                  <Text style={styles.resultsMeta}>
-                    {hasMore
-                      ? `Showing ${DISPLAY_LIMIT} of ${filtered.length} results`
-                      : `${filtered.length} result${filtered.length !== 1 ? 's' : ''}`}
-                  </Text>
-                )}
-              </View>
-            </View>
-            <View style={styles.scrollContent}>
-              <View style={resultsGrid as object} id="search-results-grid">
-                {displayed.map((item) => (
-                  <PortraitCard key={item.id} item={item} onPress={() => handlePress(item.id)} />
-                ))}
-              </View>
-              {hasMore && (
-                <Text style={styles.moreHint}>Refine your search to see more results</Text>
-              )}
-            </View>
-          </ScrollView>
-        )
-      ) : !homeStarted ? (
+      {!homeStarted ? (
         <WebHomeSkeleton />
       ) : (
         <ScrollView
@@ -1414,6 +1381,50 @@ export default function WebHomeScreen() {
             heroes={homeData.newlyAdded ?? []}
             onPress={handlePress}
           />
+
+          {/* Search results section — appears below home if actively searching */}
+          {isSearchActive && (
+            <>
+              <View style={styles.footerRule} />
+              <View style={styles.resultsHeader}>
+                <View style={styles.resultsHeaderInner}>
+                  <Text style={styles.resultsQuery as object}>
+                    {query.trim() ? `"${query}"` : publisher}
+                  </Text>
+                  {query.trim().length > 0 && (
+                    <Text style={styles.resultsMeta}>
+                      {isSearching
+                        ? 'Searching…'
+                        : filtered.length === 0
+                          ? 'No heroes found'
+                          : hasMore
+                            ? `Showing ${DISPLAY_LIMIT} of ${filtered.length} results`
+                            : `${filtered.length} result${filtered.length !== 1 ? 's' : ''}`}
+                    </Text>
+                  )}
+                </View>
+              </View>
+
+              {isSearching ? (
+                <View style={styles.scrollContent}>
+                  <GridSkeleton />
+                </View>
+              ) : filtered.length === 0 ? (
+                <EmptyState query={query} onClear={handleClear} />
+              ) : (
+                <View style={styles.scrollContent}>
+                  <View style={resultsGrid as object} id="search-results-grid">
+                    {displayed.map((item) => (
+                      <PortraitCard key={item.id} item={item} onPress={() => handlePress(item.id)} />
+                    ))}
+                  </View>
+                  {hasMore && (
+                    <Text style={styles.moreHint}>Refine your search to see more results</Text>
+                  )}
+                </View>
+              )}
+            </>
+          )}
 
           <View style={styles.footerRule} />
         </ScrollView>
