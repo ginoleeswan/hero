@@ -1224,7 +1224,7 @@ export default function WebHomeScreen() {
               ))}
             </View>
             <Text style={styles.filterCount as object}>
-              {loadingAll
+              {isSearching
                 ? ''
                 : isSearchActive
                   ? hasMore
