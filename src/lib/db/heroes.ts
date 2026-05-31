@@ -39,6 +39,7 @@ export type HeroSearchResult = Pick<
   | 'id'
   | 'name'
   | 'publisher'
+  | 'alignment'
   | 'image_md_url'
   | 'image_url'
   | 'portrait_url'
@@ -93,7 +94,7 @@ export async function searchHeroes(
 ): Promise<HeroSearchResult[]> {
   let q = supabase
     .from('heroes')
-    .select('id, name, publisher, image_md_url, image_url, portrait_url, full_name, aliases')
+    .select('id, name, publisher, alignment, image_md_url, image_url, portrait_url, full_name, aliases')
     .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
 
@@ -117,7 +118,7 @@ export async function searchHeroes(
 export async function getSearchIdleHeroes(limit = 30): Promise<HeroSearchResult[]> {
   const { data, error } = await supabase
     .from('heroes')
-    .select('id, name, publisher, image_md_url, image_url, portrait_url, full_name, aliases')
+    .select('id, name, publisher, alignment, image_md_url, image_url, portrait_url, full_name, aliases')
     .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
     .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
