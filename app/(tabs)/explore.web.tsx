@@ -1,22 +1,20 @@
-// app/(tabs)/index.web.tsx — Home screen for web
-// Search mode: full-screen grid (unchanged). Home mode: spotlight + horizontal scroll rows.
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+// app/(tabs)/explore.web.tsx — Home screen for web (spotlight + horizontal scroll rows).
+// Search lives on the dedicated /search route; this screen is home-only.
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
-  TextInput,
   ScrollView,
   StyleSheet,
   Pressable,
-  ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../src/constants/colors';
-import { heroGridImageSource, heroImageSource } from '../../src/constants/heroImages';
+import { heroImageSource } from '../../src/constants/heroImages';
 import { useSearch } from '../../src/contexts/SearchContext';
-import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { WebHomeSkeleton } from '../../src/components/web/HomeSkeleton';
 import {
   getHeroCount,
@@ -28,10 +26,7 @@ import {
   getNewlyAddedCV,
   getHeroesByPublisher,
   getHeroesByStatRanking,
-  searchHeroes,
-  rankResults,
   type Hero,
-  type HeroSearchResult,
   type PublisherFilter,
 } from '../../src/lib/db/heroes';
 import { getUserFavouriteHeroes } from '../../src/lib/db/favourites';
@@ -41,23 +36,10 @@ import type { FavouriteHero } from '../../src/types';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const PUBLISHER_FILTERS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
-const DISPLAY_LIMIT = 120;
 const ROW_CARD_HEIGHT = 310;
 const ROW_CARD_WIDTH = 220;
 
-// Publisher logos
-const MARVEL_LOGO = require('../../assets/images/Marvel-Logo.jpg') as number;
-const DC_LOGO = require('../../assets/images/DC-Logo.png') as number;
-const DARK_HORSE_LOGO = require('../../assets/images/Dark_Horse_Comics_logo.png') as number;
-const STAR_WARS_LOGO = require('../../assets/images/star-wars-logo.png') as number;
-
 // ── CSS grid / scroll layouts ─────────────────────────────────────────────────
-const resultsGrid = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-  gridAutoRows: '240px',
-  gap: 12,
-};
 // The scroll container uses padding + negative margins on all sides so box-shadows
 // have room to render inside the overflow:auto boundary.
 // Horizontal: paddingLeft/Right 16 + marginLeft/Right -16 → cards appear flush with
@@ -80,129 +62,6 @@ const rowScrollStyle = {
   scrollbarWidth: 'none',
 };
 
-// ── Publisher logo helper ─────────────────────────────────────────────────────
-function PublisherLogo({ publisher }: { publisher?: string | null }) {
-  if (!publisher) return null;
-  const pub = publisher.toLowerCase();
-  const isMarvel = pub.includes('marvel');
-  const isDC = pub.includes('dc');
-  const isDarkHorse = pub.includes('dark horse');
-  const isStarWars = pub.includes('george lucas') || pub.includes('star wars');
-
-  if (isMarvel)
-    return (
-      <Image
-        source={MARVEL_LOGO}
-        style={{ width: 38, height: 15, borderRadius: 2 } as object}
-        contentFit="contain"
-      />
-    );
-  if (isDC)
-    return (
-      <Image
-        source={DC_LOGO}
-        style={{ width: 22, height: 22, borderRadius: 2 } as object}
-        contentFit="contain"
-      />
-    );
-  if (isDarkHorse)
-    return (
-      <Image
-        source={DARK_HORSE_LOGO}
-        style={{ width: 18, height: 26, borderRadius: 2 } as object}
-        contentFit="contain"
-      />
-    );
-  if (isStarWars)
-    return (
-      <Image
-        source={STAR_WARS_LOGO}
-        style={{ width: 32, height: 32, borderRadius: 2 } as object}
-        contentFit="contain"
-      />
-    );
-
-  return (
-    <Text style={logo.text} numberOfLines={1}>
-      {publisher}
-    </Text>
-  );
-}
-
-const logo = StyleSheet.create({
-  text: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: 'rgba(245,235,220,0.55)',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-});
-
-// ── Portrait grid card (search mode) ─────────────────────────────────────────
-function PortraitCard({ item, onPress }: { item: HeroSearchResult; onPress: () => void }) {
-  const source = heroGridImageSource(item.id, item.image_url, item.portrait_url, item.image_md_url);
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ hovered }: { hovered?: boolean }) =>
-        [gcard.wrap, hovered && (gcard.wrapHover as object)] as object
-      }
-    >
-      <Image
-        source={source}
-        contentFit="cover"
-        contentPosition={{ top: 0, left: '50%' }}
-        style={StyleSheet.absoluteFill}
-        cachePolicy="memory-disk"
-        recyclingKey={item.id}
-        transition={null}
-      />
-      <View style={gcard.overlay as object} />
-      <View style={gcard.logoWrap}>
-        <PublisherLogo publisher={item.publisher} />
-      </View>
-      <View style={gcard.bottom}>
-        <Text style={gcard.name as object} numberOfLines={2}>
-          {item.name}
-        </Text>
-      </View>
-    </Pressable>
-  );
-}
-
-const gcard = StyleSheet.create({
-  wrap: {
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: COLORS.navy,
-    cursor: 'pointer',
-    transition: 'transform 200ms ease, box-shadow 200ms ease',
-  } as object,
-  wrapHover: {
-    transform: [{ scale: 1.04 }],
-    boxShadow: '0 20px 56px rgba(0,0,0,0.32)',
-    zIndex: 2,
-  } as object,
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundImage:
-      'linear-gradient(to top, rgba(29,45,51,0.97) 0%, rgba(29,45,51,0.08) 55%, transparent 100%)',
-  } as object,
-  logoWrap: { position: 'absolute', top: 10, left: 10 },
-  bottom: { position: 'absolute', bottom: 12, left: 12, right: 12 },
-  name: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 15,
-    color: COLORS.beige,
-    lineHeight: 18,
-    textShadow: '0 1px 8px rgba(0,0,0,0.9)',
-  } as object,
-});
 
 // ── Row card (home carousel rows) ────────────────────────────────────────────
 function RowCard({ hero, onPress }: { hero: Hero | FavouriteHero; onPress: () => void }) {
@@ -1029,57 +888,18 @@ const drow = StyleSheet.create({
   titleRowHover: { opacity: 0.7 } as object,
 });
 
-// ── Grid skeleton (search mode) ───────────────────────────────────────────────
-function GridSkeleton() {
-  const opacity = useSkeletonAnim();
-  return (
-    <View style={styles.scrollContent}>
-      <View style={resultsGrid as object}>
-        {Array.from({ length: 30 }).map((_, i) => (
-          <SkeletonBlock key={i} opacity={opacity} height={240} borderRadius={10} />
-        ))}
-      </View>
-    </View>
-  );
-}
-
-// ── Empty state ───────────────────────────────────────────────────────────────
-function EmptyState({ query, onClear }: { query: string; onClear: () => void }) {
-  return (
-    <View style={styles.empty}>
-      <Text style={styles.emptyHeadline as object}>{query ? `"${query}"` : 'Nothing here'}</Text>
-      <Text style={styles.emptySub as object}>
-        {query ? 'No heroes match that search.' : 'No heroes found for this filter.'}
-      </Text>
-      <Pressable
-        onPress={onClear}
-        style={({ hovered }: { hovered?: boolean }) =>
-          [styles.clearFilter, hovered && (styles.clearFilterHover as object)] as object
-        }
-      >
-        <Text style={styles.clearFilterText}>Clear filters</Text>
-      </Pressable>
-    </View>
-  );
-}
-
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function WebHomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
   const isDesktop = width >= 768;
-  const inputRef = useRef<TextInput>(null);
 
   // 1. MATCH THE ACCORDION_SCALES EXACTLY
   const optimalPoolSize = width >= 1280 ? 8 : width >= 900 ? 6 : 3;
 
-  const { query, setQuery, publisher, setPublisher } = useSearch();
+  const { publisher, setPublisher } = useSearch();
   const { user } = useAuth();
-
-  // Search data
-  const [allHeroes, setAllHeroes] = useState<HeroSearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
 
   // Home data — partial so rows render as each query resolves
   interface HomeData {
@@ -1099,13 +919,6 @@ export default function WebHomeScreen() {
   const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
   const [totalHeroCount, setTotalHeroCount] = useState<number | null>(null);
-
-  const isSearchActive = query.trim() !== '' || publisher !== 'All';
-
-  // Debounce search queries
-  const debouncedQuery = useRef<string>('');
-  const debouncedPublisher = useRef<PublisherFilter>('All');
-  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Fire every query independently — rows appear as each resolves.
   // Spotlight fires first since it's above the fold.
@@ -1130,41 +943,6 @@ export default function WebHomeScreen() {
     getNewlyAddedCV(25).then(set('newlyAdded')).catch(() => {});
   }, []);
 
-  // Live search effect with debounce
-  useEffect(() => {
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-
-    if (!query.trim()) {
-      debouncedQuery.current = '';
-      debouncedPublisher.current = publisher;
-      setAllHeroes([]);
-      setIsSearching(false);
-      return;
-    }
-
-    setIsSearching(true);
-    debounceTimer.current = setTimeout(() => {
-      debouncedQuery.current = query;
-      debouncedPublisher.current = publisher;
-
-      searchHeroes(query, publisher, 500)
-        .then((heroes) => {
-          setAllHeroes(rankResults(heroes, query));
-          const remoteUrls = heroes
-            .slice(0, 100)
-            .map((h) => h.portrait_url ?? (h.image_url?.startsWith('http') ? h.image_url : null))
-            .filter((u): u is string => u !== null);
-          if (remoteUrls.length > 0) Image.prefetch(remoteUrls, 'memory-disk').catch(() => {});
-        })
-        .catch(() => setAllHeroes([]))
-        .finally(() => setIsSearching(false));
-    }, 300);
-
-    return () => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    };
-  }, [query, publisher]);
-
   // Personal rows
   useEffect(() => {
     if (!user?.id) return;
@@ -1175,19 +953,6 @@ export default function WebHomeScreen() {
       .then(setFavourites)
       .catch(() => {});
   }, [user?.id]);
-
-
-  const filtered = useMemo(() => {
-    // Results are already ranked and filtered by server search above
-    return allHeroes;
-  }, [allHeroes]);
-
-  const displayed = filtered.slice(0, DISPLAY_LIMIT);
-  const hasMore = filtered.length > DISPLAY_LIMIT;
-  const handleClear = useCallback(() => {
-    setQuery('');
-    setPublisher('All');
-  }, [setQuery, setPublisher]);
 
   const handlePress = useCallback(
     (id: string) => {
@@ -1238,55 +1003,26 @@ export default function WebHomeScreen() {
       {!isDesktop && (
         <View style={styles.commandBar as object}>
           <View style={styles.commandInner}>
-            <View style={styles.inputRow as object}>
-              <View style={styles.underlineWrap as object}>
-                <TextInput
-                  ref={inputRef}
-                  style={[styles.input, isMobile && (styles.inputMobile as object)] as object}
-                  placeholder="Search heroes…"
-                  placeholderTextColor="rgba(245,235,220,0.28)"
-                  value={query}
-                  onChangeText={setQuery}
-                />
-                {query.length > 0 && (
-                  <Pressable
-                    onPress={() => setQuery('')}
-                    style={({ hovered }: { hovered?: boolean }) =>
-                      [styles.clearBtn, hovered && (styles.clearBtnHover as object)] as object
-                    }
-                  >
-                    <Text style={styles.clearX as object}>×</Text>
-                  </Pressable>
-                )}
-              </View>
-              {isSearching ? (
-                <ActivityIndicator size="small" color={COLORS.orange} />
-              ) : (
-                <Text style={styles.countBadge as object}>
-                  {isSearchActive
-                    ? `${filtered.length} heroes`
-                    : totalHeroCount !== null
-                      ? `${totalHeroCount.toLocaleString()} heroes`
-                      : ''}
-                </Text>
-              )}
-            </View>
+            {/* Tappable search entry — opens the dedicated /search screen */}
+            <Pressable
+              onPress={() => router.push('/search')}
+              style={styles.searchEntry as object}
+            >
+              <Ionicons name="search" size={16} color="rgba(245,235,220,0.5)" />
+              <Text style={styles.searchEntryText as object}>Search heroes…</Text>
+            </Pressable>
             <View style={styles.pillsRow}>
               {PUBLISHER_FILTERS.map((f) => (
                 <Pressable
                   key={f}
-                  onPress={() => setPublisher(f)}
+                  onPress={() =>
+                    router.push(f === 'All' ? '/search' : `/search?publisher=${f}`)
+                  }
                   style={({ hovered }: { hovered?: boolean }) =>
-                    [
-                      styles.pill,
-                      publisher === f && (styles.pillActive as object),
-                      hovered && publisher !== f && (styles.pillHover as object),
-                    ] as object
+                    [styles.pill, hovered && (styles.pillHover as object)] as object
                   }
                 >
-                  <Text style={[styles.pillText, publisher === f && styles.pillTextActive]}>
-                    {f}
-                  </Text>
+                  <Text style={styles.pillText}>{f}</Text>
                 </Pressable>
               ))}
             </View>
@@ -1381,50 +1117,6 @@ export default function WebHomeScreen() {
             onPress={handlePress}
           />
 
-          {/* ── Mobile-web inline results (desktop uses the dropdown + /search) ── */}
-          {!isDesktop && isSearchActive && (
-            <>
-              <View style={styles.footerRule} />
-              <View style={styles.resultsHeader}>
-                <View style={styles.resultsHeaderInner}>
-                  <Text style={styles.resultsQuery as object}>
-                    {query.trim() ? `"${query}"` : publisher}
-                  </Text>
-                  {query.trim().length > 0 && (
-                    <Text style={styles.resultsMeta}>
-                      {isSearching
-                        ? 'Searching…'
-                        : filtered.length === 0
-                          ? 'No heroes found'
-                          : hasMore
-                            ? `Showing ${DISPLAY_LIMIT} of ${filtered.length} results`
-                            : `${filtered.length} result${filtered.length !== 1 ? 's' : ''}`}
-                    </Text>
-                  )}
-                </View>
-              </View>
-
-              {isSearching ? (
-                <View style={styles.scrollContent}>
-                  <GridSkeleton />
-                </View>
-              ) : filtered.length === 0 ? (
-                <EmptyState query={query} onClear={handleClear} />
-              ) : (
-                <View style={styles.scrollContent}>
-                  <View style={resultsGrid as object} id="search-results-grid">
-                    {displayed.map((item) => (
-                      <PortraitCard key={item.id} item={item} onPress={() => handlePress(item.id)} />
-                    ))}
-                  </View>
-                  {hasMore && (
-                    <Text style={styles.moreHint}>Refine your search to see more results</Text>
-                  )}
-                </View>
-              )}
-            </>
-          )}
-
           <View style={styles.footerRule} />
         </ScrollView>
       )}
@@ -1500,6 +1192,23 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   } as object,
   commandInner: { paddingHorizontal: 16, gap: 10 },
+  searchEntry: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    backgroundColor: 'rgba(245,235,220,0.08)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.14)',
+    paddingHorizontal: 14,
+    height: 44,
+    cursor: 'pointer',
+  } as object,
+  searchEntryText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 15,
+    color: 'rgba(245,235,220,0.5)',
+  } as object,
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 12 } as object,
   underlineWrap: {
     flex: 1,
@@ -1570,74 +1279,4 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   footerRule: { height: 1, backgroundColor: COLORS.navy, opacity: 0.08, marginTop: 16 },
-
-  // ── Search results layout ────────────────────────────────────────────────────
-  resultsHeader: {
-    paddingTop: 40,
-    paddingBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(41,60,67,0.08)',
-  },
-  resultsHeaderInner: {
-    maxWidth: 1280,
-    alignSelf: 'center',
-    width: '100%',
-    paddingHorizontal: 16,
-  },
-  resultsQuery: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 40,
-    color: COLORS.navy,
-    lineHeight: 42,
-  } as object,
-  resultsMeta: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    color: 'rgba(41,60,67,0.4)',
-    marginTop: 4,
-    letterSpacing: 0.3,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingTop: 24,
-    maxWidth: 1280,
-    alignSelf: 'center',
-    width: '100%',
-    paddingBottom: 100,
-  },
-  moreHint: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 12,
-    color: COLORS.grey,
-    textAlign: 'center',
-    marginTop: 32,
-    letterSpacing: 0.3,
-  },
-
-  // ── Empty state ─────────────────────────────────────────────────────────────
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 120, gap: 14 },
-  emptyHeadline: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 52,
-    color: COLORS.navy,
-    textAlign: 'center',
-  } as object,
-  emptySub: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 15,
-    color: COLORS.grey,
-    textAlign: 'center',
-  } as object,
-  clearFilter: {
-    marginTop: 8,
-    paddingHorizontal: 28,
-    paddingVertical: 11,
-    borderRadius: 24,
-    borderWidth: 1.5,
-    borderColor: COLORS.navy,
-    cursor: 'pointer',
-    transition: 'all 150ms ease',
-  } as object,
-  clearFilterHover: { backgroundColor: COLORS.navy } as object,
-  clearFilterText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
 });
