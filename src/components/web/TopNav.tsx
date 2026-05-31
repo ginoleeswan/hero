@@ -6,16 +6,17 @@ import { COLORS } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { useSearch } from '../../contexts/SearchContext';
 import { HeroLogo } from './HeroLogo';
-import { SearchSuggestions } from './SearchSuggestions';
+import { SearchSuggestions } from './search/SearchSuggestions';
 
 const EXPLORE_PATH = '/explore';
+const SEARCH_PATH = '/search';
 const DESKTOP_BP = 768;
 
 export function TopNav() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, signOut } = useAuth();
-  const { query, setQuery } = useSearch();
+  const { query, setQuery, searchFocused, setSearchFocused } = useSearch();
   const { width } = useWindowDimensions();
   const inputRef = useRef<TextInput>(null);
   const containerRef = useRef<View>(null);
@@ -24,6 +25,7 @@ export function TopNav() {
   const initial = user?.email?.charAt(0).toUpperCase() ?? '';
   const isDesktop = width >= DESKTOP_BP;
   const avatarActive = menuOpen || pathname === '/profile';
+  const showSearch = isDesktop && (pathname === EXPLORE_PATH || pathname === SEARCH_PATH);
 
   // Close menu on outside click
   useEffect(() => {
@@ -50,10 +52,16 @@ export function TopNav() {
   }, [menuOpen]);
 
   const handleQueryChange = (text: string) => {
+    // Typing only drives the live dropdown — it never navigates. Committing
+    // (Enter, or "View all" in the dropdown) is what opens the results page.
     setQuery(text);
-    if (text.length === 1 && pathname !== EXPLORE_PATH) {
-      router.push('/explore');
-    }
+  };
+
+  const handleSubmitSearch = () => {
+    const q = query.trim();
+    if (!q) return;
+    inputRef.current?.blur(); // close the dropdown so the results page is unobstructed
+    router.push(`/search?q=${encodeURIComponent(q)}`);
   };
 
   const handleProfile = () => {
@@ -75,18 +83,28 @@ export function TopNav() {
           <HeroLogo iconSize={24} fontSize={19} color={COLORS.beige} gap={8} />
         </Pressable>
 
-        {/* Center — global search only on explore page; spacer elsewhere */}
-        {isDesktop && pathname === EXPLORE_PATH ? (
+        {/* Center — global search on explore + search pages; spacer elsewhere */}
+        {showSearch ? (
           <View style={styles.searchContainer as object}>
-            <View style={styles.searchWrap as object}>
-              <Ionicons name="search" size={14} color="rgba(245,235,220,0.28)" />
+            <View
+              style={[styles.searchWrap, searchFocused && (styles.searchWrapFocused as object)] as object}
+            >
+              <Ionicons
+                name="search"
+                size={15}
+                color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.4)'}
+              />
               <TextInput
                 ref={inputRef}
                 style={styles.searchInput as object}
                 placeholder="Search heroes…"
-                placeholderTextColor="rgba(245,235,220,0.28)"
+                placeholderTextColor="rgba(245,235,220,0.35)"
                 value={query}
                 onChangeText={handleQueryChange}
+                onSubmitEditing={handleSubmitSearch}
+                returnKeyType="search"
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
               />
               {query.length > 0 ? (
                 <Pressable
@@ -196,25 +214,34 @@ const styles = StyleSheet.create({
   searchContainer: {
     flex: 1,
     position: 'relative',
+    alignItems: 'center',
   } as object,
 
   searchWrap: {
-    flex: 1,
+    width: '100%',
+    maxWidth: 480,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1.5,
-    borderBottomColor: 'rgba(245,235,220,0.2)',
-    paddingBottom: 4,
-    gap: 8,
-    marginHorizontal: 24,
+    gap: 9,
+    backgroundColor: 'rgba(245,235,220,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.12)',
+    borderRadius: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    transition: 'border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease',
+  } as object,
+  searchWrapFocused: {
+    borderColor: 'rgba(231,115,51,0.55)',
+    backgroundColor: 'rgba(245,235,220,0.09)',
+    boxShadow: '0 0 0 3px rgba(231,115,51,0.14)',
   } as object,
   searchInput: {
     flex: 1,
     fontFamily: 'Nunito_400Regular',
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.beige,
     outlineStyle: 'none',
-    paddingVertical: 2,
   } as object,
   clearBtn: {
     width: 22,

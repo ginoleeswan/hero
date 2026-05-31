@@ -1206,7 +1206,9 @@ export default function WebHomeScreen() {
               {PUBLISHER_FILTERS.map((f) => (
                 <Pressable
                   key={f}
-                  onPress={() => setPublisher(f)}
+                  onPress={() =>
+                    f === 'All' ? setPublisher('All') : router.push(`/search?publisher=${f}`)
+                  }
                   style={({ hovered }: { hovered?: boolean }) =>
                     [
                       styles.filterTab,
@@ -1224,15 +1226,9 @@ export default function WebHomeScreen() {
               ))}
             </View>
             <Text style={styles.filterCount as object}>
-              {isSearching
-                ? ''
-                : isSearchActive
-                  ? hasMore
-                    ? `${DISPLAY_LIMIT} of ${filtered.length} heroes`
-                    : `${filtered.length} hero${filtered.length !== 1 ? 'es' : ''}`
-                  : totalHeroCount !== null
-                    ? `${totalHeroCount.toLocaleString()} heroes in the encyclopedia`
-                    : ''}
+              {totalHeroCount !== null
+                ? `${totalHeroCount.toLocaleString()} heroes in the encyclopedia`
+                : ''}
             </Text>
           </View>
         </View>
@@ -1306,6 +1302,9 @@ export default function WebHomeScreen() {
           style={styles.scroll}
           contentContainerStyle={[styles.discoverContent, isMobile && { paddingTop: 0 }] as object}
         >
+          {/* ── Home content — always rendered. On desktop, committed searches
+               go to the dedicated /search route; on mobile-web the inline
+               results below still appear. ───────────────────────────────────── */}
           {/* Spotlight */}
           {(homeData.spotlight?.length ?? 0) > 0 && (
             <PortraitStripSpotlight
@@ -1382,8 +1381,8 @@ export default function WebHomeScreen() {
             onPress={handlePress}
           />
 
-          {/* Search results section — appears below home if actively searching */}
-          {isSearchActive && (
+          {/* ── Mobile-web inline results (desktop uses the dropdown + /search) ── */}
+          {!isDesktop && isSearchActive && (
             <>
               <View style={styles.footerRule} />
               <View style={styles.resultsHeader}>

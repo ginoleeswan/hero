@@ -6,6 +6,8 @@ interface SearchContextValue {
   setQuery: (q: string) => void;
   publisher: PublisherFilter;
   setPublisher: (p: PublisherFilter) => void;
+  searchFocused: boolean;
+  setSearchFocused: (f: boolean) => void;
 }
 
 const SearchContext = createContext<SearchContextValue>({
@@ -13,13 +15,18 @@ const SearchContext = createContext<SearchContextValue>({
   setQuery: () => {},
   publisher: 'All',
   setPublisher: () => {},
+  searchFocused: false,
+  setSearchFocused: () => {},
 });
 
 export function SearchProvider({ children }: { children: React.ReactNode }) {
   const [query, setQuery] = useState('');
   const [publisher, setPublisher] = useState<PublisherFilter>('All');
+  const [searchFocused, setSearchFocused] = useState(false);
   return (
-    <SearchContext.Provider value={{ query, setQuery, publisher, setPublisher }}>
+    <SearchContext.Provider
+      value={{ query, setQuery, publisher, setPublisher, searchFocused, setSearchFocused }}
+    >
       {children}
     </SearchContext.Provider>
   );
