@@ -463,11 +463,14 @@ describe('getSearchIdleHeroes', () => {
       error: null,
     };
     const heroes = await getSearchIdleHeroes();
-    if (heroes.length > 0) {
-      expect(heroes[0]).toHaveProperty('id');
-      expect(heroes[0]).toHaveProperty('name');
-      expect(heroes[0]).toHaveProperty('portrait_url');
-    }
+    expect(heroes[0]).toHaveProperty('id');
+    expect(heroes[0]).toHaveProperty('name');
+    expect(heroes[0]).toHaveProperty('portrait_url');
+  });
+
+  it('throws on Supabase error', async () => {
+    mockResolveWith = { data: null, error: { message: 'db error' } };
+    await expect(getSearchIdleHeroes()).rejects.toThrow('db error');
   });
 });
 
@@ -475,13 +478,38 @@ describe('getSearchIdleHeroes', () => {
 
 describe('searchHeroes ordering', () => {
   it('returns spider-man before spider-woman when searching spider', async () => {
+    const spiderMan = {
+      id: '620',
+      name: 'Spider-Man',
+      publisher: 'Marvel Comics',
+      image_md_url: 'https://cdn.example.com/620-md.jpg',
+      image_url: 'https://cdn.example.com/620.jpg',
+      portrait_url: null,
+      full_name: 'Peter Parker',
+      aliases: ['Spidey', 'Web-Slinger'],
+      issue_count: 5000,
+    };
+    const spiderWoman = {
+      id: '621',
+      name: 'Spider-Woman',
+      publisher: 'Marvel Comics',
+      image_md_url: 'https://cdn.example.com/621-md.jpg',
+      image_url: 'https://cdn.example.com/621.jpg',
+      portrait_url: null,
+      full_name: 'Jessica Drew',
+      aliases: ['Spider-Woman'],
+      issue_count: 1000,
+    };
+    // DB returns pre-ordered by issue_count DESC (Spider-Man first)
+    mockResolveWith = { data: [spiderMan, spiderWoman], error: null };
+
     const results = await searchHeroes('spider', 'All', 20);
     const names = results.map(h => h.name.toLowerCase());
     const spiderManIdx = names.findIndex(n => n === 'spider-man');
     const spiderWomanIdx = names.findIndex(n => n === 'spider-woman');
-    if (spiderManIdx !== -1 && spiderWomanIdx !== -1) {
-      expect(spiderManIdx).toBeLessThan(spiderWomanIdx);
-    }
+    expect(spiderManIdx).not.toBe(-1);
+    expect(spiderWomanIdx).not.toBe(-1);
+    expect(spiderManIdx).toBeLessThan(spiderWomanIdx);
   });
 });
 
