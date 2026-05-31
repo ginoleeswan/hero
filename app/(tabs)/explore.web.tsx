@@ -1263,7 +1263,7 @@ export default function WebHomeScreen() {
                   </Pressable>
                 )}
               </View>
-              {loadingAll ? (
+              {isSearching ? (
                 <ActivityIndicator size="small" color={COLORS.orange} />
               ) : (
                 <Text style={styles.countBadge as object}>
@@ -1300,7 +1300,7 @@ export default function WebHomeScreen() {
 
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       {isSearchActive ? (
-        loadingAll ? (
+        isSearching ? (
           <GridSkeleton />
         ) : filtered.length === 0 ? (
           <EmptyState query={query} onClear={handleClear} />
