@@ -28,7 +28,6 @@ const PUBLISHER_PILLS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
 const GRID_COLUMNS = 2;
 const H_PAD = 12;
 const GAP = 8;
-const DISPLAY_LIMIT = 100;
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const MARVEL_LOGO = require('../../assets/images/Marvel-Logo.jpg') as number;
@@ -180,11 +179,24 @@ export function SearchSheet({ visible, onClose, onHeroPress }: SearchSheetProps)
       return;
     }
 
+    let cancelled = false;
     setIsSearching(true);
+    setSearchResults(null); // clear stale results so label shows "Popular" while in-flight
+
     searchHeroes(debouncedQuery, publisherFilter, 100)
-      .then((results) => setSearchResults(rankResults(results, debouncedQuery)))
-      .catch(() => setSearchResults([]))
-      .finally(() => setIsSearching(false));
+      .then((results) => {
+        if (!cancelled) setSearchResults(rankResults(results, debouncedQuery));
+      })
+      .catch(() => {
+        if (!cancelled) setSearchResults([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsSearching(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [debouncedQuery, publisherFilter]);
 
   useEffect(() => {
@@ -207,6 +219,8 @@ export function SearchSheet({ visible, onClose, onHeroPress }: SearchSheetProps)
           setMounted(false);
           setQuery('');
           setPublisherFilter('All');
+          setSearchResults(null);
+          setIsSearching(false);
         }
       });
     }
