@@ -13,6 +13,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,7 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../constants/colors';
 import { heroGridImageSource } from '../constants/heroImages';
-import { searchHeroes, rankResults } from '../lib/db/heroes';
+import { searchHeroes, rankResults, getSearchIdleHeroes } from '../lib/db/heroes';
 import type { HeroSearchResult, PublisherFilter } from '../lib/db/heroes';
 
 const PUBLISHER_PILLS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
@@ -155,20 +156,36 @@ export function SearchSheet({ visible, onClose, onHeroPress }: SearchSheetProps)
   const inputRef = useRef<TextInput>(null);
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const [mounted, setMounted] = useState(false);
-  const [allHeroes, setAllHeroes] = useState<HeroSearchResult[]>([]);
-  const [loadingAll, setLoadingAll] = useState(true);
+  const [idleHeroes, setIdleHeroes] = useState<HeroSearchResult[]>([]);
+  const [idleLoading, setIdleLoading] = useState(true);
+  const [searchResults, setSearchResults] = useState<HeroSearchResult[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
   const [query, setQuery] = useState('');
   const [publisherFilter, setPublisherFilter] = useState<PublisherFilter>('All');
   const cardWidth = (SCREEN_WIDTH - H_PAD * 2 - GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
 
-  const debouncedQuery = useDebounce(query, 150);
+  const debouncedQuery = useDebounce(query, 300);
 
   useEffect(() => {
-    searchHeroes('', 'All', 600)
-      .then(setAllHeroes)
+    getSearchIdleHeroes(30)
+      .then(setIdleHeroes)
       .catch(() => {})
-      .finally(() => setLoadingAll(false));
+      .finally(() => setIdleLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!debouncedQuery.trim()) {
+      setSearchResults(null);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    searchHeroes(debouncedQuery, publisherFilter, 100)
+      .then((results) => setSearchResults(rankResults(results, debouncedQuery)))
+      .catch(() => setSearchResults([]))
+      .finally(() => setIsSearching(false));
+  }, [debouncedQuery, publisherFilter]);
 
   useEffect(() => {
     if (visible) {
@@ -195,20 +212,20 @@ export function SearchSheet({ visible, onClose, onHeroPress }: SearchSheetProps)
     }
   }, [visible]);
 
-  const filteredHeroes = useMemo(() => {
-    let list =
+  const displayedHeroes = useMemo(() => {
+    if (searchResults !== null) return searchResults.slice(0, 100);
+
+    const filtered =
       publisherFilter === 'All'
-        ? allHeroes
-        : allHeroes.filter((h) => {
+        ? idleHeroes
+        : idleHeroes.filter((h) => {
             const pub = (h.publisher ?? '').toLowerCase();
             if (publisherFilter === 'Marvel') return pub.includes('marvel');
             if (publisherFilter === 'DC') return pub.includes('dc');
             return !pub.includes('marvel') && !pub.includes('dc');
           });
-    return debouncedQuery.trim() ? rankResults(list, debouncedQuery) : list;
-  }, [allHeroes, debouncedQuery, publisherFilter]);
-
-  const displayedHeroes = filteredHeroes.slice(0, DISPLAY_LIMIT);
+    return filtered;
+  }, [idleHeroes, searchResults, publisherFilter]);
 
   const handlePress = useCallback(
     (id: string) => {
@@ -253,14 +270,16 @@ export function SearchSheet({ visible, onClose, onHeroPress }: SearchSheetProps)
               autoCapitalize="none"
               returnKeyType="search"
             />
-            {query.length > 0 && (
+            {isSearching ? (
+              <ActivityIndicator size="small" color="rgba(245,235,220,0.45)" />
+            ) : query.length > 0 ? (
               <TouchableOpacity
                 onPress={() => setQuery('')}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.4)" />
               </TouchableOpacity>
-            )}
+            ) : null}
           </View>
           <ScrollView
             horizontal
@@ -283,11 +302,20 @@ export function SearchSheet({ visible, onClose, onHeroPress }: SearchSheetProps)
               );
             })}
           </ScrollView>
-          {loadingAll ? (
+          {!idleLoading && (
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionLabel}>
+                {searchResults !== null
+                  ? `${displayedHeroes.length} result${displayedHeroes.length !== 1 ? 's' : ''}`
+                  : 'Popular'}
+              </Text>
+            </View>
+          )}
+          {idleLoading ? (
             <View style={styles.center}>
               <Text style={styles.loadingText}>Loading heroes…</Text>
             </View>
-          ) : displayedHeroes.length === 0 ? (
+          ) : displayedHeroes.length === 0 && !isSearching ? (
             <View style={styles.center}>
               <Text style={styles.emptyHeadline}>No heroes found</Text>
               <Text style={styles.emptySub}>Try a different search or filter</Text>
@@ -380,4 +408,16 @@ const styles = StyleSheet.create({
   loadingText: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: 'rgba(245,235,220,0.5)' },
   emptyHeadline: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.beige },
   emptySub: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: 'rgba(245,235,220,0.55)' },
+  sectionHeader: {
+    paddingHorizontal: H_PAD,
+    paddingBottom: 8,
+    paddingTop: 4,
+  },
+  sectionLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: 'rgba(245,235,220,0.4)',
+  },
 });
