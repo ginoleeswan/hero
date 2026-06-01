@@ -26,6 +26,7 @@ import {
   type SortOption,
   type CategoryPublisher,
 } from '../../src/lib/db/heroes';
+import { DEFAULT_FILTERS } from '../../src/lib/db/categoryFilters';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
 
@@ -222,6 +223,7 @@ export default function CategoryScreen() {
         const result = await getCategoryPage(categorySlug, {
           page,
           pageSize: PAGE_SIZE,
+          ...DEFAULT_FILTERS,
           ...opts,
         });
         setHeroes((prev) => {
@@ -250,6 +252,7 @@ export default function CategoryScreen() {
         const result = await getCategoryPage(categorySlug, {
           page: 0,
           pageSize: 1,
+          ...DEFAULT_FILTERS,
           sort: 'popular',
           publisher: pub,
           search: '',

@@ -88,3 +88,6 @@ ios/build/
 android/.gradle/
 android/app/build/
 android/build/
+
+# iOS native (managed by EAS)
+/ios

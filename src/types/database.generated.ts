@@ -86,6 +86,7 @@ export type Database = {
           portrait_url: string | null
           power: number | null
           powers: string[] | null
+          powerstats_total: number | null
           publisher: string | null
           race: string | null
           relatives: string | null
@@ -138,6 +139,7 @@ export type Database = {
           portrait_url?: string | null
           power?: number | null
           powers?: string[] | null
+          powerstats_total?: number | null
           publisher?: string | null
           race?: string | null
           relatives?: string | null
@@ -190,6 +192,7 @@ export type Database = {
           portrait_url?: string | null
           power?: number | null
           powers?: string[] | null
+          powerstats_total?: number | null
           publisher?: string | null
           race?: string | null
           relatives?: string | null
@@ -286,6 +289,17 @@ export type Database = {
         Args: { p_id: string; p_powers: string[]; p_summary: string }
         Returns: undefined
       }
+      category_facet_counts: {
+        Args: {
+          p_alignment?: string
+          p_gender?: string
+          p_has_stats?: boolean
+          p_publisher?: string
+          p_search?: string
+          p_slug: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
@@ -363,20 +377,21 @@ export type TablesUpdate<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {\n    schema: keyof DatabaseWithoutInternals
-  }
-    ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
       : never
-    : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-      ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-          Update: infer U
-        }
-        ? U
-        : never
-      : never
+    : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends

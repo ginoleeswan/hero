@@ -16,13 +16,21 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import {
   getCategoryPage,
+  getCategoryFacetCounts,
   CATEGORY_LABELS,
   CATEGORY_DESCRIPTIONS,
   type CategorySlug,
   type Hero,
-  type SortOption,
-  type CategoryPublisher,
 } from '../../src/lib/db/heroes';
+import {
+  activeFilterList,
+  type CategoryFilters,
+  type FacetCounts,
+} from '../../src/lib/db/categoryFilters';
+import { useCategoryFilters } from '../../src/hooks/useCategoryFilters';
+import { FilterRail } from '../../src/components/web/category/FilterRail';
+import { FilterSheet } from '../../src/components/web/category/FilterSheet';
+import { ActiveFilterChips } from '../../src/components/web/category/ActiveFilterChips';
 import { heroGridImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
 
@@ -125,16 +133,14 @@ export default function WebCategoryScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const isWide = width >= 1100;   // show description inline
-  const isMid  = width >= 900;    // show count label
 
   const [heroes, setHeroes] = useState<Hero[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [sort, setSort] = useState<SortOption>('popular');
-  const [publisher, setPublisher] = useState<CategoryPublisher>('all');
-  const [search, setSearch] = useState('');
+  const [counts, setCounts] = useState<FacetCounts | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const currentPage = useRef(0);
   const hasMore = useRef(true);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -145,17 +151,16 @@ export default function WebCategoryScreen() {
   const title = categorySlug ? CATEGORY_LABELS[categorySlug] : (slug ?? 'Heroes');
   const description = categorySlug ? CATEGORY_DESCRIPTIONS[categorySlug] : null;
 
+  const { filters, setFilter, reset } = useCategoryFilters(categorySlug ?? 'popular');
+  const activeChips = activeFilterList(categorySlug ?? 'popular', filters);
+
   const fetchPage = useCallback(
-    async (
-      page: number,
-      opts: { sort: SortOption; publisher: CategoryPublisher; search: string },
-      append = false,
-    ) => {
+    async (page: number, f: CategoryFilters, append = false) => {
       if (!categorySlug) return;
       if (page === 0) setLoading(true);
       else setLoadingMore(true);
       try {
-        const result = await getCategoryPage(categorySlug, { page, pageSize: PAGE_SIZE, ...opts });
+        const result = await getCategoryPage(categorySlug, { page, pageSize: PAGE_SIZE, ...f });
         setHeroes((prev) => {
           if (!append) return result.heroes;
           const seen = new Set(prev.map((h) => h.id));
@@ -174,40 +179,23 @@ export default function WebCategoryScreen() {
     [categorySlug],
   );
 
+  // Refetch page 0 + facet counts whenever filters change. Search is debounced;
+  // facet selections apply immediately.
   useEffect(() => {
-    fetchPage(0, { sort, publisher, search });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!categorySlug) return;
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      fetchPage(0, filters);
+      getCategoryFacetCounts(categorySlug, filters).then(setCounts).catch(() => setCounts(null));
+    }, filters.search ? 300 : 0);
+    return () => clearTimeout(searchTimer.current);
+  }, [categorySlug, filters, fetchPage]);
 
   const handlePress = useCallback(
     (id: string) => {
       router.push(`/character/${id}`);
     },
     [router],
-  );
-
-  const handleSearch = useCallback(
-    (text: string) => {
-      setSearch(text);
-      clearTimeout(searchTimer.current);
-      searchTimer.current = setTimeout(() => fetchPage(0, { sort, publisher, search: text }), 300);
-    },
-    [fetchPage, sort, publisher],
-  );
-
-  const handleSort = useCallback(
-    (s: SortOption) => {
-      setSort(s);
-      fetchPage(0, { sort: s, publisher, search });
-    },
-    [fetchPage, publisher, search],
-  );
-
-  const handlePublisher = useCallback(
-    (p: CategoryPublisher) => {
-      setPublisher(p);
-      fetchPage(0, { sort, publisher: p, search });
-    },
-    [fetchPage, sort, search],
   );
 
   // Keep ref in sync — scroll handler reads this to avoid firing multiple fetches
@@ -222,20 +210,11 @@ export default function WebCategoryScreen() {
     }) => {
       const distanceFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
       if (distanceFromBottom < 400 && hasMore.current && !loadingMoreRef.current) {
-        fetchPage(currentPage.current + 1, { sort, publisher, search }, true);
+        fetchPage(currentPage.current + 1, filters, true);
       }
     },
-    [fetchPage, sort, publisher, search],
+    [fetchPage, filters],
   );
-
-  const countLabel = (() => {
-    const s = total !== 1 ? 's' : '';
-    if (search.trim()) return `${total} result${s} for "${search.trim()}"`;
-    const base = `${total} ${title.toLowerCase()}`;
-    if (publisher === 'marvel') return `${base} · Marvel`;
-    if (publisher === 'dc') return `${base} · DC`;
-    return base;
-  })();
 
   const gridStyle = {
     display: 'grid',
@@ -246,15 +225,17 @@ export default function WebCategoryScreen() {
   };
 
   const contentPad = isDesktop ? 32 : 16;
-  const SORT_OPTS: { key: SortOption; label: string }[] = [
-    { key: 'popular', label: 'Popular' },
-    { key: 'az', label: 'A–Z' },
-  ];
-  const PUB_OPTS: { key: CategoryPublisher; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'marvel', label: 'Marvel' },
-    { key: 'dc', label: 'DC' },
-  ];
+
+  const grid = (
+    <View style={gridStyle as object}>
+      {heroes.map((hero) => (
+        <HeroCard key={hero.id} hero={hero} onPress={() => handlePress(String(hero.id))} />
+      ))}
+      {loadingMore && Array.from({ length: 12 }).map((_, i) => (
+        <SkeletonCard key={`sk-${i}`} opacity={skeletonOpacity} />
+      ))}
+    </View>
+  );
 
   return (
     <View style={styles.root}>
@@ -291,9 +272,8 @@ export default function WebCategoryScreen() {
             </View>
           </View>
 
-          {/* Row 2 — controls: search · sort segment · publisher chips */}
+          {/* Row 2 — search (+ Filters button on mobile) */}
           <View style={[styles.controlsRow, !isDesktop && (styles.controlsRowMobile as object)] as object}>
-            {/* Search — full-width on mobile */}
             <View style={[
               styles.searchBar,
               !isDesktop && (styles.searchBarMobile as object),
@@ -304,107 +284,83 @@ export default function WebCategoryScreen() {
                 style={styles.searchInput as object}
                 placeholder={`Search ${title.toLowerCase()}…`}
                 placeholderTextColor="rgba(245,235,220,0.3)"
-                value={search}
-                onChangeText={handleSearch}
+                value={filters.search}
+                onChangeText={(t) => setFilter('search', t)}
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
                 autoCorrect={false}
               />
             </View>
 
-            {/* Sort + publisher — horizontal ScrollView on mobile, plain row on desktop */}
-            {isDesktop ? <View style={styles.pillsRow as object}>
-              {/* Sort — segmented control */}
-              <View style={styles.segmentGroup as object}>
-                {SORT_OPTS.map((o, i) => (
-                  <Pressable key={o.key} onPress={() => handleSort(o.key)}
-                    style={[
-                      styles.segment,
-                      i === 0 && (styles.segmentFirst as object),
-                      i === SORT_OPTS.length - 1 && (styles.segmentLast as object),
-                      sort === o.key && (styles.segmentActive as object),
-                    ] as object}>
-                    <Text style={[styles.segmentText, sort === o.key && (styles.segmentTextActive as object)] as object}>
-                      {o.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              {isDesktop && <View style={styles.dividerV as object} />}
-
-              {/* Publisher filter chips */}
-              <View style={styles.chips as object}>
-                {PUB_OPTS.map((o) => (
-                  <Pressable key={o.key} onPress={() => handlePublisher(o.key)}
-                    style={[styles.chip, publisher === o.key && (styles.chipActive as object)] as object}>
-                    <Text style={[styles.chipText, publisher === o.key && (styles.chipTextActive as object)] as object}>
-                      {o.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-            : (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.pillsScrollContent as object}
-              >
-                <View style={styles.segmentGroup as object}>
-                  {SORT_OPTS.map((o, i) => (
-                    <Pressable key={o.key} onPress={() => handleSort(o.key)}
-                      style={[styles.segment, i === 0 && (styles.segmentFirst as object), i === SORT_OPTS.length - 1 && (styles.segmentLast as object), sort === o.key && (styles.segmentActive as object)] as object}>
-                      <Text style={[styles.segmentText, sort === o.key && (styles.segmentTextActive as object)] as object}>{o.label}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={styles.chips as object}>
-                  {PUB_OPTS.map((o) => (
-                    <Pressable key={o.key} onPress={() => handlePublisher(o.key)}
-                      style={[styles.chip, publisher === o.key && (styles.chipActive as object)] as object}>
-                      <Text style={[styles.chipText, publisher === o.key && (styles.chipTextActive as object)] as object}>{o.label}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </ScrollView>
+            {!isDesktop && (
+              <Pressable onPress={() => setSheetOpen(true)} style={styles.filterBtn as object}>
+                <Ionicons name="options-outline" size={16} color={COLORS.beige} />
+                <Text style={styles.filterBtnText as object}>Filters</Text>
+                {activeChips.length > 0 && (
+                  <View style={styles.filterBadge as object}>
+                    <Text style={styles.filterBadgeText as object}>{activeChips.length}</Text>
+                  </View>
+                )}
+              </Pressable>
             )}
           </View>
+
+          {/* Active filter chips */}
+          {categorySlug && activeChips.length > 0 && (
+            <ActiveFilterChips slug={categorySlug} filters={filters} setFilter={setFilter} />
+          )}
         </View>
       </View>
 
-      {/* ── Content ──────────────────────────────────────────────────────────── */}
-      {loading ? (
-        // Initial skeleton grid — same layout as real cards, no layout shift on load
-        <View style={[styles.gridWrap, { paddingHorizontal: contentPad }]}>
-          <View style={gridStyle as object}>
-            {Array.from({ length: 24 }).map((_, i) => (
-              <SkeletonCard key={i} opacity={skeletonOpacity} />
-            ))}
-          </View>
-        </View>
-      ) : heroes.length === 0 ? (
-        <View style={styles.center}>
-          <Text style={styles.empty}>No heroes found</Text>
-        </View>
-      ) : (
-        <ScrollView
-          style={styles.scroll}
-          onScroll={handleScroll}
-          scrollEventThrottle={200}
-        >
-          <View style={[styles.gridWrap, { paddingHorizontal: contentPad, paddingBottom: 60 }]}>
-            <View style={gridStyle as object}>
-              {heroes.map((hero) => (
-                <HeroCard key={hero.id} hero={hero} onPress={() => handlePress(String(hero.id))} />
-              ))}
-              {/* Skeleton cards appended inline while next page loads */}
-              {loadingMore && Array.from({ length: 12 }).map((_, i) => (
-                <SkeletonCard key={`sk-${i}`} opacity={skeletonOpacity} />
-              ))}
+      {/* ── Content: desktop = rail + grid; mobile = grid only ── */}
+      <View style={[styles.contentRow, { paddingHorizontal: contentPad }] as object}>
+        {isDesktop && categorySlug && (
+          <FilterRail
+            slug={categorySlug}
+            filters={filters}
+            counts={counts}
+            setFilter={setFilter}
+            onReset={reset}
+            hasActive={activeChips.length > 0}
+          />
+        )}
+        <View style={styles.contentMain as object}>
+          {loading ? (
+            <View style={styles.gridWrap}>
+              <View style={gridStyle as object}>
+                {Array.from({ length: 24 }).map((_, i) => (
+                  <SkeletonCard key={i} opacity={skeletonOpacity} />
+                ))}
+              </View>
             </View>
-          </View>
-        </ScrollView>
+          ) : heroes.length === 0 ? (
+            <View style={styles.center}>
+              <Text style={styles.empty}>No heroes found</Text>
+            </View>
+          ) : (
+            <ScrollView
+              style={styles.scroll}
+              onScroll={handleScroll}
+              scrollEventThrottle={200}
+            >
+              <View style={[styles.gridWrap, { paddingBottom: 60 }]}>{grid}</View>
+            </ScrollView>
+          )}
+        </View>
+      </View>
+
+      {/* Mobile filter sheet */}
+      {categorySlug && (
+        <FilterSheet
+          open={sheetOpen}
+          slug={categorySlug}
+          filters={filters}
+          counts={counts}
+          setFilter={setFilter}
+          onReset={reset}
+          onClose={() => setSheetOpen(false)}
+          total={total}
+        />
       )}
     </View>
   );
@@ -533,72 +489,46 @@ const styles = StyleSheet.create({
     outlineWidth: 0,
   } as object,
 
-  // Pills row (desktop flex row; mobile uses ScrollView + pillsScrollContent)
-  pillsRow: { flexDirection: 'row', alignItems: 'center', gap: 8 } as object,
-  pillsScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingRight: 4 } as object,
-
-  // Sort — segmented control (grouped, single border)
-  segmentGroup: {
+  // Mobile "Filters" button (opens the bottom sheet)
+  filterBtn: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    height: 38,
+    paddingHorizontal: 14,
     borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.18)',
-    overflow: 'hidden',
+    cursor: 'pointer',
     flexShrink: 0,
+    alignSelf: 'flex-start',
   } as object,
-  segment: {
-    paddingHorizontal: 14,
-    height: 34,
+  filterBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.beige } as object,
+  filterBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 5,
+    backgroundColor: COLORS.orange,
     alignItems: 'center',
     justifyContent: 'center',
-    cursor: 'pointer',
-    transition: 'background-color 150ms ease',
-    backgroundColor: 'rgba(255,255,255,0.06)',
   } as object,
-  segmentFirst: {} as object,
-  segmentLast: {} as object,
-  segmentActive: { backgroundColor: 'rgba(255,255,255,0.16)' } as object,
-  segmentText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.55)',
-  } as object,
-  segmentTextActive: { color: COLORS.beige } as object,
+  filterBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#fff' } as object,
 
-  // Vertical divider
-  dividerV: {
-    width: 1,
-    height: 20,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    flexShrink: 0,
+  // Content layout — desktop rail + grid (centered, max width)
+  contentRow: {
+    flexDirection: 'row',
+    gap: 24,
+    maxWidth: 1200,
+    width: '100%',
+    alignSelf: 'center',
+    flex: 1,
   } as object,
+  contentMain: { flex: 1, minWidth: 0 } as object,
 
-  // Publisher filter chips — individual bordered buttons
-  chips: { flexDirection: 'row', gap: 5, alignItems: 'center', flexShrink: 0 } as object,
-  chip: {
-    paddingHorizontal: 12,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-    cursor: 'pointer',
-    transition: 'background-color 150ms ease, border-color 150ms ease',
-  } as object,
-  chipActive: {
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderColor: 'rgba(255,255,255,0.3)',
-  } as object,
-  chipText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.6)',
-  } as object,
-  chipTextActive: { color: COLORS.beige } as object,
   scroll: { flex: 1 },
-  gridWrap: { paddingTop: 16, maxWidth: 1200, width: '100%', alignSelf: 'center' },
+  gridWrap: { paddingTop: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
 });

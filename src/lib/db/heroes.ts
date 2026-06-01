@@ -1,6 +1,7 @@
 import { supabase } from '../supabase';
 import type { Tables } from '../../types/database.generated';
 import type { CharacterData, MovieAppearance, StatsSource } from '../../types';
+import type { CategoryFilters, FacetCounts } from './categoryFilters';
 
 export type Hero = Tables<'heroes'>;
 export type HeroCategory = 'popular' | 'villain' | 'xmen';
@@ -258,7 +259,7 @@ export type CategorySlug =
   | 'most-intelligent'
   | 'most-iconic';
 
-export type SortOption = 'popular' | 'az';
+export type SortOption = 'popular' | 'az' | 'power';
 export type CategoryPublisher = 'all' | 'marvel' | 'dc';
 
 export const CATEGORY_LABELS: Record<CategorySlug, string> = {
@@ -372,15 +373,9 @@ export async function getAllHeroesBySlug(slug: CategorySlug): Promise<Hero[]> {
 
 export async function getCategoryPage(
   slug: CategorySlug,
-  options: {
-    page: number;
-    pageSize?: number;
-    sort: SortOption;
-    publisher: CategoryPublisher;
-    search: string;
-  },
+  options: { page: number; pageSize?: number } & CategoryFilters,
 ): Promise<{ heroes: Hero[]; total: number }> {
-  const { page, pageSize = 30, sort, publisher, search } = options;
+  const { page, pageSize = 48, sort, publisher, alignment, gender, hasStats, search } = options;
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
@@ -388,59 +383,65 @@ export async function getCategoryPage(
   let q: any = supabase.from('heroes').select('*', { count: 'exact' });
 
   switch (slug) {
-    case 'popular':
-      q = q.eq('category', 'popular');
-      break;
+    case 'popular': q = q.eq('category', 'popular'); break;
     case 'villain':
-      q = q
-        .eq('alignment', 'bad')
-        .not('publisher', 'in', '("Non-Fictional","In the Public Domain")');
+      q = q.eq('alignment', 'bad').not('publisher', 'in', '("Non-Fictional","In the Public Domain")');
       break;
-    case 'xmen':
-      q = q.or('group_affiliation.ilike.%x-men%,group_affiliation.ilike.%xmen%');
-      break;
-    case 'anti-heroes':
-      q = q.ilike('alignment', '%neutral%');
-      break;
-    case 'marvel':
-      q = q.ilike('publisher', '%marvel%');
-      break;
-    case 'dc':
-      q = q.ilike('publisher', '%dc%');
-      break;
-    case 'strongest':
-      q = q.not('strength', 'is', null);
-      break;
-    case 'most-intelligent':
-      q = q.not('intelligence', 'is', null);
-      break;
+    case 'xmen': q = q.or('group_affiliation.ilike.%x-men%,group_affiliation.ilike.%xmen%'); break;
+    case 'anti-heroes': q = q.ilike('alignment', '%neutral%'); break;
+    case 'marvel': q = q.ilike('publisher', '%marvel%'); break;
+    case 'dc': q = q.ilike('publisher', '%dc%'); break;
+    case 'strongest': q = q.not('strength', 'is', null); break;
+    case 'most-intelligent': q = q.not('intelligence', 'is', null); break;
     case 'most-iconic':
       q = q.not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")');
       break;
   }
 
+  // Publisher facet
   if (publisher === 'marvel') q = q.ilike('publisher', '%marvel%');
   else if (publisher === 'dc') q = q.ilike('publisher', '%dc%');
+  else if (publisher === 'other') q = q.not('publisher', 'ilike', '%marvel%').not('publisher', 'ilike', '%dc%');
 
-  if (search.trim()) {
-    q = q.or(`name.ilike.%${search.trim()}%,full_name.ilike.%${search.trim()}%`);
-  }
+  // Alignment facet
+  if (alignment === 'good') q = q.eq('alignment', 'good');
+  else if (alignment === 'bad') q = q.eq('alignment', 'bad');
+  else if (alignment === 'neutral') q = q.ilike('alignment', '%neutral%');
 
-  if (sort === 'az') {
-    q = q.order('name');
-  } else if (slug === 'strongest') {
-    q = q.order('strength', { ascending: false, nullsFirst: false });
-  } else if (slug === 'most-intelligent') {
-    q = q.order('intelligence', { ascending: false, nullsFirst: false });
-  } else if (slug === 'most-iconic') {
-    q = q.order('issue_count', { ascending: false, nullsFirst: false });
-  } else {
-    q = q.order('issue_count', { ascending: false, nullsFirst: false });
-  }
+  // Gender facet
+  if (gender === 'male') q = q.ilike('gender', 'male');
+  else if (gender === 'female') q = q.ilike('gender', 'female');
+
+  // Has-powerstats facet
+  if (hasStats) q = q.gte('powerstats_total', 1);
+
+  // Search
+  if (search.trim()) q = q.or(`name.ilike.%${search.trim()}%,full_name.ilike.%${search.trim()}%`);
+
+  // Sort
+  if (sort === 'az') q = q.order('name');
+  else if (sort === 'power') q = q.order('powerstats_total', { ascending: false, nullsFirst: false });
+  else q = q.order('issue_count', { ascending: false, nullsFirst: false });
 
   const { data, error, count } = await q.range(from, to);
   if (error) throw new Error(error.message);
   return { heroes: (data ?? []) as Hero[], total: count ?? 0 };
+}
+
+export async function getCategoryFacetCounts(
+  slug: CategorySlug,
+  f: CategoryFilters,
+): Promise<FacetCounts> {
+  const { data, error } = await supabase.rpc('category_facet_counts', {
+    p_slug: slug,
+    p_publisher: f.publisher,
+    p_alignment: f.alignment,
+    p_gender: f.gender,
+    p_has_stats: f.hasStats,
+    p_search: f.search.trim(),
+  });
+  if (error) throw new Error(error.message);
+  return data as unknown as FacetCounts;
 }
 
 export type HeroPowerResult = Pick<
