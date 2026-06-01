@@ -46,6 +46,7 @@ function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
 
 const sk = StyleSheet.create({
   wrap: {
+    width: '100%', // WebKit won't stretch an aspect-ratio grid item to the track — force the inline size
     borderRadius: 10,
     aspectRatio: '3 / 4',
     backgroundColor: '#ddd5c8',
@@ -83,6 +84,7 @@ function HeroCard({ hero, onPress }: { hero: Hero; onPress: () => void }) {
 
 const card = StyleSheet.create({
   wrap: {
+    width: '100%', // WebKit won't stretch an aspect-ratio grid item to the track — force the inline size
     borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
