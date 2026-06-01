@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.beige,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(41,60,67,0.12)',
-    paddingVertical: 12,
+    paddingVertical: 8,
     position: 'sticky',
     top: 64,
     zIndex: 40,
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
   controlsInnerMobile: {
     flexDirection: 'column',
     alignItems: 'stretch',
-    gap: 8,
+    gap: 6,
   } as object,
   countLabel: {
     fontFamily: 'Nunito_400Regular',
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
   pillTextActive: { color: COLORS.beige } as object,
   pillDivider: { width: 1, height: 16, backgroundColor: 'rgba(29,45,51,0.15)' } as object,
   scroll: { flex: 1 },
-  gridWrap: { paddingTop: 28, maxWidth: 1200, width: '100%', alignSelf: 'center' },
+  gridWrap: { paddingTop: 16, maxWidth: 1200, width: '100%', alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
 });
