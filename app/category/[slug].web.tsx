@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 11,
     height: 34,
   } as object,
-  searchBarMobile: { maxWidth: 9999, flex: 0, width: '100%' } as object,
+  searchBarMobile: { maxWidth: 9999, flex: 0, width: '100%', minHeight: 34 } as object,
   searchBarFocused: {
     backgroundColor: 'rgba(255,255,255,0.12)',
     borderColor: 'rgba(231,115,51,0.75)',
@@ -528,6 +528,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.beige,
     outlineStyle: 'none',
+    outlineWidth: 0,
   } as object,
 
   // Pills row (desktop flex row; mobile uses ScrollView + pillsScrollContent)
