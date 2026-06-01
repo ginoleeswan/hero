@@ -272,45 +272,70 @@ export default function WebCategoryScreen() {
             </View>
           </View>
 
-          {/* Row 2 — search (+ Filters button on mobile) */}
-          <View style={[styles.controlsRow, !isDesktop && (styles.controlsRowMobile as object)] as object}>
-            <View style={[
-              styles.searchBar,
-              !isDesktop && (styles.searchBarMobile as object),
-              searchFocused && (styles.searchBarFocused as object),
-            ] as object}>
-              <Ionicons name="search-outline" size={14} color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.35)'} />
-              <TextInput
-                style={styles.searchInput as object}
-                placeholder={`Search ${title.toLowerCase()}…`}
-                placeholderTextColor="rgba(245,235,220,0.3)"
-                value={filters.search}
-                onChangeText={(t) => setFilter('search', t)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                autoCorrect={false}
-              />
-            </View>
+          {/* Row 2 — mobile only: full-width search + Filters button.
+              On desktop the search lives inside the filter rail. */}
+          {!isDesktop && (
+            <View style={[styles.controlsRow, styles.controlsRowMobile as object] as object}>
+              <View style={[
+                styles.searchBar,
+                styles.searchBarMobile as object,
+                searchFocused && (styles.searchBarFocused as object),
+              ] as object}>
+                <Ionicons name="search-outline" size={15} color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.35)'} />
+                <TextInput
+                  style={styles.searchInput as object}
+                  placeholder={`Search ${title.toLowerCase()}…`}
+                  placeholderTextColor="rgba(245,235,220,0.3)"
+                  value={filters.search}
+                  onChangeText={(t) => setFilter('search', t)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                  autoCorrect={false}
+                />
+              </View>
 
-            {!isDesktop && (
-              <Pressable onPress={() => setSheetOpen(true)} style={styles.filterBtn as object}>
-                <Ionicons name="options-outline" size={16} color={COLORS.beige} />
-                <Text style={styles.filterBtnText as object}>Filters</Text>
+              <Pressable
+                onPress={() => setSheetOpen(true)}
+                style={[styles.filterBtn, activeChips.length > 0 && (styles.filterBtnActive as object)] as object}
+              >
+                <Ionicons name="options-outline" size={16} color={activeChips.length > 0 ? COLORS.orange : COLORS.beige} />
+                <Text style={[styles.filterBtnText, activeChips.length > 0 && (styles.filterBtnTextActive as object)] as object}>
+                  Filters
+                </Text>
                 {activeChips.length > 0 && (
                   <View style={styles.filterBadge as object}>
                     <Text style={styles.filterBadgeText as object}>{activeChips.length}</Text>
                   </View>
                 )}
               </Pressable>
-            )}
-          </View>
-
-          {/* Active filter chips */}
-          {categorySlug && activeChips.length > 0 && (
-            <ActiveFilterChips slug={categorySlug} filters={filters} setFilter={setFilter} />
+            </View>
           )}
+
         </View>
       </View>
+
+      {/* ── Mobile-only active-filters strip ──────────────────────────────────
+          On desktop the rail is always visible and already shows active state,
+          so chips here would only duplicate it. On mobile the filter UI is
+          hidden in a sheet, so this scrollable strip is how active filters and
+          one-tap removal stay visible. */}
+      {!isDesktop && categorySlug && activeChips.length > 0 && (
+        <View style={[styles.activeStrip, { paddingHorizontal: contentPad }] as object}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.activeStripContent as object}
+          >
+            <ActiveFilterChips slug={categorySlug} filters={filters} setFilter={setFilter} />
+            <Pressable
+              onPress={reset}
+              style={({ hovered }: { hovered?: boolean }) => [styles.stripClear, hovered && (styles.stripClearHover as object)] as object}
+            >
+              <Text style={styles.stripClearText as object}>Clear all</Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      )}
 
       {/* ── Content: desktop = rail + grid; mobile = grid only ── */}
       <View style={[styles.contentRow, { paddingHorizontal: contentPad }] as object}>
@@ -322,6 +347,8 @@ export default function WebCategoryScreen() {
             setFilter={setFilter}
             onReset={reset}
             hasActive={activeChips.length > 0}
+            activeCount={activeChips.length}
+            searchPlaceholder={`Search ${title.toLowerCase()}…`}
           />
         )}
         <View style={styles.contentMain as object}>
@@ -360,6 +387,7 @@ export default function WebCategoryScreen() {
           onReset={reset}
           onClose={() => setSheetOpen(false)}
           total={total}
+          hasActive={activeChips.length > 0}
         />
       )}
     </View>
@@ -375,7 +403,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(245,235,220,0.07)',
     paddingTop: 12,
-    paddingBottom: 10,
+    paddingBottom: 14,
     position: 'sticky',
     top: 64,
     zIndex: 40,
@@ -449,41 +477,39 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   } as object,
 
-  // Row 2 — controls
+  // Row 2 — controls (mobile only: search + Filters button on one row)
   controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   } as object,
   controlsRowMobile: {
-    flexDirection: 'column',
-    alignItems: 'stretch',
     gap: 8,
   } as object,
 
-  // Search bar — white-tint so it's clearly visible on navy
+  // Mobile search bar — dark inset to match the filter surface
   searchBar: {
     flex: 1,
-    maxWidth: 300,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 8,
+    gap: 9,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
-    paddingHorizontal: 11,
-    height: 34,
+    borderColor: 'rgba(245,235,220,0.12)',
+    paddingHorizontal: 13,
+    height: 44,
+    transition: 'border-color 160ms ease, box-shadow 160ms ease',
   } as object,
-  searchBarMobile: { maxWidth: 9999, flex: 0, width: '100%', minHeight: 34 } as object,
+  searchBarMobile: { flex: 1, minHeight: 44 } as object,
   searchBarFocused: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderColor: 'rgba(231,115,51,0.75)',
+    borderColor: 'rgba(231,115,51,0.7)',
+    boxShadow: '0 0 0 3px rgba(231,115,51,0.12)',
   } as object,
   searchInput: {
     flex: 1,
     fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
+    fontSize: 14.5,
     color: COLORS.beige,
     outlineStyle: 'none',
     outlineWidth: 0,
@@ -494,27 +520,57 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    height: 38,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    height: 44,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(245,235,220,0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderColor: 'rgba(245,235,220,0.16)',
     cursor: 'pointer',
     flexShrink: 0,
-    alignSelf: 'flex-start',
   } as object,
-  filterBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.beige } as object,
+  filterBtnActive: {
+    backgroundColor: 'rgba(231,115,51,0.14)',
+    borderColor: 'rgba(231,115,51,0.5)',
+  } as object,
+  filterBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: COLORS.beige } as object,
+  filterBtnTextActive: { color: COLORS.orange } as object,
   filterBadge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    paddingHorizontal: 5,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 6,
     backgroundColor: COLORS.orange,
     alignItems: 'center',
     justifyContent: 'center',
   } as object,
-  filterBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#fff' } as object,
+  filterBadgeText: { fontFamily: 'Nunito_900Black', fontSize: 11, color: '#fff' } as object,
+
+  // ── Mobile active-filters strip ─────────────────────────────────────────────
+  activeStrip: {
+    paddingTop: 12,
+  } as object,
+  activeStripContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingRight: 16,
+  } as object,
+  stripClear: {
+    height: 30,
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    cursor: 'pointer',
+    transition: 'opacity 150ms ease',
+    flexShrink: 0,
+  } as object,
+  stripClearHover: { opacity: 0.6 } as object,
+  stripClearText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12.5,
+    color: COLORS.orange,
+    letterSpacing: 0.2,
+  } as object,
 
   // Content layout — desktop rail + grid (centered, max width)
   contentRow: {
@@ -524,6 +580,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
     flex: 1,
+    paddingTop: 16,
   } as object,
   contentMain: { flex: 1, minWidth: 0 } as object,
 

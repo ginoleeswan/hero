@@ -94,6 +94,6 @@ export function activeFilterList(slug: CategorySlug, f: CategoryFilters): Active
   if (visible.includes('publisher') && f.publisher !== 'all') chips.push({ key: 'publisher', label: LABELS[f.publisher] });
   if (visible.includes('alignment') && f.alignment !== 'any') chips.push({ key: 'alignment', label: LABELS[f.alignment] });
   if (visible.includes('gender') && f.gender !== 'any') chips.push({ key: 'gender', label: LABELS[f.gender] });
-  if (visible.includes('hasStats') && f.hasStats) chips.push({ key: 'hasStats', label: 'Has powerstats' });
+  if (visible.includes('hasStats') && f.hasStats) chips.push({ key: 'hasStats', label: 'Rated only' });
   return chips;
 }
