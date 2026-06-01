@@ -254,50 +254,52 @@ export default function WebCategoryScreen() {
 
   return (
     <View style={styles.root}>
-      {/* ── Hero zone — navy, scrolls away ───────────────────────────────────── */}
-      <View
-        style={[
-          styles.heroZone,
-          isDesktop && (styles.heroZoneDesktop as object),
-          { paddingHorizontal: contentPad },
-        ] as object}
-      >
-        <View
-          style={[styles.heroZoneInner, isDesktop && (styles.heroZoneInnerDesktop as object)] as object}
-        >
-          {/* Back button — desktop only; on mobile the OS/browser handles back */}
-          {isDesktop && (
-            <Pressable
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
-              style={({ hovered }: { hovered?: boolean }) =>
-                [styles.backBtn, hovered && (styles.backBtnHover as object)] as object
-              }
-            >
-              <Ionicons name="arrow-back" size={15} color="rgba(245,235,220,0.55)" />
-              <Text style={styles.backText as object}>Back</Text>
-            </Pressable>
-          )}
-
-          <View style={styles.titleRow}>
-            <View style={[styles.accentBar, isDesktop && (styles.accentBarDesktop as object)] as object} />
-            <View style={styles.titleBlock}>
-              <Text style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object}>
+      {/* ── Hero zone — navy ─────────────────────────────────────────────────── */}
+      <View style={[styles.heroZone, { paddingHorizontal: contentPad }] as object}>
+        {isDesktop ? (
+          /* Desktop: single compact row — back arrow · title · description · count */
+          <View style={styles.heroZoneInner}>
+            <View style={styles.desktopHeaderRow}>
+              <Pressable
+                onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
+                style={({ hovered }: { hovered?: boolean }) =>
+                  [styles.backBtn, hovered && (styles.backBtnHover as object)] as object
+                }
+              >
+                <Ionicons name="arrow-back" size={18} color="rgba(245,235,220,0.55)" />
+              </Pressable>
+              <View style={styles.accentBar} />
+              <Text style={styles.titleDesktop as object} numberOfLines={1}>
                 {title}
               </Text>
-              {/* Description — desktop only; mobile needs vertical space for the grid */}
-              {isDesktop && description ? (
-                <Text style={[styles.description, styles.descriptionDesktop as object] as object}>
+              {description ? (
+                <Text style={styles.descriptionDesktop as object} numberOfLines={1}>
                   {description}
                 </Text>
               ) : null}
+              {!loading && total > 0 && (
+                <View style={[styles.countPill, { marginLeft: 'auto' }] as object}>
+                  <Text style={styles.countText as object}>{total.toLocaleString()}</Text>
+                </View>
+              )}
             </View>
-            {!loading && total > 0 && (
-              <View style={styles.countPill}>
-                <Text style={styles.countText as object}>{total.toLocaleString()}</Text>
-              </View>
-            )}
           </View>
-        </View>
+        ) : (
+          /* Mobile: compact stacked (title + count only) */
+          <View style={styles.heroZoneInner}>
+            <View style={styles.titleRow}>
+              <View style={styles.accentBar} />
+              <View style={styles.titleBlock}>
+                <Text style={styles.title as object}>{title}</Text>
+              </View>
+              {!loading && total > 0 && (
+                <View style={styles.countPill}>
+                  <Text style={styles.countText as object}>{total.toLocaleString()}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
       </View>
 
       {/* ── Controls bar — beige, sticky on all viewports ───────────────────── */}
@@ -420,35 +422,33 @@ const styles = StyleSheet.create({
   // ── Hero zone (navy, scrolls away) ─────────────────────────────────────────
   heroZone: {
     backgroundColor: COLORS.navy,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingVertical: 14,
   },
-  heroZoneDesktop: {
-    paddingTop: 20,
-    paddingBottom: 22,
-  } as object,
-  heroZoneInner: { maxWidth: 1200, width: '100%', alignSelf: 'center', gap: 8 },
-  heroZoneInnerDesktop: { gap: 14 } as object,
-  backBtn: {
+  heroZoneInner: { maxWidth: 1200, width: '100%', alignSelf: 'center' },
+
+  // Desktop: everything in one row
+  desktopHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
+    gap: 14,
+  } as object,
+  backBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
     cursor: 'pointer',
     transition: 'opacity 150ms ease',
+    flexShrink: 0,
   } as object,
   backBtnHover: { opacity: 0.5 } as object,
-  backText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: 'rgba(245,235,220,0.55)',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  } as object,
+
+  // Mobile stacked
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
   },
   accentBar: {
     width: 3,
@@ -457,22 +457,28 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.orange,
     flexShrink: 0,
   },
-  accentBarDesktop: { width: 4, height: 60 } as object,
-  titleBlock: { flex: 1, gap: 2 },
+  titleBlock: { flex: 1 },
   title: {
     fontFamily: 'Flame-Regular',
     fontSize: 24,
     color: COLORS.beige,
     lineHeight: 28,
   } as object,
-  titleDesktop: { fontSize: 52, lineHeight: 56 } as object,
-  description: {
+
+  // Desktop type styles (used inline in the single row)
+  titleDesktop: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 28,
+    color: COLORS.beige,
+    lineHeight: 32,
+    flexShrink: 1,
+  } as object,
+  descriptionDesktop: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: 'rgba(245,235,220,0.5)',
-    lineHeight: 18,
+    color: 'rgba(245,235,220,0.45)',
+    flexShrink: 1,
   } as object,
-  descriptionDesktop: { fontSize: 15, lineHeight: 21 } as object,
   countPill: {
     backgroundColor: 'rgba(232,98,26,0.18)',
     borderRadius: 20,
