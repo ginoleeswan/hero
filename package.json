@@ -84,7 +84,7 @@
     }
   },
   "private": true,
-  "packageManager": "yarn@4.13.0",
+  "packageManager": "yarn@4.15.0",
   "jest": {
     "preset": "jest-expo",
     "transformIgnorePatterns": [
