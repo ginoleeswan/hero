@@ -258,7 +258,7 @@ export type CategorySlug =
   | 'most-intelligent'
   | 'most-iconic';
 
-export type SortOption = 'popular' | 'az';
+export type SortOption = 'popular' | 'az' | 'power';
 export type CategoryPublisher = 'all' | 'marvel' | 'dc';
 
 export const CATEGORY_LABELS: Record<CategorySlug, string> = {
