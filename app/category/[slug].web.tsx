@@ -291,8 +291,12 @@ export default function WebCategoryScreen() {
 
           {/* Row 2 — controls: search · sort segment · publisher chips */}
           <View style={[styles.controlsRow, !isDesktop && (styles.controlsRowMobile as object)] as object}>
-            {/* Search */}
-            <View style={[styles.searchBar, searchFocused && (styles.searchBarFocused as object)] as object}>
+            {/* Search — full-width on mobile */}
+            <View style={[
+              styles.searchBar,
+              !isDesktop && (styles.searchBarMobile as object),
+              searchFocused && (styles.searchBarFocused as object),
+            ] as object}>
               <Ionicons name="search-outline" size={14} color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.35)'} />
               <TextInput
                 style={styles.searchInput as object}
@@ -306,35 +310,38 @@ export default function WebCategoryScreen() {
               />
             </View>
 
-            {/* Sort — segmented control feel */}
-            <View style={styles.segmentGroup as object}>
-              {SORT_OPTS.map((o, i) => (
-                <Pressable key={o.key} onPress={() => handleSort(o.key)}
-                  style={[
-                    styles.segment,
-                    i === 0 && (styles.segmentFirst as object),
-                    i === SORT_OPTS.length - 1 && (styles.segmentLast as object),
-                    sort === o.key && (styles.segmentActive as object),
-                  ] as object}>
-                  <Text style={[styles.segmentText, sort === o.key && (styles.segmentTextActive as object)] as object}>
-                    {o.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            {/* Sort + publisher in one scrollable row on mobile */}
+            <View style={[styles.pillsRow, !isDesktop && (styles.pillsRowMobile as object)] as object}>
+              {/* Sort — segmented control */}
+              <View style={styles.segmentGroup as object}>
+                {SORT_OPTS.map((o, i) => (
+                  <Pressable key={o.key} onPress={() => handleSort(o.key)}
+                    style={[
+                      styles.segment,
+                      i === 0 && (styles.segmentFirst as object),
+                      i === SORT_OPTS.length - 1 && (styles.segmentLast as object),
+                      sort === o.key && (styles.segmentActive as object),
+                    ] as object}>
+                    <Text style={[styles.segmentText, sort === o.key && (styles.segmentTextActive as object)] as object}>
+                      {o.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
 
-            <View style={styles.dividerV as object} />
+              {isDesktop && <View style={styles.dividerV as object} />}
 
-            {/* Publisher filter chips */}
-            <View style={styles.chips as object}>
-              {PUB_OPTS.map((o) => (
-                <Pressable key={o.key} onPress={() => handlePublisher(o.key)}
-                  style={[styles.chip, publisher === o.key && (styles.chipActive as object)] as object}>
-                  <Text style={[styles.chipText, publisher === o.key && (styles.chipTextActive as object)] as object}>
-                    {o.label}
-                  </Text>
-                </Pressable>
-              ))}
+              {/* Publisher filter chips */}
+              <View style={styles.chips as object}>
+                {PUB_OPTS.map((o) => (
+                  <Pressable key={o.key} onPress={() => handlePublisher(o.key)}
+                    style={[styles.chip, publisher === o.key && (styles.chipActive as object)] as object}>
+                    <Text style={[styles.chipText, publisher === o.key && (styles.chipTextActive as object)] as object}>
+                      {o.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
           </View>
         </View>
@@ -486,6 +493,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 11,
     height: 34,
   } as object,
+  searchBarMobile: {
+    maxWidth: 9999,
+    flex: 0,
+    width: '100%',
+  } as object,
   searchBarFocused: {
     backgroundColor: 'rgba(245,235,220,0.1)',
     borderColor: 'rgba(231,115,51,0.6)',
@@ -496,6 +508,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.beige,
     outlineStyle: 'none',
+  } as object,
+
+  // Pills row wrapper (sort + divider + chips)
+  pillsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  } as object,
+  pillsRowMobile: {
+    overflowX: 'auto',
+    scrollbarWidth: 'none',
   } as object,
 
   // Sort — segmented control
