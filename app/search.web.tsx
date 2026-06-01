@@ -44,7 +44,8 @@ function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
   return <Animated.View style={[sk.wrap as object, { opacity }]} />;
 }
 const sk = StyleSheet.create({
-  wrap: { borderRadius: 10, aspectRatio: '3 / 4', backgroundColor: '#ddd5c8' } as object,
+  // width:100% — WebKit won't stretch an aspect-ratio grid item to the track
+  wrap: { width: '100%', borderRadius: 10, aspectRatio: '3 / 4', backgroundColor: '#ddd5c8' } as object,
 });
 
 // ── Card ────────────────────────────────────────────────────────────────────────
@@ -77,6 +78,7 @@ function HeroCard({ hero, onPress }: { hero: HeroSearchResult; onPress: () => vo
 }
 const card = StyleSheet.create({
   wrap: {
+    width: '100%', // WebKit won't stretch an aspect-ratio grid item to the track — force the inline size
     borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
