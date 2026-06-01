@@ -254,12 +254,12 @@ export default function WebCategoryScreen() {
 
   return (
     <View style={styles.root}>
-      {/* ── Hero zone — navy ─────────────────────────────────────────────────── */}
-      <View style={[styles.heroZone, { paddingHorizontal: contentPad }] as object}>
-        {isDesktop ? (
-          /* Desktop: single compact row — back arrow · title · description · count */
-          <View style={styles.heroZoneInner}>
-            <View style={styles.desktopHeaderRow}>
+      {/* ── Sticky header — navy, contains title + all controls ──────────────── */}
+      <View style={[styles.header, { paddingHorizontal: contentPad }] as object}>
+        <View style={styles.headerInner}>
+          {/* Row 1: back · accent · title · description · count */}
+          <View style={styles.titleRow}>
+            {isDesktop && (
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
                 style={({ hovered }: { hovered?: boolean }) =>
@@ -268,113 +268,75 @@ export default function WebCategoryScreen() {
               >
                 <Ionicons name="arrow-back" size={18} color="rgba(245,235,220,0.55)" />
               </Pressable>
-              <View style={styles.accentBar} />
-              <Text style={styles.titleDesktop as object} numberOfLines={1}>
-                {title}
-              </Text>
-              {description ? (
-                <Text style={styles.descriptionDesktop as object} numberOfLines={1}>
-                  {description}
-                </Text>
-              ) : null}
-              {!loading && total > 0 && (
-                <View style={[styles.countPill, { marginLeft: 'auto' }] as object}>
-                  <Text style={styles.countText as object}>{total.toLocaleString()}</Text>
-                </View>
-              )}
-            </View>
-          </View>
-        ) : (
-          /* Mobile: compact stacked (title + count only) */
-          <View style={styles.heroZoneInner}>
-            <View style={styles.titleRow}>
-              <View style={styles.accentBar} />
-              <View style={styles.titleBlock}>
-                <Text style={styles.title as object}>{title}</Text>
-              </View>
-              {!loading && total > 0 && (
-                <View style={styles.countPill}>
-                  <Text style={styles.countText as object}>{total.toLocaleString()}</Text>
-                </View>
-              )}
-            </View>
-          </View>
-        )}
-      </View>
-
-      {/* ── Controls bar — beige, sticky on all viewports ───────────────────── */}
-      <View style={styles.controlsBar}>
-        <View
-          style={[
-            styles.controlsInner,
-            !isDesktop && (styles.controlsInnerMobile as object),
-            { paddingHorizontal: contentPad },
-          ] as object}
-        >
-          {/* Search — full width on mobile (column layout), inline on desktop */}
-          <View
-            style={
-              [styles.searchBar, searchFocused && (styles.searchBarFocused as object)] as object
-            }
-          >
-            <Ionicons
-              name="search-outline"
-              size={14}
-              color={searchFocused ? COLORS.orange : COLORS.grey}
-            />
-            <TextInput
-              style={styles.searchInput as object}
-              placeholder={`Search ${title.toLowerCase()}…`}
-              placeholderTextColor={COLORS.grey}
-              value={search}
-              onChangeText={handleSearch}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              autoCorrect={false}
-            />
-          </View>
-          {/* Pills row — wraps to its own line on mobile */}
-          <View style={styles.pills as object}>
-            {SORT_OPTS.map((o) => (
-              <Pressable
-                key={o.key}
-                onPress={() => handleSort(o.key)}
-                style={[styles.pill, sort === o.key && (styles.pillActive as object)] as object}
-              >
-                <Text
-                  style={
-                    [styles.pillText, sort === o.key && (styles.pillTextActive as object)] as object
-                  }
-                >
-                  {o.label}
-                </Text>
-              </Pressable>
-            ))}
-            <View style={styles.pillDivider as object} />
-            {PUB_OPTS.map((o) => (
-              <Pressable
-                key={o.key}
-                onPress={() => handlePublisher(o.key)}
-                style={
-                  [styles.pill, publisher === o.key && (styles.pillActive as object)] as object
-                }
-              >
-                <Text
-                  style={
-                    [
-                      styles.pillText,
-                      publisher === o.key && (styles.pillTextActive as object),
-                    ] as object
-                  }
-                >
-                  {o.label}
-                </Text>
-              </Pressable>
-            ))}
-            {/* Count label only on desktop — hero zone already shows it on mobile */}
-            {isDesktop && !loading && (
-              <Text style={styles.countLabel as object}>{countLabel}</Text>
             )}
+            <View style={styles.accentBar} />
+            <Text
+              style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object}
+              numberOfLines={1}
+            >
+              {title}
+            </Text>
+            {isDesktop && description ? (
+              <Text style={styles.descriptionDesktop as object} numberOfLines={1}>
+                {description}
+              </Text>
+            ) : null}
+            {!loading && total > 0 && (
+              <View style={[styles.countPill, isDesktop && { marginLeft: 'auto' }] as object}>
+                <Text style={styles.countText as object}>{total.toLocaleString()}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Row 2: search + sort/publisher pills */}
+          <View style={[styles.controlsRow, !isDesktop && (styles.controlsRowMobile as object)] as object}>
+            <View
+              style={[styles.searchBar, searchFocused && (styles.searchBarFocused as object)] as object}
+            >
+              <Ionicons
+                name="search-outline"
+                size={14}
+                color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.4)'}
+              />
+              <TextInput
+                style={styles.searchInput as object}
+                placeholder={`Search ${title.toLowerCase()}…`}
+                placeholderTextColor="rgba(245,235,220,0.35)"
+                value={search}
+                onChangeText={handleSearch}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                autoCorrect={false}
+              />
+            </View>
+            <View style={styles.pills as object}>
+              {SORT_OPTS.map((o) => (
+                <Pressable
+                  key={o.key}
+                  onPress={() => handleSort(o.key)}
+                  style={[styles.pill, sort === o.key && (styles.pillActive as object)] as object}
+                >
+                  <Text style={[styles.pillText, sort === o.key && (styles.pillTextActive as object)] as object}>
+                    {o.label}
+                  </Text>
+                </Pressable>
+              ))}
+              <View style={styles.pillDivider as object} />
+              {PUB_OPTS.map((o) => (
+                <Pressable
+                  key={o.key}
+                  onPress={() => handlePublisher(o.key)}
+                  style={[styles.pill, publisher === o.key && (styles.pillActive as object)] as object}
+                >
+                  <Text style={[styles.pillText, publisher === o.key && (styles.pillTextActive as object)] as object}>
+                    {o.label}
+                  </Text>
+                </Pressable>
+              ))}
+              {isDesktop && !loading && (
+                <Text style={styles.countLabel as object}>{countLabel}</Text>
+              )}
+            </View>
           </View>
         </View>
       </View>
@@ -419,23 +381,33 @@ export default function WebCategoryScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
 
-  // ── Hero zone (navy, scrolls away) ─────────────────────────────────────────
-  heroZone: {
+  // ── Sticky unified header (navy) ────────────────────────────────────────────
+  header: {
     backgroundColor: COLORS.navy,
-    paddingVertical: 14,
-  },
-  heroZoneInner: { maxWidth: 1200, width: '100%', alignSelf: 'center' },
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(245,235,220,0.08)',
+    paddingTop: 10,
+    paddingBottom: 10,
+    position: 'sticky',
+    top: 64,
+    zIndex: 40,
+  } as object,
+  headerInner: {
+    maxWidth: 1200,
+    width: '100%',
+    alignSelf: 'center',
+    gap: 8,
+  } as object,
 
-  // Desktop: everything in one row
-  desktopHeaderRow: {
+  // Row 1: back · accent · title · description · count
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-  } as object,
+    gap: 12,
+  },
   backBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
@@ -443,34 +415,24 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   } as object,
   backBtnHover: { opacity: 0.5 } as object,
-
-  // Mobile stacked
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
   accentBar: {
     width: 3,
-    height: 26,
+    height: 22,
     borderRadius: 2,
     backgroundColor: COLORS.orange,
     flexShrink: 0,
   },
-  titleBlock: { flex: 1 },
   title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 20,
+    color: COLORS.beige,
+    lineHeight: 24,
+  } as object,
+  titleDesktop: {
     fontFamily: 'Flame-Regular',
     fontSize: 24,
     color: COLORS.beige,
     lineHeight: 28,
-  } as object,
-
-  // Desktop type styles (used inline in the single row)
-  titleDesktop: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 28,
-    color: COLORS.beige,
-    lineHeight: 32,
     flexShrink: 1,
   } as object,
   descriptionDesktop: {
@@ -482,38 +444,26 @@ const styles = StyleSheet.create({
   countPill: {
     backgroundColor: 'rgba(232,98,26,0.18)',
     borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderWidth: 1,
     borderColor: 'rgba(232,98,26,0.35)',
     flexShrink: 0,
   },
   countText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.orange,
     letterSpacing: 0.3,
   } as object,
 
-  // ── Controls bar (beige, sticky on desktop) ─────────────────────────────────
-  controlsBar: {
-    backgroundColor: COLORS.beige,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(41,60,67,0.12)',
-    paddingVertical: 8,
-    position: 'sticky',
-    top: 64,
-    zIndex: 40,
-  } as object,
-  controlsInner: {
-    maxWidth: 1200,
-    width: '100%',
-    alignSelf: 'center',
+  // Row 2: search + pills
+  controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   } as object,
-  controlsInnerMobile: {
+  controlsRowMobile: {
     flexDirection: 'column',
     alignItems: 'stretch',
     gap: 6,
@@ -521,45 +471,50 @@ const styles = StyleSheet.create({
   countLabel: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: COLORS.grey,
+    color: 'rgba(245,235,220,0.4)',
     marginLeft: 4,
     letterSpacing: 0.2,
   } as object,
-
-  // ── Shared ──────────────────────────────────────────────────────────────────
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(29,45,51,0.07)',
+    backgroundColor: 'rgba(245,235,220,0.07)',
     borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.12)',
     paddingHorizontal: 10,
-    height: 38,
+    height: 34,
     minWidth: 180,
   } as object,
-  searchBarFocused: { backgroundColor: '#fff', borderColor: COLORS.orange } as object,
+  searchBarFocused: {
+    backgroundColor: 'rgba(245,235,220,0.11)',
+    borderColor: COLORS.orange,
+  } as object,
   searchInput: {
     flex: 1,
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.navy,
+    color: COLORS.beige,
     outlineStyle: 'none',
   } as object,
   pills: { flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' } as object,
   pill: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 4,
     borderRadius: 20,
-    backgroundColor: 'rgba(29,45,51,0.07)',
+    backgroundColor: 'rgba(245,235,220,0.08)',
     cursor: 'pointer',
     transition: 'background-color 150ms ease',
   } as object,
-  pillActive: { backgroundColor: COLORS.navy } as object,
-  pillText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy } as object,
+  pillActive: { backgroundColor: 'rgba(245,235,220,0.18)' } as object,
+  pillText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: 'rgba(245,235,220,0.65)',
+  } as object,
   pillTextActive: { color: COLORS.beige } as object,
-  pillDivider: { width: 1, height: 16, backgroundColor: 'rgba(29,45,51,0.15)' } as object,
+  pillDivider: { width: 1, height: 14, backgroundColor: 'rgba(245,235,220,0.15)' } as object,
   scroll: { flex: 1 },
   gridWrap: { paddingTop: 16, maxWidth: 1200, width: '100%', alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
