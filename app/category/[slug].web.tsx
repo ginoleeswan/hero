@@ -310,8 +310,8 @@ export default function WebCategoryScreen() {
               />
             </View>
 
-            {/* Sort + publisher in one scrollable row on mobile */}
-            <View style={[styles.pillsRow, !isDesktop && (styles.pillsRowMobile as object)] as object}>
+            {/* Sort + publisher — horizontal ScrollView on mobile, plain row on desktop */}
+            {isDesktop ? <View style={styles.pillsRow as object}>
               {/* Sort — segmented control */}
               <View style={styles.segmentGroup as object}>
                 {SORT_OPTS.map((o, i) => (
@@ -343,6 +343,30 @@ export default function WebCategoryScreen() {
                 ))}
               </View>
             </View>
+            : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.pillsScrollContent as object}
+              >
+                <View style={styles.segmentGroup as object}>
+                  {SORT_OPTS.map((o, i) => (
+                    <Pressable key={o.key} onPress={() => handleSort(o.key)}
+                      style={[styles.segment, i === 0 && (styles.segmentFirst as object), i === SORT_OPTS.length - 1 && (styles.segmentLast as object), sort === o.key && (styles.segmentActive as object)] as object}>
+                      <Text style={[styles.segmentText, sort === o.key && (styles.segmentTextActive as object)] as object}>{o.label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <View style={styles.chips as object}>
+                  {PUB_OPTS.map((o) => (
+                    <Pressable key={o.key} onPress={() => handlePublisher(o.key)}
+                      style={[styles.chip, publisher === o.key && (styles.chipActive as object)] as object}>
+                      <Text style={[styles.chipText, publisher === o.key && (styles.chipTextActive as object)] as object}>{o.label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </ScrollView>
+            )}
           </View>
         </View>
       </View>
@@ -479,28 +503,24 @@ const styles = StyleSheet.create({
     gap: 8,
   } as object,
 
-  // Search bar
+  // Search bar — white-tint so it's clearly visible on navy
   searchBar: {
     flex: 1,
     maxWidth: 300,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
-    backgroundColor: 'rgba(245,235,220,0.06)',
+    gap: 8,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.1)',
+    borderColor: 'rgba(255,255,255,0.16)',
     paddingHorizontal: 11,
     height: 34,
   } as object,
-  searchBarMobile: {
-    maxWidth: 9999,
-    flex: 0,
-    width: '100%',
-  } as object,
+  searchBarMobile: { maxWidth: 9999, flex: 0, width: '100%' } as object,
   searchBarFocused: {
-    backgroundColor: 'rgba(245,235,220,0.1)',
-    borderColor: 'rgba(231,115,51,0.6)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(231,115,51,0.75)',
   } as object,
   searchInput: {
     flex: 1,
@@ -510,23 +530,16 @@ const styles = StyleSheet.create({
     outlineStyle: 'none',
   } as object,
 
-  // Pills row wrapper (sort + divider + chips)
-  pillsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  } as object,
-  pillsRowMobile: {
-    overflowX: 'auto',
-    scrollbarWidth: 'none',
-  } as object,
+  // Pills row (desktop flex row; mobile uses ScrollView + pillsScrollContent)
+  pillsRow: { flexDirection: 'row', alignItems: 'center', gap: 8 } as object,
+  pillsScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingRight: 4 } as object,
 
-  // Sort — segmented control
+  // Sort — segmented control (grouped, single border)
   segmentGroup: {
     flexDirection: 'row',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.12)',
+    borderColor: 'rgba(255,255,255,0.18)',
     overflow: 'hidden',
     flexShrink: 0,
   } as object,
@@ -537,27 +550,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     cursor: 'pointer',
     transition: 'background-color 150ms ease',
-    backgroundColor: 'rgba(245,235,220,0.05)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
   } as object,
   segmentFirst: {} as object,
   segmentLast: {} as object,
-  segmentActive: { backgroundColor: 'rgba(245,235,220,0.15)' } as object,
+  segmentActive: { backgroundColor: 'rgba(255,255,255,0.16)' } as object,
   segmentText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
-    color: 'rgba(245,235,220,0.5)',
+    color: 'rgba(255,255,255,0.55)',
   } as object,
   segmentTextActive: { color: COLORS.beige } as object,
 
-  // Vertical divider between sort and publisher
+  // Vertical divider
   dividerV: {
     width: 1,
     height: 20,
-    backgroundColor: 'rgba(245,235,220,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.14)',
     flexShrink: 0,
   } as object,
 
-  // Publisher filter chips
+  // Publisher filter chips — individual bordered buttons
   chips: { flexDirection: 'row', gap: 5, alignItems: 'center', flexShrink: 0 } as object,
   chip: {
     paddingHorizontal: 12,
@@ -565,20 +578,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: 'rgba(245,235,220,0.05)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.1)',
+    borderColor: 'rgba(255,255,255,0.14)',
     cursor: 'pointer',
     transition: 'background-color 150ms ease, border-color 150ms ease',
   } as object,
   chipActive: {
-    backgroundColor: 'rgba(245,235,220,0.15)',
-    borderColor: 'rgba(245,235,220,0.25)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderColor: 'rgba(255,255,255,0.3)',
   } as object,
   chipText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
-    color: 'rgba(245,235,220,0.5)',
+    color: 'rgba(255,255,255,0.6)',
   } as object,
   chipTextActive: { color: COLORS.beige } as object,
   scroll: { flex: 1 },
