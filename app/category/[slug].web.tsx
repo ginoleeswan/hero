@@ -259,104 +259,84 @@ export default function WebCategoryScreen() {
       {/* ── Sticky header — navy ─────────────────────────────────────────────── */}
       <View style={[styles.header, { paddingHorizontal: contentPad }] as object}>
         <View style={styles.headerInner}>
-          {isDesktop ? (
-            /* Desktop: single row — back · accent · title · [desc] · search · pills · count */
-            <View style={styles.desktopRow}>
+          {/* Row 1 — identity: back · accent · title · description · count */}
+          <View style={styles.identityRow}>
+            {isDesktop && (
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
                 style={({ hovered }: { hovered?: boolean }) =>
                   [styles.backBtn, hovered && (styles.backBtnHover as object)] as object
                 }
               >
-                <Ionicons name="arrow-back" size={18} color="rgba(245,235,220,0.55)" />
+                <Ionicons name="arrow-back" size={18} color="rgba(245,235,220,0.45)" />
               </Pressable>
-              <View style={styles.accentBar} />
-              <Text style={styles.titleDesktop as object} numberOfLines={1}>
-                {title}
+            )}
+            <View style={styles.accentBar} />
+            <Text style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object} numberOfLines={1}>
+              {title}
+            </Text>
+            {isDesktop && isWide && description ? (
+              <Text style={styles.descriptionInline as object} numberOfLines={1}>
+                {description}
               </Text>
-              {isWide && description ? (
-                <Text style={styles.descriptionDesktop as object} numberOfLines={1}>
-                  {description}
-                </Text>
-              ) : null}
-              <View style={[styles.searchBar, searchFocused && (styles.searchBarFocused as object)] as object}>
-                <Ionicons name="search-outline" size={14} color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.4)'} />
-                <TextInput
-                  style={styles.searchInput as object}
-                  placeholder={`Search ${title.toLowerCase()}…`}
-                  placeholderTextColor="rgba(245,235,220,0.35)"
-                  value={search}
-                  onChangeText={handleSearch}
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setSearchFocused(false)}
-                  autoCorrect={false}
-                />
-              </View>
-              <View style={styles.pills as object}>
-                {SORT_OPTS.map((o) => (
-                  <Pressable key={o.key} onPress={() => handleSort(o.key)}
-                    style={[styles.pill, sort === o.key && (styles.pillActive as object)] as object}>
-                    <Text style={[styles.pillText, sort === o.key && (styles.pillTextActive as object)] as object}>{o.label}</Text>
-                  </Pressable>
-                ))}
-                <View style={styles.pillDivider as object} />
-                {PUB_OPTS.map((o) => (
-                  <Pressable key={o.key} onPress={() => handlePublisher(o.key)}
-                    style={[styles.pill, publisher === o.key && (styles.pillActive as object)] as object}>
-                    <Text style={[styles.pillText, publisher === o.key && (styles.pillTextActive as object)] as object}>{o.label}</Text>
-                  </Pressable>
-                ))}
-              </View>
-              {isMid && !loading && total > 0 && (
+            ) : null}
+            <View style={styles.identityRight}>
+              {!loading && total > 0 && (
                 <View style={styles.countPill}>
                   <Text style={styles.countText as object}>{total.toLocaleString()}</Text>
                 </View>
               )}
             </View>
-          ) : (
-            /* Mobile: title + count, then search + pills */
-            <>
-              <View style={styles.titleRow}>
-                <View style={styles.accentBar} />
-                <Text style={styles.title as object} numberOfLines={1}>{title}</Text>
-                {!loading && total > 0 && (
-                  <View style={styles.countPill}>
-                    <Text style={styles.countText as object}>{total.toLocaleString()}</Text>
-                  </View>
-                )}
-              </View>
-              <View style={styles.controlsRowMobile as object}>
-                <View style={[styles.searchBar, searchFocused && (styles.searchBarFocused as object)] as object}>
-                  <Ionicons name="search-outline" size={14} color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.4)'} />
-                  <TextInput
-                    style={styles.searchInput as object}
-                    placeholder={`Search ${title.toLowerCase()}…`}
-                    placeholderTextColor="rgba(245,235,220,0.35)"
-                    value={search}
-                    onChangeText={handleSearch}
-                    onFocus={() => setSearchFocused(true)}
-                    onBlur={() => setSearchFocused(false)}
-                    autoCorrect={false}
-                  />
-                </View>
-                <View style={styles.pills as object}>
-                  {SORT_OPTS.map((o) => (
-                    <Pressable key={o.key} onPress={() => handleSort(o.key)}
-                      style={[styles.pill, sort === o.key && (styles.pillActive as object)] as object}>
-                      <Text style={[styles.pillText, sort === o.key && (styles.pillTextActive as object)] as object}>{o.label}</Text>
-                    </Pressable>
-                  ))}
-                  <View style={styles.pillDivider as object} />
-                  {PUB_OPTS.map((o) => (
-                    <Pressable key={o.key} onPress={() => handlePublisher(o.key)}
-                      style={[styles.pill, publisher === o.key && (styles.pillActive as object)] as object}>
-                      <Text style={[styles.pillText, publisher === o.key && (styles.pillTextActive as object)] as object}>{o.label}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            </>
-          )}
+          </View>
+
+          {/* Row 2 — controls: search · sort segment · publisher chips */}
+          <View style={[styles.controlsRow, !isDesktop && (styles.controlsRowMobile as object)] as object}>
+            {/* Search */}
+            <View style={[styles.searchBar, searchFocused && (styles.searchBarFocused as object)] as object}>
+              <Ionicons name="search-outline" size={14} color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.35)'} />
+              <TextInput
+                style={styles.searchInput as object}
+                placeholder={`Search ${title.toLowerCase()}…`}
+                placeholderTextColor="rgba(245,235,220,0.3)"
+                value={search}
+                onChangeText={handleSearch}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                autoCorrect={false}
+              />
+            </View>
+
+            {/* Sort — segmented control feel */}
+            <View style={styles.segmentGroup as object}>
+              {SORT_OPTS.map((o, i) => (
+                <Pressable key={o.key} onPress={() => handleSort(o.key)}
+                  style={[
+                    styles.segment,
+                    i === 0 && (styles.segmentFirst as object),
+                    i === SORT_OPTS.length - 1 && (styles.segmentLast as object),
+                    sort === o.key && (styles.segmentActive as object),
+                  ] as object}>
+                  <Text style={[styles.segmentText, sort === o.key && (styles.segmentTextActive as object)] as object}>
+                    {o.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <View style={styles.dividerV as object} />
+
+            {/* Publisher filter chips */}
+            <View style={styles.chips as object}>
+              {PUB_OPTS.map((o) => (
+                <Pressable key={o.key} onPress={() => handlePublisher(o.key)}
+                  style={[styles.chip, publisher === o.key && (styles.chipActive as object)] as object}>
+                  <Text style={[styles.chipText, publisher === o.key && (styles.chipTextActive as object)] as object}>
+                    {o.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
         </View>
       </View>
 
@@ -400,12 +380,13 @@ export default function WebCategoryScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
 
-  // ── Sticky unified header (navy) ────────────────────────────────────────────
+  // ── Sticky header (navy) ────────────────────────────────────────────────────
   header: {
     backgroundColor: COLORS.navy,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(245,235,220,0.08)',
-    paddingVertical: 10,
+    borderBottomColor: 'rgba(245,235,220,0.07)',
+    paddingTop: 12,
+    paddingBottom: 10,
     position: 'sticky',
     top: 64,
     zIndex: 40,
@@ -414,14 +395,19 @@ const styles = StyleSheet.create({
     maxWidth: 1200,
     width: '100%',
     alignSelf: 'center',
-    gap: 8,
+    gap: 10,
   } as object,
 
-  // Desktop: everything in one row
-  desktopRow: {
+  // Row 1 — identity
+  identityRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  } as object,
+  identityRight: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
   } as object,
   backBtn: {
     width: 28,
@@ -435,52 +421,36 @@ const styles = StyleSheet.create({
   backBtnHover: { opacity: 0.5 } as object,
   accentBar: {
     width: 3,
-    height: 22,
+    height: 24,
     borderRadius: 2,
     backgroundColor: COLORS.orange,
     flexShrink: 0,
-  },
-  titleDesktop: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 22,
-    color: COLORS.beige,
-    lineHeight: 26,
-    flexShrink: 0,
-  } as object,
-  descriptionDesktop: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    color: 'rgba(245,235,220,0.45)',
-    flexShrink: 1,
-    minWidth: 0,
-  } as object,
-
-  // Mobile stacked
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
   },
   title: {
     fontFamily: 'Flame-Regular',
     fontSize: 20,
     color: COLORS.beige,
     lineHeight: 24,
-    flex: 1,
+    flexShrink: 0,
   } as object,
-  controlsRowMobile: {
-    flexDirection: 'column',
-    alignItems: 'stretch',
-    gap: 6,
+  titleDesktop: {
+    fontSize: 26,
+    lineHeight: 30,
   } as object,
-
+  descriptionInline: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: 'rgba(245,235,220,0.4)',
+    flexShrink: 1,
+    minWidth: 0,
+  } as object,
   countPill: {
-    backgroundColor: 'rgba(232,98,26,0.18)',
+    backgroundColor: 'rgba(232,98,26,0.15)',
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: 'rgba(232,98,26,0.35)',
+    borderColor: 'rgba(232,98,26,0.3)',
     flexShrink: 0,
   },
   countText: {
@@ -490,24 +460,35 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   } as object,
 
-  // Search + pills (shared)
-  searchBar: {
-    flex: 1,
+  // Row 2 — controls
+  controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(245,235,220,0.07)',
+    gap: 10,
+  } as object,
+  controlsRowMobile: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 8,
+  } as object,
+
+  // Search bar
+  searchBar: {
+    flex: 1,
+    maxWidth: 300,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: 'rgba(245,235,220,0.06)',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.12)',
-    paddingHorizontal: 10,
+    borderColor: 'rgba(245,235,220,0.1)',
+    paddingHorizontal: 11,
     height: 34,
-    minWidth: 120,
-    maxWidth: 260,
   } as object,
   searchBarFocused: {
-    backgroundColor: 'rgba(245,235,220,0.11)',
-    borderColor: COLORS.orange,
+    backgroundColor: 'rgba(245,235,220,0.1)',
+    borderColor: 'rgba(231,115,51,0.6)',
   } as object,
   searchInput: {
     flex: 1,
@@ -516,23 +497,67 @@ const styles = StyleSheet.create({
     color: COLORS.beige,
     outlineStyle: 'none',
   } as object,
-  pills: { flexDirection: 'row', gap: 5, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 } as object,
-  pill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    backgroundColor: 'rgba(245,235,220,0.08)',
+
+  // Sort — segmented control
+  segmentGroup: {
+    flexDirection: 'row',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.12)',
+    overflow: 'hidden',
+    flexShrink: 0,
+  } as object,
+  segment: {
+    paddingHorizontal: 14,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
     cursor: 'pointer',
     transition: 'background-color 150ms ease',
+    backgroundColor: 'rgba(245,235,220,0.05)',
   } as object,
-  pillActive: { backgroundColor: 'rgba(245,235,220,0.18)' } as object,
-  pillText: {
+  segmentFirst: {} as object,
+  segmentLast: {} as object,
+  segmentActive: { backgroundColor: 'rgba(245,235,220,0.15)' } as object,
+  segmentText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: 'rgba(245,235,220,0.65)',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.5)',
   } as object,
-  pillTextActive: { color: COLORS.beige } as object,
-  pillDivider: { width: 1, height: 14, backgroundColor: 'rgba(245,235,220,0.15)' } as object,
+  segmentTextActive: { color: COLORS.beige } as object,
+
+  // Vertical divider between sort and publisher
+  dividerV: {
+    width: 1,
+    height: 20,
+    backgroundColor: 'rgba(245,235,220,0.1)',
+    flexShrink: 0,
+  } as object,
+
+  // Publisher filter chips
+  chips: { flexDirection: 'row', gap: 5, alignItems: 'center', flexShrink: 0 } as object,
+  chip: {
+    paddingHorizontal: 12,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: 'rgba(245,235,220,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.1)',
+    cursor: 'pointer',
+    transition: 'background-color 150ms ease, border-color 150ms ease',
+  } as object,
+  chipActive: {
+    backgroundColor: 'rgba(245,235,220,0.15)',
+    borderColor: 'rgba(245,235,220,0.25)',
+  } as object,
+  chipText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.5)',
+  } as object,
+  chipTextActive: { color: COLORS.beige } as object,
   scroll: { flex: 1 },
   gridWrap: { paddingTop: 16, maxWidth: 1200, width: '100%', alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
