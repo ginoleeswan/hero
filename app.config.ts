@@ -5,7 +5,7 @@ const IS_DEV = process.env.APP_VARIANT === 'development';
 
 const config: ExpoConfig = {
   name: IS_DEV ? 'Mythique (Dev)' : 'Mythique',
-  slug: 'mythique',
+  slug: 'hero',
   scheme: IS_DEV ? 'mythique-dev' : 'mythique',
   version: '1.0.0',
   orientation: 'portrait',
