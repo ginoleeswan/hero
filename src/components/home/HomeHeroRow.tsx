@@ -1,5 +1,6 @@
 // src/components/home/HomeHeroRow.tsx
 import { View, Text, FlatList, StyleSheet, Dimensions, Pressable } from 'react-native';
+import { Link } from 'expo-router';
 import { HeroCard } from '../HeroCard';
 import { ThumbCard, type ThumbHero } from './ThumbCard';
 import { COLORS } from '../../constants/colors';
@@ -53,16 +54,29 @@ export function HomeHeroRow({
         contentContainerStyle={[styles.listContent, { gap: isPortrait ? 12 : 8 }]}
         renderItem={({ item }) =>
           isPortrait ? (
-            <View style={{ width: PORTRAIT_CARD_WIDTH }}>
-              <HeroCard
-                id={item.id}
-                name={item.name}
-                imageUrl={item.image_url}
-                portraitUrl={item.portrait_url}
-                onPress={() => onPress(item)}
-                disabled={disabled}
-              />
-            </View>
+            <Link
+              href={{
+                pathname: '/character/[id]',
+                params: {
+                  id: item.id,
+                  imageUri: item.portrait_url ?? item.image_url ?? undefined,
+                },
+              }}
+              asChild
+            >
+              <Pressable style={{ width: PORTRAIT_CARD_WIDTH }}>
+                <Link.AppleZoom>
+                  <HeroCard
+                    id={item.id}
+                    name={item.name}
+                    imageUrl={item.image_url}
+                    portraitUrl={item.portrait_url}
+                    onPress={() => {}}
+                    disabled={true}
+                  />
+                </Link.AppleZoom>
+              </Pressable>
+            </Link>
           ) : (
             <ThumbCard item={item} onPress={() => onPress(item)} disabled={disabled} />
           )
