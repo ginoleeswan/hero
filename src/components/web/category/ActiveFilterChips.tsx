@@ -31,7 +31,7 @@ export function ActiveFilterChips({ slug, filters, setFilter }: Props) {
         <Pressable
           key={c.key}
           onPress={() => setFilter(c.key as FacetKey, RESET_VALUE[c.key as FacetKey] as never)}
-          style={({ hovered }: { hovered?: boolean }) =>
+          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
             [s.chip, hovered && (s.chipHover as object)] as object
           }
         >

@@ -85,7 +85,7 @@ export function FilterSheet({
         <View style={s.footer as object}>
           <Pressable
             onPress={onClose}
-            style={({ hovered }: { hovered?: boolean }) =>
+            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
               [s.apply, hovered && (s.applyHover as object)] as object
             }
           >

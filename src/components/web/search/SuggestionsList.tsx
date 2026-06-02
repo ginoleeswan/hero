@@ -64,7 +64,7 @@ export function SuggestionsList({
       {hasViewAllButton && (
         <Pressable
           onPress={onViewAll}
-          style={({ hovered }: { hovered?: boolean }) =>
+          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
             [styles.viewAllButton, hovered && (styles.viewAllButtonHover as object)] as object
           }
         >

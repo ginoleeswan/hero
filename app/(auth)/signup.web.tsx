@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
     backgroundSize: '24px 24px',
-  },
+  } as object,
   brandGlow: {
     position: 'absolute',
     bottom: 0,
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     height: 480,
     backgroundImage:
       'radial-gradient(ellipse 70% 55% at 65% 100%, rgba(231,115,51,0.28) 0%, transparent 70%)',
-  },
+  } as object,
   brandLogoWrap: {
     position: 'absolute',
     top: 48,

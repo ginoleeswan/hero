@@ -46,7 +46,7 @@ export function IdleSuggestions({
               <Pressable
                 key={q}
                 onPress={() => onSelectRecent(q)}
-                style={({ hovered }: { hovered?: boolean }) =>
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                   [styles.recentItem, hovered && (styles.recentItemHover as object)] as object
                 }
               >
@@ -63,7 +63,7 @@ export function IdleSuggestions({
       {hasHistory && (
         <Pressable
           onPress={onClearHistory}
-          style={({ hovered }: { hovered?: boolean }) =>
+          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
             [styles.clearButton, hovered && (styles.clearButtonHover as object)] as object
           }
         >

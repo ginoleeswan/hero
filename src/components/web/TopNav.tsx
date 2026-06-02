@@ -115,7 +115,7 @@ export function TopNav() {
               {query.length > 0 ? (
                 <Pressable
                   onPress={() => setQuery('')}
-                  style={({ hovered }: { hovered?: boolean }) =>
+                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                     [styles.clearBtn, hovered && (styles.clearBtnHover as object)] as object
                   }
                 >
@@ -135,7 +135,7 @@ export function TopNav() {
             <Pressable
               aria-label="Search"
               onPress={() => router.push('/search')}
-              style={({ hovered }: { hovered?: boolean }) =>
+              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                 [styles.iconBtn, hovered && (styles.iconBtnHover as object)] as object
               }
             >
@@ -147,7 +147,7 @@ export function TopNav() {
               <Pressable
                 aria-label="Account"
                 onPress={() => setMenuOpen((o) => !o)}
-                style={({ hovered }: { hovered?: boolean }) =>
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                   [
                     styles.avatar,
                     avatarActive && (styles.avatarActive as object),
@@ -162,7 +162,7 @@ export function TopNav() {
                 <View style={styles.menu as object}>
                   <Pressable
                     onPress={handleProfile}
-                    style={({ hovered }: { hovered?: boolean }) =>
+                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                       [styles.menuItem, hovered && (styles.menuItemHover as object)] as object
                     }
                   >
@@ -170,7 +170,7 @@ export function TopNav() {
                   </Pressable>
                   <Pressable
                     onPress={handleSignOut}
-                    style={({ hovered }: { hovered?: boolean }) =>
+                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                       [styles.menuItem, hovered && (styles.menuItemHover as object)] as object
                     }
                   >
@@ -182,7 +182,7 @@ export function TopNav() {
           ) : (
             <Pressable
               onPress={() => router.push('/(auth)/login')}
-              style={({ hovered }: { hovered?: boolean }) =>
+              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                 [styles.signInBtn, hovered && (styles.signInBtnHover as object)] as object
               }
             >

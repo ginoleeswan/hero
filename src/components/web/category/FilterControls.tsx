@@ -43,7 +43,7 @@ function Segmented({
           <Pressable
             key={o.value}
             onPress={() => onSelect(o.value)}
-            style={({ hovered }: { hovered?: boolean }) =>
+            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
               [
                 s.seg,
                 active && (s.segActive as object),
@@ -68,7 +68,7 @@ function Chip({ opt, active, onPress }: { opt: Opt; active: boolean; onPress: ()
     <Pressable
       disabled={disabled}
       onPress={onPress}
-      style={({ hovered }: { hovered?: boolean }) =>
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [
           s.chip,
           active && (s.chipActive as object),

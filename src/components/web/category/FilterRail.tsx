@@ -43,7 +43,7 @@ export function FilterRail({
         {hasActive && (
           <Pressable
             onPress={onReset}
-            style={({ hovered }: { hovered?: boolean }) =>
+            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
               [s.clear, hovered && (s.clearHover as object)] as object
             }
           >

@@ -43,7 +43,7 @@ export function SuggestionItem({ hero, query = '', onPress }: SuggestionItemProp
   return (
     <Pressable
       onPress={onPress}
-      style={({ hovered }: { hovered?: boolean }) =>
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [styles.suggestionItem, hovered && (styles.suggestionItemHover as object)] as object
       }
     >
