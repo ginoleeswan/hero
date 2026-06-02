@@ -2,7 +2,7 @@
 
 import { useRouter } from 'expo-router';
 
-const logoMark = require('../../../assets/hero-logo.svg');
+const logoMark = require('../../../assets/mythique-logo.svg');
 const screenshotHome = require('../../../assets/images/screenshots/home.PNG');
 const screenshotSearch = require('../../../assets/images/screenshots/search.PNG');
 
