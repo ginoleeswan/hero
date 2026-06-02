@@ -75,15 +75,6 @@
     "prettier": "^3.8.1",
     "typescript": "~5.9.2"
   },
-  "expo": {
-    "autolinking": {
-      "exclude": [
-        "expo-dev-client",
-        "expo-dev-menu",
-        "expo-dev-launcher"
-      ]
-    }
-  },
   "private": true,
   "packageManager": "yarn@4.15.0",
   "jest": {
