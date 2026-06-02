@@ -417,12 +417,12 @@ export default function CharacterScreen() {
     }
   }, [user, id, favourited, favLoading]);
 
-  // Priority: Supabase portrait → local bundled → API image → passed URI → CDN
+  // Priority: Supabase portrait → param portrait (from card) → local bundled → API image → CDN
   const heroImage = id
     ? heroImageSource(
         id,
-        data?.stats.image.url ?? paramImageUri ?? null,
-        data?.stats.image.portraitUrl ?? null,
+        data?.stats.image.url ?? null,
+        data?.stats.image.portraitUrl ?? paramImageUri ?? null,
       )
     : null;
 

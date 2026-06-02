@@ -108,11 +108,13 @@ export default function HomeScreen() {
   }, [popular]);
 
   const handlePress = useCallback(
-    (item: { id: string }) => {
+    (item: { id: string; portrait_url?: string | null; image_url?: string | null }) => {
       if (navigating) return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setNavigating(true);
-      router.push(`/character/${item.id}`);
+      const img = item.portrait_url ?? item.image_url;
+      const suffix = img ? `?imageUri=${encodeURIComponent(img)}` : '';
+      router.push(`/character/${item.id}${suffix}`);
       setTimeout(() => setNavigating(false), 1000);
     },
     [router, navigating],
