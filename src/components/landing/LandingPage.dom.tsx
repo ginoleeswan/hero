@@ -765,7 +765,9 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
 
       {/* FOOTER */}
       <footer>
-        <span className="nav-wordmark" style={{opacity: 0.6}}>mythique</span>
+        <span className="nav-wordmark" style={{ opacity: 0.6 }}>
+          mythique
+        </span>
         <p>© 2026 Mythique. All rights reserved.</p>
       </footer>
     </div>

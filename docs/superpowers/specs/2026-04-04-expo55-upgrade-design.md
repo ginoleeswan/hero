@@ -51,11 +51,13 @@ Auth-gated routing via root `_layout.tsx`:
 - **Authenticated** → redirected to `(tabs)`
 
 Tab structure (authenticated):
+
 - **Home** (`(tabs)/index.tsx`) — hero carousels
 - **Search** (`(tabs)/search.tsx`) — shell with placeholder UI
 - **Profile** (`(tabs)/profile.tsx`) — shell showing email + favourite count
 
 Stack on top of tabs:
+
 - **Character** (`character/[id].tsx`) — detail screen, reached by tapping any hero card
 
 ---
@@ -63,6 +65,7 @@ Stack on top of tabs:
 ## Supabase
 
 ### Auth
+
 - Email + password (Supabase Auth)
 - Session persisted via `@react-native-async-storage/async-storage`
 - `useAuth` hook wraps `supabase.auth.onAuthStateChange`, exposes `user`, `signIn`, `signUp`, `signOut`
@@ -97,6 +100,7 @@ user_profiles (
 ```
 
 ### Data flow
+
 - Home screen fetches `heroes` grouped by `category` on load
 - Tapping a hero card navigates to `character/[id]` and fetches external API data
 - Favouriting on CharacterScreen upserts into `user_favourites`
@@ -122,20 +126,21 @@ Called in sequence when navigating to CharacterScreen. Errors are caught per-cal
 
 ## Package Changes
 
-| Removed | Replacement | Reason |
-|---|---|---|
-| `expo-app-loading` | `expo-splash-screen` | Deprecated |
-| `react-native-unimodules` | — | Merged into Expo SDK |
-| `react-native-snap-carousel` | `react-native-reanimated-carousel` | Unmaintained |
-| `react-native-elements` | `expo-image` + `@expo/vector-icons` | App only used Image and Icon; both covered by Expo SDK directly with better performance |
-| `react-native-big-list` | `FlatList` (RN core) | Overkill for dataset size |
-| `react-native-image-gallery`, `lightbox` variants | `react-native-image-viewing` | Consolidate to one |
-| `axios` | native `fetch` | Already using fetch; redundant |
-| `react-native-flatlist-alphabet` | — | Unused |
-| `pretty-error` | — | Not applicable in RN |
-| `@react-navigation/*` | Expo Router (built on React Navigation) | Replaced by file-based routing |
+| Removed                                           | Replacement                             | Reason                                                                                  |
+| ------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------- |
+| `expo-app-loading`                                | `expo-splash-screen`                    | Deprecated                                                                              |
+| `react-native-unimodules`                         | —                                       | Merged into Expo SDK                                                                    |
+| `react-native-snap-carousel`                      | `react-native-reanimated-carousel`      | Unmaintained                                                                            |
+| `react-native-elements`                           | `expo-image` + `@expo/vector-icons`     | App only used Image and Icon; both covered by Expo SDK directly with better performance |
+| `react-native-big-list`                           | `FlatList` (RN core)                    | Overkill for dataset size                                                               |
+| `react-native-image-gallery`, `lightbox` variants | `react-native-image-viewing`            | Consolidate to one                                                                      |
+| `axios`                                           | native `fetch`                          | Already using fetch; redundant                                                          |
+| `react-native-flatlist-alphabet`                  | —                                       | Unused                                                                                  |
+| `pretty-error`                                    | —                                       | Not applicable in RN                                                                    |
+| `@react-navigation/*`                             | Expo Router (built on React Navigation) | Replaced by file-based routing                                                          |
 
 **Added:**
+
 - `@supabase/supabase-js`
 - `@react-native-async-storage/async-storage`
 - `react-native-url-polyfill`
@@ -149,6 +154,7 @@ Called in sequence when navigating to CharacterScreen. Errors are caught per-cal
 ## Migration Phases
 
 ### Phase 1 — Foundation
+
 - Scaffold Expo 55 project with TypeScript + Expo Router in-place
 - Replace `app.json` → `app.config.ts`, configure `.env.local`, update `babel.config.js` and `metro.config.js`
 - Move assets (fonts, images) to `assets/`
@@ -156,6 +162,7 @@ Called in sequence when navigating to CharacterScreen. Errors are caught per-cal
 - **Exit criteria:** App boots to a blank screen on iOS, Android, and Web
 
 ### Phase 2 — Supabase + Auth
+
 - Install and configure Supabase client (`src/lib/supabase.ts`)
 - Create Supabase project, apply schema, seed `heroes` table with current hardcoded data
 - Build `(auth)/login.tsx` and `(auth)/signup.tsx`
@@ -163,12 +170,14 @@ Called in sequence when navigating to CharacterScreen. Errors are caught per-cal
 - **Exit criteria:** Login/signup works; app redirects correctly between auth and tab groups
 
 ### Phase 3 — Home Screen + Navigation
+
 - Build `(tabs)/_layout.tsx` with bottom tab navigator
 - Build `(tabs)/index.tsx` — fetch heroes from Supabase, render carousels with `reanimated-carousel`
 - Add shell screens for Search and Profile
 - **Exit criteria:** App looks and navigates like the original; hero lists load from Supabase
 
 ### Phase 4 — Character Screen
+
 - Implement `character/[id].tsx` dynamic route
 - Centralise API calls in `src/lib/api.ts`
 - Full character detail UI (stats, summary, first issue, publisher)
@@ -177,6 +186,7 @@ Called in sequence when navigating to CharacterScreen. Errors are caught per-cal
 - **Exit criteria:** Tapping any hero card shows full detail; favouriting persists to Supabase
 
 ### Phase 5 — Polish + CLAUDE.md
+
 - TypeScript types for all shared data shapes
 - Shell screens with placeholder UI (not blank)
 - Remove all dead code and commented-out blocks

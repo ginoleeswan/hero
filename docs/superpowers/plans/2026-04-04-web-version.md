@@ -13,6 +13,7 @@
 ## File Map
 
 **New files:**
+
 - `metro.config.js` — resolver aliases for native-only packages
 - `src/web-stubs/MaskedView.js` — View with overflow:hidden
 - `src/web-stubs/SquircleView.js` — passthrough View
@@ -31,9 +32,11 @@
 - `app/(auth)/signup.web.tsx` — Signup with centred card layout
 
 **Modified files:**
+
 - `app/(tabs)/profile.tsx` — already updated to use `SquircleMask` (no further changes)
 
 **Deleted files:**
+
 - `src/components/HeroCard.web.tsx` — replaced by Metro resolver + `WebHeroCard`
 - `src/components/ui/SquircleMask.web.tsx` — replaced by Metro resolver stubs
 
@@ -42,6 +45,7 @@
 ## Task 1: Metro resolver + web stubs
 
 **Files:**
+
 - Create: `metro.config.js`
 - Create: `src/web-stubs/MaskedView.js`
 - Create: `src/web-stubs/SquircleView.js`
@@ -53,6 +57,7 @@
 - [ ] **Step 1: Create the four web stubs**
 
 `src/web-stubs/MaskedView.js`:
+
 ```js
 import React from 'react';
 import { View } from 'react-native';
@@ -62,21 +67,28 @@ export default function MaskedView({ children, style }) {
 ```
 
 `src/web-stubs/SquircleView.js`:
+
 ```js
 import { View } from 'react-native';
 export const SquircleView = View;
 ```
 
 `src/web-stubs/TouchableScale.js`:
+
 ```js
 import React from 'react';
 import { Pressable } from 'react-native';
 export default function TouchableScale({ children, onPress, style }) {
-  return <Pressable onPress={onPress} style={style}>{children}</Pressable>;
+  return (
+    <Pressable onPress={onPress} style={style}>
+      {children}
+    </Pressable>
+  );
 }
 ```
 
 `src/web-stubs/CircularProgress.js`:
+
 ```js
 import React from 'react';
 import { View } from 'react-native';
@@ -140,6 +152,7 @@ git commit -m "feat(web): metro resolver aliases for native-only packages"
 ## Task 2: Web layouts (root + tabs)
 
 **Files:**
+
 - Create: `app/_layout.web.tsx`
 - Create: `app/(tabs)/_layout.web.tsx`
 
@@ -233,6 +246,7 @@ git commit -m "feat(web): web root layout and tab layout shell"
 ## Task 3: TopNav component
 
 **Files:**
+
 - Create: `src/components/web/TopNav.tsx`
 
 - [ ] **Step 1: Create `src/components/web/TopNav.tsx`**
@@ -328,6 +342,7 @@ git commit -m "feat(web): TopNav component"
 ## Task 4: Shared web components — WebHeroCard + StatBar
 
 **Files:**
+
 - Create: `src/components/web/WebHeroCard.tsx`
 - Create: `src/components/web/StatBar.tsx`
 
@@ -359,10 +374,7 @@ export function WebHeroCard({
   const source = heroImageSource(id, imageUrl);
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.card, featured && (styles.featured as object)]}
-    >
+    <Pressable onPress={onPress} style={[styles.card, featured && (styles.featured as object)]}>
       <Image source={source} contentFit="cover" style={StyleSheet.absoluteFill} />
       <View style={styles.overlay} />
       {featured && (
@@ -461,7 +473,9 @@ export function StatBar({ label, value, color }: StatBarProps) {
         <Text style={[styles.value, { color }]}>{fill}</Text>
       </View>
       <View style={styles.track}>
-        <View style={[styles.fill, { width: `${fill}%` as unknown as number, backgroundColor: color }]} />
+        <View
+          style={[styles.fill, { width: `${fill}%` as unknown as number, backgroundColor: color }]}
+        />
       </View>
     </View>
   );
@@ -511,6 +525,7 @@ git commit -m "feat(web): WebHeroCard and StatBar shared components"
 ## Task 5: Discover page
 
 **Files:**
+
 - Create: `app/(tabs)/index.web.tsx`
 
 - [ ] **Step 1: Create `app/(tabs)/index.web.tsx`**
@@ -537,9 +552,7 @@ export default function WebDiscoverScreen() {
   useEffect(() => {
     getHeroesByCategory()
       .then(setData)
-      .catch((e: unknown) =>
-        setError(e instanceof Error ? e.message : 'Failed to load heroes')
-      );
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load heroes'));
   }, []);
 
   if (error) {
@@ -590,7 +603,12 @@ export default function WebDiscoverScreen() {
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
   content: { padding: 24, maxWidth: 1200, alignSelf: 'center', width: '100%' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.beige },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.beige,
+  },
   errorText: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.red },
   section: { marginBottom: 40 },
   sectionTitle: {
@@ -617,6 +635,7 @@ const styles = StyleSheet.create({
 - [ ] **Step 2: Verify in browser**
 
 Start the dev server (`bun start`), open `http://localhost:8081` in a browser. Confirm:
+
 - Top nav renders with HERO logo and three links
 - Three sections render with hero cards
 - First card in Popular is larger (featured)
@@ -634,6 +653,7 @@ git commit -m "feat(web): Discover page"
 ## Task 6: Search page
 
 **Files:**
+
 - Create: `app/(tabs)/search.web.tsx`
 
 - [ ] **Step 1: Create `app/(tabs)/search.web.tsx`**
@@ -718,9 +738,7 @@ export default function WebSearchScreen() {
               onPress={() => setPublisher(f)}
               style={[styles.chip, publisher === f && styles.chipActive]}
             >
-              <Text style={[styles.chipText, publisher === f && styles.chipTextActive]}>
-                {f}
-              </Text>
+              <Text style={[styles.chipText, publisher === f && styles.chipTextActive]}>{f}</Text>
             </Pressable>
           ))}
         </View>
@@ -816,6 +834,7 @@ const styles = StyleSheet.create({
 - [ ] **Step 2: Verify in browser**
 
 Navigate to `/search`. Confirm:
+
 - Dark hero bar at top with search input and publisher chips
 - Typing filters cards in real-time
 - Publisher chip filters work
@@ -833,6 +852,7 @@ git commit -m "feat(web): Search page"
 ## Task 7: Character detail page
 
 **Files:**
+
 - Create: `app/character/[id].web.tsx`
 
 - [ ] **Step 1: Create `app/character/[id].web.tsx`**
@@ -896,7 +916,11 @@ export default function WebCharacterScreen() {
     if (!id) return;
     fetchHeroStats(id)
       .then((stats) => {
-        setData({ stats, details: { summary: null, publisher: null, firstIssueId: null }, firstIssue: null });
+        setData({
+          stats,
+          details: { summary: null, publisher: null, firstIssueId: null },
+          firstIssue: null,
+        });
         fetchHeroDetails(stats.name)
           .then(async (details) => {
             const firstIssue = details.firstIssueId
@@ -912,7 +936,9 @@ export default function WebCharacterScreen() {
 
   useEffect(() => {
     if (!user || !id) return;
-    isFavourited(user.id, id).then(setFavourited).catch(() => {});
+    isFavourited(user.id, id)
+      .then(setFavourited)
+      .catch(() => {});
   }, [user, id]);
 
   const toggleFavourite = useCallback(async () => {
@@ -932,8 +958,8 @@ export default function WebCharacterScreen() {
   const heroImage = data?.stats.image.url
     ? { uri: data.stats.image.url }
     : id
-    ? heroImageSource(id, null)
-    : null;
+      ? heroImageSource(id, null)
+      : null;
 
   if (error) {
     return (
@@ -984,7 +1010,12 @@ export default function WebCharacterScreen() {
           ) : null}
         </View>
         {heroImage && (
-          <Image source={heroImage} contentFit="cover" contentPosition="top" style={styles.bannerImage} />
+          <Image
+            source={heroImage}
+            contentFit="cover"
+            contentPosition="top"
+            style={styles.bannerImage}
+          />
         )}
       </View>
 
@@ -1077,7 +1108,12 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 60,
   },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.beige },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.beige,
+  },
   errorText: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.red },
 
   topBar: {
@@ -1193,6 +1229,7 @@ const styles = StyleSheet.create({
 - [ ] **Step 2: Verify in browser**
 
 Navigate to a hero card and click it. Confirm:
+
 - Banner shows hero name, alias, publisher and image
 - Power Stats section shows 6 horizontal bars with correct colours
 - Biography, Appearance, Work, Connections sections show key/value rows
@@ -1211,6 +1248,7 @@ git commit -m "feat(web): character detail page"
 ## Task 8: Profile page
 
 **Files:**
+
 - Create: `app/(tabs)/profile.web.tsx`
 
 - [ ] **Step 1: Create `app/(tabs)/profile.web.tsx`**
@@ -1262,14 +1300,8 @@ export default function WebProfileScreen() {
           <Text style={styles.statLabel}>Favourites</Text>
           <Text style={styles.statValue}>{favourites.length}</Text>
         </View>
-        <Pressable
-          onPress={handleSignOut}
-          disabled={signingOut}
-          style={styles.signOutBtn}
-        >
-          <Text style={styles.signOutText}>
-            {signingOut ? 'Signing out…' : 'Sign out'}
-          </Text>
+        <Pressable onPress={handleSignOut} disabled={signingOut} style={styles.signOutBtn}>
+          <Text style={styles.signOutText}>{signingOut ? 'Signing out…' : 'Sign out'}</Text>
         </Pressable>
       </View>
 
@@ -1409,6 +1441,7 @@ const styles = StyleSheet.create({
 - [ ] **Step 2: Verify in browser**
 
 Navigate to `/profile` (must be logged in). Confirm:
+
 - Left panel shows avatar initial, email, favourite count, sign-out button
 - Right panel shows favourite hero cards in a grid
 - Empty state shows "Browse heroes" button
@@ -1426,6 +1459,7 @@ git commit -m "feat(web): Profile page"
 ## Task 9: Auth pages (login + signup)
 
 **Files:**
+
 - Create: `app/(auth)/login.web.tsx`
 - Create: `app/(auth)/signup.web.tsx`
 
@@ -1730,6 +1764,7 @@ const styles = StyleSheet.create({
 - [ ] **Step 3: Verify in browser**
 
 Navigate to `http://localhost:8081` while logged out. Confirm:
+
 - Redirected to `/login`
 - Centred white card on beige background
 - HERO logo in orange

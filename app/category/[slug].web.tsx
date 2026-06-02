@@ -46,7 +46,6 @@ const VALID_SLUGS = new Set<CategorySlug>([
   'most-iconic',
 ]);
 
-
 // ── Skeleton card (matches HeroCard layout) ───────────────────────────────────
 function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
   return <Animated.View style={[sk.wrap as object, { opacity }]} />;
@@ -63,7 +62,12 @@ const sk = StyleSheet.create({
 
 // ── Card ──────────────────────────────────────────────────────────────────────
 function HeroCard({ hero, onPress }: { hero: Hero; onPress: () => void }) {
-  const source = heroGridImageSource(String(hero.id), hero.image_url, hero.portrait_url, hero.image_md_url);
+  const source = heroGridImageSource(
+    String(hero.id),
+    hero.image_url,
+    hero.portrait_url,
+    hero.image_md_url,
+  );
   return (
     <Pressable
       onPress={onPress}
@@ -132,7 +136,7 @@ export default function WebCategoryScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
-  const isWide = width >= 1100;   // show description inline
+  const isWide = width >= 1100; // show description inline
 
   const [heroes, setHeroes] = useState<Hero[]>([]);
   const [total, setTotal] = useState(0);
@@ -184,10 +188,15 @@ export default function WebCategoryScreen() {
   useEffect(() => {
     if (!categorySlug) return;
     clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => {
-      fetchPage(0, filters);
-      getCategoryFacetCounts(categorySlug, filters).then(setCounts).catch(() => setCounts(null));
-    }, filters.search ? 300 : 0);
+    searchTimer.current = setTimeout(
+      () => {
+        fetchPage(0, filters);
+        getCategoryFacetCounts(categorySlug, filters)
+          .then(setCounts)
+          .catch(() => setCounts(null));
+      },
+      filters.search ? 300 : 0,
+    );
     return () => clearTimeout(searchTimer.current);
   }, [categorySlug, filters, fetchPage]);
 
@@ -199,14 +208,22 @@ export default function WebCategoryScreen() {
   );
 
   // Keep ref in sync — scroll handler reads this to avoid firing multiple fetches
-  useEffect(() => { loadingMoreRef.current = loadingMore; }, [loadingMore]);
+  useEffect(() => {
+    loadingMoreRef.current = loadingMore;
+  }, [loadingMore]);
 
   // onScroll handler — fires when the user scrolls within the ScrollView container.
   // IntersectionObserver doesn't work here because RNW's ScrollView is a scrollable
   // div, not the document — the observer sees the sentinel as always visible.
   const handleScroll = useCallback(
-    ({ nativeEvent: { contentOffset, contentSize, layoutMeasurement } }: {
-      nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } };
+    ({
+      nativeEvent: { contentOffset, contentSize, layoutMeasurement },
+    }: {
+      nativeEvent: {
+        contentOffset: { y: number };
+        contentSize: { height: number };
+        layoutMeasurement: { height: number };
+      };
     }) => {
       const distanceFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
       if (distanceFromBottom < 400 && hasMore.current && !loadingMoreRef.current) {
@@ -231,9 +248,10 @@ export default function WebCategoryScreen() {
       {heroes.map((hero) => (
         <HeroCard key={hero.id} hero={hero} onPress={() => handlePress(String(hero.id))} />
       ))}
-      {loadingMore && Array.from({ length: 12 }).map((_, i) => (
-        <SkeletonCard key={`sk-${i}`} opacity={skeletonOpacity} />
-      ))}
+      {loadingMore &&
+        Array.from({ length: 12 }).map((_, i) => (
+          <SkeletonCard key={`sk-${i}`} opacity={skeletonOpacity} />
+        ))}
     </View>
   );
 
@@ -255,7 +273,10 @@ export default function WebCategoryScreen() {
               </Pressable>
             )}
             <View style={styles.accentBar} />
-            <Text style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object} numberOfLines={1}>
+            <Text
+              style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object}
+              numberOfLines={1}
+            >
               {title}
             </Text>
             {isDesktop && isWide && description ? (
@@ -276,12 +297,20 @@ export default function WebCategoryScreen() {
               On desktop the search lives inside the filter rail. */}
           {!isDesktop && (
             <View style={[styles.controlsRow, styles.controlsRowMobile as object] as object}>
-              <View style={[
-                styles.searchBar,
-                styles.searchBarMobile as object,
-                searchFocused && (styles.searchBarFocused as object),
-              ] as object}>
-                <Ionicons name="search-outline" size={15} color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.35)'} />
+              <View
+                style={
+                  [
+                    styles.searchBar,
+                    styles.searchBarMobile as object,
+                    searchFocused && (styles.searchBarFocused as object),
+                  ] as object
+                }
+              >
+                <Ionicons
+                  name="search-outline"
+                  size={15}
+                  color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.35)'}
+                />
                 <TextInput
                   style={styles.searchInput as object}
                   placeholder={`Search ${title.toLowerCase()}…`}
@@ -296,10 +325,26 @@ export default function WebCategoryScreen() {
 
               <Pressable
                 onPress={() => setSheetOpen(true)}
-                style={[styles.filterBtn, activeChips.length > 0 && (styles.filterBtnActive as object)] as object}
+                style={
+                  [
+                    styles.filterBtn,
+                    activeChips.length > 0 && (styles.filterBtnActive as object),
+                  ] as object
+                }
               >
-                <Ionicons name="options-outline" size={16} color={activeChips.length > 0 ? COLORS.orange : COLORS.beige} />
-                <Text style={[styles.filterBtnText, activeChips.length > 0 && (styles.filterBtnTextActive as object)] as object}>
+                <Ionicons
+                  name="options-outline"
+                  size={16}
+                  color={activeChips.length > 0 ? COLORS.orange : COLORS.beige}
+                />
+                <Text
+                  style={
+                    [
+                      styles.filterBtnText,
+                      activeChips.length > 0 && (styles.filterBtnTextActive as object),
+                    ] as object
+                  }
+                >
                   Filters
                 </Text>
                 {activeChips.length > 0 && (
@@ -310,7 +355,6 @@ export default function WebCategoryScreen() {
               </Pressable>
             </View>
           )}
-
         </View>
       </View>
 
@@ -329,7 +373,9 @@ export default function WebCategoryScreen() {
             <ActiveFilterChips slug={categorySlug} filters={filters} setFilter={setFilter} />
             <Pressable
               onPress={reset}
-              style={({ hovered }: { hovered?: boolean }) => [styles.stripClear, hovered && (styles.stripClearHover as object)] as object}
+              style={({ hovered }: { hovered?: boolean }) =>
+                [styles.stripClear, hovered && (styles.stripClearHover as object)] as object
+              }
             >
               <Text style={styles.stripClearText as object}>Clear all</Text>
             </Pressable>
@@ -365,11 +411,7 @@ export default function WebCategoryScreen() {
               <Text style={styles.empty}>No heroes found</Text>
             </View>
           ) : (
-            <ScrollView
-              style={styles.scroll}
-              onScroll={handleScroll}
-              scrollEventThrottle={200}
-            >
+            <ScrollView style={styles.scroll} onScroll={handleScroll} scrollEventThrottle={200}>
               <View style={[styles.gridWrap, { paddingBottom: 60 }]}>{grid}</View>
             </ScrollView>
           )}

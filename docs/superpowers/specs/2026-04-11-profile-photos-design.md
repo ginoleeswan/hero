@@ -6,6 +6,7 @@
 ## Overview
 
 Two connected features:
+
 1. On Google sign-in, automatically populate the user's display name and profile photo from their Google account
 2. Let users upload their own profile picture and cover photo inline on the profile screen
 
@@ -29,6 +30,7 @@ ALTER TABLE user_profiles
 One bucket: `user-media`, public read, authenticated write only.
 
 File paths:
+
 - `{userId}/avatar` — profile photo
 - `{userId}/cover` — cover photo
 
@@ -37,6 +39,7 @@ Files are upserted (overwritten) on each upload so paths stay stable and no clea
 ### Google sync rule
 
 On Google sign-in, upsert `user_profiles` with:
+
 - `display_name` from `user.user_metadata.full_name`
 - `avatar_url` from `user.user_metadata.avatar_url` — **only if `avatar_url` is not already a Supabase Storage URL** (detected by checking whether the current value contains the Supabase project hostname). This ensures a user-uploaded photo is never overwritten by a re-login.
 
@@ -73,6 +76,7 @@ Loads and manages the profile row for the current user. Exposes:
 ```
 
 Internally:
+
 1. Calls `getProfile(userId)` on mount
 2. `pickAndUploadAvatar` — opens image picker (square crop hint, library only), optimistically updates local state, calls `uploadAvatar`, then `upsertProfile` with the returned URL. On error, reverts and sets error state.
 3. `pickAndUploadCover` — same flow for cover, landscape aspect hint.
@@ -98,12 +102,14 @@ async function syncGoogleProfile(user: User) {
 Replace current hardcoded cover + initials avatar with data from `useProfile`:
 
 **Cover area:**
+
 - If `cover_url` set: `expo-image` fills the cover `View`, `contentFit="cover"`
 - If not set: existing navy gradient fallback
 - "Edit cover" pill button — bottom-left, above the avatar overlap zone
 - While `coverUploading`: subtle dark overlay + `ActivityIndicator` centred on cover
 
 **Avatar:**
+
 - If `avatar_url` set: `expo-image` in the existing circle, `contentFit="cover"`
 - If not set: existing initials gradient fallback
 - Camera icon badge — 26×26, orange background, bottom-right of avatar circle
@@ -111,9 +117,11 @@ Replace current hardcoded cover + initials avatar with data from `useProfile`:
 - While `avatarUploading`: `ActivityIndicator` replaces avatar content
 
 **Display name:**
+
 - Use `profile.display_name` if set, fall back to email prefix
 
 **Error handling:**
+
 - A single `errorMsg` string state — shown in the existing `errorBox` style if set, auto-clears after 3 seconds
 
 ## Profile Screen Layout (cover area)

@@ -12,28 +12,29 @@
 
 ## File Map
 
-| File | Action | Responsibility |
-|------|--------|----------------|
-| `supabase/migrations/YYYYMMDDHHMMSS_add_user_view_history.sql` | Create | DB schema for view history |
-| `src/types/database.generated.ts` | Regenerate | Auto-generated — do not edit |
-| `src/lib/db/viewHistory.ts` | Create | `recordView` + `getRecentlyViewed` |
-| `src/lib/db/heroes.ts` | Modify | Add `getAntiHeroes`, `getHeroesByPublisher`, `getHeroesByStatRanking` |
-| `src/hooks/useViewHistory.ts` | Create | `useRecordView` hook (fire-and-forget for character screen) |
-| `app/character/[id].tsx` | Modify | Call `useRecordView` on mount |
-| `src/components/home/ThumbCard.tsx` | Create | Landscape 90×58 card for personal rows |
-| `src/components/home/SpotlightBanner.tsx` | Create | Full-bleed hero banner with search icon + dots |
-| `src/components/home/HomeHeroRow.tsx` | Create | Section row: label + title + horizontal FlatList |
-| `src/components/SearchSheet.tsx` | Create | Slide-up modal containing all search logic |
-| `src/components/skeletons/HomeSkeleton.tsx` | Modify | Spotlight + rows skeleton layout |
-| `app/(tabs)/index.tsx` | Rewrite | Ties all pieces together — data fetching + layout |
-| `__tests__/lib/db/viewHistory.test.ts` | Create | Unit tests for viewHistory DB functions |
-| `__tests__/lib/db/heroes.test.ts` | Modify | Add tests for the 3 new hero queries |
+| File                                                           | Action     | Responsibility                                                        |
+| -------------------------------------------------------------- | ---------- | --------------------------------------------------------------------- |
+| `supabase/migrations/YYYYMMDDHHMMSS_add_user_view_history.sql` | Create     | DB schema for view history                                            |
+| `src/types/database.generated.ts`                              | Regenerate | Auto-generated — do not edit                                          |
+| `src/lib/db/viewHistory.ts`                                    | Create     | `recordView` + `getRecentlyViewed`                                    |
+| `src/lib/db/heroes.ts`                                         | Modify     | Add `getAntiHeroes`, `getHeroesByPublisher`, `getHeroesByStatRanking` |
+| `src/hooks/useViewHistory.ts`                                  | Create     | `useRecordView` hook (fire-and-forget for character screen)           |
+| `app/character/[id].tsx`                                       | Modify     | Call `useRecordView` on mount                                         |
+| `src/components/home/ThumbCard.tsx`                            | Create     | Landscape 90×58 card for personal rows                                |
+| `src/components/home/SpotlightBanner.tsx`                      | Create     | Full-bleed hero banner with search icon + dots                        |
+| `src/components/home/HomeHeroRow.tsx`                          | Create     | Section row: label + title + horizontal FlatList                      |
+| `src/components/SearchSheet.tsx`                               | Create     | Slide-up modal containing all search logic                            |
+| `src/components/skeletons/HomeSkeleton.tsx`                    | Modify     | Spotlight + rows skeleton layout                                      |
+| `app/(tabs)/index.tsx`                                         | Rewrite    | Ties all pieces together — data fetching + layout                     |
+| `__tests__/lib/db/viewHistory.test.ts`                         | Create     | Unit tests for viewHistory DB functions                               |
+| `__tests__/lib/db/heroes.test.ts`                              | Modify     | Add tests for the 3 new hero queries                                  |
 
 ---
 
 ## Task 1: DB Migration — user_view_history
 
 **Files:**
+
 - Create: `supabase/migrations/20260406120000_add_user_view_history.sql`
 
 - [ ] **Step 1.1: Write the migration SQL**
@@ -79,6 +80,7 @@ git commit -m "feat(db): add user_view_history table with RLS"
 ## Task 2: viewHistory DB Functions + Tests
 
 **Files:**
+
 - Create: `src/lib/db/viewHistory.ts`
 - Create: `__tests__/lib/db/viewHistory.test.ts`
 
@@ -103,9 +105,11 @@ jest.mock('../../../src/lib/supabase', () => {
     });
     c.then = (resolve: (v: unknown) => unknown) =>
       Promise.resolve(resolvers[tableName] ?? { data: null, error: null }).then(resolve);
-    c.upsert = jest.fn().mockImplementation(() =>
-      Promise.resolve(resolvers[tableName] ?? { data: null, error: null }),
-    );
+    c.upsert = jest
+      .fn()
+      .mockImplementation(() =>
+        Promise.resolve(resolvers[tableName] ?? { data: null, error: null }),
+      );
     return c;
   };
 
@@ -144,9 +148,11 @@ beforeEach(() => {
       });
       c.then = (resolve: (v: unknown) => unknown) =>
         Promise.resolve(resolvers[tableName] ?? { data: null, error: null }).then(resolve);
-      c.upsert = jest.fn().mockImplementation(() =>
-        Promise.resolve(resolvers[tableName] ?? { data: null, error: null }),
-      );
+      c.upsert = jest
+        .fn()
+        .mockImplementation(() =>
+          Promise.resolve(resolvers[tableName] ?? { data: null, error: null }),
+        );
       chains[tableName] = c as Record<string, jest.Mock>;
     }
     return chains[tableName];
@@ -233,10 +239,7 @@ export async function recordView(userId: string, heroId: string): Promise<void> 
   // Intentionally swallow errors — this is fire-and-forget
 }
 
-export async function getRecentlyViewed(
-  userId: string,
-  limit = 15,
-): Promise<FavouriteHero[]> {
+export async function getRecentlyViewed(userId: string, limit = 15): Promise<FavouriteHero[]> {
   const { data: historyData, error: historyError } = await supabase
     .from('user_view_history')
     .select('hero_id')
@@ -282,6 +285,7 @@ git commit -m "feat(db): add viewHistory functions — recordView and getRecentl
 ## Task 3: New Hero Queries + Tests
 
 **Files:**
+
 - Modify: `src/lib/db/heroes.ts`
 - Modify: `__tests__/lib/db/heroes.test.ts`
 
@@ -447,6 +451,7 @@ git commit -m "feat(db): add getAntiHeroes, getHeroesByPublisher, getHeroesBySta
 ## Task 4: useRecordView Hook + Character Screen
 
 **Files:**
+
 - Create: `src/hooks/useViewHistory.ts`
 - Modify: `app/character/[id].tsx`
 
@@ -503,6 +508,7 @@ git commit -m "feat: record hero views via useRecordView hook on character scree
 ## Task 5: ThumbCard Component
 
 **Files:**
+
 - Create: `src/components/home/ThumbCard.tsx`
 
 - [ ] **Step 5.1: Create the component**
@@ -591,6 +597,7 @@ git commit -m "feat(ui): add ThumbCard — landscape thumbnail for personal rows
 ## Task 6: SpotlightBanner Component
 
 **Files:**
+
 - Create: `src/components/home/SpotlightBanner.tsx`
 
 - [ ] **Step 6.1: Create the component**
@@ -748,6 +755,7 @@ git commit -m "feat(ui): add SpotlightBanner — full-bleed hero with search ico
 ## Task 7: HomeHeroRow Component
 
 **Files:**
+
 - Create: `src/components/home/HomeHeroRow.tsx`
 
 - [ ] **Step 7.1: Create the component**
@@ -847,6 +855,7 @@ git commit -m "feat(ui): add HomeHeroRow — reusable section with portrait or t
 ## Task 8: SearchSheet Component
 
 **Files:**
+
 - Create: `src/components/SearchSheet.tsx`
 
 - [ ] **Step 8.1: Create the component**
@@ -1258,6 +1267,7 @@ git commit -m "feat(ui): add SearchSheet — slide-up modal with all search logi
 ## Task 9: Update HomeSkeleton
 
 **Files:**
+
 - Modify: `src/components/skeletons/HomeSkeleton.tsx`
 
 - [ ] **Step 9.1: Rewrite HomeSkeleton to match the new layout**
@@ -1362,6 +1372,7 @@ git commit -m "feat(ui): update HomeSkeleton for spotlight + row layout"
 ## Task 10: Rewrite app/(tabs)/index.tsx
 
 **Files:**
+
 - Rewrite: `app/(tabs)/index.tsx`
 
 - [ ] **Step 10.1: Rewrite the file**
@@ -1623,6 +1634,7 @@ bun start
 ```
 
 Verify on iOS simulator:
+
 - Status bar is light (white icons) over the spotlight image
 - Spotlight banner fills top ~45% of screen, extends behind status bar
 - Dots appear and auto-advance every 6s
@@ -1647,6 +1659,7 @@ git commit -m "feat: home screen takeover — spotlight, 10 carousels, search mo
 ## Self-Review Checklist
 
 **Spec coverage:**
+
 - [x] Full-bleed spotlight behind status bar — Task 6 + 10
 - [x] Spotlight rotates through popular heroes — Task 10 (auto-advance)
 - [x] Dot indicator — Task 6

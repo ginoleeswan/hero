@@ -12,19 +12,20 @@
 
 ## Files Modified
 
-| File | What changes |
-|------|-------------|
-| `src/lib/db/favourites.ts` | Add `getHeroFavouriteCount(heroId)` |
-| `src/types/index.ts` | Extend `FirstIssue` with `name`, `coverDate`, `issueNumber` |
-| `src/lib/api.ts` | Update `fetchFirstIssue` field list + parse new fields |
-| `app/character/[id].tsx` | All layout changes |
-| `__tests__/lib/db/favourites.test.ts` | New test file for the new function |
+| File                                  | What changes                                                |
+| ------------------------------------- | ----------------------------------------------------------- |
+| `src/lib/db/favourites.ts`            | Add `getHeroFavouriteCount(heroId)`                         |
+| `src/types/index.ts`                  | Extend `FirstIssue` with `name`, `coverDate`, `issueNumber` |
+| `src/lib/api.ts`                      | Update `fetchFirstIssue` field list + parse new fields      |
+| `app/character/[id].tsx`              | All layout changes                                          |
+| `__tests__/lib/db/favourites.test.ts` | New test file for the new function                          |
 
 ---
 
 ## Task 1: Add `getHeroFavouriteCount` to favourites.ts
 
 **Files:**
+
 - Modify: `src/lib/db/favourites.ts`
 - Create: `__tests__/lib/db/favourites.test.ts`
 
@@ -45,8 +46,7 @@ jest.mock('../../../src/lib/supabase', () => {
   ['select', 'eq'].forEach((m) => {
     chain[m] = jest.fn().mockReturnValue(chain);
   });
-  chain.then = (resolve: (v: unknown) => unknown) =>
-    Promise.resolve(mockResolveWith).then(resolve);
+  chain.then = (resolve: (v: unknown) => unknown) => Promise.resolve(mockResolveWith).then(resolve);
   const mockFrom = jest.fn().mockReturnValue(chain);
   return { supabase: { from: mockFrom } };
 });
@@ -114,6 +114,7 @@ git commit -m "feat(db): add getHeroFavouriteCount for per-hero favourite counts
 ## Task 2: Extend `FirstIssue` type + update `fetchFirstIssue`
 
 **Files:**
+
 - Modify: `src/types/index.ts`
 - Modify: `src/lib/api.ts`
 
@@ -187,6 +188,7 @@ git commit -m "feat(api): extend FirstIssue with name, coverDate, issueNumber"
 ## Task 3: Alignment badge in the identity block
 
 **Files:**
+
 - Modify: `app/character/[id].tsx`
 
 - [ ] **Step 1: Add `AlignmentBadge` component and styles**
@@ -275,6 +277,7 @@ yarn start
 ```
 
 Open the app on iOS simulator or device. Navigate to any character. Confirm:
+
 - A coloured badge ("Hero", "Villain", or "Neutral") appears in the name row next to the publisher
 - The Overview section no longer has an Alignment row
 - Characters with unknown/null alignment show no badge
@@ -291,6 +294,7 @@ git commit -m "feat(character): add alignment badge to identity block"
 ## Task 4: Favourite count on the header heart button
 
 **Files:**
+
 - Modify: `app/character/[id].tsx`
 
 - [ ] **Step 1: Add `favCount` state and fetch it on mount**
@@ -304,7 +308,12 @@ const [favCount, setFavCount] = useState<number>(0);
 Add the import for `getHeroFavouriteCount` at the top of the file where other db imports are:
 
 ```typescript
-import { isFavourited, addFavourite, removeFavourite, getHeroFavouriteCount } from '../../src/lib/db/favourites';
+import {
+  isFavourited,
+  addFavourite,
+  removeFavourite,
+  getHeroFavouriteCount,
+} from '../../src/lib/db/favourites';
 ```
 
 Add a new `useEffect` after the existing `isFavourited` effect:
@@ -364,6 +373,7 @@ favCount: {
 - [ ] **Step 3: Visually verify**
 
 Navigate to a character. Confirm:
+
 - The count appears below the heart icon when > 0
 - Favourite/unfavourite still works (count doesn't auto-update after toggle — that's fine, it's a load-time snapshot)
 - Count is hidden when 0
@@ -380,6 +390,7 @@ git commit -m "feat(character): show per-hero favourite count below heart button
 ## Task 5: Total power score below stat dials
 
 **Files:**
+
 - Modify: `app/character/[id].tsx`
 
 - [ ] **Step 1: Add total score below the stat dials**
@@ -455,6 +466,7 @@ git commit -m "feat(character): add total power score below stat dials"
 ## Task 6: Move First Appearance before Overview + show issue metadata
 
 **Files:**
+
 - Modify: `app/character/[id].tsx`
 
 - [ ] **Step 1: Relocate the First Appearance block**
@@ -475,49 +487,53 @@ Connections
 Cut the entire First Appearance block:
 
 ```tsx
-{/* First issue */}
-{data.firstIssue?.imageUrl ? (
-  <Section title="First Appearance">
-    <View style={styles.comicContainer}>
-      <Image
-        source={{ uri: data.firstIssue.imageUrl }}
-        contentFit="contain"
-        style={styles.comicImage}
-        cachePolicy="memory-disk"
-        recyclingKey={`comic-${id}`}
-        transition={200}
-      />
-    </View>
-  </Section>
-) : null}
+{
+  /* First issue */
+}
+{
+  data.firstIssue?.imageUrl ? (
+    <Section title="First Appearance">
+      <View style={styles.comicContainer}>
+        <Image
+          source={{ uri: data.firstIssue.imageUrl }}
+          contentFit="contain"
+          style={styles.comicImage}
+          cachePolicy="memory-disk"
+          recyclingKey={`comic-${id}`}
+          transition={200}
+        />
+      </View>
+    </Section>
+  ) : null;
+}
 ```
 
 And paste it **before** the Overview Section with the metadata additions:
 
 ```tsx
-{/* First Appearance — moved before Overview */}
-{data.firstIssue?.imageUrl ? (
-  <Section title="First Appearance">
-    <View style={styles.comicContainer}>
-      <Image
-        source={{ uri: data.firstIssue.imageUrl }}
-        contentFit="contain"
-        style={styles.comicImage}
-        cachePolicy="memory-disk"
-        recyclingKey={`comic-${id}`}
-        transition={200}
-      />
-    </View>
-    {data.firstIssue.name ? (
-      <Text style={styles.comicTitle}>{data.firstIssue.name}</Text>
-    ) : null}
-    {data.firstIssue.coverDate ? (
-      <Text style={styles.comicYear}>
-        {new Date(data.firstIssue.coverDate).getFullYear()}
-      </Text>
-    ) : null}
-  </Section>
-) : null}
+{
+  /* First Appearance — moved before Overview */
+}
+{
+  data.firstIssue?.imageUrl ? (
+    <Section title="First Appearance">
+      <View style={styles.comicContainer}>
+        <Image
+          source={{ uri: data.firstIssue.imageUrl }}
+          contentFit="contain"
+          style={styles.comicImage}
+          cachePolicy="memory-disk"
+          recyclingKey={`comic-${id}`}
+          transition={200}
+        />
+      </View>
+      {data.firstIssue.name ? <Text style={styles.comicTitle}>{data.firstIssue.name}</Text> : null}
+      {data.firstIssue.coverDate ? (
+        <Text style={styles.comicYear}>{new Date(data.firstIssue.coverDate).getFullYear()}</Text>
+      ) : null}
+    </Section>
+  ) : null;
+}
 ```
 
 - [ ] **Step 2: Add `comicTitle` and `comicYear` styles**
@@ -544,6 +560,7 @@ comicYear: {
 - [ ] **Step 3: Visually verify**
 
 Navigate to a character with a first issue (e.g. Spider-Man). Confirm:
+
 - First Appearance section appears between Abilities and Overview (not between Overview and Appearance)
 - Issue name appears below the cover art
 - Year appears below the name
@@ -561,6 +578,7 @@ git commit -m "feat(character): move First Appearance before Overview, add issue
 ## Task 7: Affiliation chips in Connections
 
 **Files:**
+
 - Modify: `app/character/[id].tsx`
 
 - [ ] **Step 1: Add `AffiliationChips` component**
@@ -626,10 +644,7 @@ In the Connections Section, find:
 
 ```tsx
 <Section title="Connections">
-  <InfoRow
-    label="Group affiliation"
-    value={data.stats.connections['group-affiliation']}
-  />
+  <InfoRow label="Group affiliation" value={data.stats.connections['group-affiliation']} />
   <InfoRow label="Relatives" value={data.stats.connections.relatives} />
 </Section>
 ```
@@ -661,6 +676,7 @@ git commit -m "feat(character): show affiliation chips instead of text blob in C
 ## Task 8: Relatives as a structured list
 
 **Files:**
+
 - Modify: `app/character/[id].tsx`
 
 - [ ] **Step 1: Add `RelativesList` component**
@@ -728,6 +744,7 @@ git commit -m "feat(character): show relatives as a structured list in Connectio
 ## Task 9: Merge Work into Connections, remove Work section
 
 **Files:**
+
 - Modify: `app/character/[id].tsx`
 
 - [ ] **Step 1: Move Work rows into Connections and remove the Work Section**
@@ -737,29 +754,35 @@ Find the Connections Section (now containing `AffiliationChips` + `RelativesList
 Replace:
 
 ```tsx
-{/* Work */}
+{
+  /* Work */
+}
 <Section title="Work">
   <InfoRow label="Occupation" value={data.stats.work.occupation} />
   <InfoRow label="Base" value={data.stats.work.base} />
-</Section>
+</Section>;
 
-{/* Connections */}
+{
+  /* Connections */
+}
 <Section title="Connections">
   <AffiliationChips value={data.stats.connections['group-affiliation']} />
   <RelativesList value={data.stats.connections.relatives} />
-</Section>
+</Section>;
 ```
 
 With:
 
 ```tsx
-{/* Connections (includes work) */}
+{
+  /* Connections (includes work) */
+}
 <Section title="Connections">
   <InfoRow label="Occupation" value={data.stats.work.occupation} />
   <InfoRow label="Base" value={data.stats.work.base} />
   <AffiliationChips value={data.stats.connections['group-affiliation']} />
   <RelativesList value={data.stats.connections.relatives} />
-</Section>
+</Section>;
 ```
 
 - [ ] **Step 2: Visually verify the final section order**

@@ -25,7 +25,9 @@ interface Props {
 function Chip({ label, amber, dark }: { label: string; amber?: boolean; dark?: boolean }) {
   return (
     <View style={[styles.chip, amber ? styles.chipAmber : dark ? styles.chipDark : null]}>
-      <Text style={[styles.chipText, amber ? styles.chipTextAmber : dark ? styles.chipTextDark : null]}>
+      <Text
+        style={[styles.chipText, amber ? styles.chipTextAmber : dark ? styles.chipTextDark : null]}
+      >
         {label}
       </Text>
     </View>
@@ -59,10 +61,7 @@ function ChipGroup({
 function IssueInfo({ firstIssue, dark = false }: { firstIssue: FirstIssue; dark?: boolean }) {
   const date = firstIssue.storeDate ?? firstIssue.coverDate;
   const year = date ? date.slice(0, 4) : null;
-  const subtitle = [
-    firstIssue.issueNumber ? `Issue #${firstIssue.issueNumber}` : null,
-    year,
-  ]
+  const subtitle = [firstIssue.issueNumber ? `Issue #${firstIssue.issueNumber}` : null, year]
     .filter(Boolean)
     .join('  ·  ');
 

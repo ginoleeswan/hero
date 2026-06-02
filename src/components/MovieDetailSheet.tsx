@@ -1,4 +1,14 @@
-import { Modal, View, Text, ScrollView, Pressable, StyleSheet, useWindowDimensions, Platform, Linking } from 'react-native';
+import {
+  Modal,
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  Platform,
+  Linking,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,17 +48,8 @@ export function MovieDetailSheet({ movie, onClose }: Props) {
   };
 
   return (
-    <Modal
-      visible
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
-      <Pressable
-        style={[styles.backdrop, isDesktop && styles.backdropDesktop]}
-        onPress={onClose}
-      >
+    <Modal visible transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      <Pressable style={[styles.backdrop, isDesktop && styles.backdropDesktop]} onPress={onClose}>
         <Pressable
           style={[
             styles.sheet,
@@ -105,9 +106,7 @@ export function MovieDetailSheet({ movie, onClose }: Props) {
                   </View>
                 ) : null}
 
-                {movie.deck ? (
-                  <Text style={styles.deck}>{movie.deck}</Text>
-                ) : null}
+                {movie.deck ? <Text style={styles.deck}>{movie.deck}</Text> : null}
               </View>
             </View>
 

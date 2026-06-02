@@ -79,6 +79,9 @@
   "packageManager": "yarn@4.15.0",
   "jest": {
     "preset": "jest-expo",
+    "setupFiles": [
+      "./jest.setup.env.js"
+    ],
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|react-native-reanimated)"
     ],
@@ -86,7 +89,8 @@
       "@testing-library/jest-native/extend-expect"
     ],
     "moduleNameMapper": {
-      "^react-native-reanimated/mock$": "<rootDir>/__mocks__/react-native-reanimated-mock-shim.js"
+      "^react-native-reanimated/mock$": "<rootDir>/__mocks__/react-native-reanimated-mock-shim.js",
+      "^@react-native-async-storage/async-storage$": "@react-native-async-storage/async-storage/jest/async-storage-mock"
     }
   }
 }

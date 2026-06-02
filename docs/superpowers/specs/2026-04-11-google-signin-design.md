@@ -22,6 +22,7 @@ Change `detectSessionInUrl` from `false` to `Platform.OS === 'web'`. On web, Sup
 Add a new `signInWithGoogle()` method to the `AuthState` interface and implementation:
 
 **Native path:**
+
 1. Build redirect URL: `Linking.createURL('auth/callback')` — resolves to `hero://auth/callback` in production builds, or the correct `exp://` URL in Expo Go
 2. Call `supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo, skipBrowserRedirect: true } })`
 3. Open the returned URL with `WebBrowser.openAuthSessionAsync(url, redirectTo)`
@@ -29,6 +30,7 @@ Add a new `signInWithGoogle()` method to the `AuthState` interface and implement
 5. Return `{ error }` — `onAuthStateChange` in the hook fires automatically, setting the user state, and `AuthGate` redirects to `/(tabs)`
 
 **Web path:**
+
 1. Call `supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })`
 2. Supabase performs a full-page redirect to Google, then back to the app root
 3. `detectSessionInUrl: true` auto-parses the token; `onAuthStateChange` fires; `AuthGate` redirects to `/(tabs)`
@@ -82,11 +84,11 @@ These are one-time configuration steps outside the codebase that must be complet
 
 ## Error Handling
 
-| Scenario | Behaviour |
-|---|---|
-| User cancels the browser (dismisses without signing in) | `result.type` is `'cancel'` — silently ignored, no error shown |
-| Google auth fails (token error, network) | Error returned from `exchangeCodeForSession`, shown in `errorBox` |
-| Provider not enabled in Supabase | Error from `signInWithOAuth`, shown in `errorBox` |
+| Scenario                                                | Behaviour                                                         |
+| ------------------------------------------------------- | ----------------------------------------------------------------- |
+| User cancels the browser (dismisses without signing in) | `result.type` is `'cancel'` — silently ignored, no error shown    |
+| Google auth fails (token error, network)                | Error returned from `exchangeCodeForSession`, shown in `errorBox` |
+| Provider not enabled in Supabase                        | Error from `signInWithOAuth`, shown in `errorBox`                 |
 
 ## Out of Scope
 

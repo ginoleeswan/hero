@@ -34,7 +34,11 @@ export function SpotlightBanner({
   const source = heroImageSource(hero.id, hero.image_url, hero.portrait_url);
 
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={onHeroPress} style={[styles.container, { height }]}>
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={onHeroPress}
+      style={[styles.container, { height }]}
+    >
       <Image
         source={source}
         contentFit="cover"

@@ -3,7 +3,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import type { CategorySlug } from '../../../lib/db/heroes';
 import {
-  type CategoryFilters, type FacetKey, activeFilterList, DEFAULT_FILTERS,
+  type CategoryFilters,
+  type FacetKey,
+  activeFilterList,
+  DEFAULT_FILTERS,
 } from '../../../lib/db/categoryFilters';
 
 interface Props {
@@ -28,7 +31,9 @@ export function ActiveFilterChips({ slug, filters, setFilter }: Props) {
         <Pressable
           key={c.key}
           onPress={() => setFilter(c.key as FacetKey, RESET_VALUE[c.key as FacetKey] as never)}
-          style={({ hovered }: { hovered?: boolean }) => [s.chip, hovered && (s.chipHover as object)] as object}
+          style={({ hovered }: { hovered?: boolean }) =>
+            [s.chip, hovered && (s.chipHover as object)] as object
+          }
         >
           <Text style={s.text as object}>{c.label}</Text>
           <Ionicons name="close" size={13} color={COLORS.orange} />
@@ -42,12 +47,27 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, alignItems: 'center' } as object,
   // Tuned for the light beige canvas: solid surface, navy text, orange accent.
   chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5, height: 30,
-    paddingLeft: 12, paddingRight: 9, borderRadius: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    height: 30,
+    paddingLeft: 12,
+    paddingRight: 9,
+    borderRadius: 15,
     backgroundColor: 'rgba(231,115,51,0.12)',
-    borderWidth: 1, borderColor: 'rgba(231,115,51,0.5)',
-    cursor: 'pointer', transition: 'background-color 150ms ease, border-color 150ms ease',
+    borderWidth: 1,
+    borderColor: 'rgba(231,115,51,0.5)',
+    cursor: 'pointer',
+    transition: 'background-color 150ms ease, border-color 150ms ease',
   } as object,
-  chipHover: { backgroundColor: 'rgba(231,115,51,0.22)', borderColor: 'rgba(231,115,51,0.8)' } as object,
-  text: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: COLORS.navy, letterSpacing: 0.2 } as object,
+  chipHover: {
+    backgroundColor: 'rgba(231,115,51,0.22)',
+    borderColor: 'rgba(231,115,51,0.8)',
+  } as object,
+  text: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12.5,
+    color: COLORS.navy,
+    letterSpacing: 0.2,
+  } as object,
 });

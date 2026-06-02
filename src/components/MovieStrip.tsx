@@ -58,7 +58,13 @@ function MovieCard({
       onPress={onPress}
       {...webHoverProps}
     >
-      <View style={[styles.posterWrapper, featured && styles.featuredPosterWrapper, { width: w, height: h }]}>
+      <View
+        style={[
+          styles.posterWrapper,
+          featured && styles.featuredPosterWrapper,
+          { width: w, height: h },
+        ]}
+      >
         {movie.imageUrl ? (
           <Image
             source={{ uri: movie.imageUrl }}
@@ -114,13 +120,21 @@ export function MovieStrip({ movies, totalCount }: Props) {
         contentContainerStyle={styles.container}
       >
         {featured ? (
-          <MovieCard key="featured" movie={featured} featured onPress={() => setSelectedMovie(featured)} />
+          <MovieCard
+            key="featured"
+            movie={featured}
+            featured
+            onPress={() => setSelectedMovie(featured)}
+          />
         ) : null}
         {rest.map((movie, i) => (
           <MovieCard key={i} movie={movie} onPress={() => setSelectedMovie(movie)} />
         ))}
         {overflow > 0 ? (
-          <Pressable style={[styles.card, styles.overflowCard]} onPress={() => setGridVisible(true)}>
+          <Pressable
+            style={[styles.card, styles.overflowCard]}
+            onPress={() => setGridVisible(true)}
+          >
             <Text style={styles.overflowCount}>+{overflow}</Text>
             <Text style={styles.overflowLabel}>more</Text>
           </Pressable>

@@ -15,13 +15,13 @@ Inside the existing Account card in `app/(tabs)/profile.tsx`, inserted as a new 
 
 Follows the exact existing `accountRow` pattern:
 
-| Part | Value |
-|---|---|
+| Part                  | Value                                                                       |
+| --------------------- | --------------------------------------------------------------------------- |
 | Icon badge background | Orange (`#fff5ee` tint with orange icon — matches `accountIconBadgeOrange`) |
-| Icon | `heart-outline` (Ionicons) — ties into the favourites/fan theme |
-| Label | "Support this project" — `Nunito_700Bold`, `COLORS.navy` |
-| Right label | "Ko-fi" — `Nunito_400Regular`, `COLORS.grey` — subtle, informative |
-| Trailing chevron | `chevron-forward`, muted navy opacity (same as Change Password row) |
+| Icon                  | `heart-outline` (Ionicons) — ties into the favourites/fan theme             |
+| Label                 | "Support this project" — `Nunito_700Bold`, `COLORS.navy`                    |
+| Right label           | "Ko-fi" — `Nunito_400Regular`, `COLORS.grey` — subtle, informative          |
+| Trailing chevron      | `chevron-forward`, muted navy opacity (same as Change Password row)         |
 
 ## Behaviour
 

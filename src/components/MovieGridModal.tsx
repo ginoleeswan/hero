@@ -1,4 +1,13 @@
-import { Modal, View, Text, FlatList, Pressable, StyleSheet, useWindowDimensions, Platform } from 'react-native';
+import {
+  Modal,
+  View,
+  Text,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  Platform,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,7 +43,11 @@ function GridCard({
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.gridCard, { width: cardW }, (pressed || hovered) && styles.cardActive]}
+      style={({ pressed }) => [
+        styles.gridCard,
+        { width: cardW },
+        (pressed || hovered) && styles.cardActive,
+      ]}
       onPress={onPress}
       {...webHoverProps}
     >
@@ -69,17 +82,8 @@ export function MovieGridModal({ movies, onClose, onSelectMovie }: Props) {
   const cardW = (sheetWidth - 32 - CARD_GAP * (COLS - 1)) / COLS;
 
   return (
-    <Modal
-      visible
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
-      <Pressable
-        style={[styles.backdrop, isDesktop && styles.backdropDesktop]}
-        onPress={onClose}
-      >
+    <Modal visible transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      <Pressable style={[styles.backdrop, isDesktop && styles.backdropDesktop]} onPress={onClose}>
         <Pressable
           style={[
             styles.sheet,

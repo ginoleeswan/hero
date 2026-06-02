@@ -182,6 +182,13 @@ describe('heroRowToCharacterData', () => {
     friends: null,
     movies: null,
     teams: null,
+    ai_stats_status: null,
+    comicvine_id: null,
+    first_issue_data: null,
+    first_issue_id: null,
+    movie_count: null,
+    powerstats_total: null,
+    stats_source: null,
   } satisfies Hero;
 
   it('maps powerstats to string values', () => {
@@ -352,6 +359,13 @@ const baseHero: HeroRow = {
   friends: null,
   movies: null,
   teams: null,
+  ai_stats_status: null,
+  comicvine_id: null,
+  first_issue_data: null,
+  first_issue_id: null,
+  movie_count: null,
+  powerstats_total: null,
+  stats_source: null,
 };
 
 describe('heroRowToCharacterData — powers mapping', () => {
@@ -459,7 +473,18 @@ describe('getSearchIdleHeroes', () => {
 
   it('returns HeroSearchResult shape (has portrait_url, full_name, aliases)', async () => {
     mockResolveWith = {
-      data: [{ id: '620', name: 'Spider-Man', publisher: 'Marvel Comics', image_md_url: null, image_url: null, portrait_url: null, full_name: 'Peter Parker', aliases: [] }],
+      data: [
+        {
+          id: '620',
+          name: 'Spider-Man',
+          publisher: 'Marvel Comics',
+          image_md_url: null,
+          image_url: null,
+          portrait_url: null,
+          full_name: 'Peter Parker',
+          aliases: [],
+        },
+      ],
       error: null,
     };
     const heroes = await getSearchIdleHeroes();
@@ -504,9 +529,9 @@ describe('searchHeroes ordering', () => {
     mockResolveWith = { data: [spiderMan, spiderWoman], error: null };
 
     const results = await searchHeroes('spider', 'All', 20);
-    const names = results.map(h => h.name.toLowerCase());
-    const spiderManIdx = names.findIndex(n => n === 'spider-man');
-    const spiderWomanIdx = names.findIndex(n => n === 'spider-woman');
+    const names = results.map((h) => h.name.toLowerCase());
+    const spiderManIdx = names.findIndex((n) => n === 'spider-man');
+    const spiderWomanIdx = names.findIndex((n) => n === 'spider-woman');
     expect(spiderManIdx).not.toBe(-1);
     expect(spiderWomanIdx).not.toBe(-1);
     expect(spiderManIdx).toBeLessThan(spiderWomanIdx);

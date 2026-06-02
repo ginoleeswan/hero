@@ -13,6 +13,7 @@
 ### Task 1: Remove nav pills + make search bar global on desktop
 
 **Files:**
+
 - Modify: `src/components/web/TopNav.tsx`
 
 The current file uses a `showSearch` boolean (`isExplore && isDesktop`) to decide whether to show the search bar or nav pills in the center. This task removes the pills entirely, removes the redundant `profileLink` right-slot element, and shows the search bar whenever `isDesktop` is true — regardless of the current path.
@@ -52,7 +53,6 @@ export function TopNav() {
   return (
     <View style={styles.nav as object}>
       <View style={styles.inner}>
-
         {/* Logo */}
         <Pressable onPress={() => router.push('/')} style={styles.logoWrap}>
           <HeroLogo iconSize={24} fontSize={19} color={COLORS.beige} gap={8} />
@@ -97,7 +97,6 @@ export function TopNav() {
             </Pressable>
           ) : null}
         </View>
-
       </View>
     </View>
   );
@@ -202,6 +201,7 @@ const styles = StyleSheet.create({
 - [ ] **Step 2: Verify in the browser**
 
 Run `bun start` and open the web app. Check:
+
 - Desktop Explore: search bar appears in the nav center, pills are gone, no "Profile" text link
 - Desktop Profile: search bar still appears in the nav center
 - Typing a search term while on Profile navigates to Explore and shows results
@@ -219,6 +219,7 @@ git commit -m "feat(web): global search bar in TopNav, remove nav pills"
 ### Task 2: Add account dropdown to the avatar
 
 **Files:**
+
 - Modify: `src/components/web/TopNav.tsx`
 
 Replace the avatar's simple `router.push('/profile')` with a toggle for a `menuOpen` dropdown. The dropdown floats below the avatar and contains "Profile" and "Sign out" items. Outside-click and Escape key close it.
@@ -297,7 +298,6 @@ export function TopNav() {
   return (
     <View style={styles.nav as object}>
       <View style={styles.inner}>
-
         {/* Logo */}
         <Pressable onPress={() => router.push('/')} style={styles.logoWrap}>
           <HeroLogo iconSize={24} fontSize={19} color={COLORS.beige} gap={8} />
@@ -369,7 +369,6 @@ export function TopNav() {
             </View>
           ) : null}
         </View>
-
       </View>
     </View>
   );

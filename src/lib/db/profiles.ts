@@ -39,7 +39,7 @@ async function uriToArrayBuffer(
   }
 
   const base64 = await FileSystem.readAsStringAsync(localUri, {
-    encoding: FileSystem.EncodingType.Base64,
+    encoding: 'base64',
   });
   return { buffer: decode(base64), contentType };
 }

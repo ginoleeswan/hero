@@ -14,12 +14,24 @@ interface HeroCardProps {
   disabled?: boolean;
 }
 
-export function HeroCard({ id, name, imageUrl, portraitUrl, onPress, disabled = false }: HeroCardProps) {
+export function HeroCard({
+  id,
+  name,
+  imageUrl,
+  portraitUrl,
+  onPress,
+  disabled = false,
+}: HeroCardProps) {
   const imageSource = heroImageSource(id, imageUrl, portraitUrl);
 
   return (
     <View style={styles.card}>
-      <PressScale onPress={onPress} scale={0.95} disabled={disabled} style={StyleSheet.absoluteFill}>
+      <PressScale
+        onPress={onPress}
+        scale={0.95}
+        disabled={disabled}
+        style={StyleSheet.absoluteFill}
+      >
         <SquircleMask style={styles.squircle} cornerRadius={50}>
           <Image
             source={imageSource}
@@ -29,10 +41,10 @@ export function HeroCard({ id, name, imageUrl, portraitUrl, onPress, disabled = 
             recyclingKey={id}
             transition={typeof imageSource === 'object' && 'uri' in imageSource ? 200 : null}
           />
-          <View style={styles.nameContainer}>
-            <Text style={styles.name}>{name}</Text>
-          </View>
         </SquircleMask>
+        <View style={styles.nameContainer}>
+          <Text style={styles.name}>{name}</Text>
+        </View>
       </PressScale>
     </View>
   );

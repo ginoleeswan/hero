@@ -171,7 +171,7 @@ export default function WebForgotPasswordScreen() {
             source={LOGIN_HERO}
             style={StyleSheet.absoluteFill}
             contentFit="contain"
-            contentPosition={{ x: '50%', y: '0%' }}
+            contentPosition="top center"
           />
           <View style={styles.mobileScrim as object} pointerEvents="none" />
         </View>
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     right: 0,
     height: '50%',
     backgroundImage: `linear-gradient(to bottom, transparent 0%, ${COLORS.navy} 70%, ${COLORS.beige} 100%)`,
-  },
+  } as object,
   mobileLogo: {
     position: 'absolute',
     top: 20,
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     borderColor: '#e0d6ca',
     outlineStyle: 'none',
     transition: 'border-color 0.15s ease',
-  },
+  } as object,
   inputFocused: {
     borderColor: COLORS.orange,
   },

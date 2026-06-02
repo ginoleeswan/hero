@@ -10,17 +10,18 @@ Every character detail screen open fires 3 sequential external API calls (Superh
 ## Goal
 
 Pre-populate Supabase with all ~731 heroes and their full data so:
+
 - The search screen queries Supabase instead of downloading a CDN blob
 - The character detail screen makes zero external API calls for enriched heroes
 - The app works faster and is resilient to third-party API downtime
 
 ## Data Sources
 
-| Source | What it provides | Cost |
-|---|---|---|
-| `cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/all.json` | All 731 heroes — powerstats, biography, appearance, work, connections, two image sizes | 1 HTTP request total |
-| ComicVine `/characters` | Summary (deck), first issue ID | 1 request per hero, ~200/hr rate limit |
-| ComicVine `/issue/{id}` | First issue cover image URL | 1 request per hero (if issue ID exists) |
+| Source                                                        | What it provides                                                                       | Cost                                    |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------- |
+| `cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/all.json` | All 731 heroes — powerstats, biography, appearance, work, connections, two image sizes | 1 HTTP request total                    |
+| ComicVine `/characters`                                       | Summary (deck), first issue ID                                                         | 1 request per hero, ~200/hr rate limit  |
+| ComicVine `/issue/{id}`                                       | First issue cover image URL                                                            | 1 request per hero (if issue ID exists) |
 
 ## Database Schema
 
@@ -93,6 +94,7 @@ Run with: `bun scripts/enrich-heroes.ts`
 **Resumable:** upsert on conflict means re-running is always safe. Supports `--id <heroId>` flag to re-enrich a single hero — the script still fetches `all.json` but filters the upsert to the matching hero.
 
 **CDN field mapping:**
+
 ```
 cdnHero.id              → id (cast to string)
 cdnHero.name            → name
@@ -138,10 +140,9 @@ export async function searchHeroes(query: string, publisher: PublisherFilter) {
   if (query.trim()) q = q.ilike('name', `%${query}%`);
 
   if (publisher === 'Marvel') q = q.ilike('publisher', '%marvel%');
-  else if (publisher === 'DC')  q = q.ilike('publisher', '%dc%');
+  else if (publisher === 'DC') q = q.ilike('publisher', '%dc%');
   else if (publisher === 'Other') {
-    q = q.not('publisher', 'ilike', '%marvel%')
-         .not('publisher', 'ilike', '%dc%');
+    q = q.not('publisher', 'ilike', '%marvel%').not('publisher', 'ilike', '%dc%');
   }
 
   const { data, error } = await q;
@@ -160,11 +161,7 @@ Add a helper in `src/lib/db/heroes.ts`:
 
 ```ts
 export async function getHeroById(id: string): Promise<Hero | null> {
-  const { data } = await supabase
-    .from('heroes')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data } = await supabase.from('heroes').select('*').eq('id', id).single();
   return data ?? null;
 }
 ```

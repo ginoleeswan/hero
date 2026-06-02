@@ -12,41 +12,41 @@
 
 ## File Map
 
-| File | Action | Purpose |
-|------|--------|---------|
-| `package.json` | Replace | New deps, Expo 55, `expo-router/entry` main |
-| `app.config.ts` | Create | Dynamic config with env vars |
-| `tsconfig.json` | Create | TypeScript config extending expo base |
-| `babel.config.js` | Replace | Expo 55 + reanimated plugin |
-| `metro.config.js` | Replace | Expo 55 metro config |
-| `.env.local` | Create | API keys (gitignored) |
-| `.env.example` | Create | Key names without values |
-| `App.js` | Delete | Replaced by Expo Router entry |
-| `index.js` | Delete | Replaced by Expo Router entry |
-| `app.json` | Delete | Replaced by `app.config.ts` |
-| `react-native.config.js` | Delete | Not needed in Expo 55 |
-| `assets/fonts/` | Move from `app/assets/fonts/` | Custom fonts |
-| `assets/images/` | Move from `app/assets/images/` | Hero images |
-| `src/constants/colors.ts` | Create | Port from `app/styles/colors.js` |
-| `src/constants/heroImages.ts` | Create | Local require() map by hero ID |
-| `src/types/index.ts` | Create | Shared TypeScript types |
-| `src/lib/supabase.ts` | Create | Supabase client initialisation |
-| `src/lib/api.ts` | Create | SuperheroAPI + ComicVine calls |
-| `src/hooks/useAuth.ts` | Create | Auth state hook |
-| `src/components/HeroCard.tsx` | Create | Reusable hero carousel card |
-| `app/_layout.tsx` | Create | Root layout: fonts, providers, auth gate |
-| `app/(auth)/_layout.tsx` | Create | Auth group stack layout |
-| `app/(auth)/login.tsx` | Create | Login screen |
-| `app/(auth)/signup.tsx` | Create | Signup screen |
-| `app/(tabs)/_layout.tsx` | Create | Bottom tab layout |
-| `app/(tabs)/index.tsx` | Create | Home screen |
-| `app/(tabs)/search.tsx` | Create | Search shell |
-| `app/(tabs)/profile.tsx` | Create | Profile screen |
-| `app/character/[id].tsx` | Create | Character detail (dynamic route) |
-| `__tests__/lib/api.test.ts` | Create | API layer unit tests |
-| `__tests__/hooks/useAuth.test.ts` | Create | Auth hook unit tests |
-| `__tests__/components/HeroCard.test.tsx` | Create | HeroCard render test |
-| `CLAUDE.md` | Create | Project setup + commands |
+| File                                     | Action                         | Purpose                                     |
+| ---------------------------------------- | ------------------------------ | ------------------------------------------- |
+| `package.json`                           | Replace                        | New deps, Expo 55, `expo-router/entry` main |
+| `app.config.ts`                          | Create                         | Dynamic config with env vars                |
+| `tsconfig.json`                          | Create                         | TypeScript config extending expo base       |
+| `babel.config.js`                        | Replace                        | Expo 55 + reanimated plugin                 |
+| `metro.config.js`                        | Replace                        | Expo 55 metro config                        |
+| `.env.local`                             | Create                         | API keys (gitignored)                       |
+| `.env.example`                           | Create                         | Key names without values                    |
+| `App.js`                                 | Delete                         | Replaced by Expo Router entry               |
+| `index.js`                               | Delete                         | Replaced by Expo Router entry               |
+| `app.json`                               | Delete                         | Replaced by `app.config.ts`                 |
+| `react-native.config.js`                 | Delete                         | Not needed in Expo 55                       |
+| `assets/fonts/`                          | Move from `app/assets/fonts/`  | Custom fonts                                |
+| `assets/images/`                         | Move from `app/assets/images/` | Hero images                                 |
+| `src/constants/colors.ts`                | Create                         | Port from `app/styles/colors.js`            |
+| `src/constants/heroImages.ts`            | Create                         | Local require() map by hero ID              |
+| `src/types/index.ts`                     | Create                         | Shared TypeScript types                     |
+| `src/lib/supabase.ts`                    | Create                         | Supabase client initialisation              |
+| `src/lib/api.ts`                         | Create                         | SuperheroAPI + ComicVine calls              |
+| `src/hooks/useAuth.ts`                   | Create                         | Auth state hook                             |
+| `src/components/HeroCard.tsx`            | Create                         | Reusable hero carousel card                 |
+| `app/_layout.tsx`                        | Create                         | Root layout: fonts, providers, auth gate    |
+| `app/(auth)/_layout.tsx`                 | Create                         | Auth group stack layout                     |
+| `app/(auth)/login.tsx`                   | Create                         | Login screen                                |
+| `app/(auth)/signup.tsx`                  | Create                         | Signup screen                               |
+| `app/(tabs)/_layout.tsx`                 | Create                         | Bottom tab layout                           |
+| `app/(tabs)/index.tsx`                   | Create                         | Home screen                                 |
+| `app/(tabs)/search.tsx`                  | Create                         | Search shell                                |
+| `app/(tabs)/profile.tsx`                 | Create                         | Profile screen                              |
+| `app/character/[id].tsx`                 | Create                         | Character detail (dynamic route)            |
+| `__tests__/lib/api.test.ts`              | Create                         | API layer unit tests                        |
+| `__tests__/hooks/useAuth.test.ts`        | Create                         | Auth hook unit tests                        |
+| `__tests__/components/HeroCard.test.tsx` | Create                         | HeroCard render test                        |
+| `CLAUDE.md`                              | Create                         | Project setup + commands                    |
 
 ---
 
@@ -55,6 +55,7 @@
 ### Task 1: Delete old files
 
 **Files:**
+
 - Delete: `App.js`, `index.js`, `app.json`, `react-native.config.js`
 - Delete: `app/` directory (entire old routing folder)
 
@@ -83,6 +84,7 @@ Expected output includes: `babel.config.js  ios/  metro.config.js  package-lock.
 ### Task 2: Move assets
 
 **Files:**
+
 - Create: `assets/fonts/` (moved from `app/assets/fonts/`)
 - Create: `assets/images/` (moved from `app/assets/images/`)
 
@@ -107,6 +109,7 @@ Expected: `Flame-Bold.ttf  Flame-Regular.ttf  FlameSans-Regular.ttf` and image f
 ### Task 3: Create project config files
 
 **Files:**
+
 - Create: `package.json`
 - Create: `app.config.ts`
 - Create: `tsconfig.json`
@@ -139,9 +142,7 @@ Expected: `Flame-Bold.ttf  Flame-Regular.ttf  FlameSans-Regular.ttf` and image f
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|react-native-reanimated)"
     ],
-    "setupFilesAfterEnv": [
-      "@testing-library/jest-native/extend-expect"
-    ]
+    "setupFilesAfterEnv": ["@testing-library/jest-native/extend-expect"]
   }
 }
 ```
@@ -279,6 +280,7 @@ node_modules/
 ### Task 4: Install dependencies
 
 **Files:**
+
 - Modify: `package.json` (deps added by installers)
 - Modify: `package-lock.json`
 
@@ -326,6 +328,7 @@ Expected: No critical errors (warnings about iOS/Android config are fine at this
 ### Task 5: Create source constants
 
 **Files:**
+
 - Create: `src/constants/colors.ts`
 - Create: `src/constants/heroImages.ts`
 
@@ -355,7 +358,7 @@ This maps SuperheroAPI hero IDs to bundled local images, avoiding network reques
 export const HERO_IMAGES: Record<string, ReturnType<typeof require>> = {
   '620': require('../../assets/images/spiderman.jpg'),
   '346': require('../../assets/images/ironman.jpg'),
-  '70':  require('../../assets/images/batman.jpg'),
+  '70': require('../../assets/images/batman.jpg'),
   '644': require('../../assets/images/superman.jpg'),
   '370': require('../../assets/images/joker.jpg'),
   '149': require('../../assets/images/captain-america.jpg'),
@@ -370,7 +373,7 @@ export const HERO_IMAGES: Record<string, ReturnType<typeof require>> = {
   '687': require('../../assets/images/venom.jpeg'),
   '630': require('../../assets/images/star-lord.jpg'),
   '106': require('../../assets/images/black-panther.jpg'),
-  '30':  require('../../assets/images/ant-man.jpg'),
+  '30': require('../../assets/images/ant-man.jpg'),
   '222': require('../../assets/images/doctor-doom.jpg'),
   '208': require('../../assets/images/darth-vader.jpg'),
   '479': require('../../assets/images/mysterio.jpg'),
@@ -381,7 +384,7 @@ export const HERO_IMAGES: Record<string, ReturnType<typeof require>> = {
   '196': require('../../assets/images/cyclops.jpg'),
   '480': require('../../assets/images/mystique.jpg'),
   '638': require('../../assets/images/storm.jpg'),
-  '75':  require('../../assets/images/beast.jpg'),
+  '75': require('../../assets/images/beast.jpg'),
   '567': require('../../assets/images/rogue.jpg'),
   '185': require('../../assets/images/colossus.png'),
   '490': require('../../assets/images/nightcrawler.jpg'),
@@ -389,7 +392,7 @@ export const HERO_IMAGES: Record<string, ReturnType<typeof require>> = {
   '274': require('../../assets/images/gambit.jpg'),
   // Publisher logos
   'marvel-logo': require('../../assets/images/Marvel-Logo.jpg'),
-  'dc-logo':     require('../../assets/images/DC-Logo.png'),
+  'dc-logo': require('../../assets/images/DC-Logo.png'),
 };
 ```
 
@@ -405,6 +408,7 @@ git commit -m "feat: scaffold Expo 55 foundation — config, assets, constants"
 ### Task 6: Create root shell layout
 
 **Files:**
+
 - Create: `app/_layout.tsx`
 
 - [ ] **Step 1: Create `app/_layout.tsx`** (shell — auth gate added in Phase 2)
@@ -416,11 +420,7 @@ import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import {
-  Nunito_400Regular,
-  Nunito_700Bold,
-  Nunito_900Black,
-} from '@expo-google-fonts/nunito';
+import { Nunito_400Regular, Nunito_700Bold, Nunito_900Black } from '@expo-google-fonts/nunito';
 import { Righteous_400Regular } from '@expo-google-fonts/righteous';
 
 SplashScreen.preventAutoHideAsync();
@@ -477,6 +477,7 @@ git commit -m "feat: add root Expo Router layout shell"
 ### Task 7: Set up Jest
 
 **Files:**
+
 - Create: `__tests__/` directory structure
 
 - [ ] **Step 1: Create test directory structure**
@@ -510,6 +511,7 @@ Expected: `PASS __tests__/sanity.test.ts` with 1 test passing.
 ### Task 8: Create Supabase client
 
 **Files:**
+
 - Create: `src/lib/supabase.ts`
 
 - [ ] **Step 1: Write `src/lib/supabase.ts`**
@@ -542,6 +544,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 ### Task 9: Create and test useAuth hook
 
 **Files:**
+
 - Create: `src/hooks/useAuth.ts`
 - Create: `__tests__/hooks/useAuth.test.ts`
 
@@ -621,13 +624,13 @@ export function useAuth(): AuthState {
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -670,6 +673,7 @@ git commit -m "feat: add useAuth hook with Supabase auth state management"
 ### Task 10: Build auth screens and wire root layout
 
 **Files:**
+
 - Create: `app/(auth)/_layout.tsx`
 - Create: `app/(auth)/login.tsx`
 - Create: `app/(auth)/signup.tsx`
@@ -681,9 +685,7 @@ git commit -m "feat: add useAuth hook with Supabase auth state management"
 import { Stack } from 'expo-router';
 
 export default function AuthLayout() {
-  return (
-    <Stack screenOptions={{ headerShown: false }} />
-  );
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
 ```
 
@@ -988,11 +990,7 @@ import { Slot, useRouter, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import {
-  Nunito_400Regular,
-  Nunito_700Bold,
-  Nunito_900Black,
-} from '@expo-google-fonts/nunito';
+import { Nunito_400Regular, Nunito_700Bold, Nunito_900Black } from '@expo-google-fonts/nunito';
 import { Righteous_400Regular } from '@expo-google-fonts/righteous';
 import { useAuth } from '../src/hooks/useAuth';
 
@@ -1176,6 +1174,7 @@ Check that the `heroes` table has rows for all 3 categories. No commit needed �
 ### Task 12: Create TypeScript types
 
 **Files:**
+
 - Create: `src/types/index.ts`
 
 - [ ] **Step 1: Write `src/types/index.ts`**
@@ -1186,7 +1185,7 @@ export interface Hero {
   id: string;
   name: string;
   publisher: string | null;
-  image_url: string | null;  // local asset key, e.g. 'spiderman'
+  image_url: string | null; // local asset key, e.g. 'spiderman'
   category: 'popular' | 'villain' | 'xmen';
 }
 
@@ -1265,6 +1264,7 @@ git commit -m "feat: add shared TypeScript types"
 ### Task 13: Create and test HeroCard component
 
 **Files:**
+
 - Create: `src/components/HeroCard.tsx`
 - Create: `__tests__/components/HeroCard.test.tsx`
 
@@ -1286,12 +1286,7 @@ jest.mock('react-native-figma-squircle', () => ({
 describe('HeroCard', () => {
   it('renders the hero name', () => {
     const { getByText } = render(
-      <HeroCard
-        id="620"
-        name="Spider-Man"
-        imageUrl="spiderman"
-        onPress={() => {}}
-      />
+      <HeroCard id="620" name="Spider-Man" imageUrl="spiderman" onPress={() => {}} />,
     );
     expect(getByText('Spider-Man')).toBeTruthy();
   });
@@ -1325,7 +1320,7 @@ interface HeroCardProps {
 }
 
 export function HeroCard({ id, name, imageUrl, onPress }: HeroCardProps) {
-  const imageSource = imageUrl ? HERO_IMAGES[imageUrl] ?? HERO_IMAGES[id] : HERO_IMAGES[id];
+  const imageSource = imageUrl ? (HERO_IMAGES[imageUrl] ?? HERO_IMAGES[id]) : HERO_IMAGES[id];
 
   return (
     <View style={styles.card}>
@@ -1419,6 +1414,7 @@ git commit -m "feat: add HeroCard component"
 ### Task 14: Build tab layout
 
 **Files:**
+
 - Create: `app/(tabs)/_layout.tsx`
 
 - [ ] **Step 1: Create `app/(tabs)/_layout.tsx`**
@@ -1459,11 +1455,7 @@ export default function TabLayout() {
           title: 'Discover',
           tabBarIcon: ({ color, focused }) => (
             <View style={styles.iconWrapper}>
-              <Ionicons
-                name={focused ? 'layers' : 'layers-outline'}
-                size={24}
-                color={color}
-              />
+              <Ionicons name={focused ? 'layers' : 'layers-outline'} size={24} color={color} />
             </View>
           ),
         }}
@@ -1489,11 +1481,7 @@ export default function TabLayout() {
           title: 'Profile',
           tabBarIcon: ({ color, focused }) => (
             <View style={styles.iconWrapper}>
-              <Ionicons
-                name={focused ? 'person' : 'person-outline'}
-                size={24}
-                color={color}
-              />
+              <Ionicons name={focused ? 'person' : 'person-outline'} size={24} color={color} />
             </View>
           ),
         }}
@@ -1532,25 +1520,24 @@ const styles = StyleSheet.create({
 ### Task 15: Build Home screen
 
 **Files:**
+
 - Create: `app/(tabs)/index.tsx`
 
 - [ ] **Step 1: Create `app/(tabs)/index.tsx`**
 
 ```tsx
 import { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  StatusBar,
-  ScrollView,
-  Modal,
-} from 'react-native';
+import { View, Text, StyleSheet, Dimensions, StatusBar, ScrollView, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
+import Animated, {
+  useSharedValue,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
 import Carousel from 'react-native-reanimated-carousel';
 import * as Progress from 'react-native-progress';
 import { supabase } from '../../src/lib/supabase';
@@ -1581,7 +1568,7 @@ export default function HomeScreen() {
           scrollY.value,
           [40, 100 + insets.top],
           [40, insets.top - 100],
-          Extrapolation.CLAMP
+          Extrapolation.CLAMP,
         ),
       },
     ],
@@ -1589,10 +1576,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     async function fetchHeroes() {
-      const { data } = await supabase
-        .from('heroes')
-        .select('*')
-        .order('name');
+      const { data } = await supabase.from('heroes').select('*').order('name');
 
       if (data) {
         setPopular(data.filter((h: Hero) => h.category === 'popular'));
@@ -1607,7 +1591,12 @@ export default function HomeScreen() {
     setLoading(true);
     router.push({
       pathname: '/character/[id]',
-      params: { id: hero.id, name: hero.name, imageUrl: hero.image_url ?? '', publisher: hero.publisher ?? '' },
+      params: {
+        id: hero.id,
+        name: hero.name,
+        imageUrl: hero.image_url ?? '',
+        publisher: hero.publisher ?? '',
+      },
     });
   };
 
@@ -1757,6 +1746,7 @@ const styles = StyleSheet.create({
 ### Task 16: Create shell screens
 
 **Files:**
+
 - Create: `app/(tabs)/search.tsx`
 - Create: `app/(tabs)/profile.tsx`
 
@@ -1856,6 +1846,7 @@ git commit -m "feat: add tab layout, Home screen with Supabase hero data, shell 
 ### Task 17: Create and test API layer
 
 **Files:**
+
 - Create: `src/lib/api.ts`
 - Create: `__tests__/lib/api.test.ts`
 
@@ -1882,9 +1873,7 @@ describe('fetchHeroStats', () => {
 
     const result = await fetchHeroStats('620');
     expect(result.name).toBe('Spider-Man');
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/620/')
-    );
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/620/'));
   });
 
   it('throws on non-ok response', async () => {
@@ -1898,11 +1887,13 @@ describe('fetchHeroDetails', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        results: [{
-          deck: 'A hero summary',
-          publisher: { name: 'Marvel Comics' },
-          first_appeared_in_issue: { id: '1234' },
-        }],
+        results: [
+          {
+            deck: 'A hero summary',
+            publisher: { name: 'Marvel Comics' },
+            first_appeared_in_issue: { id: '1234' },
+          },
+        ],
       }),
     });
 
@@ -1969,12 +1960,9 @@ export async function fetchHeroStats(id: string): Promise<HeroStats> {
   return res.json();
 }
 
-export async function fetchHeroDetails(
-  name: string,
-  publisher: string
-): Promise<HeroDetails> {
+export async function fetchHeroDetails(name: string, publisher: string): Promise<HeroDetails> {
   const res = await fetch(
-    `https://comicvine.gamespot.com/api/characters/?api_key=${COMICVINE_KEY}&filter=name:${encodeURIComponent(name)},publisher:${encodeURIComponent(publisher)}&field_list=deck,publisher,first_appeared_in_issue&format=json`
+    `https://comicvine.gamespot.com/api/characters/?api_key=${COMICVINE_KEY}&filter=name:${encodeURIComponent(name)},publisher:${encodeURIComponent(publisher)}&field_list=deck,publisher,first_appeared_in_issue&format=json`,
   );
   if (!res.ok) throw new Error(`Hero details fetch failed: ${res.status}`);
   const data = await res.json();
@@ -1995,7 +1983,7 @@ export async function fetchFirstIssue(issueId: string | null): Promise<FirstIssu
   if (!issueId) return null;
 
   const res = await fetch(
-    `https://comicvine.gamespot.com/api/issue/4000-${issueId}/?api_key=${COMICVINE_KEY}&format=json`
+    `https://comicvine.gamespot.com/api/issue/4000-${issueId}/?api_key=${COMICVINE_KEY}&format=json`,
   );
   if (!res.ok) return null;
 
@@ -2027,6 +2015,7 @@ git commit -m "feat: add centralised API layer for SuperheroAPI and ComicVine"
 ### Task 18: Build Character screen
 
 **Files:**
+
 - Create: `app/character/[id].tsx`
 
 - [ ] **Step 1: Create `app/character/[id].tsx`**
@@ -2034,8 +2023,15 @@ git commit -m "feat: add centralised API layer for SuperheroAPI and ComicVine"
 ```tsx
 import { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Dimensions, Platform,
-  StatusBar, ActivityIndicator, TouchableOpacity,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Dimensions,
+  Platform,
+  StatusBar,
+  ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -2062,7 +2058,10 @@ const STATS: Array<{ key: keyof CharacterData['stats']['powerstats']; label: str
 
 export default function CharacterScreen() {
   const { id, name, imageUrl, publisher } = useLocalSearchParams<{
-    id: string; name: string; imageUrl: string; publisher: string;
+    id: string;
+    name: string;
+    imageUrl: string;
+    publisher: string;
   }>();
   const router = useRouter();
   const [data, setData] = useState<CharacterData | null>(null);
@@ -2089,9 +2088,12 @@ export default function CharacterScreen() {
   }, [id]);
 
   const localImage = HERO_IMAGES[imageUrl] ?? HERO_IMAGES[id];
-  const publisherKey = publisher === 'Marvel Comics' || publisher === 'Marvel'
-    ? 'marvel-logo'
-    : publisher === 'DC Comics' ? 'dc-logo' : null;
+  const publisherKey =
+    publisher === 'Marvel Comics' || publisher === 'Marvel'
+      ? 'marvel-logo'
+      : publisher === 'DC Comics'
+        ? 'dc-logo'
+        : null;
 
   if (loading) {
     return (
@@ -2124,11 +2126,7 @@ export default function CharacterScreen() {
         </TouchableOpacity>
 
         {/* Hero image */}
-        <Image
-          source={localImage}
-          contentFit="contain"
-          style={styles.heroImage}
-        />
+        <Image source={localImage} contentFit="contain" style={styles.heroImage} />
         <LinearGradient
           colors={['#ffffff00', COLORS.beige]}
           style={styles.bottomFade}
@@ -2162,9 +2160,7 @@ export default function CharacterScreen() {
             showsVerticalScrollIndicator={false}
           >
             {/* Summary */}
-            {details.summary && (
-              <Text style={styles.summary}>{details.summary}</Text>
-            )}
+            {details.summary && <Text style={styles.summary}>{details.summary}</Text>}
 
             {/* Power stats */}
             <View style={styles.statsRow}>
@@ -2184,9 +2180,7 @@ export default function CharacterScreen() {
                     lineCap="round"
                     padding={0}
                   >
-                    {(fill) => (
-                      <Text style={styles.statValue}>{Math.floor(fill)}</Text>
-                    )}
+                    {(fill) => <Text style={styles.statValue}>{Math.floor(fill)}</Text>}
                   </AnimatedCircularProgress>
                   <Text style={styles.statLabel}>{label}</Text>
                 </View>
@@ -2266,9 +2260,18 @@ export default function CharacterScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.beige },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.beige },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.beige,
+  },
   errorText: { fontFamily: 'Flame-Regular', color: COLORS.red, fontSize: 16, marginBottom: 12 },
-  backLink: { fontFamily: 'Nunito_400Regular', color: COLORS.navy, textDecorationLine: 'underline' },
+  backLink: {
+    fontFamily: 'Nunito_400Regular',
+    color: COLORS.navy,
+    textDecorationLine: 'underline',
+  },
   backButton: { position: 'absolute', top: 0, left: 10, zIndex: 10, padding: 10 },
   heroImage: {
     position: 'absolute',
@@ -2280,21 +2283,53 @@ const styles = StyleSheet.create({
   },
   bottomFade: { position: 'absolute', top: 0, left: 0, zIndex: -1, width: '100%', height: 500 },
   infoPanel: { position: 'absolute', width: '100%', top: 340, left: 0, padding: 20 },
-  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   heroName: { fontFamily: 'Righteous_400Regular', fontSize: 35, color: COLORS.navy },
   fullName: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.navy, marginLeft: 3 },
   publisherSquare: { width: 30, height: 30, borderRadius: 4 },
   publisherRect: { width: 50, height: 30, borderRadius: 4 },
   divider: { height: 3, backgroundColor: COLORS.navy, borderRadius: 30, marginBottom: 10 },
   thinDivider: { height: 2, backgroundColor: COLORS.navy, borderRadius: 30, marginBottom: 15 },
-  summary: { fontFamily: 'FlameSans-Regular', fontSize: 12, color: COLORS.navy, marginBottom: 20, lineHeight: 18 },
-  statsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', marginBottom: 10 },
+  summary: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: COLORS.navy,
+    marginBottom: 20,
+    lineHeight: 18,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    marginBottom: 10,
+  },
   statItem: { alignItems: 'center', justifyContent: 'center', padding: 5 },
   statValue: { fontFamily: 'Flame-Regular', color: COLORS.navy, left: 1 },
   statLabel: { fontFamily: 'Flame-Regular', fontSize: 10, color: COLORS.navy, marginTop: -10 },
-  sectionHeading: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.navy, textTransform: 'capitalize', paddingVertical: 5 },
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5, flexWrap: 'wrap' },
-  detailKey: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.navy, textTransform: 'capitalize' },
+  sectionHeading: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 20,
+    color: COLORS.navy,
+    textTransform: 'capitalize',
+    paddingVertical: 5,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 5,
+    flexWrap: 'wrap',
+  },
+  detailKey: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 15,
+    color: COLORS.navy,
+    textTransform: 'capitalize',
+  },
   detailValue: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.navy },
   comicContainer: { marginVertical: 20, alignItems: 'center' },
   comicImage: { width: 160, height: 240 },
@@ -2322,6 +2357,7 @@ git commit -m "feat: add character detail screen with stats, biography, and firs
 ### Task 19: Add favouriting
 
 **Files:**
+
 - Modify: `app/character/[id].tsx`
 - Modify: `app/(tabs)/profile.tsx`
 
@@ -2356,16 +2392,10 @@ useEffect(() => {
 const toggleFavourite = async () => {
   if (!user) return;
   if (isFavourite) {
-    await supabase
-      .from('user_favourites')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('hero_id', id);
+    await supabase.from('user_favourites').delete().eq('user_id', user.id).eq('hero_id', id);
     setIsFavourite(false);
   } else {
-    await supabase
-      .from('user_favourites')
-      .insert({ user_id: user.id, hero_id: id });
+    await supabase.from('user_favourites').insert({ user_id: user.id, hero_id: id });
     setIsFavourite(true);
   }
 };
@@ -2407,6 +2437,7 @@ git commit -m "feat: add favourite toggle on character screen, persisted to Supa
 ### Task 20: Update Profile screen
 
 **Files:**
+
 - Replace: `app/(tabs)/profile.tsx`
 
 - [ ] **Step 1: Replace `app/(tabs)/profile.tsx`**
@@ -2540,11 +2571,12 @@ git commit -m "fix: resolve any test failures after full implementation"
 ### Task 22: Write CLAUDE.md
 
 **Files:**
+
 - Create: `CLAUDE.md`
 
 - [ ] **Step 1: Create `CLAUDE.md`**
 
-```markdown
+````markdown
 # hero
 
 A React Native / Expo superhero encyclopedia app. Displays popular heroes, villains, and X-Men from a Supabase-backed list. Tapping a card fetches live data from SuperheroAPI + ComicVine and navigates to a detail screen. Users can sign in and save favourites.
@@ -2560,6 +2592,7 @@ A React Native / Expo superhero encyclopedia app. Displays popular heroes, villa
 npm install
 npx expo start
 ```
+````
 
 ## Commands
 
@@ -2595,12 +2628,12 @@ assets/
 
 ## Env vars
 
-| Key | Where to get it |
-|-----|----------------|
-| `SUPABASE_URL` | Supabase dashboard → Project Settings → API |
+| Key                 | Where to get it                             |
+| ------------------- | ------------------------------------------- |
+| `SUPABASE_URL`      | Supabase dashboard → Project Settings → API |
 | `SUPABASE_ANON_KEY` | Supabase dashboard → Project Settings → API |
-| `SUPERHERO_API_KEY` | superheroapi.com |
-| `COMICVINE_API_KEY` | comicvine.gamespot.com/api |
+| `SUPERHERO_API_KEY` | superheroapi.com                            |
+| `COMICVINE_API_KEY` | comicvine.gamespot.com/api                  |
 
 ## Gotchas
 
@@ -2609,14 +2642,15 @@ assets/
 - `babel-preset-expo` must come before `react-native-reanimated/plugin` in `babel.config.js`.
 - `react-native-url-polyfill/auto` must be the first import in `app/_layout.tsx` for Supabase to work on React Native.
 - Carousel uses `react-native-reanimated-carousel` (not the old unmaintained `react-native-snap-carousel`).
-```
+
+````
 
 - [ ] **Step 2: Commit**
 
 ```bash
 git add CLAUDE.md
 git commit -m "docs: add CLAUDE.md with setup instructions and architecture overview"
-```
+````
 
 ---
 
@@ -2664,6 +2698,7 @@ git commit -m "chore: final cleanup — remove any remaining old JS files"
 ## Done
 
 At completion the app:
+
 - Boots with Expo SDK 55 on iOS, Android, and Web
 - Redirects unauthenticated users to login
 - Loads hero carousels from Supabase

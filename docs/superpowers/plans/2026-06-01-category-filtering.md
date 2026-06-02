@@ -16,27 +16,28 @@
 
 ## File Structure
 
-| File | Responsibility |
-|---|---|
-| `supabase/migrations/<ts>_category_facets.sql` | Generated `powerstats_total` column + `category_facet_counts` RPC |
-| `src/types/database.generated.ts` | Regenerated after migration (never hand-edit) |
-| `src/lib/db/categoryFilters.ts` | `CategoryFilters`/`FacetCounts` types, defaults, per-slug facet visibility + default sort, URL (de)serialization |
-| `src/lib/db/heroes.ts` | Extend `getCategoryPage(slug, filters)`; add `getCategoryFacetCounts(slug, filters)` |
-| `src/hooks/useCategoryFilters.ts` | Filter state ↔ URL query params; setters; active-filter list; reset |
-| `src/components/web/category/FilterControls.tsx` | Shared facet UI (radio groups, toggle, sort) used by rail + sheet |
-| `src/components/web/category/FilterRail.tsx` | Desktop left sidebar |
-| `src/components/web/category/FilterSheet.tsx` | Mobile slide-up bottom sheet + "Apply · N" footer |
-| `src/components/web/category/ActiveFilterChips.tsx` | Removable chips for non-default filters |
-| `app/category/[slug].web.tsx` | Wire hook + rail/sheet/chips around the existing grid |
-| `__tests__/lib/db/categoryFilters.test.ts` | Unit tests for the pure module |
-| `__tests__/lib/db/heroes.categoryPage.test.ts` | Unit tests for query mapping |
-| `__tests__/hooks/useCategoryFilters.test.ts` | Unit tests for the hook |
+| File                                                | Responsibility                                                                                                   |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `supabase/migrations/<ts>_category_facets.sql`      | Generated `powerstats_total` column + `category_facet_counts` RPC                                                |
+| `src/types/database.generated.ts`                   | Regenerated after migration (never hand-edit)                                                                    |
+| `src/lib/db/categoryFilters.ts`                     | `CategoryFilters`/`FacetCounts` types, defaults, per-slug facet visibility + default sort, URL (de)serialization |
+| `src/lib/db/heroes.ts`                              | Extend `getCategoryPage(slug, filters)`; add `getCategoryFacetCounts(slug, filters)`                             |
+| `src/hooks/useCategoryFilters.ts`                   | Filter state ↔ URL query params; setters; active-filter list; reset                                              |
+| `src/components/web/category/FilterControls.tsx`    | Shared facet UI (radio groups, toggle, sort) used by rail + sheet                                                |
+| `src/components/web/category/FilterRail.tsx`        | Desktop left sidebar                                                                                             |
+| `src/components/web/category/FilterSheet.tsx`       | Mobile slide-up bottom sheet + "Apply · N" footer                                                                |
+| `src/components/web/category/ActiveFilterChips.tsx` | Removable chips for non-default filters                                                                          |
+| `app/category/[slug].web.tsx`                       | Wire hook + rail/sheet/chips around the existing grid                                                            |
+| `__tests__/lib/db/categoryFilters.test.ts`          | Unit tests for the pure module                                                                                   |
+| `__tests__/lib/db/heroes.categoryPage.test.ts`      | Unit tests for query mapping                                                                                     |
+| `__tests__/hooks/useCategoryFilters.test.ts`        | Unit tests for the hook                                                                                          |
 
 ---
 
 ## Task 1: Database migration — `powerstats_total` column + facet-count RPC
 
 **Files:**
+
 - Create: `supabase/migrations/<timestamp>_category_facets.sql` (use a real timestamp, e.g. `20260601120000_category_facets.sql`)
 - Modify (regenerate): `src/types/database.generated.ts`
 
@@ -163,6 +164,7 @@ git commit -m "feat(db): add powerstats_total column + category_facet_counts RPC
 ## Task 2: Pure filter module — types, defaults, visibility, URL (de)serialization
 
 **Files:**
+
 - Create: `src/lib/db/categoryFilters.ts`
 - Test: `__tests__/lib/db/categoryFilters.test.ts`
 
@@ -205,7 +207,12 @@ describe('visibleFacets', () => {
     expect(visibleFacets('strongest')).not.toContain('hasStats');
   });
   it('shows all four for popular', () => {
-    expect(visibleFacets('popular').sort()).toEqual(['alignment', 'gender', 'hasStats', 'publisher']);
+    expect(visibleFacets('popular').sort()).toEqual([
+      'alignment',
+      'gender',
+      'hasStats',
+      'publisher',
+    ]);
   });
 });
 
@@ -215,9 +222,21 @@ describe('filtersToParams / paramsToFilters round-trip', () => {
     expect(params).toEqual({});
   });
   it('serializes non-default values', () => {
-    const f: CategoryFilters = { publisher: 'marvel', alignment: 'bad', gender: 'female', hasStats: true, sort: 'az', search: 'man' };
+    const f: CategoryFilters = {
+      publisher: 'marvel',
+      alignment: 'bad',
+      gender: 'female',
+      hasStats: true,
+      sort: 'az',
+      search: 'man',
+    };
     expect(filtersToParams('popular', f)).toEqual({
-      publisher: 'marvel', alignment: 'bad', gender: 'female', stats: '1', sort: 'az', q: 'man',
+      publisher: 'marvel',
+      alignment: 'bad',
+      gender: 'female',
+      stats: '1',
+      sort: 'az',
+      q: 'man',
     });
   });
   it('omits sort when it equals the slug default', () => {
@@ -225,7 +244,14 @@ describe('filtersToParams / paramsToFilters round-trip', () => {
     expect(filtersToParams('strongest', f).sort).toBeUndefined();
   });
   it('round-trips back to the same filters', () => {
-    const f: CategoryFilters = { publisher: 'dc', alignment: 'good', gender: 'male', hasStats: true, sort: 'power', search: 'bat' };
+    const f: CategoryFilters = {
+      publisher: 'dc',
+      alignment: 'good',
+      gender: 'male',
+      hasStats: true,
+      sort: 'power',
+      search: 'bat',
+    };
     expect(paramsToFilters('popular', filtersToParams('popular', f))).toEqual(f);
   });
   it('applies the slug default sort when no sort param present', () => {
@@ -303,7 +329,12 @@ export function visibleFacets(slug: CategorySlug): FacetKey[] {
 }
 
 export type FilterParams = Partial<{
-  publisher: string; alignment: string; gender: string; stats: string; sort: string; q: string;
+  publisher: string;
+  alignment: string;
+  gender: string;
+  stats: string;
+  sort: string;
+  q: string;
 }>;
 
 export function filtersToParams(slug: CategorySlug, f: CategoryFilters): FilterParams {
@@ -338,20 +369,32 @@ export function paramsToFilters(slug: CategorySlug, p: FilterParams): CategoryFi
 }
 
 const LABELS: Record<string, string> = {
-  marvel: 'Marvel', dc: 'DC', other: 'Other',
-  good: 'Good', bad: 'Bad', neutral: 'Neutral',
-  male: 'Male', female: 'Female',
+  marvel: 'Marvel',
+  dc: 'DC',
+  other: 'Other',
+  good: 'Good',
+  bad: 'Bad',
+  neutral: 'Neutral',
+  male: 'Male',
+  female: 'Female',
 };
 
-export interface ActiveChip { key: FacetKey | 'search'; label: string; }
+export interface ActiveChip {
+  key: FacetKey | 'search';
+  label: string;
+}
 
 export function activeFilterList(slug: CategorySlug, f: CategoryFilters): ActiveChip[] {
   const visible = visibleFacets(slug);
   const chips: ActiveChip[] = [];
-  if (visible.includes('publisher') && f.publisher !== 'all') chips.push({ key: 'publisher', label: LABELS[f.publisher] });
-  if (visible.includes('alignment') && f.alignment !== 'any') chips.push({ key: 'alignment', label: LABELS[f.alignment] });
-  if (visible.includes('gender') && f.gender !== 'any') chips.push({ key: 'gender', label: LABELS[f.gender] });
-  if (visible.includes('hasStats') && f.hasStats) chips.push({ key: 'hasStats', label: 'Has powerstats' });
+  if (visible.includes('publisher') && f.publisher !== 'all')
+    chips.push({ key: 'publisher', label: LABELS[f.publisher] });
+  if (visible.includes('alignment') && f.alignment !== 'any')
+    chips.push({ key: 'alignment', label: LABELS[f.alignment] });
+  if (visible.includes('gender') && f.gender !== 'any')
+    chips.push({ key: 'gender', label: LABELS[f.gender] });
+  if (visible.includes('hasStats') && f.hasStats)
+    chips.push({ key: 'hasStats', label: 'Has powerstats' });
   return chips;
 }
 ```
@@ -373,6 +416,7 @@ git commit -m "feat(category): pure filter model + URL serialization"
 ## Task 3: Data layer — extend `getCategoryPage`, add `getCategoryFacetCounts`
 
 **Files:**
+
 - Modify: `src/lib/db/heroes.ts` (`getCategoryPage` ~line 373; add `getCategoryFacetCounts` after it)
 - Test: `__tests__/lib/db/heroes.categoryPage.test.ts`
 
@@ -384,23 +428,59 @@ Create `__tests__/lib/db/heroes.categoryPage.test.ts`. This extends the existing
 import { getCategoryPage, getCategoryFacetCounts } from '../../../src/lib/db/heroes';
 import { DEFAULT_FILTERS } from '../../../src/lib/db/categoryFilters';
 
-let mockResolveWith: { data: unknown; error: unknown; count?: number } = { data: [], error: null, count: 0 };
+let mockResolveWith: { data: unknown; error: unknown; count?: number } = {
+  data: [],
+  error: null,
+  count: 0,
+};
 let mockRpcResolveWith: { data: unknown; error: unknown } = { data: {}, error: null };
 
 jest.mock('../../../src/lib/supabase', () => {
-  const methods = ['select', 'eq', 'gte', 'lte', 'neq', 'or', 'ilike', 'not', 'order', 'limit', 'range'];
+  const methods = [
+    'select',
+    'eq',
+    'gte',
+    'lte',
+    'neq',
+    'or',
+    'ilike',
+    'not',
+    'order',
+    'limit',
+    'range',
+  ];
   const chain: Record<string, unknown> = {};
-  methods.forEach((m) => { chain[m] = jest.fn().mockReturnValue(chain); });
+  methods.forEach((m) => {
+    chain[m] = jest.fn().mockReturnValue(chain);
+  });
   chain.then = (resolve: (v: unknown) => unknown) => Promise.resolve(mockResolveWith).then(resolve);
   const mockFrom = jest.fn().mockReturnValue(chain);
   const mockRpc = jest.fn(() => Promise.resolve(mockRpcResolveWith));
-  return { supabase: { from: mockFrom, rpc: mockRpc }, __chain: chain, __mockFrom: mockFrom, __mockRpc: mockRpc };
+  return {
+    supabase: { from: mockFrom, rpc: mockRpc },
+    __chain: chain,
+    __mockFrom: mockFrom,
+    __mockRpc: mockRpc,
+  };
 });
 
 const { __chain: chain, __mockRpc: mockRpc } = jest.requireMock('../../../src/lib/supabase') as {
-  __chain: Record<string, jest.Mock>; __mockRpc: jest.Mock;
+  __chain: Record<string, jest.Mock>;
+  __mockRpc: jest.Mock;
 };
-const methods = ['select', 'eq', 'gte', 'lte', 'neq', 'or', 'ilike', 'not', 'order', 'limit', 'range'];
+const methods = [
+  'select',
+  'eq',
+  'gte',
+  'lte',
+  'neq',
+  'or',
+  'ilike',
+  'not',
+  'order',
+  'limit',
+  'range',
+];
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -435,7 +515,10 @@ describe('getCategoryPage filter mapping', () => {
   });
   it('orders by powerstats_total for the power sort', async () => {
     await getCategoryPage('popular', opts({ sort: 'power' }));
-    expect(chain.order).toHaveBeenCalledWith('powerstats_total', { ascending: false, nullsFirst: false });
+    expect(chain.order).toHaveBeenCalledWith('powerstats_total', {
+      ascending: false,
+      nullsFirst: false,
+    });
   });
   it('orders by name for the az sort', async () => {
     await getCategoryPage('popular', opts({ sort: 'az' }));
@@ -455,10 +538,29 @@ describe('getCategoryPage filter mapping', () => {
 
 describe('getCategoryFacetCounts', () => {
   it('calls the RPC with mapped params and returns its data', async () => {
-    mockRpcResolveWith = { data: { total: 3, publisher: { all: 3, marvel: 1, dc: 1, other: 1 }, alignment: { good: 0, bad: 3, neutral: 0 }, gender: { male: 2, female: 1 }, has_stats: 2 }, error: null };
-    const res = await getCategoryFacetCounts('villain', { ...DEFAULT_FILTERS, gender: 'female', hasStats: true, search: 'x' });
+    mockRpcResolveWith = {
+      data: {
+        total: 3,
+        publisher: { all: 3, marvel: 1, dc: 1, other: 1 },
+        alignment: { good: 0, bad: 3, neutral: 0 },
+        gender: { male: 2, female: 1 },
+        has_stats: 2,
+      },
+      error: null,
+    };
+    const res = await getCategoryFacetCounts('villain', {
+      ...DEFAULT_FILTERS,
+      gender: 'female',
+      hasStats: true,
+      search: 'x',
+    });
     expect(mockRpc).toHaveBeenCalledWith('category_facet_counts', {
-      p_slug: 'villain', p_publisher: 'all', p_alignment: 'any', p_gender: 'female', p_has_stats: true, p_search: 'x',
+      p_slug: 'villain',
+      p_publisher: 'all',
+      p_alignment: 'any',
+      p_gender: 'female',
+      p_has_stats: true,
+      p_search: 'x',
     });
     expect(res.total).toBe(3);
   });
@@ -493,16 +595,32 @@ export async function getCategoryPage(
   let q: any = supabase.from('heroes').select('*', { count: 'exact' });
 
   switch (slug) {
-    case 'popular': q = q.eq('category', 'popular'); break;
-    case 'villain':
-      q = q.eq('alignment', 'bad').not('publisher', 'in', '("Non-Fictional","In the Public Domain")');
+    case 'popular':
+      q = q.eq('category', 'popular');
       break;
-    case 'xmen': q = q.or('group_affiliation.ilike.%x-men%,group_affiliation.ilike.%xmen%'); break;
-    case 'anti-heroes': q = q.ilike('alignment', '%neutral%'); break;
-    case 'marvel': q = q.ilike('publisher', '%marvel%'); break;
-    case 'dc': q = q.ilike('publisher', '%dc%'); break;
-    case 'strongest': q = q.not('strength', 'is', null); break;
-    case 'most-intelligent': q = q.not('intelligence', 'is', null); break;
+    case 'villain':
+      q = q
+        .eq('alignment', 'bad')
+        .not('publisher', 'in', '("Non-Fictional","In the Public Domain")');
+      break;
+    case 'xmen':
+      q = q.or('group_affiliation.ilike.%x-men%,group_affiliation.ilike.%xmen%');
+      break;
+    case 'anti-heroes':
+      q = q.ilike('alignment', '%neutral%');
+      break;
+    case 'marvel':
+      q = q.ilike('publisher', '%marvel%');
+      break;
+    case 'dc':
+      q = q.ilike('publisher', '%dc%');
+      break;
+    case 'strongest':
+      q = q.not('strength', 'is', null);
+      break;
+    case 'most-intelligent':
+      q = q.not('intelligence', 'is', null);
+      break;
     case 'most-iconic':
       q = q.not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")');
       break;
@@ -511,7 +629,8 @@ export async function getCategoryPage(
   // Publisher facet
   if (publisher === 'marvel') q = q.ilike('publisher', '%marvel%');
   else if (publisher === 'dc') q = q.ilike('publisher', '%dc%');
-  else if (publisher === 'other') q = q.not('publisher', 'ilike', '%marvel%').not('publisher', 'ilike', '%dc%');
+  else if (publisher === 'other')
+    q = q.not('publisher', 'ilike', '%marvel%').not('publisher', 'ilike', '%dc%');
 
   // Alignment facet
   if (alignment === 'good') q = q.eq('alignment', 'good');
@@ -530,7 +649,8 @@ export async function getCategoryPage(
 
   // Sort
   if (sort === 'az') q = q.order('name');
-  else if (sort === 'power') q = q.order('powerstats_total', { ascending: false, nullsFirst: false });
+  else if (sort === 'power')
+    q = q.order('powerstats_total', { ascending: false, nullsFirst: false });
   else q = q.order('issue_count', { ascending: false, nullsFirst: false });
 
   const { data, error, count } = await q.range(from, to);
@@ -585,6 +705,7 @@ git commit -m "feat(category): full filter query mapping + facet-count fetch"
 ## Task 4: `useCategoryFilters` hook — state ↔ URL
 
 **Files:**
+
 - Create: `src/hooks/useCategoryFilters.ts`
 - Test: `__tests__/hooks/useCategoryFilters.test.ts`
 
@@ -598,14 +719,19 @@ import { useCategoryFilters } from '../../src/hooks/useCategoryFilters';
 import { DEFAULT_FILTERS } from '../../src/lib/db/categoryFilters';
 
 let mockParams: Record<string, string> = {};
-const mockSetParams = jest.fn((p: Record<string, string>) => { mockParams = { ...mockParams, ...p }; });
+const mockSetParams = jest.fn((p: Record<string, string>) => {
+  mockParams = { ...mockParams, ...p };
+});
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockParams,
   useRouter: () => ({ setParams: mockSetParams }),
 }));
 
-beforeEach(() => { mockParams = {}; mockSetParams.mockClear(); });
+beforeEach(() => {
+  mockParams = {};
+  mockSetParams.mockClear();
+});
 
 describe('useCategoryFilters', () => {
   it('starts from DEFAULT_FILTERS for a plain slug', () => {
@@ -636,7 +762,14 @@ describe('useCategoryFilters', () => {
     const { result } = renderHook(() => useCategoryFilters('popular'));
     act(() => result.current.reset());
     expect(result.current.filters).toEqual(DEFAULT_FILTERS);
-    expect(mockSetParams).toHaveBeenCalledWith({ publisher: '', alignment: '', gender: '', stats: '', sort: '', q: '' });
+    expect(mockSetParams).toHaveBeenCalledWith({
+      publisher: '',
+      alignment: '',
+      gender: '',
+      stats: '',
+      sort: '',
+      q: '',
+    });
   });
 });
 ```
@@ -672,8 +805,12 @@ export function useCategoryFilters(slug: CategorySlug) {
   // we push changes back to the URL (matches app/search.web.tsx).
   const [filters, setFilters] = useState<CategoryFilters>(() =>
     paramsToFilters(slug, {
-      publisher: one(params.publisher), alignment: one(params.alignment), gender: one(params.gender),
-      stats: one(params.stats), sort: one(params.sort), q: one(params.q),
+      publisher: one(params.publisher),
+      alignment: one(params.alignment),
+      gender: one(params.gender),
+      stats: one(params.stats),
+      sort: one(params.sort),
+      q: one(params.q),
     }),
   );
 
@@ -682,17 +819,24 @@ export function useCategoryFilters(slug: CategorySlug) {
       const p = filtersToParams(slug, next);
       // Clear keys that fell back to default by sending empty strings.
       router.setParams({
-        publisher: p.publisher ?? '', alignment: p.alignment ?? '', gender: p.gender ?? '',
-        stats: p.stats ?? '', sort: p.sort ?? '', q: p.q ?? '',
+        publisher: p.publisher ?? '',
+        alignment: p.alignment ?? '',
+        gender: p.gender ?? '',
+        stats: p.stats ?? '',
+        sort: p.sort ?? '',
+        q: p.q ?? '',
       });
     },
     [router, slug],
   );
 
-  const update = useCallback((next: CategoryFilters) => {
-    setFilters(next);
-    pushUrl(next);
-  }, [pushUrl]);
+  const update = useCallback(
+    (next: CategoryFilters) => {
+      setFilters(next);
+      pushUrl(next);
+    },
+    [pushUrl],
+  );
 
   const setFilter = useCallback(
     <K extends keyof CategoryFilters>(key: K, value: CategoryFilters[K]) => {
@@ -731,6 +875,7 @@ git commit -m "feat(category): useCategoryFilters state-URL hook"
 ## Task 5: `FilterControls` — shared facet UI
 
 **Files:**
+
 - Create: `src/components/web/category/FilterControls.tsx`
 
 > No unit test — per CLAUDE.md we don't render-test full UI. Verified visually in Task 7.
@@ -744,7 +889,9 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { COLORS } from '../../../constants/colors';
 import type { CategorySlug } from '../../../lib/db/heroes';
 import {
-  type CategoryFilters, type FacetCounts, type FacetKey,
+  type CategoryFilters,
+  type FacetCounts,
+  type FacetKey,
   visibleFacets,
 } from '../../../lib/db/categoryFilters';
 
@@ -757,10 +904,22 @@ interface Props {
   setFilter: SetFilter;
 }
 
-interface Opt { value: string; label: string; count?: number; }
+interface Opt {
+  value: string;
+  label: string;
+  count?: number;
+}
 
-function Group({ title, options, selected, onSelect }: {
-  title: string; options: Opt[]; selected: string; onSelect: (v: string) => void;
+function Group({
+  title,
+  options,
+  selected,
+  onSelect,
+}: {
+  title: string;
+  options: Opt[];
+  selected: string;
+  onSelect: (v: string) => void;
 }) {
   return (
     <View style={s.group}>
@@ -774,11 +933,21 @@ function Group({ title, options, selected, onSelect }: {
               key={o.value}
               disabled={disabled}
               onPress={() => onSelect(o.value)}
-              style={[s.option, active && (s.optionActive as object), disabled && (s.optionDisabled as object)] as object}
+              style={
+                [
+                  s.option,
+                  active && (s.optionActive as object),
+                  disabled && (s.optionDisabled as object),
+                ] as object
+              }
             >
-              <Text style={[s.optionText, active && (s.optionTextActive as object)] as object}>{o.label}</Text>
+              <Text style={[s.optionText, active && (s.optionTextActive as object)] as object}>
+                {o.label}
+              </Text>
               {typeof o.count === 'number' && (
-                <Text style={[s.count, active && (s.countActive as object)] as object}>{o.count}</Text>
+                <Text style={[s.count, active && (s.countActive as object)] as object}>
+                  {o.count}
+                </Text>
               )}
             </Pressable>
           );
@@ -865,19 +1034,35 @@ const s = StyleSheet.create({
   root: { gap: 18 },
   group: { gap: 8 },
   groupTitle: {
-    fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 0.6,
-    textTransform: 'uppercase', color: 'rgba(245,235,220,0.5)',
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: 'rgba(245,235,220,0.5)',
   } as object,
   optionWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 } as object,
   option: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 11, height: 32, borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 11,
+    height: 32,
+    borderRadius: 8,
     backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', cursor: 'pointer',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+    cursor: 'pointer',
   } as object,
-  optionActive: { backgroundColor: 'rgba(255,255,255,0.18)', borderColor: 'rgba(255,255,255,0.32)' } as object,
+  optionActive: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderColor: 'rgba(255,255,255,0.32)',
+  } as object,
   optionDisabled: { opacity: 0.35, cursor: 'default' } as object,
-  optionText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(255,255,255,0.6)' } as object,
+  optionText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.6)',
+  } as object,
   optionTextActive: { color: COLORS.beige } as object,
   count: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: 'rgba(255,255,255,0.35)' } as object,
   countActive: { color: 'rgba(245,235,220,0.7)' } as object,
@@ -901,6 +1086,7 @@ git commit -m "feat(category): shared FilterControls facet UI"
 ## Task 6: `FilterRail`, `FilterSheet`, `ActiveFilterChips`
 
 **Files:**
+
 - Create: `src/components/web/category/FilterRail.tsx`
 - Create: `src/components/web/category/FilterSheet.tsx`
 - Create: `src/components/web/category/ActiveFilterChips.tsx`
@@ -943,10 +1129,15 @@ export function FilterRail({ slug, filters, counts, setFilter, onReset, hasActiv
 
 const s = StyleSheet.create({
   rail: {
-    width: 240, flexShrink: 0, alignSelf: 'flex-start',
-    position: 'sticky', top: 200, // 64 nav + ~136 header
-    backgroundColor: COLORS.navy, borderRadius: 14,
-    padding: 18, gap: 18,
+    width: 240,
+    flexShrink: 0,
+    alignSelf: 'flex-start',
+    position: 'sticky',
+    top: 200, // 64 nav + ~136 header
+    backgroundColor: COLORS.navy,
+    borderRadius: 14,
+    padding: 18,
+    gap: 18,
   } as object,
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontFamily: 'Flame-Regular', fontSize: 18, color: COLORS.beige } as object,
@@ -978,7 +1169,16 @@ interface Props {
   total: number;
 }
 
-export function FilterSheet({ open, slug, filters, counts, setFilter, onReset, onClose, total }: Props) {
+export function FilterSheet({
+  open,
+  slug,
+  filters,
+  counts,
+  setFilter,
+  onReset,
+  onClose,
+  total,
+}: Props) {
   if (!open) return null;
   return (
     <View style={s.overlay as object}>
@@ -987,13 +1187,17 @@ export function FilterSheet({ open, slug, filters, counts, setFilter, onReset, o
         <View style={s.grab as object} />
         <View style={s.header}>
           <Text style={s.title as object}>Filters</Text>
-          <Pressable onPress={onReset}><Text style={s.clearText as object}>Clear all</Text></Pressable>
+          <Pressable onPress={onReset}>
+            <Text style={s.clearText as object}>Clear all</Text>
+          </Pressable>
         </View>
         <ScrollView style={s.body} contentContainerStyle={s.bodyContent as object}>
           <FilterControls slug={slug} filters={filters} counts={counts} setFilter={setFilter} />
         </ScrollView>
         <Pressable onPress={onClose} style={s.apply as object}>
-          <Text style={s.applyText as object}>Show {total.toLocaleString()} result{total !== 1 ? 's' : ''}</Text>
+          <Text style={s.applyText as object}>
+            Show {total.toLocaleString()} result{total !== 1 ? 's' : ''}
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -1001,19 +1205,53 @@ export function FilterSheet({ open, slug, filters, counts, setFilter, onReset, o
 }
 
 const s = StyleSheet.create({
-  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200, justifyContent: 'flex-end' } as object,
-  scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' } as object,
-  sheet: {
-    backgroundColor: COLORS.navy, borderTopLeftRadius: 18, borderTopRightRadius: 18,
-    paddingHorizontal: 18, paddingTop: 10, paddingBottom: 18, maxHeight: '80%', gap: 14,
+  overlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 200,
+    justifyContent: 'flex-end',
   } as object,
-  grab: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(245,235,220,0.25)' } as object,
+  scrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  } as object,
+  sheet: {
+    backgroundColor: COLORS.navy,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: 18,
+    maxHeight: '80%',
+    gap: 14,
+  } as object,
+  grab: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(245,235,220,0.25)',
+  } as object,
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.beige } as object,
   clearText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.orange } as object,
   body: { flexGrow: 0 },
   bodyContent: { paddingVertical: 4 } as object,
-  apply: { height: 48, borderRadius: 12, backgroundColor: COLORS.orange, alignItems: 'center', justifyContent: 'center', cursor: 'pointer' } as object,
+  apply: {
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: COLORS.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+  } as object,
   applyText: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: '#fff' } as object,
 });
 ```
@@ -1027,7 +1265,10 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { COLORS } from '../../../constants/colors';
 import type { CategorySlug } from '../../../lib/db/heroes';
 import {
-  type CategoryFilters, type FacetKey, activeFilterList, DEFAULT_FILTERS,
+  type CategoryFilters,
+  type FacetKey,
+  activeFilterList,
+  DEFAULT_FILTERS,
 } from '../../../lib/db/categoryFilters';
 
 interface Props {
@@ -1065,9 +1306,16 @@ export function ActiveFilterChips({ slug, filters, setFilter }: Props) {
 const s = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' } as object,
   chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6, height: 28,
-    paddingHorizontal: 10, borderRadius: 14,
-    backgroundColor: 'rgba(231,115,51,0.18)', borderWidth: 1, borderColor: 'rgba(231,115,51,0.4)', cursor: 'pointer',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 28,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    backgroundColor: 'rgba(231,115,51,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(231,115,51,0.4)',
+    cursor: 'pointer',
   } as object,
   text: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange } as object,
   x: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: COLORS.orange, lineHeight: 15 } as object,
@@ -1091,6 +1339,7 @@ git commit -m "feat(category): desktop rail, mobile sheet, active chips"
 ## Task 7: Wire the new system into `app/category/[slug].web.tsx`
 
 **Files:**
+
 - Modify: `app/category/[slug].web.tsx`
 
 This replaces the screen's local filter state (`sort`, `publisher`, `search`, the inline pill/segment rows) with `useCategoryFilters` + the new components, and adds a facet-counts fetch. The grid, skeleton, `HeroCard`, and infinite scroll are kept as-is (including the `width: '100%'` WebKit fix).
@@ -1103,8 +1352,15 @@ In `app/category/[slug].web.tsx`:
 
 ```tsx
 import { useCategoryFilters } from '../../src/hooks/useCategoryFilters';
-import { getCategoryPage, getCategoryFacetCounts, /* keep existing */ } from '../../src/lib/db/heroes';
-import { activeFilterList, type CategoryFilters, type FacetCounts } from '../../src/lib/db/categoryFilters';
+import {
+  getCategoryPage,
+  getCategoryFacetCounts /* keep existing */,
+} from '../../src/lib/db/heroes';
+import {
+  activeFilterList,
+  type CategoryFilters,
+  type FacetCounts,
+} from '../../src/lib/db/categoryFilters';
 import { FilterRail } from '../../src/components/web/category/FilterRail';
 import { FilterSheet } from '../../src/components/web/category/FilterSheet';
 import { ActiveFilterChips } from '../../src/components/web/category/ActiveFilterChips';
@@ -1124,7 +1380,8 @@ const [sheetOpen, setSheetOpen] = useState(false);
 const fetchPage = useCallback(
   async (page: number, f: CategoryFilters, append = false) => {
     if (!categorySlug) return;
-    if (page === 0) setLoading(true); else setLoadingMore(true);
+    if (page === 0) setLoading(true);
+    else setLoadingMore(true);
     try {
       const result = await getCategoryPage(categorySlug, { page, pageSize: PAGE_SIZE, ...f });
       setHeroes((prev) => {
@@ -1135,7 +1392,12 @@ const fetchPage = useCallback(
       setTotal(result.total);
       currentPage.current = page;
       hasMore.current = (page + 1) * PAGE_SIZE < result.total;
-    } catch { /* */ } finally { setLoading(false); setLoadingMore(false); }
+    } catch {
+      /* */
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
   },
   [categorySlug],
 );
@@ -1150,10 +1412,15 @@ const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 useEffect(() => {
   if (!categorySlug) return;
   clearTimeout(searchTimer.current);
-  searchTimer.current = setTimeout(() => {
-    fetchPage(0, filters);
-    getCategoryFacetCounts(categorySlug, filters).then(setCounts).catch(() => setCounts(null));
-  }, filters.search ? 300 : 0);
+  searchTimer.current = setTimeout(
+    () => {
+      fetchPage(0, filters);
+      getCategoryFacetCounts(categorySlug, filters)
+        .then(setCounts)
+        .catch(() => setCounts(null));
+    },
+    filters.search ? 300 : 0,
+  );
   return () => clearTimeout(searchTimer.current);
 }, [categorySlug, filters, fetchPage]);
 ```
@@ -1163,6 +1430,7 @@ useEffect(() => {
 ```tsx
 fetchPage(currentPage.current + 1, filters, true);
 ```
+
 and its dependency array to `[fetchPage, filters]`.
 
 6. Update the search `TextInput` to use `filters.search` / `setFilter('search', t)`:
@@ -1179,7 +1447,9 @@ Replace the entire `controlsRow` block (the inline segment/chip rows, both deskt
 Replace the JSX from the start of `{/* Row 2 — controls */}` through the end of the content section with:
 
 ```tsx
-{/* Row 2 — search + active chips (+ Filters button on mobile) */}
+{
+  /* Row 2 — search + active chips (+ Filters button on mobile) */
+}
 <View style={[styles.controlsRow, !isDesktop && (styles.controlsRowMobile as object)] as object}>
   <View style={[styles.searchBar, !isDesktop && (styles.searchBarMobile as object)] as object}>
     <Ionicons name="search-outline" size={14} color="rgba(245,235,220,0.35)" />
@@ -1198,21 +1468,25 @@ Replace the JSX from the start of `{/* Row 2 — controls */}` through the end o
       <Text style={styles.filterBtnText as object}>Filters</Text>
       {activeFilterList(categorySlug ?? 'popular', filters).length > 0 && (
         <View style={styles.filterBadge as object}>
-          <Text style={styles.filterBadgeText as object}>{activeFilterList(categorySlug ?? 'popular', filters).length}</Text>
+          <Text style={styles.filterBadgeText as object}>
+            {activeFilterList(categorySlug ?? 'popular', filters).length}
+          </Text>
         </View>
       )}
     </Pressable>
   )}
-</View>
-{categorySlug && (
-  <ActiveFilterChips slug={categorySlug} filters={filters} setFilter={setFilter} />
-)}
+</View>;
+{
+  categorySlug && <ActiveFilterChips slug={categorySlug} filters={filters} setFilter={setFilter} />;
+}
 ```
 
 Then change the content region so the desktop layout is `rail + grid`. Wrap the existing loading/empty/grid `ScrollView` in a row container:
 
 ```tsx
-{/* ── Content: desktop = rail + grid; mobile = grid only ── */}
+{
+  /* ── Content: desktop = rail + grid; mobile = grid only ── */
+}
 <View style={[styles.contentRow, { paddingHorizontal: contentPad }] as object}>
   {isDesktop && categorySlug && (
     <FilterRail
@@ -1229,21 +1503,25 @@ Then change the content region so the desktop layout is `rail + grid`. Wrap the 
         remove the per-block `paddingHorizontal: contentPad` since the row
         now owns horizontal padding. Keep paddingBottom on the grid. */}
   </View>
-</View>
+</View>;
 
-{/* Mobile filter sheet */}
-{categorySlug && (
-  <FilterSheet
-    open={sheetOpen}
-    slug={categorySlug}
-    filters={filters}
-    counts={counts}
-    setFilter={setFilter}
-    onReset={reset}
-    onClose={() => setSheetOpen(false)}
-    total={total}
-  />
-)}
+{
+  /* Mobile filter sheet */
+}
+{
+  categorySlug && (
+    <FilterSheet
+      open={sheetOpen}
+      slug={categorySlug}
+      filters={filters}
+      counts={counts}
+      setFilter={setFilter}
+      onReset={reset}
+      onClose={() => setSheetOpen(false)}
+      total={total}
+    />
+  );
+}
 ```
 
 - [ ] **Step 3: Add the new styles**
@@ -1276,6 +1554,7 @@ Expected: no TS errors; all Jest suites pass.
 - [ ] **Step 5: Verify in Chromium (desktop + emulated mobile)**
 
 Start the dev server if not running (`yarn start --web` or the existing server on :8081). Using the Playwright MCP:
+
 - Navigate to `http://localhost:8081/category/villain` at 1280px wide → filter rail visible on the left, grid on the right, alignment facet **absent** (villain), publisher/gender/powerstats present with counts.
 - Click "Marvel" publisher → grid refetches, counts update, a "Marvel" chip appears, URL gains `?publisher=marvel`.
 - Resize to 390px → rail gone, "Filters" button visible; open sheet, choose Female, tap "Show N results" → sheet closes, chip shows, grid filtered.
@@ -1320,4 +1599,7 @@ Do not push or open a PR unless the user requests it.
 - **Spec coverage:** honest+adaptive counts (Task 1 RPC + Task 5 count display) ✓; filter set publisher/alignment/gender/hasStats/sort (Tasks 2,3,5) ✓; mobile sheet (Task 6) ✓; desktop rail (Task 6) ✓; shared state model (Task 4) ✓; URL state (Tasks 2,4) ✓; per-option counts via RPC (Task 1,3) ✓; generated `powerstats_total` + Power sort + getHeroesByPowerRange fix (Task 1,3) ✓; category-aware facet visibility (Task 2) ✓; web-only with extracted logic (Tasks 2–4 are platform-agnostic) ✓; tests with mocked Supabase, no screen render tests (Tasks 2,3,4) ✓.
 - **Type consistency:** `CategoryFilters`, `FacetCounts`, `FacetKey`, `SortOption ('popular'|'az'|'power')`, `visibleFacets`, `filtersToParams`/`paramsToFilters`, `getCategoryPage(slug, {page,pageSize,...filters})`, `getCategoryFacetCounts(slug, filters)`, RPC param names `p_slug/p_publisher/p_alignment/p_gender/p_has_stats/p_search` — consistent across Tasks 1–7.
 - **Placeholders:** none — all steps contain concrete code/SQL/commands.
+
+```
+
 ```

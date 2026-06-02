@@ -18,8 +18,8 @@ Before writing any code, create a Ko-fi account at https://ko-fi.com and note yo
 
 ## File Map
 
-| Action | File |
-|---|---|
+| Action | File                     |
+| ------ | ------------------------ |
 | Modify | `app/(tabs)/profile.tsx` |
 
 No new files. No DB changes. No migrations.
@@ -29,6 +29,7 @@ No new files. No DB changes. No migrations.
 ### Task 1: Add Linking import and KO_FI_URL constant
 
 **Files:**
+
 - Modify: `app/(tabs)/profile.tsx:1-15` (imports) and top of component file (constant)
 
 - [ ] **Step 1: Add `Linking` to the React Native import**
@@ -83,6 +84,7 @@ git commit -m "feat(profile): add KO_FI_URL constant and Linking import"
 ### Task 2: Add the donation row JSX
 
 **Files:**
+
 - Modify: `app/(tabs)/profile.tsx` — JSX section, Account card (~line 507)
 
 - [ ] **Step 1: Insert divider + donation row above the Sign Out divider**

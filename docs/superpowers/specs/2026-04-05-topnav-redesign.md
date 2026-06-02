@@ -21,7 +21,7 @@ Root cause: the avatar has no clear role. It duplicates a nav link rather than o
 ```
 
 | Slot   | Desktop                          | Mobile    |
-|--------|----------------------------------|-----------|
+| ------ | -------------------------------- | --------- |
 | Left   | Logo → navigates to `/`          | Logo      |
 | Center | Search bar (all pages)           | — empty — |
 | Right  | Avatar (account dropdown button) | Avatar    |
@@ -47,9 +47,9 @@ Root cause: the avatar has no clear role. It duplicates a nav link rather than o
 - Dismissed by: clicking outside (full-screen transparent `Pressable` overlay behind the menu), or pressing Escape.
 - Contents:
 
-| Item | Action |
-|------|--------|
-| Profile | `router.push('/profile')`, closes menu |
+| Item     | Action                                                          |
+| -------- | --------------------------------------------------------------- |
+| Profile  | `router.push('/profile')`, closes menu                          |
 | Sign out | `signOut()` then `router.replace('/(auth)/login')`, closes menu |
 
 - Style: navy background (`COLORS.navy`), `borderRadius: 10`, `borderWidth: 1`, `borderColor: 'rgba(245,235,220,0.1)'`, `boxShadow`, min-width 160px.

@@ -32,7 +32,12 @@ describe('visibleFacets', () => {
     expect(visibleFacets('strongest')).not.toContain('hasStats');
   });
   it('shows all four for popular', () => {
-    expect(visibleFacets('popular').sort()).toEqual(['alignment', 'gender', 'hasStats', 'publisher']);
+    expect(visibleFacets('popular').sort()).toEqual([
+      'alignment',
+      'gender',
+      'hasStats',
+      'publisher',
+    ]);
   });
 });
 
@@ -42,9 +47,21 @@ describe('filtersToParams / paramsToFilters round-trip', () => {
     expect(params).toEqual({});
   });
   it('serializes non-default values', () => {
-    const f: CategoryFilters = { publisher: 'marvel', alignment: 'bad', gender: 'female', hasStats: true, sort: 'az', search: 'man' };
+    const f: CategoryFilters = {
+      publisher: 'marvel',
+      alignment: 'bad',
+      gender: 'female',
+      hasStats: true,
+      sort: 'az',
+      search: 'man',
+    };
     expect(filtersToParams('popular', f)).toEqual({
-      publisher: 'marvel', alignment: 'bad', gender: 'female', stats: '1', sort: 'az', q: 'man',
+      publisher: 'marvel',
+      alignment: 'bad',
+      gender: 'female',
+      stats: '1',
+      sort: 'az',
+      q: 'man',
     });
   });
   it('omits sort when it equals the slug default', () => {
@@ -52,7 +69,14 @@ describe('filtersToParams / paramsToFilters round-trip', () => {
     expect(filtersToParams('strongest', f).sort).toBeUndefined();
   });
   it('round-trips back to the same filters', () => {
-    const f: CategoryFilters = { publisher: 'dc', alignment: 'good', gender: 'male', hasStats: true, sort: 'power', search: 'bat' };
+    const f: CategoryFilters = {
+      publisher: 'dc',
+      alignment: 'good',
+      gender: 'male',
+      hasStats: true,
+      sort: 'power',
+      search: 'bat',
+    };
     expect(paramsToFilters('popular', filtersToParams('popular', f))).toEqual(f);
   });
   it('applies the slug default sort when no sort param present', () => {

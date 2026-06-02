@@ -37,22 +37,26 @@ The current category full-list page (`app/category/[slug].tsx`) is a flat, unsor
 ### Components
 
 #### Featured Hero Banner
+
 - Always the top hero by `issue_count` for the active filters
 - Full-width card with cinematic image, name, publisher, and issue count
 - Tapping navigates to `/character/[id]`
 - Hidden when the search bar has text (search takes over the full screen)
 
 #### Search Bar
+
 - Debounced server-side query, 300ms delay
 - Scoped to the current category slug (same filter logic as the grid)
 - Clears with an `×` button when active
 - While active: featured banner hides, count label reflects search results
 
 #### Sort Control (Segmented)
+
 - Two segments: **Popular** (default, ordered by `issue_count` DESC) and **A–Z** (ordered by `name` ASC)
 - Switching resets pagination to page 1 and refetches
 
 #### Publisher Filter Icon
+
 - Funnel icon to the right of the segmented control
 - Orange dot indicator when a non-default filter is active
 - Tapping opens a bottom sheet with two sections:
@@ -61,10 +65,12 @@ The current category full-list page (`app/category/[slug].tsx`) is a flat, unsor
 - Sheet has an **Apply** button that closes the sheet and triggers a refetch
 
 #### Count Label
+
 - Shows live result count reflecting all active filters
 - Format: `165 villains` → `89 villains · Marvel` → `2 results for "doc"`
 
 #### Hero Grid
+
 - 3 columns, same card style as current implementation
 - **Infinite scroll:** 30 heroes per page; next page fetches automatically when user is within ~3 cards of the bottom
 - Loading indicator (spinner row) while next page fetches
@@ -93,6 +99,7 @@ getCategoryPage(
 ### State
 
 The screen manages:
+
 ```ts
 sort: 'popular' | 'az'           // default: 'popular'
 publisher: 'all' | 'marvel' | 'dc' // default: 'all'
@@ -115,11 +122,11 @@ Changing `sort`, `publisher`, or `search` resets `pages` to `[]` and fetches pag
 
 ## Files to Change
 
-| File | Change |
-|---|---|
-| `src/lib/db/heroes.ts` | Add `getCategoryPage()`, keep `getAllHeroesBySlug` for now (used by nothing after this) |
-| `app/category/[slug].tsx` | Full rewrite to use new layout and paginated data |
-| `app/category/[slug].web.tsx` | Mirror changes if it exists |
+| File                          | Change                                                                                  |
+| ----------------------------- | --------------------------------------------------------------------------------------- |
+| `src/lib/db/heroes.ts`        | Add `getCategoryPage()`, keep `getAllHeroesBySlug` for now (used by nothing after this) |
+| `app/category/[slug].tsx`     | Full rewrite to use new layout and paginated data                                       |
+| `app/category/[slug].web.tsx` | Mirror changes if it exists                                                             |
 
 ## Out of Scope
 

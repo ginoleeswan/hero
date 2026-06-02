@@ -12,17 +12,18 @@
 
 ## File Map
 
-| File | Action | Purpose |
-|---|---|---|
-| `src/lib/db/heroes.ts` | Modify | Add `getSearchIdleHeroes()`, fix `searchHeroes` ordering |
-| `src/components/SearchSheet.tsx` | Modify | Two-mode state machine, live search, spinner, section label |
-| `__tests__/lib/db/heroes.test.ts` | Modify | Tests for `getSearchIdleHeroes` and updated `searchHeroes` |
+| File                              | Action | Purpose                                                     |
+| --------------------------------- | ------ | ----------------------------------------------------------- |
+| `src/lib/db/heroes.ts`            | Modify | Add `getSearchIdleHeroes()`, fix `searchHeroes` ordering    |
+| `src/components/SearchSheet.tsx`  | Modify | Two-mode state machine, live search, spinner, section label |
+| `__tests__/lib/db/heroes.test.ts` | Modify | Tests for `getSearchIdleHeroes` and updated `searchHeroes`  |
 
 ---
 
 ## Task 1: Add `getSearchIdleHeroes` and fix `searchHeroes` ordering
 
 **Files:**
+
 - Modify: `src/lib/db/heroes.ts`
 - Modify: `__tests__/lib/db/heroes.test.ts`
 
@@ -51,9 +52,9 @@ describe('getSearchIdleHeroes', () => {
 describe('searchHeroes ordering', () => {
   it('returns spider-man before spider-woman when searching spider', async () => {
     const results = await searchHeroes('spider', 'All', 20);
-    const names = results.map(h => h.name.toLowerCase());
-    const spiderManIdx = names.findIndex(n => n === 'spider-man');
-    const spiderWomanIdx = names.findIndex(n => n === 'spider-woman');
+    const names = results.map((h) => h.name.toLowerCase());
+    const spiderManIdx = names.findIndex((n) => n === 'spider-man');
+    const spiderWomanIdx = names.findIndex((n) => n === 'spider-woman');
     if (spiderManIdx !== -1 && spiderWomanIdx !== -1) {
       expect(spiderManIdx).toBeLessThan(spiderWomanIdx);
     }
@@ -66,6 +67,7 @@ describe('searchHeroes ordering', () => {
 ```bash
 yarn test:ci --testPathPattern="heroes.test"
 ```
+
 Expected: FAIL — `getSearchIdleHeroes` not exported yet.
 
 - [ ] **Step 3: Add `getSearchIdleHeroes` and fix `searchHeroes` ordering in `src/lib/db/heroes.ts`**
@@ -130,6 +132,7 @@ import { searchHeroes, getSearchIdleHeroes, rankResults } from '../../src/lib/db
 ```bash
 yarn test:ci --testPathPattern="heroes.test"
 ```
+
 Expected: PASS
 
 - [ ] **Step 6: Commit**
@@ -144,6 +147,7 @@ git commit -m "feat(search): add getSearchIdleHeroes, order searchHeroes by issu
 ## Task 2: Rewrite SearchSheet state machine
 
 **Files:**
+
 - Modify: `src/components/SearchSheet.tsx`
 
 This task replaces the pre-load approach with the two-mode state machine. The component UI (animations, FlatList, PortraitCard, publisher pills) is unchanged — only the data layer and loading state change.
@@ -166,12 +170,12 @@ import {
   Platform,
   KeyboardAvoidingView,
   ScrollView,
-  ActivityIndicator,   // ← add
+  ActivityIndicator, // ← add
 } from 'react-native';
 ```
 
 ```ts
-import { searchHeroes, rankResults, getSearchIdleHeroes } from '../lib/db/heroes';  // add getSearchIdleHeroes
+import { searchHeroes, rankResults, getSearchIdleHeroes } from '../lib/db/heroes'; // add getSearchIdleHeroes
 ```
 
 - [ ] **Step 2: Replace state declarations**
@@ -179,15 +183,15 @@ import { searchHeroes, rankResults, getSearchIdleHeroes } from '../lib/db/heroes
 Find the block starting at `const [allHeroes, setAllHeroes]` and replace everything through `const debouncedQuery`:
 
 ```ts
-  const [idleHeroes, setIdleHeroes] = useState<HeroSearchResult[]>([]);
-  const [idleLoading, setIdleLoading] = useState(true);
-  const [searchResults, setSearchResults] = useState<HeroSearchResult[] | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const [query, setQuery] = useState('');
-  const [publisherFilter, setPublisherFilter] = useState<PublisherFilter>('All');
-  const cardWidth = (SCREEN_WIDTH - H_PAD * 2 - GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
+const [idleHeroes, setIdleHeroes] = useState<HeroSearchResult[]>([]);
+const [idleLoading, setIdleLoading] = useState(true);
+const [searchResults, setSearchResults] = useState<HeroSearchResult[] | null>(null);
+const [isSearching, setIsSearching] = useState(false);
+const [query, setQuery] = useState('');
+const [publisherFilter, setPublisherFilter] = useState<PublisherFilter>('All');
+const cardWidth = (SCREEN_WIDTH - H_PAD * 2 - GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
 
-  const debouncedQuery = useDebounce(query, 300);  // 300ms for server calls
+const debouncedQuery = useDebounce(query, 300); // 300ms for server calls
 ```
 
 - [ ] **Step 3: Replace the idle load `useEffect`**
@@ -195,12 +199,12 @@ Find the block starting at `const [allHeroes, setAllHeroes]` and replace everyth
 Replace the `useEffect` that called `searchHeroes('', 'All', 600)`:
 
 ```ts
-  useEffect(() => {
-    getSearchIdleHeroes(30)
-      .then(setIdleHeroes)
-      .catch(() => {})
-      .finally(() => setIdleLoading(false));
-  }, []);
+useEffect(() => {
+  getSearchIdleHeroes(30)
+    .then(setIdleHeroes)
+    .catch(() => {})
+    .finally(() => setIdleLoading(false));
+}, []);
 ```
 
 - [ ] **Step 4: Add live search `useEffect`**
@@ -208,19 +212,19 @@ Replace the `useEffect` that called `searchHeroes('', 'All', 600)`:
 Add this after the idle load effect:
 
 ```ts
-  useEffect(() => {
-    if (!debouncedQuery.trim()) {
-      setSearchResults(null);
-      setIsSearching(false);
-      return;
-    }
+useEffect(() => {
+  if (!debouncedQuery.trim()) {
+    setSearchResults(null);
+    setIsSearching(false);
+    return;
+  }
 
-    setIsSearching(true);
-    searchHeroes(debouncedQuery, publisherFilter, 100)
-      .then((results) => setSearchResults(rankResults(results, debouncedQuery)))
-      .catch(() => setSearchResults([]))
-      .finally(() => setIsSearching(false));
-  }, [debouncedQuery, publisherFilter]);
+  setIsSearching(true);
+  searchHeroes(debouncedQuery, publisherFilter, 100)
+    .then((results) => setSearchResults(rankResults(results, debouncedQuery)))
+    .catch(() => setSearchResults([]))
+    .finally(() => setIsSearching(false));
+}, [debouncedQuery, publisherFilter]);
 ```
 
 - [ ] **Step 5: Replace `filteredHeroes` and `displayedHeroes`**
@@ -228,22 +232,22 @@ Add this after the idle load effect:
 Replace the `filteredHeroes` useMemo and `displayedHeroes` line:
 
 ```ts
-  // In idle mode, apply publisher filter client-side on the cached iconic heroes.
-  // In search mode, the server already filtered by publisher — just show results.
-  const displayedHeroes = useMemo(() => {
-    if (searchResults !== null) return searchResults.slice(0, 100);
+// In idle mode, apply publisher filter client-side on the cached iconic heroes.
+// In search mode, the server already filtered by publisher — just show results.
+const displayedHeroes = useMemo(() => {
+  if (searchResults !== null) return searchResults.slice(0, 100);
 
-    const filtered =
-      publisherFilter === 'All'
-        ? idleHeroes
-        : idleHeroes.filter((h) => {
-            const pub = (h.publisher ?? '').toLowerCase();
-            if (publisherFilter === 'Marvel') return pub.includes('marvel');
-            if (publisherFilter === 'DC') return pub.includes('dc');
-            return !pub.includes('marvel') && !pub.includes('dc');
-          });
-    return filtered;
-  }, [idleHeroes, searchResults, publisherFilter]);
+  const filtered =
+    publisherFilter === 'All'
+      ? idleHeroes
+      : idleHeroes.filter((h) => {
+          const pub = (h.publisher ?? '').toLowerCase();
+          if (publisherFilter === 'Marvel') return pub.includes('marvel');
+          if (publisherFilter === 'DC') return pub.includes('dc');
+          return !pub.includes('marvel') && !pub.includes('dc');
+        });
+  return filtered;
+}, [idleHeroes, searchResults, publisherFilter]);
 ```
 
 - [ ] **Step 6: Update `loadingAll` references to `idleLoading`**
@@ -263,16 +267,18 @@ In the JSX, find `loadingAll` and replace:
 Find the search bar `<View style={styles.searchBar}>` and add the spinner just before the closing `</View>` of the bar (after the clear button):
 
 ```tsx
-            {isSearching ? (
-              <ActivityIndicator size="small" color="rgba(245,235,220,0.45)" />
-            ) : query.length > 0 ? (
-              <TouchableOpacity
-                onPress={() => setQuery('')}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.4)" />
-              </TouchableOpacity>
-            ) : null}
+{
+  isSearching ? (
+    <ActivityIndicator size="small" color="rgba(245,235,220,0.45)" />
+  ) : query.length > 0 ? (
+    <TouchableOpacity
+      onPress={() => setQuery('')}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.4)" />
+    </TouchableOpacity>
+  ) : null;
+}
 ```
 
 Note: this replaces the existing clear button block — the spinner takes its place while searching, the clear button shows when not searching but query exists.
@@ -280,15 +286,17 @@ Note: this replaces the existing clear button block — the spinner takes its pl
 Add a section label between the pills and the FlatList to orient the user:
 
 ```tsx
-          {!idleLoading && (
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>
-                {searchResults !== null
-                  ? `${displayedHeroes.length} result${displayedHeroes.length !== 1 ? 's' : ''}`
-                  : 'Popular'}
-              </Text>
-            </View>
-          )}
+{
+  !idleLoading && (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionLabel}>
+        {searchResults !== null
+          ? `${displayedHeroes.length} result${displayedHeroes.length !== 1 ? 's' : ''}`
+          : 'Popular'}
+      </Text>
+    </View>
+  );
+}
 ```
 
 Place this just before the `{idleLoading ? (` block.
@@ -317,6 +325,7 @@ Add to the `StyleSheet.create({})` block:
 ```bash
 yarn typecheck
 ```
+
 Expected: no errors.
 
 - [ ] **Step 10: Commit**

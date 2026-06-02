@@ -32,14 +32,7 @@ export function RoleBadge({ alignment }: RoleBadgeProps) {
   }
 
   return (
-    <Text
-      style={[
-        styles.badge,
-        badgeStyle,
-        { color: textColor },
-      ]}
-      numberOfLines={1}
-    >
+    <Text style={[styles.badge, badgeStyle, { color: textColor }]} numberOfLines={1}>
       {label}
     </Text>
   );

@@ -166,7 +166,7 @@ export default function WebLoginScreen() {
             source={LOGIN_HERO}
             style={StyleSheet.absoluteFill}
             contentFit="contain"
-            contentPosition={{ x: '50%', y: '0%' }}
+            contentPosition="top center"
           />
           {/* Scrim fades bottom of illustration into card */}
           <View style={styles.mobileScrim as object} pointerEvents="none" />
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     right: 0,
     height: '50%',
     backgroundImage: `linear-gradient(to bottom, transparent 0%, ${COLORS.navy} 70%, ${COLORS.beige} 100%)`,
-  },
+  } as object,
   mobileLogo: {
     position: 'absolute',
     top: 20,
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     borderColor: '#e0d6ca',
     outlineStyle: 'none',
     transition: 'border-color 0.15s ease',
-  },
+  } as object,
   inputFocused: {
     borderColor: COLORS.orange,
   },
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0d6ca',
     transition: 'border-color 0.15s ease',
-  },
+  } as object,
   passwordInput: {
     flex: 1,
     paddingHorizontal: 14,
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.navy,
     outlineStyle: 'none',
-  },
+  } as object,
   eyeToggle: {
     paddingHorizontal: 14,
     paddingVertical: 14,

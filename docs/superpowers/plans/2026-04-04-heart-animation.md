@@ -12,17 +12,18 @@
 
 ## File Map
 
-| File | Action | Responsibility |
-|---|---|---|
-| `src/components/HeartButton.tsx` | **Create** | Animated heart button — ring, dots, heart pop |
-| `__tests__/components/HeartButton.test.tsx` | **Create** | Behaviour tests for HeartButton |
-| `app/character/[id].tsx` | **Modify** | Remove headerRight heart; add HeartButton positioned in root View |
+| File                                        | Action     | Responsibility                                                    |
+| ------------------------------------------- | ---------- | ----------------------------------------------------------------- |
+| `src/components/HeartButton.tsx`            | **Create** | Animated heart button — ring, dots, heart pop                     |
+| `__tests__/components/HeartButton.test.tsx` | **Create** | Behaviour tests for HeartButton                                   |
+| `app/character/[id].tsx`                    | **Modify** | Remove headerRight heart; add HeartButton positioned in root View |
 
 ---
 
 ## Task 1: Write failing tests for HeartButton
 
 **Files:**
+
 - Create: `__tests__/components/HeartButton.test.tsx`
 
 - [ ] **Step 1: Write the failing tests**
@@ -87,6 +88,7 @@ Expected: FAIL — `Cannot find module '../../src/components/HeartButton'`
 ## Task 2: Implement HeartButton (static, no animation yet)
 
 **Files:**
+
 - Create: `src/components/HeartButton.tsx`
 
 - [ ] **Step 1: Create HeartButton with static heart, testID wired up**
@@ -169,12 +171,24 @@ export function HeartButton({ favourited, loading, onPress }: HeartButtonProps) 
   const ringOpacity = useSharedValue(0);
 
   // 6 dot shared values — declared individually (React hooks rules)
-  const d0x = useSharedValue(0); const d0y = useSharedValue(0); const d0o = useSharedValue(0);
-  const d1x = useSharedValue(0); const d1y = useSharedValue(0); const d1o = useSharedValue(0);
-  const d2x = useSharedValue(0); const d2y = useSharedValue(0); const d2o = useSharedValue(0);
-  const d3x = useSharedValue(0); const d3y = useSharedValue(0); const d3o = useSharedValue(0);
-  const d4x = useSharedValue(0); const d4y = useSharedValue(0); const d4o = useSharedValue(0);
-  const d5x = useSharedValue(0); const d5y = useSharedValue(0); const d5o = useSharedValue(0);
+  const d0x = useSharedValue(0);
+  const d0y = useSharedValue(0);
+  const d0o = useSharedValue(0);
+  const d1x = useSharedValue(0);
+  const d1y = useSharedValue(0);
+  const d1o = useSharedValue(0);
+  const d2x = useSharedValue(0);
+  const d2y = useSharedValue(0);
+  const d2o = useSharedValue(0);
+  const d3x = useSharedValue(0);
+  const d3y = useSharedValue(0);
+  const d3o = useSharedValue(0);
+  const d4x = useSharedValue(0);
+  const d4y = useSharedValue(0);
+  const d4o = useSharedValue(0);
+  const d5x = useSharedValue(0);
+  const d5y = useSharedValue(0);
+  const d5o = useSharedValue(0);
 
   const dots = [
     { x: d0x, y: d0y, o: d0o },
@@ -213,7 +227,10 @@ export function HeartButton({ favourited, loading, onPress }: HeartButtonProps) 
         dot.y.value = withDelay(i * 15, withSpring(ty, { damping: 15 }));
         dot.o.value = withDelay(
           i * 15,
-          withSequence(withTiming(1, { duration: 50 }), withDelay(200, withTiming(0, { duration: 200 }))),
+          withSequence(
+            withTiming(1, { duration: 50 }),
+            withDelay(200, withTiming(0, { duration: 200 })),
+          ),
         );
       });
     } else {
@@ -307,6 +324,7 @@ git commit -m "feat: add animated HeartButton component with Twitter-style burst
 ## Task 3: Wire HeartButton into the character screen
 
 **Files:**
+
 - Modify: `app/character/[id].tsx`
 
 - [ ] **Step 1: Add the import and remove `headerRight`**
@@ -344,15 +362,13 @@ headerRight: user
 In the JSX returned by `CharacterScreen`, after the closing `</Animated.ScrollView>` tag and before the closing `</View>`, add:
 
 ```tsx
-{user && (
-  <View style={styles.heartButtonContainer}>
-    <HeartButton
-      favourited={favourited}
-      loading={favLoading}
-      onPress={toggleFavourite}
-    />
-  </View>
-)}
+{
+  user && (
+    <View style={styles.heartButtonContainer}>
+      <HeartButton favourited={favourited} loading={favLoading} onPress={toggleFavourite} />
+    </View>
+  );
+}
 ```
 
 - [ ] **Step 3: Add the container style**

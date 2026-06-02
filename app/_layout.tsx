@@ -35,7 +35,7 @@ function AuthGate() {
     if (loading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    const atRoot = segments.length === 0;
+    const atRoot = (segments.length as number) === 0;
 
     if (user && (inAuthGroup || atRoot)) {
       router.replace('/explore');

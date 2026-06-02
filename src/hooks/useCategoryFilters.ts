@@ -19,8 +19,12 @@ export function useCategoryFilters(slug: CategorySlug) {
   // we push changes back to the URL (matches app/search.web.tsx).
   const [filters, setFilters] = useState<CategoryFilters>(() =>
     paramsToFilters(slug, {
-      publisher: one(params.publisher), alignment: one(params.alignment), gender: one(params.gender),
-      stats: one(params.stats), sort: one(params.sort), q: one(params.q),
+      publisher: one(params.publisher),
+      alignment: one(params.alignment),
+      gender: one(params.gender),
+      stats: one(params.stats),
+      sort: one(params.sort),
+      q: one(params.q),
     }),
   );
 
@@ -29,17 +33,24 @@ export function useCategoryFilters(slug: CategorySlug) {
       const p = filtersToParams(slug, next);
       // Clear keys that fell back to default by sending empty strings.
       router.setParams({
-        publisher: p.publisher ?? '', alignment: p.alignment ?? '', gender: p.gender ?? '',
-        stats: p.stats ?? '', sort: p.sort ?? '', q: p.q ?? '',
+        publisher: p.publisher ?? '',
+        alignment: p.alignment ?? '',
+        gender: p.gender ?? '',
+        stats: p.stats ?? '',
+        sort: p.sort ?? '',
+        q: p.q ?? '',
       });
     },
     [router, slug],
   );
 
-  const update = useCallback((next: CategoryFilters) => {
-    setFilters(next);
-    pushUrl(next);
-  }, [pushUrl]);
+  const update = useCallback(
+    (next: CategoryFilters) => {
+      setFilters(next);
+      pushUrl(next);
+    },
+    [pushUrl],
+  );
 
   const setFilter = useCallback(
     <K extends keyof CategoryFilters>(key: K, value: CategoryFilters[K]) => {

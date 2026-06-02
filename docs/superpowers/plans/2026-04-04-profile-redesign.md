@@ -17,6 +17,7 @@
 ### Task 1: Add cover banner
 
 **Files:**
+
 - Modify: `app/(tabs)/profile.tsx`
 
 The cover replaces the standalone `pageTitle` text. It uses `LinearGradient` as the container (so it fills the background), an inline `Svg` halftone overlay, and an inline `Svg` logo.
@@ -50,72 +51,78 @@ const HERO_LOGO_PATH =
 In the `ProfileScreen` return, replace:
 
 ```tsx
-        {/* Page title */}
-        <Text style={styles.pageTitle}>profile</Text>
+{
+  /* Page title */
+}
+<Text style={styles.pageTitle}>profile</Text>;
 
-        {/* Identity card */}
-        <View style={styles.identityCard}>
-          {/* Avatar */}
-          <View style={styles.avatarWrapper}>
-            <LinearGradient colors={[COLORS.orange, '#c04a10']} style={styles.avatar}>
-              <Text style={styles.avatarInitials}>{name.slice(0, 2).toUpperCase()}</Text>
-            </LinearGradient>
-          </View>
+{
+  /* Identity card */
+}
+<View style={styles.identityCard}>
+  {/* Avatar */}
+  <View style={styles.avatarWrapper}>
+    <LinearGradient colors={[COLORS.orange, '#c04a10']} style={styles.avatar}>
+      <Text style={styles.avatarInitials}>{name.slice(0, 2).toUpperCase()}</Text>
+    </LinearGradient>
+  </View>
 
-          <Text style={styles.username}>{name}</Text>
-          <Text style={styles.email}>{email}</Text>
+  <Text style={styles.username}>{name}</Text>
+  <Text style={styles.email}>{email}</Text>
 
-          {/* Stat pill */}
-          <View style={styles.statPill}>
-            <Ionicons name="heart" size={14} color={COLORS.orange} />
-            <Text style={styles.statPillText}>
-              {loading ? '–' : favourites.length} saved heroes
-            </Text>
-          </View>
-        </View>
+  {/* Stat pill */}
+  <View style={styles.statPill}>
+    <Ionicons name="heart" size={14} color={COLORS.orange} />
+    <Text style={styles.statPillText}>{loading ? '–' : favourites.length} saved heroes</Text>
+  </View>
+</View>;
 ```
 
 with:
 
 ```tsx
-        {/* Cover banner */}
-        <LinearGradient
-          colors={['#293C43', '#3d5a66']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.cover}
-        >
-          <Svg style={StyleSheet.absoluteFill}>
-            <Defs>
-              <Pattern id="dots" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
-                <Circle cx="7" cy="7" r="1.5" fill="rgba(231,115,51,0.22)" />
-              </Pattern>
-            </Defs>
-            <Rect width="100%" height="100%" fill="url(#dots)" />
-          </Svg>
-          <Svg style={styles.coverLogo} width={48} height={48} viewBox="0 0 1024 1024">
-            <Path fill="#ECECDE" d={HERO_LOGO_PATH} />
-          </Svg>
-        </LinearGradient>
+{
+  /* Cover banner */
+}
+<LinearGradient
+  colors={['#293C43', '#3d5a66']}
+  start={{ x: 0, y: 0 }}
+  end={{ x: 1, y: 1 }}
+  style={styles.cover}
+>
+  <Svg style={StyleSheet.absoluteFill}>
+    <Defs>
+      <Pattern id="dots" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+        <Circle cx="7" cy="7" r="1.5" fill="rgba(231,115,51,0.22)" />
+      </Pattern>
+    </Defs>
+    <Rect width="100%" height="100%" fill="url(#dots)" />
+  </Svg>
+  <Svg style={styles.coverLogo} width={48} height={48} viewBox="0 0 1024 1024">
+    <Path fill="#ECECDE" d={HERO_LOGO_PATH} />
+  </Svg>
+</LinearGradient>;
 
-        {/* Avatar overlap */}
-        <View style={styles.avatarZone}>
-          <LinearGradient colors={[COLORS.orange, '#c04a10']} style={styles.avatar}>
-            <Text style={styles.avatarInitials}>{name.slice(0, 2).toUpperCase()}</Text>
-          </LinearGradient>
-        </View>
+{
+  /* Avatar overlap */
+}
+<View style={styles.avatarZone}>
+  <LinearGradient colors={[COLORS.orange, '#c04a10']} style={styles.avatar}>
+    <Text style={styles.avatarInitials}>{name.slice(0, 2).toUpperCase()}</Text>
+  </LinearGradient>
+</View>;
 
-        {/* Identity */}
-        <View style={styles.identityBlock}>
-          <Text style={styles.username}>{name}</Text>
-          <Text style={styles.email}>{email}</Text>
-          <View style={styles.statPill}>
-            <Ionicons name="heart" size={14} color={COLORS.orange} />
-            <Text style={styles.statPillText}>
-              {loading ? '–' : favourites.length} saved heroes
-            </Text>
-          </View>
-        </View>
+{
+  /* Identity */
+}
+<View style={styles.identityBlock}>
+  <Text style={styles.username}>{name}</Text>
+  <Text style={styles.email}>{email}</Text>
+  <View style={styles.statPill}>
+    <Ionicons name="heart" size={14} color={COLORS.orange} />
+    <Text style={styles.statPillText}>{loading ? '–' : favourites.length} saved heroes</Text>
+  </View>
+</View>;
 ```
 
 - [ ] **Step 3: Replace the cover/avatar/identity styles in `StyleSheet.create`**
@@ -280,6 +287,7 @@ git commit -m "feat: add cover banner with halftone dots and logo to profile scr
 ### Task 2: Add hairline divider between identity and favourites
 
 **Files:**
+
 - Modify: `app/(tabs)/profile.tsx`
 
 - [ ] **Step 1: Add the hairline `View` between identity and favourites**
@@ -287,7 +295,7 @@ git commit -m "feat: add cover banner with halftone dots and logo to profile scr
 In the JSX, between the identity block and the favourites section, add:
 
 ```tsx
-        <View style={styles.hairline} />
+<View style={styles.hairline} />
 ```
 
 So the JSX reads:
@@ -368,6 +376,7 @@ git commit -m "feat: add hairline divider between identity and favourites on pro
 ### Task 3: Add coloured icon badges to account rows
 
 **Files:**
+
 - Modify: `app/(tabs)/profile.tsx`
 
 - [ ] **Step 1: Replace the email row icon with a badge**
@@ -375,27 +384,27 @@ git commit -m "feat: add hairline divider between identity and favourites on pro
 In the JSX, replace:
 
 ```tsx
-            <View style={styles.accountRow}>
-              <Ionicons name="mail-outline" size={18} color={COLORS.navy} />
-              <Text style={styles.accountLabel}>Email</Text>
-              <Text style={styles.accountValue} numberOfLines={1}>
-                {email}
-              </Text>
-            </View>
+<View style={styles.accountRow}>
+  <Ionicons name="mail-outline" size={18} color={COLORS.navy} />
+  <Text style={styles.accountLabel}>Email</Text>
+  <Text style={styles.accountValue} numberOfLines={1}>
+    {email}
+  </Text>
+</View>
 ```
 
 with:
 
 ```tsx
-            <View style={styles.accountRow}>
-              <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-                <Ionicons name="mail-outline" size={16} color={COLORS.navy} />
-              </View>
-              <Text style={styles.accountLabel}>Email</Text>
-              <Text style={styles.accountValue} numberOfLines={1}>
-                {email}
-              </Text>
-            </View>
+<View style={styles.accountRow}>
+  <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
+    <Ionicons name="mail-outline" size={16} color={COLORS.navy} />
+  </View>
+  <Text style={styles.accountLabel}>Email</Text>
+  <Text style={styles.accountValue} numberOfLines={1}>
+    {email}
+  </Text>
+</View>
 ```
 
 - [ ] **Step 2: Replace the sign out row icon with a badge**
@@ -403,43 +412,43 @@ with:
 Replace:
 
 ```tsx
-            <TouchableOpacity
-              style={styles.accountRow}
-              onPress={handleSignOut}
-              disabled={signingOut}
-              activeOpacity={0.7}
-            >
-              {signingOut ? (
-                <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
-              ) : (
-                <Ionicons name="log-out-outline" size={18} color={COLORS.red} />
-              )}
-              <Text style={[styles.accountLabel, { color: COLORS.red }]}>
-                {signingOut ? 'Signing out…' : 'Sign Out'}
-              </Text>
-            </TouchableOpacity>
+<TouchableOpacity
+  style={styles.accountRow}
+  onPress={handleSignOut}
+  disabled={signingOut}
+  activeOpacity={0.7}
+>
+  {signingOut ? (
+    <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
+  ) : (
+    <Ionicons name="log-out-outline" size={18} color={COLORS.red} />
+  )}
+  <Text style={[styles.accountLabel, { color: COLORS.red }]}>
+    {signingOut ? 'Signing out…' : 'Sign Out'}
+  </Text>
+</TouchableOpacity>
 ```
 
 with:
 
 ```tsx
-            <TouchableOpacity
-              style={styles.accountRow}
-              onPress={handleSignOut}
-              disabled={signingOut}
-              activeOpacity={0.7}
-            >
-              {signingOut ? (
-                <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
-              ) : (
-                <View style={[styles.accountIconBadge, styles.accountIconBadgeRed]}>
-                  <Ionicons name="log-out-outline" size={16} color={COLORS.red} />
-                </View>
-              )}
-              <Text style={[styles.accountLabel, { color: COLORS.red }]}>
-                {signingOut ? 'Signing out…' : 'Sign Out'}
-              </Text>
-            </TouchableOpacity>
+<TouchableOpacity
+  style={styles.accountRow}
+  onPress={handleSignOut}
+  disabled={signingOut}
+  activeOpacity={0.7}
+>
+  {signingOut ? (
+    <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
+  ) : (
+    <View style={[styles.accountIconBadge, styles.accountIconBadgeRed]}>
+      <Ionicons name="log-out-outline" size={16} color={COLORS.red} />
+    </View>
+  )}
+  <Text style={[styles.accountLabel, { color: COLORS.red }]}>
+    {signingOut ? 'Signing out…' : 'Sign Out'}
+  </Text>
+</TouchableOpacity>
 ```
 
 - [ ] **Step 3: Add badge styles and update `accountRow` padding**

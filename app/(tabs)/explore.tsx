@@ -64,19 +64,37 @@ export default function HomeScreen() {
       })
       .catch(() => setInitialLoaded(true));
 
-    getVillains(20).then(setVillains).catch(() => {});
-    getXMen(20).then(setXmen).catch(() => {});
-    getAntiHeroes(20).then(setAntiHeroes).catch(() => {});
-    getHeroesByPublisher('marvel', 20).then(setMarvel).catch(() => {});
-    getHeroesByPublisher('dc', 20).then(setDc).catch(() => {});
-    getHeroesByStatRanking('strength', 20).then(setStrongest).catch(() => {});
-    getHeroesByStatRanking('intelligence', 20).then(setMostIntelligent).catch(() => {});
+    getVillains(20)
+      .then(setVillains)
+      .catch(() => {});
+    getXMen(20)
+      .then(setXmen)
+      .catch(() => {});
+    getAntiHeroes(20)
+      .then(setAntiHeroes)
+      .catch(() => {});
+    getHeroesByPublisher('marvel', 20)
+      .then(setMarvel)
+      .catch(() => {});
+    getHeroesByPublisher('dc', 20)
+      .then(setDc)
+      .catch(() => {});
+    getHeroesByStatRanking('strength', 20)
+      .then(setStrongest)
+      .catch(() => {});
+    getHeroesByStatRanking('intelligence', 20)
+      .then(setMostIntelligent)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
     if (!user?.id) return;
-    getRecentlyViewed(user.id).then(setRecentlyViewed).catch(() => {});
-    getUserFavouriteHeroes(user.id).then(setFavourites).catch(() => {});
+    getRecentlyViewed(user.id)
+      .then(setRecentlyViewed)
+      .catch(() => {});
+    getUserFavouriteHeroes(user.id)
+      .then(setFavourites)
+      .catch(() => {});
   }, [user?.id]);
 
   useEffect(() => {

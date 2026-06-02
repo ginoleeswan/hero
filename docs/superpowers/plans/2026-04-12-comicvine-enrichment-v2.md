@@ -12,22 +12,23 @@
 
 ## File Map
 
-| File | Role |
-|---|---|
-| `supabase/migrations/20260412130000_comicvine_v2.sql` | Create — 8 new nullable columns on `heroes` |
-| `src/types/database.generated.ts` | Regenerate after migration (never hand-edit) |
-| `src/types/index.ts` | Extend `HeroDetails` with 8 new nullable fields |
-| `src/lib/api.ts` | Update `fetchHeroDetails` invoke type + return + null fallback |
-| `src/lib/db/heroes.ts` | Map new columns in `heroRowToCharacterData` |
-| `supabase/functions/get-comicvine-hero/index.ts` | Expand field_list, extract new fields, update DB write |
-| `__tests__/lib/db/heroes.test.ts` | Add new `heroRowToCharacterData` tests + update `baseHero` fixture |
-| `app/character/[id].tsx` | All UI: origin badge, issue count, creators, About block, Enemies & Allies, On Screen, teams |
+| File                                                  | Role                                                                                         |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `supabase/migrations/20260412130000_comicvine_v2.sql` | Create — 8 new nullable columns on `heroes`                                                  |
+| `src/types/database.generated.ts`                     | Regenerate after migration (never hand-edit)                                                 |
+| `src/types/index.ts`                                  | Extend `HeroDetails` with 8 new nullable fields                                              |
+| `src/lib/api.ts`                                      | Update `fetchHeroDetails` invoke type + return + null fallback                               |
+| `src/lib/db/heroes.ts`                                | Map new columns in `heroRowToCharacterData`                                                  |
+| `supabase/functions/get-comicvine-hero/index.ts`      | Expand field_list, extract new fields, update DB write                                       |
+| `__tests__/lib/db/heroes.test.ts`                     | Add new `heroRowToCharacterData` tests + update `baseHero` fixture                           |
+| `app/character/[id].tsx`                              | All UI: origin badge, issue count, creators, About block, Enemies & Allies, On Screen, teams |
 
 ---
 
 ## Task 1: DB migration — 8 new columns
 
 **Files:**
+
 - Create: `supabase/migrations/20260412130000_comicvine_v2.sql`
 - Regenerate: `src/types/database.generated.ts`
 
@@ -68,6 +69,7 @@ git commit -m "feat(db): add 8 new ComicVine enrichment columns to heroes table"
 ## Task 2: Extend TypeScript types and data layer
 
 **Files:**
+
 - Modify: `src/types/index.ts`
 - Modify: `src/lib/api.ts`
 - Modify: `src/lib/db/heroes.ts`
@@ -369,6 +371,7 @@ git commit -m "feat(types): extend HeroDetails with 8 new ComicVine v2 fields"
 ## Task 3: Expand the edge function
 
 **Files:**
+
 - Modify: `supabase/functions/get-comicvine-hero/index.ts`
 
 No unit tests — the edge function runs in Deno and calls an external API. Correctness is verified manually after deploy.
@@ -426,7 +429,7 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
 
   try {
-    const { heroId, heroName } = await req.json() as { heroId: string; heroName: string };
+    const { heroId, heroName } = (await req.json()) as { heroId: string; heroName: string };
     if (!heroId || !heroName) return json({ error: 'heroId and heroName required' }, 400);
 
     // List endpoint — character id, deck, publisher, first issue
@@ -480,7 +483,9 @@ serve(async (req: Request) => {
         ].join(','),
       });
 
-      const detailRes = await fetch(`${COMICVINE_BASE}/character/4005-${result.id}/?${detailParams}`);
+      const detailRes = await fetch(
+        `${COMICVINE_BASE}/character/4005-${result.id}/?${detailParams}`,
+      );
       if (detailRes.ok) {
         const d = (await detailRes.json()).results ?? {};
 
@@ -505,9 +510,8 @@ serve(async (req: Request) => {
         origin = typeof d.origin?.name === 'string' ? d.origin.name : null;
 
         // issue count
-        issueCount = typeof d.count_of_issue_appearances === 'number'
-          ? d.count_of_issue_appearances
-          : null;
+        issueCount =
+          typeof d.count_of_issue_appearances === 'number' ? d.count_of_issue_appearances : null;
 
         // creators — names only, capped at 5
         creators = Array.isArray(d.creators)
@@ -599,7 +603,20 @@ serve(async (req: Request) => {
       })
       .eq('id', heroId);
 
-    return json({ summary, publisher, firstIssueId, powers, description, origin, issueCount, creators, enemies, friends, movies, teams });
+    return json({
+      summary,
+      publisher,
+      firstIssueId,
+      powers,
+      description,
+      origin,
+      issueCount,
+      creators,
+      enemies,
+      friends,
+      movies,
+      teams,
+    });
   } catch (err) {
     console.error('[get-comicvine-hero]', err);
     return json(NULL_RESPONSE, 500);
@@ -623,6 +640,7 @@ git commit -m "feat(edge): expand ComicVine detail fetch to origin, enemies, all
 ## Task 4: Identity block — origin badge, issue count, creator credit, re-enrichment trigger
 
 **Files:**
+
 - Modify: `app/character/[id].tsx`
 
 - [ ] **Step 1: Add ORIGIN_CONFIG constant and OriginBadge component**
@@ -671,20 +689,20 @@ Find the `nameRowRight` View (around the identity block JSX) and add `<OriginBad
 Add this block after the `nameRow` View and before the `nameDivider`, still inside the `data ?` branch:
 
 ```tsx
-{((data.details.issueCount ?? 0) > 0 || (data.details.creators?.length ?? 0) > 0) ? (
-  <View style={styles.heroMeta}>
-    {(data.details.issueCount ?? 0) > 0 ? (
-      <Text style={styles.heroMetaText}>
-        Featured in {data.details.issueCount!.toLocaleString()} issues
-      </Text>
-    ) : null}
-    {data.details.creators?.length ? (
-      <Text style={styles.heroMetaText}>
-        Created by {data.details.creators.join(' & ')}
-      </Text>
-    ) : null}
-  </View>
-) : null}
+{
+  (data.details.issueCount ?? 0) > 0 || (data.details.creators?.length ?? 0) > 0 ? (
+    <View style={styles.heroMeta}>
+      {(data.details.issueCount ?? 0) > 0 ? (
+        <Text style={styles.heroMetaText}>
+          Featured in {data.details.issueCount!.toLocaleString()} issues
+        </Text>
+      ) : null}
+      {data.details.creators?.length ? (
+        <Text style={styles.heroMetaText}>Created by {data.details.creators.join(' & ')}</Text>
+      ) : null}
+    </View>
+  ) : null;
+}
 ```
 
 - [ ] **Step 4: Add the re-enrichment trigger**
@@ -732,6 +750,7 @@ git commit -m "feat(character): add origin badge, issue count, creator credit to
 ## Task 5: Expandable About section (description)
 
 **Files:**
+
 - Modify: `app/character/[id].tsx`
 
 - [ ] **Step 1: Add the AboutBlock component**
@@ -762,9 +781,11 @@ function AboutBlock({ description }: { description: string }) {
 Find the summary rendering block (the `comicVineLoading ? ... : data.details.summary ? ...` section). Immediately after the closing block (after the summary `View`), add:
 
 ```tsx
-{!comicVineLoading && data.details.description ? (
-  <AboutBlock description={data.details.description} />
-) : null}
+{
+  !comicVineLoading && data.details.description ? (
+    <AboutBlock description={data.details.description} />
+  ) : null;
+}
 ```
 
 - [ ] **Step 3: Add styles**
@@ -809,6 +830,7 @@ git commit -m "feat(character): add expandable About section for ComicVine full 
 ## Task 6: Enemies & Allies section
 
 **Files:**
+
 - Modify: `app/character/[id].tsx`
 
 - [ ] **Step 1: Add the CharacterChips component**
@@ -860,16 +882,18 @@ function CharacterChips({
 Add this new Section between the Overview Section and the Appearance Section:
 
 ```tsx
-{(data.details.enemies?.length || data.details.friends?.length) ? (
-  <Section title="Enemies & Allies">
-    {data.details.enemies?.length ? (
-      <CharacterChips label="Enemies" chips={data.details.enemies} chipStyle="enemy" />
-    ) : null}
-    {data.details.friends?.length ? (
-      <CharacterChips label="Allies" chips={data.details.friends} chipStyle="ally" />
-    ) : null}
-  </Section>
-) : null}
+{
+  data.details.enemies?.length || data.details.friends?.length ? (
+    <Section title="Enemies & Allies">
+      {data.details.enemies?.length ? (
+        <CharacterChips label="Enemies" chips={data.details.enemies} chipStyle="enemy" />
+      ) : null}
+      {data.details.friends?.length ? (
+        <CharacterChips label="Allies" chips={data.details.friends} chipStyle="ally" />
+      ) : null}
+    </Section>
+  ) : null;
+}
 ```
 
 - [ ] **Step 3: Add styles**
@@ -919,6 +943,7 @@ git commit -m "feat(character): add Enemies and Allies section with colour-coded
 ## Task 7: On Screen section (movies)
 
 **Files:**
+
 - Modify: `app/character/[id].tsx`
 
 - [ ] **Step 1: Render the On Screen section**
@@ -926,24 +951,26 @@ git commit -m "feat(character): add Enemies and Allies section with colour-coded
 Add this new Section after Enemies & Allies and before Appearance:
 
 ```tsx
-{data.details.movies?.length ? (
-  <Section title="On Screen">
-    {data.details.movies.map((entry, i) => {
-      const match = entry.match(/^(.+?)\s*\((\d{4})\)$/);
-      const title = match ? match[1] : entry;
-      const year = match ? match[2] : null;
-      return (
-        <View key={i} style={styles.movieRow}>
-          <Text style={styles.movieIcon}>🎬</Text>
-          <View style={styles.movieMeta}>
-            <Text style={styles.movieTitle}>{title}</Text>
-            {year ? <Text style={styles.movieYear}>{year}</Text> : null}
+{
+  data.details.movies?.length ? (
+    <Section title="On Screen">
+      {data.details.movies.map((entry, i) => {
+        const match = entry.match(/^(.+?)\s*\((\d{4})\)$/);
+        const title = match ? match[1] : entry;
+        const year = match ? match[2] : null;
+        return (
+          <View key={i} style={styles.movieRow}>
+            <Text style={styles.movieIcon}>🎬</Text>
+            <View style={styles.movieMeta}>
+              <Text style={styles.movieTitle}>{title}</Text>
+              {year ? <Text style={styles.movieYear}>{year}</Text> : null}
+            </View>
           </View>
-        </View>
-      );
-    })}
-  </Section>
-) : null}
+        );
+      })}
+    </Section>
+  ) : null;
+}
 ```
 
 - [ ] **Step 2: Add styles**
@@ -990,6 +1017,7 @@ git commit -m "feat(character): add On Screen section listing movie and TV appea
 ## Task 8: Connections — use teams when available
 
 **Files:**
+
 - Modify: `app/character/[id].tsx`
 
 - [ ] **Step 1: Update the AffiliationChips data source**

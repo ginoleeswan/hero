@@ -230,7 +230,7 @@ export default function CharacterScreen() {
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const compareStripStyle = [styles.compareStrip, { paddingBottom: insets.bottom || 12 }] as const;
+  const compareStripStyle = [styles.compareStrip, { paddingBottom: insets.bottom || 12 }];
   const { user } = useAuth();
   useRecordView(user?.id, id);
   const [data, setData] = useState<CharacterData | null>(null);
@@ -333,7 +333,11 @@ export default function CharacterScreen() {
         if (hero?.enriched_at) {
           setData(heroRowToCharacterData(hero));
           const needsComicVine =
-            !hero.comicvine_enriched_at || hero.powers === null || !hero.movies?.length || !hero.first_issue_id || !hero.first_issue_data;
+            !hero.comicvine_enriched_at ||
+            hero.powers === null ||
+            !hero.movies?.length ||
+            !hero.first_issue_id ||
+            !hero.first_issue_data;
           const moviesIncomplete =
             !needsComicVine &&
             hero.movie_count != null &&
@@ -344,7 +348,13 @@ export default function CharacterScreen() {
             !moviesIncomplete &&
             hero.movies != null &&
             (hero.movies as unknown[]).length > 0 &&
-            (hero.movies as Array<{ deck?: string | null; rating?: string | null; runtime?: string | null }>)
+            (
+              hero.movies as Array<{
+                deck?: string | null;
+                rating?: string | null;
+                runtime?: string | null;
+              }>
+            )
               .slice(0, 5)
               .every((m) => m.deck === null && m.rating === null && m.runtime === null);
           setComicVineLoading(needsComicVine);
@@ -359,7 +369,9 @@ export default function CharacterScreen() {
                 );
               })
               .catch(() => {})
-              .finally(() => { if (needsComicVine) setComicVineLoading(false); });
+              .finally(() => {
+                if (needsComicVine) setComicVineLoading(false);
+              });
           }
           return;
         }
@@ -650,10 +662,7 @@ export default function CharacterScreen() {
             {/* First Appearance — moved before Overview */}
             {data.firstIssue?.imageUrl ? (
               <Section title="First Appearance">
-                <TouchableOpacity
-                  onPress={() => setShowIssueModal(true)}
-                  activeOpacity={0.85}
-                >
+                <TouchableOpacity onPress={() => setShowIssueModal(true)} activeOpacity={0.85}>
                   <View style={styles.comicContainer}>
                     <View style={styles.comicPanel}>
                       <Image
@@ -667,7 +676,9 @@ export default function CharacterScreen() {
                       {data.firstIssue.name || data.firstIssue.coverDate ? (
                         <View style={styles.comicMeta}>
                           {data.firstIssue.name ? (
-                            <Text style={styles.comicTitle}>{data.firstIssue.name.split(';')[0].trim()}</Text>
+                            <Text style={styles.comicTitle}>
+                              {data.firstIssue.name.split(';')[0].trim()}
+                            </Text>
                           ) : null}
                           {data.firstIssue.coverDate ? (
                             <Text style={styles.comicYear}>
@@ -739,7 +750,9 @@ export default function CharacterScreen() {
                 </Section>
               </SkeletonProvider>
             ) : data.details.movies?.length ? (
-              <Section title={`On Screen (${data.details.movieCount ?? data.details.movies.length})`}>
+              <Section
+                title={`On Screen (${data.details.movieCount ?? data.details.movies.length})`}
+              >
                 <MovieStrip
                   movies={data.details.movies}
                   totalCount={data.details.movieCount ?? data.details.movies.length}
@@ -775,10 +788,7 @@ export default function CharacterScreen() {
       </Animated.ScrollView>
 
       {showIssueModal && data?.firstIssue ? (
-        <FirstIssueModal
-          firstIssue={data.firstIssue}
-          onClose={() => setShowIssueModal(false)}
-        />
+        <FirstIssueModal firstIssue={data.firstIssue} onClose={() => setShowIssueModal(false)} />
       ) : null}
 
       {/* Compare strip — fixed above safe-area bottom */}

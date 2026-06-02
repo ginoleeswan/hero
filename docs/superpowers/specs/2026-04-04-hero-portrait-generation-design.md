@@ -25,6 +25,7 @@ Generate consistent Mike Mitchell–style side-profile bust portraits for all 56
 ## Database
 
 ### Migration
+
 Add `portrait_url text` column to the `heroes` table:
 
 ```sql
@@ -34,6 +35,7 @@ ALTER TABLE heroes ADD COLUMN portrait_url text;
 `portrait_url` holds the public Supabase Storage URL for the hero's generated portrait. `NULL` means no portrait has been generated yet. `image_url` and `image_md_url` are unchanged and remain as fallbacks.
 
 ### Regeneration flag
+
 The script determines whether a hero needs processing by checking `portrait_url IS NULL`. Re-running the script safely skips already-processed heroes.
 
 ---
@@ -54,15 +56,16 @@ The script determines whether a hero needs processing by checking `portrait_url 
 
 ### CLI flags
 
-| Flag | Description |
-|---|---|
-| `--hero-id <id>` | Process a single hero only (for testing) |
-| `--dry-run` | Log what would be processed without making API calls |
-| `--concurrency <n>` | Parallel workers (default: 3) |
+| Flag                | Description                                          |
+| ------------------- | ---------------------------------------------------- |
+| `--hero-id <id>`    | Process a single hero only (for testing)             |
+| `--dry-run`         | Log what would be processed without making API calls |
+| `--concurrency <n>` | Parallel workers (default: 3)                        |
 
 ### Phase 1 — Upload existing curated images (34 heroes)
 
 For each hero ID in `HERO_IMAGES` (from `src/constants/heroImages.ts`):
+
 1. Skip if `portrait_url IS NOT NULL` in DB
 2. Read the local bundled image file
 3. Upload to `hero-portraits/{id}.jpg` in Supabase Storage
@@ -73,6 +76,7 @@ No Gemini call — these images are already in the correct style.
 ### Phase 2 — Generate portraits for remaining heroes (~530)
 
 For each hero where `portrait_url IS NULL`:
+
 1. Fetch the source image from `image_url` (existing SuperheroAPI CDN)
 2. Load `assets/images/spiderman.jpg` as the style reference (base64)
 3. POST to Gemini 2.0 Flash (`gemini-2.0-flash-preview-image-generation`) with:
@@ -80,10 +84,10 @@ For each hero where `portrait_url IS NULL`:
    - **Image 2 (style reference):** `spiderman.jpg`
    - **Prompt:**
      ```
-     Redraw the character from the first image as a side-profile bust portrait 
-     in exactly the style of the second reference image: flat graphic illustration, 
-     bold solid background colour, simplified clean shapes, head and shoulders crop, 
-     smooth flat shading with subtle gradients, clean outlines, poster art aesthetic. 
+     Redraw the character from the first image as a side-profile bust portrait
+     in exactly the style of the second reference image: flat graphic illustration,
+     bold solid background colour, simplified clean shapes, head and shoulders crop,
+     smooth flat shading with subtle gradients, clean outlines, poster art aesthetic.
      Preserve the character's costume colours and identity. Do not include any text.
      ```
 4. Decode the returned image bytes
@@ -111,10 +115,13 @@ GOOGLE_AI_STUDIO_API_KEY=...    # Gemini image generation
 ## App Changes
 
 ### `src/types/database.generated.ts`
+
 Regenerated after migration — `portrait_url: string | null` appears automatically.
 
 ### `src/constants/heroImages.ts` — `heroImageSource()`
+
 Updated priority order:
+
 1. `portrait_url` from DB (Supabase Storage CDN) ← **new, highest priority**
 2. Local bundled image from `HERO_IMAGES` map (fallback during migration)
 3. `imageUrl` if it starts with `http`
@@ -135,12 +142,14 @@ export function heroImageSource(
 ```
 
 ### `src/lib/db/heroes.ts`
+
 - `getHeroesByCategory()` — add `portrait_url` to the select
 - `searchHeroes()` — add `portrait_url` to the select
 - `getHeroById()` — already selects `*`, no change needed
 - `heroRowToCharacterData()` — pass `portrait_url` through to `stats.image.url` (or a new field)
 
 ### Call sites
+
 `HeroCard`, `CharacterScreen`, `ProfileScreen` (`FavouriteThumb`) — each passes `portrait_url` down to `heroImageSource()`. The signature change is additive (new optional param), so no existing call sites break.
 
 ---

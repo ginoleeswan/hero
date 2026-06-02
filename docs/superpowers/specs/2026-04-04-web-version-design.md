@@ -10,6 +10,7 @@ A web-first redesign of the Hero superhero encyclopedia app. The web version get
 ## Tech Foundation
 
 ### Web compatibility
+
 - `app.config.ts` already set to `output: 'single-page-application'` — no SSR, pure client-side rendering
 - Create `metro.config.js` with `resolver.resolveRequest` that aliases native-only packages to web stubs for the web platform:
   - `@react-native-masked-view/masked-view` → `View` with `overflow: hidden`
@@ -19,6 +20,7 @@ A web-first redesign of the Hero superhero encyclopedia app. The web version get
 - This replaces the current piecemeal `.web.tsx` workarounds with a single centralised resolver
 
 ### Shared with native
+
 - `src/lib/supabase.ts` — auth client (already patched for web)
 - `src/lib/api.ts` — SuperheroAPI + ComicVine fetches
 - `src/lib/db/` — all Supabase query functions
@@ -27,25 +29,27 @@ A web-first redesign of the Hero superhero encyclopedia app. The web version get
 - `src/constants/colors.ts`, `heroImages.ts`
 
 ### Web-only files
+
 All web screens live under `app/` using Expo Router's `.web.tsx` platform extension or a dedicated web route group `app/(web)/`.
 
 ## Visual Language
 
-| Token | Value |
-|---|---|
-| Background | `#f5ebdc` (COLORS.beige) |
-| Primary dark | `#1a1a2e` (COLORS.navy) |
-| Accent | `#e8621a` (COLORS.orange) |
-| Nav height | 52px |
+| Token             | Value                                            |
+| ----------------- | ------------------------------------------------ |
+| Background        | `#f5ebdc` (COLORS.beige)                         |
+| Primary dark      | `#1a1a2e` (COLORS.navy)                          |
+| Accent            | `#e8621a` (COLORS.orange)                        |
+| Nav height        | 52px                                             |
 | Content max-width | 1200px (discover grid), 860px (detail + profile) |
-| Border radius | 10–14px for cards/sections |
-| Section bg | `white` with `1px solid #e8ddd0` border |
+| Border radius     | 10–14px for cards/sections                       |
+| Section bg        | `white` with `1px solid #e8ddd0` border          |
 
 Fonts: same as native — Flame-Regular for headings, FlameSans-Regular for body, Nunito for UI text.
 
 ## Shared Navigation
 
 A persistent top nav bar across all pages:
+
 - Left: HERO logo (orange, Flame-Regular)
 - Centre: Discover / Search / Profile links
 - Active state: white text + 2px orange underline
@@ -61,6 +65,7 @@ No tab bar on web. Auth pages (login/signup) hide the nav.
 **Layout:** Immersive Portal — full-width grid on a beige canvas.
 
 **Structure:**
+
 - Top nav (shared)
 - Hero grid: CSS grid, `repeat(auto-fill, minmax(220px, 1fr))`, gap 16px, padding 24px
 - First card spans 2 columns and 2 rows — the "featured" spotlight with a badge, hero name, and publisher subtitle
@@ -75,6 +80,7 @@ No tab bar on web. Auth pages (login/signup) hide the nav.
 **Layout:** Editorial long-form — centred max-width 860px.
 
 **Structure:**
+
 - Top nav with back link (← Discover or ← Search), hero name centred, ♡ favourite button right
 - **Hero banner:** `#1a1a2e` card, border-radius 14px, hero name large (Flame-Regular 36px), alias + publisher subtitle, hero image positioned right if available
 - **2-column section grid** below the banner:
@@ -93,6 +99,7 @@ No tab bar on web. Auth pages (login/signup) hide the nav.
 **Layout:** Dedicated page with hero search bar.
 
 **Structure:**
+
 - Top nav (shared, Search link active)
 - **Search hero bar:** dark `#1a1a2e` background, centred large search input (rounded pill, white bg), publisher chips (All / Marvel / DC / Other) + category chips (Popular / Villains / X-Men) below
 - **Results grid:** same card style as Discover, `repeat(auto-fill, minmax(200px, 1fr))`, updates live as user types
@@ -104,6 +111,7 @@ No tab bar on web. Auth pages (login/signup) hide the nav.
 **Layout:** Split — user panel left, favourites right.
 
 **Structure:**
+
 - Top nav (shared, Profile link active)
 - **Left panel** (260px, `#1a1a2e` background, full height):
   - Avatar circle (initial letter, orange bg)
@@ -122,6 +130,7 @@ No tab bar on web. Auth pages (login/signup) hide the nav.
 **Layout:** Centred card on beige background.
 
 **Structure:**
+
 - No nav bar
 - Centred card (max-width 420px, white bg, border-radius 16px, soft shadow)
 - HERO logo at top (orange)

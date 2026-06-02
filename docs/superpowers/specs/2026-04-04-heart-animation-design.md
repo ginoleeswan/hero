@@ -34,6 +34,7 @@ The component is purely presentational. All favourite state and DB logic remains
 ### Placement
 
 `position: absolute`, bottom-right of the hero image container:
+
 - `bottom: 20, right: 20` relative to `heroImageContainer`
 - Rendered as a sibling of `LinearGradient`, above it in the z-order
 - Button is circular, ~52px diameter
@@ -64,15 +65,16 @@ Three layers animate simultaneously, triggered by a single `isActive` shared val
 ### On unfavourite (on → off)
 
 Heart only — no burst (matches Twitter's behaviour):
+
 - Scale: `1 → 0.8 → 1` with a soft spring
 - Icon colour fades back to white
 
 ## Files Changed
 
-| File | Change |
-|---|---|
-| `src/components/HeartButton.tsx` | **Create** — animated heart button component |
-| `app/character/[id].tsx` | Remove `headerRight` heart; add `<HeartButton>` inside `heroImageContainer` |
+| File                             | Change                                                                      |
+| -------------------------------- | --------------------------------------------------------------------------- |
+| `src/components/HeartButton.tsx` | **Create** — animated heart button component                                |
+| `app/character/[id].tsx`         | Remove `headerRight` heart; add `<HeartButton>` inside `heroImageContainer` |
 
 No changes to `src/lib/db/favourites.ts` or any other file.
 

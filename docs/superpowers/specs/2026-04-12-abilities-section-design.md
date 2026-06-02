@@ -26,21 +26,24 @@ After applying, regenerate `src/types/database.generated.ts` via the Supabase MC
 ### Type changes
 
 **`src/types/index.ts`** — extend `HeroDetails`:
+
 ```ts
 export interface HeroDetails {
   summary: string | null;
   publisher: string | null;
   firstIssueId: string | null;
-  powers: string[] | null;       // ← new
+  powers: string[] | null; // ← new
 }
 ```
 
 **`src/lib/api.ts`** — `fetchHeroDetails`:
+
 - Add `powers` to ComicVine `field_list`
 - ComicVine returns `powers` as `Array<{ name: string }>` — map to `string[]`
 - Return `powers: result.powers?.map((p: { name: string }) => p.name) ?? null`
 
 **`src/lib/db/heroes.ts`** — `heroRowToCharacterData`:
+
 - Map `hero.powers` into `details.powers`
 
 ### Data flow
@@ -77,15 +80,15 @@ export const POWER_ICON_FALLBACK: PowerIconDef = { icon: 'star', color: COLORS.o
 
 **Coverage target:** ~60 entries covering the most common ComicVine power names across categories:
 
-| Category | Example keys |
-|---|---|
-| Physical | strength, speed, flight, agility, stamina, reflexes, durability |
-| Mental | telepathy, telekinesis, mind control, precognition, intelligence |
-| Energy | energy projection, heat vision, laser, electricity, fire, ice, freeze |
-| Defensive | invulnerability, healing, regeneration, immortality, force field |
-| Sensory | x-ray vision, super senses, night vision, sonar |
-| Transformation | shapeshifting, size manipulation, intangibility, invisibility |
-| Misc | time manipulation, teleportation, magic, stealth, web, symbiote |
+| Category       | Example keys                                                          |
+| -------------- | --------------------------------------------------------------------- |
+| Physical       | strength, speed, flight, agility, stamina, reflexes, durability       |
+| Mental         | telepathy, telekinesis, mind control, precognition, intelligence      |
+| Energy         | energy projection, heat vision, laser, electricity, fire, ice, freeze |
+| Defensive      | invulnerability, healing, regeneration, immortality, force field      |
+| Sensory        | x-ray vision, super senses, night vision, sonar                       |
+| Transformation | shapeshifting, size manipulation, intangibility, invisibility         |
+| Misc           | time manipulation, teleportation, magic, stealth, web, symbiote       |
 
 Unmapped powers use the fallback (`star` icon, orange).
 
@@ -96,6 +99,7 @@ Unmapped powers use the fallback (`star` icon, orange).
 ### `src/components/AbilitiesSection.tsx`
 
 **Props:**
+
 ```ts
 interface Props {
   powers: string[] | null;
@@ -104,21 +108,25 @@ interface Props {
 ```
 
 **Behaviour:**
+
 - `loading === true` → render 4 skeleton orbs (same skeleton style as rest of app)
 - `powers === null || powers.length === 0` → render nothing (section hidden)
 - `powers.length > 0` → render section
 
 **Layout — collapsed (default):**
+
 - Section header matching existing `Section` component pattern (`"Abilities"` title + divider)
 - Horizontal `ScrollView` (no scroll indicator) showing first 8 orbs
 - If `powers.length > 8`, a `+N` orb at position 9 styled identically to power orbs but with a count label instead of an icon
 
 **Layout — expanded (after tapping +N):**
+
 - Replace horizontal scroll with a wrapped flex grid (`flexWrap: 'wrap'`, 4 columns)
 - Shows all powers
 - A `"Show less"` link collapses back to scroll view
 
 **Orb spec:**
+
 - 64×64px circle
 - Radial gradient background: sphere-style — light tint at centre, saturated accent colour at edge (e.g. `radial-gradient(135deg, #ff8a8a 0%, #c0392b 100%)`)
 - Bold filled white SVG icon centred (26×26px, `fill: white`)
@@ -163,13 +171,13 @@ No other changes to the character screen are needed.
 
 ## Files changed
 
-| File | Change |
-|---|---|
-| `supabase/migrations/YYYYMMDDHHMMSS_add_hero_powers.sql` | New — add `powers text[]` column |
-| `src/types/database.generated.ts` | Regenerated — never edit manually |
-| `src/types/index.ts` | Add `powers` to `HeroDetails` |
-| `src/lib/api.ts` | Fetch + parse powers from ComicVine |
-| `src/lib/db/heroes.ts` | Map `hero.powers` in `heroRowToCharacterData` |
-| `src/constants/powerIcons.ts` | New — icon map + fallback |
-| `src/components/AbilitiesSection.tsx` | New — orb row component |
-| `app/character/[id].tsx` | Add `AbilitiesSection` between stats and overview |
+| File                                                     | Change                                            |
+| -------------------------------------------------------- | ------------------------------------------------- |
+| `supabase/migrations/YYYYMMDDHHMMSS_add_hero_powers.sql` | New — add `powers text[]` column                  |
+| `src/types/database.generated.ts`                        | Regenerated — never edit manually                 |
+| `src/types/index.ts`                                     | Add `powers` to `HeroDetails`                     |
+| `src/lib/api.ts`                                         | Fetch + parse powers from ComicVine               |
+| `src/lib/db/heroes.ts`                                   | Map `hero.powers` in `heroRowToCharacterData`     |
+| `src/constants/powerIcons.ts`                            | New — icon map + fallback                         |
+| `src/components/AbilitiesSection.tsx`                    | New — orb row component                           |
+| `app/character/[id].tsx`                                 | Add `AbilitiesSection` between stats and overview |

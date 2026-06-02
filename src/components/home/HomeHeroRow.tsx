@@ -73,7 +73,7 @@ export function HomeHeroRow({
 }
 
 const styles = StyleSheet.create({
-  section: { paddingTop: 14, paddingBottom: 4 },
+  section: { paddingTop: 14, paddingBottom: 16 },
   header: {
     paddingHorizontal: 15,
     marginBottom: 10,
@@ -97,5 +97,5 @@ const styles = StyleSheet.create({
     color: COLORS.orange,
     letterSpacing: 0.3,
   },
-  listContent: { paddingHorizontal: 15 },
+  listContent: { paddingHorizontal: 15, paddingBottom: 20 },
 });

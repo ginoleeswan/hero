@@ -55,7 +55,7 @@ function GuestWebProfileScreen() {
       </Text>
       <Pressable
         onPress={() => router.push('/(auth)/login')}
-        style={({ hovered }: { hovered?: boolean }) =>
+        style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
           [guest.signInBtn, hovered && (guest.signInBtnHover as object)] as object
         }
       >
@@ -63,7 +63,7 @@ function GuestWebProfileScreen() {
       </Pressable>
       <Pressable
         onPress={() => router.push('/(auth)/signup')}
-        style={({ hovered }: { hovered?: boolean }) =>
+        style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
           [guest.signUpBtn, hovered && (guest.signUpBtnHover as object)] as object
         }
       >
@@ -73,7 +73,7 @@ function GuestWebProfileScreen() {
       <View style={guest.kofiCard}>
         <Pressable
           onPress={() => Linking.openURL(KO_FI_URL)}
-          style={({ hovered }: { hovered?: boolean }) =>
+          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
             [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
           }
         >
@@ -131,9 +131,7 @@ function GuestWebProfileScreen() {
           </Svg>
         </View>
       </LinearGradient>
-      <View style={desk.contentOuter as object}>
-        {inner}
-      </View>
+      <View style={desk.contentOuter as object}>{inner}</View>
     </ScrollView>
   );
 }
@@ -367,7 +365,8 @@ export default function WebProfileScreen() {
           {/* ── Cover banner ── */}
           <Pressable
             onPress={pickAndUploadCover}
-            onContextMenu={handleCoverRightClick as unknown as () => void}
+            // @ts-expect-error onContextMenu is a web-only DOM event
+            onContextMenu={handleCoverRightClick}
             style={mob.cover as object}
           >
             {profile?.cover_url ? (
@@ -408,7 +407,8 @@ export default function WebProfileScreen() {
           <View style={mob.avatarZone}>
             <Pressable
               onPress={pickAndUploadAvatar}
-              onContextMenu={handleAvatarRightClick as unknown as () => void}
+              // @ts-expect-error onContextMenu is a web-only DOM event
+              onContextMenu={handleAvatarRightClick}
             >
               {profile?.avatar_url ? (
                 <View style={mob.avatar}>
@@ -489,7 +489,7 @@ export default function WebProfileScreen() {
                 </Text>
                 <Pressable
                   onPress={() => router.push('/explore')}
-                  style={({ hovered }: { hovered?: boolean }) =>
+                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                     [mob.browseBtn, hovered && (mob.browseBtnHover as object)] as object
                   }
                 >
@@ -551,7 +551,7 @@ export default function WebProfileScreen() {
                   <View style={mob.divider} />
                   <Pressable
                     onPress={() => setShowChangePassword(true)}
-                    style={({ hovered }: { hovered?: boolean }) =>
+                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                       [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
                     }
                   >
@@ -580,7 +580,7 @@ export default function WebProfileScreen() {
               <View style={mob.divider} />
               <Pressable
                 onPress={() => Linking.openURL(KO_FI_URL)}
-                style={({ hovered }: { hovered?: boolean }) =>
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                   [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
                 }
               >
@@ -596,7 +596,7 @@ export default function WebProfileScreen() {
               <Pressable
                 onPress={handleSignOut}
                 disabled={signingOut}
-                style={({ hovered }: { hovered?: boolean }) =>
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                   [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
                 }
               >
@@ -616,7 +616,7 @@ export default function WebProfileScreen() {
               <Pressable
                 onPress={handleDeleteAccount}
                 disabled={deletingAccount}
-                style={({ hovered }: { hovered?: boolean }) =>
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                   [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
                 }
               >
@@ -662,7 +662,8 @@ export default function WebProfileScreen() {
       {/* Cover — full browser width */}
       <Pressable
         onPress={pickAndUploadCover}
-        onContextMenu={handleCoverRightClick as unknown as () => void}
+        // @ts-expect-error onContextMenu is a web-only DOM event
+        onContextMenu={handleCoverRightClick}
         style={desk.cover as object}
       >
         {profile?.cover_url ? (
@@ -706,7 +707,8 @@ export default function WebProfileScreen() {
             <View style={desk.avatarZone}>
               <Pressable
                 onPress={pickAndUploadAvatar}
-                onContextMenu={handleAvatarRightClick as unknown as () => void}
+                // @ts-expect-error onContextMenu is a web-only DOM event
+                onContextMenu={handleAvatarRightClick}
               >
                 {profile?.avatar_url ? (
                   <View style={desk.avatar}>
@@ -797,7 +799,7 @@ export default function WebProfileScreen() {
                   <View style={desk.divider} />
                   <Pressable
                     onPress={() => setShowChangePassword(true)}
-                    style={({ hovered }: { hovered?: boolean }) =>
+                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                       [desk.accountRow, hovered && (desk.accountRowHover as object)] as object
                     }
                   >
@@ -826,11 +828,11 @@ export default function WebProfileScreen() {
               <View style={desk.divider} />
               <Pressable
                 onPress={() => Linking.openURL(KO_FI_URL)}
-                style={({ hovered }: { hovered?: boolean }) =>
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                   [desk.accountRow, hovered && (desk.accountRowHover as object)] as object
                 }
               >
-                <View style={[desk.accountIconBadge, desk.accountIconBadgeOrange]}>
+                <View style={[desk.accountIconBadge, desk.accountIconBadgeRed]}>
                   <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
                 </View>
                 <Text style={desk.accountLabel}>Support this project</Text>
@@ -842,7 +844,7 @@ export default function WebProfileScreen() {
               <Pressable
                 onPress={handleSignOut}
                 disabled={signingOut}
-                style={({ hovered }: { hovered?: boolean }) =>
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                   [desk.accountRow, hovered && (desk.accountRowHover as object)] as object
                 }
               >
@@ -862,7 +864,7 @@ export default function WebProfileScreen() {
               <Pressable
                 onPress={handleDeleteAccount}
                 disabled={deletingAccount}
-                style={({ hovered }: { hovered?: boolean }) =>
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                   [desk.accountRow, hovered && (desk.accountRowHover as object)] as object
                 }
               >
@@ -909,7 +911,7 @@ export default function WebProfileScreen() {
                 </Text>
                 <Pressable
                   onPress={() => router.push('/explore')}
-                  style={({ hovered }: { hovered?: boolean }) =>
+                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                     [desk.browseBtn, hovered && (desk.browseBtnHover as object)] as object
                   }
                 >

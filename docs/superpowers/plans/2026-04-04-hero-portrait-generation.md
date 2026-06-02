@@ -12,28 +12,29 @@
 
 ## File Map
 
-| File | Action | Purpose |
-|---|---|---|
-| `supabase/migrations/20260404120000_add_portrait_url.sql` | Create | Add `portrait_url` column + create storage bucket |
-| `src/types/database.generated.ts` | Regenerate | Picks up `portrait_url: string \| null` automatically |
-| `src/constants/heroImages.ts` | Modify | Add `portraitUrl` param to `heroImageSource()` |
-| `src/lib/db/heroes.ts` | Modify | Add `portrait_url` to `HeroSearchResult` Pick + `searchHeroes` select + `heroRowToCharacterData` |
-| `src/lib/db/favourites.ts` | Modify | Add `portrait_url` to `FavouriteHero` Pick + `getUserFavouriteHeroes` select |
-| `src/components/HeroCard.tsx` | Modify | Add `portraitUrl` prop, pass to `heroImageSource` |
-| `app/(tabs)/index.tsx` | Modify | Pass `portrait_url` to `HeroCard` |
-| `app/(tabs)/search.tsx` | Modify | Prefer `portrait_url` in search result avatar |
-| `app/(tabs)/profile.tsx` | Modify | Pass `portrait_url` to `FavouriteThumb` |
-| `app/character/[id].tsx` | Modify | Prefer `portrait_url` in `heroImage` chain |
-| `scripts/generate-portraits.ts` | Create | Batch upload + Gemini generation script |
-| `__tests__/lib/heroImages.test.ts` | Create | Unit tests for updated `heroImageSource()` |
-| `__tests__/lib/db/heroes.test.ts` | Modify | Add `portrait_url` to fixture + new `heroRowToCharacterData` test |
-| `__tests__/components/HeroCard.test.tsx` | Modify | Add `portraitUrl` prop to render call |
+| File                                                      | Action     | Purpose                                                                                          |
+| --------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------ |
+| `supabase/migrations/20260404120000_add_portrait_url.sql` | Create     | Add `portrait_url` column + create storage bucket                                                |
+| `src/types/database.generated.ts`                         | Regenerate | Picks up `portrait_url: string \| null` automatically                                            |
+| `src/constants/heroImages.ts`                             | Modify     | Add `portraitUrl` param to `heroImageSource()`                                                   |
+| `src/lib/db/heroes.ts`                                    | Modify     | Add `portrait_url` to `HeroSearchResult` Pick + `searchHeroes` select + `heroRowToCharacterData` |
+| `src/lib/db/favourites.ts`                                | Modify     | Add `portrait_url` to `FavouriteHero` Pick + `getUserFavouriteHeroes` select                     |
+| `src/components/HeroCard.tsx`                             | Modify     | Add `portraitUrl` prop, pass to `heroImageSource`                                                |
+| `app/(tabs)/index.tsx`                                    | Modify     | Pass `portrait_url` to `HeroCard`                                                                |
+| `app/(tabs)/search.tsx`                                   | Modify     | Prefer `portrait_url` in search result avatar                                                    |
+| `app/(tabs)/profile.tsx`                                  | Modify     | Pass `portrait_url` to `FavouriteThumb`                                                          |
+| `app/character/[id].tsx`                                  | Modify     | Prefer `portrait_url` in `heroImage` chain                                                       |
+| `scripts/generate-portraits.ts`                           | Create     | Batch upload + Gemini generation script                                                          |
+| `__tests__/lib/heroImages.test.ts`                        | Create     | Unit tests for updated `heroImageSource()`                                                       |
+| `__tests__/lib/db/heroes.test.ts`                         | Modify     | Add `portrait_url` to fixture + new `heroRowToCharacterData` test                                |
+| `__tests__/components/HeroCard.test.tsx`                  | Modify     | Add `portraitUrl` prop to render call                                                            |
 
 ---
 
 ## Task 1: DB migration — add `portrait_url` column
 
 **Files:**
+
 - Create: `supabase/migrations/20260404120000_add_portrait_url.sql`
 
 - [ ] **Step 1: Create the migration file**
@@ -46,16 +47,19 @@ ALTER TABLE heroes ADD COLUMN portrait_url text;
 - [ ] **Step 2: Apply the migration via Supabase MCP**
 
 Use the `mcp__supabase__apply_migration` tool with:
+
 - name: `add_portrait_url`
 - query: the SQL above
 
 - [ ] **Step 3: Verify the column exists**
 
 Run:
+
 ```sql
 SELECT column_name, data_type FROM information_schema.columns
 WHERE table_name = 'heroes' AND column_name = 'portrait_url';
 ```
+
 Expected: one row — `portrait_url | text`
 
 - [ ] **Step 4: Regenerate database types**
@@ -65,8 +69,9 @@ Use `mcp__supabase__generate_typescript_types` and overwrite `src/types/database
 - [ ] **Step 5: Verify `portrait_url` appears in generated types**
 
 Open `src/types/database.generated.ts` and confirm the `heroes` row type includes:
+
 ```ts
-portrait_url: string | null
+portrait_url: string | null;
 ```
 
 - [ ] **Step 6: Commit**
@@ -85,6 +90,7 @@ git commit -m "feat(db): add portrait_url column to heroes"
 - [ ] **Step 1: Create the `hero-portraits` bucket**
 
 Run SQL via `mcp__supabase__execute_sql`:
+
 ```sql
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('hero-portraits', 'hero-portraits', true)
@@ -111,6 +117,7 @@ CREATE POLICY "Authenticated write hero portraits"
 ```sql
 SELECT id, name, public FROM storage.buckets WHERE id = 'hero-portraits';
 ```
+
 Expected: one row with `public = true`
 
 - [ ] **Step 4: Commit**
@@ -125,6 +132,7 @@ git commit --allow-empty -m "chore(storage): create hero-portraits bucket"
 ## Task 3: Update `heroImageSource()` — add `portraitUrl` parameter
 
 **Files:**
+
 - Modify: `src/constants/heroImages.ts`
 - Create: `__tests__/lib/heroImages.test.ts`
 
@@ -163,7 +171,9 @@ describe('heroImageSource', () => {
 
   it('falls back to CDN when nothing else is available', () => {
     const result = heroImageSource('999', null, null);
-    expect(result).toEqual({ uri: 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/images/md/999.jpg' });
+    expect(result).toEqual({
+      uri: 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/images/md/999.jpg',
+    });
   });
 });
 ```
@@ -173,6 +183,7 @@ describe('heroImageSource', () => {
 ```bash
 bun run test:ci -- --testPathPattern="heroImages"
 ```
+
 Expected: FAIL — `heroImageSource` doesn't accept third argument yet
 
 - [ ] **Step 3: Update `heroImageSource()` in `src/constants/heroImages.ts`**
@@ -199,6 +210,7 @@ export function heroImageSource(
 ```bash
 bun run test:ci -- --testPathPattern="heroImages"
 ```
+
 Expected: PASS (5 tests)
 
 - [ ] **Step 5: Commit**
@@ -213,6 +225,7 @@ git commit -m "feat(images): add portraitUrl param to heroImageSource"
 ## Task 4: Update `heroes.ts` — add `portrait_url` to queries and mapping
 
 **Files:**
+
 - Modify: `src/lib/db/heroes.ts`
 - Modify: `__tests__/lib/db/heroes.test.ts`
 
@@ -246,11 +259,13 @@ it('falls back to image_url when portrait_url is null', () => {
 ```bash
 bun run test:ci -- --testPathPattern="heroes"
 ```
+
 Expected: FAIL — `portrait_url` not in `HeroSearchResult`, fixture type error
 
 - [ ] **Step 3: Update `src/lib/db/heroes.ts`**
 
 1. Add `portrait_url` to `HeroSearchResult`:
+
 ```ts
 export type HeroSearchResult = Pick<
   Hero,
@@ -259,6 +274,7 @@ export type HeroSearchResult = Pick<
 ```
 
 2. Add `portrait_url` to `searchHeroes` select:
+
 ```ts
 let q = supabase
   .from('heroes')
@@ -268,6 +284,7 @@ let q = supabase
 ```
 
 3. Update `heroRowToCharacterData` — prefer `portrait_url` in `stats.image.url`:
+
 ```ts
 image: {
   url: hero.portrait_url ?? hero.image_url ?? '',
@@ -279,6 +296,7 @@ image: {
 ```bash
 bun run test:ci -- --testPathPattern="heroes"
 ```
+
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -293,6 +311,7 @@ git commit -m "feat(db): include portrait_url in hero queries and mapping"
 ## Task 5: Update `favourites.ts` — add `portrait_url` to `FavouriteHero`
 
 **Files:**
+
 - Modify: `src/lib/db/favourites.ts`
 
 - [ ] **Step 1: Update `FavouriteHero` type and `getUserFavouriteHeroes` select**
@@ -300,11 +319,13 @@ git commit -m "feat(db): include portrait_url in hero queries and mapping"
 In `src/lib/db/favourites.ts`:
 
 1. Extend the `FavouriteHero` type:
+
 ```ts
 export type FavouriteHero = Pick<Tables<'heroes'>, 'id' | 'name' | 'image_url' | 'portrait_url'>;
 ```
 
 2. Update the select in `getUserFavouriteHeroes`:
+
 ```ts
 const { data: heroData, error: heroError } = await supabase
   .from('heroes')
@@ -317,6 +338,7 @@ const { data: heroData, error: heroError } = await supabase
 ```bash
 bun run test:ci
 ```
+
 Expected: PASS
 
 - [ ] **Step 3: Commit**
@@ -331,6 +353,7 @@ git commit -m "feat(db): include portrait_url in FavouriteHero"
 ## Task 6: Update `HeroCard` component — add `portraitUrl` prop
 
 **Files:**
+
 - Modify: `src/components/HeroCard.tsx`
 - Modify: `__tests__/components/HeroCard.test.tsx`
 
@@ -367,6 +390,7 @@ describe('HeroCard', () => {
 ```bash
 bun run test:ci -- --testPathPattern="HeroCard"
 ```
+
 Expected: FAIL — `portraitUrl` prop not accepted
 
 - [ ] **Step 3: Update `HeroCard.tsx`**
@@ -391,6 +415,7 @@ export function HeroCard({ id, name, imageUrl, portraitUrl, onPress }: HeroCardP
 ```bash
 bun run test:ci -- --testPathPattern="HeroCard"
 ```
+
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -405,6 +430,7 @@ git commit -m "feat(HeroCard): accept portraitUrl prop"
 ## Task 7: Wire up call sites
 
 **Files:**
+
 - Modify: `app/(tabs)/index.tsx`
 - Modify: `app/(tabs)/search.tsx`
 - Modify: `app/(tabs)/profile.tsx`
@@ -441,6 +467,7 @@ Find the avatar `Image` in the `renderItem` and update its `source`:
 ```
 
 Also update the `handlePress` call to pass `portrait_url ?? image_url` as `imageUri`:
+
 ```tsx
 onPress={() => handlePress(item.id, item.name, item.portrait_url ?? item.image_url ?? '')}
 ```
@@ -462,6 +489,7 @@ The `heroImage` chain currently checks `HERO_IMAGES[id]` first. Since `heroRowTo
 ```bash
 bun run test:ci
 ```
+
 Expected: PASS
 
 - [ ] **Step 6: Commit**
@@ -476,11 +504,13 @@ git commit -m "feat: wire portrait_url through all hero display surfaces"
 ## Task 8: Write the batch generation script
 
 **Files:**
+
 - Create: `scripts/generate-portraits.ts`
 
 - [ ] **Step 1: Check `.env.local` has the required keys**
 
 Open `.env.local` and confirm these are present (add if missing — do not commit):
+
 ```
 EXPO_PUBLIC_SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
@@ -587,12 +617,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 async function uploadToStorage(heroId: string, imageBytes: Uint8Array): Promise<string> {
   const fileName = `${heroId}.jpg`;
-  const { error } = await supabase.storage
-    .from(BUCKET)
-    .upload(fileName, imageBytes, {
-      contentType: 'image/jpeg',
-      upsert: true,
-    });
+  const { error } = await supabase.storage.from(BUCKET).upload(fileName, imageBytes, {
+    contentType: 'image/jpeg',
+    upsert: true,
+  });
   if (error) throw new Error(`Storage upload failed for ${heroId}: ${error.message}`);
 
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(fileName);
@@ -600,10 +628,7 @@ async function uploadToStorage(heroId: string, imageBytes: Uint8Array): Promise<
 }
 
 async function setPortraitUrl(heroId: string, url: string): Promise<void> {
-  const { error } = await supabase
-    .from('heroes')
-    .update({ portrait_url: url })
-    .eq('id', heroId);
+  const { error } = await supabase.from('heroes').update({ portrait_url: url }).eq('id', heroId);
   if (error) throw new Error(`DB update failed for ${heroId}: ${error.message}`);
 }
 
@@ -625,13 +650,15 @@ async function generatePortrait(
   const styleRefBase64 = styleRefBytes.toString('base64');
 
   const body = {
-    contents: [{
-      parts: [
-        { text: `Character name: ${heroName}. ${STYLE_PROMPT}` },
-        { inline_data: { mime_type: sourceMime, data: sourceBase64 } },
-        { inline_data: { mime_type: 'image/jpeg', data: styleRefBase64 } },
-      ],
-    }],
+    contents: [
+      {
+        parts: [
+          { text: `Character name: ${heroName}. ${STYLE_PROMPT}` },
+          { inline_data: { mime_type: sourceMime, data: sourceBase64 } },
+          { inline_data: { mime_type: 'image/jpeg', data: styleRefBase64 } },
+        ],
+      },
+    ],
     generationConfig: {
       responseModalities: ['image', 'text'],
     },
@@ -660,10 +687,10 @@ async function generatePortrait(
       throw new Error(`Gemini API error ${res.status}: ${text}`);
     }
 
-    const json = await res.json() as {
+    const json = (await res.json()) as {
       candidates: Array<{
-        content: { parts: Array<{ inline_data?: { data: string } }> }
-      }>
+        content: { parts: Array<{ inline_data?: { data: string } }> };
+      }>;
     };
 
     const imagePart = json.candidates?.[0]?.content?.parts?.find((p) => p.inline_data?.data);
@@ -774,7 +801,9 @@ async function phase2(filterHeroId?: string): Promise<void> {
 
 async function main() {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-    throw new Error('EXPO_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env.local');
+    throw new Error(
+      'EXPO_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env.local',
+    );
   }
   if (!GEMINI_API_KEY) {
     throw new Error('GOOGLE_AI_STUDIO_API_KEY must be set in .env.local');
@@ -802,6 +831,7 @@ main().catch((err) => {
 ```bash
 bun run typecheck
 ```
+
 Expected: no errors
 
 - [ ] **Step 4: Commit**
@@ -825,7 +855,9 @@ Get the Google AI Studio key from aistudio.google.com → API keys.
 ```bash
 bun scripts/generate-portraits.ts --hero-id 69 --dry-run
 ```
+
 Expected output:
+
 ```
 Hero Portrait Generator
 Mode: DRY RUN
@@ -845,6 +877,7 @@ Done.
 ```bash
 bun scripts/generate-portraits.ts --hero-id 69
 ```
+
 Expected: `✓ [1/1] Aquaman (69) → https://...supabase.co/storage/v1/object/public/hero-portraits/69.jpg`
 
 - [ ] **Step 4: Verify in Supabase dashboard**
@@ -856,11 +889,13 @@ Open Supabase → Storage → hero-portraits — confirm `69.jpg` exists.
 ```sql
 SELECT id, name, portrait_url FROM heroes WHERE id = '69';
 ```
+
 Expected: `portrait_url` is a valid `https://...supabase.co/...` URL
 
 - [ ] **Step 6: Visually review the generated image**
 
 Open the URL from the DB in a browser. Confirm:
+
 - Side-profile bust portrait ✓
 - Flat graphic illustration style ✓
 - Bold solid background colour ✓
@@ -873,6 +908,7 @@ If quality is poor, adjust the `STYLE_PROMPT` constant in the script and re-run 
 ```bash
 bun start
 ```
+
 Navigate to Aquaman — confirm the portrait renders from Supabase Storage rather than the CDN fallback.
 
 ---
@@ -884,6 +920,7 @@ Navigate to Aquaman — confirm the portrait renders from Supabase Storage rathe
 ```bash
 bun scripts/generate-portraits.ts --dry-run
 ```
+
 Review the output — confirm 34 heroes are listed for Phase 1. Then run live:
 
 ```bash
@@ -907,6 +944,7 @@ SELECT
   COUNT(*) - COUNT(portrait_url) as missing
 FROM heroes;
 ```
+
 Expected: `missing` should be close to 0 (a few failures from API timeouts are normal — re-run to fill gaps).
 
 - [ ] **Step 4: Commit final state**

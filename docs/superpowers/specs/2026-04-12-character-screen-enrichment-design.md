@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-12  
 **Scope:** Native character screen (`app/character/[id].tsx`) only  
-**Goal:** Add missing content, fix section ordering, improve information hierarchy  
+**Goal:** Add missing content, fix section ordering, improve information hierarchy
 
 ---
 
@@ -19,6 +19,7 @@ All additions use data already available from SuperheroAPI or the existing Comic
 **Where:** Identity block, same row as publisher, immediately after name/alias  
 **Data source:** `stats.biography.alignment` — already fetched, currently buried in Overview info rows  
 **Design:** A small pill/chip, colour-coded by value:
+
 - `"good"` → green background (`COLORS.green` tint)
 - `"bad"` → red background (`COLORS.red` tint)
 - `"neutral"` → grey background
@@ -49,6 +50,7 @@ Alignment row is **removed** from the Overview section (it moves here).
 **Where:** First Appearance section, below the existing comic cover image  
 **Data source:** `data.firstIssue` — already fetched. Fields: `name`, `coverDate`, `issueNumber`  
 **Design:** Below the `comicImage`:
+
 - Issue name in `Flame-Regular` 13px, navy, centred
 - Cover date (year only, parsed from `coverDate`) in `FlameSans-Regular` 11px, muted, centred
 - Only render fields that are non-null/non-empty
@@ -79,17 +81,17 @@ Work (occupation + base) currently has its own `Section` component. With only 2 
 
 ## Section Order (native screen, top to bottom)
 
-| # | Section | Change |
-|---|---------|--------|
-| 1 | Hero image | Unchanged — parallax, zoom, gradient fade |
-| 2 | Identity block | + alignment badge, + favourite count on heart |
-| 3 | Summary | Unchanged |
-| 4 | Power Stats | + total score below dials |
-| 5 | Abilities | Unchanged |
-| 6 | First Appearance | **Moved up from #8** + issue title + year below cover |
-| 7 | Overview | Alignment row removed (moved to identity block) |
-| 8 | Appearance | Unchanged |
-| 9 | Connections | Affiliation chips + relatives list + Work rows merged in |
+| #   | Section          | Change                                                   |
+| --- | ---------------- | -------------------------------------------------------- |
+| 1   | Hero image       | Unchanged — parallax, zoom, gradient fade                |
+| 2   | Identity block   | + alignment badge, + favourite count on heart            |
+| 3   | Summary          | Unchanged                                                |
+| 4   | Power Stats      | + total score below dials                                |
+| 5   | Abilities        | Unchanged                                                |
+| 6   | First Appearance | **Moved up from #8** + issue title + year below cover    |
+| 7   | Overview         | Alignment row removed (moved to identity block)          |
+| 8   | Appearance       | Unchanged                                                |
+| 9   | Connections      | Affiliation chips + relatives list + Work rows merged in |
 
 The old standalone **Work** section is removed.  
 The old **First Appearance** position (between Overview and Appearance) is replaced by its new position at #6.
@@ -98,9 +100,9 @@ The old **First Appearance** position (between Overview and Appearance) is repla
 
 ## Files to Modify
 
-| File | What changes |
-|------|-------------|
-| `app/character/[id].tsx` | All layout changes live here |
+| File                       | What changes                                 |
+| -------------------------- | -------------------------------------------- |
+| `app/character/[id].tsx`   | All layout changes live here                 |
 | `src/lib/db/favourites.ts` | Add `getHeroFavouriteCount(heroId)` function |
 
 No new components needed — all additions are inline within the existing screen structure.

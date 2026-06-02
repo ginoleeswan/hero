@@ -8,6 +8,13 @@ import {
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
+const mockInvoke = jest.fn();
+jest.mock('../../src/lib/supabase', () => ({
+  supabase: {
+    functions: { invoke: (...args: unknown[]) => mockInvoke(...args) },
+  },
+}));
+
 jest.mock('expo-constants', () => ({
   default: {
     expoConfig: {
@@ -21,6 +28,7 @@ jest.mock('expo-constants', () => ({
 
 beforeEach(() => {
   mockFetch.mockReset();
+  mockInvoke.mockReset();
 });
 
 describe('fetchHeroStats', () => {
@@ -53,100 +61,106 @@ describe('fetchHeroStats', () => {
 
 describe('fetchHeroDetails', () => {
   it('returns parsed details', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        results: [
-          {
-            deck: 'A radioactive spider bite',
-            publisher: { name: 'Marvel Comics' },
-            first_appeared_in_issue: { id: 101 },
-          },
-        ],
-      }),
+    mockInvoke.mockResolvedValueOnce({
+      data: {
+        summary: 'A radioactive spider bite',
+        publisher: 'Marvel Comics',
+        firstIssueId: '101',
+        firstIssueData: null,
+        powers: null,
+        description: null,
+        origin: null,
+        issueCount: null,
+        creators: null,
+        enemies: null,
+        friends: null,
+        movies: null,
+        movieCount: null,
+        teams: null,
+      },
+      error: null,
     });
 
-    const result = await fetchHeroDetails('Spider-Man');
+    const result = await fetchHeroDetails('620', 'Spider-Man');
     expect(result.summary).toBe('A radioactive spider bite');
     expect(result.publisher).toBe('Marvel Comics');
     expect(result.firstIssueId).toBe('101');
   });
 
-  it('returns nulls when no results', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ results: [] }),
-    });
+  it('returns nulls when edge function returns error', async () => {
+    mockInvoke.mockResolvedValueOnce({ data: null, error: new Error('not found') });
 
-    const result = await fetchHeroDetails('Unknown');
-    expect(result).toEqual({ summary: null, publisher: null, firstIssueId: null, powers: null });
+    const result = await fetchHeroDetails('999', 'Unknown');
+    expect(result.summary).toBeNull();
+    expect(result.publisher).toBeNull();
+    expect(result.firstIssueId).toBeNull();
+    expect(result.powers).toBeNull();
   });
 
-  it('parses powers array from ComicVine response', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        results: [
-          {
-            deck: 'A hero of great power.',
-            publisher: { name: 'Marvel' },
-            first_appeared_in_issue: null,
-            powers: [{ name: 'Flight' }, { name: 'Super Strength' }, { name: 'Telepathy' }],
-          },
-        ],
-      }),
+  it('returns powers array from edge function', async () => {
+    mockInvoke.mockResolvedValueOnce({
+      data: {
+        summary: 'A hero of great power.',
+        publisher: 'Marvel',
+        firstIssueId: null,
+        firstIssueData: null,
+        powers: ['Flight', 'Super Strength', 'Telepathy'],
+        description: null,
+        origin: null,
+        issueCount: null,
+        creators: null,
+        enemies: null,
+        friends: null,
+        movies: null,
+        movieCount: null,
+        teams: null,
+      },
+      error: null,
     });
 
-    const result = await fetchHeroDetails('Spider-Man');
+    const result = await fetchHeroDetails('620', 'Spider-Man');
     expect(result.powers).toEqual(['Flight', 'Super Strength', 'Telepathy']);
   });
 
-  it('returns null powers when ComicVine returns no powers array', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        results: [
-          {
-            deck: null,
-            publisher: null,
-            first_appeared_in_issue: null,
-            powers: null,
-          },
-        ],
-      }),
+  it('returns null powers when edge function returns null powers', async () => {
+    mockInvoke.mockResolvedValueOnce({
+      data: {
+        summary: null,
+        publisher: null,
+        firstIssueId: null,
+        firstIssueData: null,
+        powers: null,
+        description: null,
+        origin: null,
+        issueCount: null,
+        creators: null,
+        enemies: null,
+        friends: null,
+        movies: null,
+        movieCount: null,
+        teams: null,
+      },
+      error: null,
     });
 
-    const result = await fetchHeroDetails('Unknown Hero');
+    const result = await fetchHeroDetails('999', 'Unknown Hero');
     expect(result.powers).toBeNull();
   });
 
-  it('returns null powers when no results', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ results: [] }),
-    });
+  it('returns null powers when edge function errors', async () => {
+    mockInvoke.mockResolvedValueOnce({ data: null, error: new Error('fail') });
 
-    const result = await fetchHeroDetails('Nobody');
+    const result = await fetchHeroDetails('999', 'Nobody');
     expect(result.powers).toBeNull();
   });
 
-  it('filters out powers entries without a name string', async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        results: [
-          {
-            deck: null,
-            publisher: null,
-            first_appeared_in_issue: null,
-            powers: [{ name: 'Flight' }, { id: 99 }, null, { name: 'Super Strength' }],
-          },
-        ],
-      }),
-    });
+  it('passes heroId and heroName to the edge function', async () => {
+    mockInvoke.mockResolvedValueOnce({ data: null, error: new Error('ok') });
 
-    const result = await fetchHeroDetails('Test Hero');
-    expect(result.powers).toEqual(['Flight', 'Super Strength']);
+    await fetchHeroDetails('999', 'Test Hero');
+    expect(mockInvoke).toHaveBeenCalledWith('get-comicvine-hero', {
+      body: { heroId: '999', heroName: 'Test Hero' },
+    });
   });
 });
 
@@ -165,18 +179,9 @@ describe('fetchFirstIssue', () => {
   });
 });
 
-// generateVerdict uses its own fetch mocking — restore after each test
-const originalFetch = global.fetch;
-afterEach(() => {
-  global.fetch = originalFetch;
-});
-
 describe('generateVerdict', () => {
   it('returns AI verdict on success', async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ verdict: 'Batman dominates.' }),
-    } as Response);
+    mockInvoke.mockResolvedValueOnce({ data: { verdict: 'Batman dominates.' }, error: null });
 
     const result = await generateVerdict({
       heroA: 'Batman',
@@ -189,8 +194,8 @@ describe('generateVerdict', () => {
     expect(result).toBe('Batman dominates.');
   });
 
-  it('returns fallback verdict when fetch fails', async () => {
-    global.fetch = jest.fn().mockRejectedValue(new Error('network error'));
+  it('returns fallback verdict when invoke fails', async () => {
+    mockInvoke.mockRejectedValueOnce(new Error('network error'));
 
     const result = await generateVerdict({
       heroA: 'Batman',
@@ -205,7 +210,7 @@ describe('generateVerdict', () => {
   });
 
   it('returns tie fallback when winsA equals winsB', async () => {
-    global.fetch = jest.fn().mockRejectedValue(new Error('network error'));
+    mockInvoke.mockRejectedValueOnce(new Error('network error'));
     const result = await generateVerdict({
       heroA: 'Batman',
       heroB: 'Spider-Man',

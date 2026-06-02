@@ -68,9 +68,7 @@ export function SuggestionsList({
             [styles.viewAllButton, hovered && (styles.viewAllButtonHover as object)] as object
           }
         >
-          <Text style={styles.viewAllText}>
-            View all {resultCount} results →
-          </Text>
+          <Text style={styles.viewAllText}>View all {resultCount} results →</Text>
         </Pressable>
       )}
     </View>

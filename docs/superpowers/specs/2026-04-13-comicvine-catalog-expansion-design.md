@@ -20,19 +20,19 @@ This spec flips the model: **ComicVine becomes the primary character source**; S
 
 ## What ComicVine Provides (confirmed)
 
-| Field | Available |
-|---|---|
-| Character ID (stable) | ✓ `4005-{id}` |
-| Name, aliases | ✓ |
-| Deck (one-line summary) | ✓ |
-| Full HTML biography | ✓ |
-| Powers (tag list) | ✓ |
-| Origin type | ✓ |
-| Issue count | ✓ (used as popularity/quality filter) |
-| Publisher | ✓ |
-| Image (multiple sizes) | ✓ icon, thumb, small, medium, super, original |
-| Enemies, allies, teams | ✓ |
-| Numeric powerstats (0–100) | ✗ — unique to SuperheroAPI |
+| Field                      | Available                                     |
+| -------------------------- | --------------------------------------------- |
+| Character ID (stable)      | ✓ `4005-{id}`                                 |
+| Name, aliases              | ✓                                             |
+| Deck (one-line summary)    | ✓                                             |
+| Full HTML biography        | ✓                                             |
+| Powers (tag list)          | ✓                                             |
+| Origin type                | ✓                                             |
+| Issue count                | ✓ (used as popularity/quality filter)         |
+| Publisher                  | ✓                                             |
+| Image (multiple sizes)     | ✓ icon, thumb, small, medium, super, original |
+| Enemies, allies, teams     | ✓                                             |
+| Numeric powerstats (0–100) | ✗ — unique to SuperheroAPI                    |
 
 ---
 
@@ -52,11 +52,11 @@ Character in DB
 
 ### Stats provenance
 
-| `stats_source` | Meaning |
-|---|---|
-| `'superheroapi'` | Verified numeric stats from SuperheroAPI. Shown as-is. |
-| `'ai'` | Gemini-estimated stats. Shown with "AI estimated" badge. |
-| `NULL` | No stats yet. Generation triggered on first character view. |
+| `stats_source`   | Meaning                                                     |
+| ---------------- | ----------------------------------------------------------- |
+| `'superheroapi'` | Verified numeric stats from SuperheroAPI. Shown as-is.      |
+| `'ai'`           | Gemini-estimated stats. Shown with "AI estimated" badge.    |
+| `NULL`           | No stats yet. Generation triggered on first character view. |
 
 ---
 
@@ -189,6 +189,7 @@ Return ONLY valid JSON with these exact keys, no explanation:
 ```
 
 **Cost estimate:**
+
 - ~600 input tokens + ~60 output tokens per character
 - 5,000 characters × $0.10/1M input + $0.40/1M output = **~$0.42 total**
 - Free tier (available on Gemini API) covers this entirely if generation is lazy/spread over time
@@ -203,7 +204,7 @@ With `comicvine_id` stored on every character, links in biography pages can reso
 
 ```ts
 // src/lib/db/heroes.ts
-export async function getHeroByComicvineId(cvId: string): Promise<Hero | null>
+export async function getHeroByComicvineId(cvId: string): Promise<Hero | null>;
 ```
 
 Single query: `SELECT * FROM heroes WHERE comicvine_id = $1 LIMIT 1`
@@ -234,12 +235,12 @@ Character links that resolve to an in-app hero get a subtle visual upgrade: `col
 
 **Stats section behaviour by `stats_source`:**
 
-| Value | Behaviour |
-|---|---|
-| `'superheroapi'` | Renders exactly as today. No badge. |
-| `'ai'` | Renders stats. Small "AI estimated" pill beside "Power Stats" title. |
+| Value                                  | Behaviour                                                                              |
+| -------------------------------------- | -------------------------------------------------------------------------------------- |
+| `'superheroapi'`                       | Renders exactly as today. No badge.                                                    |
+| `'ai'`                                 | Renders stats. Small "AI estimated" pill beside "Power Stats" title.                   |
 | `NULL` + `ai_stats_status = 'pending'` | Fires `generate-hero-stats` on mount. Shows stat bar skeletons. Renders when resolved. |
-| `NULL` + `ai_stats_status = 'failed'` | Hides stats section entirely. No error shown to user. |
+| `NULL` + `ai_stats_status = 'failed'`  | Hides stats section entirely. No error shown to user.                                  |
 
 **"AI estimated" pill:**  
 A small grey pill (`AI` label) next to the Power Stats card title. Tapping/hovering shows a tooltip: "Stats estimated by AI based on this character's powers and biography."

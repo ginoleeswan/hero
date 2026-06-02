@@ -25,15 +25,15 @@
 
 ## Tech Stack
 
-| Concern | Library |
-|---|---|
-| Navigation | expo-router 4 (file-based) |
-| Auth + DB | Supabase |
-| External APIs | SuperheroAPI, ComicVine API |
-| Animations | react-native-reanimated 4 |
-| Carousel | react-native-reanimated-carousel |
-| Card shape | react-native-figma-squircle |
-| Testing | jest-expo + @testing-library/react-native |
+| Concern       | Library                                   |
+| ------------- | ----------------------------------------- |
+| Navigation    | expo-router 4 (file-based)                |
+| Auth + DB     | Supabase                                  |
+| External APIs | SuperheroAPI, ComicVine API               |
+| Animations    | react-native-reanimated 4                 |
+| Carousel      | react-native-reanimated-carousel          |
+| Card shape    | react-native-figma-squircle               |
+| Testing       | jest-expo + @testing-library/react-native |
 
 ## Get Started
 
@@ -51,15 +51,15 @@ Copy `.env.example` to `.env.local` and fill in your keys:
 cp .env.example .env.local
 ```
 
-| Variable | Description |
-|---|---|
-| `EXPO_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `EXPO_PUBLIC_SUPABASE_KEY` | Supabase anon key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only) |
-| `SUPERHERO_API_KEY` | [SuperheroAPI](https://superheroapi.com/) key |
-| `COMICVINE_API_KEY` | [ComicVine API](https://comicvine.gamespot.com/api/) key |
-| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Google OAuth web client ID |
-| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | Google OAuth iOS client ID |
+| Variable                           | Description                                              |
+| ---------------------------------- | -------------------------------------------------------- |
+| `EXPO_PUBLIC_SUPABASE_URL`         | Supabase project URL                                     |
+| `EXPO_PUBLIC_SUPABASE_KEY`         | Supabase anon key                                        |
+| `SUPABASE_SERVICE_ROLE_KEY`        | Supabase service role key (server-side only)             |
+| `SUPERHERO_API_KEY`                | [SuperheroAPI](https://superheroapi.com/) key            |
+| `COMICVINE_API_KEY`                | [ComicVine API](https://comicvine.gamespot.com/api/) key |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Google OAuth web client ID                               |
+| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | Google OAuth iOS client ID                               |
 
 Then start the dev server:
 

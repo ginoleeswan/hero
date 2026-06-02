@@ -44,14 +44,7 @@ const MOSAIC = [
   { src: P('332'), name: 'Hulk' },
 ];
 
-const SIDE_HEROES = [
-  P('620'),
-  P('346'),
-  P('213'),
-  P('720'),
-  P('659'),
-  P('717'),
-];
+const SIDE_HEROES = [P('620'), P('346'), P('213'), P('720'), P('659'), P('717')];
 
 const FEATURES = [
   {
@@ -387,7 +380,12 @@ const s = StyleSheet.create({
     backgroundColor: C.bg,
     zIndex: 10,
   },
-  navWordmark: { fontFamily: 'Righteous_400Regular', fontSize: 22, color: C.beige, letterSpacing: -0.5 },
+  navWordmark: {
+    fontFamily: 'Righteous_400Regular',
+    fontSize: 22,
+    color: C.beige,
+    letterSpacing: -0.5,
+  },
   navCta: {
     backgroundColor: C.orange,
     paddingHorizontal: 20,
@@ -442,7 +440,13 @@ const s = StyleSheet.create({
     marginBottom: 28,
   },
   heroBadgeText: { color: C.yellow, fontSize: 12, fontWeight: '600', letterSpacing: 1 },
-  heroWordmark: { fontFamily: 'Righteous_400Regular', color: C.beige, letterSpacing: -3, lineHeight: 1.05, marginBottom: 20 },
+  heroWordmark: {
+    fontFamily: 'Righteous_400Regular',
+    color: C.beige,
+    letterSpacing: -3,
+    lineHeight: 1.05,
+    marginBottom: 20,
+  },
   heroTagline: {
     fontFamily: 'Righteous_400Regular',
     fontSize: 22,
@@ -668,6 +672,12 @@ const s = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
   },
-  footerWordmark: { fontFamily: 'Righteous_400Regular', fontSize: 18, color: C.beige, opacity: 0.6, letterSpacing: -0.5 },
+  footerWordmark: {
+    fontFamily: 'Righteous_400Regular',
+    fontSize: 18,
+    color: C.beige,
+    opacity: 0.6,
+    letterSpacing: -0.5,
+  },
   footerText: { fontSize: 13, color: C.muted },
 });

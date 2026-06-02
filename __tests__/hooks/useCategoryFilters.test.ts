@@ -3,14 +3,19 @@ import { useCategoryFilters } from '../../src/hooks/useCategoryFilters';
 import { DEFAULT_FILTERS } from '../../src/lib/db/categoryFilters';
 
 let mockParams: Record<string, string> = {};
-const mockSetParams = jest.fn((p: Record<string, string>) => { mockParams = { ...mockParams, ...p }; });
+const mockSetParams = jest.fn((p: Record<string, string>) => {
+  mockParams = { ...mockParams, ...p };
+});
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockParams,
   useRouter: () => ({ setParams: mockSetParams }),
 }));
 
-beforeEach(() => { mockParams = {}; mockSetParams.mockClear(); });
+beforeEach(() => {
+  mockParams = {};
+  mockSetParams.mockClear();
+});
 
 describe('useCategoryFilters', () => {
   it('starts from DEFAULT_FILTERS for a plain slug', () => {
@@ -41,6 +46,13 @@ describe('useCategoryFilters', () => {
     const { result } = renderHook(() => useCategoryFilters('popular'));
     act(() => result.current.reset());
     expect(result.current.filters).toEqual(DEFAULT_FILTERS);
-    expect(mockSetParams).toHaveBeenCalledWith({ publisher: '', alignment: '', gender: '', stats: '', sort: '', q: '' });
+    expect(mockSetParams).toHaveBeenCalledWith({
+      publisher: '',
+      alignment: '',
+      gender: '',
+      stats: '',
+      sort: '',
+      q: '',
+    });
   });
 });

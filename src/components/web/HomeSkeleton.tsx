@@ -16,7 +16,13 @@ function SpotlightSkeleton({ opacity }: { opacity: Opacity }) {
   if (isMobile) {
     return (
       <View
-        style={{ flexDirection: 'row', gap: 10, height: contentHeight, marginVertical: 20, paddingHorizontal: pagePad }}
+        style={{
+          flexDirection: 'row',
+          gap: 10,
+          height: contentHeight,
+          marginVertical: 20,
+          paddingHorizontal: pagePad,
+        }}
       >
         <SkeletonBlock opacity={opacity} width={150} height={contentHeight} borderRadius={10} />
         <View style={{ flex: 1 }}>
@@ -28,11 +34,23 @@ function SpotlightSkeleton({ opacity }: { opacity: Opacity }) {
 
   return (
     <View
-      style={{ flexDirection: 'row', gap: 12, height: contentHeight, marginVertical: 32, paddingHorizontal: pagePad }}
+      style={{
+        flexDirection: 'row',
+        gap: 12,
+        height: contentHeight,
+        marginVertical: 32,
+        paddingHorizontal: pagePad,
+      }}
     >
       {/* Accordion strip — mirror the large scale breakpoint widths */}
       {[280, 140, 100, 76].map((w, i) => (
-        <SkeletonBlock key={i} opacity={opacity} width={w} height={contentHeight} borderRadius={14} />
+        <SkeletonBlock
+          key={i}
+          opacity={opacity}
+          width={w}
+          height={contentHeight}
+          borderRadius={14}
+        />
       ))}
       {/* Info panel */}
       <View style={{ flex: 1 }}>
@@ -42,9 +60,25 @@ function SpotlightSkeleton({ opacity }: { opacity: Opacity }) {
   );
 }
 
-function RowHeader({ opacity, pagePad, dark = false }: { opacity: Opacity; pagePad: number; dark?: boolean }) {
+function RowHeader({
+  opacity,
+  pagePad,
+  dark = false,
+}: {
+  opacity: Opacity;
+  pagePad: number;
+  dark?: boolean;
+}) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 14, marginBottom: 16, paddingLeft: pagePad }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'stretch',
+        gap: 14,
+        marginBottom: 16,
+        paddingLeft: pagePad,
+      }}
+    >
       <SkeletonBlock opacity={opacity} dark={dark} width={4} height={44} borderRadius={2} />
       <View style={{ gap: 2, justifyContent: 'center' }}>
         <SkeletonBlock opacity={opacity} dark={dark} width={60} height={9} borderRadius={3} />
@@ -60,7 +94,13 @@ function RowSkeleton({ opacity, pagePad }: { opacity: Opacity; pagePad: number }
       <RowHeader opacity={opacity} pagePad={pagePad} />
       <View style={{ flexDirection: 'row', gap: 16, paddingLeft: pagePad }}>
         {Array.from({ length: 5 }).map((_, i) => (
-          <SkeletonBlock key={i} opacity={opacity} width={ROW_CARD_WIDTH} height={ROW_CARD_HEIGHT} borderRadius={10} />
+          <SkeletonBlock
+            key={i}
+            opacity={opacity}
+            width={ROW_CARD_WIDTH}
+            height={ROW_CARD_HEIGHT}
+            borderRadius={10}
+          />
         ))}
       </View>
     </View>
@@ -73,7 +113,14 @@ function DarkRowSkeleton({ opacity, pagePad }: { opacity: Opacity; pagePad: numb
       <RowHeader opacity={opacity} pagePad={pagePad} dark />
       <View style={{ flexDirection: 'row', gap: 16, paddingLeft: pagePad }}>
         {Array.from({ length: 5 }).map((_, i) => (
-          <SkeletonBlock key={i} opacity={opacity} dark width={ROW_CARD_WIDTH} height={ROW_CARD_HEIGHT} borderRadius={10} />
+          <SkeletonBlock
+            key={i}
+            opacity={opacity}
+            dark
+            width={ROW_CARD_WIDTH}
+            height={ROW_CARD_HEIGHT}
+            borderRadius={10}
+          />
         ))}
       </View>
     </View>

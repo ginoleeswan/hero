@@ -91,7 +91,9 @@ export function TopNav() {
         {showSearch ? (
           <View style={styles.searchContainer as object}>
             <View
-              style={[styles.searchWrap, searchFocused && (styles.searchWrapFocused as object)] as object}
+              style={
+                [styles.searchWrap, searchFocused && (styles.searchWrapFocused as object)] as object
+              }
             >
               <Ionicons
                 name="search"

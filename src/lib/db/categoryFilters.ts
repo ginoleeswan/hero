@@ -46,7 +46,12 @@ export function visibleFacets(slug: CategorySlug): FacetKey[] {
 }
 
 export type FilterParams = Partial<{
-  publisher: string; alignment: string; gender: string; stats: string; sort: string; q: string;
+  publisher: string;
+  alignment: string;
+  gender: string;
+  stats: string;
+  sort: string;
+  q: string;
 }>;
 
 export function filtersToParams(slug: CategorySlug, f: CategoryFilters): FilterParams {
@@ -81,19 +86,31 @@ export function paramsToFilters(slug: CategorySlug, p: FilterParams): CategoryFi
 }
 
 const LABELS: Record<string, string> = {
-  marvel: 'Marvel', dc: 'DC', other: 'Other',
-  good: 'Good', bad: 'Bad', neutral: 'Neutral',
-  male: 'Male', female: 'Female',
+  marvel: 'Marvel',
+  dc: 'DC',
+  other: 'Other',
+  good: 'Good',
+  bad: 'Bad',
+  neutral: 'Neutral',
+  male: 'Male',
+  female: 'Female',
 };
 
-export interface ActiveChip { key: FacetKey | 'search'; label: string; }
+export interface ActiveChip {
+  key: FacetKey | 'search';
+  label: string;
+}
 
 export function activeFilterList(slug: CategorySlug, f: CategoryFilters): ActiveChip[] {
   const visible = visibleFacets(slug);
   const chips: ActiveChip[] = [];
-  if (visible.includes('publisher') && f.publisher !== 'all') chips.push({ key: 'publisher', label: LABELS[f.publisher] });
-  if (visible.includes('alignment') && f.alignment !== 'any') chips.push({ key: 'alignment', label: LABELS[f.alignment] });
-  if (visible.includes('gender') && f.gender !== 'any') chips.push({ key: 'gender', label: LABELS[f.gender] });
-  if (visible.includes('hasStats') && f.hasStats) chips.push({ key: 'hasStats', label: 'Rated only' });
+  if (visible.includes('publisher') && f.publisher !== 'all')
+    chips.push({ key: 'publisher', label: LABELS[f.publisher] });
+  if (visible.includes('alignment') && f.alignment !== 'any')
+    chips.push({ key: 'alignment', label: LABELS[f.alignment] });
+  if (visible.includes('gender') && f.gender !== 'any')
+    chips.push({ key: 'gender', label: LABELS[f.gender] });
+  if (visible.includes('hasStats') && f.hasStats)
+    chips.push({ key: 'hasStats', label: 'Rated only' });
   return chips;
 }

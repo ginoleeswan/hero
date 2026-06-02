@@ -32,7 +32,7 @@ const RESULT_LIMIT = 300;
 const PUB_OPTS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
 
 function normalizePublisher(p?: string | string[]): PublisherFilter {
-  const v = (Array.isArray(p) ? p[0] : p ?? '').toLowerCase();
+  const v = (Array.isArray(p) ? p[0] : (p ?? '')).toLowerCase();
   if (v === 'marvel') return 'Marvel';
   if (v === 'dc') return 'DC';
   if (v === 'other') return 'Other';
@@ -45,7 +45,12 @@ function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
 }
 const sk = StyleSheet.create({
   // width:100% — WebKit won't stretch an aspect-ratio grid item to the track
-  wrap: { width: '100%', borderRadius: 10, aspectRatio: '3 / 4', backgroundColor: '#ddd5c8' } as object,
+  wrap: {
+    width: '100%',
+    borderRadius: 10,
+    aspectRatio: '3 / 4',
+    backgroundColor: '#ddd5c8',
+  } as object,
 });
 
 // ── Card ────────────────────────────────────────────────────────────────────────
@@ -120,7 +125,7 @@ export default function WebSearchScreen() {
   const skeletonOpacity = useSkeletonAnim();
   const { history, addSearch, clearHistory } = useSearchHistory();
 
-  const urlQ = (Array.isArray(params.q) ? params.q[0] : params.q ?? '').toString();
+  const urlQ = (Array.isArray(params.q) ? params.q[0] : (params.q ?? '')).toString();
   const publisher = normalizePublisher(params.publisher);
 
   // Mobile keeps the query in local state for live typing; desktop reads it from
@@ -266,7 +271,12 @@ export default function WebSearchScreen() {
                 style={[styles.pill, publisher === p && (styles.pillActive as object)] as object}
               >
                 <Text
-                  style={[styles.pillText, publisher === p && (styles.pillTextActive as object)] as object}
+                  style={
+                    [
+                      styles.pillText,
+                      publisher === p && (styles.pillTextActive as object),
+                    ] as object
+                  }
                 >
                   {p}
                 </Text>
@@ -291,7 +301,11 @@ export default function WebSearchScreen() {
                 </View>
                 <View style={styles.chips as object}>
                   {history.map((h) => (
-                    <Pressable key={h} onPress={() => setMobileQuery(h)} style={styles.chip as object}>
+                    <Pressable
+                      key={h}
+                      onPress={() => setMobileQuery(h)}
+                      style={styles.chip as object}
+                    >
                       <Ionicons name="time-outline" size={13} color={COLORS.grey} />
                       <Text style={styles.chipText as object} numberOfLines={1}>
                         {h}
@@ -378,7 +392,13 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   } as object,
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  accentBar: { width: 4, height: 56, borderRadius: 2, backgroundColor: COLORS.orange, flexShrink: 0 },
+  accentBar: {
+    width: 4,
+    height: 56,
+    borderRadius: 2,
+    backgroundColor: COLORS.orange,
+    flexShrink: 0,
+  },
   titleBlock: { flex: 1, gap: 4, minWidth: 0 },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
@@ -387,7 +407,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   } as object,
-  title: { fontFamily: 'Flame-Regular', fontSize: 46, color: COLORS.beige, lineHeight: 50 } as object,
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 46,
+    color: COLORS.beige,
+    lineHeight: 50,
+  } as object,
   countPill: {
     backgroundColor: 'rgba(232,98,26,0.18)',
     borderRadius: 20,

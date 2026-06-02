@@ -95,7 +95,9 @@ export async function searchHeroes(
 ): Promise<HeroSearchResult[]> {
   let q = supabase
     .from('heroes')
-    .select('id, name, publisher, alignment, image_md_url, image_url, portrait_url, full_name, aliases')
+    .select(
+      'id, name, publisher, alignment, image_md_url, image_url, portrait_url, full_name, aliases',
+    )
     .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
 
@@ -119,7 +121,9 @@ export async function searchHeroes(
 export async function getSearchIdleHeroes(limit = 30): Promise<HeroSearchResult[]> {
   const { data, error } = await supabase
     .from('heroes')
-    .select('id, name, publisher, alignment, image_md_url, image_url, portrait_url, full_name, aliases')
+    .select(
+      'id, name, publisher, alignment, image_md_url, image_url, portrait_url, full_name, aliases',
+    )
     .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
     .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
@@ -383,16 +387,32 @@ export async function getCategoryPage(
   let q: any = supabase.from('heroes').select('*', { count: 'exact' });
 
   switch (slug) {
-    case 'popular': q = q.eq('category', 'popular'); break;
-    case 'villain':
-      q = q.eq('alignment', 'bad').not('publisher', 'in', '("Non-Fictional","In the Public Domain")');
+    case 'popular':
+      q = q.eq('category', 'popular');
       break;
-    case 'xmen': q = q.or('group_affiliation.ilike.%x-men%,group_affiliation.ilike.%xmen%'); break;
-    case 'anti-heroes': q = q.ilike('alignment', '%neutral%'); break;
-    case 'marvel': q = q.ilike('publisher', '%marvel%'); break;
-    case 'dc': q = q.ilike('publisher', '%dc%'); break;
-    case 'strongest': q = q.not('strength', 'is', null); break;
-    case 'most-intelligent': q = q.not('intelligence', 'is', null); break;
+    case 'villain':
+      q = q
+        .eq('alignment', 'bad')
+        .not('publisher', 'in', '("Non-Fictional","In the Public Domain")');
+      break;
+    case 'xmen':
+      q = q.or('group_affiliation.ilike.%x-men%,group_affiliation.ilike.%xmen%');
+      break;
+    case 'anti-heroes':
+      q = q.ilike('alignment', '%neutral%');
+      break;
+    case 'marvel':
+      q = q.ilike('publisher', '%marvel%');
+      break;
+    case 'dc':
+      q = q.ilike('publisher', '%dc%');
+      break;
+    case 'strongest':
+      q = q.not('strength', 'is', null);
+      break;
+    case 'most-intelligent':
+      q = q.not('intelligence', 'is', null);
+      break;
     case 'most-iconic':
       q = q.not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")');
       break;
@@ -401,7 +421,8 @@ export async function getCategoryPage(
   // Publisher facet
   if (publisher === 'marvel') q = q.ilike('publisher', '%marvel%');
   else if (publisher === 'dc') q = q.ilike('publisher', '%dc%');
-  else if (publisher === 'other') q = q.not('publisher', 'ilike', '%marvel%').not('publisher', 'ilike', '%dc%');
+  else if (publisher === 'other')
+    q = q.not('publisher', 'ilike', '%marvel%').not('publisher', 'ilike', '%dc%');
 
   // Alignment facet
   if (alignment === 'good') q = q.eq('alignment', 'good');
@@ -420,7 +441,8 @@ export async function getCategoryPage(
 
   // Sort
   if (sort === 'az') q = q.order('name');
-  else if (sort === 'power') q = q.order('powerstats_total', { ascending: false, nullsFirst: false });
+  else if (sort === 'power')
+    q = q.order('powerstats_total', { ascending: false, nullsFirst: false });
   else q = q.order('issue_count', { ascending: false, nullsFirst: false });
 
   const { data, error, count } = await q.range(from, to);
@@ -519,7 +541,8 @@ export function heroRowToCharacterData(hero: Hero): CharacterData {
       summary: hero.summary ?? null,
       publisher: hero.publisher ?? null,
       firstIssueId: hero.first_issue_id ?? null,
-      firstIssueData: (hero.first_issue_data as unknown as import('../../types').FirstIssue | null) ?? null,
+      firstIssueData:
+        (hero.first_issue_data as unknown as import('../../types').FirstIssue | null) ?? null,
       powers: hero.powers ?? null,
       description: hero.description ?? null,
       origin: hero.origin ?? null,

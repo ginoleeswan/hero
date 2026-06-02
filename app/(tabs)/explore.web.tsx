@@ -1,14 +1,7 @@
 // app/(tabs)/explore.web.tsx — Home screen for web (spotlight + horizontal scroll rows).
 // Search lives on the dedicated /search route; this screen is home-only.
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  Pressable,
-  useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../src/constants/colors';
@@ -61,14 +54,13 @@ const rowScrollStyle = {
   scrollbarWidth: 'none',
 };
 
-
 // ── Row card (home carousel rows) ────────────────────────────────────────────
 function RowCard({ hero, onPress }: { hero: Hero | FavouriteHero; onPress: () => void }) {
   const source = heroImageSource(String(hero.id), hero.image_url, hero.portrait_url);
   return (
     <Pressable
       onPress={onPress}
-      style={({ hovered }: { hovered?: boolean }) =>
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [rc.wrap, hovered && (rc.wrapHover as object)] as object
       }
     >
@@ -281,7 +273,7 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
           <View style={pss.panelFooter}>
             <Pressable
               onPress={() => onViewProfile(String(hero.id))}
-              style={({ hovered }: { hovered?: boolean }) =>
+              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                 [pss.ctaBtn, hovered && (pss.ctaBtnHover as object)] as object
               }
             >
@@ -368,7 +360,12 @@ const pss = StyleSheet.create({
     marginVertical: 32,
     gap: 12,
   },
-  strip: { flexDirection: 'row', alignItems: 'stretch', gap: 12, contain: 'layout style' } as object,
+  strip: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 12,
+    contain: 'layout style',
+  } as object,
   card: {
     borderRadius: 14,
     overflow: 'hidden',
@@ -598,7 +595,7 @@ function CarouselArrow({
         e.stopPropagation?.();
         onPress();
       }}
-      style={({ hovered }: { hovered?: boolean }) =>
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [
           arr.btn,
           direction === 'left' ? arr.left : rightStyle,
@@ -683,7 +680,7 @@ function HomeRow({
             {onViewAll ? (
               <Pressable
                 onPress={onViewAll}
-                style={({ hovered }: { hovered?: boolean }) =>
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                   [row.titleRow, hovered && (row.titleRowHover as object)] as object
                 }
               >
@@ -799,7 +796,7 @@ function DarkHomeRow({
             {onViewAll ? (
               <Pressable
                 onPress={onViewAll}
-                style={({ hovered }: { hovered?: boolean }) =>
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                   [drow.titleRow, hovered && (drow.titleRowHover as object)] as object
                 }
               >
@@ -922,24 +919,49 @@ export default function WebHomeScreen() {
   // Fire every query independently — rows appear as each resolves.
   // Spotlight fires first since it's above the fold.
   useEffect(() => {
-    getHeroCount().then(setTotalHeroCount).catch(() => {});
+    getHeroCount()
+      .then(setTotalHeroCount)
+      .catch(() => {});
 
-    const set = <K extends keyof HomeData>(key: K) => (val: HomeData[K]) =>
-      setHomeData((d) => ({ ...d, [key]: val }));
+    const set =
+      <K extends keyof HomeData>(key: K) =>
+      (val: HomeData[K]) =>
+        setHomeData((d) => ({ ...d, [key]: val }));
 
     getSpotlightHeroes(10)
-      .then((v) => { set('spotlight')(v); setHomeStarted(true); })
+      .then((v) => {
+        set('spotlight')(v);
+        setHomeStarted(true);
+      })
       .catch(() => setHomeStarted(true));
 
-    getIconicHeroes(25).then(set('iconic')).catch(() => {});
-    getXMen(25).then(set('xmen')).catch(() => {});
-    getAntiHeroes(20).then(set('antiHeroes')).catch(() => {});
-    getVillains(25).then(set('villains')).catch(() => {});
-    getHeroesByPublisher('marvel', 25).then(set('marvel')).catch(() => {});
-    getHeroesByPublisher('dc', 25).then(set('dc')).catch(() => {});
-    getHeroesByStatRanking('strength', 20).then(set('strongest')).catch(() => {});
-    getHeroesByStatRanking('intelligence', 20).then(set('mostIntelligent')).catch(() => {});
-    getNewlyAddedCV(25).then(set('newlyAdded')).catch(() => {});
+    getIconicHeroes(25)
+      .then(set('iconic'))
+      .catch(() => {});
+    getXMen(25)
+      .then(set('xmen'))
+      .catch(() => {});
+    getAntiHeroes(20)
+      .then(set('antiHeroes'))
+      .catch(() => {});
+    getVillains(25)
+      .then(set('villains'))
+      .catch(() => {});
+    getHeroesByPublisher('marvel', 25)
+      .then(set('marvel'))
+      .catch(() => {});
+    getHeroesByPublisher('dc', 25)
+      .then(set('dc'))
+      .catch(() => {});
+    getHeroesByStatRanking('strength', 20)
+      .then(set('strongest'))
+      .catch(() => {});
+    getHeroesByStatRanking('intelligence', 20)
+      .then(set('mostIntelligent'))
+      .catch(() => {});
+    getNewlyAddedCV(25)
+      .then(set('newlyAdded'))
+      .catch(() => {});
   }, []);
 
   // Personal rows
@@ -973,7 +995,7 @@ export default function WebHomeScreen() {
                   onPress={() =>
                     f === 'All' ? setPublisher('All') : router.push(`/search?publisher=${f}`)
                   }
-                  style={({ hovered }: { hovered?: boolean }) =>
+                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                     [
                       styles.filterTab,
                       publisher === f && (styles.filterTabActive as object),
@@ -1012,14 +1034,27 @@ export default function WebHomeScreen() {
           {/* Spotlight */}
           {(homeData.spotlight?.length ?? 0) > 0 && (
             <PortraitStripSpotlight
-              heroes={homeData.spotlight!.slice(0, Math.min(optimalPoolSize, homeData.spotlight!.length))}
+              heroes={homeData.spotlight!.slice(
+                0,
+                Math.min(optimalPoolSize, homeData.spotlight!.length),
+              )}
               onViewProfile={handlePress}
             />
           )}
 
           {/* Personal rows */}
-          <HomeRow label="Personal" title="Jump Back In" heroes={recentlyViewed} onPress={handlePress} />
-          <HomeRow label="Personal" title="Your Favourites" heroes={favourites} onPress={handlePress} />
+          <HomeRow
+            label="Personal"
+            title="Jump Back In"
+            heroes={recentlyViewed}
+            onPress={handlePress}
+          />
+          <HomeRow
+            label="Personal"
+            title="Your Favourites"
+            heroes={favourites}
+            onPress={handlePress}
+          />
 
           {/* Curated rows — each appears as its query resolves */}
           <HomeRow

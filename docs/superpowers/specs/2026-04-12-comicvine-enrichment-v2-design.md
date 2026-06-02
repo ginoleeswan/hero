@@ -10,30 +10,30 @@
 
 All new data comes from the **same detail endpoint** already called for `powers`. No extra API calls needed — we expand the `field_list` and stop throwing the data away.
 
-| ComicVine field | What it is | Display |
-|---|---|---|
-| `origin` | Character type: Mutant / Alien / Human / God/Eternal / Cyborg / Robot / Radiation / Training | Colour-coded badge in identity block |
-| `description` | Full HTML wiki-style description | Expandable "About" block below summary |
-| `count_of_issue_appearances` | Integer — total issue count | Muted line below identity badges |
-| `creators` | Array of `{name, role}` objects | Single credit line in identity block |
-| `enemies` | Array of `{name}` objects | Red chips in new Enemies & Allies section |
-| `friends` | Array of `{name}` objects | Green chips in new Enemies & Allies section |
-| `movies` | Array of `{name, date}` objects | New On Screen section |
-| `teams` | Array of `{name}` objects | Chips in Connections, superseding SuperheroAPI affiliation |
+| ComicVine field              | What it is                                                                                   | Display                                                    |
+| ---------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `origin`                     | Character type: Mutant / Alien / Human / God/Eternal / Cyborg / Robot / Radiation / Training | Colour-coded badge in identity block                       |
+| `description`                | Full HTML wiki-style description                                                             | Expandable "About" block below summary                     |
+| `count_of_issue_appearances` | Integer — total issue count                                                                  | Muted line below identity badges                           |
+| `creators`                   | Array of `{name, role}` objects                                                              | Single credit line in identity block                       |
+| `enemies`                    | Array of `{name}` objects                                                                    | Red chips in new Enemies & Allies section                  |
+| `friends`                    | Array of `{name}` objects                                                                    | Green chips in new Enemies & Allies section                |
+| `movies`                     | Array of `{name, date}` objects                                                              | New On Screen section                                      |
+| `teams`                      | Array of `{name}` objects                                                                    | Chips in Connections, superseding SuperheroAPI affiliation |
 
 ---
 
 ## Files to Modify
 
-| File | What changes |
-|---|---|
-| `supabase/functions/get-comicvine-hero/index.ts` | Expand `field_list`, extract/process new fields, write to DB |
-| `supabase/migrations/YYYYMMDDHHMMSS_comicvine_v2.sql` | 8 new columns on `heroes` table |
-| `src/types/database.generated.ts` | Regenerate after migration |
-| `src/types/index.ts` | Extend `HeroDetails` with 7 new nullable fields |
-| `src/lib/api.ts` | Update `fetchHeroDetails` return type + null fallback initialisers |
-| `src/lib/db/heroes.ts` | Map new columns in `heroRowToCharacterData` + select in `getHeroById` |
-| `app/character/[id].tsx` | All UI additions |
+| File                                                  | What changes                                                          |
+| ----------------------------------------------------- | --------------------------------------------------------------------- |
+| `supabase/functions/get-comicvine-hero/index.ts`      | Expand `field_list`, extract/process new fields, write to DB          |
+| `supabase/migrations/YYYYMMDDHHMMSS_comicvine_v2.sql` | 8 new columns on `heroes` table                                       |
+| `src/types/database.generated.ts`                     | Regenerate after migration                                            |
+| `src/types/index.ts`                                  | Extend `HeroDetails` with 7 new nullable fields                       |
+| `src/lib/api.ts`                                      | Update `fetchHeroDetails` return type + null fallback initialisers    |
+| `src/lib/db/heroes.ts`                                | Map new columns in `heroRowToCharacterData` + select in `getHeroById` |
+| `app/character/[id].tsx`                              | All UI additions                                                      |
 
 No new components files — all additions are inline within the existing screen.
 
@@ -57,13 +57,13 @@ const origin: string | null = detailJson.results?.origin?.name ?? null;
 const rawDescription: string = detailJson.results?.description ?? '';
 const description: string | null = rawDescription
   ? rawDescription
-      .replace(/<[^>]+>/g, ' ')   // strip all HTML tags
+      .replace(/<[^>]+>/g, ' ') // strip all HTML tags
       .replace(/&amp;/g, '&')
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
-      .replace(/\s+/g, ' ')       // collapse whitespace
+      .replace(/\s+/g, ' ') // collapse whitespace
       .trim() || null
   : null;
 
@@ -116,11 +116,13 @@ const teams: string[] = Array.isArray(detailJson.results?.teams)
 ### DB write — remove `IS NULL` filter for re-enrichment
 
 Current write condition:
+
 ```typescript
 .is('comicvine_enriched_at', null)  // ← only enriches once, blocks new columns
 ```
 
 New write — always update, no condition:
+
 ```typescript
 await supabase
   .from('heroes')
@@ -210,6 +212,7 @@ Update `fetchHeroDetails` return initialiser in `src/lib/api.ts` (the `return { 
 ### `getHeroById` — select new columns
 
 Add to the `.select()` call:
+
 ```
 description, origin, issue_count, creators, enemies, friends, movies, cv_teams
 ```
@@ -278,23 +281,24 @@ Render `<OriginBadge>` in the `nameRowRight` alongside `<AlignmentBadge>`.
 Below the `nameRow`, before `nameDivider`:
 
 ```tsx
-{(data.details.issueCount && data.details.issueCount > 0) || data.details.creators?.length ? (
-  <View style={styles.heroMeta}>
-    {data.details.issueCount && data.details.issueCount > 0 ? (
-      <Text style={styles.heroMetaText}>
-        Featured in {data.details.issueCount.toLocaleString()} issues
-      </Text>
-    ) : null}
-    {data.details.creators?.length ? (
-      <Text style={styles.heroMetaText}>
-        Created by {data.details.creators.join(' & ')}
-      </Text>
-    ) : null}
-  </View>
-) : null}
+{
+  (data.details.issueCount && data.details.issueCount > 0) || data.details.creators?.length ? (
+    <View style={styles.heroMeta}>
+      {data.details.issueCount && data.details.issueCount > 0 ? (
+        <Text style={styles.heroMetaText}>
+          Featured in {data.details.issueCount.toLocaleString()} issues
+        </Text>
+      ) : null}
+      {data.details.creators?.length ? (
+        <Text style={styles.heroMetaText}>Created by {data.details.creators.join(' & ')}</Text>
+      ) : null}
+    </View>
+  ) : null;
+}
 ```
 
 New styles:
+
 ```typescript
 heroMeta: { marginTop: 6, gap: 2 },
 heroMetaText: {
@@ -314,13 +318,13 @@ function AboutBlock({ description }: { description: string }) {
   const [expanded, setExpanded] = useState(false);
   return (
     <View style={styles.aboutBlock}>
-      <Text
-        style={styles.aboutText}
-        numberOfLines={expanded ? undefined : 4}
-      >
+      <Text style={styles.aboutText} numberOfLines={expanded ? undefined : 4}>
         {description}
       </Text>
-      <TouchableOpacity onPress={() => setExpanded((v) => !v)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+      <TouchableOpacity
+        onPress={() => setExpanded((v) => !v)}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
         <Text style={styles.aboutToggle}>{expanded ? 'Show less' : 'Read more'}</Text>
       </TouchableOpacity>
     </View>
@@ -329,6 +333,7 @@ function AboutBlock({ description }: { description: string }) {
 ```
 
 New styles:
+
 ```typescript
 aboutBlock: { paddingHorizontal: 20, paddingBottom: 8 },
 aboutText: {
@@ -351,16 +356,18 @@ aboutToggle: {
 New `Section` between Overview (#7) and Appearance (#8):
 
 ```tsx
-{(data.details.enemies?.length || data.details.friends?.length) ? (
-  <Section title="Enemies & Allies">
-    {data.details.enemies?.length ? (
-      <CharacterChips label="Enemies" chips={data.details.enemies} chipStyle="enemy" />
-    ) : null}
-    {data.details.friends?.length ? (
-      <CharacterChips label="Allies" chips={data.details.friends} chipStyle="ally" />
-    ) : null}
-  </Section>
-) : null}
+{
+  data.details.enemies?.length || data.details.friends?.length ? (
+    <Section title="Enemies & Allies">
+      {data.details.enemies?.length ? (
+        <CharacterChips label="Enemies" chips={data.details.enemies} chipStyle="enemy" />
+      ) : null}
+      {data.details.friends?.length ? (
+        <CharacterChips label="Allies" chips={data.details.friends} chipStyle="ally" />
+      ) : null}
+    </Section>
+  ) : null;
+}
 ```
 
 ```typescript
@@ -407,6 +414,7 @@ function CharacterChips({
 ```
 
 New styles:
+
 ```typescript
 characterChipsBlock: { marginBottom: 10 },
 characterChipsLabel: {
@@ -435,27 +443,30 @@ chipTextAlly:  { color: COLORS.green },
 New `Section` after Enemies & Allies, before Appearance:
 
 ```tsx
-{data.details.movies?.length ? (
-  <Section title="On Screen">
-    {data.details.movies.map((entry, i) => {
-      const match = entry.match(/^(.+?)\s*\((\d{4})\)$/);
-      const title = match ? match[1] : entry;
-      const year  = match ? match[2] : null;
-      return (
-        <View key={i} style={styles.movieRow}>
-          <Text style={styles.movieIcon}>🎬</Text>
-          <View style={styles.movieMeta}>
-            <Text style={styles.movieTitle}>{title}</Text>
-            {year ? <Text style={styles.movieYear}>{year}</Text> : null}
+{
+  data.details.movies?.length ? (
+    <Section title="On Screen">
+      {data.details.movies.map((entry, i) => {
+        const match = entry.match(/^(.+?)\s*\((\d{4})\)$/);
+        const title = match ? match[1] : entry;
+        const year = match ? match[2] : null;
+        return (
+          <View key={i} style={styles.movieRow}>
+            <Text style={styles.movieIcon}>🎬</Text>
+            <View style={styles.movieMeta}>
+              <Text style={styles.movieTitle}>{title}</Text>
+              {year ? <Text style={styles.movieYear}>{year}</Text> : null}
+            </View>
           </View>
-        </View>
-      );
-    })}
-  </Section>
-) : null}
+        );
+      })}
+    </Section>
+  ) : null;
+}
 ```
 
 New styles:
+
 ```typescript
 movieRow: {
   flexDirection: 'row',
@@ -496,20 +507,20 @@ In `AffiliationChips`, update the data source:
 
 ## Section Order (final)
 
-| # | Section | Change |
-|---|---------|--------|
-| 1 | Hero image | Unchanged |
-| 2 | Identity block | + origin badge, + issue count, + creator credit |
-| 3 | Summary | Unchanged (deck) |
-| 3b | About | New expandable block (description) |
-| 4 | Power Stats | Unchanged |
-| 5 | Abilities | Unchanged |
-| 6 | First Appearance | Unchanged |
-| 7 | Overview | Unchanged |
-| 8 | Enemies & Allies | **New** |
-| 9 | On Screen | **New** |
-| 10 | Appearance | Unchanged |
-| 11 | Connections | cv_teams replaces affiliation when available |
+| #   | Section          | Change                                          |
+| --- | ---------------- | ----------------------------------------------- |
+| 1   | Hero image       | Unchanged                                       |
+| 2   | Identity block   | + origin badge, + issue count, + creator credit |
+| 3   | Summary          | Unchanged (deck)                                |
+| 3b  | About            | New expandable block (description)              |
+| 4   | Power Stats      | Unchanged                                       |
+| 5   | Abilities        | Unchanged                                       |
+| 6   | First Appearance | Unchanged                                       |
+| 7   | Overview         | Unchanged                                       |
+| 8   | Enemies & Allies | **New**                                         |
+| 9   | On Screen        | **New**                                         |
+| 10  | Appearance       | Unchanged                                       |
+| 11  | Connections      | cv_teams replaces affiliation when available    |
 
 ---
 

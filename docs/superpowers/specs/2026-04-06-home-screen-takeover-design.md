@@ -28,25 +28,26 @@ A `ScrollView` with `contentInsetAdjustmentBehavior="never"` (web parity handled
 
 **Personal rows** (shown only when data exists; hidden with no empty-state placeholder):
 
-| # | Section | Data source | Card style |
-|---|---------|-------------|------------|
-| 1 | Jump Back In | `user_view_history` — last 15 distinct heroes, ordered by `viewed_at desc` | Landscape thumb (90×58px) |
-| 2 | Your Favourites | `user_favourites` — ordered by `created_at desc` | Tall portrait (existing `HeroCard`) |
+| #   | Section         | Data source                                                                | Card style                          |
+| --- | --------------- | -------------------------------------------------------------------------- | ----------------------------------- |
+| 1   | Jump Back In    | `user_view_history` — last 15 distinct heroes, ordered by `viewed_at desc` | Landscape thumb (90×58px)           |
+| 2   | Your Favourites | `user_favourites` — ordered by `created_at desc`                           | Tall portrait (existing `HeroCard`) |
 
 **Curated rows** (always visible; shown in fixed order):
 
-| # | Section | Query |
-|---|---------|-------|
-| 3 | Popular Heroes | `category = 'popular'` |
-| 4 | Villains | `category = 'villain'` |
-| 5 | X-Men | `category = 'xmen'` |
-| 6 | Anti-Heroes | `alignment ilike '%neutral%'`, limit 20 |
-| 7 | Marvel Universe | `publisher ilike '%marvel%'`, order by name, limit 20 |
-| 8 | DC Universe | `publisher ilike '%dc%'`, order by name, limit 20 |
-| 9 | Strongest Heroes | `order by strength desc`, filter `strength is not null`, limit 20 |
-| 10 | Most Intelligent | `order by intelligence desc`, filter `intelligence is not null`, limit 20 |
+| #   | Section          | Query                                                                     |
+| --- | ---------------- | ------------------------------------------------------------------------- |
+| 3   | Popular Heroes   | `category = 'popular'`                                                    |
+| 4   | Villains         | `category = 'villain'`                                                    |
+| 5   | X-Men            | `category = 'xmen'`                                                       |
+| 6   | Anti-Heroes      | `alignment ilike '%neutral%'`, limit 20                                   |
+| 7   | Marvel Universe  | `publisher ilike '%marvel%'`, order by name, limit 20                     |
+| 8   | DC Universe      | `publisher ilike '%dc%'`, order by name, limit 20                         |
+| 9   | Strongest Heroes | `order by strength desc`, filter `strength is not null`, limit 20         |
+| 10  | Most Intelligent | `order by intelligence desc`, filter `intelligence is not null`, limit 20 |
 
 **Card visual distinction:**
+
 - Personal rows use **landscape thumb cards** (90×58px, `borderRadius: 8`) — signals "your history".
 - All curated rows use the existing **tall portrait `HeroCard`** (~60% screen width, same as today).
 
@@ -116,16 +117,16 @@ All home screen data is fetched in parallel on mount via `Promise.all`:
 
 ## Files to Create / Modify
 
-| File | Change |
-|------|--------|
-| `app/(tabs)/index.tsx` | Full rewrite — spotlight + rows + search modal |
-| `app/character/[id].tsx` | Add `recordView` call on mount |
-| `src/lib/db/viewHistory.ts` | New file |
-| `src/lib/db/heroes.ts` | Add `getAntiHeroes`, `getHeroesByPublisher`, `getHeroesByStatRanking` queries |
-| `src/hooks/useViewHistory.ts` | New hook |
-| `src/components/skeletons/HomeSkeleton.tsx` | Update to reflect new spotlight + row layout |
-| `supabase/migrations/*_add_user_view_history.sql` | New migration |
-| `src/types/database.generated.ts` | Regenerate after migration |
+| File                                              | Change                                                                        |
+| ------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `app/(tabs)/index.tsx`                            | Full rewrite — spotlight + rows + search modal                                |
+| `app/character/[id].tsx`                          | Add `recordView` call on mount                                                |
+| `src/lib/db/viewHistory.ts`                       | New file                                                                      |
+| `src/lib/db/heroes.ts`                            | Add `getAntiHeroes`, `getHeroesByPublisher`, `getHeroesByStatRanking` queries |
+| `src/hooks/useViewHistory.ts`                     | New hook                                                                      |
+| `src/components/skeletons/HomeSkeleton.tsx`       | Update to reflect new spotlight + row layout                                  |
+| `supabase/migrations/*_add_user_view_history.sql` | New migration                                                                 |
+| `src/types/database.generated.ts`                 | Regenerate after migration                                                    |
 
 ---
 

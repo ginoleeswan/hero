@@ -36,12 +36,7 @@ function splitOnMatch(text: string, query: string): { value: string; match: bool
 }
 
 export function SuggestionItem({ hero, query = '', onPress }: SuggestionItemProps) {
-  const source = heroGridImageSource(
-    hero.id,
-    hero.image_url,
-    hero.portrait_url,
-    hero.image_md_url
-  );
+  const source = heroGridImageSource(hero.id, hero.image_url, hero.portrait_url, hero.image_md_url);
 
   const segments = splitOnMatch(hero.name, query);
 

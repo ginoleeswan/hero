@@ -71,7 +71,8 @@ serve(async (req: Request) => {
       const issueParams = new URLSearchParams({
         api_key: COMICVINE_API_KEY,
         format: 'json',
-        field_list: 'id,image,name,cover_date,store_date,issue_number,deck,volume,person_credits,first_appearance_characters',
+        field_list:
+          'id,image,name,cover_date,store_date,issue_number,deck,volume,person_credits,first_appearance_characters',
       });
       const issueRes = await fetch(`${COMICVINE_BASE}/issue/4000-${firstIssueId}/?${issueParams}`);
       if (issueRes.ok) {
@@ -123,7 +124,16 @@ serve(async (req: Request) => {
     let creators: string[] | null = null;
     let enemies: string[] | null = null;
     let friends: string[] | null = null;
-    let movies: Array<{ name: string; year: string | null; imageUrl: string | null; url: string | null; rating: string | null; runtime: string | null; deck: string | null; totalRevenue: string | null }> | null = null;
+    let movies: Array<{
+      name: string;
+      year: string | null;
+      imageUrl: string | null;
+      url: string | null;
+      rating: string | null;
+      runtime: string | null;
+      deck: string | null;
+      totalRevenue: string | null;
+    }> | null = null;
     let movieCount: number | null = null;
     let teams: string[] | null = null;
 
@@ -228,8 +238,7 @@ serve(async (req: Request) => {
                 const year = date ? date.slice(0, 4) : null;
                 const apiDetailUrl =
                   typeof mo.api_detail_url === 'string' ? mo.api_detail_url : null;
-                const url =
-                  typeof mo.site_detail_url === 'string' ? mo.site_detail_url : null;
+                const url = typeof mo.site_detail_url === 'string' ? mo.site_detail_url : null;
                 return { name, year, apiDetailUrl, url };
               })
           : [];
@@ -238,7 +247,17 @@ serve(async (req: Request) => {
 
         const enriched = await Promise.all(
           rawMovieItems.map(async ({ name, year, apiDetailUrl, url }) => {
-            if (!apiDetailUrl) return { name, year, imageUrl: null, url, rating: null, runtime: null, deck: null, totalRevenue: null };
+            if (!apiDetailUrl)
+              return {
+                name,
+                year,
+                imageUrl: null,
+                url,
+                rating: null,
+                runtime: null,
+                deck: null,
+                totalRevenue: null,
+              };
             try {
               const params = new URLSearchParams({
                 api_key: COMICVINE_API_KEY,
@@ -246,17 +265,38 @@ serve(async (req: Request) => {
                 field_list: 'image,rating,runtime,deck,total_revenue',
               });
               const res = await fetch(`${apiDetailUrl}?${params}`);
-              if (!res.ok) return { name, year, imageUrl: null, url, rating: null, runtime: null, deck: null, totalRevenue: null };
+              if (!res.ok)
+                return {
+                  name,
+                  year,
+                  imageUrl: null,
+                  url,
+                  rating: null,
+                  runtime: null,
+                  deck: null,
+                  totalRevenue: null,
+                };
               const json = await res.json();
               const r = json.results ?? {};
               const imageUrl: string | null = r.image?.medium_url ?? null;
               const rating: string | null = typeof r.rating === 'string' ? r.rating : null;
               const runtime: string | null = r.runtime != null ? String(r.runtime) : null;
-              const deck: string | null = typeof r.deck === 'string' && r.deck.trim() ? r.deck.trim() : null;
-              const totalRevenue: string | null = r.total_revenue != null ? String(r.total_revenue) : null;
+              const deck: string | null =
+                typeof r.deck === 'string' && r.deck.trim() ? r.deck.trim() : null;
+              const totalRevenue: string | null =
+                r.total_revenue != null ? String(r.total_revenue) : null;
               return { name, year, imageUrl, url, rating, runtime, deck, totalRevenue };
             } catch {
-              return { name, year, imageUrl: null, url, rating: null, runtime: null, deck: null, totalRevenue: null };
+              return {
+                name,
+                year,
+                imageUrl: null,
+                url,
+                rating: null,
+                runtime: null,
+                deck: null,
+                totalRevenue: null,
+              };
             }
           }),
         );

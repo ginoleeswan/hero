@@ -25,8 +25,8 @@ Replace `WebSpotlight` with a new `PortraitStripSpotlight` component. Portrait c
 
 ```ts
 interface PortraitStripSpotlightProps {
-  heroes: Hero[];       // spotlight pool (up to SPOTLIGHT_POOL = 10)
-  onHeroPress: (id: string) => void;  // fired by "View Profile" button
+  heroes: Hero[]; // spotlight pool (up to SPOTLIGHT_POOL = 10)
+  onHeroPress: (id: string) => void; // fired by "View Profile" button
 }
 ```
 
@@ -87,13 +87,13 @@ Internal state: `activeIndex` (number, starts at 0).
 
 ## Interaction model
 
-| Action | Result |
-|---|---|
-| Click portrait card | Sets as active hero, updates info panel |
-| Click dot indicator | Sets corresponding hero as active |
-| Click "View Profile →" | Navigates to `/character/[activeHero.id]` |
-| Auto-advance timer | Cycles `activeIndex` every 6s |
-| `ArrowLeft` / `ArrowRight` | Cycles `activeIndex` |
+| Action                     | Result                                    |
+| -------------------------- | ----------------------------------------- |
+| Click portrait card        | Sets as active hero, updates info panel   |
+| Click dot indicator        | Sets corresponding hero as active         |
+| Click "View Profile →"     | Navigates to `/character/[activeHero.id]` |
+| Auto-advance timer         | Cycles `activeIndex` every 6s             |
+| `ArrowLeft` / `ArrowRight` | Cycles `activeIndex`                      |
 
 ---
 
@@ -108,8 +108,8 @@ Internal state: `activeIndex` (number, starts at 0).
 
 ## Files changed
 
-| File | Change |
-|---|---|
+| File                       | Change                                                                  |
+| -------------------------- | ----------------------------------------------------------------------- |
 | `app/(tabs)/index.web.tsx` | Replace `WebSpotlight` component + styles with `PortraitStripSpotlight` |
 
 No new files. No changes to native, shared hooks, DB layer, or types.

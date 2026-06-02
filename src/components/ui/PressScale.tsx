@@ -46,9 +46,7 @@ export function PressScale({
       activeOpacity={1}
       style={style}
     >
-      <Animated.View style={[{ flex: 1 }, scaleStyle]}>
-        {children}
-      </Animated.View>
+      <Animated.View style={[{ flex: 1 }, scaleStyle]}>{children}</Animated.View>
     </TouchableOpacity>
   );
 }

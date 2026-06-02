@@ -49,7 +49,6 @@ export function LogoLoader() {
       <Svg width={120} height={120} viewBox="0 0 1024 1024">
         <AnimatedPath
           d={LOGO_PATH}
-          pathLength={100}
           stroke={COLORS.navy}
           strokeWidth={12}
           strokeDasharray={100}

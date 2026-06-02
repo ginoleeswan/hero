@@ -149,7 +149,8 @@ export async function fetchFirstIssue(issueId: string): Promise<FirstIssue> {
   const params = new URLSearchParams({
     api_key: COMICVINE_API_KEY,
     format: 'json',
-    field_list: 'id,image,name,cover_date,store_date,issue_number,deck,volume,person_credits,first_appearance_characters',
+    field_list:
+      'id,image,name,cover_date,store_date,issue_number,deck,volume,person_credits,first_appearance_characters',
   });
 
   const res = await fetch(`${COMICVINE_BASE}/issue/4000-${issueId}/?${params}`);

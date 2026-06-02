@@ -12,22 +12,23 @@
 
 ## File Map
 
-| Action | File | Responsibility |
-|---|---|---|
-| Create | `src/lib/compare.ts` | Pure stat comparison logic + verdict string |
-| Create | `__tests__/lib/compare.test.ts` | Unit tests for compare logic |
-| Create | `app/compare/[id1]/pick.tsx` | Native hero picker screen |
-| Create | `app/compare/[id1]/pick.web.tsx` | Web hero picker screen |
-| Create | `app/compare/[id1]/[id2].tsx` | Native compare screen |
-| Create | `app/compare/[id1]/[id2].web.tsx` | Web compare screen |
-| Modify | `app/character/[id].tsx` | Add Compare strip at bottom (native) |
-| Modify | `app/character/[id].web.tsx` | Add Compare button to header row (web) |
+| Action | File                              | Responsibility                              |
+| ------ | --------------------------------- | ------------------------------------------- |
+| Create | `src/lib/compare.ts`              | Pure stat comparison logic + verdict string |
+| Create | `__tests__/lib/compare.test.ts`   | Unit tests for compare logic                |
+| Create | `app/compare/[id1]/pick.tsx`      | Native hero picker screen                   |
+| Create | `app/compare/[id1]/pick.web.tsx`  | Web hero picker screen                      |
+| Create | `app/compare/[id1]/[id2].tsx`     | Native compare screen                       |
+| Create | `app/compare/[id1]/[id2].web.tsx` | Web compare screen                          |
+| Modify | `app/character/[id].tsx`          | Add Compare strip at bottom (native)        |
+| Modify | `app/character/[id].web.tsx`      | Add Compare button to header row (web)      |
 
 ---
 
 ## Task 1: Comparison logic + tests
 
 **Files:**
+
 - Create: `src/lib/compare.ts`
 - Create: `__tests__/lib/compare.test.ts`
 
@@ -37,8 +38,22 @@
 // __tests__/lib/compare.test.ts
 import { compareStats } from '../../src/lib/compare';
 
-const statsA = { intelligence: '88', strength: '55', speed: '67', durability: '75', power: '74', combat: '85' };
-const statsB = { intelligence: '56', strength: '26', speed: '27', durability: '44', power: '35', combat: '76' };
+const statsA = {
+  intelligence: '88',
+  strength: '55',
+  speed: '67',
+  durability: '75',
+  power: '74',
+  combat: '85',
+};
+const statsB = {
+  intelligence: '56',
+  strength: '26',
+  speed: '27',
+  durability: '44',
+  power: '35',
+  combat: '76',
+};
 
 describe('compareStats', () => {
   it('returns a result with 6 stat rows', () => {
@@ -64,7 +79,14 @@ describe('compareStats', () => {
   });
 
   it('returns an even verdict on equal stats', () => {
-    const equal = { intelligence: '50', strength: '50', speed: '50', durability: '50', power: '50', combat: '50' };
+    const equal = {
+      intelligence: '50',
+      strength: '50',
+      speed: '50',
+      durability: '50',
+      power: '50',
+      combat: '50',
+    };
     const result = compareStats('A', equal, 'B', equal);
     expect(result.verdict).toBe('These two are evenly matched');
   });
@@ -108,11 +130,11 @@ export interface CompareResult {
 
 const STAT_CONFIG: { key: string; label: string; color: string }[] = [
   { key: 'intelligence', label: 'Intelligence', color: COLORS.blue },
-  { key: 'strength',     label: 'Strength',     color: COLORS.red },
-  { key: 'speed',        label: 'Speed',         color: COLORS.yellow },
-  { key: 'durability',   label: 'Durability',    color: COLORS.green },
-  { key: 'power',        label: 'Power',         color: COLORS.orange },
-  { key: 'combat',       label: 'Combat',        color: COLORS.brown },
+  { key: 'strength', label: 'Strength', color: COLORS.red },
+  { key: 'speed', label: 'Speed', color: COLORS.yellow },
+  { key: 'durability', label: 'Durability', color: COLORS.green },
+  { key: 'power', label: 'Power', color: COLORS.orange },
+  { key: 'combat', label: 'Combat', color: COLORS.brown },
 ];
 
 export function compareStats(
@@ -135,8 +157,8 @@ export function compareStats(
     winsA > winsB
       ? `${nameA} has the edge on ${winsA} of 6 stats`
       : winsB > winsA
-      ? `${nameB} has the edge on ${winsB} of 6 stats`
-      : 'These two are evenly matched';
+        ? `${nameB} has the edge on ${winsB} of 6 stats`
+        : 'These two are evenly matched';
 
   return { stats, winsA, winsB, verdict };
 }
@@ -162,6 +184,7 @@ git commit -m "feat(compare): add stat comparison logic + tests"
 ## Task 2: Native hero picker screen
 
 **Files:**
+
 - Create: `app/compare/[id1]/pick.tsx`
 
 The picker loads heroes via `searchHeroes` on mount (same pattern as `search.tsx`), debounces the query, and on tap navigates to the compare screen. The route param `id1` is the base hero's ID. The base hero name is passed as a search param `name` from the character detail screen.
@@ -287,7 +310,9 @@ export default function PickOpponentScreen() {
                   transition={150}
                 />
                 <View style={styles.cardOverlay} />
-                <Text style={styles.cardName} numberOfLines={2}>{item.name}</Text>
+                <Text style={styles.cardName} numberOfLines={2}>
+                  {item.name}
+                </Text>
               </TouchableOpacity>
             );
           }}
@@ -370,6 +395,7 @@ git commit -m "feat(compare): native hero picker screen"
 ## Task 3: Web hero picker screen
 
 **Files:**
+
 - Create: `app/compare/[id1]/pick.web.tsx`
 
 Same logic as native picker but uses web styling patterns (CSS grid, hover states) consistent with `search.web.tsx`.
@@ -495,7 +521,9 @@ export default function WebPickOpponentScreen() {
                     transition={150}
                   />
                   <View style={card.overlay as object} />
-                  <Text style={card.name as object} numberOfLines={2}>{item.name}</Text>
+                  <Text style={card.name as object} numberOfLines={2}>
+                    {item.name}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -590,7 +618,10 @@ const card = StyleSheet.create({
   } as object,
   overlay: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundImage:
       'linear-gradient(to top, rgba(29,45,51,0.9) 0%, rgba(29,45,51,0.1) 55%, transparent 100%)',
   } as object,
@@ -620,6 +651,7 @@ git commit -m "feat(compare): web hero picker screen"
 ## Task 4: Native compare screen
 
 **Files:**
+
 - Create: `app/compare/[id1]/[id2].tsx`
 
 Loads both heroes in parallel (Supabase first, API fallback). Renders full-bleed portrait cards side by side at the top, then a scrollable stat battle column below. Share button uses React Native's `Share` API.
@@ -710,7 +742,10 @@ export default function NativeCompareScreen() {
 
   useEffect(() => {
     Promise.all([loadHeroStats(id1), loadHeroStats(id2)])
-      .then(([a, b]) => { setStatsA(a); setStatsB(b); })
+      .then(([a, b]) => {
+        setStatsA(a);
+        setStatsB(b);
+      })
       .catch(() => setError('Could not load hero data.'));
   }, [id1, id2]);
 
@@ -760,14 +795,28 @@ export default function NativeCompareScreen() {
         {/* Portrait cards — side by side, full width */}
         <View style={styles.portraits}>
           <View style={[styles.portraitWrap, { height: PORTRAIT_HEIGHT }]}>
-            <Image source={imageA} contentFit="cover" contentPosition="top" style={StyleSheet.absoluteFill} />
+            <Image
+              source={imageA}
+              contentFit="cover"
+              contentPosition="top"
+              style={StyleSheet.absoluteFill}
+            />
             <View style={styles.portraitOverlay} />
-            <Text style={styles.portraitName} numberOfLines={2}>{statsA.name}</Text>
+            <Text style={styles.portraitName} numberOfLines={2}>
+              {statsA.name}
+            </Text>
           </View>
           <View style={[styles.portraitWrap, { height: PORTRAIT_HEIGHT }]}>
-            <Image source={imageB} contentFit="cover" contentPosition="top" style={StyleSheet.absoluteFill} />
+            <Image
+              source={imageB}
+              contentFit="cover"
+              contentPosition="top"
+              style={StyleSheet.absoluteFill}
+            />
             <View style={styles.portraitOverlay} />
-            <Text style={[styles.portraitName, styles.portraitNameRight]} numberOfLines={2}>{statsB.name}</Text>
+            <Text style={[styles.portraitName, styles.portraitNameRight]} numberOfLines={2}>
+              {statsB.name}
+            </Text>
           </View>
         </View>
 
@@ -785,7 +834,9 @@ export default function NativeCompareScreen() {
 
         {/* Compare another */}
         <TouchableOpacity
-          onPress={() => router.push(`/compare/${id1}/pick?name=${encodeURIComponent(statsA.name)}`)}
+          onPress={() =>
+            router.push(`/compare/${id1}/pick?name=${encodeURIComponent(statsA.name)}`)
+          }
           activeOpacity={0.8}
           style={styles.compareAnotherBtn}
         >
@@ -933,6 +984,7 @@ git commit -m "feat(compare): native compare screen"
 ## Task 5: Web compare screen
 
 **Files:**
+
 - Create: `app/compare/[id1]/[id2].web.tsx`
 
 Desktop: two portrait panels flanking a center stat column (magazine spread). Mobile (< 768px): stacked layout. Share via `navigator.share` with clipboard fallback.
@@ -979,17 +1031,29 @@ function StatBattleRow({ stat, isDesktop }: { stat: StatResult; isDesktop: boole
         <Text style={[wb.val, aWins && wb.valWin]}>{stat.valueA}</Text>
         <View style={wb.track}>
           <View
-            style={[wb.barLeft, { width: `${stat.valueA}%`, backgroundColor: aWins ? winColor : dimColor }] as object}
+            style={
+              [
+                wb.barLeft,
+                { width: `${stat.valueA}%`, backgroundColor: aWins ? winColor : dimColor },
+              ] as object
+            }
           />
         </View>
       </View>
 
-      <Text style={[wb.label, isDesktop && (wb.labelDesktop as object)] as object}>{stat.label}</Text>
+      <Text style={[wb.label, isDesktop && (wb.labelDesktop as object)] as object}>
+        {stat.label}
+      </Text>
 
       <View style={[wb.side, wb.sideRight]}>
         <View style={wb.track}>
           <View
-            style={[wb.barRight, { width: `${stat.valueB}%`, backgroundColor: bWins ? winColor : dimColor }] as object}
+            style={
+              [
+                wb.barRight,
+                { width: `${stat.valueB}%`, backgroundColor: bWins ? winColor : dimColor },
+              ] as object
+            }
           />
         </View>
         <Text style={[wb.val, bWins && wb.valWin]}>{stat.valueB}</Text>
@@ -1011,7 +1075,10 @@ export default function WebCompareScreen() {
 
   useEffect(() => {
     Promise.all([loadHeroStats(id1), loadHeroStats(id2)])
-      .then(([a, b]) => { setStatsA(a); setStatsB(b); })
+      .then(([a, b]) => {
+        setStatsA(a);
+        setStatsB(b);
+      })
       .catch(() => setError('Could not load hero data.'));
   }, [id1, id2]);
 
@@ -1054,7 +1121,6 @@ export default function WebCompareScreen() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.contentOuter}>
-
       {/* Sub-header */}
       <View style={styles.subHeader as object}>
         <View style={styles.subHeaderInner}>
@@ -1068,7 +1134,9 @@ export default function WebCompareScreen() {
             <Text style={styles.backText}>Back</Text>
           </Pressable>
 
-          <Text style={styles.subTitle}>{statsA.name} <Text style={styles.vs}>vs</Text> {statsB.name}</Text>
+          <Text style={styles.subTitle}>
+            {statsA.name} <Text style={styles.vs}>vs</Text> {statsB.name}
+          </Text>
 
           <Pressable
             onPress={handleShare}
@@ -1088,14 +1156,21 @@ export default function WebCompareScreen() {
           <View style={styles.desktopLayout as object}>
             {/* Hero A portrait */}
             <View style={[styles.portraitWrap, { height: portraitHeight }]}>
-              <Image source={imageA} contentFit="cover" contentPosition="top" style={{ width: '100%', height: '100%' } as object} />
+              <Image
+                source={imageA}
+                contentFit="cover"
+                contentPosition="top"
+                style={{ width: '100%', height: '100%' } as object}
+              />
               <View style={styles.portraitOverlay as object} />
               <View style={styles.portraitLabel}>
                 {statsA.biography.publisher ? (
                   <Text style={styles.publisher}>{statsA.biography.publisher}</Text>
                 ) : null}
                 <Text style={styles.heroNameLarge as object}>{statsA.name}</Text>
-                <Text style={styles.winsLabel}>{result.winsA} stat{result.winsA !== 1 ? 's' : ''}</Text>
+                <Text style={styles.winsLabel}>
+                  {result.winsA} stat{result.winsA !== 1 ? 's' : ''}
+                </Text>
               </View>
             </View>
 
@@ -1110,9 +1185,14 @@ export default function WebCompareScreen() {
                 ))}
               </View>
               <Pressable
-                onPress={() => router.push(`/compare/${id1}/pick?name=${encodeURIComponent(statsA.name)}`)}
+                onPress={() =>
+                  router.push(`/compare/${id1}/pick?name=${encodeURIComponent(statsA.name)}`)
+                }
                 style={({ hovered }: { hovered?: boolean }) =>
-                  [styles.compareAnotherBtn, hovered && (styles.compareAnotherHover as object)] as object
+                  [
+                    styles.compareAnotherBtn,
+                    hovered && (styles.compareAnotherHover as object),
+                  ] as object
                 }
               >
                 <Text style={styles.compareAnotherText}>Compare someone else →</Text>
@@ -1121,14 +1201,23 @@ export default function WebCompareScreen() {
 
             {/* Hero B portrait */}
             <View style={[styles.portraitWrap, { height: portraitHeight }]}>
-              <Image source={imageB} contentFit="cover" contentPosition="top" style={{ width: '100%', height: '100%' } as object} />
+              <Image
+                source={imageB}
+                contentFit="cover"
+                contentPosition="top"
+                style={{ width: '100%', height: '100%' } as object}
+              />
               <View style={styles.portraitOverlay as object} />
               <View style={[styles.portraitLabel, styles.portraitLabelRight]}>
                 {statsB.biography.publisher ? (
                   <Text style={styles.publisher}>{statsB.biography.publisher}</Text>
                 ) : null}
-                <Text style={[styles.heroNameLarge, styles.textRight] as object}>{statsB.name}</Text>
-                <Text style={[styles.winsLabel, styles.textRight]}>{result.winsB} stat{result.winsB !== 1 ? 's' : ''}</Text>
+                <Text style={[styles.heroNameLarge, styles.textRight] as object}>
+                  {statsB.name}
+                </Text>
+                <Text style={[styles.winsLabel, styles.textRight]}>
+                  {result.winsB} stat{result.winsB !== 1 ? 's' : ''}
+                </Text>
               </View>
             </View>
           </View>
@@ -1137,12 +1226,22 @@ export default function WebCompareScreen() {
           <View>
             <View style={styles.mobilePortraits}>
               <View style={[styles.mobilePortraitWrap, { height: portraitHeight }]}>
-                <Image source={imageA} contentFit="cover" contentPosition="top" style={StyleSheet.absoluteFill} />
+                <Image
+                  source={imageA}
+                  contentFit="cover"
+                  contentPosition="top"
+                  style={StyleSheet.absoluteFill}
+                />
                 <View style={styles.portraitOverlay as object} />
                 <Text style={styles.mobilePortraitName}>{statsA.name}</Text>
               </View>
               <View style={[styles.mobilePortraitWrap, { height: portraitHeight }]}>
-                <Image source={imageB} contentFit="cover" contentPosition="top" style={StyleSheet.absoluteFill} />
+                <Image
+                  source={imageB}
+                  contentFit="cover"
+                  contentPosition="top"
+                  style={StyleSheet.absoluteFill}
+                />
                 <View style={styles.portraitOverlay as object} />
                 <Text style={[styles.mobilePortraitName, styles.textRight]}>{statsB.name}</Text>
               </View>
@@ -1243,7 +1342,10 @@ const styles = StyleSheet.create({
   },
   portraitOverlay: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundImage:
       'linear-gradient(to top, rgba(29,45,51,0.95) 0%, rgba(29,45,51,0.3) 50%, transparent 100%)',
   } as object,
@@ -1314,7 +1416,12 @@ const styles = StyleSheet.create({
 
   // Mobile portraits
   mobilePortraits: { flexDirection: 'row', height: 280, gap: 6, marginBottom: 16 },
-  mobilePortraitWrap: { flex: 1, borderRadius: 10, overflow: 'hidden', backgroundColor: COLORS.navy },
+  mobilePortraitWrap: {
+    flex: 1,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+  },
   mobilePortraitName: {
     position: 'absolute',
     bottom: 10,
@@ -1355,12 +1462,16 @@ const wb = StyleSheet.create({
   },
   barLeft: {
     position: 'absolute',
-    right: 0, top: 0, bottom: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     borderRadius: 4,
   },
   barRight: {
     position: 'absolute',
-    left: 0, top: 0, bottom: 0,
+    left: 0,
+    top: 0,
+    bottom: 0,
     borderRadius: 4,
   },
   label: {
@@ -1389,6 +1500,7 @@ git commit -m "feat(compare): web compare screen — desktop split + mobile stac
 ## Task 6: Add Compare entry point to native character detail
 
 **Files:**
+
 - Modify: `app/character/[id].tsx`
 
 Add a fixed Compare strip above the bottom safe area, outside the `ScrollView`. Add `paddingBottom` offset to the scroll content so it clears the strip.
@@ -1402,33 +1514,38 @@ Find the closing of `<Animated.ScrollView>` and the outer `<View style={styles.c
 In `app/character/[id].tsx`, find the closing of `Animated.ScrollView` and add the strip before the outer `</View>`:
 
 ```tsx
-{/* Compare strip — fixed above safe-area bottom */}
-{data && (
-  <View style={[styles.compareStrip, { paddingBottom: insets.bottom || 12 }]}>
-    <TouchableOpacity
-      onPress={() =>
-        router.push(
-          `/compare/${id}/pick?name=${encodeURIComponent(data.stats.name)}`
-        )
-      }
-      activeOpacity={0.85}
-      style={styles.compareStripBtn}
-    >
-      <Ionicons name="git-compare-outline" size={18} color={COLORS.beige} />
-      <Text style={styles.compareStripText}>Compare {data.stats.name}</Text>
-    </TouchableOpacity>
-  </View>
-)}
+{
+  /* Compare strip — fixed above safe-area bottom */
+}
+{
+  data && (
+    <View style={[styles.compareStrip, { paddingBottom: insets.bottom || 12 }]}>
+      <TouchableOpacity
+        onPress={() =>
+          router.push(`/compare/${id}/pick?name=${encodeURIComponent(data.stats.name)}`)
+        }
+        activeOpacity={0.85}
+        style={styles.compareStripBtn}
+      >
+        <Ionicons name="git-compare-outline" size={18} color={COLORS.beige} />
+        <Text style={styles.compareStripText}>Compare {data.stats.name}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
 ```
 
 Also add `paddingBottom: 80` to the `Animated.ScrollView`'s `contentContainerStyle` so the last section isn't hidden behind the strip. The existing `contentContainerStyle` is:
+
 ```tsx
 contentContainerStyle={{
   paddingTop: HERO_IMAGE_HEIGHT - 160,
   paddingBottom: insets.bottom + 32,
 }}
 ```
+
 Change it to:
+
 ```tsx
 contentContainerStyle={{
   paddingTop: HERO_IMAGE_HEIGHT - 160,
@@ -1437,6 +1554,7 @@ contentContainerStyle={{
 ```
 
 Add styles:
+
 ```tsx
 compareStrip: {
   position: 'absolute',
@@ -1476,6 +1594,7 @@ git commit -m "feat(compare): add Compare strip to native character detail"
 ## Task 7: Add Compare entry point to web character detail
 
 **Files:**
+
 - Modify: `app/character/[id].web.tsx`
 
 Add a "Compare" button in the `headerTopRow` alongside the existing back and favourite buttons. On click, navigate to the picker.
@@ -1486,9 +1605,7 @@ In the `headerTopRow` View (which already has the back button and favourite butt
 
 ```tsx
 <Pressable
-  onPress={() =>
-    router.push(`/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`)
-  }
+  onPress={() => router.push(`/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`)}
   style={({ hovered }: { hovered?: boolean }) =>
     [styles.compareBtn, hovered && (styles.compareBtnHover as object)] as object
   }
@@ -1499,6 +1616,7 @@ In the `headerTopRow` View (which already has the back button and favourite butt
 ```
 
 Add styles:
+
 ```tsx
 compareBtn: {
   flexDirection: 'row',
@@ -1534,6 +1652,7 @@ git commit -m "feat(compare): add Compare button to web character detail header"
 ## Self-Review
 
 **Spec coverage check:**
+
 - ✅ `/compare/[id1]/[id2]` shareable URL route — Task 4 + 5
 - ✅ Hero picker from character detail — Task 6 + 7
 - ✅ Stat battle UI (bars growing from center) — Task 4 + 5
@@ -1544,6 +1663,7 @@ git commit -m "feat(compare): add Compare button to web character detail header"
 - ✅ Mobile stacked layout — Task 4 + 5
 
 **Type consistency check:**
+
 - `StatResult` and `CompareResult` defined in Task 1, imported by Task 4 + 5 — ✅
 - `loadHeroStats` is defined identically in both `[id1]/[id2].tsx` and `[id1]/[id2].web.tsx` — ✅ (intentional duplication to avoid shared state between platform files)
 - `heroImageSource(id, statsA.image.url)` matches the signature `(id: string | number, imageUrl?: string | null, portraitUrl?: string | null)` — ✅

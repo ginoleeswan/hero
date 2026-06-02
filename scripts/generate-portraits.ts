@@ -121,29 +121,45 @@ const LIMIT = limitArg ? parseInt(limitArg, 10) : null;
 // or when the character's iconic weapon keeps appearing despite framing rules.
 const COSTUME_HINTS: Record<string, string> = {
   // Superman keeps generating as Clark Kent
-  '644': 'Superman in his classic red and blue superhero costume with yellow S-shield on chest and red cape — NOT Clark Kent, NOT civilian clothes, NO glasses',
+  '644':
+    'Superman in his classic red and blue superhero costume with yellow S-shield on chest and red cape — NOT Clark Kent, NOT civilian clothes, NO glasses',
   // Framing / too much body
-  '659': 'Thor wearing his classic silver winged helmet and red cape — face and head ONLY filling entire canvas, NO hammer, NO Mjolnir, NO body, nothing below the very top of the shoulders',
-  '717': 'Wolverine in his classic yellow and blue X-Men mask — extreme close-up headshot, face fills entire canvas, NO claws, NO body below chin, nothing in hands',
-  '332': 'Hulk — massive angry green face, huge jaw, fills the entire canvas in extreme close-up — NO shirt, NO body, NO torn clothing, face only from crown to chin',
-  '213': 'Deadpool wearing his red and black mask with white eye lenses — extreme close-up headshot, mask fills entire canvas, NO body, NO weapons, head only',
-  '479': 'Mysterio — the large chrome fishbowl helmet/globe head fills the entire canvas from top to bottom, green bodysuit collar just barely visible at bottom edge — NO body, NO weapons',
-  '480': 'Mystique — blue skin, red hair, yellow eyes — extreme close-up face fills entire canvas, NO body, NO gun, head and face only',
-  '185': 'Colossus — silver metallic organic steel face and head, flat chrome finish with visible facial features — extreme close-up, face fills entire canvas, NO body, NO shoulders',
-  '490': 'Nightcrawler — blue fuzzy skin, pointed ears, yellow eyes, dark hair, sinister grin — extreme close-up face fills entire canvas, NO body, NO tail, head and face only. Style: clean painterly illustration like a high-end comic cover, bold graphic shapes, smooth rendering',
+  '659':
+    'Thor wearing his classic silver winged helmet and red cape — face and head ONLY filling entire canvas, NO hammer, NO Mjolnir, NO body, nothing below the very top of the shoulders',
+  '717':
+    'Wolverine in his classic yellow and blue X-Men mask — extreme close-up headshot, face fills entire canvas, NO claws, NO body below chin, nothing in hands',
+  '332':
+    'Hulk — massive angry green face, huge jaw, fills the entire canvas in extreme close-up — NO shirt, NO body, NO torn clothing, face only from crown to chin',
+  '213':
+    'Deadpool wearing his red and black mask with white eye lenses — extreme close-up headshot, mask fills entire canvas, NO body, NO weapons, head only',
+  '479':
+    'Mysterio — the large chrome fishbowl helmet/globe head fills the entire canvas from top to bottom, green bodysuit collar just barely visible at bottom edge — NO body, NO weapons',
+  '480':
+    'Mystique — blue skin, red hair, yellow eyes — extreme close-up face fills entire canvas, NO body, NO gun, head and face only',
+  '185':
+    'Colossus — silver metallic organic steel face and head, flat chrome finish with visible facial features — extreme close-up, face fills entire canvas, NO body, NO shoulders',
+  '490':
+    'Nightcrawler — blue fuzzy skin, pointed ears, yellow eyes, dark hair, sinister grin — extreme close-up face fills entire canvas, NO body, NO tail, head and face only. Style: clean painterly illustration like a high-end comic cover, bold graphic shapes, smooth rendering',
   // Loki horns making head appear small — frame accommodates horns but face must be large
-  '414': 'Loki in his golden curved horned helmet, green and gold armour — the face must be large and prominent filling the lower 70% of the canvas, the two tall curved horns extend upward into the top of the frame, face is not small',
+  '414':
+    'Loki in his golden curved horned helmet, green and gold armour — the face must be large and prominent filling the lower 70% of the canvas, the two tall curved horns extend upward into the top of the frame, face is not small',
   // Facing direction
-  '630': 'Star-Lord wearing his red helmet with fin details and glowing red eye lenses — STRICT pure 90-degree side profile facing directly RIGHT, nose pointing exactly right, one eye lens visible, face fills canvas',
+  '630':
+    'Star-Lord wearing his red helmet with fin details and glowing red eye lenses — STRICT pure 90-degree side profile facing directly RIGHT, nose pointing exactly right, one eye lens visible, face fills canvas',
   // White border artifacts
   '30': 'Ant-Man wearing his red and silver helmet — face fills entire canvas edge to edge, absolutely NO white border, NO white outline, NO padding around the edges, background colour bleeds to every edge',
   // Art style needs more Mitchell
-  '222': 'Doctor Doom wearing his iconic iron mask and dark green hooded cloak, the metal mask has a stern expression — clean bold graphic illustration style like a Mondo poster print, strong flat colour shapes, bold graphic forms, face fills canvas',
-  '299': 'Green Goblin wearing his classic purple and green goblin helmet with pointed ears, orange skin, menacing sharp-toothed grin, glowing orange eyes — NOT a jester, NOT medieval, classic Marvel villain goblin look',
-  '225': 'Doctor Octopus — Otto Octavius, bald head, round amber goggles, dark coat — four large mechanical metal tentacles visible curling behind his head in background, face fills canvas in strict side profile',
-  '567': 'Rogue — brown hair with a dramatic white streak at the front, green and yellow X-Men costume collar — clean bold graphic illustration style like a Mondo poster print, strong flat colour shapes, graphic poster quality. Extreme close-up, face fills canvas',
+  '222':
+    'Doctor Doom wearing his iconic iron mask and dark green hooded cloak, the metal mask has a stern expression — clean bold graphic illustration style like a Mondo poster print, strong flat colour shapes, bold graphic forms, face fills canvas',
+  '299':
+    'Green Goblin wearing his classic purple and green goblin helmet with pointed ears, orange skin, menacing sharp-toothed grin, glowing orange eyes — NOT a jester, NOT medieval, classic Marvel villain goblin look',
+  '225':
+    'Doctor Octopus — Otto Octavius, bald head, round amber goggles, dark coat — four large mechanical metal tentacles visible curling behind his head in background, face fills canvas in strict side profile',
+  '567':
+    'Rogue — brown hair with a dramatic white streak at the front, green and yellow X-Men costume collar — clean bold graphic illustration style like a Mondo poster print, strong flat colour shapes, graphic poster quality. Extreme close-up, face fills canvas',
   // Hawkeye white artifacts
-  '313': 'Hawkeye wearing his purple tactical mask with H logo — face fills entire canvas, NO white areas on sides, background colour fills edge to edge, NO bow, NO quiver',
+  '313':
+    'Hawkeye wearing his purple tactical mask with H logo — face fills entire canvas, NO white areas on sides, background colour fills edge to edge, NO bow, NO quiver',
 };
 
 // ─── Supabase client (service role — write access to Storage) ─────────────────
@@ -179,28 +195,41 @@ async function fetchImageAsBase64(url: string): Promise<{ base64: string; mimeTy
   return { base64, mimeType };
 }
 
-
-async function describeCharacterVisually(sourceBase64: string, sourceMime: string): Promise<string> {
+async function describeCharacterVisually(
+  sourceBase64: string,
+  sourceMime: string,
+): Promise<string> {
   const res = await fetch(GEMINI_TEXT_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{
-        parts: [
-          { text: 'Describe only the visual appearance of this character — costume colours, materials, distinctive physical features, and overall aesthetic. Be specific. Do not name the character. 2-3 sentences.' },
-          { inline_data: { mime_type: sourceMime, data: sourceBase64 } },
-        ],
-      }],
+      contents: [
+        {
+          parts: [
+            {
+              text: 'Describe only the visual appearance of this character — costume colours, materials, distinctive physical features, and overall aesthetic. Be specific. Do not name the character. 2-3 sentences.',
+            },
+            { inline_data: { mime_type: sourceMime, data: sourceBase64 } },
+          ],
+        },
+      ],
     }),
   });
   if (!res.ok) return '';
-  const json = (await res.json()) as { candidates: Array<{ content: { parts: Array<{ text?: string }> } }> };
+  const json = (await res.json()) as {
+    candidates: Array<{ content: { parts: Array<{ text?: string }> } }>;
+  };
   return json.candidates?.[0]?.content?.parts?.find((p) => p.text)?.text?.trim() ?? '';
 }
 
-async function generatePortraitImagen(heroName: string, sourceBase64: string, sourceMime: string, heroId?: string): Promise<Uint8Array> {
+async function generatePortraitImagen(
+  heroName: string,
+  sourceBase64: string,
+  sourceMime: string,
+  heroId?: string,
+): Promise<Uint8Array> {
   const hint = heroId ? COSTUME_HINTS[heroId] : undefined;
-  const description = hint ?? await describeCharacterVisually(sourceBase64, sourceMime);
+  const description = hint ?? (await describeCharacterVisually(sourceBase64, sourceMime));
   const prompt = `Limited edition Mondo poster art. ${heroName}${description ? ` — ${description}` : ''}.
 
 POSE — STRICT RULE: Pure 90-degree side profile facing RIGHT. Nose pointing directly right. One eye visible. Absolutely no 3/4 view, no frontal face, no action pose, no weapons being held or raised. The character is simply facing right, still, like a coin portrait or a mugshot in profile.
@@ -225,7 +254,10 @@ No hard white outline — clean natural painted edge. Portrait orientation, tall
     const text = await res.text();
     throw new Error(`Imagen API error ${res.status}: ${text}`);
   }
-  const json = (await res.json()) as { predictions?: Array<{ bytesBase64Encoded?: string }>; error?: { message: string } };
+  const json = (await res.json()) as {
+    predictions?: Array<{ bytesBase64Encoded?: string }>;
+    error?: { message: string };
+  };
   const b64 = json.predictions?.[0]?.bytesBase64Encoded;
   if (!b64) throw new Error(`No image from Imagen 4: ${json.error?.message ?? 'unknown'}`);
   return Buffer.from(b64, 'base64');
@@ -264,7 +296,9 @@ async function callImageModel(parts: object[]): Promise<Uint8Array | 'PROHIBITED
     const json = (await res.json()) as {
       candidates: Array<{
         finishReason?: string;
-        content: { parts: Array<{ inlineData?: { data: string }; inline_data?: { data: string } }> };
+        content: {
+          parts: Array<{ inlineData?: { data: string }; inline_data?: { data: string } }>;
+        };
       }>;
     };
 
@@ -326,9 +360,9 @@ async function withConcurrency<T>(
 const MITCHELL_IDS = new Set(Object.keys(LOCAL_PORTRAITS));
 
 function priorityOrder(id: string): number {
-  if (MITCHELL_IDS.has(id)) return 0;      // Mitchell heroes first
-  if (!id.startsWith('cv-')) return 1;     // SuperheroAPI numeric IDs second
-  return 2;                                // ComicVine cv- IDs last
+  if (MITCHELL_IDS.has(id)) return 0; // Mitchell heroes first
+  if (!id.startsWith('cv-')) return 1; // SuperheroAPI numeric IDs second
+  return 2; // ComicVine cv- IDs last
 }
 
 async function phase2(filterHeroId?: string): Promise<void> {

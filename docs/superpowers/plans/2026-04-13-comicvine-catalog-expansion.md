@@ -13,6 +13,7 @@
 ### Task 1: DB Migration
 
 **Files:**
+
 - Create: `supabase/migrations/20260413120000_comicvine_expansion.sql`
 
 - [ ] Create migration file:
@@ -61,6 +62,7 @@ WHERE intelligence IS NOT NULL
 ### Task 2: Update `get-comicvine-hero` to write `comicvine_id`
 
 **Files:**
+
 - Modify: `supabase/functions/get-comicvine-hero/index.ts`
 
 - [ ] In the DB update at the end of the function, add `comicvine_id: String(result.id)` to the `.update({...})` call. `result.id` is the ComicVine character numeric ID already fetched from the list endpoint.
@@ -71,6 +73,7 @@ WHERE intelligence IS NOT NULL
 ### Task 3: `seed-comicvine-characters` Edge Function
 
 **Files:**
+
 - Create: `supabase/functions/seed-comicvine-characters/index.ts`
 
 - [ ] Create the function:
@@ -138,10 +141,10 @@ serve(async (req: Request) => {
   }> = cvJson.results ?? [];
 
   // Load existing comicvine_ids and names for dedup
-  const { data: existing } = await sb
-    .from('heroes')
-    .select('id, name, comicvine_id');
-  const existingCvIds = new Set((existing ?? []).map((h) => String(h.comicvine_id)).filter(Boolean));
+  const { data: existing } = await sb.from('heroes').select('id, name, comicvine_id');
+  const existingCvIds = new Set(
+    (existing ?? []).map((h) => String(h.comicvine_id)).filter(Boolean),
+  );
   const existingByNorm = new Map((existing ?? []).map((h) => [norm(h.name), h.id]));
 
   let inserted = 0;
@@ -181,13 +184,16 @@ serve(async (req: Request) => {
   const newOffset = state.last_offset + 100;
   const newStatus = newTotal >= state.target ? 'complete' : 'idle';
 
-  await sb.from('cv_ingestion_state').update({
-    last_offset: newOffset,
-    total_ingested: newTotal,
-    status: newStatus,
-    last_run_at: new Date().toISOString(),
-    error: null,
-  }).eq('id', 1);
+  await sb
+    .from('cv_ingestion_state')
+    .update({
+      last_offset: newOffset,
+      total_ingested: newTotal,
+      status: newStatus,
+      last_run_at: new Date().toISOString(),
+      error: null,
+    })
+    .eq('id', 1);
 
   return json({ inserted, merged, total_ingested: newTotal, status: newStatus });
 });
@@ -201,6 +207,7 @@ serve(async (req: Request) => {
 ### Task 4: `generate-hero-stats` Edge Function
 
 **Files:**
+
 - Create: `supabase/functions/generate-hero-stats/index.ts`
 
 - [ ] Create the function:
@@ -222,7 +229,11 @@ const json = (data: unknown, status = 200) =>
   });
 
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 800);
+  return html
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 800);
 }
 
 serve(async (req: Request) => {
@@ -243,7 +254,8 @@ serve(async (req: Request) => {
     .single();
 
   if (!hero) return json({ error: 'Hero not found' }, 404);
-  if (hero.stats_source != null) return json({ message: 'Stats already exist', stats_source: hero.stats_source });
+  if (hero.stats_source != null)
+    return json({ message: 'Stats already exist', stats_source: hero.stats_source });
   if (hero.ai_stats_status === 'done') return json({ message: 'Already done' });
 
   const powers = Array.isArray(hero.powers) ? hero.powers.join(', ') : '';
@@ -279,19 +291,24 @@ Return ONLY valid JSON with these exact keys, no explanation:
     const stats = JSON.parse(raw) as Record<string, unknown>;
 
     const keys = ['intelligence', 'strength', 'speed', 'durability', 'power', 'combat'];
-    const valid = keys.every((k) => typeof stats[k] === 'number' && stats[k] >= 0 && stats[k] <= 100);
+    const valid = keys.every(
+      (k) => typeof stats[k] === 'number' && stats[k] >= 0 && stats[k] <= 100,
+    );
     if (!valid) throw new Error('Invalid stats shape');
 
-    await sb.from('heroes').update({
-      intelligence: stats.intelligence as number,
-      strength: stats.strength as number,
-      speed: stats.speed as number,
-      durability: stats.durability as number,
-      power: stats.power as number,
-      combat: stats.combat as number,
-      stats_source: 'ai',
-      ai_stats_status: 'done',
-    }).eq('id', heroId);
+    await sb
+      .from('heroes')
+      .update({
+        intelligence: stats.intelligence as number,
+        strength: stats.strength as number,
+        speed: stats.speed as number,
+        durability: stats.durability as number,
+        power: stats.power as number,
+        combat: stats.combat as number,
+        stats_source: 'ai',
+        ai_stats_status: 'done',
+      })
+      .eq('id', heroId);
 
     return json({ stats, stats_source: 'ai' });
   } catch (err) {
@@ -311,13 +328,16 @@ Return ONLY valid JSON with these exact keys, no explanation:
 ### Task 5: DB Helper + Biography Link Interception
 
 **Files:**
+
 - Modify: `src/lib/db/heroes.ts`
 - Modify: `app/biography/[id].web.tsx`
 
 - [ ] Add to `src/lib/db/heroes.ts`:
 
 ```ts
-export async function getHeroByComicvineId(cvId: string): Promise<Pick<Hero, 'id' | 'name'> | null> {
+export async function getHeroByComicvineId(
+  cvId: string,
+): Promise<Pick<Hero, 'id' | 'name'> | null> {
   const { data } = await supabase
     .from('heroes')
     .select('id, name')
@@ -383,6 +403,7 @@ Attach ref to the content div:
 ### Task 6: UI — AI Stats Badge + Loading State + Compare Guard
 
 **Files:**
+
 - Modify: `app/character/[id].web.tsx`
 
 - [ ] In the character web screen, after `data` loads, check `data.stats_source` (needs to come from the hero row via `heroRowToCharacterData`). Update `heroRowToCharacterData` in `src/lib/db/heroes.ts` to include `stats_source` in the returned `CharacterData`.
@@ -408,11 +429,13 @@ statsSource: (hero.stats_source as 'superheroapi' | 'ai' | null) ?? null,
 - [ ] In the Power Stats card header in `app/character/[id].web.tsx`, render the badge when `data.statsSource === 'ai'`:
 
 ```tsx
-{data.statsSource === 'ai' ? (
-  <View style={styles.aiBadge}>
-    <Text style={styles.aiBadgeText}>AI</Text>
-  </View>
-) : null}
+{
+  data.statsSource === 'ai' ? (
+    <View style={styles.aiBadge}>
+      <Text style={styles.aiBadgeText}>AI</Text>
+    </View>
+  ) : null;
+}
 ```
 
 Add to StyleSheet:
@@ -440,11 +463,23 @@ aiBadgeText: {
 useEffect(() => {
   if (!data) return;
   const hero = data as typeof data & { statsSource?: string | null; aiStatsStatus?: string | null };
-  if (hero.statsSource == null && (hero as unknown as Record<string,unknown>).aiStatsStatus === 'pending') {
-    supabase.functions.invoke('generate-hero-stats', { body: { heroId: id } })
+  if (
+    hero.statsSource == null &&
+    (hero as unknown as Record<string, unknown>).aiStatsStatus === 'pending'
+  ) {
+    supabase.functions
+      .invoke('generate-hero-stats', { body: { heroId: id } })
       .then(({ data: statsData }) => {
         if (statsData?.stats) {
-          setData((prev) => prev ? { ...prev, stats: { ...prev.stats, powerstats: statsData.stats }, statsSource: 'ai' } : prev);
+          setData((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  stats: { ...prev.stats, powerstats: statsData.stats },
+                  statsSource: 'ai',
+                }
+              : prev,
+          );
         }
       })
       .catch(() => {});

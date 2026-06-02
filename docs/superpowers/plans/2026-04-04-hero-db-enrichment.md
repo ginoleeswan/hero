@@ -12,22 +12,23 @@
 
 ## File Map
 
-| File | Action | Purpose |
-|---|---|---|
-| `supabase/migrations/20260404120000_enrich_heroes.sql` | Create | Adds all new columns to `heroes` table |
-| `src/types/database.generated.ts` | Regenerate (MCP) | Updated types after migration |
-| `scripts/enrich-heroes.ts` | Create | Phase 1: CDN bulk upsert (731 heroes, 1 HTTP request) |
-| `scripts/enrich-comicvine.ts` | Create | Phase 2: ComicVine summary + first issue image, throttled |
-| `src/lib/db/heroes.ts` | Modify | Add `getHeroById`, `searchHeroes`, `HeroSearchResult` type, `heroRowToCharacterData` |
-| `__tests__/lib/db/heroes.test.ts` | Create | Unit tests for `getHeroById` and `searchHeroes` |
-| `app/(tabs)/search.tsx` | Modify | Replace CDN fetch + client-side filter with `searchHeroes` |
-| `app/character/[id].tsx` | Modify | Supabase-first load path using `getHeroById` + `heroRowToCharacterData` |
+| File                                                   | Action           | Purpose                                                                              |
+| ------------------------------------------------------ | ---------------- | ------------------------------------------------------------------------------------ |
+| `supabase/migrations/20260404120000_enrich_heroes.sql` | Create           | Adds all new columns to `heroes` table                                               |
+| `src/types/database.generated.ts`                      | Regenerate (MCP) | Updated types after migration                                                        |
+| `scripts/enrich-heroes.ts`                             | Create           | Phase 1: CDN bulk upsert (731 heroes, 1 HTTP request)                                |
+| `scripts/enrich-comicvine.ts`                          | Create           | Phase 2: ComicVine summary + first issue image, throttled                            |
+| `src/lib/db/heroes.ts`                                 | Modify           | Add `getHeroById`, `searchHeroes`, `HeroSearchResult` type, `heroRowToCharacterData` |
+| `__tests__/lib/db/heroes.test.ts`                      | Create           | Unit tests for `getHeroById` and `searchHeroes`                                      |
+| `app/(tabs)/search.tsx`                                | Modify           | Replace CDN fetch + client-side filter with `searchHeroes`                           |
+| `app/character/[id].tsx`                               | Modify           | Supabase-first load path using `getHeroById` + `heroRowToCharacterData`              |
 
 ---
 
 ## Task 1: DB Migration
 
 **Files:**
+
 - Create: `supabase/migrations/20260404120000_enrich_heroes.sql`
 - Regenerate: `src/types/database.generated.ts`
 
@@ -85,6 +86,7 @@ alter table heroes
 - [ ] **Step 2: Apply migration via Supabase MCP**
 
 Use `mcp__supabase__apply_migration` with:
+
 - `name`: `enrich_heroes`
 - `query`: the full SQL above
 
@@ -108,6 +110,7 @@ git commit -m "feat(db): add enrichment columns to heroes table"
 ## Task 2: Phase 1 Enrichment Script
 
 **Files:**
+
 - Create: `scripts/enrich-heroes.ts`
 
 The script uses its own Supabase client (cannot import `src/lib/supabase.ts` — that file imports `react-native` which doesn't run in plain Bun).
@@ -225,9 +228,7 @@ async function main() {
   console.log(`Upserting ${rows.length} heroes in ${batches.length} batches...`);
   let done = 0;
   for (const batch of batches) {
-    const { error } = await supabase
-      .from('heroes')
-      .upsert(batch, { onConflict: 'id' });
+    const { error } = await supabase.from('heroes').upsert(batch, { onConflict: 'id' });
     if (error) throw new Error(`Upsert failed: ${error.message}`);
     done += batch.length;
     console.log(`  ${done}/${rows.length} done`);
@@ -249,6 +250,7 @@ bun scripts/enrich-heroes.ts
 ```
 
 Expected output:
+
 ```
 Fetching CDN all.json...
 Fetched 731 heroes.
@@ -263,6 +265,7 @@ Enrichment complete.
 - [ ] **Step 3: Spot-check in Supabase**
 
 Run a quick verification query using `mcp__supabase__execute_sql`:
+
 ```sql
 select id, name, intelligence, strength, full_name, enriched_at
 from heroes
@@ -272,6 +275,7 @@ where name = 'Spider-Man';
 Expected: row with `intelligence`, `strength` populated and `enriched_at` set.
 
 Also check total enriched count:
+
 ```sql
 select count(*) from heroes where enriched_at is not null;
 ```
@@ -290,10 +294,12 @@ git commit -m "feat(scripts): add Phase 1 hero enrichment script"
 ## Task 3: DB query functions + tests
 
 **Files:**
+
 - Modify: `src/lib/db/heroes.ts`
 - Create: `__tests__/lib/db/heroes.test.ts`
 
 Add three exports to `heroes.ts`:
+
 - `HeroSearchResult` — partial type for search list rows
 - `getHeroById(id)` — fetch one fully-enriched hero row
 - `searchHeroes(query, publisher)` — server-side search with publisher filter
@@ -303,11 +309,7 @@ Add three exports to `heroes.ts`:
 
 ```ts
 // __tests__/lib/db/heroes.test.ts
-import {
-  getHeroById,
-  searchHeroes,
-  heroRowToCharacterData,
-} from '../../../src/lib/db/heroes';
+import { getHeroById, searchHeroes, heroRowToCharacterData } from '../../../src/lib/db/heroes';
 
 // ─── Mock Supabase ────────────────────────────────────────────────────────────
 //
@@ -325,8 +327,7 @@ chainMethods.forEach((m) => {
 // single() returns a real Promise (used by getHeroById)
 chain.single = jest.fn(() => Promise.resolve(resolveWith));
 // then() makes the whole chain awaitable (used by searchHeroes)
-chain.then = (resolve: (v: unknown) => unknown) =>
-  Promise.resolve(resolveWith).then(resolve);
+chain.then = (resolve: (v: unknown) => unknown) => Promise.resolve(resolveWith).then(resolve);
 
 const mockFrom = jest.fn().mockReturnValue(chain);
 
@@ -468,7 +469,9 @@ describe('heroRowToCharacterData', () => {
 
   it('maps comicvine fields', () => {
     const data = heroRowToCharacterData(hero);
-    expect(data.details.summary).toBe('A bite from a radioactive spider gave Peter Parker amazing abilities.');
+    expect(data.details.summary).toBe(
+      'A bite from a radioactive spider gave Peter Parker amazing abilities.',
+    );
     expect(data.firstIssue?.imageUrl).toBe('https://cdn.example.com/issue.jpg');
   });
 
@@ -499,7 +502,10 @@ import type { CharacterData } from '../../types';
 export type Hero = Tables<'heroes'>;
 export type HeroCategory = 'popular' | 'villain' | 'xmen';
 export type PublisherFilter = 'All' | 'Marvel' | 'DC' | 'Other';
-export type HeroSearchResult = Pick<Hero, 'id' | 'name' | 'publisher' | 'image_md_url' | 'image_url'>;
+export type HeroSearchResult = Pick<
+  Hero,
+  'id' | 'name' | 'publisher' | 'image_md_url' | 'image_url'
+>;
 
 export interface HeroesByCategory {
   popular: Hero[];
@@ -518,11 +524,7 @@ export async function getHeroesByCategory(): Promise<HeroesByCategory> {
 }
 
 export async function getHeroById(id: string): Promise<Hero | null> {
-  const { data } = await supabase
-    .from('heroes')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data } = await supabase.from('heroes').select('*').eq('id', id).single();
   return data ?? null;
 }
 
@@ -634,11 +636,13 @@ git commit -m "feat(db): add getHeroById, searchHeroes, heroRowToCharacterData"
 ## Task 4: Update Search Screen
 
 **Files:**
+
 - Modify: `app/(tabs)/search.tsx`
 
 Replace the CDN fetch + in-memory filter with `searchHeroes`. The debounce (150ms) stays. Publisher pill state stays. The screen re-queries whenever `debouncedQuery` or `publisherFilter` changes.
 
 Key changes:
+
 - Remove `allHeroes` state and `CdnHero` type
 - Remove `loadHeroes` callback and its `useEffect`
 - Add `results` state and a `useEffect` that calls `searchHeroes`
@@ -835,9 +839,7 @@ export default function SearchScreen() {
                   />
                   <View style={styles.rowText}>
                     <Text style={styles.heroName}>{item.name}</Text>
-                    {item.publisher ? (
-                      <Text style={styles.publisher}>{item.publisher}</Text>
-                    ) : null}
+                    {item.publisher ? <Text style={styles.publisher}>{item.publisher}</Text> : null}
                   </View>
                   {isNavigating ? (
                     <ActivityIndicator size="small" color={COLORS.orange} />
@@ -920,7 +922,12 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontFamily: 'FlameSans-Regular', fontSize: 15, color: COLORS.grey },
   errorText: { fontFamily: 'FlameSans-Regular', fontSize: 15, color: COLORS.grey },
-  retryBtn: { paddingHorizontal: 24, paddingVertical: 10, backgroundColor: COLORS.navy, borderRadius: 20 },
+  retryBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    backgroundColor: COLORS.navy,
+    borderRadius: 20,
+  },
   retryText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: COLORS.beige },
 });
 ```
@@ -945,6 +952,7 @@ git commit -m "feat(search): replace CDN fetch with Supabase searchHeroes query"
 ## Task 5: Update Character Detail Screen
 
 **Files:**
+
 - Modify: `app/character/[id].tsx`
 
 Replace the three-API `useEffect` with a Supabase-first path. If the hero row has `enriched_at` set, use `heroRowToCharacterData` and skip all external calls. If not enriched, fall back to the existing SuperheroAPI → ComicVine chain unchanged.
@@ -1016,11 +1024,13 @@ useEffect(() => {
 - [ ] **Step 2: Add the import for `getHeroById` and `heroRowToCharacterData`**
 
 Find the existing import line:
+
 ```tsx
 import { fetchHeroStats, fetchHeroDetails, fetchFirstIssue } from '../../src/lib/api';
 ```
 
 Add below it:
+
 ```tsx
 import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
 ```
@@ -1045,6 +1055,7 @@ git commit -m "feat(character): load from Supabase first, fall back to APIs for 
 ## Task 6: Phase 2 ComicVine Enrichment Script
 
 **Files:**
+
 - Create: `scripts/enrich-comicvine.ts`
 
 Designed to run overnight. Throttled to 20 seconds between heroes (~180/hr, safely under the 200/hr ComicVine limit). Fully resumable — skips heroes where `comicvine_enriched_at IS NOT NULL` unless `--force` flag is passed.
@@ -1138,7 +1149,9 @@ async function main() {
         .eq('id', hero.id);
 
       if (updateError) throw updateError;
-      console.log(`  summary: ${summary ? 'yes' : 'none'}, issue image: ${firstIssueImageUrl ? 'yes' : 'none'}`);
+      console.log(
+        `  summary: ${summary ? 'yes' : 'none'}, issue image: ${firstIssueImageUrl ? 'yes' : 'none'}`,
+      );
     } catch (e) {
       console.error(`  FAILED: ${e instanceof Error ? e.message : e}`);
       // Continue to next hero — don't abort the whole run
@@ -1168,6 +1181,7 @@ bun scripts/enrich-comicvine.ts --force
 This re-enriches only heroes that already have `comicvine_enriched_at` set (i.e. your 34 seeded heroes if they were previously enriched). To test on just one hero, temporarily add `query = query.eq('name', 'Spider-Man')` before running, then revert.
 
 Verify via `mcp__supabase__execute_sql`:
+
 ```sql
 select name, summary, first_issue_image_url, comicvine_enriched_at
 from heroes
