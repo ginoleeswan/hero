@@ -16,6 +16,7 @@ jobs:
         with:
           node-version: 22
           cache: yarn
+      - run: corepack enable
       - run: yarn install --frozen-lockfile
       - run: yarn format:check
 
@@ -28,6 +29,7 @@ jobs:
         with:
           node-version: 22
           cache: yarn
+      - run: corepack enable
       - run: yarn install --frozen-lockfile
       - run: yarn typecheck
 
@@ -40,5 +42,6 @@ jobs:
         with:
           node-version: 22
           cache: yarn
+      - run: corepack enable
       - run: yarn install --frozen-lockfile
       - run: yarn test:ci --passWithNoTests
