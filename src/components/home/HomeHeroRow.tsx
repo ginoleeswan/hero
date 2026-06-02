@@ -1,6 +1,8 @@
 // src/components/home/HomeHeroRow.tsx
 import { View, Text, FlatList, StyleSheet, Dimensions, Pressable } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Image } from 'expo-image';
+import * as Haptics from 'expo-haptics';
 import { Link } from 'expo-router';
 import { HeroCard, HERO_CARD_RADIUS } from '../HeroCard';
 import { ThumbCard, type ThumbHero } from './ThumbCard';
@@ -12,6 +14,75 @@ const PORTRAIT_CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.6);
 const PORTRAIT_CARD_HEIGHT = 300;
 
 export interface RowHero extends ThumbHero {}
+
+/**
+ * Portrait card that navigates via the Apple Zoom transition, with a spring
+ * scale-down + light haptic on press for tactile feedback.
+ *
+ * The Pressable (the Link's asChild target) gets a single style object — Slot
+ * rejects array styles. The scale lives on an inner Animated.View; it uses a
+ * transform, which doesn't change the layout frame, so the zoom origin stays
+ * correct. Shadow + clip live on that same inner view, OUTSIDE Link.AppleZoom,
+ * so no shadow box bleeds into the transition on the way back.
+ */
+function PortraitZoomCard({ item }: { item: RowHero }) {
+  const pressed = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: withSpring(pressed.value ? 0.95 : 1, { damping: 18, stiffness: 260, mass: 0.6 }) },
+    ],
+  }));
+
+  return (
+    <Link
+      href={{
+        pathname: '/character/[id]',
+        params: {
+          id: item.id,
+          imageUri: item.portrait_url ?? item.image_url ?? undefined,
+        },
+      }}
+      asChild
+    >
+      <Pressable
+        style={styles.cardSlot}
+        onPressIn={() => {
+          pressed.value = 1;
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }}
+        onPressOut={() => {
+          pressed.value = 0;
+        }}
+      >
+        <Animated.View style={[styles.cardVisual, animatedStyle]}>
+          {/* Static portrait behind the zoom card. Fully covered by the live
+              card at rest; only revealed in the brief moment iOS hides the live
+              card during the zoom dismiss, so the detail screen contracts into
+              the hero image — seamless, never an empty slot. */}
+          <Image
+            source={heroImageSource(item.id, item.image_url, item.portrait_url)}
+            contentFit="cover"
+            style={styles.slotImage}
+            cachePolicy="memory-disk"
+            recyclingKey={`${item.id}-slot`}
+            transition={null}
+          />
+          <Link.AppleZoom>
+            <HeroCard
+              id={item.id}
+              name={item.name}
+              imageUrl={item.image_url}
+              portraitUrl={item.portrait_url}
+              width={PORTRAIT_CARD_WIDTH}
+              height={PORTRAIT_CARD_HEIGHT}
+            />
+          </Link.AppleZoom>
+        </Animated.View>
+      </Pressable>
+    </Link>
+  );
+}
 
 interface HomeHeroRowProps {
   label?: string;
@@ -70,45 +141,7 @@ export function HomeHeroRow({
         contentContainerStyle={[styles.listContent, { gap: isPortrait ? 12 : 8 }]}
         renderItem={({ item }) =>
           isPortrait ? (
-            <Link
-              href={{
-                pathname: '/character/[id]',
-                params: {
-                  id: item.id,
-                  imageUri: item.portrait_url ?? item.image_url ?? undefined,
-                },
-              }}
-              asChild
-            >
-              {/* Shadow + sizing live here, OUTSIDE Link.AppleZoom, so the
-                  zoom snapshot is just the rounded card — no shadow box bleeds
-                  into the transition on the way back. */}
-              <Pressable style={styles.cardSlot}>
-                {/* Static portrait behind the zoom card. Fully covered by the
-                    live card at rest; only revealed in the brief moment iOS
-                    hides the live card during the zoom dismiss, so the detail
-                    screen contracts into the hero image — seamless, never an
-                    empty slot. */}
-                <Image
-                  source={heroImageSource(item.id, item.image_url, item.portrait_url)}
-                  contentFit="cover"
-                  style={styles.slotImage}
-                  cachePolicy="memory-disk"
-                  recyclingKey={`${item.id}-slot`}
-                  transition={null}
-                />
-                <Link.AppleZoom>
-                  <HeroCard
-                    id={item.id}
-                    name={item.name}
-                    imageUrl={item.image_url}
-                    portraitUrl={item.portrait_url}
-                    width={PORTRAIT_CARD_WIDTH}
-                    height={PORTRAIT_CARD_HEIGHT}
-                  />
-                </Link.AppleZoom>
-              </Pressable>
-            </Link>
+            <PortraitZoomCard item={item} />
           ) : (
             <ThumbCard item={item} onPress={() => onPress(item)} disabled={disabled} />
           )
