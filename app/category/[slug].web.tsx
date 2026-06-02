@@ -71,7 +71,7 @@ function HeroCard({ hero, onPress }: { hero: Hero; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
-      style={({ hovered }: { hovered?: boolean }) =>
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [card.wrap, hovered && (card.wrapHover as object)] as object
       }
     >
@@ -265,7 +265,7 @@ export default function WebCategoryScreen() {
             {isDesktop && (
               <Pressable
                 onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
-                style={({ hovered }: { hovered?: boolean }) =>
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                   [styles.backBtn, hovered && (styles.backBtnHover as object)] as object
                 }
               >
@@ -373,7 +373,7 @@ export default function WebCategoryScreen() {
             <ActiveFilterChips slug={categorySlug} filters={filters} setFilter={setFilter} />
             <Pressable
               onPress={reset}
-              style={({ hovered }: { hovered?: boolean }) =>
+              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                 [styles.stripClear, hovered && (styles.stripClearHover as object)] as object
               }
             >

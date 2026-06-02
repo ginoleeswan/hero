@@ -347,7 +347,7 @@ export default function WebCharacterScreen() {
                     !statsGenerating &&
                     router.push(`/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`)
                   }
-                  style={({ hovered }: { hovered?: boolean }) =>
+                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                     [
                       styles.compareBtn,
                       hovered && !statsGenerating && (styles.compareBtnHover as object),
@@ -523,7 +523,7 @@ export default function WebCharacterScreen() {
                       {details.description ? (
                         <Pressable
                           onPress={() => router.push(`/biography/${id}`)}
-                          style={({ hovered }: { hovered?: boolean }) =>
+                          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                             [
                               styles.biographyLink,
                               hovered && (styles.biographyLinkHover as object),
@@ -855,7 +855,7 @@ export default function WebCharacterScreen() {
                     {details.description ? (
                       <Pressable
                         onPress={() => router.push(`/biography/${id}`)}
-                        style={({ hovered }: { hovered?: boolean }) =>
+                        style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                           [
                             styles.biographyLink,
                             hovered && (styles.biographyLinkHover as object),

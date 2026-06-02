@@ -61,7 +61,7 @@ function SuggestRow({
             <Pressable
               key={item.id}
               onPress={() => onPick(item.id)}
-              style={({ hovered }: { hovered?: boolean }) =>
+              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                 [suggest.card, hovered && (suggest.cardHover as object)] as object
               }
             >
@@ -167,7 +167,7 @@ export default function WebPickOpponentScreen() {
         <View style={styles.headerInner}>
           <Pressable
             onPress={() => router.back()}
-            style={({ hovered }: { hovered?: boolean }) =>
+            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
               [styles.backBtn, hovered && (styles.backBtnHover as object)] as object
             }
           >
@@ -233,7 +233,7 @@ export default function WebPickOpponentScreen() {
                 <Pressable
                   key={item.id}
                   onPress={() => router.replace(`/compare/${hero}/${item.id}`)}
-                  style={({ hovered }: { hovered?: boolean }) =>
+                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                     [card.wrap, hovered && (card.wrapHover as object)] as object
                   }
                 >

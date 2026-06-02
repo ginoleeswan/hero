@@ -429,7 +429,7 @@ export default function WebBiographyScreen() {
                   <Pressable
                     key={i}
                     onPress={() => scrollToSection(i)}
-                    style={({ hovered }: { hovered?: boolean }) =>
+                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                       [styles.tocItem, hovered && (styles.tocItemHovered as object)] as object
                     }
                   >

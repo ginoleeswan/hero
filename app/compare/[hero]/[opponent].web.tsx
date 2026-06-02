@@ -198,7 +198,7 @@ export default function WebCompareScreen() {
         <View style={styles.subHeaderInner}>
           <Pressable
             onPress={() => router.back()}
-            style={({ hovered }: { hovered?: boolean }) =>
+            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
               [styles.backBtn, hovered && (styles.backBtnHover as object)] as object
             }
           >
@@ -212,7 +212,7 @@ export default function WebCompareScreen() {
 
           <Pressable
             onPress={handleShare}
-            style={({ hovered }: { hovered?: boolean }) =>
+            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
               [styles.shareBtn, hovered && (styles.shareBtnHover as object)] as object
             }
           >
@@ -270,7 +270,7 @@ export default function WebCompareScreen() {
                 onPress={() =>
                   router.push(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)
                 }
-                style={({ hovered }: { hovered?: boolean }) =>
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                   [
                     styles.compareAnotherBtn,
                     hovered && (styles.compareAnotherHover as object),
@@ -356,7 +356,7 @@ export default function WebCompareScreen() {
               onPress={() =>
                 router.push(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)
               }
-              style={({ hovered }: { hovered?: boolean }) =>
+              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                 [
                   styles.compareAnotherBtn,
                   styles.compareAnotherBtnMobile,

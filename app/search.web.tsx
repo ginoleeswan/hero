@@ -59,7 +59,7 @@ function HeroCard({ hero, onPress }: { hero: HeroSearchResult; onPress: () => vo
   return (
     <Pressable
       onPress={onPress}
-      style={({ hovered }: { hovered?: boolean }) =>
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [card.wrap, hovered && (card.wrapHover as object)] as object
       }
     >
@@ -205,7 +205,7 @@ export default function WebSearchScreen() {
           <View style={styles.heroZoneInner}>
             <Pressable
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
-              style={({ hovered }: { hovered?: boolean }) =>
+              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                 [styles.backBtn, hovered && (styles.backBtnHover as object)] as object
               }
             >
