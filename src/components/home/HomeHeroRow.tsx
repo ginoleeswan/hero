@@ -18,6 +18,8 @@ interface HomeHeroRowProps {
   title: string;
   heroes: RowHero[];
   variant?: 'portrait' | 'thumb';
+  /** 'dark' renders the row on a navy editorial band for visual rhythm. */
+  tone?: 'light' | 'dark';
   onPress: (item: RowHero) => void;
   onViewAll?: () => void;
   disabled?: boolean;
@@ -28,24 +30,35 @@ export function HomeHeroRow({
   title,
   heroes,
   variant = 'portrait',
+  tone = 'light',
   onPress,
   onViewAll,
   disabled = false,
 }: HomeHeroRowProps) {
   const isPortrait = variant === 'portrait';
+  const isDark = tone === 'dark';
+
+  const titleNode = (
+    <View style={styles.titleRow}>
+      <Text style={[styles.title, isDark && styles.titleDark]}>{title}</Text>
+      {!!onViewAll && <Text style={[styles.chevron, isDark && styles.titleDark]}>›</Text>}
+    </View>
+  );
 
   return (
-    <View style={styles.section}>
+    <View style={[styles.section, isDark && styles.sectionDark]}>
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
+        <View style={styles.accentBar} />
+        <View style={styles.headerText}>
           {!!label && <Text style={styles.label}>{label}</Text>}
-          <Text style={styles.title}>{title}</Text>
+          {onViewAll ? (
+            <Pressable onPress={onViewAll} style={styles.titlePressable}>
+              {titleNode}
+            </Pressable>
+          ) : (
+            titleNode
+          )}
         </View>
-        {!!onViewAll && (
-          <Pressable onPress={onViewAll} style={styles.seeAll}>
-            <Text style={styles.seeAllText}>See All</Text>
-          </Pressable>
-        )}
       </View>
       <FlatList
         horizontal
@@ -107,14 +120,25 @@ export function HomeHeroRow({
 
 const styles = StyleSheet.create({
   section: { paddingTop: 14, paddingBottom: 16 },
+  sectionDark: {
+    backgroundColor: COLORS.navy,
+    paddingTop: 22,
+    paddingBottom: 18,
+    marginVertical: 8,
+  },
   header: {
     paddingHorizontal: 15,
-    marginBottom: 10,
+    marginBottom: 12,
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
+    alignItems: 'stretch',
+    gap: 11,
   },
-  headerLeft: { gap: 2 },
+  accentBar: {
+    width: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.orange,
+  },
+  headerText: { gap: 2, justifyContent: 'center' },
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
@@ -122,13 +146,16 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
-  title: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.navy },
-  seeAll: { paddingBottom: 2 },
-  seeAllText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: COLORS.orange,
-    letterSpacing: 0.3,
+  titlePressable: { alignSelf: 'flex-start' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  title: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.navy, lineHeight: 28 },
+  titleDark: { color: COLORS.beige },
+  chevron: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 28,
+    color: COLORS.navy,
+    lineHeight: 28,
+    marginTop: -2,
   },
   listContent: { paddingHorizontal: 15, paddingBottom: 20 },
   cardSlot: {

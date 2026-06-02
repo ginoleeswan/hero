@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, StatusBar } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
 import { HomeSkeleton } from '../../src/components/skeletons/HomeSkeleton';
@@ -12,6 +12,8 @@ import { HomeHeroRow, type RowHero } from '../../src/components/home/HomeHeroRow
 import { SearchSheet } from '../../src/components/SearchSheet';
 import {
   getPopularHeroes,
+  getIconicHeroes,
+  getNewlyAddedCV,
   getAntiHeroes,
   getVillains,
   getXMen,
@@ -40,6 +42,7 @@ export default function HomeScreen() {
   const [initialLoaded, setInitialLoaded] = useState(false);
 
   // Below-fold rows — each renders as soon as its data arrives
+  const [iconic, setIconic] = useState<Hero[]>([]);
   const [villains, setVillains] = useState<Hero[]>([]);
   const [xmen, setXmen] = useState<Hero[]>([]);
   const [antiHeroes, setAntiHeroes] = useState<Hero[]>([]);
@@ -47,6 +50,7 @@ export default function HomeScreen() {
   const [dc, setDc] = useState<Hero[]>([]);
   const [strongest, setStrongest] = useState<Hero[]>([]);
   const [mostIntelligent, setMostIntelligent] = useState<Hero[]>([]);
+  const [newlyAdded, setNewlyAdded] = useState<Hero[]>([]);
 
   const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
@@ -65,6 +69,9 @@ export default function HomeScreen() {
       })
       .catch(() => setInitialLoaded(true));
 
+    getIconicHeroes(20)
+      .then(setIconic)
+      .catch(() => {});
     getVillains(20)
       .then(setVillains)
       .catch(() => {});
@@ -85,6 +92,9 @@ export default function HomeScreen() {
       .catch(() => {});
     getHeroesByStatRanking('intelligence', 20)
       .then(setMostIntelligent)
+      .catch(() => {});
+    getNewlyAddedCV(20)
+      .then(setNewlyAdded)
       .catch(() => {});
   }, []);
 
@@ -123,6 +133,26 @@ export default function HomeScreen() {
 
   const spotlightHero = popular[spotlightIndex] ?? null;
   const spotlightTotal = Math.min(SPOTLIGHT_POOL, popular.length);
+
+  // Fixed catalog order. Tone alternates by catalog index (not by which rows
+  // happen to be loaded), so a row's band colour never flips as data streams in.
+  const curatedRows: {
+    key: string;
+    label: string;
+    title: string;
+    heroes: Hero[];
+    route?: Href;
+  }[] = [
+    { key: 'iconic', label: 'By Appearances', title: 'Most Iconic', heroes: iconic, route: '/category/most-iconic' },
+    { key: 'villains', label: 'The Dark Side', title: 'Villains', heroes: villains, route: '/category/villain' },
+    { key: 'marvel', label: 'Marvel Comics', title: 'Marvel Universe', heroes: marvel, route: '/category/marvel' },
+    { key: 'dc', label: 'DC Comics', title: 'DC Universe', heroes: dc, route: '/category/dc' },
+    { key: 'anti', label: 'Neither Good Nor Evil', title: 'Anti-Heroes', heroes: antiHeroes, route: '/category/anti-heroes' },
+    { key: 'strongest', label: 'By Power Stats', title: 'Strongest Heroes', heroes: strongest, route: '/category/strongest' },
+    { key: 'xmen', label: 'Gifted Youngsters', title: 'X-Men', heroes: xmen, route: '/category/xmen' },
+    { key: 'minds', label: 'By Power Stats', title: 'Brightest Minds', heroes: mostIntelligent, route: '/category/most-intelligent' },
+    { key: 'new', label: 'New to the Encyclopedia', title: 'Recently Added', heroes: newlyAdded },
+  ];
 
   return (
     <View style={styles.root}>
@@ -169,77 +199,19 @@ export default function HomeScreen() {
             />
           )}
 
-          {popular.length > 0 && (
-            <HomeHeroRow
-              title="Popular"
-              heroes={popular.map(toRowHero)}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/popular')}
-              disabled={navigating}
-            />
-          )}
-          {villains.length > 0 && (
-            <HomeHeroRow
-              title="Villains"
-              heroes={villains.map(toRowHero)}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/villain')}
-              disabled={navigating}
-            />
-          )}
-          {xmen.length > 0 && (
-            <HomeHeroRow
-              title="X-Men"
-              heroes={xmen.map(toRowHero)}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/xmen')}
-              disabled={navigating}
-            />
-          )}
-          {antiHeroes.length > 0 && (
-            <HomeHeroRow
-              title="Anti-Heroes"
-              heroes={antiHeroes.map(toRowHero)}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/anti-heroes')}
-              disabled={navigating}
-            />
-          )}
-          {marvel.length > 0 && (
-            <HomeHeroRow
-              title="Marvel Universe"
-              heroes={marvel.map(toRowHero)}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/marvel')}
-              disabled={navigating}
-            />
-          )}
-          {dc.length > 0 && (
-            <HomeHeroRow
-              title="DC Universe"
-              heroes={dc.map(toRowHero)}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/dc')}
-              disabled={navigating}
-            />
-          )}
-          {strongest.length > 0 && (
-            <HomeHeroRow
-              title="Strongest Heroes"
-              heroes={strongest.map(toRowHero)}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/strongest')}
-              disabled={navigating}
-            />
-          )}
-          {mostIntelligent.length > 0 && (
-            <HomeHeroRow
-              title="Most Intelligent"
-              heroes={mostIntelligent.map(toRowHero)}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/most-intelligent')}
-              disabled={navigating}
-            />
+          {curatedRows.map((r, i) =>
+            r.heroes.length > 0 ? (
+              <HomeHeroRow
+                key={r.key}
+                label={r.label}
+                title={r.title}
+                tone={i % 2 === 1 ? 'dark' : 'light'}
+                heroes={r.heroes.map(toRowHero)}
+                onPress={handlePress}
+                onViewAll={r.route ? () => router.push(r.route!) : undefined}
+                disabled={navigating}
+              />
+            ) : null,
           )}
         </Animated.ScrollView>
       )}

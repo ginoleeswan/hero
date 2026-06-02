@@ -2,6 +2,7 @@
 import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
+import { COLORS } from '../../constants/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.6);
@@ -65,7 +66,11 @@ interface HomeSkeletonProps {
 export function HomeSkeleton({ insets }: HomeSkeletonProps) {
   return (
     <SkeletonProvider>
-      <ScrollView scrollEnabled={false} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        scrollEnabled={false}
+        showsVerticalScrollIndicator={false}
+        style={styles.scroll}
+      >
         <SpotlightSkeleton insetTop={insets.top} />
         <ThumbRowSkeleton />
         <PortraitRowSkeleton />
@@ -82,6 +87,7 @@ export function HomeSkeleton({ insets }: HomeSkeletonProps) {
 }
 
 const styles = StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: COLORS.beige },
   section: { paddingTop: 14, paddingBottom: 4 },
   sectionHeader: {
     paddingHorizontal: 15,
