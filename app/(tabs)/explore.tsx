@@ -1,6 +1,7 @@
 // app/(tabs)/explore.tsx — Home screen: spotlight + curated/personal carousels
 import { useEffect, useState, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, StatusBar } from 'react-native';
+import { View, StyleSheet, StatusBar } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -129,7 +130,8 @@ export default function HomeScreen() {
       {!initialLoaded ? (
         <HomeSkeleton insets={insets} />
       ) : (
-        <ScrollView
+        <Animated.ScrollView
+          entering={FadeIn.duration(280)}
           style={styles.scroll}
           showsVerticalScrollIndicator={false}
           contentInsetAdjustmentBehavior="never"
@@ -239,7 +241,7 @@ export default function HomeScreen() {
               disabled={navigating}
             />
           )}
-        </ScrollView>
+        </Animated.ScrollView>
       )}
 
       <SearchSheet

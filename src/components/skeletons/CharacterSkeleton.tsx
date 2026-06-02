@@ -29,22 +29,23 @@ function SummaryBlock() {
   );
 }
 
-function StatBarsSkeleton() {
+function StatDialsSkeleton() {
   return (
     <View style={styles.section}>
       <View style={styles.sectionTitleRow}>
         <Skeleton width="30%" height={18} borderRadius={6} style={styles.sectionTitleSkeleton} />
       </View>
       <View style={styles.sectionDivider} />
-      {Array.from({ length: 6 }).map((_, i) => (
-        <View key={i} style={styles.statBarRow}>
-          <View style={styles.statBarHeader}>
-            <Skeleton width={70} height={11} borderRadius={4} />
-            <Skeleton width={24} height={18} borderRadius={4} />
-          </View>
-          <Skeleton width="100%" height={8} borderRadius={4} style={styles.statBarTrack} />
+      <View style={styles.statsCard}>
+        <View style={styles.statsGrid}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <View key={i} style={styles.dialWrap}>
+              <Skeleton width={72} height={72} borderRadius={36} />
+              <Skeleton width={52} height={11} borderRadius={4} style={styles.dialLabel} />
+            </View>
+          ))}
         </View>
-      ))}
+      </View>
     </View>
   );
 }
@@ -72,7 +73,7 @@ export function CharacterSkeleton({ hideNameBlock = false }: { hideNameBlock?: b
       <View style={styles.container}>
         {!hideNameBlock && <NameBlock />}
         <SummaryBlock />
-        <StatBarsSkeleton />
+        <StatDialsSkeleton />
         <InfoSectionSkeleton rows={5} />
         <InfoSectionSkeleton rows={4} />
         <InfoSectionSkeleton rows={2} />
@@ -131,17 +132,28 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
-  // Stat bars (matches real StatBar layout)
-  statBarRow: {
-    marginBottom: 14,
+  // Stat dials (matches real circular-dial statsCard layout)
+  statsCard: {
+    backgroundColor: 'rgba(41,60,67,0.05)',
+    borderRadius: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 4,
   },
-  statBarHeader: {
+  statsGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    marginBottom: 6,
   },
-  statBarTrack: {},
+  dialWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 6,
+    marginVertical: 6,
+  },
+  dialLabel: {
+    marginTop: 8,
+  },
 
   // Info rows
   infoRow: {

@@ -1,12 +1,15 @@
 // src/components/home/HomeHeroRow.tsx
 import { View, Text, FlatList, StyleSheet, Dimensions, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { Link } from 'expo-router';
-import { HeroCard } from '../HeroCard';
+import { HeroCard, HERO_CARD_RADIUS } from '../HeroCard';
 import { ThumbCard, type ThumbHero } from './ThumbCard';
+import { heroImageSource } from '../../constants/heroImages';
 import { COLORS } from '../../constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PORTRAIT_CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.6);
+const PORTRAIT_CARD_HEIGHT = 300;
 
 export interface RowHero extends ThumbHero {}
 
@@ -64,15 +67,31 @@ export function HomeHeroRow({
               }}
               asChild
             >
-              <Pressable style={{ width: PORTRAIT_CARD_WIDTH }}>
+              {/* Shadow + sizing live here, OUTSIDE Link.AppleZoom, so the
+                  zoom snapshot is just the rounded card — no shadow box bleeds
+                  into the transition on the way back. */}
+              <Pressable style={styles.cardSlot}>
+                {/* Static portrait behind the zoom card. Fully covered by the
+                    live card at rest; only revealed in the brief moment iOS
+                    hides the live card during the zoom dismiss, so the detail
+                    screen contracts into the hero image — seamless, never an
+                    empty slot. */}
+                <Image
+                  source={heroImageSource(item.id, item.image_url, item.portrait_url)}
+                  contentFit="cover"
+                  style={styles.slotImage}
+                  cachePolicy="memory-disk"
+                  recyclingKey={`${item.id}-slot`}
+                  transition={null}
+                />
                 <Link.AppleZoom>
                   <HeroCard
                     id={item.id}
                     name={item.name}
                     imageUrl={item.image_url}
                     portraitUrl={item.portrait_url}
-                    onPress={() => {}}
-                    disabled={true}
+                    width={PORTRAIT_CARD_WIDTH}
+                    height={PORTRAIT_CARD_HEIGHT}
                   />
                 </Link.AppleZoom>
               </Pressable>
@@ -112,4 +131,22 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   listContent: { paddingHorizontal: 15, paddingBottom: 20 },
+  cardSlot: {
+    // No backgroundColor on purpose: this View sits OUTSIDE Link.AppleZoom and
+    // stays visible while the zoom briefly hides the live card, so an opaque
+    // fill here would flash as a solid box on the way back. boxShadow still
+    // renders fine on a transparent View (it follows the rounded border box).
+    width: PORTRAIT_CARD_WIDTH,
+    height: PORTRAIT_CARD_HEIGHT,
+    marginVertical: 8,
+    borderRadius: HERO_CARD_RADIUS,
+    borderCurve: 'continuous',
+    boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.3)',
+  },
+  slotImage: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: HERO_CARD_RADIUS,
+    borderCurve: 'continuous',
+    backgroundColor: COLORS.navy,
+  },
 });

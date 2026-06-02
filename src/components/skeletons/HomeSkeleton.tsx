@@ -45,7 +45,13 @@ function PortraitRowSkeleton() {
         contentContainerStyle={styles.portraitRow}
       >
         {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} width={CARD_WIDTH} height={CARD_HEIGHT} borderRadius={36} />
+          <Skeleton
+            key={i}
+            width={CARD_WIDTH}
+            height={CARD_HEIGHT}
+            borderRadius={64}
+            style={styles.portraitCard}
+          />
         ))}
       </ScrollView>
     </View>
@@ -95,5 +101,9 @@ const styles = StyleSheet.create({
   portraitRow: {
     paddingHorizontal: 15,
     gap: CARD_GAP,
+    paddingVertical: 8,
+  },
+  portraitCard: {
+    borderCurve: 'continuous',
   },
 });
