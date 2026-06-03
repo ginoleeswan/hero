@@ -8,7 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import * as Haptics from 'expo-haptics';
 import { fetchHeroStats, fetchHeroDetails } from '../../src/lib/api';
-import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
+import { heroRowToCharacterData } from '../../src/lib/db/heroes';
+import { useHeroRow } from '../../src/lib/query/heroQueries';
 import {
   isFavourited,
   addFavourite,
@@ -245,6 +246,9 @@ export default function CharacterScreen() {
   const [favLoading, setFavLoading] = useState(false);
   const [favCount, setFavCount] = useState<number>(0);
 
+  const heroRowQuery = useHeroRow(id);
+  const heroRow = heroRowQuery.data;
+
   const scrollY = useRef(new Animated.Value(0)).current;
   const compareScale = useRef(new Animated.Value(1)).current;
 
@@ -341,60 +345,73 @@ export default function CharacterScreen() {
         });
     };
 
-    // Try Supabase first — instant if hero is enriched
-    getHeroById(id)
-      .then((hero) => {
-        if (hero?.enriched_at) {
-          setData(heroRowToCharacterData(hero));
-          const needsComicVine =
-            !hero.comicvine_enriched_at ||
-            hero.powers === null ||
-            !hero.movies?.length ||
-            !hero.first_issue_id ||
-            !hero.first_issue_data;
-          const moviesIncomplete =
-            !needsComicVine &&
-            hero.movie_count != null &&
-            hero.movies != null &&
-            hero.movie_count > (hero.movies as unknown[]).length;
-          const moviesLackDetail =
-            !needsComicVine &&
-            !moviesIncomplete &&
-            hero.movies != null &&
-            (hero.movies as unknown[]).length > 0 &&
-            (
-              hero.movies as Array<{
-                deck?: string | null;
-                rating?: string | null;
-                runtime?: string | null;
-              }>
-            )
-              .slice(0, 5)
-              .every((m) => m.deck === null && m.rating === null && m.runtime === null);
-          setComicVineLoading(needsComicVine);
+    // Wait for the real row (ignore the instant placeholder used only for paint).
+    if (heroRowQuery.isPlaceholderData) return;
 
-          if (needsComicVine || moviesIncomplete || moviesLackDetail) {
-            fetchHeroDetails(hero.id, hero.name)
-              .then((details) => {
-                setData((prev) =>
-                  prev
-                    ? { ...prev, details, firstIssue: details.firstIssueData ?? prev.firstIssue }
-                    : prev,
-                );
-              })
-              .catch(() => {})
-              .finally(() => {
-                if (needsComicVine) setComicVineLoading(false);
-              });
-          }
-          return;
-        }
+    // Query settled with no row → hero not enriched, fall back to external APIs.
+    if (heroRowQuery.isError || (heroRowQuery.isSuccess && !heroRow)) {
+      loadFromApi();
+      return;
+    }
+    if (!heroRow) return;
 
-        // Hero not enriched yet — fall through to external APIs
-        loadFromApi();
-      })
-      .catch(loadFromApi);
-  }, [id]);
+    if (heroRow.enriched_at) {
+      setData(heroRowToCharacterData(heroRow));
+      const needsComicVine =
+        !heroRow.comicvine_enriched_at ||
+        heroRow.powers === null ||
+        !heroRow.movies?.length ||
+        !heroRow.first_issue_id ||
+        !heroRow.first_issue_data;
+      const moviesIncomplete =
+        !needsComicVine &&
+        heroRow.movie_count != null &&
+        heroRow.movies != null &&
+        heroRow.movie_count > (heroRow.movies as unknown[]).length;
+      const moviesLackDetail =
+        !needsComicVine &&
+        !moviesIncomplete &&
+        heroRow.movies != null &&
+        (heroRow.movies as unknown[]).length > 0 &&
+        (
+          heroRow.movies as Array<{
+            deck?: string | null;
+            rating?: string | null;
+            runtime?: string | null;
+          }>
+        )
+          .slice(0, 5)
+          .every((m) => m.deck === null && m.rating === null && m.runtime === null);
+      setComicVineLoading(needsComicVine);
+
+      if (needsComicVine || moviesIncomplete || moviesLackDetail) {
+        fetchHeroDetails(heroRow.id, heroRow.name)
+          .then((details) => {
+            setData((prev) =>
+              prev
+                ? { ...prev, details, firstIssue: details.firstIssueData ?? prev.firstIssue }
+                : prev,
+            );
+          })
+          .catch(() => {})
+          .finally(() => {
+            if (needsComicVine) setComicVineLoading(false);
+          });
+      }
+      return;
+    }
+
+    // Row exists but isn't enriched — use external APIs.
+    loadFromApi();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    id,
+    heroRow?.id,
+    heroRow?.enriched_at,
+    heroRowQuery.isPlaceholderData,
+    heroRowQuery.isError,
+    heroRowQuery.isSuccess,
+  ]);
 
   useEffect(() => {
     if (!user || !id) return;
@@ -435,13 +452,13 @@ export default function CharacterScreen() {
   const heroImage = id
     ? heroImageSource(
         id,
-        data?.stats.image.url ?? null,
-        data?.stats.image.portraitUrl ?? paramImageUri ?? null,
+        data?.stats.image.url ?? heroRow?.image_url ?? null,
+        data?.stats.image.portraitUrl ?? heroRow?.portrait_url ?? paramImageUri ?? null,
       )
     : null;
 
   // Show name immediately from params while API loads
-  const displayName = data?.stats.name ?? paramName ?? '';
+  const displayName = data?.stats.name ?? heroRow?.name ?? paramName ?? '';
 
   if (error) {
     return (
