@@ -28,7 +28,12 @@ import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import type { CharacterData } from '../../src/types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const HERO_IMAGE_HEIGHT = Math.round(SCREEN_HEIGHT * 0.6);
+const HERO_IMAGE_HEIGHT = Math.round(SCREEN_HEIGHT * 0.64);
+// Fraction of the image where the fade reaches solid beige. The content block
+// starts here, so the gradient and the text stay in sync on any screen size and
+// the portrait is shown almost fully before it dissolves (no cut-off jaw).
+const FADE_FULL = 0.82;
+const CONTENT_TOP = Math.round(HERO_IMAGE_HEIGHT * FADE_FULL);
 
 const STAT_CONFIG: { key: string; label: string; tint: string }[] = [
   { key: 'intelligence', label: 'Intelligence', tint: COLORS.blue },
@@ -269,7 +274,7 @@ export default function CharacterScreen() {
   // Header name slides up + snaps in from large scale as the content name scrolls behind the header.
   // Content name scrolls naturally — the header clips it. No content-side transforms needed.
   const HEADER_H = 100; // approx status bar + nav bar height
-  const NAME_TOP = HERO_IMAGE_HEIGHT - 60; // content paddingTop = where name starts
+  const NAME_TOP = CONTENT_TOP + 24; // name sits just below the eyebrow at content top
   const NAME_IN = NAME_TOP - HEADER_H - 30; // name approaching header bottom
   const NAME_OUT = NAME_TOP - HEADER_H + 20; // name fully behind header
 
@@ -478,7 +483,7 @@ export default function CharacterScreen() {
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={styles.headerBtn}
             >
-              <Ionicons name="arrow-back" size={22} />
+              <Ionicons name="arrow-back" size={22} color={COLORS.beige} />
             </TouchableOpacity>
           ),
           headerRight: user
@@ -492,7 +497,7 @@ export default function CharacterScreen() {
                   <Ionicons
                     name={favourited ? 'heart' : 'heart-outline'}
                     size={20}
-                    color={favourited ? COLORS.red : undefined}
+                    color={favourited ? COLORS.red : COLORS.beige}
                   />
                   {favCount > 0 ? (
                     <Text style={styles.favCount}>
@@ -527,21 +532,20 @@ export default function CharacterScreen() {
           }
         />
         <LinearGradient
-          // Clear over the top ~42% (the face), then a smooth but decisive ramp
-          // to solid beige by ~72% — just above where the name block starts — so
-          // the name, badges, and meta sit on a clean canvas instead of bleeding
-          // the image behind them.
+          // Clear over the top ~58% (keeps the full face/portrait visible), then
+          // a soft ramp to solid beige by FADE_FULL — the portrait dissolves
+          // gently into the canvas instead of being cut at the jaw, while the
+          // content block (which starts at CONTENT_TOP) still sits on clean beige.
           colors={[
             'transparent',
             'transparent',
-            'rgba(245,235,220,0.25)',
-            'rgba(245,235,220,0.6)',
-            'rgba(245,235,220,0.86)',
+            'rgba(245,235,220,0.2)',
+            'rgba(245,235,220,0.55)',
+            'rgba(245,235,220,0.85)',
             'rgba(245,235,220,0.98)',
             COLORS.beige,
-            COLORS.beige,
           ]}
-          locations={[0, 0.42, 0.54, 0.62, 0.68, 0.72, 0.76, 1]}
+          locations={[0, 0.58, 0.66, 0.72, 0.78, 0.81, FADE_FULL]}
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>
@@ -549,7 +553,7 @@ export default function CharacterScreen() {
       <Animated.ScrollView
         style={styles.scroll}
         contentContainerStyle={{
-          paddingTop: HERO_IMAGE_HEIGHT - 140,
+          paddingTop: CONTENT_TOP,
           paddingBottom: insets.bottom + 96,
         }}
         showsVerticalScrollIndicator={false}
@@ -558,27 +562,45 @@ export default function CharacterScreen() {
           useNativeDriver: true,
         })}
       >
-        {/* Name block — renders immediately from params, detail row fills in when API responds */}
+        {/* Identity block — name renders immediately from params; eyebrow, alias,
+            chips and meta fill in when data arrives. Space is reserved while
+            loading so the name never jumps (no layout shift). */}
         {displayName ? (
           <View style={styles.nameBlock}>
-            <Text style={styles.heroName}>{displayName}</Text>
             {data ? (
-              <View style={styles.nameRow}>
-                {data.stats.biography['full-name'] ? (
-                  <Text style={styles.heroAlias}>{data.stats.biography['full-name']}</Text>
+              data.stats.biography.publisher ? (
+                <Text style={styles.eyebrow} numberOfLines={1}>
+                  {data.stats.biography.publisher}
+                </Text>
+              ) : null
+            ) : (
+              <Skeleton width={120} height={11} borderRadius={4} style={styles.eyebrowSkel} />
+            )}
+
+            <Text style={styles.heroName}>{displayName}</Text>
+
+            {data ? (
+              <View style={styles.identityRow}>
+                <Text style={styles.heroAlias} numberOfLines={1}>
+                  {data.stats.biography['full-name'] ?? ''}
+                </Text>
+                {data.stats.biography.alignment || data.details.origin ? (
+                  <View style={styles.chipRow}>
+                    <AlignmentBadge alignment={data.stats.biography.alignment} />
+                    <OriginBadge origin={data.details.origin} />
+                  </View>
                 ) : null}
-                <View style={styles.nameRowRight}>
-                  <AlignmentBadge alignment={data.stats.biography.alignment} />
-                  <OriginBadge origin={data.details.origin} />
-                  <Text style={styles.heroPublisher}>{data.stats.biography.publisher}</Text>
-                </View>
               </View>
             ) : (
-              <View style={styles.nameRow}>
-                <Skeleton width="40%" height={14} borderRadius={6} />
-                <Skeleton width={50} height={30} borderRadius={4} />
+              <View style={styles.identityRow}>
+                <Skeleton width={120} height={15} borderRadius={6} />
+                <View style={styles.chipRow}>
+                  <Skeleton width={54} height={24} borderRadius={12} />
+                  <Skeleton width={64} height={24} borderRadius={12} />
+                </View>
               </View>
             )}
+
             {data && comicVineLoading ? (
               <SkeletonProvider>
                 <View style={styles.heroMeta}>
@@ -602,7 +624,8 @@ export default function CharacterScreen() {
                 ) : null}
               </View>
             ) : null}
-            <View style={styles.nameDivider} />
+
+            <View style={styles.accentRule} />
           </View>
         ) : null}
 
@@ -824,16 +847,20 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   heroImage: { width: '100%', height: '100%' },
+  // Scrim chip so the control reads on any hero image (no blur dep needed).
   headerBtn: {
     width: 36,
-    minHeight: 36,
+    height: 36,
+    borderRadius: 18,
+    borderCurve: 'continuous',
+    backgroundColor: 'rgba(41,60,67,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   favCount: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 9,
-    color: COLORS.grey,
+    color: 'rgba(245,235,220,0.85)',
     textAlign: 'center',
     lineHeight: 10,
   },
@@ -844,37 +871,43 @@ const styles = StyleSheet.create({
   },
   scroll: { flex: 1 },
 
-  // Name block
+  // Identity block — single display face (Flame), 8pt vertical rhythm
   nameBlock: { paddingHorizontal: 20, paddingBottom: 4 },
-  heroName: {
-    fontFamily: 'Righteous_400Regular',
-    fontSize: 35,
-    color: COLORS.navy,
+  eyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: COLORS.orange,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginBottom: 8,
   },
-  nameRow: {
+  eyebrowSkel: { marginBottom: 8 },
+  heroName: {
+    fontFamily: 'Flame-Bold',
+    fontSize: 34,
+    color: COLORS.navy,
+    lineHeight: 38,
+  },
+  // Identity row spans the full width: alias on the left, taxonomy chips pushed
+  // to the right so the metadata uses the whole measure instead of hugging left.
+  identityRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 2,
+    marginTop: 10,
+    gap: 12,
   },
   heroAlias: {
-    fontFamily: 'Flame-Regular',
+    fontFamily: 'FlameSans-Regular',
     fontSize: 15,
     color: COLORS.navy,
-    flex: 1,
-    marginRight: 8,
+    flexShrink: 1,
   },
-  heroPublisher: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 12,
-    color: COLORS.orange,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  nameRowRight: {
+  chipRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
+    flexShrink: 0,
   },
   alignmentBadge: {
     paddingHorizontal: 10,
@@ -889,16 +922,23 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  nameDivider: { height: 2, backgroundColor: COLORS.navy, borderRadius: 30, marginTop: 10 },
   heroMeta: {
-    marginTop: 6,
-    gap: 2,
+    marginTop: 12,
+    gap: 3,
   },
   heroMetaText: {
+    // Solid muted token (≈5.5:1 on beige) — passes WCAG AA, unlike faded navy.
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
-    color: COLORS.navy,
-    opacity: 0.55,
+    color: '#54606A',
+  },
+  // Short orange accent rule replaces the heavy full-width divider (editorial).
+  accentRule: {
+    width: 44,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: COLORS.orange,
+    marginTop: 20,
   },
 
   // Summary
@@ -926,7 +966,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     paddingVertical: 5,
   },
-  divider: { height: 2, backgroundColor: COLORS.navy, borderRadius: 30, marginBottom: 16 },
+  divider: { height: 1, backgroundColor: COLORS.navy, borderRadius: 30, marginBottom: 16 },
 
   // Circular stat dials
   statsCard: {
