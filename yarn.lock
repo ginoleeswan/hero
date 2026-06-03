@@ -3551,6 +3551,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tanstack/query-core@npm:5.101.0":
+  version: 5.101.0
+  resolution: "@tanstack/query-core@npm:5.101.0"
+  checksum: 10c0/e3aacbb762887214b71d8f959930644594e2321b0cdca8eac098f894cbb75d1e32d45dc34a4b818fb8c68b344398905cf30f17c69cd87283adf73e64457e9320
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-query@npm:^5.101.0":
+  version: 5.101.0
+  resolution: "@tanstack/react-query@npm:5.101.0"
+  dependencies:
+    "@tanstack/query-core": "npm:5.101.0"
+  peerDependencies:
+    react: ^18 || ^19
+  checksum: 10c0/a86add4402c23e26cf4a8c7dade5b0198a7abfb51720b91e83cfe5db8b5ed89acb027b3d5b67882098d0c83cf50099175f8310a41fd5c4b55f6c343779c3dfb6
+  languageName: node
+  linkType: hard
+
 "@testing-library/jest-native@npm:^5.4.3":
   version: 5.4.3
   resolution: "@testing-library/jest-native@npm:5.4.3"
@@ -8688,6 +8706,7 @@ __metadata:
     "@react-native-google-signin/google-signin": "npm:^16.1.2"
     "@react-native-masked-view/masked-view": "npm:^0.3.2"
     "@supabase/supabase-js": "npm:^2.101.1"
+    "@tanstack/react-query": "npm:^5.101.0"
     "@testing-library/jest-native": "npm:^5.4.3"
     "@testing-library/react-native": "npm:^13.3.3"
     "@types/jest": "npm:29.5.14"
