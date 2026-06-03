@@ -1,5 +1,5 @@
 // app/category/[slug].tsx — Category full-list: featured banner + search + sort/filter + infinite scroll
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,14 +19,20 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
-  getCategoryPage,
   CATEGORY_LABELS,
   type CategorySlug,
   type Hero,
   type SortOption,
   type CategoryPublisher,
 } from '../../src/lib/db/heroes';
-import { DEFAULT_FILTERS } from '../../src/lib/db/categoryFilters';
+import { DEFAULT_FILTERS, type CategoryFilters } from '../../src/lib/db/categoryFilters';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  useCategoryHeroes,
+  useFeaturedHero,
+  prefetchHeroRow,
+} from '../../src/lib/query/heroQueries';
+import { flattenCategoryPages } from '../../src/lib/query/heroCache';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
 import { CategorySkeleton } from '../../src/components/skeletons/CategorySkeleton';
@@ -42,7 +48,6 @@ const VALID_SLUGS = new Set<CategorySlug>([
   'most-intelligent',
   'most-iconic',
 ]);
-const PAGE_SIZE = 30;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const NUM_COLUMNS = SCREEN_WIDTH >= 768 ? 4 : 3;
 const PADDING = 12;
@@ -197,124 +202,52 @@ export default function CategoryScreen() {
   const [sort, setSort] = useState<SortOption>('popular');
   const [publisher, setPublisher] = useState<CategoryPublisher>('all');
   const [search, setSearch] = useState('');
-  const [heroes, setHeroes] = useState<Hero[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [navigating, setNavigating] = useState(false);
-  const [featuredHero, setFeaturedHero] = useState<Hero | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
 
-  const currentPage = useRef(0);
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const hasMore = useRef(true);
+  const queryClient = useQueryClient();
 
-  // Fetch a page, optionally appending
-  const fetchPage = useCallback(
-    async (
-      page: number,
-      opts: { sort: SortOption; publisher: CategoryPublisher; search: string },
-      append = false,
-    ) => {
-      if (!categorySlug) return;
-      if (page === 0) setLoading(true);
-      else setLoadingMore(true);
-      try {
-        const result = await getCategoryPage(categorySlug, {
-          page,
-          pageSize: PAGE_SIZE,
-          ...DEFAULT_FILTERS,
-          ...opts,
-        });
-        setHeroes((prev) => {
-          if (!append) return result.heroes;
-          const seen = new Set(prev.map((h) => h.id));
-          return [...prev, ...result.heroes.filter((h) => !seen.has(h.id))];
-        });
-        setTotal(result.total);
-        currentPage.current = page;
-        hasMore.current = (page + 1) * PAGE_SIZE < result.total;
-      } catch {
-        // silently fail — stale data is better than a crash
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-      }
-    },
-    [categorySlug],
-  );
-
-  // Fetch featured hero (top by popularity, respects publisher filter)
-  const fetchFeatured = useCallback(
-    async (pub: CategoryPublisher) => {
-      if (!categorySlug) return;
-      try {
-        const result = await getCategoryPage(categorySlug, {
-          page: 0,
-          pageSize: 1,
-          ...DEFAULT_FILTERS,
-          sort: 'popular',
-          publisher: pub,
-          search: '',
-        });
-        setFeaturedHero(result.heroes[0] ?? null);
-      } catch {
-        setFeaturedHero(null);
-      }
-    },
-    [categorySlug],
-  );
-
-  // Initial load
+  // Debounce the search box into the query key so we don't refetch per keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   useEffect(() => {
-    fetchPage(0, { sort, publisher, search });
-    fetchFeatured(publisher);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  const handleSortChange = useCallback(
-    (s: SortOption) => {
-      setSort(s);
-      fetchPage(0, { sort: s, publisher, search });
-    },
-    [fetchPage, publisher, search],
+  const filters: CategoryFilters = useMemo(
+    () => ({ ...DEFAULT_FILTERS, sort, publisher, search: debouncedSearch }),
+    [sort, publisher, debouncedSearch],
   );
 
-  const handlePublisherChange = useCallback(
-    (p: CategoryPublisher) => {
-      setPublisher(p);
-      fetchPage(0, { sort, publisher: p, search });
-      fetchFeatured(p);
-    },
-    [fetchPage, fetchFeatured, sort, search],
-  );
+  const categoryQuery = useCategoryHeroes(categorySlug, filters);
+  const featuredQuery = useFeaturedHero(categorySlug, publisher);
 
-  const handleSearchChange = useCallback(
-    (text: string) => {
-      setSearch(text);
-      clearTimeout(searchTimer.current);
-      searchTimer.current = setTimeout(() => {
-        fetchPage(0, { sort, publisher, search: text });
-      }, 300);
-    },
-    [fetchPage, sort, publisher],
-  );
+  const heroes = flattenCategoryPages(categoryQuery.data);
+  const total = categoryQuery.data?.pages[0]?.total ?? 0;
+  const loading = categoryQuery.isPending;
+  const loadingMore = categoryQuery.isFetchingNextPage;
+  const featuredHero = featuredQuery.data ?? null;
 
+  const handleSortChange = useCallback((s: SortOption) => setSort(s), []);
+  const handlePublisherChange = useCallback((p: CategoryPublisher) => setPublisher(p), []);
+  const handleSearchChange = useCallback((text: string) => setSearch(text), []);
   const handleEndReached = useCallback(() => {
-    if (!hasMore.current || loadingMore || loading) return;
-    fetchPage(currentPage.current + 1, { sort, publisher, search }, true);
-  }, [loadingMore, loading, fetchPage, sort, publisher, search]);
+    if (categoryQuery.hasNextPage && !categoryQuery.isFetchingNextPage) {
+      categoryQuery.fetchNextPage();
+    }
+  }, [categoryQuery]);
 
   const handleHeroPress = useCallback(
     (id: string) => {
       if (navigating) return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      prefetchHeroRow(queryClient, id);
       setNavigating(true);
       router.push(`/character/${id}`);
       setTimeout(() => setNavigating(false), 1000);
     },
-    [router, navigating],
+    [router, navigating, queryClient],
   );
 
   const countLabel = (() => {
