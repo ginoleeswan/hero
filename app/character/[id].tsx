@@ -904,7 +904,7 @@ const styles = StyleSheet.create({
   },
   eyebrowSkel: { marginBottom: 8 },
   heroName: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 34,
     color: COLORS.navy,
     lineHeight: 38,
