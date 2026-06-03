@@ -28,12 +28,11 @@ import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import type { CharacterData } from '../../src/types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const HERO_IMAGE_HEIGHT = Math.round(SCREEN_HEIGHT * 0.64);
-// Fraction of the image where the fade reaches solid beige. The content block
-// starts here, so the gradient and the text stay in sync on any screen size and
-// the portrait is shown almost fully before it dissolves (no cut-off jaw).
-const FADE_FULL = 0.82;
-const CONTENT_TOP = Math.round(HERO_IMAGE_HEIGHT * FADE_FULL);
+const HERO_IMAGE_HEIGHT = Math.round(SCREEN_HEIGHT * 0.62);
+// The name block overlaps the faded tail of the portrait (immersive), like the
+// original design — it sits ~60px above the image bottom, where the gradient is
+// ~80% beige, so a faint ghost of the art reads behind the name.
+const CONTENT_TOP = HERO_IMAGE_HEIGHT - 60;
 
 const STAT_CONFIG: { key: string; label: string; tint: string }[] = [
   { key: 'intelligence', label: 'Intelligence', tint: COLORS.blue },
@@ -235,7 +234,7 @@ export default function CharacterScreen() {
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const compareStripStyle = [styles.compareStrip, { paddingBottom: insets.bottom || 12 }];
+  const compareStripStyle = [styles.compareStrip, { paddingBottom: insets.bottom || 16 }];
   const { user } = useAuth();
   useRecordView(user?.id, id);
   const [data, setData] = useState<CharacterData | null>(null);
@@ -247,6 +246,16 @@ export default function CharacterScreen() {
   const [favCount, setFavCount] = useState<number>(0);
 
   const scrollY = useRef(new Animated.Value(0)).current;
+  const compareScale = useRef(new Animated.Value(1)).current;
+
+  const springCompare = (toValue: number) =>
+    Animated.spring(compareScale, {
+      toValue,
+      stiffness: 260,
+      damping: 18,
+      mass: 0.6,
+      useNativeDriver: true,
+    }).start();
 
   // Parallax: image drifts up at ~0.3x scroll speed as content covers it
   // Overscroll zoom: when scrollY < 0, translateY tracks half the overscroll
@@ -460,7 +469,11 @@ export default function CharacterScreen() {
           headerShown: true,
           headerTransparent: true,
           headerShadowVisible: false,
-          headerBackTitle: '',
+          // Chevron only — without this iOS labels the back button with the
+          // previous route's name ("(tabs)").
+          headerBackButtonDisplayMode: 'minimal',
+          // Native back button, tinted to match the brand instead of a custom chip.
+          headerTintColor: COLORS.orange,
           headerStyle: { backgroundColor: 'transparent' },
           headerTitleAlign: 'center',
           headerTitle: () => (
@@ -476,15 +489,6 @@ export default function CharacterScreen() {
             >
               {displayName}
             </Animated.Text>
-          ),
-          headerLeft: () => (
-            <TouchableOpacity
-              onPress={() => router.back()}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={styles.headerBtn}
-            >
-              <Ionicons name="arrow-back" size={22} color={COLORS.beige} />
-            </TouchableOpacity>
           ),
           headerRight: user
             ? () => (
@@ -532,20 +536,12 @@ export default function CharacterScreen() {
           }
         />
         <LinearGradient
-          // Clear over the top ~58% (keeps the full face/portrait visible), then
-          // a soft ramp to solid beige by FADE_FULL — the portrait dissolves
-          // gently into the canvas instead of being cut at the jaw, while the
-          // content block (which starts at CONTENT_TOP) still sits on clean beige.
-          colors={[
-            'transparent',
-            'transparent',
-            'rgba(245,235,220,0.2)',
-            'rgba(245,235,220,0.55)',
-            'rgba(245,235,220,0.85)',
-            'rgba(245,235,220,0.98)',
-            COLORS.beige,
-          ]}
-          locations={[0, 0.58, 0.66, 0.72, 0.78, 0.81, FADE_FULL]}
+          // Gentle 3-stop fade (the original, well-liked treatment): the portrait
+          // stays fully visible through the top ~45%, then eases into beige by the
+          // image's bottom edge. The name overlaps the faded tail for an immersive
+          // header rather than sitting on a hard, fully-solid beige cut.
+          colors={['transparent', 'rgba(245,235,220,0.6)', COLORS.beige]}
+          locations={[0.45, 0.75, 1]}
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>
@@ -817,18 +813,22 @@ export default function CharacterScreen() {
         <FirstIssueModal firstIssue={data.firstIssue} onClose={() => setShowIssueModal(false)} />
       ) : null}
 
-      {/* Compare strip — fixed above safe-area bottom */}
+      {/* Floating Compare pill — hovers above the safe area; content scrolls
+          under it (box-none lets touches pass through the transparent margins). */}
       {data && (
-        <View style={compareStripStyle}>
+        <View style={compareStripStyle} pointerEvents="box-none">
           <TouchableOpacity
             onPress={() =>
               router.push(`/compare/${id}/pick?name=${encodeURIComponent(data.stats.name)}`)
             }
-            activeOpacity={0.85}
-            style={styles.compareStripBtn}
+            onPressIn={() => springCompare(0.96)}
+            onPressOut={() => springCompare(1)}
+            activeOpacity={1}
           >
-            <Ionicons name="git-compare-outline" size={18} color={COLORS.beige} />
-            <Text style={styles.compareStripText}>Compare {data.stats.name}</Text>
+            <Animated.View style={[styles.compareBtn, { transform: [{ scale: compareScale }] }]}>
+              <Ionicons name="swap-horizontal" size={20} color="#fff" />
+              <Text style={styles.compareBtnText}>Compare {data.stats.name}</Text>
+            </Animated.View>
           </TouchableOpacity>
         </View>
       )}
@@ -1127,29 +1127,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
 
-  // Compare strip
+  // Floating Compare pill — transparent container, no slab, so the beige page
+  // reads to the bottom edge and the pill simply hovers over it.
   compareStrip: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: COLORS.navy,
     paddingTop: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
-  compareStripBtn: {
+  compareBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: 'rgba(245,235,220,0.08)',
-    borderRadius: 10,
-    paddingVertical: 14,
+    // Deeper "burnt" orange (≈4.6:1 with white) — passes WCAG AA, unlike the
+    // lighter brand orange which was ~3:1 against white.
+    backgroundColor: '#C2551B',
+    borderRadius: 30,
+    borderCurve: 'continuous',
+    paddingVertical: 16,
+    boxShadow: '0px 8px 20px rgba(41,60,67,0.28)',
   },
-  compareStripText: {
+  compareBtnText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 14,
-    color: COLORS.beige,
+    fontSize: 15,
+    color: '#fff',
     letterSpacing: 0.3,
   },
 });
