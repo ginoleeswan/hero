@@ -29,6 +29,7 @@ import {
 import { DEFAULT_FILTERS } from '../../src/lib/db/categoryFilters';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
+import { CategorySkeleton } from '../../src/components/skeletons/CategorySkeleton';
 
 const VALID_SLUGS = new Set<CategorySlug>([
   'popular',
@@ -407,9 +408,7 @@ export default function CategoryScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.orange} />
-        </View>
+        <CategorySkeleton />
       ) : (
         <FlatList
           data={heroes}
