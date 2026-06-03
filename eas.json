@@ -51,13 +51,13 @@
     "production": {
       "ios": {
         "appleId": "ginoswan21@gmail.com",
-        "ascAppId": "YOUR_ASC_APP_ID"
+        "ascAppId": "6776392802"
       }
     },
     "preview": {
       "ios": {
         "appleId": "ginoswan21@gmail.com",
-        "ascAppId": "YOUR_ASC_APP_ID"
+        "ascAppId": "6776392802"
       }
     }
   }
