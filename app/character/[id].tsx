@@ -96,7 +96,7 @@ function AlignmentBadge({ alignment }: { alignment: string | null | undefined })
   const config = ALIGNMENT_CONFIG[alignment.toLowerCase().trim()];
   if (!config) return null;
   return (
-    <View style={[styles.alignmentBadge, { backgroundColor: config.bg }]}>
+    <View style={[styles.alignmentBadge, { backgroundColor: config.bg, borderColor: config.color }]}>
       <Text style={[styles.alignmentBadgeText, { color: config.color }]}>{config.label}</Text>
     </View>
   );
@@ -119,7 +119,7 @@ function OriginBadge({ origin }: { origin: string | null | undefined }) {
   const config = ORIGIN_CONFIG[origin.toLowerCase().trim()];
   if (!config) return null;
   return (
-    <View style={[styles.alignmentBadge, { backgroundColor: config.bg }]}>
+    <View style={[styles.alignmentBadge, { backgroundColor: config.bg, borderColor: config.color }]}>
       <Text style={[styles.alignmentBadgeText, { color: config.color }]}>{config.label}</Text>
     </View>
   );
@@ -527,18 +527,21 @@ export default function CharacterScreen() {
           }
         />
         <LinearGradient
+          // Clear over the top ~42% (the face), then a smooth but decisive ramp
+          // to solid beige by ~72% — just above where the name block starts — so
+          // the name, badges, and meta sit on a clean canvas instead of bleeding
+          // the image behind them.
           colors={[
             'transparent',
-            'rgba(245,235,220,0.03)',
-            'rgba(245,235,220,0.08)',
-            'rgba(245,235,220,0.18)',
-            'rgba(245,235,220,0.32)',
-            'rgba(245,235,220,0.52)',
-            'rgba(245,235,220,0.72)',
-            'rgba(245,235,220,0.9)',
+            'transparent',
+            'rgba(245,235,220,0.25)',
+            'rgba(245,235,220,0.6)',
+            'rgba(245,235,220,0.86)',
+            'rgba(245,235,220,0.98)',
+            COLORS.beige,
             COLORS.beige,
           ]}
-          locations={[0.2, 0.35, 0.48, 0.58, 0.68, 0.78, 0.88, 0.95, 1]}
+          locations={[0, 0.42, 0.54, 0.62, 0.68, 0.72, 0.76, 1]}
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>
@@ -546,7 +549,7 @@ export default function CharacterScreen() {
       <Animated.ScrollView
         style={styles.scroll}
         contentContainerStyle={{
-          paddingTop: HERO_IMAGE_HEIGHT - 160,
+          paddingTop: HERO_IMAGE_HEIGHT - 140,
           paddingBottom: insets.bottom + 96,
         }}
         showsVerticalScrollIndicator={false}
@@ -877,6 +880,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 20,
+    borderWidth: 1,
   },
   alignmentBadgeText: {
     fontFamily: 'FlameSans-Regular',
@@ -894,7 +898,7 @@ const styles = StyleSheet.create({
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
     color: COLORS.navy,
-    opacity: 0.5,
+    opacity: 0.55,
   },
 
   // Summary
