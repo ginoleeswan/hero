@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Polygon, Path } from 'react-native-svg';
+import Svg, { Polygon } from 'react-native-svg';
 
 interface VsBadgeProps {
   size?: number;
@@ -21,8 +21,6 @@ export function VsBadge({ size = 80 }: VsBadgeProps) {
     return `${cx + radius * Math.cos(angle)},${cy + radius * Math.sin(angle)}`;
   }).join(' ');
 
-  const minibolt = 'M 7 0 L 4 8 L 8 8 L 3 16 L 5 16 L 1 24 L 3 24 L 7 16 L 5 16 L 10 8 L 6 8 Z';
-
   return (
     <View style={[styles.container, { width: size + 40, height: size + 40 }]}>
       <View style={styles.burst}>
@@ -36,21 +34,6 @@ export function VsBadge({ size = 80 }: VsBadgeProps) {
         </View>
       </View>
 
-      <View style={[styles.decoration, styles.decoTopLeft]}>
-        <Svg width={12} height={20} viewBox="0 0 12 24">
-          <Path d={minibolt} fill="#f5a623" stroke="#1a1a1a" strokeWidth={1} />
-        </Svg>
-      </View>
-      <View style={[styles.decoration, styles.decoBottomRight]}>
-        <Svg width={10} height={16} viewBox="0 0 12 24">
-          <Path d={minibolt} fill="#f5a623" stroke="#1a1a1a" strokeWidth={1} />
-        </Svg>
-      </View>
-
-      <Text style={[styles.star, styles.starTR]}>★</Text>
-      <Text style={[styles.star, styles.starBL]}>★</Text>
-      <Text style={[styles.star, styles.starTL]}>✦</Text>
-      <Text style={[styles.star, styles.starBR]}>✦</Text>
     </View>
   );
 }
@@ -78,22 +61,7 @@ const styles = StyleSheet.create({
   vsText: {
     fontFamily: 'Flame-Regular',
     fontSize: 26,
-    color: 'white',
-    textShadowColor: '#1a1a1a',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 0,
+    color: '#1a1a1a',
     letterSpacing: 2,
   },
-  decoration: { position: 'absolute' },
-  decoTopLeft: { top: 4, left: 4 },
-  decoBottomRight: { bottom: 4, right: 4 },
-  star: {
-    position: 'absolute',
-    fontSize: 10,
-    color: '#f5a623',
-  },
-  starTR: { top: 6, right: 10 },
-  starBL: { bottom: 6, left: 10 },
-  starTL: { top: 14, left: 6 },
-  starBR: { bottom: 14, right: 6 },
 });

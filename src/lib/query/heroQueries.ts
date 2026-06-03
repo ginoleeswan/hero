@@ -11,6 +11,7 @@ import {
   type CategoryPublisher,
 } from '../db/heroes';
 import { DEFAULT_FILTERS, type CategoryFilters } from '../db/categoryFilters';
+import { generateVerdict, type VerdictInput } from '../api';
 import { queryKeys } from './keys';
 import { findCachedHero } from './heroCache';
 
@@ -70,5 +71,21 @@ export function prefetchHeroRow(client: QueryClient, id: string) {
   return client.prefetchQuery({
     queryKey: queryKeys.heroDetail(id),
     queryFn: () => getHeroById(id),
+  });
+}
+
+/** AI battle verdict for a matchup. Cached forever per ordered hero pair so the
+ *  edge function is only invoked once — revisiting a matchup reuses the text. */
+export function useVerdict(
+  heroId: string,
+  opponentId: string,
+  input: VerdictInput | null,
+) {
+  return useQuery({
+    queryKey: queryKeys.verdict(heroId, opponentId),
+    enabled: !!input,
+    queryFn: () => generateVerdict(input!),
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 }

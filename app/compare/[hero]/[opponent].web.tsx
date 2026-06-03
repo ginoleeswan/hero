@@ -69,6 +69,17 @@ function StatBattleRow({ stat, isDesktop }: { stat: StatResult; isDesktop: boole
   );
 }
 
+function ResultPill({ state }: { state: 'win' | 'loss' | 'tie' }) {
+  const text = state === 'win' ? 'Winner' : state === 'tie' ? 'Tie' : 'Lost';
+  return (
+    <View
+      style={[rp.pill, state === 'win' ? rp.win : state === 'tie' ? rp.tie : rp.loss] as object}
+    >
+      <Text style={[rp.text, state === 'win' && (rp.textWin as object)] as object}>{text}</Text>
+    </View>
+  );
+}
+
 function VerdictShimmer() {
   const opacity = useRef(new Animated.Value(0.3)).current;
   useEffect(() => {
@@ -170,8 +181,12 @@ export default function WebCompareScreen() {
   }
 
   const result = compareStats(statsA.name, statsA.powerstats, statsB.name, statsB.powerstats);
-  const imageA = heroImageSource(hero, statsA.image.url);
-  const imageB = heroImageSource(opponent, statsB.image.url);
+  const imageA = heroImageSource(hero, statsA.image.url, statsA.image.portraitUrl);
+  const imageB = heroImageSource(opponent, statsB.image.url, statsB.image.portraitUrl);
+  const overallWinner: 'A' | 'B' | 'tie' =
+    result.winsA > result.winsB ? 'A' : result.winsB > result.winsA ? 'B' : 'tie';
+  const aWon = overallWinner === 'A';
+  const bWon = overallWinner === 'B';
 
   const handleShare = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : '';
@@ -230,6 +245,7 @@ export default function WebCompareScreen() {
             <View
               style={[
                 styles.portraitWrap,
+                aWon && (styles.portraitWin as object),
                 { height: portraitHeight },
                 {
                   opacity: mounted ? 1 : 0,
@@ -245,7 +261,9 @@ export default function WebCompareScreen() {
                 style={styles.portraitImage as object}
               />
               <View style={styles.portraitOverlay as object} />
+              {bWon ? <View style={styles.lostOverlay as object} /> : null}
               <View style={styles.portraitLabel}>
+                <ResultPill state={aWon ? 'win' : overallWinner === 'tie' ? 'tie' : 'loss'} />
                 {statsA.biography.publisher ? (
                   <Text style={styles.publisher}>{statsA.biography.publisher}</Text>
                 ) : null}
@@ -285,6 +303,7 @@ export default function WebCompareScreen() {
             <View
               style={[
                 styles.portraitWrap,
+                bWon && (styles.portraitWin as object),
                 { height: portraitHeight },
                 {
                   opacity: mounted ? 1 : 0,
@@ -300,7 +319,9 @@ export default function WebCompareScreen() {
                 style={[styles.portraitImage as object, { transform: [{ scaleX: -1 }] }]}
               />
               <View style={styles.portraitOverlay as object} />
+              {aWon ? <View style={styles.lostOverlay as object} /> : null}
               <View style={[styles.portraitLabel, styles.portraitLabelRight]}>
+                <ResultPill state={bWon ? 'win' : overallWinner === 'tie' ? 'tie' : 'loss'} />
                 {statsB.biography.publisher ? (
                   <Text style={styles.publisher}>{statsB.biography.publisher}</Text>
                 ) : null}
@@ -317,7 +338,13 @@ export default function WebCompareScreen() {
           /* Mobile: stacked */
           <View>
             <View style={styles.mobilePortraits}>
-              <View style={[styles.mobilePortraitWrap, { height: portraitHeight }]}>
+              <View
+                style={[
+                  styles.mobilePortraitWrap,
+                  aWon && (styles.portraitWin as object),
+                  { height: portraitHeight },
+                ]}
+              >
                 <Image
                   source={imageA}
                   contentFit="cover"
@@ -325,12 +352,22 @@ export default function WebCompareScreen() {
                   style={StyleSheet.absoluteFill}
                 />
                 <View style={styles.portraitOverlay as object} />
+                {bWon ? <View style={styles.lostOverlay as object} /> : null}
+                <View style={styles.mobilePill as object}>
+                  <ResultPill state={aWon ? 'win' : overallWinner === 'tie' ? 'tie' : 'loss'} />
+                </View>
                 <Text style={styles.mobilePortraitName}>{statsA.name}</Text>
                 <Text style={styles.mobileWinsLabel}>
                   {result.winsA} stat{result.winsA !== 1 ? 's' : ''}
                 </Text>
               </View>
-              <View style={[styles.mobilePortraitWrap, { height: portraitHeight }]}>
+              <View
+                style={[
+                  styles.mobilePortraitWrap,
+                  bWon && (styles.portraitWin as object),
+                  { height: portraitHeight },
+                ]}
+              >
                 <Image
                   source={imageB}
                   contentFit="cover"
@@ -338,6 +375,10 @@ export default function WebCompareScreen() {
                   style={[StyleSheet.absoluteFill, { transform: [{ scaleX: -1 }] }]}
                 />
                 <View style={styles.portraitOverlay as object} />
+                {aWon ? <View style={styles.lostOverlay as object} /> : null}
+                <View style={[styles.mobilePill, styles.mobilePillRight] as object}>
+                  <ResultPill state={bWon ? 'win' : overallWinner === 'tie' ? 'tie' : 'loss'} />
+                </View>
                 <Text style={[styles.mobilePortraitName, styles.textRight]}>{statsB.name}</Text>
                 <Text style={[styles.mobileWinsLabel, styles.textRight]}>
                   {result.winsB} stat{result.winsB !== 1 ? 's' : ''}
@@ -449,6 +490,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
   },
+  portraitWin: {
+    boxShadow: '0 0 0 3px #F9B222, 0 10px 36px rgba(249,178,34,0.28)',
+  } as object,
+  lostOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(18,26,31,0.45)',
+  } as object,
   portraitImage: {
     width: '100%',
     height: '100%',
@@ -537,6 +589,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
   },
+  mobilePill: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+  } as object,
+  mobilePillRight: {
+    left: undefined,
+    right: 10,
+    alignItems: 'flex-end',
+  } as object,
   mobilePortraitName: {
     position: 'absolute',
     bottom: 24,
@@ -611,4 +673,26 @@ const wb = StyleSheet.create({
     flexShrink: 0,
   },
   labelDesktop: { width: 90, fontSize: 10 } as object,
+});
+
+const rp = StyleSheet.create({
+  pill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  win: { backgroundColor: COLORS.yellow, borderColor: 'rgba(255,255,255,0.6)' },
+  loss: { backgroundColor: 'rgba(0,0,0,0.3)', borderColor: 'rgba(255,255,255,0.15)' },
+  tie: { backgroundColor: 'rgba(245,235,220,0.18)', borderColor: 'rgba(245,235,220,0.4)' },
+  text: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    color: 'rgba(255,255,255,0.9)',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  textWin: { color: COLORS.navy },
 });

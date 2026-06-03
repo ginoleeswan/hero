@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,18 +7,34 @@ import {
   StyleSheet,
   ActivityIndicator,
   Share,
+  Dimensions,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getHeroById, heroRowToCharacterData } from '../../../src/lib/db/heroes';
-import { fetchHeroStats, generateVerdict } from '../../../src/lib/api';
+import { fetchHeroStats, type VerdictInput } from '../../../src/lib/api';
+import { useVerdict } from '../../../src/lib/query/heroQueries';
 import { heroImageSource } from '../../../src/constants/heroImages';
 import { compareStats } from '../../../src/lib/compare';
 import type { StatResult } from '../../../src/lib/compare';
 import type { HeroStats } from '../../../src/types';
 import { COLORS } from '../../../src/constants/colors';
 import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_MARGIN = 12;
+const CARD_WIDTH = SCREEN_WIDTH - CARD_MARGIN * 2;
+const CARD_HEIGHT = 330;
+
+const headerBase = {
+  headerShown: true,
+  headerTitle: '',
+  headerStyle: { backgroundColor: COLORS.navy },
+  headerShadowVisible: false,
+  headerBackButtonDisplayMode: 'minimal',
+} as const;
 
 async function loadHeroStats(id: string): Promise<HeroStats> {
   const row = await getHeroById(id);
@@ -68,7 +84,6 @@ export default function NativeCompareScreen() {
 
   const [statsA, setStatsA] = useState<HeroStats | null>(null);
   const [statsB, setStatsB] = useState<HeroStats | null>(null);
-  const [verdict, setVerdict] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -76,28 +91,33 @@ export default function NativeCompareScreen() {
       .then(([a, b]) => {
         setStatsA(a);
         setStatsB(b);
-        const result = compareStats(a.name, a.powerstats, b.name, b.powerstats);
-        const psA = Object.fromEntries(
-          Object.entries(a.powerstats).map(([k, v]) => [k, parseInt(v, 10) || 0]),
-        );
-        const psB = Object.fromEntries(
-          Object.entries(b.powerstats).map(([k, v]) => [k, parseInt(v, 10) || 0]),
-        );
-        generateVerdict({
-          heroA: a.name,
-          heroB: b.name,
-          winsA: result.winsA,
-          winsB: result.winsB,
-          statsA: psA,
-          statsB: psB,
-        }).then(setVerdict);
       })
       .catch(() => setError('Could not load hero data.'));
   }, [hero, opponent]);
 
+  // Verdict is cached per matchup (staleTime: Infinity), so the AI edge function
+  // is invoked once — revisiting the same pair reuses the generated text.
+  const verdictInput = useMemo<VerdictInput | null>(() => {
+    if (!statsA || !statsB) return null;
+    const r = compareStats(statsA.name, statsA.powerstats, statsB.name, statsB.powerstats);
+    const toNums = (ps: HeroStats['powerstats']) =>
+      Object.fromEntries(Object.entries(ps).map(([k, v]) => [k, parseInt(v, 10) || 0]));
+    return {
+      heroA: statsA.name,
+      heroB: statsB.name,
+      winsA: r.winsA,
+      winsB: r.winsB,
+      statsA: toNums(statsA.powerstats),
+      statsB: toNums(statsB.powerstats),
+    };
+  }, [statsA, statsB]);
+  const verdict = useVerdict(hero, opponent, verdictInput).data ?? null;
+
   if (error) {
     return (
-      <View style={[styles.center, { paddingTop: insets.top }]}>
+      <View style={styles.center}>
+        <Stack.Screen options={headerBase} />
+        <StatusBar style="light" />
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={styles.retryBtn}>
           <Text style={styles.retryText}>Go back</Text>
@@ -108,15 +128,16 @@ export default function NativeCompareScreen() {
 
   if (!statsA || !statsB) {
     return (
-      <View style={[styles.center, { paddingTop: insets.top }]}>
-        <ActivityIndicator color={COLORS.orange} size="large" />
+      <View style={styles.loading}>
+        <Stack.Screen options={headerBase} />
+        <StatusBar style="light" />
       </View>
     );
   }
 
   const result = compareStats(statsA.name, statsA.powerstats, statsB.name, statsB.powerstats);
-  const imageA = heroImageSource(hero, statsA.image.url);
-  const imageB = heroImageSource(opponent, statsB.image.url);
+  const imageA = heroImageSource(hero, statsA.image.url, statsA.image.portraitUrl);
+  const imageB = heroImageSource(opponent, statsB.image.url, statsB.image.portraitUrl);
   const overallWinner: 'A' | 'B' | 'tie' =
     result.winsA > result.winsB ? 'A' : result.winsB > result.winsA ? 'B' : 'tie';
 
@@ -127,50 +148,61 @@ export default function NativeCompareScreen() {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={styles.iconBtn}>
-          <Ionicons name="arrow-back" size={20} color={COLORS.beige} />
-        </TouchableOpacity>
-        <Text style={styles.topBarTitle}>vs</Text>
-        <TouchableOpacity onPress={handleShare} activeOpacity={0.7} style={styles.iconBtn}>
-          <Ionicons name="share-outline" size={20} color={COLORS.beige} />
-        </TouchableOpacity>
-      </View>
+    <View style={styles.root}>
+      <Stack.Screen
+        options={{
+          ...headerBase,
+          headerRight: ({ tintColor }) => (
+            <TouchableOpacity onPress={handleShare} hitSlop={10} activeOpacity={0.7}>
+              <Ionicons name="share-outline" size={24} color={tintColor} />
+            </TouchableOpacity>
+          ),
+        }}
+      />
+      <StatusBar style="light" />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom }}>
-        <ClashPortraits
-          imageA={imageA}
-          imageB={imageB}
-          nameA={statsA.name}
-          nameB={statsB.name}
-          winner={overallWinner}
-          height={280}
-        />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.navyTop}>
+          <View style={styles.clashCard}>
+            <ClashPortraits
+              imageA={imageA}
+              imageB={imageB}
+              nameA={statsA.name}
+              nameB={statsB.name}
+              winner={overallWinner}
+              width={CARD_WIDTH}
+              height={CARD_HEIGHT}
+            />
+          </View>
 
-        <View style={styles.verdictWrap}>
-          {verdict ? (
-            <Text style={styles.verdict}>{verdict}</Text>
-          ) : (
-            <Text style={styles.verdictPlaceholder}>{result.verdict}</Text>
-          )}
+          <View style={styles.verdictWrap}>
+            {verdict ? (
+              <Text style={styles.verdict}>{verdict}</Text>
+            ) : (
+              <Text style={styles.verdictPlaceholder}>{result.verdict}</Text>
+            )}
+          </View>
         </View>
 
-        <View style={styles.battleWrap}>
-          {result.stats.map((stat) => (
-            <StatBattleRow key={stat.key} stat={stat} />
-          ))}
-        </View>
+        <View style={[styles.sheet, { paddingBottom: insets.bottom + 28 }]}>
+          <View style={styles.battleWrap}>
+            {result.stats.map((stat) => (
+              <StatBattleRow key={stat.key} stat={stat} />
+            ))}
+          </View>
 
-        <TouchableOpacity
-          onPress={() =>
-            router.replace(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)
-          }
-          activeOpacity={0.8}
-          style={styles.compareAnotherBtn}
-        >
-          <Text style={styles.compareAnotherText}>Compare {statsA.name} with someone else →</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() =>
+              router.replace(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)
+            }
+            activeOpacity={0.85}
+            style={styles.compareAnotherBtn}
+          >
+            <Text style={styles.compareAnotherText}>
+              Compare {statsA.name} with someone else →
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -178,23 +210,43 @@ export default function NativeCompareScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
-  errorText: { fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.navy },
+  scroll: { flex: 1, backgroundColor: COLORS.navy },
+  scrollContent: { flexGrow: 1 },
+  loading: {
+    flex: 1,
+    backgroundColor: COLORS.navy,
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    backgroundColor: COLORS.navy,
+  },
+  errorText: { fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.beige },
   retryBtn: { paddingHorizontal: 20, paddingVertical: 10 },
   retryText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.orange },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+
+  navyTop: {
     backgroundColor: COLORS.navy,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 18,
   },
-  iconBtn: { padding: 6 },
-  topBarTitle: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.beige },
+  clashCard: {
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    marginHorizontal: CARD_MARGIN,
+    marginTop: CARD_MARGIN,
+    borderRadius: 22,
+    overflow: 'hidden',
+    backgroundColor: '#1b2a30',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 18,
+    elevation: 8,
+  },
   verdictWrap: {
-    backgroundColor: COLORS.navy,
-    paddingVertical: 18,
+    paddingVertical: 16,
     paddingHorizontal: 24,
   },
   verdict: {
@@ -212,25 +264,33 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontStyle: 'italic',
   },
+
+  sheet: {
+    flexGrow: 1,
+    backgroundColor: COLORS.beige,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -14,
+    paddingTop: 20,
+  },
   battleWrap: {
     paddingHorizontal: 16,
-    paddingTop: 12,
     paddingBottom: 8,
     gap: 10,
   },
   compareAnotherBtn: {
     marginHorizontal: 20,
-    marginTop: 8,
-    marginBottom: 32,
-    paddingVertical: 14,
-    borderRadius: 10,
+    marginTop: 12,
+    marginBottom: 12,
+    paddingVertical: 15,
+    borderRadius: 12,
     backgroundColor: COLORS.navy,
     alignItems: 'center',
   },
   compareAnotherText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: 'rgba(245,235,220,0.65)',
+    fontSize: 13.5,
+    color: COLORS.beige,
     letterSpacing: 0.3,
   },
 });
