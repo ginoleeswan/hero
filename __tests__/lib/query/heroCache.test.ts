@@ -2,7 +2,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { flattenCategoryPages, findCachedHero } from '../../../src/lib/query/heroCache';
 import type { Hero } from '../../../src/lib/db/heroes';
 
-const hero = (id: string, name: string) => ({ id, name } as unknown as Hero);
+const hero = (id: string, name: string) => ({ id, name }) as unknown as Hero;
 
 describe('flattenCategoryPages', () => {
   it('returns [] for undefined', () => {

@@ -101,7 +101,9 @@ function AlignmentBadge({ alignment }: { alignment: string | null | undefined })
   const config = ALIGNMENT_CONFIG[alignment.toLowerCase().trim()];
   if (!config) return null;
   return (
-    <View style={[styles.alignmentBadge, { backgroundColor: config.bg, borderColor: config.color }]}>
+    <View
+      style={[styles.alignmentBadge, { backgroundColor: config.bg, borderColor: config.color }]}
+    >
       <Text style={[styles.alignmentBadgeText, { color: config.color }]}>{config.label}</Text>
     </View>
   );
@@ -124,7 +126,9 @@ function OriginBadge({ origin }: { origin: string | null | undefined }) {
   const config = ORIGIN_CONFIG[origin.toLowerCase().trim()];
   if (!config) return null;
   return (
-    <View style={[styles.alignmentBadge, { backgroundColor: config.bg, borderColor: config.color }]}>
+    <View
+      style={[styles.alignmentBadge, { backgroundColor: config.bg, borderColor: config.color }]}
+    >
       <Text style={[styles.alignmentBadgeText, { color: config.color }]}>{config.label}</Text>
     </View>
   );
