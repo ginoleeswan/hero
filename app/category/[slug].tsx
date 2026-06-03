@@ -234,9 +234,6 @@ export default function CategoryScreen() {
   const handleSortChange = useCallback((s: SortOption) => setSort(s), []);
   const handlePublisherChange = useCallback((p: CategoryPublisher) => setPublisher(p), []);
   const handleSearchChange = useCallback((text: string) => setSearch(text), []);
-  const handleSortChange = useCallback((s: SortOption) => setSort(s), []);
-  const handlePublisherChange = useCallback((p: CategoryPublisher) => setPublisher(p), []);
-  const handleSearchChange = useCallback((text: string) => setSearch(text), []);
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
