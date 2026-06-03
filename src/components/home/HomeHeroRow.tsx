@@ -191,14 +191,18 @@ const styles = StyleSheet.create({
     marginTop: -2,
   },
   listContent: { paddingHorizontal: 15, paddingBottom: 20 },
+  // Link's asChild target — sizing only, single style object (Slot rejects arrays).
   cardSlot: {
-    // No backgroundColor on purpose: this View sits OUTSIDE Link.AppleZoom and
-    // stays visible while the zoom briefly hides the live card, so an opaque
-    // fill here would flash as a solid box on the way back. boxShadow still
-    // renders fine on a transparent View (it follows the rounded border box).
     width: PORTRAIT_CARD_WIDTH,
     height: PORTRAIT_CARD_HEIGHT,
     marginVertical: 8,
+  },
+  // Inner scaled view: shadow + clip live here, OUTSIDE Link.AppleZoom. No
+  // backgroundColor on purpose — this stays visible while the zoom briefly hides
+  // the live card, so an opaque fill would flash as a solid box on the way back.
+  // boxShadow still renders fine on a transparent view (follows the rounded box).
+  cardVisual: {
+    flex: 1,
     borderRadius: HERO_CARD_RADIUS,
     borderCurve: 'continuous',
     boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.3)',
