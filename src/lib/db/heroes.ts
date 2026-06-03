@@ -375,16 +375,34 @@ export async function getAllHeroesBySlug(slug: CategorySlug): Promise<Hero[]> {
   }
 }
 
+// Columns the category grid + featured banner actually render (native and web).
+// Excludes heavy text/JSON columns (summary, description, movies, enemies,
+// friends, creators, first_issue_data, powers...) which the list never shows.
+const CATEGORY_LIST_COLUMNS =
+  'id, name, image_url, image_md_url, portrait_url, publisher, issue_count';
+
 export async function getCategoryPage(
   slug: CategorySlug,
-  options: { page: number; pageSize?: number } & CategoryFilters,
+  options: { page: number; pageSize?: number; withCount?: boolean } & CategoryFilters,
 ): Promise<{ heroes: Hero[]; total: number }> {
-  const { page, pageSize = 48, sort, publisher, alignment, gender, hasStats, search } = options;
+  const {
+    page,
+    pageSize = 48,
+    withCount = true,
+    sort,
+    publisher,
+    alignment,
+    gender,
+    hasStats,
+    search,
+  } = options;
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let q: any = supabase.from('heroes').select('*', { count: 'exact' });
+  let q: any = supabase
+    .from('heroes')
+    .select(CATEGORY_LIST_COLUMNS, withCount ? { count: 'exact' } : undefined);
 
   switch (slug) {
     case 'popular':

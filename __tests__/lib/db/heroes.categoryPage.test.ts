@@ -107,6 +107,23 @@ describe('getCategoryPage filter mapping', () => {
     mockResolveWith = { data: null, error: { message: 'boom' }, count: 0 };
     await expect(getCategoryPage('popular', opts())).rejects.toThrow('boom');
   });
+  it('selects a narrowed list-column set, never select(*)', async () => {
+    await getCategoryPage('popular', opts());
+    const cols = chain.select.mock.calls[0][0] as string;
+    expect(cols).not.toBe('*');
+    expect(cols).toContain('id');
+    expect(cols).toContain('image_url');
+    expect(cols).toContain('image_md_url'); // web card needs this
+    expect(cols).not.toContain('summary'); // heavy blob must be excluded
+  });
+  it('requests an exact count on the first page by default', async () => {
+    await getCategoryPage('popular', opts());
+    expect(chain.select).toHaveBeenCalledWith(expect.any(String), { count: 'exact' });
+  });
+  it('omits the count when withCount is false (append pages)', async () => {
+    await getCategoryPage('popular', opts({ withCount: false }));
+    expect(chain.select).toHaveBeenCalledWith(expect.any(String), undefined);
+  });
 });
 
 describe('getCategoryFacetCounts', () => {
