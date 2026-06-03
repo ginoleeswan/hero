@@ -19,7 +19,7 @@ const config: ExpoConfig = {
     policy: 'appVersion',
   },
   splash: {
-    image: './assets/mythique-logo.svg',
+    image: './assets/splash.png',
     resizeMode: 'contain',
     backgroundColor: '#293c43',
   },
@@ -60,7 +60,7 @@ const config: ExpoConfig = {
     [
       'expo-splash-screen',
       {
-        image: './assets/mythique-logo.svg',
+        image: './assets/splash.png',
         backgroundColor: '#293c43',
         imageWidth: 200,
       },
