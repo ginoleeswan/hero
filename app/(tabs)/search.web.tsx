@@ -20,13 +20,13 @@ import {
   rankResults,
   type HeroSearchResult,
   type PublisherFilter,
-} from '../src/lib/db/heroes';
-import { heroGridImageSource } from '../src/constants/heroImages';
-import { COLORS } from '../src/constants/colors';
-import { useSearch } from '../src/contexts/SearchContext';
-import { useSearchHistory } from '../src/hooks/useSearchHistory';
-import { useIdleHeroes } from '../src/hooks/useIdleHeroes';
-import { useSkeletonAnim } from '../src/components/web/Skeleton';
+} from '../../src/lib/db/heroes';
+import { heroGridImageSource } from '../../src/constants/heroImages';
+import { COLORS } from '../../src/constants/colors';
+import { useSearch } from '../../src/contexts/SearchContext';
+import { useSearchHistory } from '../../src/hooks/useSearchHistory';
+import { useIdleHeroes } from '../../src/hooks/useIdleHeroes';
+import { useSkeletonAnim } from '../../src/components/web/Skeleton';
 
 const RESULT_LIMIT = 300;
 const PUB_OPTS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];

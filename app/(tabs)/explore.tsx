@@ -9,7 +9,6 @@ import { COLORS } from '../../src/constants/colors';
 import { HomeSkeleton } from '../../src/components/skeletons/HomeSkeleton';
 import { SpotlightBanner } from '../../src/components/home/SpotlightBanner';
 import { HomeHeroRow, type RowHero } from '../../src/components/home/HomeHeroRow';
-import { SearchSheet } from '../../src/components/SearchSheet';
 import {
   getPopularHeroes,
   getIconicHeroes,
@@ -55,7 +54,6 @@ export default function HomeScreen() {
   const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
   const [spotlightIndex, setSpotlightIndex] = useState(0);
-  const [searchVisible, setSearchVisible] = useState(false);
   const [navigating, setNavigating] = useState(false);
 
   // Popular fires first — it feeds both the spotlight and the Popular row.
@@ -173,7 +171,6 @@ export default function HomeScreen() {
               index={spotlightIndex}
               total={spotlightTotal}
               insetTop={insets.top}
-              onSearchPress={() => setSearchVisible(true)}
               onHeroPress={() => handlePress(spotlightHero)}
             />
           )}
@@ -215,15 +212,6 @@ export default function HomeScreen() {
           )}
         </Animated.ScrollView>
       )}
-
-      <SearchSheet
-        visible={searchVisible}
-        onClose={() => setSearchVisible(false)}
-        onHeroPress={(id) => {
-          setSearchVisible(false);
-          handlePress({ id });
-        }}
-      />
     </View>
   );
 }

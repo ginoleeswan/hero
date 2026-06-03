@@ -2,7 +2,6 @@
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { heroImageSource } from '../../constants/heroImages';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
@@ -18,7 +17,6 @@ interface SpotlightBannerProps {
   index: number;
   total: number;
   insetTop: number;
-  onSearchPress: () => void;
   onHeroPress: () => void;
 }
 
@@ -27,7 +25,6 @@ export function SpotlightBanner({
   index,
   total,
   insetTop,
-  onSearchPress,
   onHeroPress,
 }: SpotlightBannerProps) {
   const height = spotlightHeight(insetTop);
@@ -53,13 +50,6 @@ export function SpotlightBanner({
         locations={[0.45, 0.78, 1]}
         style={StyleSheet.absoluteFill}
       />
-      <TouchableOpacity
-        style={[styles.searchBtn, { top: insetTop + 10 }]}
-        onPress={onSearchPress}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Ionicons name="search" size={20} color={COLORS.beige} />
-      </TouchableOpacity>
       <View style={styles.meta}>
         <Text style={styles.metaLabel}>Featured Hero</Text>
         <Text style={styles.metaName} numberOfLines={2}>
@@ -84,17 +74,7 @@ export function SpotlightBanner({
 
 const styles = StyleSheet.create({
   container: { overflow: 'hidden', backgroundColor: COLORS.navy },
-  searchBtn: {
-    position: 'absolute',
-    right: 16,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(41,60,67,0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  meta: { position: 'absolute', bottom: 56, left: 16, right: 68 },
+  meta: { position: 'absolute', bottom: 56, left: 16, right: 16 },
   metaLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
