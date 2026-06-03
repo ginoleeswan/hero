@@ -109,81 +109,134 @@ function FavouriteThumb({
   );
 }
 
+const GUEST_BENEFITS = [
+  {
+    icon: 'heart' as const,
+    badge: 'accountIconBadgeOrange' as const,
+    tint: COLORS.orange,
+    title: 'Save your favourites',
+    sub: 'Build a personal collection of heroes',
+  },
+  {
+    icon: 'color-palette' as const,
+    badge: 'accountIconBadgeNavy' as const,
+    tint: COLORS.navy,
+    title: 'Customise your profile',
+    sub: 'Add your own avatar and cover photo',
+  },
+  {
+    icon: 'sync' as const,
+    badge: 'accountIconBadgeNavy' as const,
+    tint: COLORS.navy,
+    title: 'Sync across devices',
+    sub: 'Pick up right where you left off',
+  },
+];
+
 function GuestProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#293C43', '#3d5a66']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.cover, { height: 140 + insets.top }]}
-      >
-        <Svg style={StyleSheet.absoluteFill} width={SCREEN_WIDTH} height={280}>
-          <Defs>
-            <Pattern id="dots" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
-              <Circle cx="7" cy="7" r="1.5" fill="rgba(231,115,51,0.22)" />
-            </Pattern>
-          </Defs>
-          <Rect width={SCREEN_WIDTH} height={280} fill="url(#dots)" />
-        </Svg>
-        <View style={styles.coverLogo}>
-          <Svg width={72} height={72} viewBox="0 0 1024 1024">
-            <Path fill="#ECECDE" d={HERO_LOGO_PATH} />
-          </Svg>
-        </View>
-      </LinearGradient>
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
         automaticallyAdjustContentInsets={false}
         contentInsetAdjustmentBehavior="never"
       >
-        <View style={styles.guestContent}>
-          <LinearGradient colors={[COLORS.orange, '#c04a10']} style={styles.guestAvatar}>
-            <Ionicons name="person-outline" size={36} color="white" />
+        {/* Cover banner */}
+        <View style={[styles.cover, { height: 140 + insets.top }]}>
+          <LinearGradient
+            colors={['#293C43', '#3d5a66']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          >
+            <Svg style={StyleSheet.absoluteFill} width={SCREEN_WIDTH} height={280}>
+              <Defs>
+                <Pattern id="dots" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+                  <Circle cx="7" cy="7" r="1.5" fill="rgba(231,115,51,0.22)" />
+                </Pattern>
+              </Defs>
+              <Rect width={SCREEN_WIDTH} height={280} fill="url(#dots)" />
+            </Svg>
+            <View style={styles.coverLogo}>
+              <Svg width={72} height={72} viewBox="0 0 1024 1024">
+                <Path fill="#ECECDE" d={HERO_LOGO_PATH} />
+              </Svg>
+            </View>
           </LinearGradient>
+        </View>
 
+        {/* Emblem overlapping the cover */}
+        <View style={styles.avatarZone}>
+          <LinearGradient colors={[COLORS.orange, '#c04a10']} style={styles.avatar}>
+            <Ionicons name="person" size={38} color="white" />
+          </LinearGradient>
+        </View>
+
+        {/* Pitch */}
+        <View style={styles.guestHeader}>
           <Text style={styles.guestTitle}>Join the Mythique community</Text>
           <Text style={styles.guestBody}>
-            Sign in to save your favourite heroes, customise your profile, and sync across devices.
+            Create a free account to save heroes and make the app your own.
           </Text>
+        </View>
+
+        {/* Benefits */}
+        <View style={styles.guestSection}>
+          <View style={styles.accountCard}>
+            {GUEST_BENEFITS.map((b, i) => (
+              <View key={b.title}>
+                {i > 0 && <View style={styles.divider} />}
+                <View style={styles.benefitRow}>
+                  <View style={[styles.accountIconBadge, styles[b.badge]]}>
+                    <Ionicons name={b.icon} size={16} color={b.tint} />
+                  </View>
+                  <View style={styles.benefitText}>
+                    <Text style={styles.benefitTitle}>{b.title}</Text>
+                    <Text style={styles.benefitSub}>{b.sub}</Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Call to action */}
+        <View style={styles.guestActions}>
+          <TouchableOpacity
+            onPress={() => router.push('/(auth)/signup')}
+            style={styles.guestSignInBtn}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.guestSignInText}>Create Account</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => router.push('/(auth)/login')}
-            style={styles.guestSignInBtn}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.guestSignInText}>Sign In</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => router.push('/(auth)/signup')}
             style={styles.guestSignUpBtn}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <Text style={styles.guestSignUpText}>Create Account</Text>
+            <Text style={styles.guestSignUpText}>I already have an account</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.accountSection}>
-          <View style={styles.accountCard}>
-            <TouchableOpacity
-              style={styles.accountRow}
-              onPress={() => Linking.openURL(KO_FI_URL)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.accountIconBadge, styles.accountIconBadgeOrange]}>
-                <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
-              </View>
-              <Text style={styles.accountLabel}>Support this project</Text>
-              <Text style={styles.accountValue}>Ko-fi</Text>
-              <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-            </TouchableOpacity>
-          </View>
+        {/* Support */}
+        <View style={styles.guestSection}>
+          <TouchableOpacity
+            style={styles.supportRow}
+            onPress={() => Linking.openURL(KO_FI_URL)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.accountIconBadge, styles.accountIconBadgeOrange]}>
+              <Ionicons name="cafe-outline" size={16} color={COLORS.orange} />
+            </View>
+            <Text style={styles.accountLabel}>Support this project</Text>
+            <Text style={styles.accountValue}>Ko-fi</Text>
+            <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+          </TouchableOpacity>
         </View>
 
         <Text style={styles.disclaimer}>
@@ -703,30 +756,16 @@ const styles = StyleSheet.create({
   },
 
   // Guest state
-  guestContent: {
+  guestHeader: {
     alignItems: 'center',
     paddingHorizontal: 32,
-    paddingTop: 36,
-    paddingBottom: 32,
-  },
-  guestAvatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: 20,
-    shadowColor: COLORS.orange,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 6,
   },
   guestTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 22,
     color: COLORS.navy,
-    marginBottom: 10,
+    marginBottom: 8,
     textAlign: 'center',
   },
   guestBody: {
@@ -735,15 +774,43 @@ const styles = StyleSheet.create({
     color: COLORS.grey,
     textAlign: 'center',
     lineHeight: 21,
-    marginBottom: 28,
+  },
+  guestSection: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  benefitText: {
+    flex: 1,
+  },
+  benefitTitle: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 15,
+    color: COLORS.navy,
+  },
+  benefitSub: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12.5,
+    color: COLORS.grey,
+    marginTop: 1,
+  },
+  guestActions: {
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    gap: 10,
   },
   guestSignInBtn: {
     backgroundColor: COLORS.orange,
     borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 48,
+    borderCurve: 'continuous',
+    paddingVertical: 15,
     alignItems: 'center',
-    marginBottom: 12,
     width: '100%',
     shadowColor: COLORS.orange,
     shadowOffset: { width: 0, height: 4 },
@@ -760,18 +827,31 @@ const styles = StyleSheet.create({
   guestSignUpBtn: {
     backgroundColor: 'transparent',
     borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 48,
+    borderCurve: 'continuous',
+    paddingVertical: 13,
     alignItems: 'center',
     width: '100%',
-    borderWidth: 1.5,
-    borderColor: COLORS.navy,
   },
   guestSignUpText: {
     fontFamily: 'Nunito_700Bold',
     color: COLORS.navy,
-    fontSize: 16,
-    letterSpacing: 0.3,
+    fontSize: 15,
+    letterSpacing: 0.2,
+  },
+  supportRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
 
   // Cover
