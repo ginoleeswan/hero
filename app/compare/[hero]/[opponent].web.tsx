@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,112 +6,143 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
-  Animated,
   useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { getHeroById, heroRowToCharacterData } from '../../../src/lib/db/heroes';
-import { fetchHeroStats, generateVerdict } from '../../../src/lib/api';
 import { heroImageSource } from '../../../src/constants/heroImages';
-import { compareStats } from '../../../src/lib/compare';
-import type { StatResult } from '../../../src/lib/compare';
-import type { HeroStats } from '../../../src/types';
+import { useCompareMatchup } from '../../../src/hooks/useCompareMatchup';
 import { COLORS } from '../../../src/constants/colors';
+import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
+import { VerdictReveal } from '../../../src/components/compare/VerdictReveal';
+import { StatBattleRow } from '../../../src/components/compare/StatBattleRow';
+import { VsBadge } from '../../../src/components/compare/VsBadge';
 
-async function loadHeroStats(id: string): Promise<HeroStats> {
-  const row = await getHeroById(id);
-  if (row?.enriched_at) return heroRowToCharacterData(row).stats;
-  return fetchHeroStats(id);
+type PortraitState = 'win' | 'loss' | 'tie';
+
+function portraitState(overall: 'A' | 'B' | 'tie', thisSide: 'A' | 'B'): PortraitState {
+  if (overall === 'tie') return 'tie';
+  return overall === thisSide ? 'win' : 'loss';
 }
 
-function StatBattleRow({ stat, isDesktop }: { stat: StatResult; isDesktop: boolean }) {
-  const aWins = stat.winner === 'A';
-  const bWins = stat.winner === 'B';
-  const winColor = stat.color;
-  const dimColor = 'rgba(245,235,220,0.12)';
-
+/** Tap target + "Swap" affordance laid over a portrait — replaces that combatant. */
+function SwapOverlay({
+  onPress,
+  side,
+  name,
+}: {
+  onPress: () => void;
+  side: 'left' | 'right';
+  name: string;
+}) {
   return (
-    <View style={wb.row}>
-      <View style={wb.side}>
-        <Text style={[wb.val, aWins && wb.valWin]}>{stat.valueA}</Text>
-        <View style={wb.track}>
-          <View
-            style={
-              [
-                wb.barLeft,
-                { width: `${stat.valueA}%`, backgroundColor: aWins ? winColor : dimColor },
-              ] as object
-            }
-          />
-        </View>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Replace ${name}`}
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+        [styles.swapHit, hovered && (styles.swapHitHover as object)] as object
+      }
+    >
+      <View
+        style={
+          [styles.swapChip, side === 'left' ? styles.swapChipLeft : styles.swapChipRight] as object
+        }
+      >
+        <Ionicons name="swap-horizontal" size={13} color={COLORS.beige} />
+        <Text style={styles.swapChipText}>Swap</Text>
       </View>
+    </Pressable>
+  );
+}
 
-      <Text style={[wb.label, isDesktop && (wb.labelDesktop as object)] as object}>
-        {stat.label}
+/** Winner caption matching native: gold "Winner"/"Draw" eyebrow, name, gold rule. */
+function PortraitLabel({
+  name,
+  state,
+  align,
+}: {
+  name: string;
+  state: PortraitState;
+  align: 'left' | 'right';
+}) {
+  const right = align === 'right';
+  return (
+    <View style={[styles.portraitLabel, right && (styles.alignEnd as object)] as object}>
+      {state === 'win' && (
+        <Text style={[styles.eyebrowWin, right && (styles.textRight as object)] as object}>
+          Winner
+        </Text>
+      )}
+      {state === 'tie' && (
+        <Text style={[styles.eyebrowTie, right && (styles.textRight as object)] as object}>
+          Draw
+        </Text>
+      )}
+      <Text
+        style={
+          [
+            styles.heroNameLarge,
+            right && (styles.textRight as object),
+            state === 'loss' && (styles.heroNameDim as object),
+          ] as object
+        }
+      >
+        {name}
       </Text>
-
-      <View style={[wb.side, wb.sideRight]}>
-        <View style={wb.track}>
-          <View
-            style={
-              [
-                wb.barRight,
-                { width: `${stat.valueB}%`, backgroundColor: bWins ? winColor : dimColor },
-              ] as object
-            }
-          />
-        </View>
-        <Text style={[wb.val, bWins && wb.valWin]}>{stat.valueB}</Text>
-      </View>
+      {state === 'win' && (
+        <View style={[styles.winRule, right && (styles.winRuleRight as object)] as object} />
+      )}
     </View>
   );
 }
 
-function ResultPill({ state }: { state: 'win' | 'loss' | 'tie' }) {
-  const text = state === 'win' ? 'Winner' : state === 'tie' ? 'Tie' : 'Lost';
+/** A single tall arena portrait (desktop) — faces inward toward the scorecard. */
+function ArenaPortrait({
+  image,
+  name,
+  side,
+  state,
+  onSwap,
+  mounted,
+}: {
+  image: number | { uri: string };
+  name: string;
+  side: 'left' | 'right';
+  state: PortraitState;
+  onSwap: () => void;
+  mounted: boolean;
+}) {
+  const right = side === 'right';
   return (
     <View
-      style={[rp.pill, state === 'win' ? rp.win : state === 'tie' ? rp.tie : rp.loss] as object}
+      style={[
+        styles.arenaPortrait,
+        state === 'win' && (styles.arenaPortraitWin as object),
+        {
+          opacity: mounted ? 1 : 0,
+          transform: [{ translateX: mounted ? 0 : right ? 60 : -60 }],
+          transition: 'opacity 0.5s ease-out, transform 0.55s cubic-bezier(0.22,1,0.36,1)',
+        } as object,
+      ]}
     >
-      <Text style={[rp.text, state === 'win' && (rp.textWin as object)] as object}>{text}</Text>
-    </View>
-  );
-}
-
-function VerdictShimmer() {
-  const opacity = useRef(new Animated.Value(0.3)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 700, useNativeDriver: true }),
-      ]),
-    ).start();
-  }, []);
-  return (
-    <View style={{ gap: 8, paddingVertical: 4 }}>
-      <Animated.View
-        style={{
-          opacity,
-          height: 18,
-          borderRadius: 9,
-          backgroundColor: 'rgba(245,235,220,0.15)',
-          width: '80%',
-          alignSelf: 'center',
-        }}
+      <Image
+        source={image}
+        contentFit="cover"
+        contentPosition="top"
+        style={
+          [
+            styles.arenaImage,
+            state === 'loss' && (styles.imageLoss as object),
+            right && { transform: [{ scaleX: -1 }] },
+          ] as object
+        }
       />
-      <Animated.View
-        style={{
-          opacity,
-          height: 18,
-          borderRadius: 9,
-          backgroundColor: 'rgba(245,235,220,0.15)',
-          width: '55%',
-          alignSelf: 'center',
-        }}
-      />
+      <View style={styles.portraitGradient as object} />
+      {state === 'loss' && <View style={styles.lostOverlay as object} />}
+      <PortraitLabel name={name} state={state} align={side} />
+      <SwapOverlay side={side} name={name} onPress={onSwap} />
     </View>
   );
 }
@@ -122,44 +153,17 @@ export default function WebCompareScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
 
-  const [statsA, setStatsA] = useState<HeroStats | null>(null);
-  const [statsB, setStatsB] = useState<HeroStats | null>(null);
-  const [verdict, setVerdict] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { statsA, statsB, result, overallWinner, verdict, error } = useCompareMatchup(
+    hero,
+    opponent,
+  );
+
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     const t = requestAnimationFrame(() => setMounted(true));
     return () => cancelAnimationFrame(t);
   }, []);
-
-  useEffect(() => {
-    if (!hero || !opponent) {
-      setError('Invalid hero IDs.');
-      return;
-    }
-    Promise.all([loadHeroStats(hero), loadHeroStats(opponent)])
-      .then(([a, b]) => {
-        setStatsA(a);
-        setStatsB(b);
-        const result = compareStats(a.name, a.powerstats, b.name, b.powerstats);
-        const psA = Object.fromEntries(
-          Object.entries(a.powerstats).map(([k, v]) => [k, parseInt(v, 10) || 0]),
-        );
-        const psB = Object.fromEntries(
-          Object.entries(b.powerstats).map(([k, v]) => [k, parseInt(v, 10) || 0]),
-        );
-        generateVerdict({
-          heroA: a.name,
-          heroB: b.name,
-          winsA: result.winsA,
-          winsB: result.winsB,
-          statsA: psA,
-          statsB: psB,
-        }).then(setVerdict);
-      })
-      .catch(() => setError('Could not load hero data.'));
-  }, [hero, opponent]);
 
   if (error) {
     return (
@@ -172,7 +176,7 @@ export default function WebCompareScreen() {
     );
   }
 
-  if (!statsA || !statsB) {
+  if (!statsA || !statsB || !result || !overallWinner) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={COLORS.orange} size="large" />
@@ -180,13 +184,15 @@ export default function WebCompareScreen() {
     );
   }
 
-  const result = compareStats(statsA.name, statsA.powerstats, statsB.name, statsB.powerstats);
   const imageA = heroImageSource(hero, statsA.image.url, statsA.image.portraitUrl);
   const imageB = heroImageSource(opponent, statsB.image.url, statsB.image.portraitUrl);
-  const overallWinner: 'A' | 'B' | 'tie' =
-    result.winsA > result.winsB ? 'A' : result.winsB > result.winsA ? 'B' : 'tie';
-  const aWon = overallWinner === 'A';
-  const bWon = overallWinner === 'B';
+  const stateA = portraitState(overallWinner, 'A');
+  const stateB = portraitState(overallWinner, 'B');
+
+  // Tap A → keep B (opponent becomes the fixed hero); tap B → keep A.
+  const swapA = () =>
+    router.push(`/compare/${opponent}/pick?name=${encodeURIComponent(statsB.name)}`);
+  const swapB = () => router.push(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`);
 
   const handleShare = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : '';
@@ -204,211 +210,106 @@ export default function WebCompareScreen() {
     }
   };
 
-  const portraitHeight = isDesktop ? 520 : 260;
+  const mobileCardW = Math.min(width, 480) - 24;
 
+  const controlButtons = (
+    <>
+      <Pressable
+        onPress={() => router.back()}
+        accessibilityLabel="Go back"
+        style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+          [styles.controlBtn, hovered && (styles.controlBtnHover as object)] as object
+        }
+      >
+        <Ionicons name="arrow-back" size={15} color="rgba(245,235,220,0.75)" />
+        <Text style={styles.controlText}>Back</Text>
+      </Pressable>
+
+      <Pressable
+        onPress={handleShare}
+        accessibilityLabel="Share matchup"
+        style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+          [styles.controlBtn, hovered && (styles.controlBtnHover as object)] as object
+        }
+      >
+        <Ionicons name="share-outline" size={15} color="rgba(245,235,220,0.75)" />
+        <Text style={styles.controlText}>{copied ? 'Copied!' : 'Share'}</Text>
+      </Pressable>
+    </>
+  );
+
+  if (isDesktop) {
+    /* Desktop — chromeless full-bleed arena, no page scroll. Floating Back/Share
+       over the navy; portraits flank a centered scorecard ("Tale of the Tape"). */
+    return (
+      <View style={styles.desktopRoot}>
+        <View style={[styles.controls, styles.controlsDesktop] as object}>{controlButtons}</View>
+        <View style={styles.arena}>
+          <View style={styles.arenaInner as object}>
+            <ArenaPortrait
+              image={imageA}
+              name={statsA.name}
+              side="left"
+              state={stateA}
+              onSwap={swapA}
+              mounted={mounted}
+            />
+
+            <View style={styles.scorecard}>
+              <View style={styles.scorecardVs as object}>
+                <VsBadge size={52} variant="solid" />
+              </View>
+              <VerdictReveal verdict={verdict} tone="dark" />
+              <View style={styles.scorecardStats}>
+                {result.stats.map((stat) => (
+                  <StatBattleRow key={stat.key} stat={stat} />
+                ))}
+              </View>
+            </View>
+
+            <ArenaPortrait
+              image={imageB}
+              name={statsB.name}
+              side="right"
+              state={stateB}
+              onSwap={swapB}
+              mounted={mounted}
+            />
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  /* Mobile web — native stack: fused clash card + verdict over a beige sheet. */
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.contentOuter}>
-      {/* Sub-header */}
-      <View style={styles.subHeader as object}>
-        <View style={styles.subHeaderInner}>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-              [styles.backBtn, hovered && (styles.backBtnHover as object)] as object
-            }
-          >
-            <Ionicons name="arrow-back" size={15} color={COLORS.beige} />
-            <Text style={styles.backText}>Back</Text>
-          </Pressable>
-
-          <Text style={styles.subTitle}>
-            {statsA.name} <Text style={styles.vs}>vs</Text> {statsB.name}
-          </Text>
-
-          <Pressable
-            onPress={handleShare}
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-              [styles.shareBtn, hovered && (styles.shareBtnHover as object)] as object
-            }
-          >
-            <Ionicons name="share-outline" size={15} color={COLORS.beige} />
-            <Text style={styles.shareText}>{copied ? 'Copied!' : 'Share'}</Text>
-          </Pressable>
+      <View style={styles.mobileNavyTop}>
+        <View style={styles.controls}>{controlButtons}</View>
+        <View style={[styles.mobileCard, { width: mobileCardW }]}>
+          <ClashPortraits
+            imageA={imageA}
+            imageB={imageB}
+            nameA={statsA.name}
+            nameB={statsB.name}
+            winner={overallWinner}
+            width={mobileCardW}
+            height={286}
+            onSwapA={swapA}
+            onSwapB={swapB}
+          />
+        </View>
+        <View style={styles.verdictBlock}>
+          <VerdictReveal verdict={verdict} />
         </View>
       </View>
 
-      <View style={styles.body}>
-        {isDesktop ? (
-          /* Desktop: side-by-side portrait panels + center stat column */
-          <View style={styles.desktopLayout as object}>
-            {/* Hero A portrait */}
-            <View
-              style={[
-                styles.portraitWrap,
-                aWon && (styles.portraitWin as object),
-                { height: portraitHeight },
-                {
-                  opacity: mounted ? 1 : 0,
-                  transform: [{ translateX: mounted ? 0 : -60 }],
-                  transition: 'opacity 0.45s ease-out, transform 0.45s cubic-bezier(0.22,1,0.36,1)',
-                } as object,
-              ]}
-            >
-              <Image
-                source={imageA}
-                contentFit="cover"
-                contentPosition="top"
-                style={styles.portraitImage as object}
-              />
-              <View style={styles.portraitOverlay as object} />
-              {bWon ? <View style={styles.lostOverlay as object} /> : null}
-              <View style={styles.portraitLabel}>
-                <ResultPill state={aWon ? 'win' : overallWinner === 'tie' ? 'tie' : 'loss'} />
-                {statsA.biography.publisher ? (
-                  <Text style={styles.publisher}>{statsA.biography.publisher}</Text>
-                ) : null}
-                <Text style={styles.heroNameLarge as object}>{statsA.name}</Text>
-                <Text style={styles.winsLabel}>
-                  {result.winsA} stat{result.winsA !== 1 ? 's' : ''}
-                </Text>
-              </View>
-            </View>
-
-            {/* Center: verdict + stat battle */}
-            <View style={styles.centerCol}>
-              <View style={styles.verdictCard}>
-                {verdict ? <Text style={styles.verdictText}>{verdict}</Text> : <VerdictShimmer />}
-              </View>
-              <View style={styles.battleRows}>
-                {result.stats.map((stat) => (
-                  <StatBattleRow key={stat.key} stat={stat} isDesktop={isDesktop} />
-                ))}
-              </View>
-              <Pressable
-                onPress={() =>
-                  router.push(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)
-                }
-                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [
-                    styles.compareAnotherBtn,
-                    hovered && (styles.compareAnotherHover as object),
-                  ] as object
-                }
-              >
-                <Text style={styles.compareAnotherText}>Compare someone else →</Text>
-              </Pressable>
-            </View>
-
-            {/* Hero B portrait */}
-            <View
-              style={[
-                styles.portraitWrap,
-                bWon && (styles.portraitWin as object),
-                { height: portraitHeight },
-                {
-                  opacity: mounted ? 1 : 0,
-                  transform: [{ translateX: mounted ? 0 : 60 }],
-                  transition: 'opacity 0.45s ease-out, transform 0.45s cubic-bezier(0.22,1,0.36,1)',
-                } as object,
-              ]}
-            >
-              <Image
-                source={imageB}
-                contentFit="cover"
-                contentPosition="top"
-                style={[styles.portraitImage as object, { transform: [{ scaleX: -1 }] }]}
-              />
-              <View style={styles.portraitOverlay as object} />
-              {aWon ? <View style={styles.lostOverlay as object} /> : null}
-              <View style={[styles.portraitLabel, styles.portraitLabelRight]}>
-                <ResultPill state={bWon ? 'win' : overallWinner === 'tie' ? 'tie' : 'loss'} />
-                {statsB.biography.publisher ? (
-                  <Text style={styles.publisher}>{statsB.biography.publisher}</Text>
-                ) : null}
-                <Text style={[styles.heroNameLarge, styles.textRight] as object}>
-                  {statsB.name}
-                </Text>
-                <Text style={[styles.winsLabel, styles.textRight]}>
-                  {result.winsB} stat{result.winsB !== 1 ? 's' : ''}
-                </Text>
-              </View>
-            </View>
-          </View>
-        ) : (
-          /* Mobile: stacked */
-          <View>
-            <View style={styles.mobilePortraits}>
-              <View
-                style={[
-                  styles.mobilePortraitWrap,
-                  aWon && (styles.portraitWin as object),
-                  { height: portraitHeight },
-                ]}
-              >
-                <Image
-                  source={imageA}
-                  contentFit="cover"
-                  contentPosition="top"
-                  style={StyleSheet.absoluteFill}
-                />
-                <View style={styles.portraitOverlay as object} />
-                {bWon ? <View style={styles.lostOverlay as object} /> : null}
-                <View style={styles.mobilePill as object}>
-                  <ResultPill state={aWon ? 'win' : overallWinner === 'tie' ? 'tie' : 'loss'} />
-                </View>
-                <Text style={styles.mobilePortraitName}>{statsA.name}</Text>
-                <Text style={styles.mobileWinsLabel}>
-                  {result.winsA} stat{result.winsA !== 1 ? 's' : ''}
-                </Text>
-              </View>
-              <View
-                style={[
-                  styles.mobilePortraitWrap,
-                  bWon && (styles.portraitWin as object),
-                  { height: portraitHeight },
-                ]}
-              >
-                <Image
-                  source={imageB}
-                  contentFit="cover"
-                  contentPosition="top"
-                  style={[StyleSheet.absoluteFill, { transform: [{ scaleX: -1 }] }]}
-                />
-                <View style={styles.portraitOverlay as object} />
-                {aWon ? <View style={styles.lostOverlay as object} /> : null}
-                <View style={[styles.mobilePill, styles.mobilePillRight] as object}>
-                  <ResultPill state={bWon ? 'win' : overallWinner === 'tie' ? 'tie' : 'loss'} />
-                </View>
-                <Text style={[styles.mobilePortraitName, styles.textRight]}>{statsB.name}</Text>
-                <Text style={[styles.mobileWinsLabel, styles.textRight]}>
-                  {result.winsB} stat{result.winsB !== 1 ? 's' : ''}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.verdictCard}>
-              {verdict ? <Text style={styles.verdictText}>{verdict}</Text> : <VerdictShimmer />}
-            </View>
-            <View style={styles.battleRows}>
-              {result.stats.map((stat) => (
-                <StatBattleRow key={stat.key} stat={stat} isDesktop={false} />
-              ))}
-            </View>
-            <Pressable
-              onPress={() =>
-                router.push(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)
-              }
-              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [
-                  styles.compareAnotherBtn,
-                  styles.compareAnotherBtnMobile,
-                  hovered && (styles.compareAnotherHover as object),
-                ] as object
-              }
-            >
-              <Text style={styles.compareAnotherText}>Compare someone else →</Text>
-            </Pressable>
-          </View>
-        )}
+      <View style={styles.mobileSheet}>
+        <View style={styles.mobileStats}>
+          {result.stats.map((stat) => (
+            <StatBattleRow key={stat.key} stat={stat} />
+          ))}
+        </View>
       </View>
     </ScrollView>
   );
@@ -416,283 +317,227 @@ export default function WebCompareScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
-  contentOuter: { paddingBottom: 80 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
-  errorText: { fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.navy },
+  contentOuter: { flexGrow: 1 },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    backgroundColor: COLORS.navy,
+  },
+  errorText: { fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.beige },
   retryBtn: { paddingHorizontal: 20, paddingVertical: 10 },
   retryText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.orange },
 
-  subHeader: {
-    position: 'sticky',
-    zIndex: 50,
-    backgroundColor: COLORS.navy,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(245,235,220,0.08)',
-    paddingVertical: 12,
-  } as object,
-  subHeaderInner: {
-    maxWidth: 1200,
-    alignSelf: 'center',
+  // Floating controls (no bar) — quiet pills over the immersive navy
+  controls: {
     width: '100%',
-    paddingHorizontal: 32,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    flexShrink: 0,
   },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    cursor: 'pointer',
-  } as object,
-  backBtnHover: { backgroundColor: 'rgba(245,235,220,0.08)' } as object,
-  backText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(245,235,220,0.65)' },
-  subTitle: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 18,
-    color: COLORS.beige,
-    flex: 1,
-    textAlign: 'center',
-    paddingHorizontal: 16,
-  },
-  vs: { color: COLORS.orange },
-  shareBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    cursor: 'pointer',
-  } as object,
-  shareBtnHover: { backgroundColor: 'rgba(245,235,220,0.08)' } as object,
-  shareText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(245,235,220,0.65)' },
-
-  body: {
+  controlsDesktop: {
     maxWidth: 1200,
     alignSelf: 'center',
-    width: '100%',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  desktopLayout: {
+    paddingHorizontal: 24,
+    paddingTop: 18,
+    paddingBottom: 6,
+  } as object,
+  controlBtn: {
     flexDirection: 'row',
-    gap: 20,
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(245,235,220,0.06)',
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: 'rgba(245,235,220,0.14)',
+    cursor: 'pointer',
   } as object,
+  controlBtnHover: { backgroundColor: 'rgba(245,235,220,0.13)' } as object,
+  controlText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(245,235,220,0.75)' },
 
-  portraitWrap: {
-    flex: 3,
-    borderRadius: 12,
-    overflow: 'hidden',
+  // ── Desktop arena (fixed-height, no page scroll) ───────────────
+  desktopRoot: { flex: 1, backgroundColor: COLORS.navy },
+  arena: {
+    flex: 1,
     backgroundColor: COLORS.navy,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  portraitWin: {
-    boxShadow: '0 0 0 3px #F9B222, 0 10px 36px rgba(249,178,34,0.28)',
-  } as object,
-  lostOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(18,26,31,0.45)',
-  } as object,
-  portraitImage: {
+  arenaInner: {
+    maxWidth: 1200,
     width: '100%',
     height: '100%',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 24,
   } as object,
-  portraitOverlay: {
+  arenaPortrait: {
+    flex: 1,
+    minWidth: 240,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#1b2a30',
+    position: 'relative',
+  },
+  arenaPortraitWin: {
+    boxShadow:
+      '0 0 0 2px rgba(206,155,51,0.8), 0 0 64px rgba(206,155,51,0.28), 0 18px 50px rgba(0,0,0,0.45)',
+  } as object,
+  arenaImage: { width: '100%', height: '100%' } as object,
+  imageLoss: { filter: 'grayscale(0.4) brightness(0.78)' } as object,
+  portraitGradient: {
     position: 'absolute',
-    top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundImage:
-      'linear-gradient(to top, rgba(29,45,51,0.95) 0%, rgba(29,45,51,0.3) 50%, transparent 100%)',
+    height: 200,
+    backgroundImage: 'linear-gradient(to top, rgba(0,0,0,0.78) 0%, transparent 100%)',
+  } as object,
+  lostOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(18,24,28,0.3)',
   } as object,
   portraitLabel: {
     position: 'absolute',
-    bottom: 24,
-    left: 20,
-    right: 20,
+    bottom: 28,
+    left: 24,
+    right: 24,
   },
-  portraitLabelRight: { alignItems: 'flex-end' },
-  publisher: {
+
+  scorecard: {
+    width: 468,
+    flexShrink: 0,
+    alignSelf: 'center',
+    maxHeight: '100%',
+    backgroundColor: COLORS.beige,
+    borderRadius: 18,
+    paddingTop: 40,
+    paddingBottom: 26,
+    paddingHorizontal: 30,
+    position: 'relative',
+    boxShadow:
+      'inset 0 1px 0 rgba(255,255,255,0.55), 0 2px 6px rgba(0,0,0,0.18), 0 26px 64px rgba(0,0,0,0.42)',
+  } as object,
+  scorecardVs: {
+    position: 'absolute',
+    top: -26,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 2,
+  } as object,
+  scorecardStats: {
+    gap: 16,
+    marginTop: 18,
+  },
+
+  // ── Shared winner treatment ────────────────────────────────────
+  eyebrowWin: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
-    color: COLORS.orange,
+    color: COLORS.goldAccent,
     textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 6,
+    letterSpacing: 2.5,
+    marginBottom: 4,
+  },
+  eyebrowTie: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: 'rgba(245,235,220,0.6)',
+    textTransform: 'uppercase',
+    letterSpacing: 2.5,
+    marginBottom: 4,
   },
   heroNameLarge: {
     fontFamily: 'Flame-Regular',
-    fontSize: 32,
+    fontSize: 30,
     color: COLORS.beige,
     lineHeight: 34,
-    marginBottom: 6,
-    textShadow: '0 2px 12px rgba(0,0,0,0.6)',
+    textShadow: '0 2px 12px rgba(0,0,0,0.7)',
   } as object,
-  winsLabel: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: 'rgba(245,235,220,0.5)',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+  heroNameDim: { color: 'rgba(245,235,220,0.55)' },
+  winRule: {
+    height: 2,
+    width: 34,
+    borderRadius: 2,
+    backgroundColor: COLORS.goldAccent,
+    marginTop: 8,
+    alignSelf: 'flex-start',
   },
-
-  centerCol: { flex: 2, gap: 16, minWidth: 220 },
-  verdictCard: {
-    backgroundColor: COLORS.navy,
-    borderRadius: 10,
-    padding: 20,
-    marginBottom: 4,
-  },
-  verdictText: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 18,
-    color: COLORS.beige,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  battleRows: { gap: 8 },
-  compareAnotherBtn: {
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(41,60,67,0.2)',
-    alignItems: 'center',
-    cursor: 'pointer',
-    marginTop: 4,
-  } as object,
-  compareAnotherBtnMobile: {
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  compareAnotherHover: { backgroundColor: 'rgba(41,60,67,0.06)' } as object,
-  compareAnotherText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    color: COLORS.navy,
-    opacity: 0.5,
-    letterSpacing: 0.3,
-  },
-
-  mobilePortraits: { flexDirection: 'row', gap: 6, marginBottom: 16 },
-  mobilePortraitWrap: {
-    flex: 1,
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: COLORS.navy,
-  },
-  mobilePill: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-  } as object,
-  mobilePillRight: {
-    left: undefined,
-    right: 10,
-    alignItems: 'flex-end',
-  } as object,
-  mobilePortraitName: {
-    position: 'absolute',
-    bottom: 24,
-    left: 10,
-    right: 6,
-    fontFamily: 'Flame-Regular',
-    fontSize: 16,
-    color: COLORS.beige,
-    lineHeight: 19,
-  },
-  mobileWinsLabel: {
-    position: 'absolute',
-    bottom: 8,
-    left: 10,
-    right: 6,
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: 'rgba(245,235,220,0.5)',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
+  winRuleRight: { alignSelf: 'flex-end' },
+  alignEnd: { alignItems: 'flex-end' },
   textRight: { textAlign: 'right' },
-});
 
-const wb = StyleSheet.create({
-  row: {
+  // ── Swap affordance ────────────────────────────────────────────
+  swapHit: {
+    ...StyleSheet.absoluteFillObject,
+    cursor: 'pointer',
+  } as object,
+  swapHitHover: { backgroundColor: 'rgba(0,0,0,0.12)' } as object,
+  swapChip: {
+    position: 'absolute',
+    top: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 4,
-  },
-  side: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sideRight: { flexDirection: 'row-reverse' },
-  val: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    color: 'rgba(41,60,67,0.3)',
-    width: 24,
-    textAlign: 'center',
-    flexShrink: 0,
-  },
-  valWin: { color: COLORS.navy },
-  track: {
-    flex: 1,
-    height: 8,
-    backgroundColor: 'rgba(41,60,67,0.08)',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  barLeft: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    borderRadius: 4,
-  },
-  barRight: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    borderRadius: 4,
-  },
-  label: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: COLORS.grey,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    width: 68,
-    textAlign: 'center',
-    flexShrink: 0,
-  },
-  labelDesktop: { width: 90, fontSize: 10 } as object,
-});
-
-const rp = StyleSheet.create({
-  pill: {
-    alignSelf: 'flex-start',
+    gap: 4,
     paddingHorizontal: 9,
-    paddingVertical: 3,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginBottom: 8,
+    paddingVertical: 5,
+    borderRadius: 13,
+    backgroundColor: 'rgba(18,14,10,0.5)',
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: 'rgba(245,235,220,0.4)',
   },
-  win: { backgroundColor: COLORS.yellow, borderColor: 'rgba(255,255,255,0.6)' },
-  loss: { backgroundColor: 'rgba(0,0,0,0.3)', borderColor: 'rgba(255,255,255,0.15)' },
-  tie: { backgroundColor: 'rgba(245,235,220,0.18)', borderColor: 'rgba(245,235,220,0.4)' },
-  text: {
+  swapChipLeft: { left: 14 },
+  swapChipRight: { right: 14 },
+  swapChipText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: 'rgba(255,255,255,0.9)',
+    fontSize: 9.5,
+    color: COLORS.beige,
     textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    letterSpacing: 1,
   },
-  textWin: { color: COLORS.navy },
+
+  // ── Mobile web (native stack) ──────────────────────────────────
+  mobileNavyTop: {
+    backgroundColor: COLORS.navy,
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 30,
+  },
+  mobileCard: {
+    height: 286,
+    borderRadius: 22,
+    overflow: 'hidden',
+    backgroundColor: '#1b2a30',
+    boxShadow: '0 10px 26px rgba(0,0,0,0.4)',
+  } as object,
+  verdictBlock: {
+    minHeight: 76,
+    paddingTop: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mobileSheet: {
+    flexGrow: 1,
+    backgroundColor: COLORS.beige,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -14,
+    paddingTop: 24,
+    paddingBottom: 40,
+  },
+  mobileStats: {
+    gap: 18,
+    paddingHorizontal: 20,
+  },
 });

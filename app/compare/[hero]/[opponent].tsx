@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   Share,
   Dimensions,
 } from 'react-native';
@@ -14,16 +12,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { SymbolView } from 'expo-symbols';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getHeroById, heroRowToCharacterData } from '../../../src/lib/db/heroes';
-import { fetchHeroStats, type VerdictInput } from '../../../src/lib/api';
-import { useVerdict } from '../../../src/lib/query/heroQueries';
 import { heroImageSource } from '../../../src/constants/heroImages';
-import { compareStats } from '../../../src/lib/compare';
-import type { StatResult } from '../../../src/lib/compare';
-import type { HeroStats } from '../../../src/types';
+import { useCompareMatchup } from '../../../src/hooks/useCompareMatchup';
 import { COLORS } from '../../../src/constants/colors';
 import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
 import { VerdictReveal } from '../../../src/components/compare/VerdictReveal';
+import { StatBattleRow } from '../../../src/components/compare/StatBattleRow';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 12;
@@ -38,82 +32,15 @@ const headerBase = {
   headerBackButtonDisplayMode: 'minimal',
 } as const;
 
-async function loadHeroStats(id: string): Promise<HeroStats> {
-  const row = await getHeroById(id);
-  if (row?.enriched_at) return heroRowToCharacterData(row).stats;
-  return fetchHeroStats(id);
-}
-
-const BAR_DIM = 'rgba(41,60,67,0.16)';
-
-function StatBattleRow({ stat }: { stat: StatResult }) {
-  const aStrong = stat.winner !== 'B'; // win or tie → strong
-  const bStrong = stat.winner !== 'A';
-
-  return (
-    <View>
-      <View style={battle.head}>
-        <Text style={[battle.val, aStrong ? battle.valStrong : battle.valDim]}>{stat.valueA}</Text>
-        <Text style={battle.label}>{stat.label}</Text>
-        <Text style={[battle.val, bStrong ? battle.valStrong : battle.valDim]}>{stat.valueB}</Text>
-      </View>
-      <View style={battle.track}>
-        <View style={[battle.half, battle.halfLeft]}>
-          <View
-            style={[
-              battle.barLeft,
-              { width: `${stat.valueA}%`, backgroundColor: aStrong ? COLORS.navy : BAR_DIM } as object,
-            ]}
-          />
-        </View>
-        <View style={battle.half}>
-          <View
-            style={[
-              battle.barRight,
-              { width: `${stat.valueB}%`, backgroundColor: bStrong ? COLORS.navy : BAR_DIM } as object,
-            ]}
-          />
-        </View>
-      </View>
-    </View>
-  );
-}
-
 export default function NativeCompareScreen() {
   const { hero, opponent } = useLocalSearchParams<{ hero: string; opponent: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const [statsA, setStatsA] = useState<HeroStats | null>(null);
-  const [statsB, setStatsB] = useState<HeroStats | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    Promise.all([loadHeroStats(hero), loadHeroStats(opponent)])
-      .then(([a, b]) => {
-        setStatsA(a);
-        setStatsB(b);
-      })
-      .catch(() => setError('Could not load hero data.'));
-  }, [hero, opponent]);
-
-  // Verdict is cached per matchup (staleTime: Infinity), so the AI edge function
-  // is invoked once — revisiting the same pair reuses the generated text.
-  const verdictInput = useMemo<VerdictInput | null>(() => {
-    if (!statsA || !statsB) return null;
-    const r = compareStats(statsA.name, statsA.powerstats, statsB.name, statsB.powerstats);
-    const toNums = (ps: HeroStats['powerstats']) =>
-      Object.fromEntries(Object.entries(ps).map(([k, v]) => [k, parseInt(v, 10) || 0]));
-    return {
-      heroA: statsA.name,
-      heroB: statsB.name,
-      winsA: r.winsA,
-      winsB: r.winsB,
-      statsA: toNums(statsA.powerstats),
-      statsB: toNums(statsB.powerstats),
-    };
-  }, [statsA, statsB]);
-  const verdict = useVerdict(hero, opponent, verdictInput).data ?? null;
+  const { statsA, statsB, result, overallWinner, verdict, error } = useCompareMatchup(
+    hero,
+    opponent,
+  );
 
   if (error) {
     return (
@@ -128,7 +55,7 @@ export default function NativeCompareScreen() {
     );
   }
 
-  if (!statsA || !statsB) {
+  if (!statsA || !statsB || !result || !overallWinner) {
     return (
       <View style={styles.loading}>
         <Stack.Screen options={headerBase} />
@@ -137,11 +64,8 @@ export default function NativeCompareScreen() {
     );
   }
 
-  const result = compareStats(statsA.name, statsA.powerstats, statsB.name, statsB.powerstats);
   const imageA = heroImageSource(hero, statsA.image.url, statsA.image.portraitUrl);
   const imageB = heroImageSource(opponent, statsB.image.url, statsB.image.portraitUrl);
-  const overallWinner: 'A' | 'B' | 'tie' =
-    result.winsA > result.winsB ? 'A' : result.winsB > result.winsA ? 'B' : 'tie';
 
   const handleShare = () => {
     Share.share({
@@ -290,36 +214,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 24,
   },
-});
-
-const battle = StyleSheet.create({
-  head: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  val: { fontVariant: ['tabular-nums'] },
-  valStrong: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 16,
-    color: COLORS.navy,
-  },
-  valDim: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 14,
-    color: 'rgba(41,60,67,0.4)',
-  },
-  label: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9.5,
-    color: '#9a9388',
-    textTransform: 'uppercase',
-    letterSpacing: 1.6,
-  },
-  track: { flexDirection: 'row', height: 9, gap: 6 },
-  half: { flex: 1, flexDirection: 'row' },
-  halfLeft: { justifyContent: 'flex-end' },
-  barLeft: { height: '100%', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 },
-  barRight: { height: '100%', borderTopRightRadius: 5, borderBottomRightRadius: 5 },
 });

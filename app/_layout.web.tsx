@@ -5,10 +5,12 @@ import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { Nunito_400Regular, Nunito_700Bold, Nunito_900Black } from '@expo-google-fonts/nunito';
 import { Righteous_400Regular } from '@expo-google-fonts/righteous';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { useAuth } from '../src/hooks/useAuth';
 import { LogoLoader } from '../src/components/ui/LogoLoader';
 import { TopNav } from '../src/components/web/TopNav';
 import { SearchProvider } from '../src/contexts/SearchContext';
+import { queryClient } from '../src/lib/query/queryClient';
 import { COLORS } from '../src/constants/colors';
 
 function WebAuthGate() {
@@ -62,10 +64,10 @@ export default function WebRootLayout() {
   if (!fontsLoaded && !fontError) return <LogoLoader />;
 
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       <StatusBar style="dark" />
       <WebAuthGate />
-    </>
+    </QueryClientProvider>
   );
 }
 

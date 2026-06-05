@@ -11,13 +11,22 @@ import Animated, {
 import { COLORS } from '../../constants/colors';
 
 /**
- * Holds the verdict slot in the navy header.
- * While the AI verdict is generating it shows a quiet pulsing skeleton (no
- * throwaway placeholder copy), then crossfades the quote in once it arrives —
- * one voice, no text-swap jump.
+ * Holds the verdict slot. While the AI verdict is generating it shows a quiet
+ * pulsing skeleton (no throwaway placeholder copy), then crossfades the quote
+ * in once it arrives — one voice, no text-swap jump.
+ *
+ * `tone="light"` (default) for the navy header; `tone="dark"` for the beige
+ * scorecard on the web arena.
  */
-export function VerdictReveal({ verdict }: { verdict: string | null }) {
+export function VerdictReveal({
+  verdict,
+  tone = 'light',
+}: {
+  verdict: string | null;
+  tone?: 'light' | 'dark';
+}) {
   const pulse = useSharedValue(0.35);
+  const dark = tone === 'dark';
 
   useEffect(() => {
     pulse.value = withRepeat(
@@ -31,7 +40,10 @@ export function VerdictReveal({ verdict }: { verdict: string | null }) {
 
   if (verdict) {
     return (
-      <Animated.Text entering={FadeIn.duration(450)} style={styles.verdict}>
+      <Animated.Text
+        entering={FadeIn.duration(450)}
+        style={[styles.verdict, dark && styles.verdictDark]}
+      >
         {`“${verdict}”`}
       </Animated.Text>
     );
@@ -42,8 +54,8 @@ export function VerdictReveal({ verdict }: { verdict: string | null }) {
       style={[styles.skeleton, skeletonStyle]}
       accessibilityLabel="Generating verdict"
     >
-      <View style={[styles.line, styles.lineWide]} />
-      <View style={[styles.line, styles.lineNarrow]} />
+      <View style={[styles.line, dark && styles.lineDark, styles.lineWide]} />
+      <View style={[styles.line, dark && styles.lineDark, styles.lineNarrow]} />
     </Animated.View>
   );
 }
@@ -56,6 +68,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
+  verdictDark: { color: COLORS.navy },
   skeleton: {
     width: '100%',
     alignItems: 'center',
@@ -67,6 +80,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: 'rgba(245,235,220,0.16)',
   },
+  lineDark: { backgroundColor: 'rgba(41,60,67,0.14)' },
   lineWide: { width: '82%' },
   lineNarrow: { width: '54%' },
 });

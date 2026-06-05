@@ -211,11 +211,20 @@ function verdictFallback(input: VerdictInput): string {
   return `${winner} takes it — ${wins} of 6 stats.`;
 }
 
+// Generous timeout: the Gemini call runs ~0.7–2s server-side, and on web the
+// browser adds a CORS preflight round-trip before the POST. 3s tripped the
+// fallback on web even though the edge function succeeded; 9s leaves headroom
+// while still bounding a genuinely hung request. Verdicts are cached per
+// matchup (React Query, staleTime: Infinity), so this cost is paid once.
+const VERDICT_TIMEOUT_MS = 9000;
+
 export async function generateVerdict(input: VerdictInput): Promise<string> {
   try {
     const { data, error } = await Promise.race([
       supabase.functions.invoke<{ verdict?: string }>('generate-verdict', { body: input }),
-      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), VERDICT_TIMEOUT_MS),
+      ),
     ]);
     if (error || !data) return verdictFallback(input);
     return data.verdict?.trim() || verdictFallback(input);

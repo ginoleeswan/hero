@@ -1,17 +1,29 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { COLORS } from '../../constants/colors';
 
 interface VsBadgeProps {
   size?: number;
+  /**
+   * `glass` — dark translucent disc for the seam between portraits (native).
+   * `solid` — opaque navy medallion that reads cleanly on a light surface (web scorecard).
+   */
+  variant?: 'glass' | 'solid';
 }
 
 /**
- * Restrained typographic VS marker.
- * A small dark, semi-transparent disc with a hairline edge and the display "VS".
- * Sits on the seam between the two portraits — quiet, editorial, not a sticker.
+ * Restrained typographic VS marker — the display "VS" on a small disc.
+ * Sits between the two combatants; quiet and editorial, not a sticker.
  */
-export function VsBadge({ size = 46 }: VsBadgeProps) {
+export function VsBadge({ size = 46, variant = 'glass' }: VsBadgeProps) {
+  const solid = variant === 'solid';
   return (
-    <View style={[styles.ring, { width: size, height: size, borderRadius: size / 2 }]}>
+    <View
+      style={[
+        styles.ring,
+        solid && (styles.ringSolid as object),
+        { width: size, height: size, borderRadius: size / 2 },
+      ]}
+    >
       <Text style={styles.vs}>VS</Text>
     </View>
   );
@@ -25,6 +37,11 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth * 2,
     borderColor: 'rgba(245,235,220,0.45)',
   },
+  ringSolid: {
+    backgroundColor: COLORS.navy,
+    borderColor: 'rgba(245,235,220,0.22)',
+    boxShadow: '0 6px 18px rgba(0,0,0,0.35)',
+  } as object,
   vs: {
     fontFamily: 'Flame-Regular',
     fontSize: 17,
