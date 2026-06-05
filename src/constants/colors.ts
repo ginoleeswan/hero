@@ -12,4 +12,5 @@ export const COLORS = {
   brown: '#502314',
   purple: '#7c3aed',
   gold: '#b07d00',
+  goldAccent: '#CE9B33',
 } as const;

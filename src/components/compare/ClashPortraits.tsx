@@ -1,34 +1,36 @@
 import { useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
-import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withSpring,
-  withSequence,
   withDelay,
   Easing,
 } from 'react-native-reanimated';
-import { SpeedLines } from './SpeedLines';
 import { VsBadge } from './VsBadge';
 import { COLORS } from '../../constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const SEAM_WIDTH = 30;
+const SEAM_WIDTH = 28;
+const BADGE_SIZE = 46;
 
 export interface ClashPortraitsProps {
   imageA: number | { uri: string };
   imageB: number | { uri: string };
   nameA: string;
   nameB: string;
-  /** 'A' | 'B' | 'tie' — controls winner/loser label */
+  /** 'A' | 'B' | 'tie' — controls winner/loser cue */
   winner: 'A' | 'B' | 'tie';
   height?: number;
   /** Total width of the clash stage. Defaults to the full screen width. */
   width?: number;
+  /** Tap the left portrait to replace hero A. */
+  onSwapA?: () => void;
+  /** Tap the right portrait to replace hero B. */
+  onSwapB?: () => void;
 }
 
 export function ClashPortraits({
@@ -39,150 +41,135 @@ export function ClashPortraits({
   winner,
   height = 280,
   width = SCREEN_WIDTH,
+  onSwapA,
+  onSwapB,
 }: ClashPortraitsProps) {
   const PANEL_WIDTH = width / 2;
 
-  const leftX = useSharedValue(-SCREEN_WIDTH);
-  const rightX = useSharedValue(SCREEN_WIDTH);
-  const shakeX = useSharedValue(0);
-  const flashOp = useSharedValue(0);
-  const badgeScale = useSharedValue(0);
-  const badgeRot = useSharedValue(-10);
+  const leftX = useSharedValue(-width);
+  const rightX = useSharedValue(width);
+  const badgeP = useSharedValue(0);
   const labelsOp = useSharedValue(0);
   const resultOp = useSharedValue(0);
 
   useEffect(() => {
-    const easeOut = Easing.out(Easing.poly(3));
+    const easeOut = Easing.out(Easing.cubic);
 
-    // 1. Portraits slam in
-    leftX.value = withDelay(60, withTiming(0, { duration: 420, easing: easeOut }));
-    rightX.value = withDelay(60, withTiming(0, { duration: 420, easing: easeOut }));
+    // Portraits glide in and settle
+    leftX.value = withDelay(60, withTiming(0, { duration: 520, easing: easeOut }));
+    rightX.value = withDelay(60, withTiming(0, { duration: 520, easing: easeOut }));
 
-    // 2. Screen shake + flash at clash moment
-    shakeX.value = withDelay(
-      630,
-      withSequence(
-        withTiming(-5, { duration: 40 }),
-        withTiming(5, { duration: 40 }),
-        withTiming(-3, { duration: 35 }),
-        withTiming(3, { duration: 35 }),
-        withTiming(0, { duration: 30 }),
-      ),
-    );
-    flashOp.value = withDelay(
-      640,
-      withSequence(withTiming(0.9, { duration: 60 }), withTiming(0, { duration: 160 })),
-    );
+    // VS marker fades + eases up
+    badgeP.value = withDelay(520, withTiming(1, { duration: 320, easing: easeOut }));
 
-    // 4. VS badge pops in
-    badgeScale.value = withDelay(760, withSpring(1, { damping: 10, stiffness: 180 }));
-    badgeRot.value = withDelay(760, withTiming(0, { duration: 300, easing: easeOut }));
+    // Names fade in
+    labelsOp.value = withDelay(680, withTiming(1, { duration: 320 }));
 
-    // 5. Labels + names fade in
-    labelsOp.value = withDelay(950, withTiming(1, { duration: 250 }));
-
-    // 6. Verdict reveal — winner glow blooms, loser fades to defeat
-    resultOp.value = withDelay(1080, withTiming(1, { duration: 420, easing: easeOut }));
+    // Result reveal — loser quietly recedes
+    resultOp.value = withDelay(820, withTiming(1, { duration: 460, easing: easeOut }));
   }, []);
 
   const leftStyle = useAnimatedStyle(() => ({ transform: [{ translateX: leftX.value }] }));
   const rightStyle = useAnimatedStyle(() => ({ transform: [{ translateX: rightX.value }] }));
-  const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shakeX.value }] }));
-  const flashStyle = useAnimatedStyle(() => ({ opacity: flashOp.value }));
-  const badgeStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: badgeScale.value }, { rotate: `${badgeRot.value}deg` }],
-  }));
   const labelsStyle = useAnimatedStyle(() => ({ opacity: labelsOp.value }));
   const resultStyle = useAnimatedStyle(() => ({ opacity: resultOp.value }));
+  const badgeStyle = useAnimatedStyle(() => ({
+    opacity: badgeP.value,
+    transform: [{ scale: 0.86 + badgeP.value * 0.14 }],
+  }));
 
-  const labelA = winner === 'A' ? 'Winner' : winner === 'tie' ? 'Tie' : 'Lost';
-  const labelB = winner === 'B' ? 'Winner' : winner === 'tie' ? 'Tie' : 'Lost';
-  const isWinA = winner === 'A' || winner === 'tie';
-  const isWinB = winner === 'B' || winner === 'tie';
-  const glowOpacity = winner === 'tie' ? 0.28 : 0.55;
+  const winA = winner === 'A';
+  const winB = winner === 'B';
+  const tie = winner === 'tie';
+  const isWinA = winA || tie;
+  const isWinB = winB || tie;
 
   return (
-    <Animated.View style={[{ height, overflow: 'hidden' }, shakeStyle]}>
+    <Animated.View style={{ height, overflow: 'hidden' }}>
       {/* Left panel */}
       <Animated.View style={[styles.panelLeft, { height, width: PANEL_WIDTH }, leftStyle]}>
         <View style={styles.panelBg} />
-        <SpeedLines side="left" width={PANEL_WIDTH} height={height} />
         <Image
           source={imageA}
           contentFit="cover"
           contentPosition="top"
           style={StyleSheet.absoluteFill}
         />
-        {isWinA ? (
-          <Animated.View style={[StyleSheet.absoluteFill, resultStyle]} pointerEvents="none">
-            <Svg style={StyleSheet.absoluteFill}>
-              <Defs>
-                <RadialGradient id="glowL" cx="50%" cy="42%" rx="80%" ry="80%">
-                  <Stop offset="48%" stopColor="#F9B222" stopOpacity={0} />
-                  <Stop offset="100%" stopColor="#F9B222" stopOpacity={glowOpacity} />
-                </RadialGradient>
-              </Defs>
-              <Rect x="0" y="0" width="100%" height="100%" fill="url(#glowL)" />
-            </Svg>
-          </Animated.View>
-        ) : (
+        {!isWinA && (
           <Animated.View
             style={[StyleSheet.absoluteFill, styles.loserScrim, resultStyle]}
             pointerEvents="none"
           />
         )}
-        <View style={styles.bottomGrad} />
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.72)']}
+          style={styles.bottomGrad}
+          pointerEvents="none"
+        />
         <Animated.View style={[styles.labelsLeft, labelsStyle]}>
-          <View style={[styles.statusPill, isWinA ? styles.pillWin : styles.pillLoss]}>
-            <Text style={[styles.statusText, isWinA && styles.statusTextWin]}>{labelA}</Text>
-          </View>
+          {winA && <Text style={styles.eyebrow}>Winner</Text>}
+          {tie && <Text style={styles.eyebrowTie}>Draw</Text>}
           <Text style={[styles.heroName, !isWinA && styles.heroNameDim]}>{nameA}</Text>
+          {winA && <View style={styles.winRule} />}
         </Animated.View>
+        {onSwapA && (
+          <Pressable
+            onPress={onSwapA}
+            style={({ pressed }) => [StyleSheet.absoluteFill, pressed && styles.panelPressed]}
+            accessibilityRole="button"
+            accessibilityLabel={`Replace ${nameA}`}
+            accessibilityHint="Choose a different hero for this side"
+          >
+            <View style={[styles.swapChip, styles.swapChipLeft]}>
+              <Ionicons name="swap-horizontal" size={13} color={COLORS.beige} />
+              <Text style={styles.swapText}>Swap</Text>
+            </View>
+          </Pressable>
+        )}
       </Animated.View>
 
       {/* Right panel */}
       <Animated.View style={[styles.panelRight, { height, width: PANEL_WIDTH }, rightStyle]}>
         <View style={styles.panelBg} />
-        <SpeedLines side="right" width={PANEL_WIDTH} height={height} />
         <Image
           source={imageB}
           contentFit="cover"
           contentPosition="top"
           style={[StyleSheet.absoluteFill, styles.flipped]}
         />
-        {isWinB ? (
-          <Animated.View style={[StyleSheet.absoluteFill, resultStyle]} pointerEvents="none">
-            <Svg style={StyleSheet.absoluteFill}>
-              <Defs>
-                <RadialGradient id="glowR" cx="50%" cy="42%" rx="80%" ry="80%">
-                  <Stop offset="48%" stopColor="#F9B222" stopOpacity={0} />
-                  <Stop offset="100%" stopColor="#F9B222" stopOpacity={glowOpacity} />
-                </RadialGradient>
-              </Defs>
-              <Rect x="0" y="0" width="100%" height="100%" fill="url(#glowR)" />
-            </Svg>
-          </Animated.View>
-        ) : (
+        {!isWinB && (
           <Animated.View
             style={[StyleSheet.absoluteFill, styles.loserScrim, resultStyle]}
             pointerEvents="none"
           />
         )}
-        <View style={styles.bottomGrad} />
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.72)']}
+          style={styles.bottomGrad}
+          pointerEvents="none"
+        />
         <Animated.View style={[styles.labelsRight, labelsStyle]}>
-          <View
-            style={[
-              styles.statusPill,
-              styles.statusPillRight,
-              isWinB ? styles.pillWin : styles.pillLoss,
-            ]}
-          >
-            <Text style={[styles.statusText, isWinB && styles.statusTextWin]}>{labelB}</Text>
-          </View>
-          <Text style={[styles.heroName, styles.heroNameRight, !isWinB && styles.heroNameDim]}>
+          {winB && <Text style={[styles.eyebrow, styles.textRight]}>Winner</Text>}
+          {tie && <Text style={[styles.eyebrowTie, styles.textRight]}>Draw</Text>}
+          <Text style={[styles.heroName, styles.textRight, !isWinB && styles.heroNameDim]}>
             {nameB}
           </Text>
+          {winB && <View style={[styles.winRule, styles.winRuleRight]} />}
         </Animated.View>
+        {onSwapB && (
+          <Pressable
+            onPress={onSwapB}
+            style={({ pressed }) => [StyleSheet.absoluteFill, pressed && styles.panelPressed]}
+            accessibilityRole="button"
+            accessibilityLabel={`Replace ${nameB}`}
+            accessibilityHint="Choose a different hero for this side"
+          >
+            <View style={[styles.swapChip, styles.swapChipRight]}>
+              <Ionicons name="swap-horizontal" size={13} color={COLORS.beige} />
+              <Text style={styles.swapText}>Swap</Text>
+            </View>
+          </Pressable>
+        )}
       </Animated.View>
 
       {/* Soft center seam */}
@@ -194,18 +181,16 @@ export function ClashPortraits({
         pointerEvents="none"
       />
 
-      {/* VS Badge */}
+      {/* VS marker */}
       <Animated.View
-        style={[styles.badgeWrap, { top: height * 0.64 - 38, left: PANEL_WIDTH - 60 }, badgeStyle]}
+        style={[
+          styles.badgeWrap,
+          { top: height * 0.67 - BADGE_SIZE / 2, left: PANEL_WIDTH - BADGE_SIZE / 2 },
+          badgeStyle,
+        ]}
       >
-        <VsBadge size={76} />
+        <VsBadge size={BADGE_SIZE} />
       </Animated.View>
-
-      {/* White flash overlay */}
-      <Animated.View
-        style={[StyleSheet.absoluteFill, styles.flash, flashStyle]}
-        pointerEvents="none"
-      />
     </Animated.View>
   );
 }
@@ -230,60 +215,65 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 56,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    height: 120,
   },
   flipped: {
     transform: [{ scaleX: -1 }],
   },
-  loserScrim: { backgroundColor: 'rgba(18,26,31,0.58)' },
+  loserScrim: { backgroundColor: 'rgba(22,30,34,0.55)' },
   labelsLeft: {
     position: 'absolute',
-    bottom: 12,
-    left: 10,
-    right: 30,
+    bottom: 16,
+    left: 16,
+    right: 28,
   },
   labelsRight: {
     position: 'absolute',
-    bottom: 12,
-    right: 10,
-    left: 30,
+    bottom: 16,
+    right: 16,
+    left: 28,
     alignItems: 'flex-end',
   },
-  statusPillRight: {
-    alignSelf: 'flex-end',
-  },
-  statusPill: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 20,
-    marginBottom: 4,
-    borderWidth: 1,
-  },
-  pillWin: { backgroundColor: COLORS.yellow, borderColor: 'rgba(255,255,255,0.6)' },
-  pillLoss: { backgroundColor: 'rgba(0,0,0,0.3)', borderColor: 'rgba(255,255,255,0.12)' },
-  statusText: {
+  eyebrow: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 8,
-    color: 'rgba(255,255,255,0.85)',
+    fontSize: 10,
+    color: COLORS.goldAccent,
     textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    letterSpacing: 2.5,
+    marginBottom: 3,
   },
-  statusTextWin: { color: COLORS.navy },
+  eyebrowTie: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: 'rgba(245,235,220,0.6)',
+    textTransform: 'uppercase',
+    letterSpacing: 2.5,
+    marginBottom: 3,
+  },
   heroName: {
     fontFamily: 'Flame-Regular',
-    fontSize: 14,
-    color: 'white',
-    textShadowColor: 'rgba(0,0,0,0.9)',
+    fontSize: 17,
+    color: '#fff',
+    textShadowColor: 'rgba(0,0,0,0.85)',
     textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
+    textShadowRadius: 8,
   },
   heroNameDim: {
-    color: 'rgba(245,235,220,0.62)',
+    color: 'rgba(245,235,220,0.6)',
   },
-  heroNameRight: {
+  textRight: {
     textAlign: 'right',
+  },
+  winRule: {
+    height: 2,
+    width: 34,
+    borderRadius: 2,
+    backgroundColor: COLORS.goldAccent,
+    marginTop: 7,
+    alignSelf: 'flex-start',
+  },
+  winRuleRight: {
+    alignSelf: 'flex-end',
   },
   seam: {
     position: 'absolute',
@@ -295,8 +285,29 @@ const styles = StyleSheet.create({
     position: 'absolute',
     zIndex: 20,
   },
-  flash: {
-    backgroundColor: 'white',
-    zIndex: 100,
+  panelPressed: {
+    backgroundColor: 'rgba(0,0,0,0.16)',
+  },
+  swapChip: {
+    position: 'absolute',
+    top: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 13,
+    backgroundColor: 'rgba(18,14,10,0.5)',
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: 'rgba(245,235,220,0.4)',
+  },
+  swapChipLeft: { left: 12 },
+  swapChipRight: { right: 12 },
+  swapText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9.5,
+    color: COLORS.beige,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
 });
