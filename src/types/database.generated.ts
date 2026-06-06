@@ -280,6 +280,27 @@ export type Database = {
         }
         Relationships: []
       }
+      verdicts: {
+        Row: {
+          created_at: string
+          hero_a_id: string
+          hero_b_id: string
+          verdict: string
+        }
+        Insert: {
+          created_at?: string
+          hero_a_id: string
+          hero_b_id: string
+          verdict: string
+        }
+        Update: {
+          created_at?: string
+          hero_a_id?: string
+          hero_b_id?: string
+          verdict?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

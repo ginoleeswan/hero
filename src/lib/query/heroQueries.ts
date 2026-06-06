@@ -12,6 +12,7 @@ import {
 } from '../db/heroes';
 import { DEFAULT_FILTERS, type CategoryFilters } from '../db/categoryFilters';
 import { generateVerdict, type VerdictInput } from '../api';
+import { getCachedVerdict, saveVerdict } from '../db/verdicts';
 import { queryKeys } from './keys';
 import { findCachedHero } from './heroCache';
 
@@ -74,8 +75,9 @@ export function prefetchHeroRow(client: QueryClient, id: string) {
   });
 }
 
-/** AI battle verdict for a matchup. Cached forever per ordered hero pair so the
- *  edge function is only invoked once — revisiting a matchup reuses the text. */
+/** AI battle verdict for a matchup. DB-persisted so the edge function is called
+ *  at most once per matchup pair across all users and refreshes. React Query
+ *  provides the in-session layer; Supabase provides cross-session persistence. */
 export function useVerdict(
   heroId: string,
   opponentId: string,
@@ -84,7 +86,13 @@ export function useVerdict(
   return useQuery({
     queryKey: queryKeys.verdict(heroId, opponentId),
     enabled: !!input,
-    queryFn: () => generateVerdict(input!),
+    queryFn: async () => {
+      const cached = await getCachedVerdict(heroId, opponentId);
+      if (cached) return cached;
+      const verdict = await generateVerdict(input!);
+      await saveVerdict(heroId, opponentId, verdict);
+      return verdict;
+    },
     staleTime: Infinity,
     gcTime: Infinity,
   });
