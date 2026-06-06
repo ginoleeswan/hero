@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -18,8 +18,13 @@ import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
 import { VerdictReveal } from '../../../src/components/compare/VerdictReveal';
 import { StatBattleRow } from '../../../src/components/compare/StatBattleRow';
 import { VsBadge } from '../../../src/components/compare/VsBadge';
+import { getFighterArt } from '../../../src/lib/compareHandoff';
 
-type PortraitState = 'win' | 'loss' | 'tie';
+// Must match the picker — the locked hero (A) and chosen card (B) morph in.
+const VT_HERO = 'vt-fighter-a';
+const VT_PICK = 'vt-fighter-b';
+
+type PortraitState = 'win' | 'loss' | 'tie' | 'neutral';
 
 function portraitState(overall: 'A' | 'B' | 'tie', thisSide: 'A' | 'B'): PortraitState {
   if (overall === 'tie') return 'tie';
@@ -105,14 +110,14 @@ function ArenaPortrait({
   side,
   state,
   onSwap,
-  mounted,
+  vtName,
 }: {
   image: number | { uri: string };
   name: string;
   side: 'left' | 'right';
   state: PortraitState;
   onSwap: () => void;
-  mounted: boolean;
+  vtName?: string;
 }) {
   const right = side === 'right';
   return (
@@ -120,11 +125,7 @@ function ArenaPortrait({
       style={[
         styles.arenaPortrait,
         state === 'win' && (styles.arenaPortraitWin as object),
-        {
-          opacity: mounted ? 1 : 0,
-          transform: [{ translateX: mounted ? 0 : right ? 60 : -60 }],
-          transition: 'opacity 0.5s ease-out, transform 0.55s cubic-bezier(0.22,1,0.36,1)',
-        } as object,
+        vtName ? ({ viewTransitionName: vtName } as object) : null,
       ]}
     >
       <Image
@@ -141,7 +142,7 @@ function ArenaPortrait({
       />
       <View style={styles.portraitGradient as object} />
       {state === 'loss' && <View style={styles.lostOverlay as object} />}
-      <PortraitLabel name={name} state={state} align={side} />
+      {name ? <PortraitLabel name={name} state={state} align={side} /> : null}
       <SwapOverlay side={side} name={name} onPress={onSwap} />
     </View>
   );
@@ -159,44 +160,52 @@ export default function WebCompareScreen() {
   );
 
   const [copied, setCopied] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    const t = requestAnimationFrame(() => setMounted(true));
-    return () => cancelAnimationFrame(t);
-  }, []);
+
+  const ready = !!(statsA && statsB && result && overallWinner);
+
+  // Paint portraits instantly from the picker handoff (or an id fallback) so the
+  // shared-element morph has a target before stats finish loading. Once stats
+  // arrive, the winner glow / loser desaturation reveal over the morphed image.
+  const artA = getFighterArt(hero);
+  const artB = getFighterArt(opponent);
+  const imageA = heroImageSource(
+    hero,
+    statsA?.image.url ?? artA?.image_url,
+    statsA?.image.portraitUrl ?? artA?.portrait_url,
+  );
+  const imageB = heroImageSource(
+    opponent,
+    statsB?.image.url ?? artB?.image_url,
+    statsB?.image.portraitUrl ?? artB?.portrait_url,
+  );
+  const nameA = statsA?.name ?? artA?.name ?? '';
+  const nameB = statsB?.name ?? artB?.name ?? '';
+  const stateA: PortraitState = ready ? portraitState(overallWinner!, 'A') : 'neutral';
+  const stateB: PortraitState = ready ? portraitState(overallWinner!, 'B') : 'neutral';
 
   if (error) {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>{error}</Text>
-        <Pressable onPress={() => router.back()} style={styles.retryBtn}>
+        <Pressable
+          onPress={() =>
+            router.canGoBack() ? router.back() : router.replace(`/character/${hero}`)
+          }
+          style={styles.retryBtn}
+        >
           <Text style={styles.retryText}>Go back</Text>
         </Pressable>
       </View>
     );
   }
 
-  if (!statsA || !statsB || !result || !overallWinner) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={COLORS.orange} size="large" />
-      </View>
-    );
-  }
-
-  const imageA = heroImageSource(hero, statsA.image.url, statsA.image.portraitUrl);
-  const imageB = heroImageSource(opponent, statsB.image.url, statsB.image.portraitUrl);
-  const stateA = portraitState(overallWinner, 'A');
-  const stateB = portraitState(overallWinner, 'B');
-
   // Tap A → keep B (opponent becomes the fixed hero); tap B → keep A.
-  const swapA = () =>
-    router.push(`/compare/${opponent}/pick?name=${encodeURIComponent(statsB.name)}`);
-  const swapB = () => router.push(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`);
+  const swapA = () => router.push(`/compare/${opponent}/pick?name=${encodeURIComponent(nameB)}`);
+  const swapB = () => router.push(`/compare/${hero}/pick?name=${encodeURIComponent(nameA)}`);
 
   const handleShare = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : '';
-    const shareData = { title: `${statsA.name} vs ${statsB.name}`, url };
+    const shareData = { title: `${nameA} vs ${nameB}`, url };
     try {
       if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare?.(shareData)) {
         await navigator.share(shareData);
@@ -212,10 +221,18 @@ export default function WebCompareScreen() {
 
   const mobileCardW = Math.min(width, 480) - 24;
 
+  // router.back() throws "GO_BACK not handled" when there's no history (landed
+  // here via the picker's replace, or opened the URL directly) — fall back to
+  // the hero's page.
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace(`/character/${hero}`);
+  };
+
   const controlButtons = (
     <>
       <Pressable
-        onPress={() => router.back()}
+        onPress={goBack}
         accessibilityLabel="Go back"
         style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
           [styles.controlBtn, hovered && (styles.controlBtnHover as object)] as object
@@ -248,35 +265,51 @@ export default function WebCompareScreen() {
           <View style={styles.arenaInner as object}>
             <ArenaPortrait
               image={imageA}
-              name={statsA.name}
+              name={nameA}
               side="left"
               state={stateA}
               onSwap={swapA}
-              mounted={mounted}
+              vtName={VT_HERO}
             />
 
             <View style={styles.scorecard}>
               <View style={styles.scorecardVs as object}>
                 <VsBadge size={52} variant="solid" />
               </View>
-              <VerdictReveal verdict={verdict} tone="dark" />
-              <View style={styles.scorecardStats}>
-                {result.stats.map((stat) => (
-                  <StatBattleRow key={stat.key} stat={stat} />
-                ))}
-              </View>
+              {ready && result ? (
+                <>
+                  <VerdictReveal verdict={verdict} tone="dark" />
+                  <View style={styles.scorecardStats}>
+                    {result.stats.map((stat) => (
+                      <StatBattleRow key={stat.key} stat={stat} />
+                    ))}
+                  </View>
+                </>
+              ) : (
+                <View style={styles.scorecardLoading}>
+                  <ActivityIndicator color={COLORS.orange} />
+                </View>
+              )}
             </View>
 
             <ArenaPortrait
               image={imageB}
-              name={statsB.name}
+              name={nameB}
               side="right"
               state={stateB}
               onSwap={swapB}
-              mounted={mounted}
+              vtName={VT_PICK}
             />
           </View>
         </View>
+      </View>
+    );
+  }
+
+  if (!statsA || !statsB || !result || !overallWinner) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={COLORS.orange} size="large" />
       </View>
     );
   }
@@ -438,6 +471,11 @@ const styles = StyleSheet.create({
   scorecardStats: {
     gap: 16,
     marginTop: 18,
+  },
+  scorecardLoading: {
+    minHeight: 220,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // ── Shared winner treatment ────────────────────────────────────

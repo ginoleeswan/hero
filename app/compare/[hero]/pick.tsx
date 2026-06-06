@@ -10,8 +10,9 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { rankResults } from '../../../src/lib/db/heroes';
@@ -27,6 +28,15 @@ const CARD_W = (SCREEN_WIDTH - H_PAD * 2 - GRID_GAP) / 2;
 const CARD_H = Math.round(CARD_W * 1.4);
 const RAIL_W = 116;
 const RAIL_H = 158;
+
+const headerOptions = {
+  headerShown: true,
+  headerTitle: '',
+  headerStyle: { backgroundColor: COLORS.navy },
+  headerShadowVisible: false,
+  headerTintColor: COLORS.beige,
+  headerBackButtonDisplayMode: 'minimal',
+} as const;
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -108,18 +118,16 @@ export default function PickOpponentScreen() {
   const showSuggestions =
     !debouncedQuery.trim() && (rivals.length > 0 || sameUniverse.length > 0 || similar.length > 0);
 
-  return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityLabel="Go back"
-          style={({ pressed }) => [styles.backBtn, pressed && styles.backBtnPressed]}
-          hitSlop={8}
-        >
-          <Ionicons name="chevron-back" size={20} color={COLORS.navy} />
-        </Pressable>
-        <VsAnchor subject={subject} name={name ?? 'this hero'} />
+  const header = (
+    <>
+      <View style={styles.stage}>
+        <VsAnchor subject={subject} name={name ?? 'this hero'} tone="stage" />
+        <View style={styles.intent}>
+          <Text style={styles.eyebrow}>Choose your challenger</Text>
+        </View>
+      </View>
+
+      <View style={styles.sheetTop}>
         <View style={styles.searchRow}>
           <Ionicons name="search" size={17} color="rgba(41,60,67,0.4)" />
           <TextInput
@@ -136,84 +144,94 @@ export default function PickOpponentScreen() {
             </Pressable>
           )}
         </View>
-      </View>
 
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={COLORS.orange} />
-        </View>
-      ) : (
-        <FlatList
-          data={displayed}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          columnWrapperStyle={styles.gridRow}
-          contentContainerStyle={{
-            paddingHorizontal: H_PAD,
-            paddingBottom: insets.bottom + 20,
-          }}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          ListHeaderComponent={
-            showSuggestions ? (
-              <View>
-                {rivals.length > 0 && (
-                  <Rail
-                    label="Rivalries"
-                    items={rivals}
-                    onPick={handlePick}
-                    accent
-                    tagline="The grudge matches fans want to see."
-                  />
-                )}
-                {sameUniverse.length > 0 && (
-                  <Rail label="Same Universe" items={sameUniverse} onPick={handlePick} />
-                )}
-                {similar.length > 0 && (
-                  <Rail label="Similar Power" items={similar} onPick={handlePick} />
-                )}
-                <Text style={[styles.sectionLabel, styles.allLabel]}>All Heroes</Text>
-              </View>
-            ) : null
-          }
-          renderItem={({ item }) => (
-            <OpponentCard
-              item={item}
-              onPress={() => handlePick(item.id)}
-              width={CARD_W}
-              height={CARD_H}
-            />
-          )}
-        />
-      )}
+        {!loading && showSuggestions && (
+          <>
+            {rivals.length > 0 && (
+              <Rail
+                label="Rivalries"
+                items={rivals}
+                onPick={handlePick}
+                accent
+                tagline="The grudge matches fans want to see."
+              />
+            )}
+            {sameUniverse.length > 0 && (
+              <Rail label="Same Universe" items={sameUniverse} onPick={handlePick} />
+            )}
+            {similar.length > 0 && (
+              <Rail label="Similar Power" items={similar} onPick={handlePick} />
+            )}
+            <Text style={[styles.sectionLabel, styles.allLabel]}>All Heroes</Text>
+          </>
+        )}
+      </View>
+    </>
+  );
+
+  return (
+    <View style={styles.root}>
+      <Stack.Screen options={headerOptions} />
+      <StatusBar style="light" />
+      <FlatList
+        style={styles.list}
+        data={loading ? [] : displayed}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        columnWrapperStyle={styles.gridRow}
+        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 24 }]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        ListHeaderComponent={header}
+        ListEmptyComponent={
+          loading ? (
+            <View style={styles.center}>
+              <ActivityIndicator color={COLORS.orange} />
+            </View>
+          ) : null
+        }
+        renderItem={({ item }) => (
+          <OpponentCard
+            item={item}
+            onPress={() => handlePick(item.id)}
+            width={CARD_W}
+            height={CARD_H}
+          />
+        )}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.beige },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: { paddingTop: 6, paddingBottom: 18 },
-  backBtn: {
-    position: 'absolute',
-    top: 4,
-    left: 12,
-    zIndex: 10,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(41,60,67,0.06)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(41,60,67,0.14)',
+  root: { flex: 1, backgroundColor: COLORS.navy },
+  list: { flex: 1, backgroundColor: COLORS.navy },
+  listContent: { backgroundColor: COLORS.beige, flexGrow: 1 },
+  center: { paddingVertical: 60, alignItems: 'center', justifyContent: 'center' },
+
+  // Navy stage
+  stage: { backgroundColor: COLORS.navy, paddingTop: 8, paddingBottom: 34 },
+  intent: { minHeight: 22, marginTop: 14, alignItems: 'center', justifyContent: 'center' },
+  eyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 2.4,
+    textTransform: 'uppercase',
+    color: COLORS.goldAccent,
   },
-  backBtnPressed: { backgroundColor: 'rgba(41,60,67,0.12)' },
+
+  // Beige sheet
+  sheetTop: {
+    backgroundColor: COLORS.beige,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -16,
+    paddingTop: 22,
+    paddingHorizontal: H_PAD,
+  },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: H_PAD,
-    marginTop: 18,
     backgroundColor: 'rgba(41,60,67,0.06)',
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
@@ -221,9 +239,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 46,
     gap: 9,
+    marginBottom: 22,
   },
   input: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.navy },
-  gridRow: { gap: GRID_GAP, marginBottom: GRID_GAP },
+
+  gridRow: { gap: GRID_GAP, marginBottom: GRID_GAP, paddingHorizontal: H_PAD },
   section: { marginBottom: 18 },
   sectionLabel: {
     fontFamily: 'Nunito_700Bold',
@@ -233,8 +253,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
     marginBottom: 11,
   },
-  allLabel: { marginTop: 2 },
-  // paddingVertical gives the rival ring + press feedback room inside the rail.
+  allLabel: { marginTop: 2, marginBottom: 2 },
   railRow: { gap: 11, paddingRight: H_PAD, paddingTop: 4, paddingBottom: 8 },
   rivalHead: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 3 },
   swords: { fontSize: 15, color: COLORS.gold },

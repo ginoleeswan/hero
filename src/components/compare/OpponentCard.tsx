@@ -27,6 +27,8 @@ interface OpponentCardProps {
   /** Web hover in/out — lets the picker preview this hero in the VS slot. */
   onHoverIn?: () => void;
   onHoverOut?: () => void;
+  /** Web only: view-transition-name to morph this card into the arena portrait. */
+  vtName?: string;
 }
 
 /**
@@ -44,6 +46,7 @@ function OpponentCardBase({
   accent,
   onHoverIn,
   onHoverOut,
+  vtName,
 }: OpponentCardProps) {
   const source = heroImageSource(item.id, item.image_url, item.portrait_url);
   const sizeStyle = fill ? (styles.fill as object) : { width, height };
@@ -60,6 +63,7 @@ function OpponentCardBase({
           accent && (styles.accent as object),
           hovered && (styles.hovered as object),
           pressed && styles.pressed,
+          vtName ? ({ viewTransitionName: vtName } as object) : null,
         ] as object
       }
     >
@@ -92,7 +96,8 @@ export const OpponentCard = memo(
     a.height === b.height &&
     a.fill === b.fill &&
     a.compact === b.compact &&
-    a.accent === b.accent,
+    a.accent === b.accent &&
+    a.vtName === b.vtName,
 );
 
 const styles = StyleSheet.create({
