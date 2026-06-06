@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { flushSync } from 'react-dom';
 import {
   View,
   Text,
@@ -18,7 +19,8 @@ import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
 import { VerdictReveal } from '../../../src/components/compare/VerdictReveal';
 import { StatBattleRow } from '../../../src/components/compare/StatBattleRow';
 import { VsBadge } from '../../../src/components/compare/VsBadge';
-import { getFighterArt } from '../../../src/lib/compareHandoff';
+import { getFighterArt, stashFighters } from '../../../src/lib/compareHandoff';
+import { withViewTransition } from '../../../src/lib/viewTransition';
 
 // Must match the picker — the locked hero (A) and chosen card (B) morph in.
 const VT_HERO = 'vt-fighter-a';
@@ -76,9 +78,10 @@ function PortraitLabel({
   return (
     <View style={[styles.portraitLabel, right && (styles.alignEnd as object)] as object}>
       {state === 'win' && (
-        <Text style={[styles.eyebrowWin, right && (styles.textRight as object)] as object}>
-          Winner
-        </Text>
+        <View style={[styles.winBadge, right && (styles.winBadgeRight as object)] as object}>
+          <Ionicons name="trophy" size={13} color={COLORS.goldAccent} />
+          <Text style={styles.eyebrowWin}>Winner</Text>
+        </View>
       )}
       {state === 'tie' && (
         <Text style={[styles.eyebrowTie, right && (styles.textRight as object)] as object}>
@@ -112,7 +115,7 @@ function ArenaPortrait({
   onSwap,
   vtName,
 }: {
-  image: number | { uri: string };
+  image: { uri: string } | null;
   name: string;
   side: 'left' | 'right';
   state: PortraitState;
@@ -128,18 +131,20 @@ function ArenaPortrait({
         vtName ? ({ viewTransitionName: vtName } as object) : null,
       ]}
     >
-      <Image
-        source={image}
-        contentFit="cover"
-        contentPosition="top"
-        style={
-          [
-            styles.arenaImage,
-            state === 'loss' && (styles.imageLoss as object),
-            right && { transform: [{ scaleX: -1 }] },
-          ] as object
-        }
-      />
+      {image ? (
+        <Image
+          source={image}
+          contentFit="cover"
+          contentPosition="top"
+          style={
+            [
+              styles.arenaImage,
+              state === 'loss' && (styles.imageLoss as object),
+              right && { transform: [{ scaleX: -1 }] },
+            ] as object
+          }
+        />
+      ) : null}
       <View style={styles.portraitGradient as object} />
       {state === 'loss' && <View style={styles.lostOverlay as object} />}
       {name ? <PortraitLabel name={name} state={state} align={side} /> : null}
@@ -160,24 +165,31 @@ export default function WebCompareScreen() {
   );
 
   const [copied, setCopied] = useState(false);
+  // When swapping back to the picker, the *kept* fighter morphs into the pick
+  // page's locked portrait — so it must carry VT_HERO and the discarded side
+  // must drop its name (two elements can't share one view-transition-name).
+  const [backMorph, setBackMorph] = useState<'A' | 'B' | null>(null);
+  const vtNameA = backMorph === 'A' ? VT_HERO : backMorph === 'B' ? undefined : VT_HERO;
+  const vtNameB = backMorph === 'B' ? VT_HERO : backMorph === 'A' ? undefined : VT_PICK;
 
   const ready = !!(statsA && statsB && result && overallWinner);
 
   // Paint portraits instantly from the picker handoff (or an id fallback) so the
   // shared-element morph has a target before stats finish loading. Once stats
   // arrive, the winner glow / loser desaturation reveal over the morphed image.
+  //
+  // Guard: only call heroImageSource when we actually have a URL. Without this,
+  // heroImageSource falls back to bundled local images (HERO_IMAGES map) or CDN
+  // URLs that differ from the Supabase portrait, causing a visible flash on hard
+  // refresh before the real portrait arrives.
   const artA = getFighterArt(hero);
   const artB = getFighterArt(opponent);
-  const imageA = heroImageSource(
-    hero,
-    statsA?.image.url ?? artA?.image_url,
-    statsA?.image.portraitUrl ?? artA?.portrait_url,
-  );
-  const imageB = heroImageSource(
-    opponent,
-    statsB?.image.url ?? artB?.image_url,
-    statsB?.image.portraitUrl ?? artB?.portrait_url,
-  );
+  const rawUrlA = statsA?.image.url ?? artA?.image_url;
+  const portraitUrlA = statsA?.image.portraitUrl ?? artA?.portrait_url;
+  const rawUrlB = statsB?.image.url ?? artB?.image_url;
+  const portraitUrlB = statsB?.image.portraitUrl ?? artB?.portrait_url;
+  const imageA = rawUrlA || portraitUrlA ? heroImageSource(hero, rawUrlA, portraitUrlA) : null;
+  const imageB = rawUrlB || portraitUrlB ? heroImageSource(opponent, rawUrlB, portraitUrlB) : null;
   const nameA = statsA?.name ?? artA?.name ?? '';
   const nameB = statsB?.name ?? artB?.name ?? '';
   const stateA: PortraitState = ready ? portraitState(overallWinner!, 'A') : 'neutral';
@@ -199,9 +211,23 @@ export default function WebCompareScreen() {
     );
   }
 
-  // Tap A → keep B (opponent becomes the fixed hero); tap B → keep A.
-  const swapA = () => router.push(`/compare/${opponent}/pick?name=${encodeURIComponent(nameB)}`);
-  const swapB = () => router.push(`/compare/${hero}/pick?name=${encodeURIComponent(nameA)}`);
+  // Tap A → keep B (opponent becomes the fixed hero); tap B → keep A. The kept
+  // fighter morphs into the picker's locked seat: stash its art so the picker
+  // paints it instantly, tag it VT_HERO, then navigate inside a view transition.
+  const swapA = () => {
+    stashFighters({ id: opponent, name: nameB, image_url: rawUrlB, portrait_url: portraitUrlB });
+    flushSync(() => setBackMorph('B'));
+    withViewTransition(() =>
+      router.push(`/compare/${opponent}/pick?name=${encodeURIComponent(nameB)}`),
+    );
+  };
+  const swapB = () => {
+    stashFighters({ id: hero, name: nameA, image_url: rawUrlA, portrait_url: portraitUrlA });
+    flushSync(() => setBackMorph('A'));
+    withViewTransition(() =>
+      router.push(`/compare/${hero}/pick?name=${encodeURIComponent(nameA)}`),
+    );
+  };
 
   const handleShare = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : '';
@@ -269,7 +295,7 @@ export default function WebCompareScreen() {
               side="left"
               state={stateA}
               onSwap={swapA}
-              vtName={VT_HERO}
+              vtName={vtNameA}
             />
 
             <View style={styles.scorecard}>
@@ -280,8 +306,8 @@ export default function WebCompareScreen() {
                 <>
                   <VerdictReveal verdict={verdict} tone="dark" />
                   <View style={styles.scorecardStats}>
-                    {result.stats.map((stat) => (
-                      <StatBattleRow key={stat.key} stat={stat} />
+                    {result.stats.map((stat, i) => (
+                      <StatBattleRow key={stat.key} stat={stat} animateIn animationDelay={i * 55} />
                     ))}
                   </View>
                 </>
@@ -298,7 +324,7 @@ export default function WebCompareScreen() {
               side="right"
               state={stateB}
               onSwap={swapB}
-              vtName={VT_PICK}
+              vtName={vtNameB}
             />
           </View>
         </View>
@@ -321,8 +347,8 @@ export default function WebCompareScreen() {
         <View style={styles.controls}>{controlButtons}</View>
         <View style={[styles.mobileCard, { width: mobileCardW }]}>
           <ClashPortraits
-            imageA={imageA}
-            imageB={imageB}
+            imageA={imageA ?? { uri: '' }}
+            imageB={imageB ?? { uri: '' }}
             nameA={statsA.name}
             nameB={statsB.name}
             winner={overallWinner}
@@ -423,10 +449,10 @@ const styles = StyleSheet.create({
   },
   arenaPortraitWin: {
     boxShadow:
-      '0 0 0 2px rgba(206,155,51,0.8), 0 0 64px rgba(206,155,51,0.28), 0 18px 50px rgba(0,0,0,0.45)',
+      '0 0 0 3px rgba(206,155,51,0.95), 0 0 80px rgba(206,155,51,0.42), 0 18px 52px rgba(0,0,0,0.5)',
   } as object,
   arenaImage: { width: '100%', height: '100%' } as object,
-  imageLoss: { filter: 'grayscale(0.4) brightness(0.78)' } as object,
+  imageLoss: { filter: 'grayscale(0.5) brightness(0.76)' } as object,
   portraitGradient: {
     position: 'absolute',
     left: 0,
@@ -437,7 +463,7 @@ const styles = StyleSheet.create({
   } as object,
   lostOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(18,24,28,0.3)',
+    backgroundColor: 'rgba(12,17,20,0.32)',
   } as object,
   portraitLabel: {
     position: 'absolute',
@@ -447,7 +473,7 @@ const styles = StyleSheet.create({
   },
 
   scorecard: {
-    width: 468,
+    width: 380,
     flexShrink: 0,
     alignSelf: 'center',
     maxHeight: '100%',
@@ -479,14 +505,28 @@ const styles = StyleSheet.create({
   },
 
   // ── Shared winner treatment ────────────────────────────────────
+  winBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    marginBottom: 8,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(14,20,24,0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(206,155,51,0.55)',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+  } as object,
+  winBadgeRight: { flexDirection: 'row-reverse', alignSelf: 'flex-end' } as object,
   eyebrowWin: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
+    fontSize: 12,
     color: COLORS.goldAccent,
     textTransform: 'uppercase',
-    letterSpacing: 2.5,
-    marginBottom: 4,
-  },
+    letterSpacing: 2,
+  } as object,
   eyebrowTie: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,

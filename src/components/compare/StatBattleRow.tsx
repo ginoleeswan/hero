@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import type { StatResult } from '../../lib/compare';
 import { COLORS } from '../../constants/colors';
 
@@ -10,23 +11,46 @@ const BAR_DIM = 'rgba(41,60,67,0.16)';
  * hero B. Winner (or tie) gets the strong Flame numeral + navy bar; loser dims.
  * Shared verbatim by the native and web compare screens.
  */
-export function StatBattleRow({ stat }: { stat: StatResult }) {
+export function StatBattleRow({
+  stat,
+  animateIn,
+  animationDelay = 0,
+}: {
+  stat: StatResult;
+  animateIn?: boolean;
+  animationDelay?: number;
+}) {
   const aStrong = stat.winner !== 'B'; // win or tie → strong
   const bStrong = stat.winner !== 'A';
+
+  const [ready, setReady] = useState(!animateIn);
+  useEffect(() => {
+    if (!animateIn) return;
+    const id = setTimeout(() => setReady(true), 16);
+    return () => clearTimeout(id);
+  }, [animateIn]);
+
+  const barTransition = Platform.select({
+    web: {
+      transition: `width 540ms cubic-bezier(0.16,1,0.3,1) ${animationDelay}ms`,
+    } as object,
+    default: {},
+  });
 
   return (
     <View>
       <View style={styles.head}>
-        <Text style={[styles.val, aStrong ? styles.valStrong : styles.valDim]}>{stat.valueA}</Text>
+        <Text style={[styles.val, styles.valLeft, aStrong ? styles.valStrong : styles.valDim]}>{stat.valueA}</Text>
         <Text style={styles.label}>{stat.label}</Text>
-        <Text style={[styles.val, bStrong ? styles.valStrong : styles.valDim]}>{stat.valueB}</Text>
+        <Text style={[styles.val, styles.valRight, bStrong ? styles.valStrong : styles.valDim]}>{stat.valueB}</Text>
       </View>
       <View style={styles.track}>
         <View style={[styles.half, styles.halfLeft]}>
           <View
             style={[
               styles.barLeft,
-              { width: `${stat.valueA}%`, backgroundColor: aStrong ? COLORS.navy : BAR_DIM } as object,
+              barTransition,
+              { width: ready ? `${stat.valueA}%` : '0%', backgroundColor: aStrong ? COLORS.navy : BAR_DIM } as object,
             ]}
           />
         </View>
@@ -34,7 +58,8 @@ export function StatBattleRow({ stat }: { stat: StatResult }) {
           <View
             style={[
               styles.barRight,
-              { width: `${stat.valueB}%`, backgroundColor: bStrong ? COLORS.navy : BAR_DIM } as object,
+              barTransition,
+              { width: ready ? `${stat.valueB}%` : '0%', backgroundColor: bStrong ? COLORS.navy : BAR_DIM } as object,
             ]}
           />
         </View>
@@ -47,10 +72,11 @@ const styles = StyleSheet.create({
   head: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    justifyContent: 'space-between',
     marginBottom: 6,
   },
-  val: { fontVariant: ['tabular-nums'] },
+  val: { fontVariant: ['tabular-nums'], flex: 1 },
+  valLeft: { textAlign: 'left' },
+  valRight: { textAlign: 'right' },
   valStrong: {
     fontFamily: 'Flame-Regular',
     fontSize: 16,

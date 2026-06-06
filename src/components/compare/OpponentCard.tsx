@@ -1,5 +1,13 @@
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  cancelAnimation,
+} from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { heroImageSource } from '../../constants/heroImages';
 import { COLORS } from '../../constants/colors';
@@ -49,7 +57,33 @@ function OpponentCardBase({
   vtName,
 }: OpponentCardProps) {
   const source = heroImageSource(item.id, item.image_url, item.portrait_url);
+  const hasImage = !!source.uri;
   const sizeStyle = fill ? (styles.fill as object) : { width, height };
+
+  // Gentle skeleton pulse that sits BEHIND the image. expo-image fades in on
+  // top of it and covers it once loaded, so the skeleton never lingers even if
+  // an onLoad event is missed; onLoad just stops the animation to save cycles.
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => { setLoaded(false); }, [item.id]);
+
+  const pulse = useSharedValue(0.65);
+  useEffect(() => {
+    if (loaded) {
+      cancelAnimation(pulse);
+      return;
+    }
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 750 }),
+        withTiming(0.65, { duration: 750 }),
+      ),
+      -1,
+      false,
+    );
+    return () => cancelAnimation(pulse);
+  }, [loaded, pulse]);
+
+  const pulseStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
 
   return (
     <Pressable
@@ -67,14 +101,27 @@ function OpponentCardBase({
         ] as object
       }
     >
-      <Image
-        source={source}
-        contentFit="cover"
-        contentPosition="top center"
-        style={StyleSheet.absoluteFill}
-        placeholder={COLORS.navy}
-        transition={150}
-      />
+      {!loaded && (
+        <Animated.View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, styles.skeleton as object, pulseStyle]}
+        />
+      )}
+      {hasImage ? (
+        <Image
+          source={source}
+          contentFit="cover"
+          contentPosition="top center"
+          style={StyleSheet.absoluteFill}
+          transition={250}
+          onLoad={() => setLoaded(true)}
+          onError={() => setLoaded(true)}
+        />
+      ) : (
+        <View style={styles.fallback as object}>
+          <Text style={styles.fallbackInitial}>{item.name?.charAt(0).toUpperCase() ?? '?'}</Text>
+        </View>
+      )}
       <View style={styles.scrim as object} />
       <Text style={[styles.name, compact && styles.nameCompact]} numberOfLines={2}>
         {item.name}
@@ -115,6 +162,25 @@ const styles = StyleSheet.create({
     }),
   },
   fill: { width: '100%', height: '100%' },
+  skeleton: {
+    ...Platform.select({
+      web: {
+        backgroundImage: 'linear-gradient(150deg, #20323a 0%, #2a3f48 50%, #20323a 100%)',
+      } as object,
+      default: { backgroundColor: '#26393f' },
+    }),
+  } as object,
+  fallback: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#22343b',
+  },
+  fallbackInitial: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 40,
+    color: 'rgba(245,235,220,0.25)',
+  },
   accent: { boxShadow: '0 0 0 2px rgba(206,155,51,0.7)' } as object,
   hovered: {
     transform: [{ translateY: -4 }],

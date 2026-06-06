@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import {
   View,
   Text,
@@ -13,10 +14,15 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { rankResults } from '../../../src/lib/db/heroes';
 import type { HeroSearchResult, HeroPowerResult } from '../../../src/lib/db/heroes';
-import { usePickOpponents } from '../../../src/hooks/usePickOpponents';
+import { usePickOpponents, type PickSubject } from '../../../src/hooks/usePickOpponents';
 import { OpponentCard } from '../../../src/components/compare/OpponentCard';
 import { VsAnchor, type AnchorPreview } from '../../../src/components/compare/VsAnchor';
-import { stashFighters, type FighterArt } from '../../../src/lib/compareHandoff';
+import {
+  stashFighters,
+  getFighterArt,
+  type FighterArt,
+} from '../../../src/lib/compareHandoff';
+import { withViewTransition } from '../../../src/lib/viewTransition';
 import { COLORS } from '../../../src/constants/colors';
 
 // Shared view-transition-names: the locked hero (A) and the chosen card (B)
@@ -32,31 +38,6 @@ const rosterGrid = {
 };
 
 type RailItem = HeroSearchResult | HeroPowerResult;
-
-type ViewTransitionDoc = Document & {
-  startViewTransition?: (cb: () => unknown) => unknown;
-};
-
-/**
- * Run a navigation inside the browser's View Transition API so the pick page
- * cross-fades seamlessly into the arena. The returned promise resolves after a
- * couple of frames, giving React time to commit the new route before the API
- * snapshots the "after" state. Falls back to a plain navigation when the API is
- * unavailable (Firefox/Safari older versions).
- */
-function withViewTransition(run: () => void): void {
-  const doc = typeof document !== 'undefined' ? (document as ViewTransitionDoc) : undefined;
-  if (doc?.startViewTransition) {
-    doc.startViewTransition(() => {
-      run();
-      return new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-      );
-    });
-  } else {
-    run();
-  }
-}
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -159,13 +140,10 @@ export default function WebPickOpponentScreen() {
         image_url: item.image_url,
         portrait_url: item.portrait_url,
       });
-      // Apply the view-transition-name to the clicked card, then start the
-      // transition on the next frame once React has committed that name to the
-      // DOM — so it's present in the "old" snapshot the morph animates from.
-      setMorphKey(key);
-      requestAnimationFrame(() =>
-        withViewTransition(() => router.replace(`/compare/${hero}/${item.id}`)),
-      );
+      // Commit the view-transition-name onto the clicked card synchronously so
+      // it's in the "old" snapshot, then run the navigation inside the transition.
+      flushSync(() => setMorphKey(key));
+      withViewTransition(() => router.replace(`/compare/${hero}/${item.id}`));
     },
     [router, hero, subject],
   );
@@ -178,7 +156,21 @@ export default function WebPickOpponentScreen() {
     [],
   );
 
-  const subjectName = subject?.name ?? name ?? 'this hero';
+  // Until the subject row resolves, fall back to the art the arena stashed on
+  // its way here (the swap-back morph) so the locked portrait paints instantly
+  // and the reverse view-transition has a real target to morph into.
+  const handoffSubject: PickSubject | null = (() => {
+    const art = getFighterArt(hero);
+    if (!art) return null;
+    return {
+      id: hero,
+      name: art.name ?? name ?? 'this hero',
+      image_url: art.image_url ?? null,
+      portrait_url: art.portrait_url ?? null,
+    };
+  })();
+  const lockedSubject = subject ?? handoffSubject;
+  const subjectName = lockedSubject?.name ?? name ?? 'this hero';
   const showSuggestions =
     !debouncedQuery.trim() && (rivals.length > 0 || sameUniverse.length > 0 || similar.length > 0);
   const displayed = debouncedQuery.trim()
@@ -204,7 +196,7 @@ export default function WebPickOpponentScreen() {
           </View>
 
           <VsAnchor
-            subject={subject}
+            subject={lockedSubject}
             name={subjectName}
             preview={preview}
             tone="stage"

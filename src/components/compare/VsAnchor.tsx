@@ -83,7 +83,7 @@ export function VsAnchor({
                 source={heroImageSource(preview.id, preview.image_url, preview.portrait_url)}
                 contentFit="cover"
                 contentPosition="top center"
-                style={StyleSheet.absoluteFill}
+                style={[StyleSheet.absoluteFill, { transform: [{ scaleX: -1 }] }]}
                 placeholder={COLORS.navy}
                 transition={120}
               />
