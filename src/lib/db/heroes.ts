@@ -88,6 +88,30 @@ export async function getHeroById(id: string): Promise<Hero | null> {
   return data ?? null;
 }
 
+/**
+ * Resolve specific heroes by ID, preserving the requested order. Use this when
+ * the heroes must come back regardless of popularity — e.g. curated rivals,
+ * many of whom have a null `issue_count` and fall outside a ranked slice.
+ */
+export async function getHeroesByIds(ids: string[]): Promise<HeroSearchResult[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from('heroes')
+    .select(
+      'id, name, publisher, alignment, image_md_url, image_url, portrait_url, full_name, aliases',
+    )
+    .in('id', ids);
+
+  if (error) {
+    console.warn('[getHeroesByIds] error:', error.message);
+    return [];
+  }
+  const rank = new Map(ids.map((id, i) => [id, i]));
+  return ((data ?? []) as HeroSearchResult[]).sort(
+    (a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0),
+  );
+}
+
 export async function searchHeroes(
   query: string,
   publisher: PublisherFilter,

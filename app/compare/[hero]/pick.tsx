@@ -1,35 +1,32 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   FlatList,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  searchHeroes,
-  rankResults,
-  getHeroById,
-  getHeroesByPowerRange,
-} from '../../../src/lib/db/heroes';
-import type { HeroSearchResult, HeroPowerResult } from '../../../src/lib/db/heroes';
-import { heroImageSource } from '../../../src/constants/heroImages';
-import { getRivals } from '../../../src/constants/rivals';
+import * as Haptics from 'expo-haptics';
+import { rankResults } from '../../../src/lib/db/heroes';
+import { usePickOpponents } from '../../../src/hooks/usePickOpponents';
+import { OpponentCard } from '../../../src/components/compare/OpponentCard';
+import { VsAnchor } from '../../../src/components/compare/VsAnchor';
 import { COLORS } from '../../../src/constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_SIZE = (SCREEN_WIDTH - 12 * 3) / 2;
-const CARD_HEIGHT = Math.round(CARD_SIZE * 1.48);
-const SUGGEST_CARD_W = 110;
-const SUGGEST_CARD_H = 150;
+const H_PAD = 16;
+const GRID_GAP = 12;
+const CARD_W = (SCREEN_WIDTH - H_PAD * 2 - GRID_GAP) / 2;
+const CARD_H = Math.round(CARD_W * 1.4);
+const RAIL_W = 116;
+const RAIL_H = 158;
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -40,29 +37,49 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-function SuggestCard({
-  item,
-  onPress,
+function Rail({
+  label,
+  items,
+  onPick,
+  accent,
+  tagline,
 }: {
-  item: HeroSearchResult | HeroPowerResult;
-  onPress: () => void;
+  label: string;
+  items: { id: string; name: string; image_url?: string | null; portrait_url?: string | null }[];
+  onPick: (id: string) => void;
+  accent?: boolean;
+  tagline?: string;
 }) {
-  const source = heroImageSource(item.id, item.image_url, item.portrait_url);
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.82} style={suggest.card}>
-      <Image
-        source={source}
-        contentFit="cover"
-        contentPosition="top"
-        style={StyleSheet.absoluteFill}
-        placeholder={COLORS.navy}
-        transition={150}
-      />
-      <View style={suggest.overlay} />
-      <Text style={suggest.name} numberOfLines={2}>
-        {item.name}
-      </Text>
-    </TouchableOpacity>
+    <View style={styles.section}>
+      {accent ? (
+        <View style={styles.rivalHead}>
+          <Text style={styles.swords}>⚔</Text>
+          <Text style={styles.rivalLabel}>{label}</Text>
+          <View style={styles.rivalBar} />
+        </View>
+      ) : (
+        <Text style={styles.sectionLabel}>{label}</Text>
+      )}
+      {accent && tagline ? <Text style={styles.tagline}>{tagline}</Text> : null}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.railRow}
+      >
+        {items.map((item) => (
+          <OpponentCard
+            key={item.id}
+            item={item}
+            onPress={() => onPick(item.id)}
+            width={RAIL_W}
+            height={RAIL_H}
+            compact
+            accent={accent}
+          />
+        ))}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -73,72 +90,18 @@ export default function PickOpponentScreen() {
   const inputRef = useRef<TextInput>(null);
 
   const [query, setQuery] = useState('');
-  const [all, setAll] = useState<HeroSearchResult[]>([]);
-  const [rivals, setRivals] = useState<HeroSearchResult[]>([]);
-  const [sameUniverse, setSameUniverse] = useState<HeroSearchResult[]>([]);
-  const [similar, setSimilar] = useState<HeroPowerResult[]>([]);
-  const [loading, setLoading] = useState(true);
   const debouncedQuery = useDebounce(query, 200);
-
-  useEffect(() => {
-    const rivalIds = new Set(getRivals(hero ?? ''));
-
-    searchHeroes('', 'All', 600)
-      .then((allHeroes) => {
-        const filtered = allHeroes.filter((h) => h.id !== hero);
-        // Sort: portrait first, then image, then neither
-        const sorted = [...filtered].sort((a, b) => {
-          const scoreA = a.portrait_url ? 2 : a.image_url ? 1 : 0;
-          const scoreB = b.portrait_url ? 2 : b.image_url ? 1 : 0;
-          return scoreB - scoreA;
-        });
-        setAll(sorted);
-
-        const heroRow = allHeroes.find((h) => h.id === hero);
-        const publisher = heroRow?.publisher;
-
-        if (rivalIds.size > 0) {
-          const heroMap = new Map(allHeroes.map((h) => [h.id, h]));
-          setRivals(
-            Array.from(rivalIds)
-              .map((id) => heroMap.get(id))
-              .filter(Boolean) as HeroSearchResult[],
-          );
-        }
-        if (publisher) {
-          setSameUniverse(
-            filtered.filter((h) => h.publisher === publisher && !rivalIds.has(h.id)).slice(0, 8),
-          );
-        }
-      })
-      .catch((e: unknown) => {
-        console.warn('[PickOpponentScreen] Failed to load heroes:', e);
-      })
-      .finally(() => setLoading(false));
-
-    getHeroById(hero ?? '')
-      .then((row) => {
-        if (!row?.enriched_at) return;
-        const total =
-          (row.intelligence ?? 0) +
-          (row.strength ?? 0) +
-          (row.speed ?? 0) +
-          (row.durability ?? 0) +
-          (row.power ?? 0) +
-          (row.combat ?? 0);
-        const margin = Math.round(total * 0.18);
-        getHeroesByPowerRange(total - margin, total + margin, hero ?? '').then((results) => {
-          setSimilar(results.filter((r) => !rivalIds.has(r.id)));
-        });
-      })
-      .catch(() => {});
-  }, [hero]);
+  const { subject, rivals, sameUniverse, similar, all, loading } = usePickOpponents(
+    hero ?? '',
+    name,
+  );
 
   const displayed = debouncedQuery.trim()
     ? rankResults(all, debouncedQuery).slice(0, 80)
     : all.slice(0, 80);
 
   const handlePick = (id: string) => {
+    Haptics.selectionAsync();
     router.replace(`/compare/${hero}/${id}`);
   };
 
@@ -148,30 +111,31 @@ export default function PickOpponentScreen() {
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color={COLORS.beige} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          Who does {name ?? 'this hero'} face?
-        </Text>
-      </View>
-
-      <View style={styles.searchRow}>
-        <Ionicons name="search" size={16} color="rgba(245,235,220,0.4)" style={styles.searchIcon} />
-        <TextInput
-          ref={inputRef}
-          style={styles.input}
-          placeholder="Hero or villain name…"
-          placeholderTextColor="rgba(245,235,220,0.28)"
-          value={query}
-          onChangeText={setQuery}
-          autoFocus
-        />
-        {query.length > 0 && (
-          <TouchableOpacity onPress={() => setQuery('')} activeOpacity={0.7}>
-            <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.4)" />
-          </TouchableOpacity>
-        )}
+        <Pressable
+          onPress={() => router.back()}
+          accessibilityLabel="Go back"
+          style={({ pressed }) => [styles.backBtn, pressed && styles.backBtnPressed]}
+          hitSlop={8}
+        >
+          <Ionicons name="chevron-back" size={20} color={COLORS.navy} />
+        </Pressable>
+        <VsAnchor subject={subject} name={name ?? 'this hero'} />
+        <View style={styles.searchRow}>
+          <Ionicons name="search" size={17} color="rgba(41,60,67,0.4)" />
+          <TextInput
+            ref={inputRef}
+            style={styles.input}
+            placeholder="Search any hero or villain…"
+            placeholderTextColor="rgba(41,60,67,0.38)"
+            value={query}
+            onChangeText={setQuery}
+          />
+          {query.length > 0 && (
+            <Pressable onPress={() => setQuery('')} hitSlop={8}>
+              <Ionicons name="close-circle" size={19} color="rgba(41,60,67,0.4)" />
+            </Pressable>
+          )}
+        </View>
       </View>
 
       {loading ? (
@@ -183,92 +147,43 @@ export default function PickOpponentScreen() {
           data={displayed}
           keyExtractor={(item) => item.id}
           numColumns={2}
-          columnWrapperStyle={styles.row}
-          contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: insets.bottom + 16 }}
+          columnWrapperStyle={styles.gridRow}
+          contentContainerStyle={{
+            paddingHorizontal: H_PAD,
+            paddingBottom: insets.bottom + 20,
+          }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           ListHeaderComponent={
             showSuggestions ? (
               <View>
                 {rivals.length > 0 && (
-                  <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>Classic Rivals</Text>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.suggestRow}
-                    >
-                      {rivals.map((item) => (
-                        <SuggestCard
-                          key={item.id}
-                          item={item}
-                          onPress={() => handlePick(item.id)}
-                        />
-                      ))}
-                    </ScrollView>
-                  </View>
+                  <Rail
+                    label="Rivalries"
+                    items={rivals}
+                    onPick={handlePick}
+                    accent
+                    tagline="The grudge matches fans want to see."
+                  />
                 )}
                 {sameUniverse.length > 0 && (
-                  <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>Same Universe</Text>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.suggestRow}
-                    >
-                      {sameUniverse.map((item) => (
-                        <SuggestCard
-                          key={item.id}
-                          item={item}
-                          onPress={() => handlePick(item.id)}
-                        />
-                      ))}
-                    </ScrollView>
-                  </View>
+                  <Rail label="Same Universe" items={sameUniverse} onPick={handlePick} />
                 )}
                 {similar.length > 0 && (
-                  <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>Similar Power Level</Text>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.suggestRow}
-                    >
-                      {similar.map((item) => (
-                        <SuggestCard
-                          key={item.id}
-                          item={item}
-                          onPress={() => handlePick(item.id)}
-                        />
-                      ))}
-                    </ScrollView>
-                  </View>
+                  <Rail label="Similar Power" items={similar} onPick={handlePick} />
                 )}
-                <Text style={styles.sectionLabel}>All Heroes</Text>
+                <Text style={[styles.sectionLabel, styles.allLabel]}>All Heroes</Text>
               </View>
             ) : null
           }
-          renderItem={({ item }) => {
-            const source = heroImageSource(item.id, item.image_url, item.portrait_url);
-            return (
-              <TouchableOpacity
-                onPress={() => handlePick(item.id)}
-                activeOpacity={0.82}
-                style={styles.card}
-              >
-                <Image
-                  source={source}
-                  contentFit="cover"
-                  contentPosition="top"
-                  style={StyleSheet.absoluteFill}
-                  placeholder={COLORS.navy}
-                  transition={150}
-                />
-                <View style={styles.cardOverlay} />
-                <Text style={styles.cardName} numberOfLines={2}>
-                  {item.name}
-                </Text>
-              </TouchableOpacity>
-            );
-          }}
+          renderItem={({ item }) => (
+            <OpponentCard
+              item={item}
+              onPress={() => handlePick(item.id)}
+              width={CARD_W}
+              height={CARD_H}
+            />
+          )}
         />
       )}
     </View>
@@ -276,79 +191,66 @@ export default function PickOpponentScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.navy },
+  root: { flex: 1, backgroundColor: COLORS.beige },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: {
-    flexDirection: 'row',
+  header: { paddingTop: 6, paddingBottom: 18 },
+  backBtn: {
+    position: 'absolute',
+    top: 4,
+    left: 12,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(41,60,67,0.06)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(41,60,67,0.14)',
   },
-  backBtn: { padding: 4 },
-  headerTitle: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.beige, flex: 1 },
+  backBtnPressed: { backgroundColor: 'rgba(41,60,67,0.12)' },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 12,
-    marginBottom: 12,
-    backgroundColor: 'rgba(245,235,220,0.08)',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
+    marginHorizontal: H_PAD,
+    marginTop: 18,
+    backgroundColor: 'rgba(41,60,67,0.06)',
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(41,60,67,0.12)',
+    paddingHorizontal: 14,
+    height: 46,
+    gap: 9,
   },
-  searchIcon: { flexShrink: 0 },
-  input: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.beige },
-  row: { gap: 8, marginBottom: 8 },
-  card: {
-    width: CARD_SIZE,
-    height: CARD_HEIGHT,
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: COLORS.navy,
-  },
-  cardOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(29,45,51,0.45)' },
-  cardName: {
-    position: 'absolute',
-    bottom: 10,
-    left: 10,
-    right: 10,
-    fontFamily: 'Flame-Regular',
-    fontSize: 14,
-    color: COLORS.beige,
-    lineHeight: 17,
-  },
-  section: { marginBottom: 16 },
+  input: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.navy },
+  gridRow: { gap: GRID_GAP, marginBottom: GRID_GAP },
+  section: { marginBottom: 18 },
   sectionLabel: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
-    color: 'rgba(245,235,220,0.4)',
+    fontSize: 11,
+    color: 'rgba(41,60,67,0.5)',
     textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 10,
-    marginTop: 4,
+    letterSpacing: 1.4,
+    marginBottom: 11,
   },
-  suggestRow: { gap: 10, paddingRight: 12 },
-});
-
-const suggest = StyleSheet.create({
-  card: {
-    width: SUGGEST_CARD_W,
-    height: SUGGEST_CARD_H,
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: COLORS.navy,
-  },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(29,45,51,0.4)' },
-  name: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-    right: 8,
+  allLabel: { marginTop: 2 },
+  // paddingVertical gives the rival ring + press feedback room inside the rail.
+  railRow: { gap: 11, paddingRight: H_PAD, paddingTop: 4, paddingBottom: 8 },
+  rivalHead: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 3 },
+  swords: { fontSize: 15, color: COLORS.gold },
+  rivalLabel: {
     fontFamily: 'Flame-Regular',
-    fontSize: 12,
-    color: COLORS.beige,
-    lineHeight: 15,
+    fontSize: 15,
+    color: COLORS.gold,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  rivalBar: { flex: 1, height: 2, borderRadius: 1, backgroundColor: 'rgba(176,125,0,0.28)' },
+  tagline: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12.5,
+    fontStyle: 'italic',
+    color: 'rgba(41,60,67,0.55)',
+    marginBottom: 11,
   },
 });

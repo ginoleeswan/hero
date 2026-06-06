@@ -117,12 +117,10 @@ export default function NativeCompareScreen() {
               width={CARD_WIDTH}
               height={CARD_HEIGHT}
               onSwapA={() =>
-                router.replace(
-                  `/compare/${opponent}/pick?name=${encodeURIComponent(statsB.name)}`,
-                )
+                router.push(`/compare/${opponent}/pick?name=${encodeURIComponent(statsB.name)}`)
               }
               onSwapB={() =>
-                router.replace(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)
+                router.push(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)
               }
             />
           </View>
