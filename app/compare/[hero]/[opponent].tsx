@@ -91,11 +91,29 @@ export default function NativeCompareScreen() {
     }).catch(() => {});
   };
 
+  // Back returns to wherever the matchup was launched from — the hero's page on
+  // a fresh comparison, or the previous matchup mid-swap. Fall back to the
+  // hero's page when there's no history (e.g. opened via a deep link).
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace(`/character/${hero}`);
+  };
+
   return (
     <View style={styles.root}>
       <Stack.Screen
         options={{
           ...headerBase,
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={goBack}
+              hitSlop={8}
+              activeOpacity={0.7}
+              style={styles.headerBtn}
+            >
+              <Ionicons name="chevron-back" size={26} color={COLORS.beige} />
+            </TouchableOpacity>
+          ),
           headerRight: () => (
             <TouchableOpacity
               onPress={handleShare}

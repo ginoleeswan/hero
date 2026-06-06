@@ -1,18 +1,19 @@
-import { useEffect } from 'react';
-import { Platform, StyleSheet } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
-  withSequence,
   withTiming,
   cancelAnimation,
+  Easing,
 } from 'react-native-reanimated';
 
 /**
- * A single pulsing placeholder tile, matching OpponentCard's shape and skeleton
- * tone. Used to fill the picker grid while the roster loads — a skeleton screen
- * reads as faster than a spinner and holds the layout so cards swap in place.
+ * A pulsing placeholder tile matching OpponentCard's shape. A soft highlight
+ * sweeps across (left → right) and a faint bar hints at the card's name label,
+ * so the loading grid reads as the real roster forming rather than dead boxes.
  */
 export function CardSkeleton({
   width,
@@ -23,38 +24,61 @@ export function CardSkeleton({
   height?: number;
   fill?: boolean;
 }) {
-  const pulse = useSharedValue(0.6);
-  useEffect(() => {
-    pulse.value = withRepeat(
-      withSequence(withTiming(1, { duration: 750 }), withTiming(0.6, { duration: 750 })),
-      -1,
-      false,
-    );
-    return () => cancelAnimation(pulse);
-  }, [pulse]);
+  const [measured, setMeasured] = useState(typeof width === 'number' ? width : 0);
+  const x = useSharedValue(0);
 
-  const pulseStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
+  useEffect(() => {
+    if (!measured) return;
+    x.value = withRepeat(withTiming(1, { duration: 1300, easing: Easing.inOut(Easing.ease) }), -1, false);
+    return () => cancelAnimation(x);
+  }, [measured, x]);
+
+  const sweepStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: -measured + x.value * measured * 2 }],
+  }));
+
+  const onLayout = (e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    if (w && w !== measured) setMeasured(w);
+  };
 
   return (
-    <Animated.View
-      style={[
-        styles.base,
-        fill ? (styles.fill as object) : { width, height },
-        pulseStyle,
-      ]}
-    />
+    <View
+      onLayout={fill ? onLayout : undefined}
+      style={[styles.base, fill ? (styles.fill as object) : { width, height }]}
+    >
+      <View style={styles.nameBar} />
+      {measured > 0 && (
+        <Animated.View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, { width: measured }, sweepStyle]}
+        >
+          <LinearGradient
+            colors={['transparent', 'rgba(245,235,220,0.10)', 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
     borderRadius: 14,
-    ...Platform.select({
-      web: {
-        backgroundImage: 'linear-gradient(150deg, #20323a 0%, #2a3f48 50%, #20323a 100%)',
-      } as object,
-      default: { backgroundColor: '#26393f' },
-    }),
+    overflow: 'hidden',
+    backgroundColor: '#223843',
   },
   fill: { width: '100%', height: '100%' },
+  nameBar: {
+    position: 'absolute',
+    bottom: 11,
+    left: 11,
+    width: '52%',
+    height: 9,
+    borderRadius: 4,
+    backgroundColor: 'rgba(245,235,220,0.10)',
+  },
 });
