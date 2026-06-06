@@ -18,7 +18,7 @@ import {
 } from '../../src/lib/db/favourites';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useRecordView } from '../../src/hooks/useViewHistory';
-import { heroImageSource, HERO_IMAGES } from '../../src/constants/heroImages';
+import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
 import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkeleton';
 import { Skeleton } from '../../src/components/ui/Skeleton';

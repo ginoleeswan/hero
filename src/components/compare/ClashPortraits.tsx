@@ -18,8 +18,8 @@ const SEAM_WIDTH = 28;
 const BADGE_SIZE = 46;
 
 export interface ClashPortraitsProps {
-  imageA: number | { uri: string };
-  imageB: number | { uri: string };
+  imageA: { uri: string };
+  imageB: { uri: string };
   nameA: string;
   nameB: string;
   /** 'A' | 'B' | 'tie' — controls winner/loser cue */
