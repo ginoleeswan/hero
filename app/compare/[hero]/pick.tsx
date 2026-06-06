@@ -7,7 +7,6 @@ import {
   ScrollView,
   Pressable,
   StyleSheet,
-  ActivityIndicator,
   Platform,
   Dimensions,
 } from 'react-native';
@@ -19,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 import { rankResults } from '../../../src/lib/db/heroes';
 import { usePickOpponents } from '../../../src/hooks/usePickOpponents';
 import { OpponentCard } from '../../../src/components/compare/OpponentCard';
+import { CardSkeleton } from '../../../src/components/compare/CardSkeleton';
 import { VsAnchor } from '../../../src/components/compare/VsAnchor';
 import { stashFighters } from '../../../src/lib/compareHandoff';
 import { COLORS } from '../../../src/constants/colors';
@@ -95,6 +95,27 @@ function Rail({
           />
         ))}
       </ScrollView>
+    </View>
+  );
+}
+
+/** Skeleton screen for the initial roster load — mirrors a suggestion rail plus
+ *  the grid so content swaps in place instead of jumping in after a spinner. */
+function PickSkeleton() {
+  return (
+    <View style={styles.skelWrap}>
+      <View style={[styles.skelLabel, { width: 110 }]} />
+      <View style={styles.skelRail}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <CardSkeleton key={i} width={RAIL_W} height={RAIL_H} />
+        ))}
+      </View>
+      <View style={[styles.skelLabel, { width: 80, marginTop: 4 }]} />
+      <View style={styles.skelGrid}>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <CardSkeleton key={i} width={CARD_W} height={CARD_H} />
+        ))}
+      </View>
     </View>
   );
 }
@@ -197,13 +218,7 @@ export default function PickOpponentScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         ListHeaderComponent={header}
-        ListEmptyComponent={
-          loading ? (
-            <View style={styles.center}>
-              <ActivityIndicator color={COLORS.orange} />
-            </View>
-          ) : null
-        }
+        ListEmptyComponent={loading ? <PickSkeleton /> : null}
         renderItem={({ item }) => (
           <OpponentCard
             item={item}
@@ -221,7 +236,24 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.navy },
   list: { flex: 1, backgroundColor: COLORS.navy },
   listContent: { backgroundColor: COLORS.beige, flexGrow: 1 },
-  center: { paddingVertical: 60, alignItems: 'center', justifyContent: 'center' },
+
+  // Loading skeleton
+  skelWrap: { paddingHorizontal: H_PAD, paddingTop: 4 },
+  skelLabel: {
+    height: 11,
+    borderRadius: 4,
+    backgroundColor: 'rgba(41,60,67,0.12)',
+    marginBottom: 14,
+  },
+  skelRail: {
+    flexDirection: 'row',
+    gap: 11,
+    marginHorizontal: -H_PAD,
+    paddingHorizontal: H_PAD,
+    marginBottom: 22,
+    overflow: 'hidden',
+  },
+  skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
 
   // Navy stage — top padding is applied inline (header height + glow room).
   stage: { backgroundColor: COLORS.navy, paddingBottom: 34 },
