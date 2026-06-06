@@ -91,3 +91,6 @@ android/build/
 
 # iOS native (managed by EAS)
 /ios
+
+# Playwright MCP artifacts
+.playwright-mcp/
