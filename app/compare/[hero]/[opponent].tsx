@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Share,
+  ActivityIndicator,
+  Platform,
   Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
@@ -14,6 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { heroImageSource } from '../../../src/constants/heroImages';
 import { useCompareMatchup } from '../../../src/hooks/useCompareMatchup';
+import { getFighterArt } from '../../../src/lib/compareHandoff';
 import { COLORS } from '../../../src/constants/colors';
 import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
 import { VerdictReveal } from '../../../src/components/compare/VerdictReveal';
@@ -27,8 +30,12 @@ const CARD_HEIGHT = 286;
 const headerBase = {
   headerShown: true,
   headerTitle: '',
-  headerStyle: { backgroundColor: COLORS.navy },
+  // Transparent so the immersive navy stage reads as one continuous surface —
+  // no opaque header bar appearing over the content on scroll.
+  headerTransparent: true,
+  headerStyle: { backgroundColor: 'transparent' },
   headerShadowVisible: false,
+  headerTintColor: COLORS.beige,
   headerBackButtonDisplayMode: 'minimal',
 } as const;
 
@@ -55,21 +62,32 @@ export default function NativeCompareScreen() {
     );
   }
 
-  if (!statsA || !statsB || !result || !overallWinner) {
-    return (
-      <View style={styles.loading}>
-        <Stack.Screen options={headerBase} />
-        <StatusBar style="light" />
-      </View>
-    );
-  }
+  const ready = !!(statsA && statsB && result && overallWinner);
 
-  const imageA = heroImageSource(hero, statsA.image.url, statsA.image.portraitUrl);
-  const imageB = heroImageSource(opponent, statsB.image.url, statsB.image.portraitUrl);
+  // The header floats (transparent), so pad the navy stage down to clear it.
+  const headerHeight = insets.top + (Platform.OS === 'ios' ? 44 : 56);
+
+  // Paint portraits instantly from the picker handoff so there's no blank navy
+  // gap before stats load — the slide-in entrance plays over the real art, and
+  // the winner cue reveals once the result resolves (winner: 'neutral' → real).
+  const artA = getFighterArt(hero);
+  const artB = getFighterArt(opponent);
+  const imageA = heroImageSource(
+    hero,
+    statsA?.image.url ?? artA?.image_url,
+    statsA?.image.portraitUrl ?? artA?.portrait_url,
+  );
+  const imageB = heroImageSource(
+    opponent,
+    statsB?.image.url ?? artB?.image_url,
+    statsB?.image.portraitUrl ?? artB?.portrait_url,
+  );
+  const nameA = statsA?.name ?? artA?.name ?? '';
+  const nameB = statsB?.name ?? artB?.name ?? '';
 
   const handleShare = () => {
     Share.share({
-      message: `${statsA.name} vs ${statsB.name} — ${verdict ?? result.verdict}. Check it out on Hero app!`,
+      message: `${nameA} vs ${nameB} — ${verdict ?? result?.verdict ?? ''}. Check it out on Hero app!`,
     }).catch(() => {});
   };
 
@@ -88,11 +106,11 @@ export default function NativeCompareScreen() {
               <SymbolView
                 name="square.and.arrow.up"
                 weight="heavy"
-                tintColor={COLORS.navy}
+                tintColor={COLORS.beige}
                 size={22}
                 resizeMode="scaleAspectFit"
                 style={styles.headerIcon}
-                fallback={<Ionicons name="share" size={23} color={COLORS.navy} />}
+                fallback={<Ionicons name="share" size={23} color={COLORS.beige} />}
               />
             </TouchableOpacity>
           ),
@@ -106,21 +124,21 @@ export default function NativeCompareScreen() {
         bounces={false}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.navyTop}>
+        <View style={[styles.navyTop, { paddingTop: headerHeight }]}>
           <View style={styles.clashCard}>
             <ClashPortraits
               imageA={imageA}
               imageB={imageB}
-              nameA={statsA.name}
-              nameB={statsB.name}
-              winner={overallWinner}
+              nameA={nameA}
+              nameB={nameB}
+              winner={overallWinner ?? 'neutral'}
               width={CARD_WIDTH}
               height={CARD_HEIGHT}
               onSwapA={() =>
-                router.push(`/compare/${opponent}/pick?name=${encodeURIComponent(statsB.name)}`)
+                router.push(`/compare/${opponent}/pick?name=${encodeURIComponent(nameB)}`)
               }
               onSwapB={() =>
-                router.push(`/compare/${hero}/pick?name=${encodeURIComponent(statsA.name)}`)
+                router.push(`/compare/${hero}/pick?name=${encodeURIComponent(nameA)}`)
               }
             />
           </View>
@@ -132,9 +150,15 @@ export default function NativeCompareScreen() {
 
         <View style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]}>
           <View style={styles.battleWrap}>
-            {result.stats.map((stat) => (
-              <StatBattleRow key={stat.key} stat={stat} />
-            ))}
+            {ready && result ? (
+              result.stats.map((stat, i) => (
+                <StatBattleRow key={stat.key} stat={stat} animateIn animationDelay={i * 70} />
+              ))
+            ) : (
+              <View style={styles.statsLoading}>
+                <ActivityIndicator color={COLORS.orange} />
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -146,9 +170,11 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
   body: { flex: 1, backgroundColor: COLORS.navy },
   bodyContent: { flexGrow: 1 },
-  loading: {
-    flex: 1,
-    backgroundColor: COLORS.navy,
+  statsLoading: {
+    flexGrow: 1,
+    minHeight: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   center: {
     flex: 1,
@@ -206,10 +232,9 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   battleWrap: {
-    flexGrow: 1,
-    justifyContent: 'space-between',
-    gap: 18,
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+    gap: 24,
+    paddingHorizontal: 22,
+    paddingTop: 28,
+    paddingBottom: 28,
   },
 });

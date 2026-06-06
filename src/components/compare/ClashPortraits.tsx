@@ -22,8 +22,9 @@ export interface ClashPortraitsProps {
   imageB: { uri: string };
   nameA: string;
   nameB: string;
-  /** 'A' | 'B' | 'tie' — controls winner/loser cue */
-  winner: 'A' | 'B' | 'tie';
+  /** 'A' | 'B' | 'tie' decides the winner/loser cue. 'neutral' = result not in
+   *  yet (both lit, no cues) — used while stats load behind the handoff paint. */
+  winner: 'A' | 'B' | 'tie' | 'neutral';
   height?: number;
   /** Total width of the clash stage. Defaults to the full screen width. */
   width?: number;
@@ -64,10 +65,18 @@ export function ClashPortraits({
 
     // Names fade in
     labelsOp.value = withDelay(680, withTiming(1, { duration: 320 }));
-
-    // Result reveal — loser quietly recedes
-    resultOp.value = withDelay(820, withTiming(1, { duration: 460, easing: easeOut }));
   }, []);
+
+  // Result reveal — the loser quietly recedes once the winner is known. Driven
+  // by `winner` (not mount) so it also fires when the result resolves behind a
+  // handoff paint that started in the 'neutral' state.
+  useEffect(() => {
+    if (winner === 'neutral') {
+      resultOp.value = 0;
+      return;
+    }
+    resultOp.value = withDelay(200, withTiming(1, { duration: 460, easing: Easing.out(Easing.cubic) }));
+  }, [winner]);
 
   const leftStyle = useAnimatedStyle(() => ({ transform: [{ translateX: leftX.value }] }));
   const rightStyle = useAnimatedStyle(() => ({ transform: [{ translateX: rightX.value }] }));
@@ -78,11 +87,13 @@ export function ClashPortraits({
     transform: [{ scale: 0.86 + badgeP.value * 0.14 }],
   }));
 
+  const settled = winner !== 'neutral';
   const winA = winner === 'A';
   const winB = winner === 'B';
   const tie = winner === 'tie';
-  const isWinA = winA || tie;
-  const isWinB = winB || tie;
+  // Until the result settles, both portraits stay lit (no loser scrim/cue).
+  const isWinA = !settled || winA || tie;
+  const isWinB = !settled || winB || tie;
 
   return (
     <Animated.View style={{ height, overflow: 'hidden' }}>

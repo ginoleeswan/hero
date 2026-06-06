@@ -1,5 +1,12 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { useEffect } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+  Easing,
+} from 'react-native-reanimated';
 import type { StatResult } from '../../lib/compare';
 import { COLORS } from '../../constants/colors';
 
@@ -10,6 +17,9 @@ const BAR_DIM = 'rgba(41,60,67,0.16)';
  * Bars grow toward the center seam — left value/bar belong to hero A, right to
  * hero B. Winner (or tie) gets the strong Flame numeral + navy bar; loser dims.
  * Shared verbatim by the native and web compare screens.
+ *
+ * With `animateIn`, the bars sweep out from the center seam (width 0 → value%)
+ * via Reanimated, staggered by `animationDelay` — identical on native and web.
  */
 export function StatBattleRow({
   stat,
@@ -23,19 +33,17 @@ export function StatBattleRow({
   const aStrong = stat.winner !== 'B'; // win or tie → strong
   const bStrong = stat.winner !== 'A';
 
-  const [ready, setReady] = useState(!animateIn);
+  const progress = useSharedValue(animateIn ? 0 : 1);
   useEffect(() => {
     if (!animateIn) return;
-    const id = setTimeout(() => setReady(true), 16);
-    return () => clearTimeout(id);
-  }, [animateIn]);
+    progress.value = withDelay(
+      animationDelay,
+      withTiming(1, { duration: 560, easing: Easing.out(Easing.cubic) }),
+    );
+  }, [animateIn, animationDelay, progress]);
 
-  const barTransition = Platform.select({
-    web: {
-      transition: `width 540ms cubic-bezier(0.16,1,0.3,1) ${animationDelay}ms`,
-    } as object,
-    default: {},
-  });
+  const barLeftStyle = useAnimatedStyle(() => ({ width: `${stat.valueA * progress.value}%` }));
+  const barRightStyle = useAnimatedStyle(() => ({ width: `${stat.valueB * progress.value}%` }));
 
   return (
     <View>
@@ -46,20 +54,20 @@ export function StatBattleRow({
       </View>
       <View style={styles.track}>
         <View style={[styles.half, styles.halfLeft]}>
-          <View
+          <Animated.View
             style={[
               styles.barLeft,
-              barTransition,
-              { width: ready ? `${stat.valueA}%` : '0%', backgroundColor: aStrong ? COLORS.navy : BAR_DIM } as object,
+              { backgroundColor: aStrong ? COLORS.navy : BAR_DIM },
+              barLeftStyle,
             ]}
           />
         </View>
         <View style={styles.half}>
-          <View
+          <Animated.View
             style={[
               styles.barRight,
-              barTransition,
-              { width: ready ? `${stat.valueB}%` : '0%', backgroundColor: bStrong ? COLORS.navy : BAR_DIM } as object,
+              { backgroundColor: bStrong ? COLORS.navy : BAR_DIM },
+              barRightStyle,
             ]}
           />
         </View>

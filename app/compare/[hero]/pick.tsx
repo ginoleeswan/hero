@@ -8,6 +8,7 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  Platform,
   Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
@@ -19,6 +20,7 @@ import { rankResults } from '../../../src/lib/db/heroes';
 import { usePickOpponents } from '../../../src/hooks/usePickOpponents';
 import { OpponentCard } from '../../../src/components/compare/OpponentCard';
 import { VsAnchor } from '../../../src/components/compare/VsAnchor';
+import { stashFighters } from '../../../src/lib/compareHandoff';
 import { COLORS } from '../../../src/constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -32,7 +34,10 @@ const RAIL_H = 158;
 const headerOptions = {
   headerShown: true,
   headerTitle: '',
-  headerStyle: { backgroundColor: COLORS.navy },
+  // Transparent so the navy stage reads as one continuous surface — matches the
+  // arena; no opaque header bar appearing over the content on scroll.
+  headerTransparent: true,
+  headerStyle: { backgroundColor: 'transparent' },
   headerShadowVisible: false,
   headerTintColor: COLORS.beige,
   headerBackButtonDisplayMode: 'minimal',
@@ -100,6 +105,10 @@ export default function PickOpponentScreen() {
   const insets = useSafeAreaInsets();
   const inputRef = useRef<TextInput>(null);
 
+  // The header floats (transparent), so pad the navy stage down to clear it —
+  // plus a little extra so the VsAnchor's gold glow isn't clipped.
+  const headerHeight = insets.top + (Platform.OS === 'ios' ? 44 : 56);
+
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 200);
   const { subject, rivals, sameUniverse, similar, all, loading } = usePickOpponents(
@@ -113,6 +122,10 @@ export default function PickOpponentScreen() {
 
   const handlePick = (id: string) => {
     Haptics.selectionAsync();
+    // Stash both fighters' art so the arena paints portraits instantly (no
+    // blank navy gap) and its slide-in entrance plays over real images.
+    const picked = [...rivals, ...sameUniverse, ...similar, ...all].find((h) => h.id === id);
+    stashFighters(subject, picked);
     router.replace(`/compare/${hero}/${id}`);
   };
 
@@ -121,7 +134,7 @@ export default function PickOpponentScreen() {
 
   const header = (
     <>
-      <View style={styles.stage}>
+      <View style={[styles.stage, { paddingTop: headerHeight + 12 }]}>
         <VsAnchor subject={subject} name={name ?? 'this hero'} tone="stage" />
         <View style={styles.intent}>
           <Text style={styles.eyebrow}>Choose your challenger</Text>
@@ -210,9 +223,8 @@ const styles = StyleSheet.create({
   listContent: { backgroundColor: COLORS.beige, flexGrow: 1 },
   center: { paddingVertical: 60, alignItems: 'center', justifyContent: 'center' },
 
-  // Navy stage — extra top room so the VsAnchor's gold glow isn't clipped by
-  // the opaque navy nav header above it.
-  stage: { backgroundColor: COLORS.navy, paddingTop: 36, paddingBottom: 34 },
+  // Navy stage — top padding is applied inline (header height + glow room).
+  stage: { backgroundColor: COLORS.navy, paddingBottom: 34 },
   intent: { minHeight: 22, marginTop: 14, alignItems: 'center', justifyContent: 'center' },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
