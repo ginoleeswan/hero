@@ -75,6 +75,7 @@ function Rail({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={styles.railScroll}
         contentContainerStyle={styles.railRow}
       >
         {items.map((item) => (
@@ -209,8 +210,9 @@ const styles = StyleSheet.create({
   listContent: { backgroundColor: COLORS.beige, flexGrow: 1 },
   center: { paddingVertical: 60, alignItems: 'center', justifyContent: 'center' },
 
-  // Navy stage
-  stage: { backgroundColor: COLORS.navy, paddingTop: 8, paddingBottom: 34 },
+  // Navy stage — extra top room so the VsAnchor's gold glow isn't clipped by
+  // the opaque navy nav header above it.
+  stage: { backgroundColor: COLORS.navy, paddingTop: 36, paddingBottom: 34 },
   intent: { minHeight: 22, marginTop: 14, alignItems: 'center', justifyContent: 'center' },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
@@ -254,7 +256,10 @@ const styles = StyleSheet.create({
     marginBottom: 11,
   },
   allLabel: { marginTop: 2, marginBottom: 2 },
-  railRow: { gap: 11, paddingRight: H_PAD, paddingTop: 4, paddingBottom: 8 },
+  // Negative margin lets the rail bleed past the sheet's H_PAD to both screen
+  // edges; the content padding keeps the first card aligned with the labels.
+  railScroll: { marginHorizontal: -H_PAD },
+  railRow: { gap: 11, paddingLeft: H_PAD, paddingRight: H_PAD, paddingTop: 4, paddingBottom: 8 },
   rivalHead: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 3 },
   swords: { fontSize: 15, color: COLORS.gold },
   rivalLabel: {
