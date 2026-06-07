@@ -7,7 +7,6 @@ import {
   ScrollView,
   Pressable,
   StyleSheet,
-  ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -16,6 +15,7 @@ import { rankResults } from '../../../src/lib/db/heroes';
 import type { HeroSearchResult, HeroPowerResult } from '../../../src/lib/db/heroes';
 import { usePickOpponents, type PickSubject } from '../../../src/hooks/usePickOpponents';
 import { OpponentCard } from '../../../src/components/compare/OpponentCard';
+import { CardSkeleton } from '../../../src/components/compare/CardSkeleton';
 import { VsAnchor, type AnchorPreview } from '../../../src/components/compare/VsAnchor';
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import {
@@ -109,6 +109,27 @@ function Rail({
           );
         })}
       </ScrollView>
+    </View>
+  );
+}
+
+/** Skeleton screen for the roster load — mirrors a suggestion rail + the grid,
+ *  matching the native picker so the two platforms load the same way. */
+function WebPickSkeleton() {
+  return (
+    <View>
+      <View style={[styles.skelLabel, { width: 130 }] as object} />
+      <View style={styles.skelRail as object}>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <CardSkeleton key={i} width={138} height={196} />
+        ))}
+      </View>
+      <View style={[styles.skelLabel, { width: 96, marginTop: 6 }] as object} />
+      <View style={rosterGrid as object}>
+        {Array.from({ length: 12 }).map((_, i) => (
+          <CardSkeleton key={i} fill />
+        ))}
+      </View>
     </View>
   );
 }
@@ -255,9 +276,7 @@ export default function WebPickOpponentScreen() {
             </View>
 
             {loading ? (
-              <View style={styles.center}>
-                <ActivityIndicator color={COLORS.orange} />
-              </View>
+              <WebPickSkeleton />
             ) : (
               <>
                 {showSuggestions && (
@@ -347,7 +366,20 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.navy },
   scroll: { flex: 1 },
   scrollContent: { flexGrow: 1 },
-  center: { paddingVertical: 80, alignItems: 'center', justifyContent: 'center' },
+
+  // Loading skeleton
+  skelLabel: {
+    height: 12,
+    borderRadius: 5,
+    backgroundColor: 'rgba(41,60,67,0.1)',
+    marginBottom: 16,
+  },
+  skelRail: {
+    flexDirection: 'row',
+    gap: 14,
+    marginBottom: 24,
+    overflow: 'hidden',
+  } as object,
 
   // ── Navy stage ──
   stage: { backgroundColor: COLORS.navy, paddingBottom: 36, alignItems: 'center' },
