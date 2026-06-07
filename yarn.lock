@@ -5751,6 +5751,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"expo-blur@npm:~55.0.14":
+  version: 55.0.14
+  resolution: "expo-blur@npm:55.0.14"
+  peerDependencies:
+    expo: "*"
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/53e3d7a32e41376e244feec3a7ff17b2efc94c2aef33e16e9a78bd9a1193b553b61af040cedec9877bd7b29530b48fc71825a0b57a9f87c30834b8a20d4bf166
+  languageName: node
+  linkType: hard
+
 "expo-constants@npm:~55.0.11, expo-constants@npm:~55.0.12":
   version: 55.0.12
   resolution: "expo-constants@npm:55.0.12"
@@ -8737,6 +8748,7 @@ __metadata:
     cloudinary: "npm:^2.10.0"
     dotenv: "npm:^17.4.1"
     expo: "npm:~55.0.12"
+    expo-blur: "npm:~55.0.14"
     expo-constants: "npm:~55.0.12"
     expo-dev-client: "npm:^55.0.23"
     expo-dev-menu: "npm:^55.0.20"
