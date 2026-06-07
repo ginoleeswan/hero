@@ -203,8 +203,8 @@ export async function fetchHeroGallery(
     issueCovers: IssueCover[] | null;
   }>('get-hero-gallery', { body: { heroId, comicvineId } });
 
+  if (error) console.warn('[fetchHeroGallery] error:', error.message, error);
   if (error || !data) {
-    console.warn('[fetchHeroGallery] error:', error?.message);
     return { galleryImages: null, issueCovers: null };
   }
   return {
