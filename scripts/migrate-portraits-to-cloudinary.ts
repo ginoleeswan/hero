@@ -17,9 +17,9 @@
  *   bun scripts/migrate-portraits-to-cloudinary.ts --concurrency 8      # full run
  */
 import { createClient } from '@supabase/supabase-js';
-import { v2 as cloudinary } from 'cloudinary';
 import pLimit from 'p-limit';
-import { mkdirSync, existsSync, writeFileSync, renameSync } from 'node:fs';
+import { mkdirSync, existsSync, writeFileSync, renameSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import 'dotenv/config';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
@@ -35,8 +35,38 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !CLOUD_NAME || !CLOUD_KEY || !CLOU
   process.exit(1);
 }
 
-cloudinary.config({ cloud_name: CLOUD_NAME, api_key: CLOUD_KEY, api_secret: CLOUD_SECRET });
 const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+/**
+ * Signed Cloudinary upload via raw HTTP. The cloudinary SDK's uploader is
+ * unreliable under Bun (intermittently sends uploads as "unsigned" → 400), so we
+ * sign and POST ourselves: sha1 of the alphabetically-sorted signable params
+ * plus the api_secret, exactly as Cloudinary's signature spec requires.
+ */
+async function uploadSigned(localPath: string, publicId: string): Promise<string> {
+  const timestamp = Math.floor(Date.now() / 1000);
+  // Signable params (everything except file/api_key/signature), sorted by key.
+  const toSign = `overwrite=true&public_id=${publicId}&timestamp=${timestamp}`;
+  const signature = createHash('sha1').update(toSign + CLOUD_SECRET).digest('hex');
+
+  const form = new FormData();
+  form.append('file', new Blob([readFileSync(localPath)]), `${publicId}.jpg`);
+  form.append('api_key', CLOUD_KEY);
+  form.append('timestamp', String(timestamp));
+  form.append('public_id', publicId);
+  form.append('overwrite', 'true');
+  form.append('signature', signature);
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+    method: 'POST',
+    body: form,
+  });
+  const body = (await res.json()) as { secure_url?: string; error?: { message?: string } };
+  if (!res.ok || !body.secure_url) {
+    throw new Error(`upload ${res.status}: ${body.error?.message ?? 'no secure_url'}`);
+  }
+  return body.secure_url;
+}
 
 const arg = (flag: string): string | null =>
   process.argv.includes(flag) ? (process.argv[process.argv.indexOf(flag) + 1] ?? null) : null;
@@ -83,16 +113,12 @@ async function backup(id: string, url: string): Promise<void> {
 async function migrate(row: Row): Promise<'migrated' | 'failed'> {
   try {
     await backup(row.id, row.portrait_url);
-    // overwrite:true → safe to re-run; a hero whose DB write failed last time
-    // re-uploads and re-flips cleanly.
-    const result = await cloudinary.uploader.upload(`${BACKUP_DIR}/${row.id}.jpg`, {
-      public_id: `hero-portraits/${row.id}`,
-      overwrite: true,
-    });
-    if (!result.secure_url) throw new Error('Cloudinary returned no secure_url');
+    // overwrite:true (inside uploadSigned) → safe to re-run; a hero whose DB write
+    // failed last time re-uploads and re-flips cleanly.
+    const secureUrl = await uploadSigned(`${BACKUP_DIR}/${row.id}.jpg`, `hero-portraits/${row.id}`);
     const { error } = await sb
       .from('heroes')
-      .update({ portrait_url: result.secure_url })
+      .update({ portrait_url: secureUrl })
       .eq('id', row.id);
     if (error) throw new Error(`db: ${error.message}`);
     return 'migrated';
