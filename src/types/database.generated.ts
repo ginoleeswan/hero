@@ -67,6 +67,7 @@ export type Database = {
           first_issue_image_url: string | null
           friends: string[] | null
           full_name: string | null
+          gallery_images: Json | null
           gender: string | null
           group_affiliation: string | null
           hair_color: string | null
@@ -77,6 +78,7 @@ export type Database = {
           image_url: string | null
           intelligence: number | null
           issue_count: number | null
+          issue_covers: Json | null
           movie_count: number | null
           movies: Json[] | null
           name: string
@@ -120,6 +122,7 @@ export type Database = {
           first_issue_image_url?: string | null
           friends?: string[] | null
           full_name?: string | null
+          gallery_images?: Json | null
           gender?: string | null
           group_affiliation?: string | null
           hair_color?: string | null
@@ -130,6 +133,7 @@ export type Database = {
           image_url?: string | null
           intelligence?: number | null
           issue_count?: number | null
+          issue_covers?: Json | null
           movie_count?: number | null
           movies?: Json[] | null
           name: string
@@ -173,6 +177,7 @@ export type Database = {
           first_issue_image_url?: string | null
           friends?: string[] | null
           full_name?: string | null
+          gallery_images?: Json | null
           gender?: string | null
           group_affiliation?: string | null
           hair_color?: string | null
@@ -183,6 +188,7 @@ export type Database = {
           image_url?: string | null
           intelligence?: number | null
           issue_count?: number | null
+          issue_covers?: Json | null
           movie_count?: number | null
           movies?: Json[] | null
           name?: string
