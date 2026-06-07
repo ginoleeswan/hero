@@ -68,7 +68,6 @@ export type Database = {
           friends: string[] | null
           full_name: string | null
           gallery_enriched_at: string | null
-          gallery_images: Json | null
           gender: string | null
           group_affiliation: string | null
           hair_color: string | null
@@ -124,7 +123,6 @@ export type Database = {
           friends?: string[] | null
           full_name?: string | null
           gallery_enriched_at?: string | null
-          gallery_images?: Json | null
           gender?: string | null
           group_affiliation?: string | null
           hair_color?: string | null
@@ -180,7 +178,6 @@ export type Database = {
           friends?: string[] | null
           full_name?: string | null
           gallery_enriched_at?: string | null
-          gallery_images?: Json | null
           gender?: string | null
           group_affiliation?: string | null
           hair_color?: string | null

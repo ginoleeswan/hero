@@ -28,7 +28,7 @@ import { MovieStrip } from '../../src/components/MovieStrip';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import { GalleryStrip } from '../../src/components/GalleryStrip';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
-import type { CharacterData, GalleryImage, IssueCover } from '../../src/types';
+import type { CharacterData, IssueCover } from '../../src/types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HERO_IMAGE_HEIGHT = Math.round(SCREEN_HEIGHT * 0.62);
@@ -251,7 +251,6 @@ export default function CharacterScreen() {
   const [favourited, setFavourited] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
   const [favCount, setFavCount] = useState<number>(0);
-  const [galleryImages, setGalleryImages] = useState<GalleryImage[] | null>(null);
   const [issueCovers, setIssueCovers] = useState<IssueCover[] | null>(null);
   const [galleryLoading, setGalleryLoading] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<
@@ -371,24 +370,20 @@ export default function CharacterScreen() {
     if (heroRow.enriched_at) {
       setData(heroRowToCharacterData(heroRow));
 
-      // Seed gallery from DB if already populated
-      if (heroRow.gallery_images) {
-        setGalleryImages(heroRow.gallery_images as unknown as GalleryImage[]);
-      }
+      // Seed issue covers from DB if already populated
       if (heroRow.issue_covers) {
         setIssueCovers(heroRow.issue_covers as unknown as IssueCover[]);
       }
 
-      // Lazy-fetch gallery only if never enriched (sentinel null). Heroes that
-      // ComicVine has no art for keep null data columns but a set timestamp, so
-      // they don't re-trigger the ~21-call fetch on every visit.
+      // Lazy-fetch covers only if never enriched (sentinel null). Heroes with no
+      // covers keep a null column but a set timestamp, so they don't re-trigger
+      // the fetch on every visit.
       const needsGallery =
         heroRow.comicvine_id != null && heroRow.gallery_enriched_at === null;
       if (needsGallery) {
         setGalleryLoading(true);
         fetchHeroGallery(heroRow.id, heroRow.comicvine_id!)
-          .then(({ galleryImages: imgs, issueCovers: covers }) => {
-            if (imgs) setGalleryImages(imgs);
+          .then(({ issueCovers: covers }) => {
             if (covers) setIssueCovers(covers);
           })
           .catch(() => {})
@@ -833,29 +828,6 @@ export default function CharacterScreen() {
                 <MovieStrip
                   movies={data.details.movies}
                   totalCount={data.details.movieCount ?? data.details.movies.length}
-                />
-              </Section>
-            ) : null}
-
-            {/* Character Art — skeleton only while this section's data is still loading */}
-            {galleryImages === null && galleryLoading ? (
-              <SkeletonProvider>
-                <Section title="Character Art">
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    {[0, 1, 2, 3].map((i) => (
-                      <Skeleton key={i} width={80} height={110} borderRadius={8} />
-                    ))}
-                  </View>
-                </Section>
-              </SkeletonProvider>
-            ) : galleryImages && galleryImages.length > 0 ? (
-              <Section title="Character Art">
-                <GalleryStrip
-                  images={galleryImages.map((img) => ({ url: img.url, caption: null }))}
-                  onPress={(i) => {
-                    setLightboxImages(galleryImages.map((img) => ({ url: img.url })));
-                    setLightboxIndex(i);
-                  }}
                 />
               </Section>
             ) : null}

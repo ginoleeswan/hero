@@ -99,11 +99,6 @@ export interface FirstIssue {
   debutCharacters: string[] | null;
 }
 
-export interface GalleryImage {
-  url: string;
-  tags: string | null;
-}
-
 export interface IssueCover {
   url: string;
   name: string | null;

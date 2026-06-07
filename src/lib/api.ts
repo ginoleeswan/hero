@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import type { HeroStats, HeroDetails, FirstIssue, MovieAppearance, GalleryImage, IssueCover } from '../types';
+import type { HeroStats, HeroDetails, FirstIssue, MovieAppearance, IssueCover } from '../types';
 import { supabase } from './supabase';
 
 const SUPERHERO_API_KEY = Constants.expoConfig?.extra?.superheroApiKey as string;
@@ -197,18 +197,16 @@ export async function fetchFirstIssue(issueId: string): Promise<FirstIssue> {
 export async function fetchHeroGallery(
   heroId: string,
   comicvineId: string,
-): Promise<{ galleryImages: GalleryImage[] | null; issueCovers: IssueCover[] | null }> {
+): Promise<{ issueCovers: IssueCover[] | null }> {
   const { data, error } = await supabase.functions.invoke<{
-    galleryImages: GalleryImage[] | null;
     issueCovers: IssueCover[] | null;
   }>('get-hero-gallery', { body: { heroId, comicvineId } });
 
   if (error) console.warn('[fetchHeroGallery] error:', error.message, error);
   if (error || !data) {
-    return { galleryImages: null, issueCovers: null };
+    return { issueCovers: null };
   }
   return {
-    galleryImages: data.galleryImages ?? null,
     issueCovers: data.issueCovers ?? null,
   };
 }

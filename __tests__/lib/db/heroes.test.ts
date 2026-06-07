@@ -189,7 +189,6 @@ describe('heroRowToCharacterData', () => {
     movie_count: null,
     powerstats_total: null,
     stats_source: null,
-    gallery_images: null,
     issue_covers: null,
     gallery_enriched_at: null,
   } satisfies Hero;
@@ -369,7 +368,6 @@ const baseHero: HeroRow = {
   movie_count: null,
   powerstats_total: null,
   stats_source: null,
-  gallery_images: null,
   issue_covers: null,
   gallery_enriched_at: null,
 };
