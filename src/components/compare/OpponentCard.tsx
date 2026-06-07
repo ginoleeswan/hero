@@ -70,9 +70,9 @@ function OpponentCardBase({
   const sizeStyle = fill ? (styles.fill as object) : { width, height };
 
   // The info chip is a desktop-web affordance giving mouse users a discoverable
-  // route to the peek (touch uses long-press). It stays mounted (not hover-
-  // gated) so moving the cursor onto it can't make it flicker out before a
-  // click — it sits quiet by default and brightens on its own hover.
+  // route to the peek (touch uses long-press). It reveals on card hover only
+  // (one at a time, never plastered on every card) — kept mounted with an
+  // opacity fade so it can't flicker out before a click.
   const showInfo = IS_WEB && !!onInfo;
 
   // Gentle skeleton pulse that sits BEHIND the image. expo-image fades in on
@@ -118,41 +118,50 @@ function OpponentCardBase({
         ] as object
       }
     >
-      {!loaded && (
-        <Animated.View
-          pointerEvents="none"
-          style={[StyleSheet.absoluteFill, styles.skeleton as object, pulseStyle]}
-        />
-      )}
-      {hasImage ? (
-        <Image
-          source={source}
-          contentFit="cover"
-          contentPosition="top center"
-          style={StyleSheet.absoluteFill}
-          transition={250}
-          onLoad={() => setLoaded(true)}
-          onError={() => setLoaded(true)}
-        />
-      ) : (
-        <View style={styles.fallback as object}>
-          <Text style={styles.fallbackInitial}>{item.name?.charAt(0).toUpperCase() ?? '?'}</Text>
-        </View>
-      )}
-      <View style={styles.scrim as object} />
-      <Text style={[styles.name, compact && styles.nameCompact]} numberOfLines={2}>
-        {item.name}
-      </Text>
-      {showInfo && (
-        <Pressable
-          onPress={onInfo}
-          accessibilityLabel={`About ${item.name}`}
-          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [styles.infoChip, hovered && (styles.infoChipHover as object)] as object
-          }
-        >
-          <Ionicons name="information" size={15} color={COLORS.beige} />
-        </Pressable>
+      {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
+        <>
+          {!loaded && (
+            <Animated.View
+              pointerEvents="none"
+              style={[StyleSheet.absoluteFill, styles.skeleton as object, pulseStyle]}
+            />
+          )}
+          {hasImage ? (
+            <Image
+              source={source}
+              contentFit="cover"
+              contentPosition="top center"
+              style={StyleSheet.absoluteFill}
+              transition={250}
+              onLoad={() => setLoaded(true)}
+              onError={() => setLoaded(true)}
+            />
+          ) : (
+            <View style={styles.fallback as object}>
+              <Text style={styles.fallbackInitial}>{item.name?.charAt(0).toUpperCase() ?? '?'}</Text>
+            </View>
+          )}
+          <View style={styles.scrim as object} />
+          <Text style={[styles.name, compact && styles.nameCompact]} numberOfLines={2}>
+            {item.name}
+          </Text>
+          {showInfo && (
+            <Pressable
+              onPress={onInfo}
+              accessibilityLabel={`About ${item.name}`}
+              pointerEvents={hovered ? 'auto' : 'none'}
+              style={({ hovered: chipHovered }: { pressed: boolean; hovered?: boolean }) =>
+                [
+                  styles.infoChip,
+                  { opacity: hovered ? 1 : 0 },
+                  chipHovered && (styles.infoChipHover as object),
+                ] as object
+              }
+            >
+              <Ionicons name="information" size={15} color={COLORS.beige} />
+            </Pressable>
+          )}
+        </>
       )}
     </Pressable>
   );
@@ -253,7 +262,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(18,14,10,0.55)',
     borderWidth: StyleSheet.hairlineWidth * 2,
     borderColor: 'rgba(245,235,220,0.4)',
-    ...Platform.select({ web: { cursor: 'pointer' } as object, default: {} }),
+    ...Platform.select({
+      web: { cursor: 'pointer', transition: 'opacity 150ms ease, background-color 150ms ease' } as object,
+      default: {},
+    }),
   } as object,
   infoChipHover: { backgroundColor: 'rgba(18,14,10,0.8)' } as object,
 });

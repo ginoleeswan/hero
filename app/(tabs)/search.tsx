@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
 import { PortraitCard } from '../../src/components/search/PortraitCard';
+import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 import { HomeHeroRow, type RowHero } from '../../src/components/home/HomeHeroRow';
 import {
   searchHeroes,
@@ -64,6 +65,7 @@ export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [publisherFilter, setPublisherFilter] = useState<PublisherFilter>('All');
   const [navigating, setNavigating] = useState(false);
+  const [peek, setPeek] = useState<PeekHero | null>(null);
 
   const cardWidth = (width - H_PAD * 2 - GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
   const debouncedQuery = useDebounce(query, 300);
@@ -134,6 +136,11 @@ export default function SearchScreen() {
     },
     [router, navigating],
   );
+
+  const openPeek = useCallback((item: PeekHero) => {
+    Haptics.selectionAsync();
+    setPeek(item);
+  }, []);
 
   const isIdle = searchResults === null;
   const showRecent = isIdle && !query.trim() && recentlyViewed.length > 0;
@@ -242,9 +249,22 @@ export default function SearchScreen() {
               item={item}
               cardWidth={cardWidth}
               onPress={() => handlePress(item)}
+              onLongPress={() => openPeek(item)}
               disabled={navigating}
             />
           )}
+        />
+      )}
+
+      {peek && (
+        <HeroPeek
+          hero={peek}
+          onClose={() => setPeek(null)}
+          onFight={() => router.push(`/compare/${peek.id}/pick`)}
+          onViewProfile={() => {
+            setPeek(null);
+            router.push(`/character/${peek.id}`);
+          }}
         />
       )}
     </View>

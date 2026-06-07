@@ -36,6 +36,7 @@ import { flattenCategoryPages } from '../../src/lib/query/heroCache';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
 import { CategorySkeleton } from '../../src/components/skeletons/CategorySkeleton';
+import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 
 const VALID_SLUGS = new Set<CategorySlug>([
   'popular',
@@ -56,10 +57,24 @@ const CARD_WIDTH = (SCREEN_WIDTH - PADDING * 2 - GAP * (NUM_COLUMNS - 1)) / NUM_
 const CARD_HEIGHT = Math.round(CARD_WIDTH * 1.35);
 
 // ── Hero grid card ────────────────────────────────────────────────────────────
-function HeroGridCard({ hero, onPress }: { hero: Hero; onPress: () => void }) {
+function HeroGridCard({
+  hero,
+  onPress,
+  onLongPress,
+}: {
+  hero: Hero;
+  onPress: () => void;
+  onLongPress?: () => void;
+}) {
   const source = heroImageSource(hero.id, hero.image_url, hero.portrait_url);
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.82}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={300}
+      activeOpacity={0.82}
+    >
       <Image
         source={source}
         contentFit="cover"
@@ -205,6 +220,7 @@ export default function CategoryScreen() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [navigating, setNavigating] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [peek, setPeek] = useState<PeekHero | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -249,6 +265,11 @@ export default function CategoryScreen() {
     },
     [router, navigating, queryClient],
   );
+
+  const openPeek = useCallback((hero: Hero) => {
+    Haptics.selectionAsync();
+    setPeek(hero);
+  }, []);
 
   const countLabel = (() => {
     const s = total !== 1 ? 's' : '';
@@ -352,7 +373,11 @@ export default function CategoryScreen() {
           contentContainerStyle={[styles.grid, { paddingBottom: insets.bottom + 20 }]}
           columnWrapperStyle={styles.row}
           renderItem={({ item }) => (
-            <HeroGridCard hero={item} onPress={() => handleHeroPress(String(item.id))} />
+            <HeroGridCard
+              hero={item}
+              onPress={() => handleHeroPress(String(item.id))}
+              onLongPress={() => openPeek(item)}
+            />
           )}
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.3}
@@ -384,6 +409,18 @@ export default function CategoryScreen() {
         onClose={() => setFilterOpen(false)}
         bottomInset={insets.bottom}
       />
+
+      {peek && (
+        <HeroPeek
+          hero={peek}
+          onClose={() => setPeek(null)}
+          onFight={() => router.push(`/compare/${peek.id}/pick`)}
+          onViewProfile={() => {
+            setPeek(null);
+            router.push(`/character/${peek.id}`);
+          }}
+        />
+      )}
     </View>
   );
 }

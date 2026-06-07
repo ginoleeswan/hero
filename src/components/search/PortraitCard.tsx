@@ -15,11 +15,13 @@ export function PortraitCard({
   item,
   cardWidth,
   onPress,
+  onLongPress,
   disabled,
 }: {
   item: HeroSearchResult;
   cardWidth: number;
   onPress: () => void;
+  onLongPress?: () => void;
   disabled: boolean;
 }) {
   const source = heroGridImageSource(item.id, item.image_url, item.portrait_url, item.image_md_url);
@@ -33,6 +35,8 @@ export function PortraitCard({
   return (
     <TouchableOpacity
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={300}
       activeOpacity={0.82}
       disabled={disabled}
       style={[styles.wrap, { width: cardWidth, height: Math.round(cardWidth * 1.48) }]}

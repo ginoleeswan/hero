@@ -23,6 +23,7 @@ import {
 } from '../../src/lib/db/heroes';
 import { heroGridImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
+import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 import { useSearch } from '../../src/contexts/SearchContext';
 import { useSearchHistory } from '../../src/hooks/useSearchHistory';
 import { useIdleHeroes } from '../../src/hooks/useIdleHeroes';
@@ -54,30 +55,62 @@ const sk = StyleSheet.create({
 });
 
 // ── Card ────────────────────────────────────────────────────────────────────────
-function HeroCard({ hero, onPress }: { hero: HeroSearchResult; onPress: () => void }) {
+function HeroCard({
+  hero,
+  onPress,
+  onLongPress,
+  onInfo,
+}: {
+  hero: HeroSearchResult;
+  onPress: () => void;
+  onLongPress?: () => void;
+  onInfo?: () => void;
+}) {
   const source = heroGridImageSource(hero.id, hero.image_url, hero.portrait_url, hero.image_md_url);
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={300}
       style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [card.wrap, hovered && (card.wrapHover as object)] as object
       }
     >
-      <Image
-        source={source}
-        contentFit="cover"
-        contentPosition={{ top: 0, left: '50%' }}
-        style={StyleSheet.absoluteFill}
-        cachePolicy="memory-disk"
-        recyclingKey={hero.id}
-        transition={typeof source === 'object' && 'uri' in source ? 150 : null}
-      />
-      <View style={card.overlay as object} />
-      <View style={card.bottom}>
-        <Text style={card.name as object} numberOfLines={2}>
-          {hero.name}
-        </Text>
-      </View>
+      {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
+        <>
+          <Image
+            source={source}
+            contentFit="cover"
+            contentPosition={{ top: 0, left: '50%' }}
+            style={StyleSheet.absoluteFill}
+            cachePolicy="memory-disk"
+            recyclingKey={hero.id}
+            transition={typeof source === 'object' && 'uri' in source ? 150 : null}
+          />
+          <View style={card.overlay as object} />
+          <View style={card.bottom}>
+            <Text style={card.name as object} numberOfLines={2}>
+              {hero.name}
+            </Text>
+          </View>
+          {onInfo && (
+            <Pressable
+              onPress={onInfo}
+              accessibilityLabel={`About ${hero.name}`}
+              pointerEvents={hovered ? 'auto' : 'none'}
+              style={({ hovered: chipHovered }: { pressed: boolean; hovered?: boolean }) =>
+                [
+                  card.infoChip,
+                  { opacity: hovered ? 1 : 0 },
+                  chipHovered && (card.infoChipHover as object),
+                ] as object
+              }
+            >
+              <Ionicons name="information" size={15} color={COLORS.beige} />
+            </Pressable>
+          )}
+        </>
+      )}
     </Pressable>
   );
 }
@@ -113,6 +146,22 @@ const card = StyleSheet.create({
     lineHeight: 18,
     textShadow: '0 1px 8px rgba(0,0,0,0.9)',
   } as object,
+  infoChip: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 26,
+    height: 26,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(18,14,10,0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.4)',
+    cursor: 'pointer',
+    transition: 'opacity 150ms ease, background-color 150ms ease',
+  } as object,
+  infoChipHover: { backgroundColor: 'rgba(18,14,10,0.82)' } as object,
 });
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -173,6 +222,8 @@ export default function WebSearchScreen() {
     if (trimmed) addSearch(trimmed);
     router.push(`/character/${id}`);
   };
+
+  const [peek, setPeek] = useState<PeekHero | null>(null);
 
   const setPublisher = (p: PublisherFilter) => {
     router.setParams({ publisher: p === 'All' ? '' : p });
@@ -327,7 +378,7 @@ export default function WebSearchScreen() {
             ) : (
               <View style={gridStyle as object}>
                 {trending.map((hero) => (
-                  <HeroCard key={hero.id} hero={hero} onPress={() => goToHero(hero.id)} />
+                  <HeroCard key={hero.id} hero={hero} onPress={() => goToHero(hero.id)} onLongPress={() => setPeek(hero)} onInfo={() => setPeek(hero)} />
                 ))}
               </View>
             )}
@@ -354,7 +405,7 @@ export default function WebSearchScreen() {
           <View style={[styles.gridWrap, { paddingHorizontal: contentPad, paddingBottom: 60 }]}>
             <View style={gridStyle as object}>
               {heroes.map((hero) => (
-                <HeroCard key={hero.id} hero={hero} onPress={() => goToHero(hero.id)} />
+                <HeroCard key={hero.id} hero={hero} onPress={() => goToHero(hero.id)} onLongPress={() => setPeek(hero)} onInfo={() => setPeek(hero)} />
               ))}
             </View>
             {capped && (
@@ -364,6 +415,18 @@ export default function WebSearchScreen() {
             )}
           </View>
         </ScrollView>
+      )}
+
+      {peek && (
+        <HeroPeek
+          hero={peek}
+          onClose={() => setPeek(null)}
+          onFight={() => router.push(`/compare/${peek.id}/pick`)}
+          onViewProfile={() => {
+            setPeek(null);
+            router.push(`/character/${peek.id}`);
+          }}
+        />
       )}
     </View>
   );
