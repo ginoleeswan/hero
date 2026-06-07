@@ -94,3 +94,9 @@ android/build/
 
 # Playwright MCP artifacts
 .playwright-mcp/
+
+# Local Cloudinary onboarding script (contains inline secret — never commit)
+scripts/cloudinary-onboarding.js
+
+# Portrait backup directory (created by migration script — local only)
+portrait-backup/
