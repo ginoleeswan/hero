@@ -37,7 +37,7 @@ const STATS = [
 function PeekStat({ label, value }: { label: string; value: number }) {
   return (
     <View style={styles.statRow}>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={styles.statLabel} numberOfLines={1}>{label}</Text>
       <View style={styles.statTrack}>
         <View style={[styles.statFill, { width: `${value}%` }]} />
       </View>
@@ -225,12 +225,12 @@ const styles = StyleSheet.create({
   stats: { gap: 11, marginBottom: 22 },
   statRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   statLabel: {
-    width: 84,
+    width: 96,
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
     color: 'rgba(41,60,67,0.55)',
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 0.5,
   },
   statTrack: {
     flex: 1,
