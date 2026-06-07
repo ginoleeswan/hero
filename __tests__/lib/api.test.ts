@@ -3,6 +3,7 @@ import {
   fetchHeroDetails,
   fetchFirstIssue,
   generateVerdict,
+  fetchHeroGallery,
 } from '../../src/lib/api';
 
 const mockFetch = jest.fn();
@@ -222,5 +223,31 @@ describe('generateVerdict', () => {
     expect(result).toContain('Batman');
     expect(result).toContain('Spider-Man');
     expect(result).toContain('3');
+  });
+});
+
+describe('fetchHeroGallery', () => {
+  it('returns galleryImages and issueCovers on success', async () => {
+    const payload = {
+      galleryImages: [{ url: 'https://cv.example.com/art1.jpg', tags: null }],
+      issueCovers: [{ url: 'https://cv.example.com/cover1.jpg', name: 'ASM #1', issueNumber: '1', year: '1963' }],
+    };
+    mockInvoke.mockResolvedValueOnce({ data: payload, error: null });
+
+    const result = await fetchHeroGallery('620', '4005-1977');
+    expect(result.galleryImages).toHaveLength(1);
+    expect(result.galleryImages![0].url).toBe('https://cv.example.com/art1.jpg');
+    expect(result.issueCovers).toHaveLength(1);
+    expect(result.issueCovers![0].name).toBe('ASM #1');
+    expect(mockInvoke).toHaveBeenCalledWith('get-hero-gallery', {
+      body: { heroId: '620', comicvineId: '4005-1977' },
+    });
+  });
+
+  it('returns null arrays when edge function errors', async () => {
+    mockInvoke.mockResolvedValueOnce({ data: null, error: { message: 'edge error' } });
+    const result = await fetchHeroGallery('620', '4005-1977');
+    expect(result.galleryImages).toBeNull();
+    expect(result.issueCovers).toBeNull();
   });
 });
