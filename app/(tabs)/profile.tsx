@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,6 @@ import {
   Alert,
   ActionSheetIOS,
   Platform,
-  Animated,
   Linking,
 } from 'react-native';
 import Svg, { Defs, Pattern, Circle, Rect, Path } from 'react-native-svg';
@@ -19,6 +18,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SquircleMask } from '../../src/components/ui/SquircleMask';
+import { PressScale } from '../../src/components/ui/PressScale';
+import { Skeleton } from '../../src/components/ui/Skeleton';
+import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
@@ -57,25 +59,6 @@ function FavouriteThumb({
   onLongPress: () => void;
 }) {
   const src = heroImageSource(hero.id, hero.image_url, hero.portrait_url);
-  const scale = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.spring(scale, {
-      toValue: 0.91,
-      useNativeDriver: true,
-      bounciness: 0,
-      speed: 30,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      bounciness: 8,
-      speed: 20,
-    }).start();
-  };
 
   const handleLongPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -83,29 +66,32 @@ function FavouriteThumb({
   };
 
   return (
-    <Animated.View style={[styles.thumb, { transform: [{ scale }] }]}>
-      <TouchableOpacity
-        onPress={onPress}
-        onLongPress={handleLongPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        activeOpacity={1}
-        style={StyleSheet.absoluteFill}
-        delayLongPress={350}
-      >
-        <SquircleMask style={StyleSheet.absoluteFill} cornerRadius={26}>
-          <Image source={src} contentFit="cover" style={StyleSheet.absoluteFill} />
-          <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.7)']}
-            locations={[0.5, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-        </SquircleMask>
-        <Text style={styles.thumbName} numberOfLines={1}>
-          {hero.name}
-        </Text>
-      </TouchableOpacity>
-    </Animated.View>
+    <PressScale onPress={onPress} onLongPress={handleLongPress} scale={0.91} style={styles.thumb}>
+      <SquircleMask style={StyleSheet.absoluteFill} cornerRadius={26}>
+        <Image source={src} contentFit="cover" style={StyleSheet.absoluteFill} />
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.7)']}
+          locations={[0.5, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+      </SquircleMask>
+      <Text style={styles.thumbName} numberOfLines={1}>
+        {hero.name}
+      </Text>
+    </PressScale>
+  );
+}
+
+/** Skeleton grid matching the favourites thumbs while they load. */
+function FavouritesSkeleton() {
+  return (
+    <SkeletonProvider>
+      <View style={styles.grid}>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} width={THUMB_SIZE} height={THUMB_SIZE * 1.25} borderRadius={20} />
+        ))}
+      </View>
+    </SkeletonProvider>
   );
 }
 
@@ -555,9 +541,7 @@ export default function ProfileScreen() {
           </View>
 
           {loading ? (
-            <View style={styles.center}>
-              <ActivityIndicator color={COLORS.orange} />
-            </View>
+            <FavouritesSkeleton />
           ) : favourites.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconWrap}>

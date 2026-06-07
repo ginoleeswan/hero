@@ -24,6 +24,7 @@ import {
   type FavouriteHero,
 } from '../../src/lib/db/favourites';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';
+import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { COLORS } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
 import Svg, { Path } from 'react-native-svg';
@@ -34,6 +35,35 @@ const HERO_LOGO_PATH =
 const KO_FI_URL = 'https://ko-fi.com/glstudio';
 
 const SIDEBAR_BREAKPOINT = 640;
+
+/** Favourites skeleton grids while the user's saved heroes load. */
+function MobileFavSkeleton({ thumbSize }: { thumbSize: number }) {
+  const opacity = useSkeletonAnim();
+  return (
+    <View style={mob.grid}>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <SkeletonBlock
+          key={i}
+          opacity={opacity}
+          width={thumbSize}
+          height={thumbSize * 1.25}
+          borderRadius={12}
+        />
+      ))}
+    </View>
+  );
+}
+
+function DeskFavSkeleton() {
+  const opacity = useSkeletonAnim();
+  return (
+    <View style={deskGrid as object}>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <SkeletonBlock key={i} opacity={opacity} height={240} borderRadius={12} />
+      ))}
+    </View>
+  );
+}
 
 function username(email: string) {
   return email.split('@')[0] ?? email;
@@ -475,9 +505,7 @@ export default function WebProfileScreen() {
               )}
             </View>
             {loading ? (
-              <View style={mob.center}>
-                <ActivityIndicator color={COLORS.orange} />
-              </View>
+              <MobileFavSkeleton thumbSize={thumbSize} />
             ) : favourites.length === 0 ? (
               <View style={mob.emptyState}>
                 <View style={mob.emptyIconWrap}>
@@ -897,9 +925,7 @@ export default function WebProfileScreen() {
             </View>
 
             {loading ? (
-              <View style={desk.center}>
-                <ActivityIndicator color={COLORS.orange} size="large" />
-              </View>
+              <DeskFavSkeleton />
             ) : favourites.length === 0 ? (
               <View style={desk.emptyState}>
                 <View style={desk.emptyIconWrap}>

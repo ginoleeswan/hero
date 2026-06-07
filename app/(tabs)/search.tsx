@@ -20,6 +20,8 @@ import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
 import { PortraitCard } from '../../src/components/search/PortraitCard';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
+import { Skeleton } from '../../src/components/ui/Skeleton';
+import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { HomeHeroRow, type RowHero } from '../../src/components/home/HomeHeroRow';
 import {
   searchHeroes,
@@ -221,9 +223,18 @@ export default function SearchScreen() {
       </ScrollView>
 
       {idleLoading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={COLORS.orange} />
-        </View>
+        <SkeletonProvider>
+          <View style={[styles.grid, styles.skelGrid]}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton
+                key={i}
+                width={cardWidth}
+                height={Math.round(cardWidth * 1.48)}
+                borderRadius={10}
+              />
+            ))}
+          </View>
+        </SkeletonProvider>
       ) : displayedHeroes.length === 0 && !isSearching ? (
         <View style={styles.center}>
           <View style={styles.emptyIconWrap}>
@@ -312,6 +323,7 @@ const styles = StyleSheet.create({
   pillText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   pillTextActive: { color: COLORS.beige },
   grid: { paddingHorizontal: H_PAD },
+  skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingTop: 4 },
   gridRow: { gap: GAP },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingBottom: 80 },
   emptyIconWrap: {
