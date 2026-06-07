@@ -69,10 +69,11 @@ function OpponentCardBase({
   const hasImage = !!source.uri;
   const sizeStyle = fill ? (styles.fill as object) : { width, height };
 
-  // The info chip is a desktop-web affordance — it appears on hover so mouse
-  // users have a discoverable route to the peek (touch uses long-press).
-  const [hovered, setHovered] = useState(false);
-  const showInfo = IS_WEB && !!onInfo && hovered;
+  // The info chip is a desktop-web affordance giving mouse users a discoverable
+  // route to the peek (touch uses long-press). It stays mounted (not hover-
+  // gated) so moving the cursor onto it can't make it flicker out before a
+  // click — it sits quiet by default and brightens on its own hover.
+  const showInfo = IS_WEB && !!onInfo;
 
   // Gentle skeleton pulse that sits BEHIND the image. expo-image fades in on
   // top of it and covers it once loaded, so the skeleton never lingers even if
@@ -104,14 +105,8 @@ function OpponentCardBase({
       onPress={onPress}
       onLongPress={onLongPress}
       delayLongPress={300}
-      onHoverIn={() => {
-        setHovered(true);
-        onHoverIn?.();
-      }}
-      onHoverOut={() => {
-        setHovered(false);
-        onHoverOut?.();
-      }}
+      onHoverIn={onHoverIn}
+      onHoverOut={onHoverOut}
       style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
         [
           styles.card,
