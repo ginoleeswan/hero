@@ -17,6 +17,7 @@ import type { HeroSearchResult, HeroPowerResult } from '../../../src/lib/db/hero
 import { usePickOpponents, type PickSubject } from '../../../src/hooks/usePickOpponents';
 import { OpponentCard } from '../../../src/components/compare/OpponentCard';
 import { VsAnchor, type AnchorPreview } from '../../../src/components/compare/VsAnchor';
+import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import {
   stashFighters,
   getFighterArt,
@@ -56,6 +57,7 @@ function Rail({
   morphKey,
   onPick,
   onHover,
+  onPeek,
   accent,
   tagline,
 }: {
@@ -65,6 +67,7 @@ function Rail({
   morphKey: string | null;
   onPick: (key: string, item: RailItem) => void;
   onHover: (item: AnchorPreview | null) => void;
+  onPeek: (item: PeekHero) => void;
   accent?: boolean;
   tagline?: string;
 }) {
@@ -93,6 +96,8 @@ function Rail({
               key={item.id}
               item={item}
               onPress={() => onPick(key, item)}
+              onLongPress={() => onPeek(item)}
+              onInfo={() => onPeek(item)}
               onHoverIn={() => onHover(item)}
               onHoverOut={() => onHover(null)}
               width={138}
@@ -118,6 +123,7 @@ export default function WebPickOpponentScreen() {
   const [query, setQuery] = useState('');
   const [preview, setPreview] = useState<AnchorPreview | null>(null);
   const [morphKey, setMorphKey] = useState<string | null>(null);
+  const [peek, setPeek] = useState<PeekHero | null>(null);
   const debouncedQuery = useDebounce(query, 200);
   const { subject, rivals, sameUniverse, similar, all, loading } = usePickOpponents(
     hero ?? '',
@@ -143,6 +149,20 @@ export default function WebPickOpponentScreen() {
       // Commit the view-transition-name onto the clicked card synchronously so
       // it's in the "old" snapshot, then run the navigation inside the transition.
       flushSync(() => setMorphKey(key));
+      withViewTransition(() => router.replace(`/compare/${hero}/${item.id}`));
+    },
+    [router, hero, subject],
+  );
+  // Commit to a fight from the peek sheet — stash and navigate inside a view
+  // transition (no card morph here, so it falls back to a clean crossfade).
+  const fightFromPeek = useCallback(
+    (item: PeekHero) => {
+      stashFighters(subject, {
+        id: item.id,
+        name: item.name,
+        image_url: item.image_url,
+        portrait_url: item.portrait_url,
+      });
       withViewTransition(() => router.replace(`/compare/${hero}/${item.id}`));
     },
     [router, hero, subject],
@@ -250,6 +270,7 @@ export default function WebPickOpponentScreen() {
                         morphKey={morphKey}
                         onPick={pick}
                         onHover={handleHover}
+                        onPeek={setPeek}
                         accent
                         tagline="The grudge matches fans want to see."
                       />
@@ -262,6 +283,7 @@ export default function WebPickOpponentScreen() {
                         morphKey={morphKey}
                         onPick={pick}
                         onHover={handleHover}
+                        onPeek={setPeek}
                       />
                     )}
                     {similar.length > 0 && (
@@ -272,6 +294,7 @@ export default function WebPickOpponentScreen() {
                         morphKey={morphKey}
                         onPick={pick}
                         onHover={handleHover}
+                        onPeek={setPeek}
                       />
                     )}
                     <Text style={styles.sectionLabel}>All Heroes</Text>
@@ -285,6 +308,8 @@ export default function WebPickOpponentScreen() {
                         key={item.id}
                         item={item}
                         onPress={() => pick(key, item)}
+                        onLongPress={() => setPeek(item)}
+                        onInfo={() => setPeek(item)}
                         onHoverIn={() => handleHover(item)}
                         onHoverOut={() => handleHover(null)}
                         fill
@@ -298,6 +323,19 @@ export default function WebPickOpponentScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {peek && (
+        <HeroPeek
+          hero={peek}
+          subjectName={subject?.name ?? name}
+          onClose={() => setPeek(null)}
+          onFight={() => fightFromPeek(peek)}
+          onViewProfile={() => {
+            setPeek(null);
+            router.push(`/character/${peek.id}`);
+          }}
+        />
+      )}
     </View>
   );
 }

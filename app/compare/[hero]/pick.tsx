@@ -20,6 +20,7 @@ import { usePickOpponents } from '../../../src/hooks/usePickOpponents';
 import { OpponentCard } from '../../../src/components/compare/OpponentCard';
 import { CardSkeleton } from '../../../src/components/compare/CardSkeleton';
 import { VsAnchor } from '../../../src/components/compare/VsAnchor';
+import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { stashFighters } from '../../../src/lib/compareHandoff';
 import { COLORS } from '../../../src/constants/colors';
 
@@ -56,12 +57,14 @@ function Rail({
   label,
   items,
   onPick,
+  onPeek,
   accent,
   tagline,
 }: {
   label: string;
   items: { id: string; name: string; image_url?: string | null; portrait_url?: string | null }[];
   onPick: (id: string) => void;
+  onPeek: (item: PeekHero) => void;
   accent?: boolean;
   tagline?: string;
 }) {
@@ -88,6 +91,7 @@ function Rail({
             key={item.id}
             item={item}
             onPress={() => onPick(item.id)}
+            onLongPress={() => onPeek(item)}
             width={RAIL_W}
             height={RAIL_H}
             compact
@@ -131,6 +135,7 @@ export default function PickOpponentScreen() {
   const headerHeight = insets.top + (Platform.OS === 'ios' ? 44 : 56);
 
   const [query, setQuery] = useState('');
+  const [peek, setPeek] = useState<PeekHero | null>(null);
   const debouncedQuery = useDebounce(query, 200);
   const { subject, rivals, sameUniverse, similar, all, loading } = usePickOpponents(
     hero ?? '',
@@ -148,6 +153,11 @@ export default function PickOpponentScreen() {
     const picked = [...rivals, ...sameUniverse, ...similar, ...all].find((h) => h.id === id);
     stashFighters(subject, picked);
     router.replace(`/compare/${hero}/${id}`);
+  };
+
+  const openPeek = (item: PeekHero) => {
+    Haptics.selectionAsync();
+    setPeek(item);
   };
 
   const showSuggestions =
@@ -187,15 +197,16 @@ export default function PickOpponentScreen() {
                 label="Rivalries"
                 items={rivals}
                 onPick={handlePick}
+                onPeek={openPeek}
                 accent
                 tagline="The grudge matches fans want to see."
               />
             )}
             {sameUniverse.length > 0 && (
-              <Rail label="Same Universe" items={sameUniverse} onPick={handlePick} />
+              <Rail label="Same Universe" items={sameUniverse} onPick={handlePick} onPeek={openPeek} />
             )}
             {similar.length > 0 && (
-              <Rail label="Similar Power" items={similar} onPick={handlePick} />
+              <Rail label="Similar Power" items={similar} onPick={handlePick} onPeek={openPeek} />
             )}
             <Text style={[styles.sectionLabel, styles.allLabel]}>All Heroes</Text>
           </>
@@ -223,11 +234,25 @@ export default function PickOpponentScreen() {
           <OpponentCard
             item={item}
             onPress={() => handlePick(item.id)}
+            onLongPress={() => openPeek(item)}
             width={CARD_W}
             height={CARD_H}
           />
         )}
       />
+
+      {peek && (
+        <HeroPeek
+          hero={peek}
+          subjectName={subject?.name ?? name}
+          onClose={() => setPeek(null)}
+          onFight={() => handlePick(peek.id)}
+          onViewProfile={() => {
+            setPeek(null);
+            router.push(`/character/${peek.id}`);
+          }}
+        />
+      )}
     </View>
   );
 }

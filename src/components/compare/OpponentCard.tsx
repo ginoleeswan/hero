@@ -9,8 +9,11 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { heroImageSource } from '../../constants/heroImages';
 import { COLORS } from '../../constants/colors';
+
+const IS_WEB = Platform.OS === 'web';
 
 interface OpponentLike {
   id: string;
@@ -37,6 +40,10 @@ interface OpponentCardProps {
   onHoverOut?: () => void;
   /** Web only: view-transition-name to morph this card into the arena portrait. */
   vtName?: string;
+  /** Long-press (touch) → open the hero peek without committing to a fight. */
+  onLongPress?: () => void;
+  /** Open the hero peek from the hover-revealed info chip (desktop web). */
+  onInfo?: () => void;
 }
 
 /**
@@ -55,10 +62,17 @@ function OpponentCardBase({
   onHoverIn,
   onHoverOut,
   vtName,
+  onLongPress,
+  onInfo,
 }: OpponentCardProps) {
   const source = heroImageSource(item.id, item.image_url, item.portrait_url);
   const hasImage = !!source.uri;
   const sizeStyle = fill ? (styles.fill as object) : { width, height };
+
+  // The info chip is a desktop-web affordance — it appears on hover so mouse
+  // users have a discoverable route to the peek (touch uses long-press).
+  const [hovered, setHovered] = useState(false);
+  const showInfo = IS_WEB && !!onInfo && hovered;
 
   // Gentle skeleton pulse that sits BEHIND the image. expo-image fades in on
   // top of it and covers it once loaded, so the skeleton never lingers even if
@@ -88,8 +102,16 @@ function OpponentCardBase({
   return (
     <Pressable
       onPress={onPress}
-      onHoverIn={onHoverIn}
-      onHoverOut={onHoverOut}
+      onLongPress={onLongPress}
+      delayLongPress={300}
+      onHoverIn={() => {
+        setHovered(true);
+        onHoverIn?.();
+      }}
+      onHoverOut={() => {
+        setHovered(false);
+        onHoverOut?.();
+      }}
       style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
         [
           styles.card,
@@ -126,6 +148,17 @@ function OpponentCardBase({
       <Text style={[styles.name, compact && styles.nameCompact]} numberOfLines={2}>
         {item.name}
       </Text>
+      {showInfo && (
+        <Pressable
+          onPress={onInfo}
+          accessibilityLabel={`About ${item.name}`}
+          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+            [styles.infoChip, hovered && (styles.infoChipHover as object)] as object
+          }
+        >
+          <Ionicons name="information" size={15} color={COLORS.beige} />
+        </Pressable>
+      )}
     </Pressable>
   );
 }
@@ -213,4 +246,19 @@ const styles = StyleSheet.create({
     }),
   },
   nameCompact: { fontSize: 13, lineHeight: 16, bottom: 9, left: 9, right: 9 },
+  infoChip: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 26,
+    height: 26,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(18,14,10,0.55)',
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: 'rgba(245,235,220,0.4)',
+    ...Platform.select({ web: { cursor: 'pointer' } as object, default: {} }),
+  } as object,
+  infoChipHover: { backgroundColor: 'rgba(18,14,10,0.8)' } as object,
 });
