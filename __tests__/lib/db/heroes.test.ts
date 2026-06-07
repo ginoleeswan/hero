@@ -191,6 +191,7 @@ describe('heroRowToCharacterData', () => {
     stats_source: null,
     gallery_images: null,
     issue_covers: null,
+    gallery_enriched_at: null,
   } satisfies Hero;
 
   it('maps powerstats to string values', () => {
@@ -370,6 +371,7 @@ const baseHero: HeroRow = {
   stats_source: null,
   gallery_images: null,
   issue_covers: null,
+  gallery_enriched_at: null,
 };
 
 describe('heroRowToCharacterData — powers mapping', () => {

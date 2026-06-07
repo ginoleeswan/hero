@@ -379,10 +379,11 @@ export default function CharacterScreen() {
         setIssueCovers(heroRow.issue_covers as unknown as IssueCover[]);
       }
 
-      // Lazy-fetch gallery if columns are not yet populated
+      // Lazy-fetch gallery only if never enriched (sentinel null). Heroes that
+      // ComicVine has no art for keep null data columns but a set timestamp, so
+      // they don't re-trigger the ~21-call fetch on every visit.
       const needsGallery =
-        heroRow.comicvine_id != null &&
-        (heroRow.gallery_images === null || heroRow.issue_covers === null);
+        heroRow.comicvine_id != null && heroRow.gallery_enriched_at === null;
       if (needsGallery) {
         setGalleryLoading(true);
         fetchHeroGallery(heroRow.id, heroRow.comicvine_id!)

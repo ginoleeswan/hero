@@ -136,6 +136,7 @@ serve(async (req: Request) => {
       .update({
         gallery_images: galleryImages as unknown as Record<string, unknown>[] | null,
         issue_covers: issueCovers as unknown as Record<string, unknown>[] | null,
+        gallery_enriched_at: new Date().toISOString(),
       })
       .eq('id', heroId);
 

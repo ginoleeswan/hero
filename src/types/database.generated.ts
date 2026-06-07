@@ -67,6 +67,7 @@ export type Database = {
           first_issue_image_url: string | null
           friends: string[] | null
           full_name: string | null
+          gallery_enriched_at: string | null
           gallery_images: Json | null
           gender: string | null
           group_affiliation: string | null
@@ -122,6 +123,7 @@ export type Database = {
           first_issue_image_url?: string | null
           friends?: string[] | null
           full_name?: string | null
+          gallery_enriched_at?: string | null
           gallery_images?: Json | null
           gender?: string | null
           group_affiliation?: string | null
@@ -177,6 +179,7 @@ export type Database = {
           first_issue_image_url?: string | null
           friends?: string[] | null
           full_name?: string | null
+          gallery_enriched_at?: string | null
           gallery_images?: Json | null
           gender?: string | null
           group_affiliation?: string | null
