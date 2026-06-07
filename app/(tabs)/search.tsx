@@ -254,7 +254,7 @@ export default function SearchScreen() {
           ListHeaderComponent={listHeader}
           contentContainerStyle={[styles.grid, { paddingBottom: insets.bottom + 120 }]}
           columnWrapperStyle={styles.gridRow}
-          ItemSeparatorComponent={() => <View style={{ height: GAP }} />}
+          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           renderItem={({ item }) => (
             <PortraitCard
               item={item}
