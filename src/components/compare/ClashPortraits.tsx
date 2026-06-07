@@ -32,6 +32,10 @@ export interface ClashPortraitsProps {
   onSwapA?: () => void;
   /** Tap the right portrait to replace hero B. */
   onSwapB?: () => void;
+  /** Tap hero A's name to open their profile. */
+  onViewProfileA?: () => void;
+  /** Tap hero B's name to open their profile. */
+  onViewProfileB?: () => void;
 }
 
 export function ClashPortraits({
@@ -44,6 +48,8 @@ export function ClashPortraits({
   width = SCREEN_WIDTH,
   onSwapA,
   onSwapB,
+  onViewProfileA,
+  onViewProfileB,
 }: ClashPortraitsProps) {
   const PANEL_WIDTH = width / 2;
 
@@ -117,12 +123,6 @@ export function ClashPortraits({
           style={styles.bottomGrad}
           pointerEvents="none"
         />
-        <Animated.View style={[styles.labelsLeft, labelsStyle]}>
-          {winA && <Text style={styles.eyebrow}>Winner</Text>}
-          {tie && <Text style={styles.eyebrowTie}>Draw</Text>}
-          <Text style={[styles.heroName, !isWinA && styles.heroNameDim]}>{nameA}</Text>
-          {winA && <View style={styles.winRule} />}
-        </Animated.View>
         {onSwapA && (
           <Pressable
             onPress={onSwapA}
@@ -137,6 +137,23 @@ export function ClashPortraits({
             </View>
           </Pressable>
         )}
+        <Animated.View pointerEvents="box-none" style={[styles.labelsLeft, labelsStyle]}>
+          {winA && <Text style={styles.eyebrow}>Winner</Text>}
+          {tie && <Text style={styles.eyebrowTie}>Draw</Text>}
+          <Pressable
+            onPress={onViewProfileA}
+            disabled={!onViewProfileA}
+            style={styles.nameLink}
+            accessibilityRole="link"
+            accessibilityLabel={`View ${nameA}'s profile`}
+          >
+            <Text style={[styles.heroName, !isWinA && styles.heroNameDim]}>{nameA}</Text>
+            {!!onViewProfileA && (
+              <Ionicons name="chevron-forward" size={15} color="rgba(245,235,220,0.75)" />
+            )}
+          </Pressable>
+          {winA && <View style={styles.winRule} />}
+        </Animated.View>
       </Animated.View>
 
       {/* Right panel */}
@@ -159,14 +176,6 @@ export function ClashPortraits({
           style={styles.bottomGrad}
           pointerEvents="none"
         />
-        <Animated.View style={[styles.labelsRight, labelsStyle]}>
-          {winB && <Text style={[styles.eyebrow, styles.textRight]}>Winner</Text>}
-          {tie && <Text style={[styles.eyebrowTie, styles.textRight]}>Draw</Text>}
-          <Text style={[styles.heroName, styles.textRight, !isWinB && styles.heroNameDim]}>
-            {nameB}
-          </Text>
-          {winB && <View style={[styles.winRule, styles.winRuleRight]} />}
-        </Animated.View>
         {onSwapB && (
           <Pressable
             onPress={onSwapB}
@@ -181,6 +190,25 @@ export function ClashPortraits({
             </View>
           </Pressable>
         )}
+        <Animated.View pointerEvents="box-none" style={[styles.labelsRight, labelsStyle]}>
+          {winB && <Text style={[styles.eyebrow, styles.textRight]}>Winner</Text>}
+          {tie && <Text style={[styles.eyebrowTie, styles.textRight]}>Draw</Text>}
+          <Pressable
+            onPress={onViewProfileB}
+            disabled={!onViewProfileB}
+            style={[styles.nameLink, styles.nameLinkRight]}
+            accessibilityRole="link"
+            accessibilityLabel={`View ${nameB}'s profile`}
+          >
+            {!!onViewProfileB && (
+              <Ionicons name="chevron-back" size={15} color="rgba(245,235,220,0.75)" />
+            )}
+            <Text style={[styles.heroName, styles.textRight, !isWinB && styles.heroNameDim]}>
+              {nameB}
+            </Text>
+          </Pressable>
+          {winB && <View style={[styles.winRule, styles.winRuleRight]} />}
+        </Animated.View>
       </Animated.View>
 
       {/* Soft center seam */}
@@ -261,6 +289,13 @@ const styles = StyleSheet.create({
     letterSpacing: 2.5,
     marginBottom: 3,
   },
+  nameLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    alignSelf: 'flex-start',
+  },
+  nameLinkRight: { alignSelf: 'flex-end' },
   heroName: {
     fontFamily: 'Flame-Regular',
     fontSize: 17,

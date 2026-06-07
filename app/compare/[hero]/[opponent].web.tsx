@@ -7,6 +7,7 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  Platform,
   useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -64,19 +65,25 @@ function SwapOverlay({
   );
 }
 
-/** Winner caption matching native: gold "Winner"/"Draw" eyebrow, name, gold rule. */
+/** Winner caption matching native: gold "Winner"/"Draw" eyebrow, name, gold rule.
+ *  The name is a link to the hero's profile (chevron affordance, hover underline). */
 function PortraitLabel({
   name,
   state,
   align,
+  onViewProfile,
 }: {
   name: string;
   state: PortraitState;
   align: 'left' | 'right';
+  onViewProfile: () => void;
 }) {
   const right = align === 'right';
   return (
-    <View style={[styles.portraitLabel, right && (styles.alignEnd as object)] as object}>
+    <View
+      pointerEvents="box-none"
+      style={[styles.portraitLabel, right && (styles.alignEnd as object)] as object}
+    >
       {state === 'win' && (
         <View style={[styles.winBadge, right && (styles.winBadgeRight as object)] as object}>
           <Ionicons name="trophy" size={13} color={COLORS.goldAccent} />
@@ -88,17 +95,36 @@ function PortraitLabel({
           Draw
         </Text>
       )}
-      <Text
-        style={
+      <Pressable
+        onPress={onViewProfile}
+        accessibilityRole="link"
+        accessibilityLabel={`View ${name}'s profile`}
+        style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
           [
-            styles.heroNameLarge,
-            right && (styles.textRight as object),
-            state === 'loss' && (styles.heroNameDim as object),
+            styles.nameLink,
+            right && (styles.nameLinkRight as object),
+            hovered && (styles.nameLinkHover as object),
           ] as object
         }
       >
-        {name}
-      </Text>
+        {right && (
+          <Ionicons name="chevron-back" size={17} color="rgba(245,235,220,0.7)" />
+        )}
+        <Text
+          style={
+            [
+              styles.heroNameLarge,
+              right && (styles.textRight as object),
+              state === 'loss' && (styles.heroNameDim as object),
+            ] as object
+          }
+        >
+          {name}
+        </Text>
+        {!right && (
+          <Ionicons name="chevron-forward" size={17} color="rgba(245,235,220,0.7)" />
+        )}
+      </Pressable>
       {state === 'win' && (
         <View style={[styles.winRule, right && (styles.winRuleRight as object)] as object} />
       )}
@@ -113,6 +139,7 @@ function ArenaPortrait({
   side,
   state,
   onSwap,
+  onViewProfile,
   vtName,
 }: {
   image: { uri: string } | null;
@@ -120,6 +147,7 @@ function ArenaPortrait({
   side: 'left' | 'right';
   state: PortraitState;
   onSwap: () => void;
+  onViewProfile: () => void;
   vtName?: string;
 }) {
   const right = side === 'right';
@@ -147,8 +175,12 @@ function ArenaPortrait({
       ) : null}
       <View style={styles.portraitGradient as object} />
       {state === 'loss' && <View style={styles.lostOverlay as object} />}
-      {name ? <PortraitLabel name={name} state={state} align={side} /> : null}
+      {/* Swap covers the whole portrait; the name link sits on top of it so a
+          tap on the name opens the profile and a tap elsewhere swaps. */}
       <SwapOverlay side={side} name={name} onPress={onSwap} />
+      {name ? (
+        <PortraitLabel name={name} state={state} align={side} onViewProfile={onViewProfile} />
+      ) : null}
     </View>
   );
 }
@@ -295,6 +327,7 @@ export default function WebCompareScreen() {
               side="left"
               state={stateA}
               onSwap={swapA}
+              onViewProfile={() => router.push(`/character/${hero}`)}
               vtName={vtNameA}
             />
 
@@ -324,6 +357,7 @@ export default function WebCompareScreen() {
               side="right"
               state={stateB}
               onSwap={swapB}
+              onViewProfile={() => router.push(`/character/${opponent}`)}
               vtName={vtNameB}
             />
           </View>
@@ -356,6 +390,8 @@ export default function WebCompareScreen() {
             height={286}
             onSwapA={swapA}
             onSwapB={swapB}
+            onViewProfileA={() => router.push(`/character/${hero}`)}
+            onViewProfileB={() => router.push(`/character/${opponent}`)}
           />
         </View>
         <View style={styles.verdictBlock}>
@@ -535,6 +571,15 @@ const styles = StyleSheet.create({
     letterSpacing: 2.5,
     marginBottom: 4,
   },
+  nameLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    ...Platform.select({ web: { cursor: 'pointer' } as object, default: {} }),
+  } as object,
+  nameLinkRight: { alignSelf: 'flex-end' } as object,
+  nameLinkHover: { opacity: 0.82 } as object,
   heroNameLarge: {
     fontFamily: 'Flame-Regular',
     fontSize: 30,
