@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import * as Haptics from 'expo-haptics';
-import { fetchHeroStats, fetchHeroDetails } from '../../src/lib/api';
+import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery } from '../../src/lib/api';
 import { heroRowToCharacterData } from '../../src/lib/db/heroes';
 import { useHeroRow } from '../../src/lib/query/heroQueries';
 import {
@@ -26,7 +26,9 @@ import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
-import type { CharacterData } from '../../src/types';
+import { GalleryStrip } from '../../src/components/GalleryStrip';
+import { ImageLightbox } from '../../src/components/ImageLightbox';
+import type { CharacterData, GalleryImage, IssueCover } from '../../src/types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HERO_IMAGE_HEIGHT = Math.round(SCREEN_HEIGHT * 0.62);
@@ -249,6 +251,13 @@ export default function CharacterScreen() {
   const [favourited, setFavourited] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
   const [favCount, setFavCount] = useState<number>(0);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[] | null>(null);
+  const [issueCovers, setIssueCovers] = useState<IssueCover[] | null>(null);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<
+    { url: string; caption?: string | null }[]
+  >([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const heroRowQuery = useHeroRow(id);
   const heroRow = heroRowQuery.data;
@@ -361,6 +370,30 @@ export default function CharacterScreen() {
 
     if (heroRow.enriched_at) {
       setData(heroRowToCharacterData(heroRow));
+
+      // Seed gallery from DB if already populated
+      if (heroRow.gallery_images) {
+        setGalleryImages(heroRow.gallery_images as unknown as GalleryImage[]);
+      }
+      if (heroRow.issue_covers) {
+        setIssueCovers(heroRow.issue_covers as unknown as IssueCover[]);
+      }
+
+      // Lazy-fetch gallery if columns are not yet populated
+      const needsGallery =
+        heroRow.comicvine_id != null &&
+        (heroRow.gallery_images === null || heroRow.issue_covers === null);
+      if (needsGallery) {
+        setGalleryLoading(true);
+        fetchHeroGallery(heroRow.id, heroRow.comicvine_id!)
+          .then(({ galleryImages: imgs, issueCovers: covers }) => {
+            if (imgs) setGalleryImages(imgs);
+            if (covers) setIssueCovers(covers);
+          })
+          .catch(() => {})
+          .finally(() => setGalleryLoading(false));
+      }
+
       const needsComicVine =
         !heroRow.comicvine_enriched_at ||
         heroRow.powers === null ||
@@ -803,6 +836,52 @@ export default function CharacterScreen() {
               </Section>
             ) : null}
 
+            {/* Character Art — skeleton only while this section's data is still loading */}
+            {galleryImages === null && galleryLoading ? (
+              <SkeletonProvider>
+                <Section title="Character Art">
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {[0, 1, 2, 3].map((i) => (
+                      <Skeleton key={i} width={80} height={110} borderRadius={8} />
+                    ))}
+                  </View>
+                </Section>
+              </SkeletonProvider>
+            ) : galleryImages && galleryImages.length > 0 ? (
+              <Section title="Character Art">
+                <GalleryStrip
+                  images={galleryImages.map((img) => ({ url: img.url, caption: null }))}
+                  onPress={(i) => {
+                    setLightboxImages(galleryImages.map((img) => ({ url: img.url })));
+                    setLightboxIndex(i);
+                  }}
+                />
+              </Section>
+            ) : null}
+
+            {/* In Print — skeleton only while this section's data is still loading */}
+            {issueCovers === null && galleryLoading ? (
+              <SkeletonProvider>
+                <Section title="In Print">
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <Skeleton key={i} width={80} height={110} borderRadius={8} />
+                    ))}
+                  </View>
+                </Section>
+              </SkeletonProvider>
+            ) : issueCovers && issueCovers.length > 0 ? (
+              <Section title="In Print">
+                <GalleryStrip
+                  images={issueCovers.map((c) => ({ url: c.url, caption: c.name }))}
+                  onPress={(i) => {
+                    setLightboxImages(issueCovers.map((c) => ({ url: c.url, caption: c.name })));
+                    setLightboxIndex(i);
+                  }}
+                />
+              </Section>
+            ) : null}
+
             {/* Appearance */}
             <Section title="Appearance">
               <InfoRow label="Gender" value={data.stats.appearance.gender} />
@@ -832,6 +911,14 @@ export default function CharacterScreen() {
 
       {showIssueModal && data?.firstIssue ? (
         <FirstIssueModal firstIssue={data.firstIssue} onClose={() => setShowIssueModal(false)} />
+      ) : null}
+
+      {lightboxImages.length > 0 ? (
+        <ImageLightbox
+          images={lightboxImages}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxImages([])}
+        />
       ) : null}
 
       {/* Floating Compare pill — hovers above the safe area; content scrolls
