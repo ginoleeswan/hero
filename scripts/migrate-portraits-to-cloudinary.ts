@@ -4,7 +4,7 @@
  *
  * For each hero whose portrait_url points at Supabase Storage:
  *   1. Download the original to ./portrait-backup/{id}.jpg (local safety net).
- *   2. Upload to Cloudinary public_id `hero-portraits/{id}` (overwrite:false).
+ *   2. Upload to Cloudinary public_id `hero-portraits/{id}` (overwrite:true).
  *   3. Flip heroes.portrait_url to the returned Cloudinary secure_url.
  *
  * Idempotent + resumable: existing backup files and already-Cloudinary rows are
@@ -19,7 +19,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { v2 as cloudinary } from 'cloudinary';
 import pLimit from 'p-limit';
-import { mkdirSync, existsSync, writeFileSync } from 'node:fs';
+import { mkdirSync, existsSync, writeFileSync, renameSync } from 'node:fs';
 import 'dotenv/config';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
@@ -75,17 +75,21 @@ async function backup(id: string, url: string): Promise<void> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`download ${res.status}`);
   const buf = Buffer.from(await res.arrayBuffer());
-  writeFileSync(path, buf);
+  const tmp = `${path}.tmp`;
+  writeFileSync(tmp, buf);
+  renameSync(tmp, path); // atomic — never leave a truncated file at `path`
 }
 
 async function migrate(row: Row): Promise<'migrated' | 'failed'> {
   try {
     await backup(row.id, row.portrait_url);
-    // overwrite:false → if the asset already exists, Cloudinary returns it (no re-upload).
+    // overwrite:true → safe to re-run; a hero whose DB write failed last time
+    // re-uploads and re-flips cleanly.
     const result = await cloudinary.uploader.upload(`${BACKUP_DIR}/${row.id}.jpg`, {
       public_id: `hero-portraits/${row.id}`,
-      overwrite: false,
+      overwrite: true,
     });
+    if (!result.secure_url) throw new Error('Cloudinary returned no secure_url');
     const { error } = await sb
       .from('heroes')
       .update({ portrait_url: result.secure_url })
