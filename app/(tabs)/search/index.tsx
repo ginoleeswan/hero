@@ -291,7 +291,13 @@ export default function SearchScreen() {
         onCancelButtonPress={() => setQuery('')}
       />
 
-      {/* Native filter menus (iOS) in the header — fills the bar purposefully. */}
+      {/* Native header toolbars (iOS): "Search" title on the left, filter menus
+          on the right — fills the bar purposefully. */}
+      {IS_IOS && (
+        <Stack.Toolbar placement="left" asChild>
+          <Text style={styles.headerTitle}>Search</Text>
+        </Stack.Toolbar>
+      )}
       {IS_IOS && (
         <Stack.Toolbar placement="right">
           <Stack.Toolbar.Menu icon="books.vertical" title="Publisher">
@@ -368,6 +374,7 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: SEARCH_NAVY },
+  headerTitle: { fontFamily: 'Flame-Bold', fontSize: 20, color: COLORS.beige },
   glow: { position: 'absolute', top: 0, left: 0, right: 0, height: 260 },
   bottomScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
   list: { flex: 1, backgroundColor: 'transparent' },
