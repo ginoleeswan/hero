@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import type { SearchBarCommands } from 'react-native-screens';
+import { useQueryClient } from '@tanstack/react-query';
 import { COLORS } from '../../../src/constants/colors';
 import { PortraitCard } from '../../../src/components/search/PortraitCard';
 import { FilterChips, type FilterOption } from '../../../src/components/search/FilterChips';
@@ -30,13 +31,11 @@ import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPee
 import { Skeleton } from '../../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../../src/components/ui/SkeletonProvider';
 import {
-  searchHeroes,
-  rankResults,
   filterHeroesByAlignment,
-  type HeroSearchResult,
   type PublisherFilter,
   type AlignmentFilter,
 } from '../../../src/lib/db/heroes';
+import { useHeroSearch, prefetchHeroSearch } from '../../../src/lib/query/heroQueries';
 import { getRecentlyViewed } from '../../../src/lib/db/viewHistory';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { useRecentSearches } from '../../../src/hooks/useRecentSearches';
@@ -46,8 +45,8 @@ const SEARCH_NAVY = '#1a262b';
 const GRID_COLUMNS = 2;
 const H_PAD = 16;
 const GAP = 8;
-const FETCH_LIMIT = 60;
 const IS_IOS = Platform.OS === 'ios';
+const PUBLISHERS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
 
 const PUBLISHER_OPTIONS: FilterOption<PublisherFilter>[] = [
   { value: 'All', label: 'All' },
@@ -77,11 +76,9 @@ export default function SearchScreen() {
   const { width } = useWindowDimensions();
   const { user } = useAuth();
   const searchRef = useRef<SearchBarCommands>(null);
+  const queryClient = useQueryClient();
   const { recent, addRecent, clearRecent } = useRecentSearches();
 
-  const [results, setResults] = useState<HeroSearchResult[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isSearching, setIsSearching] = useState(false);
   const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
   const [query, setQuery] = useState('');
   const [publisherFilter, setPublisherFilter] = useState<PublisherFilter>('All');
@@ -112,36 +109,18 @@ export default function SearchScreen() {
       .catch(() => {});
   }, [user?.id]);
 
-  // One fetch path: empty query → top heroes for the publisher (DB-side); a real
-  // query → the alias/typo-tolerant RPC, then client-ranked for precision.
+  // Cached, publisher-aware fetch (keepPreviousData → instant-feeling switches).
+  const { data, isPending, isFetching } = useHeroSearch(debouncedQuery, publisherFilter);
+
+  // Warm every publisher's browse list on mount so the first switch is cached.
   useEffect(() => {
-    let cancelled = false;
-    const q = debouncedQuery.trim();
-    if (q) setIsSearching(true);
-
-    searchHeroes(debouncedQuery, publisherFilter, FETCH_LIMIT)
-      .then((rows) => {
-        if (!cancelled) setResults(q ? rankResults(rows, debouncedQuery) : rows);
-      })
-      .catch(() => {
-        if (!cancelled) setResults([]);
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false);
-          setIsSearching(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [debouncedQuery, publisherFilter]);
+    PUBLISHERS.forEach((p) => prefetchHeroSearch(queryClient, p));
+  }, [queryClient]);
 
   // Publisher is applied server-side; alignment is a light client-side facet.
   const displayedHeroes = useMemo(
-    () => filterHeroesByAlignment(results, alignmentFilter),
-    [results, alignmentFilter],
+    () => filterHeroesByAlignment(data ?? [], alignmentFilter),
+    [data, alignmentFilter],
   );
 
   const handlePress = useCallback(
@@ -220,7 +199,7 @@ export default function SearchScreen() {
         />
       )}
 
-      {!loading && (
+      {!isPending && (
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>
             {isIdle
@@ -232,7 +211,7 @@ export default function SearchScreen() {
     </>
   );
 
-  const listEmpty = loading ? (
+  const listEmpty = isPending ? (
     <SkeletonProvider>
       <View style={styles.skelGrid}>
         {Array.from({ length: 8 }).map((_, i) => (
@@ -245,7 +224,7 @@ export default function SearchScreen() {
         ))}
       </View>
     </SkeletonProvider>
-  ) : isSearching ? null : (
+  ) : isFetching ? null : (
     <View style={styles.center}>
       <View style={styles.emptyIconWrap}>
         <Ionicons name="search-outline" size={30} color={COLORS.orange} />
