@@ -269,7 +269,7 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
             </Text>
           )}
           {!!hero.summary && (
-            <Text style={pss.glassPanelSummary as object} numberOfLines={3}>
+            <Text style={pss.glassPanelSummary as object} numberOfLines={4}>
               {hero.summary}
             </Text>
           )}
@@ -379,7 +379,11 @@ const pss = StyleSheet.create({
   // Desktop
   wrap: {
     width: '100%',
+    maxWidth: 1280,
     alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 16,
     position: 'relative',
     overflow: 'hidden',
     marginBottom: 24,
@@ -464,20 +468,18 @@ const pss = StyleSheet.create({
     pointerEvents: 'none',
   } as object,
 
-  // Glass info panel (desktop)
+  // Glass info panel (desktop) — flex child beside the portrait strip
   glassPanel: {
-    position: 'absolute',
-    bottom: 20,
-    right: 0,
-    backgroundColor: 'rgba(11,24,32,0.78)',
+    flex: 1,
+    minWidth: 280,
+    backgroundColor: 'rgba(255,255,255,0.04)',
     backdropFilter: 'blur(18px)',
     WebkitBackdropFilter: 'blur(18px)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.10)',
     borderRadius: 16,
-    padding: 20,
-    minWidth: 240,
-    maxWidth: 340,
+    padding: 28,
+    justifyContent: 'center',
     zIndex: 3,
   } as object,
   glassPanelEyebrow: {
@@ -490,10 +492,10 @@ const pss = StyleSheet.create({
   } as object,
   glassPanelName: {
     fontFamily: 'Flame-Regular',
-    fontSize: 28,
+    fontSize: 34,
     color: COLORS.beige,
-    lineHeight: 32,
-    marginBottom: 4,
+    lineHeight: 38,
+    marginBottom: 6,
   } as object,
   glassPanelPub: {
     fontFamily: 'Nunito_700Bold',
