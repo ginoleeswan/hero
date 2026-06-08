@@ -10,7 +10,7 @@ const P = (id: string) =>
   `https://res.cloudinary.com/dgrsb5o4p/image/upload/f_auto,q_auto,w_400/hero-portraits/${id}.jpg`;
 
 const spiderman = P('620');
-const batman = P('70');
+const batman = P('69');
 const ironman = P('346');
 const deadpool = P('213');
 const wolverine = P('717');

@@ -36,7 +36,7 @@ const P = (id: string) =>
 
 const MOSAIC = [
   { src: P('620'), name: 'Spider-Man' },
-  { src: P('70'), name: 'Batman' },
+  { src: P('69'), name: 'Batman' },
   { src: P('346'), name: 'Iron Man' },
   { src: P('720'), name: 'Wonder Woman' },
   { src: P('106'), name: 'Black Panther' },
