@@ -5,9 +5,9 @@ import type { PublisherCounts } from '../../../lib/db/heroes';
 interface StatPodsProps {
   heroCount: number | null;
   publisherCounts: PublisherCounts | null;
-  strongestHero: { id: number; name: string; strength: number | null } | null;
-  smartestHero: { id: number; name: string; intelligence: number | null } | null;
-  fastestHero: { id: number; name: string; speed: number | null } | null;
+  strongestHero: { id: string; name: string; strength: number | null } | null;
+  smartestHero: { id: string; name: string; intelligence: number | null } | null;
+  fastestHero: { id: string; name: string; speed: number | null } | null;
   onNavigate: (path: string) => void;
 }
 

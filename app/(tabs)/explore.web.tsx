@@ -6,7 +6,6 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../src/constants/colors';
 import { heroImageSource } from '../../src/constants/heroImages';
-import { useSearch } from '../../src/contexts/SearchContext';
 import { WebHomeSkeleton } from '../../src/components/web/HomeSkeleton';
 import {
   getHeroCount,
@@ -19,16 +18,17 @@ import {
   getHeroesByPublisher,
   getHeroesByStatRanking,
   type Hero,
-  type PublisherFilter,
 } from '../../src/lib/db/heroes';
 import { getUserFavouriteHeroes } from '../../src/lib/db/favourites';
 import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
 import { RankingCard } from '../../src/components/web/home/RankingCard';
+import { PulseTicker } from '../../src/components/web/home/PulseTicker';
+import { StatPods } from '../../src/components/web/home/StatPods';
+import { getTopHeroByStat, getPublisherCounts, type PublisherCounts } from '../../src/lib/db/heroes';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const PUBLISHER_FILTERS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
 const ROW_CARD_HEIGHT = 310;
 const ROW_CARD_WIDTH = 220;
 
@@ -185,8 +185,8 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
     return (
       <View style={[pss.wrap, { paddingHorizontal: pagePad, height: dynamicHeight }] as object}>
         {/* Atmospheric orbs — decorative, no interaction */}
-        <View style={pss.orbA as object} pointerEvents="none" />
-        <View style={pss.orbB as object} pointerEvents="none" />
+        <View style={pss.orbA as object} />
+        <View style={pss.orbB as object} />
 
         <View style={pss.strip}>
           {heroes.map((h, index) => {
@@ -450,7 +450,7 @@ const pss = StyleSheet.create({
     top: -60,
     left: 140,
     borderRadius: 160,
-    background: 'radial-gradient(circle, rgba(231,115,51,0.10), transparent 70%)',
+    backgroundImage: 'radial-gradient(circle, rgba(231,115,51,0.10), transparent 70%)',
     pointerEvents: 'none',
   } as object,
   orbB: {
@@ -460,7 +460,7 @@ const pss = StyleSheet.create({
     top: 80,
     right: 180,
     borderRadius: 110,
-    background: 'radial-gradient(circle, rgba(21,161,171,0.07), transparent 70%)',
+    backgroundImage: 'radial-gradient(circle, rgba(21,161,171,0.07), transparent 70%)',
     pointerEvents: 'none',
   } as object,
 
@@ -469,10 +469,11 @@ const pss = StyleSheet.create({
     position: 'absolute',
     bottom: 20,
     right: 0,
-    background: 'rgba(11,24,32,0.78)',
+    backgroundColor: 'rgba(11,24,32,0.78)',
     backdropFilter: 'blur(18px)',
     WebkitBackdropFilter: 'blur(18px)',
-    border: '1px solid rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
     borderRadius: 16,
     padding: 20,
     minWidth: 240,
@@ -515,7 +516,7 @@ const pss = StyleSheet.create({
     marginBottom: 14,
   } as object,
   statPill: {
-    background: 'rgba(255,255,255,0.07)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 5,
@@ -1000,7 +1001,6 @@ export default function WebHomeScreen() {
   // 1. MATCH THE ACCORDION_SCALES EXACTLY
   const optimalPoolSize = width >= 1280 ? 8 : width >= 900 ? 6 : 3;
 
-  const { publisher, setPublisher } = useSearch();
   const { user } = useAuth();
 
   // Home data — partial so rows render as each query resolves
@@ -1015,6 +1015,10 @@ export default function WebHomeScreen() {
     strongest: Hero[];
     mostIntelligent: Hero[];
     newlyAdded: Hero[];
+    strongestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
+    smartestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
+    fastestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
+    publisherCounts: PublisherCounts | null;
   }
   const [homeData, setHomeData] = useState<Partial<HomeData>>({});
   const [homeStarted, setHomeStarted] = useState(false); // true once spotlight arrives
@@ -1068,6 +1072,18 @@ export default function WebHomeScreen() {
     getNewlyAddedCV(25)
       .then(set('newlyAdded'))
       .catch(() => {});
+    getTopHeroByStat('strength')
+      .then(set('strongestHero'))
+      .catch(() => {});
+    getTopHeroByStat('intelligence')
+      .then(set('smartestHero'))
+      .catch(() => {});
+    getTopHeroByStat('speed')
+      .then(set('fastestHero'))
+      .catch(() => {});
+    getPublisherCounts()
+      .then(set('publisherCounts'))
+      .catch(() => {});
   }, []);
 
   // Personal rows
@@ -1090,42 +1106,6 @@ export default function WebHomeScreen() {
 
   return (
     <View style={styles.root}>
-      {/* ── Desktop: editorial beige filter strip ────────────────────────────── */}
-      {isDesktop && (
-        <View style={styles.filterStrip as object}>
-          <View style={styles.filterInner}>
-            <View style={styles.filterTabs as object}>
-              {PUBLISHER_FILTERS.map((f) => (
-                <Pressable
-                  key={f}
-                  onPress={() =>
-                    f === 'All' ? setPublisher('All') : router.push(`/search?publisher=${f}`)
-                  }
-                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                    [
-                      styles.filterTab,
-                      publisher === f && (styles.filterTabActive as object),
-                      hovered && publisher !== f && (styles.filterTabHover as object),
-                    ] as object
-                  }
-                >
-                  <Text
-                    style={[styles.filterTabText, publisher === f && styles.filterTabTextActive]}
-                  >
-                    {f}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-            <Text style={styles.filterCount as object}>
-              {totalHeroCount !== null
-                ? `${totalHeroCount.toLocaleString()} heroes in the encyclopedia`
-                : ''}
-            </Text>
-          </View>
-        </View>
-      )}
-
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       {!homeStarted ? (
         <WebHomeSkeleton />
@@ -1137,14 +1117,68 @@ export default function WebHomeScreen() {
           {/* ── Home content — always rendered. On desktop, committed searches
                go to the dedicated /search route; on mobile-web the inline
                results below still appear. ───────────────────────────────────── */}
-          {/* Spotlight */}
-          {(homeData.spotlight?.length ?? 0) > 0 && (
-            <PortraitStripSpotlight
-              heroes={homeData.spotlight!.slice(
-                0,
-                Math.min(optimalPoolSize, homeData.spotlight!.length),
+          {/* ── Dark stage: spotlight + stat pods ──────────────────────────── */}
+          {isDesktop ? (
+            <View style={styles.darkStage}>
+              {(homeData.spotlight?.length ?? 0) > 0 && (
+                <PortraitStripSpotlight
+                  heroes={homeData.spotlight!.slice(
+                    0,
+                    Math.min(optimalPoolSize, homeData.spotlight!.length),
+                  )}
+                  onViewProfile={handlePress}
+                />
               )}
-              onViewProfile={handlePress}
+              <StatPods
+                heroCount={totalHeroCount}
+                publisherCounts={homeData.publisherCounts ?? null}
+                strongestHero={
+                  homeData.strongestHero
+                    ? {
+                        id: homeData.strongestHero.id,
+                        name: homeData.strongestHero.name,
+                        strength: homeData.strongestHero.strength ?? null,
+                      }
+                    : null
+                }
+                smartestHero={
+                  homeData.smartestHero
+                    ? {
+                        id: homeData.smartestHero.id,
+                        name: homeData.smartestHero.name,
+                        intelligence: homeData.smartestHero.intelligence ?? null,
+                      }
+                    : null
+                }
+                fastestHero={
+                  homeData.fastestHero
+                    ? {
+                        id: homeData.fastestHero.id,
+                        name: homeData.fastestHero.name,
+                        speed: homeData.fastestHero.speed ?? null,
+                      }
+                    : null
+                }
+                onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
+              />
+            </View>
+          ) : (
+            (homeData.spotlight?.length ?? 0) > 0 && (
+              <PortraitStripSpotlight
+                heroes={homeData.spotlight!.slice(
+                  0,
+                  Math.min(optimalPoolSize, homeData.spotlight!.length),
+                )}
+                onViewProfile={handlePress}
+              />
+            )
+          )}
+
+          {/* ── Orange ticker strip ────────────────────────────────────────── */}
+          {isDesktop && (
+            <PulseTicker
+              heroCount={totalHeroCount ?? 0}
+              newlyAddedCount={homeData.newlyAdded?.length ?? 0}
             />
           )}
 
@@ -1204,6 +1238,7 @@ export default function WebHomeScreen() {
             heroes={homeData.strongest ?? []}
             onPress={handlePress}
             onViewAll={() => router.push('/category/strongest')}
+            statKey="strength"
           />
           <DarkHomeRow
             label="Charles Xavier's School for Gifted Youngsters"
@@ -1218,6 +1253,7 @@ export default function WebHomeScreen() {
             heroes={homeData.mostIntelligent ?? []}
             onPress={handlePress}
             onViewAll={() => router.push('/category/most-intelligent')}
+            statKey="intelligence"
           />
           <HomeRow
             label="New to the Encyclopedia"
@@ -1238,55 +1274,11 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
   scroll: { flex: 1 },
 
-  // ── Desktop editorial filter strip ──────────────────────────────────────────
-  filterStrip: {
-    position: 'sticky',
-    top: 64,
-    zIndex: 50,
-    backgroundColor: COLORS.navy,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(245,235,220,0.08)',
-    height: 46,
-    justifyContent: 'center',
-  } as object,
-  filterInner: {
-    maxWidth: 1200,
-    width: '100%',
-    alignSelf: 'center',
-    paddingHorizontal: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  filterTabs: {
-    flexDirection: 'row',
-    height: '100%',
-    alignItems: 'center',
-  } as object,
-  filterTab: {
-    paddingHorizontal: 18,
-    height: 46,
-    justifyContent: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-    cursor: 'pointer',
-    transition: 'border-color 150ms ease',
-  } as object,
-  filterTabActive: { borderBottomColor: COLORS.orange } as object,
-  filterTabHover: { borderBottomColor: 'rgba(245,235,220,0.25)' } as object,
-  filterTabText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: 'rgba(245,235,220,0.38)',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  filterTabTextActive: { color: COLORS.beige },
-  filterCount: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 11,
-    color: 'rgba(245,235,220,0.28)',
-    letterSpacing: 0.3,
+  // ── Dark stage (top of explore — spotlight + stat pods) ─────────────────────
+  darkStage: {
+    backgroundColor: '#0b1820',
+    paddingTop: 28,
+    paddingBottom: 28,
   },
 
   // ── Home layout ──────────────────────────────────────────────────────────────
