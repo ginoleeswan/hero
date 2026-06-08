@@ -75,6 +75,14 @@ export function TopNav() {
     return () => document.removeEventListener('mousedown', handler);
   }, [searchFocused, setSearchFocused]);
 
+  // Reset the search field on route change. The /search results page owns its
+  // query (it mirrors ?q= back into the field), so leave that route alone;
+  // everywhere else a navigation clears the field and closes the dropdown.
+  useEffect(() => {
+    setSearchFocused(false);
+    if (pathname !== '/search') setQuery('');
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleQueryChange = (text: string) => {
     // Typing only drives the live dropdown — it never navigates. Committing
     // (Enter, or "View all" in the dropdown) is what opens the results page.

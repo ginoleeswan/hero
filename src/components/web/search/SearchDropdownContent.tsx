@@ -17,10 +17,12 @@ export function SearchDropdownContent() {
 
   const handleSuggestionPress = (id: string) => {
     addSearch(query);
+    setSearchFocused(false);
     router.push(`/character/${id}`);
   };
 
   const handleHeroPress = (id: string) => {
+    setSearchFocused(false);
     router.push(`/character/${id}`);
   };
 
