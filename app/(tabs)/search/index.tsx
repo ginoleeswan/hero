@@ -1,16 +1,16 @@
-// app/(tabs)/search/index.tsx — Search tab. Native iOS search bar (UISearchController)
-// in the transparent blurred header drives the query; a custom scope row in the
-// list header filters by publisher. Dark navy canvas unifies Search with the
-// arena/pick pages. Idle shows Recently Viewed (gold rail) + Popular; typing
-// swaps in results. The FlatList is the screen's root scroll view so the native
-// large title binds to it correctly (no phantom top gap).
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+// app/(tabs)/search/index.tsx — Search tab. Uses expo-router's declarative native
+// header API: Stack.Title (large, collapsing) + Stack.SearchBar (real iOS
+// UISearchController) + Stack.Header (transparent at rest, blur fades in on
+// scroll). The FlatList is the scroll view; its wrapper sets collapsable={false}
+// so the native large title binds correctly (no phantom top gap). Dark navy
+// canvas unifies Search with the arena/pick pages. Idle shows Recently Viewed
+// (gold rail) + Popular; typing swaps in results.
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../../src/constants/colors';
 import { PortraitCard } from '../../../src/components/search/PortraitCard';
@@ -47,7 +47,6 @@ function useDebounce<T>(value: T, delay: number): T {
 
 export default function SearchScreen() {
   const router = useRouter();
-  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { user } = useAuth();
@@ -65,20 +64,13 @@ export default function SearchScreen() {
   const cardWidth = (width - H_PAD * 2 - GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
   const debouncedQuery = useDebounce(query, 300);
 
-  // Wire the native iOS search bar into the screen's query state. No colours are
-  // set so iOS renders its default field, which adapts to the (dark) header on
-  // its own. Set once on mount — setQuery is stable.
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerSearchBarOptions: {
-        placeholder: 'Hero, villain, or real name…',
-        hideWhenScrolling: false,
-        autoCapitalize: 'none',
-        onChangeText: (e: { nativeEvent: { text: string } }) => setQuery(e.nativeEvent.text),
-        onCancelButtonPress: () => setQuery(''),
-      },
-    } as never);
-  }, [navigation]);
+  // Stack.SearchBar's onChangeText passes the raw string on iOS; guard for the
+  // native-event shape too so we don't depend on the exact wrapper version.
+  const handleSearchText = useCallback(
+    (e: string | { nativeEvent?: { text?: string } }) =>
+      setQuery(typeof e === 'string' ? e : (e.nativeEvent?.text ?? '')),
+    [],
+  );
 
   useEffect(() => {
     getSearchIdleHeroes(30)
@@ -198,13 +190,24 @@ export default function SearchScreen() {
   );
 
   return (
-    <View style={styles.root}>
+    // collapsable={false} keeps this wrapper in the native tree so the large
+    // title can bind to the FlatList below it (required when the scroll view
+    // isn't the screen's literal first child).
+    <View style={styles.root} collapsable={false}>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={['rgba(231,115,51,0.22)', 'transparent']}
-        locations={[0, 0.55]}
-        style={styles.glow}
-        pointerEvents="none"
+
+      <Stack.Header
+        transparent
+        blurEffect="systemChromeMaterialDark"
+        style={{ color: COLORS.beige }}
+        largeStyle={{ backgroundColor: 'transparent', shadowColor: 'transparent' }}
+      />
+      <Stack.SearchBar
+        placeholder="Hero, villain, or real name…"
+        autoCapitalize="none"
+        hideWhenScrolling={false}
+        onChangeText={handleSearchText}
+        onCancelButtonPress={() => setQuery('')}
       />
 
       <FlatList
@@ -251,7 +254,6 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: SEARCH_NAVY },
   list: { flex: 1, backgroundColor: 'transparent' },
-  glow: { position: 'absolute', top: 0, left: 0, right: 0, height: 260 },
   content: { paddingHorizontal: H_PAD, paddingTop: 4 },
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingTop: 4 },
   gridRow: { gap: GAP },
