@@ -636,13 +636,8 @@ export async function getPublisherCounts(): Promise<PublisherCounts> {
       .from('heroes')
       .select('*', { count: 'exact', head: true })
       .ilike('publisher', '%marvel%'),
-    supabase
-      .from('heroes')
-      .select('*', { count: 'exact', head: true })
-      .ilike('publisher', '%dc%'),
-    supabase
-      .from('heroes')
-      .select('*', { count: 'exact', head: true }),
+    supabase.from('heroes').select('*', { count: 'exact', head: true }).ilike('publisher', '%dc%'),
+    supabase.from('heroes').select('*', { count: 'exact', head: true }),
   ]);
   const marvel = marvelRes.count ?? 0;
   const dc = dcRes.count ?? 0;

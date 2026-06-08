@@ -1,5 +1,19 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, Animated, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { useEffect, useState, useCallback, useRef, useMemo, Fragment } from 'react';
+import {
+  View,
+  Text,
+  Animated,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  ScrollView,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+  type LayoutChangeEvent,
+  type NativeSyntheticEvent,
+  type NativeScrollEvent,
+} from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,7 +23,7 @@ import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import * as Haptics from 'expo-haptics';
 import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery } from '../../src/lib/api';
 import { heroRowToCharacterData } from '../../src/lib/db/heroes';
-import { useHeroRow } from '../../src/lib/query/heroQueries';
+import { useHeroRow, useHeroPercentile } from '../../src/lib/query/heroQueries';
 import {
   isFavourited,
   addFavourite,
@@ -45,6 +59,14 @@ const STAT_CONFIG: { key: string; label: string; tint: string }[] = [
   { key: 'power', label: 'Power', tint: COLORS.orange },
   { key: 'combat', label: 'Combat', tint: COLORS.brown },
 ];
+
+// Enable LayoutAnimation on Android (iOS/web are on by default / no-op).
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+// Shared "is this a real value" guard — DB rows carry '-' / 'null' / '' sentinels.
+const valid = (v?: string | null) => !!v && v !== '-' && v !== 'null' && v.trim() !== '';
 
 function StatDial({ label, value, tint }: { label: string; value: string; tint: string }) {
   const numeric = parseInt(value, 10);
@@ -229,6 +251,175 @@ function CharacterChips({
   );
 }
 
+// At-a-glance numbers under the name — gives the page a punchy "stat block" feel
+// before the reader scrolls. Renders only the metrics that actually exist.
+function VitalsStrip({
+  powerTotal,
+  issueCount,
+  movieCount,
+}: {
+  powerTotal: number;
+  issueCount: number | null | undefined;
+  movieCount: number | null | undefined;
+}) {
+  const items: { value: string; label: string }[] = [];
+  if (powerTotal > 0) items.push({ value: String(powerTotal), label: 'Power' });
+  if ((issueCount ?? 0) > 0)
+    items.push({ value: issueCount!.toLocaleString(), label: 'Appearances' });
+  if ((movieCount ?? 0) > 0)
+    items.push({ value: String(movieCount), label: movieCount === 1 ? 'Movie' : 'Movies' });
+  if (items.length === 0) return null;
+  return (
+    <View style={styles.vitals}>
+      {items.map((it, i) => (
+        <Fragment key={it.label}>
+          {i > 0 ? <View style={styles.vitalDivider} /> : null}
+          <View style={styles.vitalItem}>
+            <Text style={styles.vitalValue}>{it.value}</Text>
+            <Text style={styles.vitalLabel}>{it.label}</Text>
+          </View>
+        </Fragment>
+      ))}
+    </View>
+  );
+}
+
+// Whether the Dossier has anything to show — mirrors the group checks inside
+// <Dossier> so the quick-nav doesn't offer a chip that scrolls to nothing.
+function hasDossierData(data: CharacterData, includeFirstAppearance: boolean): boolean {
+  const { biography: bio, appearance: app, work, connections } = data.stats;
+  const aliases = bio.aliases.filter((a) => valid(a));
+  const affiliation = data.details.teams?.length
+    ? data.details.teams.join(', ')
+    : connections['group-affiliation'];
+  const hasProfile =
+    valid(bio['alter-egos']) ||
+    valid(bio['place-of-birth']) ||
+    (includeFirstAppearance && valid(bio['first-appearance'])) ||
+    aliases.length > 0;
+  const hasAppearance =
+    valid(app.gender) ||
+    valid(app.race) ||
+    app.height.some(valid) ||
+    app.weight.some(valid) ||
+    valid(app['eye-color']) ||
+    valid(app['hair-color']);
+  const hasConnections =
+    valid(work.occupation) ||
+    valid(work.base) ||
+    valid(affiliation) ||
+    valid(connections.relatives);
+  return hasProfile || hasAppearance || hasConnections;
+}
+
+// The dry label/value data (Profile + Appearance + Connections), folded into one
+// collapsed-by-default card so it stops dominating the lower half of the screen.
+function Dossier({
+  data,
+  includeFirstAppearance,
+}: {
+  data: CharacterData;
+  includeFirstAppearance: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const { biography: bio, appearance: app, work, connections } = data.stats;
+  const aliases = bio.aliases.filter((a) => valid(a));
+  const heightStr = app.height.filter(valid).join(' / ');
+  const weightStr = app.weight.filter(valid).join(' / ');
+  const affiliation = data.details.teams?.length
+    ? data.details.teams.join(', ')
+    : connections['group-affiliation'];
+
+  const hasProfile =
+    valid(bio['alter-egos']) ||
+    valid(bio['place-of-birth']) ||
+    (includeFirstAppearance && valid(bio['first-appearance'])) ||
+    aliases.length > 0;
+  const hasAppearance =
+    valid(app.gender) ||
+    valid(app.race) ||
+    !!heightStr ||
+    !!weightStr ||
+    valid(app['eye-color']) ||
+    valid(app['hair-color']);
+  const hasConnections =
+    valid(work.occupation) ||
+    valid(work.base) ||
+    valid(affiliation) ||
+    valid(connections.relatives);
+
+  if (!hasProfile && !hasAppearance && !hasConnections) return null;
+
+  const toggle = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setOpen((o) => !o);
+    Haptics.selectionAsync();
+  };
+
+  return (
+    <View style={styles.section}>
+      <TouchableOpacity
+        onPress={toggle}
+        activeOpacity={0.7}
+        style={styles.dossierHeader}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={open ? 'Collapse dossier' : 'Expand dossier'}
+      >
+        <Text style={styles.sectionTitle}>Dossier</Text>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={COLORS.navy} />
+      </TouchableOpacity>
+      <View style={styles.divider} />
+      {open ? (
+        <View>
+          {hasProfile ? (
+            <>
+              <Text style={styles.dossierGroupLabel}>Profile</Text>
+              <InfoRow label="Alter egos" value={bio['alter-egos']} />
+              <InfoRow label="Place of birth" value={bio['place-of-birth']} />
+              {includeFirstAppearance ? (
+                <InfoRow label="First appearance" value={bio['first-appearance']} />
+              ) : null}
+              {aliases.length > 0 ? <InfoRow label="Aliases" value={aliases.join(', ')} /> : null}
+            </>
+          ) : null}
+          {hasAppearance ? (
+            <>
+              <Text style={[styles.dossierGroupLabel, hasProfile && styles.dossierGroupSpacing]}>
+                Appearance
+              </Text>
+              <InfoRow label="Gender" value={app.gender} />
+              <InfoRow label="Race" value={app.race} />
+              <InfoRow label="Height" value={heightStr} />
+              <InfoRow label="Weight" value={weightStr} />
+              <InfoRow label="Eyes" value={app['eye-color']} />
+              <InfoRow label="Hair" value={app['hair-color']} />
+            </>
+          ) : null}
+          {hasConnections ? (
+            <>
+              <Text
+                style={[
+                  styles.dossierGroupLabel,
+                  (hasProfile || hasAppearance) && styles.dossierGroupSpacing,
+                ]}
+              >
+                Connections
+              </Text>
+              <InfoRow label="Occupation" value={work.occupation} />
+              <InfoRow label="Base" value={work.base} />
+              <AffiliationChips value={affiliation} />
+              <RelativesList value={connections.relatives} />
+            </>
+          ) : null}
+        </View>
+      ) : (
+        <Text style={styles.dossierHint}>Appearance, affiliations, relatives & more</Text>
+      )}
+    </View>
+  );
+}
+
 export default function CharacterScreen() {
   const {
     id,
@@ -253,9 +444,9 @@ export default function CharacterScreen() {
   const [favCount, setFavCount] = useState<number>(0);
   const [issueCovers, setIssueCovers] = useState<IssueCover[] | null>(null);
   const [galleryLoading, setGalleryLoading] = useState(false);
-  const [lightboxImages, setLightboxImages] = useState<
-    { url: string; caption?: string | null }[]
-  >([]);
+  const [lightboxImages, setLightboxImages] = useState<{ url: string; caption?: string | null }[]>(
+    [],
+  );
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const heroRowQuery = useHeroRow(id);
@@ -319,6 +510,95 @@ export default function CharacterScreen() {
     extrapolate: 'clamp',
   });
 
+  // ── Section quick-nav ──────────────────────────────────────────────────────
+  // A floating jump bar fades in once content covers the hero image. Each section
+  // registers its scroll offset via onLayout; tapping a chip scrolls there. The
+  // active chip is tracked from the scroll listener (refs avoid stale closures).
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionOffsets = useRef<Record<string, number>>({});
+  const sectionOrder = useRef<string[]>([]);
+  const activeRef = useRef<string>('');
+  const [activeSection, setActiveSection] = useState('');
+  const [navVisible, setNavVisible] = useState(false);
+
+  // Clearance above a section title when jumping: native header + the nav bar.
+  const NAV_CLEARANCE = HEADER_H + 52;
+
+  const navOpacity = scrollY.interpolate({
+    inputRange: [HERO_IMAGE_HEIGHT * 0.45, HERO_IMAGE_HEIGHT * 0.62],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
+  const registerAnchor = (key: string) => (e: LayoutChangeEvent) => {
+    sectionOffsets.current[key] = e.nativeEvent.layout.y;
+  };
+
+  const jumpTo = useCallback((key: string) => {
+    const y = sectionOffsets.current[key];
+    if (y == null) return;
+    Haptics.selectionAsync();
+    scrollRef.current?.scrollTo({ y: Math.max(0, y - NAV_CLEARANCE), animated: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = e.nativeEvent.contentOffset.y;
+    setNavVisible((prev) => {
+      const next = y > HERO_IMAGE_HEIGHT * 0.5;
+      return next === prev ? prev : next;
+    });
+    const probe = y + NAV_CLEARANCE + 12;
+    let current = '';
+    for (const key of sectionOrder.current) {
+      const off = sectionOffsets.current[key];
+      if (off != null && off <= probe) current = key;
+    }
+    if (current !== activeRef.current) {
+      activeRef.current = current;
+      setActiveSection(current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Total powerstats — drives both the vitals strip and the percentile hook.
+  const powerTotal = useMemo(() => {
+    if (!data) return 0;
+    return STAT_CONFIG.map(({ key }) =>
+      parseInt((data.stats.powerstats as Record<string, string>)[key] ?? '0', 10),
+    )
+      .filter((n) => !isNaN(n) && n > 0)
+      .reduce((sum, n) => sum + n, 0);
+  }, [data]);
+
+  const { data: percentile } = useHeroPercentile(powerTotal || null);
+
+  // A hero with a cover image gets the visual "First Appearance" section; without
+  // one, the same fact shows as a text row inside the Dossier (no duplication).
+  const hasFirstVisual = !!data?.firstIssue?.imageUrl;
+
+  // The sections that actually render, in scroll order — drives the quick-nav
+  // chips and active-section tracking. Mirrors the render conditions below.
+  const presentSections = useMemo<{ key: string; label: string }[]>(() => {
+    if (!data) return [];
+    const s: { key: string; label: string }[] = [];
+    if (comicVineLoading || data.details.summary || data.details.description)
+      s.push({ key: 'summary', label: 'Summary' });
+    s.push({ key: 'stats', label: 'Stats' });
+    if (comicVineLoading || data.details.powers?.length)
+      s.push({ key: 'abilities', label: 'Abilities' });
+    if (comicVineLoading || data.details.enemies?.length || data.details.friends?.length)
+      s.push({ key: 'allies', label: 'Allies' });
+    if (comicVineLoading || data.details.movies?.length)
+      s.push({ key: 'screen', label: 'On Screen' });
+    if ((issueCovers === null && galleryLoading) || (issueCovers && issueCovers.length > 0))
+      s.push({ key: 'print', label: 'In Print' });
+    if (hasFirstVisual) s.push({ key: 'first', label: 'Debut' });
+    if (hasDossierData(data, !hasFirstVisual)) s.push({ key: 'dossier', label: 'Dossier' });
+    return s;
+  }, [data, comicVineLoading, issueCovers, galleryLoading, hasFirstVisual]);
+  sectionOrder.current = presentSections.map((s) => s.key);
+
   useEffect(() => {
     if (!id) return;
 
@@ -378,8 +658,7 @@ export default function CharacterScreen() {
       // Lazy-fetch covers only if never enriched (sentinel null). Heroes with no
       // covers keep a null column but a set timestamp, so they don't re-trigger
       // the fetch on every visit.
-      const needsGallery =
-        heroRow.comicvine_id != null && heroRow.gallery_enriched_at === null;
+      const needsGallery = heroRow.comicvine_id != null && heroRow.gallery_enriched_at === null;
       if (needsGallery) {
         setGalleryLoading(true);
         fetchHeroGallery(heroRow.id, heroRow.comicvine_id!)
@@ -597,6 +876,7 @@ export default function CharacterScreen() {
       </Animated.View>
 
       <Animated.ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={{
           paddingTop: CONTENT_TOP,
@@ -606,6 +886,7 @@ export default function CharacterScreen() {
         scrollEventThrottle={16}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
           useNativeDriver: true,
+          listener: handleScroll,
         })}
       >
         {/* Identity block — name renders immediately from params; eyebrow, alias,
@@ -659,28 +940,19 @@ export default function CharacterScreen() {
               </View>
             )}
 
-            {data && comicVineLoading ? (
-              <SkeletonProvider>
-                <View style={styles.heroMeta}>
-                  <Skeleton width={160} height={10} borderRadius={4} />
-                </View>
-              </SkeletonProvider>
-            ) : null}
-            {data &&
-            !comicVineLoading &&
-            ((data.details.issueCount ?? 0) > 0 || (data.details.creators?.length ?? 0) > 0) ? (
-              <View style={styles.heroMeta}>
-                {(data.details.issueCount ?? 0) > 0 ? (
-                  <Text style={styles.heroMetaText}>
-                    Featured in {data.details.issueCount!.toLocaleString()} issues
-                  </Text>
-                ) : null}
+            {data ? (
+              <>
+                <VitalsStrip
+                  powerTotal={powerTotal}
+                  issueCount={data.details.issueCount}
+                  movieCount={data.details.movieCount ?? data.details.movies?.length ?? null}
+                />
                 {data.details.creators?.length ? (
-                  <Text style={styles.heroMetaText}>
+                  <Text style={styles.createdBy}>
                     Created by {data.details.creators.join(' & ')}
                   </Text>
                 ) : null}
-              </View>
+              </>
             ) : null}
 
             <View style={styles.accentRule} />
@@ -691,208 +963,242 @@ export default function CharacterScreen() {
           <CharacterSkeleton hideNameBlock />
         ) : (
           <>
-            {/* Summary — shows skeleton lines while ComicVine is loading */}
-            {comicVineLoading ? (
-              <SkeletonProvider>
-                <View style={styles.summaryBlock}>
-                  <Skeleton width="100%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
-                  <Skeleton width="88%" height={12} borderRadius={5} style={{ marginBottom: 7 }} />
-                  <Skeleton width="65%" height={12} borderRadius={5} />
-                </View>
-              </SkeletonProvider>
-            ) : data.details.summary || data.details.description ? (
-              <View style={styles.summaryBlock}>
-                {data.details.summary ? (
-                  <Text style={styles.summary}>{data.details.summary}</Text>
-                ) : null}
-                {data.details.description ? (
-                  <TouchableOpacity
-                    style={styles.biographyLink}
-                    onPress={() => router.push(`/biography/${id}`)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.biographyLinkText}>Full biography →</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-            ) : null}
-
-            {/* Power Stats — circular dials, 3×2 grid */}
-            <Section title="Power Stats">
-              <View style={styles.statsCard}>
-                <View style={styles.statsGrid}>
-                  {STAT_CONFIG.map(({ key, label, tint }) => (
-                    <StatDial
-                      key={key}
-                      label={label}
-                      value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
-                      tint={tint}
+            {/* Summary — the lede; shows skeleton lines while ComicVine loads */}
+            <View onLayout={registerAnchor('summary')}>
+              {comicVineLoading ? (
+                <SkeletonProvider>
+                  <View style={styles.summaryBlock}>
+                    <Skeleton
+                      width="100%"
+                      height={12}
+                      borderRadius={5}
+                      style={{ marginBottom: 7 }}
                     />
-                  ))}
+                    <Skeleton
+                      width="88%"
+                      height={12}
+                      borderRadius={5}
+                      style={{ marginBottom: 7 }}
+                    />
+                    <Skeleton width="65%" height={12} borderRadius={5} />
+                  </View>
+                </SkeletonProvider>
+              ) : data.details.summary || data.details.description ? (
+                <View style={styles.summaryBlock}>
+                  {data.details.summary ? (
+                    <Text style={styles.summary}>{data.details.summary}</Text>
+                  ) : null}
+                  {data.details.description ? (
+                    <TouchableOpacity
+                      style={styles.biographyLink}
+                      onPress={() => router.push(`/biography/${id}`)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.biographyLinkText}>Full biography →</Text>
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
-                {(() => {
-                  const values = STAT_CONFIG.map(({ key }) =>
-                    parseInt((data.stats.powerstats as Record<string, string>)[key] ?? '0', 10),
-                  ).filter((n) => !isNaN(n) && n > 0);
-                  if (values.length === 0) return null;
-                  const total = values.reduce((sum, n) => sum + n, 0);
-                  return <Text style={styles.statTotal}>Total {total} / 600</Text>;
-                })()}
-              </View>
-            </Section>
+              ) : null}
+            </View>
 
-            <AbilitiesSection powers={data.details.powers} loading={comicVineLoading} />
-
-            {/* First Appearance — moved before Overview */}
-            {data.firstIssue?.imageUrl ? (
-              <Section title="First Appearance">
-                <TouchableOpacity onPress={() => setShowIssueModal(true)} activeOpacity={0.85}>
-                  <View style={styles.comicContainer}>
-                    <View style={styles.comicPanel}>
-                      <Image
-                        source={{ uri: data.firstIssue.imageUrl }}
-                        contentFit="contain"
-                        style={styles.comicImage}
-                        cachePolicy="memory-disk"
-                        recyclingKey={`comic-${id}`}
-                        transition={200}
+            {/* Power Stats — circular dials, 3×2 grid + percentile hook */}
+            <View onLayout={registerAnchor('stats')}>
+              <Section title="Power Stats">
+                <View style={styles.statsCard}>
+                  <View style={styles.statsGrid}>
+                    {STAT_CONFIG.map(({ key, label, tint }) => (
+                      <StatDial
+                        key={key}
+                        label={label}
+                        value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
+                        tint={tint}
                       />
-                      {data.firstIssue.name || data.firstIssue.coverDate ? (
-                        <View style={styles.comicMeta}>
-                          {data.firstIssue.name ? (
-                            <Text style={styles.comicTitle}>
-                              {data.firstIssue.name.split(';')[0].trim()}
-                            </Text>
-                          ) : null}
-                          {data.firstIssue.coverDate ? (
-                            <Text style={styles.comicYear}>
-                              {data.firstIssue.coverDate.slice(0, 4)}
-                            </Text>
-                          ) : null}
-                        </View>
+                    ))}
+                  </View>
+                  {powerTotal > 0 ? (
+                    <View style={styles.statTotalRow}>
+                      <Text style={styles.statTotal}>Total {powerTotal} / 600</Text>
+                      {percentile != null && percentile > 0 ? (
+                        <Text style={styles.statPercentile}>
+                          Stronger than {percentile}% of heroes
+                        </Text>
                       ) : null}
                     </View>
-                  </View>
-                </TouchableOpacity>
+                  ) : null}
+                </View>
               </Section>
-            ) : null}
+            </View>
 
-            {/* Overview */}
-            <Section title="Overview">
-              <InfoRow label="Full name" value={data.stats.biography['full-name']} />
-              <InfoRow label="Alter egos" value={data.stats.biography['alter-egos']} />
-              <InfoRow label="Place of birth" value={data.stats.biography['place-of-birth']} />
-              <InfoRow label="First appearance" value={data.stats.biography['first-appearance']} />
-              {data.stats.biography.aliases.filter((a) => a && a !== '-').length > 0 && (
-                <InfoRow label="Aliases" value={data.stats.biography.aliases.join(', ')} />
-              )}
-            </Section>
+            {/* Abilities */}
+            <View onLayout={registerAnchor('abilities')}>
+              <AbilitiesSection powers={data.details.powers} loading={comicVineLoading} />
+            </View>
 
             {/* Enemies & Allies */}
-            {comicVineLoading ? (
-              <SkeletonProvider>
+            <View onLayout={registerAnchor('allies')}>
+              {comicVineLoading ? (
+                <SkeletonProvider>
+                  <Section title="Enemies & Allies">
+                    <Skeleton width={50} height={9} borderRadius={4} style={{ marginBottom: 8 }} />
+                    <View
+                      style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}
+                    >
+                      {[72, 54, 90, 66, 80].map((w, i) => (
+                        <Skeleton key={i} width={w} height={28} borderRadius={14} />
+                      ))}
+                    </View>
+                    <Skeleton width={40} height={9} borderRadius={4} style={{ marginBottom: 8 }} />
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                      {[60, 88, 70, 50, 76].map((w, i) => (
+                        <Skeleton key={i} width={w} height={28} borderRadius={14} />
+                      ))}
+                    </View>
+                  </Section>
+                </SkeletonProvider>
+              ) : data.details.enemies?.length || data.details.friends?.length ? (
                 <Section title="Enemies & Allies">
-                  <Skeleton width={50} height={9} borderRadius={4} style={{ marginBottom: 8 }} />
-                  <View
-                    style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}
-                  >
-                    {[72, 54, 90, 66, 80].map((w, i) => (
-                      <Skeleton key={i} width={w} height={28} borderRadius={14} />
-                    ))}
-                  </View>
-                  <Skeleton width={40} height={9} borderRadius={4} style={{ marginBottom: 8 }} />
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                    {[60, 88, 70, 50, 76].map((w, i) => (
-                      <Skeleton key={i} width={w} height={28} borderRadius={14} />
-                    ))}
-                  </View>
+                  {data.details.enemies?.length ? (
+                    <CharacterChips
+                      label="Enemies"
+                      chips={data.details.enemies}
+                      chipStyle="enemy"
+                    />
+                  ) : null}
+                  {data.details.friends?.length ? (
+                    <CharacterChips label="Allies" chips={data.details.friends} chipStyle="ally" />
+                  ) : null}
                 </Section>
-              </SkeletonProvider>
-            ) : data.details.enemies?.length || data.details.friends?.length ? (
-              <Section title="Enemies & Allies">
-                {data.details.enemies?.length ? (
-                  <CharacterChips label="Enemies" chips={data.details.enemies} chipStyle="enemy" />
-                ) : null}
-                {data.details.friends?.length ? (
-                  <CharacterChips label="Allies" chips={data.details.friends} chipStyle="ally" />
-                ) : null}
-              </Section>
-            ) : null}
+              ) : null}
+            </View>
 
             {/* On Screen */}
-            {comicVineLoading ? (
-              <SkeletonProvider>
-                <Section title="On Screen">
-                  <View style={{ flexDirection: 'row', gap: 10 }}>
-                    {[0, 1, 2].map((i) => (
-                      <View key={i} style={{ alignItems: 'center', gap: 6 }}>
-                        <Skeleton width={80} height={120} borderRadius={8} />
-                        <Skeleton width={60} height={10} borderRadius={4} />
-                      </View>
-                    ))}
-                  </View>
+            <View onLayout={registerAnchor('screen')}>
+              {comicVineLoading ? (
+                <SkeletonProvider>
+                  <Section title="On Screen">
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      {[0, 1, 2].map((i) => (
+                        <View key={i} style={{ alignItems: 'center', gap: 6 }}>
+                          <Skeleton width={80} height={120} borderRadius={8} />
+                          <Skeleton width={60} height={10} borderRadius={4} />
+                        </View>
+                      ))}
+                    </View>
+                  </Section>
+                </SkeletonProvider>
+              ) : data.details.movies?.length ? (
+                <Section
+                  title={`On Screen (${data.details.movieCount ?? data.details.movies.length})`}
+                >
+                  <MovieStrip
+                    movies={data.details.movies}
+                    totalCount={data.details.movieCount ?? data.details.movies.length}
+                  />
                 </Section>
-              </SkeletonProvider>
-            ) : data.details.movies?.length ? (
-              <Section
-                title={`On Screen (${data.details.movieCount ?? data.details.movies.length})`}
-              >
-                <MovieStrip
-                  movies={data.details.movies}
-                  totalCount={data.details.movieCount ?? data.details.movies.length}
-                />
-              </Section>
-            ) : null}
+              ) : null}
+            </View>
 
             {/* In Print — skeleton only while this section's data is still loading */}
-            {issueCovers === null && galleryLoading ? (
-              <SkeletonProvider>
+            <View onLayout={registerAnchor('print')}>
+              {issueCovers === null && galleryLoading ? (
+                <SkeletonProvider>
+                  <Section title="In Print">
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      {[0, 1, 2, 3, 4].map((i) => (
+                        <Skeleton key={i} width={80} height={110} borderRadius={8} />
+                      ))}
+                    </View>
+                  </Section>
+                </SkeletonProvider>
+              ) : issueCovers && issueCovers.length > 0 ? (
                 <Section title="In Print">
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <Skeleton key={i} width={80} height={110} borderRadius={8} />
-                    ))}
-                  </View>
+                  <GalleryStrip
+                    images={issueCovers.map((c) => ({ url: c.url, caption: c.name }))}
+                    onPress={(i) => {
+                      setLightboxImages(issueCovers.map((c) => ({ url: c.url, caption: c.name })));
+                      setLightboxIndex(i);
+                    }}
+                  />
                 </Section>
-              </SkeletonProvider>
-            ) : issueCovers && issueCovers.length > 0 ? (
-              <Section title="In Print">
-                <GalleryStrip
-                  images={issueCovers.map((c) => ({ url: c.url, caption: c.name }))}
-                  onPress={(i) => {
-                    setLightboxImages(issueCovers.map((c) => ({ url: c.url, caption: c.name })));
-                    setLightboxIndex(i);
-                  }}
-                />
-              </Section>
+              ) : null}
+            </View>
+
+            {/* First Appearance — the visual debut cover */}
+            {hasFirstVisual ? (
+              <View onLayout={registerAnchor('first')}>
+                <Section title="First Appearance">
+                  <TouchableOpacity onPress={() => setShowIssueModal(true)} activeOpacity={0.85}>
+                    <View style={styles.comicContainer}>
+                      <View style={styles.comicPanel}>
+                        <Image
+                          source={{ uri: data.firstIssue!.imageUrl! }}
+                          contentFit="contain"
+                          style={styles.comicImage}
+                          cachePolicy="memory-disk"
+                          recyclingKey={`comic-${id}`}
+                          transition={200}
+                        />
+                        {data.firstIssue!.name || data.firstIssue!.coverDate ? (
+                          <View style={styles.comicMeta}>
+                            {data.firstIssue!.name ? (
+                              <Text style={styles.comicTitle}>
+                                {data.firstIssue!.name.split(';')[0].trim()}
+                              </Text>
+                            ) : null}
+                            {data.firstIssue!.coverDate ? (
+                              <Text style={styles.comicYear}>
+                                {data.firstIssue!.coverDate.slice(0, 4)}
+                              </Text>
+                            ) : null}
+                          </View>
+                        ) : null}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                </Section>
+              </View>
             ) : null}
 
-            {/* Appearance */}
-            <Section title="Appearance">
-              <InfoRow label="Gender" value={data.stats.appearance.gender} />
-              <InfoRow label="Race" value={data.stats.appearance.race} />
-              <InfoRow label="Height" value={data.stats.appearance.height.join(' / ')} />
-              <InfoRow label="Weight" value={data.stats.appearance.weight.join(' / ')} />
-              <InfoRow label="Eyes" value={data.stats.appearance['eye-color']} />
-              <InfoRow label="Hair" value={data.stats.appearance['hair-color']} />
-            </Section>
-
-            {/* Connections (includes work) */}
-            <Section title="Connections">
-              <InfoRow label="Occupation" value={data.stats.work.occupation} />
-              <InfoRow label="Base" value={data.stats.work.base} />
-              <AffiliationChips
-                value={
-                  data.details.teams?.length
-                    ? data.details.teams.join(', ')
-                    : data.stats.connections['group-affiliation']
-                }
-              />
-              <RelativesList value={data.stats.connections.relatives} />
-            </Section>
+            {/* Dossier — Profile + Appearance + Connections, collapsed by default */}
+            <View onLayout={registerAnchor('dossier')}>
+              <Dossier data={data} includeFirstAppearance={!hasFirstVisual} />
+            </View>
           </>
         )}
       </Animated.ScrollView>
+
+      {/* Section quick-nav — floating jump bar that fades in once the content
+          covers the hero image. pointerEvents follows visibility so the hidden
+          bar never swallows taps meant for the portrait. */}
+      {data && presentSections.length > 1 ? (
+        <Animated.View
+          style={[styles.quickNav, { top: insets.top + 44, opacity: navOpacity }]}
+          pointerEvents={navVisible ? 'auto' : 'none'}
+        >
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.quickNavContent}
+          >
+            {presentSections.map((s) => {
+              const active = activeSection === s.key;
+              return (
+                <TouchableOpacity
+                  key={s.key}
+                  onPress={() => jumpTo(s.key)}
+                  style={[styles.navChip, active && styles.navChipActive]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                >
+                  <Text style={[styles.navChipText, active && styles.navChipTextActive]}>
+                    {s.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </Animated.View>
+      ) : null}
 
       {showIssueModal && data?.firstIssue ? (
         <FirstIssueModal firstIssue={data.firstIssue} onClose={() => setShowIssueModal(false)} />
@@ -1015,15 +1321,35 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  heroMeta: {
-    marginTop: 12,
-    gap: 3,
+  // At-a-glance vitals strip — big numbers + tiny labels, divider-separated.
+  vitals: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
+  vitalItem: { alignItems: 'flex-start' },
+  vitalValue: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 22,
+    color: COLORS.navy,
+    lineHeight: 26,
   },
-  heroMetaText: {
+  vitalLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    color: '#54606A',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  vitalDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: 'rgba(41,60,67,0.15)',
+    marginHorizontal: 18,
+  },
+  createdBy: {
     // Solid muted token (≈5.5:1 on beige) — passes WCAG AA, unlike faded navy.
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
     color: '#54606A',
+    marginTop: 14,
   },
   // Short orange accent rule replaces the heavy full-width divider (editorial).
   accentRule: {
@@ -1061,6 +1387,27 @@ const styles = StyleSheet.create({
   },
   divider: { height: 1, backgroundColor: COLORS.navy, borderRadius: 30, marginBottom: 16 },
 
+  // Dossier — collapsible label/value card
+  dossierHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dossierGroupLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: COLORS.orange,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 10,
+  },
+  dossierGroupSpacing: { marginTop: 18 },
+  dossierHint: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 13,
+    color: '#54606A',
+  },
+
   // Circular stat dials
   statsCard: {
     backgroundColor: 'rgba(41,60,67,0.05)',
@@ -1084,14 +1431,25 @@ const styles = StyleSheet.create({
     marginTop: -8,
     opacity: 0.75,
   },
+  statTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    marginTop: 2,
+  },
   statTotal: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 12,
     color: COLORS.navy,
     opacity: 0.45,
-    textAlign: 'right',
-    paddingHorizontal: 12,
     letterSpacing: 0.3,
+  },
+  statPercentile: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.orange,
+    letterSpacing: 0.2,
   },
 
   // Info rows
@@ -1219,6 +1577,33 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 32,
   },
+
+  // Floating section quick-nav — transparent bar under the header; the chips
+  // themselves carry the only fill, so the page reads continuously behind it.
+  quickNav: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+    paddingVertical: 8,
+    zIndex: 5,
+  },
+  quickNavContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+  },
+  navChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 18,
+    borderCurve: 'continuous',
+    backgroundColor: 'rgba(41,60,67,0.06)',
+  },
+  navChipActive: { backgroundColor: COLORS.navy },
+  navChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
+  navChipTextActive: { color: COLORS.beige },
 
   // Floating Compare pill — transparent container, no slab, so the beige page
   // reads to the bottom edge and the pill simply hovers over it.

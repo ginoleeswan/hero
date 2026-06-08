@@ -8,6 +8,7 @@ import {
 import {
   getCategoryPage,
   getHeroById,
+  getPowerPercentile,
   searchHeroesPage,
   type CategorySlug,
   type CategoryPublisher,
@@ -103,6 +104,18 @@ export function useHeroRow(id: string | undefined) {
   });
 }
 
+/** Percentile rank of a hero's total powerstats vs all ranked heroes.
+ *  Drives the "Stronger than N% of heroes" hook. Rankings shift slowly, so a
+ *  long staleTime keeps this off the network for revisits within a session. */
+export function useHeroPercentile(total: number | null) {
+  return useQuery({
+    queryKey: total ? queryKeys.powerPercentile(total) : ['heroes', 'percentile', 'disabled'],
+    enabled: !!total && total > 0,
+    queryFn: () => getPowerPercentile(total!),
+    staleTime: 1000 * 60 * 60,
+  });
+}
+
 /** Warm the detail row before navigating (call on card press). */
 export function prefetchHeroRow(client: QueryClient, id: string) {
   return client.prefetchQuery({
@@ -114,11 +127,7 @@ export function prefetchHeroRow(client: QueryClient, id: string) {
 /** AI battle verdict for a matchup. DB-persisted so the edge function is called
  *  at most once per matchup pair across all users and refreshes. React Query
  *  provides the in-session layer; Supabase provides cross-session persistence. */
-export function useVerdict(
-  heroId: string,
-  opponentId: string,
-  input: VerdictInput | null,
-) {
+export function useVerdict(heroId: string, opponentId: string, input: VerdictInput | null) {
   return useQuery({
     queryKey: queryKeys.verdict(heroId, opponentId),
     enabled: !!input,
