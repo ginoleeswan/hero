@@ -1,40 +1,37 @@
-// app/(tabs)/search.tsx — Search tab: live hero search over the app's beige canvas.
-// Idle state shows Recently Viewed + Popular; typing swaps in ranked results.
-// State persists while the tab stays mounted (query, filter, scroll, results).
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  ScrollView,
-  StyleSheet,
-  ActivityIndicator,
-  useWindowDimensions,
-} from 'react-native';
+// app/(tabs)/search/index.tsx — Search tab. Native iOS search bar (UISearchController)
+// in the transparent blurred header drives the query; a custom scope row in the
+// list header filters by publisher. Dark navy canvas unifies Search with the
+// arena/pick pages. Idle shows Recently Viewed (gold rail) + Popular; typing
+// swaps in results. The FlatList is the screen's root scroll view so the native
+// large title binds to it correctly (no phantom top gap).
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { View, Text, FlatList, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { COLORS } from '../../src/constants/colors';
-import { PortraitCard } from '../../src/components/search/PortraitCard';
-import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
-import { Skeleton } from '../../src/components/ui/Skeleton';
-import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
-import { HomeHeroRow, type RowHero } from '../../src/components/home/HomeHeroRow';
+import { COLORS } from '../../../src/constants/colors';
+import { PortraitCard } from '../../../src/components/search/PortraitCard';
+import { ScopeBar } from '../../../src/components/search/ScopeBar';
+import { AccentRail } from '../../../src/components/search/AccentRail';
+import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
+import { Skeleton } from '../../../src/components/ui/Skeleton';
+import { SkeletonProvider } from '../../../src/components/ui/SkeletonProvider';
 import {
   searchHeroes,
   rankResults,
   getSearchIdleHeroes,
+  filterHeroesByPublisher,
   type HeroSearchResult,
   type PublisherFilter,
-} from '../../src/lib/db/heroes';
-import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
-import { useAuth } from '../../src/hooks/useAuth';
-import type { FavouriteHero } from '../../src/types';
+} from '../../../src/lib/db/heroes';
+import { getRecentlyViewed } from '../../../src/lib/db/viewHistory';
+import { useAuth } from '../../../src/hooks/useAuth';
+import type { FavouriteHero } from '../../../src/types';
 
-const PUBLISHER_PILLS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
+const SEARCH_NAVY = '#1a262b';
 const GRID_COLUMNS = 2;
 const H_PAD = 16;
 const GAP = 8;
@@ -48,16 +45,12 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-function toRowHero(h: FavouriteHero): RowHero {
-  return { id: h.id, name: h.name, image_url: h.image_url, portrait_url: h.portrait_url };
-}
-
 export default function SearchScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { user } = useAuth();
-  const inputRef = useRef<TextInput>(null);
 
   const [idleHeroes, setIdleHeroes] = useState<HeroSearchResult[]>([]);
   const [idleLoading, setIdleLoading] = useState(true);
@@ -71,6 +64,21 @@ export default function SearchScreen() {
 
   const cardWidth = (width - H_PAD * 2 - GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
   const debouncedQuery = useDebounce(query, 300);
+
+  // Wire the native iOS search bar into the screen's query state. No colours are
+  // set so iOS renders its default field, which adapts to the (dark) header on
+  // its own. Set once on mount — setQuery is stable.
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerSearchBarOptions: {
+        placeholder: 'Hero, villain, or real name…',
+        hideWhenScrolling: false,
+        autoCapitalize: 'none',
+        onChangeText: (e: { nativeEvent: { text: string } }) => setQuery(e.nativeEvent.text),
+        onCancelButtonPress: () => setQuery(''),
+      },
+    } as never);
+  }, [navigation]);
 
   useEffect(() => {
     getSearchIdleHeroes(30)
@@ -115,15 +123,7 @@ export default function SearchScreen() {
 
   const displayedHeroes = useMemo(() => {
     if (searchResults !== null) return searchResults.slice(0, 100);
-
-    return publisherFilter === 'All'
-      ? idleHeroes
-      : idleHeroes.filter((h) => {
-          const pub = (h.publisher ?? '').toLowerCase();
-          if (publisherFilter === 'Marvel') return pub.includes('marvel');
-          if (publisherFilter === 'DC') return pub.includes('dc');
-          return !pub.includes('marvel') && !pub.includes('dc');
-        });
+    return filterHeroesByPublisher(idleHeroes, publisherFilter);
   }, [idleHeroes, searchResults, publisherFilter]);
 
   const handlePress = useCallback(
@@ -149,14 +149,17 @@ export default function SearchScreen() {
 
   const listHeader = (
     <>
+      <ScopeBar value={publisherFilter} onChange={setPublisherFilter} />
       {showRecent && (
-        <HomeHeroRow
-          label="Personal"
-          title="Recently Viewed"
-          heroes={recentlyViewed.map(toRowHero)}
-          variant="thumb"
-          onPress={handlePress}
-          disabled={navigating}
+        <AccentRail
+          label="Recently Viewed"
+          items={recentlyViewed}
+          onPick={(id) => {
+            const h = recentlyViewed.find((r) => r.id === id);
+            if (h) handlePress(h);
+          }}
+          onPeek={openPeek}
+          accent
         />
       )}
       {!idleLoading && (
@@ -171,101 +174,64 @@ export default function SearchScreen() {
     </>
   );
 
-  return (
-    <View style={[styles.root, { paddingTop: insets.top + 8 }]}>
-      <Text style={styles.title}>Search</Text>
-
-      <View style={styles.searchBar}>
-        <Ionicons name="search" size={17} color="rgba(245,235,220,0.5)" />
-        <TextInput
-          ref={inputRef}
-          style={styles.searchInput}
-          placeholder="Hero, villain, or real name…"
-          placeholderTextColor="rgba(245,235,220,0.4)"
-          value={query}
-          onChangeText={setQuery}
-          autoCorrect={false}
-          autoCapitalize="none"
-          returnKeyType="search"
-        />
-        {isSearching ? (
-          <ActivityIndicator size="small" color="rgba(245,235,220,0.5)" />
-        ) : query.length > 0 ? (
-          <TouchableOpacity
-            onPress={() => setQuery('')}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.45)" />
-          </TouchableOpacity>
-        ) : null}
+  const listEmpty = idleLoading ? (
+    <SkeletonProvider>
+      <View style={styles.skelGrid}>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton
+            key={i}
+            width={cardWidth}
+            height={Math.round(cardWidth * 1.48)}
+            borderRadius={10}
+          />
+        ))}
       </View>
+    </SkeletonProvider>
+  ) : isSearching ? null : (
+    <View style={styles.center}>
+      <View style={styles.emptyIconWrap}>
+        <Ionicons name="search-outline" size={30} color={COLORS.orange} />
+      </View>
+      <Text style={styles.emptyHeadline}>No heroes found</Text>
+      <Text style={styles.emptySub}>Try a different search or filter</Text>
+    </View>
+  );
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.pillsContainer}
-        style={styles.pillsScroll}
+  return (
+    <View style={styles.root}>
+      <StatusBar style="light" />
+      <LinearGradient
+        colors={['rgba(231,115,51,0.22)', 'transparent']}
+        locations={[0, 0.55]}
+        style={styles.glow}
+        pointerEvents="none"
+      />
+
+      <FlatList
+        style={styles.list}
+        data={displayedHeroes}
+        keyExtractor={(h) => h.id}
+        numColumns={GRID_COLUMNS}
         keyboardShouldPersistTaps="handled"
-      >
-        {PUBLISHER_PILLS.map((pill) => {
-          const active = publisherFilter === pill;
-          return (
-            <TouchableOpacity
-              key={pill}
-              style={[styles.pill, active && styles.pillActive]}
-              onPress={() => setPublisherFilter(pill)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.pillText, active && styles.pillTextActive]}>{pill}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
-      {idleLoading ? (
-        <SkeletonProvider>
-          <View style={[styles.grid, styles.skelGrid]}>
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton
-                key={i}
-                width={cardWidth}
-                height={Math.round(cardWidth * 1.48)}
-                borderRadius={10}
-              />
-            ))}
-          </View>
-        </SkeletonProvider>
-      ) : displayedHeroes.length === 0 && !isSearching ? (
-        <View style={styles.center}>
-          <View style={styles.emptyIconWrap}>
-            <Ionicons name="search-outline" size={30} color={COLORS.orange} />
-          </View>
-          <Text style={styles.emptyHeadline}>No heroes found</Text>
-          <Text style={styles.emptySub}>Try a different search or filter</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={displayedHeroes}
-          keyExtractor={(h) => h.id}
-          numColumns={GRID_COLUMNS}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={listHeader}
-          contentContainerStyle={[styles.grid, { paddingBottom: insets.bottom + 120 }]}
-          columnWrapperStyle={styles.gridRow}
-          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-          renderItem={({ item }) => (
-            <PortraitCard
-              item={item}
-              cardWidth={cardWidth}
-              onPress={() => handlePress(item)}
-              onLongPress={() => openPeek(item)}
-              disabled={navigating}
-            />
-          )}
-        />
-      )}
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={listEmpty}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]}
+        columnWrapperStyle={displayedHeroes.length > 0 ? styles.gridRow : undefined}
+        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+        renderItem={({ item }) => (
+          <PortraitCard
+            item={item}
+            cardWidth={cardWidth}
+            onPress={() => handlePress(item)}
+            onLongPress={() => openPeek(item)}
+            disabled={navigating}
+            onDark
+          />
+        )}
+      />
 
       {peek && (
         <HeroPeek
@@ -283,66 +249,30 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.beige },
-  title: {
-    fontFamily: 'Flame-Bold',
-    fontSize: 30,
-    color: COLORS.navy,
-    paddingHorizontal: H_PAD,
-    marginBottom: 12,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.navy,
-    borderRadius: 14,
-    borderCurve: 'continuous',
-    marginHorizontal: H_PAD,
-    marginBottom: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 15,
-    color: COLORS.beige,
-  },
-  pillsScroll: { flexGrow: 0, height: 44, marginBottom: 4 },
-  pillsContainer: { paddingHorizontal: H_PAD, paddingVertical: 2, gap: 8, alignItems: 'center' },
-  pill: {
-    height: 34,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    borderRadius: 17,
-    borderWidth: 1.5,
-    borderColor: 'rgba(41,60,67,0.25)',
-  },
-  pillActive: { backgroundColor: COLORS.navy, borderColor: COLORS.navy },
-  pillText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
-  pillTextActive: { color: COLORS.beige },
-  grid: { paddingHorizontal: H_PAD },
+  root: { flex: 1, backgroundColor: SEARCH_NAVY },
+  list: { flex: 1, backgroundColor: 'transparent' },
+  glow: { position: 'absolute', top: 0, left: 0, right: 0, height: 260 },
+  content: { paddingHorizontal: H_PAD, paddingTop: 4 },
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingTop: 4 },
   gridRow: { gap: GAP },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingBottom: 80 },
+  center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 100 },
   emptyIconWrap: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#fff5ee',
+    backgroundColor: 'rgba(245,235,220,0.06)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
-  emptyHeadline: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.navy },
-  emptySub: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
+  emptyHeadline: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.beige },
+  emptySub: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: 'rgba(245,235,220,0.55)' },
   sectionHeader: { paddingBottom: 8, paddingTop: 4 },
   sectionLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: 'rgba(41,60,67,0.45)',
+    color: COLORS.goldAccent,
   },
 });
