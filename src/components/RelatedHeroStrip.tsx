@@ -98,7 +98,6 @@ export function RelatedHeroStrip({
                 locations={[0.4, 1]}
                 style={StyleSheet.absoluteFill}
               />
-              <View style={[styles.accentBar, { backgroundColor: accent }]} />
               <Text style={styles.cardName} numberOfLines={2}>
                 {hero.name}
               </Text>
@@ -127,7 +126,15 @@ export function RelatedHeroStrip({
 
 const styles = StyleSheet.create({
   block: { marginBottom: 14 },
-  labelRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 },
+  // Label + fallback chips keep the 20px content margin; the card scroller below
+  // runs full-bleed (its own paddingLeft aligns the first card to that margin).
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginBottom: 10,
+    paddingHorizontal: 20,
+  },
   dot: { width: 7, height: 7, borderRadius: 4 },
   label: {
     fontFamily: 'FlameSans-Regular',
@@ -137,7 +144,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  cardsRow: { flexDirection: 'row', gap: 10, paddingRight: 4, paddingBottom: 2 },
+  cardsRow: { flexDirection: 'row', gap: 10, paddingLeft: 20, paddingRight: 20, paddingBottom: 2 },
   card: {
     width: CARD_W,
     height: CARD_H,
@@ -149,7 +156,6 @@ const styles = StyleSheet.create({
     boxShadow: '0px 4px 10px rgba(41,60,67,0.22)',
   },
   cardImage: { position: 'absolute', top: 0, left: 0, width: CARD_W, height: CARD_H },
-  accentBar: { position: 'absolute', top: 0, left: 0, right: 0, height: 3 },
   cardName: {
     fontFamily: 'Flame-Regular',
     fontSize: 12,
@@ -160,7 +166,7 @@ const styles = StyleSheet.create({
   },
 
   // Fallback chips for names that don't resolve to a hero row.
-  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 20 },
   chipsWrapSpaced: { marginTop: 12 },
   chip: {
     backgroundColor: 'rgba(41,60,67,0.06)',

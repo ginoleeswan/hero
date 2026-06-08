@@ -749,6 +749,8 @@ export default function WebCharacterScreen() {
                       <MovieStrip
                         movies={details.movies}
                         totalCount={details.movieCount ?? details.movies.length}
+                        contentInset={20}
+                        bleedMargin={20}
                       />
                     </View>
                   ) : null}
@@ -1076,6 +1078,8 @@ export default function WebCharacterScreen() {
                     <MovieStrip
                       movies={details.movies}
                       totalCount={details.movieCount ?? details.movies.length}
+                      contentInset={20}
+                      bleedMargin={20}
                     />
                   </View>
                 ) : null}

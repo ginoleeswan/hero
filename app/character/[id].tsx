@@ -105,6 +105,17 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+// Padded title + divider with no body padding — used for sections whose body is
+// a full-bleed horizontal scroller (the scroller carries its own edge insets).
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <View style={styles.sectionHeaderPad}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.divider} />
+    </View>
+  );
+}
+
 function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value || value === '-' || value === 'null' || value === '') return null;
   return (
@@ -1009,29 +1020,28 @@ export default function CharacterScreen() {
               <AbilitiesSection powers={data.details.powers} loading={comicVineLoading} />
             </View>
 
-            {/* Enemies & Allies */}
-            <View onLayout={registerAnchor('allies')}>
+            {/* Enemies & Allies — full-bleed card strips */}
+            <View onLayout={registerAnchor('allies')} style={styles.bleedSection}>
               {comicVineLoading ? (
                 <SkeletonProvider>
-                  <Section title="Enemies & Allies">
-                    <Skeleton width={50} height={9} borderRadius={4} style={{ marginBottom: 8 }} />
-                    <View
-                      style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}
-                    >
-                      {[72, 54, 90, 66, 80].map((w, i) => (
-                        <Skeleton key={i} width={w} height={28} borderRadius={14} />
-                      ))}
-                    </View>
-                    <Skeleton width={40} height={9} borderRadius={4} style={{ marginBottom: 8 }} />
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                      {[60, 88, 70, 50, 76].map((w, i) => (
-                        <Skeleton key={i} width={w} height={28} borderRadius={14} />
-                      ))}
-                    </View>
-                  </Section>
+                  <SectionHeader title="Enemies & Allies" />
+                  <View style={styles.bleedPad}>
+                    <Skeleton width={50} height={9} borderRadius={4} style={{ marginBottom: 10 }} />
+                  </View>
+                  <ScrollView
+                    horizontal
+                    scrollEnabled={false}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.bleedRow}
+                  >
+                    {[0, 1, 2, 3].map((i) => (
+                      <Skeleton key={i} width={104} height={140} borderRadius={14} />
+                    ))}
+                  </ScrollView>
                 </SkeletonProvider>
               ) : data.details.enemies?.length || data.details.friends?.length ? (
-                <Section title="Enemies & Allies">
+                <>
+                  <SectionHeader title="Enemies & Allies" />
                   {data.details.enemies?.length ? (
                     <RelatedHeroStrip
                       label="Enemies"
@@ -1054,51 +1064,62 @@ export default function CharacterScreen() {
                       }
                     />
                   ) : null}
-                </Section>
+                </>
               ) : null}
             </View>
 
-            {/* On Screen */}
-            <View onLayout={registerAnchor('screen')}>
+            {/* On Screen — full-bleed movie strip */}
+            <View onLayout={registerAnchor('screen')} style={styles.bleedSection}>
               {comicVineLoading ? (
                 <SkeletonProvider>
-                  <Section title="On Screen">
-                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                      {[0, 1, 2].map((i) => (
-                        <View key={i} style={{ alignItems: 'center', gap: 6 }}>
-                          <Skeleton width={80} height={120} borderRadius={8} />
-                          <Skeleton width={60} height={10} borderRadius={4} />
-                        </View>
-                      ))}
-                    </View>
-                  </Section>
+                  <SectionHeader title="On Screen" />
+                  <ScrollView
+                    horizontal
+                    scrollEnabled={false}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.bleedRow}
+                  >
+                    {[0, 1, 2].map((i) => (
+                      <View key={i} style={{ alignItems: 'center', gap: 6 }}>
+                        <Skeleton width={80} height={120} borderRadius={8} />
+                        <Skeleton width={60} height={10} borderRadius={4} />
+                      </View>
+                    ))}
+                  </ScrollView>
                 </SkeletonProvider>
               ) : data.details.movies?.length ? (
-                <Section
-                  title={`On Screen (${data.details.movieCount ?? data.details.movies.length})`}
-                >
+                <>
+                  <SectionHeader
+                    title={`On Screen (${data.details.movieCount ?? data.details.movies.length})`}
+                  />
                   <MovieStrip
                     movies={data.details.movies}
                     totalCount={data.details.movieCount ?? data.details.movies.length}
+                    contentInset={20}
                   />
-                </Section>
+                </>
               ) : null}
             </View>
 
-            {/* In Print — skeleton only while this section's data is still loading */}
-            <View onLayout={registerAnchor('print')}>
+            {/* In Print — full-bleed cover gallery */}
+            <View onLayout={registerAnchor('print')} style={styles.bleedSection}>
               {issueCovers === null && galleryLoading ? (
                 <SkeletonProvider>
-                  <Section title="In Print">
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      {[0, 1, 2, 3, 4].map((i) => (
-                        <Skeleton key={i} width={80} height={110} borderRadius={8} />
-                      ))}
-                    </View>
-                  </Section>
+                  <SectionHeader title="In Print" />
+                  <ScrollView
+                    horizontal
+                    scrollEnabled={false}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.bleedRow}
+                  >
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <Skeleton key={i} width={80} height={110} borderRadius={8} />
+                    ))}
+                  </ScrollView>
                 </SkeletonProvider>
               ) : issueCovers && issueCovers.length > 0 ? (
-                <Section title="In Print">
+                <>
+                  <SectionHeader title="In Print" />
                   <GalleryStrip
                     images={issueCovers.map((c) => ({ url: c.url, caption: c.name }))}
                     onPress={(i) => {
@@ -1106,7 +1127,7 @@ export default function CharacterScreen() {
                       setLightboxIndex(i);
                     }}
                   />
-                </Section>
+                </>
               ) : null}
             </View>
 
@@ -1373,6 +1394,12 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   divider: { height: 1, backgroundColor: COLORS.navy, borderRadius: 30, marginBottom: 16 },
+
+  // Full-bleed sections — padded header, edge-to-edge horizontal body.
+  sectionHeaderPad: { paddingHorizontal: 20, paddingTop: 20 },
+  bleedSection: { paddingBottom: 12 },
+  bleedPad: { paddingHorizontal: 20 },
+  bleedRow: { flexDirection: 'row', gap: 10, paddingLeft: 20, paddingRight: 20 },
 
   // Dossier — collapsible label/value card
   dossierHeader: {

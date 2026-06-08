@@ -16,6 +16,11 @@ const INITIAL_COUNT = 10;
 interface Props {
   movies: MovieAppearance[];
   totalCount: number;
+  // Horizontal inset of the first/last card from the scroll viewport edges.
+  contentInset?: number;
+  // Negative outer margin so the strip can break out of a padded parent (e.g. a
+  // web card) and run edge-to-edge. Pass the parent's horizontal padding.
+  bleedMargin?: number;
 }
 
 function sortByYear(movies: MovieAppearance[]): MovieAppearance[] {
@@ -94,7 +99,7 @@ function MovieCard({
   );
 }
 
-export function MovieStrip({ movies, totalCount }: Props) {
+export function MovieStrip({ movies, totalCount, contentInset = 16, bleedMargin = 0 }: Props) {
   const [selectedMovie, setSelectedMovie] = useState<MovieAppearance | null>(null);
   const [gridVisible, setGridVisible] = useState(false);
 
@@ -117,7 +122,8 @@ export function MovieStrip({ movies, totalCount }: Props) {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.container}
+        style={bleedMargin ? { marginHorizontal: -bleedMargin } : undefined}
+        contentContainerStyle={[styles.container, { paddingHorizontal: contentInset }]}
       >
         {featured ? (
           <MovieCard
@@ -161,7 +167,6 @@ export function MovieStrip({ movies, totalCount }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 2,
     gap: 10,
     paddingBottom: 4,
     alignItems: 'flex-end',

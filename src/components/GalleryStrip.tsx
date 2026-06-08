@@ -48,7 +48,7 @@ export function GalleryStrip({ images, onPress }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 8, paddingBottom: 4, paddingHorizontal: 2 },
+  container: { gap: 8, paddingBottom: 4, paddingHorizontal: 20 },
   card: {
     width: CARD_W,
     height: CARD_H,
