@@ -584,6 +584,72 @@ export async function getHeroesByPowerRange(
   return (data ?? []) as HeroPowerResult[];
 }
 
+/**
+ * Percentile rank of a hero's total powerstats among all ranked heroes.
+ * Returns e.g. 87 → "Stronger than 87% of heroes". Heroes with no stats
+ * (powerstats_total null/0) are excluded from both numerator and denominator,
+ * so the figure reflects only characters that actually have a power profile.
+ */
+export async function getPowerPercentile(total: number): Promise<number | null> {
+  if (!total || total <= 0) return null;
+  const ranked = supabase
+    .from('heroes')
+    .select('*', { count: 'exact', head: true })
+    .gt('powerstats_total', 0);
+  const below = supabase
+    .from('heroes')
+    .select('*', { count: 'exact', head: true })
+    .gt('powerstats_total', 0)
+    .lt('powerstats_total', total);
+  const [rankedRes, belowRes] = await Promise.all([ranked, below]);
+  if (rankedRes.error || belowRes.error || !rankedRes.count) return null;
+  return Math.round(((belowRes.count ?? 0) / rankedRes.count) * 100);
+}
+
+// ── Stat leaderboard query ────────────────────────────────────────────────────
+
+export async function getTopHeroByStat(
+  stat: 'strength' | 'intelligence' | 'speed',
+): Promise<Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('id,name,strength,intelligence,speed')
+    .not(stat, 'is', null)
+    .order(stat, { ascending: false })
+    .limit(1)
+    .single();
+  if (error) return null;
+  return data ?? null;
+}
+
+// ── Publisher breakdown counts ────────────────────────────────────────────────
+
+export interface PublisherCounts {
+  marvel: number;
+  dc: number;
+  other: number;
+}
+
+export async function getPublisherCounts(): Promise<PublisherCounts> {
+  const [marvelRes, dcRes, totalRes] = await Promise.all([
+    supabase
+      .from('heroes')
+      .select('*', { count: 'exact', head: true })
+      .ilike('publisher', '%marvel%'),
+    supabase
+      .from('heroes')
+      .select('*', { count: 'exact', head: true })
+      .ilike('publisher', '%dc%'),
+    supabase
+      .from('heroes')
+      .select('*', { count: 'exact', head: true }),
+  ]);
+  const marvel = marvelRes.count ?? 0;
+  const dc = dcRes.count ?? 0;
+  const total = totalRes.count ?? 0;
+  return { marvel, dc, other: total - marvel - dc };
+}
+
 export function heroRowToCharacterData(hero: Hero): CharacterData {
   const stat = (v: number | null) => String(v ?? 0);
   return {

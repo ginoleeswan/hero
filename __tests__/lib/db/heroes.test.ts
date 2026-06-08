@@ -8,7 +8,10 @@ import {
   getAntiHeroes,
   getHeroesByPublisher,
   getHeroesByStatRanking,
+  getTopHeroByStat,
+  getPublisherCounts,
   type Hero,
+  type PublisherCounts,
 } from '../../../src/lib/db/heroes';
 
 // ─── Mock Supabase ────────────────────────────────────────────────────────────
@@ -24,7 +27,7 @@ import {
 //
 
 // eslint-disable-next-line prefer-const
-let mockResolveWith: { data: unknown; error: unknown } = { data: null, error: null };
+let mockResolveWith: { data: unknown; error: unknown; count?: number | null } = { data: null, error: null };
 
 jest.mock('../../../src/lib/supabase', () => {
   const chainMethods = [
@@ -563,5 +566,64 @@ describe('getHeroesByPowerRange', () => {
   it('returns an array (even empty) without throwing', async () => {
     const result = await getHeroesByPowerRange(200, 350, '70');
     expect(Array.isArray(result)).toBe(true);
+  });
+});
+
+// ─── getTopHeroByStat ─────────────────────────────────────────────────────────
+
+describe('getTopHeroByStat', () => {
+  it('returns the hero data with the highest value for the given stat', async () => {
+    const hulk = { id: 332, name: 'Hulk', strength: 100, intelligence: 60, speed: 53 };
+    mockResolveWith = { data: hulk, error: null };
+
+    const result = await getTopHeroByStat('strength');
+
+    expect(result).toEqual(hulk);
+    expect(mockFrom).toHaveBeenCalledWith('heroes');
+    expect(chain.not).toHaveBeenCalledWith('strength', 'is', null);
+    expect(chain.order).toHaveBeenCalledWith('strength', { ascending: false });
+    expect(chain.limit).toHaveBeenCalledWith(1);
+  });
+
+  it('passes the correct stat field to the query chain', async () => {
+    mockResolveWith = { data: { id: 297, name: 'Brainiac', strength: 28, intelligence: 100, speed: 42 }, error: null };
+
+    await getTopHeroByStat('intelligence');
+
+    expect(chain.not).toHaveBeenCalledWith('intelligence', 'is', null);
+    expect(chain.order).toHaveBeenCalledWith('intelligence', { ascending: false });
+  });
+
+  it('returns null when the query errors', async () => {
+    mockResolveWith = { data: null, error: { message: 'DB error' } };
+
+    const result = await getTopHeroByStat('speed');
+
+    expect(result).toBeNull();
+  });
+});
+
+// ─── getPublisherCounts ───────────────────────────────────────────────────────
+
+describe('getPublisherCounts', () => {
+  it('returns zeroed counts when all queries return null count', async () => {
+    mockResolveWith = { data: null, error: null, count: null };
+
+    const result = await getPublisherCounts();
+
+    expect(result).toEqual<PublisherCounts>({ marvel: 0, dc: 0, other: 0 });
+  });
+
+  it('returns counts with correct shape', async () => {
+    mockResolveWith = { data: null, error: null, count: 0 };
+
+    const result = await getPublisherCounts();
+
+    expect(result).toHaveProperty('marvel');
+    expect(result).toHaveProperty('dc');
+    expect(result).toHaveProperty('other');
+    expect(typeof result.marvel).toBe('number');
+    expect(typeof result.dc).toBe('number');
+    expect(typeof result.other).toBe('number');
   });
 });
