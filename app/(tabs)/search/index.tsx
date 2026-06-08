@@ -206,7 +206,7 @@ export default function SearchScreen() {
       <Stack.Header
         transparent
         blurEffect="systemChromeMaterialDark"
-        style={{ color: COLORS.beige }}
+        style={{ color: COLORS.beige, shadowColor: 'transparent' }}
         largeStyle={{ backgroundColor: 'transparent', shadowColor: 'transparent' }}
       />
       <Stack.SearchBar
