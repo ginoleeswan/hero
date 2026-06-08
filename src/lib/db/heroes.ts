@@ -215,7 +215,8 @@ export async function getHeroCount(): Promise<number> {
 // Minimal column sets for home page queries — cards only need image + name.
 // Spotlight panel also shows publisher and summary.
 const HOME_ROW = 'id, name, image_url, portrait_url';
-const HOME_SPOT = 'id, name, image_url, portrait_url, publisher, summary';
+const HOME_SPOT =
+  'id, name, image_url, portrait_url, publisher, summary, full_name, alignment, first_appearance, intelligence, strength, speed';
 
 export async function getPopularHeroes(limit = 25): Promise<Hero[]> {
   const { data, error } = await supabase

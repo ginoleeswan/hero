@@ -119,6 +119,16 @@ const rc = StyleSheet.create({
   } as object,
 });
 
+// Map the raw alignment value (good/bad/neutral) to a display label.
+function alignmentLabel(alignment?: string | null): string | null {
+  if (!alignment) return null;
+  const a = alignment.toLowerCase();
+  if (a === 'good') return 'Hero';
+  if (a === 'bad') return 'Villain';
+  if (a === 'neutral') return 'Anti-Hero';
+  return null;
+}
+
 // ── Portrait strip spotlight ──────────────────────────────────────────────────
 const ACCORDION_SCALES = {
   // Ultra-wide displays (1200px+)
@@ -257,17 +267,29 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
           })}
         </View>
 
-        {/* Glass info panel — absolute over bottom-right of the spotlight */}
+        {/* Glass info panel — flex child beside the portrait strip */}
         <View style={pss.glassPanel as object}>
           <Text style={pss.glassPanelEyebrow as object}>Featured Hero</Text>
           <Text style={pss.glassPanelName as object} numberOfLines={2}>
             {hero.name}
           </Text>
-          {!!hero.publisher && (
-            <Text style={pss.glassPanelPub as object} numberOfLines={1}>
-              {hero.publisher}
+          {!!hero.full_name && hero.full_name !== hero.name && (
+            <Text style={pss.glassPanelRealName as object} numberOfLines={1}>
+              {hero.full_name}
             </Text>
           )}
+          <View style={pss.metaRow as object}>
+            {!!hero.publisher && (
+              <Text style={pss.glassPanelPub as object} numberOfLines={1}>
+                {hero.publisher}
+              </Text>
+            )}
+            {!!alignmentLabel(hero.alignment) && (
+              <View style={pss.alignChip as object}>
+                <Text style={pss.alignChipText as object}>{alignmentLabel(hero.alignment)}</Text>
+              </View>
+            )}
+          </View>
           {!!hero.summary && (
             <Text style={pss.glassPanelSummary as object} numberOfLines={4}>
               {hero.summary}
@@ -295,6 +317,11 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
               )}
             </View>
           ) : null}
+          {!!hero.first_appearance && (
+            <Text style={pss.firstAppearance as object} numberOfLines={1}>
+              First appearance · {hero.first_appearance}
+            </Text>
+          )}
           <View style={pss.panelFooter}>
             <Pressable
               onPress={() => onViewProfile(String(hero.id))}
@@ -495,7 +522,19 @@ const pss = StyleSheet.create({
     fontSize: 34,
     color: COLORS.beige,
     lineHeight: 38,
-    marginBottom: 6,
+    marginBottom: 2,
+  } as object,
+  glassPanelRealName: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.5)',
+    marginBottom: 12,
+  } as object,
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 16,
   } as object,
   glassPanelPub: {
     fontFamily: 'Nunito_700Bold',
@@ -503,38 +542,63 @@ const pss = StyleSheet.create({
     color: 'rgba(245,235,220,0.4)',
     textTransform: 'uppercase',
     letterSpacing: 1.5,
-    marginBottom: 10,
+  } as object,
+  alignChip: {
+    backgroundColor: 'rgba(231,115,51,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(231,115,51,0.4)',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  } as object,
+  alignChipText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    color: COLORS.orange,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   } as object,
   glassPanelSummary: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 12,
-    color: 'rgba(245,235,220,0.65)',
-    lineHeight: 19,
-    marginBottom: 12,
+    fontSize: 13,
+    color: 'rgba(245,235,220,0.68)',
+    lineHeight: 21,
+    marginBottom: 18,
   } as object,
   statPills: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 14,
+    gap: 10,
+    marginBottom: 18,
   } as object,
   statPill: {
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+    flex: 1,
+    maxWidth: 96,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
     alignItems: 'center',
   } as object,
   statPillVal: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 14,
+    fontFamily: 'Flame-Regular',
+    fontSize: 20,
     color: COLORS.orange,
+    marginBottom: 2,
   } as object,
   statPillKey: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 7,
-    color: 'rgba(245,235,220,0.4)',
+    fontSize: 8,
+    color: 'rgba(245,235,220,0.45)',
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 1,
+  } as object,
+  firstAppearance: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11,
+    color: 'rgba(245,235,220,0.4)',
+    marginBottom: 18,
   } as object,
 
   // Shared / mobile panel text
@@ -1178,10 +1242,13 @@ export default function WebHomeScreen() {
 
           {/* ── Orange ticker strip ────────────────────────────────────────── */}
           {isDesktop && (
-            <PulseTicker
-              heroCount={totalHeroCount ?? 0}
-              newlyAddedCount={homeData.newlyAdded?.length ?? 0}
-            />
+            <>
+              <PulseTicker
+                heroCount={totalHeroCount ?? 0}
+                newlyAddedCount={homeData.newlyAdded?.length ?? 0}
+              />
+              <View style={styles.afterTicker} />
+            </>
           )}
 
           {/* Personal rows */}
@@ -1282,6 +1349,8 @@ const styles = StyleSheet.create({
     paddingTop: 28,
     paddingBottom: 28,
   },
+  // Beige breathing room between the orange ticker and the first carousel.
+  afterTicker: { height: 40 },
 
   // ── Home layout ──────────────────────────────────────────────────────────────
   discoverContent: {

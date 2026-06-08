@@ -116,8 +116,8 @@ export function TopNav() {
           <HeroLogo iconSize={24} fontSize={19} color={COLORS.beige} gap={8} />
         </Pressable>
 
-        {/* Center — search field on desktop; publisher pills on /explore; spacer on mobile */}
-        {showSearch && pathname !== EXPLORE_PATH ? (
+        {/* Center — search field on desktop; spacer on mobile */}
+        {showSearch ? (
           <View ref={searchAreaRef} style={styles.searchContainer as object}>
             <View
               style={
@@ -154,34 +154,39 @@ export function TopNav() {
             </View>
             <SearchSuggestions />
           </View>
-        ) : showSearch && pathname === EXPLORE_PATH ? (
-          <View style={styles.pillRow as object}>
-            {PUBLISHER_FILTERS.map((f) => (
-              <Pressable
-                key={f}
-                onPress={() =>
-                  f === 'All' ? setPublisher('All') : router.push(`/search?publisher=${f}`)
-                }
-                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [
-                    styles.pill,
-                    publisher === f && (styles.pillActive as object),
-                    hovered && publisher !== f && (styles.pillHover as object),
-                  ] as object
-                }
-              >
-                <Text style={[styles.pillText, publisher === f && (styles.pillTextActive as object)] as object}>
-                  {f}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
         ) : (
           <View style={styles.centerSpacer} />
         )}
 
-        {/* Right slot — search icon (mobile) + avatar/dropdown or sign-in button */}
+        {/* Right slot — publisher pills (/explore desktop) + mobile search + avatar */}
         <View style={styles.rightSlot}>
+          {isDesktop && pathname === EXPLORE_PATH && (
+            <View style={styles.pillRow as object}>
+              {PUBLISHER_FILTERS.map((f) => (
+                <Pressable
+                  key={f}
+                  onPress={() =>
+                    f === 'All' ? setPublisher('All') : router.push(`/search?publisher=${f}`)
+                  }
+                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                    [
+                      styles.pill,
+                      publisher === f && (styles.pillActive as object),
+                      hovered && publisher !== f && (styles.pillHover as object),
+                    ] as object
+                  }
+                >
+                  <Text
+                    style={
+                      [styles.pillText, publisher === f && (styles.pillTextActive as object)] as object
+                    }
+                  >
+                    {f}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
           {showMobileSearch && (
             <Pressable
               aria-label="Search"
@@ -412,11 +417,10 @@ const styles = StyleSheet.create({
 
   // ── Publisher pills ────────────────────────────────────────────────────────
   pillRow: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 6,
+    marginRight: 4,
   } as object,
   pill: {
     paddingHorizontal: 14,
