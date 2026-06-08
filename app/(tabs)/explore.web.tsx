@@ -25,6 +25,7 @@ import { getUserFavouriteHeroes } from '../../src/lib/db/favourites';
 import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
+import { RankingCard } from '../../src/components/web/home/RankingCard';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const PUBLISHER_FILTERS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
@@ -649,12 +650,14 @@ function HomeRow({
   heroes,
   onPress,
   onViewAll,
+  statKey,
 }: {
   label?: string;
   title: string;
   heroes: (Hero | FavouriteHero)[];
   onPress: (id: string) => void;
   onViewAll?: () => void;
+  statKey?: 'strength' | 'intelligence' | 'speed';
 }) {
   const {
     sectionRef,
@@ -711,9 +714,18 @@ function HomeRow({
           ref={scrollRef}
           style={[rowScrollStyle, { paddingLeft: pagePad, marginLeft: 0 }] as object}
         >
-          {heroes.map((h) => (
-            <RowCard key={h.id} hero={h} onPress={() => onPress(String(h.id))} />
-          ))}
+          {heroes.map((h) =>
+            statKey ? (
+              <RankingCard
+                key={h.id}
+                hero={h as Hero}
+                statKey={statKey}
+                onPress={() => onPress(String(h.id))}
+              />
+            ) : (
+              <RowCard key={h.id} hero={h} onPress={() => onPress(String(h.id))} />
+            ),
+          )}
         </View>
         {isHovered && canScrollLeft && <CarouselArrow direction="left" onPress={doScrollLeft} />}
         {isHovered && canScrollRight && <CarouselArrow direction="right" onPress={doScrollRight} />}

@@ -10,12 +10,13 @@ import { SearchSuggestions } from './search/SearchSuggestions';
 
 const EXPLORE_PATH = '/explore';
 const DESKTOP_BP = 768;
+const PUBLISHER_FILTERS = ['All', 'Marvel', 'DC', 'Other'] as const;
 
 export function TopNav() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, signOut } = useAuth();
-  const { query, setQuery, searchFocused, setSearchFocused } = useSearch();
+  const { query, setQuery, searchFocused, setSearchFocused, publisher, setPublisher } = useSearch();
   const { width } = useWindowDimensions();
   const inputRef = useRef<TextInput>(null);
   const containerRef = useRef<View>(null);
@@ -115,8 +116,8 @@ export function TopNav() {
           <HeroLogo iconSize={24} fontSize={19} color={COLORS.beige} gap={8} />
         </Pressable>
 
-        {/* Center — search field on desktop; spacer otherwise (mobile uses an icon) */}
-        {showSearch ? (
+        {/* Center — search field on desktop; publisher pills on /explore; spacer on mobile */}
+        {showSearch && pathname !== EXPLORE_PATH ? (
           <View ref={searchAreaRef} style={styles.searchContainer as object}>
             <View
               style={
@@ -152,6 +153,28 @@ export function TopNav() {
               ) : null}
             </View>
             <SearchSuggestions />
+          </View>
+        ) : showSearch && pathname === EXPLORE_PATH ? (
+          <View style={styles.pillRow as object}>
+            {PUBLISHER_FILTERS.map((f) => (
+              <Pressable
+                key={f}
+                onPress={() =>
+                  f === 'All' ? setPublisher('All') : router.push(`/search?publisher=${f}`)
+                }
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                  [
+                    styles.pill,
+                    publisher === f && (styles.pillActive as object),
+                    hovered && publisher !== f && (styles.pillHover as object),
+                  ] as object
+                }
+              >
+                <Text style={[styles.pillText, publisher === f && (styles.pillTextActive as object)] as object}>
+                  {f}
+                </Text>
+              </Pressable>
+            ))}
           </View>
         ) : (
           <View style={styles.centerSpacer} />
@@ -229,11 +252,11 @@ const styles = StyleSheet.create({
     top: 0,
     zIndex: 100,
     height: 64,
-    backgroundColor: 'rgba(41,60,67,0.92)',
+    backgroundColor: 'rgba(11,24,32,0.88)',
     backdropFilter: 'blur(24px)',
     WebkitBackdropFilter: 'blur(24px)',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(245,235,220,0.08)',
+    borderBottomColor: 'rgba(255,255,255,0.09)',
     justifyContent: 'center',
   } as object,
 
@@ -362,7 +385,7 @@ const styles = StyleSheet.create({
     top: 42,
     right: 0,
     zIndex: 200,
-    backgroundColor: COLORS.navy,
+    backgroundColor: '#0b1820',
     borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(245,235,220,0.1)',
@@ -386,6 +409,37 @@ const styles = StyleSheet.create({
   menuItemSignOut: {
     color: COLORS.orange,
   },
+
+  // ── Publisher pills ────────────────────────────────────────────────────────
+  pillRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  } as object,
+  pill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+    cursor: 'pointer',
+    transition: 'background-color 150ms ease, border-color 150ms ease',
+  } as object,
+  pillActive: {
+    backgroundColor: 'rgba(231,115,51,0.18)',
+    borderColor: 'rgba(231,115,51,0.45)',
+  } as object,
+  pillHover: { backgroundColor: 'rgba(255,255,255,0.09)' } as object,
+  pillText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: 'rgba(245,235,220,0.5)',
+    letterSpacing: 0.3,
+  } as object,
+  pillTextActive: { color: COLORS.orange } as object,
 
   // ── Guest sign-in button ────────────────────────────────────────────────────
   signInBtn: {
