@@ -11,6 +11,7 @@ import {
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { withCloudinaryTransform } from '../../constants/heroImages';
 
 const C = {
   bg: '#0b1820',
@@ -28,8 +29,10 @@ const PAD_H = 40;
 const PAD_H_MOBILE = 20;
 const GAP = 16;
 
+const CLOUDINARY_BASE =
+  'https://res.cloudinary.com/dgrsb5o4p/image/upload/hero-portraits';
 const P = (id: string) =>
-  `https://rpvgqfaeiowisdubgxkg.supabase.co/storage/v1/object/public/hero-portraits/${id}.jpg`;
+  withCloudinaryTransform(`${CLOUDINARY_BASE}/${id}.jpg`, 400);
 
 const MOSAIC = [
   { src: P('620'), name: 'Spider-Man' },
