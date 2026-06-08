@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   FlatList,
-  ScrollView,
   Pressable,
   StyleSheet,
   Platform,
@@ -20,6 +19,7 @@ import { usePickOpponents } from '../../../src/hooks/usePickOpponents';
 import { OpponentCard } from '../../../src/components/compare/OpponentCard';
 import { CardSkeleton } from '../../../src/components/compare/CardSkeleton';
 import { VsAnchor } from '../../../src/components/compare/VsAnchor';
+import { AccentRail } from '../../../src/components/search/AccentRail';
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { stashFighters } from '../../../src/lib/compareHandoff';
 import { COLORS } from '../../../src/constants/colors';
@@ -51,56 +51,6 @@ function useDebounce<T>(value: T, delay: number): T {
     return () => clearTimeout(t);
   }, [value, delay]);
   return debounced;
-}
-
-function Rail({
-  label,
-  items,
-  onPick,
-  onPeek,
-  accent,
-  tagline,
-}: {
-  label: string;
-  items: { id: string; name: string; image_url?: string | null; portrait_url?: string | null }[];
-  onPick: (id: string) => void;
-  onPeek: (item: PeekHero) => void;
-  accent?: boolean;
-  tagline?: string;
-}) {
-  return (
-    <View style={styles.section}>
-      {accent ? (
-        <View style={styles.rivalHead}>
-          <Text style={styles.swords}>⚔</Text>
-          <Text style={styles.rivalLabel}>{label}</Text>
-          <View style={styles.rivalBar} />
-        </View>
-      ) : (
-        <Text style={styles.sectionLabel}>{label}</Text>
-      )}
-      {accent && tagline ? <Text style={styles.tagline}>{tagline}</Text> : null}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.railScroll}
-        contentContainerStyle={styles.railRow}
-      >
-        {items.map((item) => (
-          <OpponentCard
-            key={item.id}
-            item={item}
-            onPress={() => onPick(item.id)}
-            onLongPress={() => onPeek(item)}
-            width={RAIL_W}
-            height={RAIL_H}
-            compact
-            accent={accent}
-          />
-        ))}
-      </ScrollView>
-    </View>
-  );
 }
 
 /** Skeleton screen for the initial roster load — mirrors a suggestion rail plus
@@ -193,7 +143,7 @@ export default function PickOpponentScreen() {
         {!loading && showSuggestions && (
           <>
             {rivals.length > 0 && (
-              <Rail
+              <AccentRail
                 label="Rivalries"
                 items={rivals}
                 onPick={handlePick}
@@ -203,10 +153,10 @@ export default function PickOpponentScreen() {
               />
             )}
             {sameUniverse.length > 0 && (
-              <Rail label="Same Universe" items={sameUniverse} onPick={handlePick} onPeek={openPeek} />
+              <AccentRail label="Same Universe" items={sameUniverse} onPick={handlePick} onPeek={openPeek} />
             )}
             {similar.length > 0 && (
-              <Rail label="Similar Power" items={similar} onPick={handlePick} onPeek={openPeek} />
+              <AccentRail label="Similar Power" items={similar} onPick={handlePick} onPeek={openPeek} />
             )}
             <Text style={[styles.sectionLabel, styles.allLabel]}>All Heroes</Text>
           </>
@@ -315,7 +265,6 @@ const styles = StyleSheet.create({
   input: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.navy },
 
   gridRow: { gap: GRID_GAP, marginBottom: GRID_GAP, paddingHorizontal: H_PAD },
-  section: { marginBottom: 18 },
   sectionLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
@@ -325,25 +274,4 @@ const styles = StyleSheet.create({
     marginBottom: 11,
   },
   allLabel: { marginTop: 2, marginBottom: 2 },
-  // Negative margin lets the rail bleed past the sheet's H_PAD to both screen
-  // edges; the content padding keeps the first card aligned with the labels.
-  railScroll: { marginHorizontal: -H_PAD },
-  railRow: { gap: 11, paddingLeft: H_PAD, paddingRight: H_PAD, paddingTop: 4, paddingBottom: 8 },
-  rivalHead: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 3 },
-  swords: { fontSize: 15, color: COLORS.gold },
-  rivalLabel: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 15,
-    color: COLORS.gold,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-  },
-  rivalBar: { flex: 1, height: 2, borderRadius: 1, backgroundColor: 'rgba(176,125,0,0.28)' },
-  tagline: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 12.5,
-    fontStyle: 'italic',
-    color: 'rgba(41,60,67,0.55)',
-    marginBottom: 11,
-  },
 });

@@ -112,6 +112,24 @@ export async function getHeroesByIds(ids: string[]): Promise<HeroSearchResult[]>
   );
 }
 
+/**
+ * Pure publisher filter for already-fetched idle heroes (the server applies the
+ * same predicate for live searches; this mirrors it client-side for the idle
+ * grid so the scope bar can re-filter without a round-trip).
+ */
+export function filterHeroesByPublisher<T extends { publisher?: string | null }>(
+  heroes: T[],
+  filter: PublisherFilter,
+): T[] {
+  if (filter === 'All') return heroes;
+  return heroes.filter((h) => {
+    const pub = (h.publisher ?? '').toLowerCase();
+    if (filter === 'Marvel') return pub.includes('marvel');
+    if (filter === 'DC') return pub.includes('dc');
+    return !pub.includes('marvel') && !pub.includes('dc');
+  });
+}
+
 export async function searchHeroes(
   query: string,
   publisher: PublisherFilter,
