@@ -626,17 +626,29 @@ export default function CharacterScreen() {
             <Text style={styles.heroName}>{displayName}</Text>
 
             {data ? (
-              <View style={styles.identityRow}>
-                <Text style={styles.heroAlias} numberOfLines={1}>
-                  {data.stats.biography['full-name'] ?? ''}
-                </Text>
-                {data.stats.biography.alignment || data.details.origin ? (
-                  <View style={styles.chipRow}>
-                    <AlignmentBadge alignment={data.stats.biography.alignment} />
-                    <OriginBadge origin={data.details.origin} />
+              (() => {
+                const fullName = data.stats.biography['full-name'];
+                const hasAlias = !!fullName && fullName !== '-' && fullName !== 'null';
+                const hasBadges = !!(data.stats.biography.alignment || data.details.origin);
+                // No subtitle and no taxonomy chips → render nothing so the name
+                // sits directly above the accent rule (no reserved empty row).
+                if (!hasAlias && !hasBadges) return null;
+                return (
+                  <View style={styles.identityRow}>
+                    {hasAlias ? (
+                      <Text style={styles.heroAlias} numberOfLines={1}>
+                        {fullName}
+                      </Text>
+                    ) : null}
+                    {hasBadges ? (
+                      <View style={styles.chipRow}>
+                        <AlignmentBadge alignment={data.stats.biography.alignment} />
+                        <OriginBadge origin={data.details.origin} />
+                      </View>
+                    ) : null}
                   </View>
-                ) : null}
-              </View>
+                );
+              })()
             ) : (
               <View style={styles.identityRow}>
                 <Skeleton width={120} height={15} borderRadius={6} />
