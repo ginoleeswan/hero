@@ -8,9 +8,10 @@ export default function SearchLayout() {
   return (
     <Stack
       screenOptions={{
-        // The search field lives in the tab bar (role="search"), so the screen
-        // header is just an empty strip — hide it to reclaim the top space.
-        headerShown: false,
+        // Stack.SearchBar forces the header to stay shown, so we can't hide it.
+        // Keep the title empty (no "index"/"Search" text); the bar gets filled
+        // purposefully by the in-header filter row.
+        headerTitle: '',
       }}
     />
   );
