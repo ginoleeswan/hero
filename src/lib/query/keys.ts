@@ -12,6 +12,7 @@ export const queryKeys = {
     ['heroes', 'featured', slug, publisher] as const,
   heroDetail: (id: string) => ['heroes', 'detail', id] as const,
   powerPercentile: (total: number) => ['heroes', 'percentile', total] as const,
+  heroesByNames: (names: string) => ['heroes', 'byNames', names] as const,
   search: (query: string, publisher: string, alignment: string) =>
     ['heroes', 'search', query, publisher, alignment] as const,
   verdict: (heroId: string, opponentId: string) =>

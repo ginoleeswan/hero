@@ -562,6 +562,32 @@ export type HeroPowerResult = Pick<
   'id' | 'name' | 'publisher' | 'image_url' | 'portrait_url'
 >;
 
+export type RelatedHeroCard = Pick<
+  Hero,
+  'id' | 'name' | 'image_url' | 'image_md_url' | 'portrait_url' | 'publisher' | 'alignment'
+>;
+
+/**
+ * Resolve a batch of character names (e.g. ComicVine enemy/ally names) to hero
+ * rows so they can render as navigable cards. Exact name match in a single
+ * query — names with no matching row simply don't come back, and the caller
+ * falls those back to plain text chips so no information is lost.
+ */
+export async function getHeroesByNames(names: string[]): Promise<RelatedHeroCard[]> {
+  const unique = Array.from(new Set(names.map((n) => n.trim()).filter(Boolean)));
+  if (unique.length === 0) return [];
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('id, name, image_url, image_md_url, portrait_url, publisher, alignment')
+    .in('name', unique)
+    .limit(200);
+  if (error) {
+    console.warn('[getHeroesByNames] error:', error.message);
+    return [];
+  }
+  return (data ?? []) as RelatedHeroCard[];
+}
+
 export async function getHeroesByPowerRange(
   min: number,
   max: number,

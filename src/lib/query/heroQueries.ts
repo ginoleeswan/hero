@@ -8,6 +8,7 @@ import {
 import {
   getCategoryPage,
   getHeroById,
+  getHeroesByNames,
   getPowerPercentile,
   searchHeroesPage,
   type CategorySlug,
@@ -113,6 +114,22 @@ export function useHeroPercentile(total: number | null) {
     enabled: !!total && total > 0,
     queryFn: () => getPowerPercentile(total!),
     staleTime: 1000 * 60 * 60,
+  });
+}
+
+/** Resolve enemy/ally names to hero rows for navigable cards. Keyed by the
+ *  sorted name set so the same cast resolves from cache across heroes that
+ *  share rivals. Names shift rarely → long staleTime. */
+export function useHeroesByNames(names: string[]) {
+  const sorted = [...names]
+    .map((n) => n.trim())
+    .filter(Boolean)
+    .sort();
+  return useQuery({
+    queryKey: queryKeys.heroesByNames(sorted.join('|')),
+    enabled: sorted.length > 0,
+    queryFn: () => getHeroesByNames(sorted),
+    staleTime: 1000 * 60 * 30,
   });
 }
 

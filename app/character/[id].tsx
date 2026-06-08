@@ -22,8 +22,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import * as Haptics from 'expo-haptics';
 import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery } from '../../src/lib/api';
-import { heroRowToCharacterData } from '../../src/lib/db/heroes';
-import { useHeroRow, useHeroPercentile } from '../../src/lib/query/heroQueries';
+import { heroRowToCharacterData, type RelatedHeroCard } from '../../src/lib/db/heroes';
+import { useHeroRow, useHeroPercentile, useHeroesByNames } from '../../src/lib/query/heroQueries';
 import {
   isFavourited,
   addFavourite,
@@ -42,6 +42,7 @@ import { MovieStrip } from '../../src/components/MovieStrip';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import { GalleryStrip } from '../../src/components/GalleryStrip';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
+import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
 import type { CharacterData, IssueCover } from '../../src/types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -206,46 +207,6 @@ function RelativesList({ value }: { value: string | null | undefined }) {
             {entry}
           </Text>
         ))}
-      </View>
-    </View>
-  );
-}
-
-function CharacterChips({
-  label,
-  chips,
-  chipStyle,
-}: {
-  label: string;
-  chips: string[];
-  chipStyle: 'enemy' | 'ally';
-}) {
-  const [expanded, setExpanded] = useState(false);
-  if (chips.length === 0) return null;
-  const visible = expanded ? chips : chips.slice(0, 8);
-  const remainder = chips.length - 8;
-  const isEnemy = chipStyle === 'enemy';
-  return (
-    <View style={styles.characterChipsBlock}>
-      <Text style={styles.characterChipsLabel}>{label}</Text>
-      <View style={styles.characterChipsWrap}>
-        {visible.map((name, i) => (
-          <View key={i} style={[styles.chip, isEnemy ? styles.chipEnemy : styles.chipAlly]}>
-            <Text style={[styles.chipText, isEnemy ? styles.chipTextEnemy : styles.chipTextAlly]}>
-              {name}
-            </Text>
-          </View>
-        ))}
-        {!expanded && remainder > 0 && (
-          <TouchableOpacity
-            onPress={() => setExpanded(true)}
-            style={[styles.chip, isEnemy ? styles.chipEnemy : styles.chipAlly]}
-          >
-            <Text style={[styles.chipText, isEnemy ? styles.chipTextEnemy : styles.chipTextAlly]}>
-              +{remainder} more
-            </Text>
-          </TouchableOpacity>
-        )}
       </View>
     </View>
   );
@@ -598,6 +559,20 @@ export default function CharacterScreen() {
     return s;
   }, [data, comicVineLoading, issueCovers, galleryLoading, hasFirstVisual]);
   sectionOrder.current = presentSections.map((s) => s.key);
+
+  // Resolve enemy + ally names → hero rows (one query) so they render as
+  // navigable cards. heroMap is keyed by exact name; unresolved names fall
+  // back to chips inside RelatedHeroStrip.
+  const relatedNames = useMemo(
+    () => (data ? [...(data.details.enemies ?? []), ...(data.details.friends ?? [])] : []),
+    [data],
+  );
+  const { data: relatedHeroes } = useHeroesByNames(relatedNames);
+  const relatedHeroMap = useMemo(() => {
+    const m = new Map<string, RelatedHeroCard>();
+    for (const h of relatedHeroes ?? []) m.set(h.name, h);
+    return m;
+  }, [relatedHeroes]);
 
   useEffect(() => {
     if (!id) return;
@@ -1058,14 +1033,26 @@ export default function CharacterScreen() {
               ) : data.details.enemies?.length || data.details.friends?.length ? (
                 <Section title="Enemies & Allies">
                   {data.details.enemies?.length ? (
-                    <CharacterChips
+                    <RelatedHeroStrip
                       label="Enemies"
-                      chips={data.details.enemies}
-                      chipStyle="enemy"
+                      names={data.details.enemies}
+                      heroMap={relatedHeroMap}
+                      kind="enemy"
+                      onPressHero={(h) =>
+                        router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                      }
                     />
                   ) : null}
                   {data.details.friends?.length ? (
-                    <CharacterChips label="Allies" chips={data.details.friends} chipStyle="ally" />
+                    <RelatedHeroStrip
+                      label="Allies"
+                      names={data.details.friends}
+                      heroMap={relatedHeroMap}
+                      kind="ally"
+                      onPressHero={(h) =>
+                        router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                      }
+                    />
                   ) : null}
                 </Section>
               ) : null}
@@ -1476,37 +1463,6 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
 
-  // Character chips (Enemies & Allies)
-  characterChipsBlock: {
-    marginBottom: 10,
-  },
-  characterChipsLabel: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 10,
-    color: COLORS.navy,
-    opacity: 0.5,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 6,
-  },
-  chipEnemy: {
-    backgroundColor: 'rgba(181,48,43,0.08)',
-    borderColor: 'rgba(181,48,43,0.2)',
-  },
-  chipAlly: {
-    backgroundColor: 'rgba(99,169,54,0.08)',
-    borderColor: 'rgba(99,169,54,0.2)',
-  },
-  chipTextEnemy: { color: COLORS.red },
-  chipTextAlly: { color: COLORS.green },
-
-  // Character enemy/ally chips
-  characterChipsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-
   // Affiliation chips
   chipsWrap: {
     flex: 1,
@@ -1585,23 +1541,35 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'transparent',
-    paddingVertical: 8,
+    paddingTop: 4,
     zIndex: 5,
   },
+  // Vertical padding inside the scroll content leaves room for each pill's drop
+  // shadow — without it the horizontal scroll viewport clips the shadow's tail.
   quickNavContent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 14,
   },
+  // Self-contained floating pills — the bar is transparent, so each chip needs
+  // its own legible fill + hairline border + soft lift to read over any content.
   navChip: {
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 18,
     borderCurve: 'continuous',
-    backgroundColor: 'rgba(41,60,67,0.06)',
+    backgroundColor: 'rgba(250,244,235,0.94)',
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.14)',
+    boxShadow: '0px 2px 6px rgba(41,60,67,0.16)',
   },
-  navChipActive: { backgroundColor: COLORS.navy },
+  navChipActive: {
+    backgroundColor: COLORS.navy,
+    borderColor: COLORS.navy,
+  },
   navChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   navChipTextActive: { color: COLORS.beige },
 
