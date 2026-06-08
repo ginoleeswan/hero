@@ -2,6 +2,7 @@ export const COLORS = {
   beige: '#f5ebdc',
   orange: '#E77333',
   navy: '#293C43',
+  deepNavy: '#0b1820',
   grey: '#A2A19B',
   red: '#B5302B',
   yellow: '#F9B222',
