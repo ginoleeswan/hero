@@ -327,6 +327,23 @@ export type Database = {
         }
         Returns: Json
       }
+      heroes_aliases_text: { Args: { arr: string[] }; Returns: string }
+      search_heroes: {
+        Args: { publisher_filter?: string; search_query: string }
+        Returns: {
+          aliases: string[]
+          alignment: string
+          full_name: string
+          id: string
+          image_md_url: string
+          image_url: string
+          name: string
+          portrait_url: string
+          publisher: string
+        }[]
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never

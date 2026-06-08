@@ -49,19 +49,27 @@ jest.mock('../../../src/lib/supabase', () => {
   chain.then = (resolve: (v: unknown) => unknown) => Promise.resolve(mockResolveWith).then(resolve);
 
   const mockFrom = jest.fn().mockReturnValue(chain);
+  // rpc() is awaited directly (used by searchHeroes for non-empty queries).
+  const mockRpc = jest.fn(() => Promise.resolve(mockResolveWith));
 
   return {
-    supabase: { from: mockFrom },
+    supabase: { from: mockFrom, rpc: mockRpc },
     // Expose internals so tests can reset mocks without re-building
     __chain: chain,
     __mockFrom: mockFrom,
+    __mockRpc: mockRpc,
   };
 });
 
 // Retrieve mock internals once (these references stay stable across tests)
-const { __chain: chain, __mockFrom: mockFrom } = jest.requireMock('../../../src/lib/supabase') as {
+const {
+  __chain: chain,
+  __mockFrom: mockFrom,
+  __mockRpc: mockRpc,
+} = jest.requireMock('../../../src/lib/supabase') as {
   __chain: Record<string, jest.Mock>;
   __mockFrom: jest.Mock;
+  __mockRpc: jest.Mock;
 };
 
 const chainMethods = ['select', 'eq', 'gte', 'lte', 'neq', 'or', 'ilike', 'not', 'order', 'limit'];
@@ -97,10 +105,13 @@ describe('getHeroById', () => {
 // ─── searchHeroes ─────────────────────────────────────────────────────────────
 
 describe('searchHeroes', () => {
-  it('queries by name when query is non-empty', async () => {
+  it('calls the search_heroes RPC for a non-empty query', async () => {
     mockResolveWith = { data: [], error: null };
     await searchHeroes('spider', 'All');
-    expect(chain.or).toHaveBeenCalledWith('name.ilike.%spider%,full_name.ilike.%spider%');
+    expect(mockRpc).toHaveBeenCalledWith('search_heroes', {
+      search_query: 'spider',
+      publisher_filter: 'All',
+    });
   });
 
   it('does not add ilike name filter when query is empty', async () => {

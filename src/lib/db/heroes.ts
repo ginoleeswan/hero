@@ -135,29 +135,39 @@ export async function searchHeroes(
   publisher: PublisherFilter,
   limit = 100,
 ): Promise<HeroSearchResult[]> {
-  let q = supabase
-    .from('heroes')
-    .select(
-      'id, name, publisher, alignment, image_md_url, image_url, portrait_url, full_name, aliases',
-    )
-    .order('issue_count', { ascending: false, nullsFirst: false })
-    .limit(limit);
+  const trimmed = query.trim();
 
-  if (query.trim()) {
-    q = q.or(`name.ilike.%${query}%,full_name.ilike.%${query}%`) as typeof q;
+  // Empty query → browse top heroes by publisher (no search needed).
+  if (!trimmed) {
+    let q = supabase
+      .from('heroes')
+      .select(
+        'id, name, publisher, alignment, image_md_url, image_url, portrait_url, full_name, aliases',
+      )
+      .order('issue_count', { ascending: false, nullsFirst: false })
+      .limit(limit);
+
+    if (publisher === 'Marvel') {
+      q = q.ilike('publisher', '%marvel%') as typeof q;
+    } else if (publisher === 'DC') {
+      q = q.ilike('publisher', '%dc%') as typeof q;
+    } else if (publisher === 'Other') {
+      q = q.not('publisher', 'ilike', '%marvel%').not('publisher', 'ilike', '%dc%') as typeof q;
+    }
+
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+    return (data ?? []) as HeroSearchResult[];
   }
 
-  if (publisher === 'Marvel') {
-    q = q.ilike('publisher', '%marvel%') as typeof q;
-  } else if (publisher === 'DC') {
-    q = q.ilike('publisher', '%dc%') as typeof q;
-  } else if (publisher === 'Other') {
-    q = q.not('publisher', 'ilike', '%marvel%').not('publisher', 'ilike', '%dc%') as typeof q;
-  }
-
-  const { data, error } = await q;
+  // Non-empty → alias-aware, typo-tolerant, server-ranked RPC (search_heroes).
+  const { data, error } = await supabase.rpc('search_heroes', {
+    search_query: trimmed,
+    publisher_filter: publisher,
+  });
   if (error) throw new Error(error.message);
-  return (data ?? []) as HeroSearchResult[];
+  const rows = (data ?? []) as HeroSearchResult[];
+  return rows.length > limit ? rows.slice(0, limit) : rows;
 }
 
 export async function getSearchIdleHeroes(limit = 30): Promise<HeroSearchResult[]> {
