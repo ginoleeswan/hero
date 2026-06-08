@@ -224,30 +224,37 @@ export function TopNav() {
 }
 
 const styles = StyleSheet.create({
+  // Outer band — dark glass that blends with the explore dark stage and lets
+  // colourful content blur through it as the page scrolls underneath.
   nav: {
     position: 'sticky',
     top: 0,
     zIndex: 100,
-    height: 64,
-    backgroundColor: 'rgba(11,24,32,0.62)',
-    backdropFilter: 'blur(28px) saturate(150%)',
-    WebkitBackdropFilter: 'blur(28px) saturate(150%)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
-    boxShadow: '0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 32px rgba(0,0,0,0.18)',
-    justifyContent: 'center',
+    paddingTop: 12,
+    paddingBottom: 12,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(11,24,32,0.86)',
+    backdropFilter: 'blur(24px) saturate(140%)',
+    WebkitBackdropFilter: 'blur(24px) saturate(140%)',
   } as object,
 
+  // The floating glass pill itself.
   inner: {
-    maxWidth: 1200,
+    maxWidth: 1180,
     width: '100%',
     alignSelf: 'center',
-    paddingHorizontal: 32,
+    height: 56,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
-  },
-  innerMobile: { paddingHorizontal: 16, gap: 10 } as object,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    boxShadow: '0 1px 0 rgba(255,255,255,0.06) inset, 0 10px 34px rgba(0,0,0,0.32)',
+  } as object,
+  innerMobile: { paddingHorizontal: 14, gap: 10 } as object,
 
   logoWrap: {
     flexShrink: 0,
