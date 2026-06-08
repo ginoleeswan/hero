@@ -206,6 +206,14 @@ export default function SearchScreen() {
         placeholder="Hero, villain, or real name…"
         autoCapitalize="none"
         hideWhenScrolling={false}
+        // The header is transparent at rest (no material), so iOS can't infer a
+        // dark appearance to auto-tint the field. Set colours explicitly so the
+        // icon + placeholder read correctly both at rest and under the blur.
+        barTintColor="rgba(245,235,220,0.12)"
+        textColor={COLORS.beige}
+        hintTextColor="rgba(245,235,220,0.55)"
+        headerIconColor="rgba(245,235,220,0.6)"
+        tintColor={COLORS.orange}
         onChangeText={handleSearchText}
         onCancelButtonPress={() => setQuery('')}
       />
