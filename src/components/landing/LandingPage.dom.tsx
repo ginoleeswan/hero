@@ -15,7 +15,7 @@ const ironman = P('346');
 const deadpool = P('213');
 const wolverine = P('717');
 const wonderWoman = P('720');
-const thor = P('659');
+const captainAmerica = P('149');
 const blackPanther = P('106');
 const docStrange = P('226');
 const hulk = P('332');
@@ -418,7 +418,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             <img src={wonderWoman} alt="" loading="lazy" />
           </div>
           <div className="hero-card hc7">
-            <img src={thor} alt="" loading="lazy" />
+            <img src={captainAmerica} alt="" loading="lazy" />
           </div>
           <div className="hero-card hc8">
             <img src={blackPanther} alt="" loading="lazy" />
@@ -473,7 +473,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
 
         {/* Mobile hero strip */}
         <div className="hero-strip" aria-hidden="true">
-          {[spiderman, ironman, batman, deadpool, wonderWoman, thor, wolverine, blackPanther].map(
+          {[spiderman, ironman, batman, deadpool, wonderWoman, captainAmerica, wolverine, blackPanther].map(
             (src, i) => (
               <div key={i} className="hero-strip-card">
                 <img src={src} alt="" loading="lazy" />
@@ -709,7 +709,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
               [blackPanther, 'Black Panther'],
               [deadpool, 'Deadpool'],
               [wolverine, 'Wolverine'],
-              [thor, 'Thor'],
+              [captainAmerica, 'Captain America'],
               [docStrange, 'Doctor Strange'],
               [hulk, 'Hulk'],
             ].map(([src, name], i) => (
