@@ -1,21 +1,14 @@
-// app/(tabs)/search/_layout.tsx — native Stack for the Search tab. The "Search"
-// title is the header's left accessory (headerLeft) — a header item, not a
-// toolbar button, so it renders without the iOS 26 glass button capsule.
+// app/(tabs)/search/_layout.tsx — native Stack for the Search tab. No header
+// title (iOS 26 glasses any header item); the "Search" heading lives in the
+// screen content. Transparency + filter menus are declared in index.tsx.
 import { Stack } from 'expo-router';
-import { Text, StyleSheet } from 'react-native';
-import { COLORS } from '../../../src/constants/colors';
 
 export default function SearchLayout() {
   return (
     <Stack
       screenOptions={{
         headerTitle: '',
-        headerLeft: () => <Text style={styles.title}>Search</Text>,
       }}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  title: { fontFamily: 'Flame-Bold', fontSize: 22, color: COLORS.beige, marginLeft: 4 },
-});

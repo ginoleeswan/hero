@@ -162,6 +162,7 @@ export async function searchHeroes(
       .select(
         'id, name, publisher, alignment, image_md_url, image_url, portrait_url, full_name, aliases',
       )
+      .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
       .order('issue_count', { ascending: false, nullsFirst: false })
       .limit(limit);
 

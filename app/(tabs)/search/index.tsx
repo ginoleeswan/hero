@@ -1,9 +1,10 @@
 // app/(tabs)/search/index.tsx — Search tab.
 // • Native iOS search field in the tab bar (role="search" + Stack.SearchBar).
-// • Filters: native Stack.Toolbar menus (Publisher + Alignment) on iOS; visible
-//   FilterChips rows as the Android/web fallback.
-// • Idle: recent searches (AsyncStorage) + Recently Viewed rail + Popular grid.
-// • Search engine: alias-aware, typo-tolerant search_heroes RPC (see heroes.ts).
+// • Filters: native Stack.Toolbar menu (Publisher + Alignment) on iOS; FilterChips
+//   rows as the Android/web fallback.
+// • One publisher-aware fetch path: empty query → top heroes for the selected
+//   publisher (DB-side); non-empty → alias/typo-tolerant search_heroes RPC.
+// • Idle extras: "Search" heading, recent searches, Recently Viewed rail.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
@@ -31,8 +32,6 @@ import { SkeletonProvider } from '../../../src/components/ui/SkeletonProvider';
 import {
   searchHeroes,
   rankResults,
-  getSearchIdleHeroes,
-  filterHeroesByPublisher,
   filterHeroesByAlignment,
   type HeroSearchResult,
   type PublisherFilter,
@@ -47,6 +46,7 @@ const SEARCH_NAVY = '#1a262b';
 const GRID_COLUMNS = 2;
 const H_PAD = 16;
 const GAP = 8;
+const FETCH_LIMIT = 60;
 const IS_IOS = Platform.OS === 'ios';
 
 const PUBLISHER_OPTIONS: FilterOption<PublisherFilter>[] = [
@@ -79,11 +79,10 @@ export default function SearchScreen() {
   const searchRef = useRef<SearchBarCommands>(null);
   const { recent, addRecent, clearRecent } = useRecentSearches();
 
-  const [idleHeroes, setIdleHeroes] = useState<HeroSearchResult[]>([]);
-  const [idleLoading, setIdleLoading] = useState(true);
-  const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
-  const [searchResults, setSearchResults] = useState<HeroSearchResult[] | null>(null);
+  const [results, setResults] = useState<HeroSearchResult[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
+  const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
   const [query, setQuery] = useState('');
   const [publisherFilter, setPublisherFilter] = useState<PublisherFilter>('All');
   const [alignmentFilter, setAlignmentFilter] = useState<AlignmentFilter>('All');
@@ -107,39 +106,31 @@ export default function SearchScreen() {
   }, []);
 
   useEffect(() => {
-    getSearchIdleHeroes(30)
-      .then(setIdleHeroes)
-      .catch(() => {})
-      .finally(() => setIdleLoading(false));
-  }, []);
-
-  useEffect(() => {
     if (!user?.id) return;
     getRecentlyViewed(user.id)
       .then(setRecentlyViewed)
       .catch(() => {});
   }, [user?.id]);
 
+  // One fetch path: empty query → top heroes for the publisher (DB-side); a real
+  // query → the alias/typo-tolerant RPC, then client-ranked for precision.
   useEffect(() => {
-    if (!debouncedQuery.trim()) {
-      setSearchResults(null);
-      setIsSearching(false);
-      return;
-    }
-
     let cancelled = false;
-    setIsSearching(true);
-    setSearchResults(null);
+    const q = debouncedQuery.trim();
+    if (q) setIsSearching(true);
 
-    searchHeroes(debouncedQuery, publisherFilter, 100)
-      .then((results) => {
-        if (!cancelled) setSearchResults(rankResults(results, debouncedQuery));
+    searchHeroes(debouncedQuery, publisherFilter, FETCH_LIMIT)
+      .then((rows) => {
+        if (!cancelled) setResults(q ? rankResults(rows, debouncedQuery) : rows);
       })
       .catch(() => {
-        if (!cancelled) setSearchResults([]);
+        if (!cancelled) setResults([]);
       })
       .finally(() => {
-        if (!cancelled) setIsSearching(false);
+        if (!cancelled) {
+          setLoading(false);
+          setIsSearching(false);
+        }
       });
 
     return () => {
@@ -147,13 +138,11 @@ export default function SearchScreen() {
     };
   }, [debouncedQuery, publisherFilter]);
 
-  const displayedHeroes = useMemo(() => {
-    const base =
-      searchResults !== null
-        ? searchResults.slice(0, 100)
-        : filterHeroesByPublisher(idleHeroes, publisherFilter);
-    return filterHeroesByAlignment(base, alignmentFilter);
-  }, [idleHeroes, searchResults, publisherFilter, alignmentFilter]);
+  // Publisher is applied server-side; alignment is a light client-side facet.
+  const displayedHeroes = useMemo(
+    () => filterHeroesByAlignment(results, alignmentFilter),
+    [results, alignmentFilter],
+  );
 
   const handlePress = useCallback(
     (item: { id: string; portrait_url?: string | null; image_url?: string | null }) => {
@@ -173,11 +162,13 @@ export default function SearchScreen() {
     setPeek(item);
   }, []);
 
-  const isIdle = searchResults === null;
-  const idleExtras = isIdle && !query.trim();
+  const isIdle = !debouncedQuery.trim();
+  const showIdleExtras = !query.trim();
 
   const listHeader = (
     <>
+      <Text style={styles.screenTitle}>Search</Text>
+
       {!IS_IOS && (
         <View style={styles.chipStack}>
           <FilterChips
@@ -195,7 +186,7 @@ export default function SearchScreen() {
         </View>
       )}
 
-      {idleExtras && recent.length > 0 && (
+      {showIdleExtras && recent.length > 0 && (
         <View style={styles.recentWrap}>
           <View style={styles.recentHead}>
             <Text style={styles.recentLabel}>Recent</Text>
@@ -216,7 +207,7 @@ export default function SearchScreen() {
         </View>
       )}
 
-      {idleExtras && recentlyViewed.length > 0 && (
+      {showIdleExtras && recentlyViewed.length > 0 && (
         <AccentRail
           label="Recently Viewed"
           items={recentlyViewed}
@@ -229,7 +220,7 @@ export default function SearchScreen() {
         />
       )}
 
-      {!idleLoading && (
+      {!loading && (
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>
             {isIdle
@@ -241,7 +232,7 @@ export default function SearchScreen() {
     </>
   );
 
-  const listEmpty = idleLoading ? (
+  const listEmpty = loading ? (
     <SkeletonProvider>
       <View style={styles.skelGrid}>
         {Array.from({ length: 8 }).map((_, i) => (
@@ -291,8 +282,7 @@ export default function SearchScreen() {
         onCancelButtonPress={() => setQuery('')}
       />
 
-      {/* Native filter menus (iOS) on the right; the "Search" title is the
-          header's left accessory (set in _layout, no button capsule). */}
+      {/* Native filter menus (iOS) on the right — fills the header bar. */}
       {IS_IOS && (
         <Stack.Toolbar placement="right">
           <Stack.Toolbar.Menu icon="books.vertical" title="Publisher">
@@ -373,7 +363,14 @@ const styles = StyleSheet.create({
   bottomScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
   list: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingHorizontal: H_PAD, paddingTop: 4 },
-  chipStack: { marginHorizontal: -H_PAD, paddingTop: 4 },
+  screenTitle: {
+    fontFamily: 'Flame-Bold',
+    fontSize: 30,
+    color: COLORS.beige,
+    marginTop: 2,
+    marginBottom: 12,
+  },
+  chipStack: { marginHorizontal: -H_PAD, paddingBottom: 2 },
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingTop: 4 },
   gridRow: { gap: GAP },
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 100 },
@@ -388,7 +385,7 @@ const styles = StyleSheet.create({
   },
   emptyHeadline: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.beige },
   emptySub: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: 'rgba(245,235,220,0.55)' },
-  recentWrap: { paddingTop: 6, paddingBottom: 4 },
+  recentWrap: { paddingTop: 2, paddingBottom: 4 },
   recentHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -418,7 +415,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(245,235,220,0.12)',
   },
   recentChipText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.beige },
-  sectionHeader: { paddingBottom: 8, paddingTop: 10 },
+  sectionHeader: { paddingBottom: 8, paddingTop: 6 },
   sectionLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
