@@ -7,7 +7,7 @@ const screenshotHome = require('../../../assets/images/screenshots/home.PNG');
 const screenshotSearch = require('../../../assets/images/screenshots/search.PNG');
 
 const P = (id: string) =>
-  `https://rpvgqfaeiowisdubgxkg.supabase.co/storage/v1/object/public/hero-portraits/${id}.jpg`;
+  `https://res.cloudinary.com/dgrsb5o4p/image/upload/f_auto,q_auto,w_400/hero-portraits/${id}.jpg`;
 
 const spiderman = P('620');
 const batman = P('70');
