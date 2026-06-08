@@ -180,10 +180,14 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
         : ACCORDION_SCALES.small;
 
   if (isDesktop) {
-    const dynamicHeight = Math.min(320, windowHeight * 0.6);
+    const dynamicHeight = Math.min(460, windowHeight * 0.58);
 
     return (
-      <View style={[pss.wrap, { paddingHorizontal: pagePad, height: dynamicHeight }]}>
+      <View style={[pss.wrap, { paddingHorizontal: pagePad, height: dynamicHeight }] as object}>
+        {/* Atmospheric orbs — decorative, no interaction */}
+        <View style={pss.orbA as object} pointerEvents="none" />
+        <View style={pss.orbB as object} pointerEvents="none" />
+
         <View style={pss.strip}>
           {heroes.map((h, index) => {
             const offset = (index - activeIndex + heroes.length) % heroes.length;
@@ -253,24 +257,44 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
           })}
         </View>
 
-        {/* Info panel */}
-        <View style={pss.panel}>
-          <View>
-            <Text style={pss.panelLabel as object}>Featured Hero</Text>
-            <Text style={pss.panelName as object} numberOfLines={2}>
-              {hero.name}
+        {/* Glass info panel — absolute over bottom-right of the spotlight */}
+        <View style={pss.glassPanel as object}>
+          <Text style={pss.glassPanelEyebrow as object}>Featured Hero</Text>
+          <Text style={pss.glassPanelName as object} numberOfLines={2}>
+            {hero.name}
+          </Text>
+          {!!hero.publisher && (
+            <Text style={pss.glassPanelPub as object} numberOfLines={1}>
+              {hero.publisher}
             </Text>
-            {!!hero.publisher && (
-              <Text style={pss.panelPub as object} numberOfLines={1}>
-                {hero.publisher}
-              </Text>
-            )}
-            {!!hero.summary && (
-              <Text style={pss.panelSummary as object} numberOfLines={4}>
-                {hero.summary}
-              </Text>
-            )}
-          </View>
+          )}
+          {!!hero.summary && (
+            <Text style={pss.glassPanelSummary as object} numberOfLines={3}>
+              {hero.summary}
+            </Text>
+          )}
+          {hero.intelligence || hero.strength || hero.speed ? (
+            <View style={pss.statPills as object}>
+              {!!hero.intelligence && (
+                <View style={pss.statPill as object}>
+                  <Text style={pss.statPillVal as object}>{hero.intelligence}</Text>
+                  <Text style={pss.statPillKey as object}>INT</Text>
+                </View>
+              )}
+              {!!hero.strength && (
+                <View style={pss.statPill as object}>
+                  <Text style={pss.statPillVal as object}>{hero.strength}</Text>
+                  <Text style={pss.statPillKey as object}>STR</Text>
+                </View>
+              )}
+              {!!hero.speed && (
+                <View style={pss.statPill as object}>
+                  <Text style={pss.statPillVal as object}>{hero.speed}</Text>
+                  <Text style={pss.statPillKey as object}>SPD</Text>
+                </View>
+              )}
+            </View>
+          ) : null}
           <View style={pss.panelFooter}>
             <Pressable
               onPress={() => onViewProfile(String(hero.id))}
@@ -356,16 +380,16 @@ const pss = StyleSheet.create({
   wrap: {
     width: '100%',
     alignSelf: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    marginVertical: 32,
-    gap: 12,
-  },
+    position: 'relative',
+    overflow: 'hidden',
+    marginBottom: 24,
+  } as object,
   strip: {
     flexDirection: 'row',
     alignItems: 'stretch',
     gap: 12,
     contain: 'layout style',
+    height: '100%',
   } as object,
   card: {
     borderRadius: 14,
@@ -418,15 +442,99 @@ const pss = StyleSheet.create({
     left: 10,
   } as object,
 
-  // Info Panel
-  panel: {
-    flex: 1,
-    minWidth: 260,
-    backgroundColor: COLORS.navy,
-    borderRadius: 14,
-    padding: 24,
-    justifyContent: 'space-between',
-  },
+  // Atmospheric orbs (decorative, absolutely positioned)
+  orbA: {
+    position: 'absolute',
+    width: 320,
+    height: 320,
+    top: -60,
+    left: 140,
+    borderRadius: 160,
+    background: 'radial-gradient(circle, rgba(231,115,51,0.10), transparent 70%)',
+    pointerEvents: 'none',
+  } as object,
+  orbB: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    top: 80,
+    right: 180,
+    borderRadius: 110,
+    background: 'radial-gradient(circle, rgba(21,161,171,0.07), transparent 70%)',
+    pointerEvents: 'none',
+  } as object,
+
+  // Glass info panel (desktop)
+  glassPanel: {
+    position: 'absolute',
+    bottom: 20,
+    right: 0,
+    background: 'rgba(11,24,32,0.78)',
+    backdropFilter: 'blur(18px)',
+    WebkitBackdropFilter: 'blur(18px)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: 16,
+    padding: 20,
+    minWidth: 240,
+    maxWidth: 340,
+    zIndex: 3,
+  } as object,
+  glassPanelEyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 8,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    color: COLORS.orange,
+    marginBottom: 6,
+  } as object,
+  glassPanelName: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 28,
+    color: COLORS.beige,
+    lineHeight: 32,
+    marginBottom: 4,
+  } as object,
+  glassPanelPub: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    color: 'rgba(245,235,220,0.4)',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginBottom: 10,
+  } as object,
+  glassPanelSummary: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.65)',
+    lineHeight: 19,
+    marginBottom: 12,
+  } as object,
+  statPills: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+  } as object,
+  statPill: {
+    background: 'rgba(255,255,255,0.07)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    alignItems: 'center',
+  } as object,
+  statPillVal: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: COLORS.orange,
+  } as object,
+  statPillKey: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 7,
+    color: 'rgba(245,235,220,0.4)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  } as object,
+
+  // Shared / mobile panel text
   panelLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
@@ -435,14 +543,6 @@ const pss = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 8,
   } as object,
-  panelName: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 34,
-    color: COLORS.beige,
-    lineHeight: 38,
-    marginBottom: 6,
-    transition: 'opacity 200ms ease',
-  } as object,
   panelPub: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
@@ -450,12 +550,6 @@ const pss = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginBottom: 14,
-  } as object,
-  panelSummary: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    color: 'rgba(245,235,220,0.6)',
-    lineHeight: 20,
   } as object,
   panelFooter: {
     flexDirection: 'row',
