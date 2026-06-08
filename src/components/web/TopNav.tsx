@@ -224,8 +224,8 @@ export function TopNav() {
 }
 
 const styles = StyleSheet.create({
-  // Outer band — dark glass that blends with the explore dark stage and lets
-  // colourful content blur through it as the page scrolls underneath.
+  // Outer carrier — solid, matched to the explore dark stage so it reads as one
+  // continuous dark surface (no visible band); only the pill floats on top.
   nav: {
     position: 'sticky',
     top: 0,
@@ -233,9 +233,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 12,
     paddingHorizontal: 16,
-    backgroundColor: 'rgba(11,24,32,0.86)',
-    backdropFilter: 'blur(24px) saturate(140%)',
-    WebkitBackdropFilter: 'blur(24px) saturate(140%)',
+    backgroundColor: COLORS.deepNavy,
   } as object,
 
   // The floating glass pill itself.
@@ -283,25 +281,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   } as object,
 
+  // Flat search — the pill is the container, so the field itself has no box.
   searchWrap: {
     width: '100%',
-    maxWidth: 480,
+    maxWidth: 520,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
-    backgroundColor: 'rgba(245,235,220,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.12)',
-    borderRadius: 12,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    transition: 'border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease',
+    gap: 10,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    paddingVertical: 6,
+    transition: 'opacity 150ms ease',
   } as object,
-  searchWrapFocused: {
-    borderColor: 'rgba(231,115,51,0.55)',
-    backgroundColor: 'rgba(245,235,220,0.09)',
-    boxShadow: '0 0 0 3px rgba(231,115,51,0.14)',
-  } as object,
+  searchWrapFocused: {} as object,
   searchInput: {
     flex: 1,
     fontFamily: 'Nunito_400Regular',
