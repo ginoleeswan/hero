@@ -197,8 +197,8 @@ export default function SearchScreen() {
     <View style={styles.root} collapsable={false}>
       <StatusBar style="light" />
       <LinearGradient
-        colors={['rgba(231,115,51,0.22)', 'transparent']}
-        locations={[0, 0.55]}
+        colors={['rgba(231,115,51,0.13)', 'transparent']}
+        locations={[0, 0.6]}
         style={styles.glow}
         pointerEvents="none"
       />
@@ -211,6 +211,7 @@ export default function SearchScreen() {
       />
       <Stack.SearchBar
         placeholder="Hero, villain, or real name…"
+        placement="automatic"
         autoCapitalize="none"
         hideWhenScrolling={false}
         // The header is transparent at rest (no material), so iOS can't infer a
