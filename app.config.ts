@@ -47,6 +47,8 @@ const config: ExpoConfig = {
     '@react-native-google-signin/google-signin',
     'expo-router',
     'expo-image',
+    'expo-status-bar',
+    'expo-web-browser',
     [
       'expo-font',
       {

@@ -2,7 +2,7 @@
 
 ## Project
 
-**hero** — a superhero encyclopedia app built with Expo SDK 55 / React Native.  
+**hero** — a superhero encyclopedia app built with Expo SDK 56 / React Native.  
 Targets iOS, Android, and Web.
 
 ## Package manager
