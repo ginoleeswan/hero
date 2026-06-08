@@ -131,6 +131,19 @@ function alignmentLabel(alignment?: string | null): string | null {
 
 // ── Portrait strip spotlight ──────────────────────────────────────────────────
 const ACCORDION_SCALES = {
+  // Extra-wide displays (1600px+) — more, larger cards so the strip fills width
+  xlarge: [
+    { w: 360, o: 1 },
+    { w: 190, o: 0.82 },
+    { w: 140, o: 0.66 },
+    { w: 108, o: 0.54 },
+    { w: 82, o: 0.44 },
+    { w: 62, o: 0.36 },
+    { w: 46, o: 0.28 },
+    { w: 34, o: 0.2 },
+    { w: 24, o: 0.13 },
+    { w: 18, o: 0.08 },
+  ],
   // Ultra-wide displays (1200px+)
   large: [
     { w: 280, o: 1 },
@@ -183,11 +196,13 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
   const pagePad = width < 640 ? 16 : 32;
 
   const activeScale =
-    width >= 1280
-      ? ACCORDION_SCALES.large
-      : width >= 900
-        ? ACCORDION_SCALES.medium
-        : ACCORDION_SCALES.small;
+    width >= 1600
+      ? ACCORDION_SCALES.xlarge
+      : width >= 1280
+        ? ACCORDION_SCALES.large
+        : width >= 900
+          ? ACCORDION_SCALES.medium
+          : ACCORDION_SCALES.small;
 
   if (isDesktop) {
     const dynamicHeight = Math.min(460, windowHeight * 0.58);
@@ -406,7 +421,6 @@ const pss = StyleSheet.create({
   // Desktop
   wrap: {
     width: '100%',
-    maxWidth: 1280,
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'stretch',
