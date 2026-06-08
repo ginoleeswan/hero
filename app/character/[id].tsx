@@ -333,17 +333,24 @@ function Dossier({
       <TouchableOpacity
         onPress={toggle}
         activeOpacity={0.7}
-        style={styles.dossierHeader}
+        style={[styles.dossierBar, open && styles.dossierBarOpen]}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         accessibilityLabel={open ? 'Collapse dossier' : 'Expand dossier'}
       >
-        <Text style={styles.sectionTitle}>Dossier</Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={20} color={COLORS.navy} />
+        <View style={styles.dossierBarText}>
+          <Text style={styles.dossierTitle}>Dossier</Text>
+          {!open ? (
+            <Text style={styles.dossierHint}>Appearance, affiliations, relatives & more</Text>
+          ) : null}
+        </View>
+        <View style={styles.dossierToggle}>
+          <Text style={styles.dossierToggleText}>{open ? 'Hide' : 'View'}</Text>
+          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={15} color={COLORS.navy} />
+        </View>
       </TouchableOpacity>
-      <View style={styles.divider} />
       {open ? (
-        <View>
+        <View style={styles.dossierBody}>
           {hasProfile ? (
             <>
               <Text style={styles.dossierGroupLabel}>Profile</Text>
@@ -385,9 +392,7 @@ function Dossier({
             </>
           ) : null}
         </View>
-      ) : (
-        <Text style={styles.dossierHint}>Appearance, affiliations, relatives & more</Text>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -1131,35 +1136,46 @@ export default function CharacterScreen() {
               ) : null}
             </View>
 
-            {/* First Appearance — the visual debut cover */}
+            {/* First Appearance — editorial debut card: cover + issue meta */}
             {hasFirstVisual ? (
               <View onLayout={registerAnchor('first')}>
                 <Section title="First Appearance">
-                  <TouchableOpacity onPress={() => setShowIssueModal(true)} activeOpacity={0.85}>
-                    <View style={styles.comicContainer}>
-                      <View style={styles.comicPanel}>
+                  <TouchableOpacity
+                    onPress={() => setShowIssueModal(true)}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel="View first appearance issue"
+                  >
+                    <View style={styles.debutCard}>
+                      <View style={styles.debutCover}>
                         <Image
                           source={{ uri: data.firstIssue!.imageUrl! }}
-                          contentFit="contain"
-                          style={styles.comicImage}
+                          contentFit="cover"
+                          contentPosition="top"
+                          style={styles.debutCoverImg}
                           cachePolicy="memory-disk"
                           recyclingKey={`comic-${id}`}
                           transition={200}
                         />
-                        {data.firstIssue!.name || data.firstIssue!.coverDate ? (
-                          <View style={styles.comicMeta}>
-                            {data.firstIssue!.name ? (
-                              <Text style={styles.comicTitle}>
-                                {data.firstIssue!.name.split(';')[0].trim()}
-                              </Text>
-                            ) : null}
-                            {data.firstIssue!.coverDate ? (
-                              <Text style={styles.comicYear}>
-                                {data.firstIssue!.coverDate.slice(0, 4)}
-                              </Text>
-                            ) : null}
-                          </View>
+                      </View>
+                      <View style={styles.debutMeta}>
+                        <Text style={styles.debutTitle} numberOfLines={3}>
+                          {data.firstIssue!.name
+                            ? data.firstIssue!.name.split(';')[0].trim()
+                            : 'First Appearance'}
+                        </Text>
+                        {data.firstIssue!.coverDate ? (
+                          <Text style={styles.debutYear}>
+                            {data.firstIssue!.issueNumber
+                              ? `Issue #${data.firstIssue!.issueNumber} · `
+                              : ''}
+                            {data.firstIssue!.coverDate.slice(0, 4)}
+                          </Text>
                         ) : null}
+                        <View style={styles.debutCta}>
+                          <Text style={styles.debutCtaText}>View issue</Text>
+                          <Ionicons name="chevron-forward" size={14} color={COLORS.orange} />
+                        </View>
                       </View>
                     </View>
                   </TouchableOpacity>
@@ -1402,10 +1418,58 @@ const styles = StyleSheet.create({
   bleedRow: { flexDirection: 'row', gap: 10, paddingLeft: 20, paddingRight: 20 },
 
   // Dossier — collapsible label/value card
-  dossierHeader: {
+  // Collapsible Dossier — a clearly tappable card (surface + View/Hide pill) so
+  // the expand affordance reads at a glance.
+  dossierBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 12,
+    backgroundColor: 'rgba(41,60,67,0.05)',
+    borderRadius: 14,
+    borderCurve: 'continuous',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  dossierBarOpen: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  dossierBarText: { flex: 1 },
+  dossierTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 18,
+    color: COLORS.navy,
+  },
+  dossierHint: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: '#54606A',
+    marginTop: 3,
+  },
+  dossierToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(41,60,67,0.08)',
+    borderRadius: 16,
+    paddingLeft: 12,
+    paddingRight: 9,
+    paddingVertical: 7,
+  },
+  dossierToggleText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: COLORS.navy,
+  },
+  dossierBody: {
+    backgroundColor: 'rgba(41,60,67,0.035)',
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+    borderCurve: 'continuous',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 4,
   },
   dossierGroupLabel: {
     fontFamily: 'Nunito_700Bold',
@@ -1416,11 +1480,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   dossierGroupSpacing: { marginTop: 18 },
-  dossierHint: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 13,
-    color: '#54606A',
-  },
 
   // Circular stat dials
   statsCard: {
@@ -1514,44 +1573,48 @@ const styles = StyleSheet.create({
   },
 
   // First issue
-  comicContainer: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  comicPanel: {
-    backgroundColor: COLORS.navy,
+  // First Appearance — horizontal editorial card (cover + issue meta).
+  debutCard: {
+    flexDirection: 'row',
+    gap: 14,
+    backgroundColor: 'rgba(41,60,67,0.05)',
     borderRadius: 16,
-    padding: 16,
-    paddingBottom: 20,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 16,
+    borderCurve: 'continuous',
+    padding: 12,
   },
-  comicImage: { width: 160, height: 240, borderRadius: 4, overflow: 'hidden' },
-  comicMeta: {
-    paddingTop: 14,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    width: 192,
+  debutCover: {
+    width: 92,
+    height: 138,
+    borderRadius: 8,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+    boxShadow: '0px 4px 12px rgba(41,60,67,0.28)',
   },
-  comicTitle: {
+  debutCoverImg: { width: 92, height: 138 },
+  debutMeta: { flex: 1, justifyContent: 'center', gap: 6 },
+  debutTitle: {
     fontFamily: 'Flame-Regular',
-    fontSize: 13,
-    color: COLORS.beige,
-    textAlign: 'center',
-    lineHeight: 18,
+    fontSize: 16,
+    lineHeight: 21,
+    color: COLORS.navy,
   },
-  comicYear: {
+  debutYear: {
     fontFamily: 'FlameSans-Regular',
-    fontSize: 11,
-    color: 'rgba(245,235,220,0.5)',
-    textAlign: 'center',
-    marginTop: 4,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
+    fontSize: 12,
+    color: '#54606A',
+    letterSpacing: 0.3,
+  },
+  debutCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 2,
+  },
+  debutCtaText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: COLORS.orange,
   },
   errorText: {
     fontFamily: 'FlameSans-Regular',
