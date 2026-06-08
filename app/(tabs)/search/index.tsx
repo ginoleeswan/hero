@@ -13,6 +13,7 @@ import {
   Pressable,
   StyleSheet,
   Platform,
+  ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,12 +31,8 @@ import { AccentRail } from '../../../src/components/search/AccentRail';
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { Skeleton } from '../../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../../src/components/ui/SkeletonProvider';
-import {
-  filterHeroesByAlignment,
-  type PublisherFilter,
-  type AlignmentFilter,
-} from '../../../src/lib/db/heroes';
-import { useHeroSearch, prefetchHeroSearch } from '../../../src/lib/query/heroQueries';
+import type { PublisherFilter, AlignmentFilter } from '../../../src/lib/db/heroes';
+import { useHeroSearchInfinite, prefetchHeroSearch } from '../../../src/lib/query/heroQueries';
 import { getRecentlyViewed } from '../../../src/lib/db/viewHistory';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { useRecentSearches } from '../../../src/hooks/useRecentSearches';
@@ -109,19 +106,21 @@ export default function SearchScreen() {
       .catch(() => {});
   }, [user?.id]);
 
-  // Cached, publisher-aware fetch (keepPreviousData → instant-feeling switches).
-  const { data, isPending, isFetching } = useHeroSearch(debouncedQuery, publisherFilter);
+  // Cached, paginated, publisher+alignment-aware fetch (keepPreviousData →
+  // instant-feeling switches; infinite scroll for deep browsing).
+  const { data, isPending, isFetching, isFetchingNextPage, fetchNextPage, hasNextPage } =
+    useHeroSearchInfinite(debouncedQuery, publisherFilter, alignmentFilter);
 
-  // Warm every publisher's browse list on mount so the first switch is cached.
+  // Warm every publisher's first browse page on mount so the first switch is cached.
   useEffect(() => {
     PUBLISHERS.forEach((p) => prefetchHeroSearch(queryClient, p));
   }, [queryClient]);
 
-  // Publisher is applied server-side; alignment is a light client-side facet.
-  const displayedHeroes = useMemo(
-    () => filterHeroesByAlignment(data ?? [], alignmentFilter),
-    [data, alignmentFilter],
-  );
+  const displayedHeroes = useMemo(() => data?.pages.flat() ?? [], [data]);
+
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handlePress = useCallback(
     (item: { id: string; portrait_url?: string | null; image_url?: string | null }) => {
@@ -300,6 +299,15 @@ export default function SearchScreen() {
         contentInsetAdjustmentBehavior="automatic"
         ListHeaderComponent={listHeader}
         ListEmptyComponent={listEmpty}
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View style={styles.footer}>
+              <ActivityIndicator color={COLORS.orange} />
+            </View>
+          ) : null
+        }
+        onEndReachedThreshold={0.6}
+        onEndReached={loadMore}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 150 }]}
         columnWrapperStyle={displayedHeroes.length > 0 ? styles.gridRow : undefined}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
@@ -352,6 +360,7 @@ const styles = StyleSheet.create({
   chipStack: { marginHorizontal: -H_PAD, paddingBottom: 2 },
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingTop: 4 },
   gridRow: { gap: GAP },
+  footer: { paddingVertical: 24, alignItems: 'center' },
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 100 },
   emptyIconWrap: {
     width: 64,

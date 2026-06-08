@@ -148,45 +148,47 @@ export function filterHeroesByAlignment<T extends { alignment?: string | null }>
   return heroes.filter((h) => (h.alignment ?? '').toLowerCase() === target);
 }
 
+/**
+ * Search / browse via the search_heroes RPC: empty query → top heroes for the
+ * publisher (junk publishers excluded); a real query → alias-aware, typo-tolerant
+ * ranked search. Single-page convenience wrapper (used by web + suggestions).
+ */
 export async function searchHeroes(
   query: string,
   publisher: PublisherFilter,
   limit = 100,
 ): Promise<HeroSearchResult[]> {
-  const trimmed = query.trim();
-
-  // Empty query → browse top heroes by publisher (no search needed).
-  if (!trimmed) {
-    let q = supabase
-      .from('heroes')
-      .select(
-        'id, name, publisher, alignment, image_md_url, image_url, portrait_url, full_name, aliases',
-      )
-      .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
-      .order('issue_count', { ascending: false, nullsFirst: false })
-      .limit(limit);
-
-    if (publisher === 'Marvel') {
-      q = q.ilike('publisher', '%marvel%') as typeof q;
-    } else if (publisher === 'DC') {
-      q = q.ilike('publisher', '%dc%') as typeof q;
-    } else if (publisher === 'Other') {
-      q = q.not('publisher', 'ilike', '%marvel%').not('publisher', 'ilike', '%dc%') as typeof q;
-    }
-
-    const { data, error } = await q;
-    if (error) throw new Error(error.message);
-    return (data ?? []) as HeroSearchResult[];
-  }
-
-  // Non-empty → alias-aware, typo-tolerant, server-ranked RPC (search_heroes).
   const { data, error } = await supabase.rpc('search_heroes', {
-    search_query: trimmed,
+    search_query: query.trim(),
     publisher_filter: publisher,
+    alignment_filter: 'All',
+    result_limit: limit,
+    result_offset: 0,
   });
   if (error) throw new Error(error.message);
-  const rows = (data ?? []) as HeroSearchResult[];
-  return rows.length > limit ? rows.slice(0, limit) : rows;
+  return (data ?? []) as HeroSearchResult[];
+}
+
+/**
+ * Paginated search/browse for the Search tab's infinite list. Alignment is
+ * applied server-side so every page stays correctly filled.
+ */
+export async function searchHeroesPage(
+  query: string,
+  publisher: PublisherFilter,
+  alignment: AlignmentFilter,
+  page: number,
+  pageSize: number,
+): Promise<HeroSearchResult[]> {
+  const { data, error } = await supabase.rpc('search_heroes', {
+    search_query: query.trim(),
+    publisher_filter: publisher,
+    alignment_filter: alignment === 'All' ? 'All' : ALIGNMENT_VALUE[alignment],
+    result_limit: pageSize,
+    result_offset: page * pageSize,
+  });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as HeroSearchResult[];
 }
 
 export async function getSearchIdleHeroes(limit = 30): Promise<HeroSearchResult[]> {

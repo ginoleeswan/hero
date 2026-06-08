@@ -11,7 +11,8 @@ export const queryKeys = {
   featured: (slug: CategorySlug, publisher: CategoryPublisher) =>
     ['heroes', 'featured', slug, publisher] as const,
   heroDetail: (id: string) => ['heroes', 'detail', id] as const,
-  search: (query: string, publisher: string) => ['heroes', 'search', query, publisher] as const,
+  search: (query: string, publisher: string, alignment: string) =>
+    ['heroes', 'search', query, publisher, alignment] as const,
   verdict: (heroId: string, opponentId: string) =>
     ['heroes', 'verdict', heroId, opponentId] as const,
 };

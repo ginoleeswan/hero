@@ -329,7 +329,13 @@ export type Database = {
       }
       heroes_aliases_text: { Args: { arr: string[] }; Returns: string }
       search_heroes: {
-        Args: { publisher_filter?: string; search_query: string }
+        Args: {
+          alignment_filter?: string
+          publisher_filter?: string
+          result_limit?: number
+          result_offset?: number
+          search_query: string
+        }
         Returns: {
           aliases: string[]
           alignment: string

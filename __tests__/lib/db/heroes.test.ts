@@ -2,6 +2,7 @@
 import {
   getHeroById,
   searchHeroes,
+  searchHeroesPage,
   getSearchIdleHeroes,
   heroRowToCharacterData,
   getAntiHeroes,
@@ -105,43 +106,44 @@ describe('getHeroById', () => {
 // ─── searchHeroes ─────────────────────────────────────────────────────────────
 
 describe('searchHeroes', () => {
-  it('calls the search_heroes RPC for a non-empty query', async () => {
+  it('calls the search_heroes RPC with publisher + paging args', async () => {
     mockResolveWith = { data: [], error: null };
-    await searchHeroes('spider', 'All');
+    await searchHeroes('spider', 'All', 50);
     expect(mockRpc).toHaveBeenCalledWith('search_heroes', {
       search_query: 'spider',
       publisher_filter: 'All',
+      alignment_filter: 'All',
+      result_limit: 50,
+      result_offset: 0,
     });
   });
 
-  it('does not add ilike name filter when query is empty', async () => {
-    mockResolveWith = { data: [], error: null };
-    await searchHeroes('', 'All');
-    expect(chain.ilike).not.toHaveBeenCalled();
-  });
-
-  it('filters by Marvel publisher', async () => {
+  it('passes the publisher filter through to the RPC', async () => {
     mockResolveWith = { data: [], error: null };
     await searchHeroes('', 'Marvel');
-    expect(chain.ilike).toHaveBeenCalledWith('publisher', '%marvel%');
-  });
-
-  it('filters by DC publisher', async () => {
-    mockResolveWith = { data: [], error: null };
-    await searchHeroes('', 'DC');
-    expect(chain.ilike).toHaveBeenCalledWith('publisher', '%dc%');
-  });
-
-  it('excludes Marvel and DC for Other filter', async () => {
-    mockResolveWith = { data: [], error: null };
-    await searchHeroes('', 'Other');
-    expect(chain.not).toHaveBeenCalledWith('publisher', 'ilike', '%marvel%');
-    expect(chain.not).toHaveBeenCalledWith('publisher', 'ilike', '%dc%');
+    expect(mockRpc).toHaveBeenCalledWith(
+      'search_heroes',
+      expect.objectContaining({ publisher_filter: 'Marvel' }),
+    );
   });
 
   it('throws on Supabase error', async () => {
     mockResolveWith = { data: null, error: { message: 'DB error' } };
     await expect(searchHeroes('', 'All')).rejects.toThrow('DB error');
+  });
+});
+
+describe('searchHeroesPage', () => {
+  it('maps alignment + page to RPC limit/offset args', async () => {
+    mockResolveWith = { data: [], error: null };
+    await searchHeroesPage('', 'DC', 'Villains', 2, 30);
+    expect(mockRpc).toHaveBeenCalledWith('search_heroes', {
+      search_query: '',
+      publisher_filter: 'DC',
+      alignment_filter: 'bad',
+      result_limit: 30,
+      result_offset: 60,
+    });
   });
 });
 
