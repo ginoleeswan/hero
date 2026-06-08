@@ -171,6 +171,10 @@ export default function BiographyScreen() {
           // Chevron only — hides the previous route name ("character/[id]").
           headerBackButtonDisplayMode: 'minimal',
           headerStyle: { backgroundColor: 'transparent' },
+          // Kill the default iOS transparent-header backdrop (reads as a gradient
+          // over the navy banner). Just the chevron floats over the banner.
+          headerBackground: () => null,
+          headerBlurEffect: undefined,
           // Orange reads on both the navy banner (top) and the beige body (scrolled).
           headerTintColor: COLORS.orange,
           headerTitle: '',
