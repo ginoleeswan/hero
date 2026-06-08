@@ -2399,7 +2399,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jest/create-cache-key-function@npm:^29.2.1":
+"@jest/create-cache-key-function@npm:^29.2.1, @jest/create-cache-key-function@npm:^29.7.0":
   version: 29.7.0
   resolution: "@jest/create-cache-key-function@npm:29.7.0"
   dependencies:
@@ -3507,6 +3507,21 @@ __metadata:
   version: 0.85.3
   resolution: "@react-native/gradle-plugin@npm:0.85.3"
   checksum: 10c0/a5a57a0f0783cc31f3daec9e092c32774e72dbae334e9a3eaa86a4ff55f6563069003213d72efc2666e2381b73c653a2f8a4af42c8efd5a974eb848233984a2c
+  languageName: node
+  linkType: hard
+
+"@react-native/jest-preset@npm:^0.85.3":
+  version: 0.85.3
+  resolution: "@react-native/jest-preset@npm:0.85.3"
+  dependencies:
+    "@jest/create-cache-key-function": "npm:^29.7.0"
+    "@react-native/js-polyfills": "npm:0.85.3"
+    babel-jest: "npm:^29.7.0"
+    jest-environment-node: "npm:^29.7.0"
+    regenerator-runtime: "npm:^0.13.2"
+  peerDependencies:
+    react: ^19.2.3
+  checksum: 10c0/7c18a87432978d8e05bb66401d6591a99e1aaf575a206afd0a120611359c8addf7259ecf9f1ccb162fd2bd23412eaf8d7791168718bbe180e397a219806a302f
   languageName: node
   linkType: hard
 
@@ -8988,6 +9003,7 @@ __metadata:
     "@react-native-community/cli": "npm:^20.1.3"
     "@react-native-google-signin/google-signin": "npm:^16.1.2"
     "@react-native-masked-view/masked-view": "npm:^0.3.2"
+    "@react-native/jest-preset": "npm:^0.85.3"
     "@supabase/supabase-js": "npm:^2.101.1"
     "@tanstack/react-query": "npm:^5.101.0"
     "@testing-library/jest-native": "npm:^5.4.3"
