@@ -18,12 +18,14 @@ export function PortraitCard({
   onPress,
   onLongPress,
   disabled,
+  onDark,
 }: {
   item: HeroSearchResult;
   cardWidth: number;
   onPress: () => void;
   onLongPress?: () => void;
   disabled: boolean;
+  onDark?: boolean;
 }) {
   const source = heroGridImageSource(item.id, item.image_url, item.portrait_url, item.image_md_url);
   const pub = (item.publisher ?? '').toLowerCase();
@@ -48,7 +50,7 @@ export function PortraitCard({
       scale={0.96}
       style={{ width: cardWidth, height: Math.round(cardWidth * 1.5) }}
     >
-      <View style={styles.card}>
+      <View style={[styles.card, onDark && styles.cardOnDark]}>
         <Image
           source={source}
           contentFit="cover"
@@ -113,6 +115,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
   },
+  cardOnDark: { boxShadow: '0 0 0 1px rgba(245,235,220,0.08)' },
   // Logos float on a faint frosted chip so they read on light artwork too.
   badge: {
     position: 'absolute',

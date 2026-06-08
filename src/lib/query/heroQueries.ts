@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   useInfiniteQuery,
   useQuery,
   useQueryClient,
@@ -7,8 +8,11 @@ import {
 import {
   getCategoryPage,
   getHeroById,
+  searchHeroes,
+  rankResults,
   type CategorySlug,
   type CategoryPublisher,
+  type PublisherFilter,
 } from '../db/heroes';
 import { DEFAULT_FILTERS, type CategoryFilters } from '../db/categoryFilters';
 import { generateVerdict, type VerdictInput } from '../api';
@@ -17,6 +21,33 @@ import { queryKeys } from './keys';
 import { findCachedHero } from './heroCache';
 
 export const CATEGORY_PAGE_SIZE = 30;
+export const HERO_SEARCH_LIMIT = 60;
+
+/** Search / publisher-browse for the Search tab. Empty query → top heroes for
+ *  the selected publisher (DB-side); a real query → the alias/typo-tolerant
+ *  search_heroes RPC, client-ranked. keepPreviousData keeps the current grid up
+ *  while the next publisher loads (instant-feeling switches); the shared 5-min
+ *  staleTime serves revisits straight from cache. */
+export function useHeroSearch(query: string, publisher: PublisherFilter) {
+  const q = query.trim();
+  return useQuery({
+    queryKey: queryKeys.search(q, publisher),
+    queryFn: async () => {
+      const rows = await searchHeroes(q, publisher, HERO_SEARCH_LIMIT);
+      return q ? rankResults(rows, q) : rows;
+    },
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Warm a publisher's browse list — call for each publisher on mount so the
+ *  first filter switch is already cached. */
+export function prefetchHeroSearch(client: QueryClient, publisher: PublisherFilter) {
+  return client.prefetchQuery({
+    queryKey: queryKeys.search('', publisher),
+    queryFn: () => searchHeroes('', publisher, HERO_SEARCH_LIMIT),
+  });
+}
 
 /** Infinite list for the category grid. Counts only on page 0 (via withCount). */
 export function useCategoryHeroes(slug: CategorySlug | null, filters: CategoryFilters) {

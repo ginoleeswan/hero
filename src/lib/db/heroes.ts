@@ -112,34 +112,81 @@ export async function getHeroesByIds(ids: string[]): Promise<HeroSearchResult[]>
   );
 }
 
+/**
+ * Pure publisher filter for already-fetched idle heroes (the server applies the
+ * same predicate for live searches; this mirrors it client-side for the idle
+ * grid so the scope bar can re-filter without a round-trip).
+ */
+export function filterHeroesByPublisher<T extends { publisher?: string | null }>(
+  heroes: T[],
+  filter: PublisherFilter,
+): T[] {
+  if (filter === 'All') return heroes;
+  return heroes.filter((h) => {
+    const pub = (h.publisher ?? '').toLowerCase();
+    if (filter === 'Marvel') return pub.includes('marvel');
+    if (filter === 'DC') return pub.includes('dc');
+    return !pub.includes('marvel') && !pub.includes('dc');
+  });
+}
+
+export type AlignmentFilter = 'All' | 'Heroes' | 'Villains' | 'Anti';
+
+const ALIGNMENT_VALUE: Record<Exclude<AlignmentFilter, 'All'>, string> = {
+  Heroes: 'good',
+  Villains: 'bad',
+  Anti: 'neutral',
+};
+
+/** Pure alignment filter (good/bad/neutral) for already-fetched heroes. */
+export function filterHeroesByAlignment<T extends { alignment?: string | null }>(
+  heroes: T[],
+  filter: AlignmentFilter,
+): T[] {
+  if (filter === 'All') return heroes;
+  const target = ALIGNMENT_VALUE[filter];
+  return heroes.filter((h) => (h.alignment ?? '').toLowerCase() === target);
+}
+
 export async function searchHeroes(
   query: string,
   publisher: PublisherFilter,
   limit = 100,
 ): Promise<HeroSearchResult[]> {
-  let q = supabase
-    .from('heroes')
-    .select(
-      'id, name, publisher, alignment, image_md_url, image_url, portrait_url, full_name, aliases',
-    )
-    .order('issue_count', { ascending: false, nullsFirst: false })
-    .limit(limit);
+  const trimmed = query.trim();
 
-  if (query.trim()) {
-    q = q.or(`name.ilike.%${query}%,full_name.ilike.%${query}%`) as typeof q;
+  // Empty query → browse top heroes by publisher (no search needed).
+  if (!trimmed) {
+    let q = supabase
+      .from('heroes')
+      .select(
+        'id, name, publisher, alignment, image_md_url, image_url, portrait_url, full_name, aliases',
+      )
+      .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
+      .order('issue_count', { ascending: false, nullsFirst: false })
+      .limit(limit);
+
+    if (publisher === 'Marvel') {
+      q = q.ilike('publisher', '%marvel%') as typeof q;
+    } else if (publisher === 'DC') {
+      q = q.ilike('publisher', '%dc%') as typeof q;
+    } else if (publisher === 'Other') {
+      q = q.not('publisher', 'ilike', '%marvel%').not('publisher', 'ilike', '%dc%') as typeof q;
+    }
+
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+    return (data ?? []) as HeroSearchResult[];
   }
 
-  if (publisher === 'Marvel') {
-    q = q.ilike('publisher', '%marvel%') as typeof q;
-  } else if (publisher === 'DC') {
-    q = q.ilike('publisher', '%dc%') as typeof q;
-  } else if (publisher === 'Other') {
-    q = q.not('publisher', 'ilike', '%marvel%').not('publisher', 'ilike', '%dc%') as typeof q;
-  }
-
-  const { data, error } = await q;
+  // Non-empty → alias-aware, typo-tolerant, server-ranked RPC (search_heroes).
+  const { data, error } = await supabase.rpc('search_heroes', {
+    search_query: trimmed,
+    publisher_filter: publisher,
+  });
   if (error) throw new Error(error.message);
-  return (data ?? []) as HeroSearchResult[];
+  const rows = (data ?? []) as HeroSearchResult[];
+  return rows.length > limit ? rows.slice(0, limit) : rows;
 }
 
 export async function getSearchIdleHeroes(limit = 30): Promise<HeroSearchResult[]> {
