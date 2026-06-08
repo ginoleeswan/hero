@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../../src/constants/colors';
 import { PortraitCard } from '../../../src/components/search/PortraitCard';
@@ -195,6 +196,12 @@ export default function SearchScreen() {
     // isn't the screen's literal first child).
     <View style={styles.root} collapsable={false}>
       <StatusBar style="light" />
+      <LinearGradient
+        colors={['rgba(231,115,51,0.22)', 'transparent']}
+        locations={[0, 0.55]}
+        style={styles.glow}
+        pointerEvents="none"
+      />
 
       <Stack.Header
         transparent
@@ -261,6 +268,7 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: SEARCH_NAVY },
+  glow: { position: 'absolute', top: 0, left: 0, right: 0, height: 260 },
   list: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingHorizontal: H_PAD, paddingTop: 4 },
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingTop: 4 },
