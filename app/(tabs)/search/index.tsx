@@ -1,21 +1,29 @@
-// app/(tabs)/search/index.tsx — Search tab. Uses expo-router's declarative native
-// header API: Stack.Title (large, collapsing) + Stack.SearchBar (real iOS
-// UISearchController) + Stack.Header (transparent at rest, blur fades in on
-// scroll). The FlatList is the scroll view; its wrapper sets collapsable={false}
-// so the native large title binds correctly (no phantom top gap). Dark navy
-// canvas unifies Search with the arena/pick pages. Idle shows Recently Viewed
-// (gold rail) + Popular; typing swaps in results.
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, useWindowDimensions } from 'react-native';
+// app/(tabs)/search/index.tsx — Search tab.
+// • Native iOS search field in the tab bar (role="search" + Stack.SearchBar).
+// • Filters: native Stack.Toolbar menus (Publisher + Alignment) on iOS; visible
+//   FilterChips rows as the Android/web fallback.
+// • Idle: recent searches (AsyncStorage) + Recently Viewed rail + Popular grid.
+// • Search engine: alias-aware, typo-tolerant search_heroes RPC (see heroes.ts).
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Platform,
+  useWindowDimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import type { SearchBarCommands } from 'react-native-screens';
 import { COLORS } from '../../../src/constants/colors';
 import { PortraitCard } from '../../../src/components/search/PortraitCard';
-import { ScopeBar } from '../../../src/components/search/ScopeBar';
+import { FilterChips, type FilterOption } from '../../../src/components/search/FilterChips';
 import { AccentRail } from '../../../src/components/search/AccentRail';
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { Skeleton } from '../../../src/components/ui/Skeleton';
@@ -25,17 +33,34 @@ import {
   rankResults,
   getSearchIdleHeroes,
   filterHeroesByPublisher,
+  filterHeroesByAlignment,
   type HeroSearchResult,
   type PublisherFilter,
+  type AlignmentFilter,
 } from '../../../src/lib/db/heroes';
 import { getRecentlyViewed } from '../../../src/lib/db/viewHistory';
 import { useAuth } from '../../../src/hooks/useAuth';
+import { useRecentSearches } from '../../../src/hooks/useRecentSearches';
 import type { FavouriteHero } from '../../../src/types';
 
 const SEARCH_NAVY = '#1a262b';
 const GRID_COLUMNS = 2;
 const H_PAD = 16;
 const GAP = 8;
+const IS_IOS = Platform.OS === 'ios';
+
+const PUBLISHER_OPTIONS: FilterOption<PublisherFilter>[] = [
+  { value: 'All', label: 'All' },
+  { value: 'Marvel', label: 'Marvel' },
+  { value: 'DC', label: 'DC' },
+  { value: 'Other', label: 'Other' },
+];
+const ALIGNMENT_OPTIONS: FilterOption<AlignmentFilter>[] = [
+  { value: 'All', label: 'Everyone' },
+  { value: 'Heroes', label: 'Heroes' },
+  { value: 'Villains', label: 'Villains' },
+  { value: 'Anti', label: 'Anti-Heroes' },
+];
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -51,6 +76,8 @@ export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { user } = useAuth();
+  const searchRef = useRef<SearchBarCommands>(null);
+  const { recent, addRecent, clearRecent } = useRecentSearches();
 
   const [idleHeroes, setIdleHeroes] = useState<HeroSearchResult[]>([]);
   const [idleLoading, setIdleLoading] = useState(true);
@@ -59,19 +86,25 @@ export default function SearchScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [query, setQuery] = useState('');
   const [publisherFilter, setPublisherFilter] = useState<PublisherFilter>('All');
+  const [alignmentFilter, setAlignmentFilter] = useState<AlignmentFilter>('All');
   const [navigating, setNavigating] = useState(false);
   const [peek, setPeek] = useState<PeekHero | null>(null);
 
   const cardWidth = (width - H_PAD * 2 - GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
   const debouncedQuery = useDebounce(query, 300);
 
-  // Stack.SearchBar's onChangeText passes the raw string on iOS; guard for the
-  // native-event shape too so we don't depend on the exact wrapper version.
   const handleSearchText = useCallback(
     (e: string | { nativeEvent?: { text?: string } }) =>
       setQuery(typeof e === 'string' ? e : (e.nativeEvent?.text ?? '')),
     [],
   );
+
+  // Tap a recent term → re-fill the native field (via ref) and run the search.
+  const applyRecent = useCallback((term: string) => {
+    Haptics.selectionAsync();
+    searchRef.current?.setText(term);
+    setQuery(term);
+  }, []);
 
   useEffect(() => {
     getSearchIdleHeroes(30)
@@ -115,9 +148,12 @@ export default function SearchScreen() {
   }, [debouncedQuery, publisherFilter]);
 
   const displayedHeroes = useMemo(() => {
-    if (searchResults !== null) return searchResults.slice(0, 100);
-    return filterHeroesByPublisher(idleHeroes, publisherFilter);
-  }, [idleHeroes, searchResults, publisherFilter]);
+    const base =
+      searchResults !== null
+        ? searchResults.slice(0, 100)
+        : filterHeroesByPublisher(idleHeroes, publisherFilter);
+    return filterHeroesByAlignment(base, alignmentFilter);
+  }, [idleHeroes, searchResults, publisherFilter, alignmentFilter]);
 
   const handlePress = useCallback(
     (item: { id: string; portrait_url?: string | null; image_url?: string | null }) => {
@@ -138,12 +174,49 @@ export default function SearchScreen() {
   }, []);
 
   const isIdle = searchResults === null;
-  const showRecent = isIdle && !query.trim() && recentlyViewed.length > 0;
+  const idleExtras = isIdle && !query.trim();
 
   const listHeader = (
     <>
-      <ScopeBar value={publisherFilter} onChange={setPublisherFilter} />
-      {showRecent && (
+      {!IS_IOS && (
+        <View style={styles.chipStack}>
+          <FilterChips
+            value={publisherFilter}
+            options={PUBLISHER_OPTIONS}
+            onChange={setPublisherFilter}
+            idPrefix="scope"
+          />
+          <FilterChips
+            value={alignmentFilter}
+            options={ALIGNMENT_OPTIONS}
+            onChange={setAlignmentFilter}
+            idPrefix="align"
+          />
+        </View>
+      )}
+
+      {idleExtras && recent.length > 0 && (
+        <View style={styles.recentWrap}>
+          <View style={styles.recentHead}>
+            <Text style={styles.recentLabel}>Recent</Text>
+            <Pressable onPress={clearRecent} hitSlop={8}>
+              <Text style={styles.recentClear}>Clear</Text>
+            </Pressable>
+          </View>
+          <View style={styles.recentChips}>
+            {recent.map((term) => (
+              <Pressable key={term} style={styles.recentChip} onPress={() => applyRecent(term)}>
+                <Ionicons name="time-outline" size={13} color="rgba(245,235,220,0.5)" />
+                <Text style={styles.recentChipText} numberOfLines={1}>
+                  {term}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {idleExtras && recentlyViewed.length > 0 && (
         <AccentRail
           label="Recently Viewed"
           items={recentlyViewed}
@@ -155,6 +228,7 @@ export default function SearchScreen() {
           accent
         />
       )}
+
       {!idleLoading && (
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>
@@ -191,9 +265,6 @@ export default function SearchScreen() {
   );
 
   return (
-    // collapsable={false} keeps this wrapper in the native tree so the large
-    // title can bind to the FlatList below it (required when the scroll view
-    // isn't the screen's literal first child).
     <View style={styles.root} collapsable={false}>
       <StatusBar style="light" />
       <LinearGradient
@@ -203,28 +274,50 @@ export default function SearchScreen() {
         pointerEvents="none"
       />
 
-      <Stack.Header
-        transparent
-        blurEffect="systemChromeMaterialDark"
-        style={{ color: COLORS.beige, shadowColor: 'transparent' }}
-        largeStyle={{ backgroundColor: 'transparent', shadowColor: 'transparent' }}
-      />
+      <Stack.Header transparent style={{ color: COLORS.beige, shadowColor: 'transparent' }} />
       <Stack.SearchBar
+        ref={searchRef}
         placeholder="Hero, villain, or real name…"
         placement="automatic"
         autoCapitalize="none"
         hideWhenScrolling={false}
-        // The header is transparent at rest (no material), so iOS can't infer a
-        // dark appearance to auto-tint the field. Set colours explicitly so the
-        // icon + placeholder read correctly both at rest and under the blur.
         barTintColor="rgba(245,235,220,0.12)"
         textColor={COLORS.beige}
         hintTextColor="rgba(245,235,220,0.55)"
         headerIconColor="rgba(245,235,220,0.6)"
         tintColor={COLORS.orange}
         onChangeText={handleSearchText}
+        onSearchButtonPress={() => addRecent(query)}
         onCancelButtonPress={() => setQuery('')}
       />
+
+      {/* Native filter menus (iOS) in the header — fills the bar purposefully. */}
+      {IS_IOS && (
+        <Stack.Toolbar placement="right">
+          <Stack.Toolbar.Menu icon="books.vertical" title="Publisher">
+            {PUBLISHER_OPTIONS.map((o) => (
+              <Stack.Toolbar.MenuAction
+                key={o.value}
+                isOn={publisherFilter === o.value}
+                onPress={() => setPublisherFilter(o.value)}
+              >
+                {o.label}
+              </Stack.Toolbar.MenuAction>
+            ))}
+          </Stack.Toolbar.Menu>
+          <Stack.Toolbar.Menu icon="theatermasks" title="Alignment">
+            {ALIGNMENT_OPTIONS.map((o) => (
+              <Stack.Toolbar.MenuAction
+                key={o.value}
+                isOn={alignmentFilter === o.value}
+                onPress={() => setAlignmentFilter(o.value)}
+              >
+                {o.label}
+              </Stack.Toolbar.MenuAction>
+            ))}
+          </Stack.Toolbar.Menu>
+        </Stack.Toolbar>
+      )}
 
       <FlatList
         style={styles.list}
@@ -252,8 +345,6 @@ export default function SearchScreen() {
         )}
       />
 
-      {/* Fade the content to dark at the very bottom so the floating tab-bar
-          search field reads cleanly over the (otherwise busy) card art. */}
       <LinearGradient
         colors={['transparent', 'rgba(26,38,43,0.92)']}
         style={styles.bottomScrim}
@@ -281,6 +372,7 @@ const styles = StyleSheet.create({
   bottomScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
   list: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingHorizontal: H_PAD, paddingTop: 4 },
+  chipStack: { marginHorizontal: -H_PAD, paddingTop: 4 },
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingTop: 4 },
   gridRow: { gap: GAP },
   center: { alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 100 },
@@ -295,7 +387,37 @@ const styles = StyleSheet.create({
   },
   emptyHeadline: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.beige },
   emptySub: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: 'rgba(245,235,220,0.55)' },
-  sectionHeader: { paddingBottom: 8, paddingTop: 4 },
+  recentWrap: { paddingTop: 6, paddingBottom: 4 },
+  recentHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 9,
+  },
+  recentLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: 'rgba(245,235,220,0.45)',
+  },
+  recentClear: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange },
+  recentChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  recentChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    maxWidth: 180,
+    paddingHorizontal: 12,
+    height: 32,
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    backgroundColor: 'rgba(245,235,220,0.08)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(245,235,220,0.12)',
+  },
+  recentChipText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.beige },
+  sectionHeader: { paddingBottom: 8, paddingTop: 10 },
   sectionLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,

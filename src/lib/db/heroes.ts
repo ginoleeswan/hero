@@ -130,6 +130,24 @@ export function filterHeroesByPublisher<T extends { publisher?: string | null }>
   });
 }
 
+export type AlignmentFilter = 'All' | 'Heroes' | 'Villains' | 'Anti';
+
+const ALIGNMENT_VALUE: Record<Exclude<AlignmentFilter, 'All'>, string> = {
+  Heroes: 'good',
+  Villains: 'bad',
+  Anti: 'neutral',
+};
+
+/** Pure alignment filter (good/bad/neutral) for already-fetched heroes. */
+export function filterHeroesByAlignment<T extends { alignment?: string | null }>(
+  heroes: T[],
+  filter: AlignmentFilter,
+): T[] {
+  if (filter === 'All') return heroes;
+  const target = ALIGNMENT_VALUE[filter];
+  return heroes.filter((h) => (h.alignment ?? '').toLowerCase() === target);
+}
+
 export async function searchHeroes(
   query: string,
   publisher: PublisherFilter,
