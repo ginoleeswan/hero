@@ -237,7 +237,7 @@ export default function SearchScreen() {
         contentInsetAdjustmentBehavior="automatic"
         ListHeaderComponent={listHeader}
         ListEmptyComponent={listEmpty}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 150 }]}
         columnWrapperStyle={displayedHeroes.length > 0 ? styles.gridRow : undefined}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         renderItem={({ item }) => (
@@ -250,6 +250,14 @@ export default function SearchScreen() {
             onDark
           />
         )}
+      />
+
+      {/* Fade the content to dark at the very bottom so the floating tab-bar
+          search field reads cleanly over the (otherwise busy) card art. */}
+      <LinearGradient
+        colors={['transparent', 'rgba(26,38,43,0.92)']}
+        style={styles.bottomScrim}
+        pointerEvents="none"
       />
 
       {peek && (
@@ -270,6 +278,7 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: SEARCH_NAVY },
   glow: { position: 'absolute', top: 0, left: 0, right: 0, height: 260 },
+  bottomScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
   list: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingHorizontal: H_PAD, paddingTop: 4 },
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingTop: 4 },

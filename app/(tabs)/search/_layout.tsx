@@ -8,7 +8,9 @@ export default function SearchLayout() {
   return (
     <Stack
       screenOptions={{
-        headerTitle: 'Search',
+        // No title — the tab already says "Search" and the field lives in the
+        // tab bar (role="search"), so a header title is dead weight.
+        headerTitle: '',
       }}
     />
   );
