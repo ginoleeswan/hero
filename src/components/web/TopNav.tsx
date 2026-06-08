@@ -9,7 +9,6 @@ import { HeroLogo } from './HeroLogo';
 import { SearchSuggestions } from './search/SearchSuggestions';
 
 const EXPLORE_PATH = '/explore';
-const SEARCH_PATH = '/search';
 const DESKTOP_BP = 768;
 
 export function TopNav() {
@@ -20,12 +19,16 @@ export function TopNav() {
   const { width } = useWindowDimensions();
   const inputRef = useRef<TextInput>(null);
   const containerRef = useRef<View>(null);
+  const searchAreaRef = useRef<View>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const initial = user?.email?.charAt(0).toUpperCase() ?? '';
   const isDesktop = width >= DESKTOP_BP;
   const avatarActive = menuOpen || pathname === '/profile';
-  const showSearch = isDesktop && (pathname === EXPLORE_PATH || pathname === SEARCH_PATH);
+  // Search is an ambient tool — available on every desktop page where the nav
+  // renders (TopNav is already hidden on auth + root). Mobile keeps the inline
+  // search icon scoped to Explore (see showMobileSearch below).
+  const showSearch = isDesktop;
   // Mobile: a tappable search entry sits inline in the nav row (logo + search +
   // avatar). It opens the dedicated /search screen. Not shown on /search itself,
   // which has its own input.
@@ -54,6 +57,23 @@ export function TopNav() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [menuOpen]);
+
+  // Close the search dropdown on outside click. Clicking a non-focusable element
+  // (a card, background text) doesn't blur a focused <input>, so onBlur alone
+  // never fires — we mirror the avatar menu's outside-click handler here.
+  useEffect(() => {
+    if (!searchFocused) return;
+    const handler = (e: MouseEvent) => {
+      // RNW renders View as a DOM element at runtime; the TS type doesn't reflect this.
+      const node = searchAreaRef.current as unknown as Element | null;
+      if (node && !node.contains(e.target as Node)) {
+        inputRef.current?.blur();
+        setSearchFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [searchFocused, setSearchFocused]);
 
   const handleQueryChange = (text: string) => {
     // Typing only drives the live dropdown — it never navigates. Committing
@@ -89,7 +109,7 @@ export function TopNav() {
 
         {/* Center — search field on desktop; spacer otherwise (mobile uses an icon) */}
         {showSearch ? (
-          <View style={styles.searchContainer as object}>
+          <View ref={searchAreaRef} style={styles.searchContainer as object}>
             <View
               style={
                 [styles.searchWrap, searchFocused && (styles.searchWrapFocused as object)] as object

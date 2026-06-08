@@ -1,21 +1,18 @@
 import { useRef, useEffect } from 'react';
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
-import { usePathname } from 'expo-router';
 import { COLORS } from '../../../constants/colors';
 import { useSearch } from '../../../contexts/SearchContext';
 import { SearchDropdownContent } from './SearchDropdownContent';
 
 const DESKTOP_BP = 768;
-const SEARCH_SURFACES = ['/explore', '/search'];
 
 export function SearchSuggestions() {
-  const pathname = usePathname();
   const { width } = useWindowDimensions();
   const { searchFocused } = useSearch();
   const panelRef = useRef<View>(null);
 
   const isDesktop = width >= DESKTOP_BP;
-  const isOpen = isDesktop && SEARCH_SURFACES.includes(pathname) && searchFocused;
+  const isOpen = isDesktop && searchFocused;
 
   // Prevent the input from blurring when the user clicks inside the dropdown.
   // This is the standard combobox technique — mousedown preventDefault keeps
