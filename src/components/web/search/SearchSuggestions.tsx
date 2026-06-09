@@ -58,9 +58,9 @@ const styles = StyleSheet.create({
   dropdown: {
     width: 460,
     maxWidth: '90vw',
-    backgroundColor: 'rgba(11,24,32,0.78)',
-    backdropFilter: 'blur(22px) saturate(150%)',
-    WebkitBackdropFilter: 'blur(22px) saturate(150%)',
+    backgroundColor: 'rgba(11,24,32,0.93)',
+    backdropFilter: 'blur(28px) saturate(160%)',
+    WebkitBackdropFilter: 'blur(28px) saturate(160%)',
     borderRadius: 18,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
