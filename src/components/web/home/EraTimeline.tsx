@@ -60,9 +60,10 @@ export function EraTimeline({ eras, onPress }: EraTimelineProps) {
         </View>
       </View>
 
-      <View style={t.timeline}>
-        <View style={t.spine as object} pointerEvents="none" />
-        {eras.map((bucket) => (
+      <View style={t.frame}>
+        <View style={t.timeline}>
+          <View style={t.spine as object} pointerEvents="none" />
+          {eras.map((bucket) => (
           <View key={bucket.era} style={t.eraBlock}>
             <View style={t.eraDot as object} />
             <View style={t.eraHead}>
@@ -79,7 +80,8 @@ export function EraTimeline({ eras, onPress }: EraTimelineProps) {
               ))}
             </ScrollView>
           </View>
-        ))}
+          ))}
+        </View>
       </View>
     </View>
   );
@@ -103,6 +105,17 @@ const t = StyleSheet.create({
     textTransform: 'uppercase',
   },
   title: { fontFamily: 'Flame-Regular', fontSize: 36, color: COLORS.navy, lineHeight: 38 },
+
+  // Soft inset that frames the timeline as one deliberate "chapter" rather than
+  // a stack of loose rows — makes its distinct (vertical) grammar feel intended.
+  frame: {
+    backgroundColor: 'rgba(41,60,67,0.05)',
+    borderRadius: 18,
+    paddingTop: 24,
+    paddingBottom: 4,
+    paddingLeft: 22,
+    paddingRight: 18,
+  },
 
   timeline: { position: 'relative', paddingLeft: 26 },
   spine: {
@@ -145,7 +158,7 @@ const t = StyleSheet.create({
     cursor: 'pointer',
     transition: 'transform 200ms ease',
   } as object,
-  cardHover: { transform: [{ translateY: -4 }] } as object,
+  cardHover: { transform: [{ translateY: -6 }] } as object,
   cardImgWrap: {
     width: 96,
     height: 128,
@@ -155,9 +168,10 @@ const t = StyleSheet.create({
     marginBottom: 7,
   },
   cardName: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
+    fontFamily: 'Flame-Regular',
+    fontSize: 13,
     color: COLORS.navy,
+    lineHeight: 15,
   },
   cardYear: {
     fontFamily: 'Nunito_400Regular',
