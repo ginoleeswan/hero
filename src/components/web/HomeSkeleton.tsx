@@ -1,19 +1,20 @@
 import { View, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from './Skeleton';
 import { COLORS } from '../../constants/colors';
+import { NAV_HEIGHT } from './TopNav';
 
 const ROW_CARD_WIDTH = 220;
 const ROW_CARD_HEIGHT = 310;
 
 type Opacity = ReturnType<typeof useSkeletonAnim>;
 
-function SpotlightSkeleton({ opacity }: { opacity: Opacity }) {
+function SpotlightSkeleton({ opacity, dark }: { opacity: Opacity; dark: boolean }) {
   const { width, height } = useWindowDimensions();
   const isMobile = width < 640;
   const pagePad = isMobile ? 16 : 32;
-  const contentHeight = isMobile ? 240 : Math.min(320, height * 0.6);
 
   if (isMobile) {
+    const contentHeight = 240;
     return (
       <View
         style={{
@@ -24,21 +25,28 @@ function SpotlightSkeleton({ opacity }: { opacity: Opacity }) {
           paddingHorizontal: pagePad,
         }}
       >
-        <SkeletonBlock opacity={opacity} width={150} height={contentHeight} borderRadius={10} />
+        <SkeletonBlock
+          opacity={opacity}
+          dark={dark}
+          width={150}
+          height={contentHeight}
+          borderRadius={10}
+        />
         <View style={{ flex: 1 }}>
-          <SkeletonBlock opacity={opacity} height={contentHeight} borderRadius={10} />
+          <SkeletonBlock opacity={opacity} dark={dark} height={contentHeight} borderRadius={10} />
         </View>
       </View>
     );
   }
 
+  const contentHeight = Math.min(460, height * 0.58);
   return (
     <View
       style={{
         flexDirection: 'row',
-        gap: 12,
+        gap: 16,
         height: contentHeight,
-        marginVertical: 32,
+        marginBottom: 24,
         paddingHorizontal: pagePad,
       }}
     >
@@ -47,6 +55,7 @@ function SpotlightSkeleton({ opacity }: { opacity: Opacity }) {
         <SkeletonBlock
           key={i}
           opacity={opacity}
+          dark={dark}
           width={w}
           height={contentHeight}
           borderRadius={14}
@@ -54,21 +63,25 @@ function SpotlightSkeleton({ opacity }: { opacity: Opacity }) {
       ))}
       {/* Info panel */}
       <View style={{ flex: 1 }}>
-        <SkeletonBlock opacity={opacity} height={contentHeight} borderRadius={14} />
+        <SkeletonBlock opacity={opacity} dark={dark} height={contentHeight} borderRadius={16} />
       </View>
     </View>
   );
 }
 
-function RowHeader({
-  opacity,
-  pagePad,
-  dark = false,
-}: {
-  opacity: Opacity;
-  pagePad: number;
-  dark?: boolean;
-}) {
+function StatPodsSkeleton({ opacity, pagePad }: { opacity: Opacity; pagePad: number }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: pagePad }}>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <View key={i} style={{ flex: 1 }}>
+          <SkeletonBlock opacity={opacity} dark height={84} borderRadius={14} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function RowHeader({ opacity, pagePad, dark = false }: { opacity: Opacity; pagePad: number; dark?: boolean }) {
   return (
     <View
       style={{
@@ -130,28 +143,57 @@ function DarkRowSkeleton({ opacity, pagePad }: { opacity: Opacity; pagePad: numb
 export function WebHomeSkeleton() {
   const opacity = useSkeletonAnim();
   const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+  const isMobile = width < 640;
   const pagePad = width < 640 ? 16 : 32;
 
   return (
-    <ScrollView style={skel.scroll} contentContainerStyle={skel.content}>
-      <SpotlightSkeleton opacity={opacity} />
-      {/* Mirrors the curated row order in index.web.tsx */}
-      <RowSkeleton opacity={opacity} pagePad={pagePad} />
-      <DarkRowSkeleton opacity={opacity} pagePad={pagePad} />
-      <RowSkeleton opacity={opacity} pagePad={pagePad} />
-      <RowSkeleton opacity={opacity} pagePad={pagePad} />
-      <DarkRowSkeleton opacity={opacity} pagePad={pagePad} />
-      <RowSkeleton opacity={opacity} pagePad={pagePad} />
-      <DarkRowSkeleton opacity={opacity} pagePad={pagePad} />
-      <RowSkeleton opacity={opacity} pagePad={pagePad} />
-      <RowSkeleton opacity={opacity} pagePad={pagePad} />
+    <ScrollView
+      style={[skel.scroll, isDesktop && (skel.scrollDark as object)] as object}
+      contentContainerStyle={
+        [skel.content, isMobile && { paddingTop: NAV_HEIGHT }] as object
+      }
+    >
+      {isDesktop ? (
+        <>
+          <View style={skel.darkStage}>
+            <SpotlightSkeleton opacity={opacity} dark />
+            <StatPodsSkeleton opacity={opacity} pagePad={pagePad} />
+          </View>
+          <View style={skel.ticker} />
+        </>
+      ) : (
+        <SpotlightSkeleton opacity={opacity} dark={false} />
+      )}
+
+      {/* Beige carousel canvas — mirrors the curated row order in explore.web */}
+      <View style={skel.beigeCanvas}>
+        <RowSkeleton opacity={opacity} pagePad={pagePad} />
+        <DarkRowSkeleton opacity={opacity} pagePad={pagePad} />
+        <RowSkeleton opacity={opacity} pagePad={pagePad} />
+        <RowSkeleton opacity={opacity} pagePad={pagePad} />
+        <DarkRowSkeleton opacity={opacity} pagePad={pagePad} />
+        <RowSkeleton opacity={opacity} pagePad={pagePad} />
+      </View>
     </ScrollView>
   );
 }
 
 const skel = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { paddingBottom: 100 },
+  scrollDark: { backgroundColor: COLORS.deepNavy } as object,
+  content: { paddingBottom: 0 },
+  darkStage: {
+    backgroundColor: COLORS.deepNavy,
+    paddingTop: NAV_HEIGHT + 24,
+    paddingBottom: 28,
+  },
+  ticker: { height: 38, backgroundColor: COLORS.orange },
+  beigeCanvas: {
+    backgroundColor: COLORS.beige,
+    paddingTop: 40,
+    paddingBottom: 100,
+  },
   section: { marginBottom: 52 },
   darkSection: {
     backgroundColor: COLORS.navy,
