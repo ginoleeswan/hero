@@ -26,7 +26,6 @@ import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
 import { RankingCard } from '../../src/components/web/home/RankingCard';
 import { HomeFooter } from '../../src/components/web/home/HomeFooter';
-import { UniverseBreakdown } from '../../src/components/web/home/UniverseBreakdown';
 import { CoverGallery } from '../../src/components/web/home/CoverGallery';
 import { EraTimeline } from '../../src/components/web/home/EraTimeline';
 import { TodaysMatchup as TodaysMatchupCard } from '../../src/components/web/home/TodaysMatchup';
@@ -998,12 +997,16 @@ function DarkHomeRow({
   heroes,
   onPress,
   onViewAll,
+  grouped = false,
 }: {
   label?: string;
   title: string;
   heroes: (Hero | FavouriteHero)[];
   onPress: (id: string) => void;
   onViewAll?: () => void;
+  /** When true, drops the per-row navy band + margin so several rows can share
+   *  one continuous dark zone wrapper (the "Dark Side"). */
+  grouped?: boolean;
 }) {
   const {
     sectionRef,
@@ -1019,7 +1022,7 @@ function DarkHomeRow({
 
   if (heroes.length === 0) return null;
   return (
-    <View ref={sectionRef} style={drow.section}>
+    <View ref={sectionRef} style={grouped ? (drow.sectionGrouped as object) : drow.section}>
       <View style={[drow.header, { paddingLeft: pagePad }]}>
         <View style={drow.headerLeft}>
           <View style={drow.accentBar} />
@@ -1080,6 +1083,12 @@ const drow = StyleSheet.create({
     paddingTop: 28,
     paddingBottom: 8,
     marginBottom: 52,
+  } as object,
+  // Inside a shared dark zone: no own band/margin, just inter-row spacing.
+  sectionGrouped: {
+    paddingTop: 4,
+    paddingBottom: 8,
+    marginBottom: 28,
   } as object,
   header: {
     marginBottom: 16,
@@ -1316,94 +1325,102 @@ export default function WebHomeScreen() {
           {/* Beige canvas — owns the carousel surface so the dark scroll
               background only shows on the dark stage and on overscroll. */}
           <View style={styles.beigeCanvas}>
-          {/* Personal rows */}
-          <HomeRow
-            label="Personal"
-            title="Jump Back In"
-            heroes={recentlyViewed}
-            onPress={handlePress}
-          />
-          <HomeRow
-            label="Personal"
-            title="Your Favourites"
-            heroes={favourites}
-            onPress={handlePress}
-          />
-
-          {/* Curated rows — each appears as its query resolves */}
-          <HomeRow
-            label="By Appearances"
-            title="Most Iconic"
-            heroes={homeData.iconic ?? []}
-            onPress={handlePress}
-            onViewAll={() => router.push('/category/most-iconic')}
-          />
-          <DarkHomeRow
-            label="The Dark Side"
-            title="Villains"
-            heroes={homeData.villains ?? []}
-            onPress={handlePress}
-            onViewAll={() => router.push('/category/villain')}
-          />
-          {homeData.publisherCounts && (
-            <UniverseBreakdown
-              counts={homeData.publisherCounts}
-              total={totalHeroCount ?? 0}
-              onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
+            {/* ── Continue (returners) ──────────────────────────────────────── */}
+            <HomeRow
+              label="Personal"
+              title="Jump Back In"
+              heroes={recentlyViewed}
+              onPress={handlePress}
             />
-          )}
-          <HomeRow
-            label="Marvel Comics"
-            title="Marvel Universe"
-            heroes={homeData.marvel ?? []}
-            onPress={handlePress}
-            onViewAll={() => router.push('/category/marvel')}
-          />
-          <HomeRow
-            label="DC Comics"
-            title="DC Universe"
-            heroes={homeData.dc ?? []}
-            onPress={handlePress}
-            onViewAll={() => router.push('/category/dc')}
-          />
-          <DarkHomeRow
-            label="Neither Good Nor Evil"
-            title="Anti-Heroes"
-            heroes={homeData.antiHeroes ?? []}
-            onPress={handlePress}
-            onViewAll={() => router.push('/category/anti-heroes')}
-          />
-          <CoverGallery covers={homeData.covers ?? []} onPress={handlePress} />
-          <HomeRow
-            label="By Power Stats"
-            title="Strongest Heroes"
-            heroes={homeData.strongest ?? []}
-            onPress={handlePress}
-            onViewAll={() => router.push('/category/strongest')}
-            statKey="strength"
-          />
-          <DarkHomeRow
-            label="Charles Xavier's School for Gifted Youngsters"
-            title="X-Men"
-            heroes={homeData.xmen ?? []}
-            onPress={handlePress}
-            onViewAll={() => router.push('/category/xmen')}
-          />
-          <EraTimeline eras={homeData.eras ?? []} onPress={handlePress} />
-          <HomeRow
-            label="By Power Stats"
-            title="Brightest Minds"
-            heroes={homeData.mostIntelligent ?? []}
-            onPress={handlePress}
-            onViewAll={() => router.push('/category/most-intelligent')}
-            statKey="intelligence"
-          />
-          <HomeRow
-            label="New to the Encyclopedia"
-            title="Recently Added"
-            heroes={homeData.newlyAdded ?? []}
-            onPress={handlePress}
-          />
+
+            {/* ── The Universe — the marquee browse ─────────────────────────── */}
+            <HomeRow
+              label="By Appearances"
+              title="Most Iconic"
+              heroes={homeData.iconic ?? []}
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/most-iconic')}
+            />
+            <HomeRow
+              label="Marvel Comics"
+              title="Marvel Universe"
+              heroes={homeData.marvel ?? []}
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/marvel')}
+            />
+            <HomeRow
+              label="DC Comics"
+              title="DC Universe"
+              heroes={homeData.dc ?? []}
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/dc')}
+            />
+            <HomeRow
+              label="Charles Xavier's School for Gifted Youngsters"
+              title="X-Men"
+              heroes={homeData.xmen ?? []}
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/xmen')}
+            />
+
+            {/* ── The Dark Side — one deliberate dark zone ──────────────────── */}
+            {((homeData.villains?.length ?? 0) > 0 ||
+              (homeData.antiHeroes?.length ?? 0) > 0) && (
+              <View style={styles.darkZone}>
+                <DarkHomeRow
+                  grouped
+                  label="The Dark Side"
+                  title="Villains"
+                  heroes={homeData.villains ?? []}
+                  onPress={handlePress}
+                  onViewAll={() => router.push('/category/villain')}
+                />
+                <DarkHomeRow
+                  grouped
+                  label="Neither Good Nor Evil"
+                  title="Anti-Heroes"
+                  heroes={homeData.antiHeroes ?? []}
+                  onPress={handlePress}
+                  onViewAll={() => router.push('/category/anti-heroes')}
+                />
+              </View>
+            )}
+
+            {/* ── Discover — explore deeper ─────────────────────────────────── */}
+            <EraTimeline eras={homeData.eras ?? []} onPress={handlePress} />
+            <CoverGallery covers={homeData.covers ?? []} onPress={handlePress} />
+            <HomeRow
+              label="New to the Encyclopedia"
+              title="Recently Added"
+              heroes={homeData.newlyAdded ?? []}
+              onPress={handlePress}
+            />
+
+            {/* ── By the Numbers — the ranking rows ─────────────────────────── */}
+            <HomeRow
+              label="By Power Stats"
+              title="Strongest Heroes"
+              heroes={homeData.strongest ?? []}
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/strongest')}
+              statKey="strength"
+            />
+            <HomeRow
+              label="By Power Stats"
+              title="Brightest Minds"
+              heroes={homeData.mostIntelligent ?? []}
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/most-intelligent')}
+              statKey="intelligence"
+            />
+
+            {/* ── For You — warm close ──────────────────────────────────────── */}
+            <HomeRow
+              label="Personal"
+              title="Your Favourites"
+              heroes={favourites}
+              onPress={handlePress}
+            />
           </View>
 
           <HomeFooter
@@ -1440,6 +1457,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.beige,
     paddingTop: 40,
     paddingBottom: 24,
+  },
+
+  // The one deliberate dark moment in the canvas — the "Dark Side" zone holds
+  // the villain/grey-morality rows in a single continuous navy band.
+  darkZone: {
+    backgroundColor: COLORS.navy,
+    paddingTop: 28,
+    paddingBottom: 8,
+    marginBottom: 52,
   },
 
   // ── Home layout ──────────────────────────────────────────────────────────────
