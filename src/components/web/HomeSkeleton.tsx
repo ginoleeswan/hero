@@ -70,6 +70,22 @@ function SpotlightSkeleton({ opacity, dark }: { opacity: Opacity; dark: boolean 
 }
 
 function StatPodsSkeleton({ opacity, pagePad }: { opacity: Opacity; pagePad: number }) {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+
+  // Desktop: 4-up row. Tablet & mobile: 2×2 grid (mirrors StatPods).
+  if (!isDesktop) {
+    return (
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: pagePad }}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <View key={i} style={{ width: '48%' }}>
+            <SkeletonBlock opacity={opacity} dark height={84} borderRadius={14} />
+          </View>
+        ))}
+      </View>
+    );
+  }
+
   return (
     <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: pagePad }}>
       {Array.from({ length: 4 }).map((_, i) => (
@@ -143,28 +159,21 @@ function DarkRowSkeleton({ opacity, pagePad }: { opacity: Opacity; pagePad: numb
 export function WebHomeSkeleton() {
   const opacity = useSkeletonAnim();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 768;
   const isMobile = width < 640;
   const pagePad = width < 640 ? 16 : 32;
 
   return (
     <ScrollView
-      style={[skel.scroll, isDesktop && (skel.scrollDark as object)] as object}
-      contentContainerStyle={
-        [skel.content, isMobile && { paddingTop: NAV_HEIGHT }] as object
-      }
+      style={[skel.scroll, skel.scrollDark] as object}
+      contentContainerStyle={skel.content}
     >
-      {isDesktop ? (
-        <>
-          <View style={skel.darkStage}>
-            <SpotlightSkeleton opacity={opacity} dark />
-            <StatPodsSkeleton opacity={opacity} pagePad={pagePad} />
-          </View>
-          <View style={skel.ticker} />
-        </>
-      ) : (
-        <SpotlightSkeleton opacity={opacity} dark={false} />
-      )}
+      {/* Dark-stage skeleton at all widths — mirrors the unified dark stage
+          so there's no beige flash on refresh. */}
+      <View style={[skel.darkStage, isMobile && (skel.darkStageMobile as object)] as object}>
+        <SpotlightSkeleton opacity={opacity} dark />
+        <StatPodsSkeleton opacity={opacity} pagePad={pagePad} />
+      </View>
+      <View style={skel.ticker} />
 
       {/* Beige carousel canvas — mirrors the curated row order in explore.web */}
       <View style={skel.beigeCanvas}>
@@ -188,6 +197,7 @@ const skel = StyleSheet.create({
     paddingTop: NAV_HEIGHT + 24,
     paddingBottom: 28,
   },
+  darkStageMobile: { paddingTop: NAV_HEIGHT, paddingBottom: 16 } as object,
   ticker: { height: 38, backgroundColor: COLORS.orange },
   beigeCanvas: {
     backgroundColor: COLORS.beige,

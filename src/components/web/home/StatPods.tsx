@@ -21,7 +21,6 @@ export function StatPods({
 }: StatPodsProps) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
-  const isTablet = width >= 640;
 
   const pods = [
     {
@@ -52,6 +51,8 @@ export function StatPods({
     },
   ];
 
+  // Desktop: a single 4-up row. Tablet & mobile: a balanced 2×2 grid — same pod
+  // design throughout, just reflowed (keeps parity with the desktop stage).
   return (
     <View
       style={[
@@ -65,11 +66,7 @@ export function StatPods({
           key={i}
           onPress={pod.onPress}
           style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [
-              s.pod,
-              isDesktop ? s.podFlex : isTablet ? s.podHalfWidth : s.podFullWidth,
-              hovered && (s.podHover as object),
-            ] as object
+            [s.pod, isDesktop ? s.podFlex : s.podHalfWidth, hovered && (s.podHover as object)] as object
           }
         >
           <Text style={s.eyebrow as object}>{pod.eyebrow}</Text>
@@ -104,7 +101,6 @@ const s = StyleSheet.create({
   } as object,
   podFlex: { flex: 1 },
   podHalfWidth: { width: '48%' } as object,
-  podFullWidth: { width: '100%' } as object,
   podHover: { backgroundColor: 'rgba(255,255,255,0.09)' } as object,
   eyebrow: {
     fontFamily: 'Nunito_700Bold',

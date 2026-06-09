@@ -1121,7 +1121,6 @@ export default function WebHomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
-  const isDesktop = width >= 768;
 
   // 1. MATCH THE ACCORDION_SCALES EXACTLY
   const optimalPoolSize = width >= 1280 ? 8 : width >= 900 ? 6 : 3;
@@ -1248,17 +1247,17 @@ export default function WebHomeScreen() {
         <WebHomeSkeleton />
       ) : (
         <ScrollView
-          style={[styles.scroll, isDesktop && (styles.scrollDark as object)] as object}
-          contentContainerStyle={
-            [styles.discoverContent, isMobile && { paddingTop: NAV_HEIGHT }] as object
-          }
+          style={[styles.scroll, styles.scrollDark] as object}
+          contentContainerStyle={styles.discoverContent}
         >
           {/* ── Home content — always rendered. On desktop, committed searches
                go to the dedicated /search route; on mobile-web the inline
                results below still appear. ───────────────────────────────────── */}
-          {/* ── Dark stage: spotlight + stat pods ──────────────────────────── */}
-          {isDesktop ? (
-            <View style={styles.darkStage}>
+          {/* ── Dark stage: spotlight + stat pods + matchup ──────────────────
+               Renders at all widths; each child handles its own responsive
+               layout. The stage clears the floating header via its own
+               paddingTop so the screen owns its clearance (bleedBehindNav). */}
+          <View style={[styles.darkStage, isMobile && (styles.darkStageMobile as object)] as object}>
               {(homeData.spotlight?.length ?? 0) > 0 && (
                 <PortraitStripSpotlight
                   heroes={homeData.spotlight!.slice(
@@ -1306,26 +1305,13 @@ export default function WebHomeScreen() {
                   onOpen={(path) => router.push(path as Parameters<typeof router.push>[0])}
                 />
               )}
-            </View>
-          ) : (
-            (homeData.spotlight?.length ?? 0) > 0 && (
-              <PortraitStripSpotlight
-                heroes={homeData.spotlight!.slice(
-                  0,
-                  Math.min(optimalPoolSize, homeData.spotlight!.length),
-                )}
-                onViewProfile={handlePress}
-              />
-            )
-          )}
+          </View>
 
           {/* ── Orange ticker strip ────────────────────────────────────────── */}
-          {isDesktop && (
-            <PulseTicker
-              heroCount={totalHeroCount ?? 0}
-              newlyAddedCount={homeData.newlyAdded?.length ?? 0}
-            />
-          )}
+          <PulseTicker
+            heroCount={totalHeroCount ?? 0}
+            newlyAddedCount={homeData.newlyAdded?.length ?? 0}
+          />
 
           {/* Beige canvas — owns the carousel surface so the dark scroll
               background only shows on the dark stage and on overscroll. */}
@@ -1445,6 +1431,9 @@ const styles = StyleSheet.create({
     paddingTop: NAV_HEIGHT + 8,
     paddingBottom: 28,
   },
+  // Tighter rhythm on small screens — the spotlight's own marginVertical
+  // already supplies breathing room below the header.
+  darkStageMobile: { paddingTop: NAV_HEIGHT, paddingBottom: 16 } as object,
 
   // Beige canvas owns the carousel section (sits on the dark scroll surface).
   beigeCanvas: {

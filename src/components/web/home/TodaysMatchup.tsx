@@ -9,10 +9,20 @@ interface TodaysMatchupProps {
   onOpen: (path: string) => void;
 }
 
-function Fighter({ hero, side }: { hero: Matchup['heroA']; side: 'a' | 'b' }) {
+function Fighter({
+  hero,
+  side,
+  size = PORTRAIT,
+}: {
+  hero: Matchup['heroA'];
+  side: 'a' | 'b';
+  size?: number;
+}) {
   const source = heroImageSource(hero.id, hero.image_url, hero.portrait_url);
   return (
-    <View style={[m.portrait, side === 'b' && (m.portraitB as object)] as object}>
+    <View
+      style={[m.portrait, { width: size, height: size }, side === 'b' && (m.portraitB as object)] as object}
+    >
       <Image
         source={source}
         contentFit="cover"
@@ -32,11 +42,43 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
   const { heroA, heroB, winsA, winsB } = matchup;
   const lead = winsA === winsB ? 'Evenly matched' : `${winsA > winsB ? heroA.name : heroB.name} leads`;
 
+  // ── Mobile: a centred "fight poster" — face-off portraits on top, then the
+  // verdict. Same content + tokens as the desktop card, reflowed vertically. ──
+  if (!isDesktop) {
+    return (
+      <Pressable
+        onPress={() => onOpen(`/compare/${heroA.id}/${heroB.id}`)}
+        style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+          [m.card, m.cardMobile, hovered && (m.cardHover as object)] as object
+        }
+      >
+        <Text style={[m.eyebrow, m.textCenter] as object}>⚔ Today's Battle</Text>
+        <View style={m.fightersMobile}>
+          <Fighter hero={heroA} side="a" size={92} />
+          <View style={m.vsBadge as object}>
+            <Text style={m.vsText}>VS</Text>
+          </View>
+          <Fighter hero={heroB} side="b" size={92} />
+        </View>
+        <Text style={[m.title, m.textCenter] as object} numberOfLines={1}>
+          {heroA.name} vs {heroB.name}
+        </Text>
+        <Text style={[m.verdict, m.textCenter] as object} numberOfLines={3}>
+          “{matchup.verdict}”
+        </Text>
+        <View style={m.footerMobile}>
+          <Text style={m.lead}>{lead}</Text>
+          <Text style={m.link}>See full breakdown →</Text>
+        </View>
+      </Pressable>
+    );
+  }
+
   return (
     <Pressable
       onPress={() => onOpen(`/compare/${heroA.id}/${heroB.id}`)}
       style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [m.card, !isDesktop && (m.cardStack as object), hovered && (m.cardHover as object)] as object
+        [m.card, hovered && (m.cardHover as object)] as object
       }
     >
       <View style={m.fighters}>
@@ -80,10 +122,31 @@ const m = StyleSheet.create({
     cursor: 'pointer',
     transition: 'background-color 150ms ease, transform 150ms ease',
   } as object,
-  cardStack: { flexDirection: 'column', alignItems: 'flex-start', gap: 16 } as object,
+  cardMobile: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 22,
+    marginHorizontal: 16,
+  } as object,
   cardHover: { backgroundColor: 'rgba(255,255,255,0.08)' } as object,
 
   fighters: { flexDirection: 'row', alignItems: 'center', flexShrink: 0 },
+  fightersMobile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 2,
+  } as object,
+  textCenter: { textAlign: 'center', marginBottom: 0 } as object,
+  footerMobile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    alignSelf: 'stretch',
+    gap: 12,
+    marginTop: 4,
+  } as object,
   portrait: {
     width: PORTRAIT,
     height: PORTRAIT,
