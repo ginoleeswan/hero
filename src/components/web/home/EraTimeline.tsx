@@ -79,9 +79,9 @@ export function EraTimeline({ eras, onPress }: EraTimelineProps) {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={[t.heroScroll, isMobile && { marginLeft: -26 }] as object}
+                style={[t.heroScroll, isMobile && { marginLeft: -16 }] as object}
                 contentContainerStyle={
-                  [t.heroStrip, isMobile ? { paddingLeft: 26 } : { paddingRight: 4 }] as object
+                  [t.heroStrip, isMobile ? { paddingLeft: 16 } : { paddingRight: 4 }] as object
                 }
               >
                 {bucket.heroes.map((h) => (
