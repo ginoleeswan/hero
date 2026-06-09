@@ -411,7 +411,7 @@ export default function WebCharacterScreen() {
               />
             ) : null}
             {/* Gradient scrim keeps the identity text legible over the backdrop */}
-            <View style={styles.stageScrim as object} pointerEvents="none" />
+            <View style={[styles.stageScrim, { pointerEvents: 'none' }] as object} />
             {/* Atmospheric orbs — alignment-tinted, purely decorative */}
             <View
               style={
@@ -419,12 +419,12 @@ export default function WebCharacterScreen() {
                   styles.orbA,
                   {
                     backgroundImage: `radial-gradient(circle, ${alignmentColor}2e, transparent 70%)`,
+                    pointerEvents: 'none',
                   },
                 ] as object
               }
-              pointerEvents="none"
             />
-            <View style={styles.orbB as object} pointerEvents="none" />
+            <View style={[styles.orbB, { pointerEvents: 'none' }] as object} />
 
             <View style={[styles.stageInner, { paddingHorizontal: isDesktop ? 24 : 16 }]}>
               {/* Top row — glass controls */}
@@ -548,10 +548,13 @@ export default function WebCharacterScreen() {
               style={
                 [
                   styles.stageAccent,
-                  { backgroundColor: alignmentColor, boxShadow: `0 0 18px ${alignmentColor}` },
+                  {
+                    backgroundColor: alignmentColor,
+                    boxShadow: `0 0 18px ${alignmentColor}`,
+                    pointerEvents: 'none',
+                  },
                 ] as object
               }
-              pointerEvents="none"
             />
           </View>
         ) : null}
@@ -866,7 +869,7 @@ export default function WebCharacterScreen() {
                   ) : (
                     <View style={styles.portraitPlaceholder} />
                   )}
-                  <View style={styles.portraitOverlay as object} pointerEvents="none" />
+                  <View style={[styles.portraitOverlay, { pointerEvents: 'none' }] as object} />
                 </View>
 
                 <View style={styles.card}>
@@ -905,8 +908,8 @@ export default function WebCharacterScreen() {
                     recyclingKey={id}
                   />
                 ) : null}
-                <View style={styles.mScrimTop as object} pointerEvents="none" />
-                <View style={styles.mScrimBottom as object} pointerEvents="none" />
+                <View style={[styles.mScrimTop, { pointerEvents: 'none' }] as object} />
+                <View style={[styles.mScrimBottom, { pointerEvents: 'none' }] as object} />
 
                 <View style={styles.mControls}>
                   <Pressable

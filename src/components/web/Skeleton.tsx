@@ -7,8 +7,10 @@ export function useSkeletonAnim() {
   useEffect(() => {
     const anim = Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 750, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.5, duration: 750, useNativeDriver: true }),
+        // Web-only component — there's no native animation driver in the browser,
+        // so keep this on the JS driver to avoid the RCTAnimation warning.
+        Animated.timing(opacity, { toValue: 1, duration: 750, useNativeDriver: false }),
+        Animated.timing(opacity, { toValue: 0.5, duration: 750, useNativeDriver: false }),
       ]),
     );
     anim.start();
