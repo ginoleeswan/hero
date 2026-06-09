@@ -1,27 +1,38 @@
 // app/compare/pick.web.tsx — Versus matchup builder. Two fighter slots (both
-// empty to start), pick either from the roster below, swap freely, then Fight.
-// The character → Compare flow still uses /compare/[hero]/pick (one locked).
-import { useEffect, useRef, useState } from 'react';
+// empty to start); pick either from the roster, swap freely, then Fight. The
+// roster reacts to the *other* chosen fighter (rivals / same universe). Shares
+// the design language (FighterAnchor, OpponentCard) + view-transition morphs of
+// the character-locked picker — only the flow differs.
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
-  Pressable,
   TextInput,
   ScrollView,
+  Pressable,
   StyleSheet,
+  Platform,
   useWindowDimensions,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../src/constants/colors';
-import { heroImageSource } from '../../src/constants/heroImages';
-import { searchHeroes, getSearchIdleHeroes, type HeroSearchResult } from '../../src/lib/db/heroes';
-import { TOPBAR_HEIGHT } from '../../src/components/web/NavVariants';
+import { rankResults, type HeroSearchResult } from '../../src/lib/db/heroes';
+import { usePickOpponents } from '../../src/hooks/usePickOpponents';
+import { OpponentCard } from '../../src/components/compare/OpponentCard';
 import { VsBadge } from '../../src/components/compare/VsBadge';
+import { FighterAnchor, ANCHOR_H } from '../../src/components/compare/FighterAnchor';
+import { stashFighters } from '../../src/lib/compareHandoff';
+import { withViewTransition } from '../../src/lib/viewTransition';
+import { COLORS } from '../../src/constants/colors';
+import { TOPBAR_HEIGHT } from '../../src/components/web/NavVariants';
 
-type Fighter = HeroSearchResult;
+type Fighter = Pick<HeroSearchResult, 'id' | 'name' | 'image_url' | 'portrait_url'>;
 type Slot = 'a' | 'b';
+
+const VT_A = 'vt-fighter-a';
+const VT_B = 'vt-fighter-b';
+const SHEET_MAX = 1180;
+const railFadeMask = 'linear-gradient(to right, #000 92%, transparent 100%)';
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -32,134 +43,71 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-// ── A single fighter slot — empty placeholder or filled portrait card ──────────
-function FighterSlot({
-  fighter,
-  active,
-  label,
-  size,
-  onSelect,
-  onClear,
-}: {
-  fighter: Fighter | null;
-  active: boolean;
-  label: string;
-  size: number;
-  onSelect: () => void;
-  onClear: () => void;
-}) {
-  const source = fighter
-    ? heroImageSource(String(fighter.id), fighter.image_url, fighter.portrait_url)
-    : null;
-  return (
-    <Pressable
-      onPress={onSelect}
-      style={
-        [s.slot, { width: size, height: size * 1.32 }, active && (s.slotActive as object)] as object
-      }
-    >
-      {fighter && source ? (
-        <>
-          <Image
-            source={source}
-            contentFit="cover"
-            contentPosition="top"
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
-            cachePolicy="memory-disk"
-            recyclingKey={String(fighter.id)}
-            transition={160}
-          />
-          <View style={s.slotOverlay as object} />
-          <Pressable aria-label="Remove" onPress={onClear} style={s.slotClear as object}>
-            <Ionicons name="close" size={16} color={COLORS.beige} />
-          </Pressable>
-          <Text style={s.slotName as object} numberOfLines={1}>
-            {fighter.name}
-          </Text>
-        </>
-      ) : (
-        <View style={s.slotEmpty}>
-          <View style={s.slotPlus as object}>
-            <Ionicons name="add" size={26} color="rgba(245,235,220,0.5)" />
-          </View>
-          <Text style={s.slotEmptyText as object}>{label}</Text>
-        </View>
-      )}
-    </Pressable>
-  );
-}
-
-// ── Roster result card ─────────────────────────────────────────────────────────
-function RosterCard({ hero, onPick }: { hero: Fighter; onPick: () => void }) {
-  const source = heroImageSource(String(hero.id), hero.image_url, hero.portrait_url);
-  return (
-    <Pressable
-      onPress={onPick}
-      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [rc.card, hovered && (rc.cardHover as object)] as object
-      }
-    >
-      <Image
-        source={source}
-        contentFit="cover"
-        contentPosition="top"
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
-        cachePolicy="memory-disk"
-        recyclingKey={String(hero.id)}
-        transition={160}
-      />
-      <View style={rc.overlay as object} />
-      <Text style={rc.name as object} numberOfLines={1}>
-        {hero.name}
-      </Text>
-    </Pressable>
-  );
-}
-
 export default function PickArena() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
+  const wide = width >= 1024;
   const contentPad = width < 640 ? 16 : 32;
+  const inputRef = useRef<TextInput>(null);
 
   const [a, setA] = useState<Fighter | null>(null);
   const [b, setB] = useState<Fighter | null>(null);
   const [active, setActive] = useState<Slot>('a');
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Fighter[]>([]);
-  const [loading, setLoading] = useState(true);
-  const inputRef = useRef<TextInput>(null);
   const debouncedQuery = useDebounce(query, 200);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    const q = debouncedQuery.trim();
-    const p = q ? searchHeroes(q, 'All', 48) : getSearchIdleHeroes(36);
-    p.then((r) => !cancelled && setResults(r))
-      .catch(() => !cancelled && setResults([]))
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, [debouncedQuery]);
+  // The roster reacts to the *other* slot — its rivals / same-universe lead.
+  const contextId = active === 'a' ? b?.id ?? '' : a?.id ?? '';
+  const contextName = active === 'a' ? b?.name : a?.name;
+  const { rivals, sameUniverse, similar, all, loading } = usePickOpponents(contextId);
 
-  const pick = (hero: Fighter) => {
-    if (active === 'a') {
-      setA(hero);
-      if (!b) setActive('b'); // auto-advance to the still-empty slot
-    } else {
-      setB(hero);
-      if (!a) setActive('a');
-    }
-  };
+  const pickedIds = useMemo(
+    () => new Set([a?.id, b?.id].filter(Boolean) as string[]),
+    [a?.id, b?.id],
+  );
+  const exclude = useCallback(
+    <T extends { id: string }>(list: T[]) => list.filter((h) => !pickedIds.has(h.id)),
+    [pickedIds],
+  );
+
+  const q = debouncedQuery.trim();
+  const showSuggestions =
+    !q && !!contextId && (rivals.length > 0 || sameUniverse.length > 0 || similar.length > 0);
+  const displayed = q
+    ? rankResults(all, q).filter((h) => !pickedIds.has(h.id)).slice(0, 120)
+    : exclude(all).slice(0, 120);
+
+  const pick = useCallback(
+    (hero: Fighter) => {
+      withViewTransition(() => {
+        if (active === 'a') {
+          setA(hero);
+          if (!b) setActive('b');
+        } else {
+          setB(hero);
+          if (!a) setActive('a');
+        }
+        setQuery('');
+      });
+    },
+    [active, a, b],
+  );
 
   const ready = !!a && !!b;
-  const fight = () => {
-    if (a && b) router.push(`/compare/${a.id}/${b.id}` as Parameters<typeof router.push>[0]);
-  };
+  const fight = useCallback(() => {
+    if (!a || !b) return;
+    stashFighters(a, b);
+    withViewTransition(() =>
+      router.push(`/compare/${a.id}/${b.id}` as Parameters<typeof router.push>[0]),
+    );
+  }, [a, b, router]);
 
-  const slotSize = isDesktop ? 150 : Math.min(132, (width - contentPad * 2 - 72) / 2);
+  const anchorW = isDesktop ? 128 : Math.min(124, (width - contentPad * 2 - 78) / 2);
+  const anchorH = isDesktop ? ANCHOR_H : Math.round(anchorW * 1.25);
+  const promptText = contextName
+    ? `Pick a challenger for ${contextName}`
+    : `Choose fighter ${active === 'a' ? 1 : 2}`;
 
   return (
     <View style={s.root}>
@@ -167,76 +115,78 @@ export default function PickArena() {
         {/* ── Navy stage: the matchup taking shape ── */}
         <View style={[s.stage, { paddingHorizontal: contentPad }] as object}>
           <View style={s.stageInner}>
-            <Pressable
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
-              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [s.backBtn, hovered && (s.backBtnHover as object)] as object
-              }
-            >
-              <Ionicons name="arrow-back" size={15} color="rgba(245,235,220,0.6)" />
-              <Text style={s.backText as object}>Back</Text>
-            </Pressable>
-
-            <Text style={s.eyebrow as object}>Build a Matchup</Text>
-            <Text style={s.title as object}>Versus</Text>
-
-            <View style={s.slots}>
-              <FighterSlot
-                fighter={a}
-                active={active === 'a'}
-                label="Fighter 1"
-                size={slotSize}
-                onSelect={() => setActive('a')}
-                onClear={() => {
-                  setA(null);
-                  setActive('a');
-                }}
-              />
-              <VsBadge size={isDesktop ? 52 : 42} variant="solid" />
-              <FighterSlot
-                fighter={b}
-                active={active === 'b'}
-                label="Fighter 2"
-                size={slotSize}
-                onSelect={() => setActive('b')}
-                onClear={() => {
-                  setB(null);
-                  setActive('b');
-                }}
-              />
+            {/* Anchors — shared FighterAnchor, both swappable, gold spotlight behind. */}
+            <View style={s.matchup}>
+              <View style={s.spotlight as object} pointerEvents="none" />
+              <View style={s.anchorRow}>
+                <FighterAnchor
+                  fighter={a}
+                  seatLabel="Fighter 1"
+                  active={active === 'a'}
+                  vtName={VT_A}
+                  w={anchorW}
+                  h={anchorH}
+                  onPress={() => setActive('a')}
+                  onClear={() =>
+                    withViewTransition(() => {
+                      setA(null);
+                      setActive('a');
+                    })
+                  }
+                />
+                <View style={[s.vsWrap, { height: anchorH }] as object}>
+                  <VsBadge size={48} variant="glass" />
+                </View>
+                <FighterAnchor
+                  fighter={b}
+                  seatLabel="Fighter 2"
+                  active={active === 'b'}
+                  vtName={VT_B}
+                  flip
+                  w={anchorW}
+                  h={anchorH}
+                  onPress={() => setActive('b')}
+                  onClear={() =>
+                    withViewTransition(() => {
+                      setB(null);
+                      setActive('b');
+                    })
+                  }
+                />
+              </View>
             </View>
 
-            <Pressable
-              onPress={fight}
-              disabled={!ready}
-              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [
-                  s.fight,
-                  !ready && (s.fightDisabled as object),
-                  ready && hovered && (s.fightHover as object),
-                ] as object
-              }
-            >
-              <Text style={[s.fightText, !ready && (s.fightTextDisabled as object)] as object}>
-                {ready ? `${a!.name} vs ${b!.name}` : 'Pick two fighters'}
+            {ready ? (
+              <Pressable
+                onPress={fight}
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                  [s.fight, hovered && (s.fightHover as object)] as object
+                }
+              >
+                <Text style={s.fightText as object}>
+                  {a!.name} vs {b!.name}
+                </Text>
+                <Ionicons name="arrow-forward" size={16} color="#fff" />
+              </Pressable>
+            ) : (
+              <Text style={s.chooseEyebrow as object}>
+                {a || b ? 'Choose your challenger' : 'Choose your fighters'}
               </Text>
-              {ready && <Ionicons name="arrow-forward" size={16} color="#fff" />}
-            </Pressable>
+            )}
           </View>
         </View>
 
-        {/* ── Beige sheet: the roster ── */}
-        <View style={[s.sheet, { paddingHorizontal: contentPad }] as object}>
-          <View style={s.sheetInner}>
-            <Text style={s.prompt as object}>
-              {active === 'a' ? 'Choose fighter 1' : 'Choose fighter 2'}
-            </Text>
+        {/* ── Beige sheet: the roster (overlaps the stage like the arena) ── */}
+        <View style={s.sheet}>
+          <View style={[s.sheetInner, wide && (s.sheetInnerWide as object)] as object}>
             <Pressable style={s.searchWrap as object} onPress={() => inputRef.current?.focus()}>
               <Ionicons name="search" size={18} color="rgba(41,60,67,0.4)" />
               <TextInput
                 ref={inputRef}
                 style={s.input as object}
-                placeholder="Search any hero or villain…"
+                placeholder={
+                  contextName ? `Search a rival for ${contextName}…` : 'Search any hero or villain…'
+                }
                 placeholderTextColor="rgba(41,60,67,0.38)"
                 value={query}
                 onChangeText={setQuery}
@@ -249,14 +199,70 @@ export default function PickArena() {
               )}
             </Pressable>
 
+            <Text style={s.prompt as object}>{promptText}</Text>
+
+            {showSuggestions && (
+              <View style={s.sections}>
+                {rivals.length > 0 && (
+                  <View style={s.section}>
+                    <View style={s.rivalHead as object}>
+                      <Text style={s.swords as object}>⚔</Text>
+                      <Text style={s.rivalLabel as object}>Rivalries</Text>
+                      <View style={s.rivalBar as object} />
+                    </View>
+                    <Text style={s.tagline as object}>The grudge matches fans want to see.</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={s.railFade as object}
+                      contentContainerStyle={s.railRow as object}
+                    >
+                      {exclude(rivals).map((item) => (
+                        <OpponentCard
+                          key={item.id}
+                          item={item}
+                          onPress={() => pick(item)}
+                          width={138}
+                          height={196}
+                          accent
+                        />
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+                {sameUniverse.length > 0 && (
+                  <View style={s.section}>
+                    <Text style={s.sectionLabel as object}>Same Universe</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={s.railFade as object}
+                      contentContainerStyle={s.railRow as object}
+                    >
+                      {exclude(sameUniverse).map((item) => (
+                        <OpponentCard
+                          key={item.id}
+                          item={item}
+                          onPress={() => pick(item)}
+                          width={138}
+                          height={196}
+                        />
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+                <Text style={s.sectionLabel as object}>All Heroes</Text>
+              </View>
+            )}
+
             {loading ? (
-              <Text style={s.muted as object}>Loading…</Text>
-            ) : results.length === 0 ? (
+              <Text style={s.muted as object}>Loading roster…</Text>
+            ) : displayed.length === 0 ? (
               <Text style={s.muted as object}>No fighters found.</Text>
             ) : (
               <View style={s.grid as object}>
-                {results.map((h) => (
-                  <RosterCard key={h.id} hero={h} onPick={() => pick(h)} />
+                {displayed.map((item) => (
+                  <OpponentCard key={item.id} item={item} onPress={() => pick(item)} fill />
                 ))}
               </View>
             )}
@@ -268,98 +274,30 @@ export default function PickArena() {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.beige },
+  root: { flex: 1, backgroundColor: COLORS.navy },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 60 },
+  scrollContent: { paddingBottom: 40 },
 
   // ── Navy stage ──
-  stage: { backgroundColor: COLORS.navy, paddingTop: TOPBAR_HEIGHT + 16, paddingBottom: 36 },
+  stage: { backgroundColor: COLORS.navy, paddingTop: TOPBAR_HEIGHT + 18, paddingBottom: 38 },
   stageInner: { maxWidth: 760, width: '100%', alignSelf: 'center', alignItems: 'center' },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
-    cursor: 'pointer',
-    transition: 'opacity 150ms ease',
-  } as object,
-  backBtnHover: { opacity: 0.55 } as object,
-  backText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: 'rgba(245,235,220,0.6)',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  } as object,
-  eyebrow: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: COLORS.orange,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    marginTop: 14,
-  } as object,
-  title: { fontFamily: 'Flame-Regular', fontSize: 38, color: COLORS.beige, marginTop: 2 },
 
-  slots: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 24 },
-  slot: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(245,235,220,0.05)',
-    borderWidth: 2,
-    borderColor: 'rgba(245,235,220,0.12)',
-    cursor: 'pointer',
-    transition: 'border-color 160ms ease',
-  } as object,
-  slotActive: { borderColor: COLORS.orange } as object,
-  slotOverlay: {
+  matchup: { alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  spotlight: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundImage:
-      'linear-gradient(to top, rgba(11,24,32,0.92) 0%, rgba(11,24,32,0.05) 55%, transparent 100%)',
+    top: -6,
+    width: 520,
+    height: 240,
+    ...Platform.select({
+      web: {
+        backgroundImage:
+          'radial-gradient(ellipse at center, rgba(206,155,51,0.22) 0%, rgba(206,155,51,0) 64%)',
+      } as object,
+      default: {},
+    }),
   } as object,
-  slotClear: {
-    position: 'absolute',
-    top: 7,
-    right: 7,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: 'rgba(11,24,32,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-  } as object,
-  slotName: {
-    position: 'absolute',
-    bottom: 10,
-    left: 10,
-    right: 10,
-    fontFamily: 'Flame-Regular',
-    fontSize: 16,
-    color: COLORS.beige,
-    textShadow: '0 1px 6px rgba(0,0,0,0.8)',
-  } as object,
-  slotEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
-  slotPlus: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    borderWidth: 2,
-    borderColor: 'rgba(245,235,220,0.18)',
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-  } as object,
-  slotEmptyText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    color: 'rgba(245,235,220,0.5)',
-    letterSpacing: 0.3,
-  } as object,
+  anchorRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 16 },
+  vsWrap: { justifyContent: 'center' } as object,
 
   fight: {
     flexDirection: 'row',
@@ -367,48 +305,108 @@ const s = StyleSheet.create({
     gap: 8,
     marginTop: 26,
     backgroundColor: COLORS.orange,
-    paddingHorizontal: 26,
+    paddingHorizontal: 28,
     paddingVertical: 13,
     borderRadius: 30,
     cursor: 'pointer',
-    transition: 'transform 150ms ease, opacity 150ms ease',
+    transition: 'transform 150ms ease',
   } as object,
   fightHover: { transform: [{ translateY: -2 }] } as object,
-  fightDisabled: { backgroundColor: 'rgba(245,235,220,0.1)', cursor: 'default' } as object,
-  fightText: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 16,
-    color: '#fff',
-    letterSpacing: 0.3,
+  fightText: { fontFamily: 'Flame-Regular', fontSize: 16, color: '#fff', letterSpacing: 0.3 } as object,
+  chooseEyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11.5,
+    color: COLORS.goldAccent,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    marginTop: 26,
   } as object,
-  fightTextDisabled: { color: 'rgba(245,235,220,0.4)' } as object,
 
-  // ── Beige roster sheet ──
-  sheet: { paddingTop: 26 },
-  sheetInner: { maxWidth: 1080, width: '100%', alignSelf: 'center' },
-  prompt: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 20,
-    color: COLORS.navy,
-    marginBottom: 14,
-  } as object,
+  // ── Beige sheet (rounded, overlapping the stage like the arena) ──
+  sheet: {
+    flexGrow: 1,
+    backgroundColor: COLORS.beige,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -16,
+    paddingTop: 30,
+  },
+  sheetInner: {
+    width: '100%',
+    maxWidth: SHEET_MAX,
+    alignSelf: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 90,
+  },
+  sheetInnerWide: { paddingHorizontal: 32 } as object,
+
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 560,
+    marginBottom: 26,
     backgroundColor: 'rgba(41,60,67,0.06)',
-    borderRadius: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.12)',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 22,
+    height: 52,
+    gap: 10,
   } as object,
   input: {
     flex: 1,
     fontFamily: 'Nunito_400Regular',
-    fontSize: 15,
+    fontSize: 16,
     color: COLORS.navy,
     outlineStyle: 'none',
   } as object,
+
+  prompt: { fontFamily: 'Flame-Regular', fontSize: 21, color: COLORS.navy, marginBottom: 18 } as object,
+
+  sections: { marginBottom: 6 },
+  section: { marginBottom: 6 },
+  sectionLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: 'rgba(41,60,67,0.5)',
+    textTransform: 'uppercase',
+    letterSpacing: 1.4,
+    marginBottom: 12,
+  } as object,
+  railFade: { maskImage: railFadeMask, WebkitMaskImage: railFadeMask } as object,
+  railRow: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: 14,
+    paddingRight: 8,
+    paddingTop: 6,
+    paddingBottom: 30,
+  } as object,
+  rivalHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 } as object,
+  swords: { fontSize: 16, color: COLORS.gold } as object,
+  rivalLabel: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 16,
+    color: COLORS.gold,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+  } as object,
+  rivalBar: {
+    flex: 1,
+    height: 2,
+    borderRadius: 1,
+    backgroundImage: 'linear-gradient(to right, rgba(176,125,0,0.5), rgba(176,125,0,0))',
+  } as object,
+  tagline: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: 'rgba(41,60,67,0.55)',
+    marginBottom: 12,
+  } as object,
+
   muted: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
@@ -419,40 +417,7 @@ const s = StyleSheet.create({
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-    gridAutoRows: '188px',
+    gridAutoRows: '198px',
     gap: 14,
-  } as object,
-});
-
-const rc = StyleSheet.create({
-  card: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: COLORS.navy,
-    cursor: 'pointer',
-    transition: 'transform 180ms ease, box-shadow 180ms ease',
-  } as object,
-  cardHover: {
-    transform: [{ translateY: -5 }],
-    boxShadow: '0 16px 40px rgba(0,0,0,0.32)',
-  } as object,
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundImage:
-      'linear-gradient(to top, rgba(29,45,51,0.95) 0%, rgba(29,45,51,0.05) 55%, transparent 100%)',
-  } as object,
-  name: {
-    position: 'absolute',
-    bottom: 10,
-    left: 10,
-    right: 10,
-    fontFamily: 'Flame-Regular',
-    fontSize: 14,
-    color: COLORS.beige,
-    textShadow: '0 1px 6px rgba(0,0,0,0.9)',
   } as object,
 });
