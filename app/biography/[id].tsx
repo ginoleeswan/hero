@@ -1,16 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  Linking,
-  useWindowDimensions,
-} from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Linking, useWindowDimensions } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import RenderHTML, { type MixedStyleDeclaration } from 'react-native-render-html';
 import { Skeleton } from '../../src/components/ui/Skeleton';
@@ -172,27 +163,29 @@ export default function BiographyScreen() {
 
   return (
     <View style={styles.container}>
-      {/* No native header — native-stack ignores headerBackground, so its bar
-          renders a translucent gradient over the navy banner. We hide it and
-          float our own back button instead for full control. */}
-      <Stack.Screen options={{ headerShown: false }} />
-
-      <TouchableOpacity
-        onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
-        style={[styles.backBtn, { top: insets.top + 6 }]}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        accessibilityRole="button"
-        accessibilityLabel="Go back"
-      >
-        <Ionicons name="chevron-back" size={22} color={COLORS.beige} />
-      </TouchableOpacity>
+      {/* Native header with a solid navy background — same navy as the banner
+          below, so the bar reads as one seamless navy region (no translucent
+          gradient band, which is what an *transparent* native-stack header
+          renders over dark content). */}
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerTransparent: false,
+          headerShadowVisible: false,
+          // Chevron only — hides the previous route name ("character/[id]").
+          headerBackButtonDisplayMode: 'minimal',
+          headerStyle: { backgroundColor: COLORS.navy },
+          headerTintColor: COLORS.beige,
+          headerTitle: '',
+        }}
+      />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={{ paddingBottom: insets.bottom + 48 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Navy header banner — full-bleed behind the transparent nav + status bar */}
-        <View style={[styles.banner, { paddingTop: insets.top + 52 }]}>
+        {/* Navy banner — continues the navy header seamlessly into the page */}
+        <View style={styles.banner}>
           {heroImage ? (
             <Image
               source={heroImage}
@@ -267,27 +260,13 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.beige },
   scroll: { flex: 1 },
 
-  // Floating back button — scrim chip so the chevron reads on the navy banner.
-  backBtn: {
-    position: 'absolute',
-    left: 12,
-    zIndex: 10,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(245,235,220,0.14)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Navy header banner: portrait + title, runs full-bleed behind the
-  // transparent nav bar + status bar (hence the inset-aware top padding).
+  // Navy banner — same navy as the header above it, so they merge seamlessly.
   banner: {
     flexDirection: 'row',
     gap: 16,
     backgroundColor: COLORS.navy,
     paddingHorizontal: 20,
+    paddingTop: 12,
     paddingBottom: 26,
   },
   portrait: {
