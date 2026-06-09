@@ -145,6 +145,9 @@ export default function WebCharacterScreen() {
     [],
   );
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  // Measured desktop stage height — lets the overlapping portrait anchor to a
+  // constant top position regardless of how much identity content the stage has.
+  const [stageHeight, setStageHeight] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -384,6 +387,14 @@ export default function WebCharacterScreen() {
       ? Math.round(statValues.reduce((a, b) => a + b, 0) / statValues.length)
       : null;
 
+  // How far the side-column portrait overlaps up into the stage. Anchored to a
+  // constant top (NAV_HEIGHT + 60) by clamping the overlap to the stage height,
+  // so a shorter stage never pushes the portrait into the header controls. Falls
+  // back to the design default until the stage has been measured.
+  const portraitOverlap = stageHeight
+    ? -Math.min(210, Math.max(0, stageHeight - (NAV_HEIGHT + 60)))
+    : -210;
+
   return (
     <>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
@@ -391,6 +402,7 @@ export default function WebCharacterScreen() {
             immersive portrait header inside the body branch below. ── */}
         {isDesktop ? (
           <View
+            onLayout={(e) => setStageHeight(e.nativeEvent.layout.height)}
             style={[
               styles.stage,
               {
@@ -528,24 +540,18 @@ export default function WebCharacterScreen() {
                   ) : null}
                 </View>
 
-                {/* Reserve the credit line's height whether or not creators
-                    exist, so the stage doesn't shrink and shove the overlapping
-                    portrait up toward the header controls. */}
-                <View style={styles.stageCreditSlot}>
-                  {comicVineLoading ? (
-                    <SkeletonBlock
-                      opacity={skeletonOpacity}
-                      width={180}
-                      height={10}
-                      borderRadius={4}
-                      dark
-                    />
-                  ) : details.creators?.length ? (
-                    <Text style={styles.stageCredit}>
-                      Created by {details.creators.join(' & ')}
-                    </Text>
-                  ) : null}
-                </View>
+                {comicVineLoading ? (
+                  <SkeletonBlock
+                    opacity={skeletonOpacity}
+                    width={180}
+                    height={10}
+                    borderRadius={4}
+                    dark
+                    style={{ marginTop: 14 }}
+                  />
+                ) : details.creators?.length ? (
+                  <Text style={styles.stageCredit}>Created by {details.creators.join(' & ')}</Text>
+                ) : null}
               </View>
             </View>
 
@@ -892,7 +898,7 @@ export default function WebCharacterScreen() {
 
               {/* Side column — overlapping portrait + quick facts */}
               <View style={styles.sideCol}>
-                <View style={[styles.portraitCard, styles.portraitOverlapDesktop as object]}>
+                <View style={[styles.portraitCard, { marginTop: portraitOverlap }] as object}>
                   {heroImage ? (
                     <Image
                       source={heroImage}
@@ -1948,13 +1954,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: 'rgba(245,235,220,0.5)',
   },
-  // Fixed slot that always reserves one credit line + its top gap, so the stage
-  // height is identical whether or not a hero has a "Created by" credit.
-  stageCreditSlot: { marginTop: 12, minHeight: 16, justifyContent: 'center' },
   stageCredit: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
     color: 'rgba(245,235,220,0.45)',
+    marginTop: 12,
   },
   stageAccent: {
     position: 'absolute',
