@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,10 @@ import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
 import { StatBar } from '../../src/components/web/StatBar';
 import { MovieStrip } from '../../src/components/MovieStrip';
+import { AbilitiesSection } from '../../src/components/AbilitiesSection';
+import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
+import { useHeroPercentile, useHeroesByNames } from '../../src/lib/query/heroQueries';
+import type { RelatedHeroCard } from '../../src/lib/db/heroes';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import { NAV_HEIGHT } from '../../src/components/web/TopNav';
 import type { CharacterData } from '../../src/types';
@@ -278,6 +282,28 @@ export default function WebCharacterScreen() {
     ? heroImageSource(id, data?.stats.image.url ?? null, data?.stats.image.portraitUrl ?? null)
     : null;
 
+  // Power percentile + resolved enemy/ally hero cards (shared with native).
+  const powerTotal = useMemo(() => {
+    if (!data) return 0;
+    return STAT_CONFIG.map(({ key }) =>
+      parseInt((data.stats.powerstats as Record<string, string>)[key] ?? '0', 10),
+    )
+      .filter((n) => !isNaN(n) && n > 0)
+      .reduce((a, b) => a + b, 0);
+  }, [data]);
+  const { data: percentile } = useHeroPercentile(powerTotal || null);
+
+  const relatedNames = useMemo(
+    () => (data ? [...(data.details.enemies ?? []), ...(data.details.friends ?? [])] : []),
+    [data],
+  );
+  const { data: relatedHeroes } = useHeroesByNames(relatedNames);
+  const relatedHeroMap = useMemo(() => {
+    const m = new Map<string, RelatedHeroCard>();
+    for (const h of relatedHeroes ?? []) m.set(h.name, h);
+    return m;
+  }, [relatedHeroes]);
+
   if (error) {
     return (
       <View style={styles.center}>
@@ -353,7 +379,9 @@ export default function WebCharacterScreen() {
             style={
               [
                 styles.orbA,
-                { backgroundImage: `radial-gradient(circle, ${alignmentColor}2e, transparent 70%)` },
+                {
+                  backgroundImage: `radial-gradient(circle, ${alignmentColor}2e, transparent 70%)`,
+                },
               ] as object
             }
             pointerEvents="none"
@@ -489,405 +517,82 @@ export default function WebCharacterScreen() {
 
         {/* ── Body ── */}
         <View style={styles.bodyWrap}>
-        {isDesktop ? (
-          <View style={styles.bodyDesktopNew}>
-            {/* Main column — continuous editorial sections */}
-            <View style={styles.mainCol}>
-              {/* Power stats band */}
-              <View style={styles.card}>
-                <View style={styles.statCardHeader}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
-                    {data.statsSource === 'ai' ? (
-                      <View style={styles.aiBadge}>
-                        <Text style={styles.aiBadgeText}>AI</Text>
+          {isDesktop ? (
+            <View style={styles.bodyDesktopNew}>
+              {/* Main column — continuous editorial sections */}
+              <View style={styles.mainCol}>
+                {/* Power stats band */}
+                <View style={styles.card}>
+                  <View style={styles.statCardHeader}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
+                      {data.statsSource === 'ai' ? (
+                        <View style={styles.aiBadge}>
+                          <Text style={styles.aiBadgeText}>AI</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    {powerScore !== null ? (
+                      <View
+                        style={[styles.powerScorePill, { backgroundColor: alignmentColor + '22' }]}
+                      >
+                        <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
+                          {powerScore}
+                        </Text>
                       </View>
                     ) : null}
                   </View>
-                  {powerScore !== null ? (
-                    <View
-                      style={[styles.powerScorePill, { backgroundColor: alignmentColor + '22' }]}
-                    >
-                      <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
-                        {powerScore}
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-                <View style={styles.cardDivider} />
-                <View style={styles.statBand}>
-                  {STAT_CONFIG.map(({ key, label, color }) => {
-                    if (statsGenerating) {
+                  <View style={styles.cardDivider} />
+                  <View style={styles.statBand}>
+                    {STAT_CONFIG.map(({ key, label, color }) => {
+                      if (statsGenerating) {
+                        return (
+                          <View key={key} style={styles.bandCell}>
+                            <SkeletonBlock
+                              opacity={skeletonOpacity}
+                              width={42}
+                              height={28}
+                              borderRadius={5}
+                            />
+                            <SkeletonBlock
+                              opacity={skeletonOpacity}
+                              width="70%"
+                              height={5}
+                              borderRadius={3}
+                            />
+                            <SkeletonBlock
+                              opacity={skeletonOpacity}
+                              width={28}
+                              height={9}
+                              borderRadius={3}
+                            />
+                          </View>
+                        );
+                      }
+                      const raw = parseInt(
+                        (stats.powerstats as Record<string, string>)[key] ?? '0',
+                        10,
+                      );
+                      const fill = isNaN(raw) ? 0 : Math.min(raw, 100);
                       return (
                         <View key={key} style={styles.bandCell}>
-                          <SkeletonBlock
-                            opacity={skeletonOpacity}
-                            width={42}
-                            height={28}
-                            borderRadius={5}
-                          />
-                          <SkeletonBlock
-                            opacity={skeletonOpacity}
-                            width="70%"
-                            height={5}
-                            borderRadius={3}
-                          />
-                          <SkeletonBlock
-                            opacity={skeletonOpacity}
-                            width={28}
-                            height={9}
-                            borderRadius={3}
-                          />
+                          <Text style={[styles.bandVal, { color }]}>{isNaN(raw) ? '—' : raw}</Text>
+                          <View style={styles.bandTrack}>
+                            <View
+                              style={[
+                                styles.bandFill,
+                                { width: `${fill}%` as unknown as number, backgroundColor: color },
+                              ]}
+                            />
+                          </View>
+                          <Text style={styles.bandLabel}>{label}</Text>
                         </View>
                       );
-                    }
-                    const raw = parseInt(
-                      (stats.powerstats as Record<string, string>)[key] ?? '0',
-                      10,
-                    );
-                    const fill = isNaN(raw) ? 0 : Math.min(raw, 100);
-                    return (
-                      <View key={key} style={styles.bandCell}>
-                        <Text style={[styles.bandVal, { color }]}>{isNaN(raw) ? '—' : raw}</Text>
-                        <View style={styles.bandTrack}>
-                          <View
-                            style={[
-                              styles.bandFill,
-                              { width: `${fill}%` as unknown as number, backgroundColor: color },
-                            ]}
-                          />
-                        </View>
-                        <Text style={styles.bandLabel}>{label}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* Story */}
-              {comicVineLoading && !details.summary ? (
-                <View style={styles.summaryBox}>
-                  <SkeletonBlock opacity={skeletonOpacity} height={12} style={{ marginBottom: 10 }} />
-                  <SkeletonBlock
-                    opacity={skeletonOpacity}
-                    height={12}
-                    width="85%"
-                    style={{ marginBottom: 10 }}
-                  />
-                  <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
-                </View>
-              ) : details.summary || details.description ? (
-                <View style={styles.summaryBox}>
-                  {details.summary ? (
-                    <Text style={styles.summaryText}>{details.summary}</Text>
-                  ) : null}
-                  {details.description ? (
-                    <Pressable
-                      onPress={() => router.push(`/biography/${id}`)}
-                      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                        [
-                          styles.biographyLink,
-                          hovered && (styles.biographyLinkHover as object),
-                        ] as object
-                      }
-                    >
-                      <Text style={styles.biographyLinkText}>Read biography</Text>
-                      <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
-                    </Pressable>
-                  ) : null}
-                </View>
-              ) : null}
-
-              {/* Abilities */}
-              <WebAbilitiesCard
-                powers={details.powers}
-                loading={comicVineLoading}
-                skeletonOpacity={skeletonOpacity}
-              />
-
-              {/* First appearance */}
-              {comicVineLoading ? (
-                <View style={styles.card}>
-                  <View style={styles.firstAppearanceRow}>
-                    <SkeletonBlock
-                      opacity={skeletonOpacity}
-                      width={130}
-                      height={190}
-                      borderRadius={8}
-                    />
-                    <View style={{ flex: 1, gap: 10 }}>
-                      <SkeletonBlock
-                        opacity={skeletonOpacity}
-                        width="40%"
-                        height={10}
-                        borderRadius={4}
-                      />
-                      <SkeletonBlock opacity={skeletonOpacity} width={80} height={2} borderRadius={1} />
-                      <SkeletonBlock
-                        opacity={skeletonOpacity}
-                        width="55%"
-                        height={36}
-                        borderRadius={5}
-                      />
-                      <SkeletonBlock
-                        opacity={skeletonOpacity}
-                        width="80%"
-                        height={12}
-                        borderRadius={4}
-                      />
-                    </View>
+                    })}
                   </View>
                 </View>
-              ) : data.firstIssue?.imageUrl ? (
-                <Pressable onPress={() => setShowIssueModal(true)}>
-                  <View style={[styles.card, styles.firstAppearanceDesktopCard]}>
-                    <View style={styles.firstAppearanceRow}>
-                      <img
-                        src={data.firstIssue.imageUrl}
-                        style={{
-                          width: 130,
-                          height: 190,
-                          objectFit: 'cover',
-                          borderRadius: 8,
-                          flexShrink: 0,
-                          display: 'block',
-                          boxShadow: '0 6px 20px rgba(41,60,67,0.22)',
-                        }}
-                      />
-                      <View style={styles.firstAppearanceMeta}>
-                        <Text style={styles.firstAppearanceLabel}>First Appearance</Text>
-                        <View style={styles.firstAppearanceDivider} />
-                        {data.firstIssue.coverDate ? (
-                          <Text style={styles.firstAppearanceYear}>
-                            {data.firstIssue.coverDate.slice(0, 4)}
-                          </Text>
-                        ) : null}
-                        {data.firstIssue.name ? (
-                          <Text style={styles.firstAppearanceName}>
-                            {data.firstIssue.name.split(';')[0].trim()}
-                          </Text>
-                        ) : null}
-                      </View>
-                    </View>
-                  </View>
-                </Pressable>
-              ) : null}
 
-              {/* Enemies & Allies */}
-              {comicVineLoading ? (
-                <View style={styles.card}>
-                  <SkeletonBlock
-                    opacity={skeletonOpacity}
-                    width="45%"
-                    height={11}
-                    borderRadius={4}
-                    style={{ marginBottom: 10 }}
-                  />
-                  <View style={styles.cardDivider} />
-                  <SkeletonBlock
-                    opacity={skeletonOpacity}
-                    width="25%"
-                    height={10}
-                    borderRadius={4}
-                    style={{ marginBottom: 8 }}
-                  />
-                  <View style={styles.chipRow}>
-                    {[72, 90, 60, 80, 68].map((w, i) => (
-                      <SkeletonBlock
-                        key={i}
-                        opacity={skeletonOpacity}
-                        width={w}
-                        height={26}
-                        borderRadius={20}
-                      />
-                    ))}
-                  </View>
-                </View>
-              ) : details.enemies?.length || details.friends?.length ? (
-                <View style={styles.card}>
-                  <Text style={styles.cardTitle}>Enemies &amp; Allies</Text>
-                  <View style={styles.cardDivider} />
-                  {details.enemies?.length ? (
-                    <ExpandableChipGroup
-                      label="Enemies"
-                      chips={details.enemies}
-                      chipStyle={styles.chipEnemy}
-                      chipTextStyle={styles.chipTextEnemy}
-                    />
-                  ) : null}
-                  {details.friends?.length ? (
-                    <ExpandableChipGroup
-                      label="Allies"
-                      chips={details.friends}
-                      chipStyle={styles.chipAlly}
-                      chipTextStyle={styles.chipTextAlly}
-                    />
-                  ) : null}
-                </View>
-              ) : null}
-
-              {/* On screen */}
-              {comicVineLoading ? (
-                <View style={styles.card}>
-                  <SkeletonBlock
-                    opacity={skeletonOpacity}
-                    width="30%"
-                    height={11}
-                    borderRadius={4}
-                    style={{ marginBottom: 10 }}
-                  />
-                  <View style={styles.cardDivider} />
-                  <View style={{ flexDirection: 'row', gap: 10 }}>
-                    {[0, 1, 2].map((i) => (
-                      <View key={i} style={{ alignItems: 'center', gap: 6 }}>
-                        <SkeletonBlock
-                          opacity={skeletonOpacity}
-                          width={80}
-                          height={120}
-                          borderRadius={8}
-                        />
-                        <SkeletonBlock
-                          opacity={skeletonOpacity}
-                          width={60}
-                          height={10}
-                          borderRadius={4}
-                        />
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              ) : details.movies?.length ? (
-                <View style={styles.card}>
-                  <Text style={styles.cardTitle}>
-                    On Screen ({details.movieCount ?? details.movies.length})
-                  </Text>
-                  <View style={styles.cardDivider} />
-                  <MovieStrip
-                    movies={details.movies}
-                    totalCount={details.movieCount ?? details.movies.length}
-                    contentInset={20}
-                    bleedMargin={20}
-                  />
-                </View>
-              ) : null}
-            </View>
-
-            {/* Side column — overlapping portrait + quick facts */}
-            <View style={styles.sideCol}>
-              <View style={[styles.portraitCard, styles.portraitOverlapDesktop as object]}>
-                {heroImage ? (
-                  <Image
-                    source={heroImage}
-                    contentFit="cover"
-                    contentPosition={{ top: 0, left: '50%' }}
-                    style={StyleSheet.absoluteFill}
-                    cachePolicy="memory-disk"
-                    recyclingKey={id}
-                    transition={typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}
-                  />
-                ) : (
-                  <View style={styles.portraitPlaceholder} />
-                )}
-                <View style={styles.portraitOverlay as object} pointerEvents="none" />
-              </View>
-
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>Quick Facts</Text>
-                <View style={styles.cardDivider} />
-                <InfoRow label="Full name" value={stats.biography['full-name']} />
-                <InfoRow label="Origin" value={details.origin} />
-                <InfoRow label="Place of birth" value={stats.biography['place-of-birth']} />
-                <InfoRow label="Alignment" value={stats.biography.alignment} />
-                <InfoRow label="Gender" value={stats.appearance.gender} />
-                <InfoRow label="Race" value={stats.appearance.race} />
-                <InfoRow label="Height" value={stats.appearance.height.join(' / ')} />
-                <InfoRow label="Weight" value={stats.appearance.weight.join(' / ')} />
-                <InfoRow label="Occupation" value={stats.work.occupation} />
-                <InfoRow label="Base" value={stats.work.base} />
-                <ExpandableTeamsRow
-                  teams={details.teams}
-                  fallback={stats.connections['group-affiliation']}
-                />
-                <InfoRow label="Relatives" value={stats.connections.relatives} />
-              </View>
-            </View>
-          </View>
-        ) : (
-          /* ── Mobile: stacked with tabs ── */
-          <View style={styles.body}>
-            <View style={styles.portraitCardMobile}>
-              {heroImage ? (
-                <Image
-                  source={heroImage}
-                  contentFit="cover"
-                  contentPosition={{ top: 0, left: '50%' }}
-                  style={StyleSheet.absoluteFill}
-                  cachePolicy="memory-disk"
-                  recyclingKey={id}
-                  transition={typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}
-                />
-              ) : null}
-            </View>
-
-            <View style={styles.card}>
-              <View style={styles.statCardHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
-                  {data.statsSource === 'ai' ? (
-                    <View style={styles.aiBadge}>
-                      <Text style={styles.aiBadgeText}>AI</Text>
-                    </View>
-                  ) : null}
-                </View>
-                {powerScore !== null ? (
-                  <View style={[styles.powerScorePill, { backgroundColor: alignmentColor + '22' }]}>
-                    <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
-                      {powerScore}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-              <View style={styles.cardDivider} />
-              {statsGenerating
-                ? STAT_CONFIG.map(({ key }) => (
-                    <SkeletonBlock
-                      key={key}
-                      opacity={skeletonOpacity}
-                      height={10}
-                      borderRadius={5}
-                      style={{ marginBottom: 14 }}
-                    />
-                  ))
-                : STAT_CONFIG.map(({ key, label, color }) => (
-                    <StatBar
-                      key={key}
-                      label={label}
-                      value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
-                      color={color}
-                    />
-                  ))}
-            </View>
-
-            {/* Segmented tab bar */}
-            <View style={styles.tabBar}>
-              {(['overview', 'details', 'universe'] as const).map((tab) => (
-                <Pressable
-                  key={tab}
-                  onPress={() => setActiveTab(tab)}
-                  style={
-                    [styles.tabBtn, activeTab === tab && (styles.tabBtnActive as object)] as object
-                  }
-                >
-                  <Text style={[styles.tabLabel, activeTab === tab && styles.tabLabelActive]}>
-                    {tab === 'overview' ? 'Overview' : tab === 'details' ? 'Details' : 'Universe'}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {/* Overview tab: summary + abilities + first appearance */}
-            {activeTab === 'overview' && (
-              <>
+                {/* Story */}
                 {comicVineLoading && !details.summary ? (
                   <View style={styles.summaryBox}>
                     <SkeletonBlock
@@ -925,40 +630,46 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : null}
 
+                {/* Abilities */}
                 <WebAbilitiesCard
                   powers={details.powers}
                   loading={comicVineLoading}
                   skeletonOpacity={skeletonOpacity}
                 />
 
+                {/* First appearance */}
                 {comicVineLoading ? (
                   <View style={styles.card}>
-                    <SkeletonBlock
-                      opacity={skeletonOpacity}
-                      width="40%"
-                      height={11}
-                      borderRadius={4}
-                      style={{ marginBottom: 10 }}
-                    />
-                    <View style={styles.cardDivider} />
-                    <View style={styles.firstIssueRow}>
+                    <View style={styles.firstAppearanceRow}>
                       <SkeletonBlock
                         opacity={skeletonOpacity}
-                        width={80}
-                        height={120}
-                        borderRadius={6}
+                        width={130}
+                        height={190}
+                        borderRadius={8}
                       />
-                      <View style={{ flex: 1, gap: 8, justifyContent: 'flex-end' as const }}>
+                      <View style={{ flex: 1, gap: 10 }}>
                         <SkeletonBlock
                           opacity={skeletonOpacity}
-                          width="80%"
-                          height={13}
+                          width="40%"
+                          height={10}
                           borderRadius={4}
                         />
                         <SkeletonBlock
                           opacity={skeletonOpacity}
-                          width="30%"
-                          height={11}
+                          width={80}
+                          height={2}
+                          borderRadius={1}
+                        />
+                        <SkeletonBlock
+                          opacity={skeletonOpacity}
+                          width="55%"
+                          height={36}
+                          borderRadius={5}
+                        />
+                        <SkeletonBlock
+                          opacity={skeletonOpacity}
+                          width="80%"
+                          height={12}
                           borderRadius={4}
                         />
                       </View>
@@ -966,25 +677,31 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : data.firstIssue?.imageUrl ? (
                   <Pressable onPress={() => setShowIssueModal(true)}>
-                    <View style={styles.card}>
-                      <Text style={styles.cardTitle}>First Appearance</Text>
-                      <View style={styles.cardDivider} />
-                      <View style={styles.firstIssueRow}>
-                        <Image
-                          source={{ uri: data.firstIssue.imageUrl }}
-                          style={styles.firstIssueCover as object}
-                          contentFit="cover"
-                          cachePolicy="memory-disk"
+                    <View style={[styles.card, styles.firstAppearanceDesktopCard]}>
+                      <View style={styles.firstAppearanceRow}>
+                        <img
+                          src={data.firstIssue.imageUrl}
+                          style={{
+                            width: 130,
+                            height: 190,
+                            objectFit: 'cover',
+                            borderRadius: 8,
+                            flexShrink: 0,
+                            display: 'block',
+                            boxShadow: '0 6px 20px rgba(41,60,67,0.22)',
+                          }}
                         />
-                        <View style={styles.firstIssueMeta}>
-                          {data.firstIssue.name ? (
-                            <Text style={styles.firstIssueTitle}>
-                              {data.firstIssue.name.split(';')[0].trim()}
+                        <View style={styles.firstAppearanceMeta}>
+                          <Text style={styles.firstAppearanceLabel}>First Appearance</Text>
+                          <View style={styles.firstAppearanceDivider} />
+                          {data.firstIssue.coverDate ? (
+                            <Text style={styles.firstAppearanceYear}>
+                              {data.firstIssue.coverDate.slice(0, 4)}
                             </Text>
                           ) : null}
-                          {data.firstIssue.coverDate ? (
-                            <Text style={styles.firstIssueYear}>
-                              {data.firstIssue.coverDate.slice(0, 4)}
+                          {data.firstIssue.name ? (
+                            <Text style={styles.firstAppearanceName}>
+                              {data.firstIssue.name.split(';')[0].trim()}
                             </Text>
                           ) : null}
                         </View>
@@ -992,56 +709,8 @@ export default function WebCharacterScreen() {
                     </View>
                   </Pressable>
                 ) : null}
-              </>
-            )}
 
-            {/* Details tab: biographical info */}
-            {activeTab === 'details' && (
-              <>
-                <View style={styles.card}>
-                  <Text style={styles.cardTitle}>Overview</Text>
-                  <View style={styles.cardDivider} />
-                  <InfoRow label="Full name" value={stats.biography['full-name']} />
-                  <InfoRow label="Alter egos" value={stats.biography['alter-egos']} />
-                  <InfoRow label="Place of birth" value={stats.biography['place-of-birth']} />
-                  <InfoRow label="First appearance" value={stats.biography['first-appearance']} />
-                  <InfoRow label="Origin" value={details.origin} />
-                  <InfoRow label="Alignment" value={stats.biography.alignment} />
-                  {stats.biography.aliases.filter((a) => a && a !== '-').length > 0 && (
-                    <InfoRow label="Aliases" value={stats.biography.aliases.join(', ')} />
-                  )}
-                </View>
-                <View style={styles.card}>
-                  <Text style={styles.cardTitle}>Appearance</Text>
-                  <View style={styles.cardDivider} />
-                  <InfoRow label="Gender" value={stats.appearance.gender} />
-                  <InfoRow label="Race" value={stats.appearance.race} />
-                  <InfoRow label="Height" value={stats.appearance.height.join(' / ')} />
-                  <InfoRow label="Weight" value={stats.appearance.weight.join(' / ')} />
-                  <InfoRow label="Eyes" value={stats.appearance['eye-color']} />
-                  <InfoRow label="Hair" value={stats.appearance['hair-color']} />
-                </View>
-                <View style={styles.card}>
-                  <Text style={styles.cardTitle}>Work &amp; Connections</Text>
-                  <View style={styles.cardDivider} />
-                  <InfoRow label="Occupation" value={stats.work.occupation} />
-                  <InfoRow label="Base" value={stats.work.base} />
-                  <InfoRow
-                    label="Group affiliation"
-                    value={
-                      details.teams?.length
-                        ? details.teams.join(', ')
-                        : stats.connections['group-affiliation']
-                    }
-                  />
-                  <InfoRow label="Relatives" value={stats.connections.relatives} />
-                </View>
-              </>
-            )}
-
-            {/* Universe tab: enemies + movies */}
-            {activeTab === 'universe' && (
-              <>
+                {/* Enemies & Allies */}
                 {comicVineLoading ? (
                   <View style={styles.card}>
                     <SkeletonBlock
@@ -1094,6 +763,7 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : null}
 
+                {/* On screen */}
                 {comicVineLoading ? (
                   <View style={styles.card}>
                     <SkeletonBlock
@@ -1137,10 +807,387 @@ export default function WebCharacterScreen() {
                     />
                   </View>
                 ) : null}
-              </>
-            )}
-          </View>
-        )}
+              </View>
+
+              {/* Side column — overlapping portrait + quick facts */}
+              <View style={styles.sideCol}>
+                <View style={[styles.portraitCard, styles.portraitOverlapDesktop as object]}>
+                  {heroImage ? (
+                    <Image
+                      source={heroImage}
+                      contentFit="cover"
+                      contentPosition={{ top: 0, left: '50%' }}
+                      style={StyleSheet.absoluteFill}
+                      cachePolicy="memory-disk"
+                      recyclingKey={id}
+                      transition={typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}
+                    />
+                  ) : (
+                    <View style={styles.portraitPlaceholder} />
+                  )}
+                  <View style={styles.portraitOverlay as object} pointerEvents="none" />
+                </View>
+
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>Quick Facts</Text>
+                  <View style={styles.cardDivider} />
+                  <InfoRow label="Full name" value={stats.biography['full-name']} />
+                  <InfoRow label="Origin" value={details.origin} />
+                  <InfoRow label="Place of birth" value={stats.biography['place-of-birth']} />
+                  <InfoRow label="Alignment" value={stats.biography.alignment} />
+                  <InfoRow label="Gender" value={stats.appearance.gender} />
+                  <InfoRow label="Race" value={stats.appearance.race} />
+                  <InfoRow label="Height" value={stats.appearance.height.join(' / ')} />
+                  <InfoRow label="Weight" value={stats.appearance.weight.join(' / ')} />
+                  <InfoRow label="Occupation" value={stats.work.occupation} />
+                  <InfoRow label="Base" value={stats.work.base} />
+                  <ExpandableTeamsRow
+                    teams={details.teams}
+                    fallback={stats.connections['group-affiliation']}
+                  />
+                  <InfoRow label="Relatives" value={stats.connections.relatives} />
+                </View>
+              </View>
+            </View>
+          ) : (
+            /* ── Mobile: stacked with tabs ── */
+            <View style={styles.body}>
+              <View style={styles.portraitCardMobile}>
+                {heroImage ? (
+                  <Image
+                    source={heroImage}
+                    contentFit="cover"
+                    contentPosition={{ top: 0, left: '50%' }}
+                    style={StyleSheet.absoluteFill}
+                    cachePolicy="memory-disk"
+                    recyclingKey={id}
+                    transition={typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}
+                  />
+                ) : null}
+              </View>
+
+              <View style={styles.card}>
+                <View style={styles.statCardHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
+                    {data.statsSource === 'ai' ? (
+                      <View style={styles.aiBadge}>
+                        <Text style={styles.aiBadgeText}>AI</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  {powerScore !== null ? (
+                    <View
+                      style={[styles.powerScorePill, { backgroundColor: alignmentColor + '22' }]}
+                    >
+                      <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
+                        {powerScore}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+                <View style={styles.cardDivider} />
+                {statsGenerating
+                  ? STAT_CONFIG.map(({ key }) => (
+                      <SkeletonBlock
+                        key={key}
+                        opacity={skeletonOpacity}
+                        height={10}
+                        borderRadius={5}
+                        style={{ marginBottom: 14 }}
+                      />
+                    ))
+                  : STAT_CONFIG.map(({ key, label, color }) => (
+                      <StatBar
+                        key={key}
+                        label={label}
+                        value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
+                        color={color}
+                      />
+                    ))}
+                {percentile != null && percentile > 0 ? (
+                  <Text style={styles.percentileText}>Stronger than {percentile}% of heroes</Text>
+                ) : null}
+              </View>
+
+              {/* Segmented tab bar */}
+              <View style={styles.tabBar}>
+                {(['overview', 'details', 'universe'] as const).map((tab) => (
+                  <Pressable
+                    key={tab}
+                    onPress={() => setActiveTab(tab)}
+                    style={
+                      [
+                        styles.tabBtn,
+                        activeTab === tab && (styles.tabBtnActive as object),
+                      ] as object
+                    }
+                  >
+                    <Text style={[styles.tabLabel, activeTab === tab && styles.tabLabelActive]}>
+                      {tab === 'overview' ? 'Overview' : tab === 'details' ? 'Details' : 'Universe'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {/* Overview tab: summary + abilities + first appearance */}
+              {activeTab === 'overview' && (
+                <>
+                  {comicVineLoading && !details.summary ? (
+                    <View style={styles.summaryBox}>
+                      <SkeletonBlock
+                        opacity={skeletonOpacity}
+                        height={12}
+                        style={{ marginBottom: 10 }}
+                      />
+                      <SkeletonBlock
+                        opacity={skeletonOpacity}
+                        height={12}
+                        width="85%"
+                        style={{ marginBottom: 10 }}
+                      />
+                      <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
+                    </View>
+                  ) : details.summary || details.description ? (
+                    <View style={styles.summaryBox}>
+                      {details.summary ? (
+                        <Text style={styles.summaryText}>{details.summary}</Text>
+                      ) : null}
+                      {details.description ? (
+                        <Pressable
+                          onPress={() => router.push(`/biography/${id}`)}
+                          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                            [
+                              styles.biographyLink,
+                              hovered && (styles.biographyLinkHover as object),
+                            ] as object
+                          }
+                        >
+                          <Text style={styles.biographyLinkText}>Read biography</Text>
+                          <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
+                        </Pressable>
+                      ) : null}
+                    </View>
+                  ) : null}
+
+                  <AbilitiesSection powers={details.powers} loading={comicVineLoading} />
+
+                  {comicVineLoading ? (
+                    <View style={styles.card}>
+                      <SkeletonBlock
+                        opacity={skeletonOpacity}
+                        width="40%"
+                        height={11}
+                        borderRadius={4}
+                        style={{ marginBottom: 10 }}
+                      />
+                      <View style={styles.cardDivider} />
+                      <View style={styles.firstIssueRow}>
+                        <SkeletonBlock
+                          opacity={skeletonOpacity}
+                          width={80}
+                          height={120}
+                          borderRadius={6}
+                        />
+                        <View style={{ flex: 1, gap: 8, justifyContent: 'flex-end' as const }}>
+                          <SkeletonBlock
+                            opacity={skeletonOpacity}
+                            width="80%"
+                            height={13}
+                            borderRadius={4}
+                          />
+                          <SkeletonBlock
+                            opacity={skeletonOpacity}
+                            width="30%"
+                            height={11}
+                            borderRadius={4}
+                          />
+                        </View>
+                      </View>
+                    </View>
+                  ) : data.firstIssue?.imageUrl ? (
+                    <Pressable onPress={() => setShowIssueModal(true)}>
+                      <View style={styles.card}>
+                        <Text style={styles.cardTitle}>First Appearance</Text>
+                        <View style={styles.cardDivider} />
+                        <View style={styles.firstIssueRow}>
+                          <Image
+                            source={{ uri: data.firstIssue.imageUrl }}
+                            style={styles.firstIssueCover as object}
+                            contentFit="cover"
+                            cachePolicy="memory-disk"
+                          />
+                          <View style={styles.firstIssueMeta}>
+                            {data.firstIssue.name ? (
+                              <Text style={styles.firstIssueTitle}>
+                                {data.firstIssue.name.split(';')[0].trim()}
+                              </Text>
+                            ) : null}
+                            {data.firstIssue.coverDate ? (
+                              <Text style={styles.firstIssueYear}>
+                                {data.firstIssue.coverDate.slice(0, 4)}
+                              </Text>
+                            ) : null}
+                          </View>
+                        </View>
+                      </View>
+                    </Pressable>
+                  ) : null}
+                </>
+              )}
+
+              {/* Details tab: biographical info */}
+              {activeTab === 'details' && (
+                <>
+                  <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Overview</Text>
+                    <View style={styles.cardDivider} />
+                    <InfoRow label="Full name" value={stats.biography['full-name']} />
+                    <InfoRow label="Alter egos" value={stats.biography['alter-egos']} />
+                    <InfoRow label="Place of birth" value={stats.biography['place-of-birth']} />
+                    <InfoRow label="First appearance" value={stats.biography['first-appearance']} />
+                    <InfoRow label="Origin" value={details.origin} />
+                    <InfoRow label="Alignment" value={stats.biography.alignment} />
+                    {stats.biography.aliases.filter((a) => a && a !== '-').length > 0 && (
+                      <InfoRow label="Aliases" value={stats.biography.aliases.join(', ')} />
+                    )}
+                  </View>
+                  <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Appearance</Text>
+                    <View style={styles.cardDivider} />
+                    <InfoRow label="Gender" value={stats.appearance.gender} />
+                    <InfoRow label="Race" value={stats.appearance.race} />
+                    <InfoRow label="Height" value={stats.appearance.height.join(' / ')} />
+                    <InfoRow label="Weight" value={stats.appearance.weight.join(' / ')} />
+                    <InfoRow label="Eyes" value={stats.appearance['eye-color']} />
+                    <InfoRow label="Hair" value={stats.appearance['hair-color']} />
+                  </View>
+                  <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Work &amp; Connections</Text>
+                    <View style={styles.cardDivider} />
+                    <InfoRow label="Occupation" value={stats.work.occupation} />
+                    <InfoRow label="Base" value={stats.work.base} />
+                    <InfoRow
+                      label="Group affiliation"
+                      value={
+                        details.teams?.length
+                          ? details.teams.join(', ')
+                          : stats.connections['group-affiliation']
+                      }
+                    />
+                    <InfoRow label="Relatives" value={stats.connections.relatives} />
+                  </View>
+                </>
+              )}
+
+              {/* Universe tab: enemies + movies */}
+              {activeTab === 'universe' && (
+                <>
+                  {comicVineLoading ? (
+                    <View style={styles.card}>
+                      <SkeletonBlock
+                        opacity={skeletonOpacity}
+                        width="45%"
+                        height={11}
+                        borderRadius={4}
+                        style={{ marginBottom: 10 }}
+                      />
+                      <View style={styles.cardDivider} />
+                      <SkeletonBlock
+                        opacity={skeletonOpacity}
+                        width="25%"
+                        height={10}
+                        borderRadius={4}
+                        style={{ marginBottom: 8 }}
+                      />
+                      <View style={styles.chipRow}>
+                        {[72, 90, 60, 80, 68].map((w, i) => (
+                          <SkeletonBlock
+                            key={i}
+                            opacity={skeletonOpacity}
+                            width={w}
+                            height={26}
+                            borderRadius={20}
+                          />
+                        ))}
+                      </View>
+                    </View>
+                  ) : details.enemies?.length || details.friends?.length ? (
+                    <View style={styles.card}>
+                      <Text style={styles.cardTitle}>Enemies &amp; Allies</Text>
+                      <View style={styles.cardDivider} />
+                      {details.enemies?.length ? (
+                        <RelatedHeroStrip
+                          label="Enemies"
+                          names={details.enemies}
+                          heroMap={relatedHeroMap}
+                          kind="enemy"
+                          onPressHero={(h) =>
+                            router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                          }
+                        />
+                      ) : null}
+                      {details.friends?.length ? (
+                        <RelatedHeroStrip
+                          label="Allies"
+                          names={details.friends}
+                          heroMap={relatedHeroMap}
+                          kind="ally"
+                          onPressHero={(h) =>
+                            router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                          }
+                        />
+                      ) : null}
+                    </View>
+                  ) : null}
+
+                  {comicVineLoading ? (
+                    <View style={styles.card}>
+                      <SkeletonBlock
+                        opacity={skeletonOpacity}
+                        width="30%"
+                        height={11}
+                        borderRadius={4}
+                        style={{ marginBottom: 10 }}
+                      />
+                      <View style={styles.cardDivider} />
+                      <View style={{ flexDirection: 'row', gap: 10 }}>
+                        {[0, 1, 2].map((i) => (
+                          <View key={i} style={{ alignItems: 'center', gap: 6 }}>
+                            <SkeletonBlock
+                              opacity={skeletonOpacity}
+                              width={80}
+                              height={120}
+                              borderRadius={8}
+                            />
+                            <SkeletonBlock
+                              opacity={skeletonOpacity}
+                              width={60}
+                              height={10}
+                              borderRadius={4}
+                            />
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  ) : details.movies?.length ? (
+                    <View style={styles.card}>
+                      <Text style={styles.cardTitle}>
+                        On Screen ({details.movieCount ?? details.movies.length})
+                      </Text>
+                      <View style={styles.cardDivider} />
+                      <MovieStrip
+                        movies={details.movies}
+                        totalCount={details.movieCount ?? details.movies.length}
+                        contentInset={20}
+                        bleedMargin={20}
+                      />
+                    </View>
+                  ) : null}
+                </>
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
       {showIssueModal && data?.firstIssue ? (
@@ -1876,6 +1923,15 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   cardDivider: { height: 1, backgroundColor: '#ede5da', marginBottom: 14 },
+
+  percentileText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: COLORS.orange,
+    textAlign: 'right',
+    marginTop: 6,
+    letterSpacing: 0.2,
+  },
 
   // Abilities
   powerTagRow: {
