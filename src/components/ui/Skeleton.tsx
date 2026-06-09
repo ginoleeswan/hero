@@ -8,9 +8,17 @@ interface SkeletonProps {
   height: number;
   borderRadius?: number;
   style?: ViewStyle;
+  /** Override the placeholder fill — e.g. a navy tint for skeletons on a dark stage. */
+  color?: string;
 }
 
-export function Skeleton({ width = '100%', height, borderRadius = 8, style }: SkeletonProps) {
+export function Skeleton({
+  width = '100%',
+  height,
+  borderRadius = 8,
+  style,
+  color = BASE_COLOR,
+}: SkeletonProps) {
   const shimmer = useShimmer();
 
   return (
@@ -20,7 +28,7 @@ export function Skeleton({ width = '100%', height, borderRadius = 8, style }: Sk
           width,
           height,
           borderRadius,
-          backgroundColor: BASE_COLOR,
+          backgroundColor: color,
           opacity: shimmer,
         },
         style,
