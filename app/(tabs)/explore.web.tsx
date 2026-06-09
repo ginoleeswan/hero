@@ -29,6 +29,8 @@ import { HomeFooter } from '../../src/components/web/home/HomeFooter';
 import { UniverseBreakdown } from '../../src/components/web/home/UniverseBreakdown';
 import { CoverGallery } from '../../src/components/web/home/CoverGallery';
 import { EraTimeline } from '../../src/components/web/home/EraTimeline';
+import { TodaysMatchup as TodaysMatchupCard } from '../../src/components/web/home/TodaysMatchup';
+import { getTodaysMatchup, type TodaysMatchup } from '../../src/lib/matchup';
 import { NAV_HEIGHT } from '../../src/components/web/TopNav';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { StatPods } from '../../src/components/web/home/StatPods';
@@ -1144,6 +1146,7 @@ export default function WebHomeScreen() {
     publisherCounts: PublisherCounts | null;
     covers: FirstAppearanceCover[];
     eras: EraBucket[];
+    matchup: TodaysMatchup | null;
   }
   const [homeData, setHomeData] = useState<Partial<HomeData>>({});
   const [homeStarted, setHomeStarted] = useState(false); // true once spotlight arrives
@@ -1202,6 +1205,9 @@ export default function WebHomeScreen() {
       .catch(() => {});
     getEraTimeline(8)
       .then(set('eras'))
+      .catch(() => {});
+    getTodaysMatchup()
+      .then(set('matchup'))
       .catch(() => {});
     getTopHeroByStat('strength')
       .then(set('strongestHero'))
@@ -1294,6 +1300,12 @@ export default function WebHomeScreen() {
                 }
                 onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
               />
+              {homeData.matchup && (
+                <TodaysMatchupCard
+                  matchup={homeData.matchup}
+                  onOpen={(path) => router.push(path as Parameters<typeof router.push>[0])}
+                />
+              )}
             </View>
           ) : (
             (homeData.spotlight?.length ?? 0) > 0 && (
