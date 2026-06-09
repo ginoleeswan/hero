@@ -139,10 +139,8 @@ function AlignmentBadge({ alignment }: { alignment: string | null | undefined })
   const config = ALIGNMENT_CONFIG[alignment.toLowerCase().trim()];
   if (!config) return null;
   return (
-    <View
-      style={[styles.alignmentBadge, { backgroundColor: config.bg, borderColor: config.color }]}
-    >
-      <Text style={[styles.alignmentBadgeText, { color: config.color }]}>{config.label}</Text>
+    <View style={[styles.taxoBadge, { backgroundColor: config.bg, borderColor: config.color }]}>
+      <Text style={[styles.taxoBadgeText, { color: config.color }]}>{config.label}</Text>
     </View>
   );
 }
@@ -164,10 +162,8 @@ function OriginBadge({ origin }: { origin: string | null | undefined }) {
   const config = ORIGIN_CONFIG[origin.toLowerCase().trim()];
   if (!config) return null;
   return (
-    <View
-      style={[styles.alignmentBadge, { backgroundColor: config.bg, borderColor: config.color }]}
-    >
-      <Text style={[styles.alignmentBadgeText, { color: config.color }]}>{config.label}</Text>
+    <View style={[styles.taxoBadge, { backgroundColor: config.bg, borderColor: config.color }]}>
+      <Text style={[styles.taxoBadgeText, { color: config.color }]}>{config.label}</Text>
     </View>
   );
 }
@@ -881,52 +877,67 @@ export default function CharacterScreen() {
         <View style={styles.heroSpacer}>
           {displayName ? (
             <View style={styles.identity}>
-              {data?.stats.biography.publisher ? (
-                <Text style={styles.eyebrow} numberOfLines={1}>
-                  {data.stats.biography.publisher}
-                </Text>
-              ) : null}
-
-              <Text style={styles.heroName}>{displayName}</Text>
-
-              {data
-                ? (() => {
-                    const fullName = data.stats.biography['full-name'];
-                    const hasAlias = !!fullName && fullName !== '-' && fullName !== 'null';
-                    const hasBadges = !!(data.stats.biography.alignment || data.details.origin);
-                    if (!hasAlias && !hasBadges) return null;
-                    return (
-                      <View style={styles.identityRow}>
-                        {hasAlias ? (
-                          <Text style={styles.heroAlias} numberOfLines={1}>
-                            {fullName}
-                          </Text>
-                        ) : null}
-                        {hasBadges ? (
-                          <View style={styles.chipRow}>
-                            <AlignmentBadge alignment={data.stats.biography.alignment} />
-                            <OriginBadge origin={data.details.origin} />
-                          </View>
-                        ) : null}
-                      </View>
-                    );
-                  })()
-                : null}
-
               {data ? (
-                <>
-                  <VitalsStrip
-                    powerTotal={powerTotal}
-                    issueCount={data.details.issueCount}
-                    movieCount={data.details.movieCount ?? data.details.movies?.length ?? null}
-                  />
-                  {data.details.creators?.length ? (
-                    <Text style={styles.createdBy}>
-                      Created by {data.details.creators.join(' & ')}
-                    </Text>
-                  ) : null}
-                </>
-              ) : null}
+                (() => {
+                  const publisher = data.stats.biography.publisher;
+                  const hasPublisher = valid(publisher);
+                  const alignment = data.stats.biography.alignment;
+                  const origin = data.details.origin;
+                  const hasBadges = !!(alignment || origin);
+                  const fullName = data.stats.biography['full-name'];
+                  const hasAlias = !!fullName && fullName !== '-' && fullName !== 'null';
+                  const hasCreators = !!data.details.creators?.length;
+                  // Badges anchor the bottom-right of the block, balanced against the
+                  // "created by" line on the left.
+                  const bottomJustify: 'space-between' | 'flex-end' | 'flex-start' =
+                    hasCreators && hasBadges
+                      ? 'space-between'
+                      : hasBadges
+                        ? 'flex-end'
+                        : 'flex-start';
+                  return (
+                    <>
+                      {hasPublisher ? (
+                        <Text style={styles.eyebrow} numberOfLines={1}>
+                          {publisher}
+                        </Text>
+                      ) : null}
+
+                      <Text style={styles.heroName}>{displayName}</Text>
+
+                      {hasAlias ? (
+                        <Text style={styles.heroAlias} numberOfLines={1}>
+                          {fullName}
+                        </Text>
+                      ) : null}
+
+                      <VitalsStrip
+                        powerTotal={powerTotal}
+                        issueCount={data.details.issueCount}
+                        movieCount={data.details.movieCount ?? data.details.movies?.length ?? null}
+                      />
+
+                      {hasCreators || hasBadges ? (
+                        <View style={[styles.bottomMeta, { justifyContent: bottomJustify }]}>
+                          {hasCreators ? (
+                            <Text style={styles.createdBy} numberOfLines={2}>
+                              Created by {data.details.creators!.join(' & ')}
+                            </Text>
+                          ) : null}
+                          {hasBadges ? (
+                            <View style={styles.chipRow}>
+                              <AlignmentBadge alignment={alignment} />
+                              <OriginBadge origin={origin} />
+                            </View>
+                          ) : null}
+                        </View>
+                      ) : null}
+                    </>
+                  );
+                })()
+              ) : (
+                <Text style={styles.heroName}>{displayName}</Text>
+              )}
             </View>
           ) : null}
         </View>
@@ -1324,23 +1335,22 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 12,
   },
-  // Meta row flows left-aligned: alias then any taxonomy badges. Left-aligned (not
-  // space-between) so a missing origin/alignment badge never leaves a void.
-  identityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    marginTop: 10,
-    gap: 10,
-  },
   heroAlias: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 15,
     color: 'rgba(245,235,220,0.82)',
-    flexShrink: 1,
+    marginTop: 8,
     textShadowColor: 'rgba(0,0,0,0.35)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 6,
+  },
+  // Bottom line of the identity block: "created by" (left) + taxonomy badges
+  // (right) so the badges anchor the bottom-right corner of the section.
+  bottomMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    gap: 12,
   },
   chipRow: {
     flexDirection: 'row',
@@ -1348,18 +1358,27 @@ const styles = StyleSheet.create({
     gap: 8,
     flexShrink: 0,
   },
-  alignmentBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+  // Soft colour-tinted chip + coloured border/label — vivid, not a grey block.
+  taxoBadge: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 20,
+    borderCurve: 'continuous',
     borderWidth: 1,
   },
-  alignmentBadgeText: {
-    fontFamily: 'FlameSans-Regular',
+  taxoBadgeText: {
+    fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    fontWeight: '700',
+    lineHeight: 14,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
+    textAlign: 'center',
+    includeFontPadding: false,
+    textShadowColor: 'rgba(0,0,0,0.22)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   // At-a-glance vitals strip — big numbers + tiny labels, divider-separated.
   vitals: { flexDirection: 'row', alignItems: 'center', marginTop: 18 },
@@ -1388,7 +1407,7 @@ const styles = StyleSheet.create({
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
     color: 'rgba(245,235,220,0.6)',
-    marginTop: 14,
+    flexShrink: 1,
   },
 
   // Summary
@@ -1405,6 +1424,7 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
     lineHeight: 22,
     opacity: 0.85,
+    textAlign: 'justify',
   },
 
   // Sections
