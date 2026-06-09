@@ -27,10 +27,17 @@ import type { FavouriteHero } from '../../src/types';
 import { RankingCard } from '../../src/components/web/home/RankingCard';
 import { HomeFooter } from '../../src/components/web/home/HomeFooter';
 import { UniverseBreakdown } from '../../src/components/web/home/UniverseBreakdown';
+import { CoverGallery } from '../../src/components/web/home/CoverGallery';
 import { NAV_HEIGHT } from '../../src/components/web/TopNav';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { StatPods } from '../../src/components/web/home/StatPods';
-import { getTopHeroByStat, getPublisherCounts, type PublisherCounts } from '../../src/lib/db/heroes';
+import {
+  getTopHeroByStat,
+  getPublisherCounts,
+  getFirstAppearanceCovers,
+  type PublisherCounts,
+  type FirstAppearanceCover,
+} from '../../src/lib/db/heroes';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ROW_CARD_HEIGHT = 310;
@@ -1132,6 +1139,7 @@ export default function WebHomeScreen() {
     smartestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
     fastestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
     publisherCounts: PublisherCounts | null;
+    covers: FirstAppearanceCover[];
   }
   const [homeData, setHomeData] = useState<Partial<HomeData>>({});
   const [homeStarted, setHomeStarted] = useState(false); // true once spotlight arrives
@@ -1184,6 +1192,9 @@ export default function WebHomeScreen() {
       .catch(() => {});
     getNewlyAddedCV(25)
       .then(set('newlyAdded'))
+      .catch(() => {});
+    getFirstAppearanceCovers(14)
+      .then(set('covers'))
       .catch(() => {});
     getTopHeroByStat('strength')
       .then(set('strongestHero'))
@@ -1357,6 +1368,7 @@ export default function WebHomeScreen() {
             onPress={handlePress}
             onViewAll={() => router.push('/category/anti-heroes')}
           />
+          <CoverGallery covers={homeData.covers ?? []} onPress={handlePress} />
           <HomeRow
             label="By Power Stats"
             title="Strongest Heroes"

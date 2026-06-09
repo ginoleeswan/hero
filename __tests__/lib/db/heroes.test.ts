@@ -628,3 +628,35 @@ describe('getPublisherCounts', () => {
     expect(typeof result.other).toBe('number');
   });
 });
+
+// ─── getFirstAppearanceCovers ─────────────────────────────────────────────────
+
+describe('getFirstAppearanceCovers', () => {
+  it('returns covers, filtering out placeholders and non-http urls', async () => {
+    mockResolveWith = {
+      data: [
+        {
+          id: '69',
+          name: 'Batman',
+          first_appearance: 'Detective Comics #27',
+          first_issue_image_url: 'https://x/dc27.jpg',
+        },
+        { id: '1', name: 'Blank', first_appearance: null, first_issue_image_url: 'https://x/blank.png' },
+        { id: '2', name: 'NoHttp', first_appearance: null, first_issue_image_url: '/relative.jpg' },
+      ],
+      error: null,
+    };
+
+    const result = await getFirstAppearanceCovers(10);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('Batman');
+    expect(chain.not).toHaveBeenCalledWith('first_issue_image_url', 'is', null);
+  });
+
+  it('returns [] on error', async () => {
+    mockResolveWith = { data: null, error: { message: 'boom' } };
+    const result = await getFirstAppearanceCovers();
+    expect(result).toEqual([]);
+  });
+});
