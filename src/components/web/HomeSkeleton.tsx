@@ -136,22 +136,27 @@ function RowSkeleton({ opacity, pagePad }: { opacity: Opacity; pagePad: number }
   );
 }
 
-function DarkRowSkeleton({ opacity, pagePad }: { opacity: Opacity; pagePad: number }) {
+// One continuous dark zone holding two grouped rows — mirrors the "Dark Side".
+function DarkZoneSkeleton({ opacity, pagePad }: { opacity: Opacity; pagePad: number }) {
   return (
-    <View style={skel.darkSection}>
-      <RowHeader opacity={opacity} pagePad={pagePad} dark />
-      <View style={{ flexDirection: 'row', gap: 16, paddingLeft: pagePad }}>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <SkeletonBlock
-            key={i}
-            opacity={opacity}
-            dark
-            width={ROW_CARD_WIDTH}
-            height={ROW_CARD_HEIGHT}
-            borderRadius={10}
-          />
-        ))}
-      </View>
+    <View style={skel.darkZone}>
+      {[0, 1].map((g) => (
+        <View key={g} style={{ marginBottom: g === 0 ? 28 : 0 }}>
+          <RowHeader opacity={opacity} pagePad={pagePad} dark />
+          <View style={{ flexDirection: 'row', gap: 16, paddingLeft: pagePad }}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <SkeletonBlock
+                key={i}
+                opacity={opacity}
+                dark
+                width={ROW_CARD_WIDTH}
+                height={ROW_CARD_HEIGHT}
+                borderRadius={10}
+              />
+            ))}
+          </View>
+        </View>
+      ))}
     </View>
   );
 }
@@ -175,13 +180,14 @@ export function WebHomeSkeleton() {
       </View>
       <View style={skel.ticker} />
 
-      {/* Beige carousel canvas — mirrors the curated row order in explore.web */}
+      {/* Beige carousel canvas — mirrors the new chapter flow: a few browse
+          rows, the one consolidated Dark Side zone, then more rows. */}
       <View style={skel.beigeCanvas}>
         <RowSkeleton opacity={opacity} pagePad={pagePad} />
-        <DarkRowSkeleton opacity={opacity} pagePad={pagePad} />
         <RowSkeleton opacity={opacity} pagePad={pagePad} />
         <RowSkeleton opacity={opacity} pagePad={pagePad} />
-        <DarkRowSkeleton opacity={opacity} pagePad={pagePad} />
+        <DarkZoneSkeleton opacity={opacity} pagePad={pagePad} />
+        <RowSkeleton opacity={opacity} pagePad={pagePad} />
         <RowSkeleton opacity={opacity} pagePad={pagePad} />
       </View>
     </ScrollView>
@@ -205,7 +211,7 @@ const skel = StyleSheet.create({
     paddingBottom: 100,
   },
   section: { marginBottom: 52 },
-  darkSection: {
+  darkZone: {
     backgroundColor: COLORS.navy,
     paddingTop: 28,
     paddingBottom: 8,
