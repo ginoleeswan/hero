@@ -28,6 +28,7 @@ import { RankingCard } from '../../src/components/web/home/RankingCard';
 import { HomeFooter } from '../../src/components/web/home/HomeFooter';
 import { UniverseBreakdown } from '../../src/components/web/home/UniverseBreakdown';
 import { CoverGallery } from '../../src/components/web/home/CoverGallery';
+import { EraTimeline } from '../../src/components/web/home/EraTimeline';
 import { NAV_HEIGHT } from '../../src/components/web/TopNav';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { StatPods } from '../../src/components/web/home/StatPods';
@@ -35,8 +36,10 @@ import {
   getTopHeroByStat,
   getPublisherCounts,
   getFirstAppearanceCovers,
+  getEraTimeline,
   type PublisherCounts,
   type FirstAppearanceCover,
+  type EraBucket,
 } from '../../src/lib/db/heroes';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -1140,6 +1143,7 @@ export default function WebHomeScreen() {
     fastestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
     publisherCounts: PublisherCounts | null;
     covers: FirstAppearanceCover[];
+    eras: EraBucket[];
   }
   const [homeData, setHomeData] = useState<Partial<HomeData>>({});
   const [homeStarted, setHomeStarted] = useState(false); // true once spotlight arrives
@@ -1195,6 +1199,9 @@ export default function WebHomeScreen() {
       .catch(() => {});
     getFirstAppearanceCovers(14)
       .then(set('covers'))
+      .catch(() => {});
+    getEraTimeline(8)
+      .then(set('eras'))
       .catch(() => {});
     getTopHeroByStat('strength')
       .then(set('strongestHero'))
@@ -1384,6 +1391,7 @@ export default function WebHomeScreen() {
             onPress={handlePress}
             onViewAll={() => router.push('/category/xmen')}
           />
+          <EraTimeline eras={homeData.eras ?? []} onPress={handlePress} />
           <HomeRow
             label="By Power Stats"
             title="Brightest Minds"

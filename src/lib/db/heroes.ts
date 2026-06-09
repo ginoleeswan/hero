@@ -330,6 +330,56 @@ export async function getFirstAppearanceCovers(limit = 14): Promise<FirstAppeara
     .slice(0, limit);
 }
 
+// ── Era timeline (heroes bucketed by comic age) ───────────────────────────────
+
+export interface EraHero {
+  id: string;
+  name: string;
+  image_url: string | null;
+  portrait_url: string | null;
+  year: number;
+}
+
+export interface EraBucket {
+  era: string;
+  heroes: EraHero[];
+}
+
+// Fixed display order of the comic ages.
+const ERA_ORDER = ['Golden Age', 'Silver Age', 'Bronze Age', 'Modern Age'];
+
+export async function getEraTimeline(perEra = 7): Promise<EraBucket[]> {
+  const { data, error } = await supabase.rpc('get_era_timeline', { per_era: perEra });
+  if (error) {
+    console.warn('[getEraTimeline] error:', error.message);
+    return [];
+  }
+  const rows = (data ?? []) as {
+    era: string;
+    hero_id: string;
+    name: string;
+    image_url: string | null;
+    portrait_url: string | null;
+    year: number;
+  }[];
+  const byEra = new Map<string, EraHero[]>();
+  for (const r of rows) {
+    const list = byEra.get(r.era) ?? [];
+    list.push({
+      id: r.hero_id,
+      name: r.name,
+      image_url: r.image_url,
+      portrait_url: r.portrait_url,
+      year: r.year,
+    });
+    byEra.set(r.era, list);
+  }
+  return ERA_ORDER.filter((era) => byEra.has(era)).map((era) => ({
+    era,
+    heroes: byEra.get(era)!,
+  }));
+}
+
 export async function getHeroesByPublisher(
   publisher: 'marvel' | 'dc',
   limit = 25,

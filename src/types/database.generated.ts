@@ -316,6 +316,17 @@ export type Database = {
         Args: { p_id: string; p_powers: string[]; p_summary: string }
         Returns: undefined
       }
+      get_era_timeline: {
+        Args: { per_era?: number }
+        Returns: {
+          era: string
+          hero_id: string
+          image_url: string
+          name: string
+          portrait_url: string
+          year: number
+        }[]
+      }
       category_facet_counts: {
         Args: {
           p_alignment?: string
