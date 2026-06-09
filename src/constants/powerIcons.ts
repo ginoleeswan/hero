@@ -342,3 +342,31 @@ export function getPowerIcon(powerName: string): PowerIconDef {
   }
   return POWER_ICON_FALLBACK;
 }
+
+export interface PowerGroup {
+  category: PowerCategory;
+  label: string;
+  color: string;
+  items: { name: string; icon: string }[];
+}
+
+/**
+ * Bucket a list of power names into categories (shared by native + web).
+ * Preserves order within each group, drops empty categories, and orders the
+ * groups by POWER_CATEGORY_ORDER for consistency across heroes.
+ */
+export function groupPowers(powers: string[]): PowerGroup[] {
+  const buckets = new Map<PowerCategory, { name: string; icon: string }[]>();
+  for (const name of powers) {
+    const def = getPowerIcon(name);
+    const arr = buckets.get(def.category) ?? [];
+    arr.push({ name, icon: def.icon });
+    buckets.set(def.category, arr);
+  }
+  return POWER_CATEGORY_ORDER.filter((c) => buckets.has(c)).map((c) => ({
+    category: c,
+    label: POWER_CATEGORY_META[c].label,
+    color: POWER_CATEGORY_META[c].color,
+    items: buckets.get(c)!,
+  }));
+}

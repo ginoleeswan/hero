@@ -16,7 +16,7 @@ import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery } from '../../src/li
 import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
 import { supabase } from '../../src/lib/supabase';
 import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
-import { getPowerIcon } from '../../src/constants/powerIcons';
+import { getPowerIcon, groupPowers } from '../../src/constants/powerIcons';
 import { useAuth } from '../../src/hooks/useAuth';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
@@ -634,6 +634,9 @@ export default function WebCharacterScreen() {
                       );
                     })}
                   </View>
+                  {percentile != null && percentile > 0 ? (
+                    <Text style={styles.percentileText}>Stronger than {percentile}% of heroes</Text>
+                  ) : null}
                 </View>
 
                 {/* Story */}
@@ -788,22 +791,31 @@ export default function WebCharacterScreen() {
                   <View style={styles.card}>
                     <Text style={styles.cardTitle}>Enemies &amp; Allies</Text>
                     <View style={styles.cardDivider} />
-                    {details.enemies?.length ? (
-                      <ExpandableChipGroup
-                        label="Enemies"
-                        chips={details.enemies}
-                        chipStyle={styles.chipEnemy}
-                        chipTextStyle={styles.chipTextEnemy}
-                      />
-                    ) : null}
-                    {details.friends?.length ? (
-                      <ExpandableChipGroup
-                        label="Allies"
-                        chips={details.friends}
-                        chipStyle={styles.chipAlly}
-                        chipTextStyle={styles.chipTextAlly}
-                      />
-                    ) : null}
+                    {/* Break out of the card's 20px padding so the strips align */}
+                    <View style={{ marginHorizontal: -20 }}>
+                      {details.enemies?.length ? (
+                        <RelatedHeroStrip
+                          label="Enemies"
+                          names={details.enemies}
+                          heroMap={relatedHeroMap}
+                          kind="enemy"
+                          onPressHero={(h) =>
+                            router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                          }
+                        />
+                      ) : null}
+                      {details.friends?.length ? (
+                        <RelatedHeroStrip
+                          label="Allies"
+                          names={details.friends}
+                          heroMap={relatedHeroMap}
+                          kind="ally"
+                          onPressHero={(h) =>
+                            router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                          }
+                        />
+                      ) : null}
+                    </View>
                   </View>
                 ) : null}
 
@@ -849,6 +861,25 @@ export default function WebCharacterScreen() {
                       contentInset={20}
                       bleedMargin={20}
                     />
+                  </View>
+                ) : null}
+
+                {/* In Print */}
+                {issueCovers && issueCovers.length > 0 ? (
+                  <View style={styles.card}>
+                    <Text style={styles.cardTitle}>In Print</Text>
+                    <View style={styles.cardDivider} />
+                    <View style={{ marginHorizontal: -20 }}>
+                      <GalleryStrip
+                        images={issueCovers.map((c) => ({ url: c.url, caption: c.name }))}
+                        onPress={(i) => {
+                          setLightboxImages(
+                            issueCovers.map((c) => ({ url: c.url, caption: c.name })),
+                          );
+                          setLightboxIndex(i);
+                        }}
+                      />
+                    </View>
                   </View>
                 ) : null}
               </View>
@@ -1253,9 +1284,7 @@ export default function WebCharacterScreen() {
   );
 }
 
-const ABILITIES_COLLAPSED = 12;
-
-// ── Web abilities card ───────────────────────────────────────────────────────
+// ── Web abilities card — categorized power profile (card-styled) ─────────────
 function WebAbilitiesCard({
   powers,
   loading,
@@ -1265,11 +1294,9 @@ function WebAbilitiesCard({
   loading: boolean;
   skeletonOpacity: ReturnType<typeof useSkeletonAnim>;
 }) {
-  const [expanded, setExpanded] = useState(false);
   if (!loading && (!powers || powers.length === 0)) return null;
 
-  const visible = powers ? (expanded ? powers : powers.slice(0, ABILITIES_COLLAPSED)) : [];
-  const overflow = powers ? Math.max(0, powers.length - ABILITIES_COLLAPSED) : 0;
+  const groups = powers ? groupPowers(powers) : [];
 
   return (
     <View style={styles.card}>
@@ -1282,43 +1309,50 @@ function WebAbilitiesCard({
             style={{ marginBottom: 10 }}
           />
           <View style={{ height: 1, backgroundColor: '#ede5da', marginBottom: 14 }} />
-          <View style={styles.powerTagRow}>
-            {[90, 70, 110, 80, 95, 75, 100, 85].map((w, i) => (
+          {[0, 1].map((b) => (
+            <View key={b} style={{ marginBottom: 16 }}>
               <SkeletonBlock
-                key={i}
                 opacity={skeletonOpacity}
-                width={w}
-                height={28}
-                borderRadius={14}
+                width={96}
+                height={11}
+                style={{ marginBottom: 12 }}
               />
-            ))}
-          </View>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+                {[100, 132, 88].map((w, i) => (
+                  <SkeletonBlock key={i} opacity={skeletonOpacity} width={w} height={16} />
+                ))}
+              </View>
+            </View>
+          ))}
         </>
       ) : powers && powers.length > 0 ? (
         <>
           <Text style={styles.cardTitle}>Abilities</Text>
           <View style={styles.cardDivider} />
-          <View style={styles.powerTagRow}>
-            {visible.map((power, i) => {
-              const { icon, gradientEnd } = getPowerIcon(power);
-              return (
-                <View key={i} style={[styles.powerTag, { borderColor: gradientEnd + '40' }]}>
-                  <Ionicons name={icon as any} size={12} color={gradientEnd} />
-                  <Text style={styles.powerTagText}>{power}</Text>
-                </View>
-              );
-            })}
-            {!expanded && overflow > 0 && (
-              <Pressable onPress={() => setExpanded(true)} style={styles.powerTagMore}>
-                <Text style={styles.powerTagMoreText}>+{overflow} more</Text>
-              </Pressable>
-            )}
-          </View>
-          {expanded && (
-            <Pressable onPress={() => setExpanded(false)} style={styles.showLess}>
-              <Text style={styles.showLessText}>Show less</Text>
-            </Pressable>
-          )}
+          {groups.map((g, gi) => (
+            <View
+              key={g.category}
+              style={[styles.abilityGroup, gi === groups.length - 1 && { marginBottom: 0 }]}
+            >
+              <View style={styles.abilityGroupHead}>
+                <View style={[styles.abilityGroupMarker, { backgroundColor: g.color }]} />
+                <Text style={[styles.abilityGroupLabel, { color: g.color }]}>{g.label}</Text>
+                <Text style={styles.abilityGroupCount}>{g.items.length}</Text>
+              </View>
+              <View style={styles.abilityItems}>
+                {g.items.map((it, i) => (
+                  <View key={`${i}-${it.name}`} style={styles.abilityItem}>
+                    <Ionicons
+                      name={it.icon as keyof typeof Ionicons.glyphMap}
+                      size={15}
+                      color={g.color}
+                    />
+                    <Text style={styles.abilityItemName}>{it.name}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ))}
         </>
       ) : null}
     </View>
@@ -2289,7 +2323,27 @@ const styles = StyleSheet.create({
   mDebutCta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
   mDebutCtaText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange },
 
-  // Abilities
+  // Abilities — categorized groups
+  abilityGroup: { marginBottom: 18 },
+  abilityGroupHead: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 12 },
+  abilityGroupMarker: { width: 16, height: 3, borderRadius: 2 },
+  abilityGroupLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  abilityGroupCount: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.navy,
+    opacity: 0.35,
+  },
+  abilityItems: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 18, rowGap: 13 },
+  abilityItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  abilityItemName: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.navy },
+
+  // Abilities (legacy pill row — kept for skeleton usage elsewhere)
   powerTagRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

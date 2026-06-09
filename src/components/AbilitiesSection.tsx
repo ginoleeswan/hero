@@ -1,12 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
-import {
-  getPowerIcon,
-  POWER_CATEGORY_ORDER,
-  POWER_CATEGORY_META,
-  type PowerCategory,
-} from '../constants/powerIcons';
+import { getPowerIcon, groupPowers } from '../constants/powerIcons';
 import { Skeleton } from './ui/Skeleton';
 import { SkeletonProvider } from './ui/SkeletonProvider';
 
@@ -15,40 +10,10 @@ interface Props {
   loading: boolean;
 }
 
-interface AbilityEntry {
-  name: string;
-  icon: string;
-}
-
-interface AbilityGroup {
-  category: PowerCategory;
-  label: string;
-  color: string;
-  items: AbilityEntry[];
-}
-
-// Bucket abilities by category, preserving order within each group and dropping
-// empty categories. Order follows POWER_CATEGORY_ORDER for consistency.
-function groupAbilities(powers: string[]): AbilityGroup[] {
-  const buckets = new Map<PowerCategory, AbilityEntry[]>();
-  for (const name of powers) {
-    const def = getPowerIcon(name);
-    const arr = buckets.get(def.category) ?? [];
-    arr.push({ name, icon: def.icon });
-    buckets.set(def.category, arr);
-  }
-  return POWER_CATEGORY_ORDER.filter((c) => buckets.has(c)).map((c) => ({
-    category: c,
-    label: POWER_CATEGORY_META[c].label,
-    color: POWER_CATEGORY_META[c].color,
-    items: buckets.get(c)!,
-  }));
-}
-
 export function AbilitiesSection({ powers, loading }: Props) {
   if (!loading && (!powers || powers.length === 0)) return null;
 
-  const groups = powers ? groupAbilities(powers) : [];
+  const groups = powers ? groupPowers(powers) : [];
 
   return (
     <View style={styles.container}>
