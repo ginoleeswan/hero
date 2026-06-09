@@ -1309,6 +1309,11 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase',
     marginBottom: 8,
+    // Sits highest on the portrait where the scrim is lightest — shadow keeps it
+    // legible over bright art.
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   heroName: {
     fontFamily: 'Flame-Regular',
@@ -1319,20 +1324,23 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 12,
   },
-  // Identity row spans the full width: alias on the left, taxonomy chips pushed
-  // to the right so the metadata uses the whole measure instead of hugging left.
+  // Meta row flows left-aligned: alias then any taxonomy badges. Left-aligned (not
+  // space-between) so a missing origin/alignment badge never leaves a void.
   identityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
     marginTop: 10,
-    gap: 12,
+    gap: 10,
   },
   heroAlias: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 15,
     color: 'rgba(245,235,220,0.82)',
     flexShrink: 1,
+    textShadowColor: 'rgba(0,0,0,0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   chipRow: {
     flexDirection: 'row',
