@@ -65,12 +65,12 @@ export function EraTimeline({ eras, onPress }: EraTimelineProps) {
       {/* Desktop: a soft inset frame (deliberate "chapter"). Mobile: no frame so
           the hero carousels run edge-to-edge like the rest of the page. */}
       <View style={isMobile ? [t.bodyMobile, { paddingLeft: pagePad }] : [t.frame, { marginHorizontal: pagePad }]}>
-        <View style={t.timeline}>
-          <View style={t.spine as object} pointerEvents="none" />
+        <View style={[t.timeline, isMobile && (t.timelineMobile as object)] as object}>
+          {!isMobile && <View style={t.spine as object} pointerEvents="none" />}
           {eras.map((bucket) => (
             <View key={bucket.era} style={t.eraBlock}>
-              <View style={t.eraDot as object} />
-              <View style={t.eraHead}>
+              {!isMobile && <View style={t.eraDot as object} />}
+              <View style={[t.eraHead, isMobile && (t.eraHeadMobile as object)] as object}>
                 <Text style={t.eraName}>{bucket.era}</Text>
                 <Text style={t.eraYears}>{ERA_YEARS[bucket.era] ?? ''}</Text>
               </View>
@@ -131,6 +131,9 @@ const t = StyleSheet.create({
   heroStrip: { gap: 14, paddingTop: 10 } as object,
 
   timeline: { position: 'relative', paddingLeft: 26 },
+  // Mobile: no spine, so cards align to the page gutter like every other row.
+  timelineMobile: { paddingLeft: 0 } as object,
+  eraHeadMobile: { marginBottom: 12 } as object,
   spine: {
     position: 'absolute',
     left: 5,
