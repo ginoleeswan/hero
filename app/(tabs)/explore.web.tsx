@@ -145,14 +145,16 @@ function StatChip({
 }) {
   return (
     <View style={pss.statPill as object}>
-      <View style={pss.statHead as object}>
-        <MaterialCommunityIcons name={icon} size={13} color="rgba(245,235,220,0.55)" />
-        <Text style={pss.statPillKey as object}>{label}</Text>
+      <View style={pss.statTop as object}>
+        <View style={pss.statIconBadge as object}>
+          <MaterialCommunityIcons name={icon} size={19} color={COLORS.orange} />
+        </View>
+        <Text style={pss.statPillVal as object}>{value}</Text>
       </View>
-      <Text style={pss.statPillVal as object}>{value}</Text>
       <View style={pss.statBarTrack as object}>
         <View style={[pss.statBarFill, { width: `${Math.min(100, value)}%` }] as object} />
       </View>
+      <Text style={pss.statPillKey as object}>{label}</Text>
     </View>
   );
 }
@@ -608,12 +610,22 @@ const pss = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 11,
-    gap: 7,
+    gap: 9,
   } as object,
-  statHead: {
+  statTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    justifyContent: 'space-between',
+  } as object,
+  statIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    backgroundColor: 'rgba(231,115,51,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(231,115,51,0.32)',
+    alignItems: 'center',
+    justifyContent: 'center',
   } as object,
   statPillKey: {
     fontFamily: 'Nunito_700Bold',
@@ -624,7 +636,7 @@ const pss = StyleSheet.create({
   } as object,
   statPillVal: {
     fontFamily: 'Flame-Regular',
-    fontSize: 26,
+    fontSize: 28,
     color: COLORS.beige,
     lineHeight: 28,
   } as object,
