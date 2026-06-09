@@ -11,6 +11,10 @@ import { SearchSuggestions } from './search/SearchSuggestions';
 const EXPLORE_PATH = '/explore';
 const DESKTOP_BP = 768;
 
+// Total height the fixed header occupies (paddingTop 12 + pill 56 + paddingBottom 12).
+// Screens use this to clear the floating bar.
+export const NAV_HEIGHT = 80;
+
 export function TopNav() {
   const router = useRouter();
   const pathname = usePathname();
@@ -224,11 +228,13 @@ export function TopNav() {
 }
 
 const styles = StyleSheet.create({
-  // Outer carrier — transparent. The deep-navy app backdrop (set on the web
-  // layout root) shows through behind the floating pill, so there is no band.
+  // Fixed overlay — transparent carrier so the whole page scrolls behind it.
+  // Only the centred pill is a surface; everything around it is see-through.
   nav: {
-    position: 'sticky',
+    position: 'fixed',
     top: 0,
+    left: 0,
+    right: 0,
     zIndex: 100,
     paddingTop: 12,
     paddingBottom: 12,
@@ -236,7 +242,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   } as object,
 
-  // The floating glass pill itself.
+  // The floating glass pill — translucent dark glass that blurs whatever page
+  // content scrolls behind it.
   inner: {
     maxWidth: 1180,
     width: '100%',
@@ -247,10 +254,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 16,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(11,24,32,0.55)',
+    backdropFilter: 'blur(22px) saturate(150%)',
+    WebkitBackdropFilter: 'blur(22px) saturate(150%)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    boxShadow: '0 1px 0 rgba(255,255,255,0.06) inset, 0 10px 34px rgba(0,0,0,0.32)',
+    borderColor: 'rgba(255,255,255,0.12)',
+    boxShadow: '0 1px 0 rgba(255,255,255,0.07) inset, 0 12px 38px rgba(0,0,0,0.4)',
   } as object,
   innerMobile: { paddingHorizontal: 14, gap: 10 } as object,
 

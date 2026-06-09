@@ -24,6 +24,7 @@ import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
 import { RankingCard } from '../../src/components/web/home/RankingCard';
+import { NAV_HEIGHT } from '../../src/components/web/TopNav';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { StatPods } from '../../src/components/web/home/StatPods';
 import { getTopHeroByStat, getPublisherCounts, type PublisherCounts } from '../../src/lib/db/heroes';
@@ -1192,7 +1193,9 @@ export default function WebHomeScreen() {
       ) : (
         <ScrollView
           style={[styles.scroll, isDesktop && (styles.scrollDark as object)] as object}
-          contentContainerStyle={[styles.discoverContent, isMobile && { paddingTop: 0 }] as object}
+          contentContainerStyle={
+            [styles.discoverContent, isMobile && { paddingTop: NAV_HEIGHT }] as object
+          }
         >
           {/* ── Home content — always rendered. On desktop, committed searches
                go to the dedicated /search route; on mobile-web the inline
@@ -1362,9 +1365,10 @@ const styles = StyleSheet.create({
   scrollDark: { backgroundColor: COLORS.deepNavy } as object,
 
   // ── Dark stage (top of explore — spotlight + stat pods) ─────────────────────
+  // Top padding clears the floating header (content scrolls behind it).
   darkStage: {
     backgroundColor: COLORS.deepNavy,
-    paddingTop: 28,
+    paddingTop: NAV_HEIGHT + 24,
     paddingBottom: 28,
   },
 
