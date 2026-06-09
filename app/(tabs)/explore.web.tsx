@@ -26,6 +26,7 @@ import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
 import { RankingCard } from '../../src/components/web/home/RankingCard';
 import { HomeFooter } from '../../src/components/web/home/HomeFooter';
+import { UniverseBreakdown } from '../../src/components/web/home/UniverseBreakdown';
 import { NAV_HEIGHT } from '../../src/components/web/TopNav';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { StatPods } from '../../src/components/web/home/StatPods';
@@ -1328,6 +1329,13 @@ export default function WebHomeScreen() {
             onPress={handlePress}
             onViewAll={() => router.push('/category/villain')}
           />
+          {homeData.publisherCounts && (
+            <UniverseBreakdown
+              counts={homeData.publisherCounts}
+              total={totalHeroCount ?? 0}
+              onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
+            />
+          )}
           <HomeRow
             label="Marvel Comics"
             title="Marvel Universe"
