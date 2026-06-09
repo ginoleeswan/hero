@@ -528,18 +528,24 @@ export default function WebCharacterScreen() {
                   ) : null}
                 </View>
 
-                {comicVineLoading ? (
-                  <SkeletonBlock
-                    opacity={skeletonOpacity}
-                    width={180}
-                    height={10}
-                    borderRadius={4}
-                    dark
-                    style={{ marginTop: 14 }}
-                  />
-                ) : details.creators?.length ? (
-                  <Text style={styles.stageCredit}>Created by {details.creators.join(' & ')}</Text>
-                ) : null}
+                {/* Reserve the credit line's height whether or not creators
+                    exist, so the stage doesn't shrink and shove the overlapping
+                    portrait up toward the header controls. */}
+                <View style={styles.stageCreditSlot}>
+                  {comicVineLoading ? (
+                    <SkeletonBlock
+                      opacity={skeletonOpacity}
+                      width={180}
+                      height={10}
+                      borderRadius={4}
+                      dark
+                    />
+                  ) : details.creators?.length ? (
+                    <Text style={styles.stageCredit}>
+                      Created by {details.creators.join(' & ')}
+                    </Text>
+                  ) : null}
+                </View>
               </View>
             </View>
 
@@ -1942,11 +1948,13 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: 'rgba(245,235,220,0.5)',
   },
+  // Fixed slot that always reserves one credit line + its top gap, so the stage
+  // height is identical whether or not a hero has a "Created by" credit.
+  stageCreditSlot: { marginTop: 12, minHeight: 16, justifyContent: 'center' },
   stageCredit: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
     color: 'rgba(245,235,220,0.45)',
-    marginTop: 12,
   },
   stageAccent: {
     position: 'absolute',
