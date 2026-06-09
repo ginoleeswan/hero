@@ -146,9 +146,7 @@ function StatChip({
   return (
     <View style={pss.statPill as object}>
       <View style={pss.statTop as object}>
-        <View style={pss.statIconBadge as object}>
-          <MaterialCommunityIcons name={icon} size={19} color={COLORS.orange} />
-        </View>
+        <MaterialCommunityIcons name={icon} size={22} color={COLORS.orange} />
         <Text style={pss.statPillVal as object}>{value}</Text>
       </View>
       <View style={pss.statBarTrack as object}>
@@ -616,16 +614,6 @@ const pss = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  } as object,
-  statIconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 9,
-    backgroundColor: 'rgba(231,115,51,0.16)',
-    borderWidth: 1,
-    borderColor: 'rgba(231,115,51,0.32)',
-    alignItems: 'center',
-    justifyContent: 'center',
   } as object,
   statPillKey: {
     fontFamily: 'Nunito_700Bold',
