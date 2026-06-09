@@ -132,6 +132,31 @@ function alignmentLabel(alignment?: string | null): string | null {
   return null;
 }
 
+// A single power-stat chip: icon + label header, bold value, and a magnitude
+// bar (stats run 0–100) so strength reads at a glance.
+function StatChip({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  label: string;
+  value: number;
+}) {
+  return (
+    <View style={pss.statPill as object}>
+      <View style={pss.statHead as object}>
+        <MaterialCommunityIcons name={icon} size={13} color="rgba(245,235,220,0.55)" />
+        <Text style={pss.statPillKey as object}>{label}</Text>
+      </View>
+      <Text style={pss.statPillVal as object}>{value}</Text>
+      <View style={pss.statBarTrack as object}>
+        <View style={[pss.statBarFill, { width: `${Math.min(100, value)}%` }] as object} />
+      </View>
+    </View>
+  );
+}
+
 // ── Portrait strip spotlight ──────────────────────────────────────────────────
 const ACCORDION_SCALES = {
   // Extra-wide displays (1600px+) — more, larger cards so the strip fills width
@@ -316,38 +341,10 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
           {hero.intelligence || hero.strength || hero.speed ? (
             <View style={pss.statPills as object}>
               {!!hero.intelligence && (
-                <View style={pss.statPill as object}>
-                  <MaterialCommunityIcons
-                    name="brain"
-                    size={15}
-                    color="rgba(245,235,220,0.55)"
-                  />
-                  <Text style={pss.statPillVal as object}>{hero.intelligence}</Text>
-                  <Text style={pss.statPillKey as object}>INT</Text>
-                </View>
+                <StatChip icon="brain" label="INT" value={hero.intelligence} />
               )}
-              {!!hero.strength && (
-                <View style={pss.statPill as object}>
-                  <MaterialCommunityIcons
-                    name="arm-flex"
-                    size={15}
-                    color="rgba(245,235,220,0.55)"
-                  />
-                  <Text style={pss.statPillVal as object}>{hero.strength}</Text>
-                  <Text style={pss.statPillKey as object}>STR</Text>
-                </View>
-              )}
-              {!!hero.speed && (
-                <View style={pss.statPill as object}>
-                  <MaterialCommunityIcons
-                    name="lightning-bolt"
-                    size={15}
-                    color="rgba(245,235,220,0.55)"
-                  />
-                  <Text style={pss.statPillVal as object}>{hero.speed}</Text>
-                  <Text style={pss.statPillKey as object}>SPD</Text>
-                </View>
-              )}
+              {!!hero.strength && <StatChip icon="arm-flex" label="STR" value={hero.strength} />}
+              {!!hero.speed && <StatChip icon="lightning-bolt" label="SPD" value={hero.speed} />}
             </View>
           ) : null}
           {!!hero.first_appearance && (
@@ -604,27 +601,44 @@ const pss = StyleSheet.create({
   } as object,
   statPill: {
     flex: 1,
-    maxWidth: 96,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    maxWidth: 120,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-    gap: 3,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    gap: 7,
   } as object,
-  statPillVal: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 20,
-    color: COLORS.orange,
+  statHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   } as object,
   statPillKey: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 8,
-    color: 'rgba(245,235,220,0.45)',
+    fontSize: 9,
+    color: 'rgba(245,235,220,0.5)',
     textTransform: 'uppercase',
     letterSpacing: 1,
+  } as object,
+  statPillVal: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 26,
+    color: COLORS.beige,
+    lineHeight: 28,
+  } as object,
+  statBarTrack: {
+    height: 4,
+    width: '100%',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  } as object,
+  statBarFill: {
+    height: 4,
+    backgroundColor: COLORS.orange,
+    borderRadius: 2,
   } as object,
   firstAppearance: {
     fontFamily: 'Nunito_400Regular',
