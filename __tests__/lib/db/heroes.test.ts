@@ -10,6 +10,7 @@ import {
   getHeroesByStatRanking,
   getTopHeroByStat,
   getPublisherCounts,
+  getFirstAppearanceCovers,
   type Hero,
   type PublisherCounts,
 } from '../../../src/lib/db/heroes';

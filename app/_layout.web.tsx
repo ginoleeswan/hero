@@ -38,16 +38,17 @@ function WebAuthGate() {
   const inAuthGroup = segs[0] === '(auth)';
   const isRoot = segs.length === 0;
   const showNav = !inAuthGroup && !isRoot;
-  // Explore lets its content scroll behind the floating header (it provides its
-  // own top clearance). Every other screen is pushed below the header.
-  const isExplore = segs.includes('explore');
+  // Explore and the character profile let their content scroll behind the
+  // floating header (each provides its own top clearance for a cinematic
+  // full-bleed dark stage). Every other screen is pushed below the header.
+  const bleedBehindNav = segs.includes('explore') || segs.includes('character');
 
   return (
     <SearchProvider>
       <View style={styles.root}>
         {showNav && <TopNav />}
         <View
-          style={[styles.content, showNav && !isExplore && { paddingTop: NAV_HEIGHT }] as object}
+          style={[styles.content, showNav && !bleedBehindNav && { paddingTop: NAV_HEIGHT }] as object}
         >
           <Stack screenOptions={{ headerShown: false }} />
         </View>

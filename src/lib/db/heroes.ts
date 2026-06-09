@@ -298,6 +298,38 @@ export async function getNewlyAddedCV(limit = 25): Promise<Hero[]> {
   return (data ?? []) as unknown as Hero[];
 }
 
+// ── First-appearance covers (gallery wall) ────────────────────────────────────
+
+export interface FirstAppearanceCover {
+  id: string;
+  name: string;
+  first_appearance: string | null;
+  first_issue_image_url: string | null;
+}
+
+export async function getFirstAppearanceCovers(limit = 14): Promise<FirstAppearanceCover[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('id, name, first_appearance, first_issue_image_url')
+    .not('first_issue_image_url', 'is', null)
+    .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
+    .order('issue_count', { ascending: false, nullsFirst: false })
+    .limit(limit * 2);
+  if (error) {
+    console.warn('[getFirstAppearanceCovers] error:', error.message);
+    return [];
+  }
+  // Drop blank/placeholder covers and cap at the requested count.
+  return ((data ?? []) as FirstAppearanceCover[])
+    .filter(
+      (c) =>
+        !!c.first_issue_image_url &&
+        c.first_issue_image_url.startsWith('http') &&
+        !c.first_issue_image_url.includes('blank'),
+    )
+    .slice(0, limit);
+}
+
 export async function getHeroesByPublisher(
   publisher: 'marvel' | 'dc',
   limit = 25,

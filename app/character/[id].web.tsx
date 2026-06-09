@@ -11,7 +11,7 @@ import {
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { fetchHeroStats, fetchHeroDetails } from '../../src/lib/api';
 import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
 import { supabase } from '../../src/lib/supabase';
@@ -23,6 +23,7 @@ import { COLORS } from '../../src/constants/colors';
 import { StatBar } from '../../src/components/web/StatBar';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
+import { NAV_HEIGHT } from '../../src/components/web/TopNav';
 import type { CharacterData } from '../../src/types';
 
 const STAT_CONFIG = [
@@ -35,6 +36,15 @@ const STAT_CONFIG = [
 ];
 
 const JUNK_VALUES = new Set(['-', 'null', 'none', 'no alter egos found.', 'n/a', 'unknown']);
+
+// Map the raw alignment value to a display label (mirrors the Explore stage).
+function alignmentLabel(alignment?: string | null): string | null {
+  const a = (alignment ?? '').toLowerCase();
+  if (a === 'good') return 'Hero';
+  if (a === 'bad') return 'Villain';
+  if (a === 'neutral') return 'Anti-Hero';
+  return null;
+}
 
 function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value || value === '' || JUNK_VALUES.has(value.toLowerCase().trim())) return null;
@@ -296,6 +306,14 @@ export default function WebCharacterScreen() {
     return COLORS.orange;
   })();
 
+  const alignmentLabel = (() => {
+    const a = (stats.biography.alignment ?? '').toLowerCase();
+    if (a === 'good') return 'Hero';
+    if (a === 'bad') return 'Villain';
+    if (a === 'neutral') return 'Anti-Hero';
+    return null;
+  })();
+
   const statValues = STAT_CONFIG.map(({ key }) =>
     parseInt((stats.powerstats as Record<string, string>)[key] ?? '0', 10),
   ).filter((n) => !isNaN(n) && n > 0);
@@ -306,113 +324,206 @@ export default function WebCharacterScreen() {
 
   return (
     <>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        {/* ── Identity header — navy strip, no image ── */}
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        {/* ── Cinematic identity stage — mirrors the Explore dark stage ── */}
         <View
           style={[
-            styles.identityHeader,
+            styles.stage,
             {
-              borderBottomWidth: 3,
-              borderBottomColor: alignmentColor,
-              paddingBottom: isDesktop ? 24 : 14,
+              paddingTop: NAV_HEIGHT + (isDesktop ? 6 : 6),
+              paddingBottom: isDesktop ? 26 : 22,
             },
           ]}
         >
-          {/* Subtle alignment-based tint — gives each character a distinct mood */}
+          {/* Ambient blurred portrait backdrop — depth, like the spotlight imagery */}
+          {heroImage ? (
+            <Image
+              source={heroImage}
+              contentFit="cover"
+              contentPosition="top"
+              style={[StyleSheet.absoluteFill, styles.stageBackdrop] as object}
+              cachePolicy="memory-disk"
+              recyclingKey={id}
+            />
+          ) : null}
+          {/* Gradient scrim keeps the identity text legible over the backdrop */}
+          <View style={styles.stageScrim as object} pointerEvents="none" />
+          {/* Atmospheric orbs — alignment-tinted, purely decorative */}
           <View
-            style={[styles.headerAlignmentOverlay, { backgroundColor: alignmentColor }]}
+            style={
+              [
+                styles.orbA,
+                { backgroundImage: `radial-gradient(circle, ${alignmentColor}2e, transparent 70%)` },
+              ] as object
+            }
             pointerEvents="none"
           />
-          <View style={styles.headerTopRow}>
-            <Pressable
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
-              style={styles.backBtn}
-            >
-              <Ionicons name="arrow-back" size={15} color={COLORS.beige} />
-              <Text style={styles.backText}>Back</Text>
-            </Pressable>
-            <View style={styles.headerActions}>
-              {user && (
-                <Pressable onPress={toggleFavourite} disabled={favLoading} style={styles.favBtn}>
-                  <Ionicons
-                    name={favourited ? 'heart' : 'heart-outline'}
-                    size={20}
-                    color={favourited ? COLORS.red : 'rgba(245,235,220,0.6)'}
-                  />
-                </Pressable>
-              )}
-              {powerScore !== null || statsGenerating ? (
-                <Pressable
-                  onPress={() =>
-                    !statsGenerating &&
-                    router.push(`/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`)
-                  }
-                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                    [
-                      styles.compareBtn,
-                      hovered && !statsGenerating && (styles.compareBtnHover as object),
-                      statsGenerating && { opacity: 0.5 },
-                    ] as object
-                  }
-                >
-                  <Ionicons name="git-compare-outline" size={15} color={COLORS.beige} />
-                  <Text style={styles.compareBtnText}>Compare</Text>
-                </Pressable>
-              ) : (
-                <View style={[styles.compareBtn, { opacity: 0.4 }]}>
-                  <Ionicons name="git-compare-outline" size={15} color={COLORS.beige} />
-                  <Text style={styles.compareBtnText}>No stats</Text>
-                </View>
-              )}
+          <View style={styles.orbB as object} pointerEvents="none" />
+
+          <View style={[styles.stageInner, { paddingHorizontal: isDesktop ? 24 : 16 }]}>
+            {/* Top row — glass controls */}
+            <View style={styles.stageTopRow}>
+              <Pressable
+                onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                  [styles.glassBtn, hovered && (styles.glassBtnHover as object)] as object
+                }
+              >
+                <Ionicons name="arrow-back" size={15} color={COLORS.beige} />
+                <Text style={styles.glassBtnText}>Back</Text>
+              </Pressable>
+              <View style={styles.headerActions}>
+                {user && (
+                  <Pressable
+                    onPress={toggleFavourite}
+                    disabled={favLoading}
+                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                      [styles.glassIconBtn, hovered && (styles.glassBtnHover as object)] as object
+                    }
+                  >
+                    <Ionicons
+                      name={favourited ? 'heart' : 'heart-outline'}
+                      size={20}
+                      color={favourited ? COLORS.red : 'rgba(245,235,220,0.7)'}
+                    />
+                  </Pressable>
+                )}
+                {powerScore !== null || statsGenerating ? (
+                  <Pressable
+                    onPress={() =>
+                      !statsGenerating &&
+                      router.push(`/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`)
+                    }
+                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                      [
+                        styles.glassBtn,
+                        hovered && !statsGenerating && (styles.glassBtnHover as object),
+                        statsGenerating && { opacity: 0.5 },
+                      ] as object
+                    }
+                  >
+                    <Ionicons name="git-compare-outline" size={15} color={COLORS.beige} />
+                    <Text style={styles.glassBtnText}>Compare</Text>
+                  </Pressable>
+                ) : (
+                  <View style={[styles.glassBtn, { opacity: 0.4 }]}>
+                    <Ionicons name="git-compare-outline" size={15} color={COLORS.beige} />
+                    <Text style={styles.glassBtnText}>No stats</Text>
+                  </View>
+                )}
+              </View>
             </View>
-          </View>
 
-          <View style={styles.heroIdentity}>
-            <Text style={[styles.heroName, { fontSize: isDesktop ? 52 : 30 }]}>{stats.name}</Text>
-            {alias ? <Text style={styles.heroAlias}>{alias}</Text> : null}
-            {!isDesktop && stats.biography.publisher ? (
-              <Text style={[styles.heroPublisher, { marginTop: 6 }]}>
-                {stats.biography.publisher}
-              </Text>
-            ) : null}
-          </View>
+            {/* Main — identity on the left, glass power panel on the right */}
+            <View style={[styles.stageMain, !isDesktop && (styles.stageMainMobile as object)]}>
+              <View style={styles.identityCol}>
+                {stats.biography.publisher ? (
+                  <Text style={styles.stageEyebrow}>{stats.biography.publisher}</Text>
+                ) : null}
+                <Text
+                  style={[
+                    styles.heroName,
+                    { fontSize: isDesktop ? 46 : 30, lineHeight: isDesktop ? 50 : 34 },
+                  ]}
+                >
+                  {stats.name}
+                </Text>
+                {alias ? <Text style={styles.heroAlias}>{alias}</Text> : null}
 
-          {/* Publisher + meta — desktop only; on mobile it overlaps the hero name */}
-          {isDesktop ? (
-            <View style={styles.publisherCorner}>
-              {stats.biography.publisher ? (
-                <Text style={styles.heroPublisher}>{stats.biography.publisher}</Text>
-              ) : null}
-              {isDesktop ? (
-                comicVineLoading ? (
+                {/* Meta chips — alignment, power score, issue count */}
+                <View style={styles.metaRow}>
+                  {alignmentLabel ? (
+                    <View
+                      style={[
+                        styles.alignChip,
+                        {
+                          borderColor: alignmentColor + '66',
+                          backgroundColor: alignmentColor + '22',
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.alignChipText, { color: alignmentColor }]}>
+                        {alignmentLabel}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {powerScore !== null ? (
+                    <View style={styles.metaPill}>
+                      <Text style={styles.metaPillVal}>{powerScore}</Text>
+                      <Text style={styles.metaPillKey}>Power</Text>
+                    </View>
+                  ) : null}
+                  {(details.issueCount ?? 0) > 0 ? (
+                    <View style={styles.metaPill}>
+                      <Text style={styles.metaPillVal}>{details.issueCount!.toLocaleString()}</Text>
+                      <Text style={styles.metaPillKey}>Issues</Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                {comicVineLoading ? (
                   <SkeletonBlock
                     opacity={skeletonOpacity}
-                    width={140}
+                    width={180}
                     height={10}
                     borderRadius={4}
                     dark
-                    style={{ marginTop: 6 }}
+                    style={{ marginTop: 14 }}
                   />
-                ) : (details.issueCount ?? 0) > 0 || (details.creators?.length ?? 0) > 0 ? (
-                  <Text style={styles.heroMetaRight}>
-                    {[
-                      (details.issueCount ?? 0) > 0
-                        ? `Featured in ${details.issueCount!.toLocaleString()} issues`
-                        : null,
-                      details.creators?.length
-                        ? `Created by ${details.creators.join(' & ')}`
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join('\n')}
-                  </Text>
-                ) : null
+                ) : details.creators?.length ? (
+                  <Text style={styles.stageCredit}>Created by {details.creators.join(' & ')}</Text>
+                ) : null}
+              </View>
+
+              {/* Glass power panel — quick-glance core stats (desktop only) */}
+              {isDesktop && powerScore !== null ? (
+                <View style={styles.statPanel as object}>
+                  <Text style={styles.statPanelEyebrow as object}>Power Profile</Text>
+                  <View style={styles.statPods}>
+                    {(
+                      [
+                        { key: 'intelligence', label: 'INT', icon: 'brain' },
+                        { key: 'strength', label: 'STR', icon: 'arm-flex' },
+                        { key: 'speed', label: 'SPD', icon: 'lightning-bolt' },
+                      ] as const
+                    ).map(({ key, label, icon }) => {
+                      const raw = parseInt(
+                        (stats.powerstats as Record<string, string>)[key] ?? '0',
+                        10,
+                      );
+                      const val = isNaN(raw) ? '—' : String(raw);
+                      return (
+                        <View key={key} style={styles.statPod}>
+                          <MaterialCommunityIcons
+                            name={icon}
+                            size={16}
+                            color="rgba(245,235,220,0.5)"
+                          />
+                          <Text style={styles.statPodVal}>{val}</Text>
+                          <Text style={styles.statPodKey as object}>{label}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
               ) : null}
             </View>
-          ) : null}
+          </View>
+
+          {/* Soft alignment glow at the bottom edge — replaces the hard border */}
+          <View
+            style={
+              [
+                styles.stageAccent,
+                { backgroundColor: alignmentColor, boxShadow: `0 0 18px ${alignmentColor}` },
+              ] as object
+            }
+            pointerEvents="none"
+          />
         </View>
 
         {/* ── Body ── */}
+        <View style={styles.bodyWrap}>
         {isDesktop ? (
           <View style={styles.bodyDesktop}>
             {/* Left column: portrait + power stats */}
@@ -431,6 +542,7 @@ export default function WebCharacterScreen() {
                 ) : (
                   <View style={styles.portraitPlaceholder} />
                 )}
+                <View style={styles.portraitOverlay as object} pointerEvents="none" />
               </View>
 
               <View style={styles.card}>
@@ -1087,6 +1199,7 @@ export default function WebCharacterScreen() {
             )}
           </View>
         )}
+        </View>
       </ScrollView>
       {showIssueModal && data?.firstIssue ? (
         <FirstIssueModal firstIssue={data.firstIssue} onClose={() => setShowIssueModal(false)} />
@@ -1248,67 +1361,104 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
   );
 
   return (
-    <ScrollView style={sk.scroll} contentContainerStyle={sk.content}>
-      {/* Identity header — navy, matches real header structure */}
-      <View style={sk.identityHeader}>
-        <View style={sk.headerTopRow}>
-          <SkeletonBlock opacity={opacity} width={80} height={30} borderRadius={20} dark />
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {/* Heart only for authenticated users — don't skeleton it for guests */}
-            {showHeart && (
-              <SkeletonBlock opacity={opacity} width={36} height={36} borderRadius={20} dark />
-            )}
-            {/* Compare button is always shown (active or disabled) */}
-            <SkeletonBlock opacity={opacity} width={80} height={36} borderRadius={8} dark />
+    <ScrollView style={sk.scroll} contentContainerStyle={sk.scrollContent}>
+      {/* Identity stage — deep navy, matches the real cinematic header */}
+      <View style={[sk.stage, { paddingTop: NAV_HEIGHT + 6 }]}>
+        <View style={[sk.stageInner, { paddingHorizontal: isDesktop ? 24 : 16 }]}>
+          <View style={sk.headerTopRow}>
+            <SkeletonBlock opacity={opacity} width={92} height={38} borderRadius={22} dark />
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {/* Heart only for authenticated users — don't skeleton it for guests */}
+              {showHeart && (
+                <SkeletonBlock opacity={opacity} width={38} height={38} borderRadius={19} dark />
+              )}
+              {/* Compare button is always shown (active or disabled) */}
+              <SkeletonBlock opacity={opacity} width={104} height={38} borderRadius={22} dark />
+            </View>
           </View>
-        </View>
-        <View style={{ paddingHorizontal: 24 }}>
-          <SkeletonBlock
-            opacity={opacity}
-            width={isDesktop ? 320 : 200}
-            height={isDesktop ? 52 : 36}
-            style={{ marginBottom: 10 }}
-            dark
-          />
-          <SkeletonBlock opacity={opacity} width={120} height={12} borderRadius={4} dark />
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 24 }}>
+            <View style={{ flex: 1 }}>
+              <SkeletonBlock
+                opacity={opacity}
+                width={90}
+                height={11}
+                borderRadius={4}
+                dark
+                style={{ marginBottom: 12 }}
+              />
+              <SkeletonBlock
+                opacity={opacity}
+                width={isDesktop ? 300 : 200}
+                height={isDesktop ? 46 : 32}
+                style={{ marginBottom: 12 }}
+                dark
+              />
+              <SkeletonBlock
+                opacity={opacity}
+                width={140}
+                height={14}
+                borderRadius={4}
+                dark
+                style={{ marginBottom: 20 }}
+              />
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {[70, 84, 84].map((w, i) => (
+                  <SkeletonBlock
+                    key={i}
+                    opacity={opacity}
+                    width={w}
+                    height={28}
+                    borderRadius={20}
+                    dark
+                  />
+                ))}
+              </View>
+            </View>
+            {isDesktop && (
+              <SkeletonBlock opacity={opacity} width={300} height={96} borderRadius={16} dark />
+            )}
+          </View>
         </View>
       </View>
 
-      {isDesktop ? (
-        // Desktop: portrait + stats in left col, tab bar + overview in right col
-        <View style={sk.bodyDesktop}>
-          <View style={sk.leftCol}>
-            <Animated.View style={[sk.portraitCard as object, { opacity }]} />
-            {statsCard}
+      <View style={sk.bodyWrap}>
+        {isDesktop ? (
+          // Desktop: portrait + stats in left col, tab bar + overview in right col
+          <View style={sk.bodyDesktop}>
+            <View style={sk.leftCol}>
+              <Animated.View style={[sk.portraitCard as object, { opacity }]} />
+              {statsCard}
+            </View>
+            <View style={sk.rightCol}>
+              {tabBar}
+              {overviewContent}
+            </View>
           </View>
-          <View style={sk.rightCol}>
+        ) : (
+          // Mobile: portrait → stats → tab bar → overview content (matches real page order)
+          <View style={sk.body}>
+            <Animated.View style={[sk.portraitCardMobile as object, { opacity }]} />
+            {statsCard}
             {tabBar}
             {overviewContent}
           </View>
-        </View>
-      ) : (
-        // Mobile: portrait → stats → tab bar → overview content (matches real page order)
-        <View style={sk.body}>
-          <Animated.View style={[sk.portraitCardMobile as object, { opacity }]} />
-          {statsCard}
-          {tabBar}
-          {overviewContent}
-        </View>
-      )}
+        )}
+      </View>
     </ScrollView>
   );
 }
 
 const sk = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
-  content: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 60 },
-  identityHeader: { backgroundColor: COLORS.navy, paddingBottom: 24, position: 'relative' },
+  scrollContent: { width: '100%' },
+  bodyWrap: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 60 },
+  stage: { backgroundColor: COLORS.deepNavy, paddingBottom: 26, position: 'relative' },
+  stageInner: { maxWidth: 1060, width: '100%', alignSelf: 'center' },
   headerTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    marginBottom: 28,
   },
   bodyDesktop: { flexDirection: 'row', alignItems: 'flex-start', gap: 20, padding: 24 },
   leftCol: { width: 260, flexShrink: 0, gap: 12 },
@@ -1316,15 +1466,15 @@ const sk = StyleSheet.create({
   body: { padding: 16, gap: 14 },
   portraitCard: {
     width: '100%',
-    height: 380,
-    borderRadius: 12,
+    height: 420,
+    borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: '#ddd5c8',
   },
   portraitCardMobile: {
     width: '100%',
     aspectRatio: '2 / 3',
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: '#ddd5c8',
   } as object,
@@ -1358,7 +1508,10 @@ const sk = StyleSheet.create({
 
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
-  content: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 60 },
+  // Scroll content is full-width so the dark stage can bleed edge-to-edge;
+  // the body re-constrains itself to a centred reading column.
+  scrollContent: { width: '100%' },
+  bodyWrap: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 60 },
   center: {
     flex: 1,
     alignItems: 'center',
@@ -1367,102 +1520,217 @@ const styles = StyleSheet.create({
   },
   errorText: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.red },
 
-  // ── Identity header ──────────────────────────────────────────────────────────
-  identityHeader: {
-    backgroundColor: COLORS.navy,
-    paddingBottom: 24,
+  // ── Cinematic identity stage ─────────────────────────────────────────────────
+  stage: {
+    backgroundColor: COLORS.deepNavy,
     position: 'relative',
     overflow: 'hidden',
   },
-  headerAlignmentOverlay: {
+  // Blurred portrait fills the stage for atmosphere; scaled up to hide blur edges.
+  stageBackdrop: {
+    filter: 'blur(55px)',
+    transform: [{ scale: 1.3 }],
+    opacity: 0.4,
+  } as object,
+  stageScrim: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    opacity: 0.07,
-  },
-  publisherCorner: {
+    backgroundImage:
+      'linear-gradient(180deg, rgba(11,24,32,0.55) 0%, rgba(11,24,32,0.32) 38%, rgba(11,24,32,0.82) 100%)',
+  } as object,
+  orbA: {
     position: 'absolute',
-    bottom: 20,
-    right: 20,
-    alignItems: 'flex-end',
-  },
-  headerTopRow: {
+    width: 380,
+    height: 380,
+    top: -90,
+    left: '6%',
+    borderRadius: 190,
+    pointerEvents: 'none',
+  } as object,
+  orbB: {
+    position: 'absolute',
+    width: 280,
+    height: 280,
+    top: 40,
+    right: '10%',
+    borderRadius: 140,
+    backgroundImage: 'radial-gradient(circle, rgba(231,115,51,0.10), transparent 70%)',
+    pointerEvents: 'none',
+  } as object,
+  stageInner: {
+    maxWidth: 1060,
+    width: '100%',
+    alignSelf: 'center',
+    position: 'relative',
+    zIndex: 2,
+  } as object,
+  stageTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    marginBottom: 18,
   },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-  },
-  backText: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.beige },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  favBtn: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    padding: 9,
-    borderRadius: 20,
-  },
-  compareBtn: {
+  // Glass controls — echo the floating nav and Explore panels.
+  glassBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.18)',
+    borderColor: 'rgba(255,255,255,0.14)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 22,
     cursor: 'pointer',
+    transition: 'background-color 150ms ease, border-color 150ms ease',
   } as object,
-  compareBtnHover: {
-    backgroundColor: 'rgba(245,235,220,0.08)',
-    borderColor: 'rgba(245,235,220,0.3)',
+  glassBtnHover: {
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderColor: 'rgba(255,255,255,0.28)',
   } as object,
-  compareBtnText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: 'rgba(245,235,220,0.75)',
+  glassBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.beige },
+  glassIconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    cursor: 'pointer',
+    transition: 'background-color 150ms ease, border-color 150ms ease',
+  } as object,
+  stageMain: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 24,
   },
-  heroIdentity: {
-    paddingHorizontal: 24,
-  },
-  heroPublisher: {
+  stageMainMobile: { flexDirection: 'column', alignItems: 'stretch' } as object,
+  identityCol: { flex: 1, minWidth: 0 } as object,
+
+  // Glass power panel (desktop right side) — mirrors the Explore featured panel.
+  statPanel: {
+    width: 300,
+    flexShrink: 0,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 16,
+    padding: 18,
+    backdropFilter: 'blur(18px)',
+    WebkitBackdropFilter: 'blur(18px)',
+  } as object,
+  statPanelEyebrow: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
+    fontSize: 8,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    color: 'rgba(245,235,220,0.4)',
+    marginBottom: 14,
+  } as object,
+  statPods: { flexDirection: 'row', gap: 10 },
+  statPod: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    gap: 4,
+  },
+  statPodVal: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.orange },
+  statPodKey: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 8,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: 'rgba(245,235,220,0.5)',
+  } as object,
+  stageEyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
     color: COLORS.orange,
     textTransform: 'uppercase',
-    letterSpacing: 2,
-  },
-  heroMetaRight: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 10,
-    color: 'rgba(245,235,220,0.4)',
-    textAlign: 'right',
-    marginTop: 5,
-    lineHeight: 15,
+    letterSpacing: 2.5,
+    marginBottom: 8,
   },
   heroName: {
     fontFamily: 'Flame-Regular',
     color: COLORS.beige,
     marginBottom: 6,
-  },
+    textShadow: '0 2px 20px rgba(0,0,0,0.45)',
+  } as object,
   heroAlias: {
     fontFamily: 'FlameSans-Regular',
-    fontSize: 14,
-    color: 'rgba(245,235,220,0.45)',
+    fontSize: 15,
+    color: 'rgba(245,235,220,0.55)',
   },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 14,
+    flexWrap: 'wrap',
+  },
+  alignChip: {
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  alignChipText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+  },
+  metaPill: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  metaPillVal: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.beige },
+  metaPillKey: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 8,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: 'rgba(245,235,220,0.5)',
+  },
+  stageCredit: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 11,
+    color: 'rgba(245,235,220,0.45)',
+    marginTop: 12,
+  },
+  stageAccent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    zIndex: 3,
+  } as object,
   biographyLink: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1497,11 +1765,21 @@ const styles = StyleSheet.create({
   // Portrait card — tall enough to display a full portrait image properly
   portraitCard: {
     width: '100%',
-    height: 380,
-    borderRadius: 12,
+    height: 420,
+    borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
-  },
+    boxShadow: '0 24px 52px rgba(11,24,32,0.30)',
+  } as object,
+  // Subtle bottom gradient gives the portrait the same depth as Explore cards.
+  portraitOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '45%',
+    backgroundImage: 'linear-gradient(to top, rgba(11,24,32,0.42), transparent)',
+  } as object,
   portraitPlaceholder: {
     flex: 1,
     backgroundColor: COLORS.navy,
@@ -1511,9 +1789,10 @@ const styles = StyleSheet.create({
   portraitCardMobile: {
     width: '100%',
     aspectRatio: '2 / 3',
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
+    boxShadow: '0 18px 40px rgba(11,24,32,0.28)',
   } as object,
 
   // Mobile single-column
@@ -1522,13 +1801,14 @@ const styles = StyleSheet.create({
   // Summary
   summaryBox: {
     backgroundColor: 'white',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 20,
     borderWidth: 1,
     borderColor: '#e8ddd0',
     borderLeftWidth: 3,
     borderLeftColor: COLORS.orange,
-  },
+    boxShadow: '0 6px 22px rgba(41,60,67,0.06)',
+  } as object,
   summaryText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 15,
@@ -1552,9 +1832,11 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 7,
     cursor: 'pointer',
+    transition: 'background-color 150ms ease',
   } as object,
   tabBtnActive: {
-    backgroundColor: COLORS.beige,
+    backgroundColor: COLORS.navy,
+    boxShadow: '0 4px 12px rgba(41,60,67,0.22)',
   } as object,
   tabLabel: {
     fontFamily: 'FlameSans-Regular',
@@ -1562,7 +1844,7 @@ const styles = StyleSheet.create({
     color: COLORS.grey,
   },
   tabLabelActive: {
-    color: COLORS.navy,
+    color: COLORS.beige,
     fontFamily: 'Flame-Regular',
   },
   tabContent: {
@@ -1603,11 +1885,12 @@ const styles = StyleSheet.create({
   // Cards
   card: {
     backgroundColor: 'white',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 20,
     borderWidth: 1,
     borderColor: '#e8ddd0',
-  },
+    boxShadow: '0 6px 22px rgba(41,60,67,0.06)',
+  } as object,
   cardTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 11,

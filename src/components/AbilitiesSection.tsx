@@ -1,41 +1,54 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
-import { getPowerIcon } from '../constants/powerIcons';
+import {
+  getPowerIcon,
+  POWER_CATEGORY_ORDER,
+  POWER_CATEGORY_META,
+  type PowerCategory,
+} from '../constants/powerIcons';
 import { Skeleton } from './ui/Skeleton';
 import { SkeletonProvider } from './ui/SkeletonProvider';
-
-const COLLAPSED_COUNT = 8;
 
 interface Props {
   powers: string[] | null;
   loading: boolean;
 }
 
-// One reference-grid cell: a soft neutral disc + colour-tinted icon + name.
-function AbilityItem({ name }: { name: string }) {
-  const { icon, gradientEnd } = getPowerIcon(name);
-  return (
-    <View style={styles.item}>
-      <View style={styles.itemIcon}>
-        <Ionicons name={icon as keyof typeof Ionicons.glyphMap} size={17} color={gradientEnd} />
-      </View>
-      <Text style={styles.itemName} numberOfLines={2}>
-        {name}
-      </Text>
-    </View>
-  );
+interface AbilityEntry {
+  name: string;
+  icon: string;
+}
+
+interface AbilityGroup {
+  category: PowerCategory;
+  label: string;
+  color: string;
+  items: AbilityEntry[];
+}
+
+// Bucket abilities by category, preserving order within each group and dropping
+// empty categories. Order follows POWER_CATEGORY_ORDER for consistency.
+function groupAbilities(powers: string[]): AbilityGroup[] {
+  const buckets = new Map<PowerCategory, AbilityEntry[]>();
+  for (const name of powers) {
+    const def = getPowerIcon(name);
+    const arr = buckets.get(def.category) ?? [];
+    arr.push({ name, icon: def.icon });
+    buckets.set(def.category, arr);
+  }
+  return POWER_CATEGORY_ORDER.filter((c) => buckets.has(c)).map((c) => ({
+    category: c,
+    label: POWER_CATEGORY_META[c].label,
+    color: POWER_CATEGORY_META[c].color,
+    items: buckets.get(c)!,
+  }));
 }
 
 export function AbilitiesSection({ powers, loading }: Props) {
-  const [expanded, setExpanded] = useState(false);
-
   if (!loading && (!powers || powers.length === 0)) return null;
 
-  const total = powers?.length ?? 0;
-  const visible = powers ? (expanded ? powers : powers.slice(0, COLLAPSED_COUNT)) : [];
-  const overflow = Math.max(0, total - COLLAPSED_COUNT);
+  const groups = powers ? groupAbilities(powers) : [];
 
   return (
     <View style={styles.container}>
@@ -47,39 +60,39 @@ export function AbilitiesSection({ powers, loading }: Props) {
       <View style={styles.body}>
         {loading && !powers ? (
           <SkeletonProvider>
-            <View style={styles.grid}>
-              {[0, 1, 2, 3, 4, 5].map((i) => (
-                <View key={i} style={styles.item}>
-                  <Skeleton width={34} height={34} borderRadius={17} />
-                  <Skeleton width="62%" height={12} borderRadius={4} />
+            {[0, 1].map((b) => (
+              <View key={b} style={styles.group}>
+                <Skeleton width={96} height={11} borderRadius={4} style={{ marginBottom: 14 }} />
+                <View style={styles.items}>
+                  {[92, 120, 78].map((w, i) => (
+                    <Skeleton key={i} width={w} height={16} borderRadius={4} />
+                  ))}
                 </View>
-              ))}
-            </View>
+              </View>
+            ))}
           </SkeletonProvider>
         ) : (
-          <>
-            <View style={styles.grid}>
-              {visible.map((name, i) => (
-                <AbilityItem key={`${i}-${name}`} name={name} />
-              ))}
+          groups.map((g, gi) => (
+            <View key={g.category} style={[styles.group, gi === groups.length - 1 && styles.groupLast]}>
+              <View style={styles.groupHeader}>
+                <View style={[styles.groupMarker, { backgroundColor: g.color }]} />
+                <Text style={[styles.groupLabel, { color: g.color }]}>{g.label}</Text>
+                <Text style={styles.groupCount}>{g.items.length}</Text>
+              </View>
+              <View style={styles.items}>
+                {g.items.map((it, i) => (
+                  <View key={`${i}-${it.name}`} style={styles.item}>
+                    <Ionicons
+                      name={it.icon as keyof typeof Ionicons.glyphMap}
+                      size={15}
+                      color={g.color}
+                    />
+                    <Text style={styles.itemName}>{it.name}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
-            {overflow > 0 ? (
-              <TouchableOpacity
-                onPress={() => setExpanded((e) => !e)}
-                activeOpacity={0.7}
-                style={styles.toggle}
-              >
-                <Text style={styles.toggleText}>
-                  {expanded ? 'Show less' : `Show all ${total}`}
-                </Text>
-                <Ionicons
-                  name={expanded ? 'chevron-up' : 'chevron-down'}
-                  size={14}
-                  color={COLORS.orange}
-                />
-              </TouchableOpacity>
-            ) : null}
-          </>
+          ))
         )}
       </View>
     </View>
@@ -105,50 +118,48 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: COLORS.navy,
     borderRadius: 30,
-    marginBottom: 14,
+    marginBottom: 16,
   },
 
-  body: { paddingHorizontal: 20, paddingTop: 2 },
-  // Two-column reference grid.
-  grid: {
+  body: { paddingHorizontal: 20 },
+
+  group: { marginBottom: 22 },
+  groupLast: { marginBottom: 2 },
+  groupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    marginBottom: 12,
+  },
+  groupMarker: { width: 16, height: 3, borderRadius: 2 },
+  groupLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  groupCount: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.navy,
+    opacity: 0.35,
+  },
+
+  // Abilities flow and wrap within a category.
+  items: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 16,
+    columnGap: 18,
+    rowGap: 13,
   },
   item: {
-    width: '47%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 11,
-  },
-  itemIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderCurve: 'continuous',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(41,60,67,0.06)',
+    gap: 8,
   },
   itemName: {
-    flex: 1,
     fontFamily: 'FlameSans-Regular',
-    fontSize: 13.5,
-    lineHeight: 17,
+    fontSize: 14,
     color: COLORS.navy,
-  },
-
-  toggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 4,
-    marginTop: 18,
-  },
-  toggleText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: COLORS.orange,
   },
 });
