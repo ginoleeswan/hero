@@ -27,9 +27,6 @@ export function TopNav() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const initial = user?.email?.charAt(0).toUpperCase() ?? '';
-  const isMac =
-    typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform ?? '');
-  const shortcutLabel = isMac ? '⌘K' : 'Ctrl K';
   const isDesktop = width >= DESKTOP_BP;
   const avatarActive = menuOpen || pathname === '/profile';
   // Search is an ambient tool — available on every desktop page where the nav
@@ -169,11 +166,7 @@ export function TopNav() {
                 >
                   <Text style={styles.clearX as object}>×</Text>
                 </Pressable>
-              ) : (
-                <View style={styles.kbd as object}>
-                  <Text style={styles.kbdText as object}>{shortcutLabel}</Text>
-                </View>
-              )}
+              ) : null}
             </View>
             <SearchSuggestions />
           </View>
@@ -310,27 +303,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   } as object,
 
-  // Contained field — a soft, borderless surface inside the glass pill so it
-  // reads clearly as an input without competing with the pill's own border.
+  // Flat search — the glass pill is the container, so the field has no box.
   searchWrap: {
     width: '100%',
-    maxWidth: 440,
+    maxWidth: 520,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    transition: 'background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    paddingVertical: 6,
   } as object,
-  searchWrapFocused: {
-    backgroundColor: 'rgba(255,255,255,0.09)',
-    borderColor: 'rgba(231,115,51,0.5)',
-    boxShadow: '0 0 0 3px rgba(231,115,51,0.16)',
-  } as object,
+  searchWrapFocused: {} as object,
   searchInput: {
     flex: 1,
     fontFamily: 'Nunito_400Regular',
@@ -355,22 +339,6 @@ const styles = StyleSheet.create({
     color: 'rgba(245,235,220,0.65)',
     lineHeight: 18,
   },
-  // ⌘K shortcut hint
-  kbd: {
-    flexShrink: 0,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  } as object,
-  kbdText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
-    letterSpacing: 0.5,
-    color: 'rgba(245,235,220,0.45)',
-  } as object,
 
   // ── Right slot ─────────────────────────────────────────────────────────────
   rightSlot: {
