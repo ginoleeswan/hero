@@ -50,9 +50,11 @@ export function EraTimeline({ eras, onPress }: EraTimelineProps) {
 
   if (eras.length === 0) return null;
 
+  const isMobile = width < 640;
+
   return (
-    <View style={[t.section, { paddingHorizontal: pagePad }] as object}>
-      <View style={t.header}>
+    <View style={t.section}>
+      <View style={[t.header, { paddingLeft: pagePad }] as object}>
         <View style={t.accentBar} />
         <View style={t.headerText}>
           <Text style={t.label}>Comics History</Text>
@@ -60,26 +62,31 @@ export function EraTimeline({ eras, onPress }: EraTimelineProps) {
         </View>
       </View>
 
-      <View style={t.frame}>
+      {/* Desktop: a soft inset frame (deliberate "chapter"). Mobile: no frame so
+          the hero carousels run edge-to-edge like the rest of the page. */}
+      <View style={isMobile ? [t.bodyMobile, { paddingLeft: pagePad }] : [t.frame, { marginHorizontal: pagePad }]}>
         <View style={t.timeline}>
           <View style={t.spine as object} pointerEvents="none" />
           {eras.map((bucket) => (
-          <View key={bucket.era} style={t.eraBlock}>
-            <View style={t.eraDot as object} />
-            <View style={t.eraHead}>
-              <Text style={t.eraName}>{bucket.era}</Text>
-              <Text style={t.eraYears}>{ERA_YEARS[bucket.era] ?? ''}</Text>
+            <View key={bucket.era} style={t.eraBlock}>
+              <View style={t.eraDot as object} />
+              <View style={t.eraHead}>
+                <Text style={t.eraName}>{bucket.era}</Text>
+                <Text style={t.eraYears}>{ERA_YEARS[bucket.era] ?? ''}</Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={t.heroScroll as object}
+                contentContainerStyle={
+                  [t.heroStrip, !isMobile && { paddingRight: 4 }] as object
+                }
+              >
+                {bucket.heroes.map((h) => (
+                  <EraCard key={h.id} hero={h} onPress={() => onPress(h.id)} />
+                ))}
+              </ScrollView>
             </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 14 }}
-            >
-              {bucket.heroes.map((h) => (
-                <EraCard key={h.id} hero={h} onPress={() => onPress(h.id)} />
-              ))}
-            </ScrollView>
-          </View>
           ))}
         </View>
       </View>
@@ -106,8 +113,7 @@ const t = StyleSheet.create({
   },
   title: { fontFamily: 'Flame-Regular', fontSize: 36, color: COLORS.navy, lineHeight: 38 },
 
-  // Soft inset that frames the timeline as one deliberate "chapter" rather than
-  // a stack of loose rows — makes its distinct (vertical) grammar feel intended.
+  // Desktop: soft inset that frames the timeline as one deliberate "chapter".
   frame: {
     backgroundColor: 'rgba(41,60,67,0.05)',
     borderRadius: 18,
@@ -116,6 +122,13 @@ const t = StyleSheet.create({
     paddingLeft: 22,
     paddingRight: 18,
   },
+  // Mobile: no frame — carousels bleed off the right edge like other rows.
+  bodyMobile: { paddingTop: 4 },
+
+  // Horizontal hero strips. The marginTop/paddingTop pair carves headroom inside
+  // the scroller's clipped overflow so the card hover-lift isn't cut off at top.
+  heroScroll: { marginTop: -10 } as object,
+  heroStrip: { gap: 14, paddingTop: 10 } as object,
 
   timeline: { position: 'relative', paddingLeft: 26 },
   spine: {
