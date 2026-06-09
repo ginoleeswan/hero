@@ -163,19 +163,21 @@ export default function BiographyScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Native header with a solid navy background — same navy as the banner
-          below, so the bar reads as one seamless navy region (no translucent
-          gradient band, which is what an *transparent* native-stack header
-          renders over dark content). */}
+      {/* Transparent native header — content flows under it (the navy banner
+          fills behind the bar + status bar). Mirrors the character screen's
+          header exactly; note we never set headerBackground, since on
+          native-stack that forces a translucent backdrop that reads as a
+          gradient over dark content. */}
       <Stack.Screen
         options={{
           headerShown: true,
-          headerTransparent: false,
+          headerTransparent: true,
           headerShadowVisible: false,
           // Chevron only — hides the previous route name ("character/[id]").
           headerBackButtonDisplayMode: 'minimal',
-          headerStyle: { backgroundColor: COLORS.navy },
-          headerTintColor: COLORS.beige,
+          headerStyle: { backgroundColor: 'transparent' },
+          // Orange reads on both the navy banner (top) and the beige body (scrolled).
+          headerTintColor: COLORS.orange,
           headerTitle: '',
         }}
       />
@@ -184,8 +186,8 @@ export default function BiographyScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 48 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Navy banner — continues the navy header seamlessly into the page */}
-        <View style={styles.banner}>
+        {/* Navy banner — fills full-bleed behind the transparent header + status bar */}
+        <View style={[styles.banner, { paddingTop: insets.top + 52 }]}>
           {heroImage ? (
             <Image
               source={heroImage}
@@ -260,13 +262,13 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.beige },
   scroll: { flex: 1 },
 
-  // Navy banner — same navy as the header above it, so they merge seamlessly.
+  // Navy banner — fills behind the transparent header; paddingTop is applied
+  // inline (insets.top + header height) so content clears the floating chevron.
   banner: {
     flexDirection: 'row',
     gap: 16,
     backgroundColor: COLORS.navy,
     paddingHorizontal: 20,
-    paddingTop: 12,
     paddingBottom: 26,
   },
   portrait: {
