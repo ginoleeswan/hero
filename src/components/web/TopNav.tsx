@@ -37,6 +37,9 @@ export function TopNav() {
   // avatar). It opens the dedicated /search screen. Not shown on /search itself,
   // which has its own input.
   const showMobileSearch = !isDesktop && pathname === EXPLORE_PATH;
+  // Search blooms open on focus (or while it holds a query); otherwise it's
+  // just the icon — clean header, full affordance on interaction.
+  const searchExpanded = showSearch && (searchFocused || query.length > 0);
 
   // Close menu on outside click
   useEffect(() => {
@@ -135,19 +138,20 @@ export function TopNav() {
         {/* Flexible gap pushes the search + actions to the right */}
         <View style={styles.centerSpacer} />
 
-        {/* Right-aligned search (desktop) — text leads, icon trails, beside Sign In */}
+        {/* Search blooms open from the icon, beside Sign In */}
         {showSearch && (
-          <View ref={searchAreaRef} style={styles.searchContainer as object}>
-            <View
-              style={
-                [styles.searchWrap, searchFocused && (styles.searchWrapFocused as object)] as object
-              }
-            >
+          <View
+            ref={searchAreaRef}
+            style={[styles.searchContainer, { width: searchExpanded ? 280 : 40 }] as object}
+          >
+            <View style={styles.searchWrap as object}>
               <TextInput
                 ref={inputRef}
-                style={styles.searchInput as object}
+                style={
+                  [styles.searchInput, !searchExpanded && (styles.searchInputHidden as object)] as object
+                }
                 placeholder="Search heroes…"
-                placeholderTextColor="rgba(245,235,220,0.4)"
+                placeholderTextColor="rgba(245,235,220,0.45)"
                 value={query}
                 onChangeText={handleQueryChange}
                 onSubmitEditing={handleSubmitSearch}
@@ -165,11 +169,19 @@ export function TopNav() {
                   <Text style={styles.clearX as object}>×</Text>
                 </Pressable>
               ) : null}
-              <Ionicons
-                name="search"
-                size={16}
-                color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.5)'}
-              />
+              <Pressable
+                aria-label="Search"
+                onPress={() => inputRef.current?.focus()}
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                  [styles.searchIconBtn, hovered && (styles.searchIconBtnHover as object)] as object
+                }
+              >
+                <Ionicons
+                  name="search"
+                  size={18}
+                  color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.6)'}
+                />
+              </Pressable>
             </View>
             <SearchSuggestions />
           </View>
@@ -297,32 +309,45 @@ const styles = StyleSheet.create({
   } as object,
   iconBtnHover: { backgroundColor: 'rgba(245,235,220,0.1)' } as object,
 
-  // ── Search input ───────────────────────────────────────────────────────────
-  // Compact, right-aligned: sits just left of the actions. Text leads, the
-  // search icon trails. Flat — the glass pill is the container.
+  // ── Search ─────────────────────────────────────────────────────────────────
+  // At rest it's just the icon; on focus it blooms open into a field. Flat —
+  // the glass pill is the container.
   searchContainer: {
-    width: 280,
     flexShrink: 0,
     position: 'relative',
+    transition: 'width 260ms cubic-bezier(0.16, 1, 0.3, 1)',
   } as object,
   searchWrap: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-    paddingVertical: 6,
+    justifyContent: 'flex-end',
+    gap: 8,
+    overflow: 'hidden',
   } as object,
   searchWrapFocused: {} as object,
   searchInput: {
     flex: 1,
+    minWidth: 0,
     fontFamily: 'Nunito_400Regular',
     fontSize: 15,
     color: COLORS.beige,
     outlineStyle: 'none',
     textAlign: 'right',
+    transition: 'opacity 200ms ease',
   } as object,
+  searchInputHidden: { opacity: 0 } as object,
+  searchIconBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    cursor: 'pointer',
+    transition: 'background-color 150ms ease',
+  } as object,
+  searchIconBtnHover: { backgroundColor: 'rgba(245,235,220,0.08)' } as object,
   clearBtn: {
     width: 22,
     height: 22,
