@@ -24,6 +24,7 @@ import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
 import { RankingCard } from '../../src/components/web/home/RankingCard';
+import { HomeFooter } from '../../src/components/web/home/HomeFooter';
 import { NAV_HEIGHT } from '../../src/components/web/TopNav';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { StatPods } from '../../src/components/web/home/StatPods';
@@ -1347,9 +1348,12 @@ export default function WebHomeScreen() {
             heroes={homeData.newlyAdded ?? []}
             onPress={handlePress}
           />
-
-          <View style={styles.footerRule} />
           </View>
+
+          <HomeFooter
+            heroCount={totalHeroCount}
+            onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
+          />
         </ScrollView>
       )}
     </View>
@@ -1368,7 +1372,7 @@ const styles = StyleSheet.create({
   // Top padding clears the floating header (content scrolls behind it).
   darkStage: {
     backgroundColor: COLORS.deepNavy,
-    paddingTop: NAV_HEIGHT + 24,
+    paddingTop: NAV_HEIGHT + 8,
     paddingBottom: 28,
   },
 
@@ -1376,7 +1380,7 @@ const styles = StyleSheet.create({
   beigeCanvas: {
     backgroundColor: COLORS.beige,
     paddingTop: 40,
-    paddingBottom: 100,
+    paddingBottom: 24,
   },
 
   // ── Home layout ──────────────────────────────────────────────────────────────
@@ -1384,5 +1388,4 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     width: '100%',
   },
-  footerRule: { height: 1, backgroundColor: COLORS.navy, opacity: 0.08, marginTop: 16 },
 });

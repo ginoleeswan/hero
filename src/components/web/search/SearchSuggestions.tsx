@@ -1,6 +1,5 @@
 import { useRef, useEffect } from 'react';
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
-import { COLORS } from '../../../constants/colors';
 import { useSearch } from '../../../contexts/SearchContext';
 import { SearchDropdownContent } from './SearchDropdownContent';
 
@@ -59,14 +58,16 @@ const styles = StyleSheet.create({
 
   dropdown: {
     width: '100%',
-    maxWidth: 480,
-    backgroundColor: COLORS.navy,
-    borderRadius: 12,
+    maxWidth: 520,
+    backgroundColor: 'rgba(11,24,32,0.78)',
+    backdropFilter: 'blur(22px) saturate(150%)',
+    WebkitBackdropFilter: 'blur(22px) saturate(150%)',
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.10)',
-    boxShadow: '0 16px 48px rgba(0,0,0,0.45)',
-    marginTop: 8,
-    maxHeight: 440,
+    borderColor: 'rgba(255,255,255,0.12)',
+    boxShadow: '0 1px 0 rgba(255,255,255,0.06) inset, 0 20px 56px rgba(0,0,0,0.5)',
+    marginTop: 16,
+    maxHeight: 460,
     overflow: 'hidden',
     flexDirection: 'column',
   } as object,
