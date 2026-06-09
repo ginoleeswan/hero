@@ -125,7 +125,8 @@ export default function WebCharacterScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
-  const { width } = useWindowDimensions();
+  const { width, height: winHeight } = useWindowDimensions();
+  const mHeroHeight = Math.round(winHeight * 0.62);
   const isDesktop = width >= 700;
 
   const skeletonOpacity = useSkeletonAnim();
@@ -340,6 +341,21 @@ export default function WebCharacterScreen() {
     return null;
   })();
 
+  const ORIGIN_LABELS: Record<string, string> = {
+    mutant: 'Mutant',
+    alien: 'Alien',
+    human: 'Human',
+    'god/eternal': 'Eternal',
+    radiation: 'Radiation',
+    cyborg: 'Cyborg',
+    robot: 'Robot',
+    inhuman: 'Inhuman',
+    training: 'Trained',
+  };
+  const originLabel = details.origin
+    ? (ORIGIN_LABELS[details.origin.toLowerCase().trim()] ?? null)
+    : null;
+
   const statValues = STAT_CONFIG.map(({ key }) =>
     parseInt((stats.powerstats as Record<string, string>)[key] ?? '0', 10),
   ).filter((n) => !isNaN(n) && n > 0);
@@ -351,169 +367,174 @@ export default function WebCharacterScreen() {
   return (
     <>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        {/* ── Cinematic identity stage — mirrors the Explore dark stage ── */}
-        <View
-          style={[
-            styles.stage,
-            {
-              paddingTop: NAV_HEIGHT + (isDesktop ? 6 : 6),
-              paddingBottom: isDesktop ? 26 : 22,
-            },
-          ]}
-        >
-          {/* Ambient blurred portrait backdrop — depth, like the spotlight imagery */}
-          {heroImage ? (
-            <Image
-              source={heroImage}
-              contentFit="cover"
-              contentPosition="top"
-              style={[StyleSheet.absoluteFill, styles.stageBackdrop] as object}
-              cachePolicy="memory-disk"
-              recyclingKey={id}
+        {/* ── Desktop: cinematic identity stage. Mobile uses the native-style
+            immersive portrait header inside the body branch below. ── */}
+        {isDesktop ? (
+          <View
+            style={[
+              styles.stage,
+              {
+                paddingTop: NAV_HEIGHT + 6,
+                paddingBottom: 26,
+              },
+            ]}
+          >
+            {/* Ambient blurred portrait backdrop — depth, like the spotlight imagery */}
+            {heroImage ? (
+              <Image
+                source={heroImage}
+                contentFit="cover"
+                contentPosition="top"
+                style={[StyleSheet.absoluteFill, styles.stageBackdrop] as object}
+                cachePolicy="memory-disk"
+                recyclingKey={id}
+              />
+            ) : null}
+            {/* Gradient scrim keeps the identity text legible over the backdrop */}
+            <View style={styles.stageScrim as object} pointerEvents="none" />
+            {/* Atmospheric orbs — alignment-tinted, purely decorative */}
+            <View
+              style={
+                [
+                  styles.orbA,
+                  {
+                    backgroundImage: `radial-gradient(circle, ${alignmentColor}2e, transparent 70%)`,
+                  },
+                ] as object
+              }
+              pointerEvents="none"
             />
-          ) : null}
-          {/* Gradient scrim keeps the identity text legible over the backdrop */}
-          <View style={styles.stageScrim as object} pointerEvents="none" />
-          {/* Atmospheric orbs — alignment-tinted, purely decorative */}
-          <View
-            style={
-              [
-                styles.orbA,
-                {
-                  backgroundImage: `radial-gradient(circle, ${alignmentColor}2e, transparent 70%)`,
-                },
-              ] as object
-            }
-            pointerEvents="none"
-          />
-          <View style={styles.orbB as object} pointerEvents="none" />
+            <View style={styles.orbB as object} pointerEvents="none" />
 
-          <View style={[styles.stageInner, { paddingHorizontal: isDesktop ? 24 : 16 }]}>
-            {/* Top row — glass controls */}
-            <View style={styles.stageTopRow}>
-              <Pressable
-                onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
-                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [styles.glassBtn, hovered && (styles.glassBtnHover as object)] as object
-                }
+            <View style={[styles.stageInner, { paddingHorizontal: isDesktop ? 24 : 16 }]}>
+              {/* Top row — glass controls */}
+              <View style={styles.stageTopRow}>
+                <Pressable
+                  onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
+                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                    [styles.glassBtn, hovered && (styles.glassBtnHover as object)] as object
+                  }
+                >
+                  <Ionicons name="arrow-back" size={15} color={COLORS.beige} />
+                  <Text style={styles.glassBtnText}>Back</Text>
+                </Pressable>
+                <View style={styles.headerActions}>
+                  {user && (
+                    <Pressable
+                      onPress={toggleFavourite}
+                      disabled={favLoading}
+                      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                        [styles.glassIconBtn, hovered && (styles.glassBtnHover as object)] as object
+                      }
+                    >
+                      <Ionicons
+                        name={favourited ? 'heart' : 'heart-outline'}
+                        size={20}
+                        color={favourited ? COLORS.red : 'rgba(245,235,220,0.7)'}
+                      />
+                    </Pressable>
+                  )}
+                  {powerScore !== null || statsGenerating ? (
+                    <Pressable
+                      onPress={() =>
+                        !statsGenerating &&
+                        router.push(`/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`)
+                      }
+                      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                        [
+                          styles.glassBtn,
+                          hovered && !statsGenerating && (styles.glassBtnHover as object),
+                          statsGenerating && { opacity: 0.5 },
+                        ] as object
+                      }
+                    >
+                      <Ionicons name="git-compare-outline" size={15} color={COLORS.beige} />
+                      <Text style={styles.glassBtnText}>Compare</Text>
+                    </Pressable>
+                  ) : (
+                    <View style={[styles.glassBtn, { opacity: 0.4 }]}>
+                      <Ionicons name="git-compare-outline" size={15} color={COLORS.beige} />
+                      <Text style={styles.glassBtnText}>No stats</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {/* Identity — the body portrait rises into the reserved right space */}
+              <View
+                style={[styles.identityCol, isDesktop && (styles.identityColDesktop as object)]}
               >
-                <Ionicons name="arrow-back" size={15} color={COLORS.beige} />
-                <Text style={styles.glassBtnText}>Back</Text>
-              </Pressable>
-              <View style={styles.headerActions}>
-                {user && (
-                  <Pressable
-                    onPress={toggleFavourite}
-                    disabled={favLoading}
-                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                      [styles.glassIconBtn, hovered && (styles.glassBtnHover as object)] as object
-                    }
-                  >
-                    <Ionicons
-                      name={favourited ? 'heart' : 'heart-outline'}
-                      size={20}
-                      color={favourited ? COLORS.red : 'rgba(245,235,220,0.7)'}
-                    />
-                  </Pressable>
-                )}
-                {powerScore !== null || statsGenerating ? (
-                  <Pressable
-                    onPress={() =>
-                      !statsGenerating &&
-                      router.push(`/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`)
-                    }
-                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                      [
-                        styles.glassBtn,
-                        hovered && !statsGenerating && (styles.glassBtnHover as object),
-                        statsGenerating && { opacity: 0.5 },
-                      ] as object
-                    }
-                  >
-                    <Ionicons name="git-compare-outline" size={15} color={COLORS.beige} />
-                    <Text style={styles.glassBtnText}>Compare</Text>
-                  </Pressable>
-                ) : (
-                  <View style={[styles.glassBtn, { opacity: 0.4 }]}>
-                    <Ionicons name="git-compare-outline" size={15} color={COLORS.beige} />
-                    <Text style={styles.glassBtnText}>No stats</Text>
-                  </View>
-                )}
+                {stats.biography.publisher ? (
+                  <Text style={styles.stageEyebrow}>{stats.biography.publisher}</Text>
+                ) : null}
+                <Text
+                  style={[
+                    styles.heroName,
+                    { fontSize: isDesktop ? 46 : 30, lineHeight: isDesktop ? 50 : 34 },
+                  ]}
+                >
+                  {stats.name}
+                </Text>
+                {alias ? <Text style={styles.heroAlias}>{alias}</Text> : null}
+
+                {/* Meta chips — alignment, power score, issue count */}
+                <View style={styles.metaRow}>
+                  {alignmentLabel ? (
+                    <View
+                      style={[
+                        styles.alignChip,
+                        {
+                          borderColor: alignmentColor + '66',
+                          backgroundColor: alignmentColor + '22',
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.alignChipText, { color: alignmentColor }]}>
+                        {alignmentLabel}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {powerScore !== null ? (
+                    <View style={styles.metaPill}>
+                      <Text style={styles.metaPillVal}>{powerScore}</Text>
+                      <Text style={styles.metaPillKey}>Power</Text>
+                    </View>
+                  ) : null}
+                  {(details.issueCount ?? 0) > 0 ? (
+                    <View style={styles.metaPill}>
+                      <Text style={styles.metaPillVal}>{details.issueCount!.toLocaleString()}</Text>
+                      <Text style={styles.metaPillKey}>Issues</Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                {comicVineLoading ? (
+                  <SkeletonBlock
+                    opacity={skeletonOpacity}
+                    width={180}
+                    height={10}
+                    borderRadius={4}
+                    dark
+                    style={{ marginTop: 14 }}
+                  />
+                ) : details.creators?.length ? (
+                  <Text style={styles.stageCredit}>Created by {details.creators.join(' & ')}</Text>
+                ) : null}
               </View>
             </View>
 
-            {/* Identity — the body portrait rises into the reserved right space */}
-            <View style={[styles.identityCol, isDesktop && (styles.identityColDesktop as object)]}>
-              {stats.biography.publisher ? (
-                <Text style={styles.stageEyebrow}>{stats.biography.publisher}</Text>
-              ) : null}
-              <Text
-                style={[
-                  styles.heroName,
-                  { fontSize: isDesktop ? 46 : 30, lineHeight: isDesktop ? 50 : 34 },
-                ]}
-              >
-                {stats.name}
-              </Text>
-              {alias ? <Text style={styles.heroAlias}>{alias}</Text> : null}
-
-              {/* Meta chips — alignment, power score, issue count */}
-              <View style={styles.metaRow}>
-                {alignmentLabel ? (
-                  <View
-                    style={[
-                      styles.alignChip,
-                      {
-                        borderColor: alignmentColor + '66',
-                        backgroundColor: alignmentColor + '22',
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.alignChipText, { color: alignmentColor }]}>
-                      {alignmentLabel}
-                    </Text>
-                  </View>
-                ) : null}
-                {powerScore !== null ? (
-                  <View style={styles.metaPill}>
-                    <Text style={styles.metaPillVal}>{powerScore}</Text>
-                    <Text style={styles.metaPillKey}>Power</Text>
-                  </View>
-                ) : null}
-                {(details.issueCount ?? 0) > 0 ? (
-                  <View style={styles.metaPill}>
-                    <Text style={styles.metaPillVal}>{details.issueCount!.toLocaleString()}</Text>
-                    <Text style={styles.metaPillKey}>Issues</Text>
-                  </View>
-                ) : null}
-              </View>
-
-              {comicVineLoading ? (
-                <SkeletonBlock
-                  opacity={skeletonOpacity}
-                  width={180}
-                  height={10}
-                  borderRadius={4}
-                  dark
-                  style={{ marginTop: 14 }}
-                />
-              ) : details.creators?.length ? (
-                <Text style={styles.stageCredit}>Created by {details.creators.join(' & ')}</Text>
-              ) : null}
-            </View>
+            {/* Soft alignment glow at the bottom edge — replaces the hard border */}
+            <View
+              style={
+                [
+                  styles.stageAccent,
+                  { backgroundColor: alignmentColor, boxShadow: `0 0 18px ${alignmentColor}` },
+                ] as object
+              }
+              pointerEvents="none"
+            />
           </View>
-
-          {/* Soft alignment glow at the bottom edge — replaces the hard border */}
-          <View
-            style={
-              [
-                styles.stageAccent,
-                { backgroundColor: alignmentColor, boxShadow: `0 0 18px ${alignmentColor}` },
-              ] as object
-            }
-            pointerEvents="none"
-          />
-        </View>
+        ) : null}
 
         {/* ── Body ── */}
         <View style={styles.bodyWrap}>
@@ -850,342 +871,328 @@ export default function WebCharacterScreen() {
               </View>
             </View>
           ) : (
-            /* ── Mobile: stacked with tabs ── */
-            <View style={styles.body}>
-              <View style={styles.portraitCardMobile}>
+            /* ── Mobile: native-style immersive single scroll ── */
+            <View>
+              {/* Immersive portrait header */}
+              <View style={[styles.mHero, { height: mHeroHeight }]}>
                 {heroImage ? (
                   <Image
                     source={heroImage}
                     contentFit="cover"
-                    contentPosition={{ top: 0, left: '50%' }}
+                    contentPosition="top"
                     style={StyleSheet.absoluteFill}
                     cachePolicy="memory-disk"
                     recyclingKey={id}
-                    transition={typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}
                   />
                 ) : null}
-              </View>
+                <View style={styles.mScrimTop as object} pointerEvents="none" />
+                <View style={styles.mScrimBottom as object} pointerEvents="none" />
 
-              <View style={styles.card}>
-                <View style={styles.statCardHeader}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
-                    {data.statsSource === 'ai' ? (
-                      <View style={styles.aiBadge}>
-                        <Text style={styles.aiBadgeText}>AI</Text>
+                <View style={styles.mControls}>
+                  <Pressable
+                    onPress={() =>
+                      router.canGoBack() ? router.back() : router.replace('/explore')
+                    }
+                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                      [styles.glassIconBtn, hovered && (styles.glassBtnHover as object)] as object
+                    }
+                  >
+                    <Ionicons name="arrow-back" size={18} color={COLORS.beige} />
+                  </Pressable>
+                  {user ? (
+                    <Pressable
+                      onPress={toggleFavourite}
+                      disabled={favLoading}
+                      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                        [styles.glassIconBtn, hovered && (styles.glassBtnHover as object)] as object
+                      }
+                    >
+                      <Ionicons
+                        name={favourited ? 'heart' : 'heart-outline'}
+                        size={18}
+                        color={favourited ? COLORS.red : 'rgba(245,235,220,0.85)'}
+                      />
+                    </Pressable>
+                  ) : null}
+                </View>
+
+                <View style={styles.mIdentity}>
+                  {stats.biography.publisher ? (
+                    <Text style={styles.mEyebrow}>{stats.biography.publisher}</Text>
+                  ) : null}
+                  <Text style={styles.mName}>{stats.name}</Text>
+                  {alias ? <Text style={styles.mAlias}>{alias}</Text> : null}
+
+                  <View style={styles.mVitals}>
+                    {powerTotal > 0 ? (
+                      <View style={styles.mVitalItem}>
+                        <Text style={styles.mVitalVal}>{powerTotal}</Text>
+                        <Text style={styles.mVitalLabel}>Power</Text>
+                      </View>
+                    ) : null}
+                    {(details.issueCount ?? 0) > 0 ? (
+                      <>
+                        <View style={styles.mVitalDiv} />
+                        <View style={styles.mVitalItem}>
+                          <Text style={styles.mVitalVal}>
+                            {details.issueCount!.toLocaleString()}
+                          </Text>
+                          <Text style={styles.mVitalLabel}>Appearances</Text>
+                        </View>
+                      </>
+                    ) : null}
+                    {(details.movieCount ?? details.movies?.length ?? 0) > 0 ? (
+                      <>
+                        <View style={styles.mVitalDiv} />
+                        <View style={styles.mVitalItem}>
+                          <Text style={styles.mVitalVal}>
+                            {details.movieCount ?? details.movies!.length}
+                          </Text>
+                          <Text style={styles.mVitalLabel}>Movies</Text>
+                        </View>
+                      </>
+                    ) : null}
+                  </View>
+
+                  <View style={styles.mBottomRow}>
+                    {details.creators?.length ? (
+                      <Text style={styles.mCreatedBy} numberOfLines={2}>
+                        Created by {details.creators.join(' & ')}
+                      </Text>
+                    ) : null}
+                    {alignmentLabel || originLabel ? (
+                      <View style={styles.mBadgeRow}>
+                        {alignmentLabel ? (
+                          <View style={[styles.mBadge, { borderColor: alignmentColor + '99' }]}>
+                            <Text style={[styles.mBadgeText, { color: alignmentColor }]}>
+                              {alignmentLabel}
+                            </Text>
+                          </View>
+                        ) : null}
+                        {originLabel ? (
+                          <View style={styles.mBadge}>
+                            <Text style={styles.mBadgeText}>{originLabel}</Text>
+                          </View>
+                        ) : null}
                       </View>
                     ) : null}
                   </View>
-                  {powerScore !== null ? (
-                    <View
-                      style={[styles.powerScorePill, { backgroundColor: alignmentColor + '22' }]}
-                    >
-                      <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
-                        {powerScore}
-                      </Text>
-                    </View>
-                  ) : null}
                 </View>
-                <View style={styles.cardDivider} />
-                {statsGenerating
-                  ? STAT_CONFIG.map(({ key }) => (
-                      <SkeletonBlock
-                        key={key}
-                        opacity={skeletonOpacity}
-                        height={10}
-                        borderRadius={5}
-                        style={{ marginBottom: 14 }}
-                      />
-                    ))
-                  : STAT_CONFIG.map(({ key, label, color }) => (
-                      <StatBar
-                        key={key}
-                        label={label}
-                        value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
-                        color={color}
-                      />
-                    ))}
-                {percentile != null && percentile > 0 ? (
-                  <Text style={styles.percentileText}>Stronger than {percentile}% of heroes</Text>
+              </View>
+
+              {/* Beige content sheet rising over the hero */}
+              <View style={styles.mSheet}>
+                {comicVineLoading && !details.summary ? (
+                  <View style={styles.mBlock}>
+                    <SkeletonBlock
+                      opacity={skeletonOpacity}
+                      height={12}
+                      style={{ marginBottom: 10 }}
+                    />
+                    <SkeletonBlock
+                      opacity={skeletonOpacity}
+                      height={12}
+                      width="85%"
+                      style={{ marginBottom: 10 }}
+                    />
+                    <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
+                  </View>
+                ) : details.summary || details.description ? (
+                  <View style={styles.mBlock}>
+                    {details.summary ? (
+                      <Text style={styles.mSummary}>{details.summary}</Text>
+                    ) : null}
+                    {details.description ? (
+                      <Pressable
+                        onPress={() => router.push(`/biography/${id}`)}
+                        style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                          [
+                            styles.biographyLink,
+                            hovered && (styles.biographyLinkHover as object),
+                          ] as object
+                        }
+                      >
+                        <Text style={styles.biographyLinkText}>Read biography</Text>
+                        <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
+                      </Pressable>
+                    ) : null}
+                  </View>
                 ) : null}
-              </View>
 
-              {/* Segmented tab bar */}
-              <View style={styles.tabBar}>
-                {(['overview', 'details', 'universe'] as const).map((tab) => (
-                  <Pressable
-                    key={tab}
-                    onPress={() => setActiveTab(tab)}
-                    style={
-                      [
-                        styles.tabBtn,
-                        activeTab === tab && (styles.tabBtnActive as object),
-                      ] as object
-                    }
-                  >
-                    <Text style={[styles.tabLabel, activeTab === tab && styles.tabLabelActive]}>
-                      {tab === 'overview' ? 'Overview' : tab === 'details' ? 'Details' : 'Universe'}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              {/* Overview tab: summary + abilities + first appearance */}
-              {activeTab === 'overview' && (
-                <>
-                  {comicVineLoading && !details.summary ? (
-                    <View style={styles.summaryBox}>
-                      <SkeletonBlock
-                        opacity={skeletonOpacity}
-                        height={12}
-                        style={{ marginBottom: 10 }}
-                      />
-                      <SkeletonBlock
-                        opacity={skeletonOpacity}
-                        height={12}
-                        width="85%"
-                        style={{ marginBottom: 10 }}
-                      />
-                      <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
-                    </View>
-                  ) : details.summary || details.description ? (
-                    <View style={styles.summaryBox}>
-                      {details.summary ? (
-                        <Text style={styles.summaryText}>{details.summary}</Text>
-                      ) : null}
-                      {details.description ? (
-                        <Pressable
-                          onPress={() => router.push(`/biography/${id}`)}
-                          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                            [
-                              styles.biographyLink,
-                              hovered && (styles.biographyLinkHover as object),
-                            ] as object
-                          }
-                        >
-                          <Text style={styles.biographyLinkText}>Read biography</Text>
-                          <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
-                        </Pressable>
-                      ) : null}
-                    </View>
-                  ) : null}
-
-                  <AbilitiesSection powers={details.powers} loading={comicVineLoading} />
-
-                  {comicVineLoading ? (
-                    <View style={styles.card}>
-                      <SkeletonBlock
-                        opacity={skeletonOpacity}
-                        width="40%"
-                        height={11}
-                        borderRadius={4}
-                        style={{ marginBottom: 10 }}
-                      />
-                      <View style={styles.cardDivider} />
-                      <View style={styles.firstIssueRow}>
-                        <SkeletonBlock
-                          opacity={skeletonOpacity}
-                          width={80}
-                          height={120}
-                          borderRadius={6}
-                        />
-                        <View style={{ flex: 1, gap: 8, justifyContent: 'flex-end' as const }}>
-                          <SkeletonBlock
-                            opacity={skeletonOpacity}
-                            width="80%"
-                            height={13}
-                            borderRadius={4}
-                          />
-                          <SkeletonBlock
-                            opacity={skeletonOpacity}
-                            width="30%"
-                            height={11}
-                            borderRadius={4}
-                          />
-                        </View>
-                      </View>
-                    </View>
-                  ) : data.firstIssue?.imageUrl ? (
-                    <Pressable onPress={() => setShowIssueModal(true)}>
-                      <View style={styles.card}>
-                        <Text style={styles.cardTitle}>First Appearance</Text>
-                        <View style={styles.cardDivider} />
-                        <View style={styles.firstIssueRow}>
-                          <Image
-                            source={{ uri: data.firstIssue.imageUrl }}
-                            style={styles.firstIssueCover as object}
-                            contentFit="cover"
-                            cachePolicy="memory-disk"
-                          />
-                          <View style={styles.firstIssueMeta}>
-                            {data.firstIssue.name ? (
-                              <Text style={styles.firstIssueTitle}>
-                                {data.firstIssue.name.split(';')[0].trim()}
-                              </Text>
-                            ) : null}
-                            {data.firstIssue.coverDate ? (
-                              <Text style={styles.firstIssueYear}>
-                                {data.firstIssue.coverDate.slice(0, 4)}
-                              </Text>
-                            ) : null}
+                {/* Power Stats */}
+                <View style={styles.mBlock}>
+                  <View style={styles.mStatsCard}>
+                    <View style={styles.statCardHeader}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
+                        {data.statsSource === 'ai' ? (
+                          <View style={styles.aiBadge}>
+                            <Text style={styles.aiBadgeText}>AI</Text>
                           </View>
+                        ) : null}
+                      </View>
+                      {powerScore !== null ? (
+                        <View
+                          style={[
+                            styles.powerScorePill,
+                            { backgroundColor: alignmentColor + '22' },
+                          ]}
+                        >
+                          <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
+                            {powerScore}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <View style={styles.cardDivider} />
+                    {statsGenerating
+                      ? STAT_CONFIG.map(({ key }) => (
+                          <SkeletonBlock
+                            key={key}
+                            opacity={skeletonOpacity}
+                            height={10}
+                            borderRadius={5}
+                            style={{ marginBottom: 14 }}
+                          />
+                        ))
+                      : STAT_CONFIG.map(({ key, label, color }) => (
+                          <StatBar
+                            key={key}
+                            label={label}
+                            value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
+                            color={color}
+                          />
+                        ))}
+                    {percentile != null && percentile > 0 ? (
+                      <Text style={styles.percentileText}>
+                        Stronger than {percentile}% of heroes
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
+
+                {/* Abilities */}
+                <AbilitiesSection powers={details.powers} loading={comicVineLoading} />
+
+                {/* Enemies & Allies */}
+                {!comicVineLoading && (details.enemies?.length || details.friends?.length) ? (
+                  <View style={styles.mSection}>
+                    <View style={styles.mSectionHead}>
+                      <Text style={styles.mSectionTitle}>Enemies &amp; Allies</Text>
+                      <View style={styles.mSectionDivider} />
+                    </View>
+                    {details.enemies?.length ? (
+                      <RelatedHeroStrip
+                        label="Enemies"
+                        names={details.enemies}
+                        heroMap={relatedHeroMap}
+                        kind="enemy"
+                        onPressHero={(h) =>
+                          router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                        }
+                      />
+                    ) : null}
+                    {details.friends?.length ? (
+                      <RelatedHeroStrip
+                        label="Allies"
+                        names={details.friends}
+                        heroMap={relatedHeroMap}
+                        kind="ally"
+                        onPressHero={(h) =>
+                          router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                        }
+                      />
+                    ) : null}
+                  </View>
+                ) : null}
+
+                {/* On Screen */}
+                {!comicVineLoading && details.movies?.length ? (
+                  <View style={styles.mSection}>
+                    <View style={styles.mSectionHead}>
+                      <Text style={styles.mSectionTitle}>
+                        On Screen ({details.movieCount ?? details.movies.length})
+                      </Text>
+                      <View style={styles.mSectionDivider} />
+                    </View>
+                    <MovieStrip
+                      movies={details.movies}
+                      totalCount={details.movieCount ?? details.movies.length}
+                      contentInset={16}
+                    />
+                  </View>
+                ) : null}
+
+                {/* First Appearance */}
+                {data.firstIssue?.imageUrl ? (
+                  <View style={styles.mBlock}>
+                    <Text style={styles.mSectionTitle}>First Appearance</Text>
+                    <View style={styles.mSectionDivider} />
+                    <Pressable onPress={() => setShowIssueModal(true)} style={styles.mDebutCard}>
+                      <Image
+                        source={{ uri: data.firstIssue.imageUrl }}
+                        style={styles.mDebutCover as object}
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                      />
+                      <View style={styles.mDebutMeta}>
+                        {data.firstIssue.name ? (
+                          <Text style={styles.mDebutTitle}>
+                            {data.firstIssue.name.split(';')[0].trim()}
+                          </Text>
+                        ) : null}
+                        {data.firstIssue.coverDate ? (
+                          <Text style={styles.mDebutYear}>
+                            {data.firstIssue.coverDate.slice(0, 4)}
+                          </Text>
+                        ) : null}
+                        <View style={styles.mDebutCta}>
+                          <Text style={styles.mDebutCtaText}>View issue</Text>
+                          <Ionicons name="chevron-forward" size={14} color={COLORS.orange} />
                         </View>
                       </View>
                     </Pressable>
-                  ) : null}
-                </>
-              )}
-
-              {/* Details tab: biographical info */}
-              {activeTab === 'details' && (
-                <>
-                  <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Overview</Text>
-                    <View style={styles.cardDivider} />
-                    <InfoRow label="Full name" value={stats.biography['full-name']} />
-                    <InfoRow label="Alter egos" value={stats.biography['alter-egos']} />
-                    <InfoRow label="Place of birth" value={stats.biography['place-of-birth']} />
-                    <InfoRow label="First appearance" value={stats.biography['first-appearance']} />
-                    <InfoRow label="Origin" value={details.origin} />
-                    <InfoRow label="Alignment" value={stats.biography.alignment} />
-                    {stats.biography.aliases.filter((a) => a && a !== '-').length > 0 && (
-                      <InfoRow label="Aliases" value={stats.biography.aliases.join(', ')} />
-                    )}
                   </View>
-                  <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Appearance</Text>
-                    <View style={styles.cardDivider} />
-                    <InfoRow label="Gender" value={stats.appearance.gender} />
-                    <InfoRow label="Race" value={stats.appearance.race} />
-                    <InfoRow label="Height" value={stats.appearance.height.join(' / ')} />
-                    <InfoRow label="Weight" value={stats.appearance.weight.join(' / ')} />
-                    <InfoRow label="Eyes" value={stats.appearance['eye-color']} />
-                    <InfoRow label="Hair" value={stats.appearance['hair-color']} />
-                  </View>
-                  <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Work &amp; Connections</Text>
-                    <View style={styles.cardDivider} />
-                    <InfoRow label="Occupation" value={stats.work.occupation} />
-                    <InfoRow label="Base" value={stats.work.base} />
-                    <InfoRow
-                      label="Group affiliation"
-                      value={
-                        details.teams?.length
-                          ? details.teams.join(', ')
-                          : stats.connections['group-affiliation']
-                      }
-                    />
-                    <InfoRow label="Relatives" value={stats.connections.relatives} />
-                  </View>
-                </>
-              )}
+                ) : null}
 
-              {/* Universe tab: enemies + movies */}
-              {activeTab === 'universe' && (
-                <>
-                  {comicVineLoading ? (
-                    <View style={styles.card}>
-                      <SkeletonBlock
-                        opacity={skeletonOpacity}
-                        width="45%"
-                        height={11}
-                        borderRadius={4}
-                        style={{ marginBottom: 10 }}
-                      />
-                      <View style={styles.cardDivider} />
-                      <SkeletonBlock
-                        opacity={skeletonOpacity}
-                        width="25%"
-                        height={10}
-                        borderRadius={4}
-                        style={{ marginBottom: 8 }}
-                      />
-                      <View style={styles.chipRow}>
-                        {[72, 90, 60, 80, 68].map((w, i) => (
-                          <SkeletonBlock
-                            key={i}
-                            opacity={skeletonOpacity}
-                            width={w}
-                            height={26}
-                            borderRadius={20}
-                          />
-                        ))}
-                      </View>
-                    </View>
-                  ) : details.enemies?.length || details.friends?.length ? (
-                    <View style={styles.card}>
-                      <Text style={styles.cardTitle}>Enemies &amp; Allies</Text>
-                      <View style={styles.cardDivider} />
-                      {details.enemies?.length ? (
-                        <RelatedHeroStrip
-                          label="Enemies"
-                          names={details.enemies}
-                          heroMap={relatedHeroMap}
-                          kind="enemy"
-                          onPressHero={(h) =>
-                            router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
-                          }
-                        />
-                      ) : null}
-                      {details.friends?.length ? (
-                        <RelatedHeroStrip
-                          label="Allies"
-                          names={details.friends}
-                          heroMap={relatedHeroMap}
-                          kind="ally"
-                          onPressHero={(h) =>
-                            router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
-                          }
-                        />
-                      ) : null}
-                    </View>
+                {/* Dossier */}
+                <View style={styles.mBlock}>
+                  <Text style={styles.mSectionTitle}>Overview</Text>
+                  <View style={styles.mSectionDivider} />
+                  <InfoRow label="Full name" value={stats.biography['full-name']} />
+                  <InfoRow label="Alter egos" value={stats.biography['alter-egos']} />
+                  <InfoRow label="Place of birth" value={stats.biography['place-of-birth']} />
+                  <InfoRow label="First appearance" value={stats.biography['first-appearance']} />
+                  {stats.biography.aliases.filter((a) => a && a !== '-').length > 0 ? (
+                    <InfoRow label="Aliases" value={stats.biography.aliases.join(', ')} />
                   ) : null}
-
-                  {comicVineLoading ? (
-                    <View style={styles.card}>
-                      <SkeletonBlock
-                        opacity={skeletonOpacity}
-                        width="30%"
-                        height={11}
-                        borderRadius={4}
-                        style={{ marginBottom: 10 }}
-                      />
-                      <View style={styles.cardDivider} />
-                      <View style={{ flexDirection: 'row', gap: 10 }}>
-                        {[0, 1, 2].map((i) => (
-                          <View key={i} style={{ alignItems: 'center', gap: 6 }}>
-                            <SkeletonBlock
-                              opacity={skeletonOpacity}
-                              width={80}
-                              height={120}
-                              borderRadius={8}
-                            />
-                            <SkeletonBlock
-                              opacity={skeletonOpacity}
-                              width={60}
-                              height={10}
-                              borderRadius={4}
-                            />
-                          </View>
-                        ))}
-                      </View>
-                    </View>
-                  ) : details.movies?.length ? (
-                    <View style={styles.card}>
-                      <Text style={styles.cardTitle}>
-                        On Screen ({details.movieCount ?? details.movies.length})
-                      </Text>
-                      <View style={styles.cardDivider} />
-                      <MovieStrip
-                        movies={details.movies}
-                        totalCount={details.movieCount ?? details.movies.length}
-                        contentInset={20}
-                        bleedMargin={20}
-                      />
-                    </View>
-                  ) : null}
-                </>
-              )}
+                </View>
+                <View style={styles.mBlock}>
+                  <Text style={styles.mSectionTitle}>Appearance</Text>
+                  <View style={styles.mSectionDivider} />
+                  <InfoRow label="Gender" value={stats.appearance.gender} />
+                  <InfoRow label="Race" value={stats.appearance.race} />
+                  <InfoRow label="Height" value={stats.appearance.height.join(' / ')} />
+                  <InfoRow label="Weight" value={stats.appearance.weight.join(' / ')} />
+                  <InfoRow label="Eyes" value={stats.appearance['eye-color']} />
+                  <InfoRow label="Hair" value={stats.appearance['hair-color']} />
+                </View>
+                <View style={styles.mBlock}>
+                  <Text style={styles.mSectionTitle}>Connections</Text>
+                  <View style={styles.mSectionDivider} />
+                  <InfoRow label="Occupation" value={stats.work.occupation} />
+                  <InfoRow label="Base" value={stats.work.base} />
+                  <InfoRow
+                    label="Group affiliation"
+                    value={
+                      details.teams?.length
+                        ? details.teams.join(', ')
+                        : stats.connections['group-affiliation']
+                    }
+                  />
+                  <InfoRow label="Relatives" value={stats.connections.relatives} />
+                </View>
+              </View>
             </View>
           )}
         </View>
@@ -1932,6 +1939,162 @@ const styles = StyleSheet.create({
     marginTop: 6,
     letterSpacing: 0.2,
   },
+
+  // ── Mobile native-style immersive layout ──
+  mHero: {
+    width: '100%',
+    position: 'relative',
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+    backgroundColor: COLORS.deepNavy,
+  },
+  mScrimTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 140,
+    backgroundImage: 'linear-gradient(to bottom, rgba(18,26,30,0.55), transparent)',
+  },
+  mScrimBottom: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '64%',
+    backgroundImage:
+      'linear-gradient(to top, rgba(18,26,30,0.97), rgba(18,26,30,0.55) 44%, transparent)',
+  },
+  mControls: {
+    position: 'absolute',
+    top: NAV_HEIGHT + 8,
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    zIndex: 2,
+  },
+  mIdentity: { paddingHorizontal: 20, paddingBottom: 46, zIndex: 1 },
+  mEyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: COLORS.orange,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
+  },
+  mName: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 34,
+    lineHeight: 38,
+    color: COLORS.beige,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 12,
+  },
+  mAlias: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 15,
+    color: 'rgba(245,235,220,0.82)',
+    marginTop: 8,
+  },
+  mVitals: { flexDirection: 'row', alignItems: 'center', marginTop: 18 },
+  mVitalItem: { alignItems: 'flex-start' },
+  mVitalVal: { fontFamily: 'Flame-Regular', fontSize: 22, lineHeight: 26, color: COLORS.beige },
+  mVitalLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    color: 'rgba(245,235,220,0.6)',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  mVitalDiv: {
+    width: 1,
+    height: 30,
+    backgroundColor: 'rgba(245,235,220,0.22)',
+    marginHorizontal: 18,
+  },
+  mBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 16,
+  },
+  mCreatedBy: {
+    flexShrink: 1,
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 11,
+    color: 'rgba(245,235,220,0.6)',
+  },
+  mBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+  mBadge: {
+    paddingHorizontal: 11,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.3)',
+    backgroundColor: 'rgba(20,28,32,0.4)',
+  },
+  mBadgeText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.beige,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  mSheet: {
+    backgroundColor: COLORS.beige,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -28,
+    paddingTop: 12,
+    paddingBottom: 28,
+  },
+  mBlock: { paddingHorizontal: 20, paddingTop: 18 },
+  mSummary: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 14,
+    lineHeight: 22,
+    color: COLORS.navy,
+    opacity: 0.85,
+  },
+  mStatsCard: { backgroundColor: 'rgba(41,60,67,0.05)', borderRadius: 16, padding: 16 },
+  mSection: { paddingTop: 18 },
+  mSectionTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 20,
+    color: COLORS.navy,
+    textAlign: 'right',
+    paddingVertical: 5,
+  },
+  mSectionDivider: {
+    height: 2,
+    backgroundColor: COLORS.navy,
+    borderRadius: 30,
+    marginBottom: 14,
+  },
+  // Pads the title/divider of full-bleed strip sections (Enemies, On Screen) while
+  // the strip itself stays edge-to-edge.
+  mSectionHead: { paddingHorizontal: 20 },
+  mSectionBody: { paddingHorizontal: 20 },
+  mDebutCard: {
+    flexDirection: 'row',
+    gap: 14,
+    backgroundColor: 'rgba(41,60,67,0.05)',
+    borderRadius: 16,
+    padding: 12,
+  },
+  mDebutCover: { width: 92, height: 138, borderRadius: 8, backgroundColor: COLORS.deepNavy },
+  mDebutMeta: { flex: 1, justifyContent: 'center', gap: 6 },
+  mDebutTitle: { fontFamily: 'Flame-Regular', fontSize: 16, lineHeight: 21, color: COLORS.navy },
+  mDebutYear: { fontFamily: 'FlameSans-Regular', fontSize: 12, color: '#54606A' },
+  mDebutCta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
+  mDebutCtaText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange },
 
   // Abilities
   powerTagRow: {
