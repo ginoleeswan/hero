@@ -72,6 +72,8 @@ export default function WebRootLayout() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.beige },
+  // Deep navy app backdrop — this is what shows behind the transparent floating
+  // header and on overscroll. Every screen paints its own canvas on top of it.
+  root: { flex: 1, backgroundColor: COLORS.deepNavy },
   content: { flex: 1 },
 });

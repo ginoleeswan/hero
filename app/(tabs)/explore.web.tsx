@@ -1191,7 +1191,7 @@ export default function WebHomeScreen() {
         <WebHomeSkeleton />
       ) : (
         <ScrollView
-          style={styles.scroll}
+          style={[styles.scroll, isDesktop && (styles.scrollDark as object)] as object}
           contentContainerStyle={[styles.discoverContent, isMobile && { paddingTop: 0 }] as object}
         >
           {/* ── Home content — always rendered. On desktop, committed searches
@@ -1256,15 +1256,15 @@ export default function WebHomeScreen() {
 
           {/* ── Orange ticker strip ────────────────────────────────────────── */}
           {isDesktop && (
-            <>
-              <PulseTicker
-                heroCount={totalHeroCount ?? 0}
-                newlyAddedCount={homeData.newlyAdded?.length ?? 0}
-              />
-              <View style={styles.afterTicker} />
-            </>
+            <PulseTicker
+              heroCount={totalHeroCount ?? 0}
+              newlyAddedCount={homeData.newlyAdded?.length ?? 0}
+            />
           )}
 
+          {/* Beige canvas — owns the carousel surface so the dark scroll
+              background only shows on the dark stage and on overscroll. */}
+          <View style={styles.beigeCanvas}>
           {/* Personal rows */}
           <HomeRow
             label="Personal"
@@ -1346,6 +1346,7 @@ export default function WebHomeScreen() {
           />
 
           <View style={styles.footerRule} />
+          </View>
         </ScrollView>
       )}
     </View>
@@ -1356,20 +1357,27 @@ export default function WebHomeScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
   scroll: { flex: 1 },
+  // Desktop: the scroll surface is the dark stage colour, so overscroll at the
+  // top reveals dark (not beige) and the floating header sits on continuous dark.
+  scrollDark: { backgroundColor: COLORS.deepNavy } as object,
 
   // ── Dark stage (top of explore — spotlight + stat pods) ─────────────────────
   darkStage: {
-    backgroundColor: '#0b1820',
+    backgroundColor: COLORS.deepNavy,
     paddingTop: 28,
     paddingBottom: 28,
   },
-  // Beige breathing room between the orange ticker and the first carousel.
-  afterTicker: { height: 40 },
+
+  // Beige canvas owns the carousel section (sits on the dark scroll surface).
+  beigeCanvas: {
+    backgroundColor: COLORS.beige,
+    paddingTop: 40,
+    paddingBottom: 100,
+  },
 
   // ── Home layout ──────────────────────────────────────────────────────────────
   discoverContent: {
     paddingTop: 0,
-    paddingBottom: 100,
     width: '100%',
   },
   footerRule: { height: 1, backgroundColor: COLORS.navy, opacity: 0.08, marginTop: 16 },

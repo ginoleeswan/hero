@@ -224,8 +224,8 @@ export function TopNav() {
 }
 
 const styles = StyleSheet.create({
-  // Outer carrier — solid, matched to the explore dark stage so it reads as one
-  // continuous dark surface (no visible band); only the pill floats on top.
+  // Outer carrier — transparent. The deep-navy app backdrop (set on the web
+  // layout root) shows through behind the floating pill, so there is no band.
   nav: {
     position: 'sticky',
     top: 0,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 12,
     paddingHorizontal: 16,
-    backgroundColor: COLORS.deepNavy,
+    backgroundColor: 'transparent',
   } as object,
 
   // The floating glass pill itself.
