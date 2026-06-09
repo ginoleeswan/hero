@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants/colors';
 import { getPowerIcon } from '../constants/powerIcons';
 import { Skeleton } from './ui/Skeleton';
@@ -14,19 +13,14 @@ interface Props {
   loading: boolean;
 }
 
-// One reference-grid cell: a gradient icon disc + the ability name.
+// One reference-grid cell: a soft neutral disc + colour-tinted icon + name.
 function AbilityItem({ name }: { name: string }) {
-  const { icon, gradientStart, gradientEnd } = getPowerIcon(name);
+  const { icon, gradientEnd } = getPowerIcon(name);
   return (
     <View style={styles.item}>
-      <LinearGradient
-        colors={[gradientStart, gradientEnd]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.itemIcon}
-      >
-        <Ionicons name={icon as keyof typeof Ionicons.glyphMap} size={16} color="#fff" />
-      </LinearGradient>
+      <View style={styles.itemIcon}>
+        <Ionicons name={icon as keyof typeof Ionicons.glyphMap} size={17} color={gradientEnd} />
+      </View>
       <Text style={styles.itemName} numberOfLines={2}>
         {name}
       </Text>
@@ -135,6 +129,7 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(41,60,67,0.06)',
   },
   itemName: {
     flex: 1,
