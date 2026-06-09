@@ -63,23 +63,25 @@ export function EraTimeline({ eras, onPress }: EraTimelineProps) {
       </View>
 
       {/* Desktop: a soft inset frame (deliberate "chapter"). Mobile: no frame so
-          the hero carousels run edge-to-edge like the rest of the page. */}
+          the hero carousels run edge-to-edge. The spine stays at both widths. */}
       <View style={isMobile ? [t.bodyMobile, { paddingLeft: pagePad }] : [t.frame, { marginHorizontal: pagePad }]}>
-        <View style={[t.timeline, isMobile && (t.timelineMobile as object)] as object}>
-          {!isMobile && <View style={t.spine as object} pointerEvents="none" />}
+        <View style={t.timeline}>
+          <View style={t.spine as object} pointerEvents="none" />
           {eras.map((bucket) => (
             <View key={bucket.era} style={t.eraBlock}>
-              {!isMobile && <View style={t.eraDot as object} />}
-              <View style={[t.eraHead, isMobile && (t.eraHeadMobile as object)] as object}>
+              <View style={t.eraDot as object} />
+              <View style={t.eraHead}>
                 <Text style={t.eraName}>{bucket.era}</Text>
                 <Text style={t.eraYears}>{ERA_YEARS[bucket.era] ?? ''}</Text>
               </View>
+              {/* On mobile the strip bleeds left into the spine and off the right
+                  edge; on desktop it's contained within the frame. */}
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={t.heroScroll as object}
+                style={[t.heroScroll, isMobile && { marginLeft: -26 }] as object}
                 contentContainerStyle={
-                  [t.heroStrip, !isMobile && { paddingRight: 4 }] as object
+                  [t.heroStrip, isMobile ? { paddingLeft: 26 } : { paddingRight: 4 }] as object
                 }
               >
                 {bucket.heroes.map((h) => (
@@ -131,9 +133,6 @@ const t = StyleSheet.create({
   heroStrip: { gap: 14, paddingTop: 10 } as object,
 
   timeline: { position: 'relative', paddingLeft: 26 },
-  // Mobile: no spine, so cards align to the page gutter like every other row.
-  timelineMobile: { paddingLeft: 0 } as object,
-  eraHeadMobile: { marginBottom: 12 } as object,
   spine: {
     position: 'absolute',
     left: 5,
@@ -141,6 +140,7 @@ const t = StyleSheet.create({
     bottom: 30,
     width: 2,
     backgroundColor: 'rgba(231,115,51,0.25)',
+    zIndex: 2,
   } as object,
   eraBlock: { position: 'relative', marginBottom: 30 },
   eraDot: {
@@ -153,6 +153,7 @@ const t = StyleSheet.create({
     backgroundColor: COLORS.orange,
     borderWidth: 3,
     borderColor: COLORS.beige,
+    zIndex: 3,
   } as object,
   eraHead: { flexDirection: 'row', alignItems: 'baseline', gap: 12, marginBottom: 14 },
   eraName: {
