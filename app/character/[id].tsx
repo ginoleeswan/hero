@@ -1424,7 +1424,6 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
     lineHeight: 22,
     opacity: 0.85,
-    textAlign: 'justify',
   },
 
   // Sections
