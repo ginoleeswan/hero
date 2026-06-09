@@ -46,11 +46,13 @@ import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
 import type { CharacterData, IssueCover } from '../../src/types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const HERO_IMAGE_HEIGHT = Math.round(SCREEN_HEIGHT * 0.62);
-// The name block overlaps the faded tail of the portrait (immersive), like the
-// original design — it sits ~60px above the image bottom, where the gradient is
-// ~80% beige, so a faint ghost of the art reads behind the name.
-const CONTENT_TOP = HERO_IMAGE_HEIGHT - 60;
+const HERO_IMAGE_HEIGHT = Math.round(SCREEN_HEIGHT * 0.66);
+// The identity (name + vitals) sits ON the portrait over a dark scrim; the beige
+// content sheet then rises over the hero with a rounded lip, overlapping this far.
+const SHEET_OVERLAP = 28;
+// Sheet's top offset within the scroll content (hero spacer height − the lip),
+// added to each section's local onLayout y so the quick-nav anchors stay correct.
+const SHEET_TOP = HERO_IMAGE_HEIGHT - SHEET_OVERLAP;
 
 const STAT_CONFIG: { key: string; label: string; tint: string }[] = [
   { key: 'intelligence', label: 'Intelligence', tint: COLORS.blue },
@@ -457,17 +459,11 @@ export default function CharacterScreen() {
     extrapolateRight: 'clamp',
   });
 
-  // Image fades out as content scrolls up over it — keeps text readable on beige bg
-  const imageOpacity = scrollY.interpolate({
-    inputRange: [0, HERO_IMAGE_HEIGHT * 0.55],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  });
-
-  // Header name slides up + snaps in from large scale as the content name scrolls behind the header.
-  // Content name scrolls naturally — the header clips it. No content-side transforms needed.
+  // Header name slides up + snaps in from large scale as the identity scrolls behind
+  // the header. The opaque beige sheet covers the image as it rises, so the image no
+  // longer needs an opacity fade.
   const HEADER_H = 100; // approx status bar + nav bar height
-  const NAME_TOP = CONTENT_TOP + 24; // name sits just below the eyebrow at content top
+  const NAME_TOP = HERO_IMAGE_HEIGHT - 180; // the on-image name sits ~180px above the hero bottom
   const NAME_IN = NAME_TOP - HEADER_H - 30; // name approaching header bottom
   const NAME_OUT = NAME_TOP - HEADER_H + 20; // name fully behind header
 
@@ -507,8 +503,10 @@ export default function CharacterScreen() {
     extrapolate: 'clamp',
   });
 
+  // Sections live inside the beige sheet, so their onLayout y is relative to the
+  // sheet — add the sheet's offset to get the absolute scroll position to jump to.
   const registerAnchor = (key: string) => (e: LayoutChangeEvent) => {
-    sectionOffsets.current[key] = e.nativeEvent.layout.y;
+    sectionOffsets.current[key] = SHEET_TOP + e.nativeEvent.layout.y;
   };
 
   const jumpTo = useCallback((key: string) => {
@@ -834,14 +832,12 @@ export default function CharacterScreen() {
         }}
       />
 
-      {/* Hero image — parallax + zoom-on-overscroll + fade-out on scroll */}
+      {/* Hero image — parallax + zoom-on-overscroll. The opaque beige sheet covers
+          it on scroll, so no opacity fade is needed. */}
       <Animated.View
         style={[
           styles.heroImageContainer,
-          {
-            opacity: imageOpacity,
-            transform: [{ translateY: imageTranslateY }, { scale: imageScale }],
-          },
+          { transform: [{ translateY: imageTranslateY }, { scale: imageScale }] },
         ]}
       >
         <Image
@@ -855,13 +851,16 @@ export default function CharacterScreen() {
             heroImage !== null && typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null
           }
         />
+        {/* Top scrim — keeps the back / favourite controls legible on bright art */}
         <LinearGradient
-          // Gentle 3-stop fade (the original, well-liked treatment): the portrait
-          // stays fully visible through the top ~45%, then eases into beige by the
-          // image's bottom edge. The name overlaps the faded tail for an immersive
-          // header rather than sitting on a hard, fully-solid beige cut.
-          colors={['transparent', 'rgba(245,235,220,0.6)', COLORS.beige]}
-          locations={[0.45, 0.75, 1]}
+          colors={['rgba(20,28,32,0.45)', 'transparent']}
+          locations={[0, 1]}
+          style={styles.topScrim}
+        />
+        {/* Bottom scrim — darkens the lower portrait so the identity reads on it */}
+        <LinearGradient
+          colors={['transparent', 'rgba(20,28,32,0.68)', 'rgba(20,28,32,0.94)']}
+          locations={[0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>
@@ -869,10 +868,7 @@ export default function CharacterScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         style={styles.scroll}
-        contentContainerStyle={{
-          paddingTop: CONTENT_TOP,
-          paddingBottom: insets.bottom + 96,
-        }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
@@ -880,315 +876,310 @@ export default function CharacterScreen() {
           listener: handleScroll,
         })}
       >
-        {/* Identity block — name renders immediately from params; eyebrow, alias,
-            chips and meta fill in when data arrives. Space is reserved while
-            loading so the name never jumps (no layout shift). */}
-        {displayName ? (
-          <View style={styles.nameBlock}>
-            {data ? (
-              data.stats.biography.publisher ? (
+        {/* Hero spacer — transparent over the parallaxing image; the identity sits
+            at its bottom, on the dark scrim. Name paints instantly from params. */}
+        <View style={styles.heroSpacer}>
+          {displayName ? (
+            <View style={styles.identity}>
+              {data?.stats.biography.publisher ? (
                 <Text style={styles.eyebrow} numberOfLines={1}>
                   {data.stats.biography.publisher}
                 </Text>
-              ) : null
-            ) : (
-              <Skeleton width={120} height={11} borderRadius={4} style={styles.eyebrowSkel} />
-            )}
-
-            <Text style={styles.heroName}>{displayName}</Text>
-
-            {data ? (
-              (() => {
-                const fullName = data.stats.biography['full-name'];
-                const hasAlias = !!fullName && fullName !== '-' && fullName !== 'null';
-                const hasBadges = !!(data.stats.biography.alignment || data.details.origin);
-                // No subtitle and no taxonomy chips → render nothing so the name
-                // sits directly above the accent rule (no reserved empty row).
-                if (!hasAlias && !hasBadges) return null;
-                return (
-                  <View style={styles.identityRow}>
-                    {hasAlias ? (
-                      <Text style={styles.heroAlias} numberOfLines={1}>
-                        {fullName}
-                      </Text>
-                    ) : null}
-                    {hasBadges ? (
-                      <View style={styles.chipRow}>
-                        <AlignmentBadge alignment={data.stats.biography.alignment} />
-                        <OriginBadge origin={data.details.origin} />
-                      </View>
-                    ) : null}
-                  </View>
-                );
-              })()
-            ) : (
-              <View style={styles.identityRow}>
-                <Skeleton width={120} height={15} borderRadius={6} />
-                <View style={styles.chipRow}>
-                  <Skeleton width={54} height={24} borderRadius={12} />
-                  <Skeleton width={64} height={24} borderRadius={12} />
-                </View>
-              </View>
-            )}
-
-            {data ? (
-              <>
-                <VitalsStrip
-                  powerTotal={powerTotal}
-                  issueCount={data.details.issueCount}
-                  movieCount={data.details.movieCount ?? data.details.movies?.length ?? null}
-                />
-                {data.details.creators?.length ? (
-                  <Text style={styles.createdBy}>
-                    Created by {data.details.creators.join(' & ')}
-                  </Text>
-                ) : null}
-              </>
-            ) : null}
-
-            <View style={styles.accentRule} />
-          </View>
-        ) : null}
-
-        {!data ? (
-          <CharacterSkeleton hideNameBlock />
-        ) : (
-          <>
-            {/* Summary — the lede; shows skeleton lines while ComicVine loads */}
-            <View onLayout={registerAnchor('summary')}>
-              {comicVineLoading ? (
-                <SkeletonProvider>
-                  <View style={styles.summaryBlock}>
-                    <Skeleton
-                      width="100%"
-                      height={12}
-                      borderRadius={5}
-                      style={{ marginBottom: 7 }}
-                    />
-                    <Skeleton
-                      width="88%"
-                      height={12}
-                      borderRadius={5}
-                      style={{ marginBottom: 7 }}
-                    />
-                    <Skeleton width="65%" height={12} borderRadius={5} />
-                  </View>
-                </SkeletonProvider>
-              ) : data.details.summary || data.details.description ? (
-                <View style={styles.summaryBlock}>
-                  {data.details.summary ? (
-                    <Text style={styles.summary}>{data.details.summary}</Text>
-                  ) : null}
-                  {data.details.description ? (
-                    <TouchableOpacity
-                      style={styles.biographyLink}
-                      onPress={() => router.push(`/biography/${id}`)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.biographyLinkText}>Full biography →</Text>
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
               ) : null}
-            </View>
 
-            {/* Power Stats — circular dials, 3×2 grid + percentile hook */}
-            <View onLayout={registerAnchor('stats')}>
-              <Section title="Power Stats">
-                <View style={styles.statsCard}>
-                  <View style={styles.statsGrid}>
-                    {STAT_CONFIG.map(({ key, label, tint }) => (
-                      <StatDial
-                        key={key}
-                        label={label}
-                        value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
-                        tint={tint}
-                      />
-                    ))}
-                  </View>
-                  {powerTotal > 0 ? (
-                    <View style={styles.statTotalRow}>
-                      <Text style={styles.statTotal}>Total {powerTotal} / 600</Text>
-                      {percentile != null && percentile > 0 ? (
-                        <Text style={styles.statPercentile}>
-                          Stronger than {percentile}% of heroes
-                        </Text>
-                      ) : null}
-                    </View>
-                  ) : null}
-                </View>
-              </Section>
-            </View>
+              <Text style={styles.heroName}>{displayName}</Text>
 
-            {/* Abilities */}
-            <View onLayout={registerAnchor('abilities')}>
-              <AbilitiesSection powers={data.details.powers} loading={comicVineLoading} />
-            </View>
-
-            {/* Enemies & Allies — full-bleed card strips */}
-            <View onLayout={registerAnchor('allies')} style={styles.bleedSection}>
-              {comicVineLoading ? (
-                <SkeletonProvider>
-                  <SectionHeader title="Enemies & Allies" />
-                  <View style={styles.bleedPad}>
-                    <Skeleton width={50} height={9} borderRadius={4} style={{ marginBottom: 10 }} />
-                  </View>
-                  <ScrollView
-                    horizontal
-                    scrollEnabled={false}
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.bleedRow}
-                  >
-                    {[0, 1, 2, 3].map((i) => (
-                      <Skeleton key={i} width={104} height={140} borderRadius={14} />
-                    ))}
-                  </ScrollView>
-                </SkeletonProvider>
-              ) : data.details.enemies?.length || data.details.friends?.length ? (
-                <>
-                  <SectionHeader title="Enemies & Allies" />
-                  {data.details.enemies?.length ? (
-                    <RelatedHeroStrip
-                      label="Enemies"
-                      names={data.details.enemies}
-                      heroMap={relatedHeroMap}
-                      kind="enemy"
-                      onPressHero={(h) =>
-                        router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
-                      }
-                    />
-                  ) : null}
-                  {data.details.friends?.length ? (
-                    <RelatedHeroStrip
-                      label="Allies"
-                      names={data.details.friends}
-                      heroMap={relatedHeroMap}
-                      kind="ally"
-                      onPressHero={(h) =>
-                        router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
-                      }
-                    />
-                  ) : null}
-                </>
-              ) : null}
-            </View>
-
-            {/* On Screen — full-bleed movie strip */}
-            <View onLayout={registerAnchor('screen')} style={styles.bleedSection}>
-              {comicVineLoading ? (
-                <SkeletonProvider>
-                  <SectionHeader title="On Screen" />
-                  <ScrollView
-                    horizontal
-                    scrollEnabled={false}
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.bleedRow}
-                  >
-                    {[0, 1, 2].map((i) => (
-                      <View key={i} style={{ alignItems: 'center', gap: 6 }}>
-                        <Skeleton width={80} height={120} borderRadius={8} />
-                        <Skeleton width={60} height={10} borderRadius={4} />
-                      </View>
-                    ))}
-                  </ScrollView>
-                </SkeletonProvider>
-              ) : data.details.movies?.length ? (
-                <>
-                  <SectionHeader
-                    title={`On Screen (${data.details.movieCount ?? data.details.movies.length})`}
-                  />
-                  <MovieStrip
-                    movies={data.details.movies}
-                    totalCount={data.details.movieCount ?? data.details.movies.length}
-                    contentInset={20}
-                  />
-                </>
-              ) : null}
-            </View>
-
-            {/* In Print — full-bleed cover gallery */}
-            <View onLayout={registerAnchor('print')} style={styles.bleedSection}>
-              {issueCovers === null && galleryLoading ? (
-                <SkeletonProvider>
-                  <SectionHeader title="In Print" />
-                  <ScrollView
-                    horizontal
-                    scrollEnabled={false}
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.bleedRow}
-                  >
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <Skeleton key={i} width={80} height={110} borderRadius={8} />
-                    ))}
-                  </ScrollView>
-                </SkeletonProvider>
-              ) : issueCovers && issueCovers.length > 0 ? (
-                <>
-                  <SectionHeader title="In Print" />
-                  <GalleryStrip
-                    images={issueCovers.map((c) => ({ url: c.url, caption: c.name }))}
-                    onPress={(i) => {
-                      setLightboxImages(issueCovers.map((c) => ({ url: c.url, caption: c.name })));
-                      setLightboxIndex(i);
-                    }}
-                  />
-                </>
-              ) : null}
-            </View>
-
-            {/* First Appearance — editorial debut card: cover + issue meta */}
-            {hasFirstVisual ? (
-              <View onLayout={registerAnchor('first')}>
-                <Section title="First Appearance">
-                  <TouchableOpacity
-                    onPress={() => setShowIssueModal(true)}
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
-                    accessibilityLabel="View first appearance issue"
-                  >
-                    <View style={styles.debutCard}>
-                      <View style={styles.debutCover}>
-                        <Image
-                          source={{ uri: data.firstIssue!.imageUrl! }}
-                          contentFit="cover"
-                          contentPosition="top"
-                          style={styles.debutCoverImg}
-                          cachePolicy="memory-disk"
-                          recyclingKey={`comic-${id}`}
-                          transition={200}
-                        />
-                      </View>
-                      <View style={styles.debutMeta}>
-                        <Text style={styles.debutTitle} numberOfLines={3}>
-                          {data.firstIssue!.name
-                            ? data.firstIssue!.name.split(';')[0].trim()
-                            : 'First Appearance'}
-                        </Text>
-                        {data.firstIssue!.coverDate ? (
-                          <Text style={styles.debutYear}>
-                            {data.firstIssue!.issueNumber
-                              ? `Issue #${data.firstIssue!.issueNumber} · `
-                              : ''}
-                            {data.firstIssue!.coverDate.slice(0, 4)}
+              {data
+                ? (() => {
+                    const fullName = data.stats.biography['full-name'];
+                    const hasAlias = !!fullName && fullName !== '-' && fullName !== 'null';
+                    const hasBadges = !!(data.stats.biography.alignment || data.details.origin);
+                    if (!hasAlias && !hasBadges) return null;
+                    return (
+                      <View style={styles.identityRow}>
+                        {hasAlias ? (
+                          <Text style={styles.heroAlias} numberOfLines={1}>
+                            {fullName}
                           </Text>
                         ) : null}
-                        <View style={styles.debutCta}>
-                          <Text style={styles.debutCtaText}>View issue</Text>
-                          <Ionicons name="chevron-forward" size={14} color={COLORS.orange} />
-                        </View>
+                        {hasBadges ? (
+                          <View style={styles.chipRow}>
+                            <AlignmentBadge alignment={data.stats.biography.alignment} />
+                            <OriginBadge origin={data.details.origin} />
+                          </View>
+                        ) : null}
                       </View>
+                    );
+                  })()
+                : null}
+
+              {data ? (
+                <>
+                  <VitalsStrip
+                    powerTotal={powerTotal}
+                    issueCount={data.details.issueCount}
+                    movieCount={data.details.movieCount ?? data.details.movies?.length ?? null}
+                  />
+                  {data.details.creators?.length ? (
+                    <Text style={styles.createdBy}>
+                      Created by {data.details.creators.join(' & ')}
+                    </Text>
+                  ) : null}
+                </>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+
+        {/* Beige content sheet — opaque, rounded top; rises over the hero on scroll */}
+        <View style={styles.sheet}>
+          {!data ? (
+            <CharacterSkeleton hideNameBlock />
+          ) : (
+            <>
+              {/* Summary — the lede; shows skeleton lines while ComicVine loads */}
+              <View onLayout={registerAnchor('summary')}>
+                {comicVineLoading ? (
+                  <SkeletonProvider>
+                    <View style={styles.summaryBlock}>
+                      <Skeleton
+                        width="100%"
+                        height={12}
+                        borderRadius={5}
+                        style={{ marginBottom: 7 }}
+                      />
+                      <Skeleton
+                        width="88%"
+                        height={12}
+                        borderRadius={5}
+                        style={{ marginBottom: 7 }}
+                      />
+                      <Skeleton width="65%" height={12} borderRadius={5} />
                     </View>
-                  </TouchableOpacity>
+                  </SkeletonProvider>
+                ) : data.details.summary || data.details.description ? (
+                  <View style={styles.summaryBlock}>
+                    {data.details.summary ? (
+                      <Text style={styles.summary}>{data.details.summary}</Text>
+                    ) : null}
+                    {data.details.description ? (
+                      <TouchableOpacity
+                        style={styles.biographyLink}
+                        onPress={() => router.push(`/biography/${id}`)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.biographyLinkText}>Full biography →</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
+
+              {/* Power Stats — circular dials, 3×2 grid + percentile hook */}
+              <View onLayout={registerAnchor('stats')}>
+                <Section title="Power Stats">
+                  <View style={styles.statsCard}>
+                    <View style={styles.statsGrid}>
+                      {STAT_CONFIG.map(({ key, label, tint }) => (
+                        <StatDial
+                          key={key}
+                          label={label}
+                          value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
+                          tint={tint}
+                        />
+                      ))}
+                    </View>
+                    {powerTotal > 0 ? (
+                      <View style={styles.statTotalRow}>
+                        <Text style={styles.statTotal}>Total {powerTotal} / 600</Text>
+                        {percentile != null && percentile > 0 ? (
+                          <Text style={styles.statPercentile}>
+                            Stronger than {percentile}% of heroes
+                          </Text>
+                        ) : null}
+                      </View>
+                    ) : null}
+                  </View>
                 </Section>
               </View>
-            ) : null}
 
-            {/* Dossier — Profile + Appearance + Connections, collapsed by default */}
-            <View onLayout={registerAnchor('dossier')}>
-              <Dossier data={data} includeFirstAppearance={!hasFirstVisual} />
-            </View>
-          </>
-        )}
+              {/* Abilities */}
+              <View onLayout={registerAnchor('abilities')}>
+                <AbilitiesSection powers={data.details.powers} loading={comicVineLoading} />
+              </View>
+
+              {/* Enemies & Allies — full-bleed card strips */}
+              <View onLayout={registerAnchor('allies')} style={styles.bleedSection}>
+                {comicVineLoading ? (
+                  <SkeletonProvider>
+                    <SectionHeader title="Enemies & Allies" />
+                    <View style={styles.bleedPad}>
+                      <Skeleton
+                        width={50}
+                        height={9}
+                        borderRadius={4}
+                        style={{ marginBottom: 10 }}
+                      />
+                    </View>
+                    <ScrollView
+                      horizontal
+                      scrollEnabled={false}
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.bleedRow}
+                    >
+                      {[0, 1, 2, 3].map((i) => (
+                        <Skeleton key={i} width={104} height={140} borderRadius={14} />
+                      ))}
+                    </ScrollView>
+                  </SkeletonProvider>
+                ) : data.details.enemies?.length || data.details.friends?.length ? (
+                  <>
+                    <SectionHeader title="Enemies & Allies" />
+                    {data.details.enemies?.length ? (
+                      <RelatedHeroStrip
+                        label="Enemies"
+                        names={data.details.enemies}
+                        heroMap={relatedHeroMap}
+                        kind="enemy"
+                        onPressHero={(h) =>
+                          router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                        }
+                      />
+                    ) : null}
+                    {data.details.friends?.length ? (
+                      <RelatedHeroStrip
+                        label="Allies"
+                        names={data.details.friends}
+                        heroMap={relatedHeroMap}
+                        kind="ally"
+                        onPressHero={(h) =>
+                          router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                        }
+                      />
+                    ) : null}
+                  </>
+                ) : null}
+              </View>
+
+              {/* On Screen — full-bleed movie strip */}
+              <View onLayout={registerAnchor('screen')} style={styles.bleedSection}>
+                {comicVineLoading ? (
+                  <SkeletonProvider>
+                    <SectionHeader title="On Screen" />
+                    <ScrollView
+                      horizontal
+                      scrollEnabled={false}
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.bleedRow}
+                    >
+                      {[0, 1, 2].map((i) => (
+                        <View key={i} style={{ alignItems: 'center', gap: 6 }}>
+                          <Skeleton width={80} height={120} borderRadius={8} />
+                          <Skeleton width={60} height={10} borderRadius={4} />
+                        </View>
+                      ))}
+                    </ScrollView>
+                  </SkeletonProvider>
+                ) : data.details.movies?.length ? (
+                  <>
+                    <SectionHeader
+                      title={`On Screen (${data.details.movieCount ?? data.details.movies.length})`}
+                    />
+                    <MovieStrip
+                      movies={data.details.movies}
+                      totalCount={data.details.movieCount ?? data.details.movies.length}
+                      contentInset={20}
+                    />
+                  </>
+                ) : null}
+              </View>
+
+              {/* In Print — full-bleed cover gallery */}
+              <View onLayout={registerAnchor('print')} style={styles.bleedSection}>
+                {issueCovers === null && galleryLoading ? (
+                  <SkeletonProvider>
+                    <SectionHeader title="In Print" />
+                    <ScrollView
+                      horizontal
+                      scrollEnabled={false}
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.bleedRow}
+                    >
+                      {[0, 1, 2, 3, 4].map((i) => (
+                        <Skeleton key={i} width={80} height={110} borderRadius={8} />
+                      ))}
+                    </ScrollView>
+                  </SkeletonProvider>
+                ) : issueCovers && issueCovers.length > 0 ? (
+                  <>
+                    <SectionHeader title="In Print" />
+                    <GalleryStrip
+                      images={issueCovers.map((c) => ({ url: c.url, caption: c.name }))}
+                      onPress={(i) => {
+                        setLightboxImages(
+                          issueCovers.map((c) => ({ url: c.url, caption: c.name })),
+                        );
+                        setLightboxIndex(i);
+                      }}
+                    />
+                  </>
+                ) : null}
+              </View>
+
+              {/* First Appearance — editorial debut card: cover + issue meta */}
+              {hasFirstVisual ? (
+                <View onLayout={registerAnchor('first')}>
+                  <Section title="First Appearance">
+                    <TouchableOpacity
+                      onPress={() => setShowIssueModal(true)}
+                      activeOpacity={0.85}
+                      accessibilityRole="button"
+                      accessibilityLabel="View first appearance issue"
+                    >
+                      <View style={styles.debutCard}>
+                        <View style={styles.debutCover}>
+                          <Image
+                            source={{ uri: data.firstIssue!.imageUrl! }}
+                            contentFit="cover"
+                            contentPosition="top"
+                            style={styles.debutCoverImg}
+                            cachePolicy="memory-disk"
+                            recyclingKey={`comic-${id}`}
+                            transition={200}
+                          />
+                        </View>
+                        <View style={styles.debutMeta}>
+                          <Text style={styles.debutTitle} numberOfLines={3}>
+                            {data.firstIssue!.name
+                              ? data.firstIssue!.name.split(';')[0].trim()
+                              : 'First Appearance'}
+                          </Text>
+                          {data.firstIssue!.coverDate ? (
+                            <Text style={styles.debutYear}>
+                              {data.firstIssue!.issueNumber
+                                ? `Issue #${data.firstIssue!.issueNumber} · `
+                                : ''}
+                              {data.firstIssue!.coverDate.slice(0, 4)}
+                            </Text>
+                          ) : null}
+                          <View style={styles.debutCta}>
+                            <Text style={styles.debutCtaText}>View issue</Text>
+                            <Ionicons name="chevron-forward" size={14} color={COLORS.orange} />
+                          </View>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  </Section>
+                </View>
+              ) : null}
+
+              {/* Dossier — Profile + Appearance + Connections, collapsed by default */}
+              <View onLayout={registerAnchor('dossier')}>
+                <Dossier data={data} includeFirstAppearance={!hasFirstVisual} />
+              </View>
+            </>
+          )}
+        </View>
       </Animated.ScrollView>
 
       {/* Section quick-nav — floating jump bar that fades in once the content
@@ -1294,8 +1285,23 @@ const styles = StyleSheet.create({
   },
   scroll: { flex: 1 },
 
-  // Identity block — single display face (Flame), 8pt vertical rhythm
-  nameBlock: { paddingHorizontal: 20, paddingBottom: 4 },
+  // Top scrim over the portrait — keeps the back / favourite controls legible.
+  topScrim: { position: 'absolute', top: 0, left: 0, right: 0, height: 160 },
+
+  // Immersive hero: the spacer reserves the image height and pins the identity to
+  // the bottom of the portrait (over the dark scrim); the sheet rises over it.
+  heroSpacer: { height: HERO_IMAGE_HEIGHT, justifyContent: 'flex-end' },
+  identity: { paddingHorizontal: 20, paddingBottom: SHEET_OVERLAP + 18 },
+  sheet: {
+    backgroundColor: COLORS.beige,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderCurve: 'continuous',
+    marginTop: -SHEET_OVERLAP,
+    paddingTop: 10,
+    minHeight: Math.round(SCREEN_HEIGHT * 0.6),
+  },
+
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
@@ -1304,12 +1310,14 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 8,
   },
-  eyebrowSkel: { marginBottom: 8 },
   heroName: {
     fontFamily: 'Flame-Regular',
-    fontSize: 34,
-    color: COLORS.navy,
-    lineHeight: 38,
+    fontSize: 36,
+    color: COLORS.beige,
+    lineHeight: 40,
+    textShadowColor: 'rgba(0,0,0,0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 12,
   },
   // Identity row spans the full width: alias on the left, taxonomy chips pushed
   // to the right so the metadata uses the whole measure instead of hugging left.
@@ -1323,7 +1331,7 @@ const styles = StyleSheet.create({
   heroAlias: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 15,
-    color: COLORS.navy,
+    color: 'rgba(245,235,220,0.82)',
     flexShrink: 1,
   },
   chipRow: {
@@ -1346,18 +1354,18 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   // At-a-glance vitals strip — big numbers + tiny labels, divider-separated.
-  vitals: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
+  vitals: { flexDirection: 'row', alignItems: 'center', marginTop: 18 },
   vitalItem: { alignItems: 'flex-start' },
   vitalValue: {
     fontFamily: 'Flame-Regular',
     fontSize: 22,
-    color: COLORS.navy,
+    color: COLORS.beige,
     lineHeight: 26,
   },
   vitalLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
-    color: '#54606A',
+    color: 'rgba(245,235,220,0.6)',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     marginTop: 2,
@@ -1365,23 +1373,14 @@ const styles = StyleSheet.create({
   vitalDivider: {
     width: 1,
     height: 30,
-    backgroundColor: 'rgba(41,60,67,0.15)',
+    backgroundColor: 'rgba(245,235,220,0.22)',
     marginHorizontal: 18,
   },
   createdBy: {
-    // Solid muted token (≈5.5:1 on beige) — passes WCAG AA, unlike faded navy.
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
-    color: '#54606A',
+    color: 'rgba(245,235,220,0.6)',
     marginTop: 14,
-  },
-  // Short orange accent rule replaces the heavy full-width divider (editorial).
-  accentRule: {
-    width: 44,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: COLORS.orange,
-    marginTop: 20,
   },
 
   // Summary
