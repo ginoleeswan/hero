@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../src/constants/colors';
 import { heroImageSource } from '../../src/constants/heroImages';
@@ -316,18 +317,33 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
             <View style={pss.statPills as object}>
               {!!hero.intelligence && (
                 <View style={pss.statPill as object}>
+                  <MaterialCommunityIcons
+                    name="brain"
+                    size={15}
+                    color="rgba(245,235,220,0.55)"
+                  />
                   <Text style={pss.statPillVal as object}>{hero.intelligence}</Text>
                   <Text style={pss.statPillKey as object}>INT</Text>
                 </View>
               )}
               {!!hero.strength && (
                 <View style={pss.statPill as object}>
+                  <MaterialCommunityIcons
+                    name="arm-flex"
+                    size={15}
+                    color="rgba(245,235,220,0.55)"
+                  />
                   <Text style={pss.statPillVal as object}>{hero.strength}</Text>
                   <Text style={pss.statPillKey as object}>STR</Text>
                 </View>
               )}
               {!!hero.speed && (
                 <View style={pss.statPill as object}>
+                  <MaterialCommunityIcons
+                    name="lightning-bolt"
+                    size={15}
+                    color="rgba(245,235,220,0.55)"
+                  />
                   <Text style={pss.statPillVal as object}>{hero.speed}</Text>
                   <Text style={pss.statPillKey as object}>SPD</Text>
                 </View>
@@ -596,12 +612,12 @@ const pss = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 10,
     alignItems: 'center',
+    gap: 3,
   } as object,
   statPillVal: {
     fontFamily: 'Flame-Regular',
     fontSize: 20,
     color: COLORS.orange,
-    marginBottom: 2,
   } as object,
   statPillKey: {
     fontFamily: 'Nunito_700Bold',
