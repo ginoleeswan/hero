@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS } from '../../../constants/colors';
 
@@ -6,19 +7,43 @@ interface PulseTickerProps {
   newlyAddedCount: number;
 }
 
+const KEYFRAMES_ID = 'mythique-ticker-keyframes';
+const ANIM_NAME = 'mythique-ticker-scroll';
+
+// Inject the @keyframes once into the document. Doing this in raw CSS (rather
+// than via RNW's animationKeyframes, which doesn't compile reliably here) is the
+// dependable path on web.
+function ensureKeyframes() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById(KEYFRAMES_ID)) return;
+  const style = document.createElement('style');
+  style.id = KEYFRAMES_ID;
+  style.textContent = `@keyframes ${ANIM_NAME} { from { transform: translateX(0); } to { transform: translateX(-50%); } }`;
+  document.head.appendChild(style);
+}
+
 /**
- * Auto-scrolling marquee. Uses a CSS keyframe animation (via RNW's
- * `animationKeyframes`) rather than the JS `Animated` API: it runs on the
- * compositor, so it never stalls when the tab is backgrounded or rAF is
- * throttled. Two identical copies sit side by side and the track translates by
- * exactly -50% (one copy), so the loop is seamless at any text width.
+ * Auto-scrolling marquee. Two identical copies sit in a content-width track that
+ * translates by exactly -50% (one copy) via a CSS animation applied straight to
+ * the DOM node — runs on the compositor, never stalls, seamless at any width.
  */
 export function PulseTicker({ heroCount, newlyAddedCount }: PulseTickerProps) {
   const text = `${heroCount.toLocaleString()} Heroes & Villains  ·  Marvel, DC & Beyond  ·  Powers, Origins & First Appearances  ·  500+ Teams & Affiliations  ·  ${newlyAddedCount} Recently Added  ·  `;
+  const trackRef = useRef<View>(null);
+
+  useEffect(() => {
+    ensureKeyframes();
+    // RNW renders View as a DOM element at runtime; the TS type doesn't reflect it.
+    const el = trackRef.current as unknown as HTMLElement | null;
+    if (!el) return;
+    el.style.width = 'max-content';
+    el.style.willChange = 'transform';
+    el.style.animation = `${ANIM_NAME} 32s linear infinite`;
+  }, []);
 
   return (
     <View style={s.wrap} accessibilityElementsHidden>
-      <View style={s.track as object}>
+      <View ref={trackRef} style={s.track as object}>
         <Text style={s.text} numberOfLines={1}>
           {text}
         </Text>
@@ -38,15 +63,7 @@ const s = StyleSheet.create({
   },
   track: {
     flexDirection: 'row',
-    width: 'max-content',
     flexShrink: 0,
-    animationKeyframes: {
-      '0%': { transform: [{ translateX: '0%' }] },
-      '100%': { transform: [{ translateX: '-50%' }] },
-    },
-    animationDuration: '32s',
-    animationTimingFunction: 'linear',
-    animationIterationCount: 'infinite',
   } as object,
   text: {
     fontFamily: 'Nunito_700Bold',
