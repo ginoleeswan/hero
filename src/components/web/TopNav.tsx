@@ -132,24 +132,22 @@ export function TopNav() {
           <HeroLogo iconSize={24} fontSize={19} color={COLORS.beige} gap={8} />
         </Pressable>
 
-        {/* Center — search field on desktop; spacer on mobile */}
-        {showSearch ? (
+        {/* Flexible gap pushes the search + actions to the right */}
+        <View style={styles.centerSpacer} />
+
+        {/* Right-aligned search (desktop) — text leads, icon trails, beside Sign In */}
+        {showSearch && (
           <View ref={searchAreaRef} style={styles.searchContainer as object}>
             <View
               style={
                 [styles.searchWrap, searchFocused && (styles.searchWrapFocused as object)] as object
               }
             >
-              <Ionicons
-                name="search"
-                size={15}
-                color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.4)'}
-              />
               <TextInput
                 ref={inputRef}
                 style={styles.searchInput as object}
                 placeholder="Search heroes…"
-                placeholderTextColor="rgba(245,235,220,0.35)"
+                placeholderTextColor="rgba(245,235,220,0.4)"
                 value={query}
                 onChangeText={handleQueryChange}
                 onSubmitEditing={handleSubmitSearch}
@@ -167,11 +165,14 @@ export function TopNav() {
                   <Text style={styles.clearX as object}>×</Text>
                 </Pressable>
               ) : null}
+              <Ionicons
+                name="search"
+                size={16}
+                color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.5)'}
+              />
             </View>
             <SearchSuggestions />
           </View>
-        ) : (
-          <View style={styles.centerSpacer} />
         )}
 
         {/* Right slot — mobile search + avatar/dropdown or sign-in button */}
@@ -297,16 +298,15 @@ const styles = StyleSheet.create({
   iconBtnHover: { backgroundColor: 'rgba(245,235,220,0.1)' } as object,
 
   // ── Search input ───────────────────────────────────────────────────────────
+  // Compact, right-aligned: sits just left of the actions. Text leads, the
+  // search icon trails. Flat — the glass pill is the container.
   searchContainer: {
-    flex: 1,
+    width: 280,
+    flexShrink: 0,
     position: 'relative',
-    alignItems: 'center',
   } as object,
-
-  // Flat search — the glass pill is the container, so the field has no box.
   searchWrap: {
     width: '100%',
-    maxWidth: 520,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,

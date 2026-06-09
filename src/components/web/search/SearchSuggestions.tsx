@@ -50,15 +50,14 @@ const styles = StyleSheet.create({
   dropdownContainer: {
     position: 'absolute',
     top: '100%',
-    left: 0,
     right: 0,
     zIndex: 150,
-    alignItems: 'center',
+    alignItems: 'flex-end',
   } as object,
 
   dropdown: {
-    width: '100%',
-    maxWidth: 520,
+    width: 460,
+    maxWidth: '90vw',
     backgroundColor: 'rgba(11,24,32,0.78)',
     backdropFilter: 'blur(22px) saturate(150%)',
     WebkitBackdropFilter: 'blur(22px) saturate(150%)',
