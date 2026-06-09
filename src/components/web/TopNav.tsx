@@ -321,6 +321,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.beige,
     outlineStyle: 'none',
+    textAlign: 'right',
   } as object,
   clearBtn: {
     width: 22,
