@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants/colors';
 import { getPowerIcon } from '../constants/powerIcons';
 import { Skeleton } from './ui/Skeleton';
@@ -13,21 +14,23 @@ interface Props {
   loading: boolean;
 }
 
-function PowerPill({ name }: { name: string }) {
-  const { icon, gradientEnd } = getPowerIcon(name);
+// One reference-grid cell: a gradient icon disc + the ability name.
+function AbilityItem({ name }: { name: string }) {
+  const { icon, gradientStart, gradientEnd } = getPowerIcon(name);
   return (
-    <View style={[styles.pill, { borderColor: gradientEnd + '40' }]}>
-      <Ionicons name={icon as any} size={13} color={gradientEnd} />
-      <Text style={styles.pillText}>{name}</Text>
+    <View style={styles.item}>
+      <LinearGradient
+        colors={[gradientStart, gradientEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.itemIcon}
+      >
+        <Ionicons name={icon as keyof typeof Ionicons.glyphMap} size={16} color="#fff" />
+      </LinearGradient>
+      <Text style={styles.itemName} numberOfLines={2}>
+        {name}
+      </Text>
     </View>
-  );
-}
-
-function MorePill({ count, onPress }: { count: number; onPress: () => void }) {
-  return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.morePill}>
-      <Text style={styles.morePillText}>+{count} more</Text>
-    </TouchableOpacity>
   );
 }
 
@@ -36,8 +39,9 @@ export function AbilitiesSection({ powers, loading }: Props) {
 
   if (!loading && (!powers || powers.length === 0)) return null;
 
-  const overflow = powers ? Math.max(0, powers.length - COLLAPSED_COUNT) : 0;
+  const total = powers?.length ?? 0;
   const visible = powers ? (expanded ? powers : powers.slice(0, COLLAPSED_COUNT)) : [];
+  const overflow = Math.max(0, total - COLLAPSED_COUNT);
 
   return (
     <View style={styles.container}>
@@ -46,44 +50,44 @@ export function AbilitiesSection({ powers, loading }: Props) {
         <View style={styles.divider} />
       </View>
 
-      {loading && !powers ? (
-        <SkeletonProvider>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            scrollEnabled={false}
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-          >
-            {[80, 100, 70, 95, 85].map((w, i) => (
-              <Skeleton key={i} width={w} height={34} borderRadius={17} />
-            ))}
-          </ScrollView>
-        </SkeletonProvider>
-      ) : expanded ? (
-        <>
-          <View style={styles.expandedGrid}>
-            {visible.map((name, index) => (
-              <PowerPill key={`${index}-${name}`} name={name} />
-            ))}
-          </View>
-          <TouchableOpacity onPress={() => setExpanded(false)} style={styles.showLess}>
-            <Text style={styles.showLessText}>Show less</Text>
-          </TouchableOpacity>
-        </>
-      ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {visible.map((name, index) => (
-            <PowerPill key={`${index}-${name}`} name={name} />
-          ))}
-          {overflow > 0 && <MorePill count={overflow} onPress={() => setExpanded(true)} />}
-        </ScrollView>
-      )}
+      <View style={styles.body}>
+        {loading && !powers ? (
+          <SkeletonProvider>
+            <View style={styles.grid}>
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <View key={i} style={styles.item}>
+                  <Skeleton width={34} height={34} borderRadius={17} />
+                  <Skeleton width="62%" height={12} borderRadius={4} />
+                </View>
+              ))}
+            </View>
+          </SkeletonProvider>
+        ) : (
+          <>
+            <View style={styles.grid}>
+              {visible.map((name, i) => (
+                <AbilityItem key={`${i}-${name}`} name={name} />
+              ))}
+            </View>
+            {overflow > 0 ? (
+              <TouchableOpacity
+                onPress={() => setExpanded((e) => !e)}
+                activeOpacity={0.7}
+                style={styles.toggle}
+              >
+                <Text style={styles.toggleText}>
+                  {expanded ? 'Show less' : `Show all ${total}`}
+                </Text>
+                <Ionicons
+                  name={expanded ? 'chevron-up' : 'chevron-down'}
+                  size={14}
+                  color={COLORS.orange}
+                />
+              </TouchableOpacity>
+            ) : null}
+          </>
+        )}
+      </View>
     </View>
   );
 }
@@ -93,7 +97,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 4,
   },
-
   sectionHeader: {
     paddingHorizontal: 20,
   },
@@ -111,62 +114,46 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
-  scrollView: {},
-  scrollContent: {
-    paddingLeft: 20,
-    paddingRight: 20,
-    gap: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    backgroundColor: '#faf7f3',
-  },
-  pillText: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 12,
-    color: COLORS.navy,
-  },
-
-  morePill: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#ddd5c8',
-    backgroundColor: '#faf7f3',
-  },
-  morePillText: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 12,
-    color: COLORS.grey,
-  },
-
-  expandedGrid: {
+  body: { paddingHorizontal: 20, paddingTop: 2 },
+  // Two-column reference grid.
+  grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 20,
-    gap: 8,
+    justifyContent: 'space-between',
+    rowGap: 16,
+  },
+  item: {
+    width: '47%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+  },
+  itemIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  itemName: {
+    flex: 1,
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 13.5,
+    lineHeight: 17,
+    color: COLORS.navy,
   },
 
-  showLess: {
-    alignSelf: 'center',
-    marginTop: 12,
-    paddingVertical: 4,
-    paddingHorizontal: 16,
+  toggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    marginTop: 18,
   },
-  showLessText: {
-    fontFamily: 'FlameSans-Regular',
+  toggleText: {
+    fontFamily: 'Nunito_700Bold',
     fontSize: 13,
-    color: COLORS.navy,
-    textDecorationLine: 'underline',
+    color: COLORS.orange,
   },
 });

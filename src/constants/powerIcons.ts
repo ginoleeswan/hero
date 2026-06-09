@@ -96,6 +96,23 @@ export const POWER_ICONS: Record<string, PowerIconDef> = {
   shadow: { icon: 'moon', gradientStart: '#cbd5e1', gradientEnd: '#334155' },
   light: { icon: 'sunny', gradientStart: '#fef08a', gradientEnd: '#ca8a04' },
   illumin: { icon: 'sunny', gradientStart: '#fef08a', gradientEnd: '#ca8a04' },
+
+  // Skills & training (checked last — only catch what the specific keys above miss)
+  intellect: { icon: 'bulb', gradientStart: '#93c5fd', gradientEnd: '#1e40af' },
+  detective: { icon: 'search', gradientStart: '#93c5fd', gradientEnd: '#1d4ed8' },
+  martial: { icon: 'hand-left', gradientStart: '#fca5a5', gradientEnd: '#b91c1c' },
+  combat: { icon: 'hand-left', gradientStart: '#fca5a5', gradientEnd: '#b91c1c' },
+  marksman: { icon: 'locate', gradientStart: '#cbd5e1', gradientEnd: '#475569' },
+  weapon: { icon: 'locate', gradientStart: '#cbd5e1', gradientEnd: '#475569' },
+  gun: { icon: 'locate', gradientStart: '#cbd5e1', gradientEnd: '#475569' },
+  tactic: { icon: 'flag', gradientStart: '#93c5fd', gradientEnd: '#1d4ed8' },
+  strateg: { icon: 'flag', gradientStart: '#93c5fd', gradientEnd: '#1d4ed8' },
+  leader: { icon: 'flag', gradientStart: '#93c5fd', gradientEnd: '#1d4ed8' },
+  gadget: { icon: 'construct', gradientStart: '#a5b4fc', gradientEnd: '#4338ca' },
+  master: { icon: 'ribbon', gradientStart: '#fde68a', gradientEnd: '#b45309' },
+  expert: { icon: 'ribbon', gradientStart: '#fde68a', gradientEnd: '#b45309' },
+  trained: { icon: 'ribbon', gradientStart: '#fde68a', gradientEnd: '#b45309' },
+  acrobat: { icon: 'walk', gradientStart: '#fde68a', gradientEnd: '#b45309' },
 };
 
 export const POWER_ICON_FALLBACK: PowerIconDef = {
