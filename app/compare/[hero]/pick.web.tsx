@@ -25,6 +25,7 @@ import {
 } from '../../../src/lib/compareHandoff';
 import { withViewTransition } from '../../../src/lib/viewTransition';
 import { COLORS } from '../../../src/constants/colors';
+import { TOPBAR_HEIGHT } from '../../../src/components/web/NavVariants';
 
 // Shared view-transition-names: the locked hero (A) and the chosen card (B)
 // morph into the matching arena portraits.
@@ -382,7 +383,12 @@ const styles = StyleSheet.create({
   } as object,
 
   // ── Navy stage ──
-  stage: { backgroundColor: COLORS.navy, paddingBottom: 36, alignItems: 'center' },
+  stage: {
+    backgroundColor: COLORS.navy,
+    paddingTop: TOPBAR_HEIGHT,
+    paddingBottom: 36,
+    alignItems: 'center',
+  },
   stageWide: { paddingBottom: 44 } as object,
   controls: {
     width: '100%',

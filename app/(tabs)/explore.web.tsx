@@ -30,7 +30,7 @@ import { CoverGallery } from '../../src/components/web/home/CoverGallery';
 import { EraTimeline } from '../../src/components/web/home/EraTimeline';
 import { TodaysMatchup as TodaysMatchupCard } from '../../src/components/web/home/TodaysMatchup';
 import { getTodaysMatchup, type TodaysMatchup } from '../../src/lib/matchup';
-import { NAV_HEIGHT } from '../../src/components/web/TopNav';
+import { TOPBAR_HEIGHT } from '../../src/components/web/NavVariants';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { StatPods } from '../../src/components/web/home/StatPods';
 import {
@@ -1442,15 +1442,14 @@ const styles = StyleSheet.create({
   scrollDark: { backgroundColor: COLORS.deepNavy } as object,
 
   // ── Dark stage (top of explore — spotlight + stat pods) ─────────────────────
-  // Top padding clears the floating header (content scrolls behind it).
+  // Clears the transparent top bar; its deep-navy bg still bleeds up under the
+  // bar's scrim so the seam is invisible.
   darkStage: {
     backgroundColor: COLORS.deepNavy,
-    paddingTop: NAV_HEIGHT + 8,
+    paddingTop: TOPBAR_HEIGHT + 10,
     paddingBottom: 28,
   },
-  // Tighter rhythm on small screens — the spotlight's own marginVertical
-  // already supplies breathing room below the header.
-  darkStageMobile: { paddingTop: NAV_HEIGHT, paddingBottom: 16 } as object,
+  darkStageMobile: { paddingTop: TOPBAR_HEIGHT + 10, paddingBottom: 16 } as object,
 
   // Beige canvas owns the carousel section (sits on the dark scroll surface).
   beigeCanvas: {
@@ -1471,6 +1470,9 @@ const styles = StyleSheet.create({
   // ── Home layout ──────────────────────────────────────────────────────────────
   discoverContent: {
     paddingTop: 0,
+    // Clear the iOS home indicator now that content bleeds edge-to-edge
+    // (viewport-fit=cover). Resolves to plain 24px where there's no safe area.
+    paddingBottom: 'calc(24px + env(safe-area-inset-bottom))',
     width: '100%',
-  },
+  } as object,
 });

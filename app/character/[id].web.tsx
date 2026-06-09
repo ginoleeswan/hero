@@ -27,7 +27,7 @@ import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
 import { useHeroPercentile, useHeroesByNames } from '../../src/lib/query/heroQueries';
 import type { RelatedHeroCard } from '../../src/lib/db/heroes';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
-import { NAV_HEIGHT } from '../../src/components/web/TopNav';
+import { TOPBAR_HEIGHT } from '../../src/components/web/NavVariants';
 import { GalleryStrip } from '../../src/components/GalleryStrip';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
 import type { CharacterData, IssueCover } from '../../src/types';
@@ -388,11 +388,11 @@ export default function WebCharacterScreen() {
       : null;
 
   // How far the side-column portrait overlaps up into the stage. Anchored to a
-  // constant top (NAV_HEIGHT + 60) by clamping the overlap to the stage height,
+  // constant top (TOPBAR_HEIGHT + 60) by clamping the overlap to the stage height,
   // so a shorter stage never pushes the portrait into the header controls. Falls
   // back to the design default until the stage has been measured.
   const portraitOverlap = stageHeight
-    ? -Math.min(210, Math.max(0, stageHeight - (NAV_HEIGHT + 60)))
+    ? -Math.min(210, Math.max(0, stageHeight - (TOPBAR_HEIGHT + 60)))
     : -210;
 
   return (
@@ -406,7 +406,7 @@ export default function WebCharacterScreen() {
             style={[
               styles.stage,
               {
-                paddingTop: NAV_HEIGHT + 6,
+                paddingTop: TOPBAR_HEIGHT + 6,
                 paddingBottom: 26,
               },
             ]}
@@ -1457,7 +1457,7 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
     <ScrollView style={sk.scroll} contentContainerStyle={sk.scrollContent}>
       {/* Desktop: identity stage. Mobile uses an immersive portrait skeleton. */}
       {isDesktop ? (
-        <View style={[sk.stage, { paddingTop: NAV_HEIGHT + 6 }]}>
+        <View style={[sk.stage, { paddingTop: TOPBAR_HEIGHT + 6 }]}>
           <View style={[sk.stageInner, { paddingHorizontal: isDesktop ? 24 : 16 }]}>
             <View style={sk.headerTopRow}>
               <SkeletonBlock opacity={opacity} width={92} height={38} borderRadius={22} dark />
@@ -2206,7 +2206,7 @@ const styles = StyleSheet.create({
   },
   mControls: {
     position: 'absolute',
-    top: NAV_HEIGHT + 8,
+    top: TOPBAR_HEIGHT + 8,
     left: 16,
     right: 16,
     flexDirection: 'row',

@@ -8,7 +8,7 @@ import { Righteous_400Regular } from '@expo-google-fonts/righteous';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useAuth } from '../src/hooks/useAuth';
 import { LogoLoader } from '../src/components/ui/LogoLoader';
-import { TopNav, NAV_HEIGHT } from '../src/components/web/TopNav';
+import { TopBar, TOPBAR_HEIGHT } from '../src/components/web/NavVariants';
 import { SearchProvider } from '../src/contexts/SearchContext';
 import { queryClient } from '../src/lib/query/queryClient';
 import { COLORS } from '../src/constants/colors';
@@ -38,26 +38,53 @@ function WebAuthGate() {
   const inAuthGroup = segs[0] === '(auth)';
   const isRoot = segs.length === 0;
   const showNav = !inAuthGroup && !isRoot;
-  // Explore and the character profile let their content scroll behind the
-  // floating header (each provides its own top clearance for a cinematic
-  // full-bleed dark stage). Every other screen is pushed below the header.
-  const bleedBehindNav = segs.includes('explore') || segs.includes('character');
+  // Every top-level page lets its dark header bleed up under the floating nav for
+  // one seamless surface (each provides its own top clearance below).
+  const bleedBehindNav =
+    segs.includes('explore') ||
+    segs.includes('character') ||
+    segs.includes('compare') ||
+    segs.includes('search') ||
+    segs.includes('category') ||
+    segs.includes('biography');
 
   return (
     <SearchProvider>
       <View style={styles.root}>
-        {showNav && <TopNav />}
+        {showNav && <TopBar />}
         <View
-          style={[styles.content, showNav && !bleedBehindNav && { paddingTop: NAV_HEIGHT }] as object}
+          style={
+            [
+              styles.content,
+              showNav &&
+                !bleedBehindNav && {
+                  paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top))`,
+                },
+            ] as object
+          }
         >
           <Stack screenOptions={{ headerShown: false }} />
         </View>
+        {/* Safe-area top cover (glow technique): a frosted strip exactly the
+            height of the iOS status-bar inset, pinned above everything. Content
+            scrolls edge-to-edge behind it; the status-bar zone reads as one clean
+            frosted strip instead of a bare band. env() → 0 where no safe area. */}
+        <View pointerEvents="none" style={styles.statusBarCover} />
       </View>
     </SearchProvider>
   );
 }
 
 export default function WebRootLayout() {
+  // Expo's single web output ignores app/+html.tsx, so paint the document
+  // background deep-navy at runtime — otherwise the white default shows through
+  // wherever the app root doesn't fully cover (top strip, overscroll).
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.style.backgroundColor = '#0b1820';
+    document.body.style.backgroundColor = '#0b1820';
+  }, []);
+
   const [fontsLoaded, fontError] = useFonts({
     'FlameSans-Regular': require('../assets/fonts/FlameSans-Regular.ttf'),
     'Flame-Regular': require('../assets/fonts/Flame-Regular.ttf'),
@@ -83,4 +110,15 @@ const styles = StyleSheet.create({
   // header and on overscroll. Every screen paints its own canvas on top of it.
   root: { flex: 1, backgroundColor: COLORS.deepNavy },
   content: { flex: 1 },
+  statusBarCover: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 'env(safe-area-inset-top)',
+    backgroundColor: 'rgba(11,24,32,0.6)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    zIndex: 9999,
+  } as object,
 });

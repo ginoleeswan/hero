@@ -1,7 +1,7 @@
 import { View, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from './Skeleton';
 import { COLORS } from '../../constants/colors';
-import { NAV_HEIGHT } from './TopNav';
+import { TOPBAR_HEIGHT } from './NavVariants';
 
 const ROW_CARD_WIDTH = 220;
 const ROW_CARD_HEIGHT = 310;
@@ -200,10 +200,10 @@ const skel = StyleSheet.create({
   content: { paddingBottom: 0 },
   darkStage: {
     backgroundColor: COLORS.deepNavy,
-    paddingTop: NAV_HEIGHT + 24,
+    paddingTop: TOPBAR_HEIGHT + 10,
     paddingBottom: 28,
   },
-  darkStageMobile: { paddingTop: NAV_HEIGHT, paddingBottom: 16 } as object,
+  darkStageMobile: { paddingTop: TOPBAR_HEIGHT + 10, paddingBottom: 16 } as object,
   ticker: { height: 38, backgroundColor: COLORS.orange },
   beigeCanvas: {
     backgroundColor: COLORS.beige,

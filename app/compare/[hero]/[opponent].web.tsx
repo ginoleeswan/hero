@@ -22,6 +22,7 @@ import { StatBattleRow } from '../../../src/components/compare/StatBattleRow';
 import { VsBadge } from '../../../src/components/compare/VsBadge';
 import { getFighterArt, stashFighters } from '../../../src/lib/compareHandoff';
 import { withViewTransition } from '../../../src/lib/viewTransition';
+import { TOPBAR_HEIGHT } from '../../../src/components/web/NavVariants';
 
 // Must match the picker — the locked hero (A) and chosen card (B) morph in.
 const VT_HERO = 'vt-fighter-a';
@@ -438,7 +439,7 @@ const styles = StyleSheet.create({
     maxWidth: 1200,
     alignSelf: 'center',
     paddingHorizontal: 24,
-    paddingTop: 18,
+    paddingTop: TOPBAR_HEIGHT + 6,
     paddingBottom: 6,
   } as object,
   controlBtn: {
@@ -633,7 +634,7 @@ const styles = StyleSheet.create({
   mobileNavyTop: {
     backgroundColor: COLORS.navy,
     alignItems: 'center',
-    paddingTop: 12,
+    paddingTop: TOPBAR_HEIGHT + 12,
     paddingBottom: 30,
   },
   mobileCard: {

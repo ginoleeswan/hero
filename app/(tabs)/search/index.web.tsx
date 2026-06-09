@@ -28,6 +28,7 @@ import { useSearch } from '../../../src/contexts/SearchContext';
 import { useSearchHistory } from '../../../src/hooks/useSearchHistory';
 import { useIdleHeroes } from '../../../src/hooks/useIdleHeroes';
 import { useSkeletonAnim } from '../../../src/components/web/Skeleton';
+import { TOPBAR_HEIGHT } from '../../../src/components/web/NavVariants';
 
 const RESULT_LIMIT = 300;
 const PUB_OPTS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
@@ -436,7 +437,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
 
   // Desktop hero zone
-  heroZone: { backgroundColor: COLORS.navy, paddingTop: 20, paddingBottom: 22 },
+  heroZone: { backgroundColor: COLORS.navy, paddingTop: TOPBAR_HEIGHT + 18, paddingBottom: 22 },
   heroZoneInner: { maxWidth: 1200, width: '100%', alignSelf: 'center', gap: 14 },
   backBtn: {
     flexDirection: 'row',
@@ -499,7 +500,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 12,
-    paddingTop: 10,
+    paddingTop: TOPBAR_HEIGHT + 8,
     paddingBottom: 12,
   } as object,
   mobileBack: {

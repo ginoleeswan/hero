@@ -33,6 +33,7 @@ import { FilterSheet } from '../../src/components/web/category/FilterSheet';
 import { ActiveFilterChips } from '../../src/components/web/category/ActiveFilterChips';
 import { heroGridImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
+import { TOPBAR_HEIGHT } from '../../src/components/web/NavVariants';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 
 const VALID_SLUGS = new Set<CategorySlug>([
@@ -513,10 +514,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.navy,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(245,235,220,0.07)',
-    paddingTop: 12,
+    paddingTop: TOPBAR_HEIGHT + 12,
     paddingBottom: 14,
     position: 'sticky',
-    top: 64,
+    top: 0,
     zIndex: 40,
   } as object,
   headerInner: {

@@ -11,6 +11,7 @@ interface HeroLogoProps {
   color?: string;
   iconColor?: string;
   gap?: number;
+  iconOnly?: boolean;
 }
 
 export function HeroLogo({
@@ -19,6 +20,7 @@ export function HeroLogo({
   color = COLORS.orange,
   iconColor,
   gap = 8,
+  iconOnly = false,
 }: HeroLogoProps) {
   const resolvedIconColor = iconColor ?? color;
 
@@ -27,7 +29,7 @@ export function HeroLogo({
       <Svg width={iconSize} height={iconSize} viewBox="0 0 1024 1024">
         <Path fill={resolvedIconColor} d={LOGO_PATH} />
       </Svg>
-      <Text style={[styles.wordmark, { fontSize, color }]}>mythique</Text>
+      {!iconOnly && <Text style={[styles.wordmark, { fontSize, color }]}>mythique</Text>}
     </View>
   );
 }

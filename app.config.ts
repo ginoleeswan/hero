@@ -39,7 +39,11 @@ const config: ExpoConfig = {
   },
   web: {
     bundler: 'metro',
-    output: 'single',
+    // 'static' (not 'single') so Expo renders our app/+html.tsx for the document
+    // head. 'single' uses Expo's built-in template with a hardcoded viewport that
+    // omits viewport-fit=cover, which iOS Safari needs in the INITIAL HTML for
+    // edge-to-edge / safe-area-inset support.
+    output: 'static',
     favicon: './assets/favicon.png',
   },
   plugins: [

@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { getHeroById, getHeroByComicvineId } from '../../src/lib/db/heroes';
 import { COLORS } from '../../src/constants/colors';
+import { TOPBAR_HEIGHT } from '../../src/components/web/NavVariants';
 import { heroImageSource } from '../../src/constants/heroImages';
 import type { Tables } from '../../src/types/database.generated';
 
@@ -377,20 +378,45 @@ export default function WebBiographyScreen() {
 
   return (
     <ScrollView style={styles.scroll}>
-      {/* Identity header strip */}
+      {/* Cinematic identity header — echoes the character page stage */}
       <View style={styles.identityHeader}>
+        {/* Ambient blurred portrait backdrop for depth */}
+        {heroImage ? (
+          <Image
+            source={heroImage}
+            contentFit="cover"
+            contentPosition="top"
+            style={[StyleSheet.absoluteFill, styles.headerBackdrop] as object}
+            cachePolicy="memory-disk"
+            recyclingKey={id}
+          />
+        ) : null}
+        {/* Gradient scrim keeps the title legible over the backdrop */}
+        <View style={[styles.headerScrim, { pointerEvents: 'none' }] as object} />
+        {/* Atmospheric orange orb — purely decorative */}
+        <View style={[styles.headerOrb, { pointerEvents: 'none' }] as object} />
+
         <View style={styles.headerInner}>
           <Pressable
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
-            style={styles.backBtn}
+            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+              [styles.glassBack, hovered && (styles.glassBackHover as object)] as object
+            }
           >
             <Ionicons name="arrow-back" size={15} color={COLORS.beige} />
-            <Text style={styles.backText}>Back</Text>
+            <Text style={styles.glassBackText}>Back</Text>
           </Pressable>
           {hero ? (
             <View style={styles.heroTitleBlock}>
-              <Text style={[styles.heroName, { fontSize: isDesktop ? 42 : 30 }]}>{hero.name}</Text>
-              <Text style={styles.subtitle}>Biography</Text>
+              <Text style={styles.eyebrow}>Biography</Text>
+              <Text
+                style={[
+                  styles.heroName,
+                  { fontSize: isDesktop ? 46 : 32, lineHeight: isDesktop ? 50 : 36 },
+                ]}
+              >
+                {hero.name}
+              </Text>
               {hero.summary ? (
                 <Text style={styles.heroDeck} numberOfLines={2}>
                   {hero.summary}
@@ -399,13 +425,16 @@ export default function WebBiographyScreen() {
             </View>
           ) : null}
         </View>
+
+        {/* Soft orange glow at the bottom edge */}
+        <View style={[styles.headerAccent, { pointerEvents: 'none' }] as object} />
       </View>
 
       {/* Body */}
       {isDesktop ? (
         <View style={styles.desktopBody}>
           {/* Sticky sidebar */}
-          <View style={[styles.sidebar, { position: 'sticky' as 'relative', top: 24 }]}>
+          <View style={[styles.sidebar, { position: 'sticky' as 'relative', top: TOPBAR_HEIGHT + 16 }]}>
             {hero ? (
               heroImage ? (
                 <View style={styles.sidebarPortrait}>
@@ -484,38 +513,100 @@ export default function WebBiographyScreen() {
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
 
-  // Identity header
+  // Cinematic identity header — mirrors the character page stage
   identityHeader: {
-    backgroundColor: COLORS.navy,
-    paddingTop: 20,
-    paddingBottom: 28,
+    backgroundColor: COLORS.deepNavy,
+    paddingTop: TOPBAR_HEIGHT + 36,
+    paddingBottom: 30,
+    position: 'relative',
+    overflow: 'hidden',
   },
+  // Blurred portrait fills the header for atmosphere; scaled up to hide blur edges.
+  headerBackdrop: {
+    filter: 'blur(55px)',
+    transform: [{ scale: 1.3 }],
+    opacity: 0.38,
+  } as object,
+  headerScrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundImage:
+      'linear-gradient(180deg, rgba(11,24,32,0.55) 0%, rgba(11,24,32,0.32) 40%, rgba(11,24,32,0.85) 100%)',
+  } as object,
+  headerOrb: {
+    position: 'absolute',
+    width: 320,
+    height: 320,
+    top: -70,
+    right: '8%',
+    borderRadius: 160,
+    backgroundImage: 'radial-gradient(circle, rgba(231,115,51,0.16), transparent 70%)',
+    pointerEvents: 'none',
+  } as object,
   headerInner: {
     maxWidth: 1100,
     width: '100%',
     alignSelf: 'center' as const,
     paddingHorizontal: 24,
-  },
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
-  backText: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.beige, opacity: 0.7 },
-  heroTitleBlock: { gap: 4 },
-  heroName: { fontFamily: 'Flame-Regular', color: COLORS.beige, lineHeight: 48 },
-  subtitle: {
-    fontFamily: 'FlameSans-Regular',
+    position: 'relative',
+    zIndex: 2,
+  } as object,
+  headerAccent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: COLORS.orange,
+    boxShadow: `0 0 18px ${COLORS.orange}`,
+    zIndex: 3,
+  } as object,
+  // Glass back control — echoes the floating nav and character stage.
+  glassBack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 22,
+    marginBottom: 20,
+    cursor: 'pointer',
+    transition: 'background-color 150ms ease, border-color 150ms ease',
+  } as object,
+  glassBackHover: {
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderColor: 'rgba(255,255,255,0.28)',
+  } as object,
+  glassBackText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.beige },
+  heroTitleBlock: { gap: 6 },
+  eyebrow: {
+    fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: COLORS.beige,
-    opacity: 0.45,
+    color: COLORS.orange,
     textTransform: 'uppercase' as const,
-    letterSpacing: 2,
+    letterSpacing: 2.5,
   },
+  heroName: {
+    fontFamily: 'Flame-Regular',
+    color: COLORS.beige,
+    textShadow: '0 2px 20px rgba(0,0,0,0.45)',
+  } as object,
   heroDeck: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
-    color: COLORS.beige,
-    opacity: 0.6,
-    lineHeight: 20,
-    marginTop: 8,
-    maxWidth: 560,
+    color: 'rgba(245,235,220,0.62)',
+    lineHeight: 21,
+    marginTop: 6,
+    maxWidth: 620,
   },
 
   // Desktop two-column layout

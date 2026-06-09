@@ -262,9 +262,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 100,
-    paddingTop: 12,
+    // Fold the iOS status-bar / Dynamic Island inset into the top padding so the
+    // pill always clears the system UI now that content bleeds edge-to-edge
+    // (viewport-fit=cover). env() resolves to 0 on devices without safe areas.
+    paddingTop: 'calc(12px + env(safe-area-inset-top))',
     paddingBottom: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 'calc(16px + env(safe-area-inset-right))',
+    paddingLeft: 'calc(16px + env(safe-area-inset-left))',
     backgroundColor: 'transparent',
   } as object,
 
