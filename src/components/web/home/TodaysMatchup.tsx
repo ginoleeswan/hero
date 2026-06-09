@@ -78,7 +78,7 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
     <Pressable
       onPress={() => onOpen(`/compare/${heroA.id}/${heroB.id}`)}
       style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [m.card, hovered && (m.cardHover as object)] as object
+        [m.card, m.cardDesktop, hovered && (m.cardHover as object)] as object
       }
     >
       <View style={m.fighters}>
@@ -122,6 +122,7 @@ const m = StyleSheet.create({
     cursor: 'pointer',
     transition: 'background-color 150ms ease, transform 150ms ease',
   } as object,
+  cardDesktop: { marginHorizontal: 32 } as object,
   cardMobile: {
     flexDirection: 'column',
     alignItems: 'center',
