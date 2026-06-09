@@ -12,7 +12,7 @@ import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleto
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { fetchHeroStats, fetchHeroDetails } from '../../src/lib/api';
+import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery } from '../../src/lib/api';
 import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
 import { supabase } from '../../src/lib/supabase';
 import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
@@ -28,7 +28,9 @@ import { useHeroPercentile, useHeroesByNames } from '../../src/lib/query/heroQue
 import type { RelatedHeroCard } from '../../src/lib/db/heroes';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import { NAV_HEIGHT } from '../../src/components/web/TopNav';
-import type { CharacterData } from '../../src/types';
+import { GalleryStrip } from '../../src/components/GalleryStrip';
+import { ImageLightbox } from '../../src/components/ImageLightbox';
+import type { CharacterData, IssueCover } from '../../src/types';
 
 const STAT_CONFIG = [
   { key: 'intelligence', label: 'Intelligence', color: COLORS.blue },
@@ -138,6 +140,11 @@ export default function WebCharacterScreen() {
   const [favourited, setFavourited] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'universe'>('overview');
+  const [issueCovers, setIssueCovers] = useState<IssueCover[] | null>(null);
+  const [lightboxImages, setLightboxImages] = useState<{ url: string; caption?: string | null }[]>(
+    [],
+  );
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -179,6 +186,19 @@ export default function WebCharacterScreen() {
       .then((hero) => {
         if (hero?.enriched_at) {
           setData(heroRowToCharacterData(hero));
+
+          // In-Print covers: seed from the DB row, lazy-fetch once if never enriched.
+          if (hero.issue_covers) {
+            setIssueCovers(hero.issue_covers as unknown as IssueCover[]);
+          }
+          if (hero.comicvine_id != null && hero.gallery_enriched_at === null) {
+            fetchHeroGallery(hero.id, hero.comicvine_id)
+              .then(({ issueCovers: covers }) => {
+                if (covers) setIssueCovers(covers);
+              })
+              .catch(() => {});
+          }
+
           const needsComicVine =
             !hero.comicvine_enriched_at ||
             hero.powers === null ||
@@ -1123,6 +1143,25 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : null}
 
+                {/* In Print */}
+                {issueCovers && issueCovers.length > 0 ? (
+                  <View style={styles.mSection}>
+                    <View style={styles.mSectionHead}>
+                      <Text style={styles.mSectionTitle}>In Print</Text>
+                      <View style={styles.mSectionDivider} />
+                    </View>
+                    <GalleryStrip
+                      images={issueCovers.map((c) => ({ url: c.url, caption: c.name }))}
+                      onPress={(i) => {
+                        setLightboxImages(
+                          issueCovers.map((c) => ({ url: c.url, caption: c.name })),
+                        );
+                        setLightboxIndex(i);
+                      }}
+                    />
+                  </View>
+                ) : null}
+
                 {/* First Appearance */}
                 {data.firstIssue?.imageUrl ? (
                   <View style={styles.mBlock}>
@@ -1199,6 +1238,13 @@ export default function WebCharacterScreen() {
       </ScrollView>
       {showIssueModal && data?.firstIssue ? (
         <FirstIssueModal firstIssue={data.firstIssue} onClose={() => setShowIssueModal(false)} />
+      ) : null}
+      {lightboxImages.length > 0 ? (
+        <ImageLightbox
+          images={lightboxImages}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxImages([])}
+        />
       ) : null}
     </>
   );
@@ -1279,6 +1325,8 @@ function WebAbilitiesCard({
 // ── Character page skeleton ──────────────────────────────────────────────────
 function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showHeart: boolean }) {
   const opacity = useSkeletonAnim();
+  const { height: winH } = useWindowDimensions();
+  const heroH = Math.round(winH * 0.62);
   const divider = <View style={{ height: 1, backgroundColor: '#ede5da', marginBottom: 14 }} />;
 
   // Stats card — matches real layout: title + power score pill row, then 6 bar rows
@@ -1358,68 +1406,70 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
 
   return (
     <ScrollView style={sk.scroll} contentContainerStyle={sk.scrollContent}>
-      {/* Identity stage — deep navy, matches the real cinematic header */}
-      <View style={[sk.stage, { paddingTop: NAV_HEIGHT + 6 }]}>
-        <View style={[sk.stageInner, { paddingHorizontal: isDesktop ? 24 : 16 }]}>
-          <View style={sk.headerTopRow}>
-            <SkeletonBlock opacity={opacity} width={92} height={38} borderRadius={22} dark />
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {/* Heart only for authenticated users — don't skeleton it for guests */}
-              {showHeart && (
-                <SkeletonBlock opacity={opacity} width={38} height={38} borderRadius={19} dark />
-              )}
-              {/* Compare button is always shown (active or disabled) */}
-              <SkeletonBlock opacity={opacity} width={104} height={38} borderRadius={22} dark />
-            </View>
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 24 }}>
-            <View style={{ flex: 1 }}>
-              <SkeletonBlock
-                opacity={opacity}
-                width={90}
-                height={11}
-                borderRadius={4}
-                dark
-                style={{ marginBottom: 12 }}
-              />
-              <SkeletonBlock
-                opacity={opacity}
-                width={isDesktop ? 300 : 200}
-                height={isDesktop ? 46 : 32}
-                style={{ marginBottom: 12 }}
-                dark
-              />
-              <SkeletonBlock
-                opacity={opacity}
-                width={140}
-                height={14}
-                borderRadius={4}
-                dark
-                style={{ marginBottom: 20 }}
-              />
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                {[70, 84, 84].map((w, i) => (
-                  <SkeletonBlock
-                    key={i}
-                    opacity={opacity}
-                    width={w}
-                    height={28}
-                    borderRadius={20}
-                    dark
-                  />
-                ))}
+      {/* Desktop: identity stage. Mobile uses an immersive portrait skeleton. */}
+      {isDesktop ? (
+        <View style={[sk.stage, { paddingTop: NAV_HEIGHT + 6 }]}>
+          <View style={[sk.stageInner, { paddingHorizontal: isDesktop ? 24 : 16 }]}>
+            <View style={sk.headerTopRow}>
+              <SkeletonBlock opacity={opacity} width={92} height={38} borderRadius={22} dark />
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {/* Heart only for authenticated users — don't skeleton it for guests */}
+                {showHeart && (
+                  <SkeletonBlock opacity={opacity} width={38} height={38} borderRadius={19} dark />
+                )}
+                {/* Compare button is always shown (active or disabled) */}
+                <SkeletonBlock opacity={opacity} width={104} height={38} borderRadius={22} dark />
               </View>
             </View>
-            {isDesktop && (
-              <SkeletonBlock opacity={opacity} width={300} height={96} borderRadius={16} dark />
-            )}
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 24 }}>
+              <View style={{ flex: 1 }}>
+                <SkeletonBlock
+                  opacity={opacity}
+                  width={90}
+                  height={11}
+                  borderRadius={4}
+                  dark
+                  style={{ marginBottom: 12 }}
+                />
+                <SkeletonBlock
+                  opacity={opacity}
+                  width={isDesktop ? 300 : 200}
+                  height={isDesktop ? 46 : 32}
+                  style={{ marginBottom: 12 }}
+                  dark
+                />
+                <SkeletonBlock
+                  opacity={opacity}
+                  width={140}
+                  height={14}
+                  borderRadius={4}
+                  dark
+                  style={{ marginBottom: 20 }}
+                />
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  {[70, 84, 84].map((w, i) => (
+                    <SkeletonBlock
+                      key={i}
+                      opacity={opacity}
+                      width={w}
+                      height={28}
+                      borderRadius={20}
+                      dark
+                    />
+                  ))}
+                </View>
+              </View>
+              {isDesktop && (
+                <SkeletonBlock opacity={opacity} width={300} height={96} borderRadius={16} dark />
+              )}
+            </View>
           </View>
         </View>
-      </View>
+      ) : null}
 
-      <View style={sk.bodyWrap}>
-        {isDesktop ? (
-          // Desktop: portrait + stats in left col, tab bar + overview in right col
+      {isDesktop ? (
+        <View style={sk.bodyWrap}>
+          {/* Desktop: portrait + stats in left col, tab bar + overview in right col */}
           <View style={sk.bodyDesktop}>
             <View style={sk.leftCol}>
               <Animated.View style={[sk.portraitCard as object, { opacity }]} />
@@ -1430,16 +1480,137 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
               {overviewContent}
             </View>
           </View>
-        ) : (
-          // Mobile: portrait → stats → tab bar → overview content (matches real page order)
-          <View style={sk.body}>
-            <Animated.View style={[sk.portraitCardMobile as object, { opacity }]} />
-            {statsCard}
-            {tabBar}
-            {overviewContent}
+        </View>
+      ) : (
+        // Mobile: native-style immersive skeleton (portrait header → beige sheet)
+        <View style={sk.bodyWrap}>
+          <View style={[sk.mHero, { height: heroH }]}>
+            <View style={sk.mIdentitySkel}>
+              <SkeletonBlock
+                opacity={opacity}
+                width={90}
+                height={11}
+                borderRadius={4}
+                dark
+                style={{ marginBottom: 12 }}
+              />
+              <SkeletonBlock
+                opacity={opacity}
+                width={210}
+                height={32}
+                borderRadius={6}
+                dark
+                style={{ marginBottom: 12 }}
+              />
+              <SkeletonBlock
+                opacity={opacity}
+                width={150}
+                height={14}
+                borderRadius={4}
+                dark
+                style={{ marginBottom: 20 }}
+              />
+              <View style={{ flexDirection: 'row', gap: 18 }}>
+                {[46, 78, 52].map((w, i) => (
+                  <View key={i} style={{ gap: 6 }}>
+                    <SkeletonBlock opacity={opacity} width={w} height={22} borderRadius={5} dark />
+                    <SkeletonBlock
+                      opacity={opacity}
+                      width={Math.round(w * 0.7)}
+                      height={8}
+                      borderRadius={3}
+                      dark
+                    />
+                  </View>
+                ))}
+              </View>
+            </View>
           </View>
-        )}
-      </View>
+
+          <View style={sk.mSheet}>
+            <View style={sk.mPad}>
+              <SkeletonBlock opacity={opacity} height={12} style={{ marginBottom: 8 }} />
+              <SkeletonBlock
+                opacity={opacity}
+                width="88%"
+                height={12}
+                style={{ marginBottom: 8 }}
+              />
+              <SkeletonBlock opacity={opacity} width="62%" height={12} />
+            </View>
+            <View style={sk.mPad}>
+              <View style={sk.mStatsCard}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 10,
+                  }}
+                >
+                  <SkeletonBlock opacity={opacity} width={90} height={11} />
+                  <SkeletonBlock opacity={opacity} width={36} height={22} borderRadius={11} />
+                </View>
+                {divider}
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <View key={i} style={{ marginBottom: 14 }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        marginBottom: 6,
+                      }}
+                    >
+                      <SkeletonBlock opacity={opacity} width={80} height={11} />
+                      <SkeletonBlock opacity={opacity} width={22} height={16} borderRadius={4} />
+                    </View>
+                    <SkeletonBlock opacity={opacity} height={8} borderRadius={4} />
+                  </View>
+                ))}
+              </View>
+            </View>
+            <View style={sk.mPad}>
+              <SkeletonBlock
+                opacity={opacity}
+                width={88}
+                height={20}
+                borderRadius={4}
+                style={{ alignSelf: 'flex-end', marginBottom: 10 }}
+              />
+              <View
+                style={{
+                  height: 2,
+                  backgroundColor: COLORS.navy,
+                  borderRadius: 30,
+                  marginBottom: 16,
+                }}
+              />
+              {[0, 1].map((b) => (
+                <View key={b} style={{ marginBottom: 18 }}>
+                  <SkeletonBlock
+                    opacity={opacity}
+                    width={90}
+                    height={11}
+                    borderRadius={4}
+                    style={{ marginBottom: 12 }}
+                  />
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
+                    {[100, 132, 88].map((w, i) => (
+                      <SkeletonBlock
+                        key={i}
+                        opacity={opacity}
+                        width={w}
+                        height={16}
+                        borderRadius={4}
+                      />
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -1500,6 +1671,25 @@ const sk = StyleSheet.create({
     textTransform: 'uppercase' as const,
     letterSpacing: 1.4,
   },
+
+  // Mobile immersive skeleton
+  mHero: {
+    width: '100%',
+    backgroundColor: COLORS.deepNavy,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  mIdentitySkel: { paddingHorizontal: 20, paddingBottom: 46 },
+  mSheet: {
+    backgroundColor: COLORS.beige,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -28,
+    paddingTop: 12,
+    paddingBottom: 28,
+  },
+  mPad: { paddingHorizontal: 20, paddingTop: 18 },
+  mStatsCard: { backgroundColor: 'rgba(41,60,67,0.05)', borderRadius: 16, padding: 16 },
 });
 
 const styles = StyleSheet.create({
