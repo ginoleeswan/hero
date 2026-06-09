@@ -73,7 +73,10 @@ export function AbilitiesSection({ powers, loading }: Props) {
           </SkeletonProvider>
         ) : (
           groups.map((g, gi) => (
-            <View key={g.category} style={[styles.group, gi === groups.length - 1 && styles.groupLast]}>
+            <View
+              key={g.category}
+              style={[styles.group, gi === groups.length - 1 && styles.groupLast]}
+            >
               <View style={styles.groupHeader}>
                 <View style={[styles.groupMarker, { backgroundColor: g.color }]} />
                 <Text style={[styles.groupLabel, { color: g.color }]}>{g.label}</Text>
