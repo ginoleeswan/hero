@@ -61,6 +61,10 @@ node_modules/
 npm-debug.log
 yarn-error.log
 
+# Yarn 4
+.yarn/install-state.gz
+.yarn/build-state.yml
+
 # BUCK
 buck-out/
 \.buckd/

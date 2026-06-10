@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { getHeroById, getHeroByComicvineId } from '../../src/lib/db/heroes';
 import { COLORS } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { heroImageSource } from '../../src/constants/heroImages';
+import { useWebDocumentScroll } from '../../src/hooks/useWebDocumentScroll';
 import type { Tables } from '../../src/types/database.generated';
 
 type HeroRow = Tables<'heroes'>;
@@ -311,6 +312,9 @@ export default function WebBiographyScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
 
+  // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
+  useWebDocumentScroll(COLORS.beige);
+
   const [hero, setHero] = useState<HeroRow | null>(null);
   const [processedHtml, setProcessedHtml] = useState('');
   const [toc, setToc] = useState<string[]>([]);
@@ -376,7 +380,7 @@ export default function WebBiographyScreen() {
   );
 
   return (
-    <ScrollView style={styles.scroll}>
+    <View style={styles.scroll}>
       {/* Cinematic identity header — echoes the character page stage */}
       <View style={styles.identityHeader}>
         {/* Ambient blurred portrait backdrop for depth */}
@@ -496,7 +500,7 @@ export default function WebBiographyScreen() {
           )}
         </View>
       )}
-    </ScrollView>
+    </View>
   );
 }
 
@@ -585,7 +589,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center' as const,
     paddingHorizontal: 24,
     paddingTop: 36,
-    paddingBottom: 80,
+    paddingBottom: 0,
     gap: 40,
     alignItems: 'flex-start',
   },
@@ -653,7 +657,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center' as const,
     paddingHorizontal: 24,
     paddingTop: 28,
-    paddingBottom: 64,
+    paddingBottom: 0,
   },
 
   empty: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.navy, opacity: 0.4 },

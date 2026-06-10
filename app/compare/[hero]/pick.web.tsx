@@ -26,6 +26,7 @@ import {
 import { withViewTransition } from '../../../src/lib/viewTransition';
 import { COLORS } from '../../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
+import { useWebDocumentScroll } from '../../../src/hooks/useWebDocumentScroll';
 
 // Shared view-transition-names: the locked hero (A) and the chosen card (B)
 // morph into the matching arena portraits.
@@ -142,6 +143,9 @@ export default function WebPickOpponentScreen() {
   const { width } = useWindowDimensions();
   const wide = width >= 1024;
 
+  // Document scroll so content bleeds edge-to-edge under the iOS Safari toolbar.
+  useWebDocumentScroll(COLORS.beige);
+
   const [query, setQuery] = useState('');
   const [preview, setPreview] = useState<AnchorPreview | null>(null);
   const [morphKey, setMorphKey] = useState<string | null>(null);
@@ -221,7 +225,7 @@ export default function WebPickOpponentScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+      <View style={[styles.scroll, styles.scrollContent] as object}>
         {/* ── Navy stage: the matchup, your fighter lit, the seat waiting ── */}
         <View style={[styles.stage, wide && styles.stageWide] as object}>
           <View style={styles.controls as object}>
@@ -342,7 +346,7 @@ export default function WebPickOpponentScreen() {
             )}
           </View>
         </View>
-      </ScrollView>
+      </View>
 
       {peek && (
         <HeroPeek
