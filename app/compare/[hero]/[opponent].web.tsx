@@ -662,8 +662,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     marginTop: -14,
     paddingTop: 24,
-    paddingBottom: 40,
-  },
+    paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
+  } as object,
   mobileStats: {
     gap: 18,
     paddingHorizontal: 20,

@@ -49,7 +49,7 @@ function WebAuthGate() {
   // ScrollView that always mounts at the top), so reset to the top on every route
   // change — otherwise a new screen can open part-scrolled.
   useEffect(() => {
-    if (typeof window !== 'undefined') window.scrollTo(0, 0);
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [pathname]);
 
   if (loading || !settled) return <LogoLoader />;
