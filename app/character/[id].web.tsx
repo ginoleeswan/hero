@@ -1682,7 +1682,7 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
 const sk = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
   scrollContent: { width: '100%' },
-  bodyWrap: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 60 },
+  bodyWrap: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 0 },
 
   // ── Desktop identity stage ──
   stage: { backgroundColor: COLORS.deepNavy, position: 'relative', overflow: 'hidden' },
@@ -1772,7 +1772,7 @@ const sk = StyleSheet.create({
     borderTopRightRadius: 28,
     marginTop: -28,
     paddingTop: 12,
-    paddingBottom: 28,
+    paddingBottom: 0,
   },
   mPad: { paddingHorizontal: 20, paddingTop: 18 },
   mStatsCard: { backgroundColor: 'rgba(41,60,67,0.05)', borderRadius: 16, padding: 16 },
@@ -1783,7 +1783,7 @@ const styles = StyleSheet.create({
   // Scroll content is full-width so the dark stage can bleed edge-to-edge;
   // the body re-constrains itself to a centred reading column.
   scrollContent: { width: '100%' },
-  bodyWrap: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 60 },
+  bodyWrap: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 0 },
   center: {
     flex: 1,
     alignItems: 'center',
@@ -2357,7 +2357,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     marginTop: -28,
     paddingTop: 12,
-    paddingBottom: 28,
+    paddingBottom: 0,
   },
   mBlock: { paddingHorizontal: 20, paddingTop: 18 },
   mSummary: {

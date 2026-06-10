@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center' as const,
     paddingHorizontal: 24,
     paddingTop: 36,
-    paddingBottom: 80,
+    paddingBottom: 0,
     gap: 40,
     alignItems: 'flex-start',
   },
@@ -653,7 +653,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center' as const,
     paddingHorizontal: 24,
     paddingTop: 28,
-    paddingBottom: 64,
+    paddingBottom: 0,
   },
 
   empty: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.navy, opacity: 0.4 },

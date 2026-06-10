@@ -460,7 +460,7 @@ export default function WebCategoryScreen() {
             </View>
           ) : (
             <ScrollView style={styles.scroll} onScroll={handleScroll} scrollEventThrottle={200}>
-              <View style={[styles.gridWrap, { paddingBottom: 60 }]}>{grid}</View>
+              <View style={[styles.gridWrap, { paddingBottom: 0 }]}>{grid}</View>
             </ScrollView>
           )}
         </View>

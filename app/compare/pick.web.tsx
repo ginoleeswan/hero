@@ -276,7 +276,7 @@ export default function PickArena() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.navy },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 40 },
+  scrollContent: { paddingBottom: 0 },
 
   // ── Navy stage ──
   stage: { backgroundColor: COLORS.navy, paddingTop: TOPBAR_HEIGHT + 18, paddingBottom: 38 },
