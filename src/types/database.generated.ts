@@ -89,6 +89,7 @@ export type Database = {
       hero_relatives: {
         Row: {
           alias: string | null
+          branch_side: string | null
           created_at: string
           hero_id: string
           id: string
@@ -100,9 +101,11 @@ export type Database = {
           role: string
           status: string | null
           tier: number
+          tree_parent_id: string | null
         }
         Insert: {
           alias?: string | null
+          branch_side?: string | null
           created_at?: string
           hero_id: string
           id?: string
@@ -114,9 +117,11 @@ export type Database = {
           role: string
           status?: string | null
           tier: number
+          tree_parent_id?: string | null
         }
         Update: {
           alias?: string | null
+          branch_side?: string | null
           created_at?: string
           hero_id?: string
           id?: string
@@ -128,6 +133,7 @@ export type Database = {
           role?: string
           status?: string | null
           tier?: number
+          tree_parent_id?: string | null
         }
         Relationships: [
           {
@@ -142,6 +148,13 @@ export type Database = {
             columns: ["related_hero_id"]
             isOneToOne: false
             referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hero_relatives_tree_parent_id_fkey"
+            columns: ["tree_parent_id"]
+            isOneToOne: false
+            referencedRelation: "hero_relatives"
             referencedColumns: ["id"]
           },
         ]
