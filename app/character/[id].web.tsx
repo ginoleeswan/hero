@@ -388,12 +388,13 @@ export default function WebCharacterScreen() {
       : null;
 
   // How far the side-column portrait overlaps up into the stage. Anchored to a
-  // constant top (TOPBAR_HEIGHT + 60) by clamping the overlap to the stage height,
-  // so a shorter stage never pushes the portrait into the header controls. Falls
-  // back to the design default until the stage has been measured.
+  // constant top (TOPBAR_HEIGHT + 24) by clamping the overlap to the stage height,
+  // so a shorter stage never pushes the portrait under the floating nav. With the
+  // controls row gone the portrait can ride higher. Falls back to the design
+  // default until the stage has been measured.
   const portraitOverlap = stageHeight
-    ? -Math.min(210, Math.max(0, stageHeight - (TOPBAR_HEIGHT + 60)))
-    : -210;
+    ? -Math.min(300, Math.max(0, stageHeight - (TOPBAR_HEIGHT + 8)))
+    : -300;
 
   return (
     <>
@@ -406,7 +407,7 @@ export default function WebCharacterScreen() {
             style={[
               styles.stage,
               {
-                paddingTop: TOPBAR_HEIGHT + 6,
+                paddingTop: TOPBAR_HEIGHT + 32,
                 paddingBottom: 26,
               },
             ]}
@@ -439,119 +440,77 @@ export default function WebCharacterScreen() {
             <View style={[styles.orbB, { pointerEvents: 'none' }] as object} />
 
             <View style={[styles.stageInner, { paddingHorizontal: isDesktop ? 24 : 16 }]}>
-              {/* Top row — glass controls */}
-              <View style={styles.stageTopRow}>
-                <Pressable
-                  onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
-                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                    [styles.glassBtn, hovered && (styles.glassBtnHover as object)] as object
-                  }
-                >
-                  <Ionicons name="arrow-back" size={15} color={COLORS.beige} />
-                  <Text style={styles.glassBtnText}>Back</Text>
-                </Pressable>
-                <View style={styles.headerActions}>
-                  {user && (
-                    <Pressable
-                      onPress={toggleFavourite}
-                      disabled={favLoading}
-                      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                        [styles.glassIconBtn, hovered && (styles.glassBtnHover as object)] as object
-                      }
-                    >
-                      <Ionicons
-                        name={favourited ? 'heart' : 'heart-outline'}
-                        size={20}
-                        color={favourited ? COLORS.red : 'rgba(245,235,220,0.7)'}
-                      />
-                    </Pressable>
-                  )}
-                  {powerScore !== null || statsGenerating ? (
-                    <Pressable
-                      onPress={() =>
-                        !statsGenerating &&
-                        router.push(`/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`)
-                      }
-                      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                        [
-                          styles.glassBtn,
-                          hovered && !statsGenerating && (styles.glassBtnHover as object),
-                          statsGenerating && { opacity: 0.5 },
-                        ] as object
-                      }
-                    >
-                      <Ionicons name="git-compare-outline" size={15} color={COLORS.beige} />
-                      <Text style={styles.glassBtnText}>Compare</Text>
-                    </Pressable>
-                  ) : (
-                    <View style={[styles.glassBtn, { opacity: 0.4 }]}>
-                      <Ionicons name="git-compare-outline" size={15} color={COLORS.beige} />
-                      <Text style={styles.glassBtnText}>No stats</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-
-              {/* Identity — the body portrait rises into the reserved right space */}
+              {/* Identity — title hugs the left; secondary metadata fills the
+                  band between the title and the overlapping body portrait, so
+                  nothing has to stack downward past the portrait's edge. */}
               <View
                 style={[styles.identityCol, isDesktop && (styles.identityColDesktop as object)]}
               >
-                {stats.biography.publisher ? (
-                  <Text style={styles.stageEyebrow}>{stats.biography.publisher}</Text>
-                ) : null}
-                <Text
-                  style={[
-                    styles.heroName,
-                    { fontSize: isDesktop ? 46 : 30, lineHeight: isDesktop ? 50 : 34 },
-                  ]}
-                >
-                  {stats.name}
-                </Text>
-                {alias ? <Text style={styles.heroAlias}>{alias}</Text> : null}
-
-                {/* Meta chips — alignment, power score, issue count */}
-                <View style={styles.metaRow}>
-                  {alignmentLabel ? (
-                    <View
+                <View style={styles.identityRow}>
+                  <View style={styles.titleBlock}>
+                    {stats.biography.publisher ? (
+                      <Text style={styles.stageEyebrow}>{stats.biography.publisher}</Text>
+                    ) : null}
+                    <Text
                       style={[
-                        styles.alignChip,
-                        {
-                          borderColor: alignmentColor + '66',
-                          backgroundColor: alignmentColor + '22',
-                        },
+                        styles.heroName,
+                        { fontSize: isDesktop ? 46 : 30, lineHeight: isDesktop ? 50 : 34 },
                       ]}
                     >
-                      <Text style={[styles.alignChipText, { color: alignmentColor }]}>
-                        {alignmentLabel}
-                      </Text>
-                    </View>
-                  ) : null}
-                  {powerScore !== null ? (
-                    <View style={styles.metaPill}>
-                      <Text style={styles.metaPillVal}>{powerScore}</Text>
-                      <Text style={styles.metaPillKey}>Power</Text>
-                    </View>
-                  ) : null}
-                  {(details.issueCount ?? 0) > 0 ? (
-                    <View style={styles.metaPill}>
-                      <Text style={styles.metaPillVal}>{details.issueCount!.toLocaleString()}</Text>
-                      <Text style={styles.metaPillKey}>Issues</Text>
-                    </View>
-                  ) : null}
-                </View>
+                      {stats.name}
+                    </Text>
+                    {alias ? <Text style={styles.heroAlias}>{alias}</Text> : null}
+                  </View>
 
-                {comicVineLoading ? (
-                  <SkeletonBlock
-                    opacity={skeletonOpacity}
-                    width={180}
-                    height={10}
-                    borderRadius={4}
-                    dark
-                    style={{ marginTop: 14 }}
-                  />
-                ) : details.creators?.length ? (
-                  <Text style={styles.stageCredit}>Created by {details.creators.join(' & ')}</Text>
-                ) : null}
+                  {/* Meta block — alignment, power score, issue count + credit */}
+                  <View style={styles.metaBlock}>
+                    <View style={styles.metaRow}>
+                      {alignmentLabel ? (
+                        <View
+                          style={[
+                            styles.alignChip,
+                            {
+                              borderColor: alignmentColor + '66',
+                              backgroundColor: alignmentColor + '22',
+                            },
+                          ]}
+                        >
+                          <Text style={[styles.alignChipText, { color: alignmentColor }]}>
+                            {alignmentLabel}
+                          </Text>
+                        </View>
+                      ) : null}
+                      {powerScore !== null ? (
+                        <View style={styles.metaPill}>
+                          <Text style={styles.metaPillVal}>{powerScore}</Text>
+                          <Text style={styles.metaPillKey}>Power</Text>
+                        </View>
+                      ) : null}
+                      {(details.issueCount ?? 0) > 0 ? (
+                        <View style={styles.metaPill}>
+                          <Text style={styles.metaPillVal}>
+                            {details.issueCount!.toLocaleString()}
+                          </Text>
+                          <Text style={styles.metaPillKey}>Issues</Text>
+                        </View>
+                      ) : null}
+                    </View>
+
+                    {comicVineLoading ? (
+                      <SkeletonBlock
+                        opacity={skeletonOpacity}
+                        width={180}
+                        height={10}
+                        borderRadius={4}
+                        dark
+                      />
+                    ) : details.creators?.length ? (
+                      <Text style={styles.stageCredit}>
+                        Created by {details.creators.join(' & ')}
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
               </View>
             </View>
 
@@ -588,15 +547,40 @@ export default function WebCharacterScreen() {
                         </View>
                       ) : null}
                     </View>
-                    {powerScore !== null ? (
-                      <View
-                        style={[styles.powerScorePill, { backgroundColor: alignmentColor + '22' }]}
-                      >
-                        <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
-                          {powerScore}
-                        </Text>
-                      </View>
-                    ) : null}
+                    <View style={styles.statHeaderRight}>
+                      {powerScore !== null || statsGenerating ? (
+                        <Pressable
+                          onPress={() =>
+                            !statsGenerating &&
+                            router.push(
+                              `/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`,
+                            )
+                          }
+                          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                            [
+                              styles.compareBtn,
+                              hovered && !statsGenerating && (styles.compareBtnHover as object),
+                              statsGenerating && { opacity: 0.5 },
+                            ] as object
+                          }
+                        >
+                          <Ionicons name="git-compare-outline" size={14} color={COLORS.orange} />
+                          <Text style={styles.compareBtnText}>Compare</Text>
+                        </Pressable>
+                      ) : null}
+                      {powerScore !== null ? (
+                        <View
+                          style={[
+                            styles.powerScorePill,
+                            { backgroundColor: alignmentColor + '22' },
+                          ]}
+                        >
+                          <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
+                            {powerScore}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
                   </View>
                   <View style={styles.cardDivider} />
                   <View style={styles.statBand}>
@@ -913,6 +897,22 @@ export default function WebCharacterScreen() {
                     <View style={styles.portraitPlaceholder} />
                   )}
                   <View style={[styles.portraitOverlay, { pointerEvents: 'none' }] as object} />
+                  {user ? (
+                    <Pressable
+                      onPress={toggleFavourite}
+                      disabled={favLoading}
+                      aria-label={favourited ? 'Remove favourite' : 'Add favourite'}
+                      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                        [styles.portraitFav, hovered && (styles.portraitFavHover as object)] as object
+                      }
+                    >
+                      <Ionicons
+                        name={favourited ? 'heart' : 'heart-outline'}
+                        size={20}
+                        color={favourited ? COLORS.red : COLORS.beige}
+                      />
+                    </Pressable>
+                  ) : null}
                 </View>
 
                 <View style={styles.card}>
@@ -1378,155 +1378,170 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
   const heroH = Math.round(winH * 0.62);
   const divider = <View style={{ height: 1, backgroundColor: '#ede5da', marginBottom: 14 }} />;
 
-  // Stats card — matches real layout: title + power score pill row, then 6 bar rows
-  const statsCard = (
+  // Measure the stage so the overlapping side portrait anchors to the same
+  // constant top the real page uses — keeps the skeleton→content swap seamless.
+  const [stageHeight, setStageHeight] = useState(0);
+  const portraitOverlap = stageHeight
+    ? -Math.min(300, Math.max(0, stageHeight - (TOPBAR_HEIGHT + 8)))
+    : -300;
+
+  // Desktop power-stat band — 6 columns mirroring the live statBand.
+  const statBandCard = (
     <View style={sk.card}>
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 10,
-        }}
-      >
+      <View style={sk.statHeaderRow}>
         <SkeletonBlock opacity={opacity} width={90} height={11} />
-        <SkeletonBlock opacity={opacity} width={36} height={22} borderRadius={11} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          {/* Compare button is always shown (active or disabled) */}
+          <SkeletonBlock opacity={opacity} width={96} height={30} borderRadius={20} />
+          <SkeletonBlock opacity={opacity} width={40} height={24} borderRadius={12} />
+        </View>
       </View>
       {divider}
-      {[0, 1, 2, 3, 4, 5].map((i) => (
-        <View key={i} style={{ marginBottom: 14 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-            <SkeletonBlock opacity={opacity} width={80} height={11} />
-            <SkeletonBlock opacity={opacity} width={22} height={16} borderRadius={4} />
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10 }}>
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <View key={i} style={{ flex: 1, alignItems: 'center', gap: 8 }}>
+            <SkeletonBlock opacity={opacity} width={42} height={28} borderRadius={5} />
+            <SkeletonBlock opacity={opacity} width="70%" height={5} borderRadius={3} />
+            <SkeletonBlock opacity={opacity} width={44} height={9} borderRadius={3} />
           </View>
-          <SkeletonBlock opacity={opacity} height={8} borderRadius={4} />
-        </View>
-      ))}
+        ))}
+      </View>
     </View>
   );
 
-  // Tab bar — mirrors real [Overview] [Details] [Universe] bar
-  const tabBar = (
-    <View style={sk.tabBar}>
-      {[1, 2, 3].map((i) => (
-        <SkeletonBlock key={i} opacity={opacity} height={34} borderRadius={7} style={{ flex: 1 }} />
-      ))}
+  // Summary box — three text lines, matching the live summary loading state.
+  const summaryCard = (
+    <View style={sk.summaryBox}>
+      <SkeletonBlock opacity={opacity} height={12} style={{ marginBottom: 10 }} />
+      <SkeletonBlock opacity={opacity} width="85%" height={12} style={{ marginBottom: 10 }} />
+      <SkeletonBlock opacity={opacity} width="65%" height={12} />
     </View>
   );
 
-  // Overview tab content — what's visible on the default tab
-  // Summary (3 text lines), Abilities (chip cluster), First Appearance (cover + meta)
-  const overviewContent = (
-    <>
-      <View style={sk.card}>
-        <SkeletonBlock opacity={opacity} height={12} style={{ marginBottom: 8 }} />
-        <SkeletonBlock opacity={opacity} width="88%" height={12} style={{ marginBottom: 8 }} />
-        <SkeletonBlock opacity={opacity} width="65%" height={12} />
-      </View>
-      <View style={sk.card}>
-        <SkeletonBlock opacity={opacity} width={80} height={11} style={{ marginBottom: 10 }} />
-        {divider}
-        {/* Match WebAbilitiesCard's loading skeleton exactly: 8 chips, h28, r14 */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {[90, 70, 110, 80, 95, 75, 100, 85].map((w, i) => (
-            <SkeletonBlock key={i} opacity={opacity} width={w} height={28} borderRadius={14} />
-          ))}
-        </View>
-      </View>
-      <View style={sk.card}>
-        <SkeletonBlock opacity={opacity} width={110} height={11} style={{ marginBottom: 10 }} />
-        {divider}
-        <View style={{ flexDirection: 'row', gap: 12 }}>
+  // Abilities — title + two categorized groups, matching WebAbilitiesCard's loader.
+  const abilitiesCard = (
+    <View style={sk.card}>
+      <SkeletonBlock opacity={opacity} width={80} height={11} style={{ marginBottom: 10 }} />
+      {divider}
+      {[0, 1].map((b) => (
+        <View key={b} style={{ marginBottom: b === 1 ? 0 : 16 }}>
           <SkeletonBlock
             opacity={opacity}
-            width={isDesktop ? 130 : 80}
-            height={isDesktop ? 190 : 120}
-            borderRadius={8}
+            width={96}
+            height={11}
+            style={{ marginBottom: 12 }}
           />
-          <View style={{ flex: 1, gap: 10 }}>
-            <SkeletonBlock opacity={opacity} width="40%" height={10} borderRadius={4} />
-            <SkeletonBlock opacity={opacity} width="55%" height={36} borderRadius={5} />
-            <SkeletonBlock opacity={opacity} width="75%" height={12} borderRadius={4} />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+            {[100, 132, 88].map((w, i) => (
+              <SkeletonBlock key={i} opacity={opacity} width={w} height={16} />
+            ))}
           </View>
         </View>
+      ))}
+    </View>
+  );
+
+  // First appearance — horizontal cover + meta, matching the live loading card.
+  const firstAppearanceCard = (
+    <View style={sk.card}>
+      <View style={{ flexDirection: 'row', gap: 20, alignItems: 'center' }}>
+        <SkeletonBlock opacity={opacity} width={130} height={190} borderRadius={8} />
+        <View style={{ flex: 1, gap: 10 }}>
+          <SkeletonBlock opacity={opacity} width="40%" height={10} borderRadius={4} />
+          <SkeletonBlock opacity={opacity} width={80} height={2} borderRadius={1} />
+          <SkeletonBlock opacity={opacity} width="55%" height={36} borderRadius={5} />
+          <SkeletonBlock opacity={opacity} width="80%" height={12} borderRadius={4} />
+        </View>
       </View>
-    </>
+    </View>
+  );
+
+  // Quick Facts — title + a stack of label/value info rows for the side rail.
+  const quickFactsCard = (
+    <View style={sk.card}>
+      <SkeletonBlock opacity={opacity} width={80} height={11} style={{ marginBottom: 10 }} />
+      {divider}
+      {[120, 80, 150, 64, 70, 56, 96, 110].map((w, i) => (
+        <View key={i} style={sk.infoRowSkel}>
+          <SkeletonBlock opacity={opacity} width={58} height={10} borderRadius={4} />
+          <SkeletonBlock opacity={opacity} width={w} height={10} borderRadius={4} />
+        </View>
+      ))}
+    </View>
   );
 
   return (
     <ScrollView style={sk.scroll} contentContainerStyle={sk.scrollContent}>
       {/* Desktop: identity stage. Mobile uses an immersive portrait skeleton. */}
       {isDesktop ? (
-        <View style={[sk.stage, { paddingTop: TOPBAR_HEIGHT + 6 }]}>
-          <View style={[sk.stageInner, { paddingHorizontal: isDesktop ? 24 : 16 }]}>
-            <View style={sk.headerTopRow}>
-              <SkeletonBlock opacity={opacity} width={92} height={38} borderRadius={22} dark />
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                {/* Heart only for authenticated users — don't skeleton it for guests */}
-                {showHeart && (
-                  <SkeletonBlock opacity={opacity} width={38} height={38} borderRadius={19} dark />
-                )}
-                {/* Compare button is always shown (active or disabled) */}
-                <SkeletonBlock opacity={opacity} width={104} height={38} borderRadius={22} dark />
-              </View>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 24 }}>
-              <View style={{ flex: 1 }}>
-                <SkeletonBlock
-                  opacity={opacity}
-                  width={90}
-                  height={11}
-                  borderRadius={4}
-                  dark
-                  style={{ marginBottom: 12 }}
-                />
-                <SkeletonBlock
-                  opacity={opacity}
-                  width={isDesktop ? 300 : 200}
-                  height={isDesktop ? 46 : 32}
-                  style={{ marginBottom: 12 }}
-                  dark
-                />
-                <SkeletonBlock
-                  opacity={opacity}
-                  width={140}
-                  height={14}
-                  borderRadius={4}
-                  dark
-                  style={{ marginBottom: 20 }}
-                />
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                  {[70, 84, 84].map((w, i) => (
-                    <SkeletonBlock
-                      key={i}
-                      opacity={opacity}
-                      width={w}
-                      height={28}
-                      borderRadius={20}
-                      dark
-                    />
-                  ))}
+        <View
+          onLayout={(e) => setStageHeight(e.nativeEvent.layout.height)}
+          style={[sk.stage, { paddingTop: TOPBAR_HEIGHT + 32, paddingBottom: 26 }]}
+        >
+          <View style={[sk.stageInner, { paddingHorizontal: 24 }]}>
+            {/* Title hugs the left; meta block fills the band beside the portrait. */}
+            <View style={sk.identityColDesktop}>
+              <View style={sk.identityRow}>
+                <View style={{ flexShrink: 1, minWidth: 0 }}>
+                  <SkeletonBlock
+                    opacity={opacity}
+                    width={90}
+                    height={11}
+                    borderRadius={4}
+                    dark
+                    style={{ marginBottom: 10 }}
+                  />
+                  <SkeletonBlock
+                    opacity={opacity}
+                    width={320}
+                    height={46}
+                    borderRadius={8}
+                    dark
+                    style={{ marginBottom: 10 }}
+                  />
+                  <SkeletonBlock opacity={opacity} width={150} height={15} borderRadius={4} dark />
+                </View>
+                <View style={{ alignItems: 'flex-end', gap: 12, paddingBottom: 4 }}>
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    {[68, 74, 80].map((w, i) => (
+                      <SkeletonBlock
+                        key={i}
+                        opacity={opacity}
+                        width={w}
+                        height={30}
+                        borderRadius={20}
+                        dark
+                      />
+                    ))}
+                  </View>
+                  <SkeletonBlock opacity={opacity} width={180} height={10} borderRadius={4} dark />
                 </View>
               </View>
-              {isDesktop && (
-                <SkeletonBlock opacity={opacity} width={300} height={96} borderRadius={16} dark />
-              )}
             </View>
           </View>
+          {/* Soft alignment glow at the bottom edge */}
+          <View style={sk.stageAccent} />
         </View>
       ) : null}
 
       {isDesktop ? (
         <View style={sk.bodyWrap}>
-          {/* Desktop: portrait + stats in left col, tab bar + overview in right col */}
-          <View style={sk.bodyDesktop}>
-            <View style={sk.leftCol}>
-              <Animated.View style={[sk.portraitCard as object, { opacity }]} />
-              {statsCard}
+          {/* Desktop: editorial main column + overlapping portrait side rail. */}
+          <View style={sk.bodyDesktopNew}>
+            <View style={sk.mainCol}>
+              {statBandCard}
+              {summaryCard}
+              {abilitiesCard}
+              {firstAppearanceCard}
             </View>
-            <View style={sk.rightCol}>
-              {tabBar}
-              {overviewContent}
+            <View style={sk.sideCol}>
+              <Animated.View
+                style={[sk.portraitCard as object, { marginTop: portraitOverlap, opacity }]}
+              >
+                {/* Favourite lives on the portrait — only for authenticated users */}
+                {showHeart ? <View style={sk.portraitFavSkel} /> : null}
+              </Animated.View>
+              {quickFactsCard}
             </View>
           </View>
         </View>
@@ -1668,18 +1683,34 @@ const sk = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
   scrollContent: { width: '100%' },
   bodyWrap: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 60 },
-  stage: { backgroundColor: COLORS.deepNavy, paddingBottom: 26, position: 'relative' },
+
+  // ── Desktop identity stage ──
+  stage: { backgroundColor: COLORS.deepNavy, position: 'relative', overflow: 'hidden' },
   stageInner: { maxWidth: 1060, width: '100%', alignSelf: 'center' },
-  headerTopRow: {
+  // Reserve the right zone so meta sits in the band beside the overlapping portrait.
+  identityColDesktop: { paddingRight: 344 } as object,
+  identityRow: {
     flexDirection: 'row',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 28,
-  },
-  bodyDesktop: { flexDirection: 'row', alignItems: 'flex-start', gap: 20, padding: 24 },
-  leftCol: { width: 260, flexShrink: 0, gap: 12 },
-  rightCol: { flex: 1, gap: 16 },
-  body: { padding: 16, gap: 14 },
+    gap: 32,
+  } as object,
+  stageAccent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: COLORS.orange,
+    boxShadow: `0 0 18px ${COLORS.orange}`,
+  } as object,
+
+  // ── Desktop body — main editorial column + overlapping side rail ──
+  bodyDesktopNew: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, padding: 24 },
+  mainCol: { flex: 1, minWidth: 0, gap: 16 } as object,
+  sideCol: { width: 320, flexShrink: 0, gap: 16 },
+
+  // Overlapping side portrait — matches the live portraitCard footprint.
   portraitCard: {
     width: '100%',
     height: 420,
@@ -1687,38 +1718,44 @@ const sk = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#ddd5c8',
   },
-  portraitCardMobile: {
-    width: '100%',
-    aspectRatio: '2 / 3',
-    borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: '#ddd5c8',
+  portraitFavSkel: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(11,24,32,0.28)',
   } as object,
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: '#e8ddd0',
-    gap: 4,
-  },
+
   card: {
     backgroundColor: 'white',
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 20,
     borderWidth: 1,
     borderColor: '#e8ddd0',
   },
-  // First Appearance — left column cinematic cover
-  firstAppearanceCard: { gap: 8 },
-  firstAppearanceLabel: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 10,
-    color: COLORS.navy,
-    opacity: 0.45,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 1.4,
+  summaryBox: {
+    backgroundColor: 'white',
+    borderRadius: 14,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#e8ddd0',
+  },
+  statHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  // Quick Facts label/value row — mirrors the live InfoRow spacing.
+  infoRowSkel: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f0ea',
   },
 
   // Mobile immersive skeleton
@@ -1802,38 +1839,11 @@ const styles = StyleSheet.create({
     position: 'relative',
     zIndex: 2,
   } as object,
-  stageTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 18,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  // Glass controls — echo the floating nav and Explore panels.
-  glassBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 22,
-    cursor: 'pointer',
-    transition: 'background-color 150ms ease, border-color 150ms ease',
-  } as object,
+  // Glass controls — echo the floating nav and Explore panels. (Mobile only.)
   glassBtnHover: {
     backgroundColor: 'rgba(255,255,255,0.16)',
     borderColor: 'rgba(255,255,255,0.28)',
   } as object,
-  glassBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.beige },
   glassIconBtn: {
     width: 38,
     height: 38,
@@ -1857,6 +1867,16 @@ const styles = StyleSheet.create({
   identityCol: { flex: 1, minWidth: 0 } as object,
   // Reserve the right zone so the overlapping body portrait never collides with text.
   identityColDesktop: { paddingRight: 344 } as object,
+  // Title left, meta right — bottom-aligned so the pills sit on the name baseline.
+  identityRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 32,
+  } as object,
+  titleBlock: { flexShrink: 1, minWidth: 0 } as object,
+  // Drops into the empty band beside the portrait; right-aligned toward it.
+  metaBlock: { alignItems: 'flex-end', gap: 12, paddingBottom: 4 } as object,
 
   // Glass power panel (desktop right side) — mirrors the Explore featured panel.
   statPanel: {
@@ -1919,8 +1939,8 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 10,
-    marginTop: 14,
     flexWrap: 'wrap',
   },
   alignChip: {
@@ -1958,7 +1978,7 @@ const styles = StyleSheet.create({
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
     color: 'rgba(245,235,220,0.45)',
-    marginTop: 12,
+    textAlign: 'right',
   },
   stageAccent: {
     position: 'absolute',
@@ -2049,6 +2069,28 @@ const styles = StyleSheet.create({
     height: '45%',
     backgroundImage: 'linear-gradient(to top, rgba(11,24,32,0.42), transparent)',
   } as object,
+  // Favourite — lives on the portrait it bookmarks.
+  portraitFav: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(11,24,32,0.35)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.25)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    cursor: 'pointer',
+    transition: 'background-color 150ms ease, border-color 150ms ease',
+  } as object,
+  portraitFavHover: {
+    backgroundColor: 'rgba(11,24,32,0.55)',
+    borderColor: 'rgba(245,235,220,0.45)',
+  } as object,
   portraitPlaceholder: {
     flex: 1,
     backgroundColor: COLORS.navy,
@@ -2074,8 +2116,6 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1,
     borderColor: '#e8ddd0',
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.orange,
     boxShadow: '0 6px 22px rgba(41,60,67,0.06)',
   } as object,
   summaryText: {
@@ -2126,6 +2166,31 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
+  },
+  statHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  // Contextual Compare — lives on the stats it acts on, light-themed for the card.
+  compareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: COLORS.orange + '40',
+    backgroundColor: COLORS.orange + '0f',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    cursor: 'pointer',
+    transition: 'background-color 150ms ease, border-color 150ms ease',
+  } as object,
+  compareBtnHover: {
+    backgroundColor: COLORS.orange + '1f',
+    borderColor: COLORS.orange + '80',
+  } as object,
+  compareBtnText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: COLORS.orange,
+    letterSpacing: 0.2,
   },
   powerScorePill: {
     paddingHorizontal: 10,
