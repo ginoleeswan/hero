@@ -1,8 +1,7 @@
 import { type ComponentProps } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
-import Svg, { Path, G, Circle } from 'react-native-svg';
 import { useRouter, usePathname } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { HeroLogo } from './HeroLogo';
@@ -20,34 +19,6 @@ const NAV: { key: string; path: string; icon: IoniconName; iconOutline: IoniconN
   { key: 'search', path: '/search', icon: 'search', iconOutline: 'search-outline' },
   { key: 'versus', path: VERSUS_PATH, icon: 'git-compare', iconOutline: 'git-compare-outline' },
 ];
-
-// Custom crossed-swords mark with real filled + outline states — two vertical
-// swords rotated ±45° so they cross. Built so it matches the Ionicons weight.
-function Swords({ size = 22, color, filled }: { size?: number; color: string; filled?: boolean }) {
-  const sword = (
-    <G>
-      <Path d="M12 2.6 L12.85 5.2 L12.85 12.6 L11.15 12.6 L11.15 5.2 Z" />
-      <Path d="M9.2 12.6 L14.8 12.6 L14.8 14 L9.2 14 Z" />
-      <Path d="M11.2 14 L12.8 14 L12.8 17.6 L11.2 17.6 Z" />
-      <Circle cx="12" cy="18.5" r="1.15" />
-    </G>
-  );
-  return (
-    <Svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill={filled ? color : 'none'}
-      stroke={filled ? 'none' : color}
-      strokeWidth={filled ? 0 : 1.5}
-      strokeLinejoin="round"
-      strokeLinecap="round"
-    >
-      <G transform="rotate(45 12 12)">{sword}</G>
-      <G transform="rotate(-45 12 12)">{sword}</G>
-    </Svg>
-  );
-}
 
 // Transparent floating top bar with a top-down scrim. Logo left, nav icons
 // centre (desktop), avatar / sign-in right. Used on every web page, all widths.
@@ -81,7 +52,7 @@ export function TopBar() {
         }
       >
         {it.key === 'versus' ? (
-          <Swords size={21} color={tint} filled={active} />
+          <MaterialCommunityIcons name="sword-cross" size={22} color={tint} />
         ) : (
           <Ionicons name={active ? it.icon : it.iconOutline} size={22} color={tint} />
         )}

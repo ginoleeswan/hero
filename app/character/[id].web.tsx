@@ -11,7 +11,7 @@ import {
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery } from '../../src/lib/api';
 import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
 import { supabase } from '../../src/lib/supabase';
@@ -1354,8 +1354,8 @@ function WebAbilitiesCard({
               <View style={styles.abilityItems}>
                 {g.items.map((it, i) => (
                   <View key={`${i}-${it.name}`} style={styles.abilityItem}>
-                    <Ionicons
-                      name={it.icon as keyof typeof Ionicons.glyphMap}
+                    <MaterialCommunityIcons
+                      name={it.icon as keyof typeof MaterialCommunityIcons.glyphMap}
                       size={15}
                       color={g.color}
                     />

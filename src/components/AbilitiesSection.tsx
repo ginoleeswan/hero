@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { getPowerIcon, groupPowers } from '../constants/powerIcons';
 import { Skeleton } from './ui/Skeleton';
@@ -50,8 +50,8 @@ export function AbilitiesSection({ powers, loading }: Props) {
               <View style={styles.items}>
                 {g.items.map((it, i) => (
                   <View key={`${i}-${it.name}`} style={styles.item}>
-                    <Ionicons
-                      name={it.icon as keyof typeof Ionicons.glyphMap}
+                    <MaterialCommunityIcons
+                      name={it.icon as keyof typeof MaterialCommunityIcons.glyphMap}
                       size={15}
                       color={g.color}
                     />
