@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
   mobileInput: {
     flex: 1,
     fontFamily: 'Nunito_400Regular',
-    fontSize: 15,
+    fontSize: 16,
     color: COLORS.beige,
     outlineStyle: 'none',
   } as object,
