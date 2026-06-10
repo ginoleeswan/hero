@@ -5,7 +5,8 @@ import { useMemo, useState, useEffect, useCallback, type ReactElement } from 're
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import Svg, { Path } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path, Defs, Pattern, Circle, Rect } from 'react-native-svg';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { COLORS } from '../../constants/colors';
@@ -35,18 +36,20 @@ const initial = (name: string) => (name.trim()[0] ?? '?').toUpperCase();
 function CanvasNode({
   node,
   heroName,
+  heroImage,
 }: {
   node: PositionedNode;
   heroName: string;
+  heroImage: string | null;
 }): ReactElement {
   const router = useRouter();
 
   if (node.isHero) {
     return (
-      <View style={styles.heroAnchor}>
-        <View style={styles.heroAvatar}>
-          <Text style={styles.heroInitial}>{initial(heroName)}</Text>
-        </View>
+      <View style={[styles.heroAnchor, !heroImage && styles.heroAnchorNoImg]}>
+        {heroImage ? (
+          <Image source={{ uri: heroImage }} style={styles.heroAvatar} contentFit="cover" />
+        ) : null}
         <View>
           <Text style={styles.heroName} numberOfLines={1}>
             {heroName}
@@ -76,12 +79,8 @@ function CanvasNode({
         ) : null}
         {member.heroImage ? (
           <Image source={{ uri: member.heroImage }} style={styles.avatar} contentFit="cover" />
-        ) : (
-          <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: tint }]}>
-            <Text style={styles.avatarInitial}>{initial(member.name)}</Text>
-          </View>
-        )}
-        <View style={styles.linkMeta}>
+        ) : null}
+        <View style={[styles.linkMeta, !member.heroImage && styles.metaPadLeft]}>
           <Text style={[styles.linkName, { maxWidth: 150 }]} numberOfLines={1}>
             {member.name}
           </Text>
@@ -89,25 +88,24 @@ function CanvasNode({
             {roleLabel(member)}
           </Text>
         </View>
-        <Text style={styles.chevron}>›</Text>
+        <Ionicons name="chevron-forward" size={14} color="#cdbfa6" />
       </Pressable>
     );
   }
 
   const dead = member.status === 'deceased';
   return (
-    <View style={[styles.plainNode, dead && styles.dead]}>
-      <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: '#c9bba3' }]}>
-        <Text style={styles.avatarInitial}>{initial(member.name)}</Text>
-      </View>
-      <View style={styles.linkMeta}>
-        <Text style={[styles.plainName, { maxWidth: 150 }]} numberOfLines={1}>
-          {member.name}
-          {dead ? ' ✝' : ''}
-        </Text>
-        <Text style={styles.roleText} numberOfLines={1}>
-          {roleLabel(member)}
-        </Text>
+    <View style={styles.plainNode}>
+      <View style={[styles.nodeInner, dead && styles.dead]}>
+        <View style={[styles.linkMeta, styles.metaPadLeft]}>
+          <Text style={[styles.plainName, { maxWidth: 150 }]} numberOfLines={1}>
+            {member.name}
+            {dead ? ' ✝' : ''}
+          </Text>
+          <Text style={styles.roleText} numberOfLines={1}>
+            {roleLabel(member)}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -116,9 +114,11 @@ function CanvasNode({
 // ── Main component ────────────────────────────────────────────────────────────
 export function FamilyCanvas({
   heroName,
+  heroImage = null,
   members,
 }: {
   heroName: string;
+  heroImage?: string | null;
   members: FamilyMember[];
 }): ReactElement | null {
   if (members.length === 0) return null;
@@ -227,11 +227,18 @@ export function FamilyCanvas({
       </View>
       <View style={styles.divider} />
 
-      {/* Viewport */}
-      <View
-        style={styles.viewport}
-        onLayout={(e) => setVp({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
-      >
+      {/* Stage: fixed left-axis gutter + pannable viewport (separated so the
+          generation labels can never overlap the tree content) */}
+      <View style={styles.stage}>
+        <View style={styles.axisGutter} pointerEvents="none">
+          {layout.rows.map((row) => (
+            <AxisLabel key={row.tier} row={row} scale={scale} ty={ty} />
+          ))}
+        </View>
+        <View
+          style={styles.viewport}
+          onLayout={(e) => setVp({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
+        >
         {/* Pannable canvas */}
         <GestureDetector gesture={gesture}>
           <Animated.View
@@ -252,6 +259,12 @@ export function FamilyCanvas({
               height={layout.bounds.height}
               style={StyleSheet.absoluteFill}
             >
+              <Defs>
+                <Pattern id="famDots" x={0} y={0} width={24} height={24} patternUnits="userSpaceOnUse">
+                  <Circle cx={1} cy={1} r={1} fill="#ece1cd" />
+                </Pattern>
+              </Defs>
+              <Rect x={0} y={0} width={layout.bounds.width} height={layout.bounds.height} fill="url(#famDots)" />
               {layout.edges.map((edge, i) => {
                 const a = nodeMap.get(edge.fromId);
                 const b = nodeMap.get(edge.toId);
@@ -306,30 +319,24 @@ export function FamilyCanvas({
                   alignItems: 'center',
                 }}
               >
-                <CanvasNode node={node} heroName={heroName} />
+                <CanvasNode node={node} heroName={heroName} heroImage={heroImage} />
               </View>
             ))}
           </Animated.View>
         </GestureDetector>
 
-        {/* Left axis tier labels — overlaid, pointer-events none */}
-        <View style={styles.axisOverlay} pointerEvents="none">
-          {layout.rows.map((row) => (
-            <AxisLabel key={row.tier} row={row} scale={scale} ty={ty} />
-          ))}
-        </View>
-
         {/* Zoom buttons */}
         <View style={styles.zoomButtons}>
           <Pressable style={styles.zoomBtn} onPress={zoomIn}>
-            <Text style={styles.zoomBtnText}>+</Text>
+            <Ionicons name="add" size={18} color={COLORS.black} />
           </Pressable>
           <Pressable style={styles.zoomBtn} onPress={zoomOut}>
-            <Text style={styles.zoomBtnText}>−</Text>
+            <Ionicons name="remove" size={18} color={COLORS.black} />
           </Pressable>
           <Pressable style={styles.zoomBtn} onPress={recenter}>
-            <Text style={styles.zoomBtnText}>⊙</Text>
+            <Ionicons name="locate-outline" size={16} color={COLORS.black} />
           </Pressable>
+        </View>
         </View>
       </View>
 
@@ -415,12 +422,8 @@ function AsideMemberNode({ member }: { member: FamilyMember }): ReactElement {
         ) : null}
         {member.heroImage ? (
           <Image source={{ uri: member.heroImage }} style={styles.avatar} contentFit="cover" />
-        ) : (
-          <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: tint }]}>
-            <Text style={styles.avatarInitial}>{initial(member.name)}</Text>
-          </View>
-        )}
-        <View style={styles.linkMeta}>
+        ) : null}
+        <View style={[styles.linkMeta, !member.heroImage && styles.metaPadLeft]}>
           <Text style={[styles.linkName, { maxWidth: 150 }]} numberOfLines={1}>
             {member.name}
           </Text>
@@ -428,24 +431,23 @@ function AsideMemberNode({ member }: { member: FamilyMember }): ReactElement {
             {roleLabel(member)}
           </Text>
         </View>
-        <Text style={styles.chevron}>›</Text>
+        <Ionicons name="chevron-forward" size={14} color="#cdbfa6" />
       </Pressable>
     );
   }
 
   return (
-    <View style={[styles.plainNode, dead && styles.dead]}>
-      <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: '#c9bba3' }]}>
-        <Text style={styles.avatarInitial}>{initial(member.name)}</Text>
-      </View>
-      <View style={styles.linkMeta}>
-        <Text style={[styles.plainName, { maxWidth: 150 }]} numberOfLines={1}>
-          {member.name}
-          {dead ? ' ✝' : ''}
-        </Text>
-        <Text style={styles.roleText} numberOfLines={1}>
-          {roleLabel(member)}
-        </Text>
+    <View style={styles.plainNode}>
+      <View style={[styles.nodeInner, dead && styles.dead]}>
+        <View style={[styles.linkMeta, styles.metaPadLeft]}>
+          <Text style={[styles.plainName, { maxWidth: 150 }]} numberOfLines={1}>
+            {member.name}
+            {dead ? ' ✝' : ''}
+          </Text>
+          <Text style={styles.roleText} numberOfLines={1}>
+            {roleLabel(member)}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -481,31 +483,38 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
 
+  stage: {
+    flexDirection: 'row',
+    height: 460,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ede5da',
+    overflow: 'hidden',
+  },
+  axisGutter: {
+    width: 92,
+    height: 460,
+    backgroundColor: '#f6efe4',
+    borderRightWidth: 1,
+    borderRightColor: '#ece3d4',
+    overflow: 'hidden',
+    position: 'relative',
+  } as object,
   viewport: {
+    flex: 1,
     height: 460,
     overflow: 'hidden',
     position: 'relative',
     cursor: 'grab',
     backgroundColor: '#fdf9f4',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#ede5da',
-  } as object,
-
-  axisOverlay: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 110,
-    pointerEvents: 'none',
   } as object,
   axisLabel: {
     position: 'absolute',
     left: 10,
+    right: 6,
     fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    letterSpacing: 1.4,
+    fontSize: 8.5,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
     color: '#a99b84',
   },
@@ -630,9 +639,6 @@ const styles = StyleSheet.create({
   powerBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 8, color: 'white' },
 
   plainNode: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
     backgroundColor: '#fbf7ef',
     borderWidth: 1,
     borderColor: '#e7dcc9',
@@ -641,13 +647,16 @@ const styles = StyleSheet.create({
     paddingLeft: 6,
     paddingRight: 10,
   },
+  nodeInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  metaPadLeft: { paddingLeft: 5 },
+  heroAnchorNoImg: { paddingLeft: 16 },
   plainName: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
     color: COLORS.black,
     fontWeight: '700',
   },
-  dead: { opacity: 0.6 },
+  dead: { opacity: 0.55 },
 
   tierLabel: {
     fontFamily: 'Nunito_700Bold',
