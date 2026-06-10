@@ -676,7 +676,18 @@ const styles = StyleSheet.create({
   } as object,
   contentMain: { flex: 1, minWidth: 0 } as object,
 
-  scroll: { flex: 1 },
+  // RNW's ScrollView injects `transform: translateZ(0)` and
+  // `-webkit-overflow-scrolling: touch` on the scroll node (see
+  // react-native-web ScrollView baseVertical). On iOS Safari both lock the
+  // scroller into a composited sub-layer clipped to the toolbar-excluded
+  // viewport, so content can't bleed under the translucent toolbar. RNW merges
+  // our `style` after its base, so we override them here to let the scroll box
+  // extend edge-to-edge under the toolbar.
+  scroll: {
+    flex: 1,
+    transform: 'none' as unknown as undefined,
+    WebkitOverflowScrolling: 'auto',
+  } as object,
   gridWrap: { paddingTop: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
