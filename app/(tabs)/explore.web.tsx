@@ -1470,7 +1470,7 @@ const styles = StyleSheet.create({
   // ── Home layout ──────────────────────────────────────────────────────────────
   discoverContent: {
     paddingTop: 0,
-    paddingBottom: 'env(safe-area-inset-bottom)',
+    paddingBottom: 0,
     width: '100%',
   } as object,
 });
