@@ -44,8 +44,8 @@ export function TopBar() {
     // events don't bubble). Vertical-scroller guard ignores horizontal carousels.
     const onScroll = (e: Event) => {
       const t = e.target;
-      // Screens using native document scroll (useWebDocumentScroll) fire with
-      // the document as target — read window.scrollY for those.
+      // Content routes use native document scroll (enabled in _layout.web.tsx),
+      // so they fire with the document as target — read window.scrollY for those.
       if (t === document || t === document.documentElement || t === document.body) {
         setScrolled(window.scrollY > 16);
         return;

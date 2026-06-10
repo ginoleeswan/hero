@@ -12,7 +12,7 @@ import { getPowerIcon, groupPowers } from '../../src/constants/powerIcons';
 import { useAuth } from '../../src/hooks/useAuth';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
-import { useWebDocumentScroll } from '../../src/hooks/useWebDocumentScroll';
+import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { StatBar } from '../../src/components/web/StatBar';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
@@ -126,7 +126,7 @@ export default function WebCharacterScreen() {
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
   // Before the skeleton early-return so it applies in both states.
-  useWebDocumentScroll(COLORS.beige);
+  useWebCanvas(COLORS.beige);
 
   const skeletonOpacity = useSkeletonAnim();
   const [data, setData] = useState<CharacterData | null>(null);

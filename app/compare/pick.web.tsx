@@ -25,7 +25,7 @@ import { stashFighters } from '../../src/lib/compareHandoff';
 import { withViewTransition } from '../../src/lib/viewTransition';
 import { COLORS } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
-import { useWebDocumentScroll } from '../../src/hooks/useWebDocumentScroll';
+import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 
 type Fighter = Pick<HeroSearchResult, 'id' | 'name' | 'image_url' | 'portrait_url'>;
 type Slot = 'a' | 'b';
@@ -53,7 +53,7 @@ export default function PickArena() {
   const inputRef = useRef<TextInput>(null);
 
   // Document scroll so content bleeds edge-to-edge under the iOS Safari toolbar.
-  useWebDocumentScroll(COLORS.beige);
+  useWebCanvas(COLORS.beige);
 
   const [a, setA] = useState<Fighter | null>(null);
   const [b, setB] = useState<Fighter | null>(null);

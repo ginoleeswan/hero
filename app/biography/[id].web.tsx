@@ -6,7 +6,7 @@ import { getHeroById, getHeroByComicvineId } from '../../src/lib/db/heroes';
 import { COLORS } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { heroImageSource } from '../../src/constants/heroImages';
-import { useWebDocumentScroll } from '../../src/hooks/useWebDocumentScroll';
+import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import type { Tables } from '../../src/types/database.generated';
 
 type HeroRow = Tables<'heroes'>;
@@ -313,7 +313,7 @@ export default function WebBiographyScreen() {
   const isDesktop = width >= 900;
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
-  useWebDocumentScroll(COLORS.beige);
+  useWebCanvas(COLORS.beige);
 
   const [hero, setHero] = useState<HeroRow | null>(null);
   const [processedHtml, setProcessedHtml] = useState('');

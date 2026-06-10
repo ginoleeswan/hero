@@ -24,7 +24,7 @@ import { useHeroSearch } from '../../../src/hooks/useHeroSearch';
 import { useIdleHeroes } from '../../../src/hooks/useIdleHeroes';
 import { useSkeletonAnim } from '../../../src/components/web/Skeleton';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
-import { useWebDocumentScroll } from '../../../src/hooks/useWebDocumentScroll';
+import { useWebCanvas } from '../../../src/hooks/useWebCanvas';
 
 const RESULT_LIMIT = 300;
 const PUB_OPTS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
@@ -172,7 +172,7 @@ export default function WebSearchScreen() {
   const { history, addSearch, clearHistory } = useSearchHistory();
 
   // Document scroll so the grid bleeds edge-to-edge under the iOS Safari toolbar.
-  useWebDocumentScroll(COLORS.beige);
+  useWebCanvas(COLORS.beige);
 
   const urlQ = (Array.isArray(params.q) ? params.q[0] : (params.q ?? '')).toString();
   const publisher = normalizePublisher(params.publisher);

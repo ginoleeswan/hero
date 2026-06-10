@@ -31,7 +31,7 @@ import { EraTimeline } from '../../src/components/web/home/EraTimeline';
 import { TodaysMatchup as TodaysMatchupCard } from '../../src/components/web/home/TodaysMatchup';
 import { getTodaysMatchup, type TodaysMatchup } from '../../src/lib/matchup';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
-import { useWebDocumentScroll } from '../../src/hooks/useWebDocumentScroll';
+import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { StatPods } from '../../src/components/web/home/StatPods';
 import {
@@ -1134,7 +1134,7 @@ export default function WebHomeScreen() {
 
   // Document scroll so content bleeds edge-to-edge under the iOS Safari toolbar.
   // Explore opens and closes on the deep-navy stage/footer, so the canvas is navy.
-  useWebDocumentScroll(COLORS.deepNavy);
+  useWebCanvas(COLORS.deepNavy);
 
   // 1. MATCH THE ACCORDION_SCALES EXACTLY
   const optimalPoolSize = width >= 1280 ? 8 : width >= 900 ? 6 : 3;

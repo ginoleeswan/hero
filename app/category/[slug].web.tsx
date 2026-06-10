@@ -28,7 +28,7 @@ import {
   type FacetCounts,
 } from '../../src/lib/db/categoryFilters';
 import { useCategoryFilters } from '../../src/hooks/useCategoryFilters';
-import { useWebDocumentScroll } from '../../src/hooks/useWebDocumentScroll';
+import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { FilterRail } from '../../src/components/web/category/FilterRail';
 import { FilterSheet } from '../../src/components/web/category/FilterSheet';
 import { ActiveFilterChips } from '../../src/components/web/category/ActiveFilterChips';
@@ -268,7 +268,7 @@ export default function WebCategoryScreen() {
   // Document scroll so the grid (a plain View, like the skeleton) bleeds
   // edge-to-edge under the iOS Safari toolbar. Beige canvas reads continuous to
   // the bottom past the 100dvh fold.
-  useWebDocumentScroll(COLORS.beige);
+  useWebCanvas(COLORS.beige);
 
   // Infinite load now rides the document scroll (the nested ScrollView is gone),
   // so measure against the window rather than a ScrollView's nativeEvent.
