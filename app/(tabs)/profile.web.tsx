@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  ScrollView,
   useWindowDimensions,
   Linking,
 } from 'react-native';
@@ -27,6 +26,7 @@ import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { COLORS } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
+import { useWebDocumentScroll } from '../../src/hooks/useWebDocumentScroll';
 import Svg, { Path } from 'react-native-svg';
 
 const HERO_LOGO_PATH =
@@ -126,7 +126,7 @@ function GuestWebProfileScreen() {
   if (isMobile) {
     return (
       <View style={mob.root}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={mob.scroll}>
+        <View style={mob.scroll}>
           <LinearGradient
             colors={['#293C43', '#3d5a66']}
             start={{ x: 0, y: 0 }}
@@ -141,13 +141,13 @@ function GuestWebProfileScreen() {
             </View>
           </LinearGradient>
           {inner}
-        </ScrollView>
+        </View>
       </View>
     );
   }
 
   return (
-    <ScrollView style={desk.root} showsVerticalScrollIndicator={false}>
+    <View style={desk.root}>
       <LinearGradient
         colors={['#293C43', '#3d5a66']}
         start={{ x: 0, y: 0 }}
@@ -162,7 +162,7 @@ function GuestWebProfileScreen() {
         </View>
       </LinearGradient>
       <View style={desk.contentOuter as object}>{inner}</View>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -259,6 +259,9 @@ export default function WebProfileScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < SIDEBAR_BREAKPOINT;
+  // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
+  // Called before the guest early-return so it applies in both states.
+  useWebDocumentScroll(COLORS.beige);
   const { user, signOut, changePassword, deleteAccount } = useAuth();
   const {
     profile,
@@ -387,11 +390,7 @@ export default function WebProfileScreen() {
   if (isMobile) {
     return (
       <View style={mob.root}>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={mob.scroll}
-          keyboardShouldPersistTaps="handled"
-        >
+        <View style={mob.scroll}>
           {/* ── Cover banner ── */}
           <Pressable
             onPress={pickAndUploadCover}
@@ -666,7 +665,7 @@ export default function WebProfileScreen() {
             Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics,
             or any other publisher.
           </Text>
-        </ScrollView>
+        </View>
 
         <ChangePasswordModal
           visible={showChangePassword}
@@ -686,7 +685,7 @@ export default function WebProfileScreen() {
 
   // ── Desktop layout ────────────────────────────────────────────────────────────
   return (
-    <ScrollView style={desk.root} showsVerticalScrollIndicator={false}>
+    <View style={desk.root}>
       {/* Cover — full browser width */}
       <Pressable
         onPress={pickAndUploadCover}
@@ -978,14 +977,14 @@ export default function WebProfileScreen() {
         onSubmit={handleUpdateName}
       />
       <Toast message={toast.message} visible={toast.visible} />
-    </ScrollView>
+    </View>
   );
 }
 
 // ── Mobile-only styles (native parity) ───────────────────────────────────────
 const mob = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
-  scroll: { paddingBottom: 80 },
+  scroll: { paddingBottom: 0 },
 
   // Cover
   cover: {

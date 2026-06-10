@@ -1,13 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  Animated,
-  useWindowDimensions,
-} from 'react-native';
+import { View, Text, Pressable, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -22,6 +14,7 @@ import { getPowerIcon, groupPowers } from '../../src/constants/powerIcons';
 import { useAuth } from '../../src/hooks/useAuth';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
+import { useWebDocumentScroll } from '../../src/hooks/useWebDocumentScroll';
 import { StatBar } from '../../src/components/web/StatBar';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
@@ -132,6 +125,10 @@ export default function WebCharacterScreen() {
   const { width, height: winHeight } = useWindowDimensions();
   const mHeroHeight = Math.round(winHeight * 0.62);
   const isDesktop = width >= 700;
+
+  // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
+  // Before the skeleton early-return so it applies in both states.
+  useWebDocumentScroll(COLORS.beige);
 
   const skeletonOpacity = useSkeletonAnim();
   const [data, setData] = useState<CharacterData | null>(null);
@@ -419,7 +416,7 @@ export default function WebCharacterScreen() {
 
   return (
     <>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+      <View style={[styles.scroll, styles.scrollContent] as object}>
         {/* ── Desktop: cinematic identity stage. Mobile uses the native-style
             immersive portrait header inside the body branch below. ── */}
         {isDesktop ? (
@@ -1131,18 +1128,44 @@ export default function WebCharacterScreen() {
                           </View>
                         ) : null}
                       </View>
-                      {powerScore !== null ? (
-                        <View
-                          style={[
-                            styles.powerScorePill,
-                            { backgroundColor: alignmentColor + '22' },
-                          ]}
-                        >
-                          <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
-                            {powerScore}
-                          </Text>
-                        </View>
-                      ) : null}
+                      <View style={styles.statHeaderRight}>
+                        {powerScore !== null || statsGenerating ? (
+                          <Pressable
+                            onPress={() =>
+                              !statsGenerating &&
+                              router.push(
+                                `/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`,
+                              )
+                            }
+                            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                              [
+                                styles.compareBtn,
+                                hovered && !statsGenerating && (styles.compareBtnHover as object),
+                                statsGenerating && { opacity: 0.5 },
+                              ] as object
+                            }
+                          >
+                            <Ionicons
+                              name="git-compare-outline"
+                              size={14}
+                              color={COLORS.orange}
+                            />
+                            <Text style={styles.compareBtnText}>Compare</Text>
+                          </Pressable>
+                        ) : null}
+                        {powerScore !== null ? (
+                          <View
+                            style={[
+                              styles.powerScorePill,
+                              { backgroundColor: alignmentColor + '22' },
+                            ]}
+                          >
+                            <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
+                              {powerScore}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </View>
                     </View>
                     <View style={styles.cardDivider} />
                     {statsGenerating
@@ -1326,7 +1349,7 @@ export default function WebCharacterScreen() {
             </View>
           )}
         </View>
-      </ScrollView>
+      </View>
       {showIssueModal && data?.firstIssue ? (
         <FirstIssueModal firstIssue={data.firstIssue} onClose={() => setShowIssueModal(false)} />
       ) : null}
@@ -1540,7 +1563,7 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
   );
 
   return (
-    <ScrollView style={sk.scroll} contentContainerStyle={sk.scrollContent}>
+    <View style={[sk.scroll, sk.scrollContent] as object}>
       {/* Desktop: identity stage. Mobile uses an immersive portrait skeleton. */}
       {isDesktop ? (
         <View
@@ -1745,14 +1768,14 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
           </View>
         </View>
       )}
-    </ScrollView>
+    </View>
   );
 }
 
 const sk = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
   scrollContent: { width: '100%' },
-  bodyWrap: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 60 },
+  bodyWrap: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 0 },
 
   // ── Desktop identity stage ──
   stage: { backgroundColor: COLORS.deepNavy, position: 'relative', overflow: 'hidden' },
@@ -1842,7 +1865,7 @@ const sk = StyleSheet.create({
     borderTopRightRadius: 28,
     marginTop: -28,
     paddingTop: 12,
-    paddingBottom: 28,
+    paddingBottom: 0,
   },
   mPad: { paddingHorizontal: 20, paddingTop: 18 },
   mStatsCard: { backgroundColor: 'rgba(41,60,67,0.05)', borderRadius: 16, padding: 16 },
@@ -1853,7 +1876,7 @@ const styles = StyleSheet.create({
   // Scroll content is full-width so the dark stage can bleed edge-to-edge;
   // the body re-constrains itself to a centred reading column.
   scrollContent: { width: '100%' },
-  bodyWrap: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 60 },
+  bodyWrap: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 0 },
   center: {
     flex: 1,
     alignItems: 'center',
@@ -2427,7 +2450,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     marginTop: -28,
     paddingTop: 12,
-    paddingBottom: 28,
+    paddingBottom: 0,
   },
   mBlock: { paddingHorizontal: 20, paddingTop: 18 },
   mSummary: {

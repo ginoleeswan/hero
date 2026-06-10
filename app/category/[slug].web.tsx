@@ -28,6 +28,7 @@ import {
   type FacetCounts,
 } from '../../src/lib/db/categoryFilters';
 import { useCategoryFilters } from '../../src/hooks/useCategoryFilters';
+import { useWebDocumentScroll } from '../../src/hooks/useWebDocumentScroll';
 import { FilterRail } from '../../src/components/web/category/FilterRail';
 import { FilterSheet } from '../../src/components/web/category/FilterSheet';
 import { ActiveFilterChips } from '../../src/components/web/category/ActiveFilterChips';
@@ -264,26 +265,25 @@ export default function WebCategoryScreen() {
     loadingMoreRef.current = loadingMore;
   }, [loadingMore]);
 
-  // onScroll handler — fires when the user scrolls within the ScrollView container.
-  // IntersectionObserver doesn't work here because RNW's ScrollView is a scrollable
-  // div, not the document — the observer sees the sentinel as always visible.
-  const handleScroll = useCallback(
-    ({
-      nativeEvent: { contentOffset, contentSize, layoutMeasurement },
-    }: {
-      nativeEvent: {
-        contentOffset: { y: number };
-        contentSize: { height: number };
-        layoutMeasurement: { height: number };
-      };
-    }) => {
-      const distanceFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
+  // Document scroll so the grid (a plain View, like the skeleton) bleeds
+  // edge-to-edge under the iOS Safari toolbar. Beige canvas reads continuous to
+  // the bottom past the 100dvh fold.
+  useWebDocumentScroll(COLORS.beige);
+
+  // Infinite load now rides the document scroll (the nested ScrollView is gone),
+  // so measure against the window rather than a ScrollView's nativeEvent.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onScroll = () => {
+      const distanceFromBottom =
+        document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
       if (distanceFromBottom < 400 && hasMore.current && !loadingMoreRef.current) {
         fetchPage(currentPage.current + 1, filters, true);
       }
-    },
-    [fetchPage, filters],
-  );
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [fetchPage, filters]);
 
   const gridStyle = {
     display: 'grid',
@@ -459,9 +459,9 @@ export default function WebCategoryScreen() {
               <Text style={styles.empty}>No heroes found</Text>
             </View>
           ) : (
-            <ScrollView style={styles.scroll} onScroll={handleScroll} scrollEventThrottle={200}>
-              <View style={[styles.gridWrap, { paddingBottom: 60 }]}>{grid}</View>
-            </ScrollView>
+            // Plain View (no nested ScrollView) so the grid flows in the
+            // document scroll and bleeds under the iOS toolbar, like the skeleton.
+            <View style={[styles.gridWrap, { paddingBottom: 0 }] as object}>{grid}</View>
           )}
         </View>
       </View>
@@ -676,8 +676,12 @@ const styles = StyleSheet.create({
   } as object,
   contentMain: { flex: 1, minWidth: 0 } as object,
 
-  scroll: { flex: 1 },
-  gridWrap: { paddingTop: 16 },
+  // Beige background that grows with the grid: in document-scroll mode the
+  // flex:1 ancestors stay bounded to 100dvh (RNW Views set min-height:0), so the
+  // grid spills below the fold. gridWrap is a plain View (flexShrink:0), so it
+  // grows to the full grid height — its beige fill backs every card, including
+  // the ones that scroll under the toolbar, instead of the navy body showing.
+  gridWrap: { paddingTop: 16, backgroundColor: COLORS.beige } as object,
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
 });

@@ -1,4 +1,4 @@
-import { View, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from './Skeleton';
 import { COLORS } from '../../constants/colors';
 import { TOPBAR_HEIGHT } from './TopBar';
@@ -168,10 +168,9 @@ export function WebHomeSkeleton() {
   const pagePad = width < 640 ? 16 : 32;
 
   return (
-    <ScrollView
-      style={[skel.scroll, skel.scrollDark] as object}
-      contentContainerStyle={skel.content}
-    >
+    // Plain View (not a nested ScrollView) so the skeleton matches the loaded
+    // screen's document-scroll model and bleeds under the iOS Safari toolbar.
+    <View style={[skel.scroll, skel.scrollDark, skel.content] as object}>
       {/* Dark-stage skeleton at all widths — mirrors the unified dark stage
           so there's no beige flash on refresh. */}
       <View style={[skel.darkStage, isMobile && (skel.darkStageMobile as object)] as object}>
@@ -190,7 +189,7 @@ export function WebHomeSkeleton() {
         <RowSkeleton opacity={opacity} pagePad={pagePad} />
         <RowSkeleton opacity={opacity} pagePad={pagePad} />
       </View>
-    </ScrollView>
+    </View>
   );
 }
 

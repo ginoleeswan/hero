@@ -14,7 +14,7 @@ export default function Root({ children }: PropsWithChildren) {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
+          content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no, viewport-fit=cover"
         />
         {/* Tints the iOS status-bar / browser chrome to match the deep-navy backdrop
             so the system UI blends with the page instead of flashing white. */}
@@ -46,5 +46,10 @@ html, body, #root {
   height: 100%;
   height: 100dvh !important;
 }
-body { background-color: #0b1820; overscroll-behavior-y: none; }
+/* Beige body background is critical for iOS Safari's frosted-glass toolbar.
+   ScrollViewStyleReset forces body{overflow:hidden}, so RN's ScrollViews scroll
+   internally and the Safari toolbar blurs the body background — not the page
+   content. Setting it to beige (the app's dominant content colour) makes the
+   toolbar appear transparent rather than a dark navy bar. */
+body { background-color: #f5ebdc; overscroll-behavior-y: none; }
 `;

@@ -3,7 +3,6 @@ import { flushSync } from 'react-dom';
 import {
   View,
   Text,
-  ScrollView,
   Pressable,
   StyleSheet,
   ActivityIndicator,
@@ -16,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { heroImageSource } from '../../../src/constants/heroImages';
 import { useCompareMatchup } from '../../../src/hooks/useCompareMatchup';
 import { COLORS } from '../../../src/constants/colors';
+import { useWebDocumentScroll } from '../../../src/hooks/useWebDocumentScroll';
 import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
 import { VerdictReveal } from '../../../src/components/compare/VerdictReveal';
 import { StatBattleRow } from '../../../src/components/compare/StatBattleRow';
@@ -191,6 +191,10 @@ export default function WebCompareScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
+
+  // Document scroll so the mobile arena bleeds edge-to-edge under the iOS Safari
+  // toolbar. Mobile ends on the beige sheet; desktop is a fixed navy arena.
+  useWebDocumentScroll(isDesktop ? COLORS.navy : COLORS.beige);
 
   const { statsA, statsB, result, overallWinner, verdict, error } = useCompareMatchup(
     hero,
@@ -377,7 +381,7 @@ export default function WebCompareScreen() {
 
   /* Mobile web — native stack: fused clash card + verdict over a beige sheet. */
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.contentOuter}>
+    <View style={[styles.scroll, styles.contentOuter] as object}>
       <View style={styles.mobileNavyTop}>
         <View style={styles.controls}>{controlButtons}</View>
         <View style={[styles.mobileCard, { width: mobileCardW }]}>
@@ -407,7 +411,7 @@ export default function WebCompareScreen() {
           ))}
         </View>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
