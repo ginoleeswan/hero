@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { heroImageSource } from '../../../src/constants/heroImages';
 import { useCompareMatchup } from '../../../src/hooks/useCompareMatchup';
 import { COLORS } from '../../../src/constants/colors';
-import { useWebDocumentScroll } from '../../../src/hooks/useWebDocumentScroll';
+import { useWebCanvas } from '../../../src/hooks/useWebCanvas';
 import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
 import { VerdictReveal } from '../../../src/components/compare/VerdictReveal';
 import { StatBattleRow } from '../../../src/components/compare/StatBattleRow';
@@ -197,7 +197,7 @@ export default function WebCompareScreen() {
 
   // Document scroll so the mobile arena bleeds edge-to-edge under the iOS Safari
   // toolbar. Mobile ends on the beige sheet; desktop is a fixed navy arena.
-  useWebDocumentScroll(isDesktop ? COLORS.navy : COLORS.beige);
+  useWebCanvas(isDesktop ? COLORS.navy : COLORS.beige);
 
   const { statsA, statsB, result, overallWinner, verdict, error } = useCompareMatchup(
     hero,
@@ -385,11 +385,14 @@ export default function WebCompareScreen() {
     );
   }
 
-  /* Mobile web — native stack: fused clash card + verdict over a beige sheet. */
+  /* Mobile web — native stack: fused clash card + verdict over a beige sheet.
+     Back is omitted (TopBar + browser chrome handle navigation). Share sits in
+     the verdict block — the emotional punchline is the moment users want to
+     forward the result, so the action should be right there, not buried below
+     a full stat list. */
   return (
     <View style={[styles.scroll, styles.contentOuter] as object}>
-      <View style={styles.mobileNavyTop}>
-        <View style={styles.controls}>{controlButtons}</View>
+      <View style={styles.mobileNavyTop as object}>
         <View style={[styles.mobileCard, { width: mobileCardW }]}>
           <ClashPortraits
             imageA={imageA ?? { uri: '' }}
@@ -408,6 +411,16 @@ export default function WebCompareScreen() {
         <MatchupBadge badge={badge} style={{ marginTop: 14, marginBottom: 2 }} />
         <View style={styles.verdictBlock}>
           <VerdictReveal verdict={verdict} />
+          <Pressable
+            onPress={handleShare}
+            accessibilityLabel="Share matchup"
+            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+              [styles.shareRow, hovered && (styles.shareRowHover as object)] as object
+            }
+          >
+            <Ionicons name="share-outline" size={14} color="rgba(245,235,220,0.7)" />
+            <Text style={styles.shareRowText}>{copied ? 'Link copied!' : 'Share result'}</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -645,9 +658,9 @@ const styles = StyleSheet.create({
   mobileNavyTop: {
     backgroundColor: COLORS.navy,
     alignItems: 'center',
-    paddingTop: TOPBAR_HEIGHT + 12,
+    paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 16px)`,
     paddingBottom: 30,
-  },
+  } as object,
   mobileCard: {
     height: 286,
     borderRadius: 22,
@@ -669,10 +682,33 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     marginTop: -14,
     paddingTop: 24,
-    paddingBottom: 40,
-  },
+    paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
+  } as object,
   mobileStats: {
     gap: 18,
     paddingHorizontal: 20,
+  },
+
+  // Share pill — in the navy verdict block, inline with the result reveal
+  shareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    gap: 6,
+    marginTop: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(245,235,220,0.08)',
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: 'rgba(245,235,220,0.18)',
+    cursor: 'pointer',
+  } as object,
+  shareRowHover: { backgroundColor: 'rgba(245,235,220,0.14)' } as object,
+  shareRowText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: 'rgba(245,235,220,0.7)',
   },
 });

@@ -1,4 +1,5 @@
-import { type ComponentProps, useEffect, useState } from 'react';
+import React, { type ComponentProps, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -44,8 +45,8 @@ export function TopBar() {
     // events don't bubble). Vertical-scroller guard ignores horizontal carousels.
     const onScroll = (e: Event) => {
       const t = e.target;
-      // Screens using native document scroll (useWebDocumentScroll) fire with
-      // the document as target — read window.scrollY for those.
+      // Content routes use native document scroll (enabled in _layout.web.tsx),
+      // so they fire with the document as target — read window.scrollY for those.
       if (t === document || t === document.documentElement || t === document.body) {
         setScrolled(window.scrollY > 16);
         return;
@@ -114,7 +115,12 @@ export function TopBar() {
     );
   };
 
-  return (
+  // Render directly into document.body via a portal so `position: fixed` is
+  // always viewport-relative — bypasses any CSS transform or contain property
+  // that ancestor React Native / React Navigation containers might apply, which
+  // would otherwise make `position: fixed` relative to that container instead
+  // of the viewport and cause the bar to scroll with the page content.
+  const bar = (
     <View style={c.bar as object} pointerEvents="box-none">
       {/* At top: a soft gradient for icon legibility over the hero. */}
       <View style={[c.topScrim, scrolled && (c.layerHidden as object)] as object} pointerEvents="none" />
@@ -167,6 +173,9 @@ export function TopBar() {
       {!isMobile && <SearchPalette />}
     </View>
   );
+
+  if (typeof document === 'undefined') return bar;
+  return createPortal(bar, document.body) as unknown as React.ReactElement;
 }
 
 const c = StyleSheet.create({
@@ -184,6 +193,10 @@ const c = StyleSheet.create({
     paddingRight: 'env(safe-area-inset-right)',
     zIndex: 100,
     justifyContent: 'center',
+    // iOS Safari bug: when body has overflow:visible (needed for toolbar
+    // collapse), position:fixed elements scroll with the page. Forcing a GPU
+    // compositing layer via will-change makes them truly fixed again.
+    willChange: 'transform',
   } as object,
   // At-top scrim: a soft gradient with a long tail, just enough to keep light
   // icons legible over the hero (incl. bright art under the right-side avatar).

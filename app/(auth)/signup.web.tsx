@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
+import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { COLORS } from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
 import { Image } from 'expo-image';
@@ -25,6 +26,11 @@ export default function WebSignupScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
+
+  // Paint the document canvas beige so the form area (and any overscroll past the
+  // 100dvh fold) reads continuous to the very bottom under the iOS Safari toolbar,
+  // instead of the layout's navy shell showing through below the card.
+  useWebCanvas(COLORS.beige);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -238,15 +244,14 @@ export default function WebSignupScreen() {
 const styles = StyleSheet.create({
   // ── Mobile ─────────────────────────────────────────────────────────────
   mobileRoot: {
-    flex: 1,
-    backgroundColor: COLORS.navy,
-  },
+    minHeight: '100dvh',
+    backgroundColor: COLORS.beige,
+  } as object,
   mobileIllustrationWrap: {
-    position: 'absolute',
-    top: -32,
-    left: 0,
-    right: 0,
-    height: '58%',
+    position: 'relative',
+    height: '42vh',
+    minHeight: 240,
+    maxHeight: 420,
     backgroundColor: COLORS.navy,
     backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
     backgroundSize: '24px 24px',
@@ -256,15 +261,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: '50%',
-    backgroundImage: `linear-gradient(to bottom, transparent 0%, ${COLORS.navy} 70%, ${COLORS.beige} 100%)`,
+    height: '55%',
+    backgroundImage: `linear-gradient(to bottom, transparent 0%, ${COLORS.navy} 65%, ${COLORS.beige} 100%)`,
   } as object,
   mobileLogo: {
     position: 'absolute',
-    top: 20,
+    top: 'calc(20px + env(safe-area-inset-top))',
     left: 20,
     zIndex: 10,
-  },
+  } as object,
   cardAccent: {
     width: 40,
     height: 3,
@@ -275,18 +280,15 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   mobileCard: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    top: '45%',
+    flexGrow: 1,
+    marginTop: -44,
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 28,
-    paddingTop: 16,
-    paddingBottom: 48,
-  },
+    paddingTop: 24,
+    paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
+  } as object,
   // ── Desktop ────────────────────────────────────────────────────────────
   desktopRoot: {
     flex: 1,

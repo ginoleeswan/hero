@@ -26,7 +26,7 @@ import {
 import { withViewTransition } from '../../../src/lib/viewTransition';
 import { COLORS } from '../../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
-import { useWebDocumentScroll } from '../../../src/hooks/useWebDocumentScroll';
+import { useWebCanvas } from '../../../src/hooks/useWebCanvas';
 
 // Shared view-transition-names: the locked hero (A) and the chosen card (B)
 // morph into the matching arena portraits.
@@ -144,7 +144,7 @@ export default function WebPickOpponentScreen() {
   const wide = width >= 1024;
 
   // Document scroll so content bleeds edge-to-edge under the iOS Safari toolbar.
-  useWebDocumentScroll(COLORS.beige);
+  useWebCanvas(COLORS.beige);
 
   const [query, setQuery] = useState('');
   const [preview, setPreview] = useState<AnchorPreview | null>(null);

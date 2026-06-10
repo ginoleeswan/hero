@@ -26,7 +26,7 @@ import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { COLORS } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
-import { useWebDocumentScroll } from '../../src/hooks/useWebDocumentScroll';
+import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import Svg, { Path } from 'react-native-svg';
 
 const HERO_LOGO_PATH =
@@ -261,7 +261,7 @@ export default function WebProfileScreen() {
   const isMobile = width < SIDEBAR_BREAKPOINT;
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
   // Called before the guest early-return so it applies in both states.
-  useWebDocumentScroll(COLORS.beige);
+  useWebCanvas(COLORS.beige);
   const { user, signOut, changePassword, deleteAccount } = useAuth();
   const {
     profile,

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments, usePathname } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { Nunito_400Regular, Nunito_700Bold, Nunito_900Black } from '@expo-google-fonts/nunito';
@@ -18,12 +18,14 @@ function WebAuthGate() {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const pathname = usePathname();
   const [settled, setSettled] = useState(false);
+
+  const segs = segments as string[];
+  const inAuthGroup = segs[0] === '(auth)';
 
   useEffect(() => {
     if (loading) return;
-    const segs = segments as string[];
-    const inAuthGroup = segs[0] === '(auth)';
     const isRoot = segs.length === 0;
 
     if (user && (inAuthGroup || isRoot)) {
@@ -31,12 +33,28 @@ function WebAuthGate() {
     } else {
       setSettled(true);
     }
-  }, [user, loading, segments, router]);
+  }, [user, loading, segs, inAuthGroup, router]);
+
+  // Native document scroll for every route: content bleeds edge-to-edge under the
+  // iOS Safari toolbar and the toolbar can collapse (it only minimizes on
+  // *document* scroll, not on a nested RNW ScrollView), and short screens can
+  // still scroll when the toolbar/keyboard eats vertical space. Owning this here
+  // means a new screen gets correct scrolling without remembering to opt in;
+  // screens only declare their canvas colour via useWebCanvas.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.style.setProperty('overflow', 'visible', 'important');
+  }, []);
+
+  // Document scroll keeps the window offset across navigation (unlike a per-screen
+  // ScrollView that always mounts at the top), so reset to the top on every route
+  // change — otherwise a new screen can open part-scrolled.
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname]);
 
   if (loading || !settled) return <LogoLoader />;
 
-  const segs = segments as string[];
-  const inAuthGroup = segs[0] === '(auth)';
   const isRoot = segs.length === 0;
   const showNav = !inAuthGroup && !isRoot;
   // Every top-level page lets its dark header bleed up under the floating nav for
@@ -84,6 +102,14 @@ export default function WebRootLayout() {
     if (typeof document === 'undefined') return;
     document.documentElement.style.backgroundColor = '#0b1820';
     document.body.style.backgroundColor = '#0b1820';
+    // iOS Safari 16+ ignores maximum-scale=1 in the viewport meta tag and still
+    // auto-zooms when a focused input has font-size < 16 px.  Enforce the 16 px
+    // floor globally so every text field — search bars, auth forms, filters — is
+    // immune to the zoom, while still letting larger inherited sizes win.
+    const noZoomStyle = document.createElement('style');
+    noZoomStyle.textContent = 'input,textarea,select{font-size:max(16px,1em)!important}';
+    document.head.appendChild(noZoomStyle);
+    return () => noZoomStyle.remove();
   }, []);
 
   const [fontsLoaded, fontError] = useFonts({
