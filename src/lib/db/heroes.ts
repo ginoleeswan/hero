@@ -2,6 +2,8 @@ import { supabase } from '../supabase';
 import type { Tables } from '../../types/database.generated';
 import type { CharacterData, MovieAppearance, StatsSource } from '../../types';
 import type { CategoryFilters, FacetCounts } from './categoryFilters';
+import { rowToMember, type FamilyRow } from '../family/rowToMember';
+import type { FamilyMember } from '../family/types';
 
 export type Hero = Tables<'heroes'>;
 export type HeroCategory = 'popular' | 'villain' | 'xmen';
@@ -655,7 +657,40 @@ export type RelatedHeroCard = Pick<
  * rows so they can render as navigable cards. Exact name match in a single
  * query — names with no matching row simply don't come back, and the caller
  * falls those back to plain text chips so no information is lost.
+ *
+ * Ordered by popularity (issue_count) because the source lists arrive
+ * alphabetically: without this the UI would lead with obscure "A" characters
+ * instead of the recognisable foes/allies people expect to see first.
  */
+/** A hero-to-hero association grouping. Extend in lockstep with the DB `kind`s. */
+export type RelationKind = 'enemy' | 'ally' | 'teammate';
+
+/**
+ * Resolved related heroes for a grouping, straight from the normalized
+ * `hero_relationships` graph (built once upstream by rebuild_hero_relationships).
+ * Ranked by the related hero's popularity; `sameUniverse` keeps the subject's own
+ * publisher (plus any curated cross-publisher edges). One call serves enemies,
+ * allies, teammates — and any future grouping — with no client-side resolution.
+ */
+export async function getRelatedHeroes(
+  heroId: string,
+  kind: RelationKind,
+  opts?: { limit?: number; sameUniverse?: boolean },
+): Promise<RelatedHeroCard[]> {
+  if (!heroId) return [];
+  const { data, error } = await supabase.rpc('get_related_heroes', {
+    p_hero_id: heroId,
+    p_kind: kind,
+    p_limit: opts?.limit ?? 60,
+    p_same_universe: opts?.sameUniverse ?? false,
+  });
+  if (error) {
+    console.warn('[getRelatedHeroes] error:', error.message);
+    return [];
+  }
+  return (data ?? []) as RelatedHeroCard[];
+}
+
 export async function getHeroesByNames(names: string[]): Promise<RelatedHeroCard[]> {
   const unique = Array.from(new Set(names.map((n) => n.trim()).filter(Boolean)));
   if (unique.length === 0) return [];
@@ -663,6 +698,7 @@ export async function getHeroesByNames(names: string[]): Promise<RelatedHeroCard
     .from('heroes')
     .select('id, name, image_url, image_md_url, portrait_url, publisher, alignment')
     .in('name', unique)
+    .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(200);
   if (error) {
     console.warn('[getHeroesByNames] error:', error.message);
@@ -833,4 +869,27 @@ export function heroRowToCharacterData(hero: Hero): CharacterData {
         : null,
     statsSource: (hero.stats_source as StatsSource) ?? null,
   };
+}
+
+/**
+ * Family members for a hero, ordered top generation → bottom, then source order.
+ * Linked relatives (those with their own page) come back enriched with the
+ * related hero's portrait, power, and alignment via the FK embed.
+ */
+export async function getHeroFamily(heroId: string): Promise<FamilyMember[]> {
+  const { data, error } = await supabase
+    .from('hero_relatives')
+    .select(
+      'id, name, alias, role, relation, tier, modifiers, status, position, ' +
+        'related:related_hero_id ( id, image_md_url, image_url, power, alignment )',
+    )
+    .eq('hero_id', heroId)
+    .order('tier', { ascending: false })
+    .order('position', { ascending: true });
+
+  if (error) {
+    console.error('getHeroFamily failed', error);
+    return [];
+  }
+  return (data ?? []).map((row) => rowToMember(row as unknown as FamilyRow));
 }
