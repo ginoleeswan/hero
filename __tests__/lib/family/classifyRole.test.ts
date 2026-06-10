@@ -50,4 +50,14 @@ describe('classifyRole', () => {
     expect(classifyRole('fiancée')).toMatchObject({ relation: 'other', tier: 0 });
     expect(classifyRole('')).toMatchObject({ relation: 'other', tier: 0 });
   });
+
+  it('routes aunts/uncles, cousins, nieces/nephews', () => {
+    expect(classifyRole('aunt')).toMatchObject({ relation: 'aunt_uncle', tier: 1 });
+    expect(classifyRole('cousin')).toMatchObject({ relation: 'cousin', tier: 0 });
+    expect(classifyRole('nephew')).toMatchObject({ relation: 'niece_nephew', tier: -1 });
+  });
+
+  it('places descendants below the hero, not above', () => {
+    expect(classifyRole('alleged descendants')).toMatchObject({ relation: 'grandchild', tier: -2 });
+  });
 });

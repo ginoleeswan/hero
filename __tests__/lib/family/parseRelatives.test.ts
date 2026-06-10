@@ -20,7 +20,7 @@ describe('parseRelatives', () => {
 
   it('keeps status inside the role segment', () => {
     const out = parseRelatives('Warren McGinnis (father, deceased)');
-    expect(out[0]).toMatchObject({ name: 'Warren McGinnis', role: 'deceased', alias: 'father' });
+    expect(out[0]).toMatchObject({ name: 'Warren McGinnis', role: 'father, deceased', alias: null });
   });
 
   it('does not split on commas inside parentheses', () => {
@@ -37,7 +37,12 @@ describe('parseRelatives', () => {
 
   it('handles missing space before the paren', () => {
     const out = parseRelatives('Mary Parker(mother, deceased)');
-    expect(out[0]).toMatchObject({ name: 'Mary Parker', role: 'deceased' });
+    expect(out[0]).toMatchObject({ name: 'Mary Parker', role: 'mother, deceased' });
+  });
+
+  it('keeps a single descriptive role segment whole', () => {
+    const out = parseRelatives('Bruce Wayne (biological father)');
+    expect(out[0]).toMatchObject({ name: 'Bruce Wayne', role: 'biological father', alias: null });
   });
 
   it('handles a bare name with no parentheses', () => {

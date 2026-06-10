@@ -1,12 +1,12 @@
 // src/lib/family/rowToMember.ts
-import type { FamilyMember, RelationKind, RelativeStatus } from './types';
+import type { FamilyMember, FamilyRelation, RelativeStatus } from './types';
 
 export interface FamilyRow {
   id: string;
   name: string;
   alias: string | null;
   role: string;
-  relation: RelationKind;
+  relation: FamilyRelation;
   tier: number;
   modifiers: string[] | null;
   status: RelativeStatus;

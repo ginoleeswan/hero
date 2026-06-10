@@ -1,5 +1,5 @@
 // src/lib/family/types.ts
-export type RelationKind =
+export type FamilyRelation =
   | 'parent' | 'child' | 'sibling' | 'spouse'
   | 'grandparent' | 'grandchild' | 'aunt_uncle' | 'niece_nephew'
   | 'cousin' | 'in_law' | 'ancestor' | 'clone' | 'other';
@@ -16,7 +16,7 @@ export interface ParsedRelative {
 
 /** Result of classifying a role string. */
 export interface Classification {
-  relation: RelationKind;
+  relation: FamilyRelation;
   tier: number;        // +2..-2, or 9 for clone/aside
   modifiers: string[]; // adoptive | step | foster | half
   status: RelativeStatus;
@@ -28,7 +28,7 @@ export interface FamilyMember {
   name: string;
   alias: string | null;
   role: string;
-  relation: RelationKind;
+  relation: FamilyRelation;
   tier: number;
   modifiers: string[];
   status: RelativeStatus;

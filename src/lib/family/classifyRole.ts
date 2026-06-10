@@ -1,5 +1,5 @@
 // src/lib/family/classifyRole.ts
-import type { Classification, RelationKind, RelativeStatus } from './types';
+import type { Classification, FamilyRelation, RelativeStatus } from './types';
 
 const STATUS_PATTERNS: [RegExp, NonNullable<RelativeStatus>][] = [
   [/deceased|\bdead\b/, 'deceased'],
@@ -10,16 +10,17 @@ const STATUS_PATTERNS: [RegExp, NonNullable<RelativeStatus>][] = [
 
 const MODIFIER_PATTERNS: [RegExp, string][] = [
   [/adoptive|adopted/, 'adoptive'],
-  [/step[- ]?/, 'step'],
+  [/\bstep[- ]?/, 'step'],
   [/foster/, 'foster'],
-  [/half[- ]/, 'half'],
+  [/\bhalf[- ]/, 'half'],
 ];
 
 // First match wins — order is significant (specific before general).
-const RELATION_RULES: [RegExp, RelationKind, number][] = [
-  [/great[- ]?grand|ancestor|descendant/, 'ancestor', 2],
+const RELATION_RULES: [RegExp, FamilyRelation, number][] = [
+  [/great[- ]?grand|ancestor/, 'ancestor', 2],
   [/grandparent|grandfather|grandmother|grandad|grandma/, 'grandparent', 2],
   [/grandchild|grandson|granddaughter/, 'grandchild', -2],
+  [/descendant/, 'grandchild', -2],
   [/in[- ]law/, 'in_law', 0],
   [/father|mother|\bparent|\bmom\b|\bdad\b/, 'parent', 1],
   [/aunt|uncle/, 'aunt_uncle', 1],

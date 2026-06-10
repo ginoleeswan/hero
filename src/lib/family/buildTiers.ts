@@ -9,7 +9,7 @@ const TIER_LABELS: Record<number, string> = {
   [-2]: 'Grandchildren',
 };
 
-const NONFAMILY = /girlfriend|boyfriend|fianc|partner|lover|paramour/i;
+const NONFAMILY = /girlfriend|boyfriend|fianc|lover|paramour/i;
 
 export function buildTiers(members: FamilyMember[]): FamilyModel {
   const asides: FamilyMember[] = [];

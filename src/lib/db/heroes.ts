@@ -877,6 +877,7 @@ export function heroRowToCharacterData(hero: Hero): CharacterData {
  * related hero's portrait, power, and alignment via the FK embed.
  */
 export async function getHeroFamily(heroId: string): Promise<FamilyMember[]> {
+  if (!heroId) return [];
   const { data, error } = await supabase
     .from('hero_relatives')
     .select(
@@ -888,7 +889,7 @@ export async function getHeroFamily(heroId: string): Promise<FamilyMember[]> {
     .order('position', { ascending: true });
 
   if (error) {
-    console.error('getHeroFamily failed', error);
+    console.warn('[getHeroFamily] error:', error.message);
     return [];
   }
   return (data ?? []).map((row) => rowToMember(row as unknown as FamilyRow));
