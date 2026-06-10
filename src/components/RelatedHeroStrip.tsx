@@ -9,9 +9,12 @@ import type { RelatedHeroCard } from '../lib/db/heroes';
 const CARD_W = 104;
 const CARD_H = 140;
 
-const ACCENT: Record<'enemy' | 'ally', string> = {
+type RelatedKind = 'enemy' | 'ally' | 'teammate';
+
+const ACCENT: Record<RelatedKind, string> = {
   enemy: COLORS.red,
   ally: COLORS.green,
+  teammate: COLORS.blue,
 };
 
 /**
@@ -29,7 +32,7 @@ export function RelatedHeroStrip({
   label: string;
   names: string[];
   heroMap: Map<string, RelatedHeroCard>;
-  kind: 'enemy' | 'ally';
+  kind: RelatedKind;
   onPressHero: (hero: RelatedHeroCard) => void;
 }) {
   const [showAllChips, setShowAllChips] = useState(false);

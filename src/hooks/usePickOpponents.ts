@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
-import { searchHeroes, getHeroById, getHeroesByIds, getHeroesByPowerRange } from '../lib/db/heroes';
-import type { HeroSearchResult, HeroPowerResult } from '../lib/db/heroes';
-import { getRivals } from '../constants/rivals';
+import {
+  searchHeroes,
+  getHeroById,
+  getRelatedHeroes,
+  getHeroesByPowerRange,
+} from '../lib/db/heroes';
+import type { HeroSearchResult, HeroPowerResult, RelatedHeroCard } from '../lib/db/heroes';
 
 export interface PickSubject {
   id: string;
@@ -13,7 +17,7 @@ export interface PickSubject {
 export interface PickOpponents {
   /** The hero we're choosing an opponent for (for the context anchor). */
   subject: PickSubject | null;
-  rivals: HeroSearchResult[];
+  rivals: RelatedHeroCard[];
   sameUniverse: HeroSearchResult[];
   similar: HeroPowerResult[];
   /** Every other hero, portrait-first, for the full grid + search. */
@@ -33,24 +37,26 @@ export interface PickOpponents {
 export function usePickOpponents(hero: string, fallbackName?: string): PickOpponents {
   const [subject, setSubject] = useState<PickSubject | null>(null);
   const [all, setAll] = useState<HeroSearchResult[]>([]);
-  const [rivals, setRivals] = useState<HeroSearchResult[]>([]);
+  const [rivals, setRivals] = useState<RelatedHeroCard[]>([]);
   const [sameUniverse, setSameUniverse] = useState<HeroSearchResult[]>([]);
   const [similar, setSimilar] = useState<HeroPowerResult[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    const rivalIds = getRivals(hero ?? '');
-    const rivalIdSet = new Set(rivalIds);
 
     // Roster for the grid + search (popularity-ranked is the right order here).
     const rosterP = searchHeroes('', 'All', 600);
-    // Subject + rivals by ID so they resolve regardless of issue_count.
+    // Subject by ID so it resolves regardless of issue_count.
     const subjectP = getHeroById(hero ?? '');
-    const rivalsP = getHeroesByIds(rivalIds);
+    // Rivalries straight from the relationship graph — comicvine foes + curated
+    // marquee matchups, already resolved, same-universe, and ranked upstream.
+    const rivalsP = hero
+      ? getRelatedHeroes(hero, 'enemy', { sameUniverse: true, limit: 40 })
+      : Promise.resolve([]);
 
-    Promise.all([subjectP, rivalsP, rosterP])
-      .then(([subjectRow, rivalRows, allHeroes]) => {
+    Promise.all([subjectP, rosterP, rivalsP])
+      .then(([subjectRow, allHeroes, dbRivals]) => {
         if (cancelled) return;
 
         const subjectName = subjectRow?.name ?? fallbackName ?? 'this hero';
@@ -65,7 +71,14 @@ export function usePickOpponents(hero: string, fallbackName?: string): PickOppon
         const isSelf = (name: string | null) =>
           !!name && name.toLowerCase() === subjectName.toLowerCase();
 
-        setRivals(rivalRows.filter((r) => r.id !== hero && !isSelf(r.name)));
+        const seenRival = new Set<string>();
+        const mergedRivals = dbRivals.filter((r) => {
+          if (r.id === hero || isSelf(r.name) || seenRival.has(r.id)) return false;
+          seenRival.add(r.id);
+          return true;
+        });
+        setRivals(mergedRivals);
+        const rivalIdSet = new Set(mergedRivals.map((r) => r.id));
 
         const roster = allHeroes.filter((h) => h.id !== hero && !isSelf(h.name));
         // Portrait first, then any image, then neither — best art leads.

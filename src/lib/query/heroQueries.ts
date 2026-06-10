@@ -9,6 +9,7 @@ import {
   getCategoryPage,
   getHeroById,
   getHeroesByNames,
+  getRelatedHeroes,
   getPowerPercentile,
   searchHeroesPage,
   type CategorySlug,
@@ -129,6 +130,24 @@ export function useHeroesByNames(names: string[]) {
     queryKey: queryKeys.heroesByNames(sorted.join('|')),
     enabled: sorted.length > 0,
     queryFn: () => getHeroesByNames(sorted),
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
+/** Resolved enemies / allies / teammates straight from the relationship graph
+ *  (same-universe, popularity-ranked). One round-trip per grouping, cached. */
+export function useRelatedHeroes(heroId: string | undefined) {
+  return useQuery({
+    queryKey: ['relatedHeroes', heroId ?? ''],
+    enabled: !!heroId,
+    queryFn: async () => {
+      const [enemies, allies, teammates] = await Promise.all([
+        getRelatedHeroes(heroId!, 'enemy', { sameUniverse: true, limit: 24 }),
+        getRelatedHeroes(heroId!, 'ally', { sameUniverse: true, limit: 24 }),
+        getRelatedHeroes(heroId!, 'teammate', { sameUniverse: true, limit: 24 }),
+      ]);
+      return { enemies, allies, teammates };
+    },
     staleTime: 1000 * 60 * 30,
   });
 }

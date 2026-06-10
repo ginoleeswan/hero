@@ -196,7 +196,10 @@ serve(async (req: Request) => {
           : null;
         if (creators?.length === 0) creators = null;
 
-        // enemies
+        // enemies — ComicVine returns these alphabetically, so a low cap keeps
+        // only obscure "A" names and drops famous foes (e.g. Sabretooth). Store a
+        // wide slice; the UI resolves them to heroes and orders by popularity, so
+        // the recognisable foes surface regardless of where they fall A–Z.
         const rawEnemies: string[] = Array.isArray(d.character_enemies)
           ? d.character_enemies
               .map((e: unknown) =>
@@ -205,11 +208,11 @@ serve(async (req: Request) => {
                   : null,
               )
               .filter((n: string | null): n is string => n !== null)
-              .slice(0, 20)
+              .slice(0, 120)
           : [];
         enemies = rawEnemies.length > 0 ? rawEnemies : null;
 
-        // friends
+        // friends — same reasoning, wider slice so notable allies aren't lost.
         const rawFriends: string[] = Array.isArray(d.character_friends)
           ? d.character_friends
               .map((f: unknown) =>
@@ -218,7 +221,7 @@ serve(async (req: Request) => {
                   : null,
               )
               .filter((n: string | null): n is string => n !== null)
-              .slice(0, 20)
+              .slice(0, 120)
           : [];
         friends = rawFriends.length > 0 ? rawFriends : null;
 
