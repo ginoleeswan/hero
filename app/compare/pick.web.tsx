@@ -24,7 +24,7 @@ import { FighterAnchor, ANCHOR_H } from '../../src/components/compare/FighterAnc
 import { stashFighters } from '../../src/lib/compareHandoff';
 import { withViewTransition } from '../../src/lib/viewTransition';
 import { COLORS } from '../../src/constants/colors';
-import { TOPBAR_HEIGHT } from '../../src/components/web/NavVariants';
+import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 
 type Fighter = Pick<HeroSearchResult, 'id' | 'name' | 'image_url' | 'portrait_url'>;
 type Slot = 'a' | 'b';

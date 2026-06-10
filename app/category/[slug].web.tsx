@@ -33,7 +33,7 @@ import { FilterSheet } from '../../src/components/web/category/FilterSheet';
 import { ActiveFilterChips } from '../../src/components/web/category/ActiveFilterChips';
 import { heroGridImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
-import { TOPBAR_HEIGHT } from '../../src/components/web/NavVariants';
+import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 
 const VALID_SLUGS = new Set<CategorySlug>([

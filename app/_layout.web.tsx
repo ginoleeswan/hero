@@ -8,7 +8,7 @@ import { Righteous_400Regular } from '@expo-google-fonts/righteous';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useAuth } from '../src/hooks/useAuth';
 import { LogoLoader } from '../src/components/ui/LogoLoader';
-import { TopBar, TOPBAR_HEIGHT } from '../src/components/web/NavVariants';
+import { TopBar, TOPBAR_HEIGHT } from '../src/components/web/TopBar';
 import { SearchProvider } from '../src/contexts/SearchContext';
 import { queryClient } from '../src/lib/query/queryClient';
 import { COLORS } from '../src/constants/colors';

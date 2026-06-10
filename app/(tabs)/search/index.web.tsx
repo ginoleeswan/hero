@@ -24,7 +24,7 @@ import { useSearchHistory } from '../../../src/hooks/useSearchHistory';
 import { useHeroSearch } from '../../../src/hooks/useHeroSearch';
 import { useIdleHeroes } from '../../../src/hooks/useIdleHeroes';
 import { useSkeletonAnim } from '../../../src/components/web/Skeleton';
-import { TOPBAR_HEIGHT } from '../../../src/components/web/NavVariants';
+import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
 
 const RESULT_LIMIT = 300;
 const PUB_OPTS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];

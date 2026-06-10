@@ -1,7 +1,7 @@
 import { View, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from './Skeleton';
 import { COLORS } from '../../constants/colors';
-import { TOPBAR_HEIGHT } from './NavVariants';
+import { TOPBAR_HEIGHT } from './TopBar';
 
 const ROW_CARD_WIDTH = 220;
 const ROW_CARD_HEIGHT = 310;

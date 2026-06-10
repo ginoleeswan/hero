@@ -30,7 +30,7 @@ import { CoverGallery } from '../../src/components/web/home/CoverGallery';
 import { EraTimeline } from '../../src/components/web/home/EraTimeline';
 import { TodaysMatchup as TodaysMatchupCard } from '../../src/components/web/home/TodaysMatchup';
 import { getTodaysMatchup, type TodaysMatchup } from '../../src/lib/matchup';
-import { TOPBAR_HEIGHT } from '../../src/components/web/NavVariants';
+import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { StatPods } from '../../src/components/web/home/StatPods';
 import {

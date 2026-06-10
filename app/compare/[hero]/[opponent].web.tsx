@@ -22,7 +22,7 @@ import { StatBattleRow } from '../../../src/components/compare/StatBattleRow';
 import { VsBadge } from '../../../src/components/compare/VsBadge';
 import { getFighterArt, stashFighters } from '../../../src/lib/compareHandoff';
 import { withViewTransition } from '../../../src/lib/viewTransition';
-import { TOPBAR_HEIGHT } from '../../../src/components/web/NavVariants';
+import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
 
 // Must match the picker — the locked hero (A) and chosen card (B) morph in.
 const VT_HERO = 'vt-fighter-a';

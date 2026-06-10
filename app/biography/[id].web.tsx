@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { getHeroById, getHeroByComicvineId } from '../../src/lib/db/heroes';
 import { COLORS } from '../../src/constants/colors';
-import { TOPBAR_HEIGHT } from '../../src/components/web/NavVariants';
+import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { heroImageSource } from '../../src/constants/heroImages';
 import type { Tables } from '../../src/types/database.generated';
 

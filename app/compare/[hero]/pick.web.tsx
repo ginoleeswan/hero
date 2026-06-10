@@ -25,7 +25,7 @@ import {
 } from '../../../src/lib/compareHandoff';
 import { withViewTransition } from '../../../src/lib/viewTransition';
 import { COLORS } from '../../../src/constants/colors';
-import { TOPBAR_HEIGHT } from '../../../src/components/web/NavVariants';
+import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
 
 // Shared view-transition-names: the locked hero (A) and the chosen card (B)
 // morph into the matching arena portraits.

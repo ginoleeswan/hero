@@ -27,7 +27,7 @@ import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
 import { useHeroPercentile, useHeroesByNames } from '../../src/lib/query/heroQueries';
 import type { RelatedHeroCard } from '../../src/lib/db/heroes';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
-import { TOPBAR_HEIGHT } from '../../src/components/web/NavVariants';
+import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { GalleryStrip } from '../../src/components/GalleryStrip';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
 import type { CharacterData, IssueCover } from '../../src/types';

@@ -108,19 +108,26 @@ export function TopBar() {
               aria-label="Profile"
               onPress={() => router.push('/profile')}
               style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [c.avatar, hovered && (c.avatarHover as object)] as object
+                [c.item, hovered && (c.itemHover as object)] as object
               }
             >
-              <Text style={c.avatarText}>{initial}</Text>
+              <View style={c.avatar}>
+                <Text style={c.avatarText}>{initial}</Text>
+              </View>
             </Pressable>
           ) : (
             <Pressable
+              aria-label="Sign in"
+              // RN-web drops the `title` prop, so set the tooltip on the DOM node.
+              ref={(node) => {
+                if (node) (node as unknown as HTMLElement).title = 'Sign in';
+              }}
               onPress={() => router.push('/(auth)/login')}
               style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [c.signIn, hovered && (c.signInHover as object)] as object
+                [c.item, hovered && (c.itemHover as object)] as object
               }
             >
-              <Text style={c.signInText}>Sign In</Text>
+              <Ionicons name="person-outline" size={20} color={COLORS.beige} />
             </Pressable>
           )}
         </View>
@@ -178,26 +185,15 @@ const c = StyleSheet.create({
   } as object,
   itemActive: { backgroundColor: 'rgba(231,115,51,0.16)' } as object,
   itemHover: { backgroundColor: 'rgba(255,255,255,0.08)' } as object,
+  // Both account states (avatar / logged-out icon) sit inside the shared `item`
+  // hover container, so the whole top bar hovers identically.
   avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: COLORS.orange,
     alignItems: 'center',
     justifyContent: 'center',
-    cursor: 'pointer',
-    transition: 'opacity 150ms ease',
   } as object,
-  avatarHover: { opacity: 0.85 } as object,
-  avatarText: { fontFamily: 'Flame-Regular', fontSize: 15, color: '#fff' },
-  signIn: {
-    backgroundColor: COLORS.orange,
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-    borderRadius: 20,
-    cursor: 'pointer',
-    transition: 'opacity 150ms ease',
-  } as object,
-  signInHover: { opacity: 0.85 } as object,
-  signInText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#fff', letterSpacing: 0.3 },
+  avatarText: { fontFamily: 'Flame-Regular', fontSize: 14, color: '#fff' },
 });
