@@ -6,7 +6,6 @@ import {
   View,
   Text,
   TextInput,
-  ScrollView,
   Pressable,
   StyleSheet,
   Animated,
@@ -25,6 +24,7 @@ import { useHeroSearch } from '../../../src/hooks/useHeroSearch';
 import { useIdleHeroes } from '../../../src/hooks/useIdleHeroes';
 import { useSkeletonAnim } from '../../../src/components/web/Skeleton';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
+import { useWebDocumentScroll } from '../../../src/hooks/useWebDocumentScroll';
 
 const RESULT_LIMIT = 300;
 const PUB_OPTS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
@@ -170,6 +170,9 @@ export default function WebSearchScreen() {
   const { setQuery: setNavQuery } = useSearch();
   const skeletonOpacity = useSkeletonAnim();
   const { history, addSearch, clearHistory } = useSearchHistory();
+
+  // Document scroll so the grid bleeds edge-to-edge under the iOS Safari toolbar.
+  useWebDocumentScroll(COLORS.beige);
 
   const urlQ = (Array.isArray(params.q) ? params.q[0] : (params.q ?? '')).toString();
   const publisher = normalizePublisher(params.publisher);
@@ -317,7 +320,7 @@ export default function WebSearchScreen() {
 
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       {showIdle ? (
-        <ScrollView style={styles.scroll}>
+        <View style={styles.scroll}>
           <View style={[styles.gridWrap, { paddingHorizontal: contentPad, paddingBottom: 0 }]}>
             {history.length > 0 && (
               <>
@@ -360,7 +363,7 @@ export default function WebSearchScreen() {
               </View>
             )}
           </View>
-        </ScrollView>
+        </View>
       ) : !hasCriteria ? (
         <View style={styles.center}>
           <Text style={styles.empty}>Search for a hero to see results.</Text>
@@ -378,7 +381,7 @@ export default function WebSearchScreen() {
           <Text style={styles.empty}>No heroes match {title}.</Text>
         </View>
       ) : (
-        <ScrollView style={styles.scroll}>
+        <View style={styles.scroll}>
           <View style={[styles.gridWrap, { paddingHorizontal: contentPad, paddingBottom: 0 }]}>
             <View style={gridStyle as object}>
               {heroes.map((hero) => (
@@ -391,7 +394,7 @@ export default function WebSearchScreen() {
               </Text>
             )}
           </View>
-        </ScrollView>
+        </View>
       )}
 
       {peek && (
