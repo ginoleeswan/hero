@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { usePathname } from 'expo-router';
 import { COLORS } from '../constants/colors';
 
 /**
@@ -23,6 +24,8 @@ import { COLORS } from '../constants/colors';
  * plain `<View>`s (no outer `<ScrollView>`).
  */
 export function useWebDocumentScroll(background: string = COLORS.beige) {
+  const pathname = usePathname();
+
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
     const { body } = document;
@@ -38,4 +41,11 @@ export function useWebDocumentScroll(background: string = COLORS.beige) {
       html.style.backgroundColor = prevHtmlBg;
     };
   }, [background]);
+
+  // With document scroll, the window keeps its scroll offset across navigation
+  // (unlike a per-screen ScrollView that always mounts at the top). Reset to the
+  // top on every route change so a new screen never opens part-scrolled.
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.scrollTo(0, 0);
+  }, [pathname]);
 }

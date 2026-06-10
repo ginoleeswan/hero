@@ -1094,18 +1094,44 @@ export default function WebCharacterScreen() {
                           </View>
                         ) : null}
                       </View>
-                      {powerScore !== null ? (
-                        <View
-                          style={[
-                            styles.powerScorePill,
-                            { backgroundColor: alignmentColor + '22' },
-                          ]}
-                        >
-                          <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
-                            {powerScore}
-                          </Text>
-                        </View>
-                      ) : null}
+                      <View style={styles.statHeaderRight}>
+                        {powerScore !== null || statsGenerating ? (
+                          <Pressable
+                            onPress={() =>
+                              !statsGenerating &&
+                              router.push(
+                                `/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`,
+                              )
+                            }
+                            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                              [
+                                styles.compareBtn,
+                                hovered && !statsGenerating && (styles.compareBtnHover as object),
+                                statsGenerating && { opacity: 0.5 },
+                              ] as object
+                            }
+                          >
+                            <Ionicons
+                              name="git-compare-outline"
+                              size={14}
+                              color={COLORS.orange}
+                            />
+                            <Text style={styles.compareBtnText}>Compare</Text>
+                          </Pressable>
+                        ) : null}
+                        {powerScore !== null ? (
+                          <View
+                            style={[
+                              styles.powerScorePill,
+                              { backgroundColor: alignmentColor + '22' },
+                            ]}
+                          >
+                            <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
+                              {powerScore}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </View>
                     </View>
                     <View style={styles.cardDivider} />
                     {statsGenerating
