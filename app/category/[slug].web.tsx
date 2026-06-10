@@ -313,169 +313,158 @@ export default function WebCategoryScreen() {
     </View>
   );
 
-  // Shared between the loading and loaded states so both render the grid inside
-  // the SAME page-level ScrollView (below). The skeleton used to live outside any
-  // scroller and the loaded grid in its own nested ScrollView — that nested
-  // overflow:auto box is what clipped content at the iOS Safari toolbar line.
-  // One page-level scroller filling 100dvh lets content bleed edge-to-edge under
-  // the translucent toolbar, matching the skeleton.
-  const content = loading ? (
-    <View style={[styles.gridWrap, { paddingBottom: 0 }] as object}>
-      <View style={gridStyle as object}>
-        {Array.from({ length: 24 }).map((_, i) => (
-          <SkeletonCard key={i} opacity={skeletonOpacity} />
-        ))}
-      </View>
-    </View>
-  ) : heroes.length === 0 ? (
-    <View style={styles.center}>
-      <Text style={styles.empty}>No heroes found</Text>
-    </View>
-  ) : (
-    <View style={[styles.gridWrap, { paddingBottom: 0 }] as object}>{grid}</View>
-  );
-
   return (
     <View style={styles.root}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        onScroll={handleScroll}
-        scrollEventThrottle={200}
-      >
-        {/* ── Sticky header — navy ─────────────────────────────────────────────── */}
-        <View style={[styles.header, { paddingHorizontal: contentPad }] as object}>
-          <View style={styles.headerInner}>
-            {/* Row 1 — identity: accent · title · description · count */}
-            <View style={styles.identityRow}>
-              <View style={styles.accentBar} />
-              <Text
-                style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object}
-                numberOfLines={1}
-              >
-                {title}
-              </Text>
-              {isDesktop && isWide && description ? (
-                <Text style={styles.descriptionInline as object} numberOfLines={1}>
-                  {description}
-                </Text>
-              ) : null}
-              <View style={styles.identityRight}>
-                {!loading && total > 0 && (
-                  <View style={styles.countPill}>
-                    <Text style={styles.countText as object}>{total.toLocaleString()}</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {/* Row 2 — mobile only: full-width search + Filters button.
-                On desktop the search lives inside the filter rail. */}
-            {!isDesktop && (
-              <View style={[styles.controlsRow, styles.controlsRowMobile as object] as object}>
-                <View
-                  style={
-                    [
-                      styles.searchBar,
-                      styles.searchBarMobile as object,
-                      searchFocused && (styles.searchBarFocused as object),
-                    ] as object
-                  }
-                >
-                  <Ionicons
-                    name="search-outline"
-                    size={15}
-                    color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.35)'}
-                  />
-                  <TextInput
-                    style={styles.searchInput as object}
-                    placeholder={`Search ${title.toLowerCase()}…`}
-                    placeholderTextColor="rgba(245,235,220,0.3)"
-                    value={filters.search}
-                    onChangeText={(t) => setFilter('search', t)}
-                    onFocus={() => setSearchFocused(true)}
-                    onBlur={() => setSearchFocused(false)}
-                    autoCorrect={false}
-                  />
-                </View>
-
-                <Pressable
-                  onPress={() => setSheetOpen(true)}
-                  style={
-                    [
-                      styles.filterBtn,
-                      activeChips.length > 0 && (styles.filterBtnActive as object),
-                    ] as object
-                  }
-                >
-                  <Ionicons
-                    name="options-outline"
-                    size={16}
-                    color={activeChips.length > 0 ? COLORS.orange : COLORS.beige}
-                  />
-                  <Text
-                    style={
-                      [
-                        styles.filterBtnText,
-                        activeChips.length > 0 && (styles.filterBtnTextActive as object),
-                      ] as object
-                    }
-                  >
-                    Filters
-                  </Text>
-                  {activeChips.length > 0 && (
-                    <View style={styles.filterBadge as object}>
-                      <Text style={styles.filterBadgeText as object}>{activeChips.length}</Text>
-                    </View>
-                  )}
-                </Pressable>
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* ── Mobile-only active-filters strip ──────────────────────────────────
-            On desktop the rail is always visible and already shows active state,
-            so chips here would only duplicate it. On mobile the filter UI is
-            hidden in a sheet, so this scrollable strip is how active filters and
-            one-tap removal stay visible. */}
-        {!isDesktop && categorySlug && activeChips.length > 0 && (
-          <View style={[styles.activeStrip, { paddingHorizontal: contentPad }] as object}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.activeStripContent as object}
+      {/* ── Sticky header — navy ─────────────────────────────────────────────── */}
+      <View style={[styles.header, { paddingHorizontal: contentPad }] as object}>
+        <View style={styles.headerInner}>
+          {/* Row 1 — identity: accent · title · description · count */}
+          <View style={styles.identityRow}>
+            <View style={styles.accentBar} />
+            <Text
+              style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object}
+              numberOfLines={1}
             >
-              <ActiveFilterChips slug={categorySlug} filters={filters} setFilter={setFilter} />
-              <Pressable
-                onPress={reset}
-                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [styles.stripClear, hovered && (styles.stripClearHover as object)] as object
+              {title}
+            </Text>
+            {isDesktop && isWide && description ? (
+              <Text style={styles.descriptionInline as object} numberOfLines={1}>
+                {description}
+              </Text>
+            ) : null}
+            <View style={styles.identityRight}>
+              {!loading && total > 0 && (
+                <View style={styles.countPill}>
+                  <Text style={styles.countText as object}>{total.toLocaleString()}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Row 2 — mobile only: full-width search + Filters button.
+              On desktop the search lives inside the filter rail. */}
+          {!isDesktop && (
+            <View style={[styles.controlsRow, styles.controlsRowMobile as object] as object}>
+              <View
+                style={
+                  [
+                    styles.searchBar,
+                    styles.searchBarMobile as object,
+                    searchFocused && (styles.searchBarFocused as object),
+                  ] as object
                 }
               >
-                <Text style={styles.stripClearText as object}>Clear all</Text>
-              </Pressable>
-            </ScrollView>
-          </View>
-        )}
+                <Ionicons
+                  name="search-outline"
+                  size={15}
+                  color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.35)'}
+                />
+                <TextInput
+                  style={styles.searchInput as object}
+                  placeholder={`Search ${title.toLowerCase()}…`}
+                  placeholderTextColor="rgba(245,235,220,0.3)"
+                  value={filters.search}
+                  onChangeText={(t) => setFilter('search', t)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                  autoCorrect={false}
+                />
+              </View>
 
-        {/* ── Content: desktop = rail + grid; mobile = grid only ── */}
-        <View style={[styles.contentRow, { paddingHorizontal: contentPad }] as object}>
-          {isDesktop && categorySlug && (
-            <FilterRail
-              slug={categorySlug}
-              filters={filters}
-              counts={counts}
-              setFilter={setFilter}
-              onReset={reset}
-              hasActive={activeChips.length > 0}
-              activeCount={activeChips.length}
-              searchPlaceholder={`Search ${title.toLowerCase()}…`}
-            />
+              <Pressable
+                onPress={() => setSheetOpen(true)}
+                style={
+                  [
+                    styles.filterBtn,
+                    activeChips.length > 0 && (styles.filterBtnActive as object),
+                  ] as object
+                }
+              >
+                <Ionicons
+                  name="options-outline"
+                  size={16}
+                  color={activeChips.length > 0 ? COLORS.orange : COLORS.beige}
+                />
+                <Text
+                  style={
+                    [
+                      styles.filterBtnText,
+                      activeChips.length > 0 && (styles.filterBtnTextActive as object),
+                    ] as object
+                  }
+                >
+                  Filters
+                </Text>
+                {activeChips.length > 0 && (
+                  <View style={styles.filterBadge as object}>
+                    <Text style={styles.filterBadgeText as object}>{activeChips.length}</Text>
+                  </View>
+                )}
+              </Pressable>
+            </View>
           )}
-          <View style={styles.contentMain as object}>{content}</View>
         </View>
-      </ScrollView>
+      </View>
+
+      {/* ── Mobile-only active-filters strip ──────────────────────────────────
+          On desktop the rail is always visible and already shows active state,
+          so chips here would only duplicate it. On mobile the filter UI is
+          hidden in a sheet, so this scrollable strip is how active filters and
+          one-tap removal stay visible. */}
+      {!isDesktop && categorySlug && activeChips.length > 0 && (
+        <View style={[styles.activeStrip, { paddingHorizontal: contentPad }] as object}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.activeStripContent as object}
+          >
+            <ActiveFilterChips slug={categorySlug} filters={filters} setFilter={setFilter} />
+            <Pressable
+              onPress={reset}
+              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                [styles.stripClear, hovered && (styles.stripClearHover as object)] as object
+              }
+            >
+              <Text style={styles.stripClearText as object}>Clear all</Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      )}
+
+      {/* ── Content: desktop = rail + grid; mobile = grid only ── */}
+      <View style={[styles.contentRow, { paddingHorizontal: contentPad }] as object}>
+        {isDesktop && categorySlug && (
+          <FilterRail
+            slug={categorySlug}
+            filters={filters}
+            counts={counts}
+            setFilter={setFilter}
+            onReset={reset}
+            hasActive={activeChips.length > 0}
+            activeCount={activeChips.length}
+            searchPlaceholder={`Search ${title.toLowerCase()}…`}
+          />
+        )}
+        <View style={styles.contentMain as object}>
+          {loading ? (
+            <View style={styles.gridWrap}>
+              <View style={gridStyle as object}>
+                {Array.from({ length: 24 }).map((_, i) => (
+                  <SkeletonCard key={i} opacity={skeletonOpacity} />
+                ))}
+              </View>
+            </View>
+          ) : heroes.length === 0 ? (
+            <View style={styles.center}>
+              <Text style={styles.empty}>No heroes found</Text>
+            </View>
+          ) : (
+            <ScrollView style={styles.scroll} onScroll={handleScroll} scrollEventThrottle={200}>
+              <View style={[styles.gridWrap, { paddingBottom: 0 }]}>{grid}</View>
+            </ScrollView>
+          )}
+        </View>
+      </View>
 
       {/* Mobile filter sheet */}
       {categorySlug && (
@@ -688,9 +677,6 @@ const styles = StyleSheet.create({
   contentMain: { flex: 1, minWidth: 0 } as object,
 
   scroll: { flex: 1 },
-  // flexGrow lets short content (and the empty state) fill the viewport so the
-  // page-level scroller still owns the full height and bleeds under the toolbar.
-  scrollContent: { flexGrow: 1 } as object,
   gridWrap: { paddingTop: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
