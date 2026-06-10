@@ -193,6 +193,10 @@ const c = StyleSheet.create({
     paddingRight: 'env(safe-area-inset-right)',
     zIndex: 100,
     justifyContent: 'center',
+    // iOS Safari bug: when body has overflow:visible (needed for toolbar
+    // collapse), position:fixed elements scroll with the page. Forcing a GPU
+    // compositing layer via will-change makes them truly fixed again.
+    willChange: 'transform',
   } as object,
   // At-top scrim: a soft gradient with a long tail, just enough to keep light
   // icons legible over the hero (incl. bright art under the right-side avatar).
