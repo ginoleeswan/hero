@@ -1176,7 +1176,11 @@ export default function CharacterScreen() {
               {/* Family tree */}
               {family.length > 0 ? (
                 <View onLayout={registerAnchor('family')} style={styles.section}>
-                  <FamilyCanvas heroName={data.stats.name} members={family} />
+                  <FamilyCanvas
+                    heroName={data.stats.name}
+                    heroImage={data.stats.image.portraitUrl || data.stats.image.url || null}
+                    members={family}
+                  />
                 </View>
               ) : null}
 

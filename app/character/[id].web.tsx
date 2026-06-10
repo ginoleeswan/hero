@@ -551,6 +551,7 @@ export default function WebCharacterScreen() {
         {/* ── Body ── */}
         <View style={styles.bodyWrap}>
           {isDesktop ? (
+            <>
             <View style={styles.bodyDesktopNew}>
               {/* Main column — continuous editorial sections */}
               <View style={styles.mainCol}>
@@ -697,9 +698,6 @@ export default function WebCharacterScreen() {
                   loading={comicVineLoading}
                   skeletonOpacity={skeletonOpacity}
                 />
-
-                {/* Family tree */}
-                <FamilyCanvas heroName={stats.name} members={family} />
 
                 {/* First appearance */}
                 {comicVineLoading ? (
@@ -967,6 +965,16 @@ export default function WebCharacterScreen() {
                 </View>
               </View>
             </View>
+            {family.length > 0 ? (
+              <View style={styles.familyBand}>
+                <FamilyCanvas
+                  heroName={stats.name}
+                  heroImage={stats.image.portraitUrl || stats.image.url || null}
+                  members={family}
+                />
+              </View>
+            ) : null}
+            </>
           ) : (
             /* ── Mobile: native-style immersive single scroll ── */
             <View>
@@ -1196,6 +1204,17 @@ export default function WebCharacterScreen() {
 
                 {/* Abilities */}
                 <AbilitiesSection powers={details.powers} loading={comicVineLoading} />
+
+                {/* Family tree */}
+                {family.length > 0 ? (
+                  <View style={styles.mFamilyBlock}>
+                    <FamilyCanvas
+                      heroName={stats.name}
+                      heroImage={stats.image.portraitUrl || stats.image.url || null}
+                      members={family}
+                    />
+                  </View>
+                ) : null}
 
                 {/* Enemies & Allies */}
                 {!comicVineLoading &&
@@ -1877,6 +1896,7 @@ const styles = StyleSheet.create({
   // the body re-constrains itself to a centred reading column.
   scrollContent: { width: '100%' },
   bodyWrap: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 0 },
+  familyBand: { paddingHorizontal: 24, paddingBottom: 24, marginTop: -8 },
   center: {
     flex: 1,
     alignItems: 'center',
@@ -2453,6 +2473,7 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   mBlock: { paddingHorizontal: 20, paddingTop: 18 },
+  mFamilyBlock: { paddingHorizontal: 12, paddingTop: 16 },
   mSummary: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,

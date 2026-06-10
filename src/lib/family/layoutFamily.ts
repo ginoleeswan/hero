@@ -110,15 +110,24 @@ export function layoutFamily(graph: FamilyGraph): FamilyLayout {
     edges.push({ fromId: d.parent ? d.parent.data.id : HERO_ID, toId: d.data.id, kind: 'bloodline' });
   });
 
+  // Hero generation: siblings to the left, spouse(s) then cousins/others to the
+  // right. Chain each node to its inner neighbour (not back to the hero) so the
+  // dashed same-generation links never run over the gold marriage tie.
   const siblings = band.filter((mm) => mm.relation === 'sibling');
-  const right = band.filter((mm) => mm.relation !== 'sibling');
+  const spouses = band.filter((mm) => mm.relation === 'spouse');
+  const otherBand = band.filter((mm) => mm.relation !== 'sibling' && mm.relation !== 'spouse');
+  const right = [...spouses, ...otherBand];
   siblings.forEach((mm, i) => {
     nodes.push({ id: mm.id, member: mm, x: -(NODE_W + GAP_X) * (i + 1), y: 0, isHero: false });
-    edges.push({ fromId: HERO_ID, toId: mm.id, kind: 'sibling' });
+    edges.push({ fromId: i === 0 ? HERO_ID : siblings[i - 1].id, toId: mm.id, kind: 'sibling' });
   });
   right.forEach((mm, i) => {
     nodes.push({ id: mm.id, member: mm, x: (NODE_W + GAP_X) * (i + 1), y: 0, isHero: false });
-    edges.push({ fromId: HERO_ID, toId: mm.id, kind: mm.relation === 'spouse' ? 'marriage' : 'sibling' });
+    edges.push({
+      fromId: i === 0 ? HERO_ID : right[i - 1].id,
+      toId: mm.id,
+      kind: mm.relation === 'spouse' ? 'marriage' : 'sibling',
+    });
   });
 
   const minX = Math.min(...nodes.map((n) => n.x));
