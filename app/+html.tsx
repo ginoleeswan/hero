@@ -46,5 +46,10 @@ html, body, #root {
   height: 100%;
   height: 100dvh !important;
 }
-body { background-color: #0b1820; overscroll-behavior-y: none; }
+/* Beige body background is critical for iOS Safari's frosted-glass toolbar.
+   ScrollViewStyleReset forces body{overflow:hidden}, so RN's ScrollViews scroll
+   internally and the Safari toolbar blurs the body background — not the page
+   content. Setting it to beige (the app's dominant content colour) makes the
+   toolbar appear transparent rather than a dark navy bar. */
+body { background-color: #f5ebdc; overscroll-behavior-y: none; }
 `;
