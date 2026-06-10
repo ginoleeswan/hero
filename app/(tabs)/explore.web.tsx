@@ -39,10 +39,13 @@ import {
   getPublisherCounts,
   getFirstAppearanceCovers,
   getEraTimeline,
+  getTopRivalries,
   type PublisherCounts,
   type FirstAppearanceCover,
   type EraBucket,
+  type Rivalry,
 } from '../../src/lib/db/heroes';
+import { GreatestRivalries } from '../../src/components/web/home/GreatestRivalries';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ROW_CARD_HEIGHT = 310;
@@ -1160,6 +1163,7 @@ export default function WebHomeScreen() {
     covers: FirstAppearanceCover[];
     eras: EraBucket[];
     matchup: TodaysMatchup | null;
+    rivalries: Rivalry[];
   }
   const [homeData, setHomeData] = useState<Partial<HomeData>>({});
   const [homeStarted, setHomeStarted] = useState(false); // true once spotlight arrives
@@ -1218,6 +1222,9 @@ export default function WebHomeScreen() {
       .catch(() => {});
     getEraTimeline(8)
       .then(set('eras'))
+      .catch(() => {});
+    getTopRivalries(12)
+      .then(set('rivalries'))
       .catch(() => {});
     getTodaysMatchup()
       .then(set('matchup'))
@@ -1389,6 +1396,7 @@ export default function WebHomeScreen() {
             )}
 
             {/* ── Discover — explore deeper ─────────────────────────────────── */}
+            <GreatestRivalries rivalries={homeData.rivalries ?? []} />
             <EraTimeline eras={homeData.eras ?? []} onPress={handlePress} />
             <CoverGallery covers={homeData.covers ?? []} onPress={handlePress} />
             <HomeRow

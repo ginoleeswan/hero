@@ -691,6 +691,78 @@ export async function getRelatedHeroes(
   return (data ?? []) as RelatedHeroCard[];
 }
 
+export interface HeroRelationship {
+  isEnemy: boolean;
+  isAlly: boolean;
+  isTeammate: boolean;
+  isCurated: boolean;
+  crossUniverse: boolean;
+  familyRelation: string | null;
+}
+
+/** The relationship between two specific heroes, across both graphs (associations
+ *  + family). Null when they have no recorded connection. */
+export async function getRelationship(a: string, b: string): Promise<HeroRelationship | null> {
+  if (!a || !b) return null;
+  const { data, error } = await supabase.rpc('get_relationship', { p_a: a, p_b: b });
+  if (error) {
+    console.warn('[getRelationship] error:', error.message);
+    return null;
+  }
+  const row = data?.[0];
+  if (!row) return null;
+  return {
+    isEnemy: row.is_enemy,
+    isAlly: row.is_ally,
+    isTeammate: row.is_teammate,
+    isCurated: row.is_curated,
+    crossUniverse: row.cross_universe,
+    familyRelation: row.family_relation ?? null,
+  };
+}
+
+export type RelationshipTone = 'rivalry' | 'family' | 'team' | 'ally' | 'dream';
+
+/** A punchy headline for a matchup's relationship — most dramatic relation wins.
+ *  Null when the two heroes have no recorded connection. */
+export function relationshipBadge(
+  r: HeroRelationship | null | undefined,
+): { label: string; tone: RelationshipTone } | null {
+  if (!r) return null;
+  const fam = r.familyRelation;
+  if (fam === 'clone') return { label: 'Clone Clash', tone: 'family' };
+  if (fam === 'sibling') return { label: 'Sibling Rivalry', tone: 'family' };
+  if (fam === 'spouse') return { label: "Lovers' Quarrel", tone: 'family' };
+  if (fam) return { label: 'Family Feud', tone: 'family' };
+  if (r.isEnemy && r.crossUniverse) return { label: 'Dream Match', tone: 'dream' };
+  if (r.isCurated) return { label: 'Classic Rivalry', tone: 'rivalry' };
+  if (r.isEnemy) return { label: 'Sworn Enemies', tone: 'rivalry' };
+  if (r.isTeammate) return { label: 'Teammates', tone: 'team' };
+  if (r.isAlly) return { label: 'Allies', tone: 'ally' };
+  return null;
+}
+
+export interface Rivalry {
+  a: { id: string; name: string; image_url: string | null; portrait_url: string | null };
+  b: { id: string; name: string; image_url: string | null; portrait_url: string | null };
+  crossUniverse: boolean;
+}
+
+/** Iconic rivalries (curated marquee matchups), ranked by combined popularity —
+ *  the explore "Greatest Rivalries" carousel + the rivalries page. */
+export async function getTopRivalries(limit = 12): Promise<Rivalry[]> {
+  const { data, error } = await supabase.rpc('get_top_rivalries', { p_limit: limit });
+  if (error) {
+    console.warn('[getTopRivalries] error:', error.message);
+    return [];
+  }
+  return (data ?? []).map((r) => ({
+    a: { id: r.a_id, name: r.a_name, image_url: r.a_image_url, portrait_url: r.a_portrait_url },
+    b: { id: r.b_id, name: r.b_name, image_url: r.b_image_url, portrait_url: r.b_portrait_url },
+    crossUniverse: r.cross_universe,
+  }));
+}
+
 export async function getHeroesByNames(names: string[]): Promise<RelatedHeroCard[]> {
   const unique = Array.from(new Set(names.map((n) => n.trim()).filter(Boolean)));
   if (unique.length === 0) return [];

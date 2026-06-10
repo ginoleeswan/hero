@@ -20,6 +20,9 @@ import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
 import { VerdictReveal } from '../../../src/components/compare/VerdictReveal';
 import { StatBattleRow } from '../../../src/components/compare/StatBattleRow';
 import { VsBadge } from '../../../src/components/compare/VsBadge';
+import { MatchupBadge } from '../../../src/components/compare/MatchupBadge';
+import { useRelationship } from '../../../src/lib/query/heroQueries';
+import { relationshipBadge } from '../../../src/lib/db/heroes';
 import { getFighterArt, stashFighters } from '../../../src/lib/compareHandoff';
 import { withViewTransition } from '../../../src/lib/viewTransition';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
@@ -200,6 +203,8 @@ export default function WebCompareScreen() {
     hero,
     opponent,
   );
+  const { data: relationship } = useRelationship(hero, opponent);
+  const badge = relationshipBadge(relationship);
 
   const [copied, setCopied] = useState(false);
   // When swapping back to the picker, the *kept* fighter morphs into the pick
@@ -340,6 +345,7 @@ export default function WebCompareScreen() {
               <View style={styles.scorecardVs as object}>
                 <VsBadge size={52} variant="solid" />
               </View>
+              <MatchupBadge badge={badge} style={{ marginBottom: 14 }} />
               {ready && result ? (
                 <>
                   <VerdictReveal verdict={verdict} tone="dark" />
@@ -399,6 +405,7 @@ export default function WebCompareScreen() {
             onViewProfileB={() => router.push(`/character/${opponent}`)}
           />
         </View>
+        <MatchupBadge badge={badge} style={{ marginTop: 14, marginBottom: 2 }} />
         <View style={styles.verdictBlock}>
           <VerdictReveal verdict={verdict} />
         </View>

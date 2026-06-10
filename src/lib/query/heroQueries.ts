@@ -10,6 +10,7 @@ import {
   getHeroById,
   getHeroesByNames,
   getRelatedHeroes,
+  getRelationship,
   getPowerPercentile,
   searchHeroesPage,
   type CategorySlug,
@@ -148,6 +149,16 @@ export function useRelatedHeroes(heroId: string | undefined) {
       ]);
       return { enemies, allies, teammates };
     },
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
+/** The relationship between two heroes (for the matchup badge / verdict context). */
+export function useRelationship(a: string | undefined, b: string | undefined) {
+  return useQuery({
+    queryKey: ['relationship', a ?? '', b ?? ''],
+    enabled: !!a && !!b,
+    queryFn: () => getRelationship(a!, b!),
     staleTime: 1000 * 60 * 30,
   });
 }

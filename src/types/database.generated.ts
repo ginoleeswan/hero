@@ -459,6 +459,33 @@ export type Database = {
           source: string
         }[]
       }
+      get_relationship: {
+        Args: { p_a: string; p_b: string }
+        Returns: {
+          cross_universe: boolean
+          family_relation: string
+          is_ally: boolean
+          is_curated: boolean
+          is_enemy: boolean
+          is_teammate: boolean
+        }[]
+      }
+      get_top_rivalries: {
+        Args: { p_limit?: number }
+        Returns: {
+          a_id: string
+          a_image_url: string
+          a_name: string
+          a_portrait_url: string
+          a_publisher: string
+          b_id: string
+          b_image_url: string
+          b_name: string
+          b_portrait_url: string
+          b_publisher: string
+          cross_universe: boolean
+        }[]
+      }
       heroes_aliases_text: { Args: { arr: string[] }; Returns: string }
       rebuild_hero_relationships: { Args: never; Returns: undefined }
       search_heroes: {
