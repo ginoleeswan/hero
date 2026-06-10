@@ -1,4 +1,4 @@
-import { type ComponentProps, useEffect } from 'react';
+import { type ComponentProps, useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -35,6 +35,23 @@ export function TopBar() {
 
   // Desktop: the search icon opens a command palette; mobile routes to /search.
   const openSearch = () => (isMobile ? router.push('/search') : setSearchFocused(true));
+
+  // Transparent over the page's hero at the top; a frosted bar once content
+  // scrolls up behind it (keeps light icons readable over the beige body).
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    // Capture phase catches scroll from the inner RN ScrollView divs (scroll
+    // events don't bubble). Vertical-scroller guard ignores horizontal carousels.
+    const onScroll = (e: Event) => {
+      const t = e.target as HTMLElement | null;
+      if (!(t instanceof HTMLElement) || t.scrollHeight <= t.clientHeight + 4) return;
+      setScrolled(t.scrollTop > 16);
+    };
+    window.addEventListener('scroll', onScroll, true);
+    return () => window.removeEventListener('scroll', onScroll, true);
+  }, []);
+  // New routes start at the top — reset until the next scroll event.
+  useEffect(() => setScrolled(false), [pathname]);
 
   // ⌘K / Ctrl-K (and "/" when not already typing) open the palette on desktop.
   useEffect(() => {
@@ -93,7 +110,16 @@ export function TopBar() {
 
   return (
     <View style={c.bar as object} pointerEvents="box-none">
-      <View style={c.scrim as object} pointerEvents="none" />
+      {/* At top: a soft gradient for icon legibility over the hero. */}
+      <View style={[c.topScrim, scrolled && (c.layerHidden as object)] as object} pointerEvents="none" />
+      {/* On scroll: progressive frost — stacked blur layers tapering from strong
+          (top, behind the icons) to none (bottom), so it dissolves with no edge. */}
+      <View style={[c.frost, scrolled && (c.layerShown as object)] as object} pointerEvents="none">
+        <View style={[StyleSheet.absoluteFill, c.frostA] as object} />
+        <View style={[StyleSheet.absoluteFill, c.frostB] as object} />
+        <View style={[StyleSheet.absoluteFill, c.frostC] as object} />
+        <View style={[StyleSheet.absoluteFill, c.frostTint] as object} />
+      </View>
       <View style={[c.inner, { paddingHorizontal: isMobile ? 16 : 28 }] as object} pointerEvents="box-none">
         <Pressable onPress={() => router.push('/explore')} style={c.logo}>
           <HeroLogo iconSize={24} fontSize={19} color={COLORS.beige} gap={8} />
@@ -153,18 +179,57 @@ const c = StyleSheet.create({
     zIndex: 100,
     justifyContent: 'center',
   } as object,
-  // Scrim: a gradient layer slightly taller than the bar, fading gradually to
-  // transparent with a long soft tail. No blur, so it never hazes content — it
-  // just darkens for legibility over a dark header, then dissolves.
-  scrim: {
+  // At-top scrim: a soft gradient with a long tail, just enough to keep light
+  // icons legible over the hero (incl. bright art under the right-side avatar).
+  // Navy-over-navy reads as seamless on the dark headers.
+  topScrim: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 32px)`,
+    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 30px)`,
     backgroundImage:
-      'linear-gradient(to bottom, rgba(11,24,32,0.96) 0%, rgba(11,24,32,0.78) 32%, rgba(11,24,32,0.4) 64%, rgba(11,24,32,0.12) 84%, transparent 100%)',
+      'linear-gradient(to bottom, rgba(11,24,32,0.85) 0%, rgba(11,24,32,0.5) 42%, rgba(11,24,32,0.16) 76%, transparent 100%)',
+    opacity: 1,
+    transition: 'opacity 220ms ease',
   } as object,
+  // Scrolled frost: a stack of blur layers, each masked to a band, so the blur
+  // is heaviest at the top (all three stacked, behind the icons) and tapers to
+  // zero by the bottom — a graduated blur with no hard edge where sharp content
+  // would otherwise snap back. A light tint rides on top purely for icon contrast.
+  frost: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 28px)`,
+    opacity: 0,
+    transition: 'opacity 220ms ease',
+  } as object,
+  frostA: {
+    backdropFilter: 'blur(16px) saturate(150%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(150%)',
+    maskImage: 'linear-gradient(to bottom, #000 0%, #000 10%, transparent 44%)',
+    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 10%, transparent 44%)',
+  } as object,
+  frostB: {
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    maskImage: 'linear-gradient(to bottom, #000 0%, #000 28%, transparent 68%)',
+    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 28%, transparent 68%)',
+  } as object,
+  frostC: {
+    backdropFilter: 'blur(3px)',
+    WebkitBackdropFilter: 'blur(3px)',
+    maskImage: 'linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%)',
+    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%)',
+  } as object,
+  frostTint: {
+    backgroundImage:
+      'linear-gradient(to bottom, rgba(11,24,32,0.5) 0%, rgba(11,24,32,0.26) 52%, transparent 86%)',
+  } as object,
+  layerHidden: { opacity: 0 } as object,
+  layerShown: { opacity: 1 } as object,
   inner: {
     flexDirection: 'row',
     alignItems: 'center',
