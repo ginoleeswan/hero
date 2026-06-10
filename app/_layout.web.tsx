@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Nunito_400Regular, Nunito_700Bold, Nunito_900Black } from '@expo-google-fonts/nunito';
 import { Righteous_400Regular } from '@expo-google-fonts/righteous';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuth } from '../src/hooks/useAuth';
 import { LogoLoader } from '../src/components/ui/LogoLoader';
 import { TopBar, TOPBAR_HEIGHT } from '../src/components/web/TopBar';
@@ -98,10 +99,12 @@ export default function WebRootLayout() {
   if (!fontsLoaded && !fontError) return <LogoLoader />;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <StatusBar style="dark" />
-      <WebAuthGate />
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <StatusBar style="dark" />
+        <WebAuthGate />
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }
 

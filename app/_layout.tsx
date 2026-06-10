@@ -1,6 +1,7 @@
 import 'react-native-url-polyfill/auto';
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -73,10 +74,12 @@ export default function RootLayout() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <StatusBar style="dark" />
-      <AnalyticsProvider />
-      <AuthGate />
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <StatusBar style="dark" />
+        <AnalyticsProvider />
+        <AuthGate />
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }
