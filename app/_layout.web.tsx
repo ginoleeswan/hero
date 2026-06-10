@@ -9,6 +9,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { useAuth } from '../src/hooks/useAuth';
 import { LogoLoader } from '../src/components/ui/LogoLoader';
 import { TopBar, TOPBAR_HEIGHT } from '../src/components/web/TopBar';
+import { BodyPortal } from '../src/components/web/BodyPortal';
 import { SearchProvider } from '../src/contexts/SearchContext';
 import { queryClient } from '../src/lib/query/queryClient';
 import { COLORS } from '../src/constants/colors';
@@ -51,7 +52,16 @@ function WebAuthGate() {
   return (
     <SearchProvider>
       <View style={styles.root}>
-        {showNav && <TopBar />}
+        {/* The floating header and status-bar cover are `position: fixed`. They
+            live in a body-level portal — not inside this View — so no navigator
+            wrapper (react-native-screens applies transform / will-change to its
+            screen containers) can re-root their fixed positioning and make them
+            scroll with the page. See BodyPortal. */}
+        {showNav && (
+          <BodyPortal>
+            <TopBar />
+          </BodyPortal>
+        )}
         <View
           style={
             [
@@ -69,7 +79,9 @@ function WebAuthGate() {
             height of the iOS status-bar inset, pinned above everything. Content
             scrolls edge-to-edge behind it; the status-bar zone reads as one clean
             frosted strip instead of a bare band. env() → 0 where no safe area. */}
-        <View pointerEvents="none" style={styles.statusBarCover} />
+        <BodyPortal>
+          <View pointerEvents="none" style={styles.statusBarCover} />
+        </BodyPortal>
       </View>
     </SearchProvider>
   );

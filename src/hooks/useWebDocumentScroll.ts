@@ -23,6 +23,17 @@ import { COLORS } from '../constants/colors';
  * keep their existing behaviour. Pair this with rendering the screen's content in
  * plain `<View>`s (no outer `<ScrollView>`).
  */
+// The document-scroll mode is a global on `<body>`, but during navigation expo
+// router keeps the outgoing screen mounted while the incoming one mounts — so two
+// screens run this hook at once. Restoring each instance's captured "previous"
+// value on unmount then races: the outgoing screen's cleanup fires *after* the
+// incoming screen's setup and reverts `overflow` back to the reset's `hidden`,
+// stranding every later screen (its content — and the fixed header — pinned to a
+// broken scroll box). A shared count fixes the order: only the *last* doc-scroll
+// screen to unmount tears the mode down, back to the layout's known baseline.
+const BASELINE_BG = '#0b1820'; // deep navy — what app/_layout.web.tsx paints
+let activeCount = 0;
+
 export function useWebDocumentScroll(background: string = COLORS.beige) {
   const pathname = usePathname();
 
@@ -30,15 +41,17 @@ export function useWebDocumentScroll(background: string = COLORS.beige) {
     if (typeof document === 'undefined') return undefined;
     const { body } = document;
     const html = document.documentElement;
-    const prevBodyBg = body.style.backgroundColor;
-    const prevHtmlBg = html.style.backgroundColor;
+    activeCount += 1;
     body.style.setProperty('overflow', 'visible', 'important');
     body.style.backgroundColor = background;
     html.style.backgroundColor = background;
     return () => {
-      body.style.removeProperty('overflow');
-      body.style.backgroundColor = prevBodyBg;
-      html.style.backgroundColor = prevHtmlBg;
+      activeCount -= 1;
+      if (activeCount === 0) {
+        body.style.removeProperty('overflow');
+        body.style.backgroundColor = BASELINE_BG;
+        html.style.backgroundColor = BASELINE_BG;
+      }
     };
   }, [background]);
 
