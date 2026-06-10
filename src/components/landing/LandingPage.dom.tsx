@@ -370,20 +370,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
   const router = useRouter();
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        zIndex: 999,
-        backgroundColor: '#0b1820',
-        color: '#f5ebdc',
-      }}
-    >
+    <div>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
       <nav>
