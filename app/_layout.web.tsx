@@ -34,21 +34,16 @@ function WebAuthGate() {
     }
   }, [user, loading, segs, inAuthGroup, router]);
 
-  // Native document scroll is the default for every content route: content bleeds
-  // edge-to-edge under the iOS Safari toolbar and the toolbar can collapse (it
-  // only minimizes on *document* scroll, not on a nested RNW ScrollView). Auth
-  // screens stay app-shell — full-height forms that keep Expo's body{overflow:
-  // hidden}. Owning this here means a new content screen gets correct scrolling
-  // without remembering to opt in; screens only declare their canvas colour via
-  // useWebCanvas.
+  // Native document scroll for every route: content bleeds edge-to-edge under the
+  // iOS Safari toolbar and the toolbar can collapse (it only minimizes on
+  // *document* scroll, not on a nested RNW ScrollView), and short screens can
+  // still scroll when the toolbar/keyboard eats vertical space. Owning this here
+  // means a new screen gets correct scrolling without remembering to opt in;
+  // screens only declare their canvas colour via useWebCanvas.
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    if (inAuthGroup) {
-      document.body.style.removeProperty('overflow');
-    } else {
-      document.body.style.setProperty('overflow', 'visible', 'important');
-    }
-  }, [inAuthGroup]);
+    document.body.style.setProperty('overflow', 'visible', 'important');
+  }, []);
 
   // Document scroll keeps the window offset across navigation (unlike a per-screen
   // ScrollView that always mounts at the top), so reset to the top on every route
