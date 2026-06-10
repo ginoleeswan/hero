@@ -28,7 +28,7 @@ import {
   type RelatedHeroCard,
 } from '../../src/lib/db/heroes';
 import type { FamilyMember } from '../../src/lib/family/types';
-import { FamilyTree } from '../../src/components/family/FamilyTree';
+import { FamilyCanvas } from '../../src/components/family/FamilyCanvas';
 import { useHeroRow, useHeroPercentile, useHeroesByNames } from '../../src/lib/query/heroQueries';
 import {
   isFavourited,
@@ -1176,7 +1176,7 @@ export default function CharacterScreen() {
               {/* Family tree */}
               {family.length > 0 ? (
                 <View onLayout={registerAnchor('family')} style={styles.section}>
-                  <FamilyTree heroName={data.stats.name} members={family} />
+                  <FamilyCanvas heroName={data.stats.name} members={family} />
                 </View>
               ) : null}
 
