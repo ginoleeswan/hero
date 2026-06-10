@@ -379,11 +379,12 @@ export default function WebCompareScreen() {
     );
   }
 
-  /* Mobile web — native stack: fused clash card + verdict over a beige sheet. */
+  /* Mobile web — native stack: fused clash card + verdict over a beige sheet.
+     Back is omitted (TopBar + browser chrome handle navigation); Share moves to
+     the bottom of the stats sheet so it reads as a post-review CTA. */
   return (
     <View style={[styles.scroll, styles.contentOuter] as object}>
-      <View style={styles.mobileNavyTop}>
-        <View style={styles.controls}>{controlButtons}</View>
+      <View style={styles.mobileNavyTop as object}>
         <View style={[styles.mobileCard, { width: mobileCardW }]}>
           <ClashPortraits
             imageA={imageA ?? { uri: '' }}
@@ -410,6 +411,16 @@ export default function WebCompareScreen() {
             <StatBattleRow key={stat.key} stat={stat} />
           ))}
         </View>
+        <Pressable
+          onPress={handleShare}
+          accessibilityLabel="Share matchup"
+          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+            [styles.shareRow, hovered && (styles.shareRowHover as object)] as object
+          }
+        >
+          <Ionicons name="share-outline" size={16} color={COLORS.navy} />
+          <Text style={styles.shareRowText}>{copied ? 'Link copied!' : 'Share matchup'}</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -638,9 +649,9 @@ const styles = StyleSheet.create({
   mobileNavyTop: {
     backgroundColor: COLORS.navy,
     alignItems: 'center',
-    paddingTop: TOPBAR_HEIGHT + 12,
+    paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 16px)`,
     paddingBottom: 30,
-  },
+  } as object,
   mobileCard: {
     height: 286,
     borderRadius: 22,
@@ -667,5 +678,25 @@ const styles = StyleSheet.create({
   mobileStats: {
     gap: 18,
     paddingHorizontal: 20,
+  },
+
+  // Share CTA — sits below the stats as a post-review action
+  shareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 28,
+    marginHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: 'rgba(11,24,32,0.07)',
+    cursor: 'pointer',
+  } as object,
+  shareRowHover: { backgroundColor: 'rgba(11,24,32,0.13)' } as object,
+  shareRowText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: COLORS.navy,
   },
 });
