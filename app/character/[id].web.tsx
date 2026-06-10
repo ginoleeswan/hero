@@ -7,7 +7,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery } from '../../src/lib/api';
 import { getHeroById, getHeroFamily, heroRowToCharacterData } from '../../src/lib/db/heroes';
 import type { FamilyMember } from '../../src/lib/family/types';
-import { FamilyTree } from '../../src/components/family/FamilyTree.web';
+import { FamilyCanvas } from '../../src/components/family/FamilyCanvas.web';
 import { supabase } from '../../src/lib/supabase';
 import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
 import { getPowerIcon, groupPowers } from '../../src/constants/powerIcons';
@@ -699,7 +699,7 @@ export default function WebCharacterScreen() {
                 />
 
                 {/* Family tree */}
-                <FamilyTree heroName={stats.name} members={family} />
+                <FamilyCanvas heroName={stats.name} members={family} />
 
                 {/* First appearance */}
                 {comicVineLoading ? (
