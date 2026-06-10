@@ -43,7 +43,13 @@ export function TopBar() {
     // Capture phase catches scroll from the inner RN ScrollView divs (scroll
     // events don't bubble). Vertical-scroller guard ignores horizontal carousels.
     const onScroll = (e: Event) => {
-      const t = e.target as HTMLElement | null;
+      const t = e.target;
+      // Screens using native document scroll (useWebDocumentScroll) fire with
+      // the document as target — read window.scrollY for those.
+      if (t === document || t === document.documentElement || t === document.body) {
+        setScrolled(window.scrollY > 16);
+        return;
+      }
       if (!(t instanceof HTMLElement) || t.scrollHeight <= t.clientHeight + 4) return;
       setScrolled(t.scrollTop > 16);
     };

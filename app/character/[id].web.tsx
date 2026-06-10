@@ -1,13 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  Animated,
-  useWindowDimensions,
-} from 'react-native';
+import { View, Text, Pressable, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -20,6 +12,7 @@ import { getPowerIcon, groupPowers } from '../../src/constants/powerIcons';
 import { useAuth } from '../../src/hooks/useAuth';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { COLORS } from '../../src/constants/colors';
+import { useWebDocumentScroll } from '../../src/hooks/useWebDocumentScroll';
 import { StatBar } from '../../src/components/web/StatBar';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
@@ -130,6 +123,10 @@ export default function WebCharacterScreen() {
   const { width, height: winHeight } = useWindowDimensions();
   const mHeroHeight = Math.round(winHeight * 0.62);
   const isDesktop = width >= 700;
+
+  // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
+  // Before the skeleton early-return so it applies in both states.
+  useWebDocumentScroll(COLORS.beige);
 
   const skeletonOpacity = useSkeletonAnim();
   const [data, setData] = useState<CharacterData | null>(null);
@@ -398,7 +395,7 @@ export default function WebCharacterScreen() {
 
   return (
     <>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+      <View style={[styles.scroll, styles.scrollContent] as object}>
         {/* ── Desktop: cinematic identity stage. Mobile uses the native-style
             immersive portrait header inside the body branch below. ── */}
         {isDesktop ? (
@@ -1281,7 +1278,7 @@ export default function WebCharacterScreen() {
             </View>
           )}
         </View>
-      </ScrollView>
+      </View>
       {showIssueModal && data?.firstIssue ? (
         <FirstIssueModal firstIssue={data.firstIssue} onClose={() => setShowIssueModal(false)} />
       ) : null}
@@ -1471,7 +1468,7 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
   );
 
   return (
-    <ScrollView style={sk.scroll} contentContainerStyle={sk.scrollContent}>
+    <View style={[sk.scroll, sk.scrollContent] as object}>
       {/* Desktop: identity stage. Mobile uses an immersive portrait skeleton. */}
       {isDesktop ? (
         <View
@@ -1675,7 +1672,7 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
           </View>
         </View>
       )}
-    </ScrollView>
+    </View>
   );
 }
 

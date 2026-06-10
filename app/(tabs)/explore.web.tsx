@@ -31,6 +31,7 @@ import { EraTimeline } from '../../src/components/web/home/EraTimeline';
 import { TodaysMatchup as TodaysMatchupCard } from '../../src/components/web/home/TodaysMatchup';
 import { getTodaysMatchup, type TodaysMatchup } from '../../src/lib/matchup';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
+import { useWebDocumentScroll } from '../../src/hooks/useWebDocumentScroll';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { StatPods } from '../../src/components/web/home/StatPods';
 import {
@@ -1131,6 +1132,10 @@ export default function WebHomeScreen() {
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
 
+  // Document scroll so content bleeds edge-to-edge under the iOS Safari toolbar.
+  // Explore opens and closes on the deep-navy stage/footer, so the canvas is navy.
+  useWebDocumentScroll(COLORS.deepNavy);
+
   // 1. MATCH THE ACCORDION_SCALES EXACTLY
   const optimalPoolSize = width >= 1280 ? 8 : width >= 900 ? 6 : 3;
 
@@ -1255,10 +1260,7 @@ export default function WebHomeScreen() {
       {!homeStarted ? (
         <WebHomeSkeleton />
       ) : (
-        <ScrollView
-          style={[styles.scroll, styles.scrollDark] as object}
-          contentContainerStyle={styles.discoverContent}
-        >
+        <View style={[styles.scroll, styles.scrollDark, styles.discoverContent] as object}>
           {/* ── Home content — always rendered. On desktop, committed searches
                go to the dedicated /search route; on mobile-web the inline
                results below still appear. ───────────────────────────────────── */}
@@ -1427,7 +1429,7 @@ export default function WebHomeScreen() {
             heroCount={totalHeroCount}
             onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
           />
-        </ScrollView>
+        </View>
       )}
     </View>
   );
