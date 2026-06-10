@@ -44,6 +44,108 @@ export type Database = {
         }
         Relationships: []
       }
+      hero_relationships: {
+        Row: {
+          cross_universe: boolean
+          hero_id: string
+          kind: string
+          rank: number | null
+          related_id: string
+          source: string
+        }
+        Insert: {
+          cross_universe?: boolean
+          hero_id: string
+          kind: string
+          rank?: number | null
+          related_id: string
+          source?: string
+        }
+        Update: {
+          cross_universe?: boolean
+          hero_id?: string
+          kind?: string
+          rank?: number | null
+          related_id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hero_relationships_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hero_relationships_related_id_fkey"
+            columns: ["related_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hero_relatives: {
+        Row: {
+          alias: string | null
+          created_at: string
+          hero_id: string
+          id: string
+          modifiers: string[]
+          name: string
+          position: number
+          related_hero_id: string | null
+          relation: Database["public"]["Enums"]["relation_kind"]
+          role: string
+          status: string | null
+          tier: number
+        }
+        Insert: {
+          alias?: string | null
+          created_at?: string
+          hero_id: string
+          id?: string
+          modifiers?: string[]
+          name: string
+          position?: number
+          related_hero_id?: string | null
+          relation: Database["public"]["Enums"]["relation_kind"]
+          role: string
+          status?: string | null
+          tier: number
+        }
+        Update: {
+          alias?: string | null
+          created_at?: string
+          hero_id?: string
+          id?: string
+          modifiers?: string[]
+          name?: string
+          position?: number
+          related_hero_id?: string | null
+          relation?: Database["public"]["Enums"]["relation_kind"]
+          role?: string
+          status?: string | null
+          tier?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hero_relatives_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hero_relatives_related_hero_id_fkey"
+            columns: ["related_hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       heroes: {
         Row: {
           ai_stats_status: string | null
@@ -316,17 +418,6 @@ export type Database = {
         Args: { p_id: string; p_powers: string[]; p_summary: string }
         Returns: undefined
       }
-      get_era_timeline: {
-        Args: { per_era?: number }
-        Returns: {
-          era: string
-          hero_id: string
-          image_url: string
-          name: string
-          portrait_url: string
-          year: number
-        }[]
-      }
       category_facet_counts: {
         Args: {
           p_alignment?: string
@@ -338,7 +429,38 @@ export type Database = {
         }
         Returns: Json
       }
+      get_era_timeline: {
+        Args: { per_era?: number }
+        Returns: {
+          era: string
+          hero_id: string
+          image_url: string
+          name: string
+          portrait_url: string
+          year: number
+        }[]
+      }
+      get_related_heroes: {
+        Args: {
+          p_hero_id: string
+          p_kind?: string
+          p_limit?: number
+          p_same_universe?: boolean
+        }
+        Returns: {
+          alignment: string
+          id: string
+          image_md_url: string
+          image_url: string
+          name: string
+          portrait_url: string
+          publisher: string
+          rank: number
+          source: string
+        }[]
+      }
       heroes_aliases_text: { Args: { arr: string[] }; Returns: string }
+      rebuild_hero_relationships: { Args: never; Returns: undefined }
       search_heroes: {
         Args: {
           alignment_filter?: string
@@ -363,7 +485,20 @@ export type Database = {
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
-      [_ in never]: never
+      relation_kind:
+        | "parent"
+        | "child"
+        | "sibling"
+        | "spouse"
+        | "grandparent"
+        | "grandchild"
+        | "aunt_uncle"
+        | "niece_nephew"
+        | "cousin"
+        | "in_law"
+        | "ancestor"
+        | "clone"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -490,6 +625,22 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      relation_kind: [
+        "parent",
+        "child",
+        "sibling",
+        "spouse",
+        "grandparent",
+        "grandchild",
+        "aunt_uncle",
+        "niece_nephew",
+        "cousin",
+        "in_law",
+        "ancestor",
+        "clone",
+        "other",
+      ],
+    },
   },
 } as const

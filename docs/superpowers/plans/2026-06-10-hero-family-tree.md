@@ -55,7 +55,7 @@ create type relation_kind as enum (
 
 create table hero_relatives (
   id              uuid primary key default gen_random_uuid(),
-  hero_id         uuid not null references heroes(id) on delete cascade,
+  hero_id         text not null references heroes(id) on delete cascade, -- heroes.id is text
   name            text not null,
   alias           text,
   role            text not null,
@@ -63,7 +63,7 @@ create table hero_relatives (
   tier            smallint not null,
   modifiers       text[] not null default '{}',
   status          text,
-  related_hero_id uuid references heroes(id) on delete set null,
+  related_hero_id text references heroes(id) on delete set null,
   position        int not null default 0,
   created_at      timestamptz not null default now()
 );
