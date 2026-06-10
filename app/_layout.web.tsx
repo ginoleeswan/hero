@@ -101,6 +101,19 @@ export default function WebRootLayout() {
     if (typeof document === 'undefined') return;
     document.documentElement.style.backgroundColor = '#0b1820';
     document.body.style.backgroundColor = '#0b1820';
+    // Block horizontal overflow so no element can widen the document beyond the
+    // viewport — without this, a single overflowing element shifts all content
+    // left and reveals the body canvas behind the root on the trailing edge.
+    document.documentElement.style.overflowX = 'hidden';
+    document.body.style.overflowX = 'hidden';
+    // iOS Safari 16+ ignores maximum-scale=1 in the viewport meta tag and still
+    // auto-zooms when a focused input has font-size < 16 px.  Enforce the 16 px
+    // floor globally so every text field — search bars, auth forms, filters — is
+    // immune to the zoom, while still letting larger inherited sizes win.
+    const noZoomStyle = document.createElement('style');
+    noZoomStyle.textContent = 'input,textarea,select{font-size:max(16px,1em)!important}';
+    document.head.appendChild(noZoomStyle);
+    return () => noZoomStyle.remove();
   }, []);
 
   const [fontsLoaded, fontError] = useFonts({

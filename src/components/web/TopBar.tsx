@@ -1,4 +1,5 @@
-import { type ComponentProps, useEffect, useState } from 'react';
+import React, { type ComponentProps, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -114,7 +115,12 @@ export function TopBar() {
     );
   };
 
-  return (
+  // Render directly into document.body via a portal so `position: fixed` is
+  // always viewport-relative — bypasses any CSS transform or contain property
+  // that ancestor React Native / React Navigation containers might apply, which
+  // would otherwise make `position: fixed` relative to that container instead
+  // of the viewport and cause the bar to scroll with the page content.
+  const bar = (
     <View style={c.bar as object} pointerEvents="box-none">
       {/* At top: a soft gradient for icon legibility over the hero. */}
       <View style={[c.topScrim, scrolled && (c.layerHidden as object)] as object} pointerEvents="none" />
@@ -167,6 +173,9 @@ export function TopBar() {
       {!isMobile && <SearchPalette />}
     </View>
   );
+
+  if (typeof document === 'undefined') return bar;
+  return createPortal(bar, document.body) as unknown as React.ReactElement;
 }
 
 const c = StyleSheet.create({
