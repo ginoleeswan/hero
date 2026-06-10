@@ -22,7 +22,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import * as Haptics from 'expo-haptics';
 import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery } from '../../src/lib/api';
-import { heroRowToCharacterData, type RelatedHeroCard } from '../../src/lib/db/heroes';
+import {
+  heroRowToCharacterData,
+  getHeroFamily,
+  type RelatedHeroCard,
+} from '../../src/lib/db/heroes';
+import type { FamilyMember } from '../../src/lib/family/types';
+import { FamilyTree } from '../../src/components/family/FamilyTree';
 import { useHeroRow, useHeroPercentile, useHeroesByNames } from '../../src/lib/query/heroQueries';
 import {
   isFavourited,
@@ -197,30 +203,6 @@ function AffiliationChips({ value }: { value: string | null | undefined }) {
   );
 }
 
-function RelativesList({ value }: { value: string | null | undefined }) {
-  if (!value || value === '-' || value === 'null' || value === '') return null;
-  const entries = value
-    .split(/[,;]/)
-    .map((s) => s.trim())
-    .filter((s) => s && s !== '-' && s !== 'null');
-  if (entries.length === 0) return null;
-  if (entries.length === 1) {
-    return <InfoRow label="Relatives" value={entries[0]} />;
-  }
-  return (
-    <View style={styles.infoRow}>
-      <Text style={[styles.infoLabel, { alignSelf: 'flex-start', paddingTop: 1 }]}>Relatives:</Text>
-      <View style={{ flex: 1 }}>
-        {entries.map((entry, i) => (
-          <Text key={i} style={[styles.infoValue, i < entries.length - 1 && { marginBottom: 5 }]}>
-            {entry}
-          </Text>
-        ))}
-      </View>
-    </View>
-  );
-}
-
 // At-a-glance numbers under the name — gives the page a punchy "stat block" feel
 // before the reader scrolls. Renders only the metrics that actually exist.
 function VitalsStrip({
@@ -277,8 +259,7 @@ function hasDossierData(data: CharacterData, includeFirstAppearance: boolean): b
   const hasConnections =
     valid(work.occupation) ||
     valid(work.base) ||
-    valid(affiliation) ||
-    valid(connections.relatives);
+    valid(affiliation);
   return hasProfile || hasAppearance || hasConnections;
 }
 
@@ -315,8 +296,7 @@ function Dossier({
   const hasConnections =
     valid(work.occupation) ||
     valid(work.base) ||
-    valid(affiliation) ||
-    valid(connections.relatives);
+    valid(affiliation);
 
   if (!hasProfile && !hasAppearance && !hasConnections) return null;
 
@@ -386,7 +366,6 @@ function Dossier({
               <InfoRow label="Occupation" value={work.occupation} />
               <InfoRow label="Base" value={work.base} />
               <AffiliationChips value={affiliation} />
-              <RelativesList value={connections.relatives} />
             </>
           ) : null}
         </View>
@@ -411,6 +390,7 @@ export default function CharacterScreen() {
   const { user } = useAuth();
   useRecordView(user?.id, id);
   const [data, setData] = useState<CharacterData | null>(null);
+  const [family, setFamily] = useState<FamilyMember[]>([]);
   const [comicVineLoading, setComicVineLoading] = useState(true);
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -565,9 +545,10 @@ export default function CharacterScreen() {
     if ((issueCovers === null && galleryLoading) || (issueCovers && issueCovers.length > 0))
       s.push({ key: 'print', label: 'In Print' });
     if (hasFirstVisual) s.push({ key: 'first', label: 'Debut' });
+    if (family.length > 0) s.push({ key: 'family', label: 'Family' });
     if (hasDossierData(data, !hasFirstVisual)) s.push({ key: 'dossier', label: 'Dossier' });
     return s;
-  }, [data, comicVineLoading, issueCovers, galleryLoading, hasFirstVisual]);
+  }, [data, comicVineLoading, issueCovers, galleryLoading, hasFirstVisual, family]);
   sectionOrder.current = presentSections.map((s) => s.key);
 
   // Resolve enemy + ally names → hero rows (one query) so they render as
@@ -583,6 +564,14 @@ export default function CharacterScreen() {
     for (const h of relatedHeroes ?? []) m.set(h.name, h);
     return m;
   }, [relatedHeroes]);
+
+  useEffect(() => {
+    setFamily([]);
+    if (!id) return;
+    getHeroFamily(id)
+      .then(setFamily)
+      .catch(() => setFamily([]));
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -1181,6 +1170,13 @@ export default function CharacterScreen() {
                       </View>
                     </TouchableOpacity>
                   </Section>
+                </View>
+              ) : null}
+
+              {/* Family tree */}
+              {family.length > 0 ? (
+                <View onLayout={registerAnchor('family')} style={styles.section}>
+                  <FamilyTree heroName={data.stats.name} members={family} />
                 </View>
               ) : null}
 
