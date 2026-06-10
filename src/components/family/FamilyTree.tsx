@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+import { Fragment, useState, type ReactElement } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, type LayoutRectangle } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -133,7 +133,7 @@ export function FamilyTree({
     const overflow = collapsible && !isOpen && nodes.length > COLLAPSE_AFTER;
     const shown = overflow ? nodes.slice(0, COLLAPSE_AFTER) : nodes;
     return (
-      <View key={key} style={styles.tierBlock}>
+      <Fragment key={key}>
         {label ? <Text style={styles.tierLabel}>{label}</Text> : null}
         <View style={styles.tierRow} onLayout={setRow(key)}>
           {shown.map((gn) => (
@@ -150,7 +150,7 @@ export function FamilyTree({
             </TouchableOpacity>
           ) : null}
         </View>
-      </View>
+      </Fragment>
     );
   };
 
@@ -168,26 +168,24 @@ export function FamilyTree({
 
   function heroRow(): ReactElement {
     return (
-      <View key="hero" style={styles.tierBlock}>
-        <View style={styles.anchorRow} onLayout={setRow('hero')}>
-          <View onLayout={setNode(HERO_KEY, 'hero')} style={styles.heroAnchor}>
-            <View style={styles.heroAvatar}>
-              <Text style={styles.heroInitial}>{initial(heroName)}</Text>
-            </View>
-            <View>
-              <Text style={styles.heroName} numberOfLines={1}>
-                {heroName}
-              </Text>
-              <Text style={styles.heroTag}>This hero</Text>
-            </View>
+      <View key="hero" style={styles.anchorRow} onLayout={setRow('hero')}>
+        <View onLayout={setNode(HERO_KEY, 'hero')} style={styles.heroAnchor}>
+          <View style={styles.heroAvatar}>
+            <Text style={styles.heroInitial}>{initial(heroName)}</Text>
           </View>
-          {graph.spouse ? (
-            <>
-              <View style={styles.spouseTie} />
-              <MemberNode member={graph.spouse} />
-            </>
-          ) : null}
+          <View>
+            <Text style={styles.heroName} numberOfLines={1}>
+              {heroName}
+            </Text>
+            <Text style={styles.heroTag}>This hero</Text>
+          </View>
         </View>
+        {graph.spouse ? (
+          <>
+            <View style={styles.spouseTie} />
+            <MemberNode member={graph.spouse} />
+          </>
+        ) : null}
       </View>
     );
   }
