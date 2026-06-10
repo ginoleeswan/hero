@@ -1,5 +1,4 @@
 {
-  "installCommand": "corepack enable && yarn install",
   "buildCommand": "yarn expo export -p web",
   "outputDirectory": "dist",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
