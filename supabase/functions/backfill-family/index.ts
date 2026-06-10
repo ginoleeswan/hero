@@ -9,7 +9,7 @@
 //   { limit }          → batch size (1–100, default 60)
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { parseRelatives, classifyRole } from '../_shared/family.ts';
+import { parseRelatives, classifyRole, resolveKinship } from '../_shared/family.ts';
 
 type SB = ReturnType<typeof createClient>;
 
@@ -90,13 +90,14 @@ serve(async (req: Request) => {
         supabase,
         parsed.flatMap((p) => [p.name, ...(p.alias ? [p.alias] : [])]),
       );
-      const rows = parsed.map((p) => {
+      const built = parsed.map((p) => {
         const c = classifyRole(p.role);
         const linked =
           roster.get(p.name.toLowerCase()) ??
           (p.alias ? roster.get(p.alias.toLowerCase()) : undefined) ??
           null;
         return {
+          id: crypto.randomUUID(),
           hero_id: h.id,
           name: p.name,
           alias: p.alias,
@@ -109,6 +110,14 @@ serve(async (req: Request) => {
           position: p.position,
         };
       });
+      const kin = resolveKinship(
+        built.map((b) => ({ id: b.id, relation: b.relation, role: b.role, modifiers: b.modifiers })),
+      );
+      const rows = built.map((b) => ({
+        ...b,
+        tree_parent_id: kin.get(b.id)?.treeParentId ?? null,
+        branch_side: kin.get(b.id)?.branchSide ?? null,
+      }));
       await supabase.from('hero_relatives').delete().eq('hero_id', h.id);
       const { error: insErr } = await supabase.from('hero_relatives').insert(rows);
       if (insErr) return json({ error: insErr.message, hero: h.name }, 500);
