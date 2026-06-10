@@ -13,7 +13,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery } from '../../src/lib/api';
-import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
+import { getHeroById, getHeroFamily, heroRowToCharacterData } from '../../src/lib/db/heroes';
+import type { FamilyMember } from '../../src/lib/family/types';
+import { FamilyTree } from '../../src/components/family/FamilyTree.web';
 import { supabase } from '../../src/lib/supabase';
 import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
 import { getPowerIcon, groupPowers } from '../../src/constants/powerIcons';
@@ -24,7 +26,7 @@ import { StatBar } from '../../src/components/web/StatBar';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
 import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
-import { useHeroPercentile, useHeroesByNames } from '../../src/lib/query/heroQueries';
+import { useHeroPercentile, useRelatedHeroes } from '../../src/lib/query/heroQueries';
 import type { RelatedHeroCard } from '../../src/lib/db/heroes';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
@@ -148,6 +150,15 @@ export default function WebCharacterScreen() {
   // Measured desktop stage height — lets the overlapping portrait anchor to a
   // constant top position regardless of how much identity content the stage has.
   const [stageHeight, setStageHeight] = useState(0);
+  const [family, setFamily] = useState<FamilyMember[]>([]);
+
+  useEffect(() => {
+    setFamily([]);
+    if (!id) return;
+    getHeroFamily(id)
+      .then(setFamily)
+      .catch(() => setFamily([]));
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -317,16 +328,26 @@ export default function WebCharacterScreen() {
   }, [data]);
   const { data: percentile } = useHeroPercentile(powerTotal || null);
 
-  const relatedNames = useMemo(
-    () => (data ? [...(data.details.enemies ?? []), ...(data.details.friends ?? [])] : []),
-    [data],
-  );
-  const { data: relatedHeroes } = useHeroesByNames(relatedNames);
+  // Enemies / allies / teammates from the relationship graph (same-universe,
+  // popularity-ranked). The map drives the enemy/ally strips; teammates render
+  // straight from the graph (there's no ComicVine "teammates" name list).
+  const { data: related } = useRelatedHeroes(id);
   const relatedHeroMap = useMemo(() => {
     const m = new Map<string, RelatedHeroCard>();
-    for (const h of relatedHeroes ?? []) m.set(h.name, h);
+    for (const h of [
+      ...(related?.enemies ?? []),
+      ...(related?.allies ?? []),
+      ...(related?.teammates ?? []),
+    ]) {
+      m.set(h.name, h);
+    }
     return m;
-  }, [relatedHeroes]);
+  }, [related]);
+  // Names in the graph's popularity-ranked order so the strips lead with the
+  // recognisable foes/allies/teammates (every one resolves to a card).
+  const enemyNames = useMemo(() => (related?.enemies ?? []).map((h) => h.name), [related]);
+  const allyNames = useMemo(() => (related?.allies ?? []).map((h) => h.name), [related]);
+  const teammateNames = useMemo(() => (related?.teammates ?? []).map((h) => h.name), [related]);
 
   if (error) {
     return (
@@ -680,6 +701,9 @@ export default function WebCharacterScreen() {
                   skeletonOpacity={skeletonOpacity}
                 />
 
+                {/* Family tree */}
+                <FamilyTree heroName={stats.name} members={family} />
+
                 {/* First appearance */}
                 {comicVineLoading ? (
                   <View style={styles.card}>
@@ -783,16 +807,16 @@ export default function WebCharacterScreen() {
                       ))}
                     </View>
                   </View>
-                ) : details.enemies?.length || details.friends?.length ? (
+                ) : enemyNames.length || allyNames.length || teammateNames.length ? (
                   <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Enemies &amp; Allies</Text>
+                    <Text style={styles.cardTitle}>Enemies, Allies &amp; Teams</Text>
                     <View style={styles.cardDivider} />
                     {/* Break out of the card's 20px padding so the strips align */}
                     <View style={{ marginHorizontal: -20 }}>
-                      {details.enemies?.length ? (
+                      {enemyNames.length ? (
                         <RelatedHeroStrip
                           label="Enemies"
-                          names={details.enemies}
+                          names={enemyNames}
                           heroMap={relatedHeroMap}
                           kind="enemy"
                           onPressHero={(h) =>
@@ -800,12 +824,23 @@ export default function WebCharacterScreen() {
                           }
                         />
                       ) : null}
-                      {details.friends?.length ? (
+                      {allyNames.length ? (
                         <RelatedHeroStrip
                           label="Allies"
-                          names={details.friends}
+                          names={allyNames}
                           heroMap={relatedHeroMap}
                           kind="ally"
+                          onPressHero={(h) =>
+                            router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                          }
+                        />
+                      ) : null}
+                      {teammateNames.length ? (
+                        <RelatedHeroStrip
+                          label="Teammates"
+                          names={teammateNames}
+                          heroMap={relatedHeroMap}
+                          kind="teammate"
                           onPressHero={(h) =>
                             router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
                           }
@@ -932,7 +967,6 @@ export default function WebCharacterScreen() {
                     teams={details.teams}
                     fallback={stats.connections['group-affiliation']}
                   />
-                  <InfoRow label="Relatives" value={stats.connections.relatives} />
                 </View>
               </View>
             </View>
@@ -1141,16 +1175,17 @@ export default function WebCharacterScreen() {
                 <AbilitiesSection powers={details.powers} loading={comicVineLoading} />
 
                 {/* Enemies & Allies */}
-                {!comicVineLoading && (details.enemies?.length || details.friends?.length) ? (
+                {!comicVineLoading &&
+                (enemyNames.length || allyNames.length || teammateNames.length) ? (
                   <View style={styles.mSection}>
                     <View style={styles.mSectionHead}>
-                      <Text style={styles.mSectionTitle}>Enemies &amp; Allies</Text>
+                      <Text style={styles.mSectionTitle}>Enemies, Allies &amp; Teams</Text>
                       <View style={styles.mSectionDivider} />
                     </View>
-                    {details.enemies?.length ? (
+                    {enemyNames.length ? (
                       <RelatedHeroStrip
                         label="Enemies"
-                        names={details.enemies}
+                        names={enemyNames}
                         heroMap={relatedHeroMap}
                         kind="enemy"
                         onPressHero={(h) =>
@@ -1158,12 +1193,23 @@ export default function WebCharacterScreen() {
                         }
                       />
                     ) : null}
-                    {details.friends?.length ? (
+                    {allyNames.length ? (
                       <RelatedHeroStrip
                         label="Allies"
-                        names={details.friends}
+                        names={allyNames}
                         heroMap={relatedHeroMap}
                         kind="ally"
+                        onPressHero={(h) =>
+                          router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                        }
+                      />
+                    ) : null}
+                    {teammateNames.length ? (
+                      <RelatedHeroStrip
+                        label="Teammates"
+                        names={teammateNames}
+                        heroMap={relatedHeroMap}
+                        kind="teammate"
                         onPressHero={(h) =>
                           router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
                         }
@@ -1275,7 +1321,6 @@ export default function WebCharacterScreen() {
                         : stats.connections['group-affiliation']
                     }
                   />
-                  <InfoRow label="Relatives" value={stats.connections.relatives} />
                 </View>
               </View>
             </View>
