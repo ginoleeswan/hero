@@ -34,8 +34,7 @@ export function SearchDropdownContent() {
     const q = query.trim();
     if (!q) return;
     addSearch(q);
-    // Blur the input so the dropdown closes on the /search results page.
-    (document.activeElement as HTMLElement)?.blur();
+    setSearchFocused(false); // closes the palette
     router.push(`/search?q=${encodeURIComponent(q)}`);
   };
 

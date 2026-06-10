@@ -462,8 +462,22 @@ export default function WebCharacterScreen() {
                     {alias ? <Text style={styles.heroAlias}>{alias}</Text> : null}
                   </View>
 
-                  {/* Meta block — alignment, power score, issue count + credit */}
+                  {/* Meta block — credit on top, pills anchored to the name baseline */}
                   <View style={styles.metaBlock}>
+                    {comicVineLoading ? (
+                      <SkeletonBlock
+                        opacity={skeletonOpacity}
+                        width={180}
+                        height={10}
+                        borderRadius={4}
+                        dark
+                      />
+                    ) : details.creators?.length ? (
+                      <Text style={styles.stageCredit}>
+                        Created by {details.creators.join(' & ')}
+                      </Text>
+                    ) : null}
+
                     <View style={styles.metaRow}>
                       {alignmentLabel ? (
                         <View
@@ -495,20 +509,6 @@ export default function WebCharacterScreen() {
                         </View>
                       ) : null}
                     </View>
-
-                    {comicVineLoading ? (
-                      <SkeletonBlock
-                        opacity={skeletonOpacity}
-                        width={180}
-                        height={10}
-                        borderRadius={4}
-                        dark
-                      />
-                    ) : details.creators?.length ? (
-                      <Text style={styles.stageCredit}>
-                        Created by {details.creators.join(' & ')}
-                      </Text>
-                    ) : null}
                   </View>
                 </View>
               </View>
@@ -1501,7 +1501,8 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
                   />
                   <SkeletonBlock opacity={opacity} width={150} height={15} borderRadius={4} dark />
                 </View>
-                <View style={{ alignItems: 'flex-end', gap: 12, paddingBottom: 4 }}>
+                <View style={{ alignItems: 'flex-end', gap: 12, marginBottom: -3 }}>
+                  <SkeletonBlock opacity={opacity} width={180} height={10} borderRadius={4} dark />
                   <View style={{ flexDirection: 'row', gap: 10 }}>
                     {[68, 74, 80].map((w, i) => (
                       <SkeletonBlock
@@ -1514,7 +1515,6 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
                       />
                     ))}
                   </View>
-                  <SkeletonBlock opacity={opacity} width={180} height={10} borderRadius={4} dark />
                 </View>
               </View>
             </View>
@@ -1876,7 +1876,7 @@ const styles = StyleSheet.create({
   } as object,
   titleBlock: { flexShrink: 1, minWidth: 0 } as object,
   // Drops into the empty band beside the portrait; right-aligned toward it.
-  metaBlock: { alignItems: 'flex-end', gap: 12, paddingBottom: 4 } as object,
+  metaBlock: { alignItems: 'flex-end', gap: 12, marginBottom: -3 } as object,
 
   // Glass power panel (desktop right side) — mirrors the Explore featured panel.
   statPanel: {

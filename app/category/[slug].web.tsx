@@ -318,18 +318,8 @@ export default function WebCategoryScreen() {
       {/* ── Sticky header — navy ─────────────────────────────────────────────── */}
       <View style={[styles.header, { paddingHorizontal: contentPad }] as object}>
         <View style={styles.headerInner}>
-          {/* Row 1 — identity: back · accent · title · description · count */}
+          {/* Row 1 — identity: accent · title · description · count */}
           <View style={styles.identityRow}>
-            {isDesktop && (
-              <Pressable
-                onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
-                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [styles.backBtn, hovered && (styles.backBtnHover as object)] as object
-                }
-              >
-                <Ionicons name="arrow-back" size={18} color="rgba(245,235,220,0.45)" />
-              </Pressable>
-            )}
             <View style={styles.accentBar} />
             <Text
               style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object}
@@ -538,16 +528,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
   } as object,
-  backBtn: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    transition: 'opacity 150ms ease',
-    flexShrink: 0,
-  } as object,
-  backBtnHover: { opacity: 0.5 } as object,
   accentBar: {
     width: 3,
     height: 24,

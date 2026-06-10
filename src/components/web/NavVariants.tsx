@@ -1,10 +1,12 @@
-import { type ComponentProps } from 'react';
+import { type ComponentProps, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
+import { useSearch } from '../../contexts/SearchContext';
 import { HeroLogo } from './HeroLogo';
+import { SearchPalette } from './search/SearchPalette';
 
 export const TOPBAR_HEIGHT = 64;
 
@@ -26,13 +28,42 @@ export function TopBar() {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
+  const { searchFocused, setSearchFocused } = useSearch();
   const initial = user?.email?.charAt(0).toUpperCase() ?? '';
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
 
+  // Desktop: the search icon opens a command palette; mobile routes to /search.
+  const openSearch = () => (isMobile ? router.push('/search') : setSearchFocused(true));
+
+  // ⌘K / Ctrl-K (and "/" when not already typing) open the palette on desktop.
+  useEffect(() => {
+    if (isMobile) return;
+    const handler = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      const el = document.activeElement;
+      const typing =
+        el instanceof HTMLElement &&
+        (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+      if ((e.metaKey || e.ctrlKey) && k === 'k') {
+        e.preventDefault();
+        setSearchFocused(true);
+      } else if (k === '/' && !typing) {
+        e.preventDefault();
+        setSearchFocused(true);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isMobile, setSearchFocused]);
+
   // Versus highlights across the whole /compare flow; others match their route.
   const navActive = (key: string, path: string) =>
-    key === 'versus' ? pathname.startsWith('/compare') : pathname === path;
+    key === 'versus'
+      ? pathname.startsWith('/compare')
+      : key === 'search'
+        ? searchFocused || pathname === path
+        : pathname === path;
   const go = (path: string) => router.push(path as Parameters<typeof router.push>[0]);
 
   const renderItem = (it: (typeof NAV)[number]) => {
@@ -42,7 +73,7 @@ export function TopBar() {
       <Pressable
         key={it.key}
         aria-label={it.key}
-        onPress={() => go(it.path)}
+        onPress={() => (it.key === 'search' ? openSearch() : go(it.path))}
         style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
           [
             c.item,
@@ -94,6 +125,7 @@ export function TopBar() {
           )}
         </View>
       </View>
+      {!isMobile && <SearchPalette />}
     </View>
   );
 }

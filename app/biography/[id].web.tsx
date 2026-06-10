@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { getHeroById, getHeroByComicvineId } from '../../src/lib/db/heroes';
 import { COLORS } from '../../src/constants/colors';
@@ -397,15 +396,6 @@ export default function WebBiographyScreen() {
         <View style={[styles.headerOrb, { pointerEvents: 'none' }] as object} />
 
         <View style={styles.headerInner}>
-          <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-              [styles.glassBack, hovered && (styles.glassBackHover as object)] as object
-            }
-          >
-            <Ionicons name="arrow-back" size={15} color={COLORS.beige} />
-            <Text style={styles.glassBackText}>Back</Text>
-          </Pressable>
           {hero ? (
             <View style={styles.heroTitleBlock}>
               <Text style={styles.eyebrow}>Biography</Text>
@@ -565,28 +555,6 @@ const styles = StyleSheet.create({
     zIndex: 3,
   } as object,
   // Glass back control — echoes the floating nav and character stage.
-  glassBack: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 22,
-    marginBottom: 20,
-    cursor: 'pointer',
-    transition: 'background-color 150ms ease, border-color 150ms ease',
-  } as object,
-  glassBackHover: {
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    borderColor: 'rgba(255,255,255,0.28)',
-  } as object,
-  glassBackText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.beige },
   heroTitleBlock: { gap: 6 },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',

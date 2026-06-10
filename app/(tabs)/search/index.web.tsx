@@ -15,17 +15,13 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  searchHeroes,
-  rankResults,
-  type HeroSearchResult,
-  type PublisherFilter,
-} from '../../../src/lib/db/heroes';
+import { type HeroSearchResult, type PublisherFilter } from '../../../src/lib/db/heroes';
 import { heroGridImageSource } from '../../../src/constants/heroImages';
 import { COLORS } from '../../../src/constants/colors';
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { useSearch } from '../../../src/contexts/SearchContext';
 import { useSearchHistory } from '../../../src/hooks/useSearchHistory';
+import { useHeroSearch } from '../../../src/hooks/useHeroSearch';
 import { useIdleHeroes } from '../../../src/hooks/useIdleHeroes';
 import { useSkeletonAnim } from '../../../src/components/web/Skeleton';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/NavVariants';
@@ -178,46 +174,35 @@ export default function WebSearchScreen() {
   const urlQ = (Array.isArray(params.q) ? params.q[0] : (params.q ?? '')).toString();
   const publisher = normalizePublisher(params.publisher);
 
-  // Mobile keeps the query in local state for live typing; desktop reads it from
-  // the URL (the nav field is the input there).
-  const [mobileQuery, setMobileQuery] = useState(urlQ);
-  const query = isDesktop ? urlQ : mobileQuery;
+  // One input state for both platforms. ?q= in the URL is the source of truth —
+  // deep links, sharing, and the (future) nav palette all drive the page through
+  // it; the local state just keeps typing responsive.
+  const [inputQuery, setInputQuery] = useState(urlQ);
+  const query = inputQuery;
   const trimmed = query.trim();
   const hasCriteria = trimmed.length > 0 || publisher !== 'All';
 
-  const [heroes, setHeroes] = useState<HeroSearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Shared debounced search primitive (same one the nav palette rides on).
+  const { results: heroes, loading } = useHeroSearch(query, publisher, RESULT_LIMIT);
 
-  // Reflect committed query in the nav field (desktop) / seed local input (mobile).
+  // Sync the input FROM the URL (deep links, back/forward, nav palette).
   useEffect(() => {
     setNavQuery(urlQ);
-    setMobileQuery(urlQ);
+    setInputQuery(urlQ);
   }, [urlQ]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Mirror the committed query back INTO the URL so results stay shareable. The
+  // equality guard stops this from fighting the sync above. setParams replaces
+  // the current route's params (no history spam).
+  useEffect(() => {
+    if (trimmed === urlQ) return;
+    const t = setTimeout(() => router.setParams({ q: trimmed }), 300);
+    return () => clearTimeout(t);
+  }, [trimmed, urlQ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Trending for the empty mobile state.
   const showIdle = !isDesktop && !hasCriteria;
   const { heroes: trending, isLoading: trendingLoading } = useIdleHeroes(showIdle, 12);
-
-  // Debounced fetch on the effective query + publisher.
-  useEffect(() => {
-    if (!hasCriteria) {
-      setHeroes([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const timer = setTimeout(async () => {
-      try {
-        const res = await searchHeroes(trimmed, publisher, RESULT_LIMIT);
-        setHeroes(trimmed ? rankResults(res, trimmed) : res);
-      } catch {
-        setHeroes([]);
-      } finally {
-        setLoading(false);
-      }
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [trimmed, publisher, hasCriteria]);
 
   const goToHero = (id: string) => {
     if (trimmed) addSearch(trimmed);
@@ -252,32 +237,29 @@ export default function WebSearchScreen() {
   return (
     <View style={styles.root}>
       {isDesktop ? (
-        /* ── Desktop hero zone (nav field is the input) ─────────────────────── */
+        /* ── Desktop search zone — self-contained input, ?q= is the source of truth ── */
         <View style={[styles.heroZone, { paddingHorizontal: contentPad }] as object}>
           <View style={styles.heroZoneInner}>
-            <Pressable
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
-              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [styles.backBtn, hovered && (styles.backBtnHover as object)] as object
-              }
-            >
-              <Ionicons name="arrow-back" size={15} color="rgba(245,235,220,0.55)" />
-              <Text style={styles.backText as object}>Back</Text>
-            </Pressable>
-            <View style={styles.titleRow}>
-              <View style={styles.accentBar} />
-              <View style={styles.titleBlock}>
-                <Text style={styles.eyebrow as object}>Search Results</Text>
-                <Text style={styles.title as object} numberOfLines={1}>
-                  {title}
-                </Text>
-              </View>
-              {!loading && heroes.length > 0 && (
-                <View style={styles.countPill}>
-                  <Text style={styles.countText as object}>
-                    {capped ? `${RESULT_LIMIT}+` : heroes.length.toLocaleString()}
-                  </Text>
-                </View>
+            <View style={styles.desktopSearchBar}>
+              <Ionicons name="search" size={20} color="rgba(245,235,220,0.5)" />
+              <TextInput
+                style={styles.desktopInput as object}
+                placeholder="Search heroes…"
+                placeholderTextColor="rgba(245,235,220,0.4)"
+                value={inputQuery}
+                onChangeText={setInputQuery}
+                autoFocus={!urlQ}
+                autoCorrect={false}
+                returnKeyType="search"
+              />
+              {inputQuery.length > 0 && (
+                <Pressable
+                  onPress={() => setInputQuery('')}
+                  style={styles.mobileClear as object}
+                  aria-label="Clear search"
+                >
+                  <Ionicons name="close-circle" size={20} color="rgba(245,235,220,0.5)" />
+                </Pressable>
               )}
             </View>
           </View>
@@ -285,26 +267,20 @@ export default function WebSearchScreen() {
       ) : (
         /* ── Mobile search header (own input) ───────────────────────────────── */
         <View style={styles.mobileHeader as object}>
-          <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
-            style={styles.mobileBack as object}
-          >
-            <Ionicons name="arrow-back" size={22} color={COLORS.beige} />
-          </Pressable>
           <View style={styles.mobileSearchBar as object}>
             <Ionicons name="search" size={16} color="rgba(245,235,220,0.5)" />
             <TextInput
               style={styles.mobileInput as object}
               placeholder="Search heroes…"
               placeholderTextColor="rgba(245,235,220,0.4)"
-              value={mobileQuery}
-              onChangeText={setMobileQuery}
+              value={inputQuery}
+              onChangeText={setInputQuery}
               autoFocus={!urlQ}
               autoCorrect={false}
               returnKeyType="search"
             />
-            {mobileQuery.length > 0 && (
-              <Pressable onPress={() => setMobileQuery('')} style={styles.mobileClear as object}>
+            {inputQuery.length > 0 && (
+              <Pressable onPress={() => setInputQuery('')} style={styles.mobileClear as object}>
                 <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.5)" />
               </Pressable>
             )}
@@ -355,7 +331,7 @@ export default function WebSearchScreen() {
                   {history.map((h) => (
                     <Pressable
                       key={h}
-                      onPress={() => setMobileQuery(h)}
+                      onPress={() => setInputQuery(h)}
                       style={styles.chip as object}
                     >
                       <Ionicons name="time-outline" size={13} color={COLORS.grey} />
@@ -438,59 +414,25 @@ const styles = StyleSheet.create({
 
   // Desktop hero zone
   heroZone: { backgroundColor: COLORS.navy, paddingTop: TOPBAR_HEIGHT + 18, paddingBottom: 22 },
-  heroZoneInner: { maxWidth: 1200, width: '100%', alignSelf: 'center', gap: 14 },
-  backBtn: {
+  heroZoneInner: { maxWidth: 1200, width: '100%', alignSelf: 'center' },
+  // Prominent desktop search field — the page's own input (?q= source of truth).
+  desktopSearchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
-    cursor: 'pointer',
-    transition: 'opacity 150ms ease',
-  } as object,
-  backBtnHover: { opacity: 0.5 } as object,
-  backText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: 'rgba(245,235,220,0.55)',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  } as object,
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  accentBar: {
-    width: 4,
-    height: 56,
-    borderRadius: 2,
-    backgroundColor: COLORS.orange,
-    flexShrink: 0,
-  },
-  titleBlock: { flex: 1, gap: 4, minWidth: 0 },
-  eyebrow: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: 'rgba(245,235,220,0.45)',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  } as object,
-  title: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 46,
-    color: COLORS.beige,
-    lineHeight: 50,
-  } as object,
-  countPill: {
-    backgroundColor: 'rgba(232,98,26,0.18)',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    gap: 12,
+    backgroundColor: 'rgba(245,235,220,0.08)',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(232,98,26,0.35)',
-    flexShrink: 0,
-  },
-  countText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    color: COLORS.orange,
-    letterSpacing: 0.3,
+    borderColor: 'rgba(245,235,220,0.16)',
+    paddingHorizontal: 18,
+    height: 56,
+  } as object,
+  desktopInput: {
+    flex: 1,
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 18,
+    color: COLORS.beige,
+    outlineStyle: 'none',
   } as object,
 
   // Mobile header
@@ -502,14 +444,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: TOPBAR_HEIGHT + 8,
     paddingBottom: 12,
-  } as object,
-  mobileBack: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    flexShrink: 0,
   } as object,
   mobileSearchBar: {
     flex: 1,
