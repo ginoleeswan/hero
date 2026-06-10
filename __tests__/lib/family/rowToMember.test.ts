@@ -4,6 +4,7 @@ import { rowToMember, type FamilyRow } from '../../../src/lib/family/rowToMember
 const base: FamilyRow = {
   id: 'r1', name: 'Supergirl', alias: 'Kara Zor-El', role: 'cousin',
   relation: 'cousin', tier: 0, modifiers: [], status: null, position: 3,
+  tree_parent_id: 'p1', branch_side: 'paternal',
   related: { id: 'h9', image_md_url: 'md.jpg', image_url: 'full.jpg', power: 68, alignment: 'good' },
 };
 
@@ -22,5 +23,14 @@ describe('rowToMember', () => {
   it('nulls all linked fields when there is no related hero', () => {
     const m = rowToMember({ ...base, related: null });
     expect(m).toMatchObject({ heroId: null, heroImage: null, heroPower: null, heroAlignment: null });
+  });
+
+  it('maps the kinship columns', () => {
+    expect(rowToMember(base)).toMatchObject({ treeParentId: 'p1', branchSide: 'paternal' });
+  });
+
+  it('defaults kinship columns to null', () => {
+    const m = rowToMember({ ...base, tree_parent_id: null, branch_side: null });
+    expect(m).toMatchObject({ treeParentId: null, branchSide: null });
   });
 });

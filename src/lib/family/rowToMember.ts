@@ -1,5 +1,6 @@
 // src/lib/family/rowToMember.ts
 import type { FamilyMember, FamilyRelation, RelativeStatus } from './types';
+import type { BranchSide } from './resolveKinship';
 
 export interface FamilyRow {
   id: string;
@@ -11,6 +12,8 @@ export interface FamilyRow {
   modifiers: string[] | null;
   status: RelativeStatus;
   position: number;
+  tree_parent_id: string | null;
+  branch_side: BranchSide;
   related: {
     id: string;
     image_md_url: string | null;
@@ -35,5 +38,7 @@ export function rowToMember(row: FamilyRow): FamilyMember {
     heroImage: row.related ? row.related.image_md_url ?? row.related.image_url ?? null : null,
     heroPower: row.related?.power ?? null,
     heroAlignment: row.related?.alignment ?? null,
+    treeParentId: row.tree_parent_id,
+    branchSide: row.branch_side,
   };
 }

@@ -1,4 +1,6 @@
 // src/lib/family/types.ts
+import type { BranchSide } from './resolveKinship';
+
 export type FamilyRelation =
   | 'parent' | 'child' | 'sibling' | 'spouse'
   | 'grandparent' | 'grandchild' | 'aunt_uncle' | 'niece_nephew'
@@ -37,16 +39,28 @@ export interface FamilyMember {
   heroImage: string | null;    // portrait for linked nodes
   heroPower: number | null;    // power badge for linked nodes
   heroAlignment: string | null;
+  treeParentId: string | null; // the member this node hangs from (null = hero spine)
+  branchSide: BranchSide;      // paternal | maternal | spouse | null
 }
 
-export interface FamilyTier {
+/** Where a node's connector attaches: the hero spine, or a specific parent node. */
+export type ConnTarget = { kind: 'hero' } | { kind: 'parent'; id: string };
+
+export interface GraphNode {
+  member: FamilyMember;
+  connectTo: ConnTarget;
+}
+
+export interface GraphTier {
   tier: number;
   label: string;
-  members: FamilyMember[];
+  nodes: GraphNode[];
+  collapsedByDefault: boolean;
 }
 
-export interface FamilyModel {
-  tiers: FamilyTier[];        // ordered 2 → -2; empty tiers omitted
-  asides: FamilyMember[];     // clones / variants
-  footnotes: FamilyMember[];  // non-family entries (girlfriend, fiancé…)
+export interface FamilyGraph {
+  tiers: GraphTier[]; // ordered 2 → -2; empty omitted
+  asides: FamilyMember[]; // clones / variants
+  footnotes: FamilyMember[]; // non-family entries (girlfriend, fiancé…)
+  spouse: FamilyMember | null; // extracted for the hero's gold tie
 }

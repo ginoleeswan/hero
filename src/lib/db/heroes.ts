@@ -691,6 +691,21 @@ export async function getRelatedHeroes(
   return (data ?? []) as RelatedHeroCard[];
 }
 
+/** Family members (relatives) that have their own character page — the picker's
+ *  "Bloodline" row. Ranked by popularity; empty when the hero has no linked kin. */
+export async function getFamilyOpponents(heroId: string, limit = 24): Promise<RelatedHeroCard[]> {
+  if (!heroId) return [];
+  const { data, error } = await supabase.rpc('get_family_opponents', {
+    p_hero_id: heroId,
+    p_limit: limit,
+  });
+  if (error) {
+    console.warn('[getFamilyOpponents] error:', error.message);
+    return [];
+  }
+  return (data ?? []) as RelatedHeroCard[];
+}
+
 export interface HeroRelationship {
   isEnemy: boolean;
   isAlly: boolean;
@@ -954,6 +969,7 @@ export async function getHeroFamily(heroId: string): Promise<FamilyMember[]> {
     .from('hero_relatives')
     .select(
       'id, name, alias, role, relation, tier, modifiers, status, position, ' +
+        'tree_parent_id, branch_side, ' +
         'related:related_hero_id ( id, image_md_url, image_url, power, alignment )',
     )
     .eq('hero_id', heroId)
