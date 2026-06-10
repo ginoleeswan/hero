@@ -1,9 +1,15 @@
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { useState, type ReactElement } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, type LayoutRectangle } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import Svg, { Polyline } from 'react-native-svg';
 import { COLORS } from '../../constants/colors';
-import { buildTiers } from '../../lib/family/buildTiers';
-import type { FamilyMember } from '../../lib/family/types';
+import { buildFamilyGraph } from '../../lib/family/buildFamilyGraph';
+import { connectorPaths, type NodeBox, type ConnLink } from '../../lib/family/connectorPaths';
+import type { FamilyMember, GraphNode } from '../../lib/family/types';
+
+const COLLAPSE_AFTER = 6;
+const HERO_KEY = '__hero__';
 
 function alignColor(alignment: string | null): string {
   if (alignment === 'good') return COLORS.blue;
@@ -16,9 +22,7 @@ function roleLabel(member: FamilyMember): string {
   return member.relation.replace(/_/g, ' ');
 }
 
-function initial(name: string): string {
-  return (name.trim()[0] ?? '?').toUpperCase();
-}
+const initial = (name: string) => (name.trim()[0] ?? '?').toUpperCase();
 
 function MemberNode({ member }: { member: FamilyMember }) {
   const router = useRouter();
@@ -34,7 +38,7 @@ function MemberNode({ member }: { member: FamilyMember }) {
           router.push(`/character/${member.heroId}?name=${encodeURIComponent(member.name)}`)
         }
       >
-        {member.heroPower != null ? (
+        {member.heroPower != null && member.heroPower > 0 ? (
           <View style={styles.powerBadge}>
             <Text style={styles.powerBadgeText}>{member.heroPower}</Text>
           </View>
@@ -60,32 +64,18 @@ function MemberNode({ member }: { member: FamilyMember }) {
 
   return (
     <View style={[styles.plainNode, dead && styles.dead]}>
-      <Text style={styles.plainName} numberOfLines={1}>
-        {member.name}
-        {dead ? ' ✝' : ''}
-      </Text>
-      <Text style={styles.roleText} numberOfLines={1}>
-        {roleLabel(member)}
-      </Text>
-    </View>
-  );
-}
-
-// A tier row that scrolls horizontally when it overflows the screen width.
-function NodeRow({ members, label }: { members: FamilyMember[]; label?: string }) {
-  if (members.length === 0) return null;
-  return (
-    <View style={styles.tierBlock}>
-      {label ? <Text style={styles.tierLabel}>{label}</Text> : null}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tierRow}
-      >
-        {members.map((m) => (
-          <MemberNode key={m.id} member={m} />
-        ))}
-      </ScrollView>
+      <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: '#c9bba3' }]}>
+        <Text style={styles.avatarInitial}>{initial(member.name)}</Text>
+      </View>
+      <View style={styles.linkMeta}>
+        <Text style={styles.plainName} numberOfLines={1}>
+          {member.name}
+          {dead ? ' ✝' : ''}
+        </Text>
+        <Text style={styles.roleText} numberOfLines={1}>
+          {roleLabel(member)}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -96,56 +86,111 @@ export function FamilyTree({
 }: {
   heroName: string;
   members: FamilyMember[];
-}) {
+}): ReactElement | null {
+  const [rowLayouts, setRowLayouts] = useState<Record<string, { x: number; y: number }>>({});
+  const [nodeBoxes, setNodeBoxes] = useState<Record<string, { rowKey: string; rect: LayoutRectangle }>>({});
+  const [body, setBody] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+
   if (members.length === 0) return null;
 
-  const model = buildTiers(members);
-  const byTier = new Map(model.tiers.map((t) => [t.tier, t]));
-  const tier0 = byTier.get(0);
-  const spouse = tier0?.members.find((m) => m.relation === 'spouse') ?? null;
-  const sameGen = (tier0?.members ?? []).filter((m) => m !== spouse);
-  const linkedCount = members.filter((m) => m.heroId).length;
+  const graph = buildFamilyGraph(members);
+  const tier0 = graph.tiers.find((t) => t.tier === 0)?.nodes ?? [];
+  const sameGen = tier0.filter((n) => n.member.id !== graph.spouse?.id);
+  const linkedCount = members.filter((mm) => mm.heroId).length;
 
-  const rows: React.ReactNode[] = [];
-  for (const t of [2, 1, 0, -1, -2]) {
-    if (t === 0) {
-      rows.push(
-        <View key="hero" style={styles.tierBlock}>
-          <View style={styles.anchorRow}>
-            <View style={styles.heroAnchor}>
-              <View style={styles.heroAvatar}>
-                <Text style={styles.heroInitial}>{initial(heroName)}</Text>
-              </View>
-              <View>
-                <Text style={styles.heroName} numberOfLines={1}>
-                  {heroName}
-                </Text>
-                <Text style={styles.heroTag}>This hero</Text>
-              </View>
-            </View>
-            {spouse ? (
-              <>
-                <View style={styles.spouseTie} />
-                <MemberNode member={spouse} />
-              </>
-            ) : null}
-          </View>
-        </View>,
-      );
-      if (sameGen.length > 0) {
-        rows.push(<NodeRow key="samegen" members={sameGen} label="Same generation" />);
-      }
-    } else {
-      const tier = byTier.get(t);
-      if (tier) rows.push(<NodeRow key={t} members={tier.members} label={tier.label} />);
+  const setRow = (key: string) => (e: { nativeEvent: { layout: LayoutRectangle } }) => {
+    const { x, y } = e.nativeEvent.layout;
+    setRowLayouts((prev) =>
+      prev[key]?.x === x && prev[key]?.y === y ? prev : { ...prev, [key]: { x, y } },
+    );
+  };
+  const setNode = (id: string, rowKey: string) => (e: { nativeEvent: { layout: LayoutRectangle } }) => {
+    const rect = e.nativeEvent.layout;
+    setNodeBoxes((prev) => ({ ...prev, [id]: { rowKey, rect } }));
+  };
+
+  const boxes: Record<string, NodeBox> = {};
+  for (const [id, b] of Object.entries(nodeBoxes)) {
+    const row = rowLayouts[b.rowKey];
+    if (!row) continue;
+    const top = row.y + b.rect.y;
+    boxes[id] = { cx: row.x + b.rect.x + b.rect.width / 2, top, bottom: top + b.rect.height };
+  }
+  const heroBox = boxes[HERO_KEY];
+
+  const links: ConnLink[] = [];
+  for (const t of graph.tiers) {
+    for (const gn of t.nodes) {
+      if (gn.member.id === graph.spouse?.id) continue;
+      links.push({ id: gn.member.id, target: gn.connectTo });
     }
   }
+  const paths = heroBox ? connectorPaths({ hero: heroBox, boxes, links }) : [];
 
-  const spined: React.ReactNode[] = [];
-  rows.forEach((row, i) => {
-    if (i > 0) spined.push(<View key={`spine-${i}`} style={styles.spine} />);
-    spined.push(row);
-  });
+  const nodesRow = (key: string, tier: number, label: string, nodes: GraphNode[], collapsible: boolean) => {
+    const isOpen = expanded[tier];
+    const overflow = collapsible && !isOpen && nodes.length > COLLAPSE_AFTER;
+    const shown = overflow ? nodes.slice(0, COLLAPSE_AFTER) : nodes;
+    return (
+      <View key={key} style={styles.tierBlock}>
+        {label ? <Text style={styles.tierLabel}>{label}</Text> : null}
+        <View style={styles.tierRow} onLayout={setRow(key)}>
+          {shown.map((gn) => (
+            <View key={gn.member.id} onLayout={setNode(gn.member.id, key)}>
+              <MemberNode member={gn.member} />
+            </View>
+          ))}
+          {overflow ? (
+            <TouchableOpacity
+              style={styles.moreChip}
+              onPress={() => setExpanded((p) => ({ ...p, [tier]: true }))}
+            >
+              <Text style={styles.moreText}>+{nodes.length - COLLAPSE_AFTER} more</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
+    );
+  };
+
+  const rows: ReactElement[] = [];
+  for (const t of graph.tiers) {
+    if (t.tier === 0) {
+      rows.push(heroRow());
+      if (sameGen.length > 0) rows.push(nodesRow('samegen', 0, 'Same generation', sameGen, false));
+      continue;
+    }
+    if (t.tier < 0 && !rows.some((r) => r.key === 'hero')) rows.push(heroRow());
+    rows.push(nodesRow(`t${t.tier}`, t.tier, t.label, t.nodes, t.collapsedByDefault));
+  }
+  if (!rows.some((r) => r.key === 'hero')) rows.push(heroRow());
+
+  function heroRow(): ReactElement {
+    return (
+      <View key="hero" style={styles.tierBlock}>
+        <View style={styles.anchorRow} onLayout={setRow('hero')}>
+          <View onLayout={setNode(HERO_KEY, 'hero')} style={styles.heroAnchor}>
+            <View style={styles.heroAvatar}>
+              <Text style={styles.heroInitial}>{initial(heroName)}</Text>
+            </View>
+            <View>
+              <Text style={styles.heroName} numberOfLines={1}>
+                {heroName}
+              </Text>
+              <Text style={styles.heroTag}>This hero</Text>
+            </View>
+          </View>
+          {graph.spouse ? (
+            <>
+              <View style={styles.spouseTie} />
+              <MemberNode member={graph.spouse} />
+            </>
+          ) : null}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.card}>
@@ -158,26 +203,40 @@ export function FamilyTree({
       </View>
       <View style={styles.divider} />
 
-      <View>{spined}</View>
-
-      {model.asides.length > 0 ? (
-        <View style={styles.tierBlock}>
-          <Text style={[styles.tierLabel, { marginTop: 18 }]}>Variants</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.tierRow}
-          >
-            {model.asides.map((m) => (
-              <MemberNode key={m.id} member={m} />
+      <View
+        style={styles.treeBody}
+        onLayout={(e) => setBody({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
+      >
+        {heroBox && paths.length > 0 ? (
+          <Svg style={StyleSheet.absoluteFill} width={body.w} height={body.h} pointerEvents="none">
+            {paths.map((p, i) => (
+              <Polyline
+                key={i}
+                points={p.points.map(([x, y]) => `${x},${y}`).join(' ')}
+                fill="none"
+                stroke="#cdbfa6"
+                strokeWidth={2}
+              />
             ))}
-          </ScrollView>
+          </Svg>
+        ) : null}
+        {rows}
+      </View>
+
+      {graph.asides.length > 0 ? (
+        <View style={styles.asideBlock}>
+          <Text style={styles.tierLabel}>Variants</Text>
+          <View style={styles.tierRow}>
+            {graph.asides.map((mem) => (
+              <MemberNode key={mem.id} member={mem} />
+            ))}
+          </View>
         </View>
       ) : null}
 
-      {model.footnotes.length > 0 ? (
+      {graph.footnotes.length > 0 ? (
         <Text style={styles.footnote}>
-          Also: {model.footnotes.map((m) => `${m.name} (${roleLabel(m)})`).join(', ')}
+          Also: {graph.footnotes.map((mem) => `${mem.name} (${roleLabel(mem)})`).join(', ')}
         </Text>
       ) : null}
     </View>
@@ -203,6 +262,7 @@ const styles = StyleSheet.create({
   count: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#b3a791' },
   divider: { height: 1, backgroundColor: '#ede5da', marginTop: 10, marginBottom: 18 },
 
+  treeBody: { position: 'relative' },
   tierBlock: { alignItems: 'center' },
   tierLabel: {
     fontFamily: 'Nunito_700Bold',
@@ -211,20 +271,22 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: '#a99b84',
     marginBottom: 9,
+    marginTop: 16,
     textAlign: 'center',
   },
-  tierRow: { flexGrow: 1, justifyContent: 'center', flexDirection: 'row', gap: 10, paddingHorizontal: 4 },
-  spine: { width: 2, height: 18, borderRadius: 2, backgroundColor: '#e2d6c2', marginVertical: 7, alignSelf: 'center' },
+  tierRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginBottom: 4 },
 
   plainNode: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     backgroundColor: '#fbf7ef',
     borderWidth: 1,
     borderColor: '#e7dcc9',
     borderRadius: 13,
-    paddingVertical: 8,
-    paddingHorizontal: 13,
-    alignItems: 'center',
-    minWidth: 84,
+    paddingVertical: 6,
+    paddingLeft: 6,
+    paddingRight: 12,
   },
   plainName: { fontFamily: 'FlameSans-Regular', fontSize: 12, color: COLORS.black, fontWeight: '700' },
   dead: { opacity: 0.6 },
@@ -259,7 +321,14 @@ const styles = StyleSheet.create({
   },
   powerBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 9, color: 'white' },
 
-  anchorRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  anchorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 16,
+    marginBottom: 4,
+  },
   heroAnchor: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -288,6 +357,18 @@ const styles = StyleSheet.create({
     color: '#8a7e68',
   },
   spouseTie: { width: 18, height: 2, borderRadius: 2, backgroundColor: COLORS.orange },
+
+  moreChip: {
+    justifyContent: 'center',
+    backgroundColor: '#f3ece0',
+    borderWidth: 1,
+    borderColor: '#d8cbb6',
+    borderRadius: 13,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  moreText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#9a8c76' },
+  asideBlock: { alignItems: 'center', marginTop: 18 },
   footnote: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 10.5,
