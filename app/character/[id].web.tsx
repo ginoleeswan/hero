@@ -1486,6 +1486,30 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
     </View>
   );
 
+  // Family — title + a few centered tier rows, matching the live family card shape.
+  const familyCard = (
+    <View style={sk.card}>
+      <SkeletonBlock opacity={opacity} width={70} height={11} style={{ marginBottom: 10 }} />
+      {divider}
+      <View style={{ alignItems: 'center', gap: 14 }}>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          {[120, 96].map((w, i) => (
+            <SkeletonBlock key={i} opacity={opacity} width={w} height={42} borderRadius={13} />
+          ))}
+        </View>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <SkeletonBlock opacity={opacity} width={150} height={56} borderRadius={15} />
+          <SkeletonBlock opacity={opacity} width={120} height={56} borderRadius={14} />
+        </View>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          {[110, 110].map((w, i) => (
+            <SkeletonBlock key={i} opacity={opacity} width={w} height={46} borderRadius={14} />
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+
   // First appearance — horizontal cover + meta, matching the live loading card.
   const firstAppearanceCard = (
     <View style={sk.card}>
@@ -1577,6 +1601,7 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
               {statBandCard}
               {summaryCard}
               {abilitiesCard}
+              {familyCard}
               {firstAppearanceCard}
             </View>
             <View style={sk.sideCol}>
