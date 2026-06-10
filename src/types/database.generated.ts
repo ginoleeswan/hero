@@ -453,6 +453,18 @@ export type Database = {
           year: number
         }[]
       }
+      get_family_opponents: {
+        Args: { p_hero_id: string; p_limit?: number }
+        Returns: {
+          alignment: string
+          id: string
+          image_md_url: string
+          image_url: string
+          name: string
+          portrait_url: string
+          publisher: string
+        }[]
+      }
       get_related_heroes: {
         Args: {
           p_hero_id: string

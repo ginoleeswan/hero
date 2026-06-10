@@ -64,7 +64,8 @@ export default function PickArena() {
   // The roster reacts to the *other* slot — its rivals / same-universe lead.
   const contextId = active === 'a' ? b?.id ?? '' : a?.id ?? '';
   const contextName = active === 'a' ? b?.name : a?.name;
-  const { rivals, sameUniverse, similar, all, loading } = usePickOpponents(contextId);
+  const { rivals, friendlyFire, family, sameUniverse, dreamMatches, similar, all, loading } =
+    usePickOpponents(contextId);
 
   const pickedIds = useMemo(
     () => new Set([a?.id, b?.id].filter(Boolean) as string[]),
@@ -77,7 +78,14 @@ export default function PickArena() {
 
   const q = debouncedQuery.trim();
   const showSuggestions =
-    !q && !!contextId && (rivals.length > 0 || sameUniverse.length > 0 || similar.length > 0);
+    !q &&
+    !!contextId &&
+    (rivals.length > 0 ||
+      friendlyFire.length > 0 ||
+      family.length > 0 ||
+      sameUniverse.length > 0 ||
+      dreamMatches.length > 0 ||
+      similar.length > 0);
   const displayed = q
     ? rankResults(all, q).filter((h) => !pickedIds.has(h.id)).slice(0, 120)
     : exclude(all).slice(0, 120);
@@ -234,6 +242,48 @@ export default function PickArena() {
                     </ScrollView>
                   </View>
                 )}
+                {friendlyFire.length > 0 && (
+                  <View style={s.section}>
+                    <Text style={s.sectionLabel as object}>Friendly Fire</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={s.railFade as object}
+                      contentContainerStyle={s.railRow as object}
+                    >
+                      {exclude(friendlyFire).map((item) => (
+                        <OpponentCard
+                          key={item.id}
+                          item={item}
+                          onPress={() => pick(item)}
+                          width={138}
+                          height={196}
+                        />
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+                {family.length > 0 && (
+                  <View style={s.section}>
+                    <Text style={s.sectionLabel as object}>Bloodline</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={s.railFade as object}
+                      contentContainerStyle={s.railRow as object}
+                    >
+                      {exclude(family).map((item) => (
+                        <OpponentCard
+                          key={item.id}
+                          item={item}
+                          onPress={() => pick(item)}
+                          width={138}
+                          height={196}
+                        />
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
                 {sameUniverse.length > 0 && (
                   <View style={s.section}>
                     <Text style={s.sectionLabel as object}>Same Universe</Text>
@@ -244,6 +294,27 @@ export default function PickArena() {
                       contentContainerStyle={s.railRow as object}
                     >
                       {exclude(sameUniverse).map((item) => (
+                        <OpponentCard
+                          key={item.id}
+                          item={item}
+                          onPress={() => pick(item)}
+                          width={138}
+                          height={196}
+                        />
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+                {dreamMatches.length > 0 && (
+                  <View style={s.section}>
+                    <Text style={s.sectionLabel as object}>Dream Matches</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={s.railFade as object}
+                      contentContainerStyle={s.railRow as object}
+                    >
+                      {exclude(dreamMatches).map((item) => (
                         <OpponentCard
                           key={item.id}
                           item={item}

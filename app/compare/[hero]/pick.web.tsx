@@ -151,10 +151,8 @@ export default function WebPickOpponentScreen() {
   const [morphKey, setMorphKey] = useState<string | null>(null);
   const [peek, setPeek] = useState<PeekHero | null>(null);
   const debouncedQuery = useDebounce(query, 200);
-  const { subject, rivals, sameUniverse, similar, all, loading } = usePickOpponents(
-    hero ?? '',
-    name,
-  );
+  const { subject, rivals, friendlyFire, family, sameUniverse, dreamMatches, similar, all, loading } =
+    usePickOpponents(hero ?? '', name);
 
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 120);
@@ -218,7 +216,13 @@ export default function WebPickOpponentScreen() {
   const lockedSubject = subject ?? handoffSubject;
   const subjectName = lockedSubject?.name ?? name ?? 'this hero';
   const showSuggestions =
-    !debouncedQuery.trim() && (rivals.length > 0 || sameUniverse.length > 0 || similar.length > 0);
+    !debouncedQuery.trim() &&
+    (rivals.length > 0 ||
+      friendlyFire.length > 0 ||
+      family.length > 0 ||
+      sameUniverse.length > 0 ||
+      dreamMatches.length > 0 ||
+      similar.length > 0);
   const displayed = debouncedQuery.trim()
     ? rankResults(all, debouncedQuery).slice(0, 120)
     : all.slice(0, 120);
@@ -299,6 +303,30 @@ export default function WebPickOpponentScreen() {
                         tagline="The grudge matches fans want to see."
                       />
                     )}
+                    {friendlyFire.length > 0 && (
+                      <Rail
+                        label="Friendly Fire"
+                        items={friendlyFire}
+                        group="friendly"
+                        morphKey={morphKey}
+                        onPick={pick}
+                        onHover={handleHover}
+                        onPeek={setPeek}
+                        tagline="Turn on your own side."
+                      />
+                    )}
+                    {family.length > 0 && (
+                      <Rail
+                        label="Bloodline"
+                        items={family}
+                        group="family"
+                        morphKey={morphKey}
+                        onPick={pick}
+                        onHover={handleHover}
+                        onPeek={setPeek}
+                        tagline="Settle it in the family."
+                      />
+                    )}
                     {sameUniverse.length > 0 && (
                       <Rail
                         label="Same Universe"
@@ -308,6 +336,18 @@ export default function WebPickOpponentScreen() {
                         onPick={pick}
                         onHover={handleHover}
                         onPeek={setPeek}
+                      />
+                    )}
+                    {dreamMatches.length > 0 && (
+                      <Rail
+                        label="Dream Matches"
+                        items={dreamMatches}
+                        group="dream"
+                        morphKey={morphKey}
+                        onPick={pick}
+                        onHover={handleHover}
+                        onPeek={setPeek}
+                        tagline="Cross-universe legends."
                       />
                     )}
                     {similar.length > 0 && (
