@@ -1,9 +1,11 @@
 // __tests__/lib/family/parity.test.ts
 import { parseRelatives as srcParse } from '../../../src/lib/family/parseRelatives';
 import { classifyRole as srcClassify } from '../../../src/lib/family/classifyRole';
+import { resolveKinship as srcResolve } from '../../../src/lib/family/resolveKinship';
 import {
   parseRelatives as shParse,
   classifyRole as shClassify,
+  resolveKinship as shResolve,
 } from '../../../supabase/functions/_shared/family';
 
 const FIXTURES = [
@@ -25,4 +27,15 @@ describe('src vs _shared parity', () => {
       expect(shClassify(role)).toEqual(srcClassify(role));
     },
   );
+
+  it('resolveKinship matches between src and _shared', () => {
+    const nodes = [
+      { id: 'f', relation: 'parent' as const, role: 'father', modifiers: [] },
+      { id: 'm', relation: 'parent' as const, role: 'mother', modifiers: [] },
+      { id: 'gf', relation: 'grandparent' as const, role: 'paternal grandfather', modifiers: [] },
+      { id: 'u', relation: 'aunt_uncle' as const, role: 'uncle', modifiers: [] },
+      { id: 'c', relation: 'cousin' as const, role: 'cousin', modifiers: [] },
+    ];
+    expect([...shResolve(nodes).entries()]).toEqual([...srcResolve(nodes).entries()]);
+  });
 });
