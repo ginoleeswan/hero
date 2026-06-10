@@ -237,6 +237,17 @@ export function FamilyCanvas({
           style={styles.viewport}
           onLayout={(e) => setVp({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
         >
+          {/* Fixed faint dot-grid background — fills the viewport regardless of pan/zoom */}
+          {vp.w > 0 ? (
+            <Svg width={vp.w} height={vp.h} style={StyleSheet.absoluteFill} pointerEvents="none">
+              <Defs>
+                <Pattern id="famDots" x={0} y={0} width={24} height={24} patternUnits="userSpaceOnUse">
+                  <Circle cx={1} cy={1} r={1} fill="#ece1cd" />
+                </Pattern>
+              </Defs>
+              <Rect x={0} y={0} width={vp.w} height={vp.h} fill="url(#famDots)" />
+            </Svg>
+          ) : null}
           {/* Pannable canvas */}
           <GestureDetector gesture={gesture}>
             <Animated.View
@@ -257,12 +268,6 @@ export function FamilyCanvas({
                 height={layout.bounds.height}
                 style={StyleSheet.absoluteFill}
               >
-                <Defs>
-                  <Pattern id="famDots" x={0} y={0} width={24} height={24} patternUnits="userSpaceOnUse">
-                    <Circle cx={1} cy={1} r={1} fill="#ece1cd" />
-                  </Pattern>
-                </Defs>
-                <Rect x={0} y={0} width={layout.bounds.width} height={layout.bounds.height} fill="url(#famDots)" />
                 {layout.edges.map((edge, i) => {
                   const a = nodeMap.get(edge.fromId);
                   const b = nodeMap.get(edge.toId);
