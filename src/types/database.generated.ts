@@ -465,6 +465,19 @@ export type Database = {
           publisher: string
         }[]
       }
+      get_most_feared: {
+        Args: { p_limit?: number }
+        Returns: {
+          alignment: string
+          feared_by: number
+          id: string
+          image_md_url: string
+          image_url: string
+          name: string
+          portrait_url: string
+          publisher: string
+        }[]
+      }
       get_related_heroes: {
         Args: {
           p_hero_id: string

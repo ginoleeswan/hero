@@ -691,6 +691,37 @@ export async function getRelatedHeroes(
   return (data ?? []) as RelatedHeroCard[];
 }
 
+export interface FearedVillain {
+  id: string;
+  name: string;
+  image_url: string | null;
+  image_md_url: string | null;
+  portrait_url: string | null;
+  publisher: string | null;
+  alignment: string | null;
+  fearedBy: number;
+}
+
+/** Reverse-lookup leaderboard — villains ranked by how many heroes count them as
+ *  an enemy (enemy in-degree). The explore "Most Feared" / Hall of Infamy row. */
+export async function getMostFeared(limit = 12): Promise<FearedVillain[]> {
+  const { data, error } = await supabase.rpc('get_most_feared', { p_limit: limit });
+  if (error) {
+    console.warn('[getMostFeared] error:', error.message);
+    return [];
+  }
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    image_url: r.image_url,
+    image_md_url: r.image_md_url,
+    portrait_url: r.portrait_url,
+    publisher: r.publisher,
+    alignment: r.alignment,
+    fearedBy: r.feared_by,
+  }));
+}
+
 /** Family members (relatives) that have their own character page — the picker's
  *  "Bloodline" row. Ranked by popularity; empty when the hero has no linked kin. */
 export async function getFamilyOpponents(heroId: string, limit = 24): Promise<RelatedHeroCard[]> {

@@ -40,12 +40,15 @@ import {
   getFirstAppearanceCovers,
   getEraTimeline,
   getTopRivalries,
+  getMostFeared,
   type PublisherCounts,
   type FirstAppearanceCover,
   type EraBucket,
   type Rivalry,
+  type FearedVillain,
 } from '../../src/lib/db/heroes';
 import { GreatestRivalries } from '../../src/components/web/home/GreatestRivalries';
+import { HallOfInfamy } from '../../src/components/web/home/HallOfInfamy';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ROW_CARD_HEIGHT = 310;
@@ -1164,6 +1167,7 @@ export default function WebHomeScreen() {
     eras: EraBucket[];
     matchup: TodaysMatchup | null;
     rivalries: Rivalry[];
+    mostFeared: FearedVillain[];
   }
   const [homeData, setHomeData] = useState<Partial<HomeData>>({});
   const [homeStarted, setHomeStarted] = useState(false); // true once spotlight arrives
@@ -1225,6 +1229,9 @@ export default function WebHomeScreen() {
       .catch(() => {});
     getTopRivalries(12)
       .then(set('rivalries'))
+      .catch(() => {});
+    getMostFeared(12)
+      .then(set('mostFeared'))
       .catch(() => {});
     getTodaysMatchup()
       .then(set('matchup'))
@@ -1397,6 +1404,7 @@ export default function WebHomeScreen() {
 
             {/* ── Discover — explore deeper ─────────────────────────────────── */}
             <GreatestRivalries rivalries={homeData.rivalries ?? []} />
+            <HallOfInfamy villains={homeData.mostFeared ?? []} />
             <EraTimeline eras={homeData.eras ?? []} onPress={handlePress} />
             <CoverGallery covers={homeData.covers ?? []} onPress={handlePress} />
             <HomeRow
