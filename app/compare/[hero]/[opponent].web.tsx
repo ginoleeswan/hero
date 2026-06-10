@@ -380,8 +380,10 @@ export default function WebCompareScreen() {
   }
 
   /* Mobile web — native stack: fused clash card + verdict over a beige sheet.
-     Back is omitted (TopBar + browser chrome handle navigation); Share moves to
-     the bottom of the stats sheet so it reads as a post-review CTA. */
+     Back is omitted (TopBar + browser chrome handle navigation). Share sits in
+     the verdict block — the emotional punchline is the moment users want to
+     forward the result, so the action should be right there, not buried below
+     a full stat list. */
   return (
     <View style={[styles.scroll, styles.contentOuter] as object}>
       <View style={styles.mobileNavyTop as object}>
@@ -402,6 +404,16 @@ export default function WebCompareScreen() {
         </View>
         <View style={styles.verdictBlock}>
           <VerdictReveal verdict={verdict} />
+          <Pressable
+            onPress={handleShare}
+            accessibilityLabel="Share matchup"
+            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+              [styles.shareRow, hovered && (styles.shareRowHover as object)] as object
+            }
+          >
+            <Ionicons name="share-outline" size={14} color="rgba(245,235,220,0.7)" />
+            <Text style={styles.shareRowText}>{copied ? 'Link copied!' : 'Share result'}</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -411,16 +423,6 @@ export default function WebCompareScreen() {
             <StatBattleRow key={stat.key} stat={stat} />
           ))}
         </View>
-        <Pressable
-          onPress={handleShare}
-          accessibilityLabel="Share matchup"
-          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [styles.shareRow, hovered && (styles.shareRowHover as object)] as object
-          }
-        >
-          <Ionicons name="share-outline" size={16} color={COLORS.navy} />
-          <Text style={styles.shareRowText}>{copied ? 'Link copied!' : 'Share matchup'}</Text>
-        </Pressable>
       </View>
     </View>
   );
@@ -680,23 +682,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
 
-  // Share CTA — sits below the stats as a post-review action
+  // Share pill — in the navy verdict block, inline with the result reveal
   shareRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    marginTop: 28,
-    marginHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: 'rgba(11,24,32,0.07)',
+    alignSelf: 'center',
+    gap: 6,
+    marginTop: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(245,235,220,0.08)',
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: 'rgba(245,235,220,0.18)',
     cursor: 'pointer',
   } as object,
-  shareRowHover: { backgroundColor: 'rgba(11,24,32,0.13)' } as object,
+  shareRowHover: { backgroundColor: 'rgba(245,235,220,0.14)' } as object,
   shareRowText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 14,
-    color: COLORS.navy,
+    fontSize: 13,
+    color: 'rgba(245,235,220,0.7)',
   },
 });
