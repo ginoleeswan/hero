@@ -270,14 +270,26 @@ export default function WebCategoryScreen() {
   // so content clips there instead of bleeding under it. Scoped to this screen,
   // we restore native document scroll so the grid (a plain View, like the
   // skeleton) flows edge-to-edge under the translucent toolbar — and iOS
-  // collapses its toolbar on document scroll, exactly like apple.com. Cleanup
-  // removes the inline override so the rest of the app keeps its nested scroll.
+  // collapses its toolbar on document scroll, exactly like apple.com.
+  //
+  // We also repaint the document background beige here. Once content scrolls
+  // past the 100dvh fold, the backdrop behind it is the <body> (which the web
+  // layout paints navy), so the navy showed under the toolbar and along the
+  // edges. Beige body = the canvas reads continuous to the very bottom. Cleanup
+  // restores both so the rest of the app keeps its nested scroll + navy backdrop.
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
     const { body } = document;
+    const html = document.documentElement;
+    const prevBodyBg = body.style.backgroundColor;
+    const prevHtmlBg = html.style.backgroundColor;
     body.style.setProperty('overflow', 'visible', 'important');
+    body.style.backgroundColor = COLORS.beige;
+    html.style.backgroundColor = COLORS.beige;
     return () => {
       body.style.removeProperty('overflow');
+      body.style.backgroundColor = prevBodyBg;
+      html.style.backgroundColor = prevHtmlBg;
     };
   }, []);
 
