@@ -985,7 +985,7 @@ export default function WebProfileScreen() {
 // ── Mobile-only styles (native parity) ───────────────────────────────────────
 const mob = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
-  scroll: { paddingBottom: 80 },
+  scroll: { paddingBottom: 'env(safe-area-inset-bottom)' as unknown as number },
 
   // Cover
   cover: {

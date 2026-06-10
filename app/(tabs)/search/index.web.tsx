@@ -318,7 +318,7 @@ export default function WebSearchScreen() {
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       {showIdle ? (
         <ScrollView style={styles.scroll}>
-          <View style={[styles.gridWrap, { paddingHorizontal: contentPad, paddingBottom: 60 }]}>
+          <View style={[styles.gridWrap, { paddingHorizontal: contentPad, paddingBottom: 'env(safe-area-inset-bottom)' as unknown as number }]}>
             {history.length > 0 && (
               <>
                 <View style={styles.idleHeaderRow}>
@@ -379,7 +379,7 @@ export default function WebSearchScreen() {
         </View>
       ) : (
         <ScrollView style={styles.scroll}>
-          <View style={[styles.gridWrap, { paddingHorizontal: contentPad, paddingBottom: 60 }]}>
+          <View style={[styles.gridWrap, { paddingHorizontal: contentPad, paddingBottom: 'env(safe-area-inset-bottom)' as unknown as number }]}>
             <View style={gridStyle as object}>
               {heroes.map((hero) => (
                 <HeroCard key={hero.id} hero={hero} onPress={() => goToHero(hero.id)} onLongPress={() => setPeek(hero)} onInfo={() => setPeek(hero)} />

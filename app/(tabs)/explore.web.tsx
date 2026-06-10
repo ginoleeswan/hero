@@ -1470,9 +1470,7 @@ const styles = StyleSheet.create({
   // ── Home layout ──────────────────────────────────────────────────────────────
   discoverContent: {
     paddingTop: 0,
-    // Clear the iOS home indicator now that content bleeds edge-to-edge
-    // (viewport-fit=cover). Resolves to plain 24px where there's no safe area.
-    paddingBottom: 'calc(24px + env(safe-area-inset-bottom))',
+    paddingBottom: 'env(safe-area-inset-bottom)',
     width: '100%',
   } as object,
 });
