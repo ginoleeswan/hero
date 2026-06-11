@@ -29,7 +29,7 @@ export function HeroCard({ id, name, imageUrl, portraitUrl, width, height }: Her
   const imageSource = heroImageSource(id, imageUrl, portraitUrl);
 
   return (
-    <View style={[styles.card, { width, height }]}>
+    <View collapsable={false} style={[styles.card, { width, height }]}>
       <Image
         source={imageSource}
         contentFit="cover"
