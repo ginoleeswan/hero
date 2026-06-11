@@ -153,8 +153,16 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   const bar = (
     <View style={c.bar as object} pointerEvents="box-none">
       {isMobile ? (
-        // Consistent scrim — same at the top and when scrolled.
-        <View style={[c.scrim, mobileScrim] as object} pointerEvents="none" />
+        // One consistent frosted scrim at every scroll position — graduated blur
+        // (also the GPU-compositing layer that keeps the fixed bar from scrolling
+        // on iOS) under a tint that's opaque navy at the top, fused with the
+        // status bar, easing into the page below.
+        <View style={c.scrim as object} pointerEvents="none">
+          <View style={[StyleSheet.absoluteFill, c.frostA] as object} />
+          <View style={[StyleSheet.absoluteFill, c.frostB] as object} />
+          <View style={[StyleSheet.absoluteFill, c.frostC] as object} />
+          <View style={[StyleSheet.absoluteFill, mobileScrim] as object} />
+        </View>
       ) : (
         <>
           {/* Desktop: soft dark gradient over the hero at the top… */}

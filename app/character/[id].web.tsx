@@ -123,7 +123,7 @@ export default function WebCharacterScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { width, height: winHeight } = useWindowDimensions();
-  const mHeroHeight = Math.round(winHeight * 0.75);
+  const mHeroHeight = Math.round(winHeight * 0.9);
   const isDesktop = width >= 700;
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
