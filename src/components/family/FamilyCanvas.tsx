@@ -4,7 +4,7 @@
 // react-native-svg for edges. Co-exists with an outer ScrollView via
 // activeOffsetX/Y so vertical page scrolling is not captured.
 import { useMemo, useState, useEffect, useCallback, type ReactElement } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -112,31 +112,43 @@ function CanvasNode({
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
-export function FamilyCanvas({
+// ── Legend ───────────────────────────────────────────────────────────────────
+function Legend(): ReactElement {
+  return (
+    <View style={styles.legend}>
+      <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: '#c3b59c' }]} />
+        <Text style={styles.legendText}>Bloodline</Text>
+      </View>
+      <Text style={styles.legendSep}>·</Text>
+      <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: '#E0A335' }]} />
+        <Text style={styles.legendText}>Marriage</Text>
+      </View>
+      <Text style={styles.legendSep}>·</Text>
+      <View style={styles.legendItem}>
+        <View style={styles.legendDash} />
+        <Text style={styles.legendText}>Same generation</Text>
+      </View>
+    </View>
+  );
+}
+
+// ── Interactive stage: gutter + pannable/zoomable viewport ───────────────────
+function FamilyStage({
+  layout,
   heroName,
-  heroImage = null,
-  members,
+  heroImage,
+  fullscreen,
+  onToggleFullscreen,
 }: {
+  layout: FamilyLayout;
   heroName: string;
-  heroImage?: string | null;
-  members: FamilyMember[];
-}): ReactElement | null {
-  if (members.length === 0) return null;
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { graph, layout } = useMemo<{ graph: FamilyGraph; layout: FamilyLayout }>(() => {
-    const g = buildFamilyGraph(members);
-    const l = layoutFamily(g);
-    return { graph: g, layout: l };
-  }, [members]);
-
-  const linkedCount = members.filter((m) => m.heroId).length;
-
-  // Viewport size
+  heroImage: string | null;
+  fullscreen: boolean;
+  onToggleFullscreen: () => void;
+}): ReactElement {
   const [vp, setVp] = useState({ w: 0, h: 0 });
-
-  // Pan/zoom shared values
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
   const scale = useSharedValue(1);
@@ -147,15 +159,10 @@ export function FamilyCanvas({
     (vpW: number, vpH: number) => {
       const heroNode = layout.nodes.find((n) => n.isHero);
       if (!heroNode || vpW === 0) return null;
-      return {
-        tx: vpW / 2 - heroNode.x,
-        ty: vpH / 2 - heroNode.y,
-        scale: 1,
-      };
+      return { tx: vpW / 2 - heroNode.x, ty: vpH / 2 - heroNode.y, scale: 1 };
     },
     [layout],
   );
-
   const recenter = useCallback(() => {
     const c = computeCenter(vp.w, vp.h);
     if (!c) return;
@@ -164,15 +171,13 @@ export function FamilyCanvas({
     scale.value = c.scale;
   }, [computeCenter, vp.w, vp.h, tx, ty, scale]);
 
-  // Center on hero once viewport is measured
   useEffect(() => {
     if (vp.w === 0) return;
     recenter();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vp.w, vp.h, layout]);
 
-  // activeOffset ensures a deliberate horizontal/vertical drag triggers canvas
-  // pan while a vertical flick outside the threshold scrolls the page ScrollView.
+  // activeOffset: a deliberate drag pans the canvas; a vertical flick scrolls the page.
   const pan = Gesture.Pan()
     .activeOffsetX([-8, 8])
     .activeOffsetY([-8, 8])
@@ -184,29 +189,21 @@ export function FamilyCanvas({
       tx.value = startX.value + e.translationX;
       ty.value = startY.value + e.translationY;
     });
-
   const pinch = Gesture.Pinch().onUpdate((e) => {
     scale.value = Math.min(2, Math.max(0.5, e.scale));
   });
-
   const gesture = Gesture.Simultaneous(pan, pinch);
 
   const canvasStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: tx.value },
-      { translateY: ty.value },
-      { scale: scale.value },
-    ],
+    transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }],
   }));
 
-  // Build a node map for edge lookups
   const nodeMap = useMemo(() => {
     const m = new Map<string, PositionedNode>();
     for (const n of layout.nodes) m.set(n.id, n);
     return m;
   }, [layout.nodes]);
 
-  // Zoom helpers
   const zoomIn = () => {
     scale.value = Math.min(2, scale.value + 0.15);
   };
@@ -215,6 +212,126 @@ export function FamilyCanvas({
   };
 
   return (
+    <View style={[styles.stage, fullscreen && styles.stageFull]}>
+      <View style={[styles.axisGutter, fullscreen && styles.fillH]} pointerEvents="none">
+        {layout.rows.map((row) => (
+          <AxisLabel key={row.tier} row={row} scale={scale} ty={ty} />
+        ))}
+      </View>
+      <View
+        style={[styles.viewport, fullscreen && styles.fillH]}
+        onLayout={(e) => setVp({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
+      >
+        {vp.w > 0 ? (
+          <Svg width={vp.w} height={vp.h} style={StyleSheet.absoluteFill} pointerEvents="none">
+            <Defs>
+              <Pattern id="famDots" x={0} y={0} width={24} height={24} patternUnits="userSpaceOnUse">
+                <Circle cx={1} cy={1} r={1} fill="#ece1cd" />
+              </Pattern>
+            </Defs>
+            <Rect x={0} y={0} width={vp.w} height={vp.h} fill="url(#famDots)" />
+          </Svg>
+        ) : null}
+        <GestureDetector gesture={gesture}>
+          <Animated.View
+            style={[
+              {
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                width: layout.bounds.width,
+                height: layout.bounds.height,
+              },
+              canvasStyle,
+            ]}
+          >
+            <Svg
+              width={layout.bounds.width}
+              height={layout.bounds.height}
+              style={StyleSheet.absoluteFill}
+            >
+              {layout.edges.map((edge, i) => {
+                const a = nodeMap.get(edge.fromId);
+                const b = nodeMap.get(edge.toId);
+                if (!a || !b) return null;
+                const my = (a.y + b.y) / 2;
+                const d = `M${a.x},${a.y} L${a.x},${my} L${b.x},${my} L${b.x},${b.y}`;
+                if (edge.kind === 'bloodline') {
+                  return <Path key={i} d={d} stroke="#c3b59c" strokeWidth={2} fill="none" />;
+                }
+                if (edge.kind === 'marriage') {
+                  return <Path key={i} d={d} stroke="#E0A335" strokeWidth={2} fill="none" />;
+                }
+                return (
+                  <Path key={i} d={d} stroke="#e2d6c2" strokeWidth={2} strokeDasharray="4 4" fill="none" />
+                );
+              })}
+            </Svg>
+
+            {layout.nodes.map((node) => (
+              <View
+                key={node.id}
+                style={{
+                  position: 'absolute',
+                  left: node.x - NODE_W / 2,
+                  top: node.y - NODE_H / 2,
+                  width: NODE_W,
+                  alignItems: 'center',
+                }}
+              >
+                <CanvasNode node={node} heroName={heroName} heroImage={heroImage} />
+              </View>
+            ))}
+          </Animated.View>
+        </GestureDetector>
+
+        <View style={styles.zoomButtons}>
+          <TouchableOpacity style={styles.zoomBtn} onPress={zoomIn} activeOpacity={0.7}>
+            <Ionicons name="add" size={18} color={COLORS.black} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.zoomBtn} onPress={zoomOut} activeOpacity={0.7}>
+            <Ionicons name="remove" size={18} color={COLORS.black} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.zoomBtn} onPress={recenter} activeOpacity={0.7}>
+            <Ionicons name="locate-outline" size={16} color={COLORS.black} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.zoomBtn} onPress={onToggleFullscreen} activeOpacity={0.7}>
+            <Ionicons
+              name={fullscreen ? 'contract-outline' : 'expand-outline'}
+              size={16}
+              color={COLORS.black}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+export function FamilyCanvas({
+  heroName,
+  heroImage = null,
+  members,
+}: {
+  heroName: string;
+  heroImage?: string | null;
+  members: FamilyMember[];
+}): ReactElement | null {
+  const [fullscreen, setFullscreen] = useState(false);
+  if (members.length === 0) return null;
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { graph, layout } = useMemo<{ graph: FamilyGraph; layout: FamilyLayout }>(() => {
+    const g = buildFamilyGraph(members);
+    const l = layoutFamily(g);
+    return { graph: g, layout: l };
+  }, [members]);
+
+  const linkedCount = members.filter((m) => m.heroId).length;
+
+  return (
+    <>
     <View style={styles.card}>
       {/* Card chrome */}
       <View style={styles.header}>
@@ -226,140 +343,15 @@ export function FamilyCanvas({
       </View>
       <View style={styles.divider} />
 
-      {/* Stage: fixed left-axis gutter + pannable viewport */}
-      <View style={styles.stage}>
-        <View style={styles.axisGutter} pointerEvents="none">
-          {layout.rows.map((row) => (
-            <AxisLabel key={row.tier} row={row} scale={scale} ty={ty} />
-          ))}
-        </View>
-        <View
-          style={styles.viewport}
-          onLayout={(e) => setVp({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
-        >
-          {/* Fixed faint dot-grid background — fills the viewport regardless of pan/zoom */}
-          {vp.w > 0 ? (
-            <Svg width={vp.w} height={vp.h} style={StyleSheet.absoluteFill} pointerEvents="none">
-              <Defs>
-                <Pattern id="famDots" x={0} y={0} width={24} height={24} patternUnits="userSpaceOnUse">
-                  <Circle cx={1} cy={1} r={1} fill="#ece1cd" />
-                </Pattern>
-              </Defs>
-              <Rect x={0} y={0} width={vp.w} height={vp.h} fill="url(#famDots)" />
-            </Svg>
-          ) : null}
-          {/* Pannable canvas */}
-          <GestureDetector gesture={gesture}>
-            <Animated.View
-              style={[
-                {
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  width: layout.bounds.width,
-                  height: layout.bounds.height,
-                },
-                canvasStyle,
-              ]}
-            >
-              {/* SVG edges — rendered behind nodes */}
-              <Svg
-                width={layout.bounds.width}
-                height={layout.bounds.height}
-                style={StyleSheet.absoluteFill}
-              >
-                {layout.edges.map((edge, i) => {
-                  const a = nodeMap.get(edge.fromId);
-                  const b = nodeMap.get(edge.toId);
-                  if (!a || !b) return null;
-                  const my = (a.y + b.y) / 2;
-                  const d = `M${a.x},${a.y} L${a.x},${my} L${b.x},${my} L${b.x},${b.y}`;
-                  if (edge.kind === 'bloodline') {
-                    return (
-                      <Path
-                        key={i}
-                        d={d}
-                        stroke="#c3b59c"
-                        strokeWidth={2}
-                        fill="none"
-                      />
-                    );
-                  }
-                  if (edge.kind === 'marriage') {
-                    return (
-                      <Path
-                        key={i}
-                        d={d}
-                        stroke="#E0A335"
-                        strokeWidth={2}
-                        fill="none"
-                      />
-                    );
-                  }
-                  // sibling
-                  return (
-                    <Path
-                      key={i}
-                      d={d}
-                      stroke="#e2d6c2"
-                      strokeWidth={2}
-                      strokeDasharray="4 4"
-                      fill="none"
-                    />
-                  );
-                })}
-              </Svg>
+      <FamilyStage
+        layout={layout}
+        heroName={heroName}
+        heroImage={heroImage}
+        fullscreen={false}
+        onToggleFullscreen={() => setFullscreen(true)}
+      />
 
-              {/* Nodes */}
-              {layout.nodes.map((node) => (
-                <View
-                  key={node.id}
-                  style={{
-                    position: 'absolute',
-                    left: node.x - NODE_W / 2,
-                    top: node.y - NODE_H / 2,
-                    width: NODE_W,
-                    alignItems: 'center',
-                  }}
-                >
-                  <CanvasNode node={node} heroName={heroName} heroImage={heroImage} />
-                </View>
-              ))}
-            </Animated.View>
-          </GestureDetector>
-
-          {/* Zoom buttons */}
-          <View style={styles.zoomButtons}>
-            <TouchableOpacity style={styles.zoomBtn} onPress={zoomIn} activeOpacity={0.7}>
-              <Ionicons name="add" size={18} color={COLORS.black} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.zoomBtn} onPress={zoomOut} activeOpacity={0.7}>
-              <Ionicons name="remove" size={18} color={COLORS.black} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.zoomBtn} onPress={recenter} activeOpacity={0.7}>
-              <Ionicons name="locate-outline" size={16} color={COLORS.black} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-
-      {/* Legend */}
-      <View style={styles.legend}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#c3b59c' }]} />
-          <Text style={styles.legendText}>Bloodline</Text>
-        </View>
-        <Text style={styles.legendSep}>·</Text>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#E0A335' }]} />
-          <Text style={styles.legendText}>Marriage</Text>
-        </View>
-        <Text style={styles.legendSep}>·</Text>
-        <View style={styles.legendItem}>
-          <View style={styles.legendDash} />
-          <Text style={styles.legendText}>Same generation</Text>
-        </View>
-      </View>
+      <Legend />
 
       {/* Asides (variants) */}
       {graph.asides.length > 0 ? (
@@ -383,6 +375,31 @@ export function FamilyCanvas({
         </Text>
       ) : null}
     </View>
+
+    <Modal
+      visible={fullscreen}
+      animationType="fade"
+      transparent={false}
+      onRequestClose={() => setFullscreen(false)}
+    >
+      <View style={styles.modalRoot}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.eyebrow}>Family · {heroName}</Text>
+          <TouchableOpacity style={styles.modalClose} onPress={() => setFullscreen(false)}>
+            <Ionicons name="close" size={22} color={COLORS.black} />
+          </TouchableOpacity>
+        </View>
+        <FamilyStage
+          layout={layout}
+          heroName={heroName}
+          heroImage={heroImage}
+          fullscreen
+          onToggleFullscreen={() => setFullscreen(false)}
+        />
+        <Legend />
+      </View>
+    </Modal>
+    </>
   );
 }
 
@@ -491,6 +508,31 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ede5da',
     overflow: 'hidden',
+  },
+  stageFull: { flex: 1, height: undefined as unknown as number },
+  fillH: { flex: 1, height: undefined as unknown as number },
+  modalRoot: {
+    flex: 1,
+    backgroundColor: '#fdf9f4',
+    paddingTop: 52,
+    paddingHorizontal: 14,
+    paddingBottom: 18,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  modalClose: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#e0d6c8',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   axisGutter: {
     width: 92,
