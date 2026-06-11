@@ -134,9 +134,7 @@ export function TopBar() {
       {/* On scroll: progressive frost — stacked blur layers tapering from strong
           (top, behind the icons) to none (bottom), so it dissolves with no edge. */}
       <View
-        style={
-          [c.frost, isMobile && (c.frostTall as object), scrolled && (c.layerShown as object)] as object
-        }
+        style={[c.frost, scrolled && (c.layerShown as object)] as object}
         pointerEvents="none"
       >
         <View style={[StyleSheet.absoluteFill, c.frostA] as object} />
@@ -258,11 +256,6 @@ const c = StyleSheet.create({
     opacity: 0,
     transition: 'opacity 220ms ease',
   } as object,
-  // Mobile gets a longer tail so the dark frost has more room to ease out into
-  // the content below — a gentler, more flowing dissolve than the desktop bar.
-  frostTall: {
-    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 56px)`,
-  } as object,
   frostA: {
     backdropFilter: 'blur(16px) saturate(150%)',
     WebkitBackdropFilter: 'blur(16px) saturate(150%)',
@@ -281,14 +274,12 @@ const c = StyleSheet.create({
     maskImage: 'linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%)',
     WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%)',
   } as object,
-  // Mobile: opaque navy through the status-cap + icon row (identical to the
-  // system bar, so the cap→bar boundary disappears), then a many-stop ease-out
-  // curve that decelerates smoothly to transparent — no visible kink or banding
-  // at any single stop, so the dark bar dissolves into content as one flowing
-  // gradient rather than a few stepped bands.
+  // Mobile: opaque navy only across the status-cap zone (so the cap→bar boundary
+  // disappears and the system bar flows in), then ease out quickly so it's a
+  // slim bridge from the status bar — not a heavy band sitting over the content.
   frostTintMobile: {
     backgroundImage:
-      'linear-gradient(to bottom, rgba(11,24,32,1) 0%, rgba(11,24,32,1) 36%, rgba(11,24,32,0.94) 48%, rgba(11,24,32,0.8) 60%, rgba(11,24,32,0.58) 71%, rgba(11,24,32,0.34) 81%, rgba(11,24,32,0.15) 90%, rgba(11,24,32,0.05) 96%, transparent 100%)',
+      'linear-gradient(to bottom, rgba(11,24,32,0.96) 0%, rgba(11,24,32,0.72) 30%, rgba(11,24,32,0.4) 54%, rgba(11,24,32,0.14) 78%, transparent 100%)',
   } as object,
   // Desktop: the original light frosted glass — no system status bar to match.
   frostTintDesktop: {
