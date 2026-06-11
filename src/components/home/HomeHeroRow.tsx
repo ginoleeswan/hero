@@ -54,19 +54,21 @@ function PortraitZoomCard({ item }: { item: RowHero }) {
         }}
       >
         <Animated.View style={[styles.cardVisual, animatedStyle]}>
-          {/* No static placeholder behind the card: the Apple Zoom owns the
-              source. On dismiss iOS hides this card and the detail screen
-              contracts down into the now-empty slot — a true zoom-into-origin,
-              not a morph onto a duplicate card sitting underneath. */}
+          {/* Nothing sits behind the card. The drop shadow lives on a wrapper
+              INSIDE Link.AppleZoom so it's hidden together with the card during
+              the zoom dismiss — the origin slot goes completely empty and the
+              detail screen contracts cleanly back into its place. */}
           <Link.AppleZoom>
-            <HeroCard
-              id={item.id}
-              name={item.name}
-              imageUrl={item.image_url}
-              portraitUrl={item.portrait_url}
-              width={PORTRAIT_CARD_WIDTH}
-              height={PORTRAIT_CARD_HEIGHT}
-            />
+            <View style={styles.cardShadow}>
+              <HeroCard
+                id={item.id}
+                name={item.name}
+                imageUrl={item.image_url}
+                portraitUrl={item.portrait_url}
+                width={PORTRAIT_CARD_WIDTH}
+                height={PORTRAIT_CARD_HEIGHT}
+              />
+            </View>
           </Link.AppleZoom>
         </Animated.View>
       </Pressable>
@@ -187,11 +189,17 @@ const styles = StyleSheet.create({
     height: PORTRAIT_CARD_HEIGHT,
     marginVertical: 8,
   },
-  // Inner scaled view: shadow + clip live here, OUTSIDE Link.AppleZoom, so the
-  // shadow box never bleeds into the transition. No backgroundColor — when the
-  // zoom hides the live card the slot reads as empty (the band shows through)
-  // rather than flashing an opaque box.
+  // Inner scaled view: just the press-scale transform + clip. The shadow is NOT
+  // here — it lives on cardShadow inside Link.AppleZoom so it disappears with the
+  // card on dismiss, leaving a clean empty origin (no hollow shadow box).
   cardVisual: {
+    flex: 1,
+    borderRadius: HERO_CARD_RADIUS,
+    borderCurve: 'continuous',
+  },
+  // Drop shadow on the card itself (inside the zoom element), so it morphs and
+  // hides together with the card during the transition.
+  cardShadow: {
     flex: 1,
     borderRadius: HERO_CARD_RADIUS,
     borderCurve: 'continuous',
