@@ -18,12 +18,18 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   CATEGORY_LABELS,
+  getCategoryFacetCounts,
   type CategorySlug,
   type Hero,
-  type SortOption,
-  type CategoryPublisher,
 } from '../../src/lib/db/heroes';
-import { DEFAULT_FILTERS, type CategoryFilters } from '../../src/lib/db/categoryFilters';
+import {
+  DEFAULT_FILTERS,
+  defaultSort,
+  visibleFacets,
+  activeFilterList,
+  type CategoryFilters,
+  type FacetCounts,
+} from '../../src/lib/db/categoryFilters';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCategoryHeroes, prefetchHeroRow } from '../../src/lib/query/heroQueries';
 import { flattenCategoryPages } from '../../src/lib/query/heroCache';
@@ -127,10 +133,25 @@ export default function CategoryScreen() {
   const categorySlug = VALID_SLUGS.has(slug as CategorySlug) ? (slug as CategorySlug) : null;
   const title = categorySlug ? CATEGORY_LABELS[categorySlug] : (slug ?? 'Heroes');
 
-  const [sort, setSort] = useState<SortOption>('popular');
-  const [publisher, setPublisher] = useState<CategoryPublisher>('all');
+  const [filters, setFilters] = useState<CategoryFilters>(() => ({
+    ...DEFAULT_FILTERS,
+    sort: categorySlug ? defaultSort(categorySlug) : 'popular',
+  }));
   const [search, setSearch] = useState('');
+  const [counts, setCounts] = useState<FacetCounts | null>(null);
   const [navigating, setNavigating] = useState(false);
+
+  const setFilter = useCallback(
+    <K extends keyof CategoryFilters>(key: K, value: CategoryFilters[K]) => {
+      setFilters((prev) => {
+        let next: CategoryFilters = { ...prev, [key]: value };
+        // Power sort is meaningless without rated stats — couple them, matching web.
+        if (key === 'sort' && value === 'power') next = { ...next, hasStats: true };
+        return next;
+      });
+    },
+    [],
+  );
   const [peek, setPeek] = useState<PeekHero | null>(null);
 
   const queryClient = useQueryClient();
@@ -142,12 +163,27 @@ export default function CategoryScreen() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const filters: CategoryFilters = useMemo(
-    () => ({ ...DEFAULT_FILTERS, sort, publisher, search: debouncedSearch }),
-    [sort, publisher, debouncedSearch],
+  const queryFilters: CategoryFilters = useMemo(
+    () => ({ ...filters, search: debouncedSearch }),
+    [filters, debouncedSearch],
   );
 
-  const categoryQuery = useCategoryHeroes(categorySlug, filters);
+  const categoryQuery = useCategoryHeroes(categorySlug, queryFilters);
+
+  useEffect(() => {
+    if (!categorySlug) return;
+    let cancelled = false;
+    getCategoryFacetCounts(categorySlug, queryFilters)
+      .then((c) => {
+        if (!cancelled) setCounts(c);
+      })
+      .catch(() => {
+        if (!cancelled) setCounts(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [categorySlug, queryFilters]);
 
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = categoryQuery;
 
@@ -185,8 +221,8 @@ export default function CategoryScreen() {
   const eyebrow = (() => {
     if (search.trim()) return `${total} RESULT${total !== 1 ? 'S' : ''}`;
     const base = `${total.toLocaleString()} ${total === 1 ? 'CHARACTER' : 'CHARACTERS'}`;
-    if (publisher === 'marvel') return `${base} · MARVEL`;
-    if (publisher === 'dc') return `${base} · DC`;
+    if (filters.publisher === 'marvel') return `${base} · MARVEL`;
+    if (filters.publisher === 'dc') return `${base} · DC`;
     return base;
   })();
 
@@ -211,6 +247,21 @@ export default function CategoryScreen() {
     [eyebrow, tagline, title, headerHeight],
   );
 
+  const visible = categorySlug ? visibleFacets(categorySlug) : [];
+  const anyActive =
+    (categorySlug ? activeFilterList(categorySlug, filters).length : 0) > 0 ||
+    (!!categorySlug && filters.sort !== defaultSort(categorySlug));
+
+  const lbl = (text: string, count?: number) =>
+    typeof count === 'number' && count > 0 ? `${text} (${count.toLocaleString()})` : text;
+
+  const resetFilters = useCallback(() => {
+    setFilters({
+      ...DEFAULT_FILTERS,
+      sort: categorySlug ? defaultSort(categorySlug) : 'popular',
+    });
+  }, [categorySlug]);
+
   return (
     <View style={styles.root}>
       <Stack.Screen options={headerOptions} />
@@ -228,30 +279,134 @@ export default function CategoryScreen() {
       {/* Native sort + filter as a single header pull-down menu. */}
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Menu
-          icon={publisher !== 'all' ? 'line.3.horizontal.decrease.circle.fill' : 'line.3.horizontal.decrease'}
+          icon={anyActive ? 'line.3.horizontal.decrease.circle.fill' : 'line.3.horizontal.decrease'}
         >
           <Stack.Toolbar.Menu inline title="Sort">
-            <Stack.Toolbar.MenuAction isOn={sort === 'popular'} onPress={() => setSort('popular')}>
+            <Stack.Toolbar.MenuAction
+              isOn={filters.sort === 'popular'}
+              onPress={() => setFilter('sort', 'popular')}
+            >
               Popular
             </Stack.Toolbar.MenuAction>
-            <Stack.Toolbar.MenuAction isOn={sort === 'az'} onPress={() => setSort('az')}>
+            <Stack.Toolbar.MenuAction
+              isOn={filters.sort === 'az'}
+              onPress={() => setFilter('sort', 'az')}
+            >
               A–Z
             </Stack.Toolbar.MenuAction>
-          </Stack.Toolbar.Menu>
-          <Stack.Toolbar.Menu inline title="Publisher">
-            <Stack.Toolbar.MenuAction isOn={publisher === 'all'} onPress={() => setPublisher('all')}>
-              All publishers
-            </Stack.Toolbar.MenuAction>
             <Stack.Toolbar.MenuAction
-              isOn={publisher === 'marvel'}
-              onPress={() => setPublisher('marvel')}
+              isOn={filters.sort === 'power'}
+              onPress={() => setFilter('sort', 'power')}
             >
-              Marvel
-            </Stack.Toolbar.MenuAction>
-            <Stack.Toolbar.MenuAction isOn={publisher === 'dc'} onPress={() => setPublisher('dc')}>
-              DC
+              Power
             </Stack.Toolbar.MenuAction>
           </Stack.Toolbar.Menu>
+
+          {visible.includes('publisher') && (
+            <Stack.Toolbar.Menu inline title="Publisher">
+              <Stack.Toolbar.MenuAction
+                isOn={filters.publisher === 'all'}
+                onPress={() => setFilter('publisher', 'all')}
+              >
+                {lbl('All publishers', counts?.publisher.all)}
+              </Stack.Toolbar.MenuAction>
+              <Stack.Toolbar.MenuAction
+                isOn={filters.publisher === 'marvel'}
+                onPress={() => setFilter('publisher', 'marvel')}
+              >
+                {lbl('Marvel', counts?.publisher.marvel)}
+              </Stack.Toolbar.MenuAction>
+              <Stack.Toolbar.MenuAction
+                isOn={filters.publisher === 'dc'}
+                onPress={() => setFilter('publisher', 'dc')}
+              >
+                {lbl('DC', counts?.publisher.dc)}
+              </Stack.Toolbar.MenuAction>
+              <Stack.Toolbar.MenuAction
+                isOn={filters.publisher === 'other'}
+                onPress={() => setFilter('publisher', 'other')}
+              >
+                {lbl('Other', counts?.publisher.other)}
+              </Stack.Toolbar.MenuAction>
+            </Stack.Toolbar.Menu>
+          )}
+
+          {visible.includes('alignment') && (
+            <Stack.Toolbar.Menu inline title="Alignment">
+              <Stack.Toolbar.MenuAction
+                isOn={filters.alignment === 'any'}
+                onPress={() => setFilter('alignment', 'any')}
+              >
+                Any
+              </Stack.Toolbar.MenuAction>
+              <Stack.Toolbar.MenuAction
+                isOn={filters.alignment === 'good'}
+                onPress={() => setFilter('alignment', 'good')}
+              >
+                {lbl('Good', counts?.alignment.good)}
+              </Stack.Toolbar.MenuAction>
+              <Stack.Toolbar.MenuAction
+                isOn={filters.alignment === 'bad'}
+                onPress={() => setFilter('alignment', 'bad')}
+              >
+                {lbl('Bad', counts?.alignment.bad)}
+              </Stack.Toolbar.MenuAction>
+              <Stack.Toolbar.MenuAction
+                isOn={filters.alignment === 'neutral'}
+                onPress={() => setFilter('alignment', 'neutral')}
+              >
+                {lbl('Neutral', counts?.alignment.neutral)}
+              </Stack.Toolbar.MenuAction>
+            </Stack.Toolbar.Menu>
+          )}
+
+          {visible.includes('gender') && (
+            <Stack.Toolbar.Menu inline title="Gender">
+              <Stack.Toolbar.MenuAction
+                isOn={filters.gender === 'any'}
+                onPress={() => setFilter('gender', 'any')}
+              >
+                Any
+              </Stack.Toolbar.MenuAction>
+              <Stack.Toolbar.MenuAction
+                isOn={filters.gender === 'male'}
+                onPress={() => setFilter('gender', 'male')}
+              >
+                {lbl('Male', counts?.gender.male)}
+              </Stack.Toolbar.MenuAction>
+              <Stack.Toolbar.MenuAction
+                isOn={filters.gender === 'female'}
+                onPress={() => setFilter('gender', 'female')}
+              >
+                {lbl('Female', counts?.gender.female)}
+              </Stack.Toolbar.MenuAction>
+            </Stack.Toolbar.Menu>
+          )}
+
+          {visible.includes('hasStats') && (
+            <Stack.Toolbar.Menu inline title="Power stats">
+              <Stack.Toolbar.MenuAction
+                isOn={!filters.hasStats}
+                onPress={() => setFilter('hasStats', false)}
+              >
+                Any
+              </Stack.Toolbar.MenuAction>
+              <Stack.Toolbar.MenuAction
+                isOn={filters.hasStats}
+                onPress={() => setFilter('hasStats', true)}
+              >
+                {lbl('Rated only', counts?.has_stats)}
+              </Stack.Toolbar.MenuAction>
+            </Stack.Toolbar.Menu>
+          )}
+
+          {anyActive && (
+            <Stack.Toolbar.Menu inline>
+              <Stack.Toolbar.MenuAction onPress={resetFilters}>
+                Reset filters
+              </Stack.Toolbar.MenuAction>
+            </Stack.Toolbar.Menu>
+          )}
         </Stack.Toolbar.Menu>
       </Stack.Toolbar>
 
