@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     left: 8,
   },
   rankNumeral: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 100,
     lineHeight: 104,
     color: COLORS.beige,

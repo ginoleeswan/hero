@@ -52,8 +52,8 @@ export function SpotlightSlide({
       {/* Fade-to-beige scrim, kept low so it backs the identity without washing
           the portrait's face. */}
       <LinearGradient
-        colors={['transparent', 'rgba(245,235,220,0.65)', COLORS.beige]}
-        locations={[0.52, 0.82, 1]}
+        colors={['transparent', 'rgba(245,235,220,0.7)', COLORS.beige]}
+        locations={[0.66, 0.88, 1]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 4,
   },
-  metaName: { fontFamily: 'Flame-Bold', fontSize: 32, color: COLORS.navy, lineHeight: 34 },
+  metaName: { fontFamily: 'Flame-Regular', fontSize: 32, color: COLORS.navy, lineHeight: 34 },
   metaPublisher: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
