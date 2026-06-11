@@ -213,14 +213,14 @@ function FamilyStage({
   };
 
   return (
-    <View style={[styles.stage, fullscreen && styles.stageFull]}>
-      <View style={[styles.axisGutter, fullscreen && styles.gutterFull]} pointerEvents="none">
+    <View style={[styles.stage, fullscreen ? styles.stageFull : styles.stageInline]}>
+      <View style={styles.axisGutter} pointerEvents="none">
         {layout.rows.map((row) => (
           <AxisLabel key={row.tier} row={row} scale={scale} ty={ty} />
         ))}
       </View>
       <View
-        style={[styles.viewport, fullscreen && styles.fillH]}
+        style={styles.viewport}
         onLayout={(e) => setVp({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
       >
         {vp.w > 0 ? (
@@ -506,15 +506,13 @@ const styles = StyleSheet.create({
 
   stage: {
     flexDirection: 'row',
-    height: 460,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#ede5da',
     overflow: 'hidden',
   },
-  stageFull: { flex: 1, height: undefined as unknown as number },
-  fillH: { flex: 1, height: undefined as unknown as number },
-  gutterFull: { height: undefined as unknown as number },
+  stageInline: { height: 460 },
+  stageFull: { flex: 1 },
   modalRoot: {
     flex: 1,
     backgroundColor: '#fdf9f4',
@@ -540,7 +538,6 @@ const styles = StyleSheet.create({
   },
   axisGutter: {
     width: 92,
-    height: 460,
     backgroundColor: '#f6efe4',
     borderRightWidth: 1,
     borderRightColor: '#ece3d4',
@@ -549,7 +546,6 @@ const styles = StyleSheet.create({
   } as object,
   viewport: {
     flex: 1,
-    height: 460,
     overflow: 'hidden',
     position: 'relative',
     cursor: 'grab',
