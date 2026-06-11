@@ -54,21 +54,19 @@ function PortraitZoomCard({ item }: { item: RowHero }) {
         }}
       >
         <Animated.View style={[styles.cardVisual, animatedStyle]}>
-          {/* Nothing sits behind the card. The drop shadow lives on a wrapper
-              INSIDE Link.AppleZoom so it's hidden together with the card during
-              the zoom dismiss — the origin slot goes completely empty and the
-              detail screen contracts cleanly back into its place. */}
+          {/* Nothing behind the card and no drop shadow: a shadow would need a
+              persistent host outside the zoom, which would then show as a box in
+              the origin on dismiss. Keeping the slot empty means the detail
+              screen contracts cleanly back into a vacant place. */}
           <Link.AppleZoom>
-            <View style={styles.cardShadow}>
-              <HeroCard
-                id={item.id}
-                name={item.name}
-                imageUrl={item.image_url}
-                portraitUrl={item.portrait_url}
-                width={PORTRAIT_CARD_WIDTH}
-                height={PORTRAIT_CARD_HEIGHT}
-              />
-            </View>
+            <HeroCard
+              id={item.id}
+              name={item.name}
+              imageUrl={item.image_url}
+              portraitUrl={item.portrait_url}
+              width={PORTRAIT_CARD_WIDTH}
+              height={PORTRAIT_CARD_HEIGHT}
+            />
           </Link.AppleZoom>
         </Animated.View>
       </Pressable>
@@ -189,20 +187,11 @@ const styles = StyleSheet.create({
     height: PORTRAIT_CARD_HEIGHT,
     marginVertical: 8,
   },
-  // Inner scaled view: just the press-scale transform + clip. The shadow is NOT
-  // here — it lives on cardShadow inside Link.AppleZoom so it disappears with the
-  // card on dismiss, leaving a clean empty origin (no hollow shadow box).
+  // Inner scaled view: just the press-scale transform + clip. No shadow — see
+  // the JSX note; an outside-the-zoom shadow host would show in the empty origin.
   cardVisual: {
     flex: 1,
     borderRadius: HERO_CARD_RADIUS,
     borderCurve: 'continuous',
-  },
-  // Drop shadow on the card itself (inside the zoom element), so it morphs and
-  // hides together with the card during the transition.
-  cardShadow: {
-    flex: 1,
-    borderRadius: HERO_CARD_RADIUS,
-    borderCurve: 'continuous',
-    boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.3)',
   },
 });
