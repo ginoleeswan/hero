@@ -33,6 +33,7 @@ export function HeroCard({ id, name, imageUrl, portraitUrl, width, height }: Her
       <Image
         source={imageSource}
         contentFit="cover"
+        contentPosition="top"
         style={styles.image}
         cachePolicy="memory-disk"
         recyclingKey={id}

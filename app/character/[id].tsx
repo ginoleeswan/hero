@@ -14,7 +14,7 @@ import {
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter, Link } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -825,17 +825,22 @@ export default function CharacterScreen() {
           { transform: [{ translateY: imageTranslateY }, { scale: imageScale }] },
         ]}
       >
-        <Image
-          source={heroImage}
-          contentFit="cover"
-          contentPosition="top"
-          style={styles.heroImage}
-          cachePolicy="memory-disk"
-          recyclingKey={id ?? 'hero'}
-          transition={
-            heroImage !== null && typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null
-          }
-        />
+        {/* Apple Zoom target: marks the hero-image region as what the source
+            card morphs into. Without it iOS falls back to a whole-view zoom from
+            the card frame, which misaligns and reveals the card's navy bg. */}
+        <Link.AppleZoomTarget>
+          <Image
+            source={heroImage}
+            contentFit="cover"
+            contentPosition="top"
+            style={styles.heroImage}
+            cachePolicy="memory-disk"
+            recyclingKey={id ?? 'hero'}
+            transition={
+              heroImage !== null && typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null
+            }
+          />
+        </Link.AppleZoomTarget>
         {/* Top scrim — keeps the back / favourite controls legible on bright art */}
         <LinearGradient
           colors={['rgba(20,28,32,0.45)', 'transparent']}
