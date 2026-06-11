@@ -209,7 +209,7 @@ function FamilyStage({
 
   return (
     <View style={[styles.stage, fullscreen && styles.stageFull]}>
-      <View style={[styles.axisGutter, fullscreen && styles.fillH]} pointerEvents="none">
+      <View style={[styles.axisGutter, fullscreen && styles.gutterFull]} pointerEvents="none">
         {layout.rows.map((row) => (
           <AxisLabel key={row.tier} row={row} scale={scale} ty={ty} />
         ))}
@@ -509,6 +509,7 @@ const styles = StyleSheet.create({
   },
   stageFull: { flex: 1, height: undefined as unknown as number },
   fillH: { flex: 1, height: undefined as unknown as number },
+  gutterFull: { height: undefined as unknown as number },
   modalRoot: {
     flex: 1,
     backgroundColor: '#fdf9f4',
