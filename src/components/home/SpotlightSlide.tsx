@@ -1,6 +1,13 @@
 // src/components/home/SpotlightSlide.tsx
-import { useEffect, useRef } from 'react';
-import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
+import { useEffect } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,10 +20,12 @@ const ALIGN_LABEL: Record<string, string> = { good: 'Hero', bad: 'Villain', neut
 export function SpotlightSlide({
   hero,
   height,
+  scrollY,
   onPress,
 }: {
   hero: Hero;
   height: number;
+  scrollY: SharedValue<number>;
   onPress: () => void;
 }) {
   const source = heroImageSource(hero.id, hero.image_url, hero.portrait_url);
@@ -25,25 +34,26 @@ export function SpotlightSlide({
   const sub = [hero.publisher, align].filter(Boolean).join('   ·   ');
 
   // Slow Ken-Burns drift — a continuous, gentle scale so the portrait feels alive.
-  const kb = useRef(new Animated.Value(0)).current;
+  const kb = useSharedValue(0);
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(kb, { toValue: 1, duration: 9000, useNativeDriver: true }),
-        Animated.timing(kb, { toValue: 0, duration: 9000, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
+    kb.value = withRepeat(withTiming(1, { duration: 9000 }), -1, true);
   }, [kb]);
-  const scale = kb.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] });
+
+  const imageStyle = useAnimatedStyle(() => {
+    const kbScale = 1 + kb.value * 0.06;
+    // Overscroll zoom: pulling down past the top (scrollY < 0) scales the portrait
+    // up so it feels elastic, like the character screen's hero. Clamped at the top.
+    const pull = scrollY.value < 0 ? -scrollY.value : 0;
+    const overscroll = 1 + Math.min(pull / height, 0.6) * 0.9;
+    return { transform: [{ scale: kbScale * overscroll }] };
+  });
 
   // Apple TV / Disney+ billboard: full-bleed portrait, dark gradient base, a
   // centered identity + a prominent CTA. The portrait's face stays crisp; the
   // dark base guarantees the light text reads over any art.
   return (
     <Pressable onPress={onPress} style={[styles.container, { height }]}>
-      <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ scale }] }]}>
+      <Animated.View style={[StyleSheet.absoluteFill, imageStyle]}>
         <Image
           source={source}
           contentFit="cover"

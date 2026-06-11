@@ -65,7 +65,12 @@ export function SpotlightCarousel({
           Haptics.selectionAsync();
         }}
         renderItem={({ item }: { item: Hero }) => (
-          <SpotlightSlide hero={item} height={height} onPress={() => onHeroPress(item)} />
+          <SpotlightSlide
+            hero={item}
+            height={height}
+            scrollY={scrollY}
+            onPress={() => onHeroPress(item)}
+          />
         )}
       />
       {heroes.length > 1 && (
