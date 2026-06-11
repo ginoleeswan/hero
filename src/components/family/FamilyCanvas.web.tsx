@@ -2,7 +2,7 @@
 // Pannable / zoomable family tree for web. Uses react-native-reanimated 4 +
 // react-native-gesture-handler for pan + pinch, react-native-svg for edges.
 import { useMemo, useState, useEffect, useCallback, type ReactElement } from 'react';
-import { View, Text, Pressable, StyleSheet, Modal } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Modal, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -141,13 +141,17 @@ function FamilyStage({
   heroName,
   heroImage,
   fullscreen,
+  showAxis,
   onToggleFullscreen,
+  onClose,
 }: {
   layout: FamilyLayout;
   heroName: string;
   heroImage: string | null;
   fullscreen: boolean;
+  showAxis: boolean;
   onToggleFullscreen: () => void;
+  onClose?: () => void;
 }): ReactElement {
   const [vp, setVp] = useState({ w: 0, h: 0 });
   const tx = useSharedValue(0);
@@ -215,12 +219,14 @@ function FamilyStage({
   };
 
   return (
-    <View style={[styles.stage, fullscreen ? styles.stageFull : styles.stageInline]}>
-      <View style={styles.axisGutter} pointerEvents="none">
-        {layout.rows.map((row) => (
-          <AxisLabel key={row.tier} row={row} scale={scale} ty={ty} boundsH={layout.bounds.height} />
-        ))}
-      </View>
+    <View style={[styles.stage, fullscreen ? styles.stageFlat : styles.stageInline]}>
+      {showAxis ? (
+        <View style={styles.axisGutter} pointerEvents="none">
+          {layout.rows.map((row) => (
+            <AxisLabel key={row.tier} row={row} scale={scale} ty={ty} boundsH={layout.bounds.height} />
+          ))}
+        </View>
+      ) : null}
       <View
         style={styles.viewport}
         onLayout={(e) => setVp({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
@@ -288,7 +294,7 @@ function FamilyStage({
           </Animated.View>
         </GestureDetector>
 
-        <View style={styles.zoomButtons}>
+        <View style={[styles.zoomButtons, fullscreen && styles.zoomButtonsFs]}>
           <Pressable style={styles.zoomBtn} onPress={zoomIn}>
             <Ionicons name="add" size={18} color={COLORS.black} />
           </Pressable>
@@ -306,6 +312,24 @@ function FamilyStage({
             />
           </Pressable>
         </View>
+
+        {fullscreen ? (
+          <View style={styles.fsTopLeft}>
+            <Pressable style={styles.fsIconBtn} onPress={onClose}>
+              <Ionicons name="close" size={20} color={COLORS.black} />
+            </Pressable>
+            {heroImage ? (
+              <Image source={{ uri: heroImage }} style={styles.fsTitleAvatar} contentFit="cover" />
+            ) : null}
+            <Text style={styles.fsTitleText}>{heroName}</Text>
+          </View>
+        ) : null}
+
+        {fullscreen ? (
+          <View style={styles.fsLegend}>
+            <Legend large />
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -322,6 +346,9 @@ export function FamilyCanvas({
   members: FamilyMember[];
 }): ReactElement | null {
   const [fullscreen, setFullscreen] = useState(false);
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 700;
+
   if (members.length === 0) return null;
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -351,6 +378,7 @@ export function FamilyCanvas({
         heroName={heroName}
         heroImage={heroImage}
         fullscreen={false}
+        showAxis={isDesktop}
         onToggleFullscreen={() => setFullscreen(true)}
       />
 
@@ -385,55 +413,16 @@ export function FamilyCanvas({
       transparent={false}
       onRequestClose={() => setFullscreen(false)}
     >
-      <View style={styles.modalRoot}>
-        <View style={styles.modalHeader}>
-          <View style={styles.modalTitleWrap}>
-            {heroImage ? (
-              <Image source={{ uri: heroImage }} style={styles.modalAvatar} contentFit="cover" />
-            ) : null}
-            <View>
-              <Text style={styles.eyebrow}>Family Tree</Text>
-              <Text style={styles.modalTitle}>{heroName}</Text>
-            </View>
-          </View>
-          <View style={styles.modalHeaderRight}>
-            <Text style={styles.modalCount}>
-              {members.length} {members.length === 1 ? 'relative' : 'relatives'}
-              {linkedCount > 0 ? ` · ${linkedCount} on Mythique` : ''}
-            </Text>
-            <Pressable style={styles.modalClose} onPress={() => setFullscreen(false)}>
-              <Ionicons name="close" size={22} color={COLORS.black} />
-            </Pressable>
-          </View>
-        </View>
-
+      <View style={styles.fsRoot}>
         <FamilyStage
           layout={layout}
           heroName={heroName}
           heroImage={heroImage}
           fullscreen
+          showAxis={false}
           onToggleFullscreen={() => setFullscreen(false)}
+          onClose={() => setFullscreen(false)}
         />
-
-        <View style={styles.modalFooter}>
-          <Legend large />
-          {graph.asides.length > 0 ? (
-            <View style={styles.modalFooterGroup}>
-              <Text style={styles.tierLabel}>Variants</Text>
-              <View style={styles.modalFooterRow}>
-                {graph.asides.map((mem) => (
-                  <AsideMemberNode key={mem.id} member={mem} />
-                ))}
-              </View>
-            </View>
-          ) : null}
-          {graph.footnotes.length > 0 ? (
-            <Text style={styles.footnote}>
-              Also:{' '}
-              {graph.footnotes.map((mem) => `${mem.name} (${roleLabel(mem)})`).join(', ')}
-            </Text>
-          ) : null}
-        </View>
       </View>
     </Modal>
     </>
@@ -552,38 +541,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   stageInline: { height: 460 },
-  stageFull: { flex: 1 },
-  modalRoot: {
-    flex: 1,
-    backgroundColor: '#fdf9f4',
-    paddingTop: 18,
-    paddingHorizontal: 18,
-    paddingBottom: 16,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  modalTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  modalAvatar: { width: 44, height: 44, borderRadius: 11 },
-  modalTitle: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.black, marginTop: 1 },
-  modalHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  modalCount: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#b3a791' },
-  modalFooter: { marginTop: 12, gap: 10, alignItems: 'center' },
-  modalFooterGroup: { alignItems: 'center', gap: 8 },
-  modalFooterRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
-  modalClose: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#e0d6c8',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  stageFlat: { flex: 1, borderWidth: 0, borderRadius: 0 },
+  fsRoot: { flex: 1, backgroundColor: '#fdf9f4' },
   axisGutter: {
     width: 92,
     backgroundColor: '#f6efe4',
@@ -616,6 +575,7 @@ const styles = StyleSheet.create({
     right: 10,
     gap: 6,
   },
+  zoomButtonsFs: { top: 16 },
   zoomBtn: {
     width: 32,
     height: 32,
@@ -632,6 +592,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.black,
     lineHeight: 20,
+  },
+
+  fsTopLeft: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    zIndex: 5,
+  },
+  fsIconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#e0d6c8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fsTitleAvatar: { width: 34, height: 34, borderRadius: 9 },
+  fsTitleText: { fontFamily: 'Flame-Regular', fontSize: 17, color: COLORS.black },
+  fsLegend: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 18,
+    alignItems: 'center',
+    zIndex: 5,
   },
 
   // Legend
