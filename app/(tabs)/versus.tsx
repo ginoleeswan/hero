@@ -42,7 +42,7 @@ export default function VersusScreen() {
         {/* Navy stage */}
         <View style={[styles.stage, { paddingTop: insets.top + 20 }]}>
           <Text style={styles.eyebrow}>SETTLE THE DEBATE</Text>
-          <Text style={styles.title}>Versus</Text>
+          <Text style={styles.title}>Arena</Text>
         </View>
 
         <View style={styles.sheet}>
