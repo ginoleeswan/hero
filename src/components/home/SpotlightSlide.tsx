@@ -1,6 +1,6 @@
 // src/components/home/SpotlightSlide.tsx
 import { useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,8 +33,10 @@ export function SpotlightSlide({
   }, [kb]);
   const scale = kb.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] });
 
+  // Pressable (not TouchableOpacity): a tap navigates, but a swipe neither dims
+  // the image nor mis-fires — the carousel owns the horizontal gesture.
   return (
-    <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={[styles.container, { height }]}>
+    <Pressable onPress={onPress} style={[styles.container, { height }]}>
       <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ scale }] }]}>
         <Image
           source={source}
@@ -46,11 +48,21 @@ export function SpotlightSlide({
           transition={200}
         />
       </Animated.View>
+
+      {/* Top scrim — keeps the status bar legible over bright art. */}
       <LinearGradient
-        colors={['transparent', 'rgba(245,235,220,0.6)', COLORS.beige]}
-        locations={[0.45, 0.78, 1]}
+        colors={['rgba(15,23,27,0.5)', 'transparent']}
+        locations={[0, 1]}
+        style={styles.topScrim}
+      />
+      {/* Bottom scrim — a cinematic dark base for the identity; the portrait
+          itself stays crisp (no wash). */}
+      <LinearGradient
+        colors={['transparent', 'rgba(15,23,27,0.5)', 'rgba(15,23,27,0.92)']}
+        locations={[0.34, 0.68, 1]}
         style={StyleSheet.absoluteFill}
       />
+
       <View style={styles.meta}>
         <Text style={styles.metaLabel}>Featured Hero</Text>
         <Text style={styles.metaName} numberOfLines={2}>
@@ -66,40 +78,50 @@ export function SpotlightSlide({
           <Ionicons name="chevron-forward" size={14} color={COLORS.beige} />
         </View>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   container: { overflow: 'hidden', backgroundColor: COLORS.navy },
-  meta: { position: 'absolute', bottom: 54, left: 16, right: 16 },
+  topScrim: { position: 'absolute', top: 0, left: 0, right: 0, height: 130 },
+  // Sits above the rounded beige lip + dots that the carousel overlays.
+  meta: { position: 'absolute', bottom: 74, left: 18, right: 18 },
   metaLabel: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
+    fontSize: 10,
     color: COLORS.orange,
-    letterSpacing: 2,
+    letterSpacing: 2.4,
     textTransform: 'uppercase',
-    marginBottom: 4,
+    marginBottom: 5,
   },
-  metaName: { fontFamily: 'Flame-Bold', fontSize: 30, color: COLORS.navy, lineHeight: 32 },
+  metaName: {
+    fontFamily: 'Flame-Bold',
+    fontSize: 34,
+    color: COLORS.beige,
+    lineHeight: 36,
+    textShadowColor: 'rgba(10,15,18,0.55)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 10,
+  },
   metaPublisher: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
-    color: COLORS.grey,
+    color: 'rgba(245,235,220,0.62)',
     textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: 4,
+    letterSpacing: 1.2,
+    marginTop: 5,
   },
   cta: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: 4,
-    marginTop: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    marginTop: 14,
+    paddingVertical: 9,
+    paddingHorizontal: 16,
     borderRadius: 999,
     backgroundColor: COLORS.orange,
   },
-  ctaText: { fontFamily: 'Nunito_900Black', fontSize: 12.5, color: COLORS.beige },
+  ctaText: { fontFamily: 'Nunito_900Black', fontSize: 13, color: COLORS.beige },
 });

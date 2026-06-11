@@ -19,10 +19,12 @@ const PORTRAIT_CARD_HEIGHT = Math.round(PORTRAIT_CARD_WIDTH * DETAIL_HERO_RATIO)
 
 export interface RowHero extends ThumbHero {}
 
-/** Oversized chart numeral overlaid on a ranked card's corner. */
+/** Oversized editorial chart numeral overlaid on a ranked card's corner. A
+ *  dark layer sits behind the beige fill so it reads on any portrait. */
 function RankBadge({ rank }: { rank: number }) {
   return (
     <View style={styles.rankBadge} pointerEvents="none">
+      <Text style={[styles.rankNumeral, styles.rankBack]}>{rank}</Text>
       <Text style={styles.rankNumeral}>{rank}</Text>
     </View>
   );
@@ -242,16 +244,25 @@ const styles = StyleSheet.create({
   },
   rankBadge: {
     position: 'absolute',
-    top: 6,
+    top: 2,
     left: 12,
   },
   rankNumeral: {
     fontFamily: 'Flame-Bold',
-    fontSize: 64,
-    lineHeight: 64,
-    color: 'rgba(245,235,220,0.92)',
-    textShadowColor: 'rgba(0,0,0,0.55)',
+    fontSize: 78,
+    lineHeight: 84,
+    color: COLORS.beige,
+    textShadowColor: 'rgba(10,15,18,0.4)',
     textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
+    textShadowRadius: 6,
+  },
+  // Dark lift behind the fill — offset so the numeral reads on bright portraits.
+  rankBack: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    color: 'rgba(10,15,18,0.5)',
+    textShadowColor: 'transparent',
+    transform: [{ translateX: 2 }, { translateY: 4 }],
   },
 });
