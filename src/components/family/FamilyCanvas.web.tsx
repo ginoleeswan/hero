@@ -419,7 +419,7 @@ export function FamilyCanvas({
           heroName={heroName}
           heroImage={heroImage}
           fullscreen
-          showAxis={false}
+          showAxis={isDesktop}
           onToggleFullscreen={() => setFullscreen(false)}
           onClose={() => setFullscreen(false)}
         />
