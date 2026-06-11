@@ -21,6 +21,9 @@ import { COLORS } from '../../../src/constants/colors';
 import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
 import { VerdictReveal } from '../../../src/components/compare/VerdictReveal';
 import { StatBattleRow } from '../../../src/components/compare/StatBattleRow';
+import { MatchupBadge } from '../../../src/components/compare/MatchupBadge';
+import { useRelationship } from '../../../src/lib/query/heroQueries';
+import { relationshipBadge } from '../../../src/lib/db/heroes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 12;
@@ -48,6 +51,9 @@ export default function NativeCompareScreen() {
     hero,
     opponent,
   );
+
+  const { data: relationship } = useRelationship(hero, opponent);
+  const badge = relationshipBadge(relationship);
 
   if (error) {
     return (
@@ -163,8 +169,20 @@ export default function NativeCompareScreen() {
             />
           </View>
 
+          <MatchupBadge badge={badge} style={styles.matchupBadge} />
+
           <View style={styles.verdictBlock}>
             <VerdictReveal verdict={verdict} />
+            <TouchableOpacity
+              onPress={handleShare}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Share matchup"
+              style={styles.shareRow}
+            >
+              <Ionicons name="share-outline" size={14} color="rgba(245,235,220,0.7)" />
+              <Text style={styles.shareRowText}>Share result</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -225,12 +243,32 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     elevation: 8,
   },
+  matchupBadge: { marginTop: 14, marginBottom: 2 },
   verdictBlock: {
     minHeight: 76,
     paddingTop: 16,
     paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  shareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    gap: 6,
+    marginTop: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(245,235,220,0.08)',
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderColor: 'rgba(245,235,220,0.18)',
+  },
+  shareRowText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: 'rgba(245,235,220,0.7)',
   },
   headerBtn: {
     width: 30,
