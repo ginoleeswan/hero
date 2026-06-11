@@ -102,6 +102,20 @@ export default function WebRootLayout() {
     if (typeof document === 'undefined') return;
     document.documentElement.style.backgroundColor = '#0b1820';
     document.body.style.backgroundColor = '#0b1820';
+    // Pin the iOS Safari status-bar tint to the deep-navy backdrop. Expo's single
+    // web output ignores app/+html.tsx, so the theme-color meta there never ships;
+    // without it Safari samples the page background to tint the status bar, which
+    // turns beige on every beige-canvas screen (login, search, profile…) while
+    // staying navy on the navy-canvas Discover screen — an inconsistent strip up
+    // top. A fixed navy theme-color makes the system bar cohesive everywhere; it
+    // only governs the top strip, so the beige bottom-toolbar blur is unaffected.
+    let themeMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (!themeMeta) {
+      themeMeta = document.createElement('meta');
+      themeMeta.name = 'theme-color';
+      document.head.appendChild(themeMeta);
+    }
+    themeMeta.content = '#0b1820';
     // iOS Safari 16+ ignores maximum-scale=1 in the viewport meta tag and still
     // auto-zooms when a focused input has font-size < 16 px.  Enforce the 16 px
     // floor globally so every text field — search bars, auth forms, filters — is
