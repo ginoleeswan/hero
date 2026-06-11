@@ -1,7 +1,12 @@
 // app/(tabs)/explore.tsx — Home screen: spotlight + curated/personal carousels
 import { useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, StatusBar } from 'react-native';
-import Animated, { FadeIn, useSharedValue, useAnimatedScrollHandler } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  useSharedValue,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, type Href } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -60,6 +65,11 @@ export default function HomeScreen() {
   const scrollHandler = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y;
   });
+  // Counteract the overscroll bounce so the whole page holds still on pull-down —
+  // only the spotlight portrait zooms (Apple TV style), no navy gap appears.
+  const contentShift = useAnimatedStyle(() => ({
+    transform: [{ translateY: scrollY.value < 0 ? scrollY.value : 0 }],
+  }));
   const spotlightPool = popular.slice(0, SPOTLIGHT_POOL);
 
   // Popular fires first — it feeds both the spotlight and the Popular row.
@@ -161,6 +171,7 @@ export default function HomeScreen() {
           scrollEventThrottle={16}
           onScroll={scrollHandler}
         >
+          <Animated.View style={contentShift}>
           {spotlightPool.length > 0 && (
             <SpotlightCarousel
               heroes={spotlightPool}
@@ -212,6 +223,7 @@ export default function HomeScreen() {
             );
           })}
           </View>
+          </Animated.View>
         </Animated.ScrollView>
       )}
     </View>
