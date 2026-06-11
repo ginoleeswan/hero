@@ -55,7 +55,11 @@ const styles = StyleSheet.create({
     borderRadius: HERO_CARD_RADIUS,
     borderCurve: 'continuous',
     overflow: 'hidden',
-    backgroundColor: COLORS.navy,
+    // Transparent, not navy: the portrait (cover) fills the card at rest, but
+    // during the Apple Zoom morph the image can briefly not cover the whole
+    // frame. A navy fill flashes as a hard block; transparent lets the row band
+    // behind the card show through instead, so any gap blends away.
+    backgroundColor: 'transparent',
   },
   image: {
     width: '100%',
