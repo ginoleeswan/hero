@@ -3,9 +3,12 @@ import { useEffect, useRef } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { heroImageSource } from '../../constants/heroImages';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
+
+const ALIGN_LABEL: Record<string, string> = { good: 'Hero', bad: 'Villain', neutral: 'Anti-Hero' };
 
 export function SpotlightSlide({
   hero,
@@ -18,9 +21,8 @@ export function SpotlightSlide({
 }) {
   const source = heroImageSource(hero.id, hero.image_url, hero.portrait_url);
 
-  // A solid beige caption zone holds the text, so contrast never depends on what
-  // part of the portrait is behind a word. The portrait stays crisp above it.
-  const captionH = Math.round(height * 0.26);
+  const align = hero.alignment ? ALIGN_LABEL[hero.alignment.toLowerCase().trim()] : undefined;
+  const sub = [hero.publisher, align].filter(Boolean).join('   ·   ');
 
   // Slow Ken-Burns drift — a continuous, gentle scale so the portrait feels alive.
   const kb = useRef(new Animated.Value(0)).current;
@@ -36,8 +38,9 @@ export function SpotlightSlide({
   }, [kb]);
   const scale = kb.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] });
 
-  // Pressable (not TouchableOpacity): a tap navigates, a swipe neither dims nor
-  // mis-fires. The whole spotlight is the tap target — no explicit button needed.
+  // Apple TV / Disney+ billboard: full-bleed portrait, dark gradient base, a
+  // centered identity + a prominent CTA. The portrait's face stays crisp; the
+  // dark base guarantees the light text reads over any art.
   return (
     <Pressable onPress={onPress} style={[styles.container, { height }]}>
       <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ scale }] }]}>
@@ -52,24 +55,26 @@ export function SpotlightSlide({
         />
       </Animated.View>
 
-      {/* Short blend joining the crisp portrait to the solid caption below it. */}
       <LinearGradient
-        colors={['transparent', COLORS.beige]}
-        locations={[0, 1]}
-        style={[styles.blend, { bottom: captionH }]}
+        colors={['transparent', 'rgba(13,20,24,0.12)', 'rgba(13,20,24,0.82)', 'rgba(13,20,24,0.97)']}
+        locations={[0.26, 0.46, 0.76, 1]}
+        style={StyleSheet.absoluteFill}
       />
 
-      {/* Solid caption — guaranteed dark-on-beige contrast. */}
-      <View style={[styles.caption, { height: captionH }]}>
-        <Text style={styles.metaLabel}>Featured Hero</Text>
-        <Text style={styles.metaName} numberOfLines={1}>
+      <View style={styles.meta}>
+        <Text style={styles.eyebrow}>Featured Hero</Text>
+        <Text style={styles.name} numberOfLines={1}>
           {hero.name}
         </Text>
-        {!!hero.publisher && (
-          <Text style={styles.metaPublisher} numberOfLines={1}>
-            {hero.publisher}
+        {!!sub && (
+          <Text style={styles.sub} numberOfLines={1}>
+            {sub}
           </Text>
         )}
+        <View style={styles.cta}>
+          <Text style={styles.ctaText}>View Hero</Text>
+          <Ionicons name="chevron-forward" size={15} color={COLORS.navy} />
+        </View>
       </View>
     </Pressable>
   );
@@ -77,32 +82,44 @@ export function SpotlightSlide({
 
 const styles = StyleSheet.create({
   container: { overflow: 'hidden', backgroundColor: COLORS.navy },
-  blend: { position: 'absolute', left: 0, right: 0, height: 88 },
-  caption: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: COLORS.beige,
-    justifyContent: 'flex-end',
-    paddingHorizontal: 16,
-    paddingBottom: 30,
-  },
-  metaLabel: {
+  meta: { position: 'absolute', bottom: 76, left: 20, right: 20, alignItems: 'center' },
+  eyebrow: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
+    fontSize: 10.5,
     color: COLORS.orange,
-    letterSpacing: 2.2,
+    letterSpacing: 2.6,
     textTransform: 'uppercase',
-    marginBottom: 4,
+    marginBottom: 7,
+    textAlign: 'center',
   },
-  metaName: { fontFamily: 'Flame-Regular', fontSize: 32, color: COLORS.navy, lineHeight: 36 },
-  metaPublisher: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 11,
-    color: COLORS.grey,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: 4,
+  name: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 38,
+    color: COLORS.beige,
+    lineHeight: 42,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 12,
   },
+  sub: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12.5,
+    color: 'rgba(245,235,220,0.72)',
+    letterSpacing: 0.4,
+    marginTop: 7,
+    textAlign: 'center',
+  },
+  cta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 16,
+    paddingVertical: 11,
+    paddingLeft: 22,
+    paddingRight: 16,
+    borderRadius: 999,
+    backgroundColor: COLORS.beige,
+  },
+  ctaText: { fontFamily: 'Nunito_900Black', fontSize: 14, color: COLORS.navy },
 });

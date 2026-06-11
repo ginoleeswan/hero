@@ -19,17 +19,6 @@ const PORTRAIT_CARD_HEIGHT = Math.round(PORTRAIT_CARD_WIDTH * DETAIL_HERO_RATIO)
 
 export interface RowHero extends ThumbHero {}
 
-/** Oversized editorial chart numeral overlaid on a ranked card's corner. A
- *  dark layer sits behind the beige fill so it reads on any portrait. */
-function RankBadge({ rank }: { rank: number }) {
-  return (
-    <View style={styles.rankBadge} pointerEvents="none">
-      <Text style={[styles.rankNumeral, styles.rankBack]}>{rank}</Text>
-      <Text style={styles.rankNumeral}>{rank}</Text>
-    </View>
-  );
-}
-
 /**
  * Portrait card that navigates via the Apple Zoom transition, with a spring
  * scale-down + light haptic on press for tactile feedback.
@@ -44,12 +33,10 @@ function PortraitZoomCard({
   item,
   width = PORTRAIT_CARD_WIDTH,
   height = PORTRAIT_CARD_HEIGHT,
-  rank,
 }: {
   item: RowHero;
   width?: number;
   height?: number;
-  rank?: number;
 }) {
   const pressed = useSharedValue(0);
 
@@ -95,7 +82,6 @@ function PortraitZoomCard({
               height={height}
             />
           </Link.AppleZoom>
-          {typeof rank === 'number' && <RankBadge rank={rank} />}
         </Animated.View>
       </Pressable>
     </Link>
@@ -136,10 +122,19 @@ export function HomeHeroRow({
   const isPortrait = variant === 'portrait';
   const isDark = tone === 'dark';
 
+  // Ranked rows use smaller "poster" cards so the big Top-10 numeral beside each
+  // one reads, à la Apple TV. Otherwise: optional larger feature size, else default.
   const featW = Math.round(PORTRAIT_CARD_WIDTH * 1.06);
   const featH = Math.round(PORTRAIT_CARD_HEIGHT * 1.06);
-  const cardW = feature ? featW : PORTRAIT_CARD_WIDTH;
-  const cardH = feature ? featH : PORTRAIT_CARD_HEIGHT;
+  const cardW = ranked
+    ? Math.round(PORTRAIT_CARD_WIDTH * 0.72)
+    : feature
+      ? featW
+      : PORTRAIT_CARD_WIDTH;
+  const cardH = ranked ? Math.round(cardW * DETAIL_HERO_RATIO) : feature ? featH : PORTRAIT_CARD_HEIGHT;
+  // The numeral sits to the left, bottom-aligned, with the card overlapping it.
+  const rankSize = Math.round(cardH * 0.78);
+  const rankOverlap = Math.round(cardW * 0.36);
 
   const titleNode = (
     <View style={styles.titleRow}>
@@ -170,21 +165,35 @@ export function HomeHeroRow({
         data={heroes}
         keyExtractor={(h) => h.id}
         showsHorizontalScrollIndicator={false}
-        decelerationRate={isPortrait ? 'fast' : 'normal'}
-        snapToInterval={isPortrait ? cardW + 12 : undefined}
+        decelerationRate={isPortrait && !ranked ? 'fast' : 'normal'}
+        snapToInterval={isPortrait && !ranked ? cardW + 12 : undefined}
         contentContainerStyle={[styles.listContent, { gap: isPortrait ? 12 : 8 }]}
-        renderItem={({ item, index }) =>
-          isPortrait ? (
-            <PortraitZoomCard
-              item={item}
-              width={cardW}
-              height={cardH}
-              rank={ranked ? index + 1 : undefined}
-            />
-          ) : (
-            <ThumbCard item={item} onPress={() => onPress(item)} disabled={disabled} />
-          )
-        }
+        renderItem={({ item, index }) => {
+          if (!isPortrait) {
+            return <ThumbCard item={item} onPress={() => onPress(item)} disabled={disabled} />;
+          }
+          if (ranked) {
+            return (
+              <View style={styles.rankItem}>
+                <Text
+                  style={[
+                    styles.rankNumeral,
+                    {
+                      fontSize: rankSize,
+                      lineHeight: rankSize,
+                      marginRight: -rankOverlap,
+                      color: isDark ? COLORS.beige : COLORS.navy,
+                    },
+                  ]}
+                >
+                  {index + 1}
+                </Text>
+                <PortraitZoomCard item={item} width={cardW} height={cardH} />
+              </View>
+            );
+          }
+          return <PortraitZoomCard item={item} width={cardW} height={cardH} />;
+        }}
       />
     </View>
   );
@@ -242,27 +251,11 @@ const styles = StyleSheet.create({
     borderRadius: HERO_CARD_RADIUS,
     borderCurve: 'continuous',
   },
-  rankBadge: {
-    position: 'absolute',
-    top: 0,
-    left: 8,
-  },
+  // Top-10 numeral row: number to the left, bottom-aligned, card overlapping it.
+  rankItem: { flexDirection: 'row', alignItems: 'flex-end' },
   rankNumeral: {
     fontFamily: 'Flame-Regular',
-    fontSize: 100,
-    lineHeight: 104,
-    color: COLORS.beige,
-    textShadowColor: 'rgba(10,15,18,0.4)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
-  },
-  // Dark lift behind the fill — offset so the numeral reads on bright portraits.
-  rankBack: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    color: 'rgba(10,15,18,0.5)',
-    textShadowColor: 'transparent',
-    transform: [{ translateX: 2 }, { translateY: 4 }],
+    includeFontPadding: false,
+    textAlignVertical: 'bottom',
   },
 });
