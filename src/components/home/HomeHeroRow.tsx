@@ -7,9 +7,15 @@ import { HeroCard, HERO_CARD_RADIUS } from '../HeroCard';
 import { ThumbCard, type ThumbHero } from './ThumbCard';
 import { COLORS } from '../../constants/colors';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PORTRAIT_CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.6);
-const PORTRAIT_CARD_HEIGHT = 300;
+// Match the character screen's hero image aspect — full width × SCREEN_HEIGHT*0.66
+// (see HERO_IMAGE_HEIGHT in app/character/[id].tsx). Keeping the card's aspect
+// equal to the detail image's means the Apple Zoom morph fills the card edge to
+// edge with no navy background peeking through mid-transition. Both are
+// screen-relative, so the ratio lines up on every device.
+const DETAIL_HERO_RATIO = (SCREEN_HEIGHT * 0.66) / SCREEN_WIDTH; // height ÷ width
+const PORTRAIT_CARD_HEIGHT = Math.round(PORTRAIT_CARD_WIDTH * DETAIL_HERO_RATIO);
 
 export interface RowHero extends ThumbHero {}
 
