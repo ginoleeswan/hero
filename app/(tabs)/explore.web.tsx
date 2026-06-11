@@ -32,6 +32,7 @@ import { TodaysMatchup as TodaysMatchupCard } from '../../src/components/web/hom
 import { getTodaysMatchup, type TodaysMatchup } from '../../src/lib/matchup';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
+import { useChromeColor } from '../../src/contexts/WebChromeContext';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { StatPods } from '../../src/components/web/home/StatPods';
 import {
@@ -1141,6 +1142,8 @@ export default function WebHomeScreen() {
   // Document scroll so content bleeds edge-to-edge under the iOS Safari toolbar.
   // Explore opens and closes on the deep-navy stage/footer, so the canvas is navy.
   useWebCanvas(COLORS.deepNavy);
+  // Top chrome (status bar + top bar) locks to the deep-navy stage at the top.
+  useChromeColor(COLORS.deepNavy);
 
   // 1. MATCH THE ACCORDION_SCALES EXACTLY
   const optimalPoolSize = width >= 1280 ? 8 : width >= 900 ? 6 : 3;

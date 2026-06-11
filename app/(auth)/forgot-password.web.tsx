@@ -175,15 +175,13 @@ export default function WebForgotPasswordScreen() {
         <View style={styles.mobileIllustrationWrap}>
           <Image
             source={LOGIN_HERO}
-            style={StyleSheet.absoluteFill}
+            style={styles.mobileHeroImg as object}
             contentFit="contain"
-            contentPosition="top center"
+            contentPosition="center"
           />
           <View style={styles.mobileScrim as object} pointerEvents="none" />
         </View>
-        <View style={styles.mobileLogo}>
-          <HeroLogo iconSize={36} fontSize={28} color={COLORS.beige} gap={10} />
-        </View>
+        {/* Logo is provided by the shared logo-only TopBar (see _layout.web.tsx). */}
         <View style={styles.mobileCard}>
           <View style={styles.mobileCardHandle} />
           {formContent}
@@ -223,20 +221,26 @@ const styles = StyleSheet.create({
   } as object,
   mobileIllustrationWrap: {
     position: 'relative',
-    height: '42vh',
-    minHeight: 240,
-    maxHeight: 420,
+    height: '46vh',
+    minHeight: 290,
+    maxHeight: 440,
+    flexShrink: 0,
     backgroundColor: COLORS.navy,
+    paddingTop: 'calc(env(safe-area-inset-top) + 12px)',
     backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
     backgroundSize: '24px 24px',
+  } as object,
+  mobileHeroImg: {
+    flex: 1,
+    width: '100%',
   } as object,
   mobileScrim: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: '55%',
-    backgroundImage: `linear-gradient(to bottom, transparent 0%, ${COLORS.navy} 65%, ${COLORS.beige} 100%)`,
+    height: '45%',
+    backgroundImage: `linear-gradient(to bottom, transparent 0%, ${COLORS.navy} 70%, ${COLORS.beige} 100%)`,
   } as object,
   mobileLogo: {
     position: 'absolute',

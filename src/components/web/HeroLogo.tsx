@@ -41,5 +41,7 @@ const styles = StyleSheet.create({
   },
   wordmark: {
     fontFamily: 'Righteous_400Regular',
-  },
+    // Web: ease the colour when the adaptive top chrome flips dark↔light.
+    transition: 'color 300ms ease',
+  } as object,
 });

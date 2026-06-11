@@ -11,6 +11,7 @@ import { useAuth } from '../src/hooks/useAuth';
 import { LogoLoader } from '../src/components/ui/LogoLoader';
 import { TopBar, TOPBAR_HEIGHT } from '../src/components/web/TopBar';
 import { SearchProvider } from '../src/contexts/SearchContext';
+import { WebChromeProvider, AdaptiveStatusBarCover } from '../src/contexts/WebChromeContext';
 import { queryClient } from '../src/lib/query/queryClient';
 import { COLORS } from '../src/constants/colors';
 
@@ -69,27 +70,30 @@ function WebAuthGate() {
 
   return (
     <SearchProvider>
-      <View style={styles.root}>
-        {showNav && <TopBar />}
-        <View
-          style={
-            [
-              styles.content,
-              showNav &&
-                !bleedBehindNav && {
-                  paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top))`,
-                },
-            ] as object
-          }
-        >
-          <Stack screenOptions={{ headerShown: false }} />
+      <WebChromeProvider>
+        <View style={styles.root}>
+          {/* Full nav on content routes; a logo-only bar on auth (mobile) so the
+              brand sits in the same place app-wide. Hidden only on the bare root. */}
+          {!isRoot && <TopBar logoOnly={inAuthGroup} />}
+          <View
+            style={
+              [
+                styles.content,
+                showNav &&
+                  !bleedBehindNav && {
+                    paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top))`,
+                  },
+              ] as object
+            }
+          >
+            <Stack screenOptions={{ headerShown: false }} />
+          </View>
+          {/* Opaque strip over the iOS status-bar inset, painted the current
+              chrome colour so it fuses seamlessly with the system status bar and
+              tracks it dark→light as the page scrolls. */}
+          <AdaptiveStatusBarCover />
         </View>
-        {/* Safe-area top cover (glow technique): a frosted strip exactly the
-            height of the iOS status-bar inset, pinned above everything. Content
-            scrolls edge-to-edge behind it; the status-bar zone reads as one clean
-            frosted strip instead of a bare band. env() → 0 where no safe area. */}
-        <View pointerEvents="none" style={styles.statusBarCover} />
-      </View>
+      </WebChromeProvider>
     </SearchProvider>
   );
 }
@@ -102,6 +106,8 @@ export default function WebRootLayout() {
     if (typeof document === 'undefined') return;
     document.documentElement.style.backgroundColor = '#0b1820';
     document.body.style.backgroundColor = '#0b1820';
+    // The iOS Safari status-bar tint (theme-color meta) is owned by
+    // WebChromeProvider, which tracks it to the page's current top colour.
     // iOS Safari 16+ ignores maximum-scale=1 in the viewport meta tag and still
     // auto-zooms when a focused input has font-size < 16 px.  Enforce the 16 px
     // floor globally so every text field — search bars, auth forms, filters — is
@@ -139,15 +145,4 @@ const styles = StyleSheet.create({
   // header and on overscroll. Every screen paints its own canvas on top of it.
   root: { flex: 1, backgroundColor: COLORS.deepNavy },
   content: { flex: 1 },
-  statusBarCover: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 'env(safe-area-inset-top)',
-    backgroundColor: 'rgba(11,24,32,0.6)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    zIndex: 9999,
-  } as object,
 });
