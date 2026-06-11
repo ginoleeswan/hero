@@ -121,9 +121,14 @@ export function TopBar() {
         }
       >
         {it.key === 'versus' ? (
-          <MaterialCommunityIcons name="sword-cross" size={22} color={tint} />
+          <MaterialCommunityIcons name="sword-cross" size={22} color={tint} style={c.iconTint} />
         ) : (
-          <Ionicons name={active ? it.icon : it.iconOutline} size={22} color={tint} />
+          <Ionicons
+            name={active ? it.icon : it.iconOutline}
+            size={22}
+            color={tint}
+            style={c.iconTint}
+          />
         )}
       </Pressable>
     );
@@ -197,7 +202,7 @@ export function TopBar() {
                 [c.item, hovered && hoverStyle] as object
               }
             >
-              <Ionicons name="person-outline" size={20} color={foreground} />
+              <Ionicons name="person-outline" size={20} color={foreground} style={c.iconTint} />
             </Pressable>
           )}
         </View>
@@ -242,7 +247,7 @@ const c = StyleSheet.create({
     backgroundImage:
       'linear-gradient(to bottom, rgba(11,24,32,1) 0%, rgba(11,24,32,0.85) 30%, rgba(11,24,32,0.45) 62%, rgba(11,24,32,0.14) 84%, transparent 100%)',
     opacity: 1,
-    transition: 'opacity 220ms ease',
+    transition: 'opacity 300ms ease',
   } as object,
   // Scrolled frost: a stack of blur layers, each masked to a band, so the blur
   // is heaviest at the top (all three stacked, behind the icons) and tapers to
@@ -256,7 +261,7 @@ const c = StyleSheet.create({
     right: 0,
     height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 28px)`,
     opacity: 0,
-    transition: 'opacity 220ms ease',
+    transition: 'opacity 300ms ease',
   } as object,
   frostA: {
     backdropFilter: 'blur(16px) saturate(150%)',
@@ -291,6 +296,9 @@ const c = StyleSheet.create({
   } as object,
   layerHidden: { opacity: 0 } as object,
   layerShown: { opacity: 1 } as object,
+  // Ease icon/glyph colour when the chrome flips dark↔light, in step with the
+  // background cross-fade and the status-bar tint.
+  iconTint: { transition: 'color 300ms ease' } as object,
   inner: {
     flexDirection: 'row',
     alignItems: 'center',

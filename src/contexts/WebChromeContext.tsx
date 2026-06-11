@@ -56,13 +56,25 @@ const WebChromeContext = createContext<WebChromeValue>({
 // Perceived luminance (sRGB weights). Above the threshold the surface is light
 // enough that chrome sitting on it must switch to dark icons/text for contrast.
 function isLightColor(hex: string): boolean {
-  const c = hex.replace('#', '');
-  if (c.length < 6) return false;
-  const r = parseInt(c.slice(0, 2), 16);
-  const g = parseInt(c.slice(2, 4), 16);
-  const b = parseInt(c.slice(4, 6), 16);
-  return 0.299 * r + 0.587 * g + 0.114 * b > 140;
+  const rgb = hexToRgb(hex);
+  if (!rgb) return false;
+  return 0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b > 140;
 }
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const c = hex.replace('#', '');
+  if (c.length < 6) return null;
+  return {
+    r: parseInt(c.slice(0, 2), 16),
+    g: parseInt(c.slice(2, 4), 16),
+    b: parseInt(c.slice(4, 6), 16),
+  };
+}
+
+// Duration of the chrome colour cross-fade. Shared by the status-bar tint
+// animation here and the CSS transitions on the bar/cover, so the whole top
+// edge changes colour as one synchronised motion.
+const CHROME_FADE_MS = 300;
 
 export function WebChromeProvider({ children }: { children: ReactNode }) {
   const [colors, setColorsState] = useState(DEFAULTS);
@@ -92,7 +104,13 @@ export function WebChromeProvider({ children }: { children: ReactNode }) {
   // Drive the iOS Safari status-bar tint. Expo's single web output ignores
   // app/+html.tsx, so we own the theme-color meta at runtime; pointing it at the
   // current chrome colour makes the system status bar track the page as it
-  // scrolls — dark over the hero, light over the content — with no seam.
+  // scrolls — dark over the hero, light over the content. iOS has no CSS
+  // transition for theme-color, so we interpolate the value ourselves over
+  // CHROME_FADE_MS to match the bar/cover cross-fade — the system bar eases
+  // between colours instead of snapping. The current value is tracked in a ref
+  // (not read back from the meta) so each fade starts from wherever the last one
+  // left off, even mid-animation.
+  const themeRgbRef = useRef<{ r: number; g: number; b: number } | null>(null);
   useEffect(() => {
     if (typeof document === 'undefined') return;
     let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
@@ -101,7 +119,29 @@ export function WebChromeProvider({ children }: { children: ReactNode }) {
       meta.name = 'theme-color';
       document.head.appendChild(meta);
     }
-    meta.content = color;
+    const to = hexToRgb(color);
+    const from = themeRgbRef.current;
+    // First paint (no prior value) snaps; thereafter we always have a from→to.
+    if (!to || !from) {
+      themeRgbRef.current = to;
+      meta.content = color;
+      return;
+    }
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / CHROME_FADE_MS);
+      // easeInOutQuad — gentle in and out, no abrupt edges.
+      const e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+      const r = Math.round(from.r + (to.r - from.r) * e);
+      const g = Math.round(from.g + (to.g - from.g) * e);
+      const b = Math.round(from.b + (to.b - from.b) * e);
+      themeRgbRef.current = { r, g, b };
+      meta!.content = `rgb(${r}, ${g}, ${b})`;
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [color]);
 
   const value = useMemo(
@@ -136,7 +176,7 @@ const coverStyles = StyleSheet.create({
     right: 0,
     height: 'env(safe-area-inset-top)',
     zIndex: 9999,
-    transition: 'background-color 240ms ease',
+    transition: `background-color ${CHROME_FADE_MS}ms ease`,
   } as object,
 });
 
@@ -185,9 +225,16 @@ export function ChromeSentinel() {
     const inset = probe.getBoundingClientRect().height;
     probe.remove();
 
+    const barBottom = TOPBAR_HEIGHT + inset;
     const observer = new IntersectionObserver(
-      ([entry]) => setHeaderCovering(entry.isIntersecting),
-      { rootMargin: `-${TOPBAR_HEIGHT + inset}px 0px 0px 0px`, threshold: 0 }
+      ([entry]) => {
+        // The header still covers the bar while the seam sits *below* the bar's
+        // bottom edge. `isIntersecting` alone can't tell "below the fold" (still
+        // header) from "scrolled above the bar" (now content) — both read false —
+        // so compare the seam's actual position to the bar instead.
+        setHeaderCovering(entry.boundingClientRect.top > barBottom);
+      },
+      { rootMargin: `-${barBottom}px 0px 0px 0px`, threshold: 0 }
     );
     observer.observe(el);
     return () => observer.disconnect();
