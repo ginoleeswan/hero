@@ -19,6 +19,15 @@ const PORTRAIT_CARD_HEIGHT = Math.round(PORTRAIT_CARD_WIDTH * DETAIL_HERO_RATIO)
 
 export interface RowHero extends ThumbHero {}
 
+/** Oversized chart numeral overlaid on a ranked card's corner. */
+function RankBadge({ rank }: { rank: number }) {
+  return (
+    <View style={styles.rankBadge} pointerEvents="none">
+      <Text style={styles.rankNumeral}>{rank}</Text>
+    </View>
+  );
+}
+
 /**
  * Portrait card that navigates via the Apple Zoom transition, with a spring
  * scale-down + light haptic on press for tactile feedback.
@@ -29,7 +38,17 @@ export interface RowHero extends ThumbHero {}
  * correct. Shadow + clip live on that same inner view, OUTSIDE Link.AppleZoom,
  * so no shadow box bleeds into the transition on the way back.
  */
-function PortraitZoomCard({ item }: { item: RowHero }) {
+function PortraitZoomCard({
+  item,
+  width = PORTRAIT_CARD_WIDTH,
+  height = PORTRAIT_CARD_HEIGHT,
+  rank,
+}: {
+  item: RowHero;
+  width?: number;
+  height?: number;
+  rank?: number;
+}) {
   const pressed = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -50,7 +69,7 @@ function PortraitZoomCard({ item }: { item: RowHero }) {
       asChild
     >
       <Pressable
-        style={styles.cardSlot}
+        style={[styles.cardSlot, { width, height }]}
         onPressIn={() => {
           pressed.value = 1;
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -70,10 +89,11 @@ function PortraitZoomCard({ item }: { item: RowHero }) {
               name={item.name}
               imageUrl={item.image_url}
               portraitUrl={item.portrait_url}
-              width={PORTRAIT_CARD_WIDTH}
-              height={PORTRAIT_CARD_HEIGHT}
+              width={width}
+              height={height}
             />
           </Link.AppleZoom>
+          {typeof rank === 'number' && <RankBadge rank={rank} />}
         </Animated.View>
       </Pressable>
     </Link>
@@ -87,6 +107,12 @@ interface HomeHeroRowProps {
   variant?: 'portrait' | 'thumb';
   /** 'dark' renders the row on a navy editorial band for visual rhythm. */
   tone?: 'light' | 'dark';
+  /** Overlay 1·2·3 chart numerals on the cards (leaderboard rows). */
+  ranked?: boolean;
+  /** Accent colour for the bar + label (defaults to orange). */
+  accent?: string;
+  /** Larger first-row card treatment. */
+  feature?: boolean;
   onPress: (item: RowHero) => void;
   onViewAll?: () => void;
   disabled?: boolean;
@@ -98,12 +124,20 @@ export function HomeHeroRow({
   heroes,
   variant = 'portrait',
   tone = 'light',
+  ranked = false,
+  accent,
+  feature = false,
   onPress,
   onViewAll,
   disabled = false,
 }: HomeHeroRowProps) {
   const isPortrait = variant === 'portrait';
   const isDark = tone === 'dark';
+
+  const featW = Math.round(PORTRAIT_CARD_WIDTH * 1.18);
+  const featH = Math.round(PORTRAIT_CARD_HEIGHT * 1.18);
+  const cardW = feature ? featW : PORTRAIT_CARD_WIDTH;
+  const cardH = feature ? featH : PORTRAIT_CARD_HEIGHT;
 
   const titleNode = (
     <View style={styles.titleRow}>
@@ -115,9 +149,11 @@ export function HomeHeroRow({
   return (
     <View style={[styles.section, isDark && styles.sectionDark]}>
       <View style={styles.header}>
-        <View style={styles.accentBar} />
+        <View style={[styles.accentBar, accent ? { backgroundColor: accent } : null]} />
         <View style={styles.headerText}>
-          {!!label && <Text style={styles.label}>{label}</Text>}
+          {!!label && (
+            <Text style={[styles.label, accent ? { color: accent } : null]}>{label}</Text>
+          )}
           {onViewAll ? (
             <Pressable onPress={onViewAll} style={styles.titlePressable}>
               {titleNode}
@@ -133,11 +169,16 @@ export function HomeHeroRow({
         keyExtractor={(h) => h.id}
         showsHorizontalScrollIndicator={false}
         decelerationRate={isPortrait ? 'fast' : 'normal'}
-        snapToInterval={isPortrait ? PORTRAIT_CARD_WIDTH + 12 : undefined}
+        snapToInterval={isPortrait ? cardW + 12 : undefined}
         contentContainerStyle={[styles.listContent, { gap: isPortrait ? 12 : 8 }]}
-        renderItem={({ item }) =>
+        renderItem={({ item, index }) =>
           isPortrait ? (
-            <PortraitZoomCard item={item} />
+            <PortraitZoomCard
+              item={item}
+              width={cardW}
+              height={cardH}
+              rank={ranked ? index + 1 : undefined}
+            />
           ) : (
             <ThumbCard item={item} onPress={() => onPress(item)} disabled={disabled} />
           )
@@ -188,9 +229,8 @@ const styles = StyleSheet.create({
   },
   listContent: { paddingHorizontal: 15, paddingBottom: 20 },
   // Link's asChild target — sizing only, single style object (Slot rejects arrays).
+  // Width + height are passed as inline styles since they vary with feature/ranked.
   cardSlot: {
-    width: PORTRAIT_CARD_WIDTH,
-    height: PORTRAIT_CARD_HEIGHT,
     marginVertical: 8,
   },
   // Inner scaled view: just the press-scale transform + clip. No shadow — see
@@ -199,5 +239,19 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: HERO_CARD_RADIUS,
     borderCurve: 'continuous',
+  },
+  rankBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 12,
+  },
+  rankNumeral: {
+    fontFamily: 'Flame-Bold',
+    fontSize: 64,
+    lineHeight: 64,
+    color: 'rgba(245,235,220,0.92)',
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
 });
