@@ -1,0 +1,86 @@
+// src/components/home/SpotlightCarousel.tsx
+import { useState } from 'react';
+import { View, StyleSheet, Dimensions } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  interpolate,
+  Extrapolation,
+  type SharedValue,
+} from 'react-native-reanimated';
+import Carousel from 'react-native-reanimated-carousel';
+import * as Haptics from 'expo-haptics';
+import { SpotlightSlide } from './SpotlightSlide';
+import { COLORS } from '../../constants/colors';
+import type { Hero } from '../../lib/db/heroes';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+export function spotlightHeight(insetTop: number): number {
+  return insetTop + Math.round(SCREEN_HEIGHT * 0.42);
+}
+
+export function SpotlightCarousel({
+  heroes,
+  insetTop,
+  scrollY,
+  onHeroPress,
+}: {
+  heroes: Hero[];
+  insetTop: number;
+  scrollY: SharedValue<number>;
+  onHeroPress: (hero: Hero) => void;
+}) {
+  const height = spotlightHeight(insetTop);
+  const [active, setActive] = useState(0);
+
+  // Parallax: the spotlight drifts up at a fraction of scroll speed.
+  const parallax = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: interpolate(
+          scrollY.value,
+          [0, height],
+          [0, height * 0.25],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
+  }));
+
+  if (heroes.length === 0) return null;
+
+  return (
+    <Animated.View style={[styles.wrap, { height }, parallax]}>
+      <Carousel
+        width={SCREEN_WIDTH}
+        height={height}
+        data={heroes}
+        loop={heroes.length > 1}
+        autoPlay={heroes.length > 1}
+        autoPlayInterval={6000}
+        scrollAnimationDuration={750}
+        onSnapToItem={(i: number) => {
+          setActive(i);
+          Haptics.selectionAsync();
+        }}
+        renderItem={({ item }: { item: Hero }) => (
+          <SpotlightSlide hero={item} height={height} onPress={() => onHeroPress(item)} />
+        )}
+      />
+      {heroes.length > 1 && (
+        <View style={styles.dots} pointerEvents="none">
+          {heroes.map((h, i) => (
+            <View key={h.id} style={[styles.dot, i === active && styles.dotActive]} />
+          ))}
+        </View>
+      )}
+    </Animated.View>
+  );
+}
+
+const styles = StyleSheet.create({
+  wrap: { backgroundColor: COLORS.navy },
+  dots: { position: 'absolute', bottom: 28, left: 16, flexDirection: 'row', gap: 5 },
+  dot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(41,60,67,0.3)' },
+  dotActive: { width: 14, backgroundColor: COLORS.orange },
+});
