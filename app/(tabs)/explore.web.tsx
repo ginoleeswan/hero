@@ -32,6 +32,7 @@ import { TodaysMatchup as TodaysMatchupCard } from '../../src/components/web/hom
 import { getTodaysMatchup, type TodaysMatchup } from '../../src/lib/matchup';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
+import { useChromeColors, ChromeSentinel } from '../../src/contexts/WebChromeContext';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { StatPods } from '../../src/components/web/home/StatPods';
 import {
@@ -1141,6 +1142,9 @@ export default function WebHomeScreen() {
   // Document scroll so content bleeds edge-to-edge under the iOS Safari toolbar.
   // Explore opens and closes on the deep-navy stage/footer, so the canvas is navy.
   useWebCanvas(COLORS.deepNavy);
+  // Adaptive top chrome: deep-navy over the dark stage, beige over the carousels.
+  // The <ChromeSentinel /> at the stage→canvas boundary flips it at the seam.
+  useChromeColors(COLORS.deepNavy, COLORS.beige);
 
   // 1. MATCH THE ACCORDION_SCALES EXACTLY
   const optimalPoolSize = width >= 1280 ? 8 : width >= 900 ? 6 : 3;
@@ -1337,6 +1341,10 @@ export default function WebHomeScreen() {
             heroCount={totalHeroCount ?? 0}
             newlyAddedCount={homeData.newlyAdded?.length ?? 0}
           />
+
+          {/* Adaptive-chrome seam: once this marker (the dark→beige boundary)
+              scrolls under the top bar, the chrome flips from navy to beige. */}
+          <ChromeSentinel />
 
           {/* Beige canvas — owns the carousel surface so the dark scroll
               background only shows on the dark stage and on overscroll. */}

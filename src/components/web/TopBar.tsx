@@ -6,6 +6,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { useSearch } from '../../contexts/SearchContext';
+import { useWebChrome } from '../../contexts/WebChromeContext';
 import { HeroLogo } from './HeroLogo';
 import { SearchPalette } from './search/SearchPalette';
 
@@ -33,6 +34,13 @@ export function TopBar() {
   const initial = user?.email?.charAt(0).toUpperCase() ?? '';
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+
+  // Adaptive chrome (mobile): the bar matches the page colour under it — a dark
+  // scrim over the hero, a light frosted bar over the content — and the icons
+  // flip for contrast. Desktop keeps the classic dark scrim → light frost keyed
+  // on scroll, so `isLight` only steers the mobile bar.
+  const { isLight } = useWebChrome();
+  const lightChrome = isMobile && isLight;
 
   // Desktop: the search icon opens a command palette; mobile routes to /search.
   const openSearch = () => (isMobile ? router.push('/search') : setSearchFocused(true));
@@ -90,9 +98,15 @@ export function TopBar() {
         : pathname === path;
   const go = (path: string) => router.push(path as Parameters<typeof router.push>[0]);
 
+  // Icon/text colour flips with the chrome: dark glyphs on the light bar, light
+  // glyphs on the dark scrim. Active stays orange in both.
+  const inactiveTint = lightChrome ? 'rgba(41,60,67,0.78)' : 'rgba(245,235,220,0.7)';
+  const foreground = lightChrome ? COLORS.navy : COLORS.beige;
+  const hoverStyle = lightChrome ? (c.itemHoverLight as object) : (c.itemHover as object);
+
   const renderItem = (it: (typeof NAV)[number]) => {
     const active = navActive(it.key, it.path);
-    const tint = active ? COLORS.orange : 'rgba(245,235,220,0.7)';
+    const tint = active ? COLORS.orange : inactiveTint;
     return (
       <Pressable
         key={it.key}
@@ -102,7 +116,7 @@ export function TopBar() {
           [
             c.item,
             active && (c.itemActive as object),
-            !active && hovered && (c.itemHover as object),
+            !active && hovered && hoverStyle,
           ] as object
         }
       >
@@ -120,40 +134,39 @@ export function TopBar() {
   // that ancestor React Native / React Navigation containers might apply, which
   // would otherwise make `position: fixed` relative to that container instead
   // of the viewport and cause the bar to scroll with the page content.
+  // Dark scrim shows over the hero (mobile header mode / desktop at-top); the
+  // frosted bar shows over content (mobile light mode / desktop scrolled). On
+  // mobile the frost is tinted to the page (beige); desktop keeps its light tint.
+  const darkScrimShown = isMobile ? !isLight : !scrolled;
+  const frostShown = isMobile ? isLight : scrolled;
+
   const bar = (
     <View style={c.bar as object} pointerEvents="box-none">
-      {/* Solid navy cap over exactly the iOS status-bar inset. In a Safari tab
-          the system status bar is a flat opaque fill (theme-color #0b1820) that
-          can't be made transparent; matching it pixel-for-pixel here — and never
-          letting hero art bleed through this zone — fuses the system bar and the
-          page into one seamless dark cap. Persists on scroll so the status bar
-          stays solid even when beige content sits underneath. */}
-      <View style={c.statusCap as object} pointerEvents="none" />
-      {/* At top: a soft gradient for icon legibility over the hero. */}
-      <View style={[c.topScrim, scrolled && (c.layerHidden as object)] as object} pointerEvents="none" />
-      {/* On scroll: progressive frost — stacked blur layers tapering from strong
-          (top, behind the icons) to none (bottom), so it dissolves with no edge. */}
+      {/* Soft dark gradient for light-icon legibility over the hero. */}
       <View
-        style={[c.frost, scrolled && (c.layerShown as object)] as object}
+        style={[c.topScrim, !darkScrimShown && (c.layerHidden as object)] as object}
+        pointerEvents="none"
+      />
+      {/* Frosted bar over content: stacked blur layers tapering from strong (top,
+          behind the icons) to none (bottom) so it dissolves with no edge, plus a
+          tint that's opaque at the very top — matching the status-bar cover — and
+          eases out into the content below. */}
+      <View
+        style={[c.frost, frostShown && (c.layerShown as object)] as object}
         pointerEvents="none"
       >
         <View style={[StyleSheet.absoluteFill, c.frostA] as object} />
         <View style={[StyleSheet.absoluteFill, c.frostB] as object} />
         <View style={[StyleSheet.absoluteFill, c.frostC] as object} />
-        {/* Mobile: a dark tint that's fully opaque at the very top (matching the
-            status cap + system bar exactly, so there's no step) before fading,
-            making the bar flow out of the locked dark status bar. Desktop keeps
-            the original light frosted glass — there's no system status bar to
-            blend with there. */}
         <View
           style={
-            [StyleSheet.absoluteFill, isMobile ? c.frostTintMobile : c.frostTintDesktop] as object
+            [StyleSheet.absoluteFill, lightChrome ? c.frostTintLight : c.frostTintDesktop] as object
           }
         />
       </View>
       <View style={[c.inner, { paddingHorizontal: isMobile ? 16 : 28 }] as object} pointerEvents="box-none">
         <Pressable onPress={() => router.push('/explore')} style={c.logo}>
-          <HeroLogo iconSize={24} fontSize={19} color={COLORS.beige} gap={8} />
+          <HeroLogo iconSize={24} fontSize={19} color={foreground} gap={8} />
         </Pressable>
 
         {!isMobile && <View style={c.center}>{NAV.map(renderItem)}</View>}
@@ -165,7 +178,7 @@ export function TopBar() {
               aria-label="Profile"
               onPress={() => router.push('/profile')}
               style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [c.item, hovered && (c.itemHover as object)] as object
+                [c.item, hovered && hoverStyle] as object
               }
             >
               <View style={c.avatar}>
@@ -181,10 +194,10 @@ export function TopBar() {
               }}
               onPress={() => router.push('/(auth)/login')}
               style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [c.item, hovered && (c.itemHover as object)] as object
+                [c.item, hovered && hoverStyle] as object
               }
             >
-              <Ionicons name="person-outline" size={20} color={COLORS.beige} />
+              <Ionicons name="person-outline" size={20} color={foreground} />
             </Pressable>
           )}
         </View>
@@ -217,20 +230,9 @@ const c = StyleSheet.create({
     // compositing layer via will-change makes them truly fixed again.
     willChange: 'transform',
   } as object,
-  // Solid #0b1820 fill spanning just the status-bar inset, matching the
-  // theme-color the system bar uses. env() resolves to 0 where there's no safe
-  // area, so this is a no-op on Android/desktop.
-  statusCap: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 'env(safe-area-inset-top)',
-    backgroundColor: '#0b1820',
-  } as object,
-  // At-top scrim: picks up where the cap ends, holding solid navy through the
-  // icon row (so bright hero art never bleeds behind the logo/avatar) before a
-  // long fade to transparent. Navy-over-navy reads as seamless on dark headers.
+  // Dark scrim: holds near-solid navy across the status-bar inset + icon row (so
+  // it fuses with the navy status-bar cover and bright hero art never bleeds
+  // behind the logo/avatar) before a long fade to transparent.
   topScrim: {
     position: 'absolute',
     top: 0,
@@ -246,7 +248,7 @@ const c = StyleSheet.create({
   // is heaviest at the top (all three stacked, behind the icons) and tapers to
   // zero by the bottom — a graduated blur with no hard edge where sharp content
   // would otherwise snap back. The tint that rides on top is platform-specific
-  // (see frostTintMobile / frostTintDesktop below).
+  // (see frostTintLight / frostTintDesktop below).
   frost: {
     position: 'absolute',
     top: 0,
@@ -274,12 +276,13 @@ const c = StyleSheet.create({
     maskImage: 'linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%)',
     WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%)',
   } as object,
-  // Mobile: opaque navy only across the status-cap zone (so the cap→bar boundary
-  // disappears and the system bar flows in), then ease out quickly so it's a
-  // slim bridge from the status bar — not a heavy band sitting over the content.
-  frostTintMobile: {
+  // Mobile light mode: a beige tint, opaque at the very top (matching the beige
+  // status-bar cover exactly, so there's no step) then easing out into the
+  // content — the bar reads as one frosted-beige surface flowing off the status
+  // bar, with dark icons on top.
+  frostTintLight: {
     backgroundImage:
-      'linear-gradient(to bottom, rgba(11,24,32,0.96) 0%, rgba(11,24,32,0.72) 30%, rgba(11,24,32,0.4) 54%, rgba(11,24,32,0.14) 78%, transparent 100%)',
+      'linear-gradient(to bottom, rgba(245,235,220,0.96) 0%, rgba(245,235,220,0.74) 32%, rgba(245,235,220,0.38) 60%, rgba(245,235,220,0.12) 82%, transparent 100%)',
   } as object,
   // Desktop: the original light frosted glass — no system status bar to match.
   frostTintDesktop: {
@@ -308,6 +311,7 @@ const c = StyleSheet.create({
   } as object,
   itemActive: { backgroundColor: 'rgba(231,115,51,0.16)' } as object,
   itemHover: { backgroundColor: 'rgba(255,255,255,0.08)' } as object,
+  itemHoverLight: { backgroundColor: 'rgba(41,60,67,0.08)' } as object,
   // Both account states (avatar / logged-out icon) sit inside the shared `item`
   // hover container, so the whole top bar hovers identically.
   avatar: {
