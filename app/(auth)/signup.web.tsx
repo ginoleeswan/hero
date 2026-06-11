@@ -189,8 +189,8 @@ export default function WebSignupScreen() {
           <Image
             source={LOGIN_HERO}
             style={styles.mobileHeroImg as object}
-            contentFit="contain"
-            contentPosition="bottom center"
+            contentFit="cover"
+            contentPosition="top center"
           />
           {/* Scrim fades bottom of illustration into card */}
           <View style={styles.mobileScrim as object} pointerEvents="none" />
@@ -246,12 +246,12 @@ const styles = StyleSheet.create({
   } as object,
   mobileIllustrationWrap: {
     position: 'relative',
-    height: '32vh',
-    minHeight: 200,
-    maxHeight: 320,
+    height: '34vh',
+    minHeight: 210,
+    maxHeight: 340,
     flexShrink: 0,
     backgroundColor: COLORS.navy,
-    paddingTop: 'calc(env(safe-area-inset-top) + 86px)',
+    paddingTop: 'calc(env(safe-area-inset-top) + 80px)',
     backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
     backgroundSize: '24px 24px',
   } as object,

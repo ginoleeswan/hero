@@ -2375,9 +2375,9 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 'calc(env(safe-area-inset-top) + 150px)',
+    height: 'calc(env(safe-area-inset-top) + 210px)',
     backgroundImage:
-      'linear-gradient(to bottom, #0b1820 0%, rgba(11,24,32,0.82) 34%, rgba(11,24,32,0.4) 68%, transparent 100%)',
+      'linear-gradient(to bottom, #0b1820 0%, #0b1820 24%, rgba(11,24,32,0.72) 52%, rgba(11,24,32,0.32) 78%, transparent 100%)',
   } as object,
   mScrimBottom: {
     position: 'absolute',

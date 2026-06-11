@@ -299,13 +299,13 @@ const c = StyleSheet.create({
     backgroundImage:
       'linear-gradient(to bottom, rgba(245,235,220,0.96) 0%, rgba(245,235,220,0.74) 32%, rgba(245,235,220,0.38) 60%, rgba(245,235,220,0.12) 82%, transparent 100%)',
   } as object,
-  // Mobile dark-topped pages: a translucent dark-navy glass — dark enough to
-  // stay seamless with the navy status bar and keep light icons legible, but
-  // never fully opaque, so the content blurs through it (glass, not a slab) and
-  // it eases out at the bottom into the page.
+  // Mobile dark-topped pages: a dark-navy glass that's opaque at the very top so
+  // it fuses seamlessly with the navy status-bar cover (no beige bleed-through,
+  // no step at the boundary), holds through the icon row for legibility, then
+  // eases out — translucent lower down so content still blurs through it.
   frostTintDark: {
     backgroundImage:
-      'linear-gradient(to bottom, rgba(11,24,32,0.88) 0%, rgba(11,24,32,0.68) 42%, rgba(11,24,32,0.4) 70%, rgba(11,24,32,0.14) 90%, transparent 100%)',
+      'linear-gradient(to bottom, rgba(11,24,32,0.99) 0%, rgba(11,24,32,0.9) 28%, rgba(11,24,32,0.6) 58%, rgba(11,24,32,0.26) 82%, transparent 100%)',
   } as object,
   // Desktop: the original light frosted glass — no system status bar to match.
   frostTintDesktop: {
