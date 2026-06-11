@@ -71,6 +71,13 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   };
 }
 
+// iOS Safari only honours *hex* theme-color values for the status-bar tint — it
+// silently ignores rgb(), so the animated frames must be hex too.
+function rgbToHex(r: number, g: number, b: number): string {
+  const h = (n: number) => n.toString(16).padStart(2, '0');
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
+
 // Duration of the chrome colour cross-fade. Shared by the status-bar tint
 // animation here and the CSS transitions on the bar/cover, so the whole top
 // edge changes colour as one synchronised motion.
@@ -137,7 +144,7 @@ export function WebChromeProvider({ children }: { children: ReactNode }) {
       const g = Math.round(from.g + (to.g - from.g) * e);
       const b = Math.round(from.b + (to.b - from.b) * e);
       themeRgbRef.current = { r, g, b };
-      meta!.content = `rgb(${r}, ${g}, ${b})`;
+      meta!.content = rgbToHex(r, g, b);
       if (t < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);

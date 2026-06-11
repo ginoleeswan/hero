@@ -72,7 +72,9 @@ function WebAuthGate() {
     <SearchProvider>
       <WebChromeProvider>
         <View style={styles.root}>
-          {showNav && <TopBar />}
+          {/* Full nav on content routes; a logo-only bar on auth (mobile) so the
+              brand sits in the same place app-wide. Hidden only on the bare root. */}
+          {!isRoot && <TopBar logoOnly={inAuthGroup} />}
           <View
             style={
               [

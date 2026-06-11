@@ -26,7 +26,10 @@ const NAV: { key: string; path: string; icon: IoniconName; iconOutline: IoniconN
 
 // Transparent floating top bar with a top-down scrim. Logo left, nav icons
 // centre (desktop), avatar / sign-in right. Used on every web page, all widths.
-export function TopBar() {
+// `logoOnly` (auth screens) drops the nav/account controls — just the brand over
+// the page's own hero — and renders nothing on desktop, where auth has its own
+// split-panel branding.
+export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
@@ -139,6 +142,9 @@ export function TopBar() {
   // that ancestor React Native / React Navigation containers might apply, which
   // would otherwise make `position: fixed` relative to that container instead
   // of the viewport and cause the bar to scroll with the page content.
+  // Desktop auth keeps its own branding; the logo-only bar is a mobile affordance.
+  if (logoOnly && !isMobile) return null;
+
   // Dark scrim shows over the hero (mobile header mode / desktop at-top); the
   // frosted bar shows over content (mobile light mode / desktop scrolled). On
   // mobile the frost is tinted to the page (beige); desktop keeps its light tint.
@@ -174,8 +180,9 @@ export function TopBar() {
           <HeroLogo iconSize={24} fontSize={19} color={foreground} gap={8} />
         </Pressable>
 
-        {!isMobile && <View style={c.center}>{NAV.map(renderItem)}</View>}
+        {!isMobile && !logoOnly && <View style={c.center}>{NAV.map(renderItem)}</View>}
 
+        {!logoOnly && (
         <View style={c.right}>
           {isMobile && NAV.filter((it) => it.key !== 'home').map(renderItem)}
           {user ? (
@@ -206,8 +213,9 @@ export function TopBar() {
             </Pressable>
           )}
         </View>
+        )}
       </View>
-      {!isMobile && <SearchPalette />}
+      {!isMobile && !logoOnly && <SearchPalette />}
     </View>
   );
 

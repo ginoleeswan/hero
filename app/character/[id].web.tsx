@@ -985,7 +985,7 @@ export default function WebCharacterScreen() {
                     source={heroImage}
                     contentFit="cover"
                     contentPosition="top"
-                    style={StyleSheet.absoluteFill}
+                    style={styles.mHeroImg}
                     cachePolicy="memory-disk"
                     recyclingKey={id}
                   />
@@ -2365,6 +2365,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: COLORS.deepNavy,
   },
+  // Inset the portrait from the very top so the deep-navy backdrop shows above
+  // the hero's head — breathing room under the status bar / back button instead
+  // of the head sitting flush against the top edge.
+  mHeroImg: {
+    position: 'absolute',
+    top: 'calc(env(safe-area-inset-top) + 34px)',
+    left: 0,
+    right: 0,
+    bottom: 0,
+  } as object,
   mScrimTop: {
     position: 'absolute',
     top: 0,

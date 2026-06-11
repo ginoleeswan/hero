@@ -181,9 +181,7 @@ export default function WebForgotPasswordScreen() {
           />
           <View style={styles.mobileScrim as object} pointerEvents="none" />
         </View>
-        <View style={styles.mobileLogo}>
-          <HeroLogo iconSize={36} fontSize={28} color={COLORS.beige} gap={10} />
-        </View>
+        {/* Logo is provided by the shared logo-only TopBar (see _layout.web.tsx). */}
         <View style={styles.mobileCard}>
           <View style={styles.mobileCardHandle} />
           {formContent}
