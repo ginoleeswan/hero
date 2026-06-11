@@ -1,13 +1,15 @@
 // app/(tabs)/explore.tsx — Home screen: spotlight + curated/personal carousels
 import { useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, StatusBar } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, useSharedValue, useAnimatedScrollHandler } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, type Href } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
 import { HomeSkeleton } from '../../src/components/skeletons/HomeSkeleton';
-import { SpotlightBanner } from '../../src/components/home/SpotlightBanner';
+import { SpotlightCarousel, spotlightHeight } from '../../src/components/home/SpotlightCarousel';
+import { StickyHeader } from '../../src/components/home/StickyHeader';
+import { rowStyle } from '../../src/lib/home/rowStyle';
 import { HomeHeroRow, type RowHero } from '../../src/components/home/HomeHeroRow';
 import {
   getPopularHeroes,
@@ -53,8 +55,13 @@ export default function HomeScreen() {
 
   const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
-  const [spotlightIndex, setSpotlightIndex] = useState(0);
   const [navigating, setNavigating] = useState(false);
+
+  const scrollY = useSharedValue(0);
+  const scrollHandler = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y;
+  });
+  const spotlightPool = popular.slice(0, SPOTLIGHT_POOL);
 
   // Popular fires first — it feeds both the spotlight and the Popular row.
   // Once it resolves the skeleton is replaced with real content.
@@ -106,16 +113,6 @@ export default function HomeScreen() {
       .catch(() => {});
   }, [user?.id]);
 
-  useEffect(() => {
-    if (!popular.length) return;
-    const total = Math.min(SPOTLIGHT_POOL, popular.length);
-    if (total <= 1) return;
-    const timer = setInterval(() => {
-      setSpotlightIndex((i) => (i + 1) % total);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [popular]);
-
   const handlePress = useCallback(
     (item: { id: string; portrait_url?: string | null; image_url?: string | null }) => {
       if (navigating) return;
@@ -128,9 +125,6 @@ export default function HomeScreen() {
     },
     [router, navigating],
   );
-
-  const spotlightHero = popular[spotlightIndex] ?? null;
-  const spotlightTotal = Math.min(SPOTLIGHT_POOL, popular.length);
 
   // Fixed catalog order. Tone alternates by catalog index (not by which rows
   // happen to be loaded), so a row's band colour never flips as data streams in.
@@ -158,20 +152,23 @@ export default function HomeScreen() {
       {!initialLoaded ? (
         <HomeSkeleton insets={insets} />
       ) : (
+        <>
+        <StickyHeader scrollY={scrollY} revealAt={spotlightHeight(insets.top) * 0.6} insetTop={insets.top} />
         <Animated.ScrollView
           entering={FadeIn.duration(280)}
           style={styles.scroll}
           showsVerticalScrollIndicator={false}
           contentInsetAdjustmentBehavior="never"
           contentContainerStyle={styles.content}
+          scrollEventThrottle={16}
+          onScroll={scrollHandler}
         >
-          {spotlightHero && (
-            <SpotlightBanner
-              hero={spotlightHero}
-              index={spotlightIndex}
-              total={spotlightTotal}
+          {spotlightPool.length > 0 && (
+            <SpotlightCarousel
+              heroes={spotlightPool}
               insetTop={insets.top}
-              onHeroPress={() => handlePress(spotlightHero)}
+              scrollY={scrollY}
+              onHeroPress={handlePress}
             />
           )}
 
@@ -196,21 +193,27 @@ export default function HomeScreen() {
             />
           )}
 
-          {curatedRows.map((r, i) =>
-            r.heroes.length > 0 ? (
+          {curatedRows.map((r) => {
+            if (r.heroes.length === 0) return null;
+            const rs = rowStyle(r.key);
+            return (
               <HomeHeroRow
                 key={r.key}
                 label={r.label}
                 title={r.title}
-                tone={i % 2 === 1 ? 'dark' : 'light'}
+                tone={rs.tone}
+                accent={rs.accent}
+                ranked={rs.ranked}
+                feature={rs.feature}
                 heroes={r.heroes.map(toRowHero)}
                 onPress={handlePress}
                 onViewAll={r.route ? () => router.push(r.route!) : undefined}
                 disabled={navigating}
               />
-            ) : null,
-          )}
+            );
+          })}
         </Animated.ScrollView>
+        </>
       )}
     </View>
   );
