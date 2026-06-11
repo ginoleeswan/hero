@@ -14,7 +14,7 @@ import { COLORS } from '../constants/colors';
  * Safari toolbar and along the edges). Pass the screen's dominant canvas colour —
  * beige for light screens, a dark tone for screens that end on a dark section.
  */
-export function useWebCanvas(background: string = COLORS.beige) {
+export function useWebDocumentScroll(background: string = COLORS.beige) {
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
     const { body } = document;
@@ -29,3 +29,6 @@ export function useWebCanvas(background: string = COLORS.beige) {
     };
   }, [background]);
 }
+
+// Backwards compatibility alias
+export const useWebCanvas = useWebDocumentScroll;

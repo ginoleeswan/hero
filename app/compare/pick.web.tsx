@@ -362,6 +362,11 @@ const s = StyleSheet.create({
     position: 'absolute',
     top: -6,
     width: 520,
+    // Decorative glow — never let it exceed the viewport. At 520px it overflowed
+    // narrow (mobile) screens, widening the document; with body{overflow-x:visible}
+    // (we can't clip globally — it forces overflow-y:auto and breaks document
+    // scroll) that horizontal overflow drags the fixed TopBar off the viewport.
+    maxWidth: '100%',
     height: 240,
     ...Platform.select({
       web: {

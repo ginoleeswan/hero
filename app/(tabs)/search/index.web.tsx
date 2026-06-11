@@ -24,7 +24,7 @@ import { useHeroSearch } from '../../../src/hooks/useHeroSearch';
 import { useIdleHeroes } from '../../../src/hooks/useIdleHeroes';
 import { useSkeletonAnim } from '../../../src/components/web/Skeleton';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
-import { useWebCanvas } from '../../../src/hooks/useWebCanvas';
+import { useWebDocumentScroll } from '../../../src/hooks/useWebDocumentScroll';
 
 const RESULT_LIMIT = 300;
 const PUB_OPTS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
@@ -42,9 +42,8 @@ function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
   return <Animated.View style={[sk.wrap as object, { opacity }]} />;
 }
 const sk = StyleSheet.create({
-  // width:100% — WebKit won't stretch an aspect-ratio grid item to the track
   wrap: {
-    width: '100%',
+    width: '100%', // WebKit won't stretch an aspect-ratio grid item to the track
     borderRadius: 10,
     aspectRatio: '3 / 4',
     backgroundColor: '#ddd5c8',
@@ -113,7 +112,7 @@ function HeroCard({
 }
 const card = StyleSheet.create({
   wrap: {
-    width: '100%', // WebKit won't stretch an aspect-ratio grid item to the track — force the inline size
+    width: '100%', // WebKit won't stretch an aspect-ratio grid item to the track
     borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
@@ -171,22 +170,16 @@ export default function WebSearchScreen() {
   const skeletonOpacity = useSkeletonAnim();
   const { history, addSearch, clearHistory } = useSearchHistory();
 
-  // Document scroll so the grid bleeds edge-to-edge under the iOS Safari toolbar.
-  useWebCanvas(COLORS.beige);
+  useWebDocumentScroll(COLORS.beige);
 
   const urlQ = (Array.isArray(params.q) ? params.q[0] : (params.q ?? '')).toString();
   const publisher = normalizePublisher(params.publisher);
 
-  // One input state for both platforms. ?q= in the URL is the source of truth —
-  // deep links, sharing, and the (future) nav palette all drive the page through
-  // it; the local state just keeps typing responsive.
   const [inputQuery, setInputQuery] = useState(urlQ);
-  const query = inputQuery;
-  const trimmed = query.trim();
+  const trimmed = inputQuery.trim();
   const hasCriteria = trimmed.length > 0 || publisher !== 'All';
 
-  // Shared debounced search primitive (same one the nav palette rides on).
-  const { results: heroes, loading } = useHeroSearch(query, publisher, RESULT_LIMIT);
+  const { results: heroes, loading } = useHeroSearch(inputQuery, publisher, RESULT_LIMIT);
 
   // Sync the input FROM the URL (deep links, back/forward, nav palette).
   useEffect(() => {
@@ -194,16 +187,13 @@ export default function WebSearchScreen() {
     setInputQuery(urlQ);
   }, [urlQ]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Mirror the committed query back INTO the URL so results stay shareable. The
-  // equality guard stops this from fighting the sync above. setParams replaces
-  // the current route's params (no history spam).
+  // Mirror the committed query back INTO the URL so results stay shareable.
   useEffect(() => {
     if (trimmed === urlQ) return;
     const t = setTimeout(() => router.setParams({ q: trimmed }), 300);
     return () => clearTimeout(t);
   }, [trimmed, urlQ]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Trending for the empty mobile state.
   const showIdle = !isDesktop && !hasCriteria;
   const { heroes: trending, isLoading: trendingLoading } = useIdleHeroes(showIdle, 12);
 
@@ -213,6 +203,12 @@ export default function WebSearchScreen() {
   };
 
   const [peek, setPeek] = useState<PeekHero | null>(null);
+
+  // The mobile header is position:fixed (see styles.mobileFixedHeader for why),
+  // so it's out of flow — reserve its measured height with a spacer below so the
+  // grid starts under it instead of behind it. Seeded with a sensible estimate to
+  // avoid a first-frame jump before onLayout reports the real height.
+  const [headerH, setHeaderH] = useState(TOPBAR_HEIGHT + 95);
 
   const setPublisher = (p: PublisherFilter) => {
     router.setParams({ publisher: p === 'All' ? '' : p });
@@ -237,163 +233,153 @@ export default function WebSearchScreen() {
     gap: 12,
   };
 
+  const pills = (
+    <View style={styles.pills as object}>
+      {PUB_OPTS.map((p) => (
+        <Pressable
+          key={p}
+          onPress={() => setPublisher(p)}
+          style={[styles.pill, publisher === p && (styles.pillActive as object)] as object}
+        >
+          <Text
+            style={[styles.pillText, publisher === p && (styles.pillTextActive as object)] as object}
+          >
+            {p}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+
   return (
     <View style={styles.root}>
+
       {isDesktop ? (
-        /* ── Desktop search zone — self-contained input, ?q= is the source of truth ── */
-        <View style={[styles.heroZone, { paddingHorizontal: contentPad }] as object}>
-          <View style={styles.heroZoneInner}>
-            <View style={styles.desktopSearchBar}>
-              <Ionicons name="search" size={20} color="rgba(245,235,220,0.5)" />
-              <TextInput
-                style={styles.desktopInput as object}
-                placeholder="Search heroes…"
-                placeholderTextColor="rgba(245,235,220,0.4)"
-                value={inputQuery}
-                onChangeText={setInputQuery}
-                autoFocus={!urlQ}
-                autoCorrect={false}
-                returnKeyType="search"
-              />
-              {inputQuery.length > 0 && (
-                <Pressable
-                  onPress={() => setInputQuery('')}
-                  style={styles.mobileClear as object}
-                  aria-label="Clear search"
-                >
-                  <Ionicons name="close-circle" size={20} color="rgba(245,235,220,0.5)" />
-                </Pressable>
-              )}
+        <>
+          {/* ── Desktop: search hero zone (scrolls away) + sticky pill bar ── */}
+          <View style={[styles.desktopHeroZone, { paddingHorizontal: contentPad }] as object}>
+            <View style={styles.desktopHeroZoneInner}>
+              <View style={styles.desktopSearchBar as object}>
+                <Ionicons name="search" size={20} color="rgba(245,235,220,0.5)" />
+                <TextInput
+                  style={styles.desktopInput as object}
+                  placeholder="Search heroes…"
+                  placeholderTextColor="rgba(245,235,220,0.4)"
+                  value={inputQuery}
+                  onChangeText={setInputQuery}
+                  autoFocus={!urlQ}
+                  autoCorrect={false}
+                  returnKeyType="search"
+                />
+                {inputQuery.length > 0 && (
+                  <Pressable onPress={() => setInputQuery('')} style={styles.clearBtn as object}>
+                    <Ionicons name="close-circle" size={20} color="rgba(245,235,220,0.5)" />
+                  </Pressable>
+                )}
+              </View>
             </View>
           </View>
-        </View>
+          <View style={[styles.pillBar, styles.pillBarDesktop, { paddingHorizontal: contentPad }] as object}>
+            <View style={styles.pillBarInner as object}>
+              {pills}
+              {hasCriteria && <Text style={styles.countLabel as object}>{countLabel}</Text>}
+            </View>
+          </View>
+        </>
       ) : (
-        /* ── Mobile search header (own input) ───────────────────────────────── */
-        <View style={styles.mobileHeader as object}>
-          <View style={styles.mobileSearchBar as object}>
-            <Ionicons name="search" size={16} color="rgba(245,235,220,0.5)" />
-            <TextInput
-              style={styles.mobileInput as object}
-              placeholder="Search heroes…"
-              placeholderTextColor="rgba(245,235,220,0.4)"
-              value={inputQuery}
-              onChangeText={setInputQuery}
-              autoFocus={!urlQ}
-              autoCorrect={false}
-              returnKeyType="search"
-            />
-            {inputQuery.length > 0 && (
-              <Pressable onPress={() => setInputQuery('')} style={styles.mobileClear as object}>
-                <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.5)" />
-              </Pressable>
-            )}
+        /* ── Mobile: fixed header (search input + pills) pinned under the TopBar,
+             plus an in-flow spacer that reserves its height. ── */
+        <>
+          <View
+            style={styles.mobileFixedHeader as object}
+            onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
+          >
+            <View style={styles.mobileSearchRow as object}>
+              <View style={styles.mobileSearchBar as object}>
+                <Ionicons name="search" size={16} color="rgba(245,235,220,0.5)" />
+                <TextInput
+                  style={styles.mobileInput as object}
+                  placeholder="Search heroes…"
+                  placeholderTextColor="rgba(245,235,220,0.4)"
+                  value={inputQuery}
+                  onChangeText={setInputQuery}
+                  autoFocus={!urlQ}
+                  autoCorrect={false}
+                  returnKeyType="search"
+                />
+                {inputQuery.length > 0 && (
+                  <Pressable onPress={() => setInputQuery('')} style={styles.clearBtn as object}>
+                    <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.5)" />
+                  </Pressable>
+                )}
+              </View>
+            </View>
+            <View style={[styles.pillBar, { paddingHorizontal: contentPad }] as object}>
+              <View style={styles.pillBarInner as object}>
+                {pills}
+                {hasCriteria && <Text style={styles.countLabel as object}>{countLabel}</Text>}
+              </View>
+            </View>
           </View>
-        </View>
+          <View style={{ height: headerH }} />
+        </>
       )}
-
-      {/* ── Publisher filter (both platforms) ────────────────────────────────── */}
-      <View style={styles.controlsBar}>
-        <View style={[styles.controlsInner, { paddingHorizontal: contentPad }] as object}>
-          <View style={styles.pills as object}>
-            {PUB_OPTS.map((p) => (
-              <Pressable
-                key={p}
-                onPress={() => setPublisher(p)}
-                style={[styles.pill, publisher === p && (styles.pillActive as object)] as object}
-              >
-                <Text
-                  style={
-                    [
-                      styles.pillText,
-                      publisher === p && (styles.pillTextActive as object),
-                    ] as object
-                  }
-                >
-                  {p}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          {hasCriteria && <Text style={styles.countLabel as object}>{countLabel}</Text>}
-        </View>
-      </View>
 
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       {showIdle ? (
-        <View style={styles.scroll}>
-          <View style={[styles.gridWrap, { paddingHorizontal: contentPad, paddingBottom: 0 }]}>
-            {history.length > 0 && (
-              <>
-                <View style={styles.idleHeaderRow}>
-                  <Text style={styles.idleHeader as object}>Recent</Text>
-                  <Pressable onPress={clearHistory}>
-                    <Text style={styles.clearLink as object}>Clear</Text>
+        <View style={[styles.gridWrap, { paddingHorizontal: contentPad, paddingBottom: 0 }]}>
+          {history.length > 0 && (
+            <>
+              <View style={styles.idleHeaderRow}>
+                <Text style={styles.idleLabel as object}>Recent</Text>
+                <Pressable onPress={clearHistory}>
+                  <Text style={styles.clearLink as object}>Clear</Text>
+                </Pressable>
+              </View>
+              <View style={styles.chips as object}>
+                {history.map((h) => (
+                  <Pressable key={h} onPress={() => setInputQuery(h)} style={styles.chip as object}>
+                    <Ionicons name="time-outline" size={13} color={COLORS.grey} />
+                    <Text style={styles.chipText as object} numberOfLines={1}>{h}</Text>
                   </Pressable>
-                </View>
-                <View style={styles.chips as object}>
-                  {history.map((h) => (
-                    <Pressable
-                      key={h}
-                      onPress={() => setInputQuery(h)}
-                      style={styles.chip as object}
-                    >
-                      <Ionicons name="time-outline" size={13} color={COLORS.grey} />
-                      <Text style={styles.chipText as object} numberOfLines={1}>
-                        {h}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </>
-            )}
-            <Text style={[styles.idleHeader, { marginTop: history.length > 0 ? 24 : 4 }] as object}>
-              Trending
-            </Text>
-            {trendingLoading ? (
-              <View style={gridStyle as object}>
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <SkeletonCard key={i} opacity={skeletonOpacity} />
                 ))}
               </View>
-            ) : (
-              <View style={gridStyle as object}>
-                {trending.map((hero) => (
+            </>
+          )}
+          <Text style={[styles.idleLabel, { marginTop: history.length > 0 ? 24 : 4 }] as object}>
+            Trending
+          </Text>
+          <View style={gridStyle as object}>
+            {trendingLoading
+              ? Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} opacity={skeletonOpacity} />)
+              : trending.map((hero) => (
                   <HeroCard key={hero.id} hero={hero} onPress={() => goToHero(hero.id)} onLongPress={() => setPeek(hero)} onInfo={() => setPeek(hero)} />
                 ))}
-              </View>
-            )}
           </View>
         </View>
       ) : !hasCriteria ? (
         <View style={styles.center}>
           <Text style={styles.empty}>Search for a hero to see results.</Text>
         </View>
-      ) : loading ? (
+      ) : (
         <View style={[styles.gridWrap, { paddingHorizontal: contentPad }]}>
           <View style={gridStyle as object}>
-            {Array.from({ length: 18 }).map((_, i) => (
-              <SkeletonCard key={i} opacity={skeletonOpacity} />
-            ))}
+            {loading
+              ? Array.from({ length: 18 }).map((_, i) => <SkeletonCard key={i} opacity={skeletonOpacity} />)
+              : heroes.map((hero) => (
+                  <HeroCard key={hero.id} hero={hero} onPress={() => goToHero(hero.id)} onLongPress={() => setPeek(hero)} onInfo={() => setPeek(hero)} />
+                ))}
           </View>
-        </View>
-      ) : heroes.length === 0 ? (
-        <View style={styles.center}>
-          <Text style={styles.empty}>No heroes match {title}.</Text>
-        </View>
-      ) : (
-        <View style={styles.scroll}>
-          <View style={[styles.gridWrap, { paddingHorizontal: contentPad, paddingBottom: 0 }]}>
-            <View style={gridStyle as object}>
-              {heroes.map((hero) => (
-                <HeroCard key={hero.id} hero={hero} onPress={() => goToHero(hero.id)} onLongPress={() => setPeek(hero)} onInfo={() => setPeek(hero)} />
-              ))}
+          {!loading && heroes.length === 0 && (
+            <View style={styles.center}>
+              <Text style={styles.empty}>No heroes match {title}.</Text>
             </View>
-            {capped && (
-              <Text style={styles.moreHint as object}>
-                Showing the first {RESULT_LIMIT} results — refine your search to narrow it down.
-              </Text>
-            )}
-          </View>
+          )}
+          {capped && (
+            <Text style={styles.moreHint as object}>
+              Showing the first {RESULT_LIMIT} results — refine your search to narrow it down.
+            </Text>
+          )}
         </View>
       )}
 
@@ -415,10 +401,13 @@ export default function WebSearchScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
 
-  // Desktop hero zone
-  heroZone: { backgroundColor: COLORS.navy, paddingTop: TOPBAR_HEIGHT + 18, paddingBottom: 22 },
-  heroZoneInner: { maxWidth: 1200, width: '100%', alignSelf: 'center' },
-  // Prominent desktop search field — the page's own input (?q= source of truth).
+  // ── Desktop ────────────────────────────────────────────────────────────────
+  desktopHeroZone: {
+    backgroundColor: COLORS.navy,
+    paddingTop: TOPBAR_HEIGHT + 18,
+    paddingBottom: 22,
+  },
+  desktopHeroZoneInner: { maxWidth: 1200, width: '100%', alignSelf: 'center' },
   desktopSearchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -437,19 +426,34 @@ const styles = StyleSheet.create({
     color: COLORS.beige,
     outlineStyle: 'none',
   } as object,
-
-  // Mobile header
-  mobileHeader: {
-    backgroundColor: COLORS.navy,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingTop: TOPBAR_HEIGHT + 8,
-    paddingBottom: 12,
+  pillBarDesktop: {
+    position: 'sticky',
+    top: TOPBAR_HEIGHT,
   } as object,
+
+  // ── Mobile fixed header (search input + pills as one block) ────────────────
+  // position:fixed, NOT sticky. The app scrolls the document while every flex
+  // ancestor is clamped to 100dvh (#root { height: 100dvh }), so the containing
+  // block for a sticky child is only one viewport tall — sticky would release and
+  // scroll away after the first screenful. Fixed pins it to the viewport like the
+  // global TopBar; translateZ(0) forces a GPU layer so iOS Safari keeps it pinned
+  // under body{overflow:visible} (same fix the TopBar uses). paddingTop clears the
+  // TopBar (its height + the status-bar inset) so the search row sits just below.
+  mobileFixedHeader: {
+    backgroundColor: COLORS.navy,
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 8px)`,
+    transform: 'translateZ(0)',
+  } as object,
+  mobileSearchRow: {
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+  },
   mobileSearchBar: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
@@ -467,19 +471,17 @@ const styles = StyleSheet.create({
     color: COLORS.beige,
     outlineStyle: 'none',
   } as object,
-  mobileClear: { padding: 2, cursor: 'pointer' } as object,
+  clearBtn: { padding: 2, cursor: 'pointer' } as object,
 
-  // Controls
-  controlsBar: {
+  // ── Pill bar (shared, used by both platforms) ──────────────────────────────
+  pillBar: {
     backgroundColor: COLORS.beige,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(41,60,67,0.12)',
-    paddingVertical: 12,
-    position: 'sticky',
-    top: 64,
+    paddingVertical: 10,
     zIndex: 40,
   } as object,
-  controlsInner: {
+  pillBarInner: {
     maxWidth: 1200,
     width: '100%',
     alignSelf: 'center',
@@ -507,9 +509,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   } as object,
 
-  // Idle (mobile)
+  // ── Idle state (mobile, no query) ─────────────────────────────────────────
   idleHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  idleHeader: {
+  idleLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
     color: COLORS.grey,
@@ -537,7 +539,7 @@ const styles = StyleSheet.create({
   } as object,
   chipText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy } as object,
 
-  scroll: { flex: 1 },
+  // ── Grid / content ─────────────────────────────────────────────────────────
   gridWrap: { paddingTop: 24, maxWidth: 1200, width: '100%', alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
