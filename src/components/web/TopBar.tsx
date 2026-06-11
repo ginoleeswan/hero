@@ -137,7 +137,16 @@ export function TopBar() {
         <View style={[StyleSheet.absoluteFill, c.frostA] as object} />
         <View style={[StyleSheet.absoluteFill, c.frostB] as object} />
         <View style={[StyleSheet.absoluteFill, c.frostC] as object} />
-        <View style={[StyleSheet.absoluteFill, c.frostTint] as object} />
+        {/* Mobile: a dark tint that's fully opaque at the very top (matching the
+            status cap + system bar exactly, so there's no step) before fading,
+            making the bar flow out of the locked dark status bar. Desktop keeps
+            the original light frosted glass — there's no system status bar to
+            blend with there. */}
+        <View
+          style={
+            [StyleSheet.absoluteFill, isMobile ? c.frostTintMobile : c.frostTintDesktop] as object
+          }
+        />
       </View>
       <View style={[c.inner, { paddingHorizontal: isMobile ? 16 : 28 }] as object} pointerEvents="box-none">
         <Pressable onPress={() => router.push('/explore')} style={c.logo}>
@@ -233,10 +242,8 @@ const c = StyleSheet.create({
   // Scrolled frost: a stack of blur layers, each masked to a band, so the blur
   // is heaviest at the top (all three stacked, behind the icons) and tapers to
   // zero by the bottom — a graduated blur with no hard edge where sharp content
-  // would otherwise snap back. A heavy navy tint rides on top so the bar reads
-  // as a dark translucent surface (iOS dark-mode nav style) — the system status
-  // bar is locked dark navy, so only a dark bar flows seamlessly out of it; a
-  // light frosted bar would clash at the status-bar edge.
+  // would otherwise snap back. The tint that rides on top is platform-specific
+  // (see frostTintMobile / frostTintDesktop below).
   frost: {
     position: 'absolute',
     top: 0,
@@ -264,9 +271,17 @@ const c = StyleSheet.create({
     maskImage: 'linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%)',
     WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%)',
   } as object,
-  frostTint: {
+  // Mobile: opaque navy through the status-cap + icon row (identical to the
+  // system bar, so the cap→bar boundary disappears), then a long ease-out so the
+  // bottom edge melts into content with no hard line.
+  frostTintMobile: {
     backgroundImage:
-      'linear-gradient(to bottom, rgba(11,24,32,0.92) 0%, rgba(11,24,32,0.82) 46%, rgba(11,24,32,0.4) 74%, transparent 100%)',
+      'linear-gradient(to bottom, rgba(11,24,32,1) 0%, rgba(11,24,32,1) 40%, rgba(11,24,32,0.6) 66%, rgba(11,24,32,0.22) 86%, transparent 100%)',
+  } as object,
+  // Desktop: the original light frosted glass — no system status bar to match.
+  frostTintDesktop: {
+    backgroundImage:
+      'linear-gradient(to bottom, rgba(11,24,32,0.5) 0%, rgba(11,24,32,0.26) 52%, transparent 86%)',
   } as object,
   layerHidden: { opacity: 0 } as object,
   layerShown: { opacity: 1 } as object,
