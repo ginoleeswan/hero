@@ -385,11 +385,26 @@ export function FamilyCanvas({
     >
       <View style={styles.modalRoot}>
         <View style={styles.modalHeader}>
-          <Text style={styles.eyebrow}>Family · {heroName}</Text>
-          <Pressable style={styles.modalClose} onPress={() => setFullscreen(false)}>
-            <Ionicons name="close" size={22} color={COLORS.black} />
-          </Pressable>
+          <View style={styles.modalTitleWrap}>
+            {heroImage ? (
+              <Image source={{ uri: heroImage }} style={styles.modalAvatar} contentFit="cover" />
+            ) : null}
+            <View>
+              <Text style={styles.eyebrow}>Family Tree</Text>
+              <Text style={styles.modalTitle}>{heroName}</Text>
+            </View>
+          </View>
+          <View style={styles.modalHeaderRight}>
+            <Text style={styles.modalCount}>
+              {members.length} {members.length === 1 ? 'relative' : 'relatives'}
+              {linkedCount > 0 ? ` · ${linkedCount} on Mythique` : ''}
+            </Text>
+            <Pressable style={styles.modalClose} onPress={() => setFullscreen(false)}>
+              <Ionicons name="close" size={22} color={COLORS.black} />
+            </Pressable>
+          </View>
         </View>
+
         <FamilyStage
           layout={layout}
           heroName={heroName}
@@ -397,7 +412,26 @@ export function FamilyCanvas({
           fullscreen
           onToggleFullscreen={() => setFullscreen(false)}
         />
-        <Legend />
+
+        <View style={styles.modalFooter}>
+          <Legend />
+          {graph.asides.length > 0 ? (
+            <View style={styles.modalFooterGroup}>
+              <Text style={styles.tierLabel}>Variants</Text>
+              <View style={styles.modalFooterRow}>
+                {graph.asides.map((mem) => (
+                  <AsideMemberNode key={mem.id} member={mem} />
+                ))}
+              </View>
+            </View>
+          ) : null}
+          {graph.footnotes.length > 0 ? (
+            <Text style={styles.footnote}>
+              Also:{' '}
+              {graph.footnotes.map((mem) => `${mem.name} (${roleLabel(mem)})`).join(', ')}
+            </Text>
+          ) : null}
+        </View>
       </View>
     </Modal>
     </>
@@ -524,8 +558,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 12,
   },
+  modalTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  modalAvatar: { width: 44, height: 44, borderRadius: 11 },
+  modalTitle: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.black, marginTop: 1 },
+  modalHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  modalCount: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#b3a791' },
+  modalFooter: { marginTop: 12, gap: 10, alignItems: 'center' },
+  modalFooterGroup: { alignItems: 'center', gap: 8 },
+  modalFooterRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
   modalClose: {
     width: 34,
     height: 34,

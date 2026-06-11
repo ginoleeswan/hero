@@ -389,11 +389,22 @@ export function FamilyCanvas({
     >
       <View style={styles.modalRoot}>
         <View style={styles.modalHeader}>
-          <Text style={styles.eyebrow}>Family · {heroName}</Text>
+          <View style={styles.modalTitleWrap}>
+            {heroImage ? (
+              <Image source={{ uri: heroImage }} style={styles.modalAvatar} contentFit="cover" />
+            ) : null}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.eyebrow}>Family Tree</Text>
+              <Text style={styles.modalTitle} numberOfLines={1}>
+                {heroName}
+              </Text>
+            </View>
+          </View>
           <TouchableOpacity style={styles.modalClose} onPress={() => setFullscreen(false)}>
             <Ionicons name="close" size={22} color={COLORS.black} />
           </TouchableOpacity>
         </View>
+
         <FamilyStage
           layout={layout}
           heroName={heroName}
@@ -401,7 +412,26 @@ export function FamilyCanvas({
           fullscreen
           onToggleFullscreen={() => setFullscreen(false)}
         />
-        <Legend />
+
+        <View style={styles.modalFooter}>
+          <Legend />
+          {graph.asides.length > 0 ? (
+            <View style={styles.modalFooterGroup}>
+              <Text style={styles.tierLabel}>Variants</Text>
+              <View style={styles.modalFooterRow}>
+                {graph.asides.map((mem) => (
+                  <AsideMemberNode key={mem.id} member={mem} />
+                ))}
+              </View>
+            </View>
+          ) : null}
+          {graph.footnotes.length > 0 ? (
+            <Text style={styles.footnote}>
+              Also:{' '}
+              {graph.footnotes.map((mem) => `${mem.name} (${roleLabel(mem)})`).join(', ')}
+            </Text>
+          ) : null}
+        </View>
       </View>
     </Modal>
     </>
@@ -526,8 +556,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    gap: 12,
+    marginBottom: 12,
   },
+  modalTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  modalAvatar: { width: 40, height: 40, borderRadius: 10 },
+  modalTitle: { fontFamily: 'Flame-Regular', fontSize: 19, color: COLORS.black, marginTop: 1 },
+  modalFooter: { marginTop: 12, gap: 10, alignItems: 'center' },
+  modalFooterGroup: { alignItems: 'center', gap: 8 },
+  modalFooterRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
   modalClose: {
     width: 34,
     height: 34,
