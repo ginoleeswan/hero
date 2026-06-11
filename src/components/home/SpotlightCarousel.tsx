@@ -16,7 +16,8 @@ import type { Hero } from '../../lib/db/heroes';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export function spotlightHeight(insetTop: number): number {
-  return insetTop + Math.round(SCREEN_HEIGHT * 0.42);
+  // Tall enough that the portrait's face clears the fade-to-beige scrim.
+  return insetTop + Math.round(SCREEN_HEIGHT * 0.46);
 }
 
 export function SpotlightCarousel({
@@ -74,31 +75,13 @@ export function SpotlightCarousel({
           ))}
         </View>
       )}
-
-      {/* Rounded beige lip — the content sheet rises over the spotlight with a
-          deliberate edge (echoing the character screen), melting the dark hero
-          into the beige page instead of a muddy fade. */}
-      <View style={styles.lip} pointerEvents="none" />
     </Animated.View>
   );
 }
 
-const LIP_HEIGHT = 28;
-
 const styles = StyleSheet.create({
   wrap: { backgroundColor: COLORS.navy },
-  dots: { position: 'absolute', bottom: LIP_HEIGHT + 16, left: 18, flexDirection: 'row', gap: 5 },
-  dot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(245,235,220,0.4)' },
+  dots: { position: 'absolute', bottom: 22, left: 16, flexDirection: 'row', gap: 5 },
+  dot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(41,60,67,0.3)' },
   dotActive: { width: 14, backgroundColor: COLORS.orange },
-  lip: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: LIP_HEIGHT,
-    backgroundColor: COLORS.beige,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderCurve: 'continuous',
-  },
 });

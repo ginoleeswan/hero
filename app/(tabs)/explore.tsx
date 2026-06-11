@@ -7,8 +7,7 @@ import { useRouter, type Href } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
 import { HomeSkeleton } from '../../src/components/skeletons/HomeSkeleton';
-import { SpotlightCarousel, spotlightHeight } from '../../src/components/home/SpotlightCarousel';
-import { StickyHeader } from '../../src/components/home/StickyHeader';
+import { SpotlightCarousel } from '../../src/components/home/SpotlightCarousel';
 import { rowStyle } from '../../src/lib/home/rowStyle';
 import { HomeHeroRow, type RowHero } from '../../src/components/home/HomeHeroRow';
 import {
@@ -152,8 +151,6 @@ export default function HomeScreen() {
       {!initialLoaded ? (
         <HomeSkeleton insets={insets} />
       ) : (
-        <>
-        <StickyHeader scrollY={scrollY} revealAt={spotlightHeight(insets.top) * 0.6} insetTop={insets.top} />
         <Animated.ScrollView
           entering={FadeIn.duration(280)}
           style={styles.scroll}
@@ -213,7 +210,6 @@ export default function HomeScreen() {
             );
           })}
         </Animated.ScrollView>
-        </>
       )}
     </View>
   );

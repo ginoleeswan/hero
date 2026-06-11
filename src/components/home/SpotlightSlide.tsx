@@ -3,7 +3,6 @@ import { useEffect, useRef } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { heroImageSource } from '../../constants/heroImages';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
@@ -34,7 +33,8 @@ export function SpotlightSlide({
   const scale = kb.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] });
 
   // Pressable (not TouchableOpacity): a tap navigates, but a swipe neither dims
-  // the image nor mis-fires — the carousel owns the horizontal gesture.
+  // the image nor mis-fires — the carousel owns the horizontal gesture. The whole
+  // portrait is the tap target, so no explicit button is needed.
   return (
     <Pressable onPress={onPress} style={[styles.container, { height }]}>
       <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ scale }] }]}>
@@ -49,17 +49,11 @@ export function SpotlightSlide({
         />
       </Animated.View>
 
-      {/* Top scrim — keeps the status bar legible over bright art. */}
+      {/* Fade-to-beige scrim, kept low so it backs the identity without washing
+          the portrait's face. */}
       <LinearGradient
-        colors={['rgba(15,23,27,0.5)', 'transparent']}
-        locations={[0, 1]}
-        style={styles.topScrim}
-      />
-      {/* Bottom scrim — a cinematic dark base for the identity; the portrait
-          itself stays crisp (no wash). */}
-      <LinearGradient
-        colors={['transparent', 'rgba(15,23,27,0.5)', 'rgba(15,23,27,0.92)']}
-        locations={[0.34, 0.68, 1]}
+        colors={['transparent', 'rgba(245,235,220,0.65)', COLORS.beige]}
+        locations={[0.52, 0.82, 1]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -73,10 +67,6 @@ export function SpotlightSlide({
             {hero.publisher}
           </Text>
         )}
-        <View style={styles.cta}>
-          <Text style={styles.ctaText}>View hero</Text>
-          <Ionicons name="chevron-forward" size={14} color={COLORS.beige} />
-        </View>
       </View>
     </Pressable>
   );
@@ -84,44 +74,22 @@ export function SpotlightSlide({
 
 const styles = StyleSheet.create({
   container: { overflow: 'hidden', backgroundColor: COLORS.navy },
-  topScrim: { position: 'absolute', top: 0, left: 0, right: 0, height: 130 },
-  // Sits above the rounded beige lip + dots that the carousel overlays.
-  meta: { position: 'absolute', bottom: 74, left: 18, right: 18 },
+  meta: { position: 'absolute', bottom: 46, left: 16, right: 16 },
   metaLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
     color: COLORS.orange,
-    letterSpacing: 2.4,
+    letterSpacing: 2.2,
     textTransform: 'uppercase',
-    marginBottom: 5,
+    marginBottom: 4,
   },
-  metaName: {
-    fontFamily: 'Flame-Bold',
-    fontSize: 34,
-    color: COLORS.beige,
-    lineHeight: 36,
-    textShadowColor: 'rgba(10,15,18,0.55)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 10,
-  },
+  metaName: { fontFamily: 'Flame-Bold', fontSize: 32, color: COLORS.navy, lineHeight: 34 },
   metaPublisher: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
-    color: 'rgba(245,235,220,0.62)',
+    color: COLORS.grey,
     textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    marginTop: 5,
+    letterSpacing: 1,
+    marginTop: 4,
   },
-  cta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 4,
-    marginTop: 14,
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    backgroundColor: COLORS.orange,
-  },
-  ctaText: { fontFamily: 'Nunito_900Black', fontSize: 13, color: COLORS.beige },
 });

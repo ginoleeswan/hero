@@ -136,8 +136,8 @@ export function HomeHeroRow({
   const isPortrait = variant === 'portrait';
   const isDark = tone === 'dark';
 
-  const featW = Math.round(PORTRAIT_CARD_WIDTH * 1.18);
-  const featH = Math.round(PORTRAIT_CARD_HEIGHT * 1.18);
+  const featW = Math.round(PORTRAIT_CARD_WIDTH * 1.06);
+  const featH = Math.round(PORTRAIT_CARD_HEIGHT * 1.06);
   const cardW = feature ? featW : PORTRAIT_CARD_WIDTH;
   const cardH = feature ? featH : PORTRAIT_CARD_HEIGHT;
 
@@ -244,13 +244,13 @@ const styles = StyleSheet.create({
   },
   rankBadge: {
     position: 'absolute',
-    top: 2,
-    left: 12,
+    top: 0,
+    left: 8,
   },
   rankNumeral: {
     fontFamily: 'Flame-Bold',
-    fontSize: 78,
-    lineHeight: 84,
+    fontSize: 100,
+    lineHeight: 104,
     color: COLORS.beige,
     textShadowColor: 'rgba(10,15,18,0.4)',
     textShadowOffset: { width: 0, height: 2 },
