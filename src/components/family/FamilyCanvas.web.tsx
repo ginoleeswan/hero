@@ -156,9 +156,12 @@ function FamilyStage({
 
   const computeCenter = useCallback(
     (vpW: number, vpH: number) => {
-      const heroNode = layout.nodes.find((n) => n.isHero);
-      if (!heroNode || vpW === 0) return null;
-      return { tx: vpW / 2 - heroNode.x, ty: vpH / 2 - heroNode.y, scale: 1 };
+      if (vpW === 0) return null;
+      const { width: bw, height: bh } = layout.bounds;
+      const pad = 56;
+      const fit = Math.min((vpW - pad) / bw, (vpH - pad) / bh);
+      const s = Math.min(1.5, Math.max(0.45, fit));
+      return { tx: vpW / 2 - (bw / 2) * s, ty: vpH / 2 - (bh / 2) * s, scale: s };
     },
     [layout],
   );
@@ -237,7 +240,8 @@ function FamilyStage({
                 top: 0,
                 width: layout.bounds.width,
                 height: layout.bounds.height,
-              },
+                transformOrigin: '0 0',
+              } as object,
               canvasStyle,
             ]}
           >
