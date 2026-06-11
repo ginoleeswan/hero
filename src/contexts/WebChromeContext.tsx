@@ -148,6 +148,10 @@ const coverStyles = StyleSheet.create({
     right: 0,
     height: 'env(safe-area-inset-top)',
     zIndex: 9999,
+    // Force a GPU compositing layer so the fixed strip stays pinned on iOS
+    // (body overflow:visible otherwise lets fixed elements drift on scroll).
+    transform: 'translateZ(0)',
+    willChange: 'transform',
     transition: `background-color ${CHROME_FADE_MS}ms ease`,
   } as object,
 });

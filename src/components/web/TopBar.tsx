@@ -246,8 +246,10 @@ const c = StyleSheet.create({
     zIndex: 100,
     justifyContent: 'center',
     // iOS Safari bug: when body has overflow:visible (needed for toolbar
-    // collapse), position:fixed elements scroll with the page. Forcing a GPU
-    // compositing layer via will-change makes them truly fixed again.
+    // collapse), position:fixed elements drift/scroll with the page. A real
+    // transform (not just the will-change hint, which Safari may ignore) forces
+    // a dedicated GPU compositing layer and keeps the bar reliably pinned.
+    transform: 'translateZ(0)',
     willChange: 'transform',
   } as object,
   // Consistent mobile scrim container — the gradient (frostTintDark/Light) is
