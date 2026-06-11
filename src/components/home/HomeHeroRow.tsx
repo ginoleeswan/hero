@@ -69,7 +69,7 @@ function PortraitZoomCard({
       asChild
     >
       <Pressable
-        style={[styles.cardSlot, { width, height }]}
+        style={StyleSheet.flatten([styles.cardSlot, { width, height }])}
         onPressIn={() => {
           pressed.value = 1;
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
