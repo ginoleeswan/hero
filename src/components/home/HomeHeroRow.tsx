@@ -1,12 +1,10 @@
 // src/components/home/HomeHeroRow.tsx
 import { View, Text, FlatList, StyleSheet, Dimensions, Pressable } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { Link } from 'expo-router';
 import { HeroCard, HERO_CARD_RADIUS } from '../HeroCard';
 import { ThumbCard, type ThumbHero } from './ThumbCard';
-import { heroImageSource } from '../../constants/heroImages';
 import { COLORS } from '../../constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -56,18 +54,10 @@ function PortraitZoomCard({ item }: { item: RowHero }) {
         }}
       >
         <Animated.View style={[styles.cardVisual, animatedStyle]}>
-          {/* Static portrait behind the zoom card. Fully covered by the live
-              card at rest; only revealed in the brief moment iOS hides the live
-              card during the zoom dismiss, so the detail screen contracts into
-              the hero image — seamless, never an empty slot. */}
-          <Image
-            source={heroImageSource(item.id, item.image_url, item.portrait_url)}
-            contentFit="cover"
-            style={styles.slotImage}
-            cachePolicy="memory-disk"
-            recyclingKey={`${item.id}-slot`}
-            transition={null}
-          />
+          {/* No static placeholder behind the card: the Apple Zoom owns the
+              source. On dismiss iOS hides this card and the detail screen
+              contracts down into the now-empty slot — a true zoom-into-origin,
+              not a morph onto a duplicate card sitting underneath. */}
           <Link.AppleZoom>
             <HeroCard
               id={item.id}
@@ -197,20 +187,14 @@ const styles = StyleSheet.create({
     height: PORTRAIT_CARD_HEIGHT,
     marginVertical: 8,
   },
-  // Inner scaled view: shadow + clip live here, OUTSIDE Link.AppleZoom. No
-  // backgroundColor on purpose — this stays visible while the zoom briefly hides
-  // the live card, so an opaque fill would flash as a solid box on the way back.
-  // boxShadow still renders fine on a transparent view (follows the rounded box).
+  // Inner scaled view: shadow + clip live here, OUTSIDE Link.AppleZoom, so the
+  // shadow box never bleeds into the transition. No backgroundColor — when the
+  // zoom hides the live card the slot reads as empty (the band shows through)
+  // rather than flashing an opaque box.
   cardVisual: {
     flex: 1,
     borderRadius: HERO_CARD_RADIUS,
     borderCurve: 'continuous',
     boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.3)',
-  },
-  slotImage: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: HERO_CARD_RADIUS,
-    borderCurve: 'continuous',
-    backgroundColor: COLORS.navy,
   },
 });
