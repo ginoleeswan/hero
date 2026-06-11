@@ -233,7 +233,10 @@ const c = StyleSheet.create({
   // Scrolled frost: a stack of blur layers, each masked to a band, so the blur
   // is heaviest at the top (all three stacked, behind the icons) and tapers to
   // zero by the bottom — a graduated blur with no hard edge where sharp content
-  // would otherwise snap back. A light tint rides on top purely for icon contrast.
+  // would otherwise snap back. A heavy navy tint rides on top so the bar reads
+  // as a dark translucent surface (iOS dark-mode nav style) — the system status
+  // bar is locked dark navy, so only a dark bar flows seamlessly out of it; a
+  // light frosted bar would clash at the status-bar edge.
   frost: {
     position: 'absolute',
     top: 0,
@@ -263,7 +266,7 @@ const c = StyleSheet.create({
   } as object,
   frostTint: {
     backgroundImage:
-      'linear-gradient(to bottom, rgba(11,24,32,0.5) 0%, rgba(11,24,32,0.26) 52%, transparent 86%)',
+      'linear-gradient(to bottom, rgba(11,24,32,0.92) 0%, rgba(11,24,32,0.82) 46%, rgba(11,24,32,0.4) 74%, transparent 100%)',
   } as object,
   layerHidden: { opacity: 0 } as object,
   layerShown: { opacity: 1 } as object,
