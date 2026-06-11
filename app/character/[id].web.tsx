@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -25,6 +25,7 @@ import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { GalleryStrip } from '../../src/components/GalleryStrip';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
+import { BodyPortal } from '../../src/components/web/BodyPortal';
 import type { CharacterData, IssueCover } from '../../src/types';
 
 const STAT_CONFIG = [
@@ -345,6 +346,41 @@ export default function WebCharacterScreen() {
   const enemyNames = useMemo(() => (related?.enemies ?? []).map((h) => h.name), [related]);
   const allyNames = useMemo(() => (related?.allies ?? []).map((h) => h.name), [related]);
   const teammateNames = useMemo(() => (related?.teammates ?? []).map((h) => h.name), [related]);
+
+  // Once the stage (with the big hero name) has scrolled out of view, fade the
+  // name into the sticky portrait so you always know who you're looking at.
+  const [nameRevealed, setNameRevealed] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const threshold = (stageHeight || 280) - (TOPBAR_HEIGHT + 56);
+    const onScroll = () => setNameRevealed(window.scrollY > threshold);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [stageHeight]);
+
+  // Portrait card rendered via BodyPortal so it paints above the TopBar's frosted-glass
+  // layer (which lives in document.body via createPortal at zIndex 100 and can't be
+  // beaten by z-index inside the app stacking context). We measure the anchor's
+  // viewport rect on every scroll/resize and clone the card at position:fixed.
+  const portraitAnchorRef = useRef<View>(null);
+  const [portraitPos, setPortraitPos] = useState<{ top: number; right: number; width: number } | null>(null);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isDesktop) return undefined;
+    const update = () => {
+      const el = portraitAnchorRef.current as unknown as HTMLElement | null;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setPortraitPos({ top: r.top, right: window.innerWidth - r.right, width: r.width });
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [isDesktop]);
 
   if (error) {
     return (
@@ -699,79 +735,6 @@ export default function WebCharacterScreen() {
                   skeletonOpacity={skeletonOpacity}
                 />
 
-                {/* First appearance */}
-                {comicVineLoading ? (
-                  <View style={styles.card}>
-                    <View style={styles.firstAppearanceRow}>
-                      <SkeletonBlock
-                        opacity={skeletonOpacity}
-                        width={130}
-                        height={190}
-                        borderRadius={8}
-                      />
-                      <View style={{ flex: 1, gap: 10 }}>
-                        <SkeletonBlock
-                          opacity={skeletonOpacity}
-                          width="40%"
-                          height={10}
-                          borderRadius={4}
-                        />
-                        <SkeletonBlock
-                          opacity={skeletonOpacity}
-                          width={80}
-                          height={2}
-                          borderRadius={1}
-                        />
-                        <SkeletonBlock
-                          opacity={skeletonOpacity}
-                          width="55%"
-                          height={36}
-                          borderRadius={5}
-                        />
-                        <SkeletonBlock
-                          opacity={skeletonOpacity}
-                          width="80%"
-                          height={12}
-                          borderRadius={4}
-                        />
-                      </View>
-                    </View>
-                  </View>
-                ) : data.firstIssue?.imageUrl ? (
-                  <Pressable onPress={() => setShowIssueModal(true)}>
-                    <View style={[styles.card, styles.firstAppearanceDesktopCard]}>
-                      <View style={styles.firstAppearanceRow}>
-                        <img
-                          src={data.firstIssue.imageUrl}
-                          style={{
-                            width: 130,
-                            height: 190,
-                            objectFit: 'cover',
-                            borderRadius: 8,
-                            flexShrink: 0,
-                            display: 'block',
-                            boxShadow: '0 6px 20px rgba(41,60,67,0.22)',
-                          }}
-                        />
-                        <View style={styles.firstAppearanceMeta}>
-                          <Text style={styles.firstAppearanceLabel}>First Appearance</Text>
-                          <View style={styles.firstAppearanceDivider} />
-                          {data.firstIssue.coverDate ? (
-                            <Text style={styles.firstAppearanceYear}>
-                              {data.firstIssue.coverDate.slice(0, 4)}
-                            </Text>
-                          ) : null}
-                          {data.firstIssue.name ? (
-                            <Text style={styles.firstAppearanceName}>
-                              {data.firstIssue.name.split(';')[0].trim()}
-                            </Text>
-                          ) : null}
-                        </View>
-                      </View>
-                    </View>
-                  </Pressable>
-                ) : null}
-
                 {/* Enemies & Allies */}
                 {comicVineLoading ? (
                   <View style={styles.card}>
@@ -890,60 +853,185 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : null}
 
-                {/* In Print */}
-                {issueCovers && issueCovers.length > 0 ? (
+                {/* In Print — debut feature + cover gallery */}
+                {comicVineLoading ? (
                   <View style={styles.card}>
-                    <Text style={styles.cardTitle}>In Print</Text>
+                    <SkeletonBlock
+                      opacity={skeletonOpacity}
+                      width="30%"
+                      height={11}
+                      borderRadius={4}
+                      style={{ marginBottom: 10 }}
+                    />
                     <View style={styles.cardDivider} />
-                    <View style={{ marginHorizontal: -20 }}>
-                      <GalleryStrip
-                        images={issueCovers.map((c) => ({ url: c.url, caption: c.name }))}
-                        onPress={(i) => {
-                          setLightboxImages(
-                            issueCovers.map((c) => ({ url: c.url, caption: c.name })),
-                          );
-                          setLightboxIndex(i);
-                        }}
+                    <View style={{ flexDirection: 'row', gap: 22 }}>
+                      <SkeletonBlock
+                        opacity={skeletonOpacity}
+                        width={150}
+                        height={220}
+                        borderRadius={10}
                       />
+                      <View style={{ flex: 1, flexDirection: 'row', gap: 10 }}>
+                        {[0, 1, 2, 3].map((i) => (
+                          <SkeletonBlock
+                            key={i}
+                            opacity={skeletonOpacity}
+                            width={80}
+                            height={110}
+                            borderRadius={8}
+                          />
+                        ))}
+                      </View>
+                    </View>
+                  </View>
+                ) : data.firstIssue?.imageUrl || (issueCovers && issueCovers.length > 0) ? (
+                  <View style={styles.card}>
+                    <View style={styles.inPrintHeader}>
+                      <Text style={styles.cardTitle}>In Print</Text>
+                      {data.firstIssue?.coverDate ? (
+                        <Text style={styles.inPrintSince}>
+                          Since {data.firstIssue.coverDate.slice(0, 4)}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <View style={styles.cardDivider} />
+                    <View style={styles.inPrintBody}>
+                      {/* Debut — the first issue, given hero treatment */}
+                      {data.firstIssue?.imageUrl ? (
+                        <Pressable
+                          onPress={() => setShowIssueModal(true)}
+                          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                            [
+                              styles.debutBlock,
+                              hovered && (styles.debutBlockHover as object),
+                            ] as object
+                          }
+                        >
+                          <View style={styles.debutCoverWrap}>
+                            <img
+                              src={data.firstIssue.imageUrl}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                display: 'block',
+                              }}
+                            />
+                            <View
+                              style={[styles.debutCoverScrim, { pointerEvents: 'none' }] as object}
+                            />
+                            <View style={styles.debutBadge}>
+                              <Ionicons name="ribbon" size={11} color={COLORS.deepNavy} />
+                              <Text style={styles.debutBadgeText}>1st Appearance</Text>
+                            </View>
+                            {data.firstIssue.coverDate ? (
+                              <Text style={styles.debutYear}>
+                                {data.firstIssue.coverDate.slice(0, 4)}
+                              </Text>
+                            ) : null}
+                          </View>
+                          {data.firstIssue.name ? (
+                            <Text style={styles.debutName} numberOfLines={2}>
+                              {data.firstIssue.name.split(';')[0].trim()}
+                            </Text>
+                          ) : null}
+                        </Pressable>
+                      ) : null}
+
+                      {/* Cover gallery — the publication run that followed */}
+                      {issueCovers && issueCovers.length > 0 ? (
+                        <View style={styles.inPrintGallery}>
+                          <Text style={styles.inPrintGalleryLabel}>
+                            Through the years · {issueCovers.length}
+                          </Text>
+                          <View style={{ marginRight: -20 }}>
+                            <GalleryStrip
+                              images={issueCovers.map((c) => ({ url: c.url, caption: c.name }))}
+                              onPress={(i) => {
+                                setLightboxImages(
+                                  issueCovers.map((c) => ({ url: c.url, caption: c.name })),
+                                );
+                                setLightboxIndex(i);
+                              }}
+                            />
+                          </View>
+                        </View>
+                      ) : null}
                     </View>
                   </View>
                 ) : null}
               </View>
 
               {/* Side column — overlapping portrait + quick facts */}
-              <View style={styles.sideCol}>
-                <View style={[styles.portraitCard, { marginTop: portraitOverlap }] as object}>
-                  {heroImage ? (
-                    <Image
-                      source={heroImage}
-                      contentFit="cover"
-                      contentPosition={{ top: 0, left: '50%' }}
-                      style={StyleSheet.absoluteFill}
-                      cachePolicy="memory-disk"
-                      recyclingKey={id}
-                      transition={typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}
-                    />
-                  ) : (
-                    <View style={styles.portraitPlaceholder} />
-                  )}
-                  <View style={[styles.portraitOverlay, { pointerEvents: 'none' }] as object} />
-                  {user ? (
-                    <Pressable
-                      onPress={toggleFavourite}
-                      disabled={favLoading}
-                      aria-label={favourited ? 'Remove favourite' : 'Add favourite'}
-                      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                        [styles.portraitFav, hovered && (styles.portraitFavHover as object)] as object
-                      }
+              <View style={[styles.sideCol, { marginTop: portraitOverlap }] as object}>
+                {/* Anchor — invisible spacer that holds the portrait card's layout
+                    space and provides the viewport rect for the BodyPortal clone. */}
+                <View ref={portraitAnchorRef} style={[styles.portraitCard, { opacity: 0 }] as object} pointerEvents="none" />
+
+                {/* Portrait card rendered in document.body so it sits above the
+                    TopBar's frosted-glass portal (zIndex 100 in body stacking context). */}
+                {portraitPos ? (
+                  <BodyPortal>
+                    <View
+                      style={[
+                        styles.portraitCard,
+                        {
+                          position: 'fixed',
+                          top: portraitPos.top,
+                          right: portraitPos.right,
+                          width: portraitPos.width,
+                          zIndex: 110,
+                        } as object,
+                      ]}
                     >
-                      <Ionicons
-                        name={favourited ? 'heart' : 'heart-outline'}
-                        size={20}
-                        color={favourited ? COLORS.red : COLORS.beige}
-                      />
-                    </Pressable>
-                  ) : null}
-                </View>
+                      {heroImage ? (
+                        <Image
+                          source={heroImage}
+                          contentFit="cover"
+                          contentPosition={{ top: 0, left: '50%' }}
+                          style={StyleSheet.absoluteFill}
+                          cachePolicy="memory-disk"
+                          recyclingKey={id}
+                          transition={typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}
+                        />
+                      ) : (
+                        <View style={styles.portraitPlaceholder} />
+                      )}
+                      <View style={[styles.portraitOverlay, { pointerEvents: 'none' }] as object} />
+                      <View
+                        style={
+                          [
+                            styles.portraitNameOverlay,
+                            { opacity: nameRevealed ? 1 : 0, pointerEvents: 'none' },
+                          ] as object
+                        }
+                      >
+                        <Text style={styles.portraitNameText}>{stats.name}</Text>
+                        {stats.biography['full-name'] ? (
+                          <Text style={styles.portraitNameSub}>
+                            {stats.biography['full-name']}
+                          </Text>
+                        ) : null}
+                      </View>
+                      {user ? (
+                        <Pressable
+                          onPress={toggleFavourite}
+                          disabled={favLoading}
+                          aria-label={favourited ? 'Remove favourite' : 'Add favourite'}
+                          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                            [styles.portraitFav, hovered && (styles.portraitFavHover as object)] as object
+                          }
+                        >
+                          <Ionicons
+                            name={favourited ? 'heart' : 'heart-outline'}
+                            size={20}
+                            color={favourited ? COLORS.red : COLORS.beige}
+                          />
+                        </Pressable>
+                      ) : null}
+                    </View>
+                  </BodyPortal>
+                ) : null}
 
                 <View style={styles.card}>
                   <Text style={styles.cardTitle}>Quick Facts</Text>
@@ -1646,9 +1734,9 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
               {familyCard}
               {firstAppearanceCard}
             </View>
-            <View style={sk.sideCol}>
+            <View style={[sk.sideCol, { marginTop: portraitOverlap }] as object}>
               <Animated.View
-                style={[sk.portraitCard as object, { marginTop: portraitOverlap, opacity }]}
+                style={[sk.portraitCard as object, { opacity }]}
               >
                 {/* Favourite lives on the portrait — only for authenticated users */}
                 {showHeart ? <View style={sk.portraitFavSkel} /> : null}
@@ -1794,13 +1882,13 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
 const sk = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
   scrollContent: { width: '100%' },
-  bodyWrap: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 0 },
+  bodyWrap: { maxWidth: 1180, alignSelf: 'center', width: '100%', paddingBottom: 0 },
 
   // ── Desktop identity stage ──
-  stage: { backgroundColor: COLORS.deepNavy, position: 'relative', overflow: 'hidden' },
-  stageInner: { maxWidth: 1060, width: '100%', alignSelf: 'center' },
+  stage: { backgroundColor: COLORS.deepNavy, position: 'relative', overflow: 'hidden', zIndex: 0 },
+  stageInner: { maxWidth: 1180, width: '100%', alignSelf: 'center' },
   // Reserve the right zone so meta sits in the band beside the overlapping portrait.
-  identityColDesktop: { paddingRight: 344 } as object,
+  identityColDesktop: { paddingRight: 324 } as object,
   identityRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -1820,7 +1908,7 @@ const sk = StyleSheet.create({
   // ── Desktop body — main editorial column + overlapping side rail ──
   bodyDesktopNew: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, padding: 24 },
   mainCol: { flex: 1, minWidth: 0, gap: 16 } as object,
-  sideCol: { width: 320, flexShrink: 0, gap: 16 },
+  sideCol: { width: 300, flexShrink: 0, gap: 16, position: 'sticky', top: TOPBAR_HEIGHT - 10, alignSelf: 'flex-start', zIndex: 101 } as object,
 
   // Overlapping side portrait — matches the live portraitCard footprint.
   portraitCard: {
@@ -1895,7 +1983,7 @@ const styles = StyleSheet.create({
   // Scroll content is full-width so the dark stage can bleed edge-to-edge;
   // the body re-constrains itself to a centred reading column.
   scrollContent: { width: '100%' },
-  bodyWrap: { maxWidth: 1060, alignSelf: 'center', width: '100%', paddingBottom: 0 },
+  bodyWrap: { maxWidth: 1180, alignSelf: 'center', width: '100%', paddingBottom: 0 },
   familyBand: { paddingHorizontal: 24, paddingBottom: 24, marginTop: -8 },
   center: {
     flex: 1,
@@ -1910,6 +1998,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.deepNavy,
     position: 'relative',
     overflow: 'hidden',
+    zIndex: 0,
   },
   // Blurred portrait fills the stage for atmosphere; scaled up to hide blur edges.
   stageBackdrop: {
@@ -1946,7 +2035,7 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
   } as object,
   stageInner: {
-    maxWidth: 1060,
+    maxWidth: 1180,
     width: '100%',
     alignSelf: 'center',
     position: 'relative',
@@ -1979,7 +2068,7 @@ const styles = StyleSheet.create({
   stageMainMobile: { flexDirection: 'column', alignItems: 'stretch' } as object,
   identityCol: { flex: 1, minWidth: 0 } as object,
   // Reserve the right zone so the overlapping body portrait never collides with text.
-  identityColDesktop: { paddingRight: 344 } as object,
+  identityColDesktop: { paddingRight: 324 } as object,
   // Title left, meta right — bottom-aligned so the pills sit on the name baseline.
   identityRow: {
     flexDirection: 'row',
@@ -2123,7 +2212,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   mainCol: { flex: 1, minWidth: 0, gap: 16 } as object,
-  sideCol: { width: 320, flexShrink: 0, gap: 16 },
+  sideCol: { width: 300, flexShrink: 0, gap: 16, position: 'sticky', top: TOPBAR_HEIGHT - 10, alignSelf: 'flex-start', zIndex: 101 } as object,
   // Pull the portrait up so it straddles the header/body seam (magazine profile).
   portraitOverlapDesktop: { marginTop: -210 } as object,
 
@@ -2182,6 +2271,37 @@ const styles = StyleSheet.create({
     height: '45%',
     backgroundImage: 'linear-gradient(to top, rgba(11,24,32,0.42), transparent)',
   } as object,
+  // Hero name — fades into the sticky portrait once the stage scrolls away.
+  portraitNameOverlay: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 26,
+    paddingTop: 40,
+    paddingBottom: 22,
+    alignItems: 'flex-end',
+    transition: 'opacity 260ms ease',
+  } as object,
+  portraitNameText: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 20,
+    color: COLORS.beige,
+    lineHeight: 24,
+    textAlign: 'right',
+    textShadowColor: 'rgba(0,0,0,0.85)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 11,
+  },
+  portraitNameSub: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.95)',
+    marginTop: 1,
+    textAlign: 'right',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 8,
+  },
   // Favourite — lives on the portrait it bookmarks.
   portraitFav: {
     position: 'absolute',
@@ -2236,6 +2356,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.navy,
     lineHeight: 24,
+    maxWidth: 720,
   },
 
   // Segmented tab bar
@@ -2703,5 +2824,97 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
     opacity: 0.7,
     lineHeight: 20,
+  },
+
+  // In Print — debut feature + cover gallery
+  inPrintHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  inPrintSince: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: COLORS.navy,
+    opacity: 0.5,
+  },
+  inPrintBody: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+
+  // Debut poster — the first issue, given hero treatment
+  debutBlock: {
+    width: 150,
+    flexShrink: 0,
+    cursor: 'pointer',
+    transition: 'transform 180ms ease',
+  } as object,
+  debutBlockHover: { transform: [{ translateY: -3 }] } as object,
+  debutCoverWrap: {
+    width: 150,
+    height: 222,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+    borderWidth: 1.5,
+    borderColor: COLORS.goldAccent,
+    boxShadow: '0 8px 24px rgba(41,60,67,0.26)',
+  } as object,
+  debutCoverScrim: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '55%',
+    backgroundImage: 'linear-gradient(to top, rgba(11,24,32,0.85), transparent)',
+  } as object,
+  debutBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 20,
+    backgroundColor: COLORS.goldAccent,
+  } as object,
+  debutBadgeText: {
+    fontFamily: 'FlameSans-Regular',
+    fontWeight: '700',
+    fontSize: 10,
+    letterSpacing: 0.3,
+    color: COLORS.deepNavy,
+  },
+  debutYear: {
+    position: 'absolute',
+    left: 12,
+    bottom: 10,
+    fontFamily: 'Flame-Regular',
+    fontSize: 30,
+    lineHeight: 32,
+    color: COLORS.beige,
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 8,
+  } as object,
+  debutName: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12.5,
+    color: COLORS.navy,
+    opacity: 0.75,
+    lineHeight: 17,
+    marginTop: 10,
+  },
+
+  // Cover gallery — the run that followed the debut
+  inPrintGallery: { flex: 1, minWidth: 0, gap: 10 } as object,
+  inPrintGalleryLabel: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 10,
+    color: COLORS.navy,
+    opacity: 0.45,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1.2,
+    paddingLeft: 20,
   },
 });
