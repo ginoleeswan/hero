@@ -122,6 +122,13 @@ export function TopBar() {
   // of the viewport and cause the bar to scroll with the page content.
   const bar = (
     <View style={c.bar as object} pointerEvents="box-none">
+      {/* Solid navy cap over exactly the iOS status-bar inset. In a Safari tab
+          the system status bar is a flat opaque fill (theme-color #0b1820) that
+          can't be made transparent; matching it pixel-for-pixel here — and never
+          letting hero art bleed through this zone — fuses the system bar and the
+          page into one seamless dark cap. Persists on scroll so the status bar
+          stays solid even when beige content sits underneath. */}
+      <View style={c.statusCap as object} pointerEvents="none" />
       {/* At top: a soft gradient for icon legibility over the hero. */}
       <View style={[c.topScrim, scrolled && (c.layerHidden as object)] as object} pointerEvents="none" />
       {/* On scroll: progressive frost — stacked blur layers tapering from strong
@@ -198,9 +205,20 @@ const c = StyleSheet.create({
     // compositing layer via will-change makes them truly fixed again.
     willChange: 'transform',
   } as object,
-  // At-top scrim: a soft gradient with a long tail, just enough to keep light
-  // icons legible over the hero (incl. bright art under the right-side avatar).
-  // Navy-over-navy reads as seamless on the dark headers.
+  // Solid #0b1820 fill spanning just the status-bar inset, matching the
+  // theme-color the system bar uses. env() resolves to 0 where there's no safe
+  // area, so this is a no-op on Android/desktop.
+  statusCap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 'env(safe-area-inset-top)',
+    backgroundColor: '#0b1820',
+  } as object,
+  // At-top scrim: picks up where the cap ends, holding solid navy through the
+  // icon row (so bright hero art never bleeds behind the logo/avatar) before a
+  // long fade to transparent. Navy-over-navy reads as seamless on dark headers.
   topScrim: {
     position: 'absolute',
     top: 0,
@@ -208,7 +226,7 @@ const c = StyleSheet.create({
     right: 0,
     height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 30px)`,
     backgroundImage:
-      'linear-gradient(to bottom, rgba(11,24,32,0.85) 0%, rgba(11,24,32,0.5) 42%, rgba(11,24,32,0.16) 76%, transparent 100%)',
+      'linear-gradient(to bottom, rgba(11,24,32,1) 0%, rgba(11,24,32,0.85) 30%, rgba(11,24,32,0.45) 62%, rgba(11,24,32,0.14) 84%, transparent 100%)',
     opacity: 1,
     transition: 'opacity 220ms ease',
   } as object,
