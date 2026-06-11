@@ -112,22 +112,24 @@ function CanvasNode({
 }
 
 // ── Legend ───────────────────────────────────────────────────────────────────
-function Legend(): ReactElement {
+function Legend({ large = false }: { large?: boolean }): ReactElement {
+  const txt = [styles.legendText, large && styles.legendTextLarge];
+  const dot = (bg: string) => [styles.legendDot, large && styles.legendDotLarge, { backgroundColor: bg }];
   return (
-    <View style={styles.legend}>
+    <View style={[styles.legend, large && styles.legendLarge]}>
       <View style={styles.legendItem}>
-        <View style={[styles.legendDot, { backgroundColor: '#c3b59c' }]} />
-        <Text style={styles.legendText}>Bloodline</Text>
+        <View style={dot('#c3b59c')} />
+        <Text style={txt}>Bloodline</Text>
       </View>
-      <Text style={styles.legendSep}>·</Text>
+      <Text style={[styles.legendSep, large && styles.legendTextLarge]}>·</Text>
       <View style={styles.legendItem}>
-        <View style={[styles.legendDot, { backgroundColor: '#E0A335' }]} />
-        <Text style={styles.legendText}>Marriage</Text>
+        <View style={dot('#E0A335')} />
+        <Text style={txt}>Marriage</Text>
       </View>
-      <Text style={styles.legendSep}>·</Text>
+      <Text style={[styles.legendSep, large && styles.legendTextLarge]}>·</Text>
       <View style={styles.legendItem}>
-        <View style={styles.legendDash} />
-        <Text style={styles.legendText}>Same generation</Text>
+        <View style={[styles.legendDash, large && styles.legendDashLarge]} />
+        <Text style={txt}>Same generation</Text>
       </View>
     </View>
   );
@@ -216,7 +218,7 @@ function FamilyStage({
     <View style={[styles.stage, fullscreen ? styles.stageFull : styles.stageInline]}>
       <View style={styles.axisGutter} pointerEvents="none">
         {layout.rows.map((row) => (
-          <AxisLabel key={row.tier} row={row} scale={scale} ty={ty} />
+          <AxisLabel key={row.tier} row={row} scale={scale} ty={ty} boundsH={layout.bounds.height} />
         ))}
       </View>
       <View
@@ -414,7 +416,7 @@ export function FamilyCanvas({
         />
 
         <View style={styles.modalFooter}>
-          <Legend />
+          <Legend large />
           {graph.asides.length > 0 ? (
             <View style={styles.modalFooterGroup}>
               <Text style={styles.tierLabel}>Variants</Text>
@@ -438,18 +440,22 @@ export function FamilyCanvas({
   );
 }
 
-// Separate component so hooks are called at consistent call-site depth
+// Separate component so hooks are called at consistent call-site depth.
+// The canvas scales around its CENTRE, so a row at canvas-y `row.y` lands on
+// screen at ty + row.y*scale + (boundsH/2)*(1-scale) — match that here.
 function AxisLabel({
   row,
   scale,
   ty: tyVal,
+  boundsH,
 }: {
   row: { tier: number; label: string; y: number };
   scale: ReturnType<typeof useSharedValue<number>>;
   ty: ReturnType<typeof useSharedValue<number>>;
+  boundsH: number;
 }): ReactElement {
   const animStyle = useAnimatedStyle(() => ({
-    top: row.y * scale.value + tyVal.value - 8,
+    top: tyVal.value + row.y * scale.value + (boundsH / 2) * (1 - scale.value) - 8,
   }));
   return (
     <Animated.Text style={[styles.axisLabel, animStyle]}>{row.label}</Animated.Text>
@@ -550,9 +556,9 @@ const styles = StyleSheet.create({
   modalRoot: {
     flex: 1,
     backgroundColor: '#fdf9f4',
-    paddingTop: 44,
-    paddingHorizontal: 14,
-    paddingBottom: 14,
+    paddingTop: 18,
+    paddingHorizontal: 18,
+    paddingBottom: 16,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -637,8 +643,21 @@ const styles = StyleSheet.create({
     marginTop: 14,
     flexWrap: 'wrap',
   },
+  legendLarge: {
+    gap: 16,
+    paddingVertical: 9,
+    paddingHorizontal: 18,
+    backgroundColor: 'white',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#ece3d4',
+    boxShadow: '0 2px 10px rgba(41,60,67,0.06)',
+  } as object,
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendDotLarge: { width: 11, height: 11, borderRadius: 6 },
+  legendDashLarge: { width: 20, height: 3, borderTopWidth: 3 },
+  legendTextLarge: { fontSize: 12.5, color: '#5e5447' },
   legendDash: {
     width: 16,
     height: 2,
