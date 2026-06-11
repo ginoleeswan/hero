@@ -162,7 +162,9 @@ function FamilyStage({
       const pad = fullscreen ? 32 : 24;
       const fit = Math.min((vpW - pad) / bw, (vpH - pad) / bh);
       const s = Math.min(fullscreen ? 2.2 : 1.2, Math.max(0.45, fit));
-      return { tx: vpW / 2 - (bw / 2) * s, ty: vpH / 2 - (bh / 2) * s, scale: s };
+      // RN scales transforms around the element CENTRE, so centring is just
+      // viewportCentre − boundsCentre (no scale factor in the translate).
+      return { tx: vpW / 2 - bw / 2, ty: vpH / 2 - bh / 2, scale: s };
     },
     [layout, fullscreen],
   );
@@ -244,8 +246,7 @@ function FamilyStage({
                 top: 0,
                 width: layout.bounds.width,
                 height: layout.bounds.height,
-                transformOrigin: '0 0',
-              } as object,
+              },
               canvasStyle,
             ]}
           >
