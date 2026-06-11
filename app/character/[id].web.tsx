@@ -123,7 +123,7 @@ export default function WebCharacterScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { width, height: winHeight } = useWindowDimensions();
-  const mHeroHeight = Math.round(winHeight * 0.62);
+  const mHeroHeight = Math.round(winHeight * 0.7);
   const isDesktop = width >= 700;
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
@@ -2370,14 +2370,17 @@ const styles = StyleSheet.create({
   // fuses the navy status bar into the portrait (no hard cut), gives the head
   // breathing room as it emerges from the gradient, and reads as one seamless
   // surface from the system bar down into the art.
+  // Short, soft deep-navy cap: just enough to fuse the navy status-bar cover and
+  // the floating bar into the top of the portrait, then clear quickly so the
+  // hero's head/crown stays fully visible (the taller hero gives the headroom).
   mScrimTop: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 'calc(env(safe-area-inset-top) + 210px)',
+    height: 'calc(env(safe-area-inset-top) + 96px)',
     backgroundImage:
-      'linear-gradient(to bottom, #0b1820 0%, #0b1820 24%, rgba(11,24,32,0.72) 52%, rgba(11,24,32,0.32) 78%, transparent 100%)',
+      'linear-gradient(to bottom, #0b1820 0%, rgba(11,24,32,0.55) 46%, rgba(11,24,32,0.18) 76%, transparent 100%)',
   } as object,
   mScrimBottom: {
     position: 'absolute',

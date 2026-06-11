@@ -172,8 +172,8 @@ export default function WebLoginScreen() {
           <Image
             source={LOGIN_HERO}
             style={styles.mobileHeroImg as object}
-            contentFit="cover"
-            contentPosition="top center"
+            contentFit="contain"
+            contentPosition="center"
           />
           {/* Scrim fades bottom of illustration into card */}
           <View style={styles.mobileScrim as object} pointerEvents="none" />
@@ -230,19 +230,19 @@ const styles = StyleSheet.create({
   } as object,
   mobileIllustrationWrap: {
     position: 'relative',
-    height: '42vh',
-    minHeight: 260,
-    maxHeight: 400,
+    height: '48vh',
+    minHeight: 300,
+    maxHeight: 460,
     flexShrink: 0,
     backgroundColor: COLORS.navy,
-    // Clear the floating logo bar and leave breathing room above the head.
-    paddingTop: 'calc(env(safe-area-inset-top) + 80px)',
+    // Small top clearance; the square art carries its own headroom above the
+    // head, and the floating logo bar sits over that space.
+    paddingTop: 'calc(env(safe-area-inset-top) + 12px)',
     backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
     backgroundSize: '24px 24px',
   } as object,
-  // Portrait fills the width of the area below the headroom padding (cover), so
-  // it reads large and prominent with navy space above the head; the scrim fades
-  // its lower body into the card.
+  // Whole character shown (contain) at a large size, its lower edge fading into
+  // the card via the scrim.
   mobileHeroImg: {
     flex: 1,
     width: '100%',
