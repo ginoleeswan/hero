@@ -144,39 +144,36 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   // Desktop auth keeps its own branding; the logo-only bar is a mobile affordance.
   if (logoOnly && !isMobile) return null;
 
-  // At the very top the bar is a soft scrim over the hero; once scrolled it
-  // becomes a frosted bar over the content. Both stay the chrome colour (dark
-  // for navy-topped pages), so the bar never clashes with the status bar.
-  const darkScrimShown = !scrolled;
-  const frostShown = scrolled;
-  // Frost tint: light-glass on a light-topped page, otherwise a dark glass on
-  // mobile / the classic light-navy frost on desktop.
-  const frostTint = lightChrome
-    ? c.frostTintLight
-    : isMobile
-      ? c.frostTintDark
-      : c.frostTintDesktop;
+  // Mobile keeps ONE consistent scrim at every scroll position — opaque navy at
+  // the top so it fuses with the status bar, easing into the page below — so the
+  // bar never restyles as you scroll. Desktop keeps the classic transparent
+  // scrim-over-hero → frosted-bar-on-scroll.
+  const mobileScrim = lightChrome ? c.frostTintLight : c.frostTintDark;
 
   const bar = (
     <View style={c.bar as object} pointerEvents="box-none">
-      {/* Soft dark gradient for light-icon legibility over the hero. */}
-      <View
-        style={[c.topScrim, !darkScrimShown && (c.layerHidden as object)] as object}
-        pointerEvents="none"
-      />
-      {/* Frosted bar over content: stacked blur layers tapering from strong (top,
-          behind the icons) to none (bottom) so it dissolves with no edge, plus a
-          tint that's opaque at the very top — matching the status-bar cover — and
-          eases out into the content below. */}
-      <View
-        style={[c.frost, frostShown && (c.layerShown as object)] as object}
-        pointerEvents="none"
-      >
-        <View style={[StyleSheet.absoluteFill, c.frostA] as object} />
-        <View style={[StyleSheet.absoluteFill, c.frostB] as object} />
-        <View style={[StyleSheet.absoluteFill, c.frostC] as object} />
-        <View style={[StyleSheet.absoluteFill, frostTint] as object} />
-      </View>
+      {isMobile ? (
+        // Consistent scrim — same at the top and when scrolled.
+        <View style={[c.scrim, mobileScrim] as object} pointerEvents="none" />
+      ) : (
+        <>
+          {/* Desktop: soft dark gradient over the hero at the top… */}
+          <View
+            style={[c.topScrim, scrolled && (c.layerHidden as object)] as object}
+            pointerEvents="none"
+          />
+          {/* …becoming a frosted bar once content scrolls up behind it. */}
+          <View
+            style={[c.frost, scrolled && (c.layerShown as object)] as object}
+            pointerEvents="none"
+          >
+            <View style={[StyleSheet.absoluteFill, c.frostA] as object} />
+            <View style={[StyleSheet.absoluteFill, c.frostB] as object} />
+            <View style={[StyleSheet.absoluteFill, c.frostC] as object} />
+            <View style={[StyleSheet.absoluteFill, c.frostTintDesktop] as object} />
+          </View>
+        </>
+      )}
       <View style={[c.inner, { paddingHorizontal: isMobile ? 16 : 28 }] as object} pointerEvents="box-none">
         <Pressable onPress={() => router.push('/explore')} style={c.logo}>
           <HeroLogo iconSize={24} fontSize={19} color={foreground} gap={8} />
@@ -244,6 +241,16 @@ const c = StyleSheet.create({
     // collapse), position:fixed elements scroll with the page. Forcing a GPU
     // compositing layer via will-change makes them truly fixed again.
     willChange: 'transform',
+  } as object,
+  // Consistent mobile scrim container — the gradient (frostTintDark/Light) is
+  // applied on top. Spans the bar + a short tail so the tint reaches transparent
+  // by the bar's bottom edge, easing into the page.
+  scrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 30px)`,
   } as object,
   // Dark scrim: holds near-solid navy across the status-bar inset + icon row (so
   // it fuses with the navy status-bar cover and bright hero art never bleeds
