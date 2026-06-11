@@ -6,6 +6,8 @@ import Animated, {
   useAnimatedStyle,
   withRepeat,
   withTiming,
+  interpolate,
+  Extrapolation,
   type SharedValue,
 } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -41,11 +43,13 @@ export function SpotlightSlide({
 
   const imageStyle = useAnimatedStyle(() => {
     const kbScale = 1 + kb.value * 0.06;
-    // Overscroll zoom: pulling down past the top (scrollY < 0) scales the portrait
-    // up so it feels elastic, like the character screen's hero. Clamped at the top.
-    const pull = scrollY.value < 0 ? -scrollY.value : 0;
-    const overscroll = 1 + Math.min(pull / height, 0.6) * 0.9;
-    return { transform: [{ scale: kbScale * overscroll }] };
+    // Overscroll zoom — the exact curve the character screen's hero uses: pull
+    // down past the top (scrollY < 0) and the portrait scales up to 2× while
+    // translating, so it zooms in elastically. scale clamps to 1 once scrolled.
+    const sy = scrollY.value;
+    const overscroll = sy < 0 ? interpolate(sy, [-height, 0], [2, 1], Extrapolation.CLAMP) : 1;
+    const translateY = sy < 0 ? interpolate(sy, [-height, 0], [-height / 2, 0], Extrapolation.CLAMP) : 0;
+    return { transform: [{ translateY }, { scale: kbScale * overscroll }] };
   });
 
   // Apple TV / Disney+ billboard: full-bleed portrait, dark gradient base, a

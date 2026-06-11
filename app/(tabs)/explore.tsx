@@ -156,6 +156,7 @@ export default function HomeScreen() {
           style={styles.scroll}
           showsVerticalScrollIndicator={false}
           contentInsetAdjustmentBehavior="never"
+          automaticallyAdjustContentInsets={false}
           contentContainerStyle={styles.content}
           scrollEventThrottle={16}
           onScroll={scrollHandler}
@@ -169,6 +170,7 @@ export default function HomeScreen() {
             />
           )}
 
+          <View style={styles.sheet}>
           {recentlyViewed.length > 0 && (
             <HomeHeroRow
               label="Personal"
@@ -209,6 +211,7 @@ export default function HomeScreen() {
               />
             );
           })}
+          </View>
         </Animated.ScrollView>
       )}
     </View>
@@ -217,6 +220,10 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.navy },
-  scroll: { flex: 1, backgroundColor: COLORS.beige },
-  content: { paddingBottom: 120 },
+  // Transparent so the dark navy root shows under the status bar and on
+  // overscroll (matching the spotlight) instead of a beige band. The beige lives
+  // on the content sheet below.
+  scroll: { flex: 1, backgroundColor: 'transparent' },
+  content: { flexGrow: 1 },
+  sheet: { flexGrow: 1, backgroundColor: COLORS.beige, paddingBottom: 120 },
 });
