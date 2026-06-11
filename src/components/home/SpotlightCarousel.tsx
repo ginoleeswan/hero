@@ -34,19 +34,17 @@ export function SpotlightCarousel({
   const height = spotlightHeight(insetTop);
   const [active, setActive] = useState(0);
 
-  // Parallax: the spotlight drifts up at a fraction of scroll speed.
-  const parallax = useAnimatedStyle(() => ({
-    transform: [
-      {
-        translateY: interpolate(
-          scrollY.value,
-          [0, height],
-          [0, height * 0.25],
-          Extrapolation.CLAMP,
-        ),
-      },
-    ],
-  }));
+  const parallax = useAnimatedStyle(() => {
+    const sy = scrollY.value;
+    // Overscroll: pin the spotlight to the top (counteract the bounce) so the
+    // portrait stays put and only zooms — like Apple TV — instead of sliding down
+    // and revealing navy above it.
+    if (sy < 0) return { transform: [{ translateY: sy }] };
+    // Normal scroll: a subtle parallax drift.
+    return {
+      transform: [{ translateY: interpolate(sy, [0, height], [0, height * 0.25], Extrapolation.CLAMP) }],
+    };
+  });
 
   if (heroes.length === 0) return null;
 

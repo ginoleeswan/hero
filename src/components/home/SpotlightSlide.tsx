@@ -43,13 +43,12 @@ export function SpotlightSlide({
 
   const imageStyle = useAnimatedStyle(() => {
     const kbScale = 1 + kb.value * 0.06;
-    // Overscroll zoom — the exact curve the character screen's hero uses: pull
-    // down past the top (scrollY < 0) and the portrait scales up to 2× while
-    // translating, so it zooms in elastically. scale clamps to 1 once scrolled.
+    // Overscroll zoom: the carousel wrap pins the spotlight to the top on pull-
+    // down (so it doesn't slide off), and the portrait scales in place — Apple TV
+    // style. Scale clamps to 1 once scrolled normally.
     const sy = scrollY.value;
-    const overscroll = sy < 0 ? interpolate(sy, [-height, 0], [2, 1], Extrapolation.CLAMP) : 1;
-    const translateY = sy < 0 ? interpolate(sy, [-height, 0], [-height / 2, 0], Extrapolation.CLAMP) : 0;
-    return { transform: [{ translateY }, { scale: kbScale * overscroll }] };
+    const overscroll = sy < 0 ? interpolate(sy, [-height, 0], [1.6, 1], Extrapolation.CLAMP) : 1;
+    return { transform: [{ scale: kbScale * overscroll }] };
   });
 
   // Apple TV / Disney+ billboard: full-bleed portrait, dark gradient base, a
