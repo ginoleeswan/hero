@@ -9,48 +9,35 @@ import {
   type ReactNode,
 } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { usePathname } from 'expo-router';
 import { COLORS } from '../constants/colors';
 
 /**
- * Adaptive web top-chrome.
+ * Web top-chrome colour.
  *
- * Every mobile-web page is shaped the same way: a dark hero header at the very
- * top, then a light (beige) content canvas below. A single static chrome can
- * only ever match one of those, so the status bar / top bar always clashes with
- * the other. This context makes the chrome adaptive instead: a page declares its
- * two colours (the header tint at the top, the content tint once scrolled) and
- * drops a <ChromeSentinel /> at the bottom edge of its dark header. As that
- * sentinel scrolls under the bar we flip `mode`, and everything that paints the
- * top — the floating top bar, its icon colours, the status-bar cover, and the
- * iOS `theme-color` meta that tints the system status bar — derives from the
- * single resolved `color`, so the whole top edge stays seamless at every scroll
- * position on every page.
+ * In a Safari tab the iOS system status bar can't be reliably re-tinted on
+ * scroll (dynamic theme-color updates don't repaint it), so rather than let the
+ * status bar and the top bar drift apart we keep them locked together: the top
+ * bar, the status-bar cover, and the theme-color meta all match a single colour
+ * the page declares — the tint at the very top of that screen. The result is a
+ * top edge that's always seamless (status bar → cover → bar read as one piece),
+ * consistent across every page.
  */
 
-type ChromeMode = 'header' | 'content';
-
 interface WebChromeValue {
-  /** The colour the chrome is currently matching (header tint or content tint). */
+  /** The colour the chrome matches — the tint at the very top of the screen. */
   color: string;
   /** True when `color` is light enough to need dark icons/text on top of it. */
   isLight: boolean;
-  /** Declare this screen's header tint (top) and content tint (scrolled). */
-  setColors: (header: string, content: string) => void;
-  /** Sentinels report whether the dark header still covers the top bar. */
-  setHeaderCovering: (covering: boolean) => void;
+  /** Declare this screen's top colour. */
+  setColor: (color: string) => void;
 }
 
-const DEFAULTS: { header: string; content: string } = {
-  header: COLORS.deepNavy,
-  content: COLORS.beige,
-};
+const DEFAULT_COLOR: string = COLORS.deepNavy;
 
 const WebChromeContext = createContext<WebChromeValue>({
-  color: DEFAULTS.header,
+  color: DEFAULT_COLOR,
   isLight: false,
-  setColors: () => {},
-  setHeaderCovering: () => {},
+  setColor: () => {},
 });
 
 // Perceived luminance (sRGB weights). Above the threshold the surface is light
@@ -79,44 +66,26 @@ function rgbToHex(r: number, g: number, b: number): string {
 }
 
 // Duration of the chrome colour cross-fade. Shared by the status-bar tint
-// animation here and the CSS transitions on the bar/cover, so the whole top
-// edge changes colour as one synchronised motion.
+// animation here and the CSS transition on the cover, so the whole top edge
+// changes colour as one synchronised motion when a new page declares a new tint.
 const CHROME_FADE_MS = 300;
 
 export function WebChromeProvider({ children }: { children: ReactNode }) {
-  const [colors, setColorsState] = useState(DEFAULTS);
-  // Default to header mode: a fresh route always opens at the top, over its hero.
-  const [mode, setMode] = useState<ChromeMode>('header');
+  const [color, setColorState] = useState(DEFAULT_COLOR);
 
-  const setColors = useCallback((header: string, content: string) => {
-    setColorsState((prev) =>
-      prev.header === header && prev.content === content ? prev : { header, content }
-    );
-  }, []);
-
-  const setHeaderCovering = useCallback(
-    (covering: boolean) => setMode(covering ? 'header' : 'content'),
+  const setColor = useCallback(
+    (next: string) => setColorState((prev) => (prev === next ? prev : next)),
     []
   );
 
-  // Every route opens at the top, over its header — reset to header mode on
-  // navigation so a page left in content mode doesn't bleed into the next one
-  // before its sentinel re-measures.
-  const pathname = usePathname();
-  useEffect(() => setMode('header'), [pathname]);
-
-  const color = mode === 'header' ? colors.header : colors.content;
   const isLight = isLightColor(color);
 
   // Drive the iOS Safari status-bar tint. Expo's single web output ignores
-  // app/+html.tsx, so we own the theme-color meta at runtime; pointing it at the
-  // current chrome colour makes the system status bar track the page as it
-  // scrolls — dark over the hero, light over the content. iOS has no CSS
-  // transition for theme-color, so we interpolate the value ourselves over
-  // CHROME_FADE_MS to match the bar/cover cross-fade — the system bar eases
-  // between colours instead of snapping. The current value is tracked in a ref
-  // (not read back from the meta) so each fade starts from wherever the last one
-  // left off, even mid-animation.
+  // app/+html.tsx, so we own the theme-color meta at runtime. iOS has no CSS
+  // transition for theme-color, so we interpolate it ourselves over
+  // CHROME_FADE_MS (hex only — rgb() is ignored) to match the cover's CSS fade,
+  // tracking the current value in a ref so a new fade starts wherever the last
+  // one left off.
   const themeRgbRef = useRef<{ r: number; g: number; b: number } | null>(null);
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -151,10 +120,7 @@ export function WebChromeProvider({ children }: { children: ReactNode }) {
     return () => cancelAnimationFrame(raf);
   }, [color]);
 
-  const value = useMemo(
-    () => ({ color, isLight, setColors, setHeaderCovering }),
-    [color, isLight, setColors, setHeaderCovering]
-  );
+  const value = useMemo(() => ({ color, isLight, setColor }), [color, isLight, setColor]);
 
   return <WebChromeContext.Provider value={value}>{children}</WebChromeContext.Provider>;
 }
@@ -166,9 +132,8 @@ export function useWebChrome() {
 /**
  * Opaque strip over exactly the iOS status-bar inset, painted the current chrome
  * colour so it's identical to the system status bar above it (same value the
- * theme-color meta uses) — the two fuse into one seamless cap. Tracks the colour
- * as the page scrolls, so the cap goes dark over the hero and light over the
- * content. env() → 0 on Android/desktop, so it collapses to nothing there.
+ * theme-color meta uses) — the two fuse into one seamless cap. env() → 0 on
+ * Android/desktop, so it collapses to nothing there.
  */
 export function AdaptiveStatusBarCover() {
   const { color } = useWebChrome();
@@ -188,66 +153,14 @@ const coverStyles = StyleSheet.create({
 });
 
 /**
- * Declare the current screen's chrome colours for as long as it's mounted.
- * `header` is the tint at the very top (under the status bar), `content` is the
- * canvas once scrolled past the header. Pages with no dark header pass the same
- * colour for both. Defaults match the app's deep-navy hero → beige content shape.
+ * Declare the current screen's top colour for as long as it's mounted — the tint
+ * at the very top, under the status bar. The top bar, status-bar cover and iOS
+ * status-bar tint all lock to it. Defaults to the app's deep-navy hero backdrop.
  */
-export function useChromeColors(
-  header: string = DEFAULTS.header,
-  content: string = DEFAULTS.content
-) {
-  const { setColors } = useWebChrome();
+export function useChromeColor(color: string = DEFAULT_COLOR) {
+  const { setColor } = useWebChrome();
   useEffect(() => {
-    setColors(header, content);
-    return () => setColors(DEFAULTS.header, DEFAULTS.content);
-  }, [header, content, setColors]);
+    setColor(color);
+    return () => setColor(DEFAULT_COLOR);
+  }, [color, setColor]);
 }
-
-// Top bar height (kept in sync with TOPBAR_HEIGHT in TopBar.tsx). Declared here
-// too so the sentinel doesn't have to import TopBar — that would be a cycle,
-// since TopBar consumes this context.
-const TOPBAR_HEIGHT = 64;
-
-/**
- * Invisible 1px marker a page renders at the bottom edge of its dark header.
- * While it sits below the top bar the chrome is in header (dark) mode; once it
- * scrolls up under the bar we flip to content (light) mode. Using the real
- * element position — rather than a guessed scroll threshold — keeps the switch
- * exactly aligned to where the hero actually ends, on every page.
- */
-export function ChromeSentinel() {
-  const { setHeaderCovering } = useWebChrome();
-  const ref = useRef<View>(null);
-
-  useEffect(() => {
-    const el = ref.current as unknown as HTMLElement | null;
-    if (!el || typeof IntersectionObserver === 'undefined') return;
-
-    // Push the observation boundary down past the bar + status-bar inset, so the
-    // sentinel reads as "uncovered" the instant it slides beneath the bar.
-    const probe = document.createElement('div');
-    probe.style.cssText = 'position:fixed;top:0;height:env(safe-area-inset-top);visibility:hidden';
-    document.body.appendChild(probe);
-    const inset = probe.getBoundingClientRect().height;
-    probe.remove();
-
-    const barBottom = TOPBAR_HEIGHT + inset;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // The header still covers the bar while the seam sits *below* the bar's
-        // bottom edge. `isIntersecting` alone can't tell "below the fold" (still
-        // header) from "scrolled above the bar" (now content) — both read false —
-        // so compare the seam's actual position to the bar instead.
-        setHeaderCovering(entry.boundingClientRect.top > barBottom);
-      },
-      { rootMargin: `-${barBottom}px 0px 0px 0px`, threshold: 0 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [setHeaderCovering]);
-
-  return <View ref={ref} style={SENTINEL_STYLE} pointerEvents="none" />;
-}
-
-const SENTINEL_STYLE = { width: '100%', height: 1 } as const;

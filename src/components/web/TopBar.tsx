@@ -38,10 +38,9 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
 
-  // Adaptive chrome (mobile): the bar matches the page colour under it — a dark
-  // scrim over the hero, a light frosted bar over the content — and the icons
-  // flip for contrast. Desktop keeps the classic dark scrim → light frost keyed
-  // on scroll, so `isLight` only steers the mobile bar.
+  // The bar is locked to the page's top colour (status bar + bar always match,
+  // so the top edge is seamless). `isLight` flips the icons/tints to dark on the
+  // rare light-topped screen; every current page is dark-topped → dark chrome.
   const { isLight } = useWebChrome();
   const lightChrome = isMobile && isLight;
 
@@ -145,11 +144,18 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   // Desktop auth keeps its own branding; the logo-only bar is a mobile affordance.
   if (logoOnly && !isMobile) return null;
 
-  // Dark scrim shows over the hero (mobile header mode / desktop at-top); the
-  // frosted bar shows over content (mobile light mode / desktop scrolled). On
-  // mobile the frost is tinted to the page (beige); desktop keeps its light tint.
-  const darkScrimShown = isMobile ? !isLight : !scrolled;
-  const frostShown = isMobile ? isLight : scrolled;
+  // At the very top the bar is a soft scrim over the hero; once scrolled it
+  // becomes a frosted bar over the content. Both stay the chrome colour (dark
+  // for navy-topped pages), so the bar never clashes with the status bar.
+  const darkScrimShown = !scrolled;
+  const frostShown = scrolled;
+  // Frost tint: light-glass on a light-topped page, otherwise a dark glass on
+  // mobile / the classic light-navy frost on desktop.
+  const frostTint = lightChrome
+    ? c.frostTintLight
+    : isMobile
+      ? c.frostTintDark
+      : c.frostTintDesktop;
 
   const bar = (
     <View style={c.bar as object} pointerEvents="box-none">
@@ -169,11 +175,7 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
         <View style={[StyleSheet.absoluteFill, c.frostA] as object} />
         <View style={[StyleSheet.absoluteFill, c.frostB] as object} />
         <View style={[StyleSheet.absoluteFill, c.frostC] as object} />
-        <View
-          style={
-            [StyleSheet.absoluteFill, lightChrome ? c.frostTintLight : c.frostTintDesktop] as object
-          }
-        />
+        <View style={[StyleSheet.absoluteFill, frostTint] as object} />
       </View>
       <View style={[c.inner, { paddingHorizontal: isMobile ? 16 : 28 }] as object} pointerEvents="box-none">
         <Pressable onPress={() => router.push('/explore')} style={c.logo}>
@@ -296,6 +298,14 @@ const c = StyleSheet.create({
   frostTintLight: {
     backgroundImage:
       'linear-gradient(to bottom, rgba(245,235,220,0.96) 0%, rgba(245,235,220,0.74) 32%, rgba(245,235,220,0.38) 60%, rgba(245,235,220,0.12) 82%, transparent 100%)',
+  } as object,
+  // Mobile dark-topped pages: a translucent dark-navy glass — dark enough to
+  // stay seamless with the navy status bar and keep light icons legible, but
+  // never fully opaque, so the content blurs through it (glass, not a slab) and
+  // it eases out at the bottom into the page.
+  frostTintDark: {
+    backgroundImage:
+      'linear-gradient(to bottom, rgba(11,24,32,0.88) 0%, rgba(11,24,32,0.68) 42%, rgba(11,24,32,0.4) 70%, rgba(11,24,32,0.14) 90%, transparent 100%)',
   } as object,
   // Desktop: the original light frosted glass — no system status bar to match.
   frostTintDesktop: {

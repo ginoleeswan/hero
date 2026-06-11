@@ -166,13 +166,14 @@ export default function WebLoginScreen() {
   if (!isDesktop) {
     return (
       <View style={styles.mobileRoot}>
-        {/* Hero illustration — contained in top region */}
+        {/* Hero illustration — sits in the navy top region with headroom above
+            the head (paddingTop clears the logo bar) and rises into the card. */}
         <View style={styles.mobileIllustrationWrap}>
           <Image
             source={LOGIN_HERO}
-            style={StyleSheet.absoluteFill}
+            style={styles.mobileHeroImg as object}
             contentFit="contain"
-            contentPosition="top center"
+            contentPosition="bottom center"
           />
           {/* Scrim fades bottom of illustration into card */}
           <View style={styles.mobileScrim as object} pointerEvents="none" />
@@ -224,30 +225,34 @@ const styles = StyleSheet.create({
   // ── Mobile ─────────────────────────────────────────────────────────────
   mobileRoot: {
     minHeight: '100dvh',
+    flexDirection: 'column',
     backgroundColor: COLORS.beige,
   } as object,
   mobileIllustrationWrap: {
     position: 'relative',
-    height: '42vh',
-    minHeight: 240,
-    maxHeight: 420,
+    height: '38vh',
+    minHeight: 220,
+    maxHeight: 360,
+    flexShrink: 0,
     backgroundColor: COLORS.navy,
+    // Clear the floating logo bar and leave breathing room above the head.
+    paddingTop: 'calc(env(safe-area-inset-top) + 86px)',
     backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
     backgroundSize: '24px 24px',
+  } as object,
+  // Portrait fills the area below the headroom padding, anchored to the bottom
+  // so it rises into the card with navy space above its head.
+  mobileHeroImg: {
+    flex: 1,
+    width: '100%',
   } as object,
   mobileScrim: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: '55%',
-    backgroundImage: `linear-gradient(to bottom, transparent 0%, ${COLORS.navy} 65%, ${COLORS.beige} 100%)`,
-  } as object,
-  mobileLogo: {
-    position: 'absolute',
-    top: 'calc(20px + env(safe-area-inset-top))',
-    left: 20,
-    zIndex: 10,
+    height: '45%',
+    backgroundImage: `linear-gradient(to bottom, transparent 0%, ${COLORS.navy} 70%, ${COLORS.beige} 100%)`,
   } as object,
   cardAccent: {
     width: 40,
@@ -255,18 +260,18 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: COLORS.orange,
     alignSelf: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
     opacity: 0.7,
   },
   mobileCard: {
-    flexGrow: 1,
-    marginTop: -44,
+    flex: 1,
+    marginTop: -40,
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 28,
-    paddingTop: 24,
-    paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
+    paddingTop: 18,
+    paddingBottom: 'calc(28px + env(safe-area-inset-bottom))',
   } as object,
   // ── Desktop ────────────────────────────────────────────────────────────
   desktopRoot: {
@@ -380,8 +385,8 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: 'white',
     borderRadius: 10,
-    padding: 14,
-    marginBottom: 14,
+    padding: 13,
+    marginBottom: 10,
     fontFamily: 'Nunito_400Regular',
     fontSize: 15,
     color: COLORS.navy,
@@ -419,7 +424,7 @@ const styles = StyleSheet.create({
   } as object,
   forgotWrap: {
     alignSelf: 'flex-end',
-    marginBottom: 16,
+    marginBottom: 12,
     paddingVertical: 4,
     cursor: 'pointer',
   },
@@ -432,9 +437,9 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: COLORS.orange,
     borderRadius: 12,
-    paddingVertical: 17,
+    paddingVertical: 15,
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: 14,
     boxShadow: '0 4px 18px rgba(231,115,51,0.32)',
     cursor: 'pointer',
     transition: 'opacity 0.15s ease',
@@ -468,7 +473,7 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   guestRow: {
-    marginTop: 16,
+    marginTop: 10,
     alignItems: 'center',
     cursor: 'pointer',
   } as object,

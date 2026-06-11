@@ -985,7 +985,7 @@ export default function WebCharacterScreen() {
                     source={heroImage}
                     contentFit="cover"
                     contentPosition="top"
-                    style={styles.mHeroImg}
+                    style={StyleSheet.absoluteFill}
                     cachePolicy="memory-disk"
                     recyclingKey={id}
                   />
@@ -2365,24 +2365,20 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: COLORS.deepNavy,
   },
-  // Inset the portrait from the very top so the deep-navy backdrop shows above
-  // the hero's head — breathing room under the status bar / back button instead
-  // of the head sitting flush against the top edge.
-  mHeroImg: {
-    position: 'absolute',
-    top: 'calc(env(safe-area-inset-top) + 34px)',
-    left: 0,
-    right: 0,
-    bottom: 0,
-  } as object,
+  // Deep-navy vignette over the top of the full-bleed portrait: opaque navy
+  // through the status bar + back-button zone, easing to transparent below. It
+  // fuses the navy status bar into the portrait (no hard cut), gives the head
+  // breathing room as it emerges from the gradient, and reads as one seamless
+  // surface from the system bar down into the art.
   mScrimTop: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 140,
-    backgroundImage: 'linear-gradient(to bottom, rgba(18,26,30,0.55), transparent)',
-  },
+    height: 'calc(env(safe-area-inset-top) + 150px)',
+    backgroundImage:
+      'linear-gradient(to bottom, #0b1820 0%, rgba(11,24,32,0.82) 34%, rgba(11,24,32,0.4) 68%, transparent 100%)',
+  } as object,
   mScrimBottom: {
     position: 'absolute',
     left: 0,

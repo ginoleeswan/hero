@@ -184,13 +184,13 @@ export default function WebSignupScreen() {
   if (!isDesktop) {
     return (
       <View style={styles.mobileRoot}>
-        {/* Hero illustration — contained in top region */}
+        {/* Hero illustration — navy top region with headroom above the head. */}
         <View style={styles.mobileIllustrationWrap}>
           <Image
             source={LOGIN_HERO}
-            style={StyleSheet.absoluteFill}
+            style={styles.mobileHeroImg as object}
             contentFit="contain"
-            contentPosition="top center"
+            contentPosition="bottom center"
           />
           {/* Scrim fades bottom of illustration into card */}
           <View style={styles.mobileScrim as object} pointerEvents="none" />
@@ -246,20 +246,26 @@ const styles = StyleSheet.create({
   } as object,
   mobileIllustrationWrap: {
     position: 'relative',
-    height: '42vh',
-    minHeight: 240,
-    maxHeight: 420,
+    height: '32vh',
+    minHeight: 200,
+    maxHeight: 320,
+    flexShrink: 0,
     backgroundColor: COLORS.navy,
+    paddingTop: 'calc(env(safe-area-inset-top) + 86px)',
     backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.07) 1.5px, transparent 1.5px)',
     backgroundSize: '24px 24px',
+  } as object,
+  mobileHeroImg: {
+    flex: 1,
+    width: '100%',
   } as object,
   mobileScrim: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: '55%',
-    backgroundImage: `linear-gradient(to bottom, transparent 0%, ${COLORS.navy} 65%, ${COLORS.beige} 100%)`,
+    height: '45%',
+    backgroundImage: `linear-gradient(to bottom, transparent 0%, ${COLORS.navy} 70%, ${COLORS.beige} 100%)`,
   } as object,
   mobileLogo: {
     position: 'absolute',
