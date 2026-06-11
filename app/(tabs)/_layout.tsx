@@ -25,9 +25,10 @@ export default function TabLayout() {
 
       <NativeTabs.Trigger name="versus">
         <NativeTabs.Trigger.Icon
-          src={<NativeTabs.Trigger.VectorIcon family={Ionicons} name="git-compare" />}
+          src={require('../../assets/swords.png')}
+          renderingMode="template"
         />
-        <NativeTabs.Trigger.Label>Versus</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Arena</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="profile">
