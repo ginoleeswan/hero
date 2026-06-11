@@ -158,12 +158,12 @@ function FamilyStage({
     (vpW: number, vpH: number) => {
       if (vpW === 0) return null;
       const { width: bw, height: bh } = layout.bounds;
-      const pad = 56;
+      const pad = fullscreen ? 40 : 24;
       const fit = Math.min((vpW - pad) / bw, (vpH - pad) / bh);
-      const s = Math.min(1.5, Math.max(0.45, fit));
+      const s = Math.min(fullscreen ? 2.2 : 1.2, Math.max(0.45, fit));
       return { tx: vpW / 2 - (bw / 2) * s, ty: vpH / 2 - (bh / 2) * s, scale: s };
     },
-    [layout],
+    [layout, fullscreen],
   );
   const recenter = useCallback(() => {
     const c = computeCenter(vp.w, vp.h);
