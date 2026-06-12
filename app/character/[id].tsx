@@ -16,13 +16,20 @@ import {
   type NativeScrollEvent,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter, Link } from 'expo-router';
-import ReAnimated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import ReAnimated, {
+  FadeIn,
+  FadeOut,
+  Easing,
+  useSharedValue,
+  useAnimatedProps,
+  withTiming,
+} from 'react-native-reanimated';
+import Svg, { Path, G } from 'react-native-svg';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import * as Haptics from 'expo-haptics';
 import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery } from '../../src/lib/api';
 import {
@@ -89,40 +96,76 @@ const formatCreators = (creators: string[]) =>
     ? creators.join(' & ')
     : `${creators.slice(0, 2).join(' & ')} & ${creators.length - 2} others`;
 
-function StatDial({
-  label,
-  value,
-  tint,
-  animate,
-}: {
-  label: string;
-  value: string;
-  tint: string;
-  animate: boolean;
-}) {
+// ── Power-stat dial ──────────────────────────────────────────────────────────
+// Reanimated-driven arc, replacing react-native-circular-progress whose
+// SVG-stroke fill could only animate on the JS thread (the reason the dials were
+// gated behind a scroll-reveal hack). Here the arc's `d` is recomputed in a
+// worklet from a shared value, so the sweep runs on the UI thread and can play
+// freely during the entry transition. Geometry mirrors the old config exactly:
+// size 72, 11/9 stroke widths, 250° sweep, -124° rotation, round caps.
+const DIAL_SIZE = 72;
+const DIAL_TINT_W = 11;
+const DIAL_BG_W = 9;
+const DIAL_SWEEP = 250;
+const DIAL_ROTATION = -124;
+const DIAL_RADIUS = DIAL_SIZE / 2 - DIAL_TINT_W / 2;
+const DIAL_C = DIAL_SIZE / 2;
+
+// Arc path from startAngle→endAngle (degrees), matching the library's geometry
+// (0° at top, clockwise). Used both on the JS thread (static track) and inside
+// a worklet (animated tint), so it carries the 'worklet' directive.
+function dialArc(startAngle: number, endAngle: number): string {
+  'worklet';
+  const toXY = (angle: number) => {
+    const a = ((angle - 90) * Math.PI) / 180;
+    return { x: DIAL_C + DIAL_RADIUS * Math.cos(a), y: DIAL_C + DIAL_RADIUS * Math.sin(a) };
+  };
+  const start = toXY(endAngle * 0.9999999);
+  const end = toXY(startAngle);
+  const largeArc = endAngle - startAngle <= 180 ? '0' : '1';
+  return `M ${start.x} ${start.y} A ${DIAL_RADIUS} ${DIAL_RADIUS} 0 ${largeArc} 0 ${end.x} ${end.y}`;
+}
+
+const DIAL_TRACK = dialArc(0, DIAL_SWEEP);
+const AnimatedPath = ReAnimated.createAnimatedComponent(Path);
+
+function StatDial({ label, value, tint }: { label: string; value: string; tint: string }) {
   const numeric = parseInt(value, 10);
   const target = isNaN(numeric) ? 0 : numeric;
-  // Hold the dials empty until the navigation transition settles, then sweep
-  // them in. Animating six SVG arcs during the Apple Zoom morph stutters it.
-  const fill = animate ? target : 0;
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.value = withTiming(target, { duration: 1800, easing: Easing.out(Easing.cubic) });
+  }, [target, progress]);
+
+  const arcProps = useAnimatedProps(() => {
+    const angle = (DIAL_SWEEP * progress.value) / 100;
+    return { d: angle < 0.1 ? '' : dialArc(0, angle) };
+  });
 
   return (
     <View style={styles.dialWrap}>
-      <AnimatedCircularProgress
-        size={72}
-        width={11}
-        duration={1800}
-        backgroundWidth={9}
-        rotation={-124}
-        arcSweepAngle={250}
-        fill={fill}
-        tintColor={tint}
-        backgroundColor={'rgba(41,60,67,0.12)'}
-        padding={0}
-        lineCap="round"
-      >
-        {(f: number) => <Text style={styles.dialValue}>{Math.floor(f)}</Text>}
-      </AnimatedCircularProgress>
+      <View style={styles.dialGauge}>
+        <Svg width={DIAL_SIZE} height={DIAL_SIZE} style={StyleSheet.absoluteFill}>
+          <G rotation={DIAL_ROTATION} originX={DIAL_C} originY={DIAL_C}>
+            <Path
+              d={DIAL_TRACK}
+              stroke="rgba(41,60,67,0.12)"
+              strokeWidth={DIAL_BG_W}
+              strokeLinecap="round"
+              fill="none"
+            />
+            <AnimatedPath
+              animatedProps={arcProps}
+              stroke={tint}
+              strokeWidth={DIAL_TINT_W}
+              strokeLinecap="round"
+              fill="none"
+            />
+          </G>
+        </Svg>
+        <Text style={styles.dialValue}>{target}</Text>
+      </View>
       <Text style={styles.dialLabel}>{label}</Text>
     </View>
   );
@@ -435,29 +478,6 @@ export default function CharacterScreen() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const compareScale = useRef(new Animated.Value(1)).current;
 
-  // Below-fold work (the JS-driven stat-dial sweep + the family canvas/fetch) is
-  // deferred until its section is actually on screen — a glance-and-leave never
-  // pays for it, keeping the JS thread free for the dismiss gesture. The trigger
-  // is the Power Stats section entering the viewport: it fires on scroll for
-  // info-rich heroes, and immediately (via the layout hook in registerAnchor)
-  // for sparse heroes whose stats sit within the opening viewport — so the dials
-  // are never left sitting at 0 while plainly visible.
-  const [belowFoldRevealed, setBelowFoldRevealed] = useState(false);
-  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (revealTimer.current) clearTimeout(revealTimer.current);
-  }, []);
-  useEffect(() => {
-    if (belowFoldRevealed) return;
-    const sub = scrollY.addListener(({ value }) => {
-      const statsTop = sectionOffsets.current.stats;
-      if (statsTop != null && value + SCREEN_HEIGHT > statsTop) {
-        setBelowFoldRevealed(true);
-        scrollY.removeListener(sub);
-      }
-    });
-    return () => scrollY.removeListener(sub);
-  }, [scrollY, belowFoldRevealed]);
 
   const springCompare = (toValue: number) =>
     Animated.spring(compareScale, {
@@ -531,13 +551,7 @@ export default function CharacterScreen() {
   // Sections live inside the beige sheet, so their onLayout y is relative to the
   // sheet — add the sheet's offset to get the absolute scroll position to jump to.
   const registerAnchor = (key: string) => (e: LayoutChangeEvent) => {
-    const top = SHEET_TOP + e.nativeEvent.layout.y;
-    sectionOffsets.current[key] = top;
-    // Sparse hero: the Power Stats sit within the opening viewport, so reveal
-    // them just after the entry transition rather than leaving the dials at 0.
-    if (key === 'stats' && top < SCREEN_HEIGHT && !revealTimer.current) {
-      revealTimer.current = setTimeout(() => setBelowFoldRevealed(true), 300);
-    }
+    sectionOffsets.current[key] = SHEET_TOP + e.nativeEvent.layout.y;
   };
 
   const jumpTo = useCallback((key: string) => {
@@ -646,11 +660,11 @@ export default function CharacterScreen() {
 
   useEffect(() => {
     setFamily([]);
-    if (!id || !belowFoldRevealed) return;
+    if (!id) return;
     getHeroFamily(id)
       .then(setFamily)
       .catch(() => setFamily([]));
-  }, [id, belowFoldRevealed]);
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -1139,7 +1153,6 @@ export default function CharacterScreen() {
                           label={label}
                           value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
                           tint={tint}
-                          animate={belowFoldRevealed}
                         />
                       ))}
                     </View>
@@ -1728,6 +1741,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   dialWrap: { alignItems: 'center', justifyContent: 'center', padding: 6 },
+  dialGauge: {
+    width: DIAL_SIZE,
+    height: DIAL_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dialValue: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.navy, left: 1 },
   dialLabel: {
     fontFamily: 'Flame-Regular',
