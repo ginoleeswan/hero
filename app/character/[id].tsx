@@ -20,6 +20,7 @@ import ReAnimated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import * as Haptics from 'expo-haptics';
@@ -592,6 +593,9 @@ export default function CharacterScreen() {
     s.push({ key: 'stats', label: 'Stats' });
     if (comicVineLoading || data.details.powers?.length)
       s.push({ key: 'abilities', label: 'Abilities' });
+    // Dossier (the bio infobox) caps the intrinsic-character block, before the
+    // relational/media sections below.
+    if (hasDossierData(data, !hasFirstVisual)) s.push({ key: 'dossier', label: 'Dossier' });
     if (comicVineLoading || data.details.enemies?.length || data.details.friends?.length)
       s.push({ key: 'allies', label: 'Allies' });
     if (comicVineLoading || data.details.movies?.length)
@@ -604,7 +608,6 @@ export default function CharacterScreen() {
     )
       s.push({ key: 'print', label: 'In Print' });
     if (family.length > 0) s.push({ key: 'family', label: 'Family' });
-    if (hasDossierData(data, !hasFirstVisual)) s.push({ key: 'dossier', label: 'Dossier' });
     return s;
   }, [data, comicVineLoading, issueCovers, galleryLoading, hasFirstVisual, family]);
   sectionOrder.current = presentSections.map((s) => s.key);
@@ -894,14 +897,15 @@ export default function CharacterScreen() {
               <TouchableOpacity
                 onPress={handleShare}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                style={styles.headerBtn}
                 accessibilityRole="button"
                 accessibilityLabel="Share character"
               >
-                <Ionicons
-                  name={Platform.OS === 'ios' ? 'share-outline' : 'share-social-outline'}
-                  size={20}
-                  color={COLORS.beige}
+                <SymbolView
+                  name="square.and.arrow.up"
+                  weight="bold"
+                  size={22}
+                  resizeMode="scaleAspectFit"
+                  fallback={<Ionicons name="share-outline" size={23} />}
                 />
               </TouchableOpacity>
               {user ? (
@@ -1138,6 +1142,13 @@ export default function CharacterScreen() {
                 <AbilitiesSection powers={data.details.powers} loading={comicVineLoading} />
               </View>
 
+              {/* Dossier — the bio infobox (Profile + Appearance + Connections),
+                  collapsed by default. Caps the intrinsic-character block before
+                  the relational/media sections below. */}
+              <View onLayout={registerAnchor('dossier')}>
+                <Dossier data={data} includeFirstAppearance={!hasFirstVisual} />
+              </View>
+
               {/* Enemies & Allies — full-bleed card strips */}
               <View onLayout={registerAnchor('allies')} style={styles.bleedSection}>
                 {comicVineLoading ? (
@@ -1341,11 +1352,6 @@ export default function CharacterScreen() {
                   />
                 </View>
               ) : null}
-
-              {/* Dossier — Profile + Appearance + Connections, collapsed by default */}
-              <View onLayout={registerAnchor('dossier')}>
-                <Dossier data={data} includeFirstAppearance={!hasFirstVisual} />
-              </View>
             </ReAnimated.View>
           )}
         </View>
