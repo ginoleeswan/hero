@@ -117,7 +117,10 @@ async function enrichHero(
       `${COMICVINE_BASE}/character/4005-${cvId}/?${cvParams({ field_list: CHAR_FIELDS })}`,
     );
     if (!res.ok) return classifyHttp(res.status);
-    d = (await res.json()).results ?? {};
+    const body = await res.json();
+    // ComicVine rate limit is HTTP 200 + status_code 107 — transient, retry later.
+    if (body?.status_code === 107) return 'retry';
+    d = body.results ?? {};
     if (!d || !d.id) return 'failed';
   } else {
     // No id on file — search by name to discover it, then fetch full detail.
@@ -129,14 +132,20 @@ async function enrichHero(
       })}`,
     );
     if (!listRes.ok) return classifyHttp(listRes.status);
-    const match = (await listRes.json()).results?.[0];
+    const listBody = await listRes.json();
+    // Rate limited (HTTP 200 + status_code 107) — transient, leave row pending.
+    if (listBody?.status_code === 107) return 'retry';
+    const match = listBody.results?.[0];
     if (!match?.id) return 'failed';
     cvId = String(match.id);
     const res = await fetch(
       `${COMICVINE_BASE}/character/4005-${cvId}/?${cvParams({ field_list: CHAR_FIELDS })}`,
     );
     if (!res.ok) return classifyHttp(res.status);
-    d = (await res.json()).results ?? {};
+    const body = await res.json();
+    // ComicVine rate limit is HTTP 200 + status_code 107 — transient, retry later.
+    if (body?.status_code === 107) return 'retry';
+    d = body.results ?? {};
     if (!d || !d.id) return 'failed';
   }
 

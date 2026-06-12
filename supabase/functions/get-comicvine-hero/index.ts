@@ -106,7 +106,12 @@ serve(async (req: Request) => {
         `${COMICVINE_BASE}/character/4005-${id}/?${cvParams({ field_list: CHAR_FIELDS })}`,
       );
       if (!res.ok) return isTransient(res.status) ? 'transient' : 'empty';
-      const results = (await res.json()).results as Record<string, unknown> | undefined;
+      const body = await res.json();
+      // ComicVine signals rate limiting with HTTP 200 + status_code 107 ("Rate
+      // limit exceeded"). Treat it as transient — never as an empty/terminal miss,
+      // which would wrongly mark a real hero `failed`.
+      if (body?.status_code === 107) return 'transient';
+      const results = body.results as Record<string, unknown> | undefined;
       if (!results || !results.id) return 'empty';
       d = results;
       return 'ok';
@@ -135,7 +140,10 @@ serve(async (req: Request) => {
         if (!isTransient(listRes.status)) await markFailed();
         return json(NULL_RESPONSE);
       }
-      const match = (await listRes.json()).results?.[0];
+      const listBody = await listRes.json();
+      // Rate limited (HTTP 200 + status_code 107) — transient, don't mark failed.
+      if (listBody?.status_code === 107) return json(NULL_RESPONSE);
+      const match = listBody.results?.[0];
       if (!match?.id) {
         // No ComicVine character matches this name — terminal.
         await markFailed();
