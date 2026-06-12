@@ -921,9 +921,11 @@ export default function CharacterScreen() {
                 <SymbolView
                   name="square.and.arrow.up"
                   weight="bold"
+                  tintColor={COLORS.black}
                   size={22}
                   resizeMode="scaleAspectFit"
-                  fallback={<Ionicons name="share-outline" size={23} />}
+                  style={styles.headerShareIcon}
+                  fallback={<Ionicons name="share-outline" size={23} color={COLORS.black} />}
                 />
               </TouchableOpacity>
               {user ? (
@@ -1468,6 +1470,9 @@ const styles = StyleSheet.create({
   heroImage: { width: '100%', height: '100%' },
   // Share + favourite sit side by side at the header's right edge.
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  // Fixed frame so the SF Symbol's intrinsic box (the up-arrow adds height)
+  // doesn't push it out of line with the native back chevron.
+  headerShareIcon: { width: 22, height: 22 },
   // Scrim chip so the control reads on any hero image (no blur dep needed).
   headerBtn: {
     width: 36,
