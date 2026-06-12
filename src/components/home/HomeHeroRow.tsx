@@ -122,10 +122,20 @@ export function HomeHeroRow({
   const isPortrait = variant === 'portrait';
   const isDark = tone === 'dark';
 
+  // Ranked rows use smaller "poster" cards so the big Top-10 numeral beside each
+  // one reads, à la Apple TV. Otherwise: optional larger feature size, else default.
   const featW = Math.round(PORTRAIT_CARD_WIDTH * 1.06);
   const featH = Math.round(PORTRAIT_CARD_HEIGHT * 1.06);
-  const cardW = feature ? featW : PORTRAIT_CARD_WIDTH;
-  const cardH = feature ? featH : PORTRAIT_CARD_HEIGHT;
+  const cardW = ranked
+    ? Math.round(PORTRAIT_CARD_WIDTH * 0.72)
+    : feature
+      ? featW
+      : PORTRAIT_CARD_WIDTH;
+  const cardH = ranked ? Math.round(cardW * DETAIL_HERO_RATIO) : feature ? featH : PORTRAIT_CARD_HEIGHT;
+  // The numeral sits to the left, bottom-aligned, with the card overlapping just
+  // its right edge (so the whole digit still reads — a thin "1" was being hidden).
+  const rankSize = Math.round(cardH * 0.7);
+  const rankOverlap = Math.round(cardW * 0.1);
 
   const titleNode = (
     <View style={styles.titleRow}>
@@ -156,8 +166,8 @@ export function HomeHeroRow({
         data={heroes}
         keyExtractor={(h) => h.id}
         showsHorizontalScrollIndicator={false}
-        decelerationRate={isPortrait ? 'fast' : 'normal'}
-        snapToInterval={isPortrait ? cardW + 12 : undefined}
+        decelerationRate={isPortrait && !ranked ? 'fast' : 'normal'}
+        snapToInterval={isPortrait && !ranked ? cardW + 12 : undefined}
         contentContainerStyle={[styles.listContent, { gap: isPortrait ? 12 : 8 }]}
         renderItem={({ item, index }) => {
           if (!isPortrait) {
@@ -166,13 +176,20 @@ export function HomeHeroRow({
           if (ranked) {
             return (
               <View style={styles.rankItem}>
+                <Text
+                  style={[
+                    styles.rankNumeral,
+                    {
+                      fontSize: rankSize,
+                      lineHeight: rankSize,
+                      marginRight: -rankOverlap,
+                      color: isDark ? COLORS.beige : COLORS.navy,
+                    },
+                  ]}
+                >
+                  {index + 1}
+                </Text>
                 <PortraitZoomCard item={item} width={cardW} height={cardH} />
-                {/* Numeral in front, top-left, with a dark outline layer so it
-                    reads on any portrait. */}
-                <View style={styles.rankBadge} pointerEvents="none">
-                  <Text style={[styles.rankNumeral, styles.rankNumeralOutline]}>{index + 1}</Text>
-                  <Text style={styles.rankNumeral}>{index + 1}</Text>
-                </View>
               </View>
             );
           }
@@ -235,25 +252,11 @@ const styles = StyleSheet.create({
     borderRadius: HERO_CARD_RADIUS,
     borderCurve: 'continuous',
   },
-  // Ranked rows: a numeral overlaid in front, top-left of the card.
-  rankItem: { position: 'relative' },
-  rankBadge: { position: 'absolute', top: 16, left: 14 },
+  // Top-10 numeral row: number to the left, bottom-aligned, card overlapping it.
+  rankItem: { flexDirection: 'row', alignItems: 'flex-end' },
   rankNumeral: {
     fontFamily: 'Flame-Regular',
-    fontSize: 56,
-    lineHeight: 56,
-    color: COLORS.beige,
-    textShadowColor: 'rgba(10,15,18,0.45)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
-  },
-  // Dark outline layer behind the beige fill so the numeral reads on bright art.
-  rankNumeralOutline: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    color: 'rgba(10,15,18,0.55)',
-    textShadowColor: 'transparent',
-    transform: [{ translateX: 1.5 }, { translateY: 2 }],
+    includeFontPadding: false,
+    textAlignVertical: 'bottom',
   },
 });
