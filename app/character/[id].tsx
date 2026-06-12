@@ -962,14 +962,6 @@ export default function CharacterScreen() {
                   const fullName = data.stats.biography['full-name'];
                   const hasAlias = !!fullName && fullName !== '-' && fullName !== 'null';
                   const hasCreators = !!data.details.creators?.length;
-                  // Badges anchor the bottom-right of the block, balanced against the
-                  // "created by" line on the left.
-                  const bottomJustify: 'space-between' | 'flex-end' | 'flex-start' =
-                    hasCreators && hasBadges
-                      ? 'space-between'
-                      : hasBadges
-                        ? 'flex-end'
-                        : 'flex-start';
                   return (
                     <>
                       {hasPublisher ? (
@@ -986,38 +978,42 @@ export default function CharacterScreen() {
                         </Text>
                       ) : null}
 
-                      <VitalsStrip
-                        powerTotal={powerTotal}
-                        issueCount={data.details.issueCount}
-                        movieCount={data.details.movieCount ?? data.details.movies?.length ?? null}
-                      />
-
-                      {hasCreators || hasBadges ? (
-                        <View style={[styles.bottomMeta, { justifyContent: bottomJustify }]}>
+                      {/* Vitals + credit form a left column; the chip stack sits
+                          in a right column against the whole block, so its height
+                          never dictates the credit's spacing. */}
+                      <View style={styles.statsRow}>
+                        <View style={styles.statsCol}>
+                          <VitalsStrip
+                            powerTotal={powerTotal}
+                            issueCount={data.details.issueCount}
+                            movieCount={
+                              data.details.movieCount ?? data.details.movies?.length ?? null
+                            }
+                          />
                           {hasCreators ? (
                             <Text style={styles.createdBy} numberOfLines={2}>
                               Created by {formatCreators(data.details.creators!)}
                             </Text>
                           ) : null}
-                          {hasBadges ? (
-                            <View style={styles.chipRow}>
-                              {taxoChips.map((c) => (
-                                <View
-                                  key={c.key}
-                                  style={[
-                                    styles.taxoBadge,
-                                    { backgroundColor: c.bg, borderColor: c.color },
-                                  ]}
-                                >
-                                  <Text style={[styles.taxoBadgeText, { color: c.color }]}>
-                                    {c.label}
-                                  </Text>
-                                </View>
-                              ))}
-                            </View>
-                          ) : null}
                         </View>
-                      ) : null}
+                        {hasBadges ? (
+                          <View style={styles.chipRow}>
+                            {taxoChips.map((c) => (
+                              <View
+                                key={c.key}
+                                style={[
+                                  styles.taxoBadge,
+                                  { backgroundColor: c.bg, borderColor: c.color },
+                                ]}
+                              >
+                                <Text style={[styles.taxoBadgeText, { color: c.color }]}>
+                                  {c.label}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        ) : null}
+                      </View>
                     </>
                   );
                 })()
@@ -1445,15 +1441,17 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 6,
   },
-  // Bottom line of the identity block: "created by" (left) + taxonomy badges
-  // (right) so the badges anchor the bottom-right corner of the section.
-  bottomMeta: {
+  // Vitals + "created by" stacked on the left; the chip stack as a sibling column
+  // on the right. The credit's spacing comes from this column (gap below), not the
+  // chip stack — so the chips can be any height without padding the credit.
+  statsRow: {
     flexDirection: 'row',
-    // The chip stack is taller than the one-line credit; centre the credit so it
-    // sits level with the middle of the stack rather than leaving a gap beneath.
-    // (justifyContent is set inline per which of credit/chips are present.)
-    alignItems: 'center',
+    alignItems: 'flex-end',
     gap: 12,
+  },
+  statsCol: {
+    flex: 1,
+    gap: 8,
   },
   // Stacked on the right (shortest label on top), so "Created by" reclaims the
   // full-width horizontal room instead of sharing the line with two side-by-side
@@ -1461,7 +1459,7 @@ const styles = StyleSheet.create({
   chipRow: {
     flexDirection: 'column',
     alignItems: 'flex-end',
-    gap: 6,
+    gap: 9,
     flexShrink: 0,
   },
   // Soft colour-tinted chip + coloured border/label — vivid, not a grey block.
