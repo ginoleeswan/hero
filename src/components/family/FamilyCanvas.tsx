@@ -363,14 +363,15 @@ export function FamilyCanvas({
 
   return (
     <>
-    <View style={styles.card}>
-      {/* Card chrome */}
+    <View>
+      {/* Section header — matches the other native sections: right-aligned navy
+          title + navy divider, with a relatives count caption on the left. */}
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>Family</Text>
         <Text style={styles.count}>
           {members.length} {members.length === 1 ? 'relative' : 'relatives'}
           {linkedCount > 0 ? ` · ${linkedCount} on Mythique` : ''}
         </Text>
+        <Text style={styles.title}>Family</Text>
       </View>
       <View style={styles.divider} />
 
@@ -502,32 +503,33 @@ function AsideMemberNode({ member }: { member: FamilyMember }): ReactElement {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 14,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: '#e8ddd0',
-  },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
     gap: 10,
   },
-  eyebrow: {
+  // Mirrors the shared `sectionTitle` in app/character/[id].tsx so Family reads
+  // like every other section header (Power Stats, In Print, …).
+  title: {
     fontFamily: 'Flame-Regular',
-    fontSize: 11,
-    color: COLORS.orange,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    fontSize: 20,
+    color: COLORS.navy,
+    textAlign: 'right',
+    paddingVertical: 5,
   },
-  count: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#b3a791' },
+  count: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: '#54606A',
+    letterSpacing: 0.3,
+    paddingBottom: 7,
+  },
   divider: {
     height: 1,
-    backgroundColor: '#ede5da',
-    marginTop: 10,
-    marginBottom: 18,
+    backgroundColor: COLORS.navy,
+    borderRadius: 30,
+    marginBottom: 16,
   },
 
   stage: {

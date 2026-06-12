@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
   ScrollView,
+  Share,
   LayoutAnimation,
   Platform,
   UIManager,
@@ -818,6 +819,17 @@ export default function CharacterScreen() {
     }
   }, [user, id, favourited, favLoading]);
 
+  const handleShare = useCallback(async () => {
+    const name = data?.stats.name ?? heroRow?.name ?? paramName;
+    if (!name) return;
+    Haptics.selectionAsync();
+    try {
+      await Share.share({ message: `Check out ${name} on Hero` });
+    } catch {
+      // user dismissed the sheet or sharing is unavailable — nothing to do
+    }
+  }, [data, heroRow?.name, paramName]);
+
   // Priority: Supabase portrait → param portrait (from card) → local bundled → API image → CDN
   const heroImage = id
     ? heroImageSource(
@@ -877,8 +889,22 @@ export default function CharacterScreen() {
               {displayName}
             </Animated.Text>
           ),
-          headerRight: user
-            ? () => (
+          headerRight: () => (
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                onPress={handleShare}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={styles.headerBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Share character"
+              >
+                <Ionicons
+                  name={Platform.OS === 'ios' ? 'share-outline' : 'share-social-outline'}
+                  size={20}
+                  color={COLORS.beige}
+                />
+              </TouchableOpacity>
+              {user ? (
                 <TouchableOpacity
                   onPress={toggleFavourite}
                   disabled={favLoading}
@@ -896,8 +922,9 @@ export default function CharacterScreen() {
                     </Text>
                   ) : null}
                 </TouchableOpacity>
-              )
-            : undefined,
+              ) : null}
+            </View>
+          ),
         }}
       />
 
@@ -1403,6 +1430,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   heroImage: { width: '100%', height: '100%' },
+  // Share + favourite sit side by side at the header's right edge.
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   // Scrim chip so the control reads on any hero image (no blur dep needed).
   headerBtn: {
     width: 36,
