@@ -425,22 +425,28 @@ export default function CharacterScreen() {
   const compareScale = useRef(new Animated.Value(1)).current;
 
   // Below-fold work (the JS-driven stat-dial sweep + the family canvas/fetch) is
-  // deferred until the reader actually scrolls down to it. The dials animate an
-  // SVG stroke on the JS thread for 1800ms — kicking that off on a post-landing
-  // timer collided with an immediate back-swipe, making the dismiss feel gated.
-  // A one-shot scroll listener means a glance-and-leave never runs any of it, so
-  // the JS thread stays free for the gesture.
-  const [scrolledIn, setScrolledIn] = useState(false);
+  // deferred until its section is actually on screen — a glance-and-leave never
+  // pays for it, keeping the JS thread free for the dismiss gesture. The trigger
+  // is the Power Stats section entering the viewport: it fires on scroll for
+  // info-rich heroes, and immediately (via the layout hook in registerAnchor)
+  // for sparse heroes whose stats sit within the opening viewport — so the dials
+  // are never left sitting at 0 while plainly visible.
+  const [belowFoldRevealed, setBelowFoldRevealed] = useState(false);
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (revealTimer.current) clearTimeout(revealTimer.current);
+  }, []);
   useEffect(() => {
-    if (scrolledIn) return;
+    if (belowFoldRevealed) return;
     const sub = scrollY.addListener(({ value }) => {
-      if (value > HERO_IMAGE_HEIGHT * 0.35) {
-        setScrolledIn(true);
+      const statsTop = sectionOffsets.current.stats;
+      if (statsTop != null && value + SCREEN_HEIGHT > statsTop) {
+        setBelowFoldRevealed(true);
         scrollY.removeListener(sub);
       }
     });
     return () => scrollY.removeListener(sub);
-  }, [scrollY, scrolledIn]);
+  }, [scrollY, belowFoldRevealed]);
 
   const springCompare = (toValue: number) =>
     Animated.spring(compareScale, {
@@ -514,7 +520,13 @@ export default function CharacterScreen() {
   // Sections live inside the beige sheet, so their onLayout y is relative to the
   // sheet — add the sheet's offset to get the absolute scroll position to jump to.
   const registerAnchor = (key: string) => (e: LayoutChangeEvent) => {
-    sectionOffsets.current[key] = SHEET_TOP + e.nativeEvent.layout.y;
+    const top = SHEET_TOP + e.nativeEvent.layout.y;
+    sectionOffsets.current[key] = top;
+    // Sparse hero: the Power Stats sit within the opening viewport, so reveal
+    // them just after the entry transition rather than leaving the dials at 0.
+    if (key === 'stats' && top < SCREEN_HEIGHT && !revealTimer.current) {
+      revealTimer.current = setTimeout(() => setBelowFoldRevealed(true), 300);
+    }
   };
 
   const jumpTo = useCallback((key: string) => {
@@ -599,11 +611,11 @@ export default function CharacterScreen() {
 
   useEffect(() => {
     setFamily([]);
-    if (!id || !scrolledIn) return;
+    if (!id || !belowFoldRevealed) return;
     getHeroFamily(id)
       .then(setFamily)
       .catch(() => setFamily([]));
-  }, [id, scrolledIn]);
+  }, [id, belowFoldRevealed]);
 
   useEffect(() => {
     if (!id) return;
@@ -709,7 +721,14 @@ export default function CharacterScreen() {
           .then((details) => {
             setData((prev) =>
               prev
-                ? { ...prev, details, firstIssue: details.firstIssueData ?? prev.firstIssue }
+                ? {
+                    ...prev,
+                    details: {
+                      ...details,
+                      issueCount: details.issueCount ?? prev.details.issueCount,
+                    },
+                    firstIssue: details.firstIssueData ?? prev.firstIssue,
+                  }
                 : prev,
             );
           })
@@ -1030,7 +1049,7 @@ export default function CharacterScreen() {
                           label={label}
                           value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
                           tint={tint}
-                          animate={scrolledIn}
+                          animate={belowFoldRevealed}
                         />
                       ))}
                     </View>
@@ -1347,7 +1366,7 @@ const styles = StyleSheet.create({
   // Immersive hero: the spacer reserves the image height and pins the identity to
   // the bottom of the portrait (over the dark scrim); the sheet rises over it.
   heroSpacer: { height: HERO_IMAGE_HEIGHT, justifyContent: 'flex-end' },
-  identity: { paddingHorizontal: 20, paddingBottom: SHEET_OVERLAP + 18 },
+  identity: { paddingHorizontal: 20, paddingBottom: SHEET_OVERLAP + 8, gap: 8 },
   sheet: {
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 28,
@@ -1364,7 +1383,6 @@ const styles = StyleSheet.create({
     color: COLORS.orange,
     letterSpacing: 2,
     textTransform: 'uppercase',
-    marginBottom: 8,
     // Sits highest on the portrait where the scrim is lightest — shadow keeps it
     // legible over bright art.
     textShadowColor: 'rgba(0,0,0,0.5)',
@@ -1384,7 +1402,6 @@ const styles = StyleSheet.create({
     fontFamily: 'FlameSans-Regular',
     fontSize: 15,
     color: 'rgba(245,235,220,0.82)',
-    marginTop: 8,
     textShadowColor: 'rgba(0,0,0,0.35)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 6,
@@ -1394,7 +1411,6 @@ const styles = StyleSheet.create({
   bottomMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
     gap: 12,
   },
   chipRow: {
@@ -1426,7 +1442,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   // At-a-glance vitals strip — big numbers + tiny labels, divider-separated.
-  vitals: { flexDirection: 'row', alignItems: 'center', marginTop: 18 },
+  vitals: { flexDirection: 'row', alignItems: 'center' },
   vitalItem: { alignItems: 'flex-start' },
   vitalValue: {
     fontFamily: 'Flame-Regular',
