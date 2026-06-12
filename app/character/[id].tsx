@@ -31,7 +31,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery } from '../../src/lib/api';
+import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery, HeroNotFoundError } from '../../src/lib/api';
+import { NotFoundView, LoadErrorView } from '../../src/components/NotFoundView';
 import {
   heroRowToCharacterData,
   getHeroFamily,
@@ -461,7 +462,12 @@ export default function CharacterScreen() {
   const [family, setFamily] = useState<FamilyMember[]>([]);
   const [comicVineLoading, setComicVineLoading] = useState(true);
   const [showIssueModal, setShowIssueModal] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Two distinct failure modes: the hero genuinely doesn't exist (404 → poster),
+  // versus a transient load failure (network/server → retryable). `retryToken`
+  // re-runs the load effect when the user taps Retry.
+  const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [retryToken, setRetryToken] = useState(0);
   const [favourited, setFavourited] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
   const [favCount, setFavCount] = useState<number>(0);
@@ -700,7 +706,8 @@ export default function CharacterScreen() {
             .finally(() => setComicVineLoading(false));
         })
         .catch((e: unknown) => {
-          setError(e instanceof Error ? e.message : 'Failed to load character');
+          if (e instanceof HeroNotFoundError) setNotFound(true);
+          else setLoadError(true);
         });
     };
 
@@ -817,7 +824,14 @@ export default function CharacterScreen() {
     heroRowQuery.isPlaceholderData,
     heroRowQuery.isError,
     heroRowQuery.isSuccess,
+    retryToken,
   ]);
+
+  const retryLoad = useCallback(() => {
+    setLoadError(false);
+    setRetryToken((t) => t + 1);
+    heroRowQuery.refetch();
+  }, [heroRowQuery]);
 
   useEffect(() => {
     if (!user || !id) return;
@@ -877,20 +891,52 @@ export default function CharacterScreen() {
   // Show name immediately from params while API loads
   const displayName = data?.stats.name ?? heroRow?.name ?? paramName ?? '';
 
-  if (error) {
+  // Header shared by both failure states: a back chevron over the beige canvas.
+  const failureHeader = (
+    <Stack.Screen
+      options={{
+        headerShown: true,
+        headerTransparent: true,
+        headerStyle: { backgroundColor: 'transparent' },
+        headerShadowVisible: false,
+        headerTintColor: COLORS.orange,
+        headerBackButtonDisplayMode: 'minimal',
+        headerTitle: '',
+      }}
+    />
+  );
+
+  // Genuine 404 — the hero id resolves to nothing. Wanted-poster treatment.
+  if (notFound) {
     return (
-      <View style={[styles.container, styles.center]}>
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            headerTransparent: true,
-            headerStyle: { backgroundColor: 'transparent' },
-            headerShadowVisible: false,
-            headerTitle: '',
-            headerBackTitle: '',
-          }}
+      <View style={styles.container}>
+        {failureHeader}
+        <NotFoundView
+          stamp="Missing"
+          stampColor={COLORS.red}
+          icon="person"
+          headline="Whereabouts unknown"
+          subline="No such hero in the archive."
+          actions={[
+            { label: 'Back to Discover', primary: true, onPress: () => router.replace('/') },
+            { label: 'Search heroes', onPress: () => router.replace('/search') },
+          ]}
         />
-        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
+  // Transient failure — the hero exists, the load just failed. Offer a retry.
+  if (loadError) {
+    return (
+      <View style={styles.container}>
+        {failureHeader}
+        <LoadErrorView
+          actions={[
+            { label: 'Retry', primary: true, onPress: retryLoad },
+            { label: 'Go back', onPress: () => router.back() },
+          ]}
+        />
       </View>
     );
   }
@@ -1903,14 +1949,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: COLORS.orange,
   },
-  errorText: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 15,
-    color: COLORS.red,
-    textAlign: 'center',
-    paddingHorizontal: 32,
-  },
-
   // Floating section quick-nav — transparent bar under the header; the chips
   // themselves carry the only fill, so the page reads continuously behind it.
   quickNav: {

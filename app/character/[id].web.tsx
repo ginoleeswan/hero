@@ -4,7 +4,8 @@ import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleto
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery } from '../../src/lib/api';
+import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery, HeroNotFoundError } from '../../src/lib/api';
+import { NotFoundView, LoadErrorView } from '../../src/components/NotFoundView';
 import { getHeroById, getHeroFamily, heroRowToCharacterData } from '../../src/lib/db/heroes';
 import type { FamilyMember } from '../../src/lib/family/types';
 import { FamilyCanvas } from '../../src/components/family/FamilyCanvas.web';
@@ -135,7 +136,10 @@ export default function WebCharacterScreen() {
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [comicVineLoading, setComicVineLoading] = useState(true);
   const [statsGenerating, setStatsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Genuine 404 (poster) vs. transient load failure (retryable) — mirrors native.
+  const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [retryToken, setRetryToken] = useState(0);
   const [favourited, setFavourited] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'universe'>('overview');
@@ -190,7 +194,10 @@ export default function WebCharacterScreen() {
             .catch(() => {})
             .finally(() => setComicVineLoading(false));
         })
-        .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load'));
+        .catch((e: unknown) => {
+          if (e instanceof HeroNotFoundError) setNotFound(true);
+          else setLoadError(true);
+        });
     };
 
     getHeroById(id)
@@ -286,7 +293,13 @@ export default function WebCharacterScreen() {
         loadFromApi();
       })
       .catch(loadFromApi);
-  }, [id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, retryToken]);
+
+  const retryLoad = useCallback(() => {
+    setLoadError(false);
+    setRetryToken((t) => t + 1);
+  }, []);
 
   useEffect(() => {
     if (!user || !id) return;
@@ -358,11 +371,30 @@ export default function WebCharacterScreen() {
     return () => window.removeEventListener('scroll', onScroll);
   }, [stageHeight]);
 
-  if (error) {
+  if (notFound) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
+      <NotFoundView
+        stamp="Missing"
+        stampColor={COLORS.red}
+        icon="person"
+        headline="Whereabouts unknown"
+        subline="No such hero in the archive."
+        actions={[
+          { label: 'Back to Discover', primary: true, onPress: () => router.replace('/') },
+          { label: 'Search heroes', onPress: () => router.replace('/search') },
+        ]}
+      />
+    );
+  }
+
+  if (loadError) {
+    return (
+      <LoadErrorView
+        actions={[
+          { label: 'Retry', primary: true, onPress: retryLoad },
+          { label: 'Go back', onPress: () => router.back() },
+        ]}
+      />
     );
   }
 
@@ -1946,7 +1978,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: COLORS.beige,
   },
-  errorText: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: COLORS.red },
 
   // ── Cinematic identity stage ─────────────────────────────────────────────────
   stage: {

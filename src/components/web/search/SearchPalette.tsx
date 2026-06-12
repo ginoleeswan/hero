@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactElement } from 'react';
+import { createPortal } from 'react-dom';
 import { View, TextInput, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -46,7 +47,7 @@ export function SearchPalette() {
     router.push(`/search?q=${encodeURIComponent(q)}`);
   };
 
-  return (
+  const overlay = (
     <View style={styles.overlay as object}>
       <Pressable style={styles.backdrop as object} onPress={close} aria-label="Close search" />
       <View style={styles.panel as object}>
@@ -73,6 +74,13 @@ export function SearchPalette() {
       </View>
     </View>
   );
+
+  // Render into document.body so the fixed full-viewport overlay isn't trapped by
+  // the TopBar's `transform` (which makes position:fixed relative to the 64px bar
+  // instead of the viewport — that's why the backdrop/blur only covered the
+  // header and only the header was clickable to dismiss).
+  if (typeof document === 'undefined') return overlay;
+  return createPortal(overlay, document.body) as unknown as ReactElement;
 }
 
 const styles = StyleSheet.create({

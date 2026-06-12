@@ -75,17 +75,30 @@ function cdnToHeroStats(d: CdnHeroStats): HeroStats {
   };
 }
 
+// Thrown only when a hero genuinely doesn't exist (an HTTP 404, or the
+// SuperheroAPI's `response: "error"` payload) — as opposed to a transient
+// network/server failure, which throws a plain Error. The character screen
+// branches on this to show "Hero not found" vs. a retryable load error.
+export class HeroNotFoundError extends Error {
+  constructor(heroId: string) {
+    super(`Hero not found: ${heroId}`);
+    this.name = 'HeroNotFoundError';
+  }
+}
+
 export async function fetchHeroStats(heroId: string): Promise<HeroStats> {
   if (Platform.OS === 'web') {
     const res = await fetch(`${CDN_BASE}/${heroId}.json`);
-    if (!res.ok) throw new Error(`CDN hero not found: ${heroId}`);
+    if (res.status === 404) throw new HeroNotFoundError(heroId);
+    if (!res.ok) throw new Error(`CDN error ${res.status}: ${heroId}`);
     const data: CdnHeroStats = await res.json();
     return cdnToHeroStats(data);
   }
   const res = await fetch(`${SUPERHERO_BASE}/${SUPERHERO_API_KEY}/${heroId}`);
+  if (res.status === 404) throw new HeroNotFoundError(heroId);
   if (!res.ok) throw new Error(`SuperheroAPI error: ${res.status}`);
   const data = await res.json();
-  if (data.response === 'error') throw new Error(data.error ?? 'Hero not found');
+  if (data.response === 'error') throw new HeroNotFoundError(heroId);
   return data as HeroStats;
 }
 
