@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useSharedValue,
@@ -10,7 +9,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { useHeroRow } from '../../lib/query/heroQueries';
-import { heroImageSource } from '../../constants/heroImages';
+import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -91,11 +90,6 @@ export function HeroPeek({
   const publisher = row?.publisher ?? hero.publisher;
   const alignment = row?.alignment ?? hero.alignment;
   const showRealName = !!realName && realName.toLowerCase() !== name.toLowerCase();
-  const image = heroImageSource(
-    hero.id,
-    row?.image_url ?? hero.image_url,
-    row?.portrait_url ?? hero.portrait_url,
-  );
 
   const stats = STATS.map((s) => ({
     key: s.key as string,
@@ -119,7 +113,15 @@ export function HeroPeek({
 
         <View style={styles.headRow}>
           <View style={styles.portrait}>
-            <Image source={image} contentFit="cover" contentPosition="top center" style={StyleSheet.absoluteFill} />
+            <HeroImage
+              id={hero.id}
+              name={name}
+              imageUrl={row?.image_url ?? hero.image_url}
+              portraitUrl={row?.portrait_url ?? hero.portrait_url}
+              contentFit="cover"
+              contentPosition="top"
+              style={StyleSheet.absoluteFill}
+            />
           </View>
           <View style={styles.identity}>
             <Text style={styles.name} numberOfLines={2}>{name}</Text>

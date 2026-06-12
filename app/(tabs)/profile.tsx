@@ -32,7 +32,7 @@ import {
   removeFavourite,
   type FavouriteHero,
 } from '../../src/lib/db/favourites';
-import { heroImageSource } from '../../src/constants/heroImages';
+import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
 import * as Haptics from 'expo-haptics';
@@ -58,8 +58,6 @@ function FavouriteThumb({
   onPress: () => void;
   onLongPress: () => void;
 }) {
-  const src = heroImageSource(hero.id, hero.image_url, hero.portrait_url);
-
   const handleLongPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onLongPress();
@@ -68,7 +66,14 @@ function FavouriteThumb({
   return (
     <PressScale onPress={onPress} onLongPress={handleLongPress} scale={0.91} style={styles.thumb}>
       <SquircleMask style={StyleSheet.absoluteFill} cornerRadius={26}>
-        <Image source={src} contentFit="cover" style={StyleSheet.absoluteFill} />
+        <HeroImage
+          id={hero.id}
+          name={hero.name}
+          imageUrl={hero.image_url}
+          portraitUrl={hero.portrait_url}
+          contentFit="cover"
+          style={StyleSheet.absoluteFill}
+        />
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.7)']}
           locations={[0.5, 1]}

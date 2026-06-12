@@ -1,7 +1,6 @@
 import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
-import { Image } from 'expo-image';
 import { COLORS } from '../../../constants/colors';
-import { heroImageSource } from '../../../constants/heroImages';
+import { HeroImage } from '../../HeroImage';
 import type { EraBucket, EraHero } from '../../../lib/db/heroes';
 
 interface EraTimelineProps {
@@ -17,7 +16,6 @@ const ERA_YEARS: Record<string, string> = {
 };
 
 function EraCard({ hero, onPress }: { hero: EraHero; onPress: () => void }) {
-  const source = heroImageSource(hero.id, hero.image_url, hero.portrait_url);
   return (
     <Pressable
       onPress={onPress}
@@ -26,14 +24,15 @@ function EraCard({ hero, onPress }: { hero: EraHero; onPress: () => void }) {
       }
     >
       <View style={t.cardImgWrap}>
-        <Image
-          source={source}
+        <HeroImage
+          id={hero.id}
+          name={hero.name}
+          imageUrl={hero.image_url}
+          portraitUrl={hero.portrait_url}
           contentFit="cover"
           contentPosition="top"
           style={StyleSheet.absoluteFill}
-          cachePolicy="memory-disk"
           recyclingKey={hero.id}
-          transition={200}
         />
       </View>
       <Text style={t.cardName} numberOfLines={1}>

@@ -1,7 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
 import { COLORS } from '../../../constants/colors';
-import { heroGridImageSource } from '../../../constants/heroImages';
+import { HeroImage } from '../../HeroImage';
 import type { HeroSearchResult } from '../../../lib/db/heroes';
 import { RoleBadge } from './RoleBadge';
 
@@ -36,8 +35,6 @@ function splitOnMatch(text: string, query: string): { value: string; match: bool
 }
 
 export function SuggestionItem({ hero, query = '', onPress }: SuggestionItemProps) {
-  const source = heroGridImageSource(hero.id, hero.image_url, hero.portrait_url, hero.image_md_url);
-
   const segments = splitOnMatch(hero.name, query);
 
   return (
@@ -47,8 +44,13 @@ export function SuggestionItem({ hero, query = '', onPress }: SuggestionItemProp
         [styles.suggestionItem, hovered && (styles.suggestionItemHover as object)] as object
       }
     >
-      <Image
-        source={source}
+      <HeroImage
+        id={hero.id}
+        name={hero.name}
+        imageUrl={hero.image_url}
+        portraitUrl={hero.portrait_url}
+        imageMdUrl={hero.image_md_url}
+        grid
         style={styles.suggestionImage}
         contentFit="cover"
         contentPosition="top"

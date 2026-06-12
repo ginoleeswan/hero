@@ -1,8 +1,7 @@
 // src/components/versus/TodaysMatchupCard.tsx
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
 import { COLORS } from '../../constants/colors';
-import { heroImageSource } from '../../constants/heroImages';
+import { HeroImage } from '../HeroImage';
 import { VsBadge } from '../compare/VsBadge';
 import type { TodaysMatchup } from '../../lib/matchup';
 import type { FighterArt } from '../../lib/compareHandoff';
@@ -15,8 +14,6 @@ export function TodaysMatchupCard({
   onOpen: (a: FighterArt, b: FighterArt) => void;
 }) {
   const { heroA, heroB, verdict } = matchup;
-  const imgA = heroImageSource(heroA.id, heroA.image_url, heroA.portrait_url);
-  const imgB = heroImageSource(heroB.id, heroB.image_url, heroB.portrait_url);
 
   return (
     <Pressable
@@ -27,7 +24,7 @@ export function TodaysMatchupCard({
     >
       <View style={styles.portraits}>
         <View style={styles.portraitWrap}>
-          <Image source={imgA} contentFit="cover" contentPosition="top" style={[StyleSheet.absoluteFill, styles.portrait]} />
+          <HeroImage id={heroA.id} name={heroA.name} imageUrl={heroA.image_url} portraitUrl={heroA.portrait_url} contentFit="cover" contentPosition="top" style={[StyleSheet.absoluteFill, styles.portrait]} />
           <View style={styles.scrim} />
           <Text style={styles.name} numberOfLines={1}>
             {heroA.name}
@@ -39,7 +36,7 @@ export function TodaysMatchupCard({
         </View>
 
         <View style={styles.portraitWrap}>
-          <Image source={imgB} contentFit="cover" contentPosition="top" style={[StyleSheet.absoluteFill, styles.portrait]} />
+          <HeroImage id={heroB.id} name={heroB.name} imageUrl={heroB.image_url} portraitUrl={heroB.portrait_url} contentFit="cover" contentPosition="top" style={[StyleSheet.absoluteFill, styles.portrait]} />
           <View style={styles.scrim} />
           <Text style={[styles.name, styles.nameRight]} numberOfLines={1}>
             {heroB.name}

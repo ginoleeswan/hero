@@ -1,15 +1,13 @@
 import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../../constants/colors';
-import { heroImageSource } from '../../../constants/heroImages';
+import { HeroImage } from '../../HeroImage';
 import type { FearedVillain } from '../../../lib/db/heroes';
 
 const CARD_W = 176;
 const CARD_H = 234;
 
 function FearedCard({ villain, rank, onPress }: { villain: FearedVillain; rank: number; onPress: () => void }) {
-  const src = heroImageSource(villain.id, villain.image_url, villain.portrait_url);
   return (
     <Pressable
       onPress={onPress}
@@ -17,12 +15,14 @@ function FearedCard({ villain, rank, onPress }: { villain: FearedVillain; rank: 
         [c.card, hovered && (c.cardHover as object)] as object
       }
     >
-      <Image
-        source={src}
+      <HeroImage
+        id={villain.id}
+        name={villain.name}
+        imageUrl={villain.image_url}
+        portraitUrl={villain.portrait_url}
         contentFit="cover"
         contentPosition="top"
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
-        cachePolicy="memory-disk"
         transition={180}
       />
       <View style={c.overlay as object} />

@@ -1,15 +1,12 @@
 // src/components/versus/RivalriesRail.tsx
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
 import { COLORS } from '../../constants/colors';
-import { heroImageSource } from '../../constants/heroImages';
+import { HeroImage } from '../HeroImage';
 import { VsBadge } from '../compare/VsBadge';
 import type { Rivalry } from '../../lib/db/heroes';
 import type { FighterArt } from '../../lib/compareHandoff';
 
 function RivalryCard({ r, onPress }: { r: Rivalry; onPress: () => void }) {
-  const imgA = heroImageSource(r.a.id, r.a.image_url, r.a.portrait_url);
-  const imgB = heroImageSource(r.b.id, r.b.image_url, r.b.portrait_url);
   return (
     <Pressable
       onPress={onPress}
@@ -17,8 +14,8 @@ function RivalryCard({ r, onPress }: { r: Rivalry; onPress: () => void }) {
       accessibilityLabel={`${r.a.name} versus ${r.b.name}`}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
-      <Image source={imgA} contentFit="cover" contentPosition="top" style={styles.half} />
-      <Image source={imgB} contentFit="cover" contentPosition="top" style={styles.half} />
+      <HeroImage id={r.a.id} name={r.a.name} imageUrl={r.a.image_url} portraitUrl={r.a.portrait_url} contentFit="cover" contentPosition="top" style={styles.half} />
+      <HeroImage id={r.b.id} name={r.b.name} imageUrl={r.b.image_url} portraitUrl={r.b.portrait_url} contentFit="cover" contentPosition="top" style={styles.half} />
       <View style={[StyleSheet.absoluteFill, styles.scrim]} />
       <View style={styles.badge}>
         <VsBadge size={34} variant="solid" />

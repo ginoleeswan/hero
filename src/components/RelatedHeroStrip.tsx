@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants/colors';
-import { heroGridImageSource } from '../constants/heroImages';
+import { HeroImage } from './HeroImage';
 import type { RelatedHeroCard } from '../lib/db/heroes';
 
 const CARD_W = 104;
@@ -82,17 +81,16 @@ export function RelatedHeroStrip({
               accessibilityRole="button"
               accessibilityLabel={`View ${hero.name}`}
             >
-              <Image
-                source={heroGridImageSource(
-                  hero.id,
-                  hero.image_url,
-                  hero.portrait_url,
-                  hero.image_md_url,
-                )}
+              <HeroImage
+                id={hero.id}
+                name={hero.name}
+                imageUrl={hero.image_url}
+                portraitUrl={hero.portrait_url}
+                imageMdUrl={hero.image_md_url}
+                grid
                 contentFit="cover"
                 contentPosition="top"
                 style={styles.cardImage}
-                cachePolicy="memory-disk"
                 recyclingKey={hero.id}
                 transition={150}
               />

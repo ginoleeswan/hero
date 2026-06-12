@@ -3,8 +3,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PressScale } from '../ui/PressScale';
+import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
-import { heroGridImageSource } from '../../constants/heroImages';
 import type { HeroSearchResult } from '../../lib/db/heroes';
 
 const MARVEL_LOGO = require('../../../assets/images/Marvel-Logo.jpg') as number;
@@ -27,7 +27,6 @@ export function PortraitCard({
   disabled: boolean;
   onDark?: boolean;
 }) {
-  const source = heroGridImageSource(item.id, item.image_url, item.portrait_url, item.image_md_url);
   const pub = (item.publisher ?? '').toLowerCase();
   const isMarvel = pub.includes('marvel');
   const isDC = pub.includes('dc');
@@ -51,12 +50,16 @@ export function PortraitCard({
       style={{ width: cardWidth, height: Math.round(cardWidth * 1.5) }}
     >
       <View style={[styles.card, onDark && styles.cardOnDark]}>
-        <Image
-          source={source}
+        <HeroImage
+          id={item.id}
+          name={item.name}
+          imageUrl={item.image_url}
+          portraitUrl={item.portrait_url}
+          imageMdUrl={item.image_md_url}
+          grid
           contentFit="cover"
           contentPosition="top"
           style={StyleSheet.absoluteFill}
-          cachePolicy="memory-disk"
           recyclingKey={item.id}
           transition={null}
         />

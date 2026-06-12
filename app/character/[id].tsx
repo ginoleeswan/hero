@@ -50,7 +50,7 @@ import {
 } from '../../src/lib/db/favourites';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useRecordView } from '../../src/hooks/useViewHistory';
-import { heroImageSource } from '../../src/constants/heroImages';
+import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
 import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkeleton';
 import { Skeleton } from '../../src/components/ui/Skeleton';
@@ -890,14 +890,10 @@ export default function CharacterScreen() {
     }
   }, [data, heroRow?.name, paramName]);
 
-  // Priority: Supabase portrait → param portrait (from card) → local bundled → API image → CDN
-  const heroImage = id
-    ? heroImageSource(
-        id,
-        data?.stats.image.url ?? heroRow?.image_url ?? null,
-        data?.stats.image.portraitUrl ?? heroRow?.portrait_url ?? paramImageUri ?? null,
-      )
-    : null;
+  // Priority: Supabase portrait → param portrait (from card) → API image → CDN
+  const heroImageUrl = data?.stats.image.url ?? heroRow?.image_url ?? null;
+  const heroPortraitUrl =
+    data?.stats.image.portraitUrl ?? heroRow?.portrait_url ?? paramImageUri ?? null;
 
   // Show name immediately from params while API loads
   const displayName = data?.stats.name ?? heroRow?.name ?? paramName ?? '';
@@ -1035,16 +1031,15 @@ export default function CharacterScreen() {
             card morphs into. Without it iOS falls back to a whole-view zoom from
             the card frame, which misaligns and reveals the card's navy bg. */}
         <Link.AppleZoomTarget>
-          <Image
-            source={heroImage}
+          <HeroImage
+            id={id ?? 'hero'}
+            name={displayName}
+            imageUrl={heroImageUrl}
+            portraitUrl={heroPortraitUrl}
             contentFit="cover"
             contentPosition="top"
             style={styles.heroImage}
-            cachePolicy="memory-disk"
             recyclingKey={id ?? 'hero'}
-            transition={
-              heroImage !== null && typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null
-            }
           />
         </Link.AppleZoomTarget>
         {/* Top scrim — keeps the back / favourite controls legible on bright art */}

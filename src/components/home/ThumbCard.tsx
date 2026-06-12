@@ -1,9 +1,8 @@
 // src/components/home/ThumbCard.tsx
 import { Text, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PressScale } from '../ui/PressScale';
-import { heroImageSource } from '../../constants/heroImages';
+import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 
 export interface ThumbHero {
@@ -20,15 +19,16 @@ interface ThumbCardProps {
 }
 
 export function ThumbCard({ item, onPress, disabled = false }: ThumbCardProps) {
-  const source = heroImageSource(item.id, item.image_url, item.portrait_url);
   return (
     <PressScale onPress={onPress} disabled={disabled} scale={0.93} style={styles.wrap}>
-      <Image
-        source={source}
+      <HeroImage
+        id={item.id}
+        name={item.name}
+        imageUrl={item.image_url}
+        portraitUrl={item.portrait_url}
         contentFit="cover"
         contentPosition="center"
         style={StyleSheet.absoluteFill}
-        cachePolicy="memory-disk"
         recyclingKey={item.id}
         transition={null}
       />

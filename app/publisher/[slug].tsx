@@ -14,11 +14,10 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getHeroesByPublisher, type Hero } from '../../src/lib/db/heroes';
 import { publisherBySlug } from '../../src/constants/publishers';
-import { heroImageSource } from '../../src/constants/heroImages';
+import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -41,12 +40,14 @@ const headerOptions = {
 function HeroGridCard({ hero, onPress }: { hero: Hero; onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.82}>
-      <Image
-        source={heroImageSource(hero.id, hero.image_url, hero.portrait_url)}
+      <HeroImage
+        id={hero.id}
+        name={hero.name}
+        imageUrl={hero.image_url}
+        portraitUrl={hero.portrait_url}
         contentFit="cover"
-        contentPosition="top center"
+        contentPosition="top"
         style={StyleSheet.absoluteFill}
-        cachePolicy="memory-disk"
         recyclingKey={String(hero.id)}
       />
       <LinearGradient

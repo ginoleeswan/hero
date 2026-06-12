@@ -1,7 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
 import { COLORS } from '../../../constants/colors';
-import { heroImageSource } from '../../../constants/heroImages';
+import { HeroImage } from '../../HeroImage';
 import type { Hero } from '../../../lib/db/heroes';
 
 const CARD_W = 220;
@@ -20,7 +19,6 @@ interface RankingCardProps {
 }
 
 export function RankingCard({ hero, statKey, onPress }: RankingCardProps) {
-  const source = heroImageSource(String(hero.id), hero.image_url, hero.portrait_url);
   const statVal = (hero[statKey] as number | null) ?? 0;
   const label = STAT_LABELS[statKey];
 
@@ -31,14 +29,15 @@ export function RankingCard({ hero, statKey, onPress }: RankingCardProps) {
         [rc.wrap, hovered && (rc.wrapHover as object)] as object
       }
     >
-      <Image
-        source={source}
+      <HeroImage
+        id={String(hero.id)}
+        name={hero.name}
+        imageUrl={hero.image_url}
+        portraitUrl={hero.portrait_url}
         contentFit="cover"
         contentPosition="top"
         style={StyleSheet.absoluteFill}
-        cachePolicy="memory-disk"
         recyclingKey={String(hero.id)}
-        transition={200}
       />
       <View style={rc.overlay as object} />
       <View style={rc.bottom}>

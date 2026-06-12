@@ -14,7 +14,6 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   CATEGORY_LABELS,
@@ -33,7 +32,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { useCategoryHeroes, prefetchHeroRow } from '../../src/lib/query/heroQueries';
 import { flattenCategoryPages } from '../../src/lib/query/heroCache';
-import { heroImageSource } from '../../src/constants/heroImages';
+import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
 import { CategorySkeleton } from '../../src/components/skeletons/CategorySkeleton';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
@@ -94,7 +93,6 @@ function HeroGridCard({
   onPress: () => void;
   onLongPress?: () => void;
 }) {
-  const source = heroImageSource(hero.id, hero.image_url, hero.portrait_url);
   return (
     <TouchableOpacity
       style={styles.card}
@@ -103,14 +101,16 @@ function HeroGridCard({
       delayLongPress={300}
       activeOpacity={0.82}
     >
-      <Image
-        source={source}
+      <HeroImage
+        id={hero.id}
+        name={hero.name}
+        imageUrl={hero.image_url}
+        portraitUrl={hero.portrait_url}
         contentFit="cover"
-        contentPosition="top center"
+        contentPosition="top"
         style={StyleSheet.absoluteFill}
-        cachePolicy="memory-disk"
         recyclingKey={String(hero.id)}
-        transition={typeof source === 'object' && 'uri' in source ? 150 : null}
+        transition={150}
       />
       <LinearGradient
         colors={['transparent', 'rgba(29,45,51,0.88)']}

@@ -1,7 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
 import { COLORS } from '../../constants/colors';
-import { heroImageSource } from '../../constants/heroImages';
+import { HeroImage } from '../HeroImage';
 
 interface WebHeroCardProps {
   id: string;
@@ -20,8 +19,6 @@ export function WebHeroCard({
   publisher,
   onPress,
 }: WebHeroCardProps) {
-  const source = heroImageSource(id, imageUrl);
-
   return (
     <Pressable
       onPress={onPress}
@@ -33,13 +30,13 @@ export function WebHeroCard({
         ] as object
       }
     >
-      <Image
-        source={source}
+      <HeroImage
+        id={id}
+        name={name}
+        imageUrl={imageUrl}
         contentFit="cover"
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        cachePolicy="memory-disk"
         recyclingKey={id}
-        transition={typeof source === 'object' && 'uri' in source ? 200 : null}
       />
       <View style={[styles.overlay, featured && (styles.overlayFeatured as object)] as object} />
       {featured && (

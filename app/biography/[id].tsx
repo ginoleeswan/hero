@@ -2,12 +2,11 @@ import { useEffect, useState, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, Linking, useWindowDimensions } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Image } from 'expo-image';
 import RenderHTML, { type MixedStyleDeclaration } from 'react-native-render-html';
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { getHeroById, getHeroByComicvineId } from '../../src/lib/db/heroes';
-import { heroImageSource } from '../../src/constants/heroImages';
+import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
 import type { Tables } from '../../src/types/database.generated';
 
@@ -131,7 +130,6 @@ export default function BiographyScreen() {
     [hero?.description],
   );
 
-  const heroImage = id ? heroImageSource(String(id), hero?.image_url, hero?.portrait_url) : null;
   const contentWidth = width - 40;
 
   // Intercept ComicVine character links (/slug/4005-{cvId}/) → resolve to a hero
@@ -188,19 +186,16 @@ export default function BiographyScreen() {
       >
         {/* Navy banner — fills full-bleed behind the transparent header + status bar */}
         <View style={[styles.banner, { paddingTop: insets.top + 52 }]}>
-          {heroImage ? (
-            <Image
-              source={heroImage}
-              style={styles.portrait}
-              contentFit="cover"
-              contentPosition="top"
-              cachePolicy="memory-disk"
-              recyclingKey={id}
-              transition={200}
-            />
-          ) : (
-            <View style={[styles.portrait, styles.portraitFallback]} />
-          )}
+          <HeroImage
+            id={String(id ?? '')}
+            name={hero?.name ?? ''}
+            imageUrl={hero?.image_url}
+            portraitUrl={hero?.portrait_url}
+            style={styles.portrait}
+            contentFit="cover"
+            contentPosition="top"
+            recyclingKey={id}
+          />
           <View style={styles.titleBlock}>
             <Text style={styles.eyebrow}>Biography</Text>
             {hero ? (
@@ -278,7 +273,6 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     backgroundColor: 'rgba(245,235,220,0.08)',
   },
-  portraitFallback: { opacity: 0.5 },
   titleBlock: { flex: 1, justifyContent: 'flex-end' },
   eyebrow: {
     fontFamily: 'FlameSans-Regular',

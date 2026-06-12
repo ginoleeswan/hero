@@ -1,7 +1,6 @@
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { heroImageSource } from '../../constants/heroImages';
+import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 
 export interface AnchorFighter {
@@ -52,9 +51,6 @@ export function FighterAnchor({
   const filled = !!fighter;
   const showLit = lit ?? filled;
   const stage = tone === 'stage';
-  const source = filled
-    ? heroImageSource(fighter!.id, fighter!.image_url, fighter!.portrait_url)
-    : null;
 
   const portraitStyle = [
     styles.portrait,
@@ -66,13 +62,15 @@ export function FighterAnchor({
 
   const inner = (
     <>
-      {filled && source ? (
-        <Image
-          source={source}
+      {filled ? (
+        <HeroImage
+          id={fighter!.id}
+          name={fighter!.name}
+          imageUrl={fighter!.image_url}
+          portraitUrl={fighter!.portrait_url}
           contentFit="cover"
-          contentPosition="top center"
+          contentPosition="top"
           style={[StyleSheet.absoluteFill, flip ? { transform: [{ scaleX: -1 }] } : null] as object}
-          placeholder={COLORS.navy}
           transition={140}
         />
       ) : showLit ? null : (

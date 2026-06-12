@@ -1,7 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Image } from 'expo-image';
 import { COLORS } from '../constants/colors';
-import { heroImageSource } from '../constants/heroImages';
+import { HeroImage } from './HeroImage';
 
 interface HeroCardProps {
   id: string;
@@ -26,18 +25,17 @@ interface HeroCardProps {
  * the Link.AppleZoom wrapper stretching it.
  */
 export function HeroCard({ id, name, imageUrl, portraitUrl, width, height }: HeroCardProps) {
-  const imageSource = heroImageSource(id, imageUrl, portraitUrl);
-
   return (
     <View collapsable={false} style={[styles.card, { width, height }]}>
-      <Image
-        source={imageSource}
+      <HeroImage
+        id={id}
+        name={name}
+        imageUrl={imageUrl}
+        portraitUrl={portraitUrl}
         contentFit="cover"
         contentPosition="top"
         style={styles.image}
-        cachePolicy="memory-disk"
         recyclingKey={id}
-        transition={typeof imageSource === 'object' && 'uri' in imageSource ? 200 : null}
       />
       <View style={styles.nameContainer}>
         <Text style={styles.name} numberOfLines={1}>

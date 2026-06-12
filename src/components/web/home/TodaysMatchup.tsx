@@ -1,7 +1,6 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
-import { Image } from 'expo-image';
 import { COLORS } from '../../../constants/colors';
-import { heroImageSource } from '../../../constants/heroImages';
+import { HeroImage } from '../../HeroImage';
 import type { TodaysMatchup as Matchup } from '../../../lib/matchup';
 
 interface TodaysMatchupProps {
@@ -18,19 +17,19 @@ function Fighter({
   side: 'a' | 'b';
   size?: number;
 }) {
-  const source = heroImageSource(hero.id, hero.image_url, hero.portrait_url);
   return (
     <View
       style={[m.portrait, { width: size, height: size }, side === 'b' && (m.portraitB as object)] as object}
     >
-      <Image
-        source={source}
+      <HeroImage
+        id={hero.id}
+        name={hero.name}
+        imageUrl={hero.image_url}
+        portraitUrl={hero.portrait_url}
         contentFit="cover"
         contentPosition="top"
         style={StyleSheet.absoluteFill}
-        cachePolicy="memory-disk"
         recyclingKey={hero.id}
-        transition={200}
       />
     </View>
   );

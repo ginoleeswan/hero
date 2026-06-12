@@ -64,3 +64,60 @@ export function heroGridImageSource(
     (isNumericId(id) ? `${CDN_BASE}/${id}.jpg` : '');
   return { uri: withCloudinaryTransform(uri, GRID_WIDTH) };
 }
+
+/**
+ * True when there's a usable portrait for this hero. When false, surfaces should
+ * render the monogram fallback (see HeroImage) instead of a blank Image.
+ */
+export function hasHeroImage(
+  id: string | number,
+  imageUrl?: string | null,
+  portraitUrl?: string | null,
+  imageMdUrl?: string | null,
+): boolean {
+  return !!(
+    realUrl(portraitUrl) ||
+    realUrl(imageMdUrl) ||
+    realUrl(imageUrl) ||
+    isNumericId(id)
+  );
+}
+
+/**
+ * Up to two initials for a hero's monogram fallback. Uses the first letters of
+ * the first two alphanumeric words; falls back to "?" for empty/symbolic names.
+ */
+export function heroInitials(name?: string | null): string {
+  if (!name) return '?';
+  const words = name
+    .trim()
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-zA-Z0-9]/g, ''))
+    .filter(Boolean);
+  if (words.length === 0) return '?';
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+// Dark, saturated palette — beige initials stay legible on every one. Indexed by
+// a stable hash of the hero id so each hero keeps the same colour across surfaces.
+const MONOGRAM_COLORS = [
+  '#293C43', // navy
+  '#0b1820', // deepNavy
+  '#502314', // brown
+  '#7c3aed', // purple
+  '#b07d00', // gold
+  '#15A1AB', // blue
+  '#63A936', // green
+  '#B5302B', // red
+] as const;
+
+/** Deterministic monogram background colour for a hero id. */
+export function monogramColor(id: string | number): string {
+  const str = String(id);
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) | 0;
+  }
+  return MONOGRAM_COLORS[Math.abs(hash) % MONOGRAM_COLORS.length];
+}

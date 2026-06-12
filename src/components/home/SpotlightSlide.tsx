@@ -10,10 +10,9 @@ import Animated, {
   Extrapolation,
   type SharedValue,
 } from 'react-native-reanimated';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { heroImageSource } from '../../constants/heroImages';
+import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
 
@@ -30,8 +29,6 @@ export function SpotlightSlide({
   scrollY: SharedValue<number>;
   onPress: () => void;
 }) {
-  const source = heroImageSource(hero.id, hero.image_url, hero.portrait_url);
-
   const align = hero.alignment ? ALIGN_LABEL[hero.alignment.toLowerCase().trim()] : undefined;
   const sub = [hero.publisher, align].filter(Boolean).join('   ·   ');
 
@@ -57,14 +54,15 @@ export function SpotlightSlide({
   return (
     <Pressable onPress={onPress} style={[styles.container, { height }]}>
       <Animated.View style={[StyleSheet.absoluteFill, imageStyle]}>
-        <Image
-          source={source}
+        <HeroImage
+          id={hero.id}
+          name={hero.name}
+          imageUrl={hero.image_url}
+          portraitUrl={hero.portrait_url}
           contentFit="cover"
           contentPosition="top"
           style={StyleSheet.absoluteFill}
-          cachePolicy="memory-disk"
           recyclingKey={hero.id}
-          transition={200}
         />
       </Animated.View>
 

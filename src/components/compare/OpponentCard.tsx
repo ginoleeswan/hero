@@ -8,9 +8,8 @@ import Animated, {
   withTiming,
   cancelAnimation,
 } from 'react-native-reanimated';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { heroImageSource } from '../../constants/heroImages';
+import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 
 const IS_WEB = Platform.OS === 'web';
@@ -65,8 +64,6 @@ function OpponentCardBase({
   onLongPress,
   onInfo,
 }: OpponentCardProps) {
-  const source = heroImageSource(item.id, item.image_url, item.portrait_url);
-  const hasImage = !!source.uri;
   const sizeStyle = fill ? (styles.fill as object) : { width, height };
 
   // The info chip is a desktop-web affordance giving mouse users a discoverable
@@ -126,21 +123,17 @@ function OpponentCardBase({
               style={[StyleSheet.absoluteFill, styles.skeleton as object, pulseStyle]}
             />
           )}
-          {hasImage ? (
-            <Image
-              source={source}
-              contentFit="cover"
-              contentPosition="top center"
-              style={StyleSheet.absoluteFill}
-              transition={250}
-              onLoad={() => setLoaded(true)}
-              onError={() => setLoaded(true)}
-            />
-          ) : (
-            <View style={styles.fallback as object}>
-              <Text style={styles.fallbackInitial}>{item.name?.charAt(0).toUpperCase() ?? '?'}</Text>
-            </View>
-          )}
+          <HeroImage
+            id={item.id}
+            name={item.name}
+            imageUrl={item.image_url}
+            portraitUrl={item.portrait_url}
+            contentFit="cover"
+            contentPosition="top"
+            style={StyleSheet.absoluteFill}
+            transition={250}
+            onLoad={() => setLoaded(true)}
+          />
           <View style={styles.scrim as object} />
           <Text style={[styles.name, compact && styles.nameCompact]} numberOfLines={2}>
             {item.name}
@@ -207,17 +200,6 @@ const styles = StyleSheet.create({
       default: { backgroundColor: '#26393f' },
     }),
   } as object,
-  fallback: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#22343b',
-  },
-  fallbackInitial: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 40,
-    color: 'rgba(245,235,220,0.25)',
-  },
   accent: { boxShadow: '0 0 0 2px rgba(206,155,51,0.7)' } as object,
   hovered: {
     transform: [{ translateY: -4 }],

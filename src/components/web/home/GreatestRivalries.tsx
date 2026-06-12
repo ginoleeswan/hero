@@ -1,8 +1,7 @@
 import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../../constants/colors';
-import { heroImageSource } from '../../../constants/heroImages';
+import { HeroImage } from '../../HeroImage';
 import { VsBadge } from '../../compare/VsBadge';
 import type { Rivalry } from '../../../lib/db/heroes';
 
@@ -10,8 +9,6 @@ const CARD_W = 296;
 const CARD_H = 168;
 
 function RivalryCard({ r, onPress }: { r: Rivalry; onPress: () => void }) {
-  const aSrc = heroImageSource(r.a.id, r.a.image_url, r.a.portrait_url);
-  const bSrc = heroImageSource(r.b.id, r.b.image_url, r.b.portrait_url);
   return (
     <Pressable
       onPress={onPress}
@@ -19,8 +16,8 @@ function RivalryCard({ r, onPress }: { r: Rivalry; onPress: () => void }) {
         [c.card, hovered && (c.cardHover as object)] as object
       }
     >
-      <Image source={aSrc} style={c.faceA as object} contentFit="cover" contentPosition="top" cachePolicy="memory-disk" transition={180} />
-      <Image source={bSrc} style={c.faceB as object} contentFit="cover" contentPosition="top" cachePolicy="memory-disk" transition={180} />
+      <HeroImage id={r.a.id} name={r.a.name} imageUrl={r.a.image_url} portraitUrl={r.a.portrait_url} style={c.faceA as object} contentFit="cover" contentPosition="top" transition={180} />
+      <HeroImage id={r.b.id} name={r.b.name} imageUrl={r.b.image_url} portraitUrl={r.b.portrait_url} style={c.faceB as object} contentFit="cover" contentPosition="top" transition={180} />
       <View style={c.seam as object} />
       <View style={c.overlay as object} />
       <View style={c.vsWrap as object}>
