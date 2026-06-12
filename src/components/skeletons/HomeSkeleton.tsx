@@ -39,18 +39,10 @@ function ThumbRowSkeleton() {
 
 function PublisherGridSkeleton() {
   return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <View style={styles.headerLeft}>
-          <Skeleton width="28%" height={10} borderRadius={4} />
-          <Skeleton width="32%" height={22} borderRadius={6} style={styles.titleSkeleton} />
-        </View>
-      </View>
-      <View style={styles.publisherGrid}>
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} width={TILE_W} height={TILE_H} borderRadius={16} />
-        ))}
-      </View>
+    <View style={styles.publisherGrid}>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Skeleton key={i} width={TILE_W} height={TILE_H} borderRadius={16} />
+      ))}
     </View>
   );
 }
@@ -127,6 +119,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: TILE_GAP,
     paddingHorizontal: H_PAD,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   portraitRow: {
     paddingHorizontal: 15,

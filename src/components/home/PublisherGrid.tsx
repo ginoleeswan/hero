@@ -1,5 +1,7 @@
 // src/components/home/PublisherGrid.tsx
 import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
+import type { ImageSourcePropType } from 'react-native';
 import { COLORS } from '../../constants/colors';
 import { PUBLISHERS } from '../../constants/publishers';
 
@@ -9,64 +11,59 @@ const GAP = 10;
 const TILE_W = (SCREEN_WIDTH - H_PAD * 2 - GAP) / 2;
 const TILE_H = Math.round(TILE_W * 0.56);
 
-function Tile({ name, color, onPress }: { name: string; color: string; onPress: () => void }) {
+function Tile({
+  name,
+  color,
+  logo,
+  onPress,
+}: {
+  name: string;
+  color: string;
+  logo?: ImageSourcePropType;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Browse ${name}`}
-      style={({ pressed }) => [styles.tile, { borderColor: `${color}55` }, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
     >
-      {/* Brand-coloured wordmark (stand-in for the publisher logo). */}
-      <Text style={[styles.wordmark, { color }]} numberOfLines={1} adjustsFontSizeToFit>
-        {name}
-      </Text>
+      {logo ? (
+        <Image source={logo} contentFit="contain" style={styles.logo} />
+      ) : (
+        <Text style={[styles.wordmark, { color }]} numberOfLines={1} adjustsFontSizeToFit>
+          {name}
+        </Text>
+      )}
     </Pressable>
   );
 }
 
 export function PublisherGrid({ onPress }: { onPress: (slug: string) => void }) {
   return (
-    <View style={styles.section}>
-      <View style={styles.header}>
-        <View style={styles.accentBar} />
-        <View>
-          <Text style={styles.label}>Browse the universes</Text>
-          <Text style={styles.title}>Publishers</Text>
-        </View>
-      </View>
-      <View style={styles.grid}>
-        {PUBLISHERS.map((p) => (
-          <Tile key={p.slug} name={p.name} color={p.color} onPress={() => onPress(p.slug)} />
-        ))}
-      </View>
+    <View style={styles.grid}>
+      {PUBLISHERS.map((p) => (
+        <Tile
+          key={p.slug}
+          name={p.name}
+          color={p.color}
+          logo={p.logo}
+          onPress={() => onPress(p.slug)}
+        />
+      ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  section: { paddingTop: 14, paddingBottom: 16 },
-  header: {
-    paddingHorizontal: 15,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    gap: 11,
-  },
-  accentBar: { width: 4, borderRadius: 2, backgroundColor: COLORS.orange },
-  label: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: COLORS.orange,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  title: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.navy, lineHeight: 28 },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: GAP,
     paddingHorizontal: H_PAD,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   tile: {
     width: TILE_W,
@@ -74,12 +71,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderCurve: 'continuous',
     backgroundColor: COLORS.navy,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 22,
+    paddingVertical: 18,
   },
   pressed: { opacity: 0.85 },
+  logo: { width: '100%', height: '100%' },
   wordmark: {
     fontFamily: 'Flame-Regular',
     fontSize: 26,

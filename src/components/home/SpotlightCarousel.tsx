@@ -1,12 +1,7 @@
 // src/components/home/SpotlightCarousel.tsx
 import { useState } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  interpolate,
-  Extrapolation,
-  type SharedValue,
-} from 'react-native-reanimated';
+import type { SharedValue } from 'react-native-reanimated';
 import Carousel from 'react-native-reanimated-carousel';
 import * as Haptics from 'expo-haptics';
 import { SpotlightSlide } from './SpotlightSlide';
@@ -34,18 +29,13 @@ export function SpotlightCarousel({
   const height = spotlightHeight(insetTop);
   const [active, setActive] = useState(0);
 
-  // Normal-scroll parallax drift (clamps to 0 on overscroll; the page-level
-  // content shift handles pinning the whole page during pull-down).
-  const parallax = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: interpolate(scrollY.value, [0, height], [0, height * 0.25], Extrapolation.CLAMP) },
-    ],
-  }));
-
   if (heroes.length === 0) return null;
 
+  // No transform on the wrap — it scrolls uniformly with the page so the beige
+  // lip stays glued to the content sheet below. The pull-down zoom lives on the
+  // slide image (scrollY), and the page-level shift handles the overscroll pin.
   return (
-    <Animated.View style={[styles.wrap, { height }, parallax]}>
+    <View style={[styles.wrap, { height }]}>
       <Carousel
         width={SCREEN_WIDTH}
         height={height}
@@ -78,7 +68,7 @@ export function SpotlightCarousel({
       {/* Rounded beige lip — a clean, deliberate edge from the dark billboard
           into the beige content page (echoes the character screen). */}
       <View style={styles.lip} pointerEvents="none" />
-    </Animated.View>
+    </View>
   );
 }
 
