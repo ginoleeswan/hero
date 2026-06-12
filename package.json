@@ -29,6 +29,7 @@
     "dotenv": "^17.4.1",
     "expo": "^56.0.0",
     "expo-blur": "~56.0.3",
+    "expo-build-properties": "~56.0.18",
     "expo-constants": "~56.0.17",
     "expo-dev-client": "~56.0.19",
     "expo-font": "~56.0.5",
