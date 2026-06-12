@@ -595,9 +595,13 @@ export default function CharacterScreen() {
       s.push({ key: 'allies', label: 'Allies' });
     if (comicVineLoading || data.details.movies?.length)
       s.push({ key: 'screen', label: 'On Screen' });
-    if ((issueCovers === null && galleryLoading) || (issueCovers && issueCovers.length > 0))
+    // In Print consolidates the debut feature + cover gallery into one section.
+    if (
+      hasFirstVisual ||
+      (issueCovers === null && galleryLoading) ||
+      (issueCovers && issueCovers.length > 0)
+    )
       s.push({ key: 'print', label: 'In Print' });
-    if (hasFirstVisual) s.push({ key: 'first', label: 'Debut' });
     if (family.length > 0) s.push({ key: 'family', label: 'Family' });
     if (hasDossierData(data, !hasFirstVisual)) s.push({ key: 'dossier', label: 'Dossier' });
     return s;
@@ -1193,82 +1197,110 @@ export default function CharacterScreen() {
                 ) : null}
               </View>
 
-              {/* In Print — full-bleed cover gallery */}
-              <View onLayout={registerAnchor('print')} style={styles.bleedSection}>
-                {issueCovers === null && galleryLoading ? (
-                  <SkeletonProvider>
-                    <SectionHeader title="In Print" />
-                    <ScrollView
-                      horizontal
-                      scrollEnabled={false}
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.bleedRow}
-                    >
-                      {[0, 1, 2, 3, 4].map((i) => (
-                        <Skeleton key={i} width={80} height={110} borderRadius={8} />
-                      ))}
-                    </ScrollView>
-                  </SkeletonProvider>
-                ) : issueCovers && issueCovers.length > 0 ? (
-                  <>
-                    <SectionHeader title="In Print" />
-                    <GalleryStrip
-                      images={issueCovers.map((c) => ({ url: c.url, caption: c.name }))}
-                      onPress={(i) => {
-                        setLightboxImages(
-                          issueCovers.map((c) => ({ url: c.url, caption: c.name })),
-                        );
-                        setLightboxIndex(i);
-                      }}
-                    />
-                  </>
-                ) : null}
-              </View>
+              {/* In Print — debut feature + cover gallery, consolidated into one
+                  section (mirrors the web character page). */}
+              {hasFirstVisual ||
+              (issueCovers && issueCovers.length > 0) ||
+              (issueCovers === null && galleryLoading) ? (
+                <View onLayout={registerAnchor('print')} style={styles.bleedSection}>
+                  <View style={styles.sectionHeaderPad}>
+                    <View style={styles.inPrintHeader}>
+                      {data.firstIssue?.coverDate ? (
+                        <Text style={styles.inPrintSince}>
+                          Since {data.firstIssue.coverDate.slice(0, 4)}
+                        </Text>
+                      ) : (
+                        <View />
+                      )}
+                      <Text style={styles.sectionTitle}>In Print</Text>
+                    </View>
+                    <View style={styles.divider} />
+                  </View>
 
-              {/* First Appearance — editorial debut card: cover + issue meta */}
-              {hasFirstVisual ? (
-                <View onLayout={registerAnchor('first')}>
-                  <Section title="First Appearance">
-                    <TouchableOpacity
-                      onPress={() => setShowIssueModal(true)}
-                      activeOpacity={0.85}
-                      accessibilityRole="button"
-                      accessibilityLabel="View first appearance issue"
-                    >
-                      <View style={styles.debutCard}>
-                        <View style={styles.debutCover}>
-                          <Image
-                            source={{ uri: data.firstIssue!.imageUrl! }}
-                            contentFit="cover"
-                            contentPosition="top"
-                            style={styles.debutCoverImg}
-                            cachePolicy="memory-disk"
-                            recyclingKey={`comic-${id}`}
-                            transition={200}
-                          />
-                        </View>
-                        <View style={styles.debutMeta}>
-                          <Text style={styles.debutTitle} numberOfLines={3}>
-                            {data.firstIssue!.name
-                              ? data.firstIssue!.name.split(';')[0].trim()
-                              : 'First Appearance'}
-                          </Text>
-                          {data.firstIssue!.coverDate ? (
-                            <Text style={styles.debutYear}>
-                              {data.firstIssue!.issueNumber
-                                ? `Issue #${data.firstIssue!.issueNumber} · `
-                                : ''}
-                              {data.firstIssue!.coverDate.slice(0, 4)}
+                  {/* Debut — the first issue, given hero treatment */}
+                  {hasFirstVisual ? (
+                    <View style={styles.bleedPad}>
+                      <TouchableOpacity
+                        onPress={() => setShowIssueModal(true)}
+                        activeOpacity={0.85}
+                        accessibilityRole="button"
+                        accessibilityLabel="View first appearance issue"
+                      >
+                        <View style={styles.debutCard}>
+                          <View style={styles.debutCover}>
+                            <Image
+                              source={{ uri: data.firstIssue!.imageUrl! }}
+                              contentFit="cover"
+                              contentPosition="top"
+                              style={styles.debutCoverImg}
+                              cachePolicy="memory-disk"
+                              recyclingKey={`comic-${id}`}
+                              transition={200}
+                            />
+                          </View>
+                          <View style={styles.debutMeta}>
+                            <View style={styles.debutBadgeRow}>
+                              <Ionicons name="ribbon" size={12} color={COLORS.orange} />
+                              <Text style={styles.debutBadgeText}>1st Appearance</Text>
+                            </View>
+                            <Text style={styles.debutTitle} numberOfLines={3}>
+                              {data.firstIssue!.name
+                                ? data.firstIssue!.name.split(';')[0].trim()
+                                : 'First Appearance'}
                             </Text>
-                          ) : null}
-                          <View style={styles.debutCta}>
-                            <Text style={styles.debutCtaText}>View issue</Text>
-                            <Ionicons name="chevron-forward" size={14} color={COLORS.orange} />
+                            {data.firstIssue!.coverDate ? (
+                              <Text style={styles.debutYear}>
+                                {data.firstIssue!.issueNumber
+                                  ? `Issue #${data.firstIssue!.issueNumber} · `
+                                  : ''}
+                                {data.firstIssue!.coverDate.slice(0, 4)}
+                              </Text>
+                            ) : null}
+                            <View style={styles.debutCta}>
+                              <Text style={styles.debutCtaText}>View issue</Text>
+                              <Ionicons name="chevron-forward" size={14} color={COLORS.orange} />
+                            </View>
                           </View>
                         </View>
-                      </View>
-                    </TouchableOpacity>
-                  </Section>
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
+
+                  {/* Through the years — the publication run that followed */}
+                  {issueCovers === null && galleryLoading ? (
+                    <SkeletonProvider>
+                      {hasFirstVisual ? (
+                        <Text style={styles.inPrintGalleryLabel}>Through the years</Text>
+                      ) : null}
+                      <ScrollView
+                        horizontal
+                        scrollEnabled={false}
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.bleedRow}
+                      >
+                        {[0, 1, 2, 3, 4].map((i) => (
+                          <Skeleton key={i} width={80} height={110} borderRadius={8} />
+                        ))}
+                      </ScrollView>
+                    </SkeletonProvider>
+                  ) : issueCovers && issueCovers.length > 0 ? (
+                    <>
+                      {hasFirstVisual ? (
+                        <Text style={styles.inPrintGalleryLabel}>
+                          Through the years · {issueCovers.length}
+                        </Text>
+                      ) : null}
+                      <GalleryStrip
+                        images={issueCovers.map((c) => ({ url: c.url, caption: c.name }))}
+                        onPress={(i) => {
+                          setLightboxImages(
+                            issueCovers.map((c) => ({ url: c.url, caption: c.name })),
+                          );
+                          setLightboxIndex(i);
+                        }}
+                      />
+                    </>
+                  ) : null}
                 </View>
               ) : null}
 
@@ -1744,6 +1776,42 @@ const styles = StyleSheet.create({
   debutCtaText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
+    color: COLORS.orange,
+  },
+  // In Print — consolidated header (debut "Since" + title) and gallery label.
+  inPrintHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  inPrintSince: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: '#54606A',
+    letterSpacing: 0.3,
+    paddingBottom: 7,
+  },
+  inPrintGalleryLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: '#54606A',
+    paddingHorizontal: 20,
+    marginTop: 18,
+    marginBottom: 12,
+  },
+  debutBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 2,
+  },
+  debutBadgeText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
     color: COLORS.orange,
   },
   errorText: {
