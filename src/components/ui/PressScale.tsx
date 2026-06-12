@@ -7,6 +7,10 @@ interface PressScaleProps {
   scale?: number;
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
+  /** Hold-off before the press registers, so a scroll-drag cancels it first.
+   *  Most of these cards live in horizontal strips; without it onPressIn fires
+   *  the instant a finger lands and the scale flickers while you scroll. */
+  delayPressIn?: number;
   children: React.ReactNode;
 }
 
@@ -16,6 +20,7 @@ export function PressScale({
   scale = 0.95,
   style,
   disabled = false,
+  delayPressIn = 120,
   children,
 }: PressScaleProps) {
   const pressed = useSharedValue(false);
@@ -36,6 +41,7 @@ export function PressScale({
     <TouchableOpacity
       onPress={onPress}
       onLongPress={onLongPress}
+      delayPressIn={delayPressIn}
       onPressIn={() => {
         pressed.value = true;
       }}

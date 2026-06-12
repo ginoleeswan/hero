@@ -62,11 +62,18 @@ function PortraitZoomCard({
     >
       <Pressable
         style={StyleSheet.flatten([styles.cardSlot, { width, height }])}
+        // Wait before committing the press, so a scroll-drag cancels it first.
+        // onPressIn fires the instant a finger lands — in a horizontal list that
+        // means every touch-to-scroll flickered the push-in + haptic. With the
+        // delay, the FlatList claims the gesture during a scroll and the press
+        // never fires; a deliberate hold still gets the push-in (Disney-style).
+        unstable_pressDelay={120}
         onPressIn={() => {
           pressed.value = 1;
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           // Warm the detail row now so name + portrait + stats are cached by the
-          // time the destination mounts — the skeleton barely flashes.
+          // time the destination mounts — the skeleton barely flashes. Gated by
+          // the same delay, so scrolling past cards no longer prefetches them.
           prefetchHeroRow(queryClient, item.id);
         }}
         // Release the press-scale the instant navigation commits so the Apple
