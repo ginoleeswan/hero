@@ -32,7 +32,7 @@ import {
 } from '../../src/lib/db/heroes';
 import type { FamilyMember } from '../../src/lib/family/types';
 import { FamilyCanvas } from '../../src/components/family/FamilyCanvas';
-import { useHeroRow, useHeroPercentile, useHeroesByNames } from '../../src/lib/query/heroQueries';
+import { useHeroRow, useHeroPercentile, useRelatedHeroes } from '../../src/lib/query/heroQueries';
 import {
   isFavourited,
   addFavourite,
@@ -583,6 +583,28 @@ export default function CharacterScreen() {
   // one, the same fact shows as a text row inside the Dossier (no duplication).
   const hasFirstVisual = !!data?.firstIssue?.imageUrl;
 
+  // Enemies / allies / teammates from the relationship graph (same-universe,
+  // popularity-ranked), matching the web character page. The map drives the
+  // enemy/ally strips; teammates render straight from the graph (there's no
+  // ComicVine "teammates" name list).
+  const { data: related } = useRelatedHeroes(id);
+  const relatedHeroMap = useMemo(() => {
+    const m = new Map<string, RelatedHeroCard>();
+    for (const h of [
+      ...(related?.enemies ?? []),
+      ...(related?.allies ?? []),
+      ...(related?.teammates ?? []),
+    ]) {
+      m.set(h.name, h);
+    }
+    return m;
+  }, [related]);
+  // Names in the graph's popularity-ranked order so the strips lead with the
+  // recognisable foes/allies/teammates (every one resolves to a card).
+  const enemyNames = useMemo(() => (related?.enemies ?? []).map((h) => h.name), [related]);
+  const allyNames = useMemo(() => (related?.allies ?? []).map((h) => h.name), [related]);
+  const teammateNames = useMemo(() => (related?.teammates ?? []).map((h) => h.name), [related]);
+
   // The sections that actually render, in scroll order — drives the quick-nav
   // chips and active-section tracking. Mirrors the render conditions below.
   const presentSections = useMemo<{ key: string; label: string }[]>(() => {
@@ -596,7 +618,7 @@ export default function CharacterScreen() {
     // Dossier (the bio infobox) caps the intrinsic-character block, before the
     // relational/media sections below.
     if (hasDossierData(data, !hasFirstVisual)) s.push({ key: 'dossier', label: 'Dossier' });
-    if (comicVineLoading || data.details.enemies?.length || data.details.friends?.length)
+    if (comicVineLoading || enemyNames.length || allyNames.length || teammateNames.length)
       s.push({ key: 'allies', label: 'Allies' });
     if (comicVineLoading || data.details.movies?.length)
       s.push({ key: 'screen', label: 'On Screen' });
@@ -609,22 +631,18 @@ export default function CharacterScreen() {
       s.push({ key: 'print', label: 'In Print' });
     if (family.length > 0) s.push({ key: 'family', label: 'Family' });
     return s;
-  }, [data, comicVineLoading, issueCovers, galleryLoading, hasFirstVisual, family]);
+  }, [
+    data,
+    comicVineLoading,
+    issueCovers,
+    galleryLoading,
+    hasFirstVisual,
+    family,
+    enemyNames,
+    allyNames,
+    teammateNames,
+  ]);
   sectionOrder.current = presentSections.map((s) => s.key);
-
-  // Resolve enemy + ally names → hero rows (one query) so they render as
-  // navigable cards. heroMap is keyed by exact name; unresolved names fall
-  // back to chips inside RelatedHeroStrip.
-  const relatedNames = useMemo(
-    () => (data ? [...(data.details.enemies ?? []), ...(data.details.friends ?? [])] : []),
-    [data],
-  );
-  const { data: relatedHeroes } = useHeroesByNames(relatedNames);
-  const relatedHeroMap = useMemo(() => {
-    const m = new Map<string, RelatedHeroCard>();
-    for (const h of relatedHeroes ?? []) m.set(h.name, h);
-    return m;
-  }, [relatedHeroes]);
 
   useEffect(() => {
     setFamily([]);
@@ -1149,11 +1167,12 @@ export default function CharacterScreen() {
                 <Dossier data={data} includeFirstAppearance={!hasFirstVisual} />
               </View>
 
-              {/* Enemies & Allies — full-bleed card strips */}
+              {/* Enemies, Allies & Teams — full-bleed card strips off the
+                  relationship graph (same-universe, popularity-ranked). */}
               <View onLayout={registerAnchor('allies')} style={styles.bleedSection}>
                 {comicVineLoading ? (
                   <SkeletonProvider>
-                    <SectionHeader title="Enemies & Allies" />
+                    <SectionHeader title="Enemies, Allies & Teams" />
                     <View style={styles.bleedPad}>
                       <Skeleton
                         width={50}
@@ -1173,13 +1192,13 @@ export default function CharacterScreen() {
                       ))}
                     </ScrollView>
                   </SkeletonProvider>
-                ) : data.details.enemies?.length || data.details.friends?.length ? (
+                ) : enemyNames.length || allyNames.length || teammateNames.length ? (
                   <>
-                    <SectionHeader title="Enemies & Allies" />
-                    {data.details.enemies?.length ? (
+                    <SectionHeader title="Enemies, Allies & Teams" />
+                    {enemyNames.length ? (
                       <RelatedHeroStrip
                         label="Enemies"
-                        names={data.details.enemies}
+                        names={enemyNames}
                         heroMap={relatedHeroMap}
                         kind="enemy"
                         onPressHero={(h) =>
@@ -1187,12 +1206,23 @@ export default function CharacterScreen() {
                         }
                       />
                     ) : null}
-                    {data.details.friends?.length ? (
+                    {allyNames.length ? (
                       <RelatedHeroStrip
                         label="Allies"
-                        names={data.details.friends}
+                        names={allyNames}
                         heroMap={relatedHeroMap}
                         kind="ally"
+                        onPressHero={(h) =>
+                          router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                        }
+                      />
+                    ) : null}
+                    {teammateNames.length ? (
+                      <RelatedHeroStrip
+                        label="Teammates"
+                        names={teammateNames}
+                        heroMap={relatedHeroMap}
+                        kind="teammate"
                         onPressHero={(h) =>
                           router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
                         }
