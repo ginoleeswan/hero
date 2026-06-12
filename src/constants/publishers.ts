@@ -8,8 +8,10 @@ export interface PublisherConfig {
   slug: string;
   name: string;
   query: string;
-  /** Brand-ish accent used for the wordmark fallback. */
+  /** Brand accent (wordmark fallback + tile gradient top). */
   color: string;
+  /** Darker shade of the brand colour (tile gradient bottom). */
+  colorDark: string;
   /** Logo asset; the tile falls back to the name wordmark when absent. */
   logo?: ImageSourcePropType;
 }
@@ -20,6 +22,7 @@ export const PUBLISHERS: PublisherConfig[] = [
     name: 'Marvel',
     query: 'marvel',
     color: '#C8102E',
+    colorDark: '#7E0A1D',
     logo: require('../../assets/images/Marvel_Logo.png'),
   },
   {
@@ -27,14 +30,16 @@ export const PUBLISHERS: PublisherConfig[] = [
     name: 'DC',
     query: 'dc comics',
     color: '#0476F2',
+    colorDark: '#03489A',
     logo: require('../../assets/images/DC-Logo.png'),
   },
-  { slug: 'image', name: 'Image', query: 'image', color: '#16A085' },
+  { slug: 'image', name: 'Image', query: 'image', color: '#16A085', colorDark: '#0C5F4E' },
   {
     slug: 'dark-horse',
     name: 'Dark Horse',
     query: 'dark horse',
     color: '#3A2E2A',
+    colorDark: '#1E1715',
     logo: require('../../assets/images/Dark_Horse_Comics_logo.png'),
   },
 ];
