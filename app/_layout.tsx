@@ -15,14 +15,18 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../src/lib/query/queryClient';
 
 if (Platform.OS !== 'web') {
-  try {
-    const { GoogleSignin } = require('@react-native-google-signin/google-signin');
-    GoogleSignin.configure({
-      iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    });
-  } catch {
-    // Native module unavailable (Expo Go) — Google Sign-In disabled
+  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  // Only configure when a client ID is actually available. Passing undefined
+  // makes the native module fall back to looking up GoogleService-Info.plist,
+  // which (when absent) throws an uncaught "failed to determine clientID" error.
+  if (iosClientId || webClientId) {
+    try {
+      const { GoogleSignin } = require('@react-native-google-signin/google-signin');
+      GoogleSignin.configure({ iosClientId, webClientId });
+    } catch {
+      // Native module unavailable (Expo Go) — Google Sign-In disabled
+    }
   }
 }
 
