@@ -1401,7 +1401,7 @@ const styles = StyleSheet.create({
   // Immersive hero: the spacer reserves the image height and pins the identity to
   // the bottom of the portrait (over the dark scrim); the sheet rises over it.
   heroSpacer: { height: HERO_IMAGE_HEIGHT, justifyContent: 'flex-end' },
-  identity: { paddingHorizontal: 20, paddingBottom: SHEET_OVERLAP + 8, gap: 8 },
+  identity: { paddingHorizontal: 20, paddingBottom: SHEET_OVERLAP + 14, gap: 8 },
   sheet: {
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 28,
