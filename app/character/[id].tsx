@@ -78,11 +78,14 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 // Shared "is this a real value" guard — DB rows carry '-' / 'null' / '' sentinels.
 const valid = (v?: string | null) => !!v && v !== '-' && v !== 'null' && v.trim() !== '';
 
-// "Created by" sits left of the alignment chips on one line; two names fill it,
-// so a third spills to a second, cramped line. Show up to two, then collapse the
-// rest into "& N others" so the credit always stays a single, tidy line.
+// "Created by" sits left of the alignment chips. Two names fill one line and a
+// third wraps to a comfortable second (the identity block reserves room for it),
+// so show up to three in full. Only genuinely long lists (4+) collapse the tail
+// into "& N others" so the credit never runs past two lines.
 const formatCreators = (creators: string[]) =>
-  creators.length <= 2 ? creators.join(' & ') : `${creators[0]} & ${creators.length - 1} others`;
+  creators.length <= 3
+    ? creators.join(' & ')
+    : `${creators.slice(0, 2).join(' & ')} & ${creators.length - 2} others`;
 
 function StatDial({
   label,
@@ -160,17 +163,6 @@ const ALIGNMENT_CONFIG: Record<string, { label: string; bg: string; color: strin
   neutral: { label: 'Neutral', bg: 'rgba(100,100,100,0.12)', color: COLORS.grey },
 };
 
-function AlignmentBadge({ alignment }: { alignment: string | null | undefined }) {
-  if (!alignment) return null;
-  const config = ALIGNMENT_CONFIG[alignment.toLowerCase().trim()];
-  if (!config) return null;
-  return (
-    <View style={[styles.taxoBadge, { backgroundColor: config.bg, borderColor: config.color }]}>
-      <Text style={[styles.taxoBadgeText, { color: config.color }]}>{config.label}</Text>
-    </View>
-  );
-}
-
 const ORIGIN_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
   mutant: { label: 'Mutant', bg: 'rgba(139,92,246,0.15)', color: COLORS.purple },
   alien: { label: 'Alien', bg: 'rgba(21,161,171,0.15)', color: COLORS.blue },
@@ -183,15 +175,26 @@ const ORIGIN_CONFIG: Record<string, { label: string; bg: string; color: string }
   inhuman: { label: 'Inhuman', bg: 'rgba(21,161,171,0.15)', color: COLORS.blue },
 };
 
-function OriginBadge({ origin }: { origin: string | null | undefined }) {
-  if (!origin) return null;
-  const config = ORIGIN_CONFIG[origin.toLowerCase().trim()];
-  if (!config) return null;
-  return (
-    <View style={[styles.taxoBadge, { backgroundColor: config.bg, borderColor: config.color }]}>
-      <Text style={[styles.taxoBadgeText, { color: config.color }]}>{config.label}</Text>
-    </View>
-  );
+interface TaxoChip {
+  key: string;
+  label: string;
+  bg: string;
+  color: string;
+}
+
+// The identity block shows at most two taxonomy chips (alignment + origin),
+// stacked on the right. Order them shortest label first so the stack forms a
+// tidy top-down edge instead of a ragged one.
+function resolveTaxoChips(
+  alignment: string | null | undefined,
+  origin: string | null | undefined,
+): TaxoChip[] {
+  const chips: TaxoChip[] = [];
+  const a = alignment ? ALIGNMENT_CONFIG[alignment.toLowerCase().trim()] : undefined;
+  if (a) chips.push({ key: 'alignment', ...a });
+  const o = origin ? ORIGIN_CONFIG[origin.toLowerCase().trim()] : undefined;
+  if (o) chips.push({ key: 'origin', ...o });
+  return chips.sort((x, y) => x.label.length - y.label.length);
 }
 
 function AffiliationChips({ value }: { value: string | null | undefined }) {
@@ -954,7 +957,8 @@ export default function CharacterScreen() {
                   const hasPublisher = valid(publisher);
                   const alignment = data.stats.biography.alignment;
                   const origin = data.details.origin;
-                  const hasBadges = !!(alignment || origin);
+                  const taxoChips = resolveTaxoChips(alignment, origin);
+                  const hasBadges = taxoChips.length > 0;
                   const fullName = data.stats.biography['full-name'];
                   const hasAlias = !!fullName && fullName !== '-' && fullName !== 'null';
                   const hasCreators = !!data.details.creators?.length;
@@ -997,8 +1001,19 @@ export default function CharacterScreen() {
                           ) : null}
                           {hasBadges ? (
                             <View style={styles.chipRow}>
-                              <AlignmentBadge alignment={alignment} />
-                              <OriginBadge origin={origin} />
+                              {taxoChips.map((c) => (
+                                <View
+                                  key={c.key}
+                                  style={[
+                                    styles.taxoBadge,
+                                    { backgroundColor: c.bg, borderColor: c.color },
+                                  ]}
+                                >
+                                  <Text style={[styles.taxoBadgeText, { color: c.color }]}>
+                                    {c.label}
+                                  </Text>
+                                </View>
+                              ))}
                             </View>
                           ) : null}
                         </View>
@@ -1434,13 +1449,19 @@ const styles = StyleSheet.create({
   // (right) so the badges anchor the bottom-right corner of the section.
   bottomMeta: {
     flexDirection: 'row',
+    // The chip stack is taller than the one-line credit; centre the credit so it
+    // sits level with the middle of the stack rather than leaving a gap beneath.
+    // (justifyContent is set inline per which of credit/chips are present.)
     alignItems: 'center',
     gap: 12,
   },
+  // Stacked on the right (shortest label on top), so "Created by" reclaims the
+  // full-width horizontal room instead of sharing the line with two side-by-side
+  // pills. align-end keeps the stack flush to the right edge.
   chipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 6,
     flexShrink: 0,
   },
   // Soft colour-tinted chip + coloured border/label — vivid, not a grey block.
