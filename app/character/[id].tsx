@@ -78,6 +78,12 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 // Shared "is this a real value" guard — DB rows carry '-' / 'null' / '' sentinels.
 const valid = (v?: string | null) => !!v && v !== '-' && v !== 'null' && v.trim() !== '';
 
+// "Created by" sits left of the alignment chips on one line; two names fill it,
+// so a third spills to a second, cramped line. Show up to two, then collapse the
+// rest into "& N others" so the credit always stays a single, tidy line.
+const formatCreators = (creators: string[]) =>
+  creators.length <= 2 ? creators.join(' & ') : `${creators[0]} & ${creators.length - 1} others`;
+
 function StatDial({
   label,
   value,
@@ -986,7 +992,7 @@ export default function CharacterScreen() {
                         <View style={[styles.bottomMeta, { justifyContent: bottomJustify }]}>
                           {hasCreators ? (
                             <Text style={styles.createdBy} numberOfLines={2}>
-                              Created by {data.details.creators!.join(' & ')}
+                              Created by {formatCreators(data.details.creators!)}
                             </Text>
                           ) : null}
                           {hasBadges ? (
