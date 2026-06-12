@@ -48,6 +48,22 @@ const config: ExpoConfig = {
   },
   plugins: [
     './plugins/withAndroidIconPadding',
+    [
+      'expo-build-properties',
+      {
+        ios: {
+          // GoogleSignIn → AppCheckCore depends on GoogleUtilities and
+          // RecaptchaInterop, which don't define modules. As static libraries
+          // they need explicit module maps, or `pod install` fails. (The
+          // `useModularHeaders` key isn't supported by expo-build-properties —
+          // only per-pod modular_headers via extraPods.)
+          extraPods: [
+            { name: 'GoogleUtilities', modular_headers: true },
+            { name: 'RecaptchaInterop', modular_headers: true },
+          ],
+        },
+      },
+    ],
     '@react-native-google-signin/google-signin',
     'expo-router',
     'expo-image',
