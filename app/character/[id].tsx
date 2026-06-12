@@ -719,18 +719,36 @@ export default function CharacterScreen() {
       if (needsComicVine || moviesIncomplete || moviesLackDetail) {
         fetchHeroDetails(heroRow.id, heroRow.name)
           .then((details) => {
-            setData((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    details: {
-                      ...details,
-                      issueCount: details.issueCount ?? prev.details.issueCount,
-                    },
-                    firstIssue: details.firstIssueData ?? prev.firstIssue,
-                  }
-                : prev,
-            );
+            setData((prev) => {
+              if (!prev) return prev;
+              const p = prev.details;
+              // Additive merge: the live ComicVine fetch FILLS gaps, it must never
+              // ERASE a good DB value. Every field ComicVine returns as null falls
+              // back to what the row already had — so a partial response (or an
+              // all-null NULL_RESPONSE when ComicVine is throttled/unmatched) keeps
+              // the DB data on screen instead of flashing it then blanking it.
+              // Listing fields explicitly makes tsc flag any HeroDetails addition.
+              return {
+                ...prev,
+                details: {
+                  summary: details.summary ?? p.summary,
+                  publisher: details.publisher ?? p.publisher,
+                  firstIssueId: details.firstIssueId ?? p.firstIssueId,
+                  firstIssueData: details.firstIssueData ?? p.firstIssueData,
+                  powers: details.powers ?? p.powers,
+                  description: details.description ?? p.description,
+                  origin: details.origin ?? p.origin,
+                  issueCount: details.issueCount ?? p.issueCount,
+                  creators: details.creators ?? p.creators,
+                  enemies: details.enemies ?? p.enemies,
+                  friends: details.friends ?? p.friends,
+                  movies: details.movies ?? p.movies,
+                  movieCount: details.movieCount ?? p.movieCount,
+                  teams: details.teams ?? p.teams,
+                },
+                firstIssue: details.firstIssueData ?? prev.firstIssue,
+              };
+            });
           })
           .catch(() => {})
           .finally(() => {
