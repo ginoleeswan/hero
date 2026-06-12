@@ -41,6 +41,7 @@ import {
 import type { FamilyMember } from '../../src/lib/family/types';
 import { FamilyCanvas } from '../../src/components/family/FamilyCanvas';
 import { useHeroRow, useHeroPercentile, useRelatedHeroes } from '../../src/lib/query/heroQueries';
+import { planHeroLoad } from '../../src/lib/query/heroLoadPlan';
 import {
   isFavourited,
   addFavourite,
@@ -711,17 +712,31 @@ export default function CharacterScreen() {
         });
     };
 
-    // Wait for the real row (ignore the instant placeholder used only for paint).
-    if (heroRowQuery.isPlaceholderData) return;
+    const plan = planHeroLoad({
+      isPlaceholderData: heroRowQuery.isPlaceholderData,
+      isError: heroRowQuery.isError,
+      isSuccess: heroRowQuery.isSuccess,
+      row: heroRow,
+    });
 
-    // Query settled with no row → hero not enriched, fall back to external APIs.
-    if (heroRowQuery.isError || (heroRowQuery.isSuccess && !heroRow)) {
+    // Still resolving (instant placeholder, or no row yet) — keep the skeleton.
+    if (plan === 'wait') return;
+
+    // No usable DB row → fetch base stats from the external SuperheroAPI by id.
+    // Reached only for genuine SuperheroAPI heroes (numeric ids not in our DB, or
+    // un-enriched numeric stubs); never for `cv-` ComicVine heroes, whose id
+    // can't resolve against SuperheroAPI.
+    if (plan === 'external-api') {
       loadFromApi();
       return;
     }
-    if (!heroRow) return;
 
-    if (heroRow.enriched_at) {
+    // plan === 'render-row': a real DB row exists. Paint from it immediately, then
+    // layer ComicVine enrichment on top. This serves both base-enriched heroes and
+    // ComicVine-only `cv-` heroes (e.g. the franchise characters), which never get
+    // an `enriched_at` timestamp and previously fell through to a 404'ing
+    // SuperheroAPI fetch that wiped the screen.
+    if (heroRow) {
       setData(heroRowToCharacterData(heroRow));
 
       // Seed issue covers from DB if already populated
@@ -811,11 +826,7 @@ export default function CharacterScreen() {
             if (needsComicVine) setComicVineLoading(false);
           });
       }
-      return;
     }
-
-    // Row exists but isn't enriched — use external APIs.
-    loadFromApi();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     id,

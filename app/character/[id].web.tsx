@@ -217,12 +217,15 @@ export default function WebCharacterScreen() {
               .catch(() => {});
           }
 
-          const needsComicVine =
-            !hero.comicvine_enriched_at ||
-            hero.powers === null ||
-            !hero.movies?.length ||
-            !hero.first_issue_id ||
-            !hero.first_issue_data;
+          // Refetch ComicVine only when this hero has never been successfully
+          // enriched. Gate on the terminal `comicvine_status` (written by the
+          // get-comicvine-hero edge fn) — NOT on individual fields being null.
+          // ComicVine legitimately returns no powers/movies for civilians, and the
+          // old field-nullness gate treated that as "unfetched", so heroes
+          // re-fetched ComicVine on every view — and a rate-limited NULL_RESPONSE
+          // then blanked the row each time.
+          const cvStatus = hero.comicvine_status;
+          const needsComicVine = cvStatus == null || cvStatus === 'pending';
           const moviesIncomplete =
             !needsComicVine &&
             hero.movie_count != null &&
@@ -246,11 +249,36 @@ export default function WebCharacterScreen() {
           if (needsComicVine || moviesIncomplete || moviesLackDetail) {
             fetchHeroDetails(hero.id, hero.name)
               .then((details) => {
-                setData((prev) =>
-                  prev
-                    ? { ...prev, details, firstIssue: details.firstIssueData ?? prev.firstIssue }
-                    : prev,
-                );
+                setData((prev) => {
+                  if (!prev) return prev;
+                  const p = prev.details;
+                  // Additive merge: the live ComicVine fetch FILLS gaps, it must
+                  // never ERASE a good DB value. Every field ComicVine returns as
+                  // null falls back to what the row already had — so a partial
+                  // response (or an all-null NULL_RESPONSE when ComicVine is
+                  // throttled/unmatched) keeps the DB data on screen instead of
+                  // flashing it then blanking it.
+                  return {
+                    ...prev,
+                    details: {
+                      summary: details.summary ?? p.summary,
+                      publisher: details.publisher ?? p.publisher,
+                      firstIssueId: details.firstIssueId ?? p.firstIssueId,
+                      firstIssueData: details.firstIssueData ?? p.firstIssueData,
+                      powers: details.powers ?? p.powers,
+                      description: details.description ?? p.description,
+                      origin: details.origin ?? p.origin,
+                      issueCount: details.issueCount ?? p.issueCount,
+                      creators: details.creators ?? p.creators,
+                      enemies: details.enemies ?? p.enemies,
+                      friends: details.friends ?? p.friends,
+                      movies: details.movies ?? p.movies,
+                      movieCount: details.movieCount ?? p.movieCount,
+                      teams: details.teams ?? p.teams,
+                    },
+                    firstIssue: details.firstIssueData ?? prev.firstIssue,
+                  };
+                });
               })
               .catch(() => {})
               .finally(() => {
