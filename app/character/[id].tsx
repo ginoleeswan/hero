@@ -8,6 +8,7 @@ import {
   Dimensions,
   ScrollView,
   LayoutAnimation,
+  InteractionManager,
   Platform,
   UIManager,
   type LayoutChangeEvent,
@@ -77,9 +78,22 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 // Shared "is this a real value" guard — DB rows carry '-' / 'null' / '' sentinels.
 const valid = (v?: string | null) => !!v && v !== '-' && v !== 'null' && v.trim() !== '';
 
-function StatDial({ label, value, tint }: { label: string; value: string; tint: string }) {
+function StatDial({
+  label,
+  value,
+  tint,
+  animate,
+}: {
+  label: string;
+  value: string;
+  tint: string;
+  animate: boolean;
+}) {
   const numeric = parseInt(value, 10);
-  const fill = isNaN(numeric) ? 0 : numeric;
+  const target = isNaN(numeric) ? 0 : numeric;
+  // Hold the dials empty until the navigation transition settles, then sweep
+  // them in. Animating six SVG arcs during the Apple Zoom morph stutters it.
+  const fill = animate ? target : 0;
 
   return (
     <View style={styles.dialWrap}>
@@ -404,6 +418,18 @@ export default function CharacterScreen() {
   );
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
+  // Gate the heaviest sub-trees (animated stat dials, family canvas, gallery
+  // fetch) until the Apple Zoom navigation transition has finished. Mounting
+  // them during the morph stutters it; deferring lets the zoom land cleanly,
+  // then the expensive bits stream in a frame later — all below the fold anyway.
+  const [interactionsReady, setInteractionsReady] = useState(false);
+  useEffect(() => {
+    const handle = InteractionManager.runAfterInteractions(() => {
+      setInteractionsReady(true);
+    });
+    return () => handle.cancel();
+  }, []);
+
   const heroRowQuery = useHeroRow(id);
   const heroRow = heroRowQuery.data;
 
@@ -567,11 +593,11 @@ export default function CharacterScreen() {
 
   useEffect(() => {
     setFamily([]);
-    if (!id) return;
+    if (!id || !interactionsReady) return;
     getHeroFamily(id)
       .then(setFamily)
       .catch(() => setFamily([]));
-  }, [id]);
+  }, [id, interactionsReady]);
 
   useEffect(() => {
     if (!id) return;
@@ -991,6 +1017,7 @@ export default function CharacterScreen() {
                           label={label}
                           value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
                           tint={tint}
+                          animate={interactionsReady}
                         />
                       ))}
                     </View>

@@ -2,9 +2,11 @@
 import { View, Text, FlatList, StyleSheet, Dimensions, Pressable } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'expo-router';
 import { HeroCard, HERO_CARD_RADIUS } from '../HeroCard';
 import { ThumbCard, type ThumbHero } from './ThumbCard';
+import { prefetchHeroRow } from '../../lib/query/heroQueries';
 import { COLORS } from '../../constants/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -39,6 +41,7 @@ function PortraitZoomCard({
   height?: number;
 }) {
   const pressed = useSharedValue(0);
+  const queryClient = useQueryClient();
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -62,6 +65,14 @@ function PortraitZoomCard({
         onPressIn={() => {
           pressed.value = 1;
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          // Warm the detail row now so name + portrait + stats are cached by the
+          // time the destination mounts — the skeleton barely flashes.
+          prefetchHeroRow(queryClient, item.id);
+        }}
+        // Release the press-scale the instant navigation commits so the Apple
+        // Zoom snapshots a clean, full-size (1.0) frame — no shrunk-card pop.
+        onPress={() => {
+          pressed.value = 0;
         }}
         onPressOut={() => {
           pressed.value = 0;
@@ -168,6 +179,20 @@ export function HomeHeroRow({
         showsHorizontalScrollIndicator={false}
         decelerationRate={isPortrait && !ranked ? 'fast' : 'normal'}
         snapToInterval={isPortrait && !ranked ? cardW + 12 : undefined}
+        // Keep only a few cards mounted per row. The defaults (initialNumToRender
+        // 10, windowSize 21, no clipping) hold 10–20 image cards alive per list;
+        // across ~12 rows that's the JS-thread weight that delays transitionEnd
+        // and gates scroll after a back-swipe. Uniform-width portrait rows also
+        // get getItemLayout so the list skips async measurement entirely.
+        removeClippedSubviews
+        initialNumToRender={4}
+        maxToRenderPerBatch={4}
+        windowSize={5}
+        getItemLayout={
+          isPortrait && !ranked
+            ? (_, index) => ({ length: cardW, offset: 15 + index * (cardW + 12), index })
+            : undefined
+        }
         contentContainerStyle={[styles.listContent, { gap: isPortrait ? 12 : 8 }]}
         renderItem={({ item, index }) => {
           if (!isPortrait) {
