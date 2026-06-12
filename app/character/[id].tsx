@@ -15,6 +15,7 @@ import {
   type NativeScrollEvent,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter, Link } from 'expo-router';
+import ReAnimated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -969,12 +970,17 @@ export default function CharacterScreen() {
           ) : null}
         </View>
 
-        {/* Beige content sheet — opaque, rounded top; rises over the hero on scroll */}
+        {/* Beige content sheet — opaque, rounded top; rises over the hero on scroll.
+            The shell (hero image + skeleton) paints instantly so the navigation
+            transition is always cheap; the real content then cross-dissolves in as
+            it resolves (Apple TV / Disney+ pattern) instead of hard-popping. */}
         <View style={styles.sheet}>
           {!data ? (
-            <CharacterSkeleton hideNameBlock />
+            <ReAnimated.View exiting={FadeOut.duration(180)}>
+              <CharacterSkeleton hideNameBlock />
+            </ReAnimated.View>
           ) : (
-            <>
+            <ReAnimated.View entering={FadeIn.duration(320)}>
               {/* Summary — the lede; shows skeleton lines while ComicVine loads */}
               <View onLayout={registerAnchor('summary')}>
                 {comicVineLoading ? (
@@ -1227,7 +1233,7 @@ export default function CharacterScreen() {
               <View onLayout={registerAnchor('dossier')}>
                 <Dossier data={data} includeFirstAppearance={!hasFirstVisual} />
               </View>
-            </>
+            </ReAnimated.View>
           )}
         </View>
       </Animated.ScrollView>
