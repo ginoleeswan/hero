@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -25,7 +25,6 @@ import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { GalleryStrip } from '../../src/components/GalleryStrip';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
-import { BodyPortal } from '../../src/components/web/BodyPortal';
 import type { CharacterData, IssueCover } from '../../src/types';
 
 const STAT_CONFIG = [
@@ -358,29 +357,6 @@ export default function WebCharacterScreen() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, [stageHeight]);
-
-  // Portrait card rendered via BodyPortal so it paints above the TopBar's frosted-glass
-  // layer (which lives in document.body via createPortal at zIndex 100 and can't be
-  // beaten by z-index inside the app stacking context). We measure the anchor's
-  // viewport rect on every scroll/resize and clone the card at position:fixed.
-  const portraitAnchorRef = useRef<View>(null);
-  const [portraitPos, setPortraitPos] = useState<{ top: number; right: number; width: number } | null>(null);
-  useEffect(() => {
-    if (typeof window === 'undefined' || !isDesktop) return undefined;
-    const update = () => {
-      const el = portraitAnchorRef.current as unknown as HTMLElement | null;
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      setPortraitPos({ top: r.top, right: window.innerWidth - r.right, width: r.width });
-    };
-    update();
-    window.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
-    return () => {
-      window.removeEventListener('scroll', update);
-      window.removeEventListener('resize', update);
-    };
-  }, [isDesktop]);
 
   if (error) {
     return (
@@ -964,74 +940,53 @@ export default function WebCharacterScreen() {
 
               {/* Side column — overlapping portrait + quick facts */}
               <View style={[styles.sideCol, { marginTop: portraitOverlap }] as object}>
-                {/* Anchor — invisible spacer that holds the portrait card's layout
-                    space and provides the viewport rect for the BodyPortal clone. */}
-                <View ref={portraitAnchorRef} style={[styles.portraitCard, { opacity: 0 }] as object} pointerEvents="none" />
-
-                {/* Portrait card rendered in document.body so it sits above the
-                    TopBar's frosted-glass portal (zIndex 100 in body stacking context). */}
-                {portraitPos ? (
-                  <BodyPortal>
-                    <View
-                      style={[
-                        styles.portraitCard,
-                        {
-                          position: 'fixed',
-                          top: portraitPos.top,
-                          right: portraitPos.right,
-                          width: portraitPos.width,
-                          zIndex: 110,
-                        } as object,
-                      ]}
+                <View style={styles.portraitCard}>
+                  {heroImage ? (
+                    <Image
+                      source={heroImage}
+                      contentFit="cover"
+                      contentPosition={{ top: 0, left: '50%' }}
+                      style={StyleSheet.absoluteFill}
+                      cachePolicy="memory-disk"
+                      recyclingKey={id}
+                      transition={typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}
+                    />
+                  ) : (
+                    <View style={styles.portraitPlaceholder} />
+                  )}
+                  <View style={[styles.portraitOverlay, { pointerEvents: 'none' }] as object} />
+                  <View
+                    style={
+                      [
+                        styles.portraitNameOverlay,
+                        { opacity: nameRevealed ? 1 : 0, pointerEvents: 'none' },
+                      ] as object
+                    }
+                  >
+                    <Text style={styles.portraitNameText}>{stats.name}</Text>
+                    {stats.biography['full-name'] ? (
+                      <Text style={styles.portraitNameSub}>
+                        {stats.biography['full-name']}
+                      </Text>
+                    ) : null}
+                  </View>
+                  {user ? (
+                    <Pressable
+                      onPress={toggleFavourite}
+                      disabled={favLoading}
+                      aria-label={favourited ? 'Remove favourite' : 'Add favourite'}
+                      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                        [styles.portraitFav, hovered && (styles.portraitFavHover as object)] as object
+                      }
                     >
-                      {heroImage ? (
-                        <Image
-                          source={heroImage}
-                          contentFit="cover"
-                          contentPosition={{ top: 0, left: '50%' }}
-                          style={StyleSheet.absoluteFill}
-                          cachePolicy="memory-disk"
-                          recyclingKey={id}
-                          transition={typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}
-                        />
-                      ) : (
-                        <View style={styles.portraitPlaceholder} />
-                      )}
-                      <View style={[styles.portraitOverlay, { pointerEvents: 'none' }] as object} />
-                      <View
-                        style={
-                          [
-                            styles.portraitNameOverlay,
-                            { opacity: nameRevealed ? 1 : 0, pointerEvents: 'none' },
-                          ] as object
-                        }
-                      >
-                        <Text style={styles.portraitNameText}>{stats.name}</Text>
-                        {stats.biography['full-name'] ? (
-                          <Text style={styles.portraitNameSub}>
-                            {stats.biography['full-name']}
-                          </Text>
-                        ) : null}
-                      </View>
-                      {user ? (
-                        <Pressable
-                          onPress={toggleFavourite}
-                          disabled={favLoading}
-                          aria-label={favourited ? 'Remove favourite' : 'Add favourite'}
-                          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                            [styles.portraitFav, hovered && (styles.portraitFavHover as object)] as object
-                          }
-                        >
-                          <Ionicons
-                            name={favourited ? 'heart' : 'heart-outline'}
-                            size={20}
-                            color={favourited ? COLORS.red : COLORS.beige}
-                          />
-                        </Pressable>
-                      ) : null}
-                    </View>
-                  </BodyPortal>
-                ) : null}
+                      <Ionicons
+                        name={favourited ? 'heart' : 'heart-outline'}
+                        size={20}
+                        color={favourited ? COLORS.red : COLORS.beige}
+                      />
+                    </Pressable>
+                  ) : null}
+                </View>
 
                 <View style={styles.card}>
                   <Text style={styles.cardTitle}>Quick Facts</Text>
@@ -1885,7 +1840,7 @@ const sk = StyleSheet.create({
   bodyWrap: { maxWidth: 1180, alignSelf: 'center', width: '100%', paddingBottom: 0 },
 
   // ── Desktop identity stage ──
-  stage: { backgroundColor: COLORS.deepNavy, position: 'relative', overflow: 'hidden', zIndex: 0 },
+  stage: { backgroundColor: COLORS.deepNavy, position: 'relative', overflow: 'hidden' },
   stageInner: { maxWidth: 1180, width: '100%', alignSelf: 'center' },
   // Reserve the right zone so meta sits in the band beside the overlapping portrait.
   identityColDesktop: { paddingRight: 324 } as object,
@@ -1908,7 +1863,7 @@ const sk = StyleSheet.create({
   // ── Desktop body — main editorial column + overlapping side rail ──
   bodyDesktopNew: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, padding: 24 },
   mainCol: { flex: 1, minWidth: 0, gap: 16 } as object,
-  sideCol: { width: 300, flexShrink: 0, gap: 16, position: 'sticky', top: TOPBAR_HEIGHT - 10, alignSelf: 'flex-start', zIndex: 101 } as object,
+  sideCol: { width: 300, flexShrink: 0, gap: 16, position: 'sticky', top: TOPBAR_HEIGHT + 24, alignSelf: 'flex-start' } as object,
 
   // Overlapping side portrait — matches the live portraitCard footprint.
   portraitCard: {
@@ -1998,7 +1953,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.deepNavy,
     position: 'relative',
     overflow: 'hidden',
-    zIndex: 0,
   },
   // Blurred portrait fills the stage for atmosphere; scaled up to hide blur edges.
   stageBackdrop: {
@@ -2212,7 +2166,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   mainCol: { flex: 1, minWidth: 0, gap: 16 } as object,
-  sideCol: { width: 300, flexShrink: 0, gap: 16, position: 'sticky', top: TOPBAR_HEIGHT - 10, alignSelf: 'flex-start', zIndex: 101 } as object,
+  sideCol: { width: 300, flexShrink: 0, gap: 16, position: 'sticky', top: TOPBAR_HEIGHT + 24, alignSelf: 'flex-start' } as object,
   // Pull the portrait up so it straddles the header/body seam (magazine profile).
   portraitOverlapDesktop: { marginTop: -210 } as object,
 
