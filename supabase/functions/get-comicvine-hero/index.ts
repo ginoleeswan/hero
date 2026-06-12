@@ -56,7 +56,17 @@ serve(async (req: Request) => {
     const listJson = await listRes.json();
     const result = listJson.results?.[0];
 
-    if (!result) return json(NULL_RESPONSE);
+    if (!result) {
+      // No ComicVine character matched this name. Mark a terminal status so the
+      // client stops re-fetching this hero on every view. A later name fix or a
+      // manual/cron retry can reset comicvine_status back to 'pending'.
+      const sb = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      );
+      await sb.from('heroes').update({ comicvine_status: 'failed' }).eq('id', heroId);
+      return json(NULL_RESPONSE);
+    }
 
     const summary: string | null = result.deck ?? null;
     const publisher: string | null = result.publisher?.name ?? null;
@@ -329,6 +339,11 @@ serve(async (req: Request) => {
       .from('heroes')
       .update({
         summary,
+        publisher,
+        // Terminal: we matched a ComicVine character and wrote its detail fields.
+        // Some fields may legitimately be null (civilians have no powers/movies) —
+        // the client must NOT treat that as "unfetched", so it gates on this status.
+        comicvine_status: 'done',
         powers,
         description,
         origin,

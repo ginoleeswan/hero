@@ -8,7 +8,6 @@ import {
   Dimensions,
   ScrollView,
   LayoutAnimation,
-  InteractionManager,
   Platform,
   UIManager,
   type LayoutChangeEvent,
@@ -418,23 +417,29 @@ export default function CharacterScreen() {
   );
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  // Gate the heaviest sub-trees (animated stat dials, family canvas, gallery
-  // fetch) until the Apple Zoom navigation transition has finished. Mounting
-  // them during the morph stutters it; deferring lets the zoom land cleanly,
-  // then the expensive bits stream in a frame later — all below the fold anyway.
-  const [interactionsReady, setInteractionsReady] = useState(false);
-  useEffect(() => {
-    const handle = InteractionManager.runAfterInteractions(() => {
-      setInteractionsReady(true);
-    });
-    return () => handle.cancel();
-  }, []);
-
   const heroRowQuery = useHeroRow(id);
   const heroRow = heroRowQuery.data;
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const compareScale = useRef(new Animated.Value(1)).current;
+
+  // Below-fold work (the JS-driven stat-dial sweep + the family canvas/fetch) is
+  // deferred until the reader actually scrolls down to it. The dials animate an
+  // SVG stroke on the JS thread for 1800ms — kicking that off on a post-landing
+  // timer collided with an immediate back-swipe, making the dismiss feel gated.
+  // A one-shot scroll listener means a glance-and-leave never runs any of it, so
+  // the JS thread stays free for the gesture.
+  const [scrolledIn, setScrolledIn] = useState(false);
+  useEffect(() => {
+    if (scrolledIn) return;
+    const sub = scrollY.addListener(({ value }) => {
+      if (value > HERO_IMAGE_HEIGHT * 0.35) {
+        setScrolledIn(true);
+        scrollY.removeListener(sub);
+      }
+    });
+    return () => scrollY.removeListener(sub);
+  }, [scrollY, scrolledIn]);
 
   const springCompare = (toValue: number) =>
     Animated.spring(compareScale, {
@@ -593,11 +598,11 @@ export default function CharacterScreen() {
 
   useEffect(() => {
     setFamily([]);
-    if (!id || !interactionsReady) return;
+    if (!id || !scrolledIn) return;
     getHeroFamily(id)
       .then(setFamily)
       .catch(() => setFamily([]));
-  }, [id, interactionsReady]);
+  }, [id, scrolledIn]);
 
   useEffect(() => {
     if (!id) return;
@@ -669,12 +674,14 @@ export default function CharacterScreen() {
           .finally(() => setGalleryLoading(false));
       }
 
-      const needsComicVine =
-        !heroRow.comicvine_enriched_at ||
-        heroRow.powers === null ||
-        !heroRow.movies?.length ||
-        !heroRow.first_issue_id ||
-        !heroRow.first_issue_data;
+      // Refetch ComicVine only when this hero has never been successfully
+      // enriched. Gate on the terminal `comicvine_status` (written by the
+      // get-comicvine-hero edge fn) — NOT on individual fields being null.
+      // ComicVine legitimately returns no powers/movies for civilians, and the
+      // old field-nullness gate treated that as "unfetched", so ~97% of heroes
+      // re-fetched ~13 ComicVine calls on every single view, forever.
+      const cvStatus = heroRow.comicvine_status;
+      const needsComicVine = cvStatus == null || cvStatus === 'pending';
       const moviesIncomplete =
         !needsComicVine &&
         heroRow.movie_count != null &&
@@ -1017,7 +1024,7 @@ export default function CharacterScreen() {
                           label={label}
                           value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
                           tint={tint}
-                          animate={interactionsReady}
+                          animate={scrolledIn}
                         />
                       ))}
                     </View>

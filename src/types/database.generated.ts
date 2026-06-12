@@ -170,6 +170,7 @@ export type Database = {
           combat: number | null
           comicvine_enriched_at: string | null
           comicvine_id: string | null
+          comicvine_status: string | null
           creators: string[] | null
           description: string | null
           durability: number | null
@@ -225,6 +226,7 @@ export type Database = {
           combat?: number | null
           comicvine_enriched_at?: string | null
           comicvine_id?: string | null
+          comicvine_status?: string | null
           creators?: string[] | null
           description?: string | null
           durability?: number | null
@@ -280,6 +282,7 @@ export type Database = {
           combat?: number | null
           comicvine_enriched_at?: string | null
           comicvine_id?: string | null
+          comicvine_status?: string | null
           creators?: string[] | null
           description?: string | null
           durability?: number | null
