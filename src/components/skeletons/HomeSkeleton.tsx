@@ -5,12 +5,17 @@ import { SkeletonProvider } from '../ui/SkeletonProvider';
 import { COLORS } from '../../constants/colors';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+// Mirror the real layout (see HomeHeroRow / SpotlightCarousel / PublisherGrid).
 const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.6);
-const CARD_HEIGHT = 300;
+const CARD_HEIGHT = Math.round(CARD_WIDTH * ((SCREEN_HEIGHT * 0.66) / SCREEN_WIDTH));
 const CARD_GAP = 12;
+const H_PAD = 16;
+const TILE_GAP = 10;
+const TILE_W = (SCREEN_WIDTH - H_PAD * 2 - TILE_GAP) / 2;
+const TILE_H = Math.round(TILE_W * 0.56);
 
 function SpotlightSkeleton({ insetTop }: { insetTop: number }) {
-  const height = insetTop + Math.round(SCREEN_HEIGHT * 0.42);
+  const height = insetTop + Math.round(SCREEN_HEIGHT * 0.5);
   return <Skeleton width="100%" height={height} borderRadius={0} />;
 }
 
@@ -20,12 +25,30 @@ function ThumbRowSkeleton() {
       <View style={styles.sectionHeader}>
         <View style={styles.headerLeft}>
           <Skeleton width="20%" height={10} borderRadius={4} />
-          <Skeleton width="35%" height={22} borderRadius={6} style={styles.titleSkeleton} />
+          <Skeleton width="40%" height={22} borderRadius={6} style={styles.titleSkeleton} />
         </View>
       </View>
       <View style={styles.thumbRow}>
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} width={90} height={58} borderRadius={8} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function PublisherGridSkeleton() {
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <View style={styles.headerLeft}>
+          <Skeleton width="28%" height={10} borderRadius={4} />
+          <Skeleton width="32%" height={22} borderRadius={6} style={styles.titleSkeleton} />
+        </View>
+      </View>
+      <View style={styles.publisherGrid}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} width={TILE_W} height={TILE_H} borderRadius={16} />
         ))}
       </View>
     </View>
@@ -66,28 +89,23 @@ interface HomeSkeletonProps {
 export function HomeSkeleton({ insets }: HomeSkeletonProps) {
   return (
     <SkeletonProvider>
-      <ScrollView
-        scrollEnabled={false}
-        showsVerticalScrollIndicator={false}
-        style={styles.scroll}
-      >
+      <ScrollView scrollEnabled={false} showsVerticalScrollIndicator={false} style={styles.scroll}>
         <SpotlightSkeleton insetTop={insets.top} />
-        <ThumbRowSkeleton />
-        <PortraitRowSkeleton />
-        <PortraitRowSkeleton />
-        <PortraitRowSkeleton />
-        <PortraitRowSkeleton />
-        <PortraitRowSkeleton />
-        <PortraitRowSkeleton />
-        <PortraitRowSkeleton />
-        <PortraitRowSkeleton />
+        <View style={styles.sheet}>
+          <ThumbRowSkeleton />
+          <PublisherGridSkeleton />
+          {Array.from({ length: 6 }).map((_, i) => (
+            <PortraitRowSkeleton key={i} />
+          ))}
+        </View>
       </ScrollView>
     </SkeletonProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: COLORS.beige },
+  scroll: { flex: 1, backgroundColor: COLORS.navy },
+  sheet: { backgroundColor: COLORS.beige },
   section: { paddingTop: 14, paddingBottom: 4 },
   sectionHeader: {
     paddingHorizontal: 15,
@@ -103,6 +121,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     paddingHorizontal: 15,
+  },
+  publisherGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: TILE_GAP,
+    paddingHorizontal: H_PAD,
   },
   portraitRow: {
     paddingHorizontal: 15,

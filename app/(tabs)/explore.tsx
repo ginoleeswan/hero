@@ -13,6 +13,7 @@ import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
 import { HomeSkeleton } from '../../src/components/skeletons/HomeSkeleton';
 import { SpotlightCarousel } from '../../src/components/home/SpotlightCarousel';
+import { PublisherGrid } from '../../src/components/home/PublisherGrid';
 import { rowStyle } from '../../src/lib/home/rowStyle';
 import { HomeHeroRow, type RowHero } from '../../src/components/home/HomeHeroRow';
 import {
@@ -135,6 +136,14 @@ export default function HomeScreen() {
     [router, navigating],
   );
 
+  const handlePublisherPress = useCallback(
+    (slug: string) => {
+      Haptics.selectionAsync();
+      router.push(`/publisher/${slug}`);
+    },
+    [router],
+  );
+
   // Fixed catalog order. Tone alternates by catalog index (not by which rows
   // happen to be loaded), so a row's band colour never flips as data streams in.
   const curatedRows: {
@@ -185,13 +194,16 @@ export default function HomeScreen() {
           {recentlyViewed.length > 0 && (
             <HomeHeroRow
               label="Personal"
-              title="Jump Back In"
+              title="Recently Viewed"
               heroes={recentlyViewed.map(toRowHero)}
               variant="thumb"
               onPress={handlePress}
               disabled={navigating}
             />
           )}
+
+          <PublisherGrid onPress={handlePublisherPress} />
+
           {favourites.length > 0 && (
             <HomeHeroRow
               label="Personal"

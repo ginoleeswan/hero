@@ -383,7 +383,7 @@ export async function getEraTimeline(perEra = 7): Promise<EraBucket[]> {
 }
 
 export async function getHeroesByPublisher(
-  publisher: 'marvel' | 'dc',
+  publisher: string,
   limit = 25,
 ): Promise<Hero[]> {
   const { data, error } = await supabase
