@@ -63,9 +63,19 @@ const nameList = (arr: unknown, cap: number): string[] =>
 const cvParams = (extra: Record<string, string>) =>
   new URLSearchParams({ api_key: COMICVINE_API_KEY, format: 'json', ...extra });
 
-interface EnrichOutcome {
-  status: 'done' | 'failed';
-}
+// done  -> enriched and written
+// failed-> ComicVine genuinely has no match for this hero (terminal; won't retry
+//          unless explicitly asked via retryFailed)
+// retry -> transient (rate limit / 5xx / network) — leave the row `pending` so
+//          the next run picks it up again. Critical for the unattended cron:
+//          a momentary ComicVine throttle must NOT permanently park a real hero.
+type EnrichOutcome = 'done' | 'failed' | 'retry';
+
+// Classify a non-OK ComicVine HTTP response. 420 is ComicVine's own
+// "rate limit exceeded"; 429/5xx are transient too. Anything else (404, etc.)
+// we treat as terminal.
+const classifyHttp = (status: number): EnrichOutcome =>
+  status === 420 || status === 429 || status >= 500 ? 'retry' : 'failed';
 
 /**
  * Enrich one hero from ComicVine and persist every column. Identical parsing and
@@ -106,9 +116,9 @@ async function enrichHero(
     const res = await fetch(
       `${COMICVINE_BASE}/character/4005-${cvId}/?${cvParams({ field_list: CHAR_FIELDS })}`,
     );
-    if (!res.ok) return { status: 'failed' };
+    if (!res.ok) return classifyHttp(res.status);
     d = (await res.json()).results ?? {};
-    if (!d || !d.id) return { status: 'failed' };
+    if (!d || !d.id) return 'failed';
   } else {
     // No id on file — search by name to discover it, then fetch full detail.
     const listRes = await fetch(
@@ -118,16 +128,16 @@ async function enrichHero(
         limit: '1',
       })}`,
     );
-    if (!listRes.ok) return { status: 'failed' };
+    if (!listRes.ok) return classifyHttp(listRes.status);
     const match = (await listRes.json()).results?.[0];
-    if (!match?.id) return { status: 'failed' };
+    if (!match?.id) return 'failed';
     cvId = String(match.id);
     const res = await fetch(
       `${COMICVINE_BASE}/character/4005-${cvId}/?${cvParams({ field_list: CHAR_FIELDS })}`,
     );
-    if (!res.ok) return { status: 'failed' };
+    if (!res.ok) return classifyHttp(res.status);
     d = (await res.json()).results ?? {};
-    if (!d || !d.id) return { status: 'failed' };
+    if (!d || !d.id) return 'failed';
   }
 
   summary = (d.deck as string | null) ?? null;
@@ -288,7 +298,7 @@ async function enrichHero(
     })
     .eq('id', hero.id);
 
-  return { status: 'done' };
+  return 'done';
 }
 
 serve(async (req: Request) => {
@@ -325,19 +335,26 @@ serve(async (req: Request) => {
 
   let done = 0;
   let failed = 0;
+  let retry = 0;
 
   for (const hero of batch as Array<{ id: string; name: string; comicvine_id: string | null }>) {
+    let outcome: EnrichOutcome;
     try {
-      const outcome = await enrichHero(sb, hero);
-      if (outcome.status === 'done') done++;
-      else {
-        failed++;
-        await sb.from('heroes').update({ comicvine_status: 'failed' }).eq('id', hero.id);
-      }
+      outcome = await enrichHero(sb, hero);
     } catch (err) {
-      // Transient error — leave as pending so a later run retries this hero.
-      console.error('[enrich-comicvine-batch] hero failed', hero.id, err);
+      // Network/exception — transient. Leave pending so a later run retries.
+      console.error('[enrich-comicvine-batch] hero threw', hero.id, err);
+      outcome = 'retry';
+    }
+    if (outcome === 'done') {
+      done++;
+    } else if (outcome === 'failed') {
+      // Terminal: ComicVine has no match. Park it so we stop retrying.
       failed++;
+      await sb.from('heroes').update({ comicvine_status: 'failed' }).eq('id', hero.id);
+    } else {
+      // Transient: leave the row `pending` untouched — next run tries again.
+      retry++;
     }
     // Be polite to ComicVine between heroes (each hero already made several calls).
     await sleep(350);
@@ -348,5 +365,5 @@ serve(async (req: Request) => {
     .select('*', { count: 'exact', head: true })
     .eq('comicvine_status', 'pending');
 
-  return json({ processed: batch.length, done, failed, remaining: remaining ?? null });
+  return json({ processed: batch.length, done, failed, retry, remaining: remaining ?? null });
 });

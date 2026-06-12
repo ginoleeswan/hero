@@ -1,4 +1,5 @@
 // src/components/home/HomeHeroRow.tsx
+import { useRef } from 'react';
 import { View, Text, FlatList, StyleSheet, Dimensions, Pressable } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -42,6 +43,17 @@ function PortraitZoomCard({
 }) {
   const pressed = useSharedValue(0);
   const queryClient = useQueryClient();
+  // Push-in + haptic are armed on a short timer so a scroll-drag or a quick
+  // tap-to-open clears them before they fire — navigation itself is never
+  // delayed (it rides the Pressable's own onPress, below).
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearFeedback = () => {
+    if (feedbackTimer.current) {
+      clearTimeout(feedbackTimer.current);
+      feedbackTimer.current = null;
+    }
+    pressed.value = 0;
+  };
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -62,28 +74,22 @@ function PortraitZoomCard({
     >
       <Pressable
         style={StyleSheet.flatten([styles.cardSlot, { width, height }])}
-        // Wait before committing the press, so a scroll-drag cancels it first.
-        // onPressIn fires the instant a finger lands — in a horizontal list that
-        // means every touch-to-scroll flickered the push-in + haptic. With the
-        // delay, the FlatList claims the gesture during a scroll and the press
-        // never fires; a deliberate hold still gets the push-in (Disney-style).
-        unstable_pressDelay={120}
+        // Arm the push-in + haptic after a short hold. A scroll-drag or a quick
+        // tap clears the timer first, so neither flickers while scrolling nor
+        // delays opening. onPress (navigation) is untouched and fires instantly.
         onPressIn={() => {
-          pressed.value = 1;
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          // Warm the detail row now so name + portrait + stats are cached by the
-          // time the destination mounts — the skeleton barely flashes. Gated by
-          // the same delay, so scrolling past cards no longer prefetches them.
-          prefetchHeroRow(queryClient, item.id);
+          feedbackTimer.current = setTimeout(() => {
+            pressed.value = 1;
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }, 80);
         }}
-        // Release the press-scale the instant navigation commits so the Apple
-        // Zoom snapshots a clean, full-size (1.0) frame — no shrunk-card pop.
+        // Real tap-to-open: warm the detail row, drop the press-scale to a clean
+        // 1.0 frame for the zoom origin, and let the Link navigate immediately.
         onPress={() => {
-          pressed.value = 0;
+          prefetchHeroRow(queryClient, item.id);
+          clearFeedback();
         }}
-        onPressOut={() => {
-          pressed.value = 0;
-        }}
+        onPressOut={clearFeedback}
       >
         <Animated.View style={[styles.cardVisual, animatedStyle]}>
           {/* Nothing behind the card and no drop shadow: a shadow would need a
