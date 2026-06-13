@@ -311,6 +311,7 @@ export default function AdminHealthScreen() {
 
   const [metric, setMetric] = useState<CoverageMetric>('portrait');
   const [page, setPage] = useState(0);
+  const [tab, setTab] = useState<'overview' | 'backfill' | 'operations'>('overview');
 
   const profileQ = useQuery({
     queryKey: ['profile', user?.id],
@@ -512,8 +513,38 @@ export default function AdminHealthScreen() {
           {h && <Gauge value={overall} anim={anim} />}
         </LinearGradient>
 
+        {/* ── Tab bar ── */}
+        <View style={styles.tabBar}>
+          {([
+            { key: 'overview', label: 'Overview', icon: 'stats-chart' },
+            { key: 'backfill', label: 'Backfill', icon: 'construct' },
+            { key: 'operations', label: 'Operations', icon: 'pulse' },
+          ] as const).map((t) => {
+            const on = tab === t.key;
+            const badge =
+              t.key === 'backfill' && h ? (h.cvStatus.pending ?? 0) : undefined;
+            return (
+              <Pressable
+                key={t.key}
+                onPress={() => setTab(t.key)}
+                style={[styles.navPill, on && styles.navPillOn]}
+              >
+                <Ionicons name={t.icon} size={16} color={on ? '#fff' : COLORS.navy} />
+                <Text style={[styles.navPillText, on && styles.navPillTextOn]}>{t.label}</Text>
+                {badge != null && badge > 0 && (
+                  <View style={[styles.navBadge, on && styles.navBadgeOn]}>
+                    <Text style={[styles.navBadgeText, on && { color: COLORS.orange }]}>
+                      {badge > 999 ? `${Math.round(badge / 1000)}k` : badge}
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+
         {/* ── Operations ── */}
-        {h && (
+        {tab === 'operations' && h && (
           <View style={styles.card}>
             <View style={styles.opsHead}>
               <Text style={styles.cardTitle}>Operations</Text>
@@ -610,7 +641,8 @@ export default function AdminHealthScreen() {
           </View>
         )}
 
-        <View style={[styles.cols, narrow && styles.colsNarrow]}>
+        {tab === 'backfill' && (
+          <View style={[styles.cols, narrow && styles.colsNarrow]}>
           {/* ── Coverage ── */}
           <View style={[styles.card, styles.coverageCard, !narrow && styles.colLeft]}>
             <Text style={styles.cardTitle}>Coverage</Text>
@@ -745,8 +777,10 @@ export default function AdminHealthScreen() {
             )}
           </View>
         </View>
+        )}
 
         {/* ── Recent runs (monitoring) ── */}
+        {tab === 'operations' && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Recent runs</Text>
           <Text style={styles.cardHint}>Cron + manual · auto-refreshes every 15s</Text>
@@ -803,9 +837,10 @@ export default function AdminHealthScreen() {
             </>
           )}
         </View>
+        )}
 
         {/* ── Trends & distribution ── */}
-        {h && (
+        {tab === 'overview' && h && (
           <View style={[styles.cols, narrow && styles.colsNarrow]}>
             <View style={[styles.card, !narrow && styles.colRight]}>
               <Text style={styles.cardTitle}>Completeness over time</Text>
@@ -856,7 +891,7 @@ export default function AdminHealthScreen() {
           </View>
         )}
 
-        {h && dist && (
+        {tab === 'overview' && h && dist && (
           <View style={[styles.cols, narrow && styles.colsNarrow]}>
             <View style={[styles.card, { flex: 1 }]}>
               <Text style={styles.cardTitle}>Power distribution</Text>
@@ -895,7 +930,7 @@ export default function AdminHealthScreen() {
         )}
 
         {/* ── Publisher heatmap (two columns on wide screens) ── */}
-        {h && h.byPublisher.length > 0 && (
+        {tab === 'overview' && h && h.byPublisher.length > 0 && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Coverage by publisher</Text>
             <Text style={styles.cardHint}>Top {h.byPublisher.length} by catalogue size</Text>
@@ -1008,6 +1043,33 @@ const styles = StyleSheet.create({
   colRight: { flex: 1 },
 
   card,
+
+  // Tab bar
+  tabBar: { flexDirection: 'row', gap: 8, marginTop: 4, marginBottom: 2 },
+  navPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 999,
+    backgroundColor: '#fffdf8',
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.08)',
+  },
+  navPillOn: { backgroundColor: COLORS.navy, borderColor: COLORS.navy },
+  navPillText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.navy },
+  navPillTextOn: { color: '#fff' },
+  navBadge: {
+    backgroundColor: COLORS.orange,
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 1,
+    minWidth: 20,
+    alignItems: 'center',
+  },
+  navBadgeOn: { backgroundColor: '#fff' },
+  navBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#fff' },
 
   // Operations
   opsHead: { flexDirection: 'row', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' },
