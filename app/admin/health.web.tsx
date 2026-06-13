@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Animated,
   TextInput,
+  ScrollView,
   useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -60,6 +61,34 @@ const relTime = (iso: string) => {
 };
 
 const pct = (have: number, total: number) => (total > 0 ? Math.round((have / total) * 100) : 0);
+
+/** Wall-clock HH:MM:SS for log lines (24h, no locale surprises). */
+const logClock = (ms: number) => new Date(ms).toLocaleTimeString([], { hour12: false });
+
+/** Shared status → colour for runs (table + mobile cards + log). */
+const runStatusColor = (status: string) =>
+  status === 'running'
+    ? COLORS.orange
+    : status === 'error'
+      ? COLORS.red
+      : status === 'stopped'
+        ? COLORS.navy
+        : COLORS.green;
+
+// ── Activity log ──────────────────────────────────────────────────────────────
+type LogTone = 'info' | 'success' | 'error' | 'pending';
+interface LogEntry {
+  id: number;
+  at: number;
+  tone: LogTone;
+  text: string;
+}
+const LOG_TONE_COLOR: Record<LogTone, string> = {
+  success: COLORS.green,
+  error: COLORS.red,
+  pending: COLORS.orange,
+  info: COLORS.navy,
+};
 
 /** Health colour ramp: red (poor) → gold (partial) → green (strong). */
 const healthColor = (p: number) =>
@@ -232,6 +261,16 @@ function MastStat({ value, label, tint }: { value: string; label: string; tint?:
     <View style={styles.mstat}>
       <Text style={[styles.mstatNum, tint ? { color: tint } : null]}>{value}</Text>
       <Text style={styles.mstatLabel}>{label}</Text>
+    </View>
+  );
+}
+
+// Compact labelled stat used by the mobile run cards (Recent runs on narrow).
+function RunStat({ label, value, tint }: { label: string; value: string; tint: string }) {
+  return (
+    <View style={styles.runStatCell}>
+      <Text style={[styles.runStatValue, { color: tint }]}>{value}</Text>
+      <Text style={styles.runStatLabel}>{label}</Text>
     </View>
   );
 }
@@ -413,19 +452,30 @@ export default function AdminHealthScreen() {
   const cronOn = !!drainJob?.active;
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const flash = (msg: string) => {
+
+  // Activity log — a durable, session-scoped record of everything the admin runs
+  // and every run transition, so results don't vanish with the 4s toast.
+  const logSeq = useRef(0);
+  const [log, setLog] = useState<LogEntry[]>([]);
+  const logEvent = useCallback((tone: LogTone, text: string) => {
+    setLog((prev) => [{ id: ++logSeq.current, at: Date.now(), tone, text }, ...prev].slice(0, 80));
+  }, []);
+
+  // Every user-facing flash also lands permanently in the log.
+  const flash = (msg: string, tone: LogTone = 'info') => {
     setToast(msg);
     setTimeout(() => setToast(null), 4000);
+    logEvent(tone, msg);
   };
 
   const onRunDrain = async () => {
     setBusy('drain');
     try {
       await runDrain(batchSize);
-      flash(`Batch of ${batchSize} queued — watch it run below.`);
+      flash(`Batch of ${batchSize} queued — watch it run below.`, 'pending');
       setTimeout(() => queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] }), 2000);
     } catch (e) {
-      flash(`Failed: ${(e as Error).message}`);
+      flash(`Drain failed: ${(e as Error).message}`, 'error');
     } finally {
       setBusy(null);
     }
@@ -434,10 +484,10 @@ export default function AdminHealthScreen() {
     setBusy('retry');
     try {
       const n = await retryFailed();
-      flash(`${n.toLocaleString()} failed hero${n === 1 ? '' : 'es'} requeued.`);
+      flash(`${n.toLocaleString()} failed hero${n === 1 ? '' : 'es'} requeued.`, 'success');
       queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
     } catch (e) {
-      flash(`Failed: ${(e as Error).message}`);
+      flash(`Retry failed: ${(e as Error).message}`, 'error');
     } finally {
       setBusy(null);
     }
@@ -446,10 +496,10 @@ export default function AdminHealthScreen() {
     setBusy('stop');
     try {
       const ok = await stopRun(runId);
-      flash(ok ? 'Stopping after the current hero…' : 'Run already finished.');
+      flash(ok ? `Stopping run #${runId} after the current hero…` : 'Run already finished.', 'info');
       queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] });
     } catch (e) {
-      flash(`Failed: ${(e as Error).message}`);
+      flash(`Stop failed: ${(e as Error).message}`, 'error');
     } finally {
       setBusy(null);
     }
@@ -458,10 +508,10 @@ export default function AdminHealthScreen() {
     setBusy('snapshot');
     try {
       await snapshotNow();
-      flash('Snapshot captured.');
+      flash('Snapshot captured.', 'success');
       queryClient.invalidateQueries({ queryKey: ['healthSnapshots'] });
     } catch (e) {
-      flash(`Failed: ${(e as Error).message}`);
+      flash(`Snapshot failed: ${(e as Error).message}`, 'error');
     } finally {
       setBusy(null);
     }
@@ -470,10 +520,10 @@ export default function AdminHealthScreen() {
     setBusy(`reenrich-${id}`);
     try {
       await reenrichHero(id);
-      flash(`Re-fetching ${name} from ComicVine…`);
+      flash(`Re-fetching ${name} from ComicVine…`, 'pending');
       setTimeout(() => queryClient.invalidateQueries({ queryKey: ['adminHeroSearch'] }), 5000);
     } catch (e) {
-      flash(`Failed: ${(e as Error).message}`);
+      flash(`Re-fetch failed: ${(e as Error).message}`, 'error');
     } finally {
       setBusy(null);
     }
@@ -487,10 +537,10 @@ export default function AdminHealthScreen() {
     setBusy('cron');
     try {
       const state = await setDrainCron(!cronOn);
-      flash(`Drain cron ${state}.`);
+      flash(`Auto-drain cron ${state}.`, 'success');
       queryClient.invalidateQueries({ queryKey: ['cronStatus'] });
     } catch (e) {
-      flash(`Failed: ${(e as Error).message}`);
+      flash(`Cron toggle failed: ${(e as Error).message}`, 'error');
     } finally {
       setBusy(null);
     }
@@ -541,6 +591,41 @@ export default function AdminHealthScreen() {
       supabase.removeChannel(channel);
     };
   }, [opsEnabled, queryClient]);
+
+  // Stream run state changes into the activity log. The first batch only primes
+  // the seen-map (so existing history doesn't flood the log on mount); after that
+  // every transition — started, done, error, stopped — is logged with detail.
+  const seenRuns = useRef<Map<number, string>>(new Map());
+  const runLogPrimed = useRef(false);
+  useEffect(() => {
+    const data = runsQ.data;
+    if (!data) return;
+    if (!runLogPrimed.current) {
+      for (const r of data) seenRuns.current.set(r.id, r.status);
+      runLogPrimed.current = true;
+      return;
+    }
+    for (const r of data) {
+      const prev = seenRuns.current.get(r.id);
+      if (prev === r.status) continue;
+      seenRuns.current.set(r.id, r.status);
+      const took = r.duration_ms != null ? ` in ${(r.duration_ms / 1000).toFixed(1)}s` : '';
+      if (r.status === 'running' && prev == null) {
+        logEvent('pending', `Run #${r.id} started · ${r.triggered_by}`);
+      } else if (r.status === 'done') {
+        logEvent(
+          'success',
+          `Run #${r.id} finished · ${r.done} enriched${r.failed ? `, ${r.failed} failed` : ''}${
+            r.retry ? `, ${r.retry} retry` : ''
+          }${took}`,
+        );
+      } else if (r.status === 'error') {
+        logEvent('error', `Run #${r.id} errored${r.done ? ` after ${r.done} enriched` : ''}${took}`);
+      } else if (r.status === 'stopped') {
+        logEvent('info', `Run #${r.id} stopped · ${r.done} enriched${took}`);
+      }
+    }
+  }, [runsQ.data, logEvent]);
 
   if (!gateResolved || !isAdmin) return <LogoLoader />;
 
@@ -764,7 +849,7 @@ export default function AdminHealthScreen() {
                 <Pressable
                   onPress={onRunDrain}
                   disabled={!!busy}
-                  style={[styles.actBtn, styles.actPrimary, !!busy && styles.actDim]}
+                  style={[styles.actBtn, styles.actPrimary, narrow && styles.actGrow, !!busy && styles.actDim]}
                 >
                   {busy === 'drain' ? (
                     <ActivityIndicator size="small" color="#fff" />
@@ -779,6 +864,7 @@ export default function AdminHealthScreen() {
                   style={[
                     styles.actBtn,
                     styles.actGhost,
+                    narrow && styles.actGrow,
                     (!!busy || (h.cvStatus.failed ?? 0) === 0) && styles.actDim,
                   ]}
                 >
@@ -794,7 +880,12 @@ export default function AdminHealthScreen() {
                 <Pressable
                   onPress={onToggleCron}
                   disabled={!!busy}
-                  style={[styles.actBtn, cronOn ? styles.actOn : styles.actGhost, !!busy && styles.actDim]}
+                  style={[
+                    styles.actBtn,
+                    cronOn ? styles.actOn : styles.actGhost,
+                    narrow && styles.actGrow,
+                    !!busy && styles.actDim,
+                  ]}
                 >
                   {busy === 'cron' ? (
                     <ActivityIndicator size="small" color={cronOn ? '#fff' : COLORS.navy} />
@@ -811,13 +902,13 @@ export default function AdminHealthScreen() {
                 </Pressable>
               </View>
 
-              <View style={styles.opsMetrics}>
+              <View style={[styles.opsMetrics, narrow && styles.opsMetricsNarrow]}>
                 <View style={styles.opsMetric}>
                   <Text style={styles.opsMetricNum}>{(h.cvStatus.pending ?? 0).toLocaleString()}</Text>
                   <Text style={styles.opsMetricLabel}>Pending backlog</Text>
                   {etaLabel && <Text style={styles.opsMetricSub}>{etaLabel}</Text>}
                 </View>
-                <View style={styles.opsDivider} />
+                {!narrow && <View style={styles.opsDivider} />}
                 <View style={styles.opsMetricWide}>
                   <View style={styles.opsMetricHead}>
                     <View style={styles.pingRow}>
@@ -856,7 +947,7 @@ export default function AdminHealthScreen() {
                     {cvUsage >= CV_HOURLY_CAP ? 'at cap — drains will throttle' : 'calls consumed'}
                   </Text>
                 </View>
-                <View style={styles.opsDivider} />
+                {!narrow && <View style={styles.opsDivider} />}
                 <View style={styles.opsMetric}>
                   <Text style={[styles.opsMetricNum, { color: cronOn ? COLORS.green : COLORS.grey }]}>
                     {cronOn ? 'ON' : 'OFF'}
@@ -867,6 +958,43 @@ export default function AdminHealthScreen() {
                 </View>
               </View>
             </View>
+          </View>
+        )}
+
+        {/* ── Activity log ── */}
+        {tab === 'operations' && (
+          <View style={styles.card}>
+            <View style={styles.logHead}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>Activity log</Text>
+                <Text style={styles.cardHint}>Live results of actions & runs this session</Text>
+              </View>
+              {log.length > 0 && (
+                <Pressable onPress={() => setLog([])} style={styles.miniBtn}>
+                  <Ionicons name="trash-outline" size={14} color={COLORS.navy} />
+                  <Text style={styles.miniBtnText}>Clear</Text>
+                </Pressable>
+              )}
+            </View>
+            {log.length === 0 ? (
+              <Text style={styles.runsEmpty}>
+                Nothing yet — run a batch or action and results stream in here.
+              </Text>
+            ) : (
+              <ScrollView
+                style={styles.logPanel}
+                contentContainerStyle={styles.logPanelInner}
+                nestedScrollEnabled
+              >
+                {log.map((e) => (
+                  <View key={e.id} style={styles.logRow}>
+                    <Text style={styles.logTime}>{logClock(e.at)}</Text>
+                    <View style={[styles.logDot, { backgroundColor: LOG_TONE_COLOR[e.tone] }]} />
+                    <Text style={styles.logText}>{e.text}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
           </View>
         )}
 
@@ -1114,6 +1242,56 @@ export default function AdminHealthScreen() {
             <ActivityIndicator color={COLORS.orange} style={{ marginTop: 16 }} />
           ) : runs.length === 0 ? (
             <Text style={styles.runsEmpty}>No runs logged yet — hit “Run batch · 25”.</Text>
+          ) : narrow ? (
+            // Mobile: each run as a self-contained card so nothing overflows.
+            <View style={styles.runCards}>
+              {runs.map((r) => {
+                const c = runStatusColor(r.status);
+                return (
+                  <View key={r.id} style={styles.runCard}>
+                    <View style={styles.runCardHead}>
+                      <View style={[styles.stChip, { backgroundColor: c + '22' }]}>
+                        {r.status === 'running' && (
+                          <ActivityIndicator size="small" color={c} style={{ transform: [{ scale: 0.7 }] }} />
+                        )}
+                        <Text style={[styles.stChipText, { color: c }]}>{r.status}</Text>
+                      </View>
+                      <View
+                        style={[
+                          styles.byChip,
+                          { backgroundColor: r.triggered_by === 'admin' ? COLORS.orange + '22' : '#efe6d6' },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.byChipText,
+                            { color: r.triggered_by === 'admin' ? COLORS.orange : COLORS.navy },
+                          ]}
+                        >
+                          {r.triggered_by}
+                        </Text>
+                      </View>
+                      <Text style={styles.runCardWhen}>{relTime(r.created_at)}</Text>
+                    </View>
+                    <View style={styles.runCardStats}>
+                      <RunStat label="Done" value={`${r.done}`} tint={COLORS.green} />
+                      <RunStat label="Failed" value={`${r.failed}`} tint={r.failed ? COLORS.red : COLORS.grey} />
+                      <RunStat label="Retry" value={`${r.retry}`} tint={r.retry ? COLORS.yellow : COLORS.grey} />
+                      <RunStat
+                        label="Left"
+                        value={r.remaining != null ? r.remaining.toLocaleString() : '—'}
+                        tint={COLORS.navy}
+                      />
+                      <RunStat
+                        label="Took"
+                        value={r.duration_ms != null ? `${(r.duration_ms / 1000).toFixed(1)}s` : '—'}
+                        tint={COLORS.grey}
+                      />
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
           ) : (
             <>
               <View style={styles.runHeadRow}>
@@ -1126,61 +1304,52 @@ export default function AdminHealthScreen() {
                 <Text style={[styles.runStat, styles.runHeadText]}>Left</Text>
                 <Text style={[styles.runDur, styles.runHeadText]}>Took</Text>
               </View>
-              {runs.map((r) => (
-                <View key={r.id} style={styles.runRow}>
-                  <Text style={styles.runWhen}>{relTime(r.created_at)}</Text>
-                  <View style={styles.runStatusCol}>
-                    {(() => {
-                      const c =
-                        r.status === 'running'
-                          ? COLORS.orange
-                          : r.status === 'error'
-                            ? COLORS.red
-                            : r.status === 'stopped'
-                              ? COLORS.navy
-                              : COLORS.green;
-                      return (
-                        <View style={[styles.stChip, { backgroundColor: c + '22' }]}>
-                          {r.status === 'running' && (
-                            <ActivityIndicator size="small" color={c} style={{ transform: [{ scale: 0.7 }] }} />
-                          )}
-                          <Text style={[styles.stChipText, { color: c }]}>{r.status}</Text>
-                        </View>
-                      );
-                    })()}
-                  </View>
-                  <View style={styles.runBy}>
-                    <View
-                      style={[
-                        styles.byChip,
-                        { backgroundColor: r.triggered_by === 'admin' ? COLORS.orange + '22' : '#efe6d6' },
-                      ]}
-                    >
-                      <Text
+              {runs.map((r) => {
+                const c = runStatusColor(r.status);
+                return (
+                  <View key={r.id} style={styles.runRow}>
+                    <Text style={styles.runWhen}>{relTime(r.created_at)}</Text>
+                    <View style={styles.runStatusCol}>
+                      <View style={[styles.stChip, { backgroundColor: c + '22' }]}>
+                        {r.status === 'running' && (
+                          <ActivityIndicator size="small" color={c} style={{ transform: [{ scale: 0.7 }] }} />
+                        )}
+                        <Text style={[styles.stChipText, { color: c }]}>{r.status}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.runBy}>
+                      <View
                         style={[
-                          styles.byChipText,
-                          { color: r.triggered_by === 'admin' ? COLORS.orange : COLORS.navy },
+                          styles.byChip,
+                          { backgroundColor: r.triggered_by === 'admin' ? COLORS.orange + '22' : '#efe6d6' },
                         ]}
                       >
-                        {r.triggered_by}
-                      </Text>
+                        <Text
+                          style={[
+                            styles.byChipText,
+                            { color: r.triggered_by === 'admin' ? COLORS.orange : COLORS.navy },
+                          ]}
+                        >
+                          {r.triggered_by}
+                        </Text>
+                      </View>
                     </View>
+                    <Text style={[styles.runStat, { color: COLORS.green }]}>{r.done}</Text>
+                    <Text style={[styles.runStat, { color: r.failed ? COLORS.red : COLORS.grey }]}>
+                      {r.failed}
+                    </Text>
+                    <Text style={[styles.runStat, { color: r.retry ? COLORS.yellow : COLORS.grey }]}>
+                      {r.retry}
+                    </Text>
+                    <Text style={[styles.runStat, { color: COLORS.navy }]}>
+                      {r.remaining != null ? r.remaining.toLocaleString() : '—'}
+                    </Text>
+                    <Text style={styles.runDur}>
+                      {r.duration_ms != null ? `${(r.duration_ms / 1000).toFixed(1)}s` : '—'}
+                    </Text>
                   </View>
-                  <Text style={[styles.runStat, { color: COLORS.green }]}>{r.done}</Text>
-                  <Text style={[styles.runStat, { color: r.failed ? COLORS.red : COLORS.grey }]}>
-                    {r.failed}
-                  </Text>
-                  <Text style={[styles.runStat, { color: r.retry ? COLORS.yellow : COLORS.grey }]}>
-                    {r.retry}
-                  </Text>
-                  <Text style={[styles.runStat, { color: COLORS.navy }]}>
-                    {r.remaining != null ? r.remaining.toLocaleString() : '—'}
-                  </Text>
-                  <Text style={styles.runDur}>
-                    {r.duration_ms != null ? `${(r.duration_ms / 1000).toFixed(1)}s` : '—'}
-                  </Text>
-                </View>
-              ))}
+                );
+              })}
             </>
           )}
         </View>
@@ -1600,7 +1769,10 @@ const styles = StyleSheet.create({
   actGhostText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
   actOn: { backgroundColor: COLORS.green },
   actDim: { opacity: 0.4 },
+  // On mobile the action buttons stretch to fill the column for big tap targets.
+  actGrow: { flexGrow: 1, flexBasis: 140, justifyContent: 'center' },
   opsMetrics: { flexDirection: 'row', alignItems: 'center', gap: 18, flex: 1, flexWrap: 'wrap' },
+  opsMetricsNarrow: { gap: 22, paddingTop: 4 },
   opsDivider: { width: 1, height: 38, backgroundColor: '#efe6d6' },
   opsMetric: { gap: 2 },
   opsMetricWide: { gap: 4, flex: 1, minWidth: 180 },
@@ -1636,6 +1808,59 @@ const styles = StyleSheet.create({
   runStat: { width: 58, textAlign: 'right', fontFamily: 'Nunito_700Bold', fontSize: 13 },
   runDur: { width: 64, textAlign: 'right', fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
   runsEmpty: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: COLORS.grey, marginTop: 12 },
+
+  // Recent runs — mobile card layout (replaces the wide table on narrow screens).
+  runCards: { gap: 10, marginTop: 8 },
+  runCard: {
+    backgroundColor: '#faf6ee',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.06)',
+    padding: 14,
+    gap: 12,
+  },
+  runCardHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  runCardWhen: { marginLeft: 'auto', fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.grey },
+  runCardStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  runStatCell: { alignItems: 'center', gap: 1, minWidth: 48 },
+  runStatValue: { fontFamily: 'Flame-Regular', fontSize: 19, lineHeight: 21 },
+  runStatLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.4,
+    color: COLORS.grey,
+    textTransform: 'uppercase',
+  },
+
+  // Activity log — console-style timeline of actions + run transitions.
+  logHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  logPanel: {
+    maxHeight: 300,
+    marginTop: 6,
+    backgroundColor: '#faf6ee',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.06)',
+  },
+  logPanelInner: { paddingVertical: 2 },
+  logRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1ece2',
+  },
+  logTime: {
+    width: 62,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.grey,
+    fontVariant: ['tabular-nums'],
+  },
+  logDot: { width: 8, height: 8, borderRadius: 8 },
+  logText: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.black },
 
   colDonut: { width: 300, flexGrow: 0, flexShrink: 0 },
 
