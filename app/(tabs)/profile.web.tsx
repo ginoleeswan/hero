@@ -870,6 +870,24 @@ export default function WebProfileScreen() {
                 </>
               )}
 
+              {profile?.is_admin && (
+                <>
+                  <View style={desk.divider} />
+                  <Pressable
+                    onPress={() => router.push('/admin/health')}
+                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                      [desk.accountRow, hovered && (desk.accountRowHover as object)] as object
+                    }
+                  >
+                    <View style={[desk.accountIconBadge, desk.accountIconBadgeNavy]}>
+                      <Ionicons name="stats-chart-outline" size={16} color={COLORS.navy} />
+                    </View>
+                    <Text style={desk.accountLabel}>Catalog Health</Text>
+                    <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+                  </Pressable>
+                </>
+              )}
+
               <View style={desk.divider} />
               <Pressable
                 onPress={() => Linking.openURL(KO_FI_URL)}
