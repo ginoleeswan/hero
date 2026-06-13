@@ -1790,7 +1790,9 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: COLORS.beige, minHeight: '100%' as unknown as number },
   root: { width: '100%' },
   body: { width: '100%', maxWidth: 1080, alignSelf: 'center', padding: 24, gap: 18 },
-  bodyNarrow: { padding: 16, gap: 12 },
+  // Mobile: full-bleed sheets — no side padding on the body, so cards span the
+  // whole width; thin vertical gaps (beige showing through) separate them.
+  bodyNarrow: { paddingHorizontal: 0, paddingTop: 14, paddingBottom: 14, gap: 10 },
   bottomSpacer: { height: 40 },
   // Clear the fixed bottom tab bar + the home-indicator inset on mobile.
   bottomSpacerNarrow: {
@@ -1853,7 +1855,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 28,
   },
-  mastheadInnerNarrow: { flexDirection: 'column', alignItems: 'flex-start', gap: 14, paddingHorizontal: 18 },
+  mastheadInnerNarrow: { flexDirection: 'column', alignItems: 'flex-start', gap: 14, paddingHorizontal: 16 },
   mastheadGlow: {
     position: 'absolute',
     top: -120,
@@ -1942,13 +1944,15 @@ const styles = StyleSheet.create({
 
   // Columns
   cols: { flexDirection: 'row', gap: 18, alignItems: 'flex-start' },
-  colsNarrow: { flexDirection: 'column' },
+  colsNarrow: { flexDirection: 'column', gap: 10 },
   colLeft: { width: 360, flexGrow: 0, flexShrink: 0 },
   colRight: { flex: 1 },
 
   card,
-  // Mobile: tighter cards (less padding, smaller radius) for a denser feed.
-  cardNarrow: { padding: 16, borderRadius: 16 },
+  // Mobile: full-bleed flat sheet — drop the shadow/border that frame the card
+  // on desktop; the beige gap between sheets is the only separator needed. Keeps
+  // the white surface (charts need it for contrast) while reclaiming the frame.
+  cardNarrow: { padding: 16, borderRadius: 18, borderWidth: 0, shadowOpacity: 0, elevation: 0 },
   skBar: { backgroundColor: '#ece3d4', borderRadius: 8, marginBottom: 10 },
 
   // Tab bar
