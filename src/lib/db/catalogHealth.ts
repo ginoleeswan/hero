@@ -93,3 +93,73 @@ export async function getCoverageGaps(
   if (error) throw error;
   return { heroes: (data ?? []) as GapHero[], total: count ?? 0 };
 }
+
+// ── Monitoring: enrichment runs + cron status ─────────────────────────────────
+
+export interface EnrichmentRun {
+  id: number;
+  run_type: string;
+  triggered_by: string;
+  processed: number;
+  done: number;
+  failed: number;
+  retry: number;
+  remaining: number | null;
+  duration_ms: number | null;
+  created_at: string;
+}
+
+export async function getRecentRuns(limit = 8): Promise<EnrichmentRun[]> {
+  const { data, error } = await supabase
+    .from('enrichment_runs')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as EnrichmentRun[];
+}
+
+export interface CronJob {
+  jobname: string;
+  schedule: string;
+  active: boolean;
+  last_run: string | null;
+  last_status: string | null;
+}
+
+export async function getCronStatus(): Promise<CronJob[]> {
+  const { data, error } = await supabase.rpc('admin_cron_status');
+  if (error) throw error;
+  return (data ?? []) as unknown as CronJob[];
+}
+
+/** ComicVine API units consumed in the last hour (rate-limit gauge, ~200/hr). */
+export async function getComicvineUsageLastHour(): Promise<number> {
+  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from('api_usage')
+    .select('units')
+    .eq('api', 'comicvine')
+    .gte('created_at', since);
+  if (error) throw error;
+  return (data ?? []).reduce((sum, r) => sum + ((r as { units: number }).units ?? 0), 0);
+}
+
+// ── Actions (admin-guarded RPCs) ──────────────────────────────────────────────
+
+export async function runDrain(limit = 25): Promise<void> {
+  const { error } = await supabase.rpc('admin_run_drain', { p_limit: limit });
+  if (error) throw error;
+}
+
+export async function retryFailed(): Promise<number> {
+  const { data, error } = await supabase.rpc('admin_retry_failed');
+  if (error) throw error;
+  return (data as number | null) ?? 0;
+}
+
+export async function setDrainCron(enabled: boolean): Promise<string> {
+  const { data, error } = await supabase.rpc('admin_set_drain_cron', { p_enabled: enabled });
+  if (error) throw error;
+  return (data as string | null) ?? '';
+}

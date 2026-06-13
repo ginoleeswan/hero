@@ -9,7 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,11 +22,29 @@ import { COLORS } from '../../src/constants/colors';
 import {
   getCatalogHealth,
   getCoverageGaps,
+  getRecentRuns,
+  getCronStatus,
+  getComicvineUsageLastHour,
+  runDrain,
+  retryFailed,
+  setDrainCron,
   GAP_PAGE_SIZE,
   type CatalogHealth,
   type CoverageMetric,
   type PublisherCoverage,
+  type EnrichmentRun,
 } from '../../src/lib/db/catalogHealth';
+
+const DRAIN_CRON = 'enrich-comicvine-pending';
+const CV_HOURLY_CAP = 200;
+
+const relTime = (iso: string) => {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+};
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -228,6 +246,72 @@ export default function AdminHealthScreen() {
     staleTime: 60_000,
   });
 
+  // ── Ops / monitoring ────────────────────────────────────────────────────────
+  const queryClient = useQueryClient();
+  const opsEnabled = gateResolved && isAdmin;
+  const runsQ = useQuery({
+    queryKey: ['enrichmentRuns'],
+    queryFn: () => getRecentRuns(8),
+    enabled: opsEnabled,
+    refetchInterval: 15_000,
+  });
+  const cronQ = useQuery({ queryKey: ['cronStatus'], queryFn: getCronStatus, enabled: opsEnabled });
+  const usageQ = useQuery({
+    queryKey: ['cvUsage'],
+    queryFn: getComicvineUsageLastHour,
+    enabled: opsEnabled,
+    refetchInterval: 30_000,
+  });
+
+  const drainJob = cronQ.data?.find((j) => j.jobname === DRAIN_CRON);
+  const cronOn = !!drainJob?.active;
+  const [busy, setBusy] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const flash = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  const onRunDrain = async () => {
+    setBusy('drain');
+    try {
+      await runDrain(25);
+      flash('Batch of 25 queued — watch the runs table.');
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] });
+        queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
+      }, 6000);
+    } catch (e) {
+      flash(`Failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+  const onRetryFailed = async () => {
+    setBusy('retry');
+    try {
+      const n = await retryFailed();
+      flash(`${n.toLocaleString()} failed hero${n === 1 ? '' : 'es'} requeued.`);
+      queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
+    } catch (e) {
+      flash(`Failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+  const onToggleCron = async () => {
+    setBusy('cron');
+    try {
+      const state = await setDrainCron(!cronOn);
+      flash(`Drain cron ${state}.`);
+      queryClient.invalidateQueries({ queryKey: ['cronStatus'] });
+    } catch (e) {
+      flash(`Failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const h = healthQ.data;
 
   // Catalog completeness = mean of the five tracked metric percentages.
@@ -251,6 +335,11 @@ export default function AdminHealthScreen() {
   if (!gateResolved || !isAdmin) return <LogoLoader />;
 
   const gaps = gapsQ.data;
+  const cvUsage = usageQ.data ?? 0;
+  const cvPctUsed = Math.min(100, Math.round((cvUsage / CV_HOURLY_CAP) * 100));
+  const cvColor =
+    cvUsage >= CV_HOURLY_CAP * 0.8 ? COLORS.red : cvUsage >= CV_HOURLY_CAP * 0.5 ? COLORS.yellow : COLORS.green;
+  const runs: EnrichmentRun[] = runsQ.data ?? [];
   const enterStyle = {
     opacity: enter,
     transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }],
@@ -314,6 +403,104 @@ export default function AdminHealthScreen() {
           </View>
           {h && <Gauge value={overall} anim={anim} />}
         </LinearGradient>
+
+        {/* ── Operations ── */}
+        {h && (
+          <View style={styles.card}>
+            <View style={styles.opsHead}>
+              <Text style={styles.cardTitle}>Operations</Text>
+              {toast && (
+                <View style={styles.toastWrap}>
+                  <Ionicons name="information-circle" size={15} color={COLORS.orange} />
+                  <Text style={styles.toast}>{toast}</Text>
+                </View>
+              )}
+            </View>
+            <View style={[styles.opsBody, narrow && { flexDirection: 'column', alignItems: 'stretch' }]}>
+              <View style={styles.opsActions}>
+                <Pressable
+                  onPress={onRunDrain}
+                  disabled={!!busy}
+                  style={[styles.actBtn, styles.actPrimary, !!busy && styles.actDim]}
+                >
+                  {busy === 'drain' ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Ionicons name="play" size={15} color="#fff" />
+                  )}
+                  <Text style={styles.actPrimaryText}>Run batch · 25</Text>
+                </Pressable>
+                <Pressable
+                  onPress={onRetryFailed}
+                  disabled={!!busy || (h.cvStatus.failed ?? 0) === 0}
+                  style={[
+                    styles.actBtn,
+                    styles.actGhost,
+                    (!!busy || (h.cvStatus.failed ?? 0) === 0) && styles.actDim,
+                  ]}
+                >
+                  {busy === 'retry' ? (
+                    <ActivityIndicator size="small" color={COLORS.navy} />
+                  ) : (
+                    <Ionicons name="refresh" size={15} color={COLORS.navy} />
+                  )}
+                  <Text style={styles.actGhostText}>
+                    Retry failed{h.cvStatus.failed ? ` · ${h.cvStatus.failed}` : ''}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={onToggleCron}
+                  disabled={!!busy}
+                  style={[styles.actBtn, cronOn ? styles.actOn : styles.actGhost, !!busy && styles.actDim]}
+                >
+                  {busy === 'cron' ? (
+                    <ActivityIndicator size="small" color={cronOn ? '#fff' : COLORS.navy} />
+                  ) : (
+                    <Ionicons
+                      name={cronOn ? 'pause' : 'play-skip-forward'}
+                      size={15}
+                      color={cronOn ? '#fff' : COLORS.navy}
+                    />
+                  )}
+                  <Text style={cronOn ? styles.actPrimaryText : styles.actGhostText}>
+                    {cronOn ? 'Auto-drain ON' : 'Auto-drain OFF'}
+                  </Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.opsMetrics}>
+                <View style={styles.opsMetric}>
+                  <Text style={styles.opsMetricNum}>{(h.cvStatus.pending ?? 0).toLocaleString()}</Text>
+                  <Text style={styles.opsMetricLabel}>Pending backlog</Text>
+                </View>
+                <View style={styles.opsDivider} />
+                <View style={styles.opsMetricWide}>
+                  <View style={styles.opsMetricHead}>
+                    <Text style={styles.opsMetricLabel}>ComicVine · last hour</Text>
+                    <Text style={[styles.opsUsageNum, { color: cvColor }]}>
+                      {cvUsage}/{CV_HOURLY_CAP}
+                    </Text>
+                  </View>
+                  <View style={styles.cvTrack}>
+                    <View style={[styles.cvFill, { width: `${cvPctUsed}%`, backgroundColor: cvColor }]} />
+                  </View>
+                  <Text style={styles.opsMetricSub}>
+                    {cvUsage >= CV_HOURLY_CAP ? 'at cap — drains will throttle' : 'calls consumed'}
+                  </Text>
+                </View>
+                <View style={styles.opsDivider} />
+                <View style={styles.opsMetric}>
+                  <Text style={[styles.opsMetricNum, { color: cronOn ? COLORS.green : COLORS.grey }]}>
+                    {cronOn ? 'ON' : 'OFF'}
+                  </Text>
+                  <Text style={styles.opsMetricLabel}>
+                    {drainJob?.last_run ? `ran ${relTime(drainJob.last_run)}` : 'auto-drain'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
 
         <View style={[styles.cols, narrow && styles.colsNarrow]}>
           {/* ── Coverage ── */}
@@ -451,6 +638,64 @@ export default function AdminHealthScreen() {
           </View>
         </View>
 
+        {/* ── Recent runs (monitoring) ── */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Recent runs</Text>
+          <Text style={styles.cardHint}>Cron + manual · auto-refreshes every 15s</Text>
+          {runsQ.isLoading ? (
+            <ActivityIndicator color={COLORS.orange} style={{ marginTop: 16 }} />
+          ) : runs.length === 0 ? (
+            <Text style={styles.runsEmpty}>No runs logged yet — hit “Run batch · 25”.</Text>
+          ) : (
+            <>
+              <View style={styles.runHeadRow}>
+                <Text style={[styles.runWhen, styles.runHeadText]}>When</Text>
+                <Text style={[styles.runBy, styles.runHeadText]}>Source</Text>
+                <Text style={[styles.runStat, styles.runHeadText]}>Done</Text>
+                <Text style={[styles.runStat, styles.runHeadText]}>Failed</Text>
+                <Text style={[styles.runStat, styles.runHeadText]}>Retry</Text>
+                <Text style={[styles.runStat, styles.runHeadText]}>Left</Text>
+                <Text style={[styles.runDur, styles.runHeadText]}>Took</Text>
+              </View>
+              {runs.map((r) => (
+                <View key={r.id} style={styles.runRow}>
+                  <Text style={styles.runWhen}>{relTime(r.created_at)}</Text>
+                  <View style={styles.runBy}>
+                    <View
+                      style={[
+                        styles.byChip,
+                        { backgroundColor: r.triggered_by === 'admin' ? COLORS.orange + '22' : '#efe6d6' },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.byChipText,
+                          { color: r.triggered_by === 'admin' ? COLORS.orange : COLORS.navy },
+                        ]}
+                      >
+                        {r.triggered_by}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.runStat, { color: COLORS.green }]}>{r.done}</Text>
+                  <Text style={[styles.runStat, { color: r.failed ? COLORS.red : COLORS.grey }]}>
+                    {r.failed}
+                  </Text>
+                  <Text style={[styles.runStat, { color: r.retry ? COLORS.yellow : COLORS.grey }]}>
+                    {r.retry}
+                  </Text>
+                  <Text style={[styles.runStat, { color: COLORS.navy }]}>
+                    {r.remaining != null ? r.remaining.toLocaleString() : '—'}
+                  </Text>
+                  <Text style={styles.runDur}>
+                    {r.duration_ms != null ? `${(r.duration_ms / 1000).toFixed(1)}s` : '—'}
+                  </Text>
+                </View>
+              ))}
+            </>
+          )}
+        </View>
+
         {/* ── Publisher heatmap (two columns on wide screens) ── */}
         {h && h.byPublisher.length > 0 && (
           <View style={styles.card}>
@@ -565,6 +810,64 @@ const styles = StyleSheet.create({
   colRight: { flex: 1 },
 
   card,
+
+  // Operations
+  opsHead: { flexDirection: 'row', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' },
+  toastWrap: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  toast: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.orange },
+  opsBody: { flexDirection: 'row', alignItems: 'center', gap: 24, marginTop: 14 },
+  opsActions: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  actBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 12,
+  },
+  actPrimary: { backgroundColor: COLORS.orange },
+  actPrimaryText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#fff' },
+  actGhost: { backgroundColor: '#efe6d6' },
+  actGhostText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
+  actOn: { backgroundColor: COLORS.green },
+  actDim: { opacity: 0.4 },
+  opsMetrics: { flexDirection: 'row', alignItems: 'center', gap: 18, flex: 1, flexWrap: 'wrap' },
+  opsDivider: { width: 1, height: 38, backgroundColor: '#efe6d6' },
+  opsMetric: { gap: 2 },
+  opsMetricWide: { gap: 4, flex: 1, minWidth: 180 },
+  opsMetricHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  opsMetricNum: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.black, lineHeight: 26 },
+  opsUsageNum: { fontFamily: 'Flame-Regular', fontSize: 16 },
+  opsMetricLabel: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.grey },
+  opsMetricSub: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey },
+  cvTrack: { height: 8, borderRadius: 4, backgroundColor: '#efe6d6', overflow: 'hidden' },
+  cvFill: { height: 8, borderRadius: 4 },
+
+  // Recent runs
+  runHeadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingBottom: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: '#efe6d6',
+    marginTop: 4,
+  },
+  runHeadText: { color: COLORS.grey, fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 0.4 },
+  runRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f6f0e6',
+  },
+  runWhen: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
+  runBy: { width: 84 },
+  byChip: { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
+  byChipText: { fontFamily: 'Nunito_700Bold', fontSize: 11 },
+  runStat: { width: 58, textAlign: 'right', fontFamily: 'Nunito_700Bold', fontSize: 13 },
+  runDur: { width: 64, textAlign: 'right', fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
+  runsEmpty: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: COLORS.grey, marginTop: 12 },
+
   coverageCard: { gap: 4 },
   cardTitle: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.black },
   cardHint: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey, marginBottom: 8 },

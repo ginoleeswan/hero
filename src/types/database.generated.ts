@@ -14,6 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_usage: {
+        Row: { api: string; created_at: string; endpoint: string | null; id: number; units: number }
+        Insert: { api: string; created_at?: string; endpoint?: string | null; id?: number; units?: number }
+        Update: { api?: string; created_at?: string; endpoint?: string | null; id?: number; units?: number }
+        Relationships: []
+      }
+      catalog_health_snapshots: {
+        Row: {
+          captured_at: string
+          first_issue: number
+          id: number
+          image: number
+          portrait: number
+          stats: number
+          summary: number
+          total: number
+        }
+        Insert: {
+          captured_at?: string
+          first_issue: number
+          id?: number
+          image: number
+          portrait: number
+          stats: number
+          summary: number
+          total: number
+        }
+        Update: {
+          captured_at?: string
+          first_issue?: number
+          id?: number
+          image?: number
+          portrait?: number
+          stats?: number
+          summary?: number
+          total?: number
+        }
+        Relationships: []
+      }
+      enrichment_runs: {
+        Row: {
+          created_at: string
+          done: number
+          duration_ms: number | null
+          failed: number
+          id: number
+          processed: number
+          remaining: number | null
+          retry: number
+          run_type: string
+          triggered_by: string
+        }
+        Insert: {
+          created_at?: string
+          done?: number
+          duration_ms?: number | null
+          failed?: number
+          id?: number
+          processed?: number
+          remaining?: number | null
+          retry?: number
+          run_type: string
+          triggered_by?: string
+        }
+        Update: {
+          created_at?: string
+          done?: number
+          duration_ms?: number | null
+          failed?: number
+          id?: number
+          processed?: number
+          remaining?: number | null
+          retry?: number
+          run_type?: string
+          triggered_by?: string
+        }
+        Relationships: []
+      }
       cv_ingestion_state: {
         Row: {
           error: string | null
@@ -433,11 +511,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_cron_status: { Args: never; Returns: Json }
+      admin_retry_failed: { Args: never; Returns: number }
+      admin_run_drain: { Args: { p_limit?: number }; Returns: string }
+      admin_set_drain_cron: { Args: { p_enabled: boolean }; Returns: string }
       cache_hero_comicvine_data: {
         Args: { p_id: string; p_powers: string[]; p_summary: string }
         Returns: undefined
       }
       catalog_health: { Args: never; Returns: Json }
+      snapshot_catalog_health: { Args: never; Returns: undefined }
       category_facet_counts: {
         Args: {
           p_alignment?: string

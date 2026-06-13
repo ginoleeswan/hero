@@ -313,12 +313,15 @@ async function enrichHero(
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
 
+  const startedAt = Date.now();
   let limit = 25;
   let retryFailed = false;
+  let triggeredBy = 'cron';
   try {
     const body = await req.json().catch(() => ({}));
     if (typeof body?.limit === 'number') limit = Math.min(Math.max(1, body.limit), 50);
     if (body?.retryFailed === true) retryFailed = true;
+    if (typeof body?.triggeredBy === 'string') triggeredBy = body.triggeredBy;
   } catch {
     /* empty body is fine */
   }
@@ -373,6 +376,21 @@ serve(async (req: Request) => {
     .from('heroes')
     .select('*', { count: 'exact', head: true })
     .eq('comicvine_status', 'pending');
+
+  // ── Telemetry: log the run + ComicVine usage for the admin console ──────────
+  await sb.from('enrichment_runs').insert({
+    run_type: retryFailed ? 'comicvine_retry' : 'comicvine_drain',
+    triggered_by: triggeredBy,
+    processed: batch.length,
+    done,
+    failed,
+    retry,
+    remaining: remaining ?? null,
+    duration_ms: Date.now() - startedAt,
+  });
+  if (batch.length > 0) {
+    await sb.from('api_usage').insert({ api: 'comicvine', endpoint: 'character', units: batch.length });
+  }
 
   return json({ processed: batch.length, done, failed, retry, remaining: remaining ?? null });
 });
