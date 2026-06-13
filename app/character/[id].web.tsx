@@ -27,6 +27,8 @@ import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { GalleryStrip } from '../../src/components/GalleryStrip';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
+import { PublisherLogoChip } from '../../src/components/PublisherBadge';
+import { brandForPublisher } from '../../src/constants/publishers';
 import type { CharacterData, IssueCover } from '../../src/types';
 
 const STAT_CONFIG = [
@@ -433,6 +435,8 @@ export default function WebCharacterScreen() {
 
   const { stats, details } = data;
 
+  const publisherBrand = brandForPublisher(stats.biography.publisher);
+
   const alias =
     stats.biography['full-name'] &&
     stats.biography['full-name'] !== stats.name &&
@@ -539,7 +543,12 @@ export default function WebCharacterScreen() {
               >
                 <View style={styles.identityRow}>
                   <View style={styles.titleBlock}>
-                    {stats.biography.publisher ? (
+                    {publisherBrand?.logo ? (
+                      <PublisherLogoChip
+                        publisher={stats.biography.publisher}
+                        height={isDesktop ? 18 : 16}
+                      />
+                    ) : stats.biography.publisher ? (
                       <Text style={styles.stageEyebrow}>{stats.biography.publisher}</Text>
                     ) : null}
                     <Text
@@ -1123,7 +1132,9 @@ export default function WebCharacterScreen() {
                 </View>
 
                 <View style={styles.mIdentity}>
-                  {stats.biography.publisher ? (
+                  {publisherBrand?.logo ? (
+                    <PublisherLogoChip publisher={stats.biography.publisher} height={16} />
+                  ) : stats.biography.publisher ? (
                     <Text style={styles.mEyebrow}>{stats.biography.publisher}</Text>
                   ) : null}
                   <Text style={styles.mName}>{stats.name}</Text>
