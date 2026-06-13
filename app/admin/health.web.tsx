@@ -256,6 +256,40 @@ function PublisherTable({
   );
 }
 
+// Labelled heat pill — the mobile stand-in for a heatmap cell.
+function HeatPill({ label, val }: { label: string; val: number }) {
+  const c = healthColor(val);
+  return (
+    <View style={styles.heatPill}>
+      <Text style={styles.heatPillLabel}>{label}</Text>
+      <View style={[styles.heatPillVal, { backgroundColor: c + '22' }]}>
+        <Text style={[styles.heatPillNum, { color: c }]}>{val}%</Text>
+      </View>
+    </View>
+  );
+}
+
+// Mobile publisher coverage as a stacked card (replaces the wide heatmap table
+// on narrow screens, where the fixed columns would overflow horizontally).
+function PublisherCard({ row, onPick }: { row: PublisherCoverage; onPick: (publisher: string) => void }) {
+  return (
+    <Pressable onPress={() => onPick(row.publisher)} style={styles.pubCard}>
+      <View style={styles.pubCardHead}>
+        <Text style={styles.pubCardName} numberOfLines={1}>
+          {row.publisher}
+        </Text>
+        <Text style={styles.pubCardCount}>{row.total.toLocaleString()} heroes</Text>
+        <Ionicons name="chevron-forward" size={15} color="rgba(41,60,67,0.3)" />
+      </View>
+      <View style={styles.pubCardHeats}>
+        <HeatPill label="Portrait" val={pct(row.portrait, row.total)} />
+        <HeatPill label="Summary" val={pct(row.summary, row.total)} />
+        <HeatPill label="Stats" val={pct(row.stats, row.total)} />
+      </View>
+    </Pressable>
+  );
+}
+
 function MastStat({ value, label, tint }: { value: string; label: string; tint?: string }) {
   return (
     <View style={styles.mstat}>
@@ -687,26 +721,26 @@ export default function AdminHealthScreen() {
           <View style={[styles.mastheadInner, narrow && styles.mastheadInnerNarrow]}>
           <View style={styles.mastheadLeft}>
             <Text style={styles.kicker}>MYTHIQUE · ARCHIVE CONTROL</Text>
-            <Text style={styles.title}>Catalog Health</Text>
+            <Text style={[styles.title, narrow && styles.titleNarrow]}>Catalog Health</Text>
             <Text style={styles.subtitle}>
               {h ? 'Live coverage across the archive' : 'Loading the archive…'}
             </Text>
             {h && (
-              <View style={styles.scoreboard}>
+              <View style={[styles.scoreboard, narrow && styles.scoreboardNarrow]}>
                 <MastStat value={h.total.toLocaleString()} label="Heroes" />
-                <View style={styles.scoreDivider} />
+                {!narrow && <View style={styles.scoreDivider} />}
                 <MastStat
                   value={`${pct(h.metrics.portrait, h.total)}%`}
                   label="Portraits"
                   tint={COLORS.orange}
                 />
-                <View style={styles.scoreDivider} />
+                {!narrow && <View style={styles.scoreDivider} />}
                 <MastStat
                   value={(h.total - h.metrics.portrait).toLocaleString()}
                   label="Awaiting"
                   tint={COLORS.yellow}
                 />
-                <View style={styles.scoreDivider} />
+                {!narrow && <View style={styles.scoreDivider} />}
                 <MastStat value={`${h.byPublisher.length}`} label="Publishers" tint={COLORS.blue} />
               </View>
             )}
@@ -734,7 +768,7 @@ export default function AdminHealthScreen() {
           </View>
         </LinearGradient>
 
-        <View style={styles.body}>
+        <View style={[styles.body, narrow && styles.bodyNarrow]}>
         {/* ── Tab bar ── */}
         <View style={styles.tabBar}>
           {([
@@ -1448,7 +1482,7 @@ export default function AdminHealthScreen() {
               <Text style={styles.cardHint}>By hero count</Text>
               {h.byPublisher.slice(0, 8).map((p) => (
                 <View key={p.publisher} style={styles.pbRow}>
-                  <Text style={styles.pbName} numberOfLines={1}>
+                  <Text style={[styles.pbName, narrow && styles.pbNameNarrow]} numberOfLines={1}>
                     {p.publisher}
                   </Text>
                   <View style={styles.pbTrack}>
@@ -1467,7 +1501,11 @@ export default function AdminHealthScreen() {
             <Text style={styles.cardTitle}>Coverage by publisher</Text>
             <Text style={styles.cardHint}>Top {h.byPublisher.length} by catalogue size</Text>
             {narrow ? (
-              <PublisherTable rows={h.byPublisher} onPick={pickPublisher} />
+              <View style={styles.pubCards}>
+                {h.byPublisher.map((p) => (
+                  <PublisherCard key={p.publisher} row={p} onPick={pickPublisher} />
+                ))}
+              </View>
             ) : (
               <View style={styles.pubSplit}>
                 <PublisherTable
@@ -1507,6 +1545,7 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: COLORS.beige, minHeight: '100%' as unknown as number },
   root: { width: '100%' },
   body: { width: '100%', maxWidth: 1080, alignSelf: 'center', padding: 24, gap: 18 },
+  bodyNarrow: { padding: 16, gap: 14 },
 
   // Masthead — full-bleed dark band; its top tucks under the floating nav so the
   // bar's dark scrim sits on dark, seamless. The content row is held to the same
@@ -1527,7 +1566,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 28,
   },
-  mastheadInnerNarrow: { flexDirection: 'column', alignItems: 'flex-start', gap: 24 },
+  mastheadInnerNarrow: { flexDirection: 'column', alignItems: 'flex-start', gap: 22, paddingHorizontal: 18 },
   mastheadGlow: {
     position: 'absolute',
     top: -120,
@@ -1546,6 +1585,7 @@ const styles = StyleSheet.create({
     color: COLORS.orange,
   },
   title: { fontFamily: 'Flame-Regular', fontSize: 46, color: '#fff', lineHeight: 50 },
+  titleNarrow: { fontSize: 36, lineHeight: 40 },
   subtitle: { fontFamily: 'Nunito_400Regular', fontSize: 15, color: 'rgba(255,255,255,0.6)' },
   statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   statusChip: {
@@ -1575,6 +1615,8 @@ const styles = StyleSheet.create({
 
   // Masthead scoreboard
   scoreboard: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 16, flexWrap: 'wrap' },
+  // On mobile, dividers are dropped and the four stats flow as a tidy grid.
+  scoreboardNarrow: { alignSelf: 'stretch', marginTop: 14, columnGap: 22, rowGap: 14 },
   scoreDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.13)' },
   mstat: { gap: 1 },
   mstatNum: { fontFamily: 'Flame-Regular', fontSize: 27, color: '#fff', lineHeight: 29 },
@@ -1883,6 +1925,7 @@ const styles = StyleSheet.create({
   histLabel: { fontFamily: 'Nunito_400Regular', fontSize: 10, color: COLORS.grey },
   pbRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
   pbName: { width: 130, fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.black },
+  pbNameNarrow: { width: 92 },
   pbTrack: { flex: 1, height: 14, backgroundColor: '#f6f0e6', borderRadius: 7, overflow: 'hidden' },
   pbFill: { height: 14, backgroundColor: COLORS.blue, borderRadius: 7 },
   pbNum: { width: 52, textAlign: 'right', fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
@@ -2017,4 +2060,34 @@ const styles = StyleSheet.create({
   pubCellPct: { width: 92, alignItems: 'flex-end' },
   heat: { borderRadius: 7, paddingHorizontal: 9, paddingVertical: 3, minWidth: 46, alignItems: 'center' },
   heatText: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
+
+  // Publisher heatmap — mobile card layout (replaces the wide table on narrow).
+  pubCards: { gap: 10, marginTop: 4 },
+  pubCard: {
+    backgroundColor: '#faf6ee',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.06)',
+    padding: 13,
+    gap: 11,
+  },
+  pubCardHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  pubCardName: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 15, color: COLORS.black },
+  pubCardCount: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.grey },
+  pubCardHeats: { flexDirection: 'row', gap: 8 },
+  heatPill: { flex: 1, alignItems: 'center', gap: 4 },
+  heatPillLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.4,
+    color: COLORS.grey,
+    textTransform: 'uppercase',
+  },
+  heatPillVal: {
+    width: '100%',
+    borderRadius: 8,
+    paddingVertical: 6,
+    alignItems: 'center',
+  },
+  heatPillNum: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
 });
