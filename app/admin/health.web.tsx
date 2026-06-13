@@ -557,14 +557,20 @@ function BarRow({
   max: number;
   color: string;
 }) {
-  const w = value > 0 && max > 0 ? Math.max(4, Math.round((value / max) * 100)) : 0;
+  // Size with flex weights, not a % width: a % child of a flex-sized track
+  // resolves to 0 in Yoga (RN's layout engine), so the bar would never show.
+  const fill = Math.max(0, value);
+  const rest = Math.max(0, max - value);
   return (
     <View style={styles.barRow}>
       <Text style={styles.barLabel} numberOfLines={1}>
         {label}
       </Text>
       <View style={styles.barTrack}>
-        <View style={[styles.barFill, { width: `${w}%`, backgroundColor: color }]} />
+        <View
+          style={[styles.barFill, { flex: fill, minWidth: value > 0 ? 6 : 0, backgroundColor: color }]}
+        />
+        {rest > 0 && <View style={{ flex: rest }} />}
       </View>
       <Text style={styles.barValue}>{value.toLocaleString()}</Text>
     </View>
@@ -1788,7 +1794,8 @@ export default function AdminHealthScreen() {
                       {p.publisher}
                     </Text>
                     <View style={styles.pbTrack}>
-                      <View style={[styles.pbFill, { width: `${Math.round((p.total / pubMax) * 100)}%` }]} />
+                      <View style={[styles.pbFill, { flex: p.total }]} />
+                      {pubMax > p.total && <View style={{ flex: pubMax - p.total }} />}
                     </View>
                     <Text style={styles.pbNum}>{p.total.toLocaleString()}</Text>
                   </View>
@@ -2305,7 +2312,7 @@ const styles = StyleSheet.create({
   barList: { gap: 2, marginTop: 4 },
   barRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
   barLabel: { width: 84, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
-  barTrack: { flex: 1, height: 16, backgroundColor: '#f1ece2', borderRadius: 8, overflow: 'hidden' },
+  barTrack: { flex: 1, flexDirection: 'row', height: 16, backgroundColor: '#f1ece2', borderRadius: 8, overflow: 'hidden' },
   barFill: { height: 16, borderRadius: 8 },
   barValue: { minWidth: 46, textAlign: 'right', fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
   donutNum: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.black, lineHeight: 28 },
@@ -2324,7 +2331,7 @@ const styles = StyleSheet.create({
   histLabel: { fontFamily: 'Nunito_400Regular', fontSize: 10, color: COLORS.grey },
   pbRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
   pbName: { width: 130, fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.black },
-  pbTrack: { flex: 1, height: 14, backgroundColor: '#f6f0e6', borderRadius: 7, overflow: 'hidden' },
+  pbTrack: { flex: 1, flexDirection: 'row', height: 14, backgroundColor: '#f6f0e6', borderRadius: 7, overflow: 'hidden' },
   pbFill: { height: 14, backgroundColor: COLORS.blue, borderRadius: 7 },
   pbNum: { width: 52, textAlign: 'right', fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
 
