@@ -255,10 +255,14 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
           : ACCORDION_SCALES.small;
 
   if (isDesktop) {
-    const dynamicHeight = Math.min(460, windowHeight * 0.58);
+    // Floor + ceiling, used as a *minimum* (not a hard height): the portrait
+    // strip wants to be tall on big screens, but the glass panel's stacked
+    // content must never be clipped, so the stage grows to fit it on short
+    // windows instead of cropping the name / first-appearance lines.
+    const stageHeight = Math.max(440, Math.min(500, windowHeight * 0.62));
 
     return (
-      <View style={[pss.wrap, { paddingHorizontal: pagePad, height: dynamicHeight }] as object}>
+      <View style={[pss.wrap, { paddingHorizontal: pagePad, minHeight: stageHeight }] as object}>
         {/* Atmospheric orbs — decorative, no interaction */}
         <View style={pss.orbA as object} />
         <View style={pss.orbB as object} />
@@ -556,7 +560,8 @@ const pss = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.10)',
     borderRadius: 16,
-    padding: 28,
+    paddingVertical: 32,
+    paddingHorizontal: 30,
     justifyContent: 'center',
     zIndex: 3,
   } as object,
@@ -566,27 +571,27 @@ const pss = StyleSheet.create({
     letterSpacing: 2.5,
     textTransform: 'uppercase',
     color: COLORS.orange,
-    marginBottom: 6,
+    marginBottom: 10,
   } as object,
   glassPanelName: {
     fontFamily: 'Flame-Regular',
     fontSize: 34,
     color: COLORS.beige,
-    lineHeight: 38,
-    marginBottom: 2,
+    lineHeight: 40,
+    marginBottom: 4,
   } as object,
   glassPanelRealName: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
     lineHeight: 16,
     color: 'rgba(245,235,220,0.5)',
-    marginBottom: 12,
+    marginBottom: 16,
   } as object,
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 16,
+    marginBottom: 20,
   } as object,
   glassPanelPub: {
     fontFamily: 'Nunito_700Bold',
@@ -615,12 +620,12 @@ const pss = StyleSheet.create({
     fontSize: 13,
     color: 'rgba(245,235,220,0.68)',
     lineHeight: 21,
-    marginBottom: 18,
+    marginBottom: 20,
   } as object,
   statPills: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 18,
+    marginBottom: 20,
   } as object,
   statPill: {
     flex: 1,
@@ -668,7 +673,6 @@ const pss = StyleSheet.create({
     fontSize: 11,
     lineHeight: 15,
     color: 'rgba(245,235,220,0.4)',
-    marginBottom: 18,
   } as object,
 
   // Shared / mobile panel text
@@ -692,7 +696,7 @@ const pss = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 16,
+    marginTop: 20,
   },
   ctaBtn: {
     backgroundColor: COLORS.orange,
