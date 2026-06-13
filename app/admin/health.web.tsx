@@ -544,8 +544,9 @@ function Donut({
   );
 }
 
-// Horizontal stat bar — the mobile-native replacement for the donut + vertical
-// histogram, which don't read at phone width. Reads label · bar · value, stacked.
+// Horizontal stat row — label + value on top, then a FULL-WIDTH bar beneath.
+// The track is a plain block (stretched to full width by its column parent), so
+// the % fill resolves; a % inside a flex-sized track collapses to 0 in Yoga.
 function BarRow({
   label,
   value,
@@ -557,22 +558,18 @@ function BarRow({
   max: number;
   color: string;
 }) {
-  // Size with flex weights, not a % width: a % child of a flex-sized track
-  // resolves to 0 in Yoga (RN's layout engine), so the bar would never show.
-  const fill = Math.max(0, value);
-  const rest = Math.max(0, max - value);
+  const p = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
     <View style={styles.barRow}>
-      <Text style={styles.barLabel} numberOfLines={1}>
-        {label}
-      </Text>
-      <View style={styles.barTrack}>
-        <View
-          style={[styles.barFill, { flex: fill, minWidth: value > 0 ? 6 : 0, backgroundColor: color }]}
-        />
-        {rest > 0 && <View style={{ flex: rest }} />}
+      <View style={styles.barHead}>
+        <Text style={styles.barLabel} numberOfLines={1}>
+          {label}
+        </Text>
+        <Text style={styles.barValue}>{value.toLocaleString()}</Text>
       </View>
-      <Text style={styles.barValue}>{value.toLocaleString()}</Text>
+      <View style={styles.barTrack}>
+        <View style={[styles.barFill, { width: `${p}%`, backgroundColor: color }]} />
+      </View>
     </View>
   );
 }
@@ -1788,18 +1785,11 @@ export default function AdminHealthScreen() {
               <View style={[styles.card, { flex: 1 }]}>
                 <Text style={styles.cardTitle}>Largest publishers</Text>
                 <Text style={styles.cardHint}>By hero count</Text>
-                {h.byPublisher.slice(0, 8).map((p) => (
-                  <View key={p.publisher} style={styles.pbRow}>
-                    <Text style={styles.pbName} numberOfLines={1}>
-                      {p.publisher}
-                    </Text>
-                    <View style={styles.pbTrack}>
-                      <View style={[styles.pbFill, { flex: p.total }]} />
-                      {pubMax > p.total && <View style={{ flex: pubMax - p.total }} />}
-                    </View>
-                    <Text style={styles.pbNum}>{p.total.toLocaleString()}</Text>
-                  </View>
-                ))}
+                <View style={styles.barList}>
+                  {h.byPublisher.slice(0, 8).map((p) => (
+                    <BarRow key={p.publisher} label={p.publisher} value={p.total} max={pubMax} color={COLORS.blue} />
+                  ))}
+                </View>
               </View>
             )}
           </View>
@@ -2317,13 +2307,15 @@ const styles = StyleSheet.create({
   // Mobile completeness empty state (the masthead gauge already shows the %).
   trendEmpty: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
   trendEmptyText: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
-  // Horizontal stat bars (mobile Alignment + Power distribution).
-  barList: { gap: 2, marginTop: 4 },
-  barRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
-  barLabel: { width: 84, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
-  barTrack: { flex: 1, flexDirection: 'row', height: 16, backgroundColor: 'rgba(41,60,67,0.08)', borderRadius: 8, overflow: 'hidden' },
-  barFill: { height: 16, borderRadius: 8 },
-  barValue: { minWidth: 46, textAlign: 'right', fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
+  // Horizontal stat bars (mobile Alignment + Power, desktop Largest publishers):
+  // full-width bar under a label/value line.
+  barList: { gap: 6, marginTop: 6 },
+  barRow: { gap: 7, paddingVertical: 5 },
+  barHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 },
+  barLabel: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
+  barTrack: { height: 12, backgroundColor: 'rgba(41,60,67,0.08)', borderRadius: 6, overflow: 'hidden' },
+  barFill: { height: 12, borderRadius: 6 },
+  barValue: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.navy },
   donutNum: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.black, lineHeight: 28 },
   donutLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey },
   donutWrap: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 8 },
@@ -2338,11 +2330,6 @@ const styles = StyleSheet.create({
   histTrack: { width: '100%', height: 120, backgroundColor: '#f6f0e6', borderRadius: 8, justifyContent: 'flex-end', overflow: 'hidden' },
   histBar: { width: '100%', backgroundColor: COLORS.orange, borderRadius: 8 },
   histLabel: { fontFamily: 'Nunito_400Regular', fontSize: 10, color: COLORS.grey },
-  pbRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
-  pbName: { width: 130, fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.black },
-  pbTrack: { flex: 1, flexDirection: 'row', height: 14, backgroundColor: '#f6f0e6', borderRadius: 7, overflow: 'hidden' },
-  pbFill: { height: 14, backgroundColor: COLORS.blue, borderRadius: 7 },
-  pbNum: { width: 52, textAlign: 'right', fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
 
   coverageCard: { gap: 4 },
   cardTitle: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.black },
