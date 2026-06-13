@@ -1,6 +1,11 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { COLORS } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
+import { brandForPublisher } from '../../constants/publishers';
+
+// Logo height used on the featured card; width follows the art's aspect ratio.
+const LOGO_H = 22;
 
 interface WebHeroCardProps {
   id: string;
@@ -19,6 +24,11 @@ export function WebHeroCard({
   publisher,
   onPress,
 }: WebHeroCardProps) {
+  const brand = featured ? brandForPublisher(publisher) : undefined;
+  const logoWidth =
+    brand?.logo && brand.badgeSize
+      ? LOGO_H * (brand.badgeSize.width / brand.badgeSize.height)
+      : 0;
   return (
     <Pressable
       onPress={onPress}
@@ -51,7 +61,15 @@ export function WebHeroCard({
         >
           {name}
         </Text>
-        {featured && publisher ? (
+        {featured && brand?.logo && brand.badgeSize ? (
+          <View style={styles.logoChip}>
+            <Image
+              source={brand.logo}
+              style={{ width: logoWidth, height: LOGO_H }}
+              contentFit="contain"
+            />
+          </View>
+        ) : featured && publisher ? (
           <Text style={styles.publisher} numberOfLines={1}>
             {publisher}
           </Text>
@@ -133,4 +151,12 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  logoChip: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: 'rgba(18,24,28,0.42)',
+  } as object,
 });

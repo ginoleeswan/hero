@@ -1,16 +1,11 @@
 // src/components/search/PortraitCard.tsx — portrait result card for the search grid
 import { View, Text, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PressScale } from '../ui/PressScale';
 import { HeroImage } from '../HeroImage';
+import { PublisherBadge } from '../PublisherBadge';
 import { COLORS } from '../../constants/colors';
 import type { HeroSearchResult } from '../../lib/db/heroes';
-
-const MARVEL_LOGO = require('../../../assets/images/Marvel-Logo.jpg') as number;
-const DC_LOGO = require('../../../assets/images/DC-Logo.png') as number;
-const DARK_HORSE_LOGO = require('../../../assets/images/Dark_Horse_Comics_logo.png') as number;
-const STAR_WARS_LOGO = require('../../../assets/images/star-wars-logo.png') as number;
 
 export function PortraitCard({
   item,
@@ -27,13 +22,6 @@ export function PortraitCard({
   disabled: boolean;
   onDark?: boolean;
 }) {
-  const pub = (item.publisher ?? '').toLowerCase();
-  const isMarvel = pub.includes('marvel');
-  const isDC = pub.includes('dc');
-  const isDarkHorse = pub.includes('dark horse');
-  const isStarWars = pub.includes('george lucas') || pub.includes('star wars');
-  const hasLogo = isMarvel || isDC || isDarkHorse || isStarWars;
-
   // Real name disambiguates same-named heroes (e.g. the three "Batman"s:
   // Bruce Wayne / Terry McGinnis / Dick Grayson) and adds useful context.
   const realName =
@@ -69,31 +57,7 @@ export function PortraitCard({
           style={StyleSheet.absoluteFill}
         />
 
-        {hasLogo ? (
-          <View style={styles.badge}>
-            <Image
-              source={
-                isMarvel ? MARVEL_LOGO : isDC ? DC_LOGO : isDarkHorse ? DARK_HORSE_LOGO : STAR_WARS_LOGO
-              }
-              style={
-                isMarvel
-                  ? styles.logoMarvel
-                  : isDC
-                    ? styles.logoDC
-                    : isDarkHorse
-                      ? styles.logoDarkHorse
-                      : styles.logoStarWars
-              }
-              contentFit="contain"
-            />
-          </View>
-        ) : item.publisher ? (
-          <View style={styles.pubPill}>
-            <Text style={styles.pubText} numberOfLines={1}>
-              {item.publisher}
-            </Text>
-          </View>
-        ) : null}
+        <PublisherBadge publisher={item.publisher} />
 
         <View style={styles.bottom}>
           <Text style={styles.name} numberOfLines={realName ? 1 : 2}>
@@ -119,36 +83,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.navy,
   },
   cardOnDark: { boxShadow: '0 0 0 1px rgba(245,235,220,0.08)' },
-  // Logos float on a faint frosted chip so they read on light artwork too.
-  badge: {
-    position: 'absolute',
-    top: 9,
-    left: 9,
-    paddingHorizontal: 6,
-    paddingVertical: 5,
-    borderRadius: 8,
-    backgroundColor: 'rgba(18,24,28,0.42)',
-  },
-  logoMarvel: { width: 36, height: 14, borderRadius: 2 },
-  logoDC: { width: 20, height: 20 },
-  logoDarkHorse: { width: 16, height: 24 },
-  logoStarWars: { width: 32, height: 32 },
-  pubPill: {
-    position: 'absolute',
-    top: 9,
-    left: 9,
-    backgroundColor: 'rgba(18,24,28,0.5)',
-    borderRadius: 7,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  pubText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: 'rgba(245,235,220,0.85)',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
   bottom: { position: 'absolute', bottom: 12, left: 13, right: 13 },
   name: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.beige, lineHeight: 19 },
   realName: {

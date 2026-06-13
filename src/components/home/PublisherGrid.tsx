@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import type { ImageSourcePropType } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../../constants/colors';
-import { PUBLISHERS, type PublisherConfig } from '../../constants/publishers';
+import { FEATURED_PUBLISHERS, type PublisherBrand } from '../../constants/publishers';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const H_PAD = 16;
@@ -18,7 +18,7 @@ const TILE_H = Math.round(TILE_W * 0.6);
  * always reads regardless of the logo's own colours. A soft top sheen adds
  * depth without any imagery.
  */
-function Tile({ publisher, onPress }: { publisher: PublisherConfig; onPress: () => void }) {
+function Tile({ publisher, onPress }: { publisher: PublisherBrand; onPress: () => void }) {
   const { name, color, colorDark, logo } = publisher;
   return (
     <Pressable
@@ -55,7 +55,7 @@ function Tile({ publisher, onPress }: { publisher: PublisherConfig; onPress: () 
 export function PublisherGrid({ onPress }: { onPress: (slug: string) => void }) {
   return (
     <View style={styles.grid}>
-      {PUBLISHERS.map((p) => (
+      {FEATURED_PUBLISHERS.map((p) => (
         <Tile key={p.slug} publisher={p} onPress={() => onPress(p.slug)} />
       ))}
     </View>

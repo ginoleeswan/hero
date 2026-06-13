@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-nati
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../src/hooks/useAuth';
-import { useProfile } from '../../src/hooks/useProfile';
+import { getProfile } from '../../src/lib/db/profiles';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { LogoLoader } from '../../src/components/ui/LogoLoader';
 import { COLORS } from '../../src/constants/colors';
@@ -53,14 +53,24 @@ export default function AdminHealthScreen() {
   useWebCanvas(COLORS.beige);
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { profile, loading: profileLoading } = useProfile(user?.id);
 
   const [metric, setMetric] = useState<CoverageMetric>('portrait');
   const [page, setPage] = useState(0);
 
-  // Gate: only admins. Anyone else (incl. signed-out) bounces to Explore.
-  const gateResolved = !authLoading && !profileLoading;
-  const isAdmin = !!profile?.is_admin;
+  // Fetch the profile via react-query so the gate keys off a definitive
+  // settled state — not useProfile's `loading` flag, which doesn't reset when
+  // the user id arrives and briefly reads "loaded, no profile", bouncing admins.
+  const profileQ = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: () => getProfile(user!.id),
+    enabled: !!user,
+  });
+
+  // Gate: only admins. Resolved once auth settles AND either there's no user
+  // (signed out) or the profile query has actually finished. Anyone non-admin
+  // bounces to Explore.
+  const gateResolved = !authLoading && (!user || profileQ.isSuccess || profileQ.isError);
+  const isAdmin = !!profileQ.data?.is_admin;
   useEffect(() => {
     if (gateResolved && !isAdmin) router.replace('/explore');
   }, [gateResolved, isAdmin, router]);
