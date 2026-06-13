@@ -163,3 +163,40 @@ export async function setDrainCron(enabled: boolean): Promise<string> {
   if (error) throw error;
   return (data as string | null) ?? '';
 }
+
+// ── Charts: history + distributions ───────────────────────────────────────────
+
+export interface HealthSnapshot {
+  captured_at: string;
+  total: number;
+  portrait: number;
+  image: number;
+  stats: number;
+  summary: number;
+  first_issue: number;
+}
+
+export async function getHealthSnapshots(limit = 60): Promise<HealthSnapshot[]> {
+  const { data, error } = await supabase
+    .from('catalog_health_snapshots')
+    .select('captured_at, total, portrait, image, stats, summary, first_issue')
+    .order('captured_at', { ascending: true })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as HealthSnapshot[];
+}
+
+export interface Distributions {
+  alignment: { good: number; bad: number; neutral: number; unknown: number };
+  power_hist: { label: string; n: number }[];
+}
+
+export async function getCatalogDistributions(): Promise<Distributions> {
+  const { data, error } = await supabase.rpc('catalog_distributions');
+  if (error) throw error;
+  const d = (data ?? {}) as Partial<Distributions>;
+  return {
+    alignment: d.alignment ?? { good: 0, bad: 0, neutral: 0, unknown: 0 },
+    power_hist: d.power_hist ?? [],
+  };
+}

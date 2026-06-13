@@ -519,6 +519,7 @@ export type Database = {
         Args: { p_id: string; p_powers: string[]; p_summary: string }
         Returns: undefined
       }
+      catalog_distributions: { Args: never; Returns: Json }
       catalog_health: { Args: never; Returns: Json }
       snapshot_catalog_health: { Args: never; Returns: undefined }
       category_facet_counts: {

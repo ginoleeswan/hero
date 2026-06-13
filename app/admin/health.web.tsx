@@ -13,7 +13,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Path, Polyline } from 'react-native-svg';
 import { useAuth } from '../../src/hooks/useAuth';
 import { getProfile } from '../../src/lib/db/profiles';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
@@ -28,11 +28,14 @@ import {
   runDrain,
   retryFailed,
   setDrainCron,
+  getHealthSnapshots,
+  getCatalogDistributions,
   GAP_PAGE_SIZE,
   type CatalogHealth,
   type CoverageMetric,
   type PublisherCoverage,
   type EnrichmentRun,
+  type HealthSnapshot,
 } from '../../src/lib/db/catalogHealth';
 
 const DRAIN_CRON = 'enrich-comicvine-pending';
@@ -212,6 +215,93 @@ function MastStat({ value, label, tint }: { value: string; label: string; tint?:
   );
 }
 
+// Segmented ring (alignment split).
+function Donut({
+  segments,
+  total,
+}: {
+  segments: { value: number; color: string; label: string }[];
+  total: number;
+}) {
+  const size = 132;
+  const stroke = 17;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  let acc = 0;
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke="#efe6d6" strokeWidth={stroke} fill="none" />
+        {segments.map((s, i) => {
+          const frac = total > 0 ? s.value / total : 0;
+          const el = (
+            <Circle
+              key={i}
+              cx={size / 2}
+              cy={size / 2}
+              r={r}
+              stroke={s.color}
+              strokeWidth={stroke}
+              fill="none"
+              strokeDasharray={`${frac * c} ${c}`}
+              strokeDashoffset={-acc * c}
+            />
+          );
+          acc += frac;
+          return el;
+        })}
+      </Svg>
+      <View style={{ position: 'absolute', alignItems: 'center' }}>
+        <Text style={styles.donutNum}>{total.toLocaleString()}</Text>
+        <Text style={styles.donutLabel}>heroes</Text>
+      </View>
+    </View>
+  );
+}
+
+// Completeness-over-time area+line. Fixed 0–100 Y scale; width measured on layout.
+function CompletenessChart({ snaps }: { snaps: HealthSnapshot[] }) {
+  const [w, setW] = useState(0);
+  const H = 160;
+  const padT = 12;
+  const padB = 22;
+  const vals = snaps.map((s) => {
+    const ms = [s.portrait, s.image, s.stats, s.summary, s.first_issue].map((m) =>
+      s.total > 0 ? (m / s.total) * 100 : 0,
+    );
+    return Math.round(ms.reduce((a, b) => a + b, 0) / ms.length);
+  });
+  const yOf = (v: number) => padT + (1 - v / 100) * (H - padT - padB);
+  const xOf = (i: number) => (vals.length <= 1 ? w / 2 : (i / (vals.length - 1)) * w);
+  const line = vals.map((v, i) => `${xOf(i)},${yOf(v)}`).join(' ');
+  const area = vals.length
+    ? `M0,${H - padB} ` + vals.map((v, i) => `L${xOf(i)},${yOf(v)}`).join(' ') + ` L${w},${H - padB} Z`
+    : '';
+  return (
+    <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: H }}>
+      {w > 0 && (
+        <Svg width={w} height={H}>
+          {[0, 50, 100].map((g) => (
+            <Polyline
+              key={g}
+              points={`0,${yOf(g)} ${w},${yOf(g)}`}
+              stroke="#efe6d6"
+              strokeWidth={1}
+            />
+          ))}
+          {area ? <Path d={area} fill={COLORS.green + '1f'} /> : null}
+          {vals.length > 1 && (
+            <Polyline points={line} fill="none" stroke={COLORS.green} strokeWidth={2.5} />
+          )}
+          {vals.map((v, i) => (
+            <Circle key={i} cx={xOf(i)} cy={yOf(v)} r={vals.length === 1 ? 5 : 3.5} fill={COLORS.green} />
+          ))}
+        </Svg>
+      )}
+    </View>
+  );
+}
+
 export default function AdminHealthScreen() {
   useWebCanvas(COLORS.beige);
   const router = useRouter();
@@ -261,6 +351,18 @@ export default function AdminHealthScreen() {
     queryFn: getComicvineUsageLastHour,
     enabled: opsEnabled,
     refetchInterval: 30_000,
+  });
+  const distQ = useQuery({
+    queryKey: ['distributions'],
+    queryFn: getCatalogDistributions,
+    enabled: opsEnabled,
+    staleTime: 60_000,
+  });
+  const snapsQ = useQuery({
+    queryKey: ['healthSnapshots'],
+    queryFn: () => getHealthSnapshots(60),
+    enabled: opsEnabled,
+    staleTime: 60_000,
   });
 
   const drainJob = cronQ.data?.find((j) => j.jobname === DRAIN_CRON);
@@ -340,6 +442,12 @@ export default function AdminHealthScreen() {
   const cvColor =
     cvUsage >= CV_HOURLY_CAP * 0.8 ? COLORS.red : cvUsage >= CV_HOURLY_CAP * 0.5 ? COLORS.yellow : COLORS.green;
   const runs: EnrichmentRun[] = runsQ.data ?? [];
+  const dist = distQ.data;
+  const snaps = snapsQ.data ?? [];
+  const align = dist?.alignment;
+  const alignTotal = align ? align.good + align.bad + align.neutral + align.unknown : 0;
+  const histMax = dist ? Math.max(1, ...dist.power_hist.map((b) => b.n)) : 1;
+  const pubMax = h && h.byPublisher.length ? h.byPublisher[0].total : 1;
   const enterStyle = {
     opacity: enter,
     transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }],
@@ -696,6 +804,96 @@ export default function AdminHealthScreen() {
           )}
         </View>
 
+        {/* ── Trends & distribution ── */}
+        {h && (
+          <View style={[styles.cols, narrow && styles.colsNarrow]}>
+            <View style={[styles.card, !narrow && styles.colRight]}>
+              <Text style={styles.cardTitle}>Completeness over time</Text>
+              <Text style={styles.cardHint}>Daily snapshots · now {overall}%</Text>
+              {snaps.length >= 2 ? (
+                <CompletenessChart snaps={snaps} />
+              ) : (
+                <View style={styles.chartEmpty}>
+                  <Text style={styles.bigStat}>{overall}%</Text>
+                  <Text style={styles.runsEmpty}>
+                    History begins today — the trend line fills in daily.
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {dist && (
+              <View style={[styles.card, !narrow && styles.colDonut]}>
+                <Text style={styles.cardTitle}>Alignment</Text>
+                <Text style={styles.cardHint}>Hero vs villain split</Text>
+                <View style={styles.donutWrap}>
+                  <Donut
+                    total={alignTotal}
+                    segments={[
+                      { value: align!.good, color: COLORS.green, label: 'Heroes' },
+                      { value: align!.bad, color: COLORS.red, label: 'Villains' },
+                      { value: align!.neutral, color: COLORS.yellow, label: 'Neutral' },
+                      { value: align!.unknown, color: COLORS.grey, label: 'Unknown' },
+                    ]}
+                  />
+                  <View style={styles.legend}>
+                    {[
+                      { c: COLORS.green, l: 'Heroes', v: align!.good },
+                      { c: COLORS.red, l: 'Villains', v: align!.bad },
+                      { c: COLORS.yellow, l: 'Neutral', v: align!.neutral },
+                      { c: COLORS.grey, l: 'Unknown', v: align!.unknown },
+                    ].map((s) => (
+                      <View key={s.l} style={styles.legendRow}>
+                        <View style={[styles.legendDot, { backgroundColor: s.c }]} />
+                        <Text style={styles.legendLabel}>{s.l}</Text>
+                        <Text style={styles.legendVal}>{s.v.toLocaleString()}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+
+        {h && dist && (
+          <View style={[styles.cols, narrow && styles.colsNarrow]}>
+            <View style={[styles.card, { flex: 1 }]}>
+              <Text style={styles.cardTitle}>Power distribution</Text>
+              <Text style={styles.cardHint}>Total powerstats (0–600)</Text>
+              <View style={styles.histRow}>
+                {dist.power_hist.map((b) => (
+                  <View key={b.label} style={styles.histCol}>
+                    <Text style={styles.histN}>{b.n}</Text>
+                    <View style={styles.histTrack}>
+                      <View
+                        style={[styles.histBar, { height: `${Math.round((b.n / histMax) * 100)}%` }]}
+                      />
+                    </View>
+                    <Text style={styles.histLabel}>{b.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <View style={[styles.card, { flex: 1 }]}>
+              <Text style={styles.cardTitle}>Largest publishers</Text>
+              <Text style={styles.cardHint}>By hero count</Text>
+              {h.byPublisher.slice(0, 8).map((p) => (
+                <View key={p.publisher} style={styles.pbRow}>
+                  <Text style={styles.pbName} numberOfLines={1}>
+                    {p.publisher}
+                  </Text>
+                  <View style={styles.pbTrack}>
+                    <View style={[styles.pbFill, { width: `${Math.round((p.total / pubMax) * 100)}%` }]} />
+                  </View>
+                  <Text style={styles.pbNum}>{p.total.toLocaleString()}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* ── Publisher heatmap (two columns on wide screens) ── */}
         {h && h.byPublisher.length > 0 && (
           <View style={styles.card}>
@@ -867,6 +1065,31 @@ const styles = StyleSheet.create({
   runStat: { width: 58, textAlign: 'right', fontFamily: 'Nunito_700Bold', fontSize: 13 },
   runDur: { width: 64, textAlign: 'right', fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
   runsEmpty: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: COLORS.grey, marginTop: 12 },
+
+  colDonut: { width: 300, flexGrow: 0, flexShrink: 0 },
+
+  // Charts
+  chartEmpty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 28, gap: 6 },
+  bigStat: { fontFamily: 'Flame-Regular', fontSize: 52, color: COLORS.green, lineHeight: 54 },
+  donutNum: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.black, lineHeight: 28 },
+  donutLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey },
+  donutWrap: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 8 },
+  legend: { flex: 1, gap: 8 },
+  legendRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  legendDot: { width: 10, height: 10, borderRadius: 10 },
+  legendLabel: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
+  legendVal: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
+  histRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, marginTop: 10 },
+  histCol: { flex: 1, alignItems: 'center', gap: 6 },
+  histN: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
+  histTrack: { width: '100%', height: 120, backgroundColor: '#f6f0e6', borderRadius: 8, justifyContent: 'flex-end', overflow: 'hidden' },
+  histBar: { width: '100%', backgroundColor: COLORS.orange, borderRadius: 8 },
+  histLabel: { fontFamily: 'Nunito_400Regular', fontSize: 10, color: COLORS.grey },
+  pbRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
+  pbName: { width: 130, fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.black },
+  pbTrack: { flex: 1, height: 14, backgroundColor: '#f6f0e6', borderRadius: 7, overflow: 'hidden' },
+  pbFill: { height: 14, backgroundColor: COLORS.blue, borderRadius: 7 },
+  pbNum: { width: 52, textAlign: 'right', fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
 
   coverageCard: { gap: 4 },
   cardTitle: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.black },
