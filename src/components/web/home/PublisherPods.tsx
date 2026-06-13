@@ -4,7 +4,7 @@ import { COLORS } from '../../../constants/colors';
 import { FEATURED_PUBLISHERS } from '../../../constants/publishers';
 
 // Logo height inside a pod; width follows each mark's aspect ratio.
-const LOGO_H = 34;
+const LOGO_H = 44;
 
 /**
  * The row beneath the spotlight: one pod per featured publisher, each showing

@@ -92,7 +92,8 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['image'],
     color: '#16A085',
     colorDark: '#0C5F4E',
-    // No logo asset yet → falls back to the name wordmark.
+    logo: require('../../assets/images/image-comics-logo.svg'),
+    badgeSize: { width: 50, height: 20 },
     featured: true,
   },
 ];
