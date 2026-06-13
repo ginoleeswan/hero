@@ -1856,9 +1856,9 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: COLORS.beige, minHeight: '100%' as unknown as number },
   root: { width: '100%' },
   body: { width: '100%', maxWidth: 1080, alignSelf: 'center', padding: 24, gap: 18 },
-  // Mobile: full-bleed sheets — no side padding on the body, so cards span the
-  // whole width; thin vertical gaps (beige showing through) separate them.
-  bodyNarrow: { paddingHorizontal: 0, paddingTop: 14, paddingBottom: 14, gap: 10 },
+  // Mobile: list-style — content sits on the beige canvas, inset from the screen
+  // edges; sections are separated by hairline dividers (see cardNarrow), no gaps.
+  bodyNarrow: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8, gap: 0 },
   bottomSpacer: { height: 40 },
   // Clear the fixed bottom tab bar + the home-indicator inset on mobile.
   bottomSpacerNarrow: {
@@ -2010,15 +2010,24 @@ const styles = StyleSheet.create({
 
   // Columns
   cols: { flexDirection: 'row', gap: 18, alignItems: 'flex-start' },
-  colsNarrow: { flexDirection: 'column', gap: 10 },
+  colsNarrow: { flexDirection: 'column', gap: 0 },
   colLeft: { width: 360, flexGrow: 0, flexShrink: 0 },
   colRight: { flex: 1 },
 
   card,
-  // Mobile: full-bleed flat sheet — drop the shadow/border that frame the card
-  // on desktop; the beige gap between sheets is the only separator needed. Keeps
-  // the white surface (charts need it for contrast) while reclaiming the frame.
-  cardNarrow: { padding: 16, borderRadius: 18, borderWidth: 0, shadowOpacity: 0, elevation: 0 },
+  // Mobile: no card chrome — transparent section on the canvas, set off only by a
+  // bottom hairline divider (list-style). Horizontal inset comes from the body.
+  cardNarrow: {
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    padding: 0,
+    paddingVertical: 18,
+    borderWidth: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(41,60,67,0.1)',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   skBar: { backgroundColor: '#ece3d4', borderRadius: 8, marginBottom: 10 },
 
   // Tab bar
@@ -2312,7 +2321,7 @@ const styles = StyleSheet.create({
   barList: { gap: 2, marginTop: 4 },
   barRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
   barLabel: { width: 84, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
-  barTrack: { flex: 1, flexDirection: 'row', height: 16, backgroundColor: '#f1ece2', borderRadius: 8, overflow: 'hidden' },
+  barTrack: { flex: 1, flexDirection: 'row', height: 16, backgroundColor: 'rgba(41,60,67,0.08)', borderRadius: 8, overflow: 'hidden' },
   barFill: { height: 16, borderRadius: 8 },
   barValue: { minWidth: 46, textAlign: 'right', fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
   donutNum: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.black, lineHeight: 28 },
