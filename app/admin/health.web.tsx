@@ -544,6 +544,33 @@ function Donut({
   );
 }
 
+// Horizontal stat bar — the mobile-native replacement for the donut + vertical
+// histogram, which don't read at phone width. Reads label · bar · value, stacked.
+function BarRow({
+  label,
+  value,
+  max,
+  color,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  color: string;
+}) {
+  const w = value > 0 && max > 0 ? Math.max(4, Math.round((value / max) * 100)) : 0;
+  return (
+    <View style={styles.barRow}>
+      <Text style={styles.barLabel} numberOfLines={1}>
+        {label}
+      </Text>
+      <View style={styles.barTrack}>
+        <View style={[styles.barFill, { width: `${w}%`, backgroundColor: color }]} />
+      </View>
+      <Text style={styles.barValue}>{value.toLocaleString()}</Text>
+    </View>
+  );
+}
+
 // Completeness-over-time area+line. Fixed 0–100 Y scale; width measured on layout.
 function CompletenessChart({ snaps }: { snaps: HealthSnapshot[] }) {
   const [w, setW] = useState(0);
@@ -1657,9 +1684,17 @@ export default function AdminHealthScreen() {
               </View>
               {snaps.length >= 2 ? (
                 <CompletenessChart snaps={snaps} />
+              ) : narrow ? (
+                // Mobile: the masthead gauge already shows the % — keep this slim.
+                <View style={styles.trendEmpty}>
+                  <Ionicons name="trending-up-outline" size={18} color={COLORS.grey} />
+                  <Text style={styles.trendEmptyText}>
+                    Daily history starts today — the trend line fills in over time.
+                  </Text>
+                </View>
               ) : (
-                <View style={[styles.chartEmpty, narrow && styles.chartEmptyNarrow]}>
-                  <Text style={[styles.bigStat, narrow && styles.bigStatNarrow]}>{overall}%</Text>
+                <View style={styles.chartEmpty}>
+                  <Text style={styles.bigStat}>{overall}%</Text>
                   <Text style={styles.runsEmpty}>
                     History begins today — the trend line fills in daily.
                   </Text>
@@ -1671,31 +1706,44 @@ export default function AdminHealthScreen() {
               <View style={[styles.card, narrow && styles.cardNarrow, !narrow && styles.colDonut]}>
                 <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Alignment</Text>
                 <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Hero vs villain split</Text>
-                <View style={styles.donutWrap}>
-                  <Donut
-                    total={alignTotal}
-                    segments={[
-                      { value: align!.good, color: COLORS.green, label: 'Heroes' },
-                      { value: align!.bad, color: COLORS.red, label: 'Villains' },
-                      { value: align!.neutral, color: COLORS.yellow, label: 'Neutral' },
-                      { value: align!.unknown, color: COLORS.grey, label: 'Unknown' },
-                    ]}
-                  />
-                  <View style={styles.legend}>
+                {narrow ? (
+                  <View style={styles.barList}>
                     {[
-                      { c: COLORS.green, l: 'Heroes', v: align!.good },
-                      { c: COLORS.red, l: 'Villains', v: align!.bad },
-                      { c: COLORS.yellow, l: 'Neutral', v: align!.neutral },
-                      { c: COLORS.grey, l: 'Unknown', v: align!.unknown },
+                      { l: 'Heroes', v: align!.good, c: COLORS.green },
+                      { l: 'Villains', v: align!.bad, c: COLORS.red },
+                      { l: 'Neutral', v: align!.neutral, c: COLORS.yellow },
+                      { l: 'Unknown', v: align!.unknown, c: COLORS.grey },
                     ].map((s) => (
-                      <View key={s.l} style={styles.legendRow}>
-                        <View style={[styles.legendDot, { backgroundColor: s.c }]} />
-                        <Text style={styles.legendLabel}>{s.l}</Text>
-                        <Text style={styles.legendVal}>{s.v.toLocaleString()}</Text>
-                      </View>
+                      <BarRow key={s.l} label={s.l} value={s.v} max={alignTotal} color={s.c} />
                     ))}
                   </View>
-                </View>
+                ) : (
+                  <View style={styles.donutWrap}>
+                    <Donut
+                      total={alignTotal}
+                      segments={[
+                        { value: align!.good, color: COLORS.green, label: 'Heroes' },
+                        { value: align!.bad, color: COLORS.red, label: 'Villains' },
+                        { value: align!.neutral, color: COLORS.yellow, label: 'Neutral' },
+                        { value: align!.unknown, color: COLORS.grey, label: 'Unknown' },
+                      ]}
+                    />
+                    <View style={styles.legend}>
+                      {[
+                        { c: COLORS.green, l: 'Heroes', v: align!.good },
+                        { c: COLORS.red, l: 'Villains', v: align!.bad },
+                        { c: COLORS.yellow, l: 'Neutral', v: align!.neutral },
+                        { c: COLORS.grey, l: 'Unknown', v: align!.unknown },
+                      ].map((s) => (
+                        <View key={s.l} style={styles.legendRow}>
+                          <View style={[styles.legendDot, { backgroundColor: s.c }]} />
+                          <Text style={styles.legendLabel}>{s.l}</Text>
+                          <Text style={styles.legendVal}>{s.v.toLocaleString()}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -1706,36 +1754,47 @@ export default function AdminHealthScreen() {
             <View style={[styles.card, narrow && styles.cardNarrow, { flex: 1 }]}>
               <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Power distribution</Text>
               <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Total powerstats (0–600)</Text>
-              <View style={styles.histRow}>
-                {dist.power_hist.map((b) => (
-                  <View key={b.label} style={styles.histCol}>
-                    <Text style={styles.histN}>{b.n}</Text>
-                    <View style={[styles.histTrack, narrow && styles.histTrackNarrow]}>
-                      <View
-                        style={[styles.histBar, { height: `${Math.round((b.n / histMax) * 100)}%` }]}
-                      />
+              {narrow ? (
+                <View style={styles.barList}>
+                  {dist.power_hist.map((b) => (
+                    <BarRow key={b.label} label={b.label} value={b.n} max={histMax} color={COLORS.orange} />
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.histRow}>
+                  {dist.power_hist.map((b) => (
+                    <View key={b.label} style={styles.histCol}>
+                      <Text style={styles.histN}>{b.n}</Text>
+                      <View style={styles.histTrack}>
+                        <View
+                          style={[styles.histBar, { height: `${Math.round((b.n / histMax) * 100)}%` }]}
+                        />
+                      </View>
+                      <Text style={styles.histLabel}>{b.label}</Text>
                     </View>
-                    <Text style={styles.histLabel}>{b.label}</Text>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* Largest publishers is redundant with Coverage-by-publisher on mobile. */}
+            {!narrow && (
+              <View style={[styles.card, { flex: 1 }]}>
+                <Text style={styles.cardTitle}>Largest publishers</Text>
+                <Text style={styles.cardHint}>By hero count</Text>
+                {h.byPublisher.slice(0, 8).map((p) => (
+                  <View key={p.publisher} style={styles.pbRow}>
+                    <Text style={styles.pbName} numberOfLines={1}>
+                      {p.publisher}
+                    </Text>
+                    <View style={styles.pbTrack}>
+                      <View style={[styles.pbFill, { width: `${Math.round((p.total / pubMax) * 100)}%` }]} />
+                    </View>
+                    <Text style={styles.pbNum}>{p.total.toLocaleString()}</Text>
                   </View>
                 ))}
               </View>
-            </View>
-
-            <View style={[styles.card, narrow && styles.cardNarrow, { flex: 1 }]}>
-              <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Largest publishers</Text>
-              <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>By hero count</Text>
-              {h.byPublisher.slice(0, 8).map((p) => (
-                <View key={p.publisher} style={styles.pbRow}>
-                  <Text style={[styles.pbName, narrow && styles.pbNameNarrow]} numberOfLines={1}>
-                    {p.publisher}
-                  </Text>
-                  <View style={styles.pbTrack}>
-                    <View style={[styles.pbFill, { width: `${Math.round((p.total / pubMax) * 100)}%` }]} />
-                  </View>
-                  <Text style={styles.pbNum}>{p.total.toLocaleString()}</Text>
-                </View>
-              ))}
-            </View>
+            )}
           </View>
         )}
 
@@ -2238,9 +2297,17 @@ const styles = StyleSheet.create({
 
   // Charts
   chartEmpty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 28, gap: 6 },
-  chartEmptyNarrow: { paddingVertical: 14 },
   bigStat: { fontFamily: 'Flame-Regular', fontSize: 52, color: COLORS.green, lineHeight: 54 },
-  bigStatNarrow: { fontSize: 34, lineHeight: 36 },
+  // Mobile completeness empty state (the masthead gauge already shows the %).
+  trendEmpty: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
+  trendEmptyText: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
+  // Horizontal stat bars (mobile Alignment + Power distribution).
+  barList: { gap: 2, marginTop: 4 },
+  barRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
+  barLabel: { width: 84, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
+  barTrack: { flex: 1, height: 16, backgroundColor: '#f1ece2', borderRadius: 8, overflow: 'hidden' },
+  barFill: { height: 16, borderRadius: 8 },
+  barValue: { minWidth: 46, textAlign: 'right', fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
   donutNum: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.black, lineHeight: 28 },
   donutLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey },
   donutWrap: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 8 },
@@ -2253,12 +2320,10 @@ const styles = StyleSheet.create({
   histCol: { flex: 1, alignItems: 'center', gap: 6 },
   histN: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   histTrack: { width: '100%', height: 120, backgroundColor: '#f6f0e6', borderRadius: 8, justifyContent: 'flex-end', overflow: 'hidden' },
-  histTrackNarrow: { height: 92 },
   histBar: { width: '100%', backgroundColor: COLORS.orange, borderRadius: 8 },
   histLabel: { fontFamily: 'Nunito_400Regular', fontSize: 10, color: COLORS.grey },
   pbRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
   pbName: { width: 130, fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.black },
-  pbNameNarrow: { width: 92 },
   pbTrack: { flex: 1, height: 14, backgroundColor: '#f6f0e6', borderRadius: 7, overflow: 'hidden' },
   pbFill: { height: 14, backgroundColor: COLORS.blue, borderRadius: 7 },
   pbNum: { width: 52, textAlign: 'right', fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
