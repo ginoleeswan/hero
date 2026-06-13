@@ -909,7 +909,7 @@ export default function AdminHealthScreen() {
         {tab === 'operations' && h && (
           <View style={[styles.card, narrow && styles.cardNarrow]}>
             <View style={styles.opsHead}>
-              <Text style={styles.cardTitle}>Operations</Text>
+              <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Operations</Text>
               {toast && (
                 <View style={styles.toastWrap}>
                   <Ionicons name="information-circle" size={15} color={COLORS.orange} />
@@ -1081,8 +1081,8 @@ export default function AdminHealthScreen() {
           <View style={[styles.card, narrow && styles.cardNarrow]}>
             <View style={styles.logHead}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>Activity log</Text>
-                <Text style={styles.cardHint}>Live results of actions & runs this session</Text>
+                <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Activity log</Text>
+                <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Live results of actions & runs this session</Text>
               </View>
               {log.length > 0 && (
                 <Pressable onPress={() => setLog([])} style={styles.miniBtn}>
@@ -1116,8 +1116,8 @@ export default function AdminHealthScreen() {
         {/* ── Single-hero console ── */}
         {tab === 'operations' && (
           <View style={[styles.card, narrow && styles.cardNarrow]}>
-            <Text style={styles.cardTitle}>Hero console</Text>
-            <Text style={styles.cardHint}>Find any hero and re-fetch its ComicVine data on demand</Text>
+            <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Hero console</Text>
+            <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Find any hero and re-fetch its ComicVine data on demand</Text>
             <View style={styles.heroSearchBox}>
               <Ionicons name="search" size={16} color={COLORS.grey} />
               <TextInput
@@ -1200,8 +1200,8 @@ export default function AdminHealthScreen() {
           <View style={[styles.cols, narrow && styles.colsNarrow]}>
           {/* ── Coverage ── */}
           <View style={[styles.card, narrow && styles.cardNarrow, styles.coverageCard, !narrow && styles.colLeft]}>
-            <Text style={styles.cardTitle}>Coverage</Text>
-            <Text style={styles.cardHint}>Sorted by weakest first · tap one to load its queue</Text>
+            <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Coverage</Text>
+            <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Sorted by weakest first · tap one to load its queue</Text>
             {!h ? (
               <ActivityIndicator color={COLORS.orange} style={{ marginTop: 20 }} />
             ) : (
@@ -1231,8 +1231,8 @@ export default function AdminHealthScreen() {
           {/* ── Backfill queue ── */}
           <View style={[styles.card, narrow && styles.cardNarrow, !narrow && styles.colRight]}>
             <View style={styles.queueHead}>
-              <Text style={styles.cardTitle}>Backfill queue</Text>
-              <Text style={styles.cardHint}>Most-viewed first</Text>
+              <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Backfill queue</Text>
+              <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Most-viewed first</Text>
             </View>
             <View style={styles.tabs}>
               {(Object.keys(WORKLIST_LABEL) as CoverageMetric[]).map((m) => {
@@ -1351,8 +1351,8 @@ export default function AdminHealthScreen() {
         {/* ── Recent runs (monitoring) ── */}
         {tab === 'operations' && (
         <View style={[styles.card, narrow && styles.cardNarrow]}>
-          <Text style={styles.cardTitle}>Recent runs</Text>
-          <Text style={styles.cardHint}>Cron + manual · auto-refreshes every 15s</Text>
+          <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Recent runs</Text>
+          <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Cron + manual · auto-refreshes every 15s</Text>
           {runsQ.isLoading ? (
             <ActivityIndicator color={COLORS.orange} style={{ marginTop: 16 }} />
           ) : runs.length === 0 ? (
@@ -1476,8 +1476,8 @@ export default function AdminHealthScreen() {
             <View style={[styles.card, narrow && styles.cardNarrow, !narrow && styles.colRight]}>
               <View style={styles.cardTitleRow}>
                 <View>
-                  <Text style={styles.cardTitle}>Completeness over time</Text>
-                  <Text style={styles.cardHint}>Daily snapshots · now {overall}%</Text>
+                  <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Completeness over time</Text>
+                  <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Daily snapshots · now {overall}%</Text>
                 </View>
                 <Pressable
                   onPress={onSnapshot}
@@ -1506,8 +1506,8 @@ export default function AdminHealthScreen() {
 
             {dist && (
               <View style={[styles.card, narrow && styles.cardNarrow, !narrow && styles.colDonut]}>
-                <Text style={styles.cardTitle}>Alignment</Text>
-                <Text style={styles.cardHint}>Hero vs villain split</Text>
+                <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Alignment</Text>
+                <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Hero vs villain split</Text>
                 <View style={styles.donutWrap}>
                   <Donut
                     total={alignTotal}
@@ -1541,8 +1541,8 @@ export default function AdminHealthScreen() {
         {tab === 'overview' && h && dist && (
           <View style={[styles.cols, narrow && styles.colsNarrow]}>
             <View style={[styles.card, narrow && styles.cardNarrow, { flex: 1 }]}>
-              <Text style={styles.cardTitle}>Power distribution</Text>
-              <Text style={styles.cardHint}>Total powerstats (0–600)</Text>
+              <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Power distribution</Text>
+              <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Total powerstats (0–600)</Text>
               <View style={styles.histRow}>
                 {dist.power_hist.map((b) => (
                   <View key={b.label} style={styles.histCol}>
@@ -1559,8 +1559,8 @@ export default function AdminHealthScreen() {
             </View>
 
             <View style={[styles.card, narrow && styles.cardNarrow, { flex: 1 }]}>
-              <Text style={styles.cardTitle}>Largest publishers</Text>
-              <Text style={styles.cardHint}>By hero count</Text>
+              <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Largest publishers</Text>
+              <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>By hero count</Text>
               {h.byPublisher.slice(0, 8).map((p) => (
                 <View key={p.publisher} style={styles.pbRow}>
                   <Text style={[styles.pbName, narrow && styles.pbNameNarrow]} numberOfLines={1}>
@@ -1579,8 +1579,8 @@ export default function AdminHealthScreen() {
         {/* ── Publisher heatmap (two columns on wide screens) ── */}
         {tab === 'overview' && h && h.byPublisher.length > 0 && (
           <View style={[styles.card, narrow && styles.cardNarrow]}>
-            <Text style={styles.cardTitle}>Coverage by publisher</Text>
-            <Text style={styles.cardHint}>Top {h.byPublisher.length} by catalogue size</Text>
+            <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Coverage by publisher</Text>
+            <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Top {h.byPublisher.length} by catalogue size</Text>
             {narrow ? (
               <View style={styles.pubCards}>
                 {h.byPublisher.map((p) => (
@@ -2074,7 +2074,10 @@ const styles = StyleSheet.create({
 
   coverageCard: { gap: 4 },
   cardTitle: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.black },
+  // Mobile: lighter section headers create clearer hierarchy under the 28px page title.
+  cardTitleNarrow: { fontSize: 18 },
   cardHint: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey, marginBottom: 8 },
+  cardHintNarrow: { fontSize: 12, marginBottom: 6 },
 
   // Coverage rows
   covRow: {
