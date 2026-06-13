@@ -142,8 +142,8 @@ function BottomTabBar({
         const badge = t.key === 'backfill' ? pending : undefined;
         return (
           <Pressable key={t.key} onPress={() => onChange(t.key)} style={styles.btabItem}>
-            <View>
-              <Ionicons name={t.icon} size={23} color={on ? COLORS.orange : COLORS.navy} />
+            <View style={[styles.btabIconWrap, on && styles.btabIconWrapOn]}>
+              <Ionicons name={t.icon} size={22} color={on ? COLORS.orange : COLORS.navy} />
               {badge != null && badge > 0 && (
                 <View style={styles.btabBadge}>
                   <Text style={styles.btabBadgeText}>
@@ -157,6 +157,37 @@ function BottomTabBar({
         );
       })}
     </View>
+  );
+}
+
+// Pulsing placeholder cards shown while the first health payload loads, so the
+// page has shape immediately instead of a blank flash.
+function SkeletonCards({ narrow }: { narrow: boolean }) {
+  const pulse = useRef(new Animated.Value(0.5)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.5, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+  const bar = (w: number | string, h = 14) => (
+    <Animated.View style={[styles.skBar, { width: w as number, height: h, opacity: pulse }]} />
+  );
+  return (
+    <>
+      {[0, 1, 2].map((i) => (
+        <View key={i} style={[styles.card, narrow && styles.cardNarrow]}>
+          {bar('45%', 18)}
+          {bar('70%', 12)}
+          <View style={{ height: 12 }} />
+          {bar('100%', 44)}
+        </View>
+      ))}
+    </>
   );
 }
 
@@ -206,6 +237,7 @@ function CoverageRow({
   anim,
   active,
   onPress,
+  compact,
 }: {
   def: MetricDef;
   have: number;
@@ -213,6 +245,7 @@ function CoverageRow({
   anim: Animated.Value;
   active: boolean;
   onPress?: () => void;
+  compact?: boolean;
 }) {
   const p = pct(have, total);
   const gap = total - have;
@@ -223,7 +256,12 @@ function CoverageRow({
       onPress={onPress}
       disabled={!tappable}
       style={({ hovered }: { hovered?: boolean }) =>
-        [styles.covRow, active && styles.covRowActive, hovered && tappable && styles.covRowHover] as object
+        [
+          styles.covRow,
+          compact && styles.covRowNarrow,
+          active && styles.covRowActive,
+          hovered && tappable && styles.covRowHover,
+        ] as object
       }
     >
       <View style={[styles.covDot, { backgroundColor: def.tint }]} />
@@ -342,31 +380,52 @@ function MastStat({
   label,
   tint,
   compact,
+  onPress,
 }: {
   value: string;
   label: string;
   tint?: string;
   compact?: boolean;
+  onPress?: () => void;
 }) {
-  return (
-    <View style={styles.mstat}>
+  const body = (
+    <>
       <Text style={[compact ? styles.mstatNumSm : styles.mstatNum, tint ? { color: tint } : null]}>
         {value}
       </Text>
       <Text style={[styles.mstatLabel, compact && styles.mstatLabelSm]}>{label}</Text>
-    </View>
+    </>
   );
+  if (onPress) {
+    return (
+      <Pressable onPress={onPress} style={({ pressed }) => [styles.mstat, pressed && styles.mstatPressed]}>
+        {body}
+      </Pressable>
+    );
+  }
+  return <View style={styles.mstat}>{body}</View>;
 }
 
 // Masthead stats strip — compact variant drops the dividers and shrinks the
-// figures so it reads as a tidy single row on mobile.
-function Scoreboard({ h, compact }: { h: CatalogHealth; compact?: boolean }) {
+// figures so it reads as a tidy single row on mobile. Coverage stats deep-link
+// into the backfill worklist when onJump is supplied.
+function Scoreboard({
+  h,
+  compact,
+  onJump,
+}: {
+  h: CatalogHealth;
+  compact?: boolean;
+  onJump?: (metric: CoverageMetric) => void;
+}) {
+  const jumpPortrait = onJump ? () => onJump('portrait') : undefined;
   return (
     <View style={[styles.scoreboard, compact && styles.scoreboardNarrow]}>
       <MastStat compact={compact} value={h.total.toLocaleString()} label="Heroes" />
       {!compact && <View style={styles.scoreDivider} />}
       <MastStat
         compact={compact}
+        onPress={jumpPortrait}
         value={`${pct(h.metrics.portrait, h.total)}%`}
         label="Portraits"
         tint={COLORS.orange}
@@ -374,6 +433,7 @@ function Scoreboard({ h, compact }: { h: CatalogHealth; compact?: boolean }) {
       {!compact && <View style={styles.scoreDivider} />}
       <MastStat
         compact={compact}
+        onPress={jumpPortrait}
         value={(h.total - h.metrics.portrait).toLocaleString()}
         label="Awaiting"
         tint={COLORS.yellow}
@@ -497,6 +557,7 @@ export default function AdminHealthScreen() {
   const [heroQuery, setHeroQuery] = useState('');
   const [batchSize, setBatchSize] = useState(25);
   const [pubFilter, setPubFilter] = useState<string | null>(null);
+  const [alertsOpen, setAlertsOpen] = useState(false);
 
   const profileQ = useQuery({
     queryKey: ['profile', user?.id],
@@ -652,6 +713,22 @@ export default function AdminHealthScreen() {
     setPage(0);
     setTab('backfill');
   };
+  // Deep-link from the masthead into a backfill worklist.
+  const goToBackfill = (m: CoverageMetric = 'portrait') => {
+    setMetric(m);
+    setPage(0);
+    setPubFilter(null);
+    setTab('backfill');
+  };
+  // Manual refresh — refetch everything with a brief minimum spin so the tap reads.
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    Promise.resolve(queryClient.invalidateQueries()).finally(() =>
+      setTimeout(() => setRefreshing(false), 600),
+    );
+  };
   const onToggleCron = async () => {
     setBusy('cron');
     try {
@@ -780,6 +857,9 @@ export default function AdminHealthScreen() {
     alerts.push({ tone: 'red', text: `${h!.cvStatus.failed} hero(es) marked failed — Retry failed in Operations.` });
   if (runs[0]?.status === 'error')
     alerts.push({ tone: 'red', text: 'The last run errored — see Recent runs.' });
+  // Mobile collapses multiple alerts into one banner (worst-first) to save space.
+  const leadAlert = alerts.find((a) => a.tone === 'red') ?? alerts[0];
+  const alertsCollapsed = narrow && !alertsOpen && alerts.length > 1;
 
   const dist = distQ.data;
   const snaps = snapsQ.data ?? [];
@@ -810,12 +890,25 @@ export default function AdminHealthScreen() {
             <View style={styles.mastheadInnerNarrow}>
               <View style={styles.mastHeadRow}>
                 <View style={styles.mastHeadTitleCol}>
-                  <Text style={styles.kickerNarrow}>ARCHIVE CONTROL</Text>
+                  <View style={styles.mastKickerRow}>
+                    <Text style={styles.kickerNarrow}>ARCHIVE CONTROL</Text>
+                    <Pressable onPress={onRefresh} hitSlop={8} style={styles.mastRefresh}>
+                      {refreshing ? (
+                        <ActivityIndicator size="small" color="rgba(255,255,255,0.85)" />
+                      ) : (
+                        <Ionicons name="refresh" size={15} color="rgba(255,255,255,0.85)" />
+                      )}
+                    </Pressable>
+                  </View>
                   <Text style={[styles.title, styles.titleNarrow]}>Catalog Health</Text>
                 </View>
-                {h && <Gauge value={overall} size={76} />}
+                {h && (
+                  <Pressable onPress={() => goToBackfill()} accessibilityLabel="Go to backfill">
+                    <Gauge value={overall} size={76} />
+                  </Pressable>
+                )}
               </View>
-              {h && <Scoreboard h={h} compact />}
+              {h && <Scoreboard h={h} compact onJump={goToBackfill} />}
             </View>
           ) : (
             <View style={styles.mastheadInner}>
@@ -825,7 +918,7 @@ export default function AdminHealthScreen() {
                 <Text style={styles.subtitle}>
                   {h ? 'Live coverage across the archive' : 'Loading the archive…'}
                 </Text>
-                {h && <Scoreboard h={h} />}
+                {h && <Scoreboard h={h} onJump={goToBackfill} />}
                 <View style={styles.statusRow}>
                   {h &&
                     Object.entries(h.cvStatus).map(([k, v]) => (
@@ -846,7 +939,11 @@ export default function AdminHealthScreen() {
                     ))}
                 </View>
               </View>
-              {h && <Gauge value={overall} size={150} />}
+              {h && (
+                <Pressable onPress={() => goToBackfill()} accessibilityLabel="Go to backfill">
+                  <Gauge value={overall} size={150} />
+                </Pressable>
+              )}
             </View>
           )}
         </LinearGradient>
@@ -880,8 +977,33 @@ export default function AdminHealthScreen() {
         </View>
         )}
 
-        {/* ── Alerts ── */}
-        {alerts.length > 0 && (
+        {/* ── Alerts (mobile collapses to a single worst-first banner) ── */}
+        {alerts.length > 0 && alertsCollapsed && leadAlert && (
+          <Pressable
+            onPress={() => setAlertsOpen(true)}
+            style={[
+              styles.alert,
+              {
+                backgroundColor: (leadAlert.tone === 'red' ? COLORS.red : COLORS.yellow) + '18',
+                borderColor: (leadAlert.tone === 'red' ? COLORS.red : COLORS.yellow) + '44',
+              },
+            ]}
+          >
+            <Ionicons
+              name={leadAlert.tone === 'red' ? 'alert-circle' : 'warning'}
+              size={16}
+              color={leadAlert.tone === 'red' ? COLORS.red : COLORS.gold}
+            />
+            <Text style={styles.alertText} numberOfLines={1}>
+              {leadAlert.text}
+            </Text>
+            <View style={styles.alertCount}>
+              <Text style={styles.alertCountText}>+{alerts.length - 1}</Text>
+            </View>
+            <Ionicons name="chevron-down" size={16} color={COLORS.navy} />
+          </Pressable>
+        )}
+        {alerts.length > 0 && !alertsCollapsed && (
           <View style={styles.alertWrap}>
             {alerts.map((a, i) => (
               <View
@@ -902,8 +1024,17 @@ export default function AdminHealthScreen() {
                 <Text style={styles.alertText}>{a.text}</Text>
               </View>
             ))}
+            {narrow && alerts.length > 1 && (
+              <Pressable onPress={() => setAlertsOpen(false)} style={styles.alertCollapse}>
+                <Ionicons name="chevron-up" size={14} color={COLORS.grey} />
+                <Text style={styles.alertCollapseText}>Show less</Text>
+              </Pressable>
+            )}
           </View>
         )}
+
+        {/* ── Loading skeleton (first health payload) ── */}
+        {!h && <SkeletonCards narrow={narrow} />}
 
         {/* ── Operations ── */}
         {tab === 'operations' && h && (
@@ -1214,6 +1345,7 @@ export default function AdminHealthScreen() {
                     have={h.metrics[def.key]}
                     total={h.total}
                     anim={anim}
+                    compact={narrow}
                     active={def.worklist === metric}
                     onPress={
                       def.worklist
@@ -1547,7 +1679,7 @@ export default function AdminHealthScreen() {
                 {dist.power_hist.map((b) => (
                   <View key={b.label} style={styles.histCol}>
                     <Text style={styles.histN}>{b.n}</Text>
-                    <View style={styles.histTrack}>
+                    <View style={[styles.histTrack, narrow && styles.histTrackNarrow]}>
                       <View
                         style={[styles.histBar, { height: `${Math.round((b.n / histMax) * 100)}%` }]}
                       />
@@ -1627,7 +1759,7 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: COLORS.beige, minHeight: '100%' as unknown as number },
   root: { width: '100%' },
   body: { width: '100%', maxWidth: 1080, alignSelf: 'center', padding: 24, gap: 18 },
-  bodyNarrow: { padding: 16, gap: 14 },
+  bodyNarrow: { padding: 16, gap: 12 },
   bottomSpacer: { height: 40 },
   // Clear the fixed bottom tab bar + the home-indicator inset on mobile.
   bottomSpacerNarrow: {
@@ -1654,6 +1786,8 @@ const styles = StyleSheet.create({
     transform: 'translateZ(0)',
   } as object,
   btabItem: { flex: 1, alignItems: 'center', gap: 3, paddingVertical: 2 },
+  btabIconWrap: { paddingHorizontal: 16, paddingVertical: 3, borderRadius: 999 },
+  btabIconWrapOn: { backgroundColor: COLORS.orange + '1a' },
   btabLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.navy },
   btabLabelOn: { color: COLORS.orange },
   btabBadge: {
@@ -1711,6 +1845,15 @@ const styles = StyleSheet.create({
   // Mobile masthead: title column beside a small gauge.
   mastHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 14, alignSelf: 'stretch' },
   mastHeadTitleCol: { flex: 1, gap: 3 },
+  mastKickerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  mastRefresh: {
+    width: 30,
+    height: 30,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
   kickerNarrow: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 2, color: COLORS.orange },
   subtitle: { fontFamily: 'Nunito_400Regular', fontSize: 15, color: 'rgba(255,255,255,0.6)' },
   statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
@@ -1755,6 +1898,7 @@ const styles = StyleSheet.create({
   },
   scoreDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.13)' },
   mstat: { gap: 1 },
+  mstatPressed: { opacity: 0.5 },
   mstatNum: { fontFamily: 'Flame-Regular', fontSize: 27, color: '#fff', lineHeight: 29 },
   mstatNumSm: { fontFamily: 'Flame-Regular', fontSize: 19, color: '#fff', lineHeight: 21 },
   mstatLabel: {
@@ -1773,7 +1917,8 @@ const styles = StyleSheet.create({
 
   card,
   // Mobile: tighter cards (less padding, smaller radius) for a denser feed.
-  cardNarrow: { padding: 15, borderRadius: 16 },
+  cardNarrow: { padding: 16, borderRadius: 16 },
+  skBar: { backgroundColor: '#ece3d4', borderRadius: 8, marginBottom: 10 },
 
   // Tab bar
   tabBar: { flexDirection: 'row', gap: 8, marginTop: 4, marginBottom: 2 },
@@ -1881,6 +2026,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   alertText: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
+  alertCount: {
+    backgroundColor: 'rgba(41,60,67,0.12)',
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 1,
+  },
+  alertCountText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.navy },
+  alertCollapse: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'center', paddingTop: 2 },
+  alertCollapseText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.grey },
 
   // ComicVine ping
   pingRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -2063,6 +2217,7 @@ const styles = StyleSheet.create({
   histCol: { flex: 1, alignItems: 'center', gap: 6 },
   histN: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   histTrack: { width: '100%', height: 120, backgroundColor: '#f6f0e6', borderRadius: 8, justifyContent: 'flex-end', overflow: 'hidden' },
+  histTrackNarrow: { height: 92 },
   histBar: { width: '100%', backgroundColor: COLORS.orange, borderRadius: 8 },
   histLabel: { fontFamily: 'Nunito_400Regular', fontSize: 10, color: COLORS.grey },
   pbRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
@@ -2089,6 +2244,7 @@ const styles = StyleSheet.create({
     marginHorizontal: -10,
     borderRadius: 14,
   },
+  covRowNarrow: { paddingVertical: 8, gap: 10 },
   covRowActive: { backgroundColor: 'rgba(231,115,51,0.06)' },
   covRowHover: { backgroundColor: 'rgba(41,60,67,0.04)' },
   covDot: { width: 10, height: 10, borderRadius: 10, marginTop: 2, alignSelf: 'flex-start' },
