@@ -162,11 +162,15 @@ function BottomTabBar({
 
 // ── Completeness gauge ────────────────────────────────────────────────────────
 function Gauge({ value, size = 150 }: { value: number; size?: number }) {
-  const stroke = size < 130 ? 10 : 12;
+  const small = size < 110;
+  const stroke = small ? 8 : size < 130 ? 10 : 12;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const tint = healthColor(value);
   const offset = c * (1 - value / 100);
+  // Scale the centre readout to the ring (≈46px at the 150 desktop size, so the
+  // desktop gauge is unchanged) so a 76px mobile gauge stays legible & tight.
+  const numSize = Math.round(size * 0.31);
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
@@ -185,10 +189,10 @@ function Gauge({ value, size = 150 }: { value: number; size?: number }) {
       </Svg>
       <View style={styles.gaugeCenter}>
         <View style={styles.gaugeNumRow}>
-          <Text style={styles.gaugeNum}>{value}</Text>
-          <Text style={styles.gaugePct}>%</Text>
+          <Text style={[styles.gaugeNum, { fontSize: numSize, lineHeight: numSize + 2 }]}>{value}</Text>
+          <Text style={[styles.gaugePct, { fontSize: Math.round(numSize * 0.42) }]}>%</Text>
         </View>
-        <Text style={[styles.gaugeCaption, { color: tint }]}>complete</Text>
+        {!small && <Text style={[styles.gaugeCaption, { color: tint }]}>complete</Text>}
       </View>
     </View>
   );
@@ -333,11 +337,49 @@ function PublisherCard({ row, onPick }: { row: PublisherCoverage; onPick: (publi
   );
 }
 
-function MastStat({ value, label, tint }: { value: string; label: string; tint?: string }) {
+function MastStat({
+  value,
+  label,
+  tint,
+  compact,
+}: {
+  value: string;
+  label: string;
+  tint?: string;
+  compact?: boolean;
+}) {
   return (
     <View style={styles.mstat}>
-      <Text style={[styles.mstatNum, tint ? { color: tint } : null]}>{value}</Text>
-      <Text style={styles.mstatLabel}>{label}</Text>
+      <Text style={[compact ? styles.mstatNumSm : styles.mstatNum, tint ? { color: tint } : null]}>
+        {value}
+      </Text>
+      <Text style={[styles.mstatLabel, compact && styles.mstatLabelSm]}>{label}</Text>
+    </View>
+  );
+}
+
+// Masthead stats strip — compact variant drops the dividers and shrinks the
+// figures so it reads as a tidy single row on mobile.
+function Scoreboard({ h, compact }: { h: CatalogHealth; compact?: boolean }) {
+  return (
+    <View style={[styles.scoreboard, compact && styles.scoreboardNarrow]}>
+      <MastStat compact={compact} value={h.total.toLocaleString()} label="Heroes" />
+      {!compact && <View style={styles.scoreDivider} />}
+      <MastStat
+        compact={compact}
+        value={`${pct(h.metrics.portrait, h.total)}%`}
+        label="Portraits"
+        tint={COLORS.orange}
+      />
+      {!compact && <View style={styles.scoreDivider} />}
+      <MastStat
+        compact={compact}
+        value={(h.total - h.metrics.portrait).toLocaleString()}
+        label="Awaiting"
+        tint={COLORS.yellow}
+      />
+      {!compact && <View style={styles.scoreDivider} />}
+      <MastStat compact={compact} value={`${h.byPublisher.length}`} label="Publishers" tint={COLORS.blue} />
     </View>
   );
 }
@@ -761,58 +803,52 @@ export default function AdminHealthScreen() {
           style={[styles.masthead, narrow && styles.mastheadNarrow]}
         >
           <View style={styles.mastheadGlow} />
-          <View style={[styles.mastheadInner, narrow && styles.mastheadInnerNarrow]}>
-          <View style={styles.mastheadLeft}>
-            <Text style={styles.kicker}>MYTHIQUE · ARCHIVE CONTROL</Text>
-            <Text style={[styles.title, narrow && styles.titleNarrow]}>Catalog Health</Text>
-            <Text style={styles.subtitle}>
-              {h ? 'Live coverage across the archive' : 'Loading the archive…'}
-            </Text>
-            {h && (
-              <View style={[styles.scoreboard, narrow && styles.scoreboardNarrow]}>
-                <MastStat value={h.total.toLocaleString()} label="Heroes" />
-                {!narrow && <View style={styles.scoreDivider} />}
-                <MastStat
-                  value={`${pct(h.metrics.portrait, h.total)}%`}
-                  label="Portraits"
-                  tint={COLORS.orange}
-                />
-                {!narrow && <View style={styles.scoreDivider} />}
-                <MastStat
-                  value={(h.total - h.metrics.portrait).toLocaleString()}
-                  label="Awaiting"
-                  tint={COLORS.yellow}
-                />
-                {!narrow && <View style={styles.scoreDivider} />}
-                <MastStat value={`${h.byPublisher.length}`} label="Publishers" tint={COLORS.blue} />
+          {narrow ? (
+            // Mobile: a tight two-row hero — title beside a small gauge, then a
+            // single compact stats strip. Kicker/subtitle/status-chips are
+            // dropped (pending lives in the nav badge, failures in alerts).
+            <View style={styles.mastheadInnerNarrow}>
+              <View style={styles.mastHeadRow}>
+                <View style={styles.mastHeadTitleCol}>
+                  <Text style={styles.kickerNarrow}>ARCHIVE CONTROL</Text>
+                  <Text style={[styles.title, styles.titleNarrow]}>Catalog Health</Text>
+                </View>
+                {h && <Gauge value={overall} size={76} />}
               </View>
-            )}
-            <View style={styles.statusRow}>
-              {h &&
-                Object.entries(h.cvStatus).map(([k, v]) => (
-                  <View key={k} style={styles.statusChip}>
-                    <View
-                      style={[
-                        styles.statusDot,
-                        {
-                          backgroundColor:
-                            k === 'done' ? COLORS.green : k === 'failed' ? COLORS.red : COLORS.yellow,
-                        },
-                      ]}
-                    />
-                    <Text style={styles.statusChipText}>
-                      {k} · {v.toLocaleString()}
-                    </Text>
-                  </View>
-                ))}
+              {h && <Scoreboard h={h} compact />}
             </View>
-          </View>
-          {h && (
-            <View style={narrow ? styles.mastGaugeNarrow : undefined}>
-              <Gauge value={overall} size={narrow ? 120 : 150} />
+          ) : (
+            <View style={styles.mastheadInner}>
+              <View style={styles.mastheadLeft}>
+                <Text style={styles.kicker}>MYTHIQUE · ARCHIVE CONTROL</Text>
+                <Text style={styles.title}>Catalog Health</Text>
+                <Text style={styles.subtitle}>
+                  {h ? 'Live coverage across the archive' : 'Loading the archive…'}
+                </Text>
+                {h && <Scoreboard h={h} />}
+                <View style={styles.statusRow}>
+                  {h &&
+                    Object.entries(h.cvStatus).map(([k, v]) => (
+                      <View key={k} style={styles.statusChip}>
+                        <View
+                          style={[
+                            styles.statusDot,
+                            {
+                              backgroundColor:
+                                k === 'done' ? COLORS.green : k === 'failed' ? COLORS.red : COLORS.yellow,
+                            },
+                          ]}
+                        />
+                        <Text style={styles.statusChipText}>
+                          {k} · {v.toLocaleString()}
+                        </Text>
+                      </View>
+                    ))}
+                </View>
+              </View>
+              {h && <Gauge value={overall} size={150} />}
             </View>
           )}
-          </View>
         </LinearGradient>
 
         <View style={[styles.body, narrow && styles.bodyNarrow]}>
@@ -871,7 +907,7 @@ export default function AdminHealthScreen() {
 
         {/* ── Operations ── */}
         {tab === 'operations' && h && (
-          <View style={styles.card}>
+          <View style={[styles.card, narrow && styles.cardNarrow]}>
             <View style={styles.opsHead}>
               <Text style={styles.cardTitle}>Operations</Text>
               {toast && (
@@ -1042,7 +1078,7 @@ export default function AdminHealthScreen() {
 
         {/* ── Activity log ── */}
         {tab === 'operations' && (
-          <View style={styles.card}>
+          <View style={[styles.card, narrow && styles.cardNarrow]}>
             <View style={styles.logHead}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitle}>Activity log</Text>
@@ -1079,7 +1115,7 @@ export default function AdminHealthScreen() {
 
         {/* ── Single-hero console ── */}
         {tab === 'operations' && (
-          <View style={styles.card}>
+          <View style={[styles.card, narrow && styles.cardNarrow]}>
             <Text style={styles.cardTitle}>Hero console</Text>
             <Text style={styles.cardHint}>Find any hero and re-fetch its ComicVine data on demand</Text>
             <View style={styles.heroSearchBox}>
@@ -1163,7 +1199,7 @@ export default function AdminHealthScreen() {
         {tab === 'backfill' && (
           <View style={[styles.cols, narrow && styles.colsNarrow]}>
           {/* ── Coverage ── */}
-          <View style={[styles.card, styles.coverageCard, !narrow && styles.colLeft]}>
+          <View style={[styles.card, narrow && styles.cardNarrow, styles.coverageCard, !narrow && styles.colLeft]}>
             <Text style={styles.cardTitle}>Coverage</Text>
             <Text style={styles.cardHint}>Sorted by weakest first · tap one to load its queue</Text>
             {!h ? (
@@ -1193,7 +1229,7 @@ export default function AdminHealthScreen() {
           </View>
 
           {/* ── Backfill queue ── */}
-          <View style={[styles.card, !narrow && styles.colRight]}>
+          <View style={[styles.card, narrow && styles.cardNarrow, !narrow && styles.colRight]}>
             <View style={styles.queueHead}>
               <Text style={styles.cardTitle}>Backfill queue</Text>
               <Text style={styles.cardHint}>Most-viewed first</Text>
@@ -1314,7 +1350,7 @@ export default function AdminHealthScreen() {
 
         {/* ── Recent runs (monitoring) ── */}
         {tab === 'operations' && (
-        <View style={styles.card}>
+        <View style={[styles.card, narrow && styles.cardNarrow]}>
           <Text style={styles.cardTitle}>Recent runs</Text>
           <Text style={styles.cardHint}>Cron + manual · auto-refreshes every 15s</Text>
           {runsQ.isLoading ? (
@@ -1437,7 +1473,7 @@ export default function AdminHealthScreen() {
         {/* ── Trends & distribution ── */}
         {tab === 'overview' && h && (
           <View style={[styles.cols, narrow && styles.colsNarrow]}>
-            <View style={[styles.card, !narrow && styles.colRight]}>
+            <View style={[styles.card, narrow && styles.cardNarrow, !narrow && styles.colRight]}>
               <View style={styles.cardTitleRow}>
                 <View>
                   <Text style={styles.cardTitle}>Completeness over time</Text>
@@ -1459,8 +1495,8 @@ export default function AdminHealthScreen() {
               {snaps.length >= 2 ? (
                 <CompletenessChart snaps={snaps} />
               ) : (
-                <View style={styles.chartEmpty}>
-                  <Text style={styles.bigStat}>{overall}%</Text>
+                <View style={[styles.chartEmpty, narrow && styles.chartEmptyNarrow]}>
+                  <Text style={[styles.bigStat, narrow && styles.bigStatNarrow]}>{overall}%</Text>
                   <Text style={styles.runsEmpty}>
                     History begins today — the trend line fills in daily.
                   </Text>
@@ -1469,7 +1505,7 @@ export default function AdminHealthScreen() {
             </View>
 
             {dist && (
-              <View style={[styles.card, !narrow && styles.colDonut]}>
+              <View style={[styles.card, narrow && styles.cardNarrow, !narrow && styles.colDonut]}>
                 <Text style={styles.cardTitle}>Alignment</Text>
                 <Text style={styles.cardHint}>Hero vs villain split</Text>
                 <View style={styles.donutWrap}>
@@ -1504,7 +1540,7 @@ export default function AdminHealthScreen() {
 
         {tab === 'overview' && h && dist && (
           <View style={[styles.cols, narrow && styles.colsNarrow]}>
-            <View style={[styles.card, { flex: 1 }]}>
+            <View style={[styles.card, narrow && styles.cardNarrow, { flex: 1 }]}>
               <Text style={styles.cardTitle}>Power distribution</Text>
               <Text style={styles.cardHint}>Total powerstats (0–600)</Text>
               <View style={styles.histRow}>
@@ -1522,7 +1558,7 @@ export default function AdminHealthScreen() {
               </View>
             </View>
 
-            <View style={[styles.card, { flex: 1 }]}>
+            <View style={[styles.card, narrow && styles.cardNarrow, { flex: 1 }]}>
               <Text style={styles.cardTitle}>Largest publishers</Text>
               <Text style={styles.cardHint}>By hero count</Text>
               {h.byPublisher.slice(0, 8).map((p) => (
@@ -1542,7 +1578,7 @@ export default function AdminHealthScreen() {
 
         {/* ── Publisher heatmap (two columns on wide screens) ── */}
         {tab === 'overview' && h && h.byPublisher.length > 0 && (
-          <View style={styles.card}>
+          <View style={[styles.card, narrow && styles.cardNarrow]}>
             <Text style={styles.cardTitle}>Coverage by publisher</Text>
             <Text style={styles.cardHint}>Top {h.byPublisher.length} by catalogue size</Text>
             {narrow ? (
@@ -1652,8 +1688,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 28,
   },
-  mastheadInnerNarrow: { flexDirection: 'column', alignItems: 'flex-start', gap: 16, paddingHorizontal: 18 },
-  mastGaugeNarrow: { alignSelf: 'center' },
+  mastheadInnerNarrow: { flexDirection: 'column', alignItems: 'flex-start', gap: 14, paddingHorizontal: 18 },
   mastheadGlow: {
     position: 'absolute',
     top: -120,
@@ -1672,7 +1707,11 @@ const styles = StyleSheet.create({
     color: COLORS.orange,
   },
   title: { fontFamily: 'Flame-Regular', fontSize: 46, color: '#fff', lineHeight: 50 },
-  titleNarrow: { fontSize: 36, lineHeight: 40 },
+  titleNarrow: { fontSize: 28, lineHeight: 31 },
+  // Mobile masthead: title column beside a small gauge.
+  mastHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 14, alignSelf: 'stretch' },
+  mastHeadTitleCol: { flex: 1, gap: 3 },
+  kickerNarrow: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 2, color: COLORS.orange },
   subtitle: { fontFamily: 'Nunito_400Regular', fontSize: 15, color: 'rgba(255,255,255,0.6)' },
   statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   statusChip: {
@@ -1702,17 +1741,29 @@ const styles = StyleSheet.create({
 
   // Masthead scoreboard
   scoreboard: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 16, flexWrap: 'wrap' },
-  // On mobile, dividers are dropped and the four stats flow as a tidy grid.
-  scoreboardNarrow: { alignSelf: 'stretch', marginTop: 14, columnGap: 22, rowGap: 14 },
+  // Mobile: a tidy single-row stat strip on a translucent panel, no dividers.
+  scoreboardNarrow: {
+    alignSelf: 'stretch',
+    marginTop: 0,
+    flexWrap: 'nowrap',
+    justifyContent: 'space-between',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 14,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+  },
   scoreDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.13)' },
   mstat: { gap: 1 },
   mstatNum: { fontFamily: 'Flame-Regular', fontSize: 27, color: '#fff', lineHeight: 29 },
+  mstatNumSm: { fontFamily: 'Flame-Regular', fontSize: 19, color: '#fff', lineHeight: 21 },
   mstatLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
     letterSpacing: 0.4,
     color: 'rgba(255,255,255,0.5)',
   },
+  mstatLabelSm: { fontSize: 9, letterSpacing: 0.2 },
 
   // Columns
   cols: { flexDirection: 'row', gap: 18, alignItems: 'flex-start' },
@@ -1721,6 +1772,8 @@ const styles = StyleSheet.create({
   colRight: { flex: 1 },
 
   card,
+  // Mobile: tighter cards (less padding, smaller radius) for a denser feed.
+  cardNarrow: { padding: 15, borderRadius: 16 },
 
   // Tab bar
   tabBar: { flexDirection: 'row', gap: 8, marginTop: 4, marginBottom: 2 },
@@ -1995,7 +2048,9 @@ const styles = StyleSheet.create({
 
   // Charts
   chartEmpty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 28, gap: 6 },
+  chartEmptyNarrow: { paddingVertical: 14 },
   bigStat: { fontFamily: 'Flame-Regular', fontSize: 52, color: COLORS.green, lineHeight: 54 },
+  bigStatNarrow: { fontSize: 34, lineHeight: 36 },
   donutNum: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.black, lineHeight: 28 },
   donutLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey },
   donutWrap: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 8 },
