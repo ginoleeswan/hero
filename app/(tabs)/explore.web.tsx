@@ -2,11 +2,10 @@
 // Search lives on the dedicated /search route; this screen is home-only.
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
-import { Image } from 'expo-image';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../src/constants/colors';
-import { heroImageSource } from '../../src/constants/heroImages';
+import { HeroImage } from '../../src/components/HeroImage';
 import { WebHomeSkeleton } from '../../src/components/web/HomeSkeleton';
 import {
   getHeroCount,
@@ -80,7 +79,6 @@ const rowScrollStyle = {
 
 // ── Row card (home carousel rows) ────────────────────────────────────────────
 function RowCard({ hero, onPress }: { hero: Hero | FavouriteHero; onPress: () => void }) {
-  const source = heroImageSource(String(hero.id), hero.image_url, hero.portrait_url);
   return (
     <Pressable
       onPress={onPress}
@@ -88,14 +86,15 @@ function RowCard({ hero, onPress }: { hero: Hero | FavouriteHero; onPress: () =>
         [rc.wrap, hovered && (rc.wrapHover as object)] as object
       }
     >
-      <Image
-        source={source}
+      <HeroImage
+        id={String(hero.id)}
+        name={hero.name}
+        imageUrl={hero.image_url}
+        portraitUrl={hero.portrait_url}
         contentFit="cover"
         contentPosition="top"
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
-        cachePolicy="memory-disk"
         recyclingKey={String(hero.id)}
-        transition={typeof source === 'object' && 'uri' in source ? 200 : null}
       />
       <View style={rc.overlay as object} />
       <View style={rc.bottom}>
@@ -271,8 +270,6 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
             const cardWidth = isVisible ? activeScale[offset].w : 0;
             const opacity = isVisible ? activeScale[offset].o : 0;
 
-            const source = heroImageSource(String(h.id), h.image_url, h.portrait_url);
-
             return (
               <Pressable
                 key={h.id}
@@ -287,8 +284,11 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
                   isActive && (pss.cardActive as object),
                 ]}
               >
-                <Image
-                  source={source}
+                <HeroImage
+                  id={String(h.id)}
+                  name={h.name}
+                  imageUrl={h.image_url}
+                  portraitUrl={h.portrait_url}
                   contentFit="cover"
                   contentPosition={{ top: 0, left: '50%' }}
                   style={[
@@ -298,7 +298,6 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
                       transition: 'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1)',
                     } as any,
                   ]}
-                  cachePolicy="memory-disk"
                   recyclingKey={String(h.id)}
                 />
                 <View style={pss.cardOverlay as object} />
@@ -397,18 +396,18 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
   }
 
   // Mobile web: single portrait + info panel
-  const source = heroImageSource(String(hero.id), hero.image_url, hero.portrait_url);
   return (
     <View style={[pss.wrapMobile, { paddingHorizontal: pagePad }]}>
       <View style={pss.singlePortrait}>
-        <Image
-          source={source}
+        <HeroImage
+          id={String(hero.id)}
+          name={hero.name}
+          imageUrl={hero.image_url}
+          portraitUrl={hero.portrait_url}
           contentFit="cover"
           contentPosition="top"
           style={StyleSheet.absoluteFill}
-          cachePolicy="memory-disk"
           recyclingKey={String(hero.id)}
-          transition={200}
         />
         <View style={pss.cardOverlay as object} />
         <Text style={pss.cardBadge as object}>Featured</Text>
@@ -576,6 +575,7 @@ const pss = StyleSheet.create({
   glassPanelRealName: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
+    lineHeight: 16,
     color: 'rgba(245,235,220,0.5)',
     marginBottom: 12,
   } as object,
@@ -663,6 +663,7 @@ const pss = StyleSheet.create({
   firstAppearance: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,
+    lineHeight: 15,
     color: 'rgba(245,235,220,0.4)',
     marginBottom: 18,
   } as object,

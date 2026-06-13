@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { useSkeletonAnim } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import {
   getCategoryPage,
@@ -32,7 +31,7 @@ import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { FilterRail } from '../../src/components/web/category/FilterRail';
 import { FilterSheet } from '../../src/components/web/category/FilterSheet';
 import { ActiveFilterChips } from '../../src/components/web/category/ActiveFilterChips';
-import { heroGridImageSource } from '../../src/constants/heroImages';
+import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
@@ -75,12 +74,6 @@ function HeroCard({
   onLongPress?: () => void;
   onInfo?: () => void;
 }) {
-  const source = heroGridImageSource(
-    String(hero.id),
-    hero.image_url,
-    hero.portrait_url,
-    hero.image_md_url,
-  );
   return (
     <Pressable
       onPress={onPress}
@@ -92,14 +85,18 @@ function HeroCard({
     >
       {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
         <>
-          <Image
-            source={source}
+          <HeroImage
+            id={String(hero.id)}
+            name={hero.name}
+            imageUrl={hero.image_url}
+            portraitUrl={hero.portrait_url}
+            imageMdUrl={hero.image_md_url}
+            grid
             contentFit="cover"
             contentPosition={{ top: 0, left: '50%' }}
             style={StyleSheet.absoluteFill}
-            cachePolicy="memory-disk"
             recyclingKey={String(hero.id)}
-            transition={typeof source === 'object' && 'uri' in source ? 150 : null}
+            transition={150}
           />
           <View style={card.overlay as object} />
           <View style={card.bottom}>

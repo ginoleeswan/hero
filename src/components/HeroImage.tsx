@@ -7,7 +7,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { Image, ImageContentFit, ImageStyle } from 'expo-image';
+import { Image, ImageContentFit, ImageContentPosition, ImageStyle } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import {
@@ -28,7 +28,7 @@ interface HeroImageProps {
   /** Same style you'd give the underlying expo-image; fills the card box. */
   style?: StyleProp<ImageStyle>;
   contentFit?: ImageContentFit;
-  contentPosition?: 'top' | 'center' | 'bottom';
+  contentPosition?: ImageContentPosition;
   cachePolicy?: 'none' | 'disk' | 'memory' | 'memory-disk';
   recyclingKey?: string | null;
   transition?: number | null;
@@ -69,7 +69,7 @@ export function HeroImage({
   const showMonogram = !source.uri || errored;
 
   if (showMonogram) {
-    return <Monogram id={id} name={name} style={style} onLoad={onLoad} />;
+    return <HeroMonogram seed={id} name={name} style={style} onLoad={onLoad} />;
   }
 
   return (
@@ -87,13 +87,19 @@ export function HeroImage({
   );
 }
 
-function Monogram({
-  id,
+/**
+ * The fallback portrait itself — initials over a deterministic colour plus a
+ * faint glyph. Exported for source-based consumers (e.g. the compare arena)
+ * that hold a resolved image source rather than the hero's id/urls; pass a
+ * stable `seed` (id when available, otherwise the name) for the colour.
+ */
+export function HeroMonogram({
+  seed,
   name,
   style,
   onLoad,
 }: {
-  id: string | number;
+  seed: string | number;
   name: string;
   style?: StyleProp<ImageStyle>;
   onLoad?: () => void;
@@ -111,7 +117,7 @@ function Monogram({
     setSize(Math.min(width, height));
   };
 
-  const background = monogramColor(id);
+  const background = monogramColor(seed);
   const initialsSize = size > 0 ? Math.round(size * 0.4) : 0;
   const glyphSize = size > 0 ? Math.round(size * 0.55) : 0;
 

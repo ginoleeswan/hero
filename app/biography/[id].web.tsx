@@ -6,6 +6,7 @@ import { getHeroById, getHeroByComicvineId } from '../../src/lib/db/heroes';
 import { COLORS } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { heroImageSource } from '../../src/constants/heroImages';
+import { HeroImage } from '../../src/components/HeroImage';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import type { Tables } from '../../src/types/database.generated';
 
@@ -430,18 +431,18 @@ export default function WebBiographyScreen() {
           {/* Sticky sidebar */}
           <View style={[styles.sidebar, { position: 'sticky' as 'relative', top: TOPBAR_HEIGHT + 16 }]}>
             {hero ? (
-              heroImage ? (
-                <View style={styles.sidebarPortrait}>
-                  <Image
-                    source={heroImage}
-                    contentFit="cover"
-                    contentPosition={{ top: 0, left: '50%' }}
-                    style={{ width: '100%', aspectRatio: 3 / 4, borderRadius: 10 } as object}
-                    cachePolicy="memory-disk"
-                    recyclingKey={id}
-                  />
-                </View>
-              ) : null
+              <View style={styles.sidebarPortrait}>
+                <HeroImage
+                  id={String(id ?? '')}
+                  name={hero.name}
+                  imageUrl={hero.image_url}
+                  portraitUrl={hero.portrait_url}
+                  contentFit="cover"
+                  contentPosition={{ top: 0, left: '50%' }}
+                  style={{ width: '100%', aspectRatio: 3 / 4, borderRadius: 10 } as object}
+                  recyclingKey={id}
+                />
+              </View>
             ) : (
               <SidebarSkeleton />
             )}

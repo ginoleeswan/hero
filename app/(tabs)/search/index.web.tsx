@@ -12,10 +12,9 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { type HeroSearchResult, type PublisherFilter } from '../../../src/lib/db/heroes';
-import { heroGridImageSource } from '../../../src/constants/heroImages';
+import { HeroImage } from '../../../src/components/HeroImage';
 import { COLORS } from '../../../src/constants/colors';
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { useSearch } from '../../../src/contexts/SearchContext';
@@ -62,7 +61,6 @@ function HeroCard({
   onLongPress?: () => void;
   onInfo?: () => void;
 }) {
-  const source = heroGridImageSource(hero.id, hero.image_url, hero.portrait_url, hero.image_md_url);
   return (
     <Pressable
       onPress={onPress}
@@ -74,14 +72,18 @@ function HeroCard({
     >
       {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
         <>
-          <Image
-            source={source}
+          <HeroImage
+            id={hero.id}
+            name={hero.name}
+            imageUrl={hero.image_url}
+            portraitUrl={hero.portrait_url}
+            imageMdUrl={hero.image_md_url}
+            grid
             contentFit="cover"
             contentPosition={{ top: 0, left: '50%' }}
             style={StyleSheet.absoluteFill}
-            cachePolicy="memory-disk"
             recyclingKey={hero.id}
-            transition={typeof source === 'object' && 'uri' in source ? 150 : null}
+            transition={150}
           />
           <View style={card.overlay as object} />
           <View style={card.bottom}>

@@ -14,6 +14,7 @@ import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/fa
 import { getPowerIcon, groupPowers } from '../../src/constants/powerIcons';
 import { useAuth } from '../../src/hooks/useAuth';
 import { heroImageSource } from '../../src/constants/heroImages';
+import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { StatBar } from '../../src/components/web/StatBar';
@@ -1001,19 +1002,16 @@ export default function WebCharacterScreen() {
               {/* Side column — overlapping portrait + quick facts */}
               <View style={[styles.sideCol, { marginTop: portraitOverlap }] as object}>
                 <View style={styles.portraitCard}>
-                  {heroImage ? (
-                    <Image
-                      source={heroImage}
-                      contentFit="cover"
-                      contentPosition={{ top: 0, left: '50%' }}
-                      style={StyleSheet.absoluteFill}
-                      cachePolicy="memory-disk"
-                      recyclingKey={id}
-                      transition={typeof heroImage === 'object' && 'uri' in heroImage ? 200 : null}
-                    />
-                  ) : (
-                    <View style={styles.portraitPlaceholder} />
-                  )}
+                  <HeroImage
+                    id={id}
+                    name={stats.name}
+                    imageUrl={stats.image.url ?? null}
+                    portraitUrl={stats.image.portraitUrl ?? null}
+                    contentFit="cover"
+                    contentPosition={{ top: 0, left: '50%' }}
+                    style={StyleSheet.absoluteFill}
+                    recyclingKey={id}
+                  />
                   <View style={[styles.portraitOverlay, { pointerEvents: 'none' }] as object} />
                   <View
                     style={
@@ -1083,16 +1081,16 @@ export default function WebCharacterScreen() {
             <View>
               {/* Immersive portrait header */}
               <View style={[styles.mHero, { height: mHeroHeight }]}>
-                {heroImage ? (
-                  <Image
-                    source={heroImage}
-                    contentFit="cover"
-                    contentPosition="top"
-                    style={StyleSheet.absoluteFill}
-                    cachePolicy="memory-disk"
-                    recyclingKey={id}
-                  />
-                ) : null}
+                <HeroImage
+                  id={id}
+                  name={stats.name}
+                  imageUrl={stats.image.url ?? null}
+                  portraitUrl={stats.image.portraitUrl ?? null}
+                  contentFit="cover"
+                  contentPosition="top"
+                  style={StyleSheet.absoluteFill}
+                  recyclingKey={id}
+                />
                 <View style={[styles.mScrimTop, { pointerEvents: 'none' }] as object} />
                 <View style={[styles.mScrimBottom, { pointerEvents: 'none' }] as object} />
 

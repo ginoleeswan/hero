@@ -11,6 +11,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { VsBadge } from './VsBadge';
+import { HeroMonogram } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -106,12 +107,16 @@ export function ClashPortraits({
       {/* Left panel */}
       <Animated.View style={[styles.panelLeft, { height, width: PANEL_WIDTH }, leftStyle]}>
         <View style={styles.panelBg} />
-        <Image
-          source={imageA}
-          contentFit="cover"
-          contentPosition="top"
-          style={StyleSheet.absoluteFill}
-        />
+        {imageA.uri ? (
+          <Image
+            source={imageA}
+            contentFit="cover"
+            contentPosition="top"
+            style={StyleSheet.absoluteFill}
+          />
+        ) : (
+          <HeroMonogram seed={nameA} name={nameA} style={StyleSheet.absoluteFill} />
+        )}
         {!isWinA && (
           <Animated.View
             style={[StyleSheet.absoluteFill, styles.loserScrim, resultStyle]}
@@ -159,12 +164,16 @@ export function ClashPortraits({
       {/* Right panel */}
       <Animated.View style={[styles.panelRight, { height, width: PANEL_WIDTH }, rightStyle]}>
         <View style={styles.panelBg} />
-        <Image
-          source={imageB}
-          contentFit="cover"
-          contentPosition="top"
-          style={[StyleSheet.absoluteFill, styles.flipped]}
-        />
+        {imageB.uri ? (
+          <Image
+            source={imageB}
+            contentFit="cover"
+            contentPosition="top"
+            style={[StyleSheet.absoluteFill, styles.flipped]}
+          />
+        ) : (
+          <HeroMonogram seed={nameB} name={nameB} style={StyleSheet.absoluteFill} />
+        )}
         {!isWinB && (
           <Animated.View
             style={[StyleSheet.absoluteFill, styles.loserScrim, resultStyle]}

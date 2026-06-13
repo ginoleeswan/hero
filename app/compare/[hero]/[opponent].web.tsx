@@ -17,6 +17,7 @@ import { useCompareMatchup } from '../../../src/hooks/useCompareMatchup';
 import { COLORS } from '../../../src/constants/colors';
 import { useWebCanvas } from '../../../src/hooks/useWebCanvas';
 import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
+import { HeroMonogram } from '../../../src/components/HeroImage';
 import { VerdictReveal } from '../../../src/components/compare/VerdictReveal';
 import { StatBattleRow } from '../../../src/components/compare/StatBattleRow';
 import { VsBadge } from '../../../src/components/compare/VsBadge';
@@ -163,7 +164,7 @@ function ArenaPortrait({
         vtName ? ({ viewTransitionName: vtName } as object) : null,
       ]}
     >
-      {image ? (
+      {image?.uri ? (
         <Image
           source={image}
           contentFit="cover"
@@ -176,7 +177,13 @@ function ArenaPortrait({
             ] as object
           }
         />
-      ) : null}
+      ) : (
+        <HeroMonogram
+          seed={name}
+          name={name}
+          style={[styles.arenaImage, state === 'loss' && (styles.imageLoss as object)] as object}
+        />
+      )}
       <View style={styles.portraitGradient as object} />
       {state === 'loss' && <View style={styles.lostOverlay as object} />}
       {/* Swap covers the whole portrait; the name link sits on top of it so a

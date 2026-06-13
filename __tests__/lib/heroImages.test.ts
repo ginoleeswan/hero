@@ -3,6 +3,9 @@ import {
   heroImageSource,
   heroGridImageSource,
   withCloudinaryTransform,
+  hasHeroImage,
+  heroInitials,
+  monogramColor,
 } from '../../src/constants/heroImages';
 
 const CDN = 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/images/md';
@@ -88,5 +91,62 @@ describe('Cloudinary wiring', () => {
     const supabase =
       'https://rpvgqfaeiowisdubgxkg.supabase.co/storage/v1/object/public/hero-portraits/269.jpg';
     expect(heroImageSource('269', null, supabase)).toEqual({ uri: supabase });
+  });
+});
+
+describe('hasHeroImage', () => {
+  it('is true when a real portrait/image url exists', () => {
+    expect(hasHeroImage('cv-1', 'https://x/y.jpg', null)).toBe(true);
+    expect(hasHeroImage('cv-1', null, 'https://x/p.jpg')).toBe(true);
+  });
+
+  it('is true for numeric ids even with no urls (CDN fallback)', () => {
+    expect(hasHeroImage('999', null, null)).toBe(true);
+  });
+
+  it('is false for non-numeric ids with no usable url', () => {
+    expect(hasHeroImage('cv-1234', null, null)).toBe(false);
+  });
+
+  it('treats blank/no-portrait placeholders as missing', () => {
+    const blank = 'https://comicvine.gamespot.com/a/uploads/6373148-blank.png';
+    expect(hasHeroImage('cv-1', blank, blank)).toBe(false);
+  });
+});
+
+describe('heroInitials', () => {
+  it('takes the first letter of the first two words', () => {
+    expect(heroInitials('Peter Parker')).toBe('PP');
+    expect(heroInitials('Bruce Wayne Jr')).toBe('BW');
+  });
+
+  it('takes up to two letters from a single-word name', () => {
+    expect(heroInitials('Thanos')).toBe('TH');
+    expect(heroInitials('X')).toBe('X');
+  });
+
+  it('strips punctuation and symbols', () => {
+    expect(heroInitials('  spider-man ')).toBe('SP');
+    expect(heroInitials('!!! ???')).toBe('?');
+  });
+
+  it('falls back to "?" for empty/nullish names', () => {
+    expect(heroInitials('')).toBe('?');
+    expect(heroInitials(null)).toBe('?');
+    expect(heroInitials(undefined)).toBe('?');
+  });
+});
+
+describe('monogramColor', () => {
+  it('is deterministic for a given id', () => {
+    expect(monogramColor('cv-42')).toBe(monogramColor('cv-42'));
+    expect(monogramColor(42)).toBe(monogramColor('42'));
+  });
+
+  it('always returns a colour from the palette', () => {
+    const palette = ['#293C43', '#0b1820', '#502314', '#7c3aed', '#b07d00', '#15A1AB', '#63A936', '#B5302B'];
+    for (const id of ['a', 'b', 'cv-1', 'cv-9999', '12345', 'Spider-Man']) {
+      expect(palette).toContain(monogramColor(id));
+    }
   });
 });
