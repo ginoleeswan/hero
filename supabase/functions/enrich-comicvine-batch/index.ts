@@ -348,6 +348,7 @@ serve(async (req: Request) => {
   let done = 0;
   let failed = 0;
   let retry = 0;
+  let cancelled = false;
 
   // ── Log the run as `running` up front so the admin console sees it live ──────
   const { data: runRow } = await sb
@@ -383,9 +384,19 @@ serve(async (req: Request) => {
         // Transient: leave the row `pending` untouched — next run tries again.
         retry++;
       }
-      // Push live progress every few heroes so the dashboard can watch it tick.
-      if (runId != null && (done + failed + retry) % 5 === 0) {
-        await sb.from('enrichment_runs').update({ done, failed, retry }).eq('id', runId);
+      // Push live progress every few heroes AND check for a stop request in the
+      // same round trip (the admin console sets cancel_requested via RPC).
+      if (runId != null && (done + failed + retry) % 3 === 0) {
+        const { data: ctrl } = await sb
+          .from('enrichment_runs')
+          .update({ done, failed, retry })
+          .eq('id', runId)
+          .select('cancel_requested')
+          .single();
+        if ((ctrl as { cancel_requested?: boolean } | null)?.cancel_requested) {
+          cancelled = true;
+          break;
+        }
       }
       // Be polite to ComicVine between heroes (each hero already made several calls).
       await sleep(350);
@@ -401,7 +412,7 @@ serve(async (req: Request) => {
       await sb
         .from('enrichment_runs')
         .update({
-          status: 'done',
+          status: cancelled ? 'stopped' : 'done',
           done,
           failed,
           retry,

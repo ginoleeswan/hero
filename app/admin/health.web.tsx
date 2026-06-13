@@ -28,6 +28,7 @@ import {
   runDrain,
   retryFailed,
   setDrainCron,
+  stopRun,
   getHealthSnapshots,
   getCatalogDistributions,
   GAP_PAGE_SIZE,
@@ -401,6 +402,18 @@ export default function AdminHealthScreen() {
       setBusy(null);
     }
   };
+  const onStop = async (runId: number) => {
+    setBusy('stop');
+    try {
+      const ok = await stopRun(runId);
+      flash(ok ? 'Stopping after the current hero…' : 'Run already finished.');
+      queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] });
+    } catch (e) {
+      flash(`Failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(null);
+    }
+  };
   const onToggleCron = async () => {
     setBusy('cron');
     try {
@@ -579,6 +592,20 @@ export default function AdminHealthScreen() {
                     started {relTime(activeRun.started_at ?? activeRun.created_at)}
                   </Text>
                 </View>
+                <Pressable
+                  onPress={() => onStop(activeRun.id)}
+                  disabled={busy === 'stop' || activeRun.cancel_requested}
+                  style={[styles.stopBtn, (busy === 'stop' || activeRun.cancel_requested) && styles.actDim]}
+                >
+                  {busy === 'stop' ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Ionicons name="stop" size={14} color="#fff" />
+                  )}
+                  <Text style={styles.stopBtnText}>
+                    {activeRun.cancel_requested ? 'Stopping…' : 'Stop'}
+                  </Text>
+                </Pressable>
               </View>
             )}
             <View style={[styles.opsBody, narrow && { flexDirection: 'column', alignItems: 'stretch' }]}>
@@ -836,7 +863,9 @@ export default function AdminHealthScreen() {
                           ? COLORS.orange
                           : r.status === 'error'
                             ? COLORS.red
-                            : COLORS.green;
+                            : r.status === 'stopped'
+                              ? COLORS.navy
+                              : COLORS.green;
                       return (
                         <View style={[styles.stChip, { backgroundColor: c + '22' }]}>
                           {r.status === 'running' && (
@@ -1131,6 +1160,16 @@ const styles = StyleSheet.create({
   },
   activeRunText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
   activeRunSub: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, marginTop: 1 },
+  stopBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 10,
+    backgroundColor: COLORS.red,
+  },
+  stopBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#fff' },
   runStatusCol: { width: 96 },
   stChip: {
     flexDirection: 'row',

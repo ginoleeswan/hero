@@ -102,6 +102,7 @@ export interface EnrichmentRun {
   triggered_by: string;
   status: string;
   started_at: string | null;
+  cancel_requested: boolean;
   processed: number;
   done: number;
   failed: number;
@@ -164,6 +165,12 @@ export async function setDrainCron(enabled: boolean): Promise<string> {
   const { data, error } = await supabase.rpc('admin_set_drain_cron', { p_enabled: enabled });
   if (error) throw error;
   return (data as string | null) ?? '';
+}
+
+export async function stopRun(runId: number): Promise<boolean> {
+  const { data, error } = await supabase.rpc('admin_stop_run', { p_run_id: runId });
+  if (error) throw error;
+  return !!data;
 }
 
 // ── Charts: history + distributions ───────────────────────────────────────────

@@ -55,6 +55,7 @@ export type Database = {
       }
       enrichment_runs: {
         Row: {
+          cancel_requested: boolean
           created_at: string
           done: number
           duration_ms: number | null
@@ -69,6 +70,7 @@ export type Database = {
           triggered_by: string
         }
         Insert: {
+          cancel_requested?: boolean
           created_at?: string
           done?: number
           duration_ms?: number | null
@@ -83,6 +85,7 @@ export type Database = {
           triggered_by?: string
         }
         Update: {
+          cancel_requested?: boolean
           created_at?: string
           done?: number
           duration_ms?: number | null
@@ -521,6 +524,7 @@ export type Database = {
       admin_retry_failed: { Args: never; Returns: number }
       admin_run_drain: { Args: { p_limit?: number }; Returns: string }
       admin_set_drain_cron: { Args: { p_enabled: boolean }; Returns: string }
+      admin_stop_run: { Args: { p_run_id: number }; Returns: boolean }
       cache_hero_comicvine_data: {
         Args: { p_id: string; p_powers: string[]; p_summary: string }
         Returns: undefined
