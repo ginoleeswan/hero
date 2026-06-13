@@ -521,6 +521,7 @@ export type Database = {
     }
     Functions: {
       admin_cron_status: { Args: never; Returns: Json }
+      admin_reenrich_hero: { Args: { p_id: string }; Returns: string }
       admin_retry_failed: { Args: never; Returns: number }
       admin_run_drain: { Args: { p_limit?: number }; Returns: string }
       admin_set_drain_cron: { Args: { p_enabled: boolean }; Returns: string }

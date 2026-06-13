@@ -173,6 +173,36 @@ export async function stopRun(runId: number): Promise<boolean> {
   return !!data;
 }
 
+// ── Single-hero console: search any hero, re-fetch one on demand ──────────────
+
+export interface AdminHeroResult {
+  id: string;
+  name: string;
+  publisher: string | null;
+  comicvine_status: string | null;
+  enriched_at: string | null;
+  portrait_url: string | null;
+  image_url: string | null;
+}
+
+export async function searchHeroesAdmin(q: string): Promise<AdminHeroResult[]> {
+  const term = q.trim();
+  if (term.length < 2) return [];
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('id, name, publisher, comicvine_status, enriched_at, portrait_url, image_url')
+    .ilike('name', `%${term}%`)
+    .order('issue_count', { ascending: false, nullsFirst: false })
+    .limit(12);
+  if (error) throw error;
+  return (data ?? []) as AdminHeroResult[];
+}
+
+export async function reenrichHero(id: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_reenrich_hero', { p_id: id });
+  if (error) throw error;
+}
+
 // ── Charts: history + distributions ───────────────────────────────────────────
 
 export interface HealthSnapshot {

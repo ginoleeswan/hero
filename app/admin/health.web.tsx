@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Animated,
+  TextInput,
   useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -17,6 +18,8 @@ import Svg, { Circle, Path, Polyline } from 'react-native-svg';
 import { useAuth } from '../../src/hooks/useAuth';
 import { getProfile } from '../../src/lib/db/profiles';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
+import { useChromeColor } from '../../src/contexts/WebChromeContext';
+import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { LogoLoader } from '../../src/components/ui/LogoLoader';
 import { COLORS } from '../../src/constants/colors';
 import {
@@ -29,6 +32,8 @@ import {
   retryFailed,
   setDrainCron,
   stopRun,
+  searchHeroesAdmin,
+  reenrichHero,
   getHealthSnapshots,
   getCatalogDistributions,
   GAP_PAGE_SIZE,
@@ -37,6 +42,7 @@ import {
   type PublisherCoverage,
   type EnrichmentRun,
   type HealthSnapshot,
+  type AdminHeroResult,
 } from '../../src/lib/db/catalogHealth';
 
 const DRAIN_CRON = 'enrich-comicvine-pending';
@@ -303,6 +309,9 @@ function CompletenessChart({ snaps }: { snaps: HealthSnapshot[] }) {
 
 export default function AdminHealthScreen() {
   useWebCanvas(COLORS.beige);
+  // Masthead is dark-topped and bleeds up behind the floating nav, so lock the
+  // chrome (status-bar tint + bar) to its top colour for a seamless top edge.
+  useChromeColor('#10242e');
   const router = useRouter();
   const { width: winW } = useWindowDimensions();
   const narrow = winW < 760;
@@ -311,6 +320,7 @@ export default function AdminHealthScreen() {
   const [metric, setMetric] = useState<CoverageMetric>('portrait');
   const [page, setPage] = useState(0);
   const [tab, setTab] = useState<'overview' | 'backfill' | 'operations'>('overview');
+  const [heroQuery, setHeroQuery] = useState('');
 
   const profileQ = useQuery({
     queryKey: ['profile', user?.id],
@@ -350,6 +360,12 @@ export default function AdminHealthScreen() {
         : 15_000,
   });
   const cronQ = useQuery({ queryKey: ['cronStatus'], queryFn: getCronStatus, enabled: opsEnabled });
+  const heroSearchQ = useQuery({
+    queryKey: ['adminHeroSearch', heroQuery],
+    queryFn: () => searchHeroesAdmin(heroQuery),
+    enabled: opsEnabled && heroQuery.trim().length >= 2,
+    staleTime: 30_000,
+  });
   const usageQ = useQuery({
     queryKey: ['cvUsage'],
     queryFn: getComicvineUsageLastHour,
@@ -414,6 +430,18 @@ export default function AdminHealthScreen() {
       setBusy(null);
     }
   };
+  const onReenrich = async (id: string, name: string) => {
+    setBusy(`reenrich-${id}`);
+    try {
+      await reenrichHero(id);
+      flash(`Re-fetching ${name} from ComicVine…`);
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['adminHeroSearch'] }), 5000);
+    } catch (e) {
+      flash(`Failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(null);
+    }
+  };
   const onToggleCron = async () => {
     setBusy('cron');
     try {
@@ -467,6 +495,19 @@ export default function AdminHealthScreen() {
     cvUsage >= CV_HOURLY_CAP * 0.8 ? COLORS.red : cvUsage >= CV_HOURLY_CAP * 0.5 ? COLORS.yellow : COLORS.green;
   const runs: EnrichmentRun[] = runsQ.data ?? [];
   const activeRun = runs.find((r) => r.status === 'running');
+  // Backlog ETA at the observed drain rate (heroes enriched per minute of run time).
+  const drainedRuns = runs.filter((r) => r.duration_ms && r.done > 0);
+  const drainMs = drainedRuns.reduce((a, r) => a + (r.duration_ms ?? 0), 0);
+  const drainDone = drainedRuns.reduce((a, r) => a + r.done, 0);
+  const perMin = drainMs > 0 ? drainDone / (drainMs / 60000) : 0;
+  const pendingNow = h?.cvStatus.pending ?? 0;
+  const etaMin = perMin > 0 ? pendingNow / perMin : 0;
+  const etaLabel =
+    perMin > 0 && pendingNow > 0
+      ? etaMin >= 60
+        ? `~${(etaMin / 60).toFixed(1)}h to clear`
+        : `~${Math.ceil(etaMin)}m to clear`
+      : null;
   const dist = distQ.data;
   const snaps = snapsQ.data ?? [];
   const align = dist?.alignment;
@@ -480,15 +521,16 @@ export default function AdminHealthScreen() {
 
   return (
     <View style={styles.page}>
-      <Animated.View style={[styles.inner, enterStyle]}>
-        {/* ── Masthead ── */}
+      <Animated.View style={[styles.root, enterStyle]}>
+        {/* ── Masthead — full-bleed dark band that fuses with the floating nav ── */}
         <LinearGradient
           colors={['#10242e', COLORS.deepNavy]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.masthead, narrow && styles.mastheadNarrow]}
+          style={styles.masthead}
         >
           <View style={styles.mastheadGlow} />
+          <View style={[styles.mastheadInner, narrow && styles.mastheadInnerNarrow]}>
           <View style={styles.mastheadLeft}>
             <Text style={styles.kicker}>MYTHIQUE · ARCHIVE CONTROL</Text>
             <Text style={styles.title}>Catalog Health</Text>
@@ -535,8 +577,10 @@ export default function AdminHealthScreen() {
             </View>
           </View>
           {h && <Gauge value={overall} />}
+          </View>
         </LinearGradient>
 
+        <View style={styles.body}>
         {/* ── Tab bar ── */}
         <View style={styles.tabBar}>
           {([
@@ -664,6 +708,7 @@ export default function AdminHealthScreen() {
                 <View style={styles.opsMetric}>
                   <Text style={styles.opsMetricNum}>{(h.cvStatus.pending ?? 0).toLocaleString()}</Text>
                   <Text style={styles.opsMetricLabel}>Pending backlog</Text>
+                  {etaLabel && <Text style={styles.opsMetricSub}>{etaLabel}</Text>}
                 </View>
                 <View style={styles.opsDivider} />
                 <View style={styles.opsMetricWide}>
@@ -691,6 +736,89 @@ export default function AdminHealthScreen() {
                 </View>
               </View>
             </View>
+          </View>
+        )}
+
+        {/* ── Single-hero console ── */}
+        {tab === 'operations' && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Hero console</Text>
+            <Text style={styles.cardHint}>Find any hero and re-fetch its ComicVine data on demand</Text>
+            <View style={styles.heroSearchBox}>
+              <Ionicons name="search" size={16} color={COLORS.grey} />
+              <TextInput
+                value={heroQuery}
+                onChangeText={setHeroQuery}
+                placeholder="Search heroes by name…"
+                placeholderTextColor={COLORS.grey}
+                style={[styles.heroSearchInput, { outlineStyle: 'none' }] as object}
+              />
+              {heroQuery.length > 0 && (
+                <Pressable onPress={() => setHeroQuery('')}>
+                  <Ionicons name="close-circle" size={16} color={COLORS.grey} />
+                </Pressable>
+              )}
+            </View>
+            {heroQuery.trim().length >= 2 && (
+              <View style={{ marginTop: 6 }}>
+                {heroSearchQ.isLoading ? (
+                  <ActivityIndicator color={COLORS.orange} style={{ marginTop: 14 }} />
+                ) : (heroSearchQ.data ?? []).length === 0 ? (
+                  <Text style={styles.runsEmpty}>No heroes match “{heroQuery}”.</Text>
+                ) : (
+                  (heroSearchQ.data as AdminHeroResult[]).map((hero) => {
+                    const st = hero.comicvine_status ?? 'none';
+                    const stc =
+                      st === 'done' ? COLORS.green : st === 'failed' ? COLORS.red : st === 'pending' ? COLORS.yellow : COLORS.grey;
+                    const busyThis = busy === `reenrich-${hero.id}`;
+                    return (
+                      <View key={hero.id} style={styles.hcRow}>
+                        {hero.portrait_url || hero.image_url ? (
+                          <Image
+                            source={{ uri: hero.portrait_url ?? hero.image_url ?? undefined }}
+                            style={styles.hcThumb}
+                            contentFit="cover"
+                            transition={150}
+                          />
+                        ) : (
+                          <View style={[styles.hcThumb, styles.thumbBlank]}>
+                            <Ionicons name="person" size={15} color="rgba(41,60,67,0.3)" />
+                          </View>
+                        )}
+                        <Pressable style={styles.hcInfo} onPress={() => router.push(`/character/${hero.id}`)}>
+                          <Text style={styles.hcName} numberOfLines={1}>
+                            {hero.name}
+                          </Text>
+                          <View style={styles.hcMetaRow}>
+                            <Text style={styles.hcPub} numberOfLines={1}>
+                              {hero.publisher ?? '—'}
+                            </Text>
+                            <View style={[styles.stChip, { backgroundColor: stc + '22' }]}>
+                              <Text style={[styles.stChipText, { color: stc }]}>{st}</Text>
+                            </View>
+                            {!hero.portrait_url && (
+                              <Text style={styles.hcFlag}>no portrait</Text>
+                            )}
+                          </View>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => onReenrich(hero.id, hero.name)}
+                          disabled={!!busy}
+                          style={[styles.hcBtn, !!busy && styles.actDim]}
+                        >
+                          {busyThis ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                          ) : (
+                            <Ionicons name="refresh" size={14} color="#fff" />
+                          )}
+                          <Text style={styles.hcBtnText}>Re-fetch</Text>
+                        </Pressable>
+                      </View>
+                    );
+                  })
+                )}
+              </View>
+            )}
           </View>
         )}
 
@@ -1021,6 +1149,7 @@ export default function AdminHealthScreen() {
         )}
 
         <View style={{ height: 40 }} />
+        </View>
       </Animated.View>
     </View>
   );
@@ -1040,19 +1169,29 @@ const card = {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: COLORS.beige, minHeight: '100%' as unknown as number },
-  inner: { width: '100%', maxWidth: 1080, alignSelf: 'center', padding: 24, gap: 18 },
+  root: { width: '100%' },
+  body: { width: '100%', maxWidth: 1080, alignSelf: 'center', padding: 24, gap: 18 },
 
-  // Masthead
+  // Masthead — full-bleed dark band; its top tucks under the floating nav so the
+  // bar's dark scrim sits on dark, seamless. The content row is held to the same
+  // 1080 column as the body below.
   masthead: {
+    width: '100%',
+    overflow: 'hidden',
+    paddingTop: (`calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 30px)` as unknown) as number,
+    paddingBottom: 30,
+  },
+  mastheadInner: {
+    width: '100%',
+    maxWidth: 1080,
+    alignSelf: 'center',
+    paddingHorizontal: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: 24,
-    padding: 28,
-    paddingRight: 36,
-    overflow: 'hidden',
+    gap: 28,
   },
-  mastheadNarrow: { flexDirection: 'column', alignItems: 'flex-start', gap: 24, paddingRight: 28 },
+  mastheadInnerNarrow: { flexDirection: 'column', alignItems: 'flex-start', gap: 24 },
   mastheadGlow: {
     position: 'absolute',
     top: -120,
@@ -1170,6 +1309,48 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.red,
   },
   stopBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#fff' },
+
+  // Hero console
+  heroSearchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#f6f0e6',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    marginTop: 10,
+  },
+  heroSearchInput: {
+    flex: 1,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: COLORS.black,
+  },
+  hcRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f6f0e6',
+  },
+  hcThumb: { width: 34, height: 44, borderRadius: 7, backgroundColor: '#efe6d6' },
+  hcInfo: { flex: 1, gap: 4, minWidth: 0 },
+  hcName: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
+  hcMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  hcPub: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, maxWidth: 150 },
+  hcFlag: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.red },
+  hcBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: COLORS.navy,
+  },
+  hcBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
   runStatusCol: { width: 96 },
   stChip: {
     flexDirection: 'row',
