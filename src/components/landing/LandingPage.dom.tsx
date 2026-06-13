@@ -436,13 +436,13 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             >
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-            500+ Heroes &amp; Villains
+            3,000+ Heroes &amp; Villains
           </div>
           <span className="hero-wordmark-large">mythique</span>
           <p className="hero-tagline">The Universe's Greatest Heroes</p>
           <p className="hero-sub">
-            Discover the powers, origins, and stories of 500+ characters from Marvel, DC, and beyond
-            — all in your pocket.
+            Discover the powers, origins, and stories of 3,000+ characters from Marvel, DC, and
+            beyond — all in your pocket.
           </p>
           <div className="hero-ctas">
             <button className="btn-primary">
@@ -494,12 +494,12 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* STATS */}
       <div className="stats">
         <div className="stat-item">
-          <span className="stat-num">500+</span>
+          <span className="stat-num">3,000+</span>
           <span className="stat-label">Heroes &amp; Villains</span>
         </div>
         <div className="stat-item">
-          <span className="stat-num">Marvel &amp; DC</span>
-          <span className="stat-label">Universes</span>
+          <span className="stat-num">130+</span>
+          <span className="stat-label">Publishers</span>
         </div>
         <div className="stat-item">
           <span className="stat-num">Free</span>
@@ -574,7 +574,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
               },
               {
                 title: 'Instant Search',
-                desc: 'Find any of 500+ characters in seconds. Search by name, power, publisher, or team affiliation.',
+                desc: 'Find any of 3,000+ characters in seconds. Search by name, power, publisher, or team affiliation.',
                 icon: (
                   <>
                     <circle cx="11" cy="11" r="8" />
@@ -597,6 +597,22 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 icon: (
                   <>
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </>
+                ),
+              },
+              {
+                title: 'Compare Heroes',
+                desc: 'Pit any two characters head-to-head and watch their power stats clash, stat by stat, in the versus arena.',
+                icon: (
+                  <>
+                    <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
+                    <path d="m13 19 6-6" />
+                    <path d="m16 16 4 4" />
+                    <path d="m19 21 2-2" />
+                    <path d="M14.5 6.5 18 3h3v3l-3.5 3.5" />
+                    <path d="m5 14 4 4" />
+                    <path d="m7 17-2 2" />
+                    <path d="m3 19 2 2" />
                   </>
                 ),
               },
