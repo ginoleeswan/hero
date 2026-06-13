@@ -1234,7 +1234,7 @@ export default function AdminHealthScreen() {
                   {etaLabel && <Text style={styles.opsMetricSub}>{etaLabel}</Text>}
                 </View>
                 {!narrow && <View style={styles.opsDivider} />}
-                <View style={styles.opsMetricWide}>
+                <View style={[styles.opsMetricWide, narrow && styles.opsMetricWideNarrow]}>
                   <View style={styles.opsMetricHead}>
                     <View style={styles.pingRow}>
                       <View
@@ -2209,7 +2209,15 @@ const styles = StyleSheet.create({
   // On mobile the action buttons stretch to fill the column for big tap targets.
   actGrow: { flexGrow: 1, flexBasis: 140, justifyContent: 'center' },
   opsMetrics: { flexDirection: 'row', alignItems: 'center', gap: 18, flex: 1, flexWrap: 'wrap' },
-  opsMetricsNarrow: { gap: 22, paddingTop: 4 },
+  opsMetricsNarrow: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 16,
+    paddingTop: 12,
+    flexGrow: 0,
+    flexBasis: 'auto',
+  },
+  opsMetricWideNarrow: { flexGrow: 0, flexBasis: 'auto' },
   opsDivider: { width: 1, height: 38, backgroundColor: '#efe6d6' },
   opsMetric: { gap: 2 },
   opsMetricWide: { gap: 4, flex: 1, minWidth: 180 },
@@ -2489,7 +2497,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   heatPillVal: {
-    width: '100%',
+    alignSelf: 'stretch',
     borderRadius: 8,
     paddingVertical: 6,
     alignItems: 'center',
