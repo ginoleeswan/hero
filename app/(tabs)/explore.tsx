@@ -33,7 +33,7 @@ import { PublisherGrid } from '../../src/components/home/PublisherGrid';
 import { rowStyle } from '../../src/lib/home/rowStyle';
 import { HomeHeroRow, type RowHero } from '../../src/components/home/HomeHeroRow';
 import {
-  getPopularHeroes,
+  getSpotlightHeroes,
   getIconicHeroes,
   getNewlyAddedCV,
   getAntiHeroes,
@@ -81,7 +81,7 @@ export default function HomeScreen() {
   const { user } = useAuth();
 
   // Above-fold data — skeleton shows until this arrives
-  const [popular, setPopular] = useState<Hero[]>([]);
+  const [spotlight, setSpotlight] = useState<Hero[]>([]);
   const [initialLoaded, setInitialLoaded] = useState(false);
 
   // Below-fold rows — each renders as soon as its data arrives
@@ -108,15 +108,16 @@ export default function HomeScreen() {
   const contentShift = useAnimatedStyle(() => ({
     transform: [{ translateY: scrollY.value < 0 ? scrollY.value : 0 }],
   }));
-  const spotlightPool = useMemo(() => popular.slice(0, SPOTLIGHT_POOL), [popular]);
+  const spotlightPool = spotlight;
 
-  // Popular fires first — it feeds both the spotlight and the Popular row.
-  // Once it resolves the skeleton is replaced with real content.
-  // All other queries fire in parallel and their rows appear as they arrive.
+  // Spotlight fires first — once it resolves the skeleton is replaced with real
+  // content. All other queries fire in parallel and their rows appear as they
+  // arrive. getSpotlightHeroes gates on portraits + enrichment and rotates a
+  // mostly-marquee, partly-discovery lineup, so the billboard always looks right.
   useEffect(() => {
-    getPopularHeroes(25)
+    getSpotlightHeroes(SPOTLIGHT_POOL)
       .then((heroes) => {
-        setPopular(heroes);
+        setSpotlight(heroes);
         setInitialLoaded(true);
       })
       .catch(() => setInitialLoaded(true));

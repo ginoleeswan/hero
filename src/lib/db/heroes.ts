@@ -276,16 +276,67 @@ export async function getIconicHeroes(limit = 25): Promise<Hero[]> {
   return (data ?? []) as unknown as Hero[];
 }
 
-export async function getSpotlightHeroes(limit = 10): Promise<Hero[]> {
-  const { data, error } = await supabase
+// Spotlight billboard rules: a portrait is mandatory (it fills a half-screen
+// stage — a square image_url cropped to that height looks broken), and the hero
+// must be enriched (summary present) so the detail screen they tap into is full.
+// We mix mostly marquee names (≥2 movies) with ~1-in-5 lesser-known "discovery"
+// heroes, sampling fresh from each tier on every load so the lineup rotates.
+const SPOT_PUBLISHER_EXCLUDE = '("Non-Fictional","In the Public Domain","Company-Licensed")';
+const SPOT_FAMOUS_POOL = 20; // deep enough to vary, shallow enough to stay A-list
+const SPOT_DISCOVERY_POOL = 50;
+const SPOT_MIN_POWERSTATS = 200; // floor that filters out civilian sidekicks
+
+function sampleN<T>(arr: T[], n: number): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, n);
+}
+
+export async function getSpotlightHeroes(limit = 5): Promise<Hero[]> {
+  const discoveryCount = Math.max(1, Math.round(limit * 0.2));
+  const famousCount = Math.max(0, limit - discoveryCount);
+
+  // The powerstats floor keeps the billboard to actual heroes/villains: it drops
+  // famous-by-association civilians (Alfred, Lois Lane, Jimmy Olsen, Goofy…) who
+  // inherit their franchise's film count, while still keeping low-stat but real
+  // heroes like Hawkeye and Ant-Man.
+  const famousQuery = supabase
     .from('heroes')
     .select(HOME_SPOT)
     .not('portrait_url', 'is', null)
-    .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
+    .not('summary', 'is', null)
+    .gte('movie_count', 2)
+    .gte('powerstats_total', SPOT_MIN_POWERSTATS)
+    .not('publisher', 'in', SPOT_PUBLISHER_EXCLUDE)
+    .order('movie_count', { ascending: false, nullsFirst: false })
     .order('issue_count', { ascending: false, nullsFirst: false })
-    .limit(limit);
-  if (error) throw new Error(error.message);
-  return (data ?? []) as unknown as Hero[];
+    .limit(SPOT_FAMOUS_POOL);
+
+  // Lesser-known but not obscure: no/few films, yet a real publication history.
+  const discoveryQuery = supabase
+    .from('heroes')
+    .select(HOME_SPOT)
+    .not('portrait_url', 'is', null)
+    .not('summary', 'is', null)
+    .or('movie_count.is.null,movie_count.lt.2')
+    .gte('issue_count', 200)
+    .gte('powerstats_total', SPOT_MIN_POWERSTATS)
+    .not('publisher', 'in', SPOT_PUBLISHER_EXCLUDE)
+    .order('issue_count', { ascending: false, nullsFirst: false })
+    .limit(SPOT_DISCOVERY_POOL);
+
+  const [famousRes, discoveryRes] = await Promise.all([famousQuery, discoveryQuery]);
+  if (famousRes.error) throw new Error(famousRes.error.message);
+  if (discoveryRes.error) throw new Error(discoveryRes.error.message);
+
+  const famous = sampleN((famousRes.data ?? []) as unknown as Hero[], famousCount);
+  const discovery = sampleN((discoveryRes.data ?? []) as unknown as Hero[], discoveryCount);
+
+  // Shuffle the merged set so the discovery hero isn't pinned to the last slot.
+  return sampleN([...famous, ...discovery], limit);
 }
 
 export async function getNewlyAddedCV(limit = 25): Promise<Hero[]> {
