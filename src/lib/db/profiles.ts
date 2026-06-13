@@ -9,6 +9,7 @@ export interface UserProfile {
   avatar_url: string | null;
   cover_url: string | null;
   created_at: string | null;
+  is_admin: boolean | null;
 }
 
 export async function getProfile(userId: string): Promise<UserProfile | null> {

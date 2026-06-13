@@ -366,6 +366,7 @@ export type Database = {
           created_at: string | null
           display_name: string | null
           id: string
+          is_admin: boolean
         }
         Insert: {
           avatar_url?: string | null
@@ -373,6 +374,7 @@ export type Database = {
           created_at?: string | null
           display_name?: string | null
           id: string
+          is_admin?: boolean
         }
         Update: {
           avatar_url?: string | null
@@ -380,6 +382,7 @@ export type Database = {
           created_at?: string | null
           display_name?: string | null
           id?: string
+          is_admin?: boolean
         }
         Relationships: []
       }
@@ -434,6 +437,7 @@ export type Database = {
         Args: { p_id: string; p_powers: string[]; p_summary: string }
         Returns: undefined
       }
+      catalog_health: { Args: never; Returns: Json }
       category_facet_counts: {
         Args: {
           p_alignment?: string
