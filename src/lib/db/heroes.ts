@@ -453,7 +453,7 @@ export async function getHeroesByStatRanking(
 ): Promise<Hero[]> {
   const { data, error } = await supabase
     .from('heroes')
-    .select(HOME_ROW)
+    .select(`${HOME_ROW}, intelligence, strength, speed`)
     .not(stat, 'is', null)
     .order(stat, { ascending: false })
     .limit(limit);
