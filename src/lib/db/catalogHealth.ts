@@ -100,6 +100,8 @@ export interface EnrichmentRun {
   id: number;
   run_type: string;
   triggered_by: string;
+  status: string;
+  started_at: string | null;
   processed: number;
   done: number;
   failed: number;

@@ -349,48 +349,79 @@ serve(async (req: Request) => {
   let failed = 0;
   let retry = 0;
 
-  for (const hero of batch as Array<{ id: string; name: string; comicvine_id: string | null }>) {
-    let outcome: EnrichOutcome;
-    try {
-      outcome = await enrichHero(sb, hero);
-    } catch (err) {
-      // Network/exception — transient. Leave pending so a later run retries.
-      console.error('[enrich-comicvine-batch] hero threw', hero.id, err);
-      outcome = 'retry';
-    }
-    if (outcome === 'done') {
-      done++;
-    } else if (outcome === 'failed') {
-      // Terminal: ComicVine has no match. Park it so we stop retrying.
-      failed++;
-      await sb.from('heroes').update({ comicvine_status: 'failed' }).eq('id', hero.id);
-    } else {
-      // Transient: leave the row `pending` untouched — next run tries again.
-      retry++;
-    }
-    // Be polite to ComicVine between heroes (each hero already made several calls).
-    await sleep(350);
-  }
+  // ── Log the run as `running` up front so the admin console sees it live ──────
+  const { data: runRow } = await sb
+    .from('enrichment_runs')
+    .insert({
+      run_type: retryFailed ? 'comicvine_retry' : 'comicvine_drain',
+      triggered_by: triggeredBy,
+      status: 'running',
+      started_at: new Date(startedAt).toISOString(),
+      processed: batch.length,
+    })
+    .select('id')
+    .single();
+  const runId = (runRow as { id?: number } | null)?.id ?? null;
 
-  const { count: remaining } = await sb
-    .from('heroes')
-    .select('*', { count: 'exact', head: true })
-    .eq('comicvine_status', 'pending');
+  try {
+    for (const hero of batch as Array<{ id: string; name: string; comicvine_id: string | null }>) {
+      let outcome: EnrichOutcome;
+      try {
+        outcome = await enrichHero(sb, hero);
+      } catch (err) {
+        // Network/exception — transient. Leave pending so a later run retries.
+        console.error('[enrich-comicvine-batch] hero threw', hero.id, err);
+        outcome = 'retry';
+      }
+      if (outcome === 'done') {
+        done++;
+      } else if (outcome === 'failed') {
+        // Terminal: ComicVine has no match. Park it so we stop retrying.
+        failed++;
+        await sb.from('heroes').update({ comicvine_status: 'failed' }).eq('id', hero.id);
+      } else {
+        // Transient: leave the row `pending` untouched — next run tries again.
+        retry++;
+      }
+      // Push live progress every few heroes so the dashboard can watch it tick.
+      if (runId != null && (done + failed + retry) % 5 === 0) {
+        await sb.from('enrichment_runs').update({ done, failed, retry }).eq('id', runId);
+      }
+      // Be polite to ComicVine between heroes (each hero already made several calls).
+      await sleep(350);
+    }
 
-  // ── Telemetry: log the run + ComicVine usage for the admin console ──────────
-  await sb.from('enrichment_runs').insert({
-    run_type: retryFailed ? 'comicvine_retry' : 'comicvine_drain',
-    triggered_by: triggeredBy,
-    processed: batch.length,
-    done,
-    failed,
-    retry,
-    remaining: remaining ?? null,
-    duration_ms: Date.now() - startedAt,
-  });
-  if (batch.length > 0) {
+    const { count: remaining } = await sb
+      .from('heroes')
+      .select('*', { count: 'exact', head: true })
+      .eq('comicvine_status', 'pending');
+
+    // ── Finalise the run + log ComicVine usage ────────────────────────────────
+    if (runId != null) {
+      await sb
+        .from('enrichment_runs')
+        .update({
+          status: 'done',
+          done,
+          failed,
+          retry,
+          remaining: remaining ?? null,
+          duration_ms: Date.now() - startedAt,
+        })
+        .eq('id', runId);
+    }
     await sb.from('api_usage').insert({ api: 'comicvine', endpoint: 'character', units: batch.length });
-  }
 
-  return json({ processed: batch.length, done, failed, retry, remaining: remaining ?? null });
+    return json({ processed: batch.length, done, failed, retry, remaining: remaining ?? null });
+  } catch (err) {
+    // Hard failure mid-run — mark the run errored so it never silently vanishes.
+    if (runId != null) {
+      await sb
+        .from('enrichment_runs')
+        .update({ status: 'error', done, failed, retry, duration_ms: Date.now() - startedAt })
+        .eq('id', runId);
+    }
+    console.error('[enrich-comicvine-batch] run failed', err);
+    return json({ error: String(err) }, 500);
+  }
 });

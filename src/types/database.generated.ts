@@ -64,6 +64,8 @@ export type Database = {
           remaining: number | null
           retry: number
           run_type: string
+          started_at: string | null
+          status: string
           triggered_by: string
         }
         Insert: {
@@ -76,6 +78,8 @@ export type Database = {
           remaining?: number | null
           retry?: number
           run_type: string
+          started_at?: string | null
+          status?: string
           triggered_by?: string
         }
         Update: {
@@ -88,6 +92,8 @@ export type Database = {
           remaining?: number | null
           retry?: number
           run_type?: string
+          started_at?: string | null
+          status?: string
           triggered_by?: string
         }
         Relationships: []

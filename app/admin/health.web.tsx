@@ -49,8 +49,6 @@ const relTime = (iso: string) => {
   return `${Math.floor(s / 86400)}d ago`;
 };
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-
 const pct = (have: number, total: number) => (total > 0 ? Math.round((have / total) * 100) : 0);
 
 /** Health colour ramp: red (poor) → gold (partial) → green (strong). */
@@ -80,18 +78,18 @@ const WORKLIST_LABEL: Record<CoverageMetric, string> = {
 };
 
 // ── Completeness gauge ────────────────────────────────────────────────────────
-function Gauge({ value, anim }: { value: number; anim: Animated.Value }) {
+function Gauge({ value }: { value: number }) {
   const size = 150;
   const stroke = 12;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const tint = healthColor(value);
-  const offset = anim.interpolate({ inputRange: [0, 1], outputRange: [c, c * (1 - value / 100)] });
+  const offset = c * (1 - value / 100);
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
         <Circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,0.12)" strokeWidth={stroke} fill="none" />
-        <AnimatedCircle
+        <Circle
           cx={size / 2}
           cy={size / 2}
           r={r}
@@ -344,7 +342,11 @@ export default function AdminHealthScreen() {
     queryKey: ['enrichmentRuns'],
     queryFn: () => getRecentRuns(8),
     enabled: opsEnabled,
-    refetchInterval: 15_000,
+    // Poll fast while a run is in flight, slow otherwise.
+    refetchInterval: (q) =>
+      ((q.state.data as EnrichmentRun[] | undefined) ?? []).some((r) => r.status === 'running')
+        ? 2500
+        : 15_000,
   });
   const cronQ = useQuery({ queryKey: ['cronStatus'], queryFn: getCronStatus, enabled: opsEnabled });
   const usageQ = useQuery({
@@ -379,11 +381,8 @@ export default function AdminHealthScreen() {
     setBusy('drain');
     try {
       await runDrain(25);
-      flash('Batch of 25 queued — watch the runs table.');
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] });
-        queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
-      }, 6000);
+      flash('Batch queued — watch it run below.');
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] }), 2000);
     } catch (e) {
       flash(`Failed: ${(e as Error).message}`);
     } finally {
@@ -435,6 +434,17 @@ export default function AdminHealthScreen() {
     ]).start();
   }, [h, anim, enter]);
 
+  // While a run is in flight, poll backlog + usage so the live numbers tick down.
+  useEffect(() => {
+    const live = (runsQ.data ?? []).some((r) => r.status === 'running');
+    if (!live) return;
+    const id = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
+      queryClient.invalidateQueries({ queryKey: ['cvUsage'] });
+    }, 4000);
+    return () => clearInterval(id);
+  }, [runsQ.data, queryClient]);
+
   if (!gateResolved || !isAdmin) return <LogoLoader />;
 
   const gaps = gapsQ.data;
@@ -443,6 +453,7 @@ export default function AdminHealthScreen() {
   const cvColor =
     cvUsage >= CV_HOURLY_CAP * 0.8 ? COLORS.red : cvUsage >= CV_HOURLY_CAP * 0.5 ? COLORS.yellow : COLORS.green;
   const runs: EnrichmentRun[] = runsQ.data ?? [];
+  const activeRun = runs.find((r) => r.status === 'running');
   const dist = distQ.data;
   const snaps = snapsQ.data ?? [];
   const align = dist?.alignment;
@@ -510,7 +521,7 @@ export default function AdminHealthScreen() {
                 ))}
             </View>
           </View>
-          {h && <Gauge value={overall} anim={anim} />}
+          {h && <Gauge value={overall} />}
         </LinearGradient>
 
         {/* ── Tab bar ── */}
@@ -555,6 +566,21 @@ export default function AdminHealthScreen() {
                 </View>
               )}
             </View>
+            {activeRun && (
+              <View style={styles.activeRun}>
+                <ActivityIndicator size="small" color={COLORS.orange} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.activeRunText}>
+                    Draining live · {activeRun.done + activeRun.failed + activeRun.retry}/
+                    {activeRun.processed} processed
+                  </Text>
+                  <Text style={styles.activeRunSub}>
+                    {activeRun.done} done · {activeRun.failed} failed · {activeRun.retry} retry ·
+                    started {relTime(activeRun.started_at ?? activeRun.created_at)}
+                  </Text>
+                </View>
+              </View>
+            )}
             <View style={[styles.opsBody, narrow && { flexDirection: 'column', alignItems: 'stretch' }]}>
               <View style={styles.opsActions}>
                 <Pressable
@@ -792,6 +818,7 @@ export default function AdminHealthScreen() {
             <>
               <View style={styles.runHeadRow}>
                 <Text style={[styles.runWhen, styles.runHeadText]}>When</Text>
+                <Text style={[styles.runStatusCol, styles.runHeadText]}>State</Text>
                 <Text style={[styles.runBy, styles.runHeadText]}>Source</Text>
                 <Text style={[styles.runStat, styles.runHeadText]}>Done</Text>
                 <Text style={[styles.runStat, styles.runHeadText]}>Failed</Text>
@@ -802,6 +829,24 @@ export default function AdminHealthScreen() {
               {runs.map((r) => (
                 <View key={r.id} style={styles.runRow}>
                   <Text style={styles.runWhen}>{relTime(r.created_at)}</Text>
+                  <View style={styles.runStatusCol}>
+                    {(() => {
+                      const c =
+                        r.status === 'running'
+                          ? COLORS.orange
+                          : r.status === 'error'
+                            ? COLORS.red
+                            : COLORS.green;
+                      return (
+                        <View style={[styles.stChip, { backgroundColor: c + '22' }]}>
+                          {r.status === 'running' && (
+                            <ActivityIndicator size="small" color={c} style={{ transform: [{ scale: 0.7 }] }} />
+                          )}
+                          <Text style={[styles.stChipText, { color: c }]}>{r.status}</Text>
+                        </View>
+                      );
+                    })()}
+                  </View>
                   <View style={styles.runBy}>
                     <View
                       style={[
@@ -1073,6 +1118,30 @@ const styles = StyleSheet.create({
 
   // Operations
   opsHead: { flexDirection: 'row', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' },
+  activeRun: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 14,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: COLORS.orange + '14',
+    borderWidth: 1,
+    borderColor: COLORS.orange + '33',
+  },
+  activeRunText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
+  activeRunSub: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, marginTop: 1 },
+  runStatusCol: { width: 96 },
+  stChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  stChipText: { fontFamily: 'Nunito_700Bold', fontSize: 11, textTransform: 'capitalize' },
   toastWrap: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   toast: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.orange },
   opsBody: { flexDirection: 'row', alignItems: 'center', gap: 24, marginTop: 14 },
