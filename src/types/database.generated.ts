@@ -531,6 +531,7 @@ export type Database = {
         Returns: undefined
       }
       catalog_distributions: { Args: never; Returns: Json }
+      admin_snapshot_now: { Args: never; Returns: undefined }
       catalog_health: { Args: never; Returns: Json }
       snapshot_catalog_health: { Args: never; Returns: undefined }
       category_facet_counts: {

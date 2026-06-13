@@ -203,6 +203,19 @@ export async function reenrichHero(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export type ComicvineStatus = 'ok' | 'limited' | 'error';
+export async function pingComicvine(): Promise<ComicvineStatus> {
+  const { data, error } = await supabase.functions.invoke<{ status?: string }>('comicvine-ping');
+  if (error) return 'error';
+  const s = data?.status;
+  return s === 'ok' || s === 'limited' ? s : 'error';
+}
+
+export async function snapshotNow(): Promise<void> {
+  const { error } = await supabase.rpc('admin_snapshot_now');
+  if (error) throw error;
+}
+
 // ── Charts: history + distributions ───────────────────────────────────────────
 
 export interface HealthSnapshot {

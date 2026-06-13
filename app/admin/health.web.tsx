@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Path, Polyline } from 'react-native-svg';
 import { useAuth } from '../../src/hooks/useAuth';
+import { supabase } from '../../src/lib/supabase';
 import { getProfile } from '../../src/lib/db/profiles';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { useChromeColor } from '../../src/contexts/WebChromeContext';
@@ -34,6 +35,8 @@ import {
   stopRun,
   searchHeroesAdmin,
   reenrichHero,
+  pingComicvine,
+  snapshotNow,
   getHealthSnapshots,
   getCatalogDistributions,
   GAP_PAGE_SIZE,
@@ -179,7 +182,14 @@ function CoverageRow({
 }
 
 // One publisher sub-table (header + rows) — rendered twice side-by-side on wide.
-function PublisherTable({ rows }: { rows: PublisherCoverage[] }) {
+// Rows are tappable → drill into that publisher's backfill queue.
+function PublisherTable({
+  rows,
+  onPick,
+}: {
+  rows: PublisherCoverage[];
+  onPick: (publisher: string) => void;
+}) {
   const cell = (val: number) => (
     <View style={styles.pubCellPct}>
       <View style={[styles.heat, { backgroundColor: healthColor(val) + '22' }]}>
@@ -197,7 +207,13 @@ function PublisherTable({ rows }: { rows: PublisherCoverage[] }) {
         <Text style={[styles.pubCellPct, styles.pubHeadText]}>Stats</Text>
       </View>
       {rows.map((p) => (
-        <View key={p.publisher} style={styles.pubRow}>
+        <Pressable
+          key={p.publisher}
+          onPress={() => onPick(p.publisher)}
+          style={({ hovered }: { hovered?: boolean }) =>
+            [styles.pubRow, hovered && styles.pubRowHover] as object
+          }
+        >
           <Text style={styles.pubCellName} numberOfLines={1}>
             {p.publisher}
           </Text>
@@ -205,7 +221,7 @@ function PublisherTable({ rows }: { rows: PublisherCoverage[] }) {
           {cell(pct(p.portrait, p.total))}
           {cell(pct(p.summary, p.total))}
           {cell(pct(p.stats, p.total))}
-        </View>
+        </Pressable>
       ))}
     </View>
   );
@@ -321,6 +337,8 @@ export default function AdminHealthScreen() {
   const [page, setPage] = useState(0);
   const [tab, setTab] = useState<'overview' | 'backfill' | 'operations'>('overview');
   const [heroQuery, setHeroQuery] = useState('');
+  const [batchSize, setBatchSize] = useState(25);
+  const [pubFilter, setPubFilter] = useState<string | null>(null);
 
   const profileQ = useQuery({
     queryKey: ['profile', user?.id],
@@ -340,8 +358,8 @@ export default function AdminHealthScreen() {
     staleTime: 60_000,
   });
   const gapsQ = useQuery({
-    queryKey: ['coverageGaps', metric, page],
-    queryFn: () => getCoverageGaps(metric, { page }),
+    queryKey: ['coverageGaps', metric, page, pubFilter],
+    queryFn: () => getCoverageGaps(metric, { page, publisher: pubFilter }),
     enabled: gateResolved && isAdmin,
     staleTime: 60_000,
   });
@@ -365,6 +383,12 @@ export default function AdminHealthScreen() {
     queryFn: () => searchHeroesAdmin(heroQuery),
     enabled: opsEnabled && heroQuery.trim().length >= 2,
     staleTime: 30_000,
+  });
+  const pingQ = useQuery({
+    queryKey: ['cvPing'],
+    queryFn: pingComicvine,
+    enabled: opsEnabled,
+    refetchInterval: 60_000,
   });
   const usageQ = useQuery({
     queryKey: ['cvUsage'],
@@ -397,8 +421,8 @@ export default function AdminHealthScreen() {
   const onRunDrain = async () => {
     setBusy('drain');
     try {
-      await runDrain(25);
-      flash('Batch queued — watch it run below.');
+      await runDrain(batchSize);
+      flash(`Batch of ${batchSize} queued — watch it run below.`);
       setTimeout(() => queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] }), 2000);
     } catch (e) {
       flash(`Failed: ${(e as Error).message}`);
@@ -430,6 +454,18 @@ export default function AdminHealthScreen() {
       setBusy(null);
     }
   };
+  const onSnapshot = async () => {
+    setBusy('snapshot');
+    try {
+      await snapshotNow();
+      flash('Snapshot captured.');
+      queryClient.invalidateQueries({ queryKey: ['healthSnapshots'] });
+    } catch (e) {
+      flash(`Failed: ${(e as Error).message}`);
+    } finally {
+      setBusy(null);
+    }
+  };
   const onReenrich = async (id: string, name: string) => {
     setBusy(`reenrich-${id}`);
     try {
@@ -441,6 +477,11 @@ export default function AdminHealthScreen() {
     } finally {
       setBusy(null);
     }
+  };
+  const pickPublisher = (publisher: string) => {
+    setPubFilter(publisher);
+    setPage(0);
+    setTab('backfill');
   };
   const onToggleCron = async () => {
     setBusy('cron');
@@ -486,6 +527,21 @@ export default function AdminHealthScreen() {
     return () => clearInterval(id);
   }, [runsQ.data, queryClient]);
 
+  // Realtime: any change to enrichment_runs refreshes the runs view instantly
+  // (complements the interval polling — feels live without waiting for the tick).
+  useEffect(() => {
+    if (!opsEnabled) return;
+    const channel = supabase
+      .channel('admin-enrichment-runs')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'enrichment_runs' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [opsEnabled, queryClient]);
+
   if (!gateResolved || !isAdmin) return <LogoLoader />;
 
   const gaps = gapsQ.data;
@@ -508,6 +564,19 @@ export default function AdminHealthScreen() {
         ? `~${(etaMin / 60).toFixed(1)}h to clear`
         : `~${Math.ceil(etaMin)}m to clear`
       : null;
+
+  // ── Alerts: surface problems without hunting ────────────────────────────────
+  const cvPing = pingQ.data;
+  const alerts: { tone: 'red' | 'gold'; text: string }[] = [];
+  if (cvPing === 'limited')
+    alerts.push({ tone: 'gold', text: 'ComicVine is rate-limited right now — drains will mostly retry.' });
+  else if (cvUsage >= CV_HOURLY_CAP * 0.8)
+    alerts.push({ tone: 'gold', text: `ComicVine usage high — ${cvUsage}/${CV_HOURLY_CAP} calls this hour.` });
+  if ((h?.cvStatus.failed ?? 0) > 0)
+    alerts.push({ tone: 'red', text: `${h!.cvStatus.failed} hero(es) marked failed — Retry failed in Operations.` });
+  if (runs[0]?.status === 'error')
+    alerts.push({ tone: 'red', text: 'The last run errored — see Recent runs.' });
+
   const dist = distQ.data;
   const snaps = snapsQ.data ?? [];
   const align = dist?.alignment;
@@ -611,6 +680,31 @@ export default function AdminHealthScreen() {
           })}
         </View>
 
+        {/* ── Alerts ── */}
+        {alerts.length > 0 && (
+          <View style={styles.alertWrap}>
+            {alerts.map((a, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.alert,
+                  {
+                    backgroundColor: (a.tone === 'red' ? COLORS.red : COLORS.yellow) + '18',
+                    borderColor: (a.tone === 'red' ? COLORS.red : COLORS.yellow) + '44',
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={a.tone === 'red' ? 'alert-circle' : 'warning'}
+                  size={16}
+                  color={a.tone === 'red' ? COLORS.red : COLORS.gold}
+                />
+                <Text style={styles.alertText}>{a.text}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* ── Operations ── */}
         {tab === 'operations' && h && (
           <View style={styles.card}>
@@ -654,6 +748,19 @@ export default function AdminHealthScreen() {
             )}
             <View style={[styles.opsBody, narrow && { flexDirection: 'column', alignItems: 'stretch' }]}>
               <View style={styles.opsActions}>
+                <View style={styles.sizeSel}>
+                  {[10, 25, 50].map((n) => (
+                    <Pressable
+                      key={n}
+                      onPress={() => setBatchSize(n)}
+                      style={[styles.sizePill, batchSize === n && styles.sizePillOn]}
+                    >
+                      <Text style={[styles.sizePillText, batchSize === n && styles.sizePillTextOn]}>
+                        {n}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
                 <Pressable
                   onPress={onRunDrain}
                   disabled={!!busy}
@@ -664,7 +771,7 @@ export default function AdminHealthScreen() {
                   ) : (
                     <Ionicons name="play" size={15} color="#fff" />
                   )}
-                  <Text style={styles.actPrimaryText}>Run batch · 25</Text>
+                  <Text style={styles.actPrimaryText}>Run batch · {batchSize}</Text>
                 </Pressable>
                 <Pressable
                   onPress={onRetryFailed}
@@ -713,7 +820,31 @@ export default function AdminHealthScreen() {
                 <View style={styles.opsDivider} />
                 <View style={styles.opsMetricWide}>
                   <View style={styles.opsMetricHead}>
-                    <Text style={styles.opsMetricLabel}>ComicVine · last hour</Text>
+                    <View style={styles.pingRow}>
+                      <View
+                        style={[
+                          styles.pingDot,
+                          {
+                            backgroundColor:
+                              cvPing === 'ok'
+                                ? COLORS.green
+                                : cvPing === 'limited'
+                                  ? COLORS.red
+                                  : COLORS.grey,
+                          },
+                        ]}
+                      />
+                      <Text style={styles.opsMetricLabel}>
+                        ComicVine ·{' '}
+                        {cvPing === 'ok'
+                          ? 'healthy'
+                          : cvPing === 'limited'
+                            ? 'rate-limited'
+                            : cvPing === 'error'
+                              ? 'error'
+                              : 'checking…'}
+                      </Text>
+                    </View>
                     <Text style={[styles.opsUsageNum, { color: cvColor }]}>
                       {cvUsage}/{CV_HOURLY_CAP}
                     </Text>
@@ -887,6 +1018,20 @@ export default function AdminHealthScreen() {
               })}
             </View>
 
+            {pubFilter && (
+              <Pressable
+                onPress={() => {
+                  setPubFilter(null);
+                  setPage(0);
+                }}
+                style={styles.filterChip}
+              >
+                <Ionicons name="funnel" size={12} color={COLORS.orange} />
+                <Text style={styles.filterChipText}>{pubFilter}</Text>
+                <Ionicons name="close" size={13} color={COLORS.navy} />
+              </Pressable>
+            )}
+
             {gapsQ.isLoading || !gaps ? (
               <ActivityIndicator color={COLORS.orange} style={{ marginTop: 24 }} />
             ) : gaps.heroes.length === 0 ? (
@@ -1045,8 +1190,24 @@ export default function AdminHealthScreen() {
         {tab === 'overview' && h && (
           <View style={[styles.cols, narrow && styles.colsNarrow]}>
             <View style={[styles.card, !narrow && styles.colRight]}>
-              <Text style={styles.cardTitle}>Completeness over time</Text>
-              <Text style={styles.cardHint}>Daily snapshots · now {overall}%</Text>
+              <View style={styles.cardTitleRow}>
+                <View>
+                  <Text style={styles.cardTitle}>Completeness over time</Text>
+                  <Text style={styles.cardHint}>Daily snapshots · now {overall}%</Text>
+                </View>
+                <Pressable
+                  onPress={onSnapshot}
+                  disabled={busy === 'snapshot'}
+                  style={[styles.miniBtn, busy === 'snapshot' && styles.actDim]}
+                >
+                  {busy === 'snapshot' ? (
+                    <ActivityIndicator size="small" color={COLORS.navy} />
+                  ) : (
+                    <Ionicons name="camera-outline" size={14} color={COLORS.navy} />
+                  )}
+                  <Text style={styles.miniBtnText}>Snapshot now</Text>
+                </Pressable>
+              </View>
               {snaps.length >= 2 ? (
                 <CompletenessChart snaps={snaps} />
               ) : (
@@ -1137,12 +1298,18 @@ export default function AdminHealthScreen() {
             <Text style={styles.cardTitle}>Coverage by publisher</Text>
             <Text style={styles.cardHint}>Top {h.byPublisher.length} by catalogue size</Text>
             {narrow ? (
-              <PublisherTable rows={h.byPublisher} />
+              <PublisherTable rows={h.byPublisher} onPick={pickPublisher} />
             ) : (
               <View style={styles.pubSplit}>
-                <PublisherTable rows={h.byPublisher.slice(0, Math.ceil(h.byPublisher.length / 2))} />
+                <PublisherTable
+                  rows={h.byPublisher.slice(0, Math.ceil(h.byPublisher.length / 2))}
+                  onPick={pickPublisher}
+                />
                 <View style={styles.pubSplitDivider} />
-                <PublisherTable rows={h.byPublisher.slice(Math.ceil(h.byPublisher.length / 2))} />
+                <PublisherTable
+                  rows={h.byPublisher.slice(Math.ceil(h.byPublisher.length / 2))}
+                  onPick={pickPublisher}
+                />
               </View>
             )}
           </View>
@@ -1351,6 +1518,59 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.navy,
   },
   hcBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
+
+  // Alerts
+  alertWrap: { gap: 8 },
+  alert: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  alertText: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
+
+  // ComicVine ping
+  pingRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  pingDot: { width: 8, height: 8, borderRadius: 8 },
+
+  // Batch-size selector
+  sizeSel: { flexDirection: 'row', backgroundColor: '#efe6d6', borderRadius: 10, padding: 3 },
+  sizePill: { paddingHorizontal: 11, paddingVertical: 7, borderRadius: 8 },
+  sizePillOn: { backgroundColor: '#fff' },
+  sizePillText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.grey },
+  sizePillTextOn: { color: COLORS.navy },
+
+  // Snapshot-now / mini button
+  cardTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  miniBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: '#efe6d6',
+  },
+  miniBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
+
+  // Publisher drill-down
+  pubRowHover: { backgroundColor: 'rgba(231,115,51,0.06)' },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 7,
+    marginBottom: 8,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: COLORS.orange + '18',
+    borderWidth: 1,
+    borderColor: COLORS.orange + '33',
+  },
+  filterChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   runStatusCol: { width: 96 },
   stChip: {
     flexDirection: 'row',
