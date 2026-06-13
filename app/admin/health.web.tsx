@@ -59,8 +59,8 @@ const WORKLIST_LABEL: Record<CoverageMetric, string> = {
 
 // ── Completeness gauge ────────────────────────────────────────────────────────
 function Gauge({ value, anim }: { value: number; anim: Animated.Value }) {
-  const size = 156;
-  const stroke = 13;
+  const size = 150;
+  const stroke = 12;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const tint = healthColor(value);
@@ -82,10 +82,12 @@ function Gauge({ value, anim }: { value: number; anim: Animated.Value }) {
         />
       </Svg>
       <View style={styles.gaugeCenter}>
-        <Text style={styles.gaugeNum}>{value}</Text>
-        <Text style={styles.gaugePct}>%</Text>
+        <View style={styles.gaugeNumRow}>
+          <Text style={styles.gaugeNum}>{value}</Text>
+          <Text style={styles.gaugePct}>%</Text>
+        </View>
+        <Text style={[styles.gaugeCaption, { color: tint }]}>complete</Text>
       </View>
-      <Text style={styles.gaugeCaption}>complete</Text>
     </View>
   );
 }
@@ -149,12 +151,11 @@ function CoverageRow({
   );
 }
 
-function StatPill({ label, value, tint }: { label: string; value: string; tint: string }) {
+function MastStat({ value, label, tint }: { value: string; label: string; tint?: string }) {
   return (
-    <View style={styles.kpi}>
-      <View style={[styles.kpiAccent, { backgroundColor: tint }]} />
-      <Text style={styles.kpiValue}>{value}</Text>
-      <Text style={styles.kpiLabel}>{label}</Text>
+    <View style={styles.mstat}>
+      <Text style={[styles.mstatNum, tint ? { color: tint } : null]}>{value}</Text>
+      <Text style={styles.mstatLabel}>{label}</Text>
     </View>
   );
 }
@@ -236,8 +237,27 @@ export default function AdminHealthScreen() {
             <Text style={styles.kicker}>MYTHIQUE · ARCHIVE CONTROL</Text>
             <Text style={styles.title}>Catalog Health</Text>
             <Text style={styles.subtitle}>
-              {h ? `${h.total.toLocaleString()} heroes catalogued` : 'Loading the archive…'}
+              {h ? 'Live coverage across the archive' : 'Loading the archive…'}
             </Text>
+            {h && (
+              <View style={styles.scoreboard}>
+                <MastStat value={h.total.toLocaleString()} label="Heroes" />
+                <View style={styles.scoreDivider} />
+                <MastStat
+                  value={`${pct(h.metrics.portrait, h.total)}%`}
+                  label="Portraits"
+                  tint={COLORS.orange}
+                />
+                <View style={styles.scoreDivider} />
+                <MastStat
+                  value={(h.total - h.metrics.portrait).toLocaleString()}
+                  label="Awaiting"
+                  tint={COLORS.yellow}
+                />
+                <View style={styles.scoreDivider} />
+                <MastStat value={`${h.byPublisher.length}`} label="Publishers" tint={COLORS.blue} />
+              </View>
+            )}
             <View style={styles.statusRow}>
               {h &&
                 Object.entries(h.cvStatus).map(([k, v]) => (
@@ -260,24 +280,6 @@ export default function AdminHealthScreen() {
           </View>
           {h && <Gauge value={overall} anim={anim} />}
         </LinearGradient>
-
-        {/* ── KPI strip ── */}
-        {h && (
-          <View style={[styles.kpiStrip, narrow && styles.kpiStripNarrow]}>
-            <StatPill label="Heroes in archive" value={h.total.toLocaleString()} tint={COLORS.navy} />
-            <StatPill
-              label="Portraits rendered"
-              value={`${pct(h.metrics.portrait, h.total)}%`}
-              tint={COLORS.orange}
-            />
-            <StatPill
-              label="Awaiting portraits"
-              value={(h.total - h.metrics.portrait).toLocaleString()}
-              tint={COLORS.red}
-            />
-            <StatPill label="Publishers" value={`${h.byPublisher.length}`} tint={COLORS.blue} />
-          </View>
-        )}
 
         <View style={[styles.cols, narrow && styles.colsNarrow]}>
           {/* ── Coverage ── */}
@@ -481,10 +483,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderRadius: 24,
-    padding: 30,
+    padding: 28,
+    paddingRight: 36,
     overflow: 'hidden',
   },
-  mastheadNarrow: { flexDirection: 'column', alignItems: 'flex-start', gap: 24 },
+  mastheadNarrow: { flexDirection: 'column', alignItems: 'flex-start', gap: 24, paddingRight: 28 },
   mastheadGlow: {
     position: 'absolute',
     top: -120,
@@ -518,33 +521,29 @@ const styles = StyleSheet.create({
   statusChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(255,255,255,0.85)' },
 
   // Gauge
-  gaugeCenter: { position: 'absolute', flexDirection: 'row', alignItems: 'baseline' },
-  gaugeNum: { fontFamily: 'Flame-Regular', fontSize: 48, color: '#fff', lineHeight: 50 },
-  gaugePct: { fontFamily: 'Flame-Regular', fontSize: 20, color: 'rgba(255,255,255,0.6)' },
+  gaugeCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+  gaugeNumRow: { flexDirection: 'row', alignItems: 'baseline' },
+  gaugeNum: { fontFamily: 'Flame-Regular', fontSize: 46, color: '#fff', lineHeight: 48 },
+  gaugePct: { fontFamily: 'Flame-Regular', fontSize: 19, color: 'rgba(255,255,255,0.55)' },
   gaugeCaption: {
-    position: 'absolute',
-    bottom: 18,
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
     letterSpacing: 2,
     textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.45)',
+    marginTop: 2,
   },
 
-  // KPI strip
-  kpiStrip: { flexDirection: 'row', gap: 14 },
-  kpiStripNarrow: { flexWrap: 'wrap' },
-  kpi: {
-    ...card,
-    flex: 1,
-    minWidth: 150,
-    padding: 18,
-    gap: 2,
-    overflow: 'hidden',
+  // Masthead scoreboard
+  scoreboard: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 16, flexWrap: 'wrap' },
+  scoreDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.13)' },
+  mstat: { gap: 1 },
+  mstatNum: { fontFamily: 'Flame-Regular', fontSize: 27, color: '#fff', lineHeight: 29 },
+  mstatLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 0.4,
+    color: 'rgba(255,255,255,0.5)',
   },
-  kpiAccent: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4 },
-  kpiValue: { fontFamily: 'Flame-Regular', fontSize: 32, color: COLORS.black, lineHeight: 36 },
-  kpiLabel: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.grey },
 
   // Columns
   cols: { flexDirection: 'row', gap: 18, alignItems: 'flex-start' },
