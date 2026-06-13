@@ -25,6 +25,7 @@ import {
   GAP_PAGE_SIZE,
   type CatalogHealth,
   type CoverageMetric,
+  type PublisherCoverage,
 } from '../../src/lib/db/catalogHealth';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -148,6 +149,39 @@ function CoverageRow({
         />
       )}
     </Pressable>
+  );
+}
+
+// One publisher sub-table (header + rows) — rendered twice side-by-side on wide.
+function PublisherTable({ rows }: { rows: PublisherCoverage[] }) {
+  const cell = (val: number) => (
+    <View style={styles.pubCellPct}>
+      <View style={[styles.heat, { backgroundColor: healthColor(val) + '22' }]}>
+        <Text style={[styles.heatText, { color: healthColor(val) }]}>{val}%</Text>
+      </View>
+    </View>
+  );
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={styles.pubHeadRow}>
+        <Text style={[styles.pubCellName, styles.pubHeadText]}>Publisher</Text>
+        <Text style={[styles.pubCellNum, styles.pubHeadText]}>Heroes</Text>
+        <Text style={[styles.pubCellPct, styles.pubHeadText]}>Portrait</Text>
+        <Text style={[styles.pubCellPct, styles.pubHeadText]}>Summary</Text>
+        <Text style={[styles.pubCellPct, styles.pubHeadText]}>Stats</Text>
+      </View>
+      {rows.map((p) => (
+        <View key={p.publisher} style={styles.pubRow}>
+          <Text style={styles.pubCellName} numberOfLines={1}>
+            {p.publisher}
+          </Text>
+          <Text style={styles.pubCellNum}>{p.total.toLocaleString()}</Text>
+          {cell(pct(p.portrait, p.total))}
+          {cell(pct(p.summary, p.total))}
+          {cell(pct(p.stats, p.total))}
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -417,41 +451,20 @@ export default function AdminHealthScreen() {
           </View>
         </View>
 
-        {/* ── Publisher heatmap ── */}
+        {/* ── Publisher heatmap (two columns on wide screens) ── */}
         {h && h.byPublisher.length > 0 && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Coverage by publisher</Text>
             <Text style={styles.cardHint}>Top {h.byPublisher.length} by catalogue size</Text>
-            <View style={[styles.pubHeadRow]}>
-              <Text style={[styles.pubCellName, styles.pubHeadText]}>Publisher</Text>
-              <Text style={[styles.pubCellNum, styles.pubHeadText]}>Heroes</Text>
-              <Text style={[styles.pubCellPct, styles.pubHeadText]}>Portrait</Text>
-              <Text style={[styles.pubCellPct, styles.pubHeadText]}>Summary</Text>
-              <Text style={[styles.pubCellPct, styles.pubHeadText]}>Stats</Text>
-            </View>
-            {h.byPublisher.map((p) => {
-              const pp = pct(p.portrait, p.total);
-              const ps = pct(p.summary, p.total);
-              const pt = pct(p.stats, p.total);
-              const cell = (val: number) => (
-                <View style={styles.pubCellPct}>
-                  <View style={[styles.heat, { backgroundColor: healthColor(val) + '22' }]}>
-                    <Text style={[styles.heatText, { color: healthColor(val) }]}>{val}%</Text>
-                  </View>
-                </View>
-              );
-              return (
-                <View key={p.publisher} style={styles.pubRow}>
-                  <Text style={styles.pubCellName} numberOfLines={1}>
-                    {p.publisher}
-                  </Text>
-                  <Text style={styles.pubCellNum}>{p.total.toLocaleString()}</Text>
-                  {cell(pp)}
-                  {cell(ps)}
-                  {cell(pt)}
-                </View>
-              );
-            })}
+            {narrow ? (
+              <PublisherTable rows={h.byPublisher} />
+            ) : (
+              <View style={styles.pubSplit}>
+                <PublisherTable rows={h.byPublisher.slice(0, Math.ceil(h.byPublisher.length / 2))} />
+                <View style={styles.pubSplitDivider} />
+                <PublisherTable rows={h.byPublisher.slice(Math.ceil(h.byPublisher.length / 2))} />
+              </View>
+            )}
           </View>
         )}
 
@@ -659,6 +672,8 @@ const styles = StyleSheet.create({
   pageInfo: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.grey },
 
   // Publisher heatmap
+  pubSplit: { flexDirection: 'row', gap: 28 },
+  pubSplitDivider: { width: 1, backgroundColor: '#efe6d6' },
   pubHeadRow: {
     flexDirection: 'row',
     alignItems: 'center',

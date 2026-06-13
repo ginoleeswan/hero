@@ -66,7 +66,7 @@ export interface GapPage {
   total: number;
 }
 
-export const GAP_PAGE_SIZE = 40;
+export const GAP_PAGE_SIZE = 12;
 
 /** Heroes that are renderable (enriched_at set) but missing `metric`, ordered by
  *  popularity so the most-visible gaps surface first. Paginated; `total` is the
