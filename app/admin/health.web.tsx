@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   View,
   Text,
@@ -74,6 +74,12 @@ const runStatusColor = (status: string) =>
       : status === 'stopped'
         ? COLORS.navy
         : COLORS.green;
+
+/** Shared source ("admin"/cron) chip colours for runs (table + mobile cards). */
+const runSourceChip = (by: string) => ({
+  bg: by === 'admin' ? COLORS.orange + '22' : '#efe6d6',
+  fg: by === 'admin' ? COLORS.orange : COLORS.navy,
+});
 
 // ── Activity log ──────────────────────────────────────────────────────────────
 type LogTone = 'info' | 'success' | 'error' | 'pending';
@@ -188,6 +194,46 @@ function SkeletonCards({ narrow }: { narrow: boolean }) {
         </View>
       ))}
     </>
+  );
+}
+
+// Alert pill — one tone-coloured row. Renders as a Pressable (with optional
+// trailing content) when onPress is supplied; otherwise a static row. Shared by
+// the expanded list and the collapsed mobile banner so they never drift.
+function AlertPill({
+  tone,
+  text,
+  onPress,
+  trailing,
+  numberOfLines,
+}: {
+  tone: 'red' | 'gold';
+  text: string;
+  onPress?: () => void;
+  trailing?: ReactNode;
+  numberOfLines?: number;
+}) {
+  const base = tone === 'red' ? COLORS.red : COLORS.yellow;
+  const style = [styles.alert, { backgroundColor: base + '18', borderColor: base + '44' }];
+  const inner = (
+    <>
+      <Ionicons
+        name={tone === 'red' ? 'alert-circle' : 'warning'}
+        size={16}
+        color={tone === 'red' ? COLORS.red : COLORS.gold}
+      />
+      <Text style={styles.alertText} numberOfLines={numberOfLines}>
+        {text}
+      </Text>
+      {trailing}
+    </>
+  );
+  return onPress ? (
+    <Pressable onPress={onPress} style={style}>
+      {inner}
+    </Pressable>
+  ) : (
+    <View style={style}>{inner}</View>
   );
 }
 
@@ -720,13 +766,26 @@ export default function AdminHealthScreen() {
     setPubFilter(null);
     setTab('backfill');
   };
-  // Manual refresh — refetch everything with a brief minimum spin so the tap reads.
+  // Manual refresh — refetch this screen's queries (not the whole app cache) and
+  // keep the spinner up until they actually settle, with a small minimum so the
+  // tap registers visually.
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = () => {
     if (refreshing) return;
     setRefreshing(true);
-    Promise.resolve(queryClient.invalidateQueries()).finally(() =>
-      setTimeout(() => setRefreshing(false), 600),
+    const started = Date.now();
+    const keys = [
+      'catalogHealth',
+      'coverageGaps',
+      'enrichmentRuns',
+      'cronStatus',
+      'cvPing',
+      'cvUsage',
+      'distributions',
+      'healthSnapshots',
+    ];
+    Promise.all(keys.map((k) => queryClient.invalidateQueries({ queryKey: [k] }))).finally(() =>
+      setTimeout(() => setRefreshing(false), Math.max(0, 450 - (Date.now() - started))),
     );
   };
   const onToggleCron = async () => {
@@ -823,6 +882,29 @@ export default function AdminHealthScreen() {
     }
   }, [runsQ.data, logEvent]);
 
+  // Alerts surface problems without hunting. Memoised so the auto-collapse
+  // effect can re-fold the mobile banner once they drop back to ≤1.
+  const alerts = useMemo<{ tone: 'red' | 'gold'; text: string }[]>(() => {
+    const usage = usageQ.data ?? 0;
+    const recent = runsQ.data ?? [];
+    const a: { tone: 'red' | 'gold'; text: string }[] = [];
+    if (pingQ.data === 'limited')
+      a.push({ tone: 'gold', text: 'ComicVine is rate-limited right now — drains will mostly retry.' });
+    else if (usage >= CV_HOURLY_CAP * 0.8)
+      a.push({ tone: 'gold', text: `ComicVine usage high — ${usage}/${CV_HOURLY_CAP} calls this hour.` });
+    if ((h?.cvStatus.failed ?? 0) > 0)
+      a.push({ tone: 'red', text: `${h!.cvStatus.failed} hero(es) marked failed — Retry failed in Operations.` });
+    if (recent[0]?.status === 'error')
+      a.push({ tone: 'red', text: 'The last run errored — see Recent runs.' });
+    return a;
+  }, [pingQ.data, usageQ.data, runsQ.data, h]);
+
+  // Once alerts fall back to one (or none), reset the mobile banner so the next
+  // time multiple appear it starts collapsed again instead of staying expanded.
+  useEffect(() => {
+    if (alerts.length <= 1) setAlertsOpen(false);
+  }, [alerts.length]);
+
   if (!gateResolved || !isAdmin) return <LogoLoader />;
 
   const gaps = gapsQ.data;
@@ -846,17 +928,8 @@ export default function AdminHealthScreen() {
         : `~${Math.ceil(etaMin)}m to clear`
       : null;
 
-  // ── Alerts: surface problems without hunting ────────────────────────────────
+  // ── Alerts: surface problems without hunting (built in a memo above) ─────────
   const cvPing = pingQ.data;
-  const alerts: { tone: 'red' | 'gold'; text: string }[] = [];
-  if (cvPing === 'limited')
-    alerts.push({ tone: 'gold', text: 'ComicVine is rate-limited right now — drains will mostly retry.' });
-  else if (cvUsage >= CV_HOURLY_CAP * 0.8)
-    alerts.push({ tone: 'gold', text: `ComicVine usage high — ${cvUsage}/${CV_HOURLY_CAP} calls this hour.` });
-  if ((h?.cvStatus.failed ?? 0) > 0)
-    alerts.push({ tone: 'red', text: `${h!.cvStatus.failed} hero(es) marked failed — Retry failed in Operations.` });
-  if (runs[0]?.status === 'error')
-    alerts.push({ tone: 'red', text: 'The last run errored — see Recent runs.' });
   // Mobile collapses multiple alerts into one banner (worst-first) to save space.
   const leadAlert = alerts.find((a) => a.tone === 'red') ?? alerts[0];
   const alertsCollapsed = narrow && !alertsOpen && alerts.length > 1;
@@ -978,59 +1051,35 @@ export default function AdminHealthScreen() {
         )}
 
         {/* ── Alerts (mobile collapses to a single worst-first banner) ── */}
-        {alerts.length > 0 && alertsCollapsed && leadAlert && (
-          <Pressable
+        {alertsCollapsed ? (
+          <AlertPill
+            tone={leadAlert.tone}
+            text={leadAlert.text}
+            numberOfLines={1}
             onPress={() => setAlertsOpen(true)}
-            style={[
-              styles.alert,
-              {
-                backgroundColor: (leadAlert.tone === 'red' ? COLORS.red : COLORS.yellow) + '18',
-                borderColor: (leadAlert.tone === 'red' ? COLORS.red : COLORS.yellow) + '44',
-              },
-            ]}
-          >
-            <Ionicons
-              name={leadAlert.tone === 'red' ? 'alert-circle' : 'warning'}
-              size={16}
-              color={leadAlert.tone === 'red' ? COLORS.red : COLORS.gold}
-            />
-            <Text style={styles.alertText} numberOfLines={1}>
-              {leadAlert.text}
-            </Text>
-            <View style={styles.alertCount}>
-              <Text style={styles.alertCountText}>+{alerts.length - 1}</Text>
+            trailing={
+              <>
+                <View style={styles.alertCount}>
+                  <Text style={styles.alertCountText}>+{alerts.length - 1}</Text>
+                </View>
+                <Ionicons name="chevron-down" size={16} color={COLORS.navy} />
+              </>
+            }
+          />
+        ) : (
+          alerts.length > 0 && (
+            <View style={styles.alertWrap}>
+              {alerts.map((a, i) => (
+                <AlertPill key={i} tone={a.tone} text={a.text} />
+              ))}
+              {narrow && alerts.length > 1 && (
+                <Pressable onPress={() => setAlertsOpen(false)} style={styles.alertCollapse}>
+                  <Ionicons name="chevron-up" size={14} color={COLORS.grey} />
+                  <Text style={styles.alertCollapseText}>Show less</Text>
+                </Pressable>
+              )}
             </View>
-            <Ionicons name="chevron-down" size={16} color={COLORS.navy} />
-          </Pressable>
-        )}
-        {alerts.length > 0 && !alertsCollapsed && (
-          <View style={styles.alertWrap}>
-            {alerts.map((a, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.alert,
-                  {
-                    backgroundColor: (a.tone === 'red' ? COLORS.red : COLORS.yellow) + '18',
-                    borderColor: (a.tone === 'red' ? COLORS.red : COLORS.yellow) + '44',
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={a.tone === 'red' ? 'alert-circle' : 'warning'}
-                  size={16}
-                  color={a.tone === 'red' ? COLORS.red : COLORS.gold}
-                />
-                <Text style={styles.alertText}>{a.text}</Text>
-              </View>
-            ))}
-            {narrow && alerts.length > 1 && (
-              <Pressable onPress={() => setAlertsOpen(false)} style={styles.alertCollapse}>
-                <Ionicons name="chevron-up" size={14} color={COLORS.grey} />
-                <Text style={styles.alertCollapseText}>Show less</Text>
-              </Pressable>
-            )}
-          </View>
+          )
         )}
 
         {/* ── Loading skeleton (first health payload) ── */}
@@ -1077,7 +1126,7 @@ export default function AdminHealthScreen() {
                 </Pressable>
               </View>
             )}
-            <View style={[styles.opsBody, narrow && { flexDirection: 'column', alignItems: 'stretch' }]}>
+            <View style={[styles.opsBody, narrow && styles.opsBodyNarrow]}>
               <View style={styles.opsActions}>
                 <View style={styles.sizeSel}>
                   {[10, 25, 50].map((n) => (
@@ -1494,6 +1543,7 @@ export default function AdminHealthScreen() {
             <View style={styles.runCards}>
               {runs.map((r) => {
                 const c = runStatusColor(r.status);
+                const src = runSourceChip(r.triggered_by);
                 return (
                   <View key={r.id} style={styles.runCard}>
                     <View style={styles.runCardHead}>
@@ -1503,18 +1553,8 @@ export default function AdminHealthScreen() {
                         )}
                         <Text style={[styles.stChipText, { color: c }]}>{r.status}</Text>
                       </View>
-                      <View
-                        style={[
-                          styles.byChip,
-                          { backgroundColor: r.triggered_by === 'admin' ? COLORS.orange + '22' : '#efe6d6' },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.byChipText,
-                            { color: r.triggered_by === 'admin' ? COLORS.orange : COLORS.navy },
-                          ]}
-                        >
+                      <View style={[styles.byChip, { backgroundColor: src.bg }]}>
+                        <Text style={[styles.byChipText, { color: src.fg }]}>
                           {r.triggered_by}
                         </Text>
                       </View>
@@ -1553,6 +1593,7 @@ export default function AdminHealthScreen() {
               </View>
               {runs.map((r) => {
                 const c = runStatusColor(r.status);
+                const src = runSourceChip(r.triggered_by);
                 return (
                   <View key={r.id} style={styles.runRow}>
                     <Text style={styles.runWhen}>{relTime(r.created_at)}</Text>
@@ -1565,18 +1606,8 @@ export default function AdminHealthScreen() {
                       </View>
                     </View>
                     <View style={styles.runBy}>
-                      <View
-                        style={[
-                          styles.byChip,
-                          { backgroundColor: r.triggered_by === 'admin' ? COLORS.orange + '22' : '#efe6d6' },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.byChipText,
-                            { color: r.triggered_by === 'admin' ? COLORS.orange : COLORS.navy },
-                          ]}
-                        >
+                      <View style={[styles.byChip, { backgroundColor: src.bg }]}>
+                        <Text style={[styles.byChipText, { color: src.fg }]}>
                           {r.triggered_by}
                         </Text>
                       </View>
@@ -2090,6 +2121,7 @@ const styles = StyleSheet.create({
   toastWrap: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   toast: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.orange },
   opsBody: { flexDirection: 'row', alignItems: 'center', gap: 24, marginTop: 14 },
+  opsBodyNarrow: { flexDirection: 'column', alignItems: 'stretch' },
   opsActions: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   actBtn: {
     flexDirection: 'row',
