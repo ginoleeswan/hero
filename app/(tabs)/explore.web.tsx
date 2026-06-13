@@ -36,7 +36,7 @@ import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { useChromeColor } from '../../src/contexts/WebChromeContext';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
-import { StatPods } from '../../src/components/web/home/StatPods';
+import { PublisherPods } from '../../src/components/web/home/PublisherPods';
 import {
   getTopHeroByStat,
   getPublisherCounts,
@@ -1303,36 +1303,7 @@ export default function WebHomeScreen() {
                   onViewProfile={handlePress}
                 />
               )}
-              <StatPods
-                heroCount={totalHeroCount}
-                publisherCounts={homeData.publisherCounts ?? null}
-                strongestHero={
-                  homeData.strongestHero
-                    ? {
-                        id: homeData.strongestHero.id,
-                        name: homeData.strongestHero.name,
-                        strength: homeData.strongestHero.strength ?? null,
-                      }
-                    : null
-                }
-                smartestHero={
-                  homeData.smartestHero
-                    ? {
-                        id: homeData.smartestHero.id,
-                        name: homeData.smartestHero.name,
-                        intelligence: homeData.smartestHero.intelligence ?? null,
-                      }
-                    : null
-                }
-                fastestHero={
-                  homeData.fastestHero
-                    ? {
-                        id: homeData.fastestHero.id,
-                        name: homeData.fastestHero.name,
-                        speed: homeData.fastestHero.speed ?? null,
-                      }
-                    : null
-                }
+              <PublisherPods
                 onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
               />
               {homeData.matchup === undefined ? (

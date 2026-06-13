@@ -43,6 +43,8 @@ const VALID_SLUGS = new Set<CategorySlug>([
   'anti-heroes',
   'marvel',
   'dc',
+  'image',
+  'dark-horse',
   'strongest',
   'most-intelligent',
   'most-iconic',

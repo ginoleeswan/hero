@@ -39,7 +39,11 @@ export function visibleFacets(slug: CategorySlug): FacetKey[] {
   const all: FacetKey[] = ['publisher', 'alignment', 'gender', 'hasStats'];
   return all.filter((f) => {
     if (f === 'alignment' && (slug === 'villain' || slug === 'anti-heroes')) return false;
-    if (f === 'publisher' && (slug === 'marvel' || slug === 'dc')) return false;
+    if (
+      f === 'publisher' &&
+      (slug === 'marvel' || slug === 'dc' || slug === 'image' || slug === 'dark-horse')
+    )
+      return false;
     if (f === 'hasStats' && (slug === 'strongest' || slug === 'most-intelligent')) return false;
     return true;
   });

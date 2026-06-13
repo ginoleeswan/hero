@@ -468,6 +468,8 @@ export type CategorySlug =
   | 'anti-heroes'
   | 'marvel'
   | 'dc'
+  | 'image'
+  | 'dark-horse'
   | 'strongest'
   | 'most-intelligent'
   | 'most-iconic';
@@ -482,6 +484,8 @@ export const CATEGORY_LABELS: Record<CategorySlug, string> = {
   'anti-heroes': 'Anti-Heroes',
   marvel: 'Marvel Universe',
   dc: 'DC Universe',
+  image: 'Image Comics',
+  'dark-horse': 'Dark Horse',
   strongest: 'Strongest Heroes',
   'most-intelligent': 'Most Intelligent',
   'most-iconic': 'Most Iconic',
@@ -494,6 +498,8 @@ export const CATEGORY_DESCRIPTIONS: Record<CategorySlug, string> = {
   'anti-heroes': 'Characters who walk the line between good and evil',
   marvel: 'From the pages of Marvel Comics',
   dc: 'Heroes and villains of the DC Universe',
+  image: 'Creator-owned heroes from Image Comics',
+  'dark-horse': 'Heroes and villains from Dark Horse Comics',
   strongest: 'Ranked by raw physical power',
   'most-intelligent': 'The greatest minds in all of comics',
   'most-iconic': 'Ranked by total comic book appearances',
@@ -556,6 +562,14 @@ export async function getAllHeroesBySlug(slug: CategorySlug): Promise<Hero[]> {
     case 'dc':
       return fetchAllPages(() =>
         supabase.from('heroes').select('*').ilike('publisher', '%dc%').order('name'),
+      );
+    case 'image':
+      return fetchAllPages(() =>
+        supabase.from('heroes').select('*').ilike('publisher', '%image%').order('name'),
+      );
+    case 'dark-horse':
+      return fetchAllPages(() =>
+        supabase.from('heroes').select('*').ilike('publisher', '%dark horse%').order('name'),
       );
     case 'strongest':
       return fetchAllPages(() =>
@@ -633,6 +647,12 @@ export async function getCategoryPage(
       break;
     case 'dc':
       q = q.ilike('publisher', '%dc%');
+      break;
+    case 'image':
+      q = q.ilike('publisher', '%image%');
+      break;
+    case 'dark-horse':
+      q = q.ilike('publisher', '%dark horse%');
       break;
     case 'strongest':
       q = q.not('strength', 'is', null);
