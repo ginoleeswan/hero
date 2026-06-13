@@ -1,6 +1,7 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { COLORS } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
+import { useSkeletonAnim, SkeletonBlock } from '../Skeleton';
 import type { TodaysMatchup as Matchup } from '../../../lib/matchup';
 
 interface TodaysMatchupProps {
@@ -102,6 +103,57 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
         </View>
       </View>
     </Pressable>
+  );
+}
+
+/**
+ * Placeholder that reserves the matchup slot while the (multi-hop + AI verdict)
+ * query resolves, so the card fills in without shoving the page below it down.
+ * Reuses the real card's container/portrait styles so its height matches.
+ */
+export function TodaysMatchupSkeleton() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+  const opacity = useSkeletonAnim();
+
+  if (!isDesktop) {
+    return (
+      <View style={[m.card, m.cardMobile] as object}>
+        <SkeletonBlock opacity={opacity} dark width={110} height={9} />
+        <View style={m.fightersMobile}>
+          <SkeletonBlock opacity={opacity} dark width={92} height={92} borderRadius={14} />
+          <View style={[m.vsBadge, { backgroundColor: 'rgba(245,235,220,0.15)' }] as object} />
+          <SkeletonBlock opacity={opacity} dark width={92} height={92} borderRadius={14} />
+        </View>
+        <SkeletonBlock opacity={opacity} dark width={200} height={20} />
+        <SkeletonBlock opacity={opacity} dark width={260} height={14} />
+        <View style={m.footerMobile}>
+          <SkeletonBlock opacity={opacity} dark width={90} height={10} />
+          <SkeletonBlock opacity={opacity} dark width={120} height={10} />
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[m.card, m.cardDesktop] as object}>
+      <View style={m.fighters}>
+        <SkeletonBlock opacity={opacity} dark width={PORTRAIT} height={PORTRAIT} borderRadius={14} />
+        <View
+          style={[m.vsBadge, { marginHorizontal: -12, backgroundColor: 'rgba(245,235,220,0.15)' }] as object}
+        />
+        <SkeletonBlock opacity={opacity} dark width={PORTRAIT} height={PORTRAIT} borderRadius={14} />
+      </View>
+      <View style={m.info}>
+        <SkeletonBlock opacity={opacity} dark width={110} height={9} style={{ marginBottom: 8 }} />
+        <SkeletonBlock opacity={opacity} dark width={220} height={20} style={{ marginBottom: 8 }} />
+        <SkeletonBlock opacity={opacity} dark width="80%" height={14} style={{ marginBottom: 12 }} />
+        <View style={m.footer}>
+          <SkeletonBlock opacity={opacity} dark width={90} height={10} />
+          <SkeletonBlock opacity={opacity} dark width={120} height={10} />
+        </View>
+      </View>
+    </View>
   );
 }
 

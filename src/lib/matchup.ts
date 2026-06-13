@@ -1,4 +1,4 @@
-import { getIconicHeroes, getHeroById, type Hero } from './db/heroes';
+import { getIconicHeroes, type Hero } from './db/heroes';
 import { getCachedVerdict, saveVerdict } from './db/verdicts';
 import { compareStats } from './compare';
 import { generateVerdict } from './api';
@@ -59,7 +59,10 @@ export async function getTodaysMatchup(): Promise<TodaysMatchup | null> {
   let iB = (seed * 7 + 3) % pool.length;
   if (iB === iA) iB = (iB + 1) % pool.length;
 
-  const [a, b] = await Promise.all([getHeroById(pool[iA].id), getHeroById(pool[iB].id)]);
+  // getIconicHeroes already returns full stat rows (HOME_SPOT), so use the pool
+  // entries directly rather than re-fetching each hero by id.
+  const a = pool[iA];
+  const b = pool[iB];
   if (!a || !b) return null;
 
   const cmp = compareStats(a.name, statsString(a), b.name, statsString(b));

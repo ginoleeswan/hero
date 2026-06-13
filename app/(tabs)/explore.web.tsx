@@ -27,7 +27,10 @@ import { RankingCard } from '../../src/components/web/home/RankingCard';
 import { HomeFooter } from '../../src/components/web/home/HomeFooter';
 import { CoverGallery } from '../../src/components/web/home/CoverGallery';
 import { EraTimeline } from '../../src/components/web/home/EraTimeline';
-import { TodaysMatchup as TodaysMatchupCard } from '../../src/components/web/home/TodaysMatchup';
+import {
+  TodaysMatchup as TodaysMatchupCard,
+  TodaysMatchupSkeleton,
+} from '../../src/components/web/home/TodaysMatchup';
 import { getTodaysMatchup, type TodaysMatchup } from '../../src/lib/matchup';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
@@ -1239,7 +1242,7 @@ export default function WebHomeScreen() {
       .catch(() => {});
     getTodaysMatchup()
       .then(set('matchup'))
-      .catch(() => {});
+      .catch(() => set('matchup')(null));
     getTopHeroByStat('strength')
       .then(set('strongestHero'))
       .catch(() => {});
@@ -1328,12 +1331,14 @@ export default function WebHomeScreen() {
                 }
                 onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
               />
-              {homeData.matchup && (
+              {homeData.matchup === undefined ? (
+                <TodaysMatchupSkeleton />
+              ) : homeData.matchup ? (
                 <TodaysMatchupCard
                   matchup={homeData.matchup}
                   onOpen={(path) => router.push(path as Parameters<typeof router.push>[0])}
                 />
-              )}
+              ) : null}
           </View>
 
           {/* ── Orange ticker strip ────────────────────────────────────────── */}
