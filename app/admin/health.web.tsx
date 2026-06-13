@@ -116,10 +116,53 @@ const WORKLIST_LABEL: Record<CoverageMetric, string> = {
   firstIssue: 'First Issue',
 };
 
+// ── Tabs (shared by the desktop pill row and the mobile bottom bar) ───────────
+type TabKey = 'overview' | 'backfill' | 'operations';
+const TABS: { key: TabKey; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: 'overview', label: 'Overview', icon: 'stats-chart' },
+  { key: 'backfill', label: 'Backfill', icon: 'construct' },
+  { key: 'operations', label: 'Operations', icon: 'pulse' },
+];
+
+// Mobile bottom navigation — fixed to the viewport (sticky releases here because
+// #root is clamped to 100dvh; fixed + translateZ pins it like the global TopBar).
+function BottomTabBar({
+  tab,
+  onChange,
+  pending,
+}: {
+  tab: TabKey;
+  onChange: (k: TabKey) => void;
+  pending?: number;
+}) {
+  return (
+    <View style={styles.btab}>
+      {TABS.map((t) => {
+        const on = tab === t.key;
+        const badge = t.key === 'backfill' ? pending : undefined;
+        return (
+          <Pressable key={t.key} onPress={() => onChange(t.key)} style={styles.btabItem}>
+            <View>
+              <Ionicons name={t.icon} size={23} color={on ? COLORS.orange : COLORS.navy} />
+              {badge != null && badge > 0 && (
+                <View style={styles.btabBadge}>
+                  <Text style={styles.btabBadgeText}>
+                    {badge > 999 ? `${Math.round(badge / 1000)}k` : badge}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.btabLabel, on && styles.btabLabelOn]}>{t.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 // ── Completeness gauge ────────────────────────────────────────────────────────
-function Gauge({ value }: { value: number }) {
-  const size = 150;
-  const stroke = 12;
+function Gauge({ value, size = 150 }: { value: number; size?: number }) {
+  const stroke = size < 130 ? 10 : 12;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const tint = healthColor(value);
@@ -408,7 +451,7 @@ export default function AdminHealthScreen() {
 
   const [metric, setMetric] = useState<CoverageMetric>('portrait');
   const [page, setPage] = useState(0);
-  const [tab, setTab] = useState<'overview' | 'backfill' | 'operations'>('overview');
+  const [tab, setTab] = useState<TabKey>('overview');
   const [heroQuery, setHeroQuery] = useState('');
   const [batchSize, setBatchSize] = useState(25);
   const [pubFilter, setPubFilter] = useState<string | null>(null);
@@ -715,7 +758,7 @@ export default function AdminHealthScreen() {
           colors={['#10242e', COLORS.deepNavy]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.masthead}
+          style={[styles.masthead, narrow && styles.mastheadNarrow]}
         >
           <View style={styles.mastheadGlow} />
           <View style={[styles.mastheadInner, narrow && styles.mastheadInnerNarrow]}>
@@ -764,18 +807,19 @@ export default function AdminHealthScreen() {
                 ))}
             </View>
           </View>
-          {h && <Gauge value={overall} />}
+          {h && (
+            <View style={narrow ? styles.mastGaugeNarrow : undefined}>
+              <Gauge value={overall} size={narrow ? 120 : 150} />
+            </View>
+          )}
           </View>
         </LinearGradient>
 
         <View style={[styles.body, narrow && styles.bodyNarrow]}>
-        {/* ── Tab bar ── */}
+        {/* ── Tab bar (desktop pill row; mobile uses the fixed bottom bar) ── */}
+        {!narrow && (
         <View style={styles.tabBar}>
-          {([
-            { key: 'overview', label: 'Overview', icon: 'stats-chart' },
-            { key: 'backfill', label: 'Backfill', icon: 'construct' },
-            { key: 'operations', label: 'Operations', icon: 'pulse' },
-          ] as const).map((t) => {
+          {TABS.map((t) => {
             const on = tab === t.key;
             const badge =
               t.key === 'backfill' && h ? (h.cvStatus.pending ?? 0) : undefined;
@@ -798,6 +842,7 @@ export default function AdminHealthScreen() {
             );
           })}
         </View>
+        )}
 
         {/* ── Alerts ── */}
         {alerts.length > 0 && (
@@ -1522,9 +1567,10 @@ export default function AdminHealthScreen() {
           </View>
         )}
 
-        <View style={{ height: 40 }} />
+        <View style={[styles.bottomSpacer, narrow && styles.bottomSpacerNarrow]} />
         </View>
       </Animated.View>
+      {narrow && <BottomTabBar tab={tab} onChange={setTab} pending={h?.cvStatus.pending} />}
     </View>
   );
 }
@@ -1546,6 +1592,45 @@ const styles = StyleSheet.create({
   root: { width: '100%' },
   body: { width: '100%', maxWidth: 1080, alignSelf: 'center', padding: 24, gap: 18 },
   bodyNarrow: { padding: 16, gap: 14 },
+  bottomSpacer: { height: 40 },
+  // Clear the fixed bottom tab bar + the home-indicator inset on mobile.
+  bottomSpacerNarrow: {
+    height: (`calc(env(safe-area-inset-bottom) + 84px)` as unknown) as number,
+  },
+
+  // ── Mobile bottom navigation (fixed to viewport) ──────────────────────────────
+  btab: {
+    position: 'fixed',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 50,
+    flexDirection: 'row',
+    backgroundColor: '#fffdf8',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(41,60,67,0.1)',
+    paddingTop: 9,
+    paddingBottom: `calc(env(safe-area-inset-bottom) + 9px)`,
+    shadowColor: '#3a2a14',
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: -4 },
+    transform: 'translateZ(0)',
+  } as object,
+  btabItem: { flex: 1, alignItems: 'center', gap: 3, paddingVertical: 2 },
+  btabLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.navy },
+  btabLabelOn: { color: COLORS.orange },
+  btabBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -11,
+    backgroundColor: COLORS.orange,
+    borderRadius: 999,
+    minWidth: 16,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+  },
+  btabBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 9, color: '#fff', lineHeight: 14 },
 
   // Masthead — full-bleed dark band; its top tucks under the floating nav so the
   // bar's dark scrim sits on dark, seamless. The content row is held to the same
@@ -1556,6 +1641,7 @@ const styles = StyleSheet.create({
     paddingTop: (`calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 30px)` as unknown) as number,
     paddingBottom: 30,
   },
+  mastheadNarrow: { paddingBottom: 22 },
   mastheadInner: {
     width: '100%',
     maxWidth: 1080,
@@ -1566,7 +1652,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 28,
   },
-  mastheadInnerNarrow: { flexDirection: 'column', alignItems: 'flex-start', gap: 22, paddingHorizontal: 18 },
+  mastheadInnerNarrow: { flexDirection: 'column', alignItems: 'flex-start', gap: 16, paddingHorizontal: 18 },
+  mastGaugeNarrow: { alignSelf: 'center' },
   mastheadGlow: {
     position: 'absolute',
     top: -120,
