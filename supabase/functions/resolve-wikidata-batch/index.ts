@@ -127,14 +127,27 @@ interface HeroRow {
   first_appearance: string | null; creators: string[] | null;
 }
 
-async function runResolve(sb: SB, limit: number, retryUnresolved: boolean, runId: number | null): Promise<number> {
-  const statuses = retryUnresolved ? ['pending', 'unresolved'] : ['pending'];
-  const { data: heroes } = await sb
-    .from('heroes')
-    .select('id, name, aliases, publisher, first_appearance, creators')
-    .in('wikidata_status', statuses)
-    .order('issue_count', { ascending: false, nullsFirst: false })
-    .limit(limit);
+async function runResolve(sb: SB, limit: number, retryUnresolved: boolean, runId: number | null, heroId: string | null): Promise<number> {
+  // Single-hero mode (used by the Build orchestrator) processes exactly one hero
+  // regardless of status; batch mode drains the pending queue popularity-first.
+  let heroes: HeroRow[] | null;
+  if (heroId) {
+    const { data } = await sb
+      .from('heroes')
+      .select('id, name, aliases, publisher, first_appearance, creators')
+      .eq('id', heroId)
+      .limit(1);
+    heroes = data as HeroRow[] | null;
+  } else {
+    const statuses = retryUnresolved ? ['pending', 'unresolved'] : ['pending'];
+    const { data } = await sb
+      .from('heroes')
+      .select('id, name, aliases, publisher, first_appearance, creators')
+      .in('wikidata_status', statuses)
+      .order('issue_count', { ascending: false, nullsFirst: false })
+      .limit(limit);
+    heroes = data as HeroRow[] | null;
+  }
   if (!heroes || heroes.length === 0) return 0;
   let calls = 0;
   for (const h of heroes as HeroRow[]) {
@@ -169,12 +182,13 @@ async function runResolve(sb: SB, limit: number, retryUnresolved: boolean, runId
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   const startedAt = Date.now();
-  let limit = 10, retryUnresolved = false, triggeredBy = 'cron';
+  let limit = 10, retryUnresolved = false, triggeredBy = 'cron', heroId: string | null = null;
   try {
     const body = await req.json().catch(() => ({}));
     if (typeof body?.limit === 'number') limit = Math.min(Math.max(1, body.limit), 25);
     if (body?.retryUnresolved === true) retryUnresolved = true;
     if (typeof body?.triggeredBy === 'string') triggeredBy = body.triggeredBy;
+    if (typeof body?.heroId === 'string') heroId = body.heroId;
   } catch { /* empty body ok */ }
 
   const sb = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
@@ -186,7 +200,7 @@ serve(async (req: Request) => {
 
   let calls = 0;
   try {
-    calls = await runResolve(sb, limit, retryUnresolved, runId);
+    calls = await runResolve(sb, limit, retryUnresolved, runId, heroId);
   } catch (err) {
     if (runId != null) await sb.from('enrichment_runs').update({ status: 'error' }).eq('id', runId);
     return json({ error: String(err) }, 500);

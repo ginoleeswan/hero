@@ -130,11 +130,16 @@ const mergeUniq = (existing: string[], extra: string[]): string[] => {
   return out;
 };
 
-async function runEnrich(sb: SB, limit: number, retry: boolean, runId: number | null): Promise<number> {
+async function runEnrich(sb: SB, limit: number, retry: boolean, runId: number | null, heroId: string | null): Promise<number> {
+  // Single-hero mode (Build orchestrator) enriches exactly one resolved hero.
   let q = sb.from('heroes').select('id, wikidata_qid, issue_count, creators, aliases')
-    .eq('wikidata_status', 'resolved').not('wikidata_qid', 'is', null)
-    .order('issue_count', { ascending: false, nullsFirst: false }).limit(limit);
-  if (!retry) q = q.is('wikidata_enriched_at', null);
+    .eq('wikidata_status', 'resolved').not('wikidata_qid', 'is', null);
+  if (heroId) {
+    q = q.eq('id', heroId).limit(1);
+  } else {
+    q = q.order('issue_count', { ascending: false, nullsFirst: false }).limit(limit);
+    if (!retry) q = q.is('wikidata_enriched_at', null);
+  }
   const { data: heroes } = await q;
   if (!heroes || heroes.length === 0) return 0;
   // Marquee heroes have huge appearance lists (hundreds of upserts) — stop taking
@@ -204,12 +209,13 @@ async function runEnrich(sb: SB, limit: number, retry: boolean, runId: number | 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   const startedAt = Date.now();
-  let limit = 10, retry = false, triggeredBy = 'cron';
+  let limit = 10, retry = false, triggeredBy = 'cron', heroId: string | null = null;
   try {
     const body = await req.json().catch(() => ({}));
     if (typeof body?.limit === 'number') limit = Math.min(Math.max(1, body.limit), 25);
     if (body?.retry === true) retry = true;
     if (typeof body?.triggeredBy === 'string') triggeredBy = body.triggeredBy;
+    if (typeof body?.heroId === 'string') heroId = body.heroId;
   } catch { /* empty body ok */ }
 
   const sb = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
@@ -220,7 +226,7 @@ serve(async (req: Request) => {
   const runId = (runRow as { id?: number } | null)?.id ?? null;
 
   let calls = 0;
-  try { calls = await runEnrich(sb, limit, retry, runId); }
+  try { calls = await runEnrich(sb, limit, retry, runId, heroId); }
   catch (err) {
     if (runId != null) await sb.from('enrichment_runs').update({ status: 'error' }).eq('id', runId);
     return json({ error: String(err) }, 500);
