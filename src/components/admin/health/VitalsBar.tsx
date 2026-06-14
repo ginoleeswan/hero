@@ -64,7 +64,7 @@ export function VitalsBar({
       <View style={s.cell}>
         <Text style={s.label}>BACKLOG</Text>
         <Text style={s.value}>{pending.toLocaleString()}</Text>
-        <Text style={s.sub}>{etaLabel ?? 'pending'}</Text>
+        <Text style={s.sub}>{etaLabel ?? 'to enrich'}</Text>
       </View>
       <Divider />
 

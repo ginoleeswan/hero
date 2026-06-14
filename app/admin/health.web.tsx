@@ -213,9 +213,15 @@ export default function AdminHealthScreen() {
   const drainDone = drainedRuns.reduce((a, r) => a + r.done, 0);
   const perMin = drainMs > 0 ? drainDone / (drainMs / 60000) : 0;
   const pendingNow = h?.cvStatus.pending ?? 0;
-  const etaMin = perMin > 0 ? pendingNow / perMin : 0;
+  // The real enrichment backlog: every hero still needing an actionable step —
+  // not yet fully enriched, and not terminally failed / awaiting review / unresolvable.
+  const ep = enrichProgressQ.data;
+  const actionable = ep
+    ? Math.max(0, ep.heroesTotal - ep.enriched - (h?.cvStatus.failed ?? 0) - ep.ambiguous - ep.unresolved)
+    : pendingNow;
+  const etaMin = perMin > 0 ? actionable / perMin : 0;
   const etaLabel =
-    perMin > 0 && pendingNow > 0
+    perMin > 0 && actionable > 0
       ? etaMin >= 60
         ? `~${(etaMin / 60).toFixed(1)}h to clear`
         : `~${Math.ceil(etaMin)}m to clear`
@@ -224,7 +230,7 @@ export default function AdminHealthScreen() {
   const ribbon = h ? (
     <VitalsBar
       narrow={narrow}
-      pending={pendingNow}
+      pending={actionable}
       etaLabel={etaLabel}
       cvPing={pingQ.data}
       cvUsage={cvUsage}

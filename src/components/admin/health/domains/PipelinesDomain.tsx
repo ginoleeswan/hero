@@ -4,7 +4,6 @@
 // and the review queue pair below; full run history underneath.
 import { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Bento } from '../Bento';
@@ -55,76 +54,65 @@ function cronHelp(jobname: string): string {
   return 'A scheduled background job.';
 }
 
-// Progress ring (arc only). The centre is filled by the run control in the node.
-function Ring({ percent, size, stroke = 6 }: { percent: number; size: number; stroke?: number }) {
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const frac = Math.max(0, Math.min(1, percent / 100));
-  return (
-    <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
-      <Circle cx={size / 2} cy={size / 2} r={r} stroke="#efe6d6" strokeWidth={stroke} fill="none" />
-      <Circle
-        cx={size / 2} cy={size / 2} r={r} stroke={COLORS.orange} strokeWidth={stroke} fill="none"
-        strokeDasharray={`${frac * c} ${c}`} strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
-const RING = 72;
-
-// One node of the horizontal assembly line: a progress ring with the run button
-// inside it, a step-number badge, and the label below.
-function PipelineNode({ p, step, busy }: { p: Pipeline; step: number; busy: string | null }) {
-  const percent = pctOf(p.have, p.total);
-  const running = p.run && busy === p.run.busyKey;
-  const disabled = !!busy;
-  return (
-    <View style={styles.node}>
-      <View style={styles.ringWrap}>
-        <Ring percent={percent} size={RING} />
-        <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>{step}</Text></View>
-        {p.run ? (
-          <Pressable
-            onPress={p.run.onPress}
-            disabled={disabled}
-            style={[styles.ringCenter, styles.ringCenterRun, disabled && styles.dim]}
-            accessibilityLabel={`${p.run.label} ${p.name}`}
-          >
-            {running ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Ionicons name="play" size={20} color="#fff" />
-            )}
-          </Pressable>
-        ) : (
-          <View style={[styles.ringCenter, styles.ringCenterAuto]}>
-            <Ionicons name="time-outline" size={18} color={COLORS.grey} />
-          </View>
-        )}
-      </View>
-      <View style={styles.nodeNameRow}>
-        <Text style={styles.nodeName} numberOfLines={1}>{p.name}</Text>
-        <InfoTip text={p.tip} size={13} />
-      </View>
-      <Text style={styles.nodePct}>
-        {p.run ? `${percent}%` : p.note ?? 'auto'}
-        <Text style={styles.nodeCount}>  ·  {p.have.toLocaleString()}/{p.total.toLocaleString()}</Text>
-      </Text>
-    </View>
-  );
-}
-
-interface Pipeline {
+interface Stage {
   key: string;
   name: string;
-  blurb: string;
   tip: string;
-  dependsOn?: string;
-  have: number;
-  total: number;
-  note?: string;
-  run?: { label: string; busyKey: string; onPress: () => void };
+  reached: number; // heroes that have passed this stage
+  total: number; // shared denominator (all heroes) so the funnel reads true
+  pending: number; // still actionable at this stage
+  // Heroes stuck here that need a human or can't proceed (failed / review / unresolvable).
+  stuck?: { label: string; tone: string } | null;
+  run?: { busyKey: string; onPress: () => void } | null; // per-stage drain (power user)
+  auto?: boolean; // runs itself (TMDB)
+}
+
+// One row of the vertical funnel: a stage, its bar (scaled to the shared total so
+// the drop-off between stages is visible), its counts, and an optional "Run" drain.
+function FunnelStage({ s, n, busy, bottleneck }: { s: Stage; n: number; busy: string | null; bottleneck: boolean }) {
+  const pct = pctOf(s.reached, s.total);
+  const running = !!s.run && busy === s.run.busyKey;
+  return (
+    <View style={styles.stRow}>
+      <View style={styles.stBadge}><Text style={styles.stBadgeText}>{n}</Text></View>
+      <View style={styles.stBody}>
+        <View style={styles.stHead}>
+          <Text style={styles.stName} numberOfLines={1}>{s.name}</Text>
+          <InfoTip text={s.tip} size={13} />
+          {bottleneck ? <Text style={styles.stBottleneck}>bottleneck</Text> : null}
+          <Text style={styles.stCount}>{s.reached.toLocaleString()}<Text style={styles.stCountDim}> / {s.total.toLocaleString()}</Text></Text>
+        </View>
+        <View style={styles.stTrack}>
+          <View style={[styles.stFill, { width: `${pct}%` }, bottleneck && styles.stFillWarn]} />
+        </View>
+        <View style={styles.stFoot}>
+          {s.auto ? (
+            <Text style={styles.stMeta}>auto · runs on a schedule</Text>
+          ) : (
+            <Text style={styles.stMeta}>
+              {s.pending > 0 ? `${s.pending.toLocaleString()} pending` : 'clear'}
+              {s.stuck ? <Text style={[styles.stStuck, { color: s.stuck.tone }]}>{`  ·  ${s.stuck.label}`}</Text> : null}
+            </Text>
+          )}
+          {s.run ? (
+            <Pressable
+              onPress={s.run.onPress}
+              disabled={!!busy || s.pending === 0}
+              style={[styles.stRun, (!!busy || s.pending === 0) && styles.dim]}
+              accessibilityLabel={`Run ${s.name} over the backlog`}
+            >
+              {running ? (
+                <ActivityIndicator size="small" color={COLORS.navy} />
+              ) : (
+                <Ionicons name="play" size={11} color={COLORS.navy} />
+              )}
+              <Text style={styles.stRunText}>Run all</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+    </View>
+  );
 }
 
 export function PipelinesDomain({
@@ -186,69 +174,81 @@ export function PipelinesDomain({
     enriched: 0, filmTitles: 0, tvTitles: 0, gameTitles: 0, mediaDone: 0,
   };
   const failed = h.cvStatus.failed ?? 0;
+  const reviewN = ambiguous.length;
 
   const buildNextPending = async () => {
-    const ids = await getPendingBuildIds(25);
+    const ids = await getPendingBuildIds(batchSize);
     if (ids.length === 0) { flash('Nothing pending to build.', 'info'); return; }
     setBuildIds(ids);
   };
 
-  // Assembly line: each step feeds the next, so they render top-to-bottom in order.
-  const pipelines: Pipeline[] = [
+  // Pending (still actionable) at each stage, in funnel order.
+  const cvPending = Math.max(0, p.heroesTotal - p.comicvineDone - failed);
+  const resolvePending = Math.max(0, p.comicvineDone - p.resolved - p.ambiguous - p.unresolved);
+  const appearPending = Math.max(0, p.resolved - p.enriched);
+  // The whole enrichment backlog — what "Build" works through, one hero at a time.
+  const totalActionable = cvPending + resolvePending + appearPending;
+
+  // A true funnel: every actionable stage shares one denominator (all heroes), so
+  // the drop-off between stages is visible. TMDB is a separate unit (titles), shown apart.
+  const stages: Stage[] = [
     {
-      key: 'comicvine', name: 'ComicVine', blurb: 'Core hero data — powers, bio, movies',
-      tip: `Pulls each hero's core data — powers, bio, alter egos, movie list — from ComicVine. "Run ${batchSize}" processes the next ${batchSize} heroes that still need it. The ring shows how many of all heroes are done.`,
-      have: p.comicvineDone, total: p.heroesTotal,
-      run: { label: `Run ${batchSize}`, busyKey: 'drain', onPress: onRunDrain },
+      key: 'comicvine', name: 'ComicVine', tip: 'Pulls each hero\'s core data — powers, bio, alter egos, movie list — from ComicVine. This is the gate: every later stage needs it done first.',
+      reached: p.comicvineDone, total: p.heroesTotal, pending: cvPending,
+      stuck: failed > 0 ? { label: `${failed} failed`, tone: COLORS.red } : null,
+      run: { busyKey: 'drain', onPress: onRunDrain },
     },
     {
-      key: 'wd-resolve', name: 'Wikidata · resolve', blurb: 'Match each hero to its Wikidata identity',
-      tip: 'Matches each hero to its single correct Wikidata identity (QID) using publisher, first-appearance year, creators and aliases. Required before appearances can be pulled. Uncertain matches go to "Needs attention".',
-      have: p.resolved, total: p.heroesTotal,
-      run: { label: 'Resolve', busyKey: 'resolve', onPress: onRunResolve },
+      key: 'resolve', name: 'Resolve identity', tip: 'Matches each hero to its single Wikidata identity (QID) using publisher, first-appearance year, creators and aliases. Uncertain matches go to "Needs you".',
+      reached: p.resolved, total: p.heroesTotal, pending: resolvePending,
+      stuck: reviewN > 0 ? { label: `${reviewN} need you`, tone: COLORS.yellow } : null,
+      run: { busyKey: 'resolve', onPress: onRunResolve },
     },
     {
-      key: 'wd-enrich', name: 'Wikidata · appearances', blurb: `Cross-media + cast (${p.tvTitles}+${p.gameTitles} tv/game titles)`,
-      tip: 'For resolved heroes, pulls cross-media appearances (film / TV / game) and who played or voiced them. Feeds the On-Screen shelves and the Portrayed-By section. Ring = enriched ÷ resolved heroes.',
-      dependsOn: 'needs resolved heroes (step 2)',
-      have: p.enriched, total: p.resolved,
-      run: { label: 'Enrich', busyKey: 'enrich', onPress: onRunEnrich },
+      key: 'appearances', name: 'Appearances & cast', tip: 'For resolved heroes, pulls cross-media appearances (film / TV / game) and who played or voiced them. Feeds the On-Screen shelves and Portrayed-By.',
+      reached: p.enriched, total: p.heroesTotal, pending: appearPending,
+      run: { busyKey: 'enrich', onPress: onRunEnrich },
     },
     {
-      key: 'tmdb', name: 'TMDB · media', blurb: `${p.mediaDone.toLocaleString()} of ${(p.filmTitles + p.tvTitles).toLocaleString()} film/TV enriched`,
-      tip: 'Adds rich media to matched film & TV titles — posters, backdrops, trailers, cast and where-to-watch. Runs automatically on a schedule; it keeps working as Wikidata discovers new titles.',
-      dependsOn: 'auto-fills titles found in step 3',
-      have: p.mediaDone, total: p.filmTitles + p.tvTitles, note: 'cron',
+      key: 'tmdb', name: 'TMDB media', tip: 'Adds posters, backdrops, trailers, cast and where-to-watch to matched film & TV titles. Runs itself on a schedule as Wikidata discovers new titles.',
+      reached: p.mediaDone, total: Math.max(1, p.filmTitles + p.tvTitles), pending: 0, auto: true,
     },
   ];
+  // Flag the actionable stage holding up the most heroes.
+  const maxPending = Math.max(cvPending, resolvePending, appearPending);
+  const bottleneckKey = maxPending > 0
+    ? stages.find((s) => !s.auto && s.pending === maxPending)?.key
+    : undefined;
 
   return (
     <Bento>
       {/* 1 · Add characters — name / team / series, multi-select, build live. */}
       <AddHeroesPanel flash={flash} onAdded={onHeroesAdded} onBuild={setBuildIds} />
 
-      {/* 2 · Build & status — backlog runs + live build, beside what needs you. */}
+      {/* 2 · Build & status — the funnel + one primary action, beside what needs you. */}
       <Bento.Row narrow={narrow}>
         <Panel
-          title="2 · Build & status"
-          hint="Each ring is a stage's coverage. Press a ring to run that stage over the backlog, or build the next batch live."
-          action={<InfoTip text="Each ring is a stage and how complete it is. Press a ring to run that stage across the whole backlog (a batch drain). 'Build next 25' opens the live board for the next pending heroes. Stages depend on the one before them." />}
+          title="Build & status"
+          hint={`${p.enriched.toLocaleString()} of ${p.heroesTotal.toLocaleString()} fully enriched · ${totalActionable.toLocaleString()} to go`}
+          action={<InfoTip text="The enrichment funnel. Each bar is how many heroes have reached that stage, all on the same scale, so you can see where they pile up. 'Build next' works the backlog one hero at a time; 'Run all' on a stage drains just that stage." />}
           style={styles.flex15}
         >
-          <View style={styles.flow}>
-            {pipelines.map((pl, i) => (
-              <View key={pl.key} style={styles.flowItem}>
-                <PipelineNode p={pl} step={i + 1} busy={busy} />
-                {i < pipelines.length - 1 ? (
-                  <Ionicons name="chevron-forward" size={18} color="rgba(41,60,67,0.28)" style={styles.flowArrow as object} />
-                ) : null}
-              </View>
+          <View style={styles.funnel}>
+            {stages.map((s, i) => (
+              <FunnelStage key={s.key} s={s} n={i + 1} busy={busy} bottleneck={s.key === bottleneckKey} />
             ))}
           </View>
-          {/* ComicVine batch + retry, kept compact under the grid. */}
-          <View style={styles.cvControls}>
-            <Text style={styles.cvControlsLabel}>ComicVine batch</Text>
-            <InfoTip text="How many heroes one ComicVine run processes. Larger = more per click, but each run takes longer and uses more API budget." size={13} />
+
+          {/* Primary action: work the whole backlog, one hero at a time, live. */}
+          <View style={styles.primary}>
+            <Pressable
+              onPress={buildNextPending}
+              disabled={!!buildIds || totalActionable === 0}
+              style={[styles.buildBtn, (!!buildIds || totalActionable === 0) && styles.dim]}
+            >
+              <Ionicons name="construct" size={16} color="#fff" />
+              <Text style={styles.buildBtnText}>Build next {Math.min(batchSize, totalActionable || batchSize)}</Text>
+            </Pressable>
             <View style={styles.sizeSel}>
               {[10, 25, 50].map((n) => (
                 <Pressable key={n} onPress={() => setBatchSize(n)} style={[styles.sizePill, batchSize === n && styles.sizePillOn]}>
@@ -256,27 +256,21 @@ export function PipelinesDomain({
                 </Pressable>
               ))}
             </View>
-            <Pressable
-              onPress={onRetryFailed}
-              disabled={!!busy || failed === 0}
-              style={[styles.ctrlBtn, (!!busy || failed === 0) && styles.dim]}
-            >
-              {busy === 'retry' ? (
-                <ActivityIndicator size="small" color={COLORS.navy} />
-              ) : (
-                <Ionicons name="refresh" size={13} color={COLORS.navy} />
-              )}
-              <Text style={styles.ctrlText}>Retry failed{failed ? ` · ${failed}` : ''}</Text>
-            </Pressable>
-            <InfoTip text="Re-queues heroes whose last ComicVine fetch errored, so the next run tries them again." size={13} />
-          </View>
-          {/* Live, watched build of the next pending heroes (the global backlog). */}
-          <View style={styles.buildRow}>
-            <Pressable onPress={buildNextPending} disabled={!!buildIds} style={[styles.buildBtn, !!buildIds && styles.dim]}>
-              <Ionicons name="construct" size={14} color="#fff" />
-              <Text style={styles.buildBtnText}>Build next 25 pending</Text>
-            </Pressable>
-            <InfoTip text="Opens the live Build board for the next 25 heroes that still need a stage — you watch them go through ComicVine → Resolve → Appearances, with Pause/Stop. (Your just-added characters get their own Build button up in Add.)" size={13} />
+            <InfoTip text={`Opens the live Build board for the next ${batchSize} heroes in the backlog — you watch each go ComicVine → Resolve → Appearances, with Pause/Stop. The 10/25/50 sets how many. (Just-added characters get their own Build button up top.)`} size={13} />
+            {failed > 0 ? (
+              <Pressable
+                onPress={onRetryFailed}
+                disabled={!!busy}
+                style={[styles.ctrlBtn, !!busy && styles.dim]}
+              >
+                {busy === 'retry' ? (
+                  <ActivityIndicator size="small" color={COLORS.navy} />
+                ) : (
+                  <Ionicons name="refresh" size={13} color={COLORS.navy} />
+                )}
+                <Text style={styles.ctrlText}>Retry {failed} failed</Text>
+              </Pressable>
+            ) : null}
           </View>
         </Panel>
 
@@ -431,45 +425,50 @@ const styles = StyleSheet.create({
   flex1: { flex: 1 },
   flex15: { flex: 1.5 },
 
-  // Pipeline assembly-line flow (horizontal nodes + arrows)
-  flow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between' },
-  flowItem: { flexDirection: 'row', alignItems: 'center', flexGrow: 1 },
-  flowArrow: { marginHorizontal: 4 },
-  node: { alignItems: 'center', gap: 7, paddingVertical: 6, minWidth: 104, flex: 1 },
-  ringWrap: { width: RING, height: RING, alignItems: 'center', justifyContent: 'center' },
-  ringCenter: {
-    position: 'absolute', width: RING - 22, height: RING - 22, borderRadius: (RING - 22) / 2,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  ringCenterRun: { backgroundColor: COLORS.orange, cursor: 'pointer' } as object,
-  ringCenterAuto: { backgroundColor: '#f1ece2' },
-  stepBadge: {
-    position: 'absolute', top: -2, left: -2, width: 20, height: 20, borderRadius: 10,
-    backgroundColor: COLORS.navy, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: '#fffdf8',
-  },
-  stepBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#fff' },
-  nodeNameRow: { flexDirection: 'row', alignItems: 'center', gap: 4, maxWidth: 150 },
-  nodeName: { fontFamily: 'Flame-Regular', fontSize: 12.5, color: COLORS.black, textAlign: 'center', flexShrink: 1 },
-  nodePct: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.orange },
-  nodeCount: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey },
   dim: { opacity: 0.4 },
 
-  // "Build next N" — opens the live board for the global backlog.
-  buildRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14 },
-  buildBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: COLORS.orange,
-    borderRadius: 10, paddingHorizontal: 15, paddingVertical: 10,
+  // The enrichment funnel — one row per stage, bars on a shared scale.
+  funnel: { gap: 12 },
+  stRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  stBadge: {
+    width: 20, height: 20, borderRadius: 10, marginTop: 1,
+    backgroundColor: COLORS.navy, alignItems: 'center', justifyContent: 'center',
   },
-  buildBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: '#fff' },
+  stBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#fff' },
+  stBody: { flex: 1, minWidth: 0, gap: 5 },
+  stHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  stName: { fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: COLORS.black, flexShrink: 1 },
+  stBottleneck: {
+    fontFamily: 'Nunito_700Bold', fontSize: 9.5, color: COLORS.red, letterSpacing: 0.5,
+    textTransform: 'uppercase', backgroundColor: COLORS.red + '15', borderRadius: 5,
+    paddingHorizontal: 5, paddingVertical: 1, overflow: 'hidden',
+  },
+  stCount: { marginLeft: 'auto', fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy, fontVariant: ['tabular-nums'] },
+  stCountDim: { fontFamily: 'Nunito_400Regular', color: COLORS.grey },
+  stTrack: { height: 7, borderRadius: 4, backgroundColor: '#efe6d6', overflow: 'hidden' },
+  stFill: { height: 7, borderRadius: 4, backgroundColor: COLORS.orange },
+  stFillWarn: { backgroundColor: COLORS.red },
+  stFoot: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 22 },
+  stMeta: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: COLORS.grey },
+  stStuck: { fontFamily: 'Nunito_700Bold', fontSize: 11.5 },
+  stRun: {
+    flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#efe6d6',
+    borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4,
+  },
+  stRunText: { fontFamily: 'Nunito_700Bold', fontSize: 11.5, color: COLORS.navy },
+
+  // Primary action row: Build next N + size selector + retry.
+  primary: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginTop: 16 },
+  buildBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.orange,
+    borderRadius: 11, paddingHorizontal: 18, paddingVertical: 12,
+  },
+  buildBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 14.5, color: '#fff' },
 
   // Advanced (crons + run history) collapsible header.
   advHead: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingVertical: 6, marginTop: 2 },
   advHeadText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
 
-  // ComicVine compact controls
-  cvControls: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 12 },
-  cvControlsLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey, textTransform: 'uppercase', letterSpacing: 0.6 },
   sizeSel: { flexDirection: 'row', backgroundColor: '#efe6d6', borderRadius: 10, padding: 3 },
   sizePill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
   sizePillOn: { backgroundColor: '#fff' },
