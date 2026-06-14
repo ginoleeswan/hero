@@ -152,12 +152,12 @@ export interface RecentlyEnriched {
 export async function getRecentlyEnriched(limit = 24): Promise<RecentlyEnriched[]> {
   const { data, error } = await supabase
     .from('enrichment_run_heroes')
-    .select('run_id, heroes ( id, name, image_md_url, portrait_url ), enrichment_runs ( run_type, created_at )')
+    .select('run_id, heroes ( id, name, image_md_url, image_url, portrait_url ), enrichment_runs ( run_type, created_at )')
     .order('run_id', { ascending: false })
     .limit(limit);
   if (error || !data) return [];
   type Row = {
-    heroes: { id: string; name: string; image_md_url: string | null; portrait_url: string | null } | null;
+    heroes: { id: string; name: string; image_md_url: string | null; image_url: string | null; portrait_url: string | null } | null;
     enrichment_runs: { run_type: string; created_at: string } | null;
   };
   return (data as unknown as Row[])
@@ -165,7 +165,7 @@ export async function getRecentlyEnriched(limit = 24): Promise<RecentlyEnriched[
     .map((r) => ({
       heroId: r.heroes!.id,
       name: r.heroes!.name,
-      imageUrl: r.heroes!.portrait_url ?? r.heroes!.image_md_url,
+      imageUrl: r.heroes!.portrait_url ?? r.heroes!.image_md_url ?? r.heroes!.image_url,
       runType: r.enrichment_runs?.run_type ?? '',
       at: r.enrichment_runs?.created_at ?? '',
     }));
@@ -270,19 +270,19 @@ export interface AmbiguousHero {
 export async function getAmbiguousHeroes(limit = 25): Promise<AmbiguousHero[]> {
   const { data, error } = await supabase
     .from('heroes')
-    .select('id, name, publisher, image_md_url, wikidata_candidates')
+    .select('id, name, publisher, image_md_url, image_url, wikidata_candidates')
     .eq('wikidata_status', 'ambiguous')
     .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error || !data) return [];
   return (data as Array<{
-    id: string; name: string; publisher: string | null; image_md_url: string | null;
+    id: string; name: string; publisher: string | null; image_md_url: string | null; image_url: string | null;
     wikidata_candidates: { qid: string; score: number }[] | null;
   }>).map((r) => ({
     id: r.id,
     name: r.name,
     publisher: r.publisher,
-    imageUrl: r.image_md_url,
+    imageUrl: r.image_md_url ?? r.image_url,
     candidates: r.wikidata_candidates ?? [],
   }));
 }

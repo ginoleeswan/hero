@@ -1,9 +1,9 @@
 // cv-search: ComicVine lookup proxy for the admin ingestion console.
 // POST body:
 //   { kind: 'character', query }                  -> characters matching a name
-//   { kind: 'group', resource, query }            -> teams / series matching a name
+//   { kind: 'group', resource, query }            -> groups matching a name
 //   { kind: 'group_members', resource, id }       -> a group's character roster
-// resource ∈ 'team' | 'volume'. Server-side ComicVine key; logs to api_usage.
+// resource ∈ 'team' | 'volume' | 'person' | 'movie'. Server-side key; logs usage.
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -11,7 +11,15 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const CV = 'https://comicvine.gamespot.com/api';
 const KEY = Deno.env.get('COMICVINE_API_KEY') ?? '';
 const UA = { 'User-Agent': 'mythique/1.0 (admin ingestion)' };
-const PREFIX: Record<string, string> = { team: '4060', volume: '4050' };
+// ComicVine type-id prefix per resource path.
+const PREFIX: Record<string, string> = { team: '4060', volume: '4050', person: '4040', movie: '4025' };
+// Which field on a resource holds its character roster (person uses created_characters).
+const MEMBER_FIELD: Record<string, string> = {
+  team: 'characters',
+  volume: 'characters',
+  movie: 'characters',
+  person: 'created_characters',
+};
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -51,24 +59,27 @@ serve(async (req: Request) => {
       };
     } else if (kind === 'group') {
       if (query.length < 2 || !PREFIX[resource]) return json({ results: [] });
-      const url = `${CV}/search/?api_key=${KEY}&format=json&query=${encodeURIComponent(query)}&resources=${resource}&field_list=id,name,count_of_team_members,start_year,publisher&limit=15`;
+      const url = `${CV}/search/?api_key=${KEY}&format=json&query=${encodeURIComponent(query)}&resources=${resource}&field_list=id,name,count_of_team_members,start_year,publisher,deck&limit=15`;
       const body = await (await fetch(url, { headers: UA })).json();
       out = {
         results: (body.results ?? []).map((r: Record<string, any>) => ({
           id: String(r.id),
           name: r.name,
           members: typeof r.count_of_team_members === 'number' ? r.count_of_team_members : null,
-          hint: r.start_year ? String(r.start_year) : r.publisher?.name ?? null,
+          hint:
+            r.start_year ? String(r.start_year)
+            : r.publisher?.name ?? (typeof r.deck === 'string' ? r.deck.slice(0, 60) : null),
         })),
       };
     } else if (kind === 'group_members') {
       if (!id || !PREFIX[resource]) return json({ groupName: null, characters: [] });
-      const url = `${CV}/${resource}/${PREFIX[resource]}-${id}/?api_key=${KEY}&format=json&field_list=name,characters`;
+      const field = MEMBER_FIELD[resource] ?? 'characters';
+      const url = `${CV}/${resource}/${PREFIX[resource]}-${id}/?api_key=${KEY}&format=json&field_list=name,${field}`;
       const body = await (await fetch(url, { headers: UA })).json();
       const r = body.results ?? {};
       out = {
         groupName: r.name ?? null,
-        characters: (r.characters ?? []).map((c: Record<string, any>) => ({ id: String(c.id), name: c.name })),
+        characters: (r[field] ?? []).map((c: Record<string, any>) => ({ id: String(c.id), name: c.name })),
       };
     } else {
       return json({ error: 'bad kind' }, 400);

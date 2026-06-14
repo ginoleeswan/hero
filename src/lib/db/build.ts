@@ -14,6 +14,7 @@ interface HeroRow {
   id: string;
   name: string;
   image_md_url: string | null;
+  image_url: string | null;
   portrait_url: string | null;
   comicvine_status: string | null;
   wikidata_status: string;
@@ -37,13 +38,13 @@ export async function getBuildHeroes(ids: string[]): Promise<BuildHero[]> {
   if (ids.length === 0) return [];
   const { data, error } = await supabase
     .from('heroes')
-    .select('id, name, image_md_url, portrait_url, comicvine_status, wikidata_status, wikidata_enriched_at')
+    .select('id, name, image_md_url, image_url, portrait_url, comicvine_status, wikidata_status, wikidata_enriched_at')
     .in('id', ids);
   if (error || !data) return [];
   return (data as HeroRow[]).map((h) => ({
     id: h.id,
     name: h.name,
-    image: h.portrait_url ?? h.image_md_url,
+    image: h.portrait_url ?? h.image_md_url ?? h.image_url,
     stage: stageOf(h),
   }));
 }

@@ -25,13 +25,26 @@ import {
 // A character added during this session — enough to show it, build it, or undo it.
 type AddedHero = { id: string; name: string; image: string | null };
 
-type Mode = 'name' | 'team' | 'volume';
+type Mode = 'name' | 'team' | 'volume' | 'person' | 'movie';
 type Flash = (msg: string, tone?: 'info' | 'success' | 'error' | 'pending') => void;
 const MODES: { key: Mode; label: string }[] = [
   { key: 'name', label: 'By name' },
   { key: 'team', label: 'By team' },
   { key: 'volume', label: 'By series' },
+  { key: 'person', label: 'By creator' },
+  { key: 'movie', label: 'By film' },
 ];
+// Group-mode icon + search placeholder per resource.
+const GROUP_ICON: Record<string, 'people' | 'book' | 'brush' | 'film'> = {
+  team: 'people', volume: 'book', person: 'brush', movie: 'film',
+};
+const PLACEHOLDER: Record<Mode, string> = {
+  name: 'Character name… (e.g. Darth Vader)',
+  team: 'Team name… (e.g. Jedi Order)',
+  volume: 'Comic series… (e.g. Star Wars)',
+  person: 'Creator name… (e.g. Jack Kirby)',
+  movie: 'Film title… (e.g. The Empire Strikes Back)',
+};
 
 export function AddHeroesPanel({
   flash, onAdded, onBuild,
@@ -162,7 +175,7 @@ export function AddHeroesPanel({
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder={mode === 'name' ? 'Character name… (e.g. Darth Vader)' : mode === 'team' ? 'Team name… (e.g. Jedi Order)' : 'Comic series… (e.g. Star Wars)'}
+            placeholder={PLACEHOLDER[mode]}
             placeholderTextColor={COLORS.grey}
             style={[styles.searchInput, { outlineStyle: 'none' }] as object}
           />
@@ -177,7 +190,7 @@ export function AddHeroesPanel({
         <ScrollView style={styles.scroll} nestedScrollEnabled>
           {groups.map((g) => (
             <Pressable key={g.id} onPress={() => openGroup(g)} style={styles.row}>
-              <View style={styles.groupIcon}><Ionicons name={mode === 'team' ? 'people' : 'book'} size={16} color={COLORS.orange} /></View>
+              <View style={styles.groupIcon}><Ionicons name={GROUP_ICON[mode] ?? 'book'} size={16} color={COLORS.orange} /></View>
               <View style={styles.meta}>
                 <Text style={styles.name} numberOfLines={1}>{g.name}</Text>
                 <Text style={styles.sub} numberOfLines={1}>
@@ -308,7 +321,7 @@ function StatusBadge({ inCat, dup }: { inCat: boolean; dup: boolean }) {
 }
 
 const styles = StyleSheet.create({
-  modeRow: { flexDirection: 'row', gap: 6, marginBottom: 10 },
+  modeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, rowGap: 6, marginBottom: 10 },
   modePill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: '#efe6d6' },
   modePillOn: { backgroundColor: COLORS.navy },
   modePillText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },

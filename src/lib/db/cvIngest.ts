@@ -1,6 +1,6 @@
 import { supabase } from '../supabase';
 
-export type GroupResource = 'team' | 'volume';
+export type GroupResource = 'team' | 'volume' | 'person' | 'movie';
 
 export interface CvCharacter {
   id: string;
