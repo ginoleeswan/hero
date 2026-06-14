@@ -106,26 +106,57 @@ async function runMatch(sb: SB, limit: number, retryUnmatched: boolean): Promise
   return calls;
 }
 
+// ── tv mapper (mirror of src/lib/tmdb/mapTv.ts) ─────────────────────────────
+function mapTvDetails(d: Record<string, any>) {
+  const videos: any[] = d.videos?.results ?? [];
+  const trailer = videos.find((v) => v.site === 'YouTube' && v.type === 'Trailer') ?? videos.find((v) => v.site === 'YouTube');
+  const cast = (d.credits?.cast ?? []).slice(0, 10).map((c: any) => ({
+    name: c.name, character: c.character?.trim() ? c.character : null, profile_url: img(c.profile_path, 'w185'),
+  }));
+  const stills = (d.images?.backdrops ?? []).slice(0, 8).map((b: any) => img(b.file_path, 'w780')).filter(Boolean);
+  const providers = d['watch/providers']?.results ?? null;
+  const networks = (d.networks ?? []).map((n: any) => n.name).filter(Boolean);
+  const runtimes: number[] = Array.isArray(d.episode_run_time) ? d.episode_run_time : [];
+  return {
+    title: d.name, release_date: d.first_air_date || null,
+    poster_url: img(d.poster_path, 'w500'), backdrop_url: img(d.backdrop_path, 'w1280'),
+    overview: d.overview?.trim() ? d.overview : null,
+    vote_average: typeof d.vote_average === 'number' ? d.vote_average : null,
+    trailer_key: trailer?.key ?? null,
+    watch_providers: providers && Object.keys(providers).length > 0 ? providers : null,
+    cast_members: cast.length > 0 ? cast : null,
+    stills: stills.length > 0 ? stills : null,
+    details: {
+      seasons: typeof d.number_of_seasons === 'number' ? d.number_of_seasons : null,
+      episodes: typeof d.number_of_episodes === 'number' ? d.number_of_episodes : null,
+      episode_runtime: runtimes.length > 0 ? runtimes[0] : null,
+      networks: networks.length > 0 ? networks : null,
+    },
+  };
+}
+
 async function runEnrich(sb: SB, limit: number): Promise<number> {
   const { data: titles } = await sb
     .from('titles')
-    .select('id, external_id')
+    .select('id, external_id, media_type')
     .eq('source', 'tmdb')
-    .eq('media_type', 'film')
+    .in('media_type', ['film', 'tv'])
     .eq('enrich_status', 'pending')
     .limit(limit);
   if (!titles || titles.length === 0) return 0;
   let calls = 0;
-  for (const t of titles as Array<{ id: string; external_id: string }>) {
+  for (const t of titles as Array<{ id: string; external_id: string; media_type: string }>) {
     calls++;
     try {
-      const url = `${TMDB_BASE}/movie/${t.external_id}?api_key=${TMDB_API_KEY}&append_to_response=videos,watch/providers,credits,images`;
+      const path = t.media_type === 'tv' ? 'tv' : 'movie';
+      const url = `${TMDB_BASE}/${path}/${t.external_id}?api_key=${TMDB_API_KEY}&append_to_response=videos,watch/providers,credits,images`;
       const res = await fetch(url);
       if (!res.ok) {
         if (res.status === 404) await sb.from('titles').update({ enrich_status: 'failed' }).eq('id', t.id);
         await sleep(250); continue;
       }
-      const mapped = mapDetails(await res.json());
+      const body = await res.json();
+      const mapped = t.media_type === 'tv' ? mapTvDetails(body) : mapDetails(body);
       await sb.from('titles').update({ ...mapped, enrich_status: 'done', enriched_at: new Date().toISOString() }).eq('id', t.id);
     } catch (err) {
       console.error('[enrich-tmdb-batch] enrich threw', t.id, err); // leave pending
