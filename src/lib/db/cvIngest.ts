@@ -69,3 +69,9 @@ export async function addComicvineHeroes(heroes: { id: string; name: string; ima
   if (error) throw error;
   return (data as number) ?? 0;
 }
+
+/** Remove a hero from the catalogue by id (undo a just-added character). */
+export async function deleteHero(heroId: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_delete_hero', { p_hero_id: heroId });
+  if (error) throw error;
+}

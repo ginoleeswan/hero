@@ -16,10 +16,14 @@ import {
   existingComicvineIds,
   existingHeroNames,
   addComicvineHeroes,
+  deleteHero,
   type CvCharacter,
   type CvGroup,
   type GroupResource,
 } from '../../../lib/db/cvIngest';
+
+// A character added during this session — enough to show it, build it, or undo it.
+type AddedHero = { id: string; name: string; image: string | null };
 
 type Mode = 'name' | 'team' | 'volume';
 type Flash = (msg: string, tone?: 'info' | 'success' | 'error' | 'pending') => void;
@@ -45,11 +49,14 @@ export function AddHeroesPanel({
   const [existingIds, setExistingIds] = useState<Set<string>>(new Set());
   const [existingNames, setExistingNames] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [addedSession, setAddedSession] = useState<Set<string>>(new Set());
+  const [addedSession, setAddedSession] = useState<AddedHero[]>([]);
+  const [removing, setRemoving] = useState<Set<string>>(new Set());
+  const [rosterOpen, setRosterOpen] = useState(false);
   const [newOnly, setNewOnly] = useState(true);
 
+  const addedIds = useMemo(() => new Set(addedSession.map((a) => a.id)), [addedSession]);
   const reset = () => { setChars([]); setGroups([]); setGroup(null); setMembers([]); setSelected(new Set()); };
-  const isIn = (id: string) => existingIds.has(id) || addedSession.has(id);
+  const isIn = (id: string) => existingIds.has(id) || addedIds.has(id);
   const isDup = (id: string, name: string) => !isIn(id) && existingNames.has(name.toLowerCase().trim());
 
   // Live (debounced) search whenever the query or mode changes.
@@ -112,12 +119,25 @@ export function AddHeroesPanel({
     setBusy(true);
     try {
       const n = await addComicvineHeroes(payload);
-      setAddedSession((p) => { const s = new Set(p); ids.forEach((id) => s.add(id)); return s; });
+      setAddedSession((p) => [...payload.filter((x) => !p.some((a) => a.id === x.id)), ...p]);
+      setRosterOpen(true);
       setSelected(new Set());
       flash(`Added ${n} hero${n === 1 ? '' : 'es'} — pending at step 1.`, 'success');
       onAdded();
     } catch (e) { flash(`Add failed: ${(e as Error).message}`, 'error'); }
     finally { setBusy(false); }
+  };
+
+  // Undo a just-added character — delete it from the catalogue and drop it here.
+  const removeAdded = async (a: AddedHero) => {
+    setRemoving((p) => new Set(p).add(a.id));
+    try {
+      await deleteHero(`cv-${a.id}`);
+      setAddedSession((p) => p.filter((x) => x.id !== a.id));
+      flash(`Removed ${a.name}.`, 'info');
+      onAdded();
+    } catch (e) { flash(`Remove failed: ${(e as Error).message}`, 'error'); }
+    finally { setRemoving((p) => { const s = new Set(p); s.delete(a.id); return s; }); }
   };
 
   const memberView = group ? (newOnly ? members.filter((m) => !isIn(m.id)) : members) : [];
@@ -228,15 +248,45 @@ export function AddHeroesPanel({
         )
       ) : null}
 
-      {/* Close the loop — build everything you added, live. */}
-      {addedSession.size > 0 ? (
-        <View style={styles.loopBar}>
-          <Ionicons name="information-circle" size={15} color={COLORS.orange} />
-          <Text style={styles.loopText}>{addedSession.size} added this session.</Text>
-          <Pressable onPress={() => onBuild([...addedSession].map((cid) => `cv-${cid}`))} style={styles.loopBtn}>
-            <Ionicons name="construct" size={12} color="#fff" />
-            <Text style={styles.loopBtnText}>Build now</Text>
+      {/* Close the loop — review what you added, remove mistakes, then build live. */}
+      {addedSession.length > 0 ? (
+        <View style={styles.session}>
+          <Pressable onPress={() => setRosterOpen((v) => !v)} style={styles.loopBar}>
+            <Ionicons name="information-circle" size={15} color={COLORS.orange} />
+            <Text style={styles.loopText}>
+              {addedSession.length} added this session
+            </Text>
+            <Ionicons name={rosterOpen ? 'chevron-up' : 'chevron-down'} size={15} color={COLORS.navy} />
+            <Pressable onPress={() => onBuild(addedSession.map((a) => `cv-${a.id}`))} style={styles.loopBtn}>
+              <Ionicons name="construct" size={12} color="#fff" />
+              <Text style={styles.loopBtnText}>Build {addedSession.length}</Text>
+            </Pressable>
           </Pressable>
+          {rosterOpen ? (
+            <View style={styles.addedList}>
+              {addedSession.map((a) => {
+                const busyThis = removing.has(a.id);
+                return (
+                  <View key={a.id} style={styles.addedRow}>
+                    <HeroThumb uri={a.image} width={28} height={37} radius={5} />
+                    <Text style={styles.addedName} numberOfLines={1}>{a.name}</Text>
+                    <Pressable
+                      onPress={() => removeAdded(a)}
+                      disabled={busyThis}
+                      style={[styles.removeBtn, busyThis && styles.dim]}
+                      accessibilityLabel={`Remove ${a.name}`}
+                    >
+                      {busyThis ? (
+                        <ActivityIndicator size="small" color={COLORS.red} />
+                      ) : (
+                        <Ionicons name="trash-outline" size={14} color={COLORS.red} />
+                      )}
+                    </Pressable>
+                  </View>
+                );
+              })}
+            </View>
+          ) : null}
         </View>
       ) : null}
     </Panel>
@@ -301,11 +351,22 @@ const styles = StyleSheet.create({
   badge: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   badgeText: { fontFamily: 'Nunito_700Bold', fontSize: 11 },
 
+  session: { marginTop: 12, gap: 8 },
   loopBar: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: COLORS.orange + '12', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9,
   },
   loopText: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: COLORS.navy },
   loopBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: COLORS.orange, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7 },
   loopBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
+  addedList: { gap: 2 },
+  addedRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 5,
+    borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.06)',
+  },
+  addedName: { flex: 1, minWidth: 0, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
+  removeBtn: {
+    width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.red + '12',
+  },
 });
