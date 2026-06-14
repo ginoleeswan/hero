@@ -26,7 +26,8 @@ export const dayLabel = (iso: string) => {
   return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 };
 
-export const pct = (have: number, total: number) => (total > 0 ? Math.round((have / total) * 100) : 0);
+export const pct = (have: number, total: number) =>
+  total > 0 ? Math.round((have / total) * 100) : 0;
 
 /** Wall-clock HH:MM:SS for log lines (24h, no locale surprises). */
 export const logClock = (ms: number) => new Date(ms).toLocaleTimeString([], { hour12: false });
@@ -75,9 +76,27 @@ export interface MetricDef {
   worklist?: CoverageMetric;
 }
 export const METRICS: MetricDef[] = [
-  { key: 'portrait', label: 'AI Portraits', blurb: 'Styled hero art', tint: COLORS.orange, worklist: 'portrait' },
-  { key: 'summary', label: 'Summaries', blurb: 'Short bio deck', tint: COLORS.blue, worklist: 'summary' },
-  { key: 'firstIssue', label: 'First Issue', blurb: 'Debut + cover', tint: COLORS.gold, worklist: 'firstIssue' },
+  {
+    key: 'portrait',
+    label: 'AI Portraits',
+    blurb: 'Styled hero art',
+    tint: COLORS.orange,
+    worklist: 'portrait',
+  },
+  {
+    key: 'summary',
+    label: 'Summaries',
+    blurb: 'Short bio deck',
+    tint: COLORS.blue,
+    worklist: 'summary',
+  },
+  {
+    key: 'firstIssue',
+    label: 'First Issue',
+    blurb: 'Debut + cover',
+    tint: COLORS.gold,
+    worklist: 'firstIssue',
+  },
   { key: 'image', label: 'Source Image', blurb: 'ComicVine art', tint: COLORS.green },
   { key: 'stats', label: 'Powerstats', blurb: 'The six dials', tint: COLORS.green },
 ];
@@ -88,15 +107,7 @@ export const WORKLIST_LABEL: Record<CoverageMetric, string> = {
   firstIssue: 'First Issue',
 };
 
-// ── Tabs (shared by the desktop pill row and the mobile bottom bar) ───────────
-export type TabKey = 'overview' | 'backfill' | 'operations';
-export const TABS: { key: TabKey; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'overview', label: 'Overview', icon: 'stats-chart' },
-  { key: 'backfill', label: 'Backfill', icon: 'construct' },
-  { key: 'operations', label: 'Operations', icon: 'pulse' },
-];
-
-// ── Domains (command-center rail; replaces TABS in Task 6) ─────────────────────
+// ── Domains (command-center rail) ─────────────────────────────────────────────
 export type DomainKey = 'command' | 'catalog' | 'operations' | 'spend' | 'users' | 'traffic';
 
 export interface DomainDef {

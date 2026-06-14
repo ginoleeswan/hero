@@ -17,8 +17,12 @@ export function Chip({
 }) {
   return (
     <View style={[styles.chip, { backgroundColor: bg }]}>
-      {spinner && <ActivityIndicator size="small" color={fg} style={{ transform: [{ scale: 0.7 }] }} />}
-      <Text style={[styles.chipText, capitalize && styles.chipCapitalize, { color: fg }]}>{text}</Text>
+      {spinner && (
+        <ActivityIndicator size="small" color={fg} style={{ transform: [{ scale: 0.7 }] }} />
+      )}
+      <Text style={[styles.chipText, capitalize && styles.chipCapitalize, { color: fg }]}>
+        {text}
+      </Text>
     </View>
   );
 }

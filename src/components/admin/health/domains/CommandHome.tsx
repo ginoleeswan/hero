@@ -80,14 +80,18 @@ export function CommandHome({
   const align = dist?.alignment;
   const alignTotal = align ? align.good + align.bad + align.neutral + align.unknown : 0;
   const queue = gaps?.heroes.slice(0, 4) ?? [];
-  const days = spend?.available ? spend.days ?? [] : [];
+  const days = spend?.available ? (spend.days ?? []) : [];
   const spendMax = Math.max(1, ...days.map((d) => d.cost));
 
   return (
     <Bento>
       <Bento.Row narrow={narrow}>
         {/* Coverage */}
-        <Panel title="Catalog coverage" hint="Tap a metric to load its backfill queue" style={s.flex15}>
+        <Panel
+          title="Catalog coverage"
+          hint="Tap a metric to load its backfill queue"
+          style={s.flex15}
+        >
           <View style={s.headline}>
             <View>
               <Text style={[s.bigPct, { color: healthColor(overall) }]}>{overall}%</Text>
@@ -121,7 +125,11 @@ export function CommandHome({
           hint={`Daily snapshots · now ${overall}%`}
           style={s.flex1}
           action={
-            <Pressable onPress={onSnapshot} disabled={snapshotting} style={[s.mini, snapshotting && s.dim]}>
+            <Pressable
+              onPress={onSnapshot}
+              disabled={snapshotting}
+              style={[s.mini, snapshotting && s.dim]}
+            >
               {snapshotting ? (
                 <ActivityIndicator size="small" color={COLORS.navy} />
               ) : (
@@ -168,7 +176,12 @@ export function CommandHome({
                 style={s.qRow}
               >
                 {hero.image_url ? (
-                  <Image source={{ uri: hero.image_url }} style={s.qThumb} contentFit="cover" transition={150} />
+                  <Image
+                    source={{ uri: hero.image_url }}
+                    style={s.qThumb}
+                    contentFit="cover"
+                    transition={150}
+                  />
                 ) : (
                   <View style={[s.qThumb, s.qThumbBlank]}>
                     <Ionicons name="person" size={14} color="rgba(41,60,67,0.3)" />
@@ -233,7 +246,9 @@ export function CommandHome({
               <View style={s.spendBars}>
                 {days.map((d) => (
                   <View key={d.day} style={s.spendCol}>
-                    <View style={[s.spendBar, { height: `${Math.round((d.cost / spendMax) * 100)}%` }]} />
+                    <View
+                      style={[s.spendBar, { height: `${Math.round((d.cost / spendMax) * 100)}%` }]}
+                    />
                   </View>
                 ))}
               </View>
@@ -252,9 +267,20 @@ export function CommandHome({
 const s = StyleSheet.create({
   flex1: { flex: 1 },
   flex15: { flex: 1.5 },
-  headline: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 },
+  headline: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
   bigPct: { fontFamily: 'Flame-Regular', fontSize: 40, lineHeight: 42 },
-  bigCaption: { fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 0.5, color: COLORS.grey, textTransform: 'uppercase' },
+  bigCaption: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 0.5,
+    color: COLORS.grey,
+    textTransform: 'uppercase',
+  },
   headlineStat: { alignItems: 'flex-end' },
   statNum: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.black, lineHeight: 24 },
   statLabel: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 0.4, color: COLORS.grey },
@@ -265,11 +291,25 @@ const s = StyleSheet.create({
   cbPct: { fontFamily: 'Flame-Regular', fontSize: 13 },
   cbTrack: { height: 6, borderRadius: 4, backgroundColor: '#ece2cf', overflow: 'hidden' },
   cbFill: { height: 6, borderRadius: 4 },
-  mini: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#efe6d6', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 },
+  mini: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#efe6d6',
+    borderRadius: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
   miniText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   dim: { opacity: 0.4 },
   empty: { alignItems: 'center', gap: 6, paddingVertical: 22 },
-  emptyText: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, textAlign: 'center', maxWidth: 220 },
+  emptyText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: COLORS.grey,
+    textAlign: 'center',
+    maxWidth: 220,
+  },
   qRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 5 },
   qThumb: { width: 30, height: 30, borderRadius: 8, backgroundColor: '#efe6d6' },
   qThumbBlank: { alignItems: 'center', justifyContent: 'center' },
@@ -284,7 +324,12 @@ const s = StyleSheet.create({
   legendVal: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   spendWrap: { gap: 2 },
   spendBig: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.black, lineHeight: 28 },
-  spendLabel: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 0.4, color: COLORS.grey },
+  spendLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.4,
+    color: COLORS.grey,
+  },
   spendBars: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 40, marginTop: 8 },
   spendCol: { flex: 1, height: '100%', justifyContent: 'flex-end' },
   spendBar: { borderRadius: 2, backgroundColor: COLORS.orange, opacity: 0.8 },

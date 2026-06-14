@@ -41,8 +41,16 @@ function RunItem({ run: r, narrow }: { run: EnrichmentRun; narrow: boolean }) {
         </View>
         <View style={styles.runCardStats}>
           <RunStat label="Done" value={`${r.done}`} tint={COLORS.green} />
-          <RunStat label="Failed" value={`${r.failed}`} tint={r.failed ? COLORS.red : COLORS.grey} />
-          <RunStat label="Retry" value={`${r.retry}`} tint={r.retry ? COLORS.yellow : COLORS.grey} />
+          <RunStat
+            label="Failed"
+            value={`${r.failed}`}
+            tint={r.failed ? COLORS.red : COLORS.grey}
+          />
+          <RunStat
+            label="Retry"
+            value={`${r.retry}`}
+            tint={r.retry ? COLORS.yellow : COLORS.grey}
+          />
           <RunStat
             label="Left"
             value={r.remaining != null ? r.remaining.toLocaleString() : '—'}
@@ -67,8 +75,12 @@ function RunItem({ run: r, narrow }: { run: EnrichmentRun; narrow: boolean }) {
         <Chip bg={src.bg} fg={src.fg} text={r.triggered_by} />
       </View>
       <Text style={[styles.runStat, { color: COLORS.green }]}>{r.done}</Text>
-      <Text style={[styles.runStat, { color: r.failed ? COLORS.red : COLORS.grey }]}>{r.failed}</Text>
-      <Text style={[styles.runStat, { color: r.retry ? COLORS.yellow : COLORS.grey }]}>{r.retry}</Text>
+      <Text style={[styles.runStat, { color: r.failed ? COLORS.red : COLORS.grey }]}>
+        {r.failed}
+      </Text>
+      <Text style={[styles.runStat, { color: r.retry ? COLORS.yellow : COLORS.grey }]}>
+        {r.retry}
+      </Text>
       <Text style={[styles.runStat, { color: COLORS.navy }]}>
         {r.remaining != null ? r.remaining.toLocaleString() : '—'}
       </Text>
@@ -102,7 +114,8 @@ export function RunHistory({
   // KPI summary over the loaded window.
   const winDone = runs.reduce((a, r) => a + r.done, 0);
   const winFailed = runs.reduce((a, r) => a + r.failed, 0);
-  const successRate = winDone + winFailed > 0 ? Math.round((winDone / (winDone + winFailed)) * 100) : 100;
+  const successRate =
+    winDone + winFailed > 0 ? Math.round((winDone / (winDone + winFailed)) * 100) : 100;
   const drained = runs.filter((r) => r.duration_ms && r.done > 0);
   const drainMs = drained.reduce((a, r) => a + (r.duration_ms ?? 0), 0);
   const drainDone = drained.reduce((a, r) => a + r.done, 0);
@@ -112,7 +125,8 @@ export function RunHistory({
   const groups: { key: string; label: string; runs: EnrichmentRun[]; done: number }[] = [];
   for (const r of runs) {
     const key = dayKey(r.created_at);
-    let g = groups.length && groups[groups.length - 1].key === key ? groups[groups.length - 1] : null;
+    let g =
+      groups.length && groups[groups.length - 1].key === key ? groups[groups.length - 1] : null;
     if (!g) {
       g = { key, label: dayLabel(r.created_at), runs: [], done: 0 };
       groups.push(g);
@@ -124,14 +138,26 @@ export function RunHistory({
   return (
     <>
       <View style={styles.kpiRow}>
-        <KpiTile label={`Enriched · last ${runs.length}`} value={winDone.toLocaleString()} tint={COLORS.green} />
-        <KpiTile label="Failed" value={winFailed.toLocaleString()} tint={winFailed ? COLORS.red : COLORS.grey} />
+        <KpiTile
+          label={`Enriched · last ${runs.length}`}
+          value={winDone.toLocaleString()}
+          tint={COLORS.green}
+        />
+        <KpiTile
+          label="Failed"
+          value={winFailed.toLocaleString()}
+          tint={winFailed ? COLORS.red : COLORS.grey}
+        />
         <KpiTile
           label="Success rate"
           value={`${successRate}%`}
           tint={successRate >= 95 ? COLORS.green : successRate >= 80 ? COLORS.yellow : COLORS.red}
         />
-        <KpiTile label="Throughput" value={throughput > 0 ? `${throughput}/min` : '—'} tint={COLORS.navy} />
+        <KpiTile
+          label="Throughput"
+          value={throughput > 0 ? `${throughput}/min` : '—'}
+          tint={COLORS.navy}
+        />
       </View>
 
       {groups.map((g) => (
@@ -139,7 +165,8 @@ export function RunHistory({
           <View style={styles.dayHead}>
             <Text style={styles.dayLabel}>{g.label}</Text>
             <Text style={styles.daySub}>
-              {g.runs.length} run{g.runs.length === 1 ? '' : 's'} · {g.done.toLocaleString()} enriched
+              {g.runs.length} run{g.runs.length === 1 ? '' : 's'} · {g.done.toLocaleString()}{' '}
+              enriched
             </Text>
           </View>
           {!narrow && (
@@ -163,7 +190,11 @@ export function RunHistory({
       ))}
 
       {runs.length < total && (
-        <Pressable onPress={onLoadMore} disabled={fetching} style={[styles.loadMore, fetching && styles.dim]}>
+        <Pressable
+          onPress={onLoadMore}
+          disabled={fetching}
+          style={[styles.loadMore, fetching && styles.dim]}
+        >
           {fetching ? (
             <ActivityIndicator size="small" color={COLORS.navy} />
           ) : (
@@ -233,7 +264,12 @@ const styles = StyleSheet.create({
     borderBottomColor: '#efe6d6',
     marginTop: 4,
   },
-  runHeadText: { color: COLORS.grey, fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 0.4 },
+  runHeadText: {
+    color: COLORS.grey,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 0.4,
+  },
   runRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -245,7 +281,13 @@ const styles = StyleSheet.create({
   runStatusCol: { width: 96 },
   runBy: { width: 84 },
   runStat: { width: 58, textAlign: 'right', fontFamily: 'Nunito_700Bold', fontSize: 13 },
-  runDur: { width: 64, textAlign: 'right', fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
+  runDur: {
+    width: 64,
+    textAlign: 'right',
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.grey,
+  },
 
   // Mobile run cards
   runCards: { gap: 10, marginTop: 8 },
@@ -258,7 +300,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   runCardHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  runCardWhen: { marginLeft: 'auto', fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.grey },
+  runCardWhen: {
+    marginLeft: 'auto',
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: COLORS.grey,
+  },
   runCardStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
   runStatCell: { alignItems: 'center', gap: 1, minWidth: 48 },
   runStatValue: { fontFamily: 'Flame-Regular', fontSize: 19, lineHeight: 21 },

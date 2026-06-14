@@ -1,4 +1,8 @@
-import { DOMAINS, primaryDomainKeys, DENSITY } from '../../../../src/components/admin/health/format';
+import {
+  DOMAINS,
+  primaryDomainKeys,
+  DENSITY,
+} from '../../../../src/components/admin/health/format';
 
 describe('DOMAINS', () => {
   it('lists the four primary domains in rail order, then placeholders', () => {

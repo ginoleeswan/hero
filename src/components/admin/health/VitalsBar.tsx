@@ -7,7 +7,12 @@ import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { CV_HOURLY_CAP, relTime } from './format';
-import type { EnrichmentRun, CronJob, GeminiSpend, ComicvineStatus } from '../../../lib/db/catalogHealth';
+import type {
+  EnrichmentRun,
+  CronJob,
+  GeminiSpend,
+  ComicvineStatus,
+} from '../../../lib/db/catalogHealth';
 
 interface Props {
   narrow: boolean;
@@ -118,7 +123,9 @@ export function VitalsBar({
         <Text style={[s.value, { color: cronOn ? COLORS.green : COLORS.grey }]}>
           {cronOn ? 'ON' : 'OFF'}
         </Text>
-        <Text style={s.sub}>{drainJob?.last_run ? `ran ${relTime(drainJob.last_run)}` : 'manual'}</Text>
+        <Text style={s.sub}>
+          {drainJob?.last_run ? `ran ${relTime(drainJob.last_run)}` : 'manual'}
+        </Text>
       </View>
       <Divider />
 

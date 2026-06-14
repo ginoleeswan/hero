@@ -7,7 +7,15 @@ import { Panel } from '../Panel';
 const money = (n: number, cur?: string) =>
   cur && cur !== 'USD' ? `${n.toFixed(2)} ${cur}` : `$${n.toFixed(2)}`;
 
-export function SpendDomain({ spend, loading, narrow: _narrow }: { spend?: GeminiSpend; loading: boolean; narrow: boolean }) {
+export function SpendDomain({
+  spend,
+  loading,
+  narrow: _narrow,
+}: {
+  spend?: GeminiSpend;
+  loading: boolean;
+  narrow: boolean;
+}) {
   if (loading || !spend) {
     return (
       <Panel title="Gemini / GCP Spend">
@@ -73,7 +81,12 @@ export function SpendDomain({ spend, loading, narrow: _narrow }: { spend?: Gemin
 
 const spend_s = StyleSheet.create({
   empty: { alignItems: 'center', gap: 8, paddingVertical: 24 },
-  emptyText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy, textAlign: 'center' },
+  emptyText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.navy,
+    textAlign: 'center',
+  },
   emptySub: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,

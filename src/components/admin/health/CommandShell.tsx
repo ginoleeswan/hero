@@ -32,7 +32,9 @@ function RailItem({
       <Ionicons name={def.icon} size={20} color={on ? '#fff' : 'rgba(255,255,255,0.6)'} />
       {badge != null && badge > 0 && (
         <View style={styles.railBadge}>
-          <Text style={styles.railBadgeText}>{badge > 999 ? `${Math.round(badge / 1000)}k` : badge}</Text>
+          <Text style={styles.railBadgeText}>
+            {badge > 999 ? `${Math.round(badge / 1000)}k` : badge}
+          </Text>
         </View>
       )}
       <Text style={[styles.railLabel, on && styles.railLabelOn]}>{def.label}</Text>
@@ -109,7 +111,12 @@ export function CommandShell({
               ))}
               <View style={styles.railDivider} />
               {future.map((d) => (
-                <RailItem key={d.key} def={d} on={domain === d.key} onPress={() => onDomain(d.key)} />
+                <RailItem
+                  key={d.key}
+                  def={d}
+                  on={domain === d.key}
+                  onPress={() => onDomain(d.key)}
+                />
               ))}
               <View style={{ flex: 1 }} />
             </View>
@@ -155,7 +162,7 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: COLORS.deepNavy, minHeight: '100%' as unknown as number },
   top: {
     width: '100%',
-    paddingTop: (`calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 12px)` as unknown) as number,
+    paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 12px)` as unknown as number,
     paddingBottom: 12,
   },
   topInner: {
@@ -200,12 +207,23 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     alignSelf: 'stretch',
   },
-  railItem: { alignItems: 'center', gap: 3, paddingVertical: 9, marginHorizontal: 8, borderRadius: 11 },
+  railItem: {
+    alignItems: 'center',
+    gap: 3,
+    paddingVertical: 9,
+    marginHorizontal: 8,
+    borderRadius: 11,
+  },
   railItemOn: { backgroundColor: COLORS.orange },
   railItemDim: { opacity: 0.4 },
   railLabel: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: 'rgba(255,255,255,0.6)' },
   railLabelOn: { color: '#fff' },
-  railDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.12)', marginVertical: 6, marginHorizontal: 14 },
+  railDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    marginVertical: 6,
+    marginHorizontal: 14,
+  },
   railBadge: {
     position: 'absolute',
     top: 4,
@@ -220,7 +238,7 @@ const styles = StyleSheet.create({
   content: { flex: 1, gap: 12, minWidth: 0 },
   contentNarrow: {
     width: '100%',
-    paddingBottom: (`calc(env(safe-area-inset-bottom) + 84px)` as unknown) as number,
+    paddingBottom: `calc(env(safe-area-inset-bottom) + 84px)` as unknown as number,
   },
 
   // Mobile bottom tab bar (fixed)

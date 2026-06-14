@@ -19,7 +19,11 @@ import { Bento } from '../Bento';
 import { RunHistory } from '../RunHistory';
 import { Chip } from '../atoms';
 import { LOG_TONE_COLOR, logClock } from '../format';
-import type { CatalogHealth, EnrichmentRun, AdminHeroResult } from '../../../../lib/db/catalogHealth';
+import type {
+  CatalogHealth,
+  EnrichmentRun,
+  AdminHeroResult,
+} from '../../../../lib/db/catalogHealth';
 import type { LogEntry } from '../format';
 
 export function OperationsDomain({
@@ -108,7 +112,12 @@ export function OperationsDomain({
             <Pressable
               onPress={onRunDrain}
               disabled={!!busy}
-              style={[styles.actBtn, styles.actPrimary, narrow && styles.actGrow, !!busy && styles.actDim]}
+              style={[
+                styles.actBtn,
+                styles.actPrimary,
+                narrow && styles.actGrow,
+                !!busy && styles.actDim,
+              ]}
             >
               {busy === 'drain' ? (
                 <ActivityIndicator size="small" color="#fff" />
@@ -208,10 +217,7 @@ export function OperationsDomain({
         </Panel>
 
         {/* Hero console */}
-        <Panel
-          title="Hero console"
-          hint="Find any hero and re-fetch its ComicVine data on demand"
-        >
+        <Panel title="Hero console" hint="Find any hero and re-fetch its ComicVine data on demand">
           <View style={styles.heroSearchBox}>
             <Ionicons name="search" size={16} color={COLORS.grey} />
             <TextInput
@@ -271,9 +277,7 @@ export function OperationsDomain({
                             {hero.publisher ?? '—'}
                           </Text>
                           <Chip bg={stc + '22'} fg={stc} text={st} capitalize />
-                          {!hero.portrait_url && (
-                            <Text style={styles.hcFlag}>no portrait</Text>
-                          )}
+                          {!hero.portrait_url && <Text style={styles.hcFlag}>no portrait</Text>}
                         </View>
                       </Pressable>
                       <Pressable

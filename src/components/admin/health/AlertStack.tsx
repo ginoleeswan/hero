@@ -114,6 +114,12 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
   },
   countText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.navy },
-  collapse: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'center', paddingVertical: 4 },
+  collapse: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'center',
+    paddingVertical: 4,
+  },
   collapseText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.grey },
 });

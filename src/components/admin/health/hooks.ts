@@ -49,7 +49,12 @@ export function useCatalogQueries({
 }) {
   const queryClient = useQueryClient();
 
-  const healthQ = useQuery({ queryKey: ['catalogHealth'], queryFn: getCatalogHealth, enabled, staleTime: 60_000 });
+  const healthQ = useQuery({
+    queryKey: ['catalogHealth'],
+    queryFn: getCatalogHealth,
+    enabled,
+    staleTime: 60_000,
+  });
   const gapsQ = useQuery({
     queryKey: ['coverageGaps', metric, page, pubFilter],
     queryFn: () => getCoverageGaps(metric, { page, publisher: pubFilter }),
@@ -74,14 +79,24 @@ export function useCatalogQueries({
     enabled: enabled && heroQuery.trim().length >= 2,
     staleTime: 30_000,
   });
-  const pingQ = useQuery({ queryKey: ['cvPing'], queryFn: pingComicvine, enabled, refetchInterval: 60_000 });
+  const pingQ = useQuery({
+    queryKey: ['cvPing'],
+    queryFn: pingComicvine,
+    enabled,
+    refetchInterval: 60_000,
+  });
   const usageQ = useQuery({
     queryKey: ['cvUsage'],
     queryFn: getComicvineUsageLastHour,
     enabled,
     refetchInterval: 30_000,
   });
-  const distQ = useQuery({ queryKey: ['distributions'], queryFn: getCatalogDistributions, enabled, staleTime: 60_000 });
+  const distQ = useQuery({
+    queryKey: ['distributions'],
+    queryFn: getCatalogDistributions,
+    enabled,
+    staleTime: 60_000,
+  });
   const snapsQ = useQuery({
     queryKey: ['healthSnapshots'],
     queryFn: () => getHealthSnapshots(60),
@@ -215,7 +230,10 @@ export function useCatalogActions({
     setBusy('stop');
     try {
       const ok = await stopRun(runId);
-      flash(ok ? `Stopping run #${runId} after the current hero…` : 'Run already finished.', 'info');
+      flash(
+        ok ? `Stopping run #${runId} after the current hero…` : 'Run already finished.',
+        'info',
+      );
       queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] });
     } catch (e) {
       flash(`Stop failed: ${(e as Error).message}`, 'error');
@@ -269,8 +287,8 @@ export function useCatalogActions({
     if (refreshing) return;
     setRefreshing(true);
     const started = Date.now();
-    Promise.all(REFRESH_KEYS.map((k) => queryClient.invalidateQueries({ queryKey: [k] }))).finally(() =>
-      setTimeout(() => setRefreshing(false), Math.max(0, 450 - (Date.now() - started))),
+    Promise.all(REFRESH_KEYS.map((k) => queryClient.invalidateQueries({ queryKey: [k] }))).finally(
+      () => setTimeout(() => setRefreshing(false), Math.max(0, 450 - (Date.now() - started))),
     );
   };
 

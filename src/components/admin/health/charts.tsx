@@ -20,7 +20,14 @@ export function Gauge({ value, size = 150 }: { value: number; size?: number }) {
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
-        <Circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,0.12)" strokeWidth={stroke} fill="none" />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke="rgba(255,255,255,0.12)"
+          strokeWidth={stroke}
+          fill="none"
+        />
         <Circle
           cx={size / 2}
           cy={size / 2}
@@ -35,7 +42,9 @@ export function Gauge({ value, size = 150 }: { value: number; size?: number }) {
       </Svg>
       <View style={styles.gaugeCenter}>
         <View style={styles.gaugeNumRow}>
-          <Text style={[styles.gaugeNum, { fontSize: numSize, lineHeight: numSize + 2 }]}>{value}</Text>
+          <Text style={[styles.gaugeNum, { fontSize: numSize, lineHeight: numSize + 2 }]}>
+            {value}
+          </Text>
           <Text style={[styles.gaugePct, { fontSize: Math.round(numSize * 0.42) }]}>%</Text>
         </View>
         {!small && <Text style={[styles.gaugeCaption, { color: tint }]}>complete</Text>}
@@ -60,7 +69,14 @@ export function Donut({
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
-        <Circle cx={size / 2} cy={size / 2} r={r} stroke="#efe6d6" strokeWidth={stroke} fill="none" />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke="#efe6d6"
+          strokeWidth={stroke}
+          fill="none"
+        />
         {segments.map((s, i) => {
           const frac = total > 0 ? s.value / total : 0;
           const el = (
@@ -134,19 +150,34 @@ export function CompletenessChart({ snaps }: { snaps: HealthSnapshot[] }) {
   const xOf = (i: number) => (vals.length <= 1 ? w / 2 : (i / (vals.length - 1)) * w);
   const line = vals.map((v, i) => `${xOf(i)},${yOf(v)}`).join(' ');
   const area = vals.length
-    ? `M0,${H - padB} ` + vals.map((v, i) => `L${xOf(i)},${yOf(v)}`).join(' ') + ` L${w},${H - padB} Z`
+    ? `M0,${H - padB} ` +
+      vals.map((v, i) => `L${xOf(i)},${yOf(v)}`).join(' ') +
+      ` L${w},${H - padB} Z`
     : '';
   return (
     <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: H }}>
       {w > 0 && (
         <Svg width={w} height={H}>
           {[0, 50, 100].map((g) => (
-            <Polyline key={g} points={`0,${yOf(g)} ${w},${yOf(g)}`} stroke="#efe6d6" strokeWidth={1} />
+            <Polyline
+              key={g}
+              points={`0,${yOf(g)} ${w},${yOf(g)}`}
+              stroke="#efe6d6"
+              strokeWidth={1}
+            />
           ))}
           {area ? <Path d={area} fill={COLORS.green + '1f'} /> : null}
-          {vals.length > 1 && <Polyline points={line} fill="none" stroke={COLORS.green} strokeWidth={2.5} />}
+          {vals.length > 1 && (
+            <Polyline points={line} fill="none" stroke={COLORS.green} strokeWidth={2.5} />
+          )}
           {vals.map((v, i) => (
-            <Circle key={i} cx={xOf(i)} cy={yOf(v)} r={vals.length === 1 ? 5 : 3.5} fill={COLORS.green} />
+            <Circle
+              key={i}
+              cx={xOf(i)}
+              cy={yOf(v)}
+              r={vals.length === 1 ? 5 : 3.5}
+              fill={COLORS.green}
+            />
           ))}
         </Svg>
       )}
@@ -169,9 +200,19 @@ const styles = StyleSheet.create({
   donutNum: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.black, lineHeight: 28 },
   donutLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey },
   barRow: { gap: 8, paddingVertical: 6 },
-  barHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 },
+  barHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: 10,
+  },
   barLabel: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
-  barTrack: { height: 12, backgroundColor: 'rgba(41,60,67,0.08)', borderRadius: 6, overflow: 'hidden' },
+  barTrack: {
+    height: 12,
+    backgroundColor: 'rgba(41,60,67,0.08)',
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
   barFill: { height: 12, borderRadius: 6 },
   barValue: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.navy },
 });

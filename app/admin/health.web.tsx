@@ -146,7 +146,10 @@ export default function AdminHealthScreen() {
           }${took}`,
         );
       } else if (r.status === 'error') {
-        logEvent('error', `Run #${r.id} errored${r.done ? ` after ${r.done} enriched` : ''}${took}`);
+        logEvent(
+          'error',
+          `Run #${r.id} errored${r.done ? ` after ${r.done} enriched` : ''}${took}`,
+        );
       } else if (r.status === 'stopped') {
         logEvent('info', `Run #${r.id} stopped · ${r.done} enriched${took}`);
       }
@@ -160,12 +163,22 @@ export default function AdminHealthScreen() {
     const recent = runsQ.data?.runs ?? [];
     const a: Alert[] = [];
     if (pingQ.data === 'limited')
-      a.push({ tone: 'gold', text: 'ComicVine is rate-limited right now — drains will mostly retry.' });
+      a.push({
+        tone: 'gold',
+        text: 'ComicVine is rate-limited right now — drains will mostly retry.',
+      });
     else if (usage >= CV_HOURLY_CAP * 0.8)
-      a.push({ tone: 'gold', text: `ComicVine usage high — ${usage}/${CV_HOURLY_CAP} calls this hour.` });
+      a.push({
+        tone: 'gold',
+        text: `ComicVine usage high — ${usage}/${CV_HOURLY_CAP} calls this hour.`,
+      });
     if ((h?.cvStatus.failed ?? 0) > 0)
-      a.push({ tone: 'red', text: `${h!.cvStatus.failed} hero(es) marked failed — Retry failed in Operations.` });
-    if (recent[0]?.status === 'error') a.push({ tone: 'red', text: 'The last run errored — see Operations.' });
+      a.push({
+        tone: 'red',
+        text: `${h!.cvStatus.failed} hero(es) marked failed — Retry failed in Operations.`,
+      });
+    if (recent[0]?.status === 'error')
+      a.push({ tone: 'red', text: 'The last run errored — see Operations.' });
     return a;
   }, [pingQ.data, usageQ.data, runsQ.data, h]);
 
@@ -181,7 +194,11 @@ export default function AdminHealthScreen() {
   const cvUsage = usageQ.data ?? 0;
   const cvPctUsed = Math.min(100, Math.round((cvUsage / CV_HOURLY_CAP) * 100));
   const cvColor =
-    cvUsage >= CV_HOURLY_CAP * 0.8 ? COLORS.red : cvUsage >= CV_HOURLY_CAP * 0.5 ? COLORS.yellow : COLORS.green;
+    cvUsage >= CV_HOURLY_CAP * 0.8
+      ? COLORS.red
+      : cvUsage >= CV_HOURLY_CAP * 0.5
+        ? COLORS.yellow
+        : COLORS.green;
   const runs = runsQ.data?.runs ?? [];
   const activeRun = runs.find((r) => r.status === 'running');
   // Backlog ETA at the observed drain rate (heroes enriched per minute of run time).
@@ -298,7 +315,9 @@ export default function AdminHealthScreen() {
             narrow={narrow}
           />
         )}
-        {domain === 'spend' && <SpendDomain spend={spendQ.data} loading={spendQ.isLoading} narrow={narrow} />}
+        {domain === 'spend' && (
+          <SpendDomain spend={spendQ.data} loading={spendQ.isLoading} narrow={narrow} />
+        )}
         {domain === 'users' && (
           <PlaceholderDomain
             label="Users"

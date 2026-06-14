@@ -56,7 +56,7 @@ function CoverageRow({
         <View style={styles.covHead}>
           <Text style={styles.covLabel}>
             {def.label}
-            {gap === 0 && <Text style={styles.covDone}>  ✓</Text>}
+            {gap === 0 && <Text style={styles.covDone}> ✓</Text>}
           </Text>
           <Text style={[styles.covPctNum, { color: def.tint }]}>{p}%</Text>
         </View>
@@ -143,7 +143,13 @@ function HeatPill({ label, val }: { label: string; val: number }) {
 
 // Mobile publisher coverage as a stacked card (replaces the wide heatmap table
 // on narrow screens, where the fixed columns would overflow horizontally).
-function PublisherCard({ row, onPick }: { row: PublisherCoverage; onPick: (publisher: string) => void }) {
+function PublisherCard({
+  row,
+  onPick,
+}: {
+  row: PublisherCoverage;
+  onPick: (publisher: string) => void;
+}) {
   return (
     <Pressable onPress={() => onPick(row.publisher)} style={styles.pubCard}>
       <View style={styles.pubCardHead}>
@@ -203,7 +209,11 @@ export function CatalogDomain({
       {/* ── Coverage + Backfill queue ── */}
       <Bento.Row narrow={narrow}>
         {/* Coverage */}
-        <Panel title="Coverage" hint="Sorted by weakest first · tap one to load its queue" style={{ width: narrow ? undefined : 360, flexGrow: 0, flexShrink: 0, gap: 4 } as object}>
+        <Panel
+          title="Coverage"
+          hint="Sorted by weakest first · tap one to load its queue"
+          style={{ width: narrow ? undefined : 360, flexGrow: 0, flexShrink: 0, gap: 4 } as object}
+        >
           {!h ? (
             <ActivityIndicator color={COLORS.orange} style={{ marginTop: 20 }} />
           ) : (
@@ -293,7 +303,12 @@ export function CatalogDomain({
                 >
                   <Text style={styles.gapRank}>{page * GAP_PAGE_SIZE + i + 1}</Text>
                   {hero.image_url ? (
-                    <Image source={{ uri: hero.image_url }} style={styles.thumb} contentFit="cover" transition={150} />
+                    <Image
+                      source={{ uri: hero.image_url }}
+                      style={styles.thumb}
+                      contentFit="cover"
+                      transition={150}
+                    />
                   ) : (
                     <View style={[styles.thumb, styles.thumbBlank]}>
                       <Ionicons name="person" size={16} color="rgba(41,60,67,0.3)" />
@@ -396,7 +411,13 @@ export function CatalogDomain({
             {narrow ? (
               <View style={styles.barList}>
                 {dist.power_hist.map((b) => (
-                  <BarRow key={b.label} label={b.label} value={b.n} max={histMax} color={COLORS.orange} />
+                  <BarRow
+                    key={b.label}
+                    label={b.label}
+                    value={b.n}
+                    max={histMax}
+                    color={COLORS.orange}
+                  />
                 ))}
               </View>
             ) : (
@@ -406,7 +427,10 @@ export function CatalogDomain({
                     <Text style={styles.histN}>{b.n}</Text>
                     <View style={styles.histTrack}>
                       <View
-                        style={[styles.histBar, { height: `${Math.round((b.n / histMax) * 100)}%` }]}
+                        style={[
+                          styles.histBar,
+                          { height: `${Math.round((b.n / histMax) * 100)}%` },
+                        ]}
                       />
                     </View>
                     <Text style={styles.histLabel}>{b.label}</Text>
@@ -421,7 +445,13 @@ export function CatalogDomain({
             <Panel title="Largest publishers" hint="By hero count" style={{ flex: 1 }}>
               <View style={styles.barList}>
                 {h.byPublisher.slice(0, 8).map((p) => (
-                  <BarRow key={p.publisher} label={p.publisher} value={p.total} max={pubMax} color={COLORS.blue} />
+                  <BarRow
+                    key={p.publisher}
+                    label={p.publisher}
+                    value={p.total}
+                    max={pubMax}
+                    color={COLORS.blue}
+                  />
                 ))}
               </View>
             </Panel>
@@ -616,9 +646,20 @@ const styles = StyleSheet.create({
     borderBottomColor: '#efe6d6',
     marginTop: 4,
   },
-  pubHeadText: { color: COLORS.grey, fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 0.5 },
+  pubHeadText: {
+    color: COLORS.grey,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 0.5,
+  },
   pubCellName: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
-  pubCellNum: { width: 70, textAlign: 'right', fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.navy },
+  pubCellNum: {
+    width: 70,
+    textAlign: 'right',
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.navy,
+  },
   pubCellPct: { width: 92, alignItems: 'flex-end' },
   pubRow: {
     flexDirection: 'row',
@@ -628,7 +669,13 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f6f0e6',
   },
   pubRowHover: { backgroundColor: 'rgba(231,115,51,0.06)' },
-  heat: { borderRadius: 7, paddingHorizontal: 9, paddingVertical: 3, minWidth: 46, alignItems: 'center' },
+  heat: {
+    borderRadius: 7,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    minWidth: 46,
+    alignItems: 'center',
+  },
   heatText: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
   heatPill: { flex: 1, alignItems: 'center', gap: 4 },
   heatPillLabel: {
