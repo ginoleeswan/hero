@@ -433,10 +433,7 @@ export async function getEraTimeline(perEra = 7): Promise<EraBucket[]> {
   }));
 }
 
-export async function getHeroesByPublisher(
-  publisher: string,
-  limit = 25,
-): Promise<Hero[]> {
+export async function getHeroesByPublisher(publisher: string, limit = 25): Promise<Hero[]> {
   const { data, error } = await supabase
     .from('heroes')
     .select(HOME_ROW)
@@ -1084,7 +1081,7 @@ export async function getHeroFamily(heroId: string): Promise<FamilyMember[]> {
     .select(
       'id, name, alias, role, relation, tier, modifiers, status, position, ' +
         'tree_parent_id, branch_side, ' +
-        'related:related_hero_id ( id, image_md_url, image_url, power, alignment )',
+        'related:related_hero_id ( id, portrait_url, image_md_url, image_url, power, alignment )',
     )
     .eq('hero_id', heroId)
     .order('tier', { ascending: false })

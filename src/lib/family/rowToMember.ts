@@ -16,6 +16,7 @@ export interface FamilyRow {
   branch_side: BranchSide;
   related: {
     id: string;
+    portrait_url: string | null;
     image_md_url: string | null;
     image_url: string | null;
     power: number | null;
@@ -35,7 +36,9 @@ export function rowToMember(row: FamilyRow): FamilyMember {
     status: row.status,
     position: row.position,
     heroId: row.related?.id ?? null,
-    heroImage: row.related ? row.related.image_md_url ?? row.related.image_url ?? null : null,
+    heroImage: row.related
+      ? (row.related.portrait_url ?? row.related.image_md_url ?? row.related.image_url ?? null)
+      : null,
     heroPower: row.related?.power ?? null,
     heroAlignment: row.related?.alignment ?? null,
     treeParentId: row.tree_parent_id,

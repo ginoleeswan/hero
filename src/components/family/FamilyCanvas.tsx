@@ -39,10 +39,12 @@ function CanvasNode({
   node,
   heroName,
   heroImage,
+  onNavigate,
 }: {
   node: PositionedNode;
   heroName: string;
   heroImage: string | null;
+  onNavigate?: () => void;
 }): ReactElement {
   const router = useRouter();
 
@@ -71,9 +73,10 @@ function CanvasNode({
       <TouchableOpacity
         activeOpacity={0.75}
         style={[styles.linkNode, { borderColor: tint + '66' }]}
-        onPress={() =>
-          router.push(`/character/${member.heroId}?name=${encodeURIComponent(member.name)}`)
-        }
+        onPress={() => {
+          onNavigate?.();
+          router.push(`/character/${member.heroId}?name=${encodeURIComponent(member.name)}`);
+        }}
       >
         {member.heroPower != null && member.heroPower > 0 ? (
           <View style={styles.powerBadge}>
@@ -115,7 +118,11 @@ function CanvasNode({
 // ── Legend ───────────────────────────────────────────────────────────────────
 function Legend({ large = false }: { large?: boolean }): ReactElement {
   const txt = [styles.legendText, large && styles.legendTextLarge];
-  const dot = (bg: string) => [styles.legendDot, large && styles.legendDotLarge, { backgroundColor: bg }];
+  const dot = (bg: string) => [
+    styles.legendDot,
+    large && styles.legendDotLarge,
+    { backgroundColor: bg },
+  ];
   return (
     <View style={[styles.legend, large && styles.legendLarge]}>
       <View style={styles.legendItem}>
@@ -145,6 +152,7 @@ function FamilyStage({
   showAxis,
   onToggleFullscreen,
   onClose,
+  onNavigate,
 }: {
   layout: FamilyLayout;
   heroName: string;
@@ -153,6 +161,7 @@ function FamilyStage({
   showAxis: boolean;
   onToggleFullscreen: () => void;
   onClose?: () => void;
+  onNavigate?: () => void;
 }): ReactElement {
   const [vp, setVp] = useState({ w: 0, h: 0 });
   const tx = useSharedValue(0);
@@ -227,7 +236,13 @@ function FamilyStage({
       {showAxis ? (
         <View style={styles.axisGutter} pointerEvents="none">
           {layout.rows.map((row) => (
-            <AxisLabel key={row.tier} row={row} scale={scale} ty={ty} boundsH={layout.bounds.height} />
+            <AxisLabel
+              key={row.tier}
+              row={row}
+              scale={scale}
+              ty={ty}
+              boundsH={layout.bounds.height}
+            />
           ))}
         </View>
       ) : null}
@@ -238,7 +253,14 @@ function FamilyStage({
         {vp.w > 0 ? (
           <Svg width={vp.w} height={vp.h} style={StyleSheet.absoluteFill} pointerEvents="none">
             <Defs>
-              <Pattern id="famDots" x={0} y={0} width={24} height={24} patternUnits="userSpaceOnUse">
+              <Pattern
+                id="famDots"
+                x={0}
+                y={0}
+                width={24}
+                height={24}
+                patternUnits="userSpaceOnUse"
+              >
                 <Circle cx={1} cy={1} r={1} fill="#ece1cd" />
               </Pattern>
             </Defs>
@@ -276,7 +298,14 @@ function FamilyStage({
                   return <Path key={i} d={d} stroke="#E0A335" strokeWidth={2} fill="none" />;
                 }
                 return (
-                  <Path key={i} d={d} stroke="#e2d6c2" strokeWidth={2} strokeDasharray="4 4" fill="none" />
+                  <Path
+                    key={i}
+                    d={d}
+                    stroke="#e2d6c2"
+                    strokeWidth={2}
+                    strokeDasharray="4 4"
+                    fill="none"
+                  />
                 );
               })}
             </Svg>
@@ -292,7 +321,12 @@ function FamilyStage({
                   alignItems: 'center',
                 }}
               >
-                <CanvasNode node={node} heroName={heroName} heroImage={heroImage} />
+                <CanvasNode
+                  node={node}
+                  heroName={heroName}
+                  heroImage={heroImage}
+                  onNavigate={onNavigate}
+                />
               </View>
             ))}
           </Animated.View>
@@ -363,70 +397,68 @@ export function FamilyCanvas({
 
   return (
     <>
-    <View>
-      {/* Section header — matches the other native sections: right-aligned navy
+      <View>
+        {/* Section header — matches the other native sections: right-aligned navy
           title + navy divider, with a relatives count caption on the left. */}
-      <View style={styles.header}>
-        <Text style={styles.count}>
-          {members.length} {members.length === 1 ? 'relative' : 'relatives'}
-          {linkedCount > 0 ? ` · ${linkedCount} on Mythique` : ''}
-        </Text>
-        <Text style={styles.title}>Family</Text>
-      </View>
-      <View style={styles.divider} />
-
-      <FamilyStage
-        layout={layout}
-        heroName={heroName}
-        heroImage={heroImage}
-        fullscreen={false}
-        showAxis={false}
-        onToggleFullscreen={() => setFullscreen(true)}
-      />
-
-      <Legend />
-
-      {/* Asides (variants) */}
-      {graph.asides.length > 0 ? (
-        <View style={styles.asideBlock}>
-          <Text style={styles.tierLabel}>Variants</Text>
-          <View style={styles.tierRow}>
-            {graph.asides.map((mem) => (
-              <AsideMemberNode key={mem.id} member={mem} />
-            ))}
-          </View>
+        <View style={styles.header}>
+          <Text style={styles.count}>
+            {members.length} {members.length === 1 ? 'relative' : 'relatives'}
+            {linkedCount > 0 ? ` · ${linkedCount} on Mythique` : ''}
+          </Text>
+          <Text style={styles.title}>Family</Text>
         </View>
-      ) : null}
+        <View style={styles.divider} />
 
-      {/* Footnotes */}
-      {graph.footnotes.length > 0 ? (
-        <Text style={styles.footnote}>
-          Also:{' '}
-          {graph.footnotes
-            .map((mem) => `${mem.name} (${roleLabel(mem)})`)
-            .join(', ')}
-        </Text>
-      ) : null}
-    </View>
-
-    <Modal
-      visible={fullscreen}
-      animationType="fade"
-      transparent={false}
-      onRequestClose={() => setFullscreen(false)}
-    >
-      <View style={styles.fsRoot}>
         <FamilyStage
           layout={layout}
           heroName={heroName}
           heroImage={heroImage}
-          fullscreen
+          fullscreen={false}
           showAxis={false}
-          onToggleFullscreen={() => setFullscreen(false)}
-          onClose={() => setFullscreen(false)}
+          onToggleFullscreen={() => setFullscreen(true)}
         />
+
+        <Legend />
+
+        {/* Asides (variants) */}
+        {graph.asides.length > 0 ? (
+          <View style={styles.asideBlock}>
+            <Text style={styles.tierLabel}>Variants</Text>
+            <View style={styles.tierRow}>
+              {graph.asides.map((mem) => (
+                <AsideMemberNode key={mem.id} member={mem} />
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        {/* Footnotes */}
+        {graph.footnotes.length > 0 ? (
+          <Text style={styles.footnote}>
+            Also: {graph.footnotes.map((mem) => `${mem.name} (${roleLabel(mem)})`).join(', ')}
+          </Text>
+        ) : null}
       </View>
-    </Modal>
+
+      <Modal
+        visible={fullscreen}
+        animationType="fade"
+        transparent={false}
+        onRequestClose={() => setFullscreen(false)}
+      >
+        <View style={styles.fsRoot}>
+          <FamilyStage
+            layout={layout}
+            heroName={heroName}
+            heroImage={heroImage}
+            fullscreen
+            showAxis={false}
+            onToggleFullscreen={() => setFullscreen(false)}
+            onClose={() => setFullscreen(false)}
+            onNavigate={() => setFullscreen(false)}
+          />
+        </View>
+      </Modal>
     </>
   );
 }
@@ -446,9 +478,7 @@ function AxisLabel({
   const animStyle = useAnimatedStyle(() => ({
     top: tyVal.value + row.y * scale.value + (boundsH / 2) * (1 - scale.value) - 8,
   }));
-  return (
-    <Animated.Text style={[styles.axisLabel, animStyle]}>{row.label}</Animated.Text>
-  );
+  return <Animated.Text style={[styles.axisLabel, animStyle]}>{row.label}</Animated.Text>;
 }
 
 // Inline member node for asides section (outside the canvas)
