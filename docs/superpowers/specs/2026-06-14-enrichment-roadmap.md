@@ -9,10 +9,21 @@ brief and runs its own brainstorming → spec → plan → build cycle.
 
 | Lane | Brief | Primary source | Ships | Status |
 | --- | --- | --- | --- | --- |
-| 1. Media | `2026-06-14-tmdb-media-enrichment-design.md` | TMDB | New `films` + `hero_film_appearances` tables, richer `MovieStrip` | **Design approved** |
+| 1. Media | `2026-06-14-tmdb-media-enrichment-design.md` | TMDB | `films` + `hero_film_appearances` tables, `/film` pages, On-Screen shelves | **SHIPPED (film)** |
 | 2. LLM narrative | `2026-06-14-llm-narrative-lane-brief.md` | LLM (no new API) | "Did you know", power explainers, themed tags, era summaries | Brief only |
-| 3. Deeper factual | `2026-06-14-deeper-factual-lane-brief.md` | Wikidata / Marvel API | Voice actors, canonical dates, awards, cross-media | Brief only |
+| 3. Deeper factual + media backbone | `2026-06-14-deeper-factual-lane-brief.md` | Wikidata / IGDB / Marvel | Cross-media appearance edges (film/TV/game) + voice actors, dates, awards | Brief only |
 | 4. Richer relationships | `2026-06-14-richer-relationships-lane-brief.md` | LLM + ComicVine | New relationship kinds (mentor/love-interest/alter-ego) | Brief only |
+
+### Lane 1 ↔ Lane 3 convergence (revised)
+
+Lane 1 shipped **film** media. **TV and video-game** media are no longer a Lane 1
+job: the *appears-in* linkage for all media now comes from **Wikidata in Lane 3**,
+which carries TMDB movie/TV IDs and IGDB game IDs as properties (no fuzzy
+matching). Lane 3 sources the typed, ID-stamped appearance edges; enrichment fans
+out to the **TMDB pipeline (film + TV)** we already built and a **new IGDB
+pipeline (games)**. So Lane 1's `films`/`hero_film_appearances` tables generalize
+into a media-agnostic `titles`/`hero_media_appearances` backbone owned by Lane 3.
+The two lanes are now coupled — see the Lane 3 brief.
 
 Lane 1 is fully designed (see its spec). Lanes 2–4 are briefs: a fresh tab should
 open the brief, run the brainstorming skill to resolve its open questions, write a
