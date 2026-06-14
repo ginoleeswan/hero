@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { HeroFilm } from '../../lib/db/films';
+import type { HeroTitle } from '../../lib/db/titles';
 import { COLORS } from '../../constants/colors';
 
 const TOPBAR_HEIGHT = 64;
@@ -19,7 +19,7 @@ export function FilmBackdropHeader({
   film,
   onBack,
 }: {
-  film: HeroFilm;
+  film: HeroTitle;
   onBack: () => void;
 }) {
   const insets = useSafeAreaInsets();

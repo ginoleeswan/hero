@@ -2,9 +2,9 @@ import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
-import type { HeroFilmCastMember } from '../../lib/db/films';
+import type { HeroTitleCastMember } from '../../lib/db/titles';
 
-function CastMember({ member }: { member: HeroFilmCastMember }) {
+function CastMember({ member }: { member: HeroTitleCastMember }) {
   return (
     <View style={styles.member}>
       {member.profile_url ? (
@@ -27,7 +27,7 @@ function CastMember({ member }: { member: HeroFilmCastMember }) {
   );
 }
 
-export function CastRail({ cast, inCard }: { cast: HeroFilmCastMember[]; inCard?: boolean }) {
+export function CastRail({ cast, inCard }: { cast: HeroTitleCastMember[]; inCard?: boolean }) {
   if (cast.length === 0) return null;
 
   if (Platform.OS === 'web') {

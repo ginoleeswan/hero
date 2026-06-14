@@ -7,8 +7,8 @@ import { useRouter } from 'expo-router';
 import type { MovieAppearance } from '../types';
 import { COLORS } from '../constants/colors';
 import { MovieGridModal } from './MovieGridModal';
-import type { HeroFilm } from '../lib/db/films';
-import { pickFeaturedFilm } from '../lib/db/films';
+import type { HeroTitle } from '../lib/db/titles';
+import { pickFeaturedTitle } from '../lib/db/titles';
 
 const CARD_W = 100;
 const CARD_H = 150;
@@ -33,12 +33,12 @@ interface StripItem {
   backdropUrl: string | null;
   voteAverage: number | null;
   hasTrailer: boolean;
-  film?: HeroFilm;
+  title_ref?: HeroTitle;
   movie?: MovieAppearance;
 }
 
 interface Props {
-  films?: HeroFilm[];
+  titles?: HeroTitle[];
   movies?: MovieAppearance[];
   totalCount: number;
   contentInset?: number;
@@ -80,17 +80,17 @@ function groupByDecade(items: StripItem[]): DecadeGroup[] {
   return groups;
 }
 
-function buildItems(films?: HeroFilm[], movies?: MovieAppearance[]): StripItem[] {
-  if (films && films.length > 0) {
-    return films.map((f) => ({
-      key: f.tmdbId,
+function buildItems(titles?: HeroTitle[], movies?: MovieAppearance[]): StripItem[] {
+  if (titles && titles.length > 0) {
+    return titles.map((f) => ({
+      key: f.id,
       title: f.title,
       year: f.year ? String(f.year) : null,
       posterUrl: f.posterUrl,
       backdropUrl: f.backdropUrl,
       voteAverage: f.voteAverage,
       hasTrailer: !!f.trailerKey,
-      film: f,
+      title_ref: f,
     }));
   }
   if (movies && movies.length > 0) {
@@ -248,10 +248,10 @@ function WebFeaturedFilm({ item, onPress }: { item: StripItem; onPress: () => vo
         <View style={webStyles.featuredPills}>
           {item.year ? <Text style={webStyles.featuredPill}>{item.year}</Text> : null}
           {item.voteAverage != null ? <Text style={webStyles.featuredPill}>★ {item.voteAverage.toFixed(1)}</Text> : null}
-          {item.film?.runtime ? <Text style={webStyles.featuredPill}>{item.film.runtime} min</Text> : null}
+          {item.title_ref?.runtime ? <Text style={webStyles.featuredPill}>{item.title_ref.runtime} min</Text> : null}
         </View>
-        {item.film?.overview ? (
-          <Text style={webStyles.featuredOverview} numberOfLines={2}>{item.film.overview}</Text>
+        {item.title_ref?.overview ? (
+          <Text style={webStyles.featuredOverview} numberOfLines={2}>{item.title_ref.overview}</Text>
         ) : null}
         <View style={webStyles.featuredCta}>
           <Ionicons name={item.hasTrailer ? 'play-circle' : 'open-outline'} size={16} color="#fff" />
@@ -361,20 +361,20 @@ function WebShelf({
   );
 }
 
-export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleedMargin = 0 }: Props) {
+export function MovieStrip({ titles, movies, totalCount, contentInset = 16, bleedMargin = 0 }: Props) {
   const router = useRouter();
   const [gridVisible, setGridVisible] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [webShowAll, setWebShowAll] = useState(false);
 
-  const allItems = buildItems(films, movies);
+  const allItems = buildItems(titles, movies);
   const sorted = sortItems(allItems);
 
-  const isFilmsPath = !!(films && films.length > 0);
+  const isFilmsPath = !!(titles && titles.length > 0);
 
   const handlePress = (item: StripItem) => {
-    if (item.film) {
-      router.push(`/film/${item.film.tmdbId}`);
+    if (item.title_ref) {
+      router.push(`/title/${item.title_ref.id}`);
     } else if (item.movie) {
       const url = item.movie.url ?? `https://www.google.com/search?q=${encodeURIComponent(item.title + ' film')}`;
       Linking.openURL(url);
@@ -383,9 +383,9 @@ export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleed
 
   // ─── Web: featured banner + edge-to-edge horizontal decade shelves ───────────
   if (Platform.OS === 'web' && isFilmsPath) {
-    const webFeatured = pickFeaturedFilm(films ?? []);
+    const webFeatured = pickFeaturedTitle(titles ?? []);
     const webFeaturedItem = webFeatured
-      ? sorted.find((it) => it.film?.tmdbId === webFeatured.tmdbId)
+      ? sorted.find((it) => it.title_ref?.id === webFeatured.id)
       : null;
     const webRest = webFeaturedItem ? sorted.filter((it) => it !== webFeaturedItem) : sorted;
     const groups = groupByDecade(webRest);
@@ -426,9 +426,9 @@ export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleed
 
   // ─── Native horizontal strip ─────────────────────────────────────────────────
   // For the films path: featured film uses backdrop card (if any film has one)
-  const featuredFilm = isFilmsPath ? pickFeaturedFilm(films ?? []) : null;
+  const featuredFilm = isFilmsPath ? pickFeaturedTitle(titles ?? []) : null;
   const featuredItem = featuredFilm
-    ? sorted.find((it) => it.film?.tmdbId === featuredFilm.tmdbId)
+    ? sorted.find((it) => it.title_ref?.id === featuredFilm.id)
     : null;
   const restItems = featuredItem
     ? sorted.filter((it) => it !== featuredItem)

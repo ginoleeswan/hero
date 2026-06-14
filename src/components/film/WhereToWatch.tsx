@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { COLORS } from '../../constants/colors';
-import type { WatchProvider } from '../../lib/db/films';
+import type { WatchProvider } from '../../lib/db/titles';
 
 function ProviderChip({ p }: { p: WatchProvider }) {
   return (

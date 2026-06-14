@@ -19,7 +19,7 @@ import { COLORS } from '../../src/constants/colors';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { StatBar } from '../../src/components/web/StatBar';
 import { MovieStrip } from '../../src/components/MovieStrip';
-import { getHeroFilms, type HeroFilm } from '../../src/lib/db/films';
+import { getHeroTitles, type HeroTitle } from '../../src/lib/db/titles';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
 import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
 import { useHeroPercentile, useRelatedHeroes } from '../../src/lib/query/heroQueries';
@@ -171,7 +171,7 @@ export default function WebCharacterScreen() {
   // constant top position regardless of how much identity content the stage has.
   const [stageHeight, setStageHeight] = useState(0);
   const [family, setFamily] = useState<FamilyMember[]>([]);
-  const [films, setFilms] = useState<HeroFilm[] | null>(null);
+  const [titles, setTitles] = useState<HeroTitle[] | null>(null);
 
   useEffect(() => {
     setFamily([]);
@@ -182,10 +182,10 @@ export default function WebCharacterScreen() {
   }, [id]);
 
   useEffect(() => {
-    setFilms(null);
+    setTitles(null);
     if (!id) return;
     let active = true;
-    getHeroFilms(id).then((f) => { if (active) setFilms(f); });
+    getHeroTitles(id).then((f) => { if (active) setTitles(f); });
     return () => { active = false; };
   }, [id]);
 
@@ -930,15 +930,15 @@ export default function WebCharacterScreen() {
                       ))}
                     </View>
                   </View>
-                ) : films && films.length > 0 ? (
+                ) : titles && titles.length > 0 ? (
                   <View style={styles.card}>
                     <Text style={styles.cardTitle}>
-                      On Screen ({films.length})
+                      On Screen ({titles.length})
                     </Text>
                     <View style={styles.cardDivider} />
                     <MovieStrip
-                      films={films}
-                      totalCount={films.length}
+                      titles={titles}
+                      totalCount={titles.length}
                       contentInset={20}
                       bleedMargin={20}
                     />
@@ -1417,17 +1417,17 @@ export default function WebCharacterScreen() {
                 ) : null}
 
                 {/* On Screen */}
-                {films && films.length > 0 ? (
+                {titles && titles.length > 0 ? (
                   <View style={styles.mSection}>
                     <View style={styles.mSectionHead}>
                       <Text style={styles.mSectionTitle}>
-                        On Screen ({films.length})
+                        On Screen ({titles.length})
                       </Text>
                       <View style={styles.mSectionDivider} />
                     </View>
                     <MovieStrip
-                      films={films}
-                      totalCount={films.length}
+                      titles={titles}
+                      totalCount={titles.length}
                       contentInset={16}
                     />
                   </View>
