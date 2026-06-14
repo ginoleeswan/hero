@@ -19,6 +19,7 @@ import { COLORS } from '../../src/constants/colors';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { StatBar } from '../../src/components/web/StatBar';
 import { MovieStrip } from '../../src/components/MovieStrip';
+import { getHeroFilms, type HeroFilm } from '../../src/lib/db/films';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
 import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
 import { useHeroPercentile, useRelatedHeroes } from '../../src/lib/query/heroQueries';
@@ -155,6 +156,7 @@ export default function WebCharacterScreen() {
   // constant top position regardless of how much identity content the stage has.
   const [stageHeight, setStageHeight] = useState(0);
   const [family, setFamily] = useState<FamilyMember[]>([]);
+  const [films, setFilms] = useState<HeroFilm[] | null>(null);
 
   useEffect(() => {
     setFamily([]);
@@ -162,6 +164,14 @@ export default function WebCharacterScreen() {
     getHeroFamily(id)
       .then(setFamily)
       .catch(() => setFamily([]));
+  }, [id]);
+
+  useEffect(() => {
+    setFilms(null);
+    if (!id) return;
+    let active = true;
+    getHeroFilms(id).then((f) => { if (active) setFilms(f); });
+    return () => { active = false; };
   }, [id]);
 
   useEffect(() => {
@@ -884,15 +894,15 @@ export default function WebCharacterScreen() {
                       ))}
                     </View>
                   </View>
-                ) : details.movies?.length ? (
+                ) : films && films.length > 0 ? (
                   <View style={styles.card}>
                     <Text style={styles.cardTitle}>
-                      On Screen ({details.movieCount ?? details.movies.length})
+                      On Screen ({films.length})
                     </Text>
                     <View style={styles.cardDivider} />
                     <MovieStrip
-                      movies={details.movies}
-                      totalCount={details.movieCount ?? details.movies.length}
+                      films={films}
+                      totalCount={films.length}
                       contentInset={20}
                       bleedMargin={20}
                     />
@@ -1373,17 +1383,17 @@ export default function WebCharacterScreen() {
                 ) : null}
 
                 {/* On Screen */}
-                {!comicVineLoading && details.movies?.length ? (
+                {films && films.length > 0 ? (
                   <View style={styles.mSection}>
                     <View style={styles.mSectionHead}>
                       <Text style={styles.mSectionTitle}>
-                        On Screen ({details.movieCount ?? details.movies.length})
+                        On Screen ({films.length})
                       </Text>
                       <View style={styles.mSectionDivider} />
                     </View>
                     <MovieStrip
-                      movies={details.movies}
-                      totalCount={details.movieCount ?? details.movies.length}
+                      films={films}
+                      totalCount={films.length}
                       contentInset={16}
                     />
                   </View>
