@@ -107,23 +107,28 @@ async function runMatch(sb: SB, limit: number, retryUnmatched: boolean): Promise
 }
 
 async function runEnrich(sb: SB, limit: number): Promise<number> {
-  const { data: films } = await sb
-    .from('films').select('tmdb_id').eq('tmdb_status', 'pending').limit(limit);
-  if (!films || films.length === 0) return 0;
+  const { data: titles } = await sb
+    .from('titles')
+    .select('id, external_id')
+    .eq('source', 'tmdb')
+    .eq('media_type', 'film')
+    .eq('enrich_status', 'pending')
+    .limit(limit);
+  if (!titles || titles.length === 0) return 0;
   let calls = 0;
-  for (const f of films as Array<{ tmdb_id: string }>) {
+  for (const t of titles as Array<{ id: string; external_id: string }>) {
     calls++;
     try {
-      const url = `${TMDB_BASE}/movie/${f.tmdb_id}?api_key=${TMDB_API_KEY}&append_to_response=videos,watch/providers,credits,images`;
+      const url = `${TMDB_BASE}/movie/${t.external_id}?api_key=${TMDB_API_KEY}&append_to_response=videos,watch/providers,credits,images`;
       const res = await fetch(url);
       if (!res.ok) {
-        if (res.status === 404) await sb.from('films').update({ tmdb_status: 'failed' }).eq('tmdb_id', f.tmdb_id);
+        if (res.status === 404) await sb.from('titles').update({ enrich_status: 'failed' }).eq('id', t.id);
         await sleep(250); continue;
       }
       const mapped = mapDetails(await res.json());
-      await sb.from('films').update({ ...mapped, tmdb_status: 'done', tmdb_enriched_at: new Date().toISOString() }).eq('tmdb_id', f.tmdb_id);
+      await sb.from('titles').update({ ...mapped, enrich_status: 'done', enriched_at: new Date().toISOString() }).eq('id', t.id);
     } catch (err) {
-      console.error('[enrich-tmdb-batch] enrich threw', f.tmdb_id, err); // leave pending
+      console.error('[enrich-tmdb-batch] enrich threw', t.id, err); // leave pending
     }
     await sleep(120);
   }
