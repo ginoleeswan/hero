@@ -74,37 +74,52 @@ interface Pipeline {
   name: string;
   blurb: string;
   tip: string;
+  dependsOn?: string;
   have: number;
   total: number;
   note?: string;
   run?: { label: string; busyKey: string; onPress: () => void };
 }
 
-function PipelineCard({ p, busy }: { p: Pipeline; busy: string | null }) {
+// One step of the assembly line: a numbered badge + connector rail, then the card.
+function PipelineStep({ p, step, isLast, busy }: { p: Pipeline; step: number; isLast: boolean; busy: string | null }) {
   const percent = pctOf(p.have, p.total);
   const running = p.run && busy === p.run.busyKey;
   return (
-    <View style={styles.card}>
-      <Ring percent={percent} />
-      <View style={styles.cardBody}>
-        <View style={styles.cardNameRow}>
-          <Text style={styles.cardName} numberOfLines={1}>{p.name}</Text>
-          <InfoTip text={p.tip} size={13} />
-        </View>
-        <Text style={styles.cardBlurb} numberOfLines={1}>{p.blurb}</Text>
+    <View style={styles.step}>
+      <View style={styles.rail}>
+        <View style={styles.railLine} />
+        <View style={styles.stepNum}><Text style={styles.stepNumText}>{step}</Text></View>
+        <View style={[styles.railLine, isLast && styles.railLineHidden]} />
       </View>
-      {p.run ? (
-        <Pressable onPress={p.run.onPress} disabled={!!busy} style={[styles.runBtn, !!busy && styles.dim]}>
-          {running ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Ionicons name="play" size={12} color="#fff" />
-          )}
-          <Text style={styles.runText}>{p.run.label}</Text>
-        </Pressable>
-      ) : (
-        <Text style={styles.note}>{p.note ?? 'auto'}</Text>
-      )}
+      <View style={styles.card}>
+        <Ring percent={percent} />
+        <View style={styles.cardBody}>
+          <View style={styles.cardNameRow}>
+            <Text style={styles.cardName} numberOfLines={1}>{p.name}</Text>
+            <InfoTip text={p.tip} size={13} />
+          </View>
+          <Text style={styles.cardBlurb} numberOfLines={1}>{p.blurb}</Text>
+          {p.dependsOn ? (
+            <View style={styles.dependsRow}>
+              <Ionicons name="arrow-up" size={10} color={COLORS.grey} />
+              <Text style={styles.dependsText}>{p.dependsOn}</Text>
+            </View>
+          ) : null}
+        </View>
+        {p.run ? (
+          <Pressable onPress={p.run.onPress} disabled={!!busy} style={[styles.runBtn, !!busy && styles.dim]}>
+            {running ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="play" size={12} color="#fff" />
+            )}
+            <Text style={styles.runText}>{p.run.label}</Text>
+          </Pressable>
+        ) : (
+          <Text style={styles.note}>{p.note ?? 'auto'}</Text>
+        )}
+      </View>
     </View>
   );
 }
@@ -163,29 +178,32 @@ export function PipelinesDomain({
   };
   const failed = h.cvStatus.failed ?? 0;
 
+  // Assembly line: each step feeds the next, so they render top-to-bottom in order.
   const pipelines: Pipeline[] = [
     {
-      key: 'comicvine', name: 'ComicVine', blurb: 'Core hero data',
+      key: 'comicvine', name: 'ComicVine', blurb: 'Core hero data — powers, bio, movies',
       tip: `Pulls each hero's core data — powers, bio, alter egos, movie list — from ComicVine. "Run ${batchSize}" processes the next ${batchSize} heroes that still need it. The ring shows how many of all heroes are done.`,
       have: p.comicvineDone, total: p.heroesTotal,
       run: { label: `Run ${batchSize}`, busyKey: 'drain', onPress: onRunDrain },
     },
     {
-      key: 'tmdb', name: 'TMDB · media', blurb: `${p.mediaDone.toLocaleString()} of ${(p.filmTitles + p.tvTitles).toLocaleString()} film/TV enriched`,
-      tip: 'Adds rich media to matched film & TV titles — posters, backdrops, trailers, cast and where-to-watch. Runs automatically on a schedule; it keeps working as Wikidata discovers new titles.',
-      have: p.mediaDone, total: p.filmTitles + p.tvTitles, note: 'cron',
-    },
-    {
-      key: 'wd-resolve', name: 'Wikidata · resolve', blurb: 'Hero → QID identity',
+      key: 'wd-resolve', name: 'Wikidata · resolve', blurb: 'Match each hero to its Wikidata identity',
       tip: 'Matches each hero to its single correct Wikidata identity (QID) using publisher, first-appearance year, creators and aliases. Required before appearances can be pulled. Uncertain matches go to "Needs attention".',
       have: p.resolved, total: p.heroesTotal,
       run: { label: 'Resolve', busyKey: 'resolve', onPress: onRunResolve },
     },
     {
-      key: 'wd-enrich', name: 'Wikidata · appearances', blurb: `${p.tvTitles}+${p.gameTitles} tv/game titles`,
+      key: 'wd-enrich', name: 'Wikidata · appearances', blurb: `Cross-media + cast (${p.tvTitles}+${p.gameTitles} tv/game titles)`,
       tip: 'For resolved heroes, pulls cross-media appearances (film / TV / game) and who played or voiced them. Feeds the On-Screen shelves and the Portrayed-By section. Ring = enriched ÷ resolved heroes.',
+      dependsOn: 'needs resolved heroes (step 2)',
       have: p.enriched, total: p.resolved,
       run: { label: 'Enrich', busyKey: 'enrich', onPress: onRunEnrich },
+    },
+    {
+      key: 'tmdb', name: 'TMDB · media', blurb: `${p.mediaDone.toLocaleString()} of ${(p.filmTitles + p.tvTitles).toLocaleString()} film/TV enriched`,
+      tip: 'Adds rich media to matched film & TV titles — posters, backdrops, trailers, cast and where-to-watch. Runs automatically on a schedule; it keeps working as Wikidata discovers new titles.',
+      dependsOn: 'auto-fills titles found in step 3',
+      have: p.mediaDone, total: p.filmTitles + p.tvTitles, note: 'cron',
     },
   ];
 
@@ -195,15 +213,13 @@ export function PipelinesDomain({
       <Bento.Row narrow={narrow}>
         <Panel
           title="Pipelines"
-          hint="Run a drain on demand; coverage shown in each ring."
-          action={<InfoTip text="Each pipeline pulls a different kind of data into the catalogue. The ring is how complete it is. Hover the ? on a card to see exactly what running it does." />}
+          hint="An assembly line — run top to bottom; each step feeds the next."
+          action={<InfoTip text="Each step pulls a different kind of data and depends on the one above it. Run 1 → 2 → 3 in order; step 4 (TMDB) runs itself. The ring is how complete each step is." />}
           style={styles.flex15}
         >
-          <View style={styles.grid}>
-            {pipelines.map((pl) => (
-              <View key={pl.key} style={styles.gridCell}>
-                <PipelineCard p={pl} busy={busy} />
-              </View>
+          <View style={styles.steps}>
+            {pipelines.map((pl, i) => (
+              <PipelineStep key={pl.key} p={pl} step={i + 1} isLast={i === pipelines.length - 1} busy={busy} />
             ))}
           </View>
           {/* ComicVine batch + retry, kept compact under the grid. */}
@@ -378,15 +394,26 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
 
-  // Pipeline grid (2-up on wide, wraps to 1 when tight)
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  gridCell: { flexBasis: '47%', flexGrow: 1, minWidth: 200 },
+  // Pipeline assembly-line stepper
+  steps: { gap: 0 },
+  step: { flexDirection: 'row', alignItems: 'stretch', gap: 11 },
+  rail: { width: 26, alignItems: 'center' },
+  railLine: { width: 2, flex: 1, backgroundColor: 'rgba(41,60,67,0.14)' },
+  railLineHidden: { backgroundColor: 'transparent' },
+  stepNum: {
+    width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.orange,
+    alignItems: 'center', justifyContent: 'center', marginVertical: 4,
+  },
+  stepNumText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
   card: {
+    flex: 1,
     flexDirection: 'row', alignItems: 'center', gap: 11,
-    paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12,
+    paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, marginVertical: 5,
     backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(41,60,67,0.08)',
   },
   cardBody: { flex: 1, gap: 2, minWidth: 0 },
+  dependsRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
+  dependsText: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: COLORS.grey, textTransform: 'uppercase', letterSpacing: 0.4 },
   cardNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   cardName: { fontFamily: 'Flame-Regular', fontSize: 13.5, color: COLORS.black, flexShrink: 1 },
   cardBlurb: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey },
