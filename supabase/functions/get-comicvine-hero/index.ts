@@ -60,6 +60,7 @@ const isTransient = (status: number): boolean =>
 // single request, not the old list + detail pair.
 const CHAR_FIELDS = [
   'id',
+  'image',
   'deck',
   'publisher',
   'first_appeared_in_issue',
@@ -161,6 +162,16 @@ serve(async (req: Request) => {
     // d is populated, cvId is set.
     const detail = d as Record<string, unknown>;
     const summary: string | null = (detail.deck as string | null) ?? null;
+    // The character's ComicVine art. Prefer the largest variant — it's the source
+    // image the AI portrait generator reads (image_url), so higher res = better
+    // portraits. Falls back through the sizes; null if ComicVine has no art.
+    const cvImage = detail.image as Record<string, string> | null;
+    const charImageUrl: string | null =
+      cvImage?.super_url ??
+      cvImage?.original_url ??
+      cvImage?.screen_large_url ??
+      cvImage?.medium_url ??
+      null;
     const publisher: string | null =
       (detail.publisher as { name?: string } | null)?.name ?? null;
     const fai = detail.first_appeared_in_issue as { id?: number | string } | null;
@@ -300,6 +311,9 @@ serve(async (req: Request) => {
     await supabase
       .from('heroes')
       .update({
+        // Only overwrite when ComicVine actually returned art — never blank an
+        // existing image with a null.
+        ...(charImageUrl ? { image_url: charImageUrl } : {}),
         summary,
         publisher,
         comicvine_status: 'done',
