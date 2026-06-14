@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ScrollView, View, Text, StyleSheet, Pressable, Platform, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -296,13 +296,72 @@ function WebPosterCard({ item, onPress }: { item: StripItem; onPress: () => void
   );
 }
 
-const WEB_HIGHLIGHTS = 6;
+// ─── Web: an edge-to-edge horizontal shelf with hover arrows ──────────────────
+// A desktop mouse can't drag an RN-web horizontal ScrollView, so chevron buttons
+// appear on hover and page it; trackpad/touch swipe works natively.
+function WebShelf({
+  items,
+  onItemPress,
+  bleed,
+  inset,
+}: {
+  items: StripItem[];
+  onItemPress: (item: StripItem) => void;
+  bleed: number;
+  inset: number;
+}) {
+  const ref = useRef<ScrollView>(null);
+  const [hovered, setHovered] = useState(false);
+
+  const nudge = (dir: 1 | -1) => {
+    const sv = ref.current as unknown as { getScrollableNode?: () => HTMLElement } | null;
+    const node = sv?.getScrollableNode?.();
+    if (node) node.scrollBy({ left: dir * Math.round(node.clientWidth * 0.85), behavior: 'smooth' });
+  };
+
+  const hoverProps =
+    Platform.OS === 'web'
+      ? ({ onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false) } as object)
+      : {};
+
+  return (
+    <View style={[webStyles.shelfWrap, { marginHorizontal: -bleed }] as object} {...hoverProps}>
+      <ScrollView
+        ref={ref}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[webStyles.shelfRow, { paddingHorizontal: inset }]}
+      >
+        {items.map((item, i) => (
+          <WebPosterCard key={item.key + i} item={item} onPress={() => onItemPress(item)} />
+        ))}
+      </ScrollView>
+      {hovered && items.length > 4 ? (
+        <>
+          <Pressable
+            aria-label="Scroll left"
+            style={[webStyles.arrow, webStyles.arrowLeft] as object}
+            onPress={() => nudge(-1)}
+          >
+            <Ionicons name="chevron-back" size={20} color={COLORS.navy} />
+          </Pressable>
+          <Pressable
+            aria-label="Scroll right"
+            style={[webStyles.arrow, webStyles.arrowRight] as object}
+            onPress={() => nudge(1)}
+          >
+            <Ionicons name="chevron-forward" size={20} color={COLORS.navy} />
+          </Pressable>
+        </>
+      ) : null}
+    </View>
+  );
+}
 
 export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleedMargin = 0 }: Props) {
   const router = useRouter();
   const [gridVisible, setGridVisible] = useState(false);
   const [showAll, setShowAll] = useState(false);
-  const [webShowAll, setWebShowAll] = useState(false);
 
   const allItems = buildItems(films, movies);
   const sorted = sortItems(allItems);
@@ -318,60 +377,28 @@ export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleed
     }
   };
 
-  // ─── Web: featured banner → curated "Top Rated" preview → full decade archive ─
+  // ─── Web: featured banner + edge-to-edge horizontal decade shelves ───────────
   if (Platform.OS === 'web' && isFilmsPath) {
     const webFeatured = pickFeaturedFilm(films ?? []);
     const webFeaturedItem = webFeatured
       ? sorted.find((it) => it.film?.tmdbId === webFeatured.tmdbId)
       : null;
     const webRest = webFeaturedItem ? sorted.filter((it) => it !== webFeaturedItem) : sorted;
-
-    const featuredBanner = webFeaturedItem ? (
-      <WebFeaturedFilm item={webFeaturedItem} onPress={() => handlePress(webFeaturedItem)} />
-    ) : null;
-
-    const renderShelf = (label: string, items: StripItem[], count?: number) => (
-      <View key={label} style={webStyles.group}>
-        <Text style={webStyles.groupLabel}>
-          {label}
-          {count != null ? ` · ${count}` : ''}
-        </Text>
-        <View style={webStyles.grid}>
-          {items.map((item, i) => (
-            <WebPosterCard key={item.key + i} item={item} onPress={() => handlePress(item)} />
-          ))}
-        </View>
-      </View>
-    );
-
-    // Collapsed: featured + a tight, curated "Top Rated" row — the best titles at
-    // a glance, so a 50-title filmography never dumps onto the page by default.
-    if (!webShowAll) {
-      const highlights = [...webRest]
-        .sort((a, b) => (b.voteAverage ?? 0) - (a.voteAverage ?? 0))
-        .slice(0, WEB_HIGHLIGHTS);
-      return (
-        <View style={webStyles.wrap}>
-          {featuredBanner}
-          {highlights.length > 0 ? renderShelf('Top Rated', highlights) : null}
-          {webRest.length > highlights.length ? (
-            <Pressable style={webStyles.showAllBtn} onPress={() => setWebShowAll(true)}>
-              <Text style={webStyles.showAllText}>Show all {sorted.length} titles</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      );
-    }
-
-    // Expanded: the complete filmography, grouped into decade shelves (newest first).
     const groups = groupByDecade(webRest);
+
     return (
       <View style={webStyles.wrap}>
-        {featuredBanner}
-        {groups.map((g) => renderShelf(g.label, g.items, g.items.length))}
-        <Pressable style={webStyles.showAllBtn} onPress={() => setWebShowAll(false)}>
-          <Text style={webStyles.showAllText}>Show less</Text>
-        </Pressable>
+        {webFeaturedItem ? (
+          <WebFeaturedFilm item={webFeaturedItem} onPress={() => handlePress(webFeaturedItem)} />
+        ) : null}
+        {groups.map((g) => (
+          <View key={g.label} style={webStyles.group}>
+            <Text style={webStyles.groupLabel}>
+              {g.label} · {g.items.length}
+            </Text>
+            <WebShelf items={g.items} onItemPress={handlePress} bleed={bleedMargin} inset={contentInset} />
+          </View>
+        ))}
       </View>
     );
   }
@@ -541,8 +568,24 @@ const webStyles = StyleSheet.create({
   } as object,
   featuredCtaText: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: '#fff' },
 
-  // ── Poster grid ──
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 18 },
+  // ── Horizontal shelf ──
+  shelfWrap: { position: 'relative' } as object,
+  shelfRow: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
+  arrow: {
+    position: 'absolute',
+    top: WEB_POSTER_H / 2 - 18,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 2px 10px rgba(41,60,67,0.28)',
+    zIndex: 5,
+    cursor: 'pointer',
+  } as object,
+  arrowLeft: { left: 8 } as object,
+  arrowRight: { right: 8 } as object,
   posterCard: { width: WEB_POSTER_W } as object,
   posterWrap: {
     width: WEB_POSTER_W,
@@ -597,19 +640,6 @@ const webStyles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.grey,
     marginTop: 1,
-  },
-
-  showAllBtn: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginTop: 2,
-  },
-  showAllText: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 13,
-    color: COLORS.orange,
-    textDecorationLine: 'underline',
   },
 });
 
