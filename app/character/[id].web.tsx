@@ -20,6 +20,8 @@ import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { StatBar } from '../../src/components/web/StatBar';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { getHeroTitles, groupTitlesByMedia, type HeroTitle } from '../../src/lib/db/titles';
+import { getHeroPortrayals, type HeroPortrayals } from '../../src/lib/db/people';
+import { PortrayedBySection } from '../../src/components/PortrayedBySection';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
 import { NarrativeSection } from '../../src/components/character/NarrativeSection';
 import { getHeroNarrative, type HeroNarrative } from '../../src/lib/db/heroFacts';
@@ -175,6 +177,7 @@ export default function WebCharacterScreen() {
   const [family, setFamily] = useState<FamilyMember[]>([]);
   const [narrative, setNarrative] = useState<HeroNarrative | null>(null);
   const [titles, setTitles] = useState<HeroTitle[] | null>(null);
+  const [portrayals, setPortrayals] = useState<HeroPortrayals | null>(null);
 
   useEffect(() => {
     setFamily([]);
@@ -196,9 +199,11 @@ export default function WebCharacterScreen() {
 
   useEffect(() => {
     setTitles(null);
+    setPortrayals(null);
     if (!id) return;
     let active = true;
     getHeroTitles(id).then((f) => { if (active) setTitles(f); });
+    getHeroPortrayals(id).then((pp) => { if (active) setPortrayals(pp); });
     return () => { active = false; };
   }, [id]);
 
@@ -974,6 +979,15 @@ export default function WebCharacterScreen() {
                   })()
                 ) : null}
 
+                {/* Portrayed By */}
+                {portrayals && (portrayals.performers.length > 0 || portrayals.voiceActors.length > 0) ? (
+                  <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Portrayed By</Text>
+                    <View style={styles.cardDivider} />
+                    <PortrayedBySection portrayals={portrayals} contentInset={0} />
+                  </View>
+                ) : null}
+
                 {/* In Print — debut feature + cover gallery */}
                 {comicVineLoading ? (
                   <View style={styles.card}>
@@ -1483,6 +1497,17 @@ export default function WebCharacterScreen() {
                       </>
                     );
                   })()
+                ) : null}
+
+                {/* Portrayed By */}
+                {portrayals && (portrayals.performers.length > 0 || portrayals.voiceActors.length > 0) ? (
+                  <View style={styles.mSection}>
+                    <View style={styles.mSectionHead}>
+                      <Text style={styles.mSectionTitle}>Portrayed By</Text>
+                      <View style={styles.mSectionDivider} />
+                    </View>
+                    <PortrayedBySection portrayals={portrayals} contentInset={0} />
+                  </View>
                 ) : null}
 
                 {/* In Print */}

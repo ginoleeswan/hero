@@ -69,21 +69,29 @@ SELECT ?work ?workLabel ?year ?tmdbMovie ?tmdbTv ?igdb WHERE {
 }
 
 async function fetchPerformers(qid: string): Promise<Array<{ name: string; role: 'performer' | 'voice_actor' }>> {
+  // Live performers (P161) and voice actors (P725) credited as THIS character
+  // (qualifier P453), limited to works we actually track (a TMDB/IGDB id) to cut
+  // novelty/parody noise.
   const q = `
-SELECT DISTINCT ?performerLabel ?isVoice WHERE {
-  ?work p:P161 ?st. ?st ps:P161 ?performer. ?st pq:P453 wd:${qid}.
-  BIND(EXISTS { ?work p:P725 [ pq:P453 wd:${qid} ] } AS ?isVoice)
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-} LIMIT 40`;
+SELECT DISTINCT ?performerLabel ?kind WHERE {
+  { ?work p:P161 ?st. ?st ps:P161 ?performer. ?st pq:P453 wd:${qid}. BIND("performer" AS ?kind) }
+  UNION
+  { ?work p:P725 ?st. ?st ps:P725 ?performer. ?st pq:P453 wd:${qid}. BIND("voice_actor" AS ?kind) }
+  ?work (wdt:P4947|wdt:P4983|wdt:P5794) [] .
+  ?performer rdfs:label ?performerLabel. FILTER(LANG(?performerLabel)="en")
+} LIMIT 60`;
   const rows = await sparql(q);
-  const out = new Map<string, { name: string; role: 'performer' | 'voice_actor' }>();
+  const performers = new Set<string>();
+  const voice = new Set<string>();
   for (const r of rows) {
     const name = r.performerLabel?.value;
     if (!name || /^Q\d+$/.test(name)) continue; // skip entities with no en label
-    const role = r.isVoice?.value === 'true' ? 'voice_actor' : 'performer';
-    if (!out.has(name)) out.set(name, { name, role });
+    if (r.kind?.value === 'voice_actor') voice.add(name); else performers.add(name);
   }
-  return [...out.values()];
+  const out: Array<{ name: string; role: 'performer' | 'voice_actor' }> = [];
+  for (const n of performers) out.push({ name: n, role: 'performer' });
+  for (const n of voice) if (!performers.has(n)) out.push({ name: n, role: 'voice_actor' });
+  return out;
 }
 
 async function runEnrich(sb: SB, limit: number, retry: boolean): Promise<number> {

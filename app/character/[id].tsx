@@ -49,6 +49,8 @@ import {
   getHeroFavouriteCount,
 } from '../../src/lib/db/favourites';
 import { getHeroTitles, groupTitlesByMedia, type HeroTitle } from '../../src/lib/db/titles';
+import { getHeroPortrayals, type HeroPortrayals } from '../../src/lib/db/people';
+import { PortrayedBySection } from '../../src/components/PortrayedBySection';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useRecordView } from '../../src/hooks/useViewHistory';
 import { HeroImage } from '../../src/components/HeroImage';
@@ -479,6 +481,7 @@ export default function CharacterScreen() {
   const [favLoading, setFavLoading] = useState(false);
   const [favCount, setFavCount] = useState<number>(0);
   const [titles, setTitles] = useState<HeroTitle[] | null>(null);
+  const [portrayals, setPortrayals] = useState<HeroPortrayals | null>(null);
   const [issueCovers, setIssueCovers] = useState<IssueCover[] | null>(null);
   const [galleryLoading, setGalleryLoading] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<{ url: string; caption?: string | null }[]>(
@@ -703,6 +706,7 @@ export default function CharacterScreen() {
     if (!data?.stats.id) return;
     let active = true;
     getHeroTitles(data.stats.id).then((f) => { if (active) setTitles(f); });
+    getHeroPortrayals(data.stats.id).then((pp) => { if (active) setPortrayals(pp); });
     return () => { active = false; };
   }, [data?.stats.id]);
 
@@ -1392,6 +1396,14 @@ export default function CharacterScreen() {
                   })()
                 ) : null}
               </View>
+
+              {/* Portrayed By — performers + voice actors */}
+              {portrayals && (portrayals.performers.length > 0 || portrayals.voiceActors.length > 0) ? (
+                <View style={styles.section}>
+                  <SectionHeader title="Portrayed By" />
+                  <PortrayedBySection portrayals={portrayals} contentInset={0} />
+                </View>
+              ) : null}
 
               {/* In Print — debut feature + cover gallery, consolidated into one
                   section (mirrors the web character page). */}
