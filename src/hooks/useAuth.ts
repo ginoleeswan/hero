@@ -15,6 +15,7 @@ interface AuthState {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
+  signInWithApple: () => Promise<{ error: Error | null }>;
   changePassword: (
     currentPassword: string,
     newPassword: string,
@@ -114,6 +115,41 @@ export function useAuth(): AuthState {
     }
   };
 
+  const signInWithApple = async (): Promise<{ error: Error | null }> => {
+    if (Platform.OS === 'web') {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: { redirectTo: window.location.origin },
+      });
+      return { error };
+    }
+
+    try {
+      const AppleAuthentication = require('expo-apple-authentication');
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (!credential.identityToken) {
+        return { error: new Error('No identity token from Apple') };
+      }
+
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+      });
+      return { error };
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === 'ERR_REQUEST_CANCELED') {
+        return { error: null };
+      }
+      return { error: err instanceof Error ? err : new Error('Apple sign-in failed') };
+    }
+  };
+
   const changePassword = async (
     currentPassword: string,
     newPassword: string,
@@ -158,6 +194,7 @@ export function useAuth(): AuthState {
     signOut,
     resetPassword,
     signInWithGoogle,
+    signInWithApple,
     changePassword,
     deleteAccount,
   };

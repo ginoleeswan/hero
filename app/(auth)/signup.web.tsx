@@ -17,12 +17,13 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { SocialDivider } from '../../src/components/ui/SocialDivider';
 import { GoogleSignInButton } from '../../src/components/ui/GoogleSignInButton';
+import { AppleSignInButton } from '../../src/components/ui/AppleSignInButton';
 
 const LOGIN_HERO = require('../../assets/images/login-hero.webp');
 const HERO_ASPECT = LOGIN_HERO.width / LOGIN_HERO.height;
 
 export default function WebSignupScreen() {
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle, signInWithApple } = useAuth();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
@@ -37,6 +38,7 @@ export default function WebSignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [emailFocused, setEmailFocused] = useState(false);
@@ -94,6 +96,16 @@ export default function WebSignupScreen() {
         </View>
       )}
 
+      <AppleSignInButton
+        onPress={async () => {
+          setAppleLoading(true);
+          setError(null);
+          const { error } = await signInWithApple();
+          if (error) setError(error.message);
+          setAppleLoading(false);
+        }}
+        loading={appleLoading}
+      />
       <GoogleSignInButton
         onPress={async () => {
           setGoogleLoading(true);

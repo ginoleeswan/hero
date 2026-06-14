@@ -3,6 +3,13 @@ import type { ExpoConfig } from 'expo/config';
 
 const IS_DEV = process.env.APP_VARIANT === 'development';
 
+// Reversed iOS client ID — registered as a URL scheme in Info.plist so iOS can
+// redirect back to the app after Google sign-in completes.
+const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
+const googleIosUrlScheme = iosClientId
+  ? 'com.googleusercontent.apps.' + iosClientId.replace('.apps.googleusercontent.com', '')
+  : undefined;
+
 const config: ExpoConfig = {
   name: IS_DEV ? 'Mythique (Dev)' : 'Mythique',
   slug: 'hero',
@@ -29,6 +36,7 @@ const config: ExpoConfig = {
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
     },
+    usesAppleSignIn: true,
   },
   android: {
     adaptiveIcon: {
@@ -64,7 +72,8 @@ const config: ExpoConfig = {
         },
       },
     ],
-    '@react-native-google-signin/google-signin',
+    ['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme }],
+    'expo-apple-authentication',
     'expo-router',
     'expo-image',
     'expo-status-bar',

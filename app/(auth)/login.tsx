@@ -23,6 +23,7 @@ import { DotGrid } from '../../src/components/ui/DotGrid';
 import { AnimatedInput } from '../../src/components/ui/AnimatedInput';
 import { SocialDivider } from '../../src/components/ui/SocialDivider';
 import { GoogleSignInButton } from '../../src/components/ui/GoogleSignInButton';
+import { AppleSignInButton } from '../../src/components/ui/AppleSignInButton';
 
 // Google Sign-In requires the OAuth URL scheme registered at native build time.
 // Expo Go / dev client builds don't have it — hide the button in those environments.
@@ -31,7 +32,7 @@ const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreCl
 const LOGIN_HERO = require('../../assets/images/login-hero.webp');
 
 export default function LoginScreen() {
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, signInWithApple } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
@@ -41,6 +42,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
@@ -117,6 +119,16 @@ export default function LoginScreen() {
 
             {!isExpoGo && (
               <>
+                <AppleSignInButton
+                  onPress={async () => {
+                    setAppleLoading(true);
+                    setError(null);
+                    const { error } = await signInWithApple();
+                    if (error) setError(error.message);
+                    setAppleLoading(false);
+                  }}
+                  loading={appleLoading}
+                />
                 <GoogleSignInButton
                   onPress={async () => {
                     setGoogleLoading(true);

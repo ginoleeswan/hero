@@ -28,6 +28,7 @@
     "d3-hierarchy": "^3.1.2",
     "dotenv": "^17.4.1",
     "expo": "^56.0.0",
+    "expo-apple-authentication": "~56.0.4",
     "expo-blur": "~56.0.3",
     "expo-build-properties": "~56.0.18",
     "expo-constants": "~56.0.17",

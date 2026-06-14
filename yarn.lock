@@ -5965,6 +5965,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"expo-apple-authentication@npm:~56.0.4":
+  version: 56.0.4
+  resolution: "expo-apple-authentication@npm:56.0.4"
+  peerDependencies:
+    expo: "*"
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/aac654520e5f11c4dca795634f0dbf05dc093aab66ecdfcc0bd46b1edd1249a5f11d0806db1381178774ff0aebe94f24225553d22a2ca80f546afe1b1a9a6de9
+  languageName: node
+  linkType: hard
+
 "expo-asset@npm:~56.0.16":
   version: 56.0.16
   resolution: "expo-asset@npm:56.0.16"
@@ -9047,6 +9058,7 @@ __metadata:
     d3-hierarchy: "npm:^3.1.2"
     dotenv: "npm:^17.4.1"
     expo: "npm:^56.0.0"
+    expo-apple-authentication: "npm:~56.0.4"
     expo-blur: "npm:~56.0.3"
     expo-build-properties: "npm:~56.0.18"
     expo-constants: "npm:~56.0.17"
