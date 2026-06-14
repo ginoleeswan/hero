@@ -22,13 +22,13 @@ function AlertPill({
   numberOfLines?: number;
 }) {
   const base = tone === 'red' ? COLORS.red : COLORS.yellow;
-  const style = [styles.alert, { backgroundColor: base + '18', borderColor: base + '44' }];
+  const style = [styles.alert, { backgroundColor: base + '2e', borderColor: base + '66' }];
   const inner = (
     <>
       <Ionicons
         name={tone === 'red' ? 'alert-circle' : 'warning'}
         size={16}
-        color={tone === 'red' ? COLORS.red : COLORS.gold}
+        color={tone === 'red' ? '#f08a7e' : COLORS.yellow}
       />
       <Text style={styles.alertText} numberOfLines={numberOfLines}>
         {text}
@@ -74,7 +74,7 @@ export function AlertStack({
             <View style={styles.count}>
               <Text style={styles.countText}>+{alerts.length - 1}</Text>
             </View>
-            <Ionicons name="chevron-down" size={16} color={COLORS.navy} />
+            <Ionicons name="chevron-down" size={16} color="rgba(255,255,255,0.7)" />
           </>
         }
       />
@@ -87,7 +87,7 @@ export function AlertStack({
       ))}
       {narrow && alerts.length > 1 && (
         <Pressable onPress={onClose} style={styles.collapse}>
-          <Ionicons name="chevron-up" size={14} color={COLORS.grey} />
+          <Ionicons name="chevron-up" size={14} color="rgba(255,255,255,0.6)" />
           <Text style={styles.collapseText}>Show less</Text>
         </Pressable>
       )}
@@ -106,14 +106,14 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 12,
   },
-  alertText: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
+  alertText: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(255,255,255,0.92)' },
   count: {
-    backgroundColor: 'rgba(41,60,67,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.16)',
     borderRadius: 999,
     paddingHorizontal: 7,
     paddingVertical: 1,
   },
-  countText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.navy },
+  countText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#fff' },
   collapse: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -121,5 +121,5 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingVertical: 4,
   },
-  collapseText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.grey },
+  collapseText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(255,255,255,0.6)' },
 });
