@@ -13,15 +13,18 @@ import { ActivityLog } from '../ActivityLog';
 import { useRouter } from 'expo-router';
 import { InfoTip } from '../InfoTip';
 import { AddHeroesPanel } from '../AddHeroesPanel';
+import { StatsBoard } from '../StatsBoard';
 import { HeroThumb } from '../atoms';
 import { getPendingBuildIds } from '../../../../lib/db/build';
-import { relTime, runTypeLabel, type LogTone } from '../format';
+import { getPendingStatsIds } from '../../../../lib/db/stats';
+import { relTime, runTypeLabel, GEMINI_MONTHLY_BUDGET, type LogTone } from '../format';
 import type {
   AmbiguousHero,
   CatalogHealth,
   CronJob,
   EnrichmentProgress,
   EnrichmentRun,
+  GeminiSpend,
   RecentlyEnriched,
 } from '../../../../lib/db/catalogHealth';
 import type { LogEntry } from '../format';
@@ -122,6 +125,8 @@ export function PipelinesDomain({
   onLoadMoreAmbiguous,
   buildIds,
   setBuildIds,
+  statsPending,
+  spend,
   busy,
   batchSize,
   setBatchSize,
@@ -151,6 +156,8 @@ export function PipelinesDomain({
   onLoadMoreAmbiguous: () => void;
   buildIds: string[] | null;
   setBuildIds: (ids: string[] | null) => void;
+  statsPending: number;
+  spend: GeminiSpend | undefined;
   busy: string | null;
   batchSize: number;
   setBatchSize: (n: number) => void;
@@ -175,6 +182,8 @@ export function PipelinesDomain({
 }) {
   const router = useRouter();
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [statsIds, setStatsIds] = useState<string[] | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
   const p = progress ?? {
     heroesTotal: 0, comicvineDone: 0, resolved: 0, ambiguous: 0, unresolved: 0,
     enriched: 0, filmTitles: 0, tvTitles: 0, gameTitles: 0, mediaDone: 0,
@@ -186,6 +195,22 @@ export function PipelinesDomain({
     const ids = await getPendingBuildIds(batchSize);
     if (ids.length === 0) { flash('Nothing pending to build.', 'info'); return; }
     setBuildIds(ids);
+  };
+
+  // Gemini spend gate: block paid generation once month-to-date hits the budget.
+  const spendMtd = spend?.available ? spend.monthToDate ?? 0 : null;
+  const overBudget = spendMtd != null && spendMtd >= GEMINI_MONTHLY_BUDGET;
+
+  const generateStats = async () => {
+    if (overBudget) { flash('Over the monthly Gemini budget — generation paused.', 'info'); return; }
+    setLoadingStats(true);
+    try {
+      const ids = await getPendingStatsIds(batchSize);
+      if (ids.length === 0) { flash('No heroes need powerstats.', 'info'); return; }
+      setStatsIds(ids);
+    } finally {
+      setLoadingStats(false);
+    }
   };
 
   // Open a candidate's Wikidata page in a new tab so you can eyeball the match.
@@ -351,6 +376,49 @@ export function PipelinesDomain({
         </Panel>
       </Bento.Row>
 
+      {/* AI generation (Gemini) — paid work, gated on your monthly budget. */}
+      <Panel
+        title="AI generation · Gemini"
+        hint={statsPending > 0 ? `${statsPending.toLocaleString()} heroes need powerstats` : 'Powerstats all generated'}
+        action={<InfoTip text="Generates the six powerstat dials with Gemini for heroes that have ComicVine data but no stats yet. This costs money, so it's gated on your monthly budget. AI Portraits will join here next." />}
+      >
+        <View style={styles.gen}>
+          <View style={styles.genItem}>
+            <View style={styles.genInfo}>
+              <Text style={styles.genName}>Powerstats</Text>
+              <Text style={styles.genSub}>
+                {spendMtd != null ? `$${spendMtd.toFixed(0)} / $${GEMINI_MONTHLY_BUDGET} this month` : 'spend data unavailable'}
+                {overBudget ? ' · over budget' : ''}
+              </Text>
+            </View>
+            <Pressable
+              onPress={generateStats}
+              disabled={overBudget || statsPending === 0 || loadingStats || !!statsIds}
+              style={[styles.genBtn, (overBudget || statsPending === 0 || loadingStats || !!statsIds) && styles.dim]}
+            >
+              {loadingStats ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Ionicons name={overBudget ? 'lock-closed' : 'sparkles'} size={14} color="#fff" />
+              )}
+              <Text style={styles.genBtnText}>
+                {overBudget ? 'Over budget' : `Generate ${Math.min(batchSize, statsPending || batchSize)}`}
+              </Text>
+            </Pressable>
+          </View>
+          <View style={styles.genItem}>
+            <View style={styles.genInfo}>
+              <Text style={styles.genName}>AI Portraits</Text>
+              <Text style={styles.genSub}>Run via the generate-portraits script · in-app runner coming next</Text>
+            </View>
+            <View style={[styles.genBtn, styles.genBtnGhost]}>
+              <Ionicons name="time-outline" size={14} color={COLORS.grey} />
+              <Text style={[styles.genBtnText, { color: COLORS.grey }]}>Soon</Text>
+            </View>
+          </View>
+        </View>
+      </Panel>
+
       {/* 3 · Monitor — live log + who just got built. */}
       <Bento.Row narrow={narrow}>
         <View style={styles.flex1}>
@@ -449,6 +517,10 @@ export function PipelinesDomain({
           />
         </Panel>
         </>
+      ) : null}
+
+      {statsIds ? (
+        <StatsBoard heroIds={statsIds} flash={flash} onClose={() => { setStatsIds(null); onHeroesAdded(); }} />
       ) : null}
     </Bento>
   );
@@ -566,4 +638,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#efe6d6', borderRadius: 9, paddingVertical: 9, marginTop: 10,
   },
   loadMoreText: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: COLORS.navy },
+
+  // AI generation (Gemini) panel
+  gen: { gap: 4 },
+  genItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 9,
+    borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.06)',
+  },
+  genInfo: { flex: 1, minWidth: 0, gap: 2 },
+  genName: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
+  genSub: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: COLORS.grey, fontVariant: ['tabular-nums'] },
+  genBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.orange,
+    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9,
+  },
+  genBtnGhost: { backgroundColor: '#efe6d6' },
+  genBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#fff' },
 });

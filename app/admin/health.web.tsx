@@ -66,7 +66,7 @@ export default function AdminHealthScreen() {
     if (gateResolved && !isAdmin) router.replace('/explore');
   }, [gateResolved, isAdmin, router]);
 
-  const { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ, enrichProgressQ, recentEnrichedQ } =
+  const { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ, enrichProgressQ, statsPendingQ, recentEnrichedQ } =
     useCatalogQueries({
       enabled: gateResolved && isAdmin,
       metric,
@@ -330,6 +330,8 @@ export default function AdminHealthScreen() {
             onLoadMoreAmbiguous={() => setAmbiguousLimit((l) => l + 25)}
             buildIds={buildIds}
             setBuildIds={setBuildIds}
+            statsPending={statsPendingQ.data ?? 0}
+            spend={spendQ.data}
             busy={busy}
             batchSize={batchSize}
             setBatchSize={setBatchSize}
@@ -352,6 +354,7 @@ export default function AdminHealthScreen() {
             onHeroesAdded={() => {
               queryClient.invalidateQueries({ queryKey: ['enrichmentProgress'] });
               queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
+              queryClient.invalidateQueries({ queryKey: ['statsPending'] });
             }}
             narrow={narrow}
           />

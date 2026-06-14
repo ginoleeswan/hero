@@ -6,6 +6,11 @@ import type { CatalogHealth, CoverageMetric } from '../../../lib/db/catalogHealt
 export const DRAIN_CRON = 'enrich-comicvine-pending';
 export const CV_HOURLY_CAP = 200;
 
+// Soft monthly Gemini budget (USD). The AI-generation runners (powerstats, later
+// portraits) disable their Run button once month-to-date spend reaches this, so
+// you never kick off paid work over budget. Adjust to your actual billing cap.
+export const GEMINI_MONTHLY_BUDGET = 50;
+
 export const relTime = (iso: string) => {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (s < 60) return `${s}s ago`;

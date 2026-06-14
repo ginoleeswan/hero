@@ -30,6 +30,7 @@ import {
   type CoverageMetric,
   type RunHistoryPage,
 } from '../../../lib/db/catalogHealth';
+import { getPendingStatsCount } from '../../../lib/db/stats';
 import type { LogTone, LogEntry } from './format';
 
 type Flash = (msg: string, tone?: LogTone) => void;
@@ -131,6 +132,12 @@ export function useCatalogQueries({
     enabled,
     staleTime: 30_000,
   });
+  const statsPendingQ = useQuery({
+    queryKey: ['statsPending'],
+    queryFn: getPendingStatsCount,
+    enabled,
+    staleTime: 30_000,
+  });
   const recentEnrichedQ = useQuery({
     queryKey: ['recentlyEnriched'],
     queryFn: () => getRecentlyEnriched(24),
@@ -167,7 +174,7 @@ export function useCatalogQueries({
     };
   }, [enabled, queryClient]);
 
-  return { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ, enrichProgressQ, recentEnrichedQ };
+  return { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ, enrichProgressQ, statsPendingQ, recentEnrichedQ };
 }
 
 /**
