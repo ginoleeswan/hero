@@ -290,13 +290,13 @@ function WebPosterCard({ item, onPress }: { item: StripItem; onPress: () => void
           </View>
         ) : null}
       </View>
-      <Text style={webStyles.posterTitle} numberOfLines={1}>{item.title}</Text>
+      <Text style={webStyles.posterTitle} numberOfLines={2}>{item.title}</Text>
       {item.year ? <Text style={webStyles.posterYear}>{item.year}</Text> : null}
     </Pressable>
   );
 }
 
-const WEB_GRID_INITIAL = 17;
+const WEB_HIGHLIGHTS = 6;
 
 export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleedMargin = 0 }: Props) {
   const router = useRouter();
@@ -318,55 +318,60 @@ export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleed
     }
   };
 
-  // ─── Web: featured film banner + decade-grouped filmography (films path) ──────
+  // ─── Web: featured banner → curated "Top Rated" preview → full decade archive ─
   if (Platform.OS === 'web' && isFilmsPath) {
     const webFeatured = pickFeaturedFilm(films ?? []);
     const webFeaturedItem = webFeatured
       ? sorted.find((it) => it.film?.tmdbId === webFeatured.tmdbId)
       : null;
     const webRest = webFeaturedItem ? sorted.filter((it) => it !== webFeaturedItem) : sorted;
-    const groups = groupByDecade(webRest);
 
-    // Default view: whole decades until ~WEB_GRID_INITIAL titles are shown; the
-    // rest collapse behind a "show all" so a deep filmography stays scannable.
-    let shownGroups = groups;
-    let hiddenCount = 0;
+    const featuredBanner = webFeaturedItem ? (
+      <WebFeaturedFilm item={webFeaturedItem} onPress={() => handlePress(webFeaturedItem)} />
+    ) : null;
+
+    const renderShelf = (label: string, items: StripItem[], count?: number) => (
+      <View key={label} style={webStyles.group}>
+        <Text style={webStyles.groupLabel}>
+          {label}
+          {count != null ? ` · ${count}` : ''}
+        </Text>
+        <View style={webStyles.grid}>
+          {items.map((item, i) => (
+            <WebPosterCard key={item.key + i} item={item} onPress={() => handlePress(item)} />
+          ))}
+        </View>
+      </View>
+    );
+
+    // Collapsed: featured + a tight, curated "Top Rated" row — the best titles at
+    // a glance, so a 50-title filmography never dumps onto the page by default.
     if (!webShowAll) {
-      const capped: DecadeGroup[] = [];
-      let count = 0;
-      for (const g of groups) {
-        if (count >= WEB_GRID_INITIAL && capped.length > 0) {
-          hiddenCount += g.items.length;
-        } else {
-          capped.push(g);
-          count += g.items.length;
-        }
-      }
-      shownGroups = capped;
+      const highlights = [...webRest]
+        .sort((a, b) => (b.voteAverage ?? 0) - (a.voteAverage ?? 0))
+        .slice(0, WEB_HIGHLIGHTS);
+      return (
+        <View style={webStyles.wrap}>
+          {featuredBanner}
+          {highlights.length > 0 ? renderShelf('Top Rated', highlights) : null}
+          {webRest.length > highlights.length ? (
+            <Pressable style={webStyles.showAllBtn} onPress={() => setWebShowAll(true)}>
+              <Text style={webStyles.showAllText}>Show all {sorted.length} titles</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      );
     }
 
+    // Expanded: the complete filmography, grouped into decade shelves (newest first).
+    const groups = groupByDecade(webRest);
     return (
       <View style={webStyles.wrap}>
-        {webFeaturedItem ? (
-          <WebFeaturedFilm item={webFeaturedItem} onPress={() => handlePress(webFeaturedItem)} />
-        ) : null}
-        {shownGroups.map((g) => (
-          <View key={g.label} style={webStyles.group}>
-            <Text style={webStyles.groupLabel}>
-              {g.label} · {g.items.length}
-            </Text>
-            <View style={webStyles.grid}>
-              {g.items.map((item, i) => (
-                <WebPosterCard key={item.key + i} item={item} onPress={() => handlePress(item)} />
-              ))}
-            </View>
-          </View>
-        ))}
-        {!webShowAll && hiddenCount > 0 ? (
-          <Pressable style={webStyles.showAllBtn} onPress={() => setWebShowAll(true)}>
-            <Text style={webStyles.showAllText}>Show all {sorted.length} titles</Text>
-          </Pressable>
-        ) : null}
+        {featuredBanner}
+        {groups.map((g) => renderShelf(g.label, g.items, g.items.length))}
+        <Pressable style={webStyles.showAllBtn} onPress={() => setWebShowAll(false)}>
+          <Text style={webStyles.showAllText}>Show less</Text>
+        </Pressable>
       </View>
     );
   }
@@ -585,6 +590,7 @@ const webStyles = StyleSheet.create({
     fontSize: 12.5,
     color: COLORS.navy,
     lineHeight: 16,
+    minHeight: 32,
   },
   posterYear: {
     fontFamily: 'FlameSans-Regular',

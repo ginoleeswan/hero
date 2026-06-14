@@ -59,10 +59,20 @@ export function extractProviders(blob: Record<string, unknown> | null): WatchPro
   return Array.from(seen.values());
 }
 
-/** The first film that has a backdropUrl; else first film; else null. */
+/**
+ * Pick the strongest film to feature: the highest-rated title that has a
+ * backdrop (a backdrop implies a real theatrical/streaming release, and the
+ * rating keeps the banner from leading with an obscure low-rated entry). Falls
+ * back to the highest-rated overall, then the first film.
+ */
 export function pickFeaturedFilm(films: HeroFilm[]): HeroFilm | null {
   if (films.length === 0) return null;
-  return films.find((f) => !!f.backdropUrl) ?? films[0];
+  const withBackdrop = films.filter((f) => !!f.backdropUrl);
+  const pool = withBackdrop.length > 0 ? withBackdrop : films;
+  return pool.reduce(
+    (best, f) => ((f.voteAverage ?? 0) > (best.voteAverage ?? 0) ? f : best),
+    pool[0],
+  );
 }
 
 interface FilmRow {

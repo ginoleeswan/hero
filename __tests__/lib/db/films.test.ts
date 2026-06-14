@@ -153,11 +153,17 @@ describe('pickFeaturedFilm', () => {
     expect(pickFeaturedFilm([])).toBeNull();
   });
 
-  it('prefers the first film with a backdropUrl', () => {
+  it('prefers a film with a backdrop over one without', () => {
     expect(pickFeaturedFilm([noBackdrop, withBackdrop])).toBe(withBackdrop);
   });
 
-  it('falls back to the first film when none have a backdrop', () => {
+  it('picks the highest-rated film among those with a backdrop', () => {
+    const lower = { ...withBackdrop, tmdbId: 'lo', voteAverage: 6 };
+    const higher = { ...withBackdrop, tmdbId: 'hi', voteAverage: 8.4 };
+    expect(pickFeaturedFilm([lower, higher])!.tmdbId).toBe('hi');
+  });
+
+  it('falls back to a film when none have a backdrop', () => {
     expect(pickFeaturedFilm([noBackdrop])).toBe(noBackdrop);
   });
 });
