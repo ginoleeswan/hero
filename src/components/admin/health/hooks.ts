@@ -19,6 +19,7 @@ import {
   snapshotNow,
   reenrichHero,
   setDrainCron,
+  getGeminiSpend,
   type CoverageMetric,
   type RunHistoryPage,
 } from '../../../lib/db/catalogHealth';
@@ -87,6 +88,12 @@ export function useCatalogQueries({
     enabled,
     staleTime: 60_000,
   });
+  const spendQ = useQuery({
+    queryKey: ['geminiSpend'],
+    queryFn: getGeminiSpend,
+    enabled,
+    staleTime: 5 * 60_000,
+  });
 
   // While a run is in flight, poll backlog + usage so the live numbers tick down.
   const runsData = runsQ.data;
@@ -101,10 +108,13 @@ export function useCatalogQueries({
   }, [runsData, queryClient]);
 
   // Realtime: any change to enrichment_runs refreshes the runs view instantly.
+  // Unique channel name per effect run — reusing a fixed name returns the
+  // already-subscribed channel and ".on() after subscribe()" throws (StrictMode
+  // double-mount / re-runs).
   useEffect(() => {
     if (!enabled) return;
     const channel = supabase
-      .channel('admin-enrichment-runs')
+      .channel(`admin-enrichment-runs-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'enrichment_runs' }, () => {
         queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] });
       })
@@ -114,7 +124,7 @@ export function useCatalogQueries({
     };
   }, [enabled, queryClient]);
 
-  return { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ };
+  return { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ };
 }
 
 /**
@@ -154,6 +164,7 @@ const REFRESH_KEYS = [
   'cvUsage',
   'distributions',
   'healthSnapshots',
+  'geminiSpend',
 ];
 
 /**

@@ -234,6 +234,24 @@ export async function snapshotNow(): Promise<void> {
   if (error) throw error;
 }
 
+// ── Gemini / GCP spend (BigQuery billing export via the gemini-spend edge fn) ──
+
+export interface GeminiSpend {
+  available: boolean;
+  reason?: string;
+  currency?: string;
+  total28?: number;
+  monthToDate?: number;
+  days?: { day: string; cost: number }[];
+  byService?: { service: string; cost: number }[];
+}
+
+export async function getGeminiSpend(): Promise<GeminiSpend> {
+  const { data, error } = await supabase.functions.invoke<GeminiSpend>('gemini-spend');
+  if (error) return { available: false, reason: error.message };
+  return data ?? { available: false, reason: 'no response' };
+}
+
 // ── Charts: history + distributions ───────────────────────────────────────────
 
 export interface HealthSnapshot {

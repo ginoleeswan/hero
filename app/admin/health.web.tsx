@@ -26,6 +26,7 @@ import {
   type PublisherCoverage,
   type EnrichmentRun,
   type AdminHeroResult,
+  type GeminiSpend,
 } from '../../src/lib/db/catalogHealth';
 import {
   DRAIN_CRON,
@@ -304,6 +305,83 @@ function PublisherCard({ row, onPick }: { row: PublisherCoverage; onPick: (publi
   );
 }
 
+const money = (n: number, cur?: string) =>
+  cur && cur !== 'USD' ? `${n.toFixed(2)} ${cur}` : `$${n.toFixed(2)}`;
+
+// Gemini / GCP spend from the BigQuery billing export (AI Studio "Spend" parity).
+function SpendCard({ spend, loading, narrow }: { spend?: GeminiSpend; loading: boolean; narrow: boolean }) {
+  const title = (
+    <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Gemini / GCP Spend</Text>
+  );
+  if (loading || !spend) {
+    return (
+      <View style={[styles.card, narrow && styles.cardNarrow]}>
+        {title}
+        <ActivityIndicator color={COLORS.orange} style={{ marginTop: 16 }} />
+      </View>
+    );
+  }
+  if (!spend.available) {
+    return (
+      <View style={[styles.card, narrow && styles.cardNarrow]}>
+        {title}
+        <View style={spend_s.empty}>
+          <Ionicons name="cloud-offline-outline" size={26} color={COLORS.grey} />
+          <Text style={spend_s.emptyText}>{spend.reason ?? 'Spend data not available yet.'}</Text>
+          <Text style={spend_s.emptySub}>
+            Enable the BigQuery billing export on the billing account; data appears ~24h later.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+  const cur = spend.currency;
+  const days = spend.days ?? [];
+  const max = Math.max(1, ...days.map((d) => d.cost));
+  const services = spend.byService ?? [];
+  return (
+    <View style={[styles.card, narrow && styles.cardNarrow]}>
+      {title}
+      <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>
+        BigQuery billing export · last 28 days
+      </Text>
+      <View style={spend_s.top}>
+        <View>
+          <Text style={spend_s.big}>{money(spend.monthToDate ?? 0, cur)}</Text>
+          <Text style={spend_s.bigLabel}>this month</Text>
+        </View>
+        <View>
+          <Text style={spend_s.med}>{money(spend.total28 ?? 0, cur)}</Text>
+          <Text style={spend_s.bigLabel}>last 28 days</Text>
+        </View>
+      </View>
+      {days.length > 0 && (
+        <View style={spend_s.bars}>
+          {days.map((d) => (
+            <View key={d.day} style={spend_s.barCol}>
+              <View style={spend_s.barTrack}>
+                <View style={[spend_s.bar, { height: `${Math.round((d.cost / max) * 100)}%` }]} />
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+      {services.length > 0 && (
+        <View style={spend_s.svcWrap}>
+          {services.slice(0, 6).map((s) => (
+            <View key={s.service} style={spend_s.svcRow}>
+              <Text style={spend_s.svcName} numberOfLines={1}>
+                {s.service}
+              </Text>
+              <Text style={spend_s.svcVal}>{money(s.cost, cur)}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
 export default function AdminHealthScreen() {
   useWebCanvas(COLORS.beige);
   // Masthead is dark-topped and bleeds up behind the floating nav, so lock the
@@ -334,7 +412,7 @@ export default function AdminHealthScreen() {
     if (gateResolved && !isAdmin) router.replace('/explore');
   }, [gateResolved, isAdmin, router]);
 
-  const { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ } = useCatalogQueries({
+  const { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ } = useCatalogQueries({
     enabled: gateResolved && isAdmin,
     metric,
     page,
@@ -729,9 +807,33 @@ export default function AdminHealthScreen() {
           </View>
         )}
 
-        {/* ── Activity log ── */}
+        {/* ── Run history (monitoring dashboard) ── */}
         {tab === 'operations' && (
           <View style={[styles.card, narrow && styles.cardNarrow]}>
+            <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Run history</Text>
+            <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>
+              {runsTotal.toLocaleString()} runs logged · cron + manual · auto-refreshes
+            </Text>
+            <RunHistory
+              runs={runs}
+              total={runsTotal}
+              narrow={narrow}
+              loading={runsQ.isLoading}
+              fetching={runsQ.isFetching}
+              onLoadMore={() => setHistoryLimit((l) => l + 30)}
+            />
+          </View>
+        )}
+
+        {/* ── Gemini / GCP spend ── */}
+        {tab === 'operations' && (
+          <SpendCard spend={spendQ.data} loading={spendQ.isLoading} narrow={narrow} />
+        )}
+
+        {/* ── Activity log + Hero console (paired side-by-side) ── */}
+        {tab === 'operations' && (
+          <View style={[styles.cols, narrow && styles.colsNarrow]}>
+          <View style={[styles.opsHalf, styles.card, narrow && styles.cardNarrow]}>
             <View style={styles.logHead}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Activity log</Text>
@@ -764,11 +866,7 @@ export default function AdminHealthScreen() {
               </ScrollView>
             )}
           </View>
-        )}
-
-        {/* ── Single-hero console ── */}
-        {tab === 'operations' && (
-          <View style={[styles.card, narrow && styles.cardNarrow]}>
+          <View style={[styles.opsHalf, styles.card, narrow && styles.cardNarrow]}>
             <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Hero console</Text>
             <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Find any hero and re-fetch its ComicVine data on demand</Text>
             <View style={styles.heroSearchBox}>
@@ -845,6 +943,7 @@ export default function AdminHealthScreen() {
                 )}
               </View>
             )}
+          </View>
           </View>
         )}
 
@@ -998,24 +1097,6 @@ export default function AdminHealthScreen() {
               </>
             )}
           </View>
-        </View>
-        )}
-
-        {/* ── Run history (monitoring dashboard) ── */}
-        {tab === 'operations' && (
-        <View style={[styles.card, narrow && styles.cardNarrow]}>
-          <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Run history</Text>
-          <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>
-            {runsTotal.toLocaleString()} runs logged · cron + manual · auto-refreshes
-          </Text>
-          <RunHistory
-            runs={runs}
-            total={runsTotal}
-            narrow={narrow}
-            loading={runsQ.isLoading}
-            fetching={runsQ.isFetching}
-            onLoadMore={() => setHistoryLimit((l) => l + 30)}
-          />
         </View>
         )}
 
@@ -1687,4 +1768,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   heatPillNum: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
+  // Equal-width column for paired Operations cards (Activity log + Hero console).
+  opsHalf: { flex: 1, minWidth: 0 },
+});
+
+const spend_s = StyleSheet.create({
+  empty: { alignItems: 'center', gap: 8, paddingVertical: 24 },
+  emptyText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy, textAlign: 'center' },
+  emptySub: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: COLORS.grey,
+    textAlign: 'center',
+    maxWidth: 360,
+  },
+  top: { flexDirection: 'row', gap: 36, marginTop: 10, marginBottom: 14 },
+  big: { fontFamily: 'Flame-Regular', fontSize: 38, color: COLORS.green, lineHeight: 40 },
+  med: { fontFamily: 'Flame-Regular', fontSize: 30, color: COLORS.navy, lineHeight: 34 },
+  bigLabel: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.grey, marginTop: 2 },
+  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 90, marginTop: 4 },
+  barCol: { flex: 1, height: '100%', justifyContent: 'flex-end' },
+  barTrack: { width: '100%', height: '100%', justifyContent: 'flex-end' },
+  bar: { width: '100%', backgroundColor: COLORS.green, borderRadius: 3, minHeight: 2 },
+  svcWrap: { marginTop: 14, gap: 7 },
+  svcRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f6f0e6',
+  },
+  svcName: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
+  svcVal: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
 });
