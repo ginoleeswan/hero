@@ -1,24 +1,30 @@
-import { useState, useEffect } from 'react';
-import { ScrollView, View, Text, StyleSheet, Pressable, Platform } from 'react-native';
+import { useState } from 'react';
+import { ScrollView, View, Text, StyleSheet, Pressable, Platform, Linking } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import type { MovieAppearance } from '../types';
 import { COLORS } from '../constants/colors';
-import { MovieDetailSheet } from './MovieDetailSheet';
 import { MovieGridModal } from './MovieGridModal';
 import type { HeroFilm } from '../lib/db/films';
+import { pickFeaturedFilm } from '../lib/db/films';
 
-const FEATURED_W = 120;
-const FEATURED_H = 180;
 const CARD_W = 100;
 const CARD_H = 150;
 const INITIAL_COUNT = 10;
+
+// Landscape backdrop card dimensions (films with a backdropUrl)
+const BACKDROP_W = 220;
+const BACKDROP_H = 150;
 
 interface StripItem {
   key: string;
   title: string;
   year: string | null;
   posterUrl: string | null;
+  backdropUrl: string | null;
+  voteAverage: number | null;
   hasTrailer: boolean;
   film?: HeroFilm;
   movie?: MovieAppearance;
@@ -28,10 +34,7 @@ interface Props {
   films?: HeroFilm[];
   movies?: MovieAppearance[];
   totalCount: number;
-  // Horizontal inset of the first/last card from the scroll viewport edges.
   contentInset?: number;
-  // Negative outer margin so the strip can break out of a padded parent (e.g. a
-  // web card) and run edge-to-edge. Pass the parent's horizontal padding.
   bleedMargin?: number;
 }
 
@@ -51,6 +54,8 @@ function buildItems(films?: HeroFilm[], movies?: MovieAppearance[]): StripItem[]
       title: f.title,
       year: f.year ? String(f.year) : null,
       posterUrl: f.posterUrl,
+      backdropUrl: f.backdropUrl,
+      voteAverage: f.voteAverage,
       hasTrailer: !!f.trailerKey,
       film: f,
     }));
@@ -61,6 +66,8 @@ function buildItems(films?: HeroFilm[], movies?: MovieAppearance[]): StripItem[]
       title: m.name,
       year: m.year ?? null,
       posterUrl: m.imageUrl ?? null,
+      backdropUrl: null,
+      voteAverage: null,
       hasTrailer: false,
       movie: m,
     }));
@@ -68,107 +75,162 @@ function buildItems(films?: HeroFilm[], movies?: MovieAppearance[]): StripItem[]
   return [];
 }
 
-function StripCard({
-  item,
-  featured,
-  onPress,
-}: {
-  item: StripItem;
-  featured?: boolean;
-  onPress: () => void;
-}) {
+/** Landscape backdrop card — used for the top film when it has a backdropUrl. */
+function FeaturedFilmCard({ item, onPress }: { item: StripItem; onPress: () => void }) {
   const [hovered, setHovered] = useState(false);
-  const w = featured ? FEATURED_W : CARD_W;
-  const h = featured ? FEATURED_H : CARD_H;
-
   const webHoverProps =
     Platform.OS === 'web'
-      ? ({
-          onMouseEnter: () => setHovered(true),
-          onMouseLeave: () => setHovered(false),
-        } as object)
+      ? ({ onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false) } as object)
       : {};
 
   return (
     <Pressable
-      style={({ pressed }) => [
-        styles.card,
-        featured && styles.featuredCard,
-        (pressed || hovered) && styles.cardActive,
-      ]}
+      style={({ pressed }) => [styles.backdropCard, (pressed || hovered) && styles.cardActive]}
       onPress={onPress}
       {...webHoverProps}
     >
-      <View
-        style={[
-          styles.posterWrapper,
-          featured && styles.featuredPosterWrapper,
-          { width: w, height: h },
-        ]}
-      >
+      {item.backdropUrl ? (
+        <Image
+          source={{ uri: item.backdropUrl }}
+          style={styles.backdropImage}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+        />
+      ) : item.posterUrl ? (
+        <Image
+          source={{ uri: item.posterUrl }}
+          style={styles.backdropImage}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+        />
+      ) : (
+        <View style={[styles.backdropImage, styles.placeholder]}>
+          <Ionicons name="film-outline" size={28} color={COLORS.grey} />
+        </View>
+      )}
+
+      {/* Bottom gradient + title overlay */}
+      <LinearGradient
+        colors={['transparent', 'rgba(20,28,32,0.85)']}
+        locations={[0.35, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.backdropMeta}>
+        <Text style={styles.backdropTitle} numberOfLines={2}>{item.title}</Text>
+        <View style={styles.backdropPillRow}>
+          {item.year ? (
+            <Text style={styles.backdropPill}>{item.year}</Text>
+          ) : null}
+          {item.voteAverage != null ? (
+            <Text style={styles.backdropPill}>★ {item.voteAverage.toFixed(1)}</Text>
+          ) : null}
+        </View>
+      </View>
+
+      {item.hasTrailer ? (
+        <View style={styles.trailerBadge}>
+          <Ionicons name="play-circle" size={22} color="#fff" />
+        </View>
+      ) : null}
+    </Pressable>
+  );
+}
+
+/** Standard portrait poster card for non-featured items. */
+function StripCard({ item, onPress }: { item: StripItem; onPress: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  const webHoverProps =
+    Platform.OS === 'web'
+      ? ({ onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false) } as object)
+      : {};
+
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.card, (pressed || hovered) && styles.cardActive]}
+      onPress={onPress}
+      {...webHoverProps}
+    >
+      <View style={styles.posterWrapper}>
         {item.posterUrl ? (
           <Image
             source={{ uri: item.posterUrl }}
-            style={{ width: w, height: h }}
+            style={{ width: CARD_W, height: CARD_H }}
             contentFit="cover"
             cachePolicy="memory-disk"
           />
         ) : (
-          <View style={[styles.placeholder, { width: w, height: h }]}>
-            <Ionicons name="film-outline" size={featured ? 28 : 22} color={COLORS.grey} />
-            <Text style={[styles.placeholderName, { width: w - 16 }]} numberOfLines={3}>
+          <View style={[styles.placeholder, { width: CARD_W, height: CARD_H }]}>
+            <Ionicons name="film-outline" size={22} color={COLORS.grey} />
+            <Text style={[styles.placeholderName, { width: CARD_W - 16 }]} numberOfLines={3}>
               {item.title}
             </Text>
           </View>
         )}
-        {featured ? (
-          <View style={styles.firstBadge}>
-            <Text style={styles.firstBadgeText}>LATEST</Text>
+
+        {/* ★ rating chip — top-left */}
+        {item.voteAverage != null ? (
+          <View style={styles.ratingChip}>
+            <Text style={styles.ratingChipText}>★ {item.voteAverage.toFixed(1)}</Text>
           </View>
         ) : null}
+
+        {/* Trailer play badge — top-right */}
         {item.hasTrailer ? (
           <View style={styles.trailerBadge}>
             <Ionicons name="play-circle" size={22} color="#fff" />
           </View>
         ) : null}
       </View>
-      <Text style={[styles.title, { width: w }]} numberOfLines={2}>
-        {item.title}
-      </Text>
+
+      <Text style={[styles.title, { width: CARD_W }]} numberOfLines={2}>{item.title}</Text>
       {item.year ? <Text style={styles.year}>{item.year}</Text> : null}
     </Pressable>
   );
 }
 
 export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleedMargin = 0 }: Props) {
-  const [selectedItem, setSelectedItem] = useState<StripItem | null>(null);
+  const router = useRouter();
   const [gridVisible, setGridVisible] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   const allItems = buildItems(films, movies);
   const sorted = sortItems(allItems);
 
-  // Keep selectedItem in sync when films/movies prop updates (re-enrichment).
-  // Only applies to legacy movie path (films are immutable snapshots).
-  useEffect(() => {
-    if (!selectedItem || selectedItem.movie) return;
-    const updated = movies?.find(
-      (m) => m.name === selectedItem.title && m.year === selectedItem.year,
-    );
-    if (updated && updated !== selectedItem.movie) {
-      setSelectedItem((prev) =>
-        prev ? { ...prev, movie: updated, posterUrl: updated.imageUrl ?? null } : prev,
-      );
-    }
-  }, [movies]);
+  const isFilmsPath = !!(films && films.length > 0);
 
-  const visible = sorted.slice(0, INITIAL_COUNT);
-  const overflow = totalCount - visible.length;
-  const [featured, ...rest] = visible;
+  // For the films path: featured film uses backdrop card (if any film has one)
+  const featuredFilm = isFilmsPath ? pickFeaturedFilm(films ?? []) : null;
+  const featuredItem = featuredFilm
+    ? sorted.find((it) => it.film?.tmdbId === featuredFilm.tmdbId)
+    : null;
+  const restItems = featuredItem
+    ? sorted.filter((it) => it !== featuredItem)
+    : sorted.slice(1);
+  const legacyFeatured = !featuredItem ? sorted[0] : null;
 
-  // For the legacy grid modal we still need MovieAppearance[].
+  const cappedRest = isFilmsPath
+    ? (showAll ? restItems : restItems.slice(0, INITIAL_COUNT - 1))
+    : restItems.slice(0, INITIAL_COUNT - 1);
+
+  const filmOverflow = isFilmsPath && !showAll && restItems.length > INITIAL_COUNT - 1
+    ? restItems.length - (INITIAL_COUNT - 1)
+    : 0;
+  const legacyOverflow = !isFilmsPath
+    ? totalCount - Math.min(sorted.length, INITIAL_COUNT)
+    : 0;
+
   const legacyMovies: MovieAppearance[] = sorted
     .filter((it) => it.movie != null)
     .map((it) => it.movie!);
+
+  const handlePress = (item: StripItem) => {
+    if (item.film) {
+      router.push(`/film/${item.film.tmdbId}`);
+    } else if (item.movie) {
+      const url = item.movie.url ?? `https://www.google.com/search?q=${encodeURIComponent(item.title + ' film')}`;
+      Linking.openURL(url);
+    }
+  };
 
   return (
     <>
@@ -178,35 +240,39 @@ export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleed
         style={bleedMargin ? { marginHorizontal: -bleedMargin } : undefined}
         contentContainerStyle={[styles.container, { paddingHorizontal: contentInset }]}
       >
-        {featured ? (
-          <StripCard
-            key="featured"
-            item={featured}
-            featured
-            onPress={() => setSelectedItem(featured)}
-          />
+        {/* Featured card: landscape backdrop (films) or poster (legacy) */}
+        {featuredItem ? (
+          <FeaturedFilmCard item={featuredItem} onPress={() => handlePress(featuredItem)} />
+        ) : legacyFeatured ? (
+          <StripCard item={legacyFeatured} onPress={() => handlePress(legacyFeatured)} />
         ) : null}
-        {rest.map((item, i) => (
-          <StripCard key={item.key + i} item={item} onPress={() => setSelectedItem(item)} />
+
+        {cappedRest.map((item, i) => (
+          <StripCard key={item.key + i} item={item} onPress={() => handlePress(item)} />
         ))}
-        {overflow > 0 ? (
+
+        {/* Films overflow: reveal all in-place */}
+        {filmOverflow > 0 ? (
+          <Pressable
+            style={[styles.card, styles.overflowCard]}
+            onPress={() => setShowAll(true)}
+          >
+            <Text style={styles.overflowCount}>+{filmOverflow}</Text>
+            <Text style={styles.overflowLabel}>more</Text>
+          </Pressable>
+        ) : null}
+
+        {/* Legacy movies overflow: open grid modal */}
+        {legacyOverflow > 0 ? (
           <Pressable
             style={[styles.card, styles.overflowCard]}
             onPress={() => setGridVisible(true)}
           >
-            <Text style={styles.overflowCount}>+{overflow}</Text>
+            <Text style={styles.overflowCount}>+{legacyOverflow}</Text>
             <Text style={styles.overflowLabel}>more</Text>
           </Pressable>
         ) : null}
       </ScrollView>
-
-      {selectedItem ? (
-        <MovieDetailSheet
-          film={selectedItem.film}
-          movie={selectedItem.movie}
-          onClose={() => setSelectedItem(null)}
-        />
-      ) : null}
 
       {gridVisible && legacyMovies.length > 0 ? (
         <MovieGridModal
@@ -214,8 +280,8 @@ export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleed
           onClose={() => setGridVisible(false)}
           onSelectMovie={(movie) => {
             setGridVisible(false);
-            const found = sorted.find((it) => it.movie === movie) ?? null;
-            setSelectedItem(found);
+            const url = movie.url ?? `https://www.google.com/search?q=${encodeURIComponent(movie.name + ' film')}`;
+            Linking.openURL(url);
           }}
         />
       ) : null}
@@ -229,25 +295,53 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     alignItems: 'flex-end',
   },
+  // Landscape backdrop card
+  backdropCard: {
+    width: BACKDROP_W,
+    height: BACKDROP_H,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+  },
+  backdropImage: {
+    width: BACKDROP_W,
+    height: BACKDROP_H,
+  },
+  backdropMeta: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 10,
+    gap: 4,
+  },
+  backdropTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 14,
+    color: '#fff',
+    lineHeight: 17,
+  },
+  backdropPillRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  backdropPill: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  // Standard portrait card
   card: {
     width: CARD_W,
     alignItems: 'center',
   },
-  featuredCard: {
-    width: FEATURED_W,
-  },
-  cardActive: {
-    opacity: 0.8,
-  },
+  cardActive: { opacity: 0.8 },
   posterWrapper: {
+    width: CARD_W,
+    height: CARD_H,
     borderRadius: 8,
     overflow: 'hidden',
     marginBottom: 6,
-  },
-  featuredPosterWrapper: {
-    borderWidth: 2,
-    borderColor: COLORS.orange,
-    borderRadius: 9,
   },
   placeholder: {
     backgroundColor: COLORS.navy + '18',
@@ -263,20 +357,20 @@ const styles = StyleSheet.create({
     opacity: 0.65,
     paddingHorizontal: 4,
   },
-  firstBadge: {
+  ratingChip: {
     position: 'absolute',
-    bottom: 6,
-    left: 6,
-    backgroundColor: COLORS.orange,
+    top: 5,
+    left: 5,
+    backgroundColor: 'rgba(0,0,0,0.55)',
     borderRadius: 4,
-    paddingHorizontal: 5,
+    paddingHorizontal: 4,
     paddingVertical: 2,
   },
-  firstBadgeText: {
+  ratingChipText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 8,
     color: '#fff',
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
   },
   trailerBadge: {
     position: 'absolute',
