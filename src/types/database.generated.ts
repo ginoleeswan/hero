@@ -890,6 +890,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_add_comicvine_heroes: { Args: { p_heroes: Json }; Returns: number }
       admin_cron_status: { Args: never; Returns: Json }
       admin_reenrich_hero: { Args: { p_id: string }; Returns: string }
       admin_retry_failed: { Args: never; Returns: number }

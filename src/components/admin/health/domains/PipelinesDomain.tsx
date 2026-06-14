@@ -12,8 +12,9 @@ import { RunHistory } from '../RunHistory';
 import { ActivityLog } from '../ActivityLog';
 import { useRouter } from 'expo-router';
 import { InfoTip } from '../InfoTip';
+import { AddHeroesPanel } from '../AddHeroesPanel';
 import { HeroThumb } from '../atoms';
-import { relTime, runTypeLabel } from '../format';
+import { relTime, runTypeLabel, type LogTone } from '../format';
 import type {
   AmbiguousHero,
   CatalogHealth,
@@ -145,6 +146,8 @@ export function PipelinesDomain({
   recentlyEnriched,
   log,
   clearLog,
+  flash,
+  onHeroesAdded,
   narrow,
 }: {
   h: CatalogHealth;
@@ -168,6 +171,8 @@ export function PipelinesDomain({
   recentlyEnriched: RecentlyEnriched[];
   log: LogEntry[];
   clearLog: () => void;
+  flash: (msg: string, tone?: LogTone) => void;
+  onHeroesAdded: () => void;
   narrow: boolean;
 }) {
   const router = useRouter();
@@ -208,6 +213,9 @@ export function PipelinesDomain({
 
   return (
     <Bento>
+      {/* Step 0 — bring new characters in from ComicVine. */}
+      <AddHeroesPanel flash={flash} onAdded={onHeroesAdded} />
+
       {/* Top: controls + their live feedback, side by side. */}
       <Bento.Row narrow={narrow}>
         <Panel

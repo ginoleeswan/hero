@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Animated, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../src/hooks/useAuth';
 import { getProfile } from '../../src/lib/db/profiles';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
@@ -74,6 +74,7 @@ export default function AdminHealthScreen() {
   const drainJob = cronQ.data?.find((j) => j.jobname === DRAIN_CRON);
   const cronOn = !!drainJob?.active;
   const { log, toast, flash, logEvent, clearLog } = useActivityLog();
+  const queryClient = useQueryClient();
   const {
     busy,
     refreshing,
@@ -329,6 +330,11 @@ export default function AdminHealthScreen() {
             recentlyEnriched={recentEnrichedQ.data ?? []}
             log={log}
             clearLog={clearLog}
+            flash={flash}
+            onHeroesAdded={() => {
+              queryClient.invalidateQueries({ queryKey: ['enrichmentProgress'] });
+              queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
+            }}
             narrow={narrow}
           />
         )}
