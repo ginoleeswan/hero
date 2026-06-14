@@ -31,7 +31,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery, HeroNotFoundError } from '../../src/lib/api';
+import {
+  fetchHeroStats,
+  fetchHeroDetails,
+  fetchHeroGallery,
+  HeroNotFoundError,
+} from '../../src/lib/api';
 import { NotFoundView, LoadErrorView } from '../../src/components/NotFoundView';
 import {
   heroRowToCharacterData,
@@ -49,7 +54,12 @@ import {
   getHeroFavouriteCount,
 } from '../../src/lib/db/favourites';
 import { getHeroTitles, groupTitlesByMedia, type HeroTitle } from '../../src/lib/db/titles';
-import { getHeroPortrayals, getHeroLinks, type HeroPortrayals, type HeroLinks } from '../../src/lib/db/people';
+import {
+  getHeroPortrayals,
+  getHeroLinks,
+  type HeroPortrayals,
+  type HeroLinks,
+} from '../../src/lib/db/people';
 import { PortrayedBySection } from '../../src/components/PortrayedBySection';
 import { HeroLinksRow, heroLinksHasContent } from '../../src/components/HeroLinksRow';
 import { useAuth } from '../../src/hooks/useAuth';
@@ -60,7 +70,8 @@ import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkele
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
-import { NarrativeSection } from '../../src/components/character/NarrativeSection';
+import { TraitBand } from '../../src/components/character/TraitBand';
+import { DidYouKnowDeck } from '../../src/components/character/DidYouKnowDeck';
 import { getHeroNarrative, type HeroNarrative } from '../../src/lib/db/heroFacts';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
@@ -334,10 +345,7 @@ function hasDossierData(data: CharacterData, includeFirstAppearance: boolean): b
     app.weight.some(valid) ||
     valid(app['eye-color']) ||
     valid(app['hair-color']);
-  const hasConnections =
-    valid(work.occupation) ||
-    valid(work.base) ||
-    valid(affiliation);
+  const hasConnections = valid(work.occupation) || valid(work.base) || valid(affiliation);
   return hasProfile || hasAppearance || hasConnections;
 }
 
@@ -346,9 +354,11 @@ function hasDossierData(data: CharacterData, includeFirstAppearance: boolean): b
 function Dossier({
   data,
   includeFirstAppearance,
+  eraSummary,
 }: {
   data: CharacterData;
   includeFirstAppearance: boolean;
+  eraSummary?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const { biography: bio, appearance: app, work, connections } = data.stats;
@@ -371,12 +381,10 @@ function Dossier({
     !!weightStr ||
     valid(app['eye-color']) ||
     valid(app['hair-color']);
-  const hasConnections =
-    valid(work.occupation) ||
-    valid(work.base) ||
-    valid(affiliation);
+  const hasConnections = valid(work.occupation) || valid(work.base) || valid(affiliation);
 
-  if (!hasProfile && !hasAppearance && !hasConnections) return null;
+  const hasEra = !!eraSummary;
+  if (!hasProfile && !hasAppearance && !hasConnections && !hasEra) return null;
 
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -407,9 +415,17 @@ function Dossier({
       </TouchableOpacity>
       {open ? (
         <View style={styles.dossierBody}>
+          {hasEra ? (
+            <>
+              <Text style={styles.dossierGroupLabel}>Debut</Text>
+              <Text style={styles.dossierEra}>{eraSummary}</Text>
+            </>
+          ) : null}
           {hasProfile ? (
             <>
-              <Text style={styles.dossierGroupLabel}>Profile</Text>
+              <Text style={[styles.dossierGroupLabel, hasEra && styles.dossierGroupSpacing]}>
+                Profile
+              </Text>
               <InfoRow label="Alter egos" value={bio['alter-egos']} />
               <InfoRow label="Place of birth" value={bio['place-of-birth']} />
               {includeFirstAppearance ? (
@@ -496,7 +512,6 @@ export default function CharacterScreen() {
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const compareScale = useRef(new Animated.Value(1)).current;
-
 
   const springCompare = (toValue: number) =>
     Animated.spring(compareScale, {
@@ -648,7 +663,7 @@ export default function CharacterScreen() {
     s.push({ key: 'stats', label: 'Stats' });
     if (comicVineLoading || data.details.powers?.length)
       s.push({ key: 'abilities', label: 'Abilities' });
-    if (narrative && !narrative.isEmpty) s.push({ key: 'narrative', label: 'Lore' });
+    if (narrative && narrative.didYouKnow.length > 0) s.push({ key: 'narrative', label: 'Trivia' });
     // Dossier (the bio infobox) caps the intrinsic-character block, before the
     // relational/media sections below.
     if (hasDossierData(data, !hasFirstVisual)) s.push({ key: 'dossier', label: 'Dossier' });
@@ -707,10 +722,18 @@ export default function CharacterScreen() {
   useEffect(() => {
     if (!data?.stats.id) return;
     let active = true;
-    getHeroTitles(data.stats.id).then((f) => { if (active) setTitles(f); });
-    getHeroPortrayals(data.stats.id).then((pp) => { if (active) setPortrayals(pp); });
-    getHeroLinks(data.stats.id).then((l) => { if (active) setLinks(l); });
-    return () => { active = false; };
+    getHeroTitles(data.stats.id).then((f) => {
+      if (active) setTitles(f);
+    });
+    getHeroPortrayals(data.stats.id).then((pp) => {
+      if (active) setPortrayals(pp);
+    });
+    getHeroLinks(data.stats.id).then((l) => {
+      if (active) setLinks(l);
+    });
+    return () => {
+      active = false;
+    };
   }, [data?.stats.id]);
 
   useEffect(() => {
@@ -1199,6 +1222,14 @@ export default function CharacterScreen() {
             </ReAnimated.View>
           ) : (
             <ReAnimated.View entering={FadeIn.duration(320)}>
+              {/* Theme trait band — colour-coded by vocab category; sits at the
+                  top of the sheet as a sibling to the identity header badges. */}
+              {narrative && narrative.tags.length > 0 ? (
+                <View style={styles.traitBandWrap}>
+                  <TraitBand tags={narrative.tags} />
+                </View>
+              ) : null}
+
               {/* Summary — the lede; shows skeleton lines while ComicVine loads */}
               <View onLayout={registerAnchor('summary')}>
                 {comicVineLoading ? (
@@ -1265,24 +1296,33 @@ export default function CharacterScreen() {
                 </Section>
               </View>
 
-              {/* Abilities */}
+              {/* Abilities — power explainers fold in as the "Decoded" strip */}
               <View onLayout={registerAnchor('abilities')}>
-                <AbilitiesSection powers={data.details.powers} loading={comicVineLoading} />
+                <AbilitiesSection
+                  powers={data.details.powers}
+                  loading={comicVineLoading}
+                  explainers={narrative?.powerExplainers ?? []}
+                />
               </View>
 
-              {narrative && !narrative.isEmpty && (
-                <View onLayout={registerAnchor('narrative')}>
-                  <Section title="Lore">
-                    <NarrativeSection narrative={narrative} />
-                  </Section>
+              {/* Did You Know — swipeable trivia deck (the one playful module).
+                  Full-bleed so the deck owns its own edge insets + peek. */}
+              {narrative && narrative.didYouKnow.length > 0 ? (
+                <View onLayout={registerAnchor('narrative')} style={styles.bleedSection}>
+                  <SectionHeader title="Did You Know" />
+                  <DidYouKnowDeck facts={narrative.didYouKnow} />
                 </View>
-              )}
+              ) : null}
 
               {/* Dossier — the bio infobox (Profile + Appearance + Connections),
                   collapsed by default. Caps the intrinsic-character block before
                   the relational/media sections below. */}
               <View onLayout={registerAnchor('dossier')}>
-                <Dossier data={data} includeFirstAppearance={!hasFirstVisual} />
+                <Dossier
+                  data={data}
+                  includeFirstAppearance={!hasFirstVisual}
+                  eraSummary={narrative?.eraSummary}
+                />
               </View>
 
               {/* Enemies, Allies & Teams — full-bleed card strips off the
@@ -1385,7 +1425,9 @@ export default function CharacterScreen() {
                           </>
                         ) : null}
                         {groups.tv.length > 0 ? (
-                          <View style={groups.film.length > 0 ? styles.onScreenSubsection : undefined}>
+                          <View
+                            style={groups.film.length > 0 ? styles.onScreenSubsection : undefined}
+                          >
                             <SectionHeader title={`Television (${groups.tv.length})`} />
                             <MovieStrip
                               titles={groups.tv}
@@ -1401,7 +1443,8 @@ export default function CharacterScreen() {
               </View>
 
               {/* Portrayed By — performers + voice actors */}
-              {portrayals && (portrayals.performers.length > 0 || portrayals.voiceActors.length > 0) ? (
+              {portrayals &&
+              (portrayals.performers.length > 0 || portrayals.voiceActors.length > 0) ? (
                 <View style={styles.section}>
                   <SectionHeader title="Portrayed By" />
                   <PortrayedBySection portrayals={portrayals} contentInset={0} />
@@ -1783,6 +1826,7 @@ const styles = StyleSheet.create({
 
   // Sections
   section: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
+  traitBandWrap: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 4 },
   sectionTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 20,
@@ -1862,6 +1906,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   dossierGroupSpacing: { marginTop: 18 },
+  dossierEra: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 14.5,
+    lineHeight: 22,
+    color: COLORS.navy,
+  },
 
   // Circular stat dials
   statsCard: {

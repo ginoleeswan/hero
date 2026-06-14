@@ -19,7 +19,10 @@ export function TraitBand({ tags }: Props) {
         return (
           <View
             key={t.slug}
-            style={[styles.pill, { backgroundColor: withAlpha(c, 0.1), borderColor: withAlpha(c, 0.35) }]}
+            style={[
+              styles.pill,
+              { backgroundColor: withAlpha(c, 0.1), borderColor: withAlpha(c, 0.35) },
+            ]}
           >
             <View style={[styles.dot, { backgroundColor: c }]} />
             <Text style={[styles.label, { color: c }]}>{t.label}</Text>

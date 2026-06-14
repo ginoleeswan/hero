@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   cardBody: { flex: 1, paddingVertical: 12, paddingHorizontal: 14, gap: 6 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   name: {
-    fontFamily: 'Nunito_800ExtraBold',
+    fontFamily: 'Nunito_700Bold',
     fontSize: 13.5,
     letterSpacing: 0.3,
   },

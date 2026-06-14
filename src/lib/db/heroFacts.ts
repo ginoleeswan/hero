@@ -78,10 +78,7 @@ export async function getHeroNarrative(heroId: string): Promise<HeroNarrative> {
       .from('hero_narrative_facts')
       .select('kind, content, subject, position')
       .eq('hero_id', heroId),
-    supabase
-      .from('hero_tags')
-      .select('tag, hero_tag_vocab(label, category)')
-      .eq('hero_id', heroId),
+    supabase.from('hero_tags').select('tag, hero_tag_vocab(label, category)').eq('hero_id', heroId),
   ]);
 
   if (factsRes.error) throw new Error(factsRes.error.message);

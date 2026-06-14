@@ -4,12 +4,32 @@
 // (ai_stats_status null/pending — 'done'/'failed' are terminal, skipped by the fn).
 import { supabase } from '../supabase';
 
+export interface HeroStatValues {
+  intelligence: number;
+  strength: number;
+  speed: number;
+  durability: number;
+  power: number;
+  combat: number;
+}
+
 export interface StatsHero {
   id: string;
   name: string;
   image: string | null;
   status: 'pending' | 'done' | 'failed';
+  // The six dials, once generated — drives the live reveal in the runner.
+  stats: HeroStatValues | null;
 }
+
+export const STAT_KEYS: { key: keyof HeroStatValues; label: string }[] = [
+  { key: 'intelligence', label: 'INT' },
+  { key: 'strength', label: 'STR' },
+  { key: 'speed', label: 'SPD' },
+  { key: 'durability', label: 'DUR' },
+  { key: 'power', label: 'PWR' },
+  { key: 'combat', label: 'CBT' },
+];
 
 const PENDING = 'ai_stats_status.is.null,ai_stats_status.eq.pending';
 
