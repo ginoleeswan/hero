@@ -48,6 +48,18 @@ export const runSourceChip = (by: string) => ({
   fg: by === 'admin' ? COLORS.orange : COLORS.navy,
 });
 
+/** Friendly label for a run's pipeline, from its run_type. */
+export const runTypeLabel = (runType: string): string => {
+  const t = (runType ?? '').toLowerCase();
+  if (t === 'wikidata_resolve') return 'Wikidata · resolve';
+  if (t === 'wikidata_enrich') return 'Wikidata · appearances';
+  if (t.includes('tmdb')) return 'TMDB · media';
+  if (t.includes('comicvine')) return 'ComicVine';
+  if (t.includes('wikidata')) return 'Wikidata';
+  if (t.includes('snapshot')) return 'Health snapshot';
+  return runType || 'run';
+};
+
 /** Health colour ramp: red (poor) → gold (partial) → green (strong). */
 export const healthColor = (p: number) =>
   p >= 80 ? COLORS.green : p >= 50 ? COLORS.yellow : COLORS.red;

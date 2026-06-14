@@ -3,7 +3,7 @@ import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import type { EnrichmentRun } from '../../../lib/db/catalogHealth';
-import { relTime, runStatusColor, runSourceChip, dayKey, dayLabel } from './format';
+import { relTime, runStatusColor, runSourceChip, runTypeLabel, dayKey, dayLabel } from './format';
 import { Chip } from './atoms';
 
 // Compact labelled stat used by the mobile run cards.
@@ -35,9 +35,12 @@ function RunItem({ run: r, narrow }: { run: EnrichmentRun; narrow: boolean }) {
     return (
       <View style={styles.runCard}>
         <View style={styles.runCardHead}>
+          <Text style={styles.runCardType} numberOfLines={1}>{runTypeLabel(r.run_type)}</Text>
+          <Text style={styles.runCardWhen}>{relTime(r.created_at)}</Text>
+        </View>
+        <View style={styles.runCardHead}>
           <Chip bg={c + '22'} fg={c} text={r.status} spinner={r.status === 'running'} capitalize />
           <Chip bg={src.bg} fg={src.fg} text={r.triggered_by} />
-          <Text style={styles.runCardWhen}>{relTime(r.created_at)}</Text>
         </View>
         <View style={styles.runCardStats}>
           <RunStat label="Done" value={`${r.done}`} tint={COLORS.green} />
@@ -68,6 +71,7 @@ function RunItem({ run: r, narrow }: { run: EnrichmentRun; narrow: boolean }) {
   return (
     <View style={styles.runRow}>
       <Text style={styles.runWhen}>{relTime(r.created_at)}</Text>
+      <Text style={styles.runType} numberOfLines={1}>{runTypeLabel(r.run_type)}</Text>
       <View style={styles.runStatusCol}>
         <Chip bg={c + '22'} fg={c} text={r.status} spinner={r.status === 'running'} capitalize />
       </View>
@@ -172,6 +176,7 @@ export function RunHistory({
           {!narrow && (
             <View style={styles.runHeadRow}>
               <Text style={[styles.runWhen, styles.runHeadText]}>When</Text>
+              <Text style={[styles.runType, styles.runHeadText]}>Pipeline</Text>
               <Text style={[styles.runStatusCol, styles.runHeadText]}>State</Text>
               <Text style={[styles.runBy, styles.runHeadText]}>Source</Text>
               <Text style={[styles.runStat, styles.runHeadText]}>Done</Text>
@@ -278,6 +283,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f6f0e6',
   },
   runWhen: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
+  runType: { flex: 1.3, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.orange },
   runStatusCol: { width: 96 },
   runBy: { width: 84 },
   runStat: { width: 58, textAlign: 'right', fontFamily: 'Nunito_700Bold', fontSize: 13 },
@@ -300,6 +306,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   runCardHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  runCardType: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.orange },
   runCardWhen: {
     marginLeft: 'auto',
     fontFamily: 'Nunito_700Bold',
