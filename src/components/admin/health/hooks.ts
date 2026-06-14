@@ -1,18 +1,121 @@
 // Logic hooks for the catalog-health dashboard — keep the screen thin & the
 // behaviour unit-testable.
-import { useCallback, useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '../../../lib/supabase';
 import {
+  getCatalogHealth,
+  getCoverageGaps,
+  getRunHistory,
+  getCronStatus,
+  getComicvineUsageLastHour,
+  searchHeroesAdmin,
+  pingComicvine,
+  getHealthSnapshots,
+  getCatalogDistributions,
   runDrain,
   retryFailed,
   stopRun,
   snapshotNow,
   reenrichHero,
   setDrainCron,
+  type CoverageMetric,
+  type RunHistoryPage,
 } from '../../../lib/db/catalogHealth';
 import type { LogTone, LogEntry } from './format';
 
 type Flash = (msg: string, tone?: LogTone) => void;
+
+/**
+ * All of the dashboard's read queries plus the two data-freshness effects
+ * (fast-poll while a run is live, and realtime invalidation on enrichment_runs).
+ * Returns the query objects; the screen reads `.data`.
+ */
+export function useCatalogQueries({
+  enabled,
+  metric,
+  page,
+  pubFilter,
+  heroQuery,
+  historyLimit,
+}: {
+  enabled: boolean;
+  metric: CoverageMetric;
+  page: number;
+  pubFilter: string | null;
+  heroQuery: string;
+  historyLimit: number;
+}) {
+  const queryClient = useQueryClient();
+
+  const healthQ = useQuery({ queryKey: ['catalogHealth'], queryFn: getCatalogHealth, enabled, staleTime: 60_000 });
+  const gapsQ = useQuery({
+    queryKey: ['coverageGaps', metric, page, pubFilter],
+    queryFn: () => getCoverageGaps(metric, { page, publisher: pubFilter }),
+    enabled,
+    staleTime: 60_000,
+  });
+  const runsQ = useQuery({
+    queryKey: ['enrichmentRuns', historyLimit],
+    queryFn: () => getRunHistory(historyLimit),
+    enabled,
+    placeholderData: (prev) => prev, // keep history visible while "load more" fetches
+    // Poll fast while a run is in flight, slow otherwise.
+    refetchInterval: (q) =>
+      ((q.state.data as RunHistoryPage | undefined)?.runs ?? []).some((r) => r.status === 'running')
+        ? 2500
+        : 15_000,
+  });
+  const cronQ = useQuery({ queryKey: ['cronStatus'], queryFn: getCronStatus, enabled });
+  const heroSearchQ = useQuery({
+    queryKey: ['adminHeroSearch', heroQuery],
+    queryFn: () => searchHeroesAdmin(heroQuery),
+    enabled: enabled && heroQuery.trim().length >= 2,
+    staleTime: 30_000,
+  });
+  const pingQ = useQuery({ queryKey: ['cvPing'], queryFn: pingComicvine, enabled, refetchInterval: 60_000 });
+  const usageQ = useQuery({
+    queryKey: ['cvUsage'],
+    queryFn: getComicvineUsageLastHour,
+    enabled,
+    refetchInterval: 30_000,
+  });
+  const distQ = useQuery({ queryKey: ['distributions'], queryFn: getCatalogDistributions, enabled, staleTime: 60_000 });
+  const snapsQ = useQuery({
+    queryKey: ['healthSnapshots'],
+    queryFn: () => getHealthSnapshots(60),
+    enabled,
+    staleTime: 60_000,
+  });
+
+  // While a run is in flight, poll backlog + usage so the live numbers tick down.
+  const runsData = runsQ.data;
+  useEffect(() => {
+    const live = (runsData?.runs ?? []).some((r) => r.status === 'running');
+    if (!live) return;
+    const id = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
+      queryClient.invalidateQueries({ queryKey: ['cvUsage'] });
+    }, 4000);
+    return () => clearInterval(id);
+  }, [runsData, queryClient]);
+
+  // Realtime: any change to enrichment_runs refreshes the runs view instantly.
+  useEffect(() => {
+    if (!enabled) return;
+    const channel = supabase
+      .channel('admin-enrichment-runs')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'enrichment_runs' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [enabled, queryClient]);
+
+  return { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ };
+}
 
 /**
  * Session activity log + a transient toast. `flash` shows the toast AND records

@@ -11,32 +11,20 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/hooks/useAuth';
-import { supabase } from '../../src/lib/supabase';
 import { getProfile } from '../../src/lib/db/profiles';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { useChromeColor } from '../../src/contexts/WebChromeContext';
 import { LogoLoader } from '../../src/components/ui/LogoLoader';
 import { COLORS } from '../../src/constants/colors';
 import {
-  getCatalogHealth,
-  getCoverageGaps,
-  getRunHistory,
-  getCronStatus,
-  getComicvineUsageLastHour,
-  searchHeroesAdmin,
-  pingComicvine,
-  getHealthSnapshots,
-  getCatalogDistributions,
   GAP_PAGE_SIZE,
-  type CatalogHealth,
   type CoverageMetric,
   type PublisherCoverage,
   type EnrichmentRun,
-  type RunHistoryPage,
   type AdminHeroResult,
 } from '../../src/lib/db/catalogHealth';
 import {
@@ -57,7 +45,11 @@ import { Donut, BarRow, CompletenessChart } from '../../src/components/admin/hea
 import { Masthead } from '../../src/components/admin/health/Masthead';
 import { RunHistory } from '../../src/components/admin/health/RunHistory';
 import { Chip } from '../../src/components/admin/health/atoms';
-import { useActivityLog, useCatalogActions } from '../../src/components/admin/health/hooks';
+import {
+  useActivityLog,
+  useCatalogActions,
+  useCatalogQueries,
+} from '../../src/components/admin/health/hooks';
 
 // Mobile bottom navigation — fixed to the viewport (sticky releases here because
 // #root is clamped to 100dvh; fixed + translateZ pins it like the global TopBar).
@@ -342,63 +334,13 @@ export default function AdminHealthScreen() {
     if (gateResolved && !isAdmin) router.replace('/explore');
   }, [gateResolved, isAdmin, router]);
 
-  const healthQ = useQuery({
-    queryKey: ['catalogHealth'],
-    queryFn: getCatalogHealth,
+  const { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ } = useCatalogQueries({
     enabled: gateResolved && isAdmin,
-    staleTime: 60_000,
-  });
-  const gapsQ = useQuery({
-    queryKey: ['coverageGaps', metric, page, pubFilter],
-    queryFn: () => getCoverageGaps(metric, { page, publisher: pubFilter }),
-    enabled: gateResolved && isAdmin,
-    staleTime: 60_000,
-  });
-
-  // ── Ops / monitoring ────────────────────────────────────────────────────────
-  const queryClient = useQueryClient();
-  const opsEnabled = gateResolved && isAdmin;
-  const runsQ = useQuery({
-    queryKey: ['enrichmentRuns', historyLimit],
-    queryFn: () => getRunHistory(historyLimit),
-    enabled: opsEnabled,
-    placeholderData: (prev) => prev, // keep history visible while "load more" fetches
-    // Poll fast while a run is in flight, slow otherwise.
-    refetchInterval: (q) =>
-      ((q.state.data as RunHistoryPage | undefined)?.runs ?? []).some((r) => r.status === 'running')
-        ? 2500
-        : 15_000,
-  });
-  const cronQ = useQuery({ queryKey: ['cronStatus'], queryFn: getCronStatus, enabled: opsEnabled });
-  const heroSearchQ = useQuery({
-    queryKey: ['adminHeroSearch', heroQuery],
-    queryFn: () => searchHeroesAdmin(heroQuery),
-    enabled: opsEnabled && heroQuery.trim().length >= 2,
-    staleTime: 30_000,
-  });
-  const pingQ = useQuery({
-    queryKey: ['cvPing'],
-    queryFn: pingComicvine,
-    enabled: opsEnabled,
-    refetchInterval: 60_000,
-  });
-  const usageQ = useQuery({
-    queryKey: ['cvUsage'],
-    queryFn: getComicvineUsageLastHour,
-    enabled: opsEnabled,
-    refetchInterval: 30_000,
-  });
-  const distQ = useQuery({
-    queryKey: ['distributions'],
-    queryFn: getCatalogDistributions,
-    enabled: opsEnabled,
-    staleTime: 60_000,
-  });
-  const snapsQ = useQuery({
-    queryKey: ['healthSnapshots'],
-    queryFn: () => getHealthSnapshots(60),
-    enabled: opsEnabled,
-    staleTime: 60_000,
+    metric,
+    page,
+    pubFilter,
+    heroQuery,
+    historyLimit,
   });
 
   const drainJob = cronQ.data?.find((j) => j.jobname === DRAIN_CRON);
@@ -439,32 +381,6 @@ export default function AdminHealthScreen() {
       Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: false }),
     ]).start();
   }, [h, anim, enter]);
-
-  // While a run is in flight, poll backlog + usage so the live numbers tick down.
-  useEffect(() => {
-    const live = (runsQ.data?.runs ?? []).some((r) => r.status === 'running');
-    if (!live) return;
-    const id = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
-      queryClient.invalidateQueries({ queryKey: ['cvUsage'] });
-    }, 4000);
-    return () => clearInterval(id);
-  }, [runsQ.data, queryClient]);
-
-  // Realtime: any change to enrichment_runs refreshes the runs view instantly
-  // (complements the interval polling — feels live without waiting for the tick).
-  useEffect(() => {
-    if (!opsEnabled) return;
-    const channel = supabase
-      .channel('admin-enrichment-runs')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'enrichment_runs' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] });
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [opsEnabled, queryClient]);
 
   // Stream run state changes into the activity log. The first batch only primes
   // the seen-map (so existing history doesn't flood the log on mount); after that
