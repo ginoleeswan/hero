@@ -27,6 +27,7 @@ import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleto
 import { COLORS } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
+import { useChromeColor } from '../../src/contexts/WebChromeContext';
 import Svg, { Path } from 'react-native-svg';
 
 const HERO_LOGO_PATH =
@@ -262,6 +263,9 @@ export default function WebProfileScreen() {
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
   // Called before the guest early-return so it applies in both states.
   useWebCanvas(COLORS.beige);
+  // The cover banner bleeds up behind the floating nav, so lock the chrome to its
+  // dark top tone for a seamless top edge (matches the rest of the web app).
+  useChromeColor('#293C43');
   const { user, signOut, changePassword, deleteAccount } = useAuth();
   const {
     profile,

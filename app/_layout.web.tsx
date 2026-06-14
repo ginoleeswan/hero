@@ -66,7 +66,9 @@ function WebAuthGate() {
     segs.includes('compare') ||
     segs.includes('search') ||
     segs.includes('category') ||
-    segs.includes('biography');
+    segs.includes('biography') ||
+    segs.includes('profile') ||
+    segs.includes('admin');
 
   return (
     <SearchProvider>
