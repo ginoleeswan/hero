@@ -22,7 +22,6 @@ import type {
   CatalogHealth,
   EnrichmentRun,
   AdminHeroResult,
-  AmbiguousHero,
 } from '../../../../lib/db/catalogHealth';
 import type { LogEntry } from '../format';
 
@@ -48,10 +47,6 @@ export function OperationsDomain({
   onRetryFailed,
   onToggleCron,
   onReenrich,
-  ambiguous,
-  onResolveQid,
-  onRunResolve,
-  onRunEnrich,
   narrow,
 }: {
   h: CatalogHealth;
@@ -75,10 +70,6 @@ export function OperationsDomain({
   onRetryFailed: () => void;
   onToggleCron: () => void;
   onReenrich: (id: string, name: string) => void;
-  ambiguous: AmbiguousHero[];
-  onResolveQid: (id: string, qid: string, name: string) => void;
-  onRunResolve: () => void;
-  onRunEnrich: () => void;
   narrow: boolean;
 }) {
   const router = useRouter();
@@ -301,70 +292,6 @@ export function OperationsDomain({
             </View>
           )}
         </Panel>
-
-        <Panel
-          title="Identity review"
-          hint="Resolve heroes to Wikidata QIDs; pick the right one for ambiguous cases"
-          action={
-            <View style={styles.idrActions}>
-              <Pressable
-                onPress={onRunResolve}
-                disabled={!!busy}
-                style={[styles.idrRunBtn, styles.idrRunGhost, !!busy && styles.actDim]}
-              >
-                {busy === 'resolve' ? (
-                  <ActivityIndicator size="small" color={COLORS.navy} />
-                ) : (
-                  <Ionicons name="search" size={13} color={COLORS.navy} />
-                )}
-                <Text style={styles.idrRunGhostText}>Resolve 15</Text>
-              </Pressable>
-              <Pressable
-                onPress={onRunEnrich}
-                disabled={!!busy}
-                style={[styles.idrRunBtn, !!busy && styles.actDim]}
-              >
-                {busy === 'enrich' ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Ionicons name="sparkles" size={13} color="#fff" />
-                )}
-                <Text style={styles.idrRunText}>Enrich 10</Text>
-              </Pressable>
-            </View>
-          }
-        >
-          {ambiguous.length === 0 ? (
-            <Text style={styles.runsEmpty}>No heroes awaiting review.</Text>
-          ) : (
-            ambiguous.map((hero) => {
-              const busyThis = busy === `resolveqid-${hero.id}`;
-              return (
-                <View key={hero.id} style={styles.hcRow}>
-                  <HeroThumb uri={hero.imageUrl} width={34} height={44} radius={7} />
-                  <View style={styles.hcInfo}>
-                    <Text style={styles.hcName} numberOfLines={1}>{hero.name}</Text>
-                    <Text style={styles.hcPub} numberOfLines={1}>{hero.publisher ?? '—'}</Text>
-                  </View>
-                  <View style={styles.idrCandidates}>
-                    {hero.candidates.map((c) => (
-                      <Pressable
-                        key={c.qid}
-                        onPress={() => onResolveQid(hero.id, c.qid, hero.name)}
-                        disabled={!!busy}
-                        style={[styles.idrChip, !!busy && styles.actDim]}
-                      >
-                        <Text style={styles.idrChipText}>
-                          {busyThis ? '…' : `${c.qid} · ${c.score.toFixed(2)}`}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-              );
-            })
-          )}
-        </Panel>
       </Bento.Row>
     </Bento>
   );
@@ -474,22 +401,6 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f6f0e6',
   },
   hcInfo: { flex: 1, gap: 4, minWidth: 0 },
-  idrCandidates: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'flex-end', maxWidth: 220 },
-  idrChip: { backgroundColor: COLORS.navy + '12', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-  idrChipText: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.navy },
-  idrRunBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: COLORS.orange,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  idrRunText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
-  idrActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  idrRunGhost: { backgroundColor: COLORS.navy + '12' },
-  idrRunGhostText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   hcName: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
   hcMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   hcPub: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, maxWidth: 150 },

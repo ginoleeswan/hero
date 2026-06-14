@@ -24,6 +24,7 @@ import {
   resolveHeroQid,
   runWikidataResolve,
   runWikidataEnrich,
+  getEnrichmentProgress,
   type CoverageMetric,
   type RunHistoryPage,
 } from '../../../lib/db/catalogHealth';
@@ -119,6 +120,12 @@ export function useCatalogQueries({
     enabled,
     staleTime: 30_000,
   });
+  const enrichProgressQ = useQuery({
+    queryKey: ['enrichmentProgress'],
+    queryFn: getEnrichmentProgress,
+    enabled,
+    staleTime: 30_000,
+  });
 
   // While a run is in flight, poll backlog + usage so the live numbers tick down.
   const runsData = runsQ.data;
@@ -149,7 +156,7 @@ export function useCatalogQueries({
     };
   }, [enabled, queryClient]);
 
-  return { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ };
+  return { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ, enrichProgressQ };
 }
 
 /**
@@ -191,6 +198,7 @@ const REFRESH_KEYS = [
   'healthSnapshots',
   'geminiSpend',
   'ambiguousHeroes',
+  'enrichmentProgress',
 ];
 
 /**
@@ -287,6 +295,7 @@ export function useCatalogActions({
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] });
         queryClient.invalidateQueries({ queryKey: ['ambiguousHeroes'] });
+        queryClient.invalidateQueries({ queryKey: ['enrichmentProgress'] });
       }, 4000);
     } catch (e) {
       flash(`Resolve failed: ${(e as Error).message}`, 'error');
@@ -300,7 +309,10 @@ export function useCatalogActions({
     try {
       await runWikidataEnrich(10);
       flash('Wikidata enrich batch queued — watch it run below.', 'pending');
-      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] }), 4000);
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] });
+        queryClient.invalidateQueries({ queryKey: ['enrichmentProgress'] });
+      }, 4000);
     } catch (e) {
       flash(`Enrich failed: ${(e as Error).message}`, 'error');
     } finally {

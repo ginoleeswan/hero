@@ -268,6 +268,44 @@ export async function runWikidataEnrich(limit = 10): Promise<void> {
   if (error) throw error;
 }
 
+export interface EnrichmentProgress {
+  heroesTotal: number;
+  comicvineDone: number;
+  resolved: number;
+  ambiguous: number;
+  unresolved: number;
+  enriched: number; // resolved heroes whose appearances/people have been pulled
+  filmTitles: number;
+  tvTitles: number;
+  gameTitles: number;
+}
+
+async function awaitCount(qb: PromiseLike<{ count: number | null }>): Promise<number> {
+  const { count } = await qb;
+  return count ?? 0;
+}
+
+/** One snapshot of every enrichment pipeline's progress, for the Enrichment hub. */
+export async function getEnrichmentProgress(): Promise<EnrichmentProgress> {
+  const heroCount = () => supabase.from('heroes').select('*', { count: 'exact', head: true });
+  const titleCount = () => supabase.from('titles').select('*', { count: 'exact', head: true });
+  const [
+    heroesTotal, comicvineDone, resolved, ambiguous, unresolved, enriched,
+    filmTitles, tvTitles, gameTitles,
+  ] = await Promise.all([
+    awaitCount(heroCount()),
+    awaitCount(heroCount().eq('comicvine_status', 'done')),
+    awaitCount(heroCount().eq('wikidata_status', 'resolved')),
+    awaitCount(heroCount().eq('wikidata_status', 'ambiguous')),
+    awaitCount(heroCount().eq('wikidata_status', 'unresolved')),
+    awaitCount(heroCount().eq('wikidata_status', 'resolved').not('wikidata_enriched_at', 'is', null)),
+    awaitCount(titleCount().eq('media_type', 'film')),
+    awaitCount(titleCount().eq('media_type', 'tv')),
+    awaitCount(titleCount().eq('media_type', 'game')),
+  ]);
+  return { heroesTotal, comicvineDone, resolved, ambiguous, unresolved, enriched, filmTitles, tvTitles, gameTitles };
+}
+
 export type ComicvineStatus = 'ok' | 'limited' | 'error';
 export async function pingComicvine(): Promise<ComicvineStatus> {
   const { data, error } = await supabase.functions.invoke<{ status?: string }>('comicvine-ping');

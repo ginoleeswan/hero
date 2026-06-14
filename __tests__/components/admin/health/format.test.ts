@@ -5,11 +5,12 @@ import {
 } from '../../../../src/components/admin/health/format';
 
 describe('DOMAINS', () => {
-  it('lists the four primary domains in rail order, then placeholders', () => {
+  it('lists the primary domains in rail order, then placeholders', () => {
     expect(DOMAINS.map((d) => d.key)).toEqual([
       'command',
       'catalog',
       'operations',
+      'enrichment',
       'spend',
       'users',
       'traffic',
@@ -30,7 +31,7 @@ describe('DOMAINS', () => {
   });
 
   it('primaryDomainKeys excludes placeholders (mobile bottom bar set)', () => {
-    expect(primaryDomainKeys()).toEqual(['command', 'catalog', 'operations', 'spend']);
+    expect(primaryDomainKeys()).toEqual(['command', 'catalog', 'operations', 'enrichment', 'spend']);
   });
 });
 

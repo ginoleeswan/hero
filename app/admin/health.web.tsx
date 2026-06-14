@@ -22,6 +22,7 @@ import { AlertStack, type Alert } from '../../src/components/admin/health/AlertS
 import { CommandHome } from '../../src/components/admin/health/domains/CommandHome';
 import { CatalogDomain } from '../../src/components/admin/health/domains/CatalogDomain';
 import { OperationsDomain } from '../../src/components/admin/health/domains/OperationsDomain';
+import { EnrichmentDomain } from '../../src/components/admin/health/domains/EnrichmentDomain';
 import { SpendDomain } from '../../src/components/admin/health/domains/SpendDomain';
 import { PlaceholderDomain } from '../../src/components/admin/health/domains/PlaceholderDomain';
 import {
@@ -60,7 +61,7 @@ export default function AdminHealthScreen() {
     if (gateResolved && !isAdmin) router.replace('/explore');
   }, [gateResolved, isAdmin, router]);
 
-  const { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ } =
+  const { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ, enrichProgressQ } =
     useCatalogQueries({
       enabled: gateResolved && isAdmin,
       metric,
@@ -315,10 +316,18 @@ export default function AdminHealthScreen() {
             onRetryFailed={onRetryFailed}
             onToggleCron={onToggleCron}
             onReenrich={onReenrich}
+            narrow={narrow}
+          />
+        )}
+        {domain === 'enrichment' && (
+          <EnrichmentDomain
+            progress={enrichProgressQ.data}
             ambiguous={ambiguousQ.data ?? []}
-            onResolveQid={onResolveQid}
+            busy={busy}
+            onRunDrain={onRunDrain}
             onRunResolve={onRunResolve}
             onRunEnrich={onRunEnrich}
+            onResolveQid={onResolveQid}
             narrow={narrow}
           />
         )}
