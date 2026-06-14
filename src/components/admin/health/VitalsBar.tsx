@@ -125,7 +125,7 @@ export function VitalsBar({
       {/* Spend */}
       <View style={s.cell}>
         <Text style={s.label}>SPEND · MTD</Text>
-        <Text style={[s.value, { color: COLORS.navy }]}>
+        <Text style={[s.value, { color: '#fff' }]}>
           {spend?.available ? `$${(spend.monthToDate ?? 0).toFixed(0)}` : '—'}
         </Text>
         <Text style={s.sub}>{spend?.available ? 'this month' : 'no data'}</Text>
@@ -138,35 +138,37 @@ const s = StyleSheet.create({
   bar: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    backgroundColor: '#fffdf8',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(41,60,67,0.08)',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 16,
-    shadowColor: '#3a2a14',
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    borderColor: 'rgba(255,255,255,0.08)',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    gap: 14,
   },
-  barNarrow: { flexWrap: 'wrap', gap: 14, rowGap: 14 },
-  cell: { gap: 2, minWidth: 84, justifyContent: 'center' },
+  barNarrow: { flexWrap: 'wrap', gap: 12, rowGap: 12 },
+  cell: { gap: 2, minWidth: 80, justifyContent: 'center' },
   cellWide: { flex: 1, minWidth: 150 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
     letterSpacing: 0.8,
-    color: COLORS.grey,
+    color: 'rgba(255,255,255,0.5)',
   },
-  value: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.black, lineHeight: 24 },
+  value: { fontFamily: 'Flame-Regular', fontSize: 21, color: '#fff', lineHeight: 23 },
   usage: { fontFamily: 'Flame-Regular', fontSize: 14, marginLeft: 'auto' },
-  sub: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey },
+  sub: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: 'rgba(255,255,255,0.45)' },
   dot: { width: 8, height: 8, borderRadius: 8 },
-  track: { height: 5, borderRadius: 3, backgroundColor: '#efe6d6', overflow: 'hidden', marginVertical: 2 },
+  track: {
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    overflow: 'hidden',
+    marginVertical: 2,
+  },
   fill: { height: 5, borderRadius: 3 },
-  divider: { width: 1, alignSelf: 'stretch', backgroundColor: '#efe6d6' },
+  divider: { width: 1, alignSelf: 'stretch', backgroundColor: 'rgba(255,255,255,0.1)' },
   stopBtn: {
     flexDirection: 'row',
     alignItems: 'center',
