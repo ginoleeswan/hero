@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   View,
   Text,
@@ -7,118 +7,154 @@ import {
   ActivityIndicator,
   Animated,
   TextInput,
+  ScrollView,
   useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Path, Polyline } from 'react-native-svg';
 import { useAuth } from '../../src/hooks/useAuth';
-import { supabase } from '../../src/lib/supabase';
 import { getProfile } from '../../src/lib/db/profiles';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { useChromeColor } from '../../src/contexts/WebChromeContext';
-import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { LogoLoader } from '../../src/components/ui/LogoLoader';
 import { COLORS } from '../../src/constants/colors';
 import {
-  getCatalogHealth,
-  getCoverageGaps,
-  getRecentRuns,
-  getCronStatus,
-  getComicvineUsageLastHour,
-  runDrain,
-  retryFailed,
-  setDrainCron,
-  stopRun,
-  searchHeroesAdmin,
-  reenrichHero,
-  pingComicvine,
-  snapshotNow,
-  getHealthSnapshots,
-  getCatalogDistributions,
   GAP_PAGE_SIZE,
-  type CatalogHealth,
   type CoverageMetric,
   type PublisherCoverage,
   type EnrichmentRun,
-  type HealthSnapshot,
   type AdminHeroResult,
 } from '../../src/lib/db/catalogHealth';
+import {
+  DRAIN_CRON,
+  CV_HOURLY_CAP,
+  relTime,
+  pct,
+  logClock,
+  healthColor,
+  LOG_TONE_COLOR,
+  METRICS,
+  WORKLIST_LABEL,
+  TABS,
+  type MetricDef,
+  type TabKey,
+} from '../../src/components/admin/health/format';
+import { Donut, BarRow, CompletenessChart } from '../../src/components/admin/health/charts';
+import { Masthead } from '../../src/components/admin/health/Masthead';
+import { RunHistory } from '../../src/components/admin/health/RunHistory';
+import { Chip } from '../../src/components/admin/health/atoms';
+import {
+  useActivityLog,
+  useCatalogActions,
+  useCatalogQueries,
+} from '../../src/components/admin/health/hooks';
 
-const DRAIN_CRON = 'enrich-comicvine-pending';
-const CV_HOURLY_CAP = 200;
-
-const relTime = (iso: string) => {
-  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return `${s}s ago`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
-};
-
-const pct = (have: number, total: number) => (total > 0 ? Math.round((have / total) * 100) : 0);
-
-/** Health colour ramp: red (poor) → gold (partial) → green (strong). */
-const healthColor = (p: number) =>
-  p >= 80 ? COLORS.green : p >= 50 ? COLORS.yellow : COLORS.red;
-
-// ── Coverage metric catalogue (label, tint, whether it has a worklist) ────────
-interface MetricDef {
-  key: keyof CatalogHealth['metrics'];
-  label: string;
-  blurb: string;
-  tint: string;
-  worklist?: CoverageMetric;
-}
-const METRICS: MetricDef[] = [
-  { key: 'portrait', label: 'AI Portraits', blurb: 'Styled hero art', tint: COLORS.orange, worklist: 'portrait' },
-  { key: 'summary', label: 'Summaries', blurb: 'Short bio deck', tint: COLORS.blue, worklist: 'summary' },
-  { key: 'firstIssue', label: 'First Issue', blurb: 'Debut + cover', tint: COLORS.gold, worklist: 'firstIssue' },
-  { key: 'image', label: 'Source Image', blurb: 'ComicVine art', tint: COLORS.green },
-  { key: 'stats', label: 'Powerstats', blurb: 'The six dials', tint: COLORS.green },
-];
-
-const WORKLIST_LABEL: Record<CoverageMetric, string> = {
-  portrait: 'AI Portraits',
-  summary: 'Summaries',
-  firstIssue: 'First Issue',
-};
-
-// ── Completeness gauge ────────────────────────────────────────────────────────
-function Gauge({ value }: { value: number }) {
-  const size = 150;
-  const stroke = 12;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const tint = healthColor(value);
-  const offset = c * (1 - value / 100);
+// Mobile bottom navigation — fixed to the viewport (sticky releases here because
+// #root is clamped to 100dvh; fixed + translateZ pins it like the global TopBar).
+function BottomTabBar({
+  tab,
+  onChange,
+  pending,
+}: {
+  tab: TabKey;
+  onChange: (k: TabKey) => void;
+  pending?: number;
+}) {
   return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
-        <Circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,0.12)" strokeWidth={stroke} fill="none" />
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke={tint}
-          strokeWidth={stroke}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={offset}
-        />
-      </Svg>
-      <View style={styles.gaugeCenter}>
-        <View style={styles.gaugeNumRow}>
-          <Text style={styles.gaugeNum}>{value}</Text>
-          <Text style={styles.gaugePct}>%</Text>
-        </View>
-        <Text style={[styles.gaugeCaption, { color: tint }]}>complete</Text>
-      </View>
+    <View style={styles.btab}>
+      {TABS.map((t) => {
+        const on = tab === t.key;
+        const badge = t.key === 'backfill' ? pending : undefined;
+        return (
+          <Pressable key={t.key} onPress={() => onChange(t.key)} style={styles.btabItem}>
+            <View style={[styles.btabIconWrap, on && styles.btabIconWrapOn]}>
+              <Ionicons name={t.icon} size={22} color={on ? COLORS.orange : COLORS.navy} />
+              {badge != null && badge > 0 && (
+                <View style={styles.btabBadge}>
+                  <Text style={styles.btabBadgeText}>
+                    {badge > 999 ? `${Math.round(badge / 1000)}k` : badge}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.btabLabel, on && styles.btabLabelOn]}>{t.label}</Text>
+          </Pressable>
+        );
+      })}
     </View>
+  );
+}
+
+// Pulsing placeholder cards shown while the first health payload loads, so the
+// page has shape immediately instead of a blank flash.
+function SkeletonCards({ narrow }: { narrow: boolean }) {
+  const pulse = useRef(new Animated.Value(0.5)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.5, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+  const bar = (w: number | string, h = 14) => (
+    <Animated.View style={[styles.skBar, { width: w as number, height: h, opacity: pulse }]} />
+  );
+  return (
+    <>
+      {[0, 1, 2].map((i) => (
+        <View key={i} style={[styles.card, narrow && styles.cardNarrow]}>
+          {bar('45%', 18)}
+          {bar('70%', 12)}
+          <View style={{ height: 12 }} />
+          {bar('100%', 44)}
+        </View>
+      ))}
+    </>
+  );
+}
+
+// Alert pill — one tone-coloured row. Renders as a Pressable (with optional
+// trailing content) when onPress is supplied; otherwise a static row. Shared by
+// the expanded list and the collapsed mobile banner so they never drift.
+function AlertPill({
+  tone,
+  text,
+  onPress,
+  trailing,
+  numberOfLines,
+}: {
+  tone: 'red' | 'gold';
+  text: string;
+  onPress?: () => void;
+  trailing?: ReactNode;
+  numberOfLines?: number;
+}) {
+  const base = tone === 'red' ? COLORS.red : COLORS.yellow;
+  const style = [styles.alert, { backgroundColor: base + '18', borderColor: base + '44' }];
+  const inner = (
+    <>
+      <Ionicons
+        name={tone === 'red' ? 'alert-circle' : 'warning'}
+        size={16}
+        color={tone === 'red' ? COLORS.red : COLORS.gold}
+      />
+      <Text style={styles.alertText} numberOfLines={numberOfLines}>
+        {text}
+      </Text>
+      {trailing}
+    </>
+  );
+  return onPress ? (
+    <Pressable onPress={onPress} style={style}>
+      {inner}
+    </Pressable>
+  ) : (
+    <View style={style}>{inner}</View>
   );
 }
 
@@ -130,6 +166,7 @@ function CoverageRow({
   anim,
   active,
   onPress,
+  compact,
 }: {
   def: MetricDef;
   have: number;
@@ -137,6 +174,7 @@ function CoverageRow({
   anim: Animated.Value;
   active: boolean;
   onPress?: () => void;
+  compact?: boolean;
 }) {
   const p = pct(have, total);
   const gap = total - have;
@@ -147,7 +185,12 @@ function CoverageRow({
       onPress={onPress}
       disabled={!tappable}
       style={({ hovered }: { hovered?: boolean }) =>
-        [styles.covRow, active && styles.covRowActive, hovered && tappable && styles.covRowHover] as object
+        [
+          styles.covRow,
+          compact && styles.covRowNarrow,
+          active && styles.covRowActive,
+          hovered && tappable && styles.covRowHover,
+        ] as object
       }
     >
       <View style={[styles.covDot, { backgroundColor: def.tint }]} />
@@ -227,99 +270,37 @@ function PublisherTable({
   );
 }
 
-function MastStat({ value, label, tint }: { value: string; label: string; tint?: string }) {
+// Labelled heat pill — the mobile stand-in for a heatmap cell.
+function HeatPill({ label, val }: { label: string; val: number }) {
+  const c = healthColor(val);
   return (
-    <View style={styles.mstat}>
-      <Text style={[styles.mstatNum, tint ? { color: tint } : null]}>{value}</Text>
-      <Text style={styles.mstatLabel}>{label}</Text>
-    </View>
-  );
-}
-
-// Segmented ring (alignment split).
-function Donut({
-  segments,
-  total,
-}: {
-  segments: { value: number; color: string; label: string }[];
-  total: number;
-}) {
-  const size = 132;
-  const stroke = 17;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  let acc = 0;
-  return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
-        <Circle cx={size / 2} cy={size / 2} r={r} stroke="#efe6d6" strokeWidth={stroke} fill="none" />
-        {segments.map((s, i) => {
-          const frac = total > 0 ? s.value / total : 0;
-          const el = (
-            <Circle
-              key={i}
-              cx={size / 2}
-              cy={size / 2}
-              r={r}
-              stroke={s.color}
-              strokeWidth={stroke}
-              fill="none"
-              strokeDasharray={`${frac * c} ${c}`}
-              strokeDashoffset={-acc * c}
-            />
-          );
-          acc += frac;
-          return el;
-        })}
-      </Svg>
-      <View style={{ position: 'absolute', alignItems: 'center' }}>
-        <Text style={styles.donutNum}>{total.toLocaleString()}</Text>
-        <Text style={styles.donutLabel}>heroes</Text>
+    <View style={styles.heatPill}>
+      <Text style={styles.heatPillLabel}>{label}</Text>
+      <View style={[styles.heatPillVal, { backgroundColor: c + '22' }]}>
+        <Text style={[styles.heatPillNum, { color: c }]}>{val}%</Text>
       </View>
     </View>
   );
 }
 
-// Completeness-over-time area+line. Fixed 0–100 Y scale; width measured on layout.
-function CompletenessChart({ snaps }: { snaps: HealthSnapshot[] }) {
-  const [w, setW] = useState(0);
-  const H = 160;
-  const padT = 12;
-  const padB = 22;
-  const vals = snaps.map((s) => {
-    const ms = [s.portrait, s.image, s.stats, s.summary, s.first_issue].map((m) =>
-      s.total > 0 ? (m / s.total) * 100 : 0,
-    );
-    return Math.round(ms.reduce((a, b) => a + b, 0) / ms.length);
-  });
-  const yOf = (v: number) => padT + (1 - v / 100) * (H - padT - padB);
-  const xOf = (i: number) => (vals.length <= 1 ? w / 2 : (i / (vals.length - 1)) * w);
-  const line = vals.map((v, i) => `${xOf(i)},${yOf(v)}`).join(' ');
-  const area = vals.length
-    ? `M0,${H - padB} ` + vals.map((v, i) => `L${xOf(i)},${yOf(v)}`).join(' ') + ` L${w},${H - padB} Z`
-    : '';
+// Mobile publisher coverage as a stacked card (replaces the wide heatmap table
+// on narrow screens, where the fixed columns would overflow horizontally).
+function PublisherCard({ row, onPick }: { row: PublisherCoverage; onPick: (publisher: string) => void }) {
   return (
-    <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: H }}>
-      {w > 0 && (
-        <Svg width={w} height={H}>
-          {[0, 50, 100].map((g) => (
-            <Polyline
-              key={g}
-              points={`0,${yOf(g)} ${w},${yOf(g)}`}
-              stroke="#efe6d6"
-              strokeWidth={1}
-            />
-          ))}
-          {area ? <Path d={area} fill={COLORS.green + '1f'} /> : null}
-          {vals.length > 1 && (
-            <Polyline points={line} fill="none" stroke={COLORS.green} strokeWidth={2.5} />
-          )}
-          {vals.map((v, i) => (
-            <Circle key={i} cx={xOf(i)} cy={yOf(v)} r={vals.length === 1 ? 5 : 3.5} fill={COLORS.green} />
-          ))}
-        </Svg>
-      )}
-    </View>
+    <Pressable onPress={() => onPick(row.publisher)} style={styles.pubCard}>
+      <View style={styles.pubCardHead}>
+        <Text style={styles.pubCardName} numberOfLines={1}>
+          {row.publisher}
+        </Text>
+        <Text style={styles.pubCardCount}>{row.total.toLocaleString()} heroes</Text>
+        <Ionicons name="chevron-forward" size={15} color="rgba(41,60,67,0.3)" />
+      </View>
+      <View style={styles.pubCardHeats}>
+        <HeatPill label="Portrait" val={pct(row.portrait, row.total)} />
+        <HeatPill label="Summary" val={pct(row.summary, row.total)} />
+        <HeatPill label="Stats" val={pct(row.stats, row.total)} />
+      </View>
+    </Pressable>
   );
 }
 
@@ -335,10 +316,12 @@ export default function AdminHealthScreen() {
 
   const [metric, setMetric] = useState<CoverageMetric>('portrait');
   const [page, setPage] = useState(0);
-  const [tab, setTab] = useState<'overview' | 'backfill' | 'operations'>('overview');
+  const [tab, setTab] = useState<TabKey>('overview');
   const [heroQuery, setHeroQuery] = useState('');
   const [batchSize, setBatchSize] = useState(25);
   const [pubFilter, setPubFilter] = useState<string | null>(null);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const [historyLimit, setHistoryLimit] = useState(30);
 
   const profileQ = useQuery({
     queryKey: ['profile', user?.id],
@@ -351,149 +334,32 @@ export default function AdminHealthScreen() {
     if (gateResolved && !isAdmin) router.replace('/explore');
   }, [gateResolved, isAdmin, router]);
 
-  const healthQ = useQuery({
-    queryKey: ['catalogHealth'],
-    queryFn: getCatalogHealth,
+  const { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ } = useCatalogQueries({
     enabled: gateResolved && isAdmin,
-    staleTime: 60_000,
-  });
-  const gapsQ = useQuery({
-    queryKey: ['coverageGaps', metric, page, pubFilter],
-    queryFn: () => getCoverageGaps(metric, { page, publisher: pubFilter }),
-    enabled: gateResolved && isAdmin,
-    staleTime: 60_000,
-  });
-
-  // ── Ops / monitoring ────────────────────────────────────────────────────────
-  const queryClient = useQueryClient();
-  const opsEnabled = gateResolved && isAdmin;
-  const runsQ = useQuery({
-    queryKey: ['enrichmentRuns'],
-    queryFn: () => getRecentRuns(8),
-    enabled: opsEnabled,
-    // Poll fast while a run is in flight, slow otherwise.
-    refetchInterval: (q) =>
-      ((q.state.data as EnrichmentRun[] | undefined) ?? []).some((r) => r.status === 'running')
-        ? 2500
-        : 15_000,
-  });
-  const cronQ = useQuery({ queryKey: ['cronStatus'], queryFn: getCronStatus, enabled: opsEnabled });
-  const heroSearchQ = useQuery({
-    queryKey: ['adminHeroSearch', heroQuery],
-    queryFn: () => searchHeroesAdmin(heroQuery),
-    enabled: opsEnabled && heroQuery.trim().length >= 2,
-    staleTime: 30_000,
-  });
-  const pingQ = useQuery({
-    queryKey: ['cvPing'],
-    queryFn: pingComicvine,
-    enabled: opsEnabled,
-    refetchInterval: 60_000,
-  });
-  const usageQ = useQuery({
-    queryKey: ['cvUsage'],
-    queryFn: getComicvineUsageLastHour,
-    enabled: opsEnabled,
-    refetchInterval: 30_000,
-  });
-  const distQ = useQuery({
-    queryKey: ['distributions'],
-    queryFn: getCatalogDistributions,
-    enabled: opsEnabled,
-    staleTime: 60_000,
-  });
-  const snapsQ = useQuery({
-    queryKey: ['healthSnapshots'],
-    queryFn: () => getHealthSnapshots(60),
-    enabled: opsEnabled,
-    staleTime: 60_000,
+    metric,
+    page,
+    pubFilter,
+    heroQuery,
+    historyLimit,
   });
 
   const drainJob = cronQ.data?.find((j) => j.jobname === DRAIN_CRON);
   const cronOn = !!drainJob?.active;
-  const [busy, setBusy] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-  const flash = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 4000);
-  };
+  const { log, toast, flash, logEvent, clearLog } = useActivityLog();
+  const { busy, refreshing, onRunDrain, onRetryFailed, onStop, onSnapshot, onReenrich, onToggleCron, onRefresh } =
+    useCatalogActions({ batchSize, cronOn, flash });
 
-  const onRunDrain = async () => {
-    setBusy('drain');
-    try {
-      await runDrain(batchSize);
-      flash(`Batch of ${batchSize} queued — watch it run below.`);
-      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] }), 2000);
-    } catch (e) {
-      flash(`Failed: ${(e as Error).message}`);
-    } finally {
-      setBusy(null);
-    }
-  };
-  const onRetryFailed = async () => {
-    setBusy('retry');
-    try {
-      const n = await retryFailed();
-      flash(`${n.toLocaleString()} failed hero${n === 1 ? '' : 'es'} requeued.`);
-      queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
-    } catch (e) {
-      flash(`Failed: ${(e as Error).message}`);
-    } finally {
-      setBusy(null);
-    }
-  };
-  const onStop = async (runId: number) => {
-    setBusy('stop');
-    try {
-      const ok = await stopRun(runId);
-      flash(ok ? 'Stopping after the current hero…' : 'Run already finished.');
-      queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] });
-    } catch (e) {
-      flash(`Failed: ${(e as Error).message}`);
-    } finally {
-      setBusy(null);
-    }
-  };
-  const onSnapshot = async () => {
-    setBusy('snapshot');
-    try {
-      await snapshotNow();
-      flash('Snapshot captured.');
-      queryClient.invalidateQueries({ queryKey: ['healthSnapshots'] });
-    } catch (e) {
-      flash(`Failed: ${(e as Error).message}`);
-    } finally {
-      setBusy(null);
-    }
-  };
-  const onReenrich = async (id: string, name: string) => {
-    setBusy(`reenrich-${id}`);
-    try {
-      await reenrichHero(id);
-      flash(`Re-fetching ${name} from ComicVine…`);
-      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['adminHeroSearch'] }), 5000);
-    } catch (e) {
-      flash(`Failed: ${(e as Error).message}`);
-    } finally {
-      setBusy(null);
-    }
-  };
   const pickPublisher = (publisher: string) => {
     setPubFilter(publisher);
     setPage(0);
     setTab('backfill');
   };
-  const onToggleCron = async () => {
-    setBusy('cron');
-    try {
-      const state = await setDrainCron(!cronOn);
-      flash(`Drain cron ${state}.`);
-      queryClient.invalidateQueries({ queryKey: ['cronStatus'] });
-    } catch (e) {
-      flash(`Failed: ${(e as Error).message}`);
-    } finally {
-      setBusy(null);
-    }
+  // Deep-link from the masthead into a backfill worklist.
+  const goToBackfill = (m: CoverageMetric = 'portrait') => {
+    setMetric(m);
+    setPage(0);
+    setPubFilter(null);
+    setTab('backfill');
   };
 
   const h = healthQ.data;
@@ -516,31 +382,63 @@ export default function AdminHealthScreen() {
     ]).start();
   }, [h, anim, enter]);
 
-  // While a run is in flight, poll backlog + usage so the live numbers tick down.
+  // Stream run state changes into the activity log. The first batch only primes
+  // the seen-map (so existing history doesn't flood the log on mount); after that
+  // every transition — started, done, error, stopped — is logged with detail.
+  const seenRuns = useRef<Map<number, string>>(new Map());
+  const runLogPrimed = useRef(false);
   useEffect(() => {
-    const live = (runsQ.data ?? []).some((r) => r.status === 'running');
-    if (!live) return;
-    const id = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
-      queryClient.invalidateQueries({ queryKey: ['cvUsage'] });
-    }, 4000);
-    return () => clearInterval(id);
-  }, [runsQ.data, queryClient]);
+    const data = runsQ.data?.runs;
+    if (!data) return;
+    if (!runLogPrimed.current) {
+      for (const r of data) seenRuns.current.set(r.id, r.status);
+      runLogPrimed.current = true;
+      return;
+    }
+    for (const r of data) {
+      const prev = seenRuns.current.get(r.id);
+      if (prev === r.status) continue;
+      seenRuns.current.set(r.id, r.status);
+      const took = r.duration_ms != null ? ` in ${(r.duration_ms / 1000).toFixed(1)}s` : '';
+      if (r.status === 'running' && prev == null) {
+        logEvent('pending', `Run #${r.id} started · ${r.triggered_by}`);
+      } else if (r.status === 'done') {
+        logEvent(
+          'success',
+          `Run #${r.id} finished · ${r.done} enriched${r.failed ? `, ${r.failed} failed` : ''}${
+            r.retry ? `, ${r.retry} retry` : ''
+          }${took}`,
+        );
+      } else if (r.status === 'error') {
+        logEvent('error', `Run #${r.id} errored${r.done ? ` after ${r.done} enriched` : ''}${took}`);
+      } else if (r.status === 'stopped') {
+        logEvent('info', `Run #${r.id} stopped · ${r.done} enriched${took}`);
+      }
+    }
+  }, [runsQ.data, logEvent]);
 
-  // Realtime: any change to enrichment_runs refreshes the runs view instantly
-  // (complements the interval polling — feels live without waiting for the tick).
+  // Alerts surface problems without hunting. Memoised so the auto-collapse
+  // effect can re-fold the mobile banner once they drop back to ≤1.
+  const alerts = useMemo<{ tone: 'red' | 'gold'; text: string }[]>(() => {
+    const usage = usageQ.data ?? 0;
+    const recent = runsQ.data?.runs ?? [];
+    const a: { tone: 'red' | 'gold'; text: string }[] = [];
+    if (pingQ.data === 'limited')
+      a.push({ tone: 'gold', text: 'ComicVine is rate-limited right now — drains will mostly retry.' });
+    else if (usage >= CV_HOURLY_CAP * 0.8)
+      a.push({ tone: 'gold', text: `ComicVine usage high — ${usage}/${CV_HOURLY_CAP} calls this hour.` });
+    if ((h?.cvStatus.failed ?? 0) > 0)
+      a.push({ tone: 'red', text: `${h!.cvStatus.failed} hero(es) marked failed — Retry failed in Operations.` });
+    if (recent[0]?.status === 'error')
+      a.push({ tone: 'red', text: 'The last run errored — see Recent runs.' });
+    return a;
+  }, [pingQ.data, usageQ.data, runsQ.data, h]);
+
+  // Once alerts fall back to one (or none), reset the mobile banner so the next
+  // time multiple appear it starts collapsed again instead of staying expanded.
   useEffect(() => {
-    if (!opsEnabled) return;
-    const channel = supabase
-      .channel('admin-enrichment-runs')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'enrichment_runs' }, () => {
-        queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] });
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [opsEnabled, queryClient]);
+    if (alerts.length <= 1) setAlertsOpen(false);
+  }, [alerts.length]);
 
   if (!gateResolved || !isAdmin) return <LogoLoader />;
 
@@ -549,7 +447,8 @@ export default function AdminHealthScreen() {
   const cvPctUsed = Math.min(100, Math.round((cvUsage / CV_HOURLY_CAP) * 100));
   const cvColor =
     cvUsage >= CV_HOURLY_CAP * 0.8 ? COLORS.red : cvUsage >= CV_HOURLY_CAP * 0.5 ? COLORS.yellow : COLORS.green;
-  const runs: EnrichmentRun[] = runsQ.data ?? [];
+  const runs: EnrichmentRun[] = runsQ.data?.runs ?? [];
+  const runsTotal = runsQ.data?.total ?? runs.length;
   const activeRun = runs.find((r) => r.status === 'running');
   // Backlog ETA at the observed drain rate (heroes enriched per minute of run time).
   const drainedRuns = runs.filter((r) => r.duration_ms && r.done > 0);
@@ -565,17 +464,11 @@ export default function AdminHealthScreen() {
         : `~${Math.ceil(etaMin)}m to clear`
       : null;
 
-  // ── Alerts: surface problems without hunting ────────────────────────────────
+  // ── Alerts: surface problems without hunting (built in a memo above) ─────────
   const cvPing = pingQ.data;
-  const alerts: { tone: 'red' | 'gold'; text: string }[] = [];
-  if (cvPing === 'limited')
-    alerts.push({ tone: 'gold', text: 'ComicVine is rate-limited right now — drains will mostly retry.' });
-  else if (cvUsage >= CV_HOURLY_CAP * 0.8)
-    alerts.push({ tone: 'gold', text: `ComicVine usage high — ${cvUsage}/${CV_HOURLY_CAP} calls this hour.` });
-  if ((h?.cvStatus.failed ?? 0) > 0)
-    alerts.push({ tone: 'red', text: `${h!.cvStatus.failed} hero(es) marked failed — Retry failed in Operations.` });
-  if (runs[0]?.status === 'error')
-    alerts.push({ tone: 'red', text: 'The last run errored — see Recent runs.' });
+  // Mobile collapses multiple alerts into one banner (worst-first) to save space.
+  const leadAlert = alerts.find((a) => a.tone === 'red') ?? alerts[0];
+  const alertsCollapsed = narrow && !alertsOpen && alerts.length > 1;
 
   const dist = distQ.data;
   const snaps = snapsQ.data ?? [];
@@ -592,71 +485,20 @@ export default function AdminHealthScreen() {
     <View style={styles.page}>
       <Animated.View style={[styles.root, enterStyle]}>
         {/* ── Masthead — full-bleed dark band that fuses with the floating nav ── */}
-        <LinearGradient
-          colors={['#10242e', COLORS.deepNavy]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.masthead}
-        >
-          <View style={styles.mastheadGlow} />
-          <View style={[styles.mastheadInner, narrow && styles.mastheadInnerNarrow]}>
-          <View style={styles.mastheadLeft}>
-            <Text style={styles.kicker}>MYTHIQUE · ARCHIVE CONTROL</Text>
-            <Text style={styles.title}>Catalog Health</Text>
-            <Text style={styles.subtitle}>
-              {h ? 'Live coverage across the archive' : 'Loading the archive…'}
-            </Text>
-            {h && (
-              <View style={styles.scoreboard}>
-                <MastStat value={h.total.toLocaleString()} label="Heroes" />
-                <View style={styles.scoreDivider} />
-                <MastStat
-                  value={`${pct(h.metrics.portrait, h.total)}%`}
-                  label="Portraits"
-                  tint={COLORS.orange}
-                />
-                <View style={styles.scoreDivider} />
-                <MastStat
-                  value={(h.total - h.metrics.portrait).toLocaleString()}
-                  label="Awaiting"
-                  tint={COLORS.yellow}
-                />
-                <View style={styles.scoreDivider} />
-                <MastStat value={`${h.byPublisher.length}`} label="Publishers" tint={COLORS.blue} />
-              </View>
-            )}
-            <View style={styles.statusRow}>
-              {h &&
-                Object.entries(h.cvStatus).map(([k, v]) => (
-                  <View key={k} style={styles.statusChip}>
-                    <View
-                      style={[
-                        styles.statusDot,
-                        {
-                          backgroundColor:
-                            k === 'done' ? COLORS.green : k === 'failed' ? COLORS.red : COLORS.yellow,
-                        },
-                      ]}
-                    />
-                    <Text style={styles.statusChipText}>
-                      {k} · {v.toLocaleString()}
-                    </Text>
-                  </View>
-                ))}
-            </View>
-          </View>
-          {h && <Gauge value={overall} />}
-          </View>
-        </LinearGradient>
+        <Masthead
+          h={h}
+          overall={overall}
+          narrow={narrow}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          onJump={goToBackfill}
+        />
 
-        <View style={styles.body}>
-        {/* ── Tab bar ── */}
+        <View style={[styles.body, narrow && styles.bodyNarrow]}>
+        {/* ── Tab bar (desktop pill row; mobile uses the fixed bottom bar) ── */}
+        {!narrow && (
         <View style={styles.tabBar}>
-          {([
-            { key: 'overview', label: 'Overview', icon: 'stats-chart' },
-            { key: 'backfill', label: 'Backfill', icon: 'construct' },
-            { key: 'operations', label: 'Operations', icon: 'pulse' },
-          ] as const).map((t) => {
+          {TABS.map((t) => {
             const on = tab === t.key;
             const badge =
               t.key === 'backfill' && h ? (h.cvStatus.pending ?? 0) : undefined;
@@ -679,37 +521,48 @@ export default function AdminHealthScreen() {
             );
           })}
         </View>
-
-        {/* ── Alerts ── */}
-        {alerts.length > 0 && (
-          <View style={styles.alertWrap}>
-            {alerts.map((a, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.alert,
-                  {
-                    backgroundColor: (a.tone === 'red' ? COLORS.red : COLORS.yellow) + '18',
-                    borderColor: (a.tone === 'red' ? COLORS.red : COLORS.yellow) + '44',
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={a.tone === 'red' ? 'alert-circle' : 'warning'}
-                  size={16}
-                  color={a.tone === 'red' ? COLORS.red : COLORS.gold}
-                />
-                <Text style={styles.alertText}>{a.text}</Text>
-              </View>
-            ))}
-          </View>
         )}
+
+        {/* ── Alerts (mobile collapses to a single worst-first banner) ── */}
+        {alertsCollapsed ? (
+          <AlertPill
+            tone={leadAlert.tone}
+            text={leadAlert.text}
+            numberOfLines={1}
+            onPress={() => setAlertsOpen(true)}
+            trailing={
+              <>
+                <View style={styles.alertCount}>
+                  <Text style={styles.alertCountText}>+{alerts.length - 1}</Text>
+                </View>
+                <Ionicons name="chevron-down" size={16} color={COLORS.navy} />
+              </>
+            }
+          />
+        ) : (
+          alerts.length > 0 && (
+            <View style={styles.alertWrap}>
+              {alerts.map((a, i) => (
+                <AlertPill key={i} tone={a.tone} text={a.text} />
+              ))}
+              {narrow && alerts.length > 1 && (
+                <Pressable onPress={() => setAlertsOpen(false)} style={styles.alertCollapse}>
+                  <Ionicons name="chevron-up" size={14} color={COLORS.grey} />
+                  <Text style={styles.alertCollapseText}>Show less</Text>
+                </Pressable>
+              )}
+            </View>
+          )
+        )}
+
+        {/* ── Loading skeleton (first health payload) ── */}
+        {!h && <SkeletonCards narrow={narrow} />}
 
         {/* ── Operations ── */}
         {tab === 'operations' && h && (
-          <View style={styles.card}>
+          <View style={[styles.card, narrow && styles.cardNarrow]}>
             <View style={styles.opsHead}>
-              <Text style={styles.cardTitle}>Operations</Text>
+              <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Operations</Text>
               {toast && (
                 <View style={styles.toastWrap}>
                   <Ionicons name="information-circle" size={15} color={COLORS.orange} />
@@ -746,7 +599,7 @@ export default function AdminHealthScreen() {
                 </Pressable>
               </View>
             )}
-            <View style={[styles.opsBody, narrow && { flexDirection: 'column', alignItems: 'stretch' }]}>
+            <View style={[styles.opsBody, narrow && styles.opsBodyNarrow]}>
               <View style={styles.opsActions}>
                 <View style={styles.sizeSel}>
                   {[10, 25, 50].map((n) => (
@@ -764,7 +617,7 @@ export default function AdminHealthScreen() {
                 <Pressable
                   onPress={onRunDrain}
                   disabled={!!busy}
-                  style={[styles.actBtn, styles.actPrimary, !!busy && styles.actDim]}
+                  style={[styles.actBtn, styles.actPrimary, narrow && styles.actGrow, !!busy && styles.actDim]}
                 >
                   {busy === 'drain' ? (
                     <ActivityIndicator size="small" color="#fff" />
@@ -779,6 +632,7 @@ export default function AdminHealthScreen() {
                   style={[
                     styles.actBtn,
                     styles.actGhost,
+                    narrow && styles.actGrow,
                     (!!busy || (h.cvStatus.failed ?? 0) === 0) && styles.actDim,
                   ]}
                 >
@@ -794,7 +648,12 @@ export default function AdminHealthScreen() {
                 <Pressable
                   onPress={onToggleCron}
                   disabled={!!busy}
-                  style={[styles.actBtn, cronOn ? styles.actOn : styles.actGhost, !!busy && styles.actDim]}
+                  style={[
+                    styles.actBtn,
+                    cronOn ? styles.actOn : styles.actGhost,
+                    narrow && styles.actGrow,
+                    !!busy && styles.actDim,
+                  ]}
                 >
                   {busy === 'cron' ? (
                     <ActivityIndicator size="small" color={cronOn ? '#fff' : COLORS.navy} />
@@ -811,14 +670,14 @@ export default function AdminHealthScreen() {
                 </Pressable>
               </View>
 
-              <View style={styles.opsMetrics}>
+              <View style={[styles.opsMetrics, narrow && styles.opsMetricsNarrow]}>
                 <View style={styles.opsMetric}>
                   <Text style={styles.opsMetricNum}>{(h.cvStatus.pending ?? 0).toLocaleString()}</Text>
                   <Text style={styles.opsMetricLabel}>Pending backlog</Text>
                   {etaLabel && <Text style={styles.opsMetricSub}>{etaLabel}</Text>}
                 </View>
-                <View style={styles.opsDivider} />
-                <View style={styles.opsMetricWide}>
+                {!narrow && <View style={styles.opsDivider} />}
+                <View style={[styles.opsMetricWide, narrow && styles.opsMetricWideNarrow]}>
                   <View style={styles.opsMetricHead}>
                     <View style={styles.pingRow}>
                       <View
@@ -856,7 +715,7 @@ export default function AdminHealthScreen() {
                     {cvUsage >= CV_HOURLY_CAP ? 'at cap — drains will throttle' : 'calls consumed'}
                   </Text>
                 </View>
-                <View style={styles.opsDivider} />
+                {!narrow && <View style={styles.opsDivider} />}
                 <View style={styles.opsMetric}>
                   <Text style={[styles.opsMetricNum, { color: cronOn ? COLORS.green : COLORS.grey }]}>
                     {cronOn ? 'ON' : 'OFF'}
@@ -870,11 +729,48 @@ export default function AdminHealthScreen() {
           </View>
         )}
 
+        {/* ── Activity log ── */}
+        {tab === 'operations' && (
+          <View style={[styles.card, narrow && styles.cardNarrow]}>
+            <View style={styles.logHead}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Activity log</Text>
+                <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Live results of actions & runs this session</Text>
+              </View>
+              {log.length > 0 && (
+                <Pressable onPress={clearLog} style={styles.miniBtn}>
+                  <Ionicons name="trash-outline" size={14} color={COLORS.navy} />
+                  <Text style={styles.miniBtnText}>Clear</Text>
+                </Pressable>
+              )}
+            </View>
+            {log.length === 0 ? (
+              <Text style={styles.runsEmpty}>
+                Nothing yet — run a batch or action and results stream in here.
+              </Text>
+            ) : (
+              <ScrollView
+                style={styles.logPanel}
+                contentContainerStyle={styles.logPanelInner}
+                nestedScrollEnabled
+              >
+                {log.map((e) => (
+                  <View key={e.id} style={styles.logRow}>
+                    <Text style={styles.logTime}>{logClock(e.at)}</Text>
+                    <View style={[styles.logDot, { backgroundColor: LOG_TONE_COLOR[e.tone] }]} />
+                    <Text style={styles.logText}>{e.text}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        )}
+
         {/* ── Single-hero console ── */}
         {tab === 'operations' && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Hero console</Text>
-            <Text style={styles.cardHint}>Find any hero and re-fetch its ComicVine data on demand</Text>
+          <View style={[styles.card, narrow && styles.cardNarrow]}>
+            <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Hero console</Text>
+            <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Find any hero and re-fetch its ComicVine data on demand</Text>
             <View style={styles.heroSearchBox}>
               <Ionicons name="search" size={16} color={COLORS.grey} />
               <TextInput
@@ -924,9 +820,8 @@ export default function AdminHealthScreen() {
                             <Text style={styles.hcPub} numberOfLines={1}>
                               {hero.publisher ?? '—'}
                             </Text>
-                            <View style={[styles.stChip, { backgroundColor: stc + '22' }]}>
-                              <Text style={[styles.stChipText, { color: stc }]}>{st}</Text>
-                            </View>
+                            <Chip bg={stc + '22'} fg={stc} text={st} capitalize />
+
                             {!hero.portrait_url && (
                               <Text style={styles.hcFlag}>no portrait</Text>
                             )}
@@ -956,9 +851,9 @@ export default function AdminHealthScreen() {
         {tab === 'backfill' && (
           <View style={[styles.cols, narrow && styles.colsNarrow]}>
           {/* ── Coverage ── */}
-          <View style={[styles.card, styles.coverageCard, !narrow && styles.colLeft]}>
-            <Text style={styles.cardTitle}>Coverage</Text>
-            <Text style={styles.cardHint}>Sorted by weakest first · tap one to load its queue</Text>
+          <View style={[styles.card, narrow && styles.cardNarrow, styles.coverageCard, !narrow && styles.colLeft]}>
+            <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Coverage</Text>
+            <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Sorted by weakest first · tap one to load its queue</Text>
             {!h ? (
               <ActivityIndicator color={COLORS.orange} style={{ marginTop: 20 }} />
             ) : (
@@ -971,6 +866,7 @@ export default function AdminHealthScreen() {
                     have={h.metrics[def.key]}
                     total={h.total}
                     anim={anim}
+                    compact={narrow}
                     active={def.worklist === metric}
                     onPress={
                       def.worklist
@@ -986,10 +882,10 @@ export default function AdminHealthScreen() {
           </View>
 
           {/* ── Backfill queue ── */}
-          <View style={[styles.card, !narrow && styles.colRight]}>
+          <View style={[styles.card, narrow && styles.cardNarrow, !narrow && styles.colRight]}>
             <View style={styles.queueHead}>
-              <Text style={styles.cardTitle}>Backfill queue</Text>
-              <Text style={styles.cardHint}>Most-viewed first</Text>
+              <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Backfill queue</Text>
+              <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Most-viewed first</Text>
             </View>
             <View style={styles.tabs}>
               {(Object.keys(WORKLIST_LABEL) as CoverageMetric[]).map((m) => {
@@ -1105,95 +1001,32 @@ export default function AdminHealthScreen() {
         </View>
         )}
 
-        {/* ── Recent runs (monitoring) ── */}
+        {/* ── Run history (monitoring dashboard) ── */}
         {tab === 'operations' && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Recent runs</Text>
-          <Text style={styles.cardHint}>Cron + manual · auto-refreshes every 15s</Text>
-          {runsQ.isLoading ? (
-            <ActivityIndicator color={COLORS.orange} style={{ marginTop: 16 }} />
-          ) : runs.length === 0 ? (
-            <Text style={styles.runsEmpty}>No runs logged yet — hit “Run batch · 25”.</Text>
-          ) : (
-            <>
-              <View style={styles.runHeadRow}>
-                <Text style={[styles.runWhen, styles.runHeadText]}>When</Text>
-                <Text style={[styles.runStatusCol, styles.runHeadText]}>State</Text>
-                <Text style={[styles.runBy, styles.runHeadText]}>Source</Text>
-                <Text style={[styles.runStat, styles.runHeadText]}>Done</Text>
-                <Text style={[styles.runStat, styles.runHeadText]}>Failed</Text>
-                <Text style={[styles.runStat, styles.runHeadText]}>Retry</Text>
-                <Text style={[styles.runStat, styles.runHeadText]}>Left</Text>
-                <Text style={[styles.runDur, styles.runHeadText]}>Took</Text>
-              </View>
-              {runs.map((r) => (
-                <View key={r.id} style={styles.runRow}>
-                  <Text style={styles.runWhen}>{relTime(r.created_at)}</Text>
-                  <View style={styles.runStatusCol}>
-                    {(() => {
-                      const c =
-                        r.status === 'running'
-                          ? COLORS.orange
-                          : r.status === 'error'
-                            ? COLORS.red
-                            : r.status === 'stopped'
-                              ? COLORS.navy
-                              : COLORS.green;
-                      return (
-                        <View style={[styles.stChip, { backgroundColor: c + '22' }]}>
-                          {r.status === 'running' && (
-                            <ActivityIndicator size="small" color={c} style={{ transform: [{ scale: 0.7 }] }} />
-                          )}
-                          <Text style={[styles.stChipText, { color: c }]}>{r.status}</Text>
-                        </View>
-                      );
-                    })()}
-                  </View>
-                  <View style={styles.runBy}>
-                    <View
-                      style={[
-                        styles.byChip,
-                        { backgroundColor: r.triggered_by === 'admin' ? COLORS.orange + '22' : '#efe6d6' },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.byChipText,
-                          { color: r.triggered_by === 'admin' ? COLORS.orange : COLORS.navy },
-                        ]}
-                      >
-                        {r.triggered_by}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={[styles.runStat, { color: COLORS.green }]}>{r.done}</Text>
-                  <Text style={[styles.runStat, { color: r.failed ? COLORS.red : COLORS.grey }]}>
-                    {r.failed}
-                  </Text>
-                  <Text style={[styles.runStat, { color: r.retry ? COLORS.yellow : COLORS.grey }]}>
-                    {r.retry}
-                  </Text>
-                  <Text style={[styles.runStat, { color: COLORS.navy }]}>
-                    {r.remaining != null ? r.remaining.toLocaleString() : '—'}
-                  </Text>
-                  <Text style={styles.runDur}>
-                    {r.duration_ms != null ? `${(r.duration_ms / 1000).toFixed(1)}s` : '—'}
-                  </Text>
-                </View>
-              ))}
-            </>
-          )}
+        <View style={[styles.card, narrow && styles.cardNarrow]}>
+          <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Run history</Text>
+          <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>
+            {runsTotal.toLocaleString()} runs logged · cron + manual · auto-refreshes
+          </Text>
+          <RunHistory
+            runs={runs}
+            total={runsTotal}
+            narrow={narrow}
+            loading={runsQ.isLoading}
+            fetching={runsQ.isFetching}
+            onLoadMore={() => setHistoryLimit((l) => l + 30)}
+          />
         </View>
         )}
 
         {/* ── Trends & distribution ── */}
         {tab === 'overview' && h && (
           <View style={[styles.cols, narrow && styles.colsNarrow]}>
-            <View style={[styles.card, !narrow && styles.colRight]}>
+            <View style={[styles.card, narrow && styles.cardNarrow, !narrow && styles.colRight]}>
               <View style={styles.cardTitleRow}>
                 <View>
-                  <Text style={styles.cardTitle}>Completeness over time</Text>
-                  <Text style={styles.cardHint}>Daily snapshots · now {overall}%</Text>
+                  <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Completeness over time</Text>
+                  <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Daily snapshots · now {overall}%</Text>
                 </View>
                 <Pressable
                   onPress={onSnapshot}
@@ -1210,6 +1043,14 @@ export default function AdminHealthScreen() {
               </View>
               {snaps.length >= 2 ? (
                 <CompletenessChart snaps={snaps} />
+              ) : narrow ? (
+                // Mobile: the masthead gauge already shows the % — keep this slim.
+                <View style={styles.trendEmpty}>
+                  <Ionicons name="trending-up-outline" size={18} color={COLORS.grey} />
+                  <Text style={styles.trendEmptyText}>
+                    Daily history starts today — the trend line fills in over time.
+                  </Text>
+                </View>
               ) : (
                 <View style={styles.chartEmpty}>
                   <Text style={styles.bigStat}>{overall}%</Text>
@@ -1221,34 +1062,47 @@ export default function AdminHealthScreen() {
             </View>
 
             {dist && (
-              <View style={[styles.card, !narrow && styles.colDonut]}>
-                <Text style={styles.cardTitle}>Alignment</Text>
-                <Text style={styles.cardHint}>Hero vs villain split</Text>
-                <View style={styles.donutWrap}>
-                  <Donut
-                    total={alignTotal}
-                    segments={[
-                      { value: align!.good, color: COLORS.green, label: 'Heroes' },
-                      { value: align!.bad, color: COLORS.red, label: 'Villains' },
-                      { value: align!.neutral, color: COLORS.yellow, label: 'Neutral' },
-                      { value: align!.unknown, color: COLORS.grey, label: 'Unknown' },
-                    ]}
-                  />
-                  <View style={styles.legend}>
+              <View style={[styles.card, narrow && styles.cardNarrow, !narrow && styles.colDonut]}>
+                <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Alignment</Text>
+                <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Hero vs villain split</Text>
+                {narrow ? (
+                  <View style={styles.barList}>
                     {[
-                      { c: COLORS.green, l: 'Heroes', v: align!.good },
-                      { c: COLORS.red, l: 'Villains', v: align!.bad },
-                      { c: COLORS.yellow, l: 'Neutral', v: align!.neutral },
-                      { c: COLORS.grey, l: 'Unknown', v: align!.unknown },
+                      { l: 'Heroes', v: align!.good, c: COLORS.green },
+                      { l: 'Villains', v: align!.bad, c: COLORS.red },
+                      { l: 'Neutral', v: align!.neutral, c: COLORS.yellow },
+                      { l: 'Unknown', v: align!.unknown, c: COLORS.grey },
                     ].map((s) => (
-                      <View key={s.l} style={styles.legendRow}>
-                        <View style={[styles.legendDot, { backgroundColor: s.c }]} />
-                        <Text style={styles.legendLabel}>{s.l}</Text>
-                        <Text style={styles.legendVal}>{s.v.toLocaleString()}</Text>
-                      </View>
+                      <BarRow key={s.l} label={s.l} value={s.v} max={alignTotal} color={s.c} />
                     ))}
                   </View>
-                </View>
+                ) : (
+                  <View style={styles.donutWrap}>
+                    <Donut
+                      total={alignTotal}
+                      segments={[
+                        { value: align!.good, color: COLORS.green, label: 'Heroes' },
+                        { value: align!.bad, color: COLORS.red, label: 'Villains' },
+                        { value: align!.neutral, color: COLORS.yellow, label: 'Neutral' },
+                        { value: align!.unknown, color: COLORS.grey, label: 'Unknown' },
+                      ]}
+                    />
+                    <View style={styles.legend}>
+                      {[
+                        { c: COLORS.green, l: 'Heroes', v: align!.good },
+                        { c: COLORS.red, l: 'Villains', v: align!.bad },
+                        { c: COLORS.yellow, l: 'Neutral', v: align!.neutral },
+                        { c: COLORS.grey, l: 'Unknown', v: align!.unknown },
+                      ].map((s) => (
+                        <View key={s.l} style={styles.legendRow}>
+                          <View style={[styles.legendDot, { backgroundColor: s.c }]} />
+                          <Text style={styles.legendLabel}>{s.l}</Text>
+                          <Text style={styles.legendVal}>{s.v.toLocaleString()}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -1256,49 +1110,58 @@ export default function AdminHealthScreen() {
 
         {tab === 'overview' && h && dist && (
           <View style={[styles.cols, narrow && styles.colsNarrow]}>
-            <View style={[styles.card, { flex: 1 }]}>
-              <Text style={styles.cardTitle}>Power distribution</Text>
-              <Text style={styles.cardHint}>Total powerstats (0–600)</Text>
-              <View style={styles.histRow}>
-                {dist.power_hist.map((b) => (
-                  <View key={b.label} style={styles.histCol}>
-                    <Text style={styles.histN}>{b.n}</Text>
-                    <View style={styles.histTrack}>
-                      <View
-                        style={[styles.histBar, { height: `${Math.round((b.n / histMax) * 100)}%` }]}
-                      />
+            <View style={[styles.card, narrow && styles.cardNarrow, { flex: 1 }]}>
+              <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Power distribution</Text>
+              <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Total powerstats (0–600)</Text>
+              {narrow ? (
+                <View style={styles.barList}>
+                  {dist.power_hist.map((b) => (
+                    <BarRow key={b.label} label={b.label} value={b.n} max={histMax} color={COLORS.orange} />
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.histRow}>
+                  {dist.power_hist.map((b) => (
+                    <View key={b.label} style={styles.histCol}>
+                      <Text style={styles.histN}>{b.n}</Text>
+                      <View style={styles.histTrack}>
+                        <View
+                          style={[styles.histBar, { height: `${Math.round((b.n / histMax) * 100)}%` }]}
+                        />
+                      </View>
+                      <Text style={styles.histLabel}>{b.label}</Text>
                     </View>
-                    <Text style={styles.histLabel}>{b.label}</Text>
-                  </View>
-                ))}
-              </View>
+                  ))}
+                </View>
+              )}
             </View>
 
-            <View style={[styles.card, { flex: 1 }]}>
-              <Text style={styles.cardTitle}>Largest publishers</Text>
-              <Text style={styles.cardHint}>By hero count</Text>
-              {h.byPublisher.slice(0, 8).map((p) => (
-                <View key={p.publisher} style={styles.pbRow}>
-                  <Text style={styles.pbName} numberOfLines={1}>
-                    {p.publisher}
-                  </Text>
-                  <View style={styles.pbTrack}>
-                    <View style={[styles.pbFill, { width: `${Math.round((p.total / pubMax) * 100)}%` }]} />
-                  </View>
-                  <Text style={styles.pbNum}>{p.total.toLocaleString()}</Text>
+            {/* Largest publishers is redundant with Coverage-by-publisher on mobile. */}
+            {!narrow && (
+              <View style={[styles.card, { flex: 1 }]}>
+                <Text style={styles.cardTitle}>Largest publishers</Text>
+                <Text style={styles.cardHint}>By hero count</Text>
+                <View style={styles.barList}>
+                  {h.byPublisher.slice(0, 8).map((p) => (
+                    <BarRow key={p.publisher} label={p.publisher} value={p.total} max={pubMax} color={COLORS.blue} />
+                  ))}
                 </View>
-              ))}
-            </View>
+              </View>
+            )}
           </View>
         )}
 
         {/* ── Publisher heatmap (two columns on wide screens) ── */}
         {tab === 'overview' && h && h.byPublisher.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Coverage by publisher</Text>
-            <Text style={styles.cardHint}>Top {h.byPublisher.length} by catalogue size</Text>
+          <View style={[styles.card, narrow && styles.cardNarrow]}>
+            <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Coverage by publisher</Text>
+            <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Top {h.byPublisher.length} by catalogue size</Text>
             {narrow ? (
-              <PublisherTable rows={h.byPublisher} onPick={pickPublisher} />
+              <View style={styles.pubCards}>
+                {h.byPublisher.map((p) => (
+                  <PublisherCard key={p.publisher} row={p} onPick={pickPublisher} />
+                ))}
+              </View>
             ) : (
               <View style={styles.pubSplit}>
                 <PublisherTable
@@ -1315,9 +1178,10 @@ export default function AdminHealthScreen() {
           </View>
         )}
 
-        <View style={{ height: 40 }} />
+        <View style={[styles.bottomSpacer, narrow && styles.bottomSpacerNarrow]} />
         </View>
       </Animated.View>
+      {narrow && <BottomTabBar tab={tab} onChange={setTab} pending={h?.cvStatus.pending} />}
     </View>
   );
 }
@@ -1338,91 +1202,72 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: COLORS.beige, minHeight: '100%' as unknown as number },
   root: { width: '100%' },
   body: { width: '100%', maxWidth: 1080, alignSelf: 'center', padding: 24, gap: 18 },
+  // Mobile: list-style — content sits on the beige canvas, inset from the screen
+  // edges; sections are separated by hairline dividers (see cardNarrow), no gaps.
+  bodyNarrow: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8, gap: 0 },
+  bottomSpacer: { height: 40 },
+  // Clear the fixed bottom tab bar + the home-indicator inset on mobile.
+  bottomSpacerNarrow: {
+    height: (`calc(env(safe-area-inset-bottom) + 84px)` as unknown) as number,
+  },
 
-  // Masthead — full-bleed dark band; its top tucks under the floating nav so the
-  // bar's dark scrim sits on dark, seamless. The content row is held to the same
-  // 1080 column as the body below.
-  masthead: {
-    width: '100%',
-    overflow: 'hidden',
-    paddingTop: (`calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 30px)` as unknown) as number,
-    paddingBottom: 30,
-  },
-  mastheadInner: {
-    width: '100%',
-    maxWidth: 1080,
-    alignSelf: 'center',
-    paddingHorizontal: 24,
+  // ── Mobile bottom navigation (fixed to viewport) ──────────────────────────────
+  btab: {
+    position: 'fixed',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 50,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 28,
-  },
-  mastheadInnerNarrow: { flexDirection: 'column', alignItems: 'flex-start', gap: 24 },
-  mastheadGlow: {
+    backgroundColor: '#fffdf8',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(41,60,67,0.1)',
+    paddingTop: 9,
+    paddingBottom: `calc(env(safe-area-inset-bottom) + 9px)`,
+    shadowColor: '#3a2a14',
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: -4 },
+    transform: 'translateZ(0)',
+  } as object,
+  btabItem: { flex: 1, alignItems: 'center', gap: 3, paddingVertical: 2 },
+  btabIconWrap: { paddingHorizontal: 16, paddingVertical: 3, borderRadius: 999 },
+  btabIconWrapOn: { backgroundColor: COLORS.orange + '1a' },
+  btabLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.navy },
+  btabLabelOn: { color: COLORS.orange },
+  btabBadge: {
     position: 'absolute',
-    top: -120,
-    right: -80,
-    width: 320,
-    height: 320,
-    borderRadius: 320,
+    top: -5,
+    right: -11,
     backgroundColor: COLORS.orange,
-    opacity: 0.14,
-  },
-  mastheadLeft: { gap: 6, flexShrink: 1 },
-  kicker: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 2.5,
-    color: COLORS.orange,
-  },
-  title: { fontFamily: 'Flame-Regular', fontSize: 46, color: '#fff', lineHeight: 50 },
-  subtitle: { fontFamily: 'Nunito_400Regular', fontSize: 15, color: 'rgba(255,255,255,0.6)' },
-  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-  statusChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.07)',
     borderRadius: 999,
-    paddingHorizontal: 11,
-    paddingVertical: 5,
+    minWidth: 16,
+    paddingHorizontal: 4,
+    alignItems: 'center',
   },
-  statusDot: { width: 7, height: 7, borderRadius: 7 },
-  statusChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(255,255,255,0.85)' },
-
-  // Gauge
-  gaugeCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  gaugeNumRow: { flexDirection: 'row', alignItems: 'baseline' },
-  gaugeNum: { fontFamily: 'Flame-Regular', fontSize: 46, color: '#fff', lineHeight: 48 },
-  gaugePct: { fontFamily: 'Flame-Regular', fontSize: 19, color: 'rgba(255,255,255,0.55)' },
-  gaugeCaption: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    marginTop: 2,
-  },
-
-  // Masthead scoreboard
-  scoreboard: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 16, flexWrap: 'wrap' },
-  scoreDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.13)' },
-  mstat: { gap: 1 },
-  mstatNum: { fontFamily: 'Flame-Regular', fontSize: 27, color: '#fff', lineHeight: 29 },
-  mstatLabel: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 0.4,
-    color: 'rgba(255,255,255,0.5)',
-  },
+  btabBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 9, color: '#fff', lineHeight: 14 },
 
   // Columns
   cols: { flexDirection: 'row', gap: 18, alignItems: 'flex-start' },
-  colsNarrow: { flexDirection: 'column' },
+  colsNarrow: { flexDirection: 'column', gap: 0 },
   colLeft: { width: 360, flexGrow: 0, flexShrink: 0 },
   colRight: { flex: 1 },
 
   card,
+  // Mobile: no card chrome — transparent section on the canvas, set off only by a
+  // bottom hairline divider (list-style). Horizontal inset comes from the body.
+  cardNarrow: {
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    padding: 0,
+    paddingVertical: 22,
+    borderWidth: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(41,60,67,0.1)',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  skBar: { backgroundColor: '#ece3d4', borderRadius: 8, marginBottom: 10 },
 
   // Tab bar
   tabBar: { flexDirection: 'row', gap: 8, marginTop: 4, marginBottom: 2 },
@@ -1530,6 +1375,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   alertText: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
+  alertCount: {
+    backgroundColor: 'rgba(41,60,67,0.12)',
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 1,
+  },
+  alertCountText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.navy },
+  alertCollapse: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'center', paddingTop: 2 },
+  alertCollapseText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.grey },
 
   // ComicVine ping
   pingRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -1571,20 +1425,10 @@ const styles = StyleSheet.create({
     borderColor: COLORS.orange + '33',
   },
   filterChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
-  runStatusCol: { width: 96 },
-  stChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    alignSelf: 'flex-start',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  stChipText: { fontFamily: 'Nunito_700Bold', fontSize: 11, textTransform: 'capitalize' },
   toastWrap: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   toast: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.orange },
   opsBody: { flexDirection: 'row', alignItems: 'center', gap: 24, marginTop: 14 },
+  opsBodyNarrow: { flexDirection: 'column', alignItems: 'stretch' },
   opsActions: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   actBtn: {
     flexDirection: 'row',
@@ -1600,7 +1444,18 @@ const styles = StyleSheet.create({
   actGhostText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
   actOn: { backgroundColor: COLORS.green },
   actDim: { opacity: 0.4 },
+  // On mobile the action buttons stretch to fill the column for big tap targets.
+  actGrow: { flexGrow: 1, flexBasis: 140, justifyContent: 'center' },
   opsMetrics: { flexDirection: 'row', alignItems: 'center', gap: 18, flex: 1, flexWrap: 'wrap' },
+  opsMetricsNarrow: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 16,
+    paddingTop: 12,
+    flexGrow: 0,
+    flexBasis: 'auto',
+  },
+  opsMetricWideNarrow: { flexGrow: 0, flexBasis: 'auto' },
   opsDivider: { width: 1, height: 38, backgroundColor: '#efe6d6' },
   opsMetric: { gap: 2 },
   opsMetricWide: { gap: 4, flex: 1, minWidth: 180 },
@@ -1612,38 +1467,49 @@ const styles = StyleSheet.create({
   cvTrack: { height: 8, borderRadius: 4, backgroundColor: '#efe6d6', overflow: 'hidden' },
   cvFill: { height: 8, borderRadius: 4 },
 
-  // Recent runs
-  runHeadRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingBottom: 9,
-    borderBottomWidth: 1,
-    borderBottomColor: '#efe6d6',
-    marginTop: 4,
-  },
-  runHeadText: { color: COLORS.grey, fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 0.4 },
-  runRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 9,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f6f0e6',
-  },
-  runWhen: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
-  runBy: { width: 84 },
-  byChip: { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
-  byChipText: { fontFamily: 'Nunito_700Bold', fontSize: 11 },
-  runStat: { width: 58, textAlign: 'right', fontFamily: 'Nunito_700Bold', fontSize: 13 },
-  runDur: { width: 64, textAlign: 'right', fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
   runsEmpty: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: COLORS.grey, marginTop: 12 },
+
+  // Activity log — console-style timeline of actions + run transitions.
+  logHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  logPanel: {
+    maxHeight: 300,
+    marginTop: 6,
+    backgroundColor: '#faf6ee',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.06)',
+  },
+  logPanelInner: { paddingVertical: 2 },
+  logRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1ece2',
+  },
+  logTime: {
+    width: 62,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.grey,
+    fontVariant: ['tabular-nums'],
+  },
+  logDot: { width: 8, height: 8, borderRadius: 8 },
+  logText: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.black },
 
   colDonut: { width: 300, flexGrow: 0, flexShrink: 0 },
 
   // Charts
   chartEmpty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 28, gap: 6 },
   bigStat: { fontFamily: 'Flame-Regular', fontSize: 52, color: COLORS.green, lineHeight: 54 },
-  donutNum: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.black, lineHeight: 28 },
-  donutLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey },
+  // Mobile completeness empty state (the masthead gauge already shows the %).
+  trendEmpty: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
+  trendEmptyText: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
+  // Horizontal stat bars (mobile Alignment + Power, desktop Largest publishers):
+  // full-width bar under a label/value line.
+  barList: { gap: 10, marginTop: 8 },
   donutWrap: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 8 },
   legend: { flex: 1, gap: 8 },
   legendRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -1656,15 +1522,13 @@ const styles = StyleSheet.create({
   histTrack: { width: '100%', height: 120, backgroundColor: '#f6f0e6', borderRadius: 8, justifyContent: 'flex-end', overflow: 'hidden' },
   histBar: { width: '100%', backgroundColor: COLORS.orange, borderRadius: 8 },
   histLabel: { fontFamily: 'Nunito_400Regular', fontSize: 10, color: COLORS.grey },
-  pbRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
-  pbName: { width: 130, fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.black },
-  pbTrack: { flex: 1, height: 14, backgroundColor: '#f6f0e6', borderRadius: 7, overflow: 'hidden' },
-  pbFill: { height: 14, backgroundColor: COLORS.blue, borderRadius: 7 },
-  pbNum: { width: 52, textAlign: 'right', fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
 
   coverageCard: { gap: 4 },
   cardTitle: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.black },
+  // Mobile: lighter section headers create clearer hierarchy under the 28px page title.
+  cardTitleNarrow: { fontSize: 18 },
   cardHint: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey, marginBottom: 8 },
+  cardHintNarrow: { fontSize: 12, marginBottom: 10 },
 
   // Coverage rows
   covRow: {
@@ -1676,6 +1540,7 @@ const styles = StyleSheet.create({
     marginHorizontal: -10,
     borderRadius: 14,
   },
+  covRowNarrow: { paddingVertical: 8, gap: 10 },
   covRowActive: { backgroundColor: 'rgba(231,115,51,0.06)' },
   covRowHover: { backgroundColor: 'rgba(41,60,67,0.04)' },
   covDot: { width: 10, height: 10, borderRadius: 10, marginTop: 2, alignSelf: 'flex-start' },
@@ -1792,4 +1657,34 @@ const styles = StyleSheet.create({
   pubCellPct: { width: 92, alignItems: 'flex-end' },
   heat: { borderRadius: 7, paddingHorizontal: 9, paddingVertical: 3, minWidth: 46, alignItems: 'center' },
   heatText: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
+
+  // Publisher heatmap — mobile card layout (replaces the wide table on narrow).
+  pubCards: { gap: 10, marginTop: 4 },
+  pubCard: {
+    backgroundColor: '#faf6ee',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.06)',
+    padding: 13,
+    gap: 11,
+  },
+  pubCardHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  pubCardName: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 15, color: COLORS.black },
+  pubCardCount: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.grey },
+  pubCardHeats: { flexDirection: 'row', gap: 8 },
+  heatPill: { flex: 1, alignItems: 'center', gap: 4 },
+  heatPillLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.4,
+    color: COLORS.grey,
+    textTransform: 'uppercase',
+  },
+  heatPillVal: {
+    alignSelf: 'stretch',
+    borderRadius: 8,
+    paddingVertical: 6,
+    alignItems: 'center',
+  },
+  heatPillNum: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
 });
