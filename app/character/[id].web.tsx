@@ -20,8 +20,9 @@ import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { StatBar } from '../../src/components/web/StatBar';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { getHeroTitles, groupTitlesByMedia, type HeroTitle } from '../../src/lib/db/titles';
-import { getHeroPortrayals, type HeroPortrayals } from '../../src/lib/db/people';
+import { getHeroPortrayals, getHeroLinks, type HeroPortrayals, type HeroLinks } from '../../src/lib/db/people';
 import { PortrayedBySection } from '../../src/components/PortrayedBySection';
+import { HeroLinksRow, heroLinksHasContent } from '../../src/components/HeroLinksRow';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
 import { NarrativeSection } from '../../src/components/character/NarrativeSection';
 import { getHeroNarrative, type HeroNarrative } from '../../src/lib/db/heroFacts';
@@ -178,6 +179,7 @@ export default function WebCharacterScreen() {
   const [narrative, setNarrative] = useState<HeroNarrative | null>(null);
   const [titles, setTitles] = useState<HeroTitle[] | null>(null);
   const [portrayals, setPortrayals] = useState<HeroPortrayals | null>(null);
+  const [links, setLinks] = useState<HeroLinks | null>(null);
 
   useEffect(() => {
     setFamily([]);
@@ -200,10 +202,12 @@ export default function WebCharacterScreen() {
   useEffect(() => {
     setTitles(null);
     setPortrayals(null);
+    setLinks(null);
     if (!id) return;
     let active = true;
     getHeroTitles(id).then((f) => { if (active) setTitles(f); });
     getHeroPortrayals(id).then((pp) => { if (active) setPortrayals(pp); });
+    getHeroLinks(id).then((l) => { if (active) setLinks(l); });
     return () => { active = false; };
   }, [id]);
 
@@ -988,6 +992,15 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : null}
 
+                {/* Links */}
+                {heroLinksHasContent(links) ? (
+                  <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Links</Text>
+                    <View style={styles.cardDivider} />
+                    <HeroLinksRow links={links!} contentInset={0} />
+                  </View>
+                ) : null}
+
                 {/* In Print — debut feature + cover gallery */}
                 {comicVineLoading ? (
                   <View style={styles.card}>
@@ -1507,6 +1520,17 @@ export default function WebCharacterScreen() {
                       <View style={styles.mSectionDivider} />
                     </View>
                     <PortrayedBySection portrayals={portrayals} contentInset={0} />
+                  </View>
+                ) : null}
+
+                {/* Links */}
+                {heroLinksHasContent(links) ? (
+                  <View style={styles.mSection}>
+                    <View style={styles.mSectionHead}>
+                      <Text style={styles.mSectionTitle}>Links</Text>
+                      <View style={styles.mSectionDivider} />
+                    </View>
+                    <HeroLinksRow links={links!} contentInset={0} />
                   </View>
                 ) : null}
 

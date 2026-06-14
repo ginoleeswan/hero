@@ -49,8 +49,9 @@ import {
   getHeroFavouriteCount,
 } from '../../src/lib/db/favourites';
 import { getHeroTitles, groupTitlesByMedia, type HeroTitle } from '../../src/lib/db/titles';
-import { getHeroPortrayals, type HeroPortrayals } from '../../src/lib/db/people';
+import { getHeroPortrayals, getHeroLinks, type HeroPortrayals, type HeroLinks } from '../../src/lib/db/people';
 import { PortrayedBySection } from '../../src/components/PortrayedBySection';
+import { HeroLinksRow, heroLinksHasContent } from '../../src/components/HeroLinksRow';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useRecordView } from '../../src/hooks/useViewHistory';
 import { HeroImage } from '../../src/components/HeroImage';
@@ -482,6 +483,7 @@ export default function CharacterScreen() {
   const [favCount, setFavCount] = useState<number>(0);
   const [titles, setTitles] = useState<HeroTitle[] | null>(null);
   const [portrayals, setPortrayals] = useState<HeroPortrayals | null>(null);
+  const [links, setLinks] = useState<HeroLinks | null>(null);
   const [issueCovers, setIssueCovers] = useState<IssueCover[] | null>(null);
   const [galleryLoading, setGalleryLoading] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<{ url: string; caption?: string | null }[]>(
@@ -707,6 +709,7 @@ export default function CharacterScreen() {
     let active = true;
     getHeroTitles(data.stats.id).then((f) => { if (active) setTitles(f); });
     getHeroPortrayals(data.stats.id).then((pp) => { if (active) setPortrayals(pp); });
+    getHeroLinks(data.stats.id).then((l) => { if (active) setLinks(l); });
     return () => { active = false; };
   }, [data?.stats.id]);
 
@@ -1402,6 +1405,14 @@ export default function CharacterScreen() {
                 <View style={styles.section}>
                   <SectionHeader title="Portrayed By" />
                   <PortrayedBySection portrayals={portrayals} contentInset={0} />
+                </View>
+              ) : null}
+
+              {/* Links — debut year + external links (Wikidata-sourced) */}
+              {heroLinksHasContent(links) ? (
+                <View style={styles.section}>
+                  <SectionHeader title="Links" />
+                  <HeroLinksRow links={links!} contentInset={0} />
                 </View>
               ) : null}
 

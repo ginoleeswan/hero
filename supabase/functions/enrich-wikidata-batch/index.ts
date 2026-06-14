@@ -94,21 +94,60 @@ SELECT DISTINCT ?performerLabel ?kind WHERE {
   return out;
 }
 
+// Character-level facts: aliases, creators, first-appearance year, and external
+// links (IMDb / official site). Validated live; characters reliably have site +
+// aliases + creators + inception; IMDb is often absent (left null).
+async function fetchFacts(qid: string): Promise<{
+  aliases: string[]; creators: string[]; inceptionYear: number | null; imdb: string | null; site: string | null;
+}> {
+  const q = `
+SELECT ?aliases ?creators ?inc ?imdb ?site WHERE {
+  OPTIONAL { wd:${qid} wdt:P571 ?inc. }
+  OPTIONAL { wd:${qid} wdt:P345 ?imdb. }
+  OPTIONAL { wd:${qid} wdt:P856 ?site. }
+  OPTIONAL { SELECT (GROUP_CONCAT(DISTINCT ?a; SEPARATOR="|") AS ?aliases) WHERE { wd:${qid} skos:altLabel ?a. FILTER(LANG(?a)="en") } }
+  OPTIONAL { SELECT (GROUP_CONCAT(DISTINCT ?cl; SEPARATOR="|") AS ?creators) WHERE { wd:${qid} wdt:P170 ?c. ?c rdfs:label ?cl. FILTER(LANG(?cl)="en") } }
+} LIMIT 1`;
+  const rows = await sparql(q);
+  const r = rows[0] ?? {};
+  const split = (v: string | undefined) => (v ? v.split('|').map((s) => s.trim()).filter(Boolean) : []);
+  return {
+    aliases: split(r.aliases?.value),
+    creators: split(r.creators?.value),
+    inceptionYear: yearOf(r.inc?.value ?? null),
+    imdb: r.imdb?.value ?? null,
+    site: r.site?.value ?? null,
+  };
+}
+
+const mergeUniq = (existing: string[], extra: string[]): string[] => {
+  const seen = new Set(existing.map((s) => s.toLowerCase().trim()));
+  const out = [...existing];
+  for (const e of extra) {
+    const k = e.toLowerCase().trim();
+    if (k && !seen.has(k)) { seen.add(k); out.push(e); }
+  }
+  return out;
+};
+
 async function runEnrich(sb: SB, limit: number, retry: boolean, runId: number | null): Promise<number> {
-  let q = sb.from('heroes').select('id, wikidata_qid, issue_count')
+  let q = sb.from('heroes').select('id, wikidata_qid, issue_count, creators, aliases')
     .eq('wikidata_status', 'resolved').not('wikidata_qid', 'is', null)
     .order('issue_count', { ascending: false, nullsFirst: false }).limit(limit);
   if (!retry) q = q.is('wikidata_enriched_at', null);
   const { data: heroes } = await q;
   if (!heroes || heroes.length === 0) return 0;
   let calls = 0;
-  for (const h of heroes as Array<{ id: string; wikidata_qid: string; issue_count: number | null }>) {
+  for (const h of heroes as Array<{ id: string; wikidata_qid: string; issue_count: number | null; creators: string[] | null; aliases: string[] | null }>) {
     try {
       calls++;
       const titles = await fetchAppearances(h.wikidata_qid);
       await sleep(200);
       calls++;
       const performers = await fetchPerformers(h.wikidata_qid);
+      await sleep(200);
+      calls++;
+      const facts = await fetchFacts(h.wikidata_qid);
 
       for (const t of titles) {
         await sb.from('titles').upsert({
@@ -130,7 +169,24 @@ async function runEnrich(sb: SB, limit: number, retry: boolean, runId: number | 
           performers.map((p) => ({ hero_id: h.id, person_name: p.name, role: p.role, title_id: null, source: 'wikidata' })),
         );
       }
-      await sb.from('heroes').update({ wikidata_enriched_at: new Date().toISOString() }).eq('id', h.id);
+      // Merge Wikidata creators/aliases into the hero arrays (fills CV gaps,
+      // improves search), and stamp the enrich time.
+      await sb.from('heroes').update({
+        creators: mergeUniq(h.creators ?? [], facts.creators),
+        aliases: mergeUniq(h.aliases ?? [], facts.aliases),
+        wikidata_enriched_at: new Date().toISOString(),
+      }).eq('id', h.id);
+
+      // Scalar facts + external links (idempotent: replace this hero's wikidata facts).
+      await sb.from('hero_facts').delete().eq('hero_id', h.id).eq('source', 'wikidata');
+      const factRows: Array<{ hero_id: string; key: string; value: string; source: string }> = [
+        { hero_id: h.id, key: 'wikidata_qid', value: h.wikidata_qid, source: 'wikidata' },
+      ];
+      if (facts.inceptionYear) factRows.push({ hero_id: h.id, key: 'first_appearance_year', value: String(facts.inceptionYear), source: 'wikidata' });
+      if (facts.imdb) factRows.push({ hero_id: h.id, key: 'imdb_id', value: facts.imdb, source: 'wikidata' });
+      if (facts.site) factRows.push({ hero_id: h.id, key: 'official_site', value: facts.site, source: 'wikidata' });
+      await sb.from('hero_facts').insert(factRows);
+
       if (runId != null) await sb.from('enrichment_run_heroes').insert({ run_id: runId, hero_id: h.id });
     } catch (err) {
       console.error('[enrich-wikidata-batch] threw', h.id, err);

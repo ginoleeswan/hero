@@ -22,3 +22,27 @@ export async function getHeroPortrayals(heroId: string): Promise<HeroPortrayals>
   }
   return { performers, voiceActors };
 }
+
+export interface HeroLinks {
+  imdb: string | null;
+  site: string | null;
+  wikidataQid: string | null;
+  firstAppearanceYear: number | null;
+}
+
+/** External links + canonical first-appearance year for a hero (from hero_facts). */
+export async function getHeroLinks(heroId: string): Promise<HeroLinks> {
+  const { data, error } = await supabase
+    .from('hero_facts')
+    .select('key, value')
+    .eq('hero_id', heroId);
+  if (error || !data) return { imdb: null, site: null, wikidataQid: null, firstAppearanceYear: null };
+  const m = new Map((data as Array<{ key: string; value: string }>).map((r) => [r.key, r.value]));
+  const yr = m.get('first_appearance_year');
+  return {
+    imdb: m.get('imdb_id') ?? null,
+    site: m.get('official_site') ?? null,
+    wikidataQid: m.get('wikidata_qid') ?? null,
+    firstAppearanceYear: yr ? parseInt(yr, 10) : null,
+  };
+}
