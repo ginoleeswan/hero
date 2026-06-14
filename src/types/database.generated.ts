@@ -149,86 +149,64 @@ export type Database = {
         }
         Relationships: []
       }
-      films: {
+      hero_facts: {
         Row: {
-          backdrop_url: string | null
-          cast_members: Json | null
-          media_type: string
-          overview: string | null
-          poster_url: string | null
-          release_date: string | null
-          revenue: number | null
-          runtime: number | null
-          stills: Json | null
-          title: string
-          tmdb_enriched_at: string | null
-          tmdb_id: string
-          tmdb_status: string
-          trailer_key: string | null
-          vote_average: number | null
-          watch_providers: Json | null
-          year: number | null
+          hero_id: string
+          key: string
+          source: string
+          value: string
         }
         Insert: {
-          backdrop_url?: string | null
-          cast_members?: Json | null
-          media_type?: string
-          overview?: string | null
-          poster_url?: string | null
-          release_date?: string | null
-          revenue?: number | null
-          runtime?: number | null
-          stills?: Json | null
-          title: string
-          tmdb_enriched_at?: string | null
-          tmdb_id: string
-          tmdb_status?: string
-          trailer_key?: string | null
-          vote_average?: number | null
-          watch_providers?: Json | null
-          year?: number | null
+          hero_id: string
+          key: string
+          source?: string
+          value: string
         }
         Update: {
-          backdrop_url?: string | null
-          cast_members?: Json | null
-          media_type?: string
-          overview?: string | null
-          poster_url?: string | null
-          release_date?: string | null
-          revenue?: number | null
-          runtime?: number | null
-          stills?: Json | null
-          title?: string
-          tmdb_enriched_at?: string | null
-          tmdb_id?: string
-          tmdb_status?: string
-          trailer_key?: string | null
-          vote_average?: number | null
-          watch_providers?: Json | null
-          year?: number | null
+          hero_id?: string
+          key?: string
+          source?: string
+          value?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "hero_facts_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      hero_film_appearances: {
+      hero_media_appearances: {
         Row: {
           cv_name: string | null
           cv_url: string | null
           hero_id: string
+          media_type: string | null
           rank: number | null
+          source: string | null
+          title_id: string
           tmdb_id: string
         }
         Insert: {
           cv_name?: string | null
           cv_url?: string | null
           hero_id: string
+          media_type?: string | null
           rank?: number | null
+          source?: string | null
+          title_id: string
           tmdb_id: string
         }
         Update: {
           cv_name?: string | null
           cv_url?: string | null
           hero_id?: string
+          media_type?: string | null
           rank?: number | null
+          source?: string | null
+          title_id?: string
           tmdb_id?: string
         }
         Relationships: [
@@ -240,11 +218,50 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "hero_film_appearances_tmdb_id_fkey"
-            columns: ["tmdb_id"]
+            foreignKeyName: "hero_media_appearances_title_id_fkey"
+            columns: ["title_id"]
             isOneToOne: false
-            referencedRelation: "films"
-            referencedColumns: ["tmdb_id"]
+            referencedRelation: "titles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hero_people: {
+        Row: {
+          hero_id: string
+          person_name: string
+          role: string
+          source: string
+          title_id: string
+        }
+        Insert: {
+          hero_id: string
+          person_name: string
+          role: string
+          source?: string
+          title_id: string
+        }
+        Update: {
+          hero_id?: string
+          person_name?: string
+          role?: string
+          source?: string
+          title_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hero_people_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hero_people_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "titles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -419,6 +436,10 @@ export type Database = {
           teams: string[] | null
           weight_imperial: string | null
           weight_metric: string | null
+          wikidata_candidates: Json | null
+          wikidata_enriched_at: string | null
+          wikidata_qid: string | null
+          wikidata_status: string
         }
         Insert: {
           ai_stats_status?: string | null
@@ -475,6 +496,10 @@ export type Database = {
           teams?: string[] | null
           weight_imperial?: string | null
           weight_metric?: string | null
+          wikidata_candidates?: Json | null
+          wikidata_enriched_at?: string | null
+          wikidata_qid?: string | null
+          wikidata_status?: string
         }
         Update: {
           ai_stats_status?: string | null
@@ -531,6 +556,82 @@ export type Database = {
           teams?: string[] | null
           weight_imperial?: string | null
           weight_metric?: string | null
+          wikidata_candidates?: Json | null
+          wikidata_enriched_at?: string | null
+          wikidata_qid?: string | null
+          wikidata_status?: string
+        }
+        Relationships: []
+      }
+      titles: {
+        Row: {
+          backdrop_url: string | null
+          cast_members: Json | null
+          details: Json | null
+          enrich_status: string
+          enriched_at: string | null
+          external_id: string
+          id: string
+          media_type: string
+          overview: string | null
+          poster_url: string | null
+          release_date: string | null
+          revenue: number | null
+          runtime: number | null
+          source: string
+          stills: Json | null
+          title: string
+          tmdb_id: string
+          trailer_key: string | null
+          vote_average: number | null
+          watch_providers: Json | null
+          year: number | null
+        }
+        Insert: {
+          backdrop_url?: string | null
+          cast_members?: Json | null
+          details?: Json | null
+          enrich_status?: string
+          enriched_at?: string | null
+          external_id: string
+          id: string
+          media_type?: string
+          overview?: string | null
+          poster_url?: string | null
+          release_date?: string | null
+          revenue?: number | null
+          runtime?: number | null
+          source: string
+          stills?: Json | null
+          title: string
+          tmdb_id: string
+          trailer_key?: string | null
+          vote_average?: number | null
+          watch_providers?: Json | null
+          year?: number | null
+        }
+        Update: {
+          backdrop_url?: string | null
+          cast_members?: Json | null
+          details?: Json | null
+          enrich_status?: string
+          enriched_at?: string | null
+          external_id?: string
+          id?: string
+          media_type?: string
+          overview?: string | null
+          poster_url?: string | null
+          release_date?: string | null
+          revenue?: number | null
+          runtime?: number | null
+          source?: string
+          stills?: Json | null
+          title?: string
+          tmdb_id?: string
+          trailer_key?: string | null
+          vote_average?: number | null
+          watch_providers?: Json | null
+          year?: number | null
         }
         Relationships: []
       }
@@ -776,6 +877,20 @@ export type Database = {
           p_title: string
           p_tmdb_id: string
         }
+        Returns: undefined
+      }
+      register_media_match: {
+        Args: {
+          p_cv_name: string
+          p_external_id: string
+          p_media_type: string
+          p_source: string
+          p_title: string
+        }
+        Returns: undefined
+      }
+      resolve_hero_qid: {
+        Args: { p_hero_id: string; p_qid: string }
         Returns: undefined
       }
       search_heroes: {
