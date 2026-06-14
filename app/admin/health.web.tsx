@@ -27,7 +27,7 @@ import { COLORS } from '../../src/constants/colors';
 import {
   getCatalogHealth,
   getCoverageGaps,
-  getRecentRuns,
+  getRunHistory,
   getCronStatus,
   getComicvineUsageLastHour,
   runDrain,
@@ -45,6 +45,7 @@ import {
   type CoverageMetric,
   type PublisherCoverage,
   type EnrichmentRun,
+  type RunHistoryPage,
   type HealthSnapshot,
   type AdminHeroResult,
 } from '../../src/lib/db/catalogHealth';
@@ -58,6 +59,18 @@ const relTime = (iso: string) => {
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
   return `${Math.floor(s / 86400)}d ago`;
+};
+
+// Day bucketing for the run-history dashboard.
+const dayKey = (iso: string) => new Date(iso).toDateString();
+const dayLabel = (iso: string) => {
+  const d = new Date(iso);
+  const today = new Date();
+  const yest = new Date();
+  yest.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return 'Today';
+  if (d.toDateString() === yest.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 };
 
 const pct = (have: number, total: number) => (total > 0 ? Math.round((have / total) * 100) : 0);
@@ -500,6 +513,83 @@ function RunStat({ label, value, tint }: { label: string; value: string; tint: s
   );
 }
 
+// A KPI tile for the run-history summary (Enriched / Failed / Success / rate).
+function KpiTile({ label, value, tint }: { label: string; value: string; tint: string }) {
+  return (
+    <View style={styles.kpiTile}>
+      <Text style={[styles.kpiValue, { color: tint }]}>{value}</Text>
+      <Text style={styles.kpiLabel}>{label}</Text>
+    </View>
+  );
+}
+
+// One run — a stacked card on mobile, a table row on desktop. Shared by the
+// grouped run-history list so both layouts stay in lockstep.
+function RunItem({ run: r, narrow }: { run: EnrichmentRun; narrow: boolean }) {
+  const c = runStatusColor(r.status);
+  const src = runSourceChip(r.triggered_by);
+  if (narrow) {
+    return (
+      <View style={styles.runCard}>
+        <View style={styles.runCardHead}>
+          <View style={[styles.stChip, { backgroundColor: c + '22' }]}>
+            {r.status === 'running' && (
+              <ActivityIndicator size="small" color={c} style={{ transform: [{ scale: 0.7 }] }} />
+            )}
+            <Text style={[styles.stChipText, { color: c }]}>{r.status}</Text>
+          </View>
+          <View style={[styles.byChip, { backgroundColor: src.bg }]}>
+            <Text style={[styles.byChipText, { color: src.fg }]}>{r.triggered_by}</Text>
+          </View>
+          <Text style={styles.runCardWhen}>{relTime(r.created_at)}</Text>
+        </View>
+        <View style={styles.runCardStats}>
+          <RunStat label="Done" value={`${r.done}`} tint={COLORS.green} />
+          <RunStat label="Failed" value={`${r.failed}`} tint={r.failed ? COLORS.red : COLORS.grey} />
+          <RunStat label="Retry" value={`${r.retry}`} tint={r.retry ? COLORS.yellow : COLORS.grey} />
+          <RunStat
+            label="Left"
+            value={r.remaining != null ? r.remaining.toLocaleString() : '—'}
+            tint={COLORS.navy}
+          />
+          <RunStat
+            label="Took"
+            value={r.duration_ms != null ? `${(r.duration_ms / 1000).toFixed(1)}s` : '—'}
+            tint={COLORS.grey}
+          />
+        </View>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.runRow}>
+      <Text style={styles.runWhen}>{relTime(r.created_at)}</Text>
+      <View style={styles.runStatusCol}>
+        <View style={[styles.stChip, { backgroundColor: c + '22' }]}>
+          {r.status === 'running' && (
+            <ActivityIndicator size="small" color={c} style={{ transform: [{ scale: 0.7 }] }} />
+          )}
+          <Text style={[styles.stChipText, { color: c }]}>{r.status}</Text>
+        </View>
+      </View>
+      <View style={styles.runBy}>
+        <View style={[styles.byChip, { backgroundColor: src.bg }]}>
+          <Text style={[styles.byChipText, { color: src.fg }]}>{r.triggered_by}</Text>
+        </View>
+      </View>
+      <Text style={[styles.runStat, { color: COLORS.green }]}>{r.done}</Text>
+      <Text style={[styles.runStat, { color: r.failed ? COLORS.red : COLORS.grey }]}>{r.failed}</Text>
+      <Text style={[styles.runStat, { color: r.retry ? COLORS.yellow : COLORS.grey }]}>{r.retry}</Text>
+      <Text style={[styles.runStat, { color: COLORS.navy }]}>
+        {r.remaining != null ? r.remaining.toLocaleString() : '—'}
+      </Text>
+      <Text style={styles.runDur}>
+        {r.duration_ms != null ? `${(r.duration_ms / 1000).toFixed(1)}s` : '—'}
+      </Text>
+    </View>
+  );
+}
+
 // Segmented ring (alignment split).
 function Donut({
   segments,
@@ -634,6 +724,7 @@ export default function AdminHealthScreen() {
   const [batchSize, setBatchSize] = useState(25);
   const [pubFilter, setPubFilter] = useState<string | null>(null);
   const [alertsOpen, setAlertsOpen] = useState(false);
+  const [historyLimit, setHistoryLimit] = useState(30);
 
   const profileQ = useQuery({
     queryKey: ['profile', user?.id],
@@ -663,12 +754,13 @@ export default function AdminHealthScreen() {
   const queryClient = useQueryClient();
   const opsEnabled = gateResolved && isAdmin;
   const runsQ = useQuery({
-    queryKey: ['enrichmentRuns'],
-    queryFn: () => getRecentRuns(8),
+    queryKey: ['enrichmentRuns', historyLimit],
+    queryFn: () => getRunHistory(historyLimit),
     enabled: opsEnabled,
+    placeholderData: (prev) => prev, // keep history visible while "load more" fetches
     // Poll fast while a run is in flight, slow otherwise.
     refetchInterval: (q) =>
-      ((q.state.data as EnrichmentRun[] | undefined) ?? []).some((r) => r.status === 'running')
+      ((q.state.data as RunHistoryPage | undefined)?.runs ?? []).some((r) => r.status === 'running')
         ? 2500
         : 15_000,
   });
@@ -853,7 +945,7 @@ export default function AdminHealthScreen() {
 
   // While a run is in flight, poll backlog + usage so the live numbers tick down.
   useEffect(() => {
-    const live = (runsQ.data ?? []).some((r) => r.status === 'running');
+    const live = (runsQ.data?.runs ?? []).some((r) => r.status === 'running');
     if (!live) return;
     const id = setInterval(() => {
       queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
@@ -883,7 +975,7 @@ export default function AdminHealthScreen() {
   const seenRuns = useRef<Map<number, string>>(new Map());
   const runLogPrimed = useRef(false);
   useEffect(() => {
-    const data = runsQ.data;
+    const data = runsQ.data?.runs;
     if (!data) return;
     if (!runLogPrimed.current) {
       for (const r of data) seenRuns.current.set(r.id, r.status);
@@ -916,7 +1008,7 @@ export default function AdminHealthScreen() {
   // effect can re-fold the mobile banner once they drop back to ≤1.
   const alerts = useMemo<{ tone: 'red' | 'gold'; text: string }[]>(() => {
     const usage = usageQ.data ?? 0;
-    const recent = runsQ.data ?? [];
+    const recent = runsQ.data?.runs ?? [];
     const a: { tone: 'red' | 'gold'; text: string }[] = [];
     if (pingQ.data === 'limited')
       a.push({ tone: 'gold', text: 'ComicVine is rate-limited right now — drains will mostly retry.' });
@@ -942,7 +1034,8 @@ export default function AdminHealthScreen() {
   const cvPctUsed = Math.min(100, Math.round((cvUsage / CV_HOURLY_CAP) * 100));
   const cvColor =
     cvUsage >= CV_HOURLY_CAP * 0.8 ? COLORS.red : cvUsage >= CV_HOURLY_CAP * 0.5 ? COLORS.yellow : COLORS.green;
-  const runs: EnrichmentRun[] = runsQ.data ?? [];
+  const runs: EnrichmentRun[] = runsQ.data?.runs ?? [];
+  const runsTotal = runsQ.data?.total ?? runs.length;
   const activeRun = runs.find((r) => r.status === 'running');
   // Backlog ETA at the observed drain rate (heroes enriched per minute of run time).
   const drainedRuns = runs.filter((r) => r.duration_ms && r.done > 0);
@@ -957,6 +1050,24 @@ export default function AdminHealthScreen() {
         ? `~${(etaMin / 60).toFixed(1)}h to clear`
         : `~${Math.ceil(etaMin)}m to clear`
       : null;
+
+  // ── Run-history dashboard: KPIs over the loaded window + per-day grouping ──────
+  const winDone = runs.reduce((a, r) => a + r.done, 0);
+  const winFailed = runs.reduce((a, r) => a + r.failed, 0);
+  const successRate = winDone + winFailed > 0 ? Math.round((winDone / (winDone + winFailed)) * 100) : 100;
+  const throughput = perMin > 0 ? Math.round(perMin) : 0;
+  // Bucket the loaded runs by day (cheap loop over <=60 rows; runs are newest-first).
+  const runGroups: { key: string; label: string; runs: EnrichmentRun[]; done: number }[] = [];
+  for (const r of runs) {
+    const key = dayKey(r.created_at);
+    let g = runGroups.length && runGroups[runGroups.length - 1].key === key ? runGroups[runGroups.length - 1] : null;
+    if (!g) {
+      g = { key, label: dayLabel(r.created_at), runs: [], done: 0 };
+      runGroups.push(g);
+    }
+    g.runs.push(r);
+    g.done += r.done;
+  }
 
   // ── Alerts: surface problems without hunting (built in a memo above) ─────────
   const cvPing = pingQ.data;
@@ -1559,105 +1670,76 @@ export default function AdminHealthScreen() {
         </View>
         )}
 
-        {/* ── Recent runs (monitoring) ── */}
+        {/* ── Run history (monitoring dashboard) ── */}
         {tab === 'operations' && (
         <View style={[styles.card, narrow && styles.cardNarrow]}>
-          <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Recent runs</Text>
-          <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Cron + manual · auto-refreshes every 15s</Text>
+          <Text style={[styles.cardTitle, narrow && styles.cardTitleNarrow]}>Run history</Text>
+          <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>
+            {runsTotal.toLocaleString()} runs logged · cron + manual · auto-refreshes
+          </Text>
           {runsQ.isLoading ? (
             <ActivityIndicator color={COLORS.orange} style={{ marginTop: 16 }} />
           ) : runs.length === 0 ? (
             <Text style={styles.runsEmpty}>No runs logged yet — hit “Run batch · 25”.</Text>
-          ) : narrow ? (
-            // Mobile: each run as a self-contained card so nothing overflows.
-            <View style={styles.runCards}>
-              {runs.map((r) => {
-                const c = runStatusColor(r.status);
-                const src = runSourceChip(r.triggered_by);
-                return (
-                  <View key={r.id} style={styles.runCard}>
-                    <View style={styles.runCardHead}>
-                      <View style={[styles.stChip, { backgroundColor: c + '22' }]}>
-                        {r.status === 'running' && (
-                          <ActivityIndicator size="small" color={c} style={{ transform: [{ scale: 0.7 }] }} />
-                        )}
-                        <Text style={[styles.stChipText, { color: c }]}>{r.status}</Text>
-                      </View>
-                      <View style={[styles.byChip, { backgroundColor: src.bg }]}>
-                        <Text style={[styles.byChipText, { color: src.fg }]}>
-                          {r.triggered_by}
-                        </Text>
-                      </View>
-                      <Text style={styles.runCardWhen}>{relTime(r.created_at)}</Text>
-                    </View>
-                    <View style={styles.runCardStats}>
-                      <RunStat label="Done" value={`${r.done}`} tint={COLORS.green} />
-                      <RunStat label="Failed" value={`${r.failed}`} tint={r.failed ? COLORS.red : COLORS.grey} />
-                      <RunStat label="Retry" value={`${r.retry}`} tint={r.retry ? COLORS.yellow : COLORS.grey} />
-                      <RunStat
-                        label="Left"
-                        value={r.remaining != null ? r.remaining.toLocaleString() : '—'}
-                        tint={COLORS.navy}
-                      />
-                      <RunStat
-                        label="Took"
-                        value={r.duration_ms != null ? `${(r.duration_ms / 1000).toFixed(1)}s` : '—'}
-                        tint={COLORS.grey}
-                      />
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
           ) : (
             <>
-              <View style={styles.runHeadRow}>
-                <Text style={[styles.runWhen, styles.runHeadText]}>When</Text>
-                <Text style={[styles.runStatusCol, styles.runHeadText]}>State</Text>
-                <Text style={[styles.runBy, styles.runHeadText]}>Source</Text>
-                <Text style={[styles.runStat, styles.runHeadText]}>Done</Text>
-                <Text style={[styles.runStat, styles.runHeadText]}>Failed</Text>
-                <Text style={[styles.runStat, styles.runHeadText]}>Retry</Text>
-                <Text style={[styles.runStat, styles.runHeadText]}>Left</Text>
-                <Text style={[styles.runDur, styles.runHeadText]}>Took</Text>
+              {/* KPI summary over the loaded window */}
+              <View style={styles.kpiRow}>
+                <KpiTile label={`Enriched · last ${runs.length}`} value={winDone.toLocaleString()} tint={COLORS.green} />
+                <KpiTile label="Failed" value={winFailed.toLocaleString()} tint={winFailed ? COLORS.red : COLORS.grey} />
+                <KpiTile
+                  label="Success rate"
+                  value={`${successRate}%`}
+                  tint={successRate >= 95 ? COLORS.green : successRate >= 80 ? COLORS.yellow : COLORS.red}
+                />
+                <KpiTile label="Throughput" value={throughput > 0 ? `${throughput}/min` : '—'} tint={COLORS.navy} />
               </View>
-              {runs.map((r) => {
-                const c = runStatusColor(r.status);
-                const src = runSourceChip(r.triggered_by);
-                return (
-                  <View key={r.id} style={styles.runRow}>
-                    <Text style={styles.runWhen}>{relTime(r.created_at)}</Text>
-                    <View style={styles.runStatusCol}>
-                      <View style={[styles.stChip, { backgroundColor: c + '22' }]}>
-                        {r.status === 'running' && (
-                          <ActivityIndicator size="small" color={c} style={{ transform: [{ scale: 0.7 }] }} />
-                        )}
-                        <Text style={[styles.stChipText, { color: c }]}>{r.status}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.runBy}>
-                      <View style={[styles.byChip, { backgroundColor: src.bg }]}>
-                        <Text style={[styles.byChipText, { color: src.fg }]}>
-                          {r.triggered_by}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={[styles.runStat, { color: COLORS.green }]}>{r.done}</Text>
-                    <Text style={[styles.runStat, { color: r.failed ? COLORS.red : COLORS.grey }]}>
-                      {r.failed}
-                    </Text>
-                    <Text style={[styles.runStat, { color: r.retry ? COLORS.yellow : COLORS.grey }]}>
-                      {r.retry}
-                    </Text>
-                    <Text style={[styles.runStat, { color: COLORS.navy }]}>
-                      {r.remaining != null ? r.remaining.toLocaleString() : '—'}
-                    </Text>
-                    <Text style={styles.runDur}>
-                      {r.duration_ms != null ? `${(r.duration_ms / 1000).toFixed(1)}s` : '—'}
+
+              {/* Per-day grouped history */}
+              {runGroups.map((g) => (
+                <View key={g.key} style={styles.dayGroup}>
+                  <View style={styles.dayHead}>
+                    <Text style={styles.dayLabel}>{g.label}</Text>
+                    <Text style={styles.daySub}>
+                      {g.runs.length} run{g.runs.length === 1 ? '' : 's'} · {g.done.toLocaleString()} enriched
                     </Text>
                   </View>
-                );
-              })}
+                  {!narrow && (
+                    <View style={styles.runHeadRow}>
+                      <Text style={[styles.runWhen, styles.runHeadText]}>When</Text>
+                      <Text style={[styles.runStatusCol, styles.runHeadText]}>State</Text>
+                      <Text style={[styles.runBy, styles.runHeadText]}>Source</Text>
+                      <Text style={[styles.runStat, styles.runHeadText]}>Done</Text>
+                      <Text style={[styles.runStat, styles.runHeadText]}>Failed</Text>
+                      <Text style={[styles.runStat, styles.runHeadText]}>Retry</Text>
+                      <Text style={[styles.runStat, styles.runHeadText]}>Left</Text>
+                      <Text style={[styles.runDur, styles.runHeadText]}>Took</Text>
+                    </View>
+                  )}
+                  <View style={narrow ? styles.runCards : undefined}>
+                    {g.runs.map((r) => (
+                      <RunItem key={r.id} run={r} narrow={narrow} />
+                    ))}
+                  </View>
+                </View>
+              ))}
+
+              {runs.length < runsTotal && (
+                <Pressable
+                  onPress={() => setHistoryLimit((l) => l + 30)}
+                  disabled={runsQ.isFetching}
+                  style={[styles.loadMore, runsQ.isFetching && styles.actDim]}
+                >
+                  {runsQ.isFetching ? (
+                    <ActivityIndicator size="small" color={COLORS.navy} />
+                  ) : (
+                    <Ionicons name="chevron-down" size={15} color={COLORS.navy} />
+                  )}
+                  <Text style={styles.loadMoreText}>
+                    Load more · {runs.length} of {runsTotal.toLocaleString()}
+                  </Text>
+                </Pressable>
+              )}
             </>
           )}
         </View>
@@ -2011,7 +2093,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderRadius: 0,
     padding: 0,
-    paddingVertical: 18,
+    paddingVertical: 22,
     borderWidth: 0,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(41,60,67,0.1)',
@@ -2254,6 +2336,46 @@ const styles = StyleSheet.create({
   runDur: { width: 64, textAlign: 'right', fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
   runsEmpty: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: COLORS.grey, marginTop: 12 },
 
+  // Run-history dashboard — KPI summary tiles + per-day grouping + load-more.
+  kpiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4, marginBottom: 4 },
+  kpiTile: {
+    flexGrow: 1,
+    flexBasis: 120,
+    minWidth: 110,
+    backgroundColor: '#faf6ee',
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.06)',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 13,
+    gap: 2,
+  },
+  kpiValue: { fontFamily: 'Flame-Regular', fontSize: 24, lineHeight: 26 },
+  kpiLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey },
+  dayGroup: { marginTop: 16 },
+  dayHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: 10,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(41,60,67,0.08)',
+  },
+  dayLabel: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black, letterSpacing: 0.3 },
+  daySub: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey },
+  loadMore: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    marginTop: 16,
+    paddingVertical: 11,
+    borderRadius: 12,
+    backgroundColor: '#efe6d6',
+  },
+  loadMoreText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
+
   // Recent runs — mobile card layout (replaces the wide table on narrow screens).
   runCards: { gap: 10, marginTop: 8 },
   runCard: {
@@ -2317,8 +2439,8 @@ const styles = StyleSheet.create({
   trendEmptyText: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
   // Horizontal stat bars (mobile Alignment + Power, desktop Largest publishers):
   // full-width bar under a label/value line.
-  barList: { gap: 6, marginTop: 6 },
-  barRow: { gap: 7, paddingVertical: 5 },
+  barList: { gap: 10, marginTop: 8 },
+  barRow: { gap: 8, paddingVertical: 6 },
   barHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 },
   barLabel: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
   barTrack: { height: 12, backgroundColor: 'rgba(41,60,67,0.08)', borderRadius: 6, overflow: 'hidden' },
@@ -2344,7 +2466,7 @@ const styles = StyleSheet.create({
   // Mobile: lighter section headers create clearer hierarchy under the 28px page title.
   cardTitleNarrow: { fontSize: 18 },
   cardHint: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey, marginBottom: 8 },
-  cardHintNarrow: { fontSize: 12, marginBottom: 6 },
+  cardHintNarrow: { fontSize: 12, marginBottom: 10 },
 
   // Coverage rows
   covRow: {

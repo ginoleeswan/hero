@@ -122,6 +122,24 @@ export async function getRecentRuns(limit = 8): Promise<EnrichmentRun[]> {
   return (data ?? []) as EnrichmentRun[];
 }
 
+export interface RunHistoryPage {
+  /** Most-recent `limit` runs, newest first. */
+  runs: EnrichmentRun[];
+  /** Lifetime run count (for "showing N of TOTAL" + load-more). */
+  total: number;
+}
+
+/** Paginated run history with the lifetime count, for the run-history dashboard. */
+export async function getRunHistory(limit = 30): Promise<RunHistoryPage> {
+  const { data, error, count } = await supabase
+    .from('enrichment_runs')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(0, Math.max(0, limit - 1));
+  if (error) throw error;
+  return { runs: (data ?? []) as EnrichmentRun[], total: count ?? 0 };
+}
+
 export interface CronJob {
   jobname: string;
   schedule: string;
