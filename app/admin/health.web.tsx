@@ -45,6 +45,7 @@ import {
 import { Donut, BarRow, CompletenessChart } from '../../src/components/admin/health/charts';
 import { Masthead } from '../../src/components/admin/health/Masthead';
 import { RunHistory } from '../../src/components/admin/health/RunHistory';
+import { VitalsBar } from '../../src/components/admin/health/VitalsBar';
 import { Chip } from '../../src/components/admin/health/atoms';
 import {
   useActivityLog,
@@ -573,6 +574,24 @@ export default function AdminHealthScreen() {
         />
 
         <View style={[styles.body, narrow && styles.bodyNarrow]}>
+        {/* ── Always-on vitals (live ops signals, visible on every tab) ── */}
+        {h && (
+          <VitalsBar
+            narrow={narrow}
+            pending={h.cvStatus.pending ?? 0}
+            etaLabel={etaLabel}
+            cvPing={cvPing}
+            cvUsage={cvUsage}
+            cvColor={cvColor}
+            cvPctUsed={cvPctUsed}
+            activeRun={activeRun}
+            stopping={busy === 'stop'}
+            onStop={onStop}
+            cronOn={cronOn}
+            drainJob={drainJob}
+            spend={spendQ.data}
+          />
+        )}
         {/* ── Tab bar (desktop pill row; mobile uses the fixed bottom bar) ── */}
         {!narrow && (
         <View style={styles.tabBar}>
@@ -648,35 +667,6 @@ export default function AdminHealthScreen() {
                 </View>
               )}
             </View>
-            {activeRun && (
-              <View style={styles.activeRun}>
-                <ActivityIndicator size="small" color={COLORS.orange} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.activeRunText}>
-                    Draining live · {activeRun.done + activeRun.failed + activeRun.retry}/
-                    {activeRun.processed} processed
-                  </Text>
-                  <Text style={styles.activeRunSub}>
-                    {activeRun.done} done · {activeRun.failed} failed · {activeRun.retry} retry ·
-                    started {relTime(activeRun.started_at ?? activeRun.created_at)}
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={() => onStop(activeRun.id)}
-                  disabled={busy === 'stop' || activeRun.cancel_requested}
-                  style={[styles.stopBtn, (busy === 'stop' || activeRun.cancel_requested) && styles.actDim]}
-                >
-                  {busy === 'stop' ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Ionicons name="stop" size={14} color="#fff" />
-                  )}
-                  <Text style={styles.stopBtnText}>
-                    {activeRun.cancel_requested ? 'Stopping…' : 'Stop'}
-                  </Text>
-                </Pressable>
-              </View>
-            )}
             <View style={[styles.opsBody, narrow && styles.opsBodyNarrow]}>
               <View style={styles.opsActions}>
                 <View style={styles.sizeSel}>
@@ -748,61 +738,6 @@ export default function AdminHealthScreen() {
                 </Pressable>
               </View>
 
-              <View style={[styles.opsMetrics, narrow && styles.opsMetricsNarrow]}>
-                <View style={styles.opsMetric}>
-                  <Text style={styles.opsMetricNum}>{(h.cvStatus.pending ?? 0).toLocaleString()}</Text>
-                  <Text style={styles.opsMetricLabel}>Pending backlog</Text>
-                  {etaLabel && <Text style={styles.opsMetricSub}>{etaLabel}</Text>}
-                </View>
-                {!narrow && <View style={styles.opsDivider} />}
-                <View style={[styles.opsMetricWide, narrow && styles.opsMetricWideNarrow]}>
-                  <View style={styles.opsMetricHead}>
-                    <View style={styles.pingRow}>
-                      <View
-                        style={[
-                          styles.pingDot,
-                          {
-                            backgroundColor:
-                              cvPing === 'ok'
-                                ? COLORS.green
-                                : cvPing === 'limited'
-                                  ? COLORS.red
-                                  : COLORS.grey,
-                          },
-                        ]}
-                      />
-                      <Text style={styles.opsMetricLabel}>
-                        ComicVine ·{' '}
-                        {cvPing === 'ok'
-                          ? 'healthy'
-                          : cvPing === 'limited'
-                            ? 'rate-limited'
-                            : cvPing === 'error'
-                              ? 'error'
-                              : 'checking…'}
-                      </Text>
-                    </View>
-                    <Text style={[styles.opsUsageNum, { color: cvColor }]}>
-                      {cvUsage}/{CV_HOURLY_CAP}
-                    </Text>
-                  </View>
-                  <View style={styles.cvTrack}>
-                    <View style={[styles.cvFill, { width: `${cvPctUsed}%`, backgroundColor: cvColor }]} />
-                  </View>
-                  <Text style={styles.opsMetricSub}>
-                    {cvUsage >= CV_HOURLY_CAP ? 'at cap — drains will throttle' : 'calls consumed'}
-                  </Text>
-                </View>
-                {!narrow && <View style={styles.opsDivider} />}
-                <View style={styles.opsMetric}>
-                  <Text style={[styles.opsMetricNum, { color: cronOn ? COLORS.green : COLORS.grey }]}>
-                    {cronOn ? 'ON' : 'OFF'}
-                  </Text>
-                  <Text style={styles.opsMetricLabel}>
-                    {drainJob?.last_run ? `ran ${relTime(drainJob.last_run)}` : 'auto-drain'}
-                  </Text>
-                </View>
-              </View>
             </View>
           </View>
         )}
