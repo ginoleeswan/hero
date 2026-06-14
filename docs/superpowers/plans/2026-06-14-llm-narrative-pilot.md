@@ -4,7 +4,7 @@
 
 **Goal:** Add an AI-generated narrative layer (did-you-know facts, power explainers, era summary, themed tags) for a pilot set of ~10–20 top heroes, generated in-session by Claude and stored in normalized side-tables, surfaced on the character pages and as Search/Discover filters.
 
-**Architecture:** New `hero_facts` + `hero_tags` + `hero_tag_vocab` tables (public-read RLS) gated by `heroes.narrative_status`. Generation is performed by Claude in this Claude Code session (model Sonnet) reading each hero's stored fields and writing rows via the Supabase MCP — no edge function, no Anthropic API, no cron. A `NarrativeSection` component renders the content on the native and web character pages; the controlled-vocab tags become a filter facet on Search/Discover.
+**Architecture:** New `hero_narrative_facts` + `hero_tags` + `hero_tag_vocab` tables (public-read RLS) gated by `heroes.narrative_status`. Generation is performed by Claude in this Claude Code session (model Sonnet) reading each hero's stored fields and writing rows via the Supabase MCP — no edge function, no Anthropic API, no cron. A `NarrativeSection` component renders the content on the native and web character pages; the controlled-vocab tags become a filter facet on Search/Discover.
 
 **Tech Stack:** Expo SDK 56 / React Native, expo-router, Supabase (PostgREST + RLS), TypeScript, jest-expo + @testing-library/react-native. Schema via `supabase/migrations/` applied through the Supabase MCP.
 
@@ -16,7 +16,7 @@
 
 | File | Responsibility |
 | --- | --- |
-| `supabase/migrations/20260614210000_create_hero_narrative.sql` | Schema: `heroes.narrative_status`, `hero_facts`, `hero_tags`, `hero_tag_vocab`; public-read RLS; vocab seed |
+| `supabase/migrations/20260614210000_create_hero_narrative.sql` | Schema: `heroes.narrative_status`, `hero_narrative_facts`, `hero_tags`, `hero_tag_vocab`; public-read RLS; vocab seed |
 | `src/types/database.generated.ts` | Regenerated after migration (never hand-edited) |
 | `src/types/index.ts` | Derive `HeroFact`, `HeroTag`, `HeroTagVocab` from generated types |
 | `src/lib/db/heroFacts.ts` | Narrative queries + the pure `buildNarrative` mapper; tag-vocab + tag-filter helpers |
@@ -66,9 +66,9 @@ create table if not exists public.hero_tag_vocab (
 
 -- 3. Text outputs (did_you_know rows ordered by position; one power_explainer
 --    row per power with subject=power name; one era_summary row).
-create table if not exists public.hero_facts (
+create table if not exists public.hero_narrative_facts (
   id           bigint generated always as identity primary key,
-  hero_id      uuid not null references public.heroes(id) on delete cascade,
+  hero_id      text not null references public.heroes(id) on delete cascade,
   kind         text not null check (kind in ('did_you_know','power_explainer','era_summary')),
   content      text not null,
   subject      text,
@@ -77,11 +77,11 @@ create table if not exists public.hero_facts (
   needs_review boolean not null default false,
   generated_at timestamptz not null default now()
 );
-create index if not exists hero_facts_hero_id_kind_idx on public.hero_facts (hero_id, kind);
+create index if not exists hero_narrative_facts_hero_id_kind_idx on public.hero_narrative_facts (hero_id, kind);
 
 -- 4. Normalized, filterable tags.
 create table if not exists public.hero_tags (
-  hero_id uuid not null references public.heroes(id) on delete cascade,
+  hero_id text not null references public.heroes(id) on delete cascade,
   tag     text not null references public.hero_tag_vocab(slug),
   primary key (hero_id, tag)
 );
@@ -89,11 +89,11 @@ create index if not exists hero_tags_tag_idx on public.hero_tags (tag);
 
 -- 5. Public-read RLS on all three new tables (anon reads return 0 rows without this).
 alter table public.hero_tag_vocab enable row level security;
-alter table public.hero_facts     enable row level security;
+alter table public.hero_narrative_facts     enable row level security;
 alter table public.hero_tags      enable row level security;
 
 create policy "hero_tag_vocab_public_read" on public.hero_tag_vocab for select using (true);
-create policy "hero_facts_public_read"     on public.hero_facts     for select using (true);
+create policy "hero_narrative_facts_public_read"     on public.hero_narrative_facts     for select using (true);
 create policy "hero_tags_public_read"      on public.hero_tags      for select using (true);
 
 -- 6. Seed the controlled vocabulary (~35 slugs across 5 categories).
@@ -154,12 +154,12 @@ Expected: `vocab_count = 35`; one row for `narrative_status`.
 - [ ] **Step 4: Check advisors (RLS/security)**
 
 Run `mcp__supabase__get_advisors` with type `security`.
-Expected: no new ERROR-level advisory for `hero_facts`, `hero_tags`, or `hero_tag_vocab` (public-read policies exist).
+Expected: no new ERROR-level advisory for `hero_narrative_facts`, `hero_tags`, or `hero_tag_vocab` (public-read policies exist).
 
 - [ ] **Step 5: Regenerate generated types**
 
 Run `mcp__supabase__generate_typescript_types` and overwrite `src/types/database.generated.ts` with the result.
-Expected: file now contains `hero_facts`, `hero_tags`, `hero_tag_vocab`, and `narrative_status` on `heroes`.
+Expected: file now contains `hero_narrative_facts`, `hero_tags`, `hero_tag_vocab`, and `narrative_status` on `heroes`.
 
 - [ ] **Step 6: Commit**
 
@@ -180,7 +180,7 @@ git commit -m "feat(db): add hero narrative side-tables + tag vocab (Lane 2)"
 In `src/types/index.ts`, directly below `export type UserProfile = Tables<'user_profiles'>;`, add:
 
 ```ts
-export type HeroFact = Tables<'hero_facts'>;
+export type HeroFact = Tables<'hero_narrative_facts'>;
 export type HeroTag = Tables<'hero_tags'>;
 export type HeroTagVocab = Tables<'hero_tag_vocab'>;
 ```
@@ -188,7 +188,7 @@ export type HeroTagVocab = Tables<'hero_tag_vocab'>;
 - [ ] **Step 2: Verify types compile**
 
 Run: `yarn tsc --noEmit`
-Expected: no errors referencing `hero_facts` / `hero_tags` / `hero_tag_vocab`.
+Expected: no errors referencing `hero_narrative_facts` / `hero_tags` / `hero_tag_vocab`.
 
 - [ ] **Step 3: Commit**
 
@@ -299,7 +299,7 @@ const emptyNarrative = (): HeroNarrative => ({
   isEmpty: true,
 });
 
-/** Pure: fold raw hero_facts + hero_tags rows into the render-ready shape. */
+/** Pure: fold raw hero_narrative_facts + hero_tags rows into the render-ready shape. */
 export function buildNarrative(facts: FactRow[], tags: TagJoinRow[]): HeroNarrative {
   const didYouKnow = facts
     .filter((f) => f.kind === 'did_you_know')
@@ -333,7 +333,7 @@ export async function getHeroNarrative(heroId: string): Promise<HeroNarrative> {
 
   const [factsRes, tagsRes] = await Promise.all([
     supabase
-      .from('hero_facts')
+      .from('hero_narrative_facts')
       .select('kind, content, subject, position')
       .eq('hero_id', heroId),
     supabase
@@ -1022,10 +1022,10 @@ Rules: never invent beyond the provided fields; omit any output whose grounding 
 
 For each hero `:hero_id` with `:model = 'claude-sonnet-4-6 (claude-code session)'`, run via `mcp__supabase__execute_sql` (clear-then-insert so it is also the regeneration path):
 ```sql
-delete from public.hero_facts where hero_id = :hero_id;
+delete from public.hero_narrative_facts where hero_id = :hero_id;
 delete from public.hero_tags  where hero_id = :hero_id;
 
-insert into public.hero_facts (hero_id, kind, content, subject, position, source_model) values
+insert into public.hero_narrative_facts (hero_id, kind, content, subject, position, source_model) values
   (:hero_id, 'did_you_know', :fact0, null, 0, :model),
   (:hero_id, 'did_you_know', :fact1, null, 1, :model),
   (:hero_id, 'power_explainer', :explainerText, :powerName, null, :model),
@@ -1041,7 +1041,7 @@ on conflict do nothing;
 
 Present the generated content for the pilot heroes to the user for review. Mark any questionable fact with `needs_review = true`:
 ```sql
-update public.hero_facts set needs_review = true where id = :fact_id;
+update public.hero_narrative_facts set needs_review = true where id = :fact_id;
 ```
 Wait for user sign-off before Step 5.
 

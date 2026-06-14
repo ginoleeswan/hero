@@ -226,6 +226,50 @@ export type Database = {
           },
         ]
       }
+      hero_narrative_facts: {
+        Row: {
+          content: string
+          generated_at: string
+          hero_id: string
+          id: number
+          kind: string
+          needs_review: boolean
+          position: number | null
+          source_model: string
+          subject: string | null
+        }
+        Insert: {
+          content: string
+          generated_at?: string
+          hero_id: string
+          id?: never
+          kind: string
+          needs_review?: boolean
+          position?: number | null
+          source_model: string
+          subject?: string | null
+        }
+        Update: {
+          content?: string
+          generated_at?: string
+          hero_id?: string
+          id?: never
+          kind?: string
+          needs_review?: boolean
+          position?: number | null
+          source_model?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hero_narrative_facts_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hero_people: {
         Row: {
           hero_id: string
@@ -380,6 +424,57 @@ export type Database = {
           },
         ]
       }
+      hero_tag_vocab: {
+        Row: {
+          category: string
+          description: string
+          label: string
+          slug: string
+        }
+        Insert: {
+          category: string
+          description: string
+          label: string
+          slug: string
+        }
+        Update: {
+          category?: string
+          description?: string
+          label?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      hero_tags: {
+        Row: {
+          hero_id: string
+          tag: string
+        }
+        Insert: {
+          hero_id: string
+          tag: string
+        }
+        Update: {
+          hero_id?: string
+          tag?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hero_tags_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hero_tags_tag_fkey"
+            columns: ["tag"]
+            isOneToOne: false
+            referencedRelation: "hero_tag_vocab"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       heroes: {
         Row: {
           ai_stats_status: string | null
@@ -419,6 +514,7 @@ export type Database = {
           movie_count: number | null
           movies: Json[] | null
           name: string
+          narrative_status: string
           occupation: string | null
           origin: string | null
           place_of_birth: string | null
@@ -479,6 +575,7 @@ export type Database = {
           movie_count?: number | null
           movies?: Json[] | null
           name: string
+          narrative_status?: string
           occupation?: string | null
           origin?: string | null
           place_of_birth?: string | null
@@ -539,6 +636,7 @@ export type Database = {
           movie_count?: number | null
           movies?: Json[] | null
           name?: string
+          narrative_status?: string
           occupation?: string | null
           origin?: string | null
           place_of_birth?: string | null

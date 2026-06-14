@@ -58,16 +58,16 @@ Mirrors the existing `comicvine_status` / `ai_stats_status` gating pattern. The
 drain query selects `pending` (and optionally `stale`) ordered by `issue_count`
 desc — i.e. popularity order (per the popularity-ordering memory).
 
-### 3.2 `hero_facts` (text outputs)
+### 3.2 `hero_narrative_facts` (text outputs)
 
 One row per text output. `did_you_know` is multi-row (ordered by `position`);
 `power_explainer` is one row per explained power (`subject` = power name);
 `era_summary` is a single row.
 
 ```sql
-create table public.hero_facts (
+create table public.hero_narrative_facts (
   id           bigint generated always as identity primary key,
-  hero_id      uuid not null references public.heroes(id) on delete cascade,
+  hero_id      text not null references public.heroes(id) on delete cascade,
   kind         text not null check (kind in ('did_you_know','power_explainer','era_summary')),
   content      text not null,
   subject      text,            -- power name for power_explainer; null otherwise
@@ -76,7 +76,7 @@ create table public.hero_facts (
   needs_review boolean not null default false,
   generated_at timestamptz not null default now()
 );
-create index hero_facts_hero_id_kind_idx on public.hero_facts (hero_id, kind);
+create index hero_narrative_facts_hero_id_kind_idx on public.hero_narrative_facts (hero_id, kind);
 ```
 
 Regeneration overwrites a hero's rows (delete-then-insert within
@@ -101,7 +101,7 @@ create table public.hero_tag_vocab (
 
 ```sql
 create table public.hero_tags (
-  hero_id uuid not null references public.heroes(id) on delete cascade,
+  hero_id text not null references public.heroes(id) on delete cascade,
   tag     text not null references public.hero_tag_vocab(slug),
   primary key (hero_id, tag)
 );
@@ -112,7 +112,7 @@ create index hero_tags_tag_idx on public.hero_tags (tag);
 
 New tables get RLS auto-enabled; without an explicit public-read policy anon
 reads return 0 rows silently (per the new-table-RLS memory). Add to each of
-`hero_facts`, `hero_tags`, `hero_tag_vocab`:
+`hero_narrative_facts`, `hero_tags`, `hero_tag_vocab`:
 
 ```sql
 alter table public.<t> enable row level security;
@@ -181,7 +181,7 @@ empty/absent when grounding is insufficient.
 The pilot is small (~10–20 heroes) and generated in-session, so: **human review
 before go-live.** Generated rows are written, the output is eyeballed, and
 `narrative_status` is flipped to `done` once it looks right. The `needs_review`
-boolean on `hero_facts` flags any individual fact that warrants a second look.
+boolean on `hero_narrative_facts` flags any individual fact that warrants a second look.
 No heavier workflow (no per-fact confidence model, no review queue).
 
 ### Regeneration policy
@@ -190,7 +190,7 @@ No heavier workflow (no per-fact confidence model, no review queue).
 `narrative_status` back to `pending` (or `stale`) — directly via SQL or through
 the existing admin re-enrich mechanism (`admin_reenrich_hero`) — and the hero is
 regenerated in a future in-session pass. Regeneration **deletes the hero's
-existing `hero_facts` + `hero_tags` rows and reinserts**. `generated_at` and
+existing `hero_narrative_facts` + `hero_tags` rows and reinserts**. `generated_at` and
 `source_model` are recorded for reasoning about staleness. No automatic
 drift/fingerprint detection in this pilot.
 
@@ -275,9 +275,9 @@ and roadmap; treat its wiring as the higher-risk integration in the plan.
 
 ## 11. Acceptance criteria
 
-1. Migration creates `heroes.narrative_status`, `hero_facts`, `hero_tags`,
+1. Migration creates `heroes.narrative_status`, `hero_narrative_facts`, `hero_tags`,
    `hero_tag_vocab` with public-read RLS; vocab seeded; types regenerated.
-2. ~10–20 top-`issue_count` heroes have grounded `hero_facts` + `hero_tags`,
+2. ~10–20 top-`issue_count` heroes have grounded `hero_narrative_facts` + `hero_tags`,
    reviewed, with `narrative_status = 'done'`.
 3. `NarrativeSection` renders facts/explainers/era + tag chips on both the native
    and web character pages; renders nothing for heroes without narrative.
