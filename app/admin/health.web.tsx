@@ -181,10 +181,10 @@ export default function AdminHealthScreen() {
     if ((h?.cvStatus.failed ?? 0) > 0)
       a.push({
         tone: 'red',
-        text: `${h!.cvStatus.failed} hero(es) marked failed — Retry failed in Operations.`,
+        text: `${h!.cvStatus.failed} hero(es) marked failed — use "Retry failed" on the Build tab.`,
       });
     if (recent[0]?.status === 'error')
-      a.push({ tone: 'red', text: 'The last run errored — see Operations.' });
+      a.push({ tone: 'red', text: 'The last run errored — see the Build tab.' });
     return a;
   }, [pingQ.data, usageQ.data, runsQ.data, h]);
 

@@ -1,6 +1,6 @@
 // Command home — the read-only glance. Synthesises the catalogue's state from
 // existing primitives and deep-links into each domain. No mutations live here
-// (actions are in Operations); no big gauge (the dark top bar owns it).
+// (actions live on the Build tab); no big gauge (the dark top bar owns it).
 import { View, Text, Pressable, Animated, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
