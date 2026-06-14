@@ -102,7 +102,7 @@ export function FilmBackdropHeader({
 const styles = StyleSheet.create({
   root: {
     width: '100%',
-    minHeight: 280,
+    minHeight: Platform.OS === 'web' ? 360 : 280,
     justifyContent: 'flex-end',
     paddingBottom: 24,
   },
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   contentRowWide: {
-    maxWidth: 760,
+    maxWidth: 1040,
     alignSelf: 'center',
     width: '100%',
   },
@@ -145,8 +145,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   poster: {
-    width: 100,
-    height: 150,
+    width: Platform.OS === 'web' ? 130 : 100,
+    height: Platform.OS === 'web' ? 195 : 150,
   },
   posterPlaceholder: {
     backgroundColor: 'rgba(255,255,255,0.1)',

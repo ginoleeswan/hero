@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { HeroImage } from '../HeroImage';
@@ -8,9 +8,57 @@ import type { RelatedHeroCard } from '../../lib/db/heroes';
 const CARD_W = 104;
 const CARD_H = 140;
 
+function HeroCard({ hero, onPress }: { hero: RelatedHeroCard; onPress: () => void }) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={onPress}
+      style={styles.card}
+      accessibilityRole="button"
+      accessibilityLabel={`View ${hero.name}`}
+    >
+      <HeroImage
+        id={hero.id}
+        name={hero.name}
+        imageUrl={hero.image_url}
+        portraitUrl={hero.portrait_url}
+        imageMdUrl={hero.image_md_url}
+        grid
+        contentFit="cover"
+        contentPosition="top"
+        style={styles.cardImage}
+        recyclingKey={hero.id}
+        transition={150}
+      />
+      <LinearGradient
+        colors={['transparent', 'rgba(20,28,32,0.9)']}
+        locations={[0.4, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <Text style={styles.cardName} numberOfLines={2}>{hero.name}</Text>
+    </TouchableOpacity>
+  );
+}
+
 export function HeroesInFilmRail({ heroes }: { heroes: RelatedHeroCard[] }) {
   const router = useRouter();
   if (heroes.length === 0) return null;
+
+  const handlePress = (hero: RelatedHeroCard) =>
+    router.push(`/character/${hero.id}?name=${encodeURIComponent(hero.name)}`);
+
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.block}>
+        <Text style={styles.label}>Heroes in this Film</Text>
+        <View style={webStyles.grid}>
+          {heroes.map((hero) => (
+            <HeroCard key={hero.id} hero={hero} onPress={() => handlePress(hero)} />
+          ))}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.block}>
@@ -21,39 +69,22 @@ export function HeroesInFilmRail({ heroes }: { heroes: RelatedHeroCard[] }) {
         contentContainerStyle={styles.row}
       >
         {heroes.map((hero) => (
-          <TouchableOpacity
-            key={hero.id}
-            activeOpacity={0.85}
-            onPress={() => router.push(`/character/${hero.id}?name=${encodeURIComponent(hero.name)}`)}
-            style={styles.card}
-            accessibilityRole="button"
-            accessibilityLabel={`View ${hero.name}`}
-          >
-            <HeroImage
-              id={hero.id}
-              name={hero.name}
-              imageUrl={hero.image_url}
-              portraitUrl={hero.portrait_url}
-              imageMdUrl={hero.image_md_url}
-              grid
-              contentFit="cover"
-              contentPosition="top"
-              style={styles.cardImage}
-              recyclingKey={hero.id}
-              transition={150}
-            />
-            <LinearGradient
-              colors={['transparent', 'rgba(20,28,32,0.9)']}
-              locations={[0.4, 1]}
-              style={StyleSheet.absoluteFill}
-            />
-            <Text style={styles.cardName} numberOfLines={2}>{hero.name}</Text>
-          </TouchableOpacity>
+          <HeroCard key={hero.id} hero={hero} onPress={() => handlePress(hero)} />
         ))}
       </ScrollView>
     </View>
   );
 }
+
+const webStyles = StyleSheet.create({
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 2,
+  },
+});
 
 const styles = StyleSheet.create({
   block: { gap: 8 },

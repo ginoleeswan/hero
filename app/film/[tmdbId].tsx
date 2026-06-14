@@ -86,22 +86,44 @@ export default function FilmScreen() {
         <FilmBackdropHeader film={film} onBack={() => router.back()} />
 
         {wide ? (
-          // Two-column desktop layout: left col ~300px (trailer), right col (meta)
-          <View style={styles.desktopRow}>
-            <View style={styles.desktopLeft}>
-              {film.trailerKey ? (
-                <View style={styles.sectionNoPad}>
-                  <FilmTrailer trailerKey={film.trailerKey} />
-                </View>
-              ) : null}
-            </View>
-            <View style={styles.desktopRight}>
-              {film.overview ? (
-                <View style={styles.sectionNoPad}>
-                  <Text style={styles.overview}>{film.overview}</Text>
-                </View>
-              ) : null}
-            </View>
+          // Desktop layout: centered max-width container, overview then large trailer
+          <View style={styles.desktopContainer}>
+            {film.overview ? (
+              <Text style={[styles.overview, styles.overviewWide]}>{film.overview}</Text>
+            ) : null}
+            {film.trailerKey ? (
+              <View style={styles.trailerWide}>
+                <FilmTrailer trailerKey={film.trailerKey} />
+              </View>
+            ) : null}
+            {providers.length > 0 ? (
+              <View style={styles.railSectionWide}>
+                <WhereToWatch providers={providers} />
+              </View>
+            ) : null}
+            {film.cast && film.cast.length > 0 ? (
+              <View style={styles.railSectionWide}>
+                <CastRail cast={film.cast} />
+              </View>
+            ) : null}
+            {film.stills && film.stills.length > 0 ? (
+              <View style={styles.railSectionWide}>
+                <StillsGallery stills={film.stills} />
+              </View>
+            ) : null}
+            {heroes.length > 0 ? (
+              <View style={styles.railSectionWide}>
+                <HeroesInFilmRail heroes={heroes} />
+              </View>
+            ) : null}
+            <TouchableOpacity
+              style={[styles.linkBtn, styles.linkBtnWide]}
+              onPress={() => Linking.openURL(tmdbUrl)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="open-outline" size={14} color="#fff" />
+              <Text style={styles.linkBtnText}>View on TMDB</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <>
@@ -115,43 +137,43 @@ export default function FilmScreen() {
                 <FilmTrailer trailerKey={film.trailerKey} />
               </View>
             ) : null}
+
+            {providers.length > 0 ? (
+              <View style={styles.railSection}>
+                <WhereToWatch providers={providers} />
+              </View>
+            ) : null}
+
+            {film.cast && film.cast.length > 0 ? (
+              <View style={styles.railSection}>
+                <CastRail cast={film.cast} />
+              </View>
+            ) : null}
+
+            {film.stills && film.stills.length > 0 ? (
+              <View style={styles.railSection}>
+                <StillsGallery stills={film.stills} />
+              </View>
+            ) : null}
+
+            {heroes.length > 0 ? (
+              <View style={styles.railSection}>
+                <HeroesInFilmRail heroes={heroes} />
+              </View>
+            ) : null}
+
+            <View style={styles.section}>
+              <TouchableOpacity
+                style={styles.linkBtn}
+                onPress={() => Linking.openURL(tmdbUrl)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="open-outline" size={14} color="#fff" />
+                <Text style={styles.linkBtnText}>View on TMDB</Text>
+              </TouchableOpacity>
+            </View>
           </>
         )}
-
-        {providers.length > 0 ? (
-          <View style={styles.railSection}>
-            <WhereToWatch providers={providers} />
-          </View>
-        ) : null}
-
-        {film.cast && film.cast.length > 0 ? (
-          <View style={styles.railSection}>
-            <CastRail cast={film.cast} />
-          </View>
-        ) : null}
-
-        {film.stills && film.stills.length > 0 ? (
-          <View style={styles.railSection}>
-            <StillsGallery stills={film.stills} />
-          </View>
-        ) : null}
-
-        {heroes.length > 0 ? (
-          <View style={styles.railSection}>
-            <HeroesInFilmRail heroes={heroes} />
-          </View>
-        ) : null}
-
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.linkBtn}
-            onPress={() => Linking.openURL(tmdbUrl)}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="open-outline" size={14} color="#fff" />
-            <Text style={styles.linkBtnText}>View on TMDB</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </View>
   );
@@ -172,9 +194,6 @@ const styles = StyleSheet.create({
   scrollContent: { gap: 0 },
   section: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  sectionNoPad: {
     paddingTop: 20,
   },
   railSection: {
@@ -201,18 +220,28 @@ const styles = StyleSheet.create({
     color: '#fff',
     letterSpacing: 0.2,
   },
-  desktopRow: {
-    flexDirection: 'row',
-    gap: 24,
-    paddingHorizontal: 20,
-    maxWidth: 900,
+  // Desktop-only layout styles
+  desktopContainer: {
+    maxWidth: 1040,
     alignSelf: 'center',
     width: '100%',
+    paddingTop: 24,
+    gap: 24,
   },
-  desktopLeft: {
-    width: 300,
+  overviewWide: {
+    paddingHorizontal: 32,
+    fontSize: 15,
+    lineHeight: 24,
+    maxWidth: 760,
   },
-  desktopRight: {
-    flex: 1,
+  trailerWide: {
+    paddingHorizontal: 32,
+  },
+  railSectionWide: {
+    gap: 0,
+  },
+  linkBtnWide: {
+    marginHorizontal: 32,
+    marginBottom: 16,
   },
 });

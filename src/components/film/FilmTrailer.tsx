@@ -34,17 +34,19 @@ export function FilmTrailer({ trailerKey }: { trailerKey: string }) {
 
   if (Platform.OS === 'web') {
     return (
-      <View style={styles.frame}>
-        {/* @ts-ignore — iframe is a web-only element */}
-        <iframe
-          src={embedUrl}
-          width="100%"
-          height="100%"
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          style={{ border: 'none', borderRadius: 10 }}
-        />
+      <View style={webStyles.frameWrap}>
+        <View style={webStyles.frame}>
+          {/* @ts-ignore — iframe is a web-only element */}
+          <iframe
+            src={embedUrl}
+            width="100%"
+            height="100%"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            style={{ border: 'none', borderRadius: 10 }}
+          />
+        </View>
       </View>
     );
   }
@@ -73,6 +75,21 @@ export function FilmTrailer({ trailerKey }: { trailerKey: string }) {
     </TouchableOpacity>
   );
 }
+
+// Web-only: larger 16:9 player centered, max 720px wide
+const webStyles = StyleSheet.create({
+  frameWrap: {
+    alignItems: 'center',
+  },
+  frame: {
+    width: '100%',
+    maxWidth: 720,
+    aspectRatio: 16 / 9,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+  },
+});
 
 const styles = StyleSheet.create({
   btn: {

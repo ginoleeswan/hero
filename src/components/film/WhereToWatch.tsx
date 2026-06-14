@@ -1,10 +1,40 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { COLORS } from '../../constants/colors';
 import type { WatchProvider } from '../../lib/db/films';
 
+function ProviderChip({ p }: { p: WatchProvider }) {
+  return (
+    <View style={styles.chip}>
+      {p.logoUrl ? (
+        <Image
+          source={{ uri: p.logoUrl }}
+          style={styles.logo}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+        />
+      ) : null}
+      <Text style={styles.name} numberOfLines={1}>{p.name}</Text>
+    </View>
+  );
+}
+
 export function WhereToWatch({ providers }: { providers: WatchProvider[] }) {
   if (providers.length === 0) return null;
+
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.block}>
+        <Text style={styles.label}>Where to Watch</Text>
+        <View style={webStyles.wrap}>
+          {providers.map((p) => (
+            <ProviderChip key={p.name} p={p} />
+          ))}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.block}>
       <Text style={styles.label}>Where to Watch</Text>
@@ -14,22 +44,21 @@ export function WhereToWatch({ providers }: { providers: WatchProvider[] }) {
         contentContainerStyle={styles.row}
       >
         {providers.map((p) => (
-          <View key={p.name} style={styles.chip}>
-            {p.logoUrl ? (
-              <Image
-                source={{ uri: p.logoUrl }}
-                style={styles.logo}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-              />
-            ) : null}
-            <Text style={styles.name} numberOfLines={1}>{p.name}</Text>
-          </View>
+          <ProviderChip key={p.name} p={p} />
         ))}
       </ScrollView>
     </View>
   );
 }
+
+const webStyles = StyleSheet.create({
+  wrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 20,
+  },
+});
 
 const styles = StyleSheet.create({
   block: { gap: 8 },

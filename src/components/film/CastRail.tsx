@@ -1,11 +1,48 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import type { HeroFilmCastMember } from '../../lib/db/films';
 
+function CastMember({ member }: { member: HeroFilmCastMember }) {
+  return (
+    <View style={styles.member}>
+      {member.profile_url ? (
+        <Image
+          source={{ uri: member.profile_url }}
+          style={styles.avatar}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+        />
+      ) : (
+        <View style={[styles.avatar, styles.avatarPlaceholder]}>
+          <Ionicons name="person" size={20} color={COLORS.grey} />
+        </View>
+      )}
+      <Text style={styles.name} numberOfLines={2}>{member.name}</Text>
+      {member.character ? (
+        <Text style={styles.character} numberOfLines={2}>{member.character}</Text>
+      ) : null}
+    </View>
+  );
+}
+
 export function CastRail({ cast }: { cast: HeroFilmCastMember[] }) {
   if (cast.length === 0) return null;
+
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.block}>
+        <Text style={styles.label}>Cast</Text>
+        <View style={webStyles.grid}>
+          {cast.map((member, i) => (
+            <CastMember key={`${member.name}-${i}`} member={member} />
+          ))}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.block}>
       <Text style={styles.label}>Cast</Text>
@@ -15,29 +52,21 @@ export function CastRail({ cast }: { cast: HeroFilmCastMember[] }) {
         contentContainerStyle={styles.row}
       >
         {cast.map((member, i) => (
-          <View key={`${member.name}-${i}`} style={styles.member}>
-            {member.profile_url ? (
-              <Image
-                source={{ uri: member.profile_url }}
-                style={styles.avatar}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-              />
-            ) : (
-              <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                <Ionicons name="person" size={20} color={COLORS.grey} />
-              </View>
-            )}
-            <Text style={styles.name} numberOfLines={2}>{member.name}</Text>
-            {member.character ? (
-              <Text style={styles.character} numberOfLines={2}>{member.character}</Text>
-            ) : null}
-          </View>
+          <CastMember key={`${member.name}-${i}`} member={member} />
         ))}
       </ScrollView>
     </View>
   );
 }
+
+const webStyles = StyleSheet.create({
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+    paddingHorizontal: 20,
+  },
+});
 
 const styles = StyleSheet.create({
   block: { gap: 8 },

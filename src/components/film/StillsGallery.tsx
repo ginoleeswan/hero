@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { COLORS } from '../../constants/colors';
 import { ImageLightbox } from '../ImageLightbox';
@@ -9,6 +9,37 @@ export function StillsGallery({ stills }: { stills: string[] }) {
   if (stills.length === 0) return null;
 
   const images = stills.map((url) => ({ url }));
+
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.block}>
+        <Text style={styles.label}>Stills</Text>
+        <View style={webStyles.grid}>
+          {stills.map((url, i) => (
+            <TouchableOpacity
+              key={i}
+              activeOpacity={0.85}
+              onPress={() => setLightboxIndex(i)}
+            >
+              <Image
+                source={{ uri: url }}
+                style={webStyles.still}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+        {lightboxIndex !== null ? (
+          <ImageLightbox
+            images={images}
+            initialIndex={lightboxIndex}
+            onClose={() => setLightboxIndex(null)}
+          />
+        ) : null}
+      </View>
+    );
+  }
 
   return (
     <View style={styles.block}>
@@ -44,6 +75,20 @@ export function StillsGallery({ stills }: { stills: string[] }) {
     </View>
   );
 }
+
+const webStyles = StyleSheet.create({
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 20,
+  },
+  still: {
+    width: 256,
+    height: 144,
+    borderRadius: 8,
+  },
+});
 
 const styles = StyleSheet.create({
   block: { gap: 8 },
