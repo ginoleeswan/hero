@@ -3,11 +3,11 @@
 // (actions are in Operations); no big gauge (the dark top bar owns it).
 import { View, Text, Pressable, Animated, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';
 import { Bento } from '../Bento';
+import { HeroThumb } from '../atoms';
 import { Donut, CompletenessChart } from '../charts';
 import { pct, healthColor, METRICS } from '../format';
 import type {
@@ -175,18 +175,7 @@ export function CommandHome({
                 onPress={() => router.push(`/character/${hero.id}`)}
                 style={s.qRow}
               >
-                {hero.image_url ? (
-                  <Image
-                    source={{ uri: hero.image_url }}
-                    style={s.qThumb}
-                    contentFit="cover"
-                    transition={150}
-                  />
-                ) : (
-                  <View style={[s.qThumb, s.qThumbBlank]}>
-                    <Ionicons name="person" size={14} color="rgba(41,60,67,0.3)" />
-                  </View>
-                )}
+                <HeroThumb uri={hero.image_url} size={30} radius={8} />
                 <View style={s.qInfo}>
                   <Text style={s.qName} numberOfLines={1}>
                     {hero.name}
@@ -311,8 +300,6 @@ const s = StyleSheet.create({
     maxWidth: 220,
   },
   qRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 5 },
-  qThumb: { width: 30, height: 30, borderRadius: 8, backgroundColor: '#efe6d6' },
-  qThumbBlank: { alignItems: 'center', justifyContent: 'center' },
   qInfo: { flex: 1, gap: 1 },
   qName: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
   qSub: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey },

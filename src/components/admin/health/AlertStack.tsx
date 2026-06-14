@@ -106,7 +106,12 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 12,
   },
-  alertText: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(255,255,255,0.92)' },
+  alertText: {
+    flex: 1,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.92)',
+  },
   count: {
     backgroundColor: 'rgba(255,255,255,0.16)',
     borderRadius: 999,

@@ -11,13 +11,12 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';
 import { Bento } from '../Bento';
 import { RunHistory } from '../RunHistory';
-import { Chip } from '../atoms';
+import { Chip, HeroThumb } from '../atoms';
 import { LOG_TONE_COLOR, logClock } from '../format';
 import type {
   CatalogHealth,
@@ -253,18 +252,12 @@ export function OperationsDomain({
                   const busyThis = busy === `reenrich-${hero.id}`;
                   return (
                     <View key={hero.id} style={styles.hcRow}>
-                      {hero.portrait_url || hero.image_url ? (
-                        <Image
-                          source={{ uri: hero.portrait_url ?? hero.image_url ?? undefined }}
-                          style={styles.hcThumb}
-                          contentFit="cover"
-                          transition={150}
-                        />
-                      ) : (
-                        <View style={[styles.hcThumb, styles.thumbBlank]}>
-                          <Ionicons name="person" size={15} color="rgba(41,60,67,0.3)" />
-                        </View>
-                      )}
+                      <HeroThumb
+                        uri={hero.portrait_url ?? hero.image_url}
+                        width={34}
+                        height={44}
+                        radius={7}
+                      />
                       <Pressable
                         style={styles.hcInfo}
                         onPress={() => router.push(`/character/${hero.id}`)}
@@ -407,8 +400,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f6f0e6',
   },
-  hcThumb: { width: 34, height: 44, borderRadius: 7, backgroundColor: '#efe6d6' },
-  thumbBlank: { alignItems: 'center', justifyContent: 'center' },
   hcInfo: { flex: 1, gap: 4, minWidth: 0 },
   hcName: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
   hcMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },

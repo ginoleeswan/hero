@@ -134,10 +134,12 @@ export function BarRow({
   );
 }
 
-// Completeness-over-time area+line. Fixed 0–100 Y scale; width measured on layout.
+// Completeness-over-time area+line. Fixed 0–100 Y scale; size measured on layout
+// so the chart fills whatever panel height it's given (min 150).
 export function CompletenessChart({ snaps }: { snaps: HealthSnapshot[] }) {
-  const [w, setW] = useState(0);
-  const H = 160;
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  const w = size.w;
+  const H = size.h || 160;
   const padT = 12;
   const padB = 22;
   const vals = snaps.map((s) => {
@@ -155,7 +157,10 @@ export function CompletenessChart({ snaps }: { snaps: HealthSnapshot[] }) {
       ` L${w},${H - padB} Z`
     : '';
   return (
-    <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: H }}>
+    <View
+      onLayout={(e) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
+      style={{ flex: 1, minHeight: 150 }}
+    >
       {w > 0 && (
         <Svg width={w} height={H}>
           {[0, 50, 100].map((g) => (

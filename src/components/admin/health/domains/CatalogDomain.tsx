@@ -1,10 +1,10 @@
 import { View, Text, Pressable, ActivityIndicator, Animated, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';
 import { Bento } from '../Bento';
+import { HeroThumb } from '../atoms';
 import { Donut, BarRow } from '../charts';
 import { pct, healthColor, METRICS, WORKLIST_LABEL, type MetricDef } from '../format';
 import {
@@ -302,18 +302,7 @@ export function CatalogDomain({
                   }
                 >
                   <Text style={styles.gapRank}>{page * GAP_PAGE_SIZE + i + 1}</Text>
-                  {hero.image_url ? (
-                    <Image
-                      source={{ uri: hero.image_url }}
-                      style={styles.thumb}
-                      contentFit="cover"
-                      transition={150}
-                    />
-                  ) : (
-                    <View style={[styles.thumb, styles.thumbBlank]}>
-                      <Ionicons name="person" size={16} color="rgba(41,60,67,0.3)" />
-                    </View>
-                  )}
+                  <HeroThumb uri={hero.image_url} width={38} height={48} radius={8} />
                   <View style={styles.gapInfo}>
                     <Text style={styles.gapName} numberOfLines={1}>
                       {hero.name}
@@ -576,8 +565,6 @@ const styles = StyleSheet.create({
     color: 'rgba(41,60,67,0.35)',
     textAlign: 'center',
   },
-  thumb: { width: 38, height: 48, borderRadius: 8, backgroundColor: '#efe6d6' },
-  thumbBlank: { alignItems: 'center', justifyContent: 'center' },
   gapInfo: { flex: 1, gap: 4, minWidth: 0 },
   gapName: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
   gapSub: { flexDirection: 'row', alignItems: 'center', gap: 8 },
