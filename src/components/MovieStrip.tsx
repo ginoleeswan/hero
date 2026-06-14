@@ -51,6 +51,32 @@ function sortItems(items: StripItem[]): StripItem[] {
   });
 }
 
+interface DecadeGroup {
+  label: string;
+  items: StripItem[];
+}
+
+/** Group year-sorted items into decade buckets (newest first); undated last. */
+function groupByDecade(items: StripItem[]): DecadeGroup[] {
+  const buckets = new Map<number, StripItem[]>();
+  const undated: StripItem[] = [];
+  for (const it of items) {
+    const y = it.year ? parseInt(it.year, 10) : NaN;
+    if (!y || Number.isNaN(y)) {
+      undated.push(it);
+      continue;
+    }
+    const decade = Math.floor(y / 10) * 10;
+    if (!buckets.has(decade)) buckets.set(decade, []);
+    buckets.get(decade)!.push(it);
+  }
+  const groups: DecadeGroup[] = [...buckets.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .map(([decade, groupItems]) => ({ label: `${decade}s`, items: groupItems }));
+  if (undated.length > 0) groups.push({ label: 'Undated', items: undated });
+  return groups;
+}
+
 function buildItems(films?: HeroFilm[], movies?: MovieAppearance[]): StripItem[] {
   if (films && films.length > 0) {
     return films.map((f) => ({
@@ -292,25 +318,50 @@ export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleed
     }
   };
 
-  // ─── Web: featured film banner + refined poster grid (films path only) ───────
+  // ─── Web: featured film banner + decade-grouped filmography (films path) ──────
   if (Platform.OS === 'web' && isFilmsPath) {
     const webFeatured = pickFeaturedFilm(films ?? []);
     const webFeaturedItem = webFeatured
       ? sorted.find((it) => it.film?.tmdbId === webFeatured.tmdbId)
       : null;
     const webRest = webFeaturedItem ? sorted.filter((it) => it !== webFeaturedItem) : sorted;
-    const shown = webShowAll ? webRest : webRest.slice(0, WEB_GRID_INITIAL);
-    const hiddenCount = webRest.length - shown.length;
+    const groups = groupByDecade(webRest);
+
+    // Default view: whole decades until ~WEB_GRID_INITIAL titles are shown; the
+    // rest collapse behind a "show all" so a deep filmography stays scannable.
+    let shownGroups = groups;
+    let hiddenCount = 0;
+    if (!webShowAll) {
+      const capped: DecadeGroup[] = [];
+      let count = 0;
+      for (const g of groups) {
+        if (count >= WEB_GRID_INITIAL && capped.length > 0) {
+          hiddenCount += g.items.length;
+        } else {
+          capped.push(g);
+          count += g.items.length;
+        }
+      }
+      shownGroups = capped;
+    }
+
     return (
       <View style={webStyles.wrap}>
         {webFeaturedItem ? (
           <WebFeaturedFilm item={webFeaturedItem} onPress={() => handlePress(webFeaturedItem)} />
         ) : null}
-        <View style={webStyles.grid}>
-          {shown.map((item, i) => (
-            <WebPosterCard key={item.key + i} item={item} onPress={() => handlePress(item)} />
-          ))}
-        </View>
+        {shownGroups.map((g) => (
+          <View key={g.label} style={webStyles.group}>
+            <Text style={webStyles.groupLabel}>
+              {g.label} · {g.items.length}
+            </Text>
+            <View style={webStyles.grid}>
+              {g.items.map((item, i) => (
+                <WebPosterCard key={item.key + i} item={item} onPress={() => handlePress(item)} />
+              ))}
+            </View>
+          </View>
+        ))}
         {!webShowAll && hiddenCount > 0 ? (
           <Pressable style={webStyles.showAllBtn} onPress={() => setWebShowAll(true)}>
             <Text style={webStyles.showAllText}>Show all {sorted.length} titles</Text>
@@ -404,7 +455,19 @@ export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleed
 }
 
 const webStyles = StyleSheet.create({
-  wrap: { gap: 18 },
+  wrap: { gap: 22 },
+
+  // ── Decade group ──
+  group: { gap: 0 },
+  groupLabel: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 11,
+    color: COLORS.navy,
+    opacity: 0.45,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: 12,
+  },
 
   // ── Featured banner ──
   featured: {
