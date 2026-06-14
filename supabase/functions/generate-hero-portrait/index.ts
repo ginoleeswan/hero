@@ -154,6 +154,15 @@ serve(async (req: Request) => {
 
     const sb = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
+    // Admin gate: verify_jwt only proves the caller is signed in. This spends
+    // Gemini money, so require an actual admin (not just any registered user).
+    const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+    const { data: auth } = await sb.auth.getUser(jwt);
+    const uid = auth?.user?.id;
+    if (!uid) return json({ error: 'unauthorized' }, 401);
+    const { data: prof } = await sb.from('user_profiles').select('is_admin').eq('id', uid).maybeSingle();
+    if (!(prof as { is_admin?: boolean } | null)?.is_admin) return json({ error: 'forbidden' }, 403);
+
     const { data: hero, error } = await sb
       .from('heroes')
       .select('id, name, image_url, portrait_url')

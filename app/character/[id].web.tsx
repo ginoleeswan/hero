@@ -102,28 +102,38 @@ function genderIcon(value: string | null | undefined): IoniconName {
   return 'transgender-outline';
 }
 
-// One Quick-Facts tile: icon, value, small label. Short facts sit two-up; long
-// ones (full name, birthplace…) span the row via `wide`.
+// One Quick-Facts card: a compact square tile — icon, value, tiny label. Short
+// facts sit two-up; long ones (full name, birthplace…) span the row via `wide`.
+// `accent` tints the whole card + icon + value (used for alignment, the one pop
+// of colour in the panel).
 function FactTile({
   icon,
   label,
   value,
   wide,
+  accent,
 }: {
   icon: IoniconName;
   label: string;
   value: string | null | undefined;
   wide?: boolean;
+  accent?: string;
 }) {
   const v = cleanFact(value);
   if (!v) return null;
+  const tint = accent ? { backgroundColor: accent + '14', borderColor: accent + '33' } : null;
   return (
-    <View style={[styles.factTile, wide && styles.factTileWide] as object}>
-      <Ionicons name={icon} size={15} color={COLORS.navy + '70'} style={styles.factIcon} />
-      <Text style={styles.factValue} numberOfLines={2}>
-        {v}
-      </Text>
+    <View style={[styles.factTile, wide && styles.factTileWide, tint] as object}>
       <Text style={styles.factLabel}>{label}</Text>
+      <View style={styles.factValueRow}>
+        <Ionicons name={icon} size={12} color={accent ?? COLORS.navy + '70'} />
+        <Text
+          style={[styles.factValue, accent ? { color: accent } : null] as object}
+          numberOfLines={2}
+        >
+          {v}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -1224,50 +1234,76 @@ export default function WebCharacterScreen() {
                   </View>
 
                   <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Quick Facts</Text>
-                    <View style={styles.cardDivider} />
                     <View style={styles.factGrid}>
-                      <FactTile
-                        icon="shield-half-outline"
-                        label="Alignment"
-                        value={stats.biography.alignment}
-                      />
-                      <FactTile icon="planet-outline" label="Origin" value={details.origin} />
-                      <FactTile
-                        icon={genderIcon(stats.appearance.gender)}
-                        label="Gender"
-                        value={stats.appearance.gender}
-                      />
-                      <FactTile icon="people-outline" label="Race" value={stats.appearance.race} />
-                      <FactTile
-                        icon="swap-vertical-outline"
-                        label="Height"
-                        value={stats.appearance.height.join(' / ')}
-                      />
-                      <FactTile
-                        icon="barbell-outline"
-                        label="Weight"
-                        value={stats.appearance.weight.join(' / ')}
-                      />
-                      <FactTile
-                        icon="id-card-outline"
-                        label="Full name"
-                        value={stats.biography['full-name']}
-                        wide
-                      />
-                      <FactTile
-                        icon="location-outline"
-                        label="Place of birth"
-                        value={stats.biography['place-of-birth']}
-                        wide
-                      />
-                      <FactTile
-                        icon="briefcase-outline"
-                        label="Occupation"
-                        value={stats.work.occupation}
-                        wide
-                      />
-                      <FactTile icon="business-outline" label="Base" value={stats.work.base} wide />
+                      {(() => {
+                        const rows = (
+                          [
+                            {
+                              icon: 'shield-half-outline',
+                              label: 'Alignment',
+                              value: stats.biography.alignment,
+                              accent: alignmentColor,
+                            },
+                            { icon: 'planet-outline', label: 'Origin', value: details.origin },
+                            {
+                              icon: genderIcon(stats.appearance.gender),
+                              label: 'Gender',
+                              value: stats.appearance.gender,
+                            },
+                            { icon: 'people-outline', label: 'Race', value: stats.appearance.race },
+                            {
+                              icon: 'swap-vertical-outline',
+                              label: 'Height',
+                              value: stats.appearance.height.join(' / '),
+                            },
+                            {
+                              icon: 'barbell-outline',
+                              label: 'Weight',
+                              value: stats.appearance.weight.join(' / '),
+                            },
+                            {
+                              icon: 'id-card-outline',
+                              label: 'Full name',
+                              value: stats.biography['full-name'],
+                              wide: true,
+                            },
+                            {
+                              icon: 'location-outline',
+                              label: 'Place of birth',
+                              value: stats.biography['place-of-birth'],
+                              wide: true,
+                            },
+                            {
+                              icon: 'briefcase-outline',
+                              label: 'Occupation',
+                              value: stats.work.occupation,
+                              wide: true,
+                            },
+                            {
+                              icon: 'business-outline',
+                              label: 'Base',
+                              value: stats.work.base,
+                              wide: true,
+                            },
+                          ] as {
+                            icon: IoniconName;
+                            label: string;
+                            value: string | null | undefined;
+                            wide?: boolean;
+                            accent?: string;
+                          }[]
+                        ).filter((r) => cleanFact(r.value));
+                        return rows.map((r) => (
+                          <FactTile
+                            key={r.label}
+                            icon={r.icon}
+                            label={r.label}
+                            value={r.value}
+                            wide={r.wide}
+                            accent={r.accent}
+                          />
+                        ));
+                      })()}
                     </View>
                   </View>
 
@@ -3064,31 +3100,34 @@ const styles = StyleSheet.create({
     flex: 1,
     textTransform: 'capitalize',
   },
-  // Quick Facts icon-tile grid
-  factGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  // Quick Facts — compact square card grid (two-up; long facts span the row)
+  factGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   factTile: {
-    width: '48%',
-    backgroundColor: COLORS.navy + '07',
+    width: '48.5%',
+    backgroundColor: COLORS.navy + '08',
+    borderWidth: 1,
+    borderColor: COLORS.navy + '0f',
     borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 11,
+    paddingVertical: 7,
+    paddingHorizontal: 9,
     gap: 2,
   } as object,
   factTileWide: { width: '100%' } as object,
-  factIcon: { marginBottom: 3 },
-  factValue: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 14,
-    color: COLORS.navy,
-    lineHeight: 18,
-    textTransform: 'capitalize',
-  },
   factLabel: {
     fontFamily: 'FlameSans-Regular',
-    fontSize: 9.5,
+    fontSize: 8.5,
     color: COLORS.grey,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
+  },
+  factValueRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  factValue: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 13,
+    color: COLORS.navy,
+    lineHeight: 16,
+    textTransform: 'capitalize',
+    flexShrink: 1,
   },
 
   // Enemies & Allies chips

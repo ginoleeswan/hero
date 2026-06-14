@@ -55,6 +55,7 @@ export function PortraitBoard({
   const [heroes, setHeroes] = useState<PortraitHero[]>([]);
   const [spot, setSpot] = useState<Spot | null>(null);
   const [paused, setPaused] = useState(false);
+  const [failed, setFailed] = useState<Set<string>>(new Set());
   const [done, setDone] = useState(false);
   const ctrl = useRef({ stopped: false, paused: false });
   const running = useRef(false);
@@ -81,6 +82,9 @@ export function PortraitBoard({
           if (fresh?.status === 'done') { setSpot({ hero: fresh }); revealed = true; }
         } catch { /* counted below, skipped after 3 */ }
         attempts.current.set(next.id, (attempts.current.get(next.id) ?? 0) + 1);
+        if (!revealed && (attempts.current.get(next.id) ?? 0) >= 3) {
+          setFailed((prev) => new Set(prev).add(next.id));
+        }
         await sleep(revealed ? 1400 : 500);
       }
     } finally {
@@ -113,6 +117,7 @@ export function PortraitBoard({
             <Text style={styles.title}>Portraits · {total} hero{total === 1 ? '' : 'es'}</Text>
             <Text style={styles.sub}>
               {done ? 'Finished.' : paused ? 'Paused.' : 'Painting with Gemini — keep this tab open.'}
+              {failed.size > 0 ? `  ·  ${failed.size} failed` : ''}
             </Text>
           </View>
           {!done ? (
@@ -141,10 +146,13 @@ export function PortraitBoard({
         <ScrollView style={styles.grid} nestedScrollEnabled contentContainerStyle={styles.gridInner}>
           {heroes.map((h) => {
             const isNow = spot?.hero.id === h.id && h.status !== 'done';
+            const isFailed = failed.has(h.id) && h.status !== 'done';
             return (
-              <View key={h.id} style={[styles.chip, h.status === 'done' && styles.chipDone, isNow && styles.chipNow]}>
+              <View key={h.id} style={[styles.chip, h.status === 'done' && styles.chipDone, isFailed && styles.chipFailed, isNow && styles.chipNow]}>
                 {h.status === 'done' ? (
                   <Ionicons name="checkmark-circle" size={13} color={COLORS.green} />
+                ) : isFailed ? (
+                  <Ionicons name="close-circle" size={13} color={COLORS.red} />
                 ) : isNow ? (
                   <ActivityIndicator size="small" color={COLORS.orange} />
                 ) : (
@@ -209,6 +217,7 @@ const styles = StyleSheet.create({
     borderRadius: 8, backgroundColor: '#f3ecdd', maxWidth: 200,
   },
   chipDone: { backgroundColor: COLORS.green + '14' },
+  chipFailed: { backgroundColor: COLORS.red + '12' },
   chipNow: { backgroundColor: COLORS.orange + '18' },
   chipDot: { width: 8, height: 8, borderRadius: 8, backgroundColor: '#d8cdbb' },
   chipName: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.black, flexShrink: 1, minWidth: 0 },
