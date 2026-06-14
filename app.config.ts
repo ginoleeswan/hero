@@ -94,6 +94,7 @@ const config: ExpoConfig = {
   extra: {
     superheroApiKey: process.env.SUPERHERO_API_KEY,
     comicvineApiKey: process.env.COMICVINE_API_KEY,
+    tmdbApiKey: process.env.TMDB_API_KEY,
     eas: {
       projectId: '129c7437-8d73-4224-bda5-74f69f85a523',
     },
