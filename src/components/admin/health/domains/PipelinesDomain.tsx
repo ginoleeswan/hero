@@ -10,6 +10,7 @@ import { Bento } from '../Bento';
 import { Panel } from '../Panel';
 import { RunHistory } from '../RunHistory';
 import { ActivityLog } from '../ActivityLog';
+import { InfoTip } from '../InfoTip';
 import { HeroThumb } from '../atoms';
 import type {
   AmbiguousHero,
@@ -21,6 +22,31 @@ import type {
 import type { LogEntry } from '../format';
 
 const pctOf = (have: number, total: number) => (total > 0 ? Math.round((have / total) * 100) : 0);
+
+/** Turn a cron expression into a short human phrase for the common cases. */
+function humanizeCron(s: string): string {
+  const parts = s.trim().split(/\s+/);
+  if (parts.length !== 5) return s;
+  const [min, hr] = parts;
+  const everyMin = min.match(/^\*\/(\d+)$/);
+  if (everyMin && hr === '*') return `every ${everyMin[1]} min`;
+  if (min === '0' && hr === '*') return 'hourly';
+  const everyHr = hr.match(/^\*\/(\d+)$/);
+  if (min === '0' && everyHr) return `every ${everyHr[1]} h`;
+  if (/^\d+$/.test(min) && /^\d+$/.test(hr)) return `daily ${hr.padStart(2, '0')}:${min.padStart(2, '0')}`;
+  return s;
+}
+
+/** Plain-English description of what a scheduled job does, by name. */
+function cronHelp(jobname: string): string {
+  const n = jobname.toLowerCase();
+  if (n.includes('comicvine')) return 'Automatically runs the ComicVine drain to keep core hero data (powers, bio, movies) filling in.';
+  if (n.includes('tmdb')) return 'Automatically runs the TMDB drain to enrich film & TV media (posters, trailers, cast).';
+  if (n.includes('wikidata') && n.includes('resolve')) return 'Automatically resolves heroes to their Wikidata identity (QID).';
+  if (n.includes('wikidata')) return 'Automatically pulls cross-media appearances and cast from Wikidata for resolved heroes.';
+  if (n.includes('snapshot')) return 'Captures a periodic catalogue-health snapshot that feeds the trend charts.';
+  return 'A scheduled background job.';
+}
 
 function Ring({ percent, size = 44, stroke = 5 }: { percent: number; size?: number; stroke?: number }) {
   const r = (size - stroke) / 2;
@@ -44,6 +70,7 @@ interface Pipeline {
   key: string;
   name: string;
   blurb: string;
+  tip: string;
   have: number;
   total: number;
   note?: string;
@@ -57,7 +84,10 @@ function PipelineCard({ p, busy }: { p: Pipeline; busy: string | null }) {
     <View style={styles.card}>
       <Ring percent={percent} />
       <View style={styles.cardBody}>
-        <Text style={styles.cardName} numberOfLines={1}>{p.name}</Text>
+        <View style={styles.cardNameRow}>
+          <Text style={styles.cardName} numberOfLines={1}>{p.name}</Text>
+          <InfoTip text={p.tip} size={13} />
+        </View>
         <Text style={styles.cardBlurb} numberOfLines={1}>{p.blurb}</Text>
       </View>
       {p.run ? (
@@ -130,20 +160,24 @@ export function PipelinesDomain({
   const pipelines: Pipeline[] = [
     {
       key: 'comicvine', name: 'ComicVine', blurb: 'Core hero data',
+      tip: `Pulls each hero's core data — powers, bio, alter egos, movie list — from ComicVine. "Run ${batchSize}" processes the next ${batchSize} heroes that still need it. The ring shows how many of all heroes are done.`,
       have: p.comicvineDone, total: p.heroesTotal,
       run: { label: `Run ${batchSize}`, busyKey: 'drain', onPress: onRunDrain },
     },
     {
       key: 'tmdb', name: 'TMDB · film', blurb: `${p.filmTitles.toLocaleString()} film titles`,
+      tip: 'Adds rich media to matched film & TV titles — posters, backdrops, trailers, cast and where-to-watch. Runs automatically on a schedule (see Scheduled crons).',
       have: p.filmTitles, total: p.filmTitles, note: 'cron',
     },
     {
       key: 'wd-resolve', name: 'Wikidata · resolve', blurb: 'Hero → QID identity',
+      tip: 'Matches each hero to its single correct Wikidata identity (QID) using publisher, first-appearance year, creators and aliases. Required before appearances can be pulled. Uncertain matches go to "Needs attention".',
       have: p.resolved, total: p.heroesTotal,
       run: { label: 'Resolve', busyKey: 'resolve', onPress: onRunResolve },
     },
     {
       key: 'wd-enrich', name: 'Wikidata · appearances', blurb: `${p.tvTitles}+${p.gameTitles} tv/game titles`,
+      tip: 'For resolved heroes, pulls cross-media appearances (film / TV / game) and who played or voiced them. Feeds the On-Screen shelves and the Portrayed-By section. Ring = enriched ÷ resolved heroes.',
       have: p.enriched, total: p.resolved,
       run: { label: 'Enrich', busyKey: 'enrich', onPress: onRunEnrich },
     },
@@ -153,7 +187,12 @@ export function PipelinesDomain({
     <Bento>
       {/* Top: controls + their live feedback, side by side. */}
       <Bento.Row narrow={narrow}>
-        <Panel title="Pipelines" hint="Run a drain on demand; coverage shown in each ring." style={styles.flex15}>
+        <Panel
+          title="Pipelines"
+          hint="Run a drain on demand; coverage shown in each ring."
+          action={<InfoTip text="Each pipeline pulls a different kind of data into the catalogue. The ring is how complete it is. Hover the ? on a card to see exactly what running it does." />}
+          style={styles.flex15}
+        >
           <View style={styles.grid}>
             {pipelines.map((pl) => (
               <View key={pl.key} style={styles.gridCell}>
@@ -164,6 +203,7 @@ export function PipelinesDomain({
           {/* ComicVine batch + retry, kept compact under the grid. */}
           <View style={styles.cvControls}>
             <Text style={styles.cvControlsLabel}>ComicVine batch</Text>
+            <InfoTip text="How many heroes one ComicVine run processes. Larger = more per click, but each run takes longer and uses more API budget." size={13} />
             <View style={styles.sizeSel}>
               {[10, 25, 50].map((n) => (
                 <Pressable key={n} onPress={() => setBatchSize(n)} style={[styles.sizePill, batchSize === n && styles.sizePillOn]}>
@@ -183,6 +223,7 @@ export function PipelinesDomain({
               )}
               <Text style={styles.ctrlText}>Retry failed{failed ? ` · ${failed}` : ''}</Text>
             </Pressable>
+            <InfoTip text="Re-queues heroes whose last ComicVine fetch errored, so the next run tries them again." size={13} />
           </View>
         </Panel>
 
@@ -193,7 +234,12 @@ export function PipelinesDomain({
 
       {/* Middle: scheduled automation + the human review queue. */}
       <Bento.Row narrow={narrow}>
-        <Panel title="Scheduled crons" hint="Background jobs — stop or start any." style={styles.flex1}>
+        <Panel
+          title="Scheduled crons"
+          hint="Background jobs that run the drains for you."
+          action={<InfoTip text="These jobs run automatically on a schedule. A green dot means active; Stop pauses it (keeping its schedule), Start resumes it. Hover the ? on a job to see what it does." />}
+          style={styles.flex1}
+        >
           {crons.length === 0 ? (
             <Text style={styles.empty}>No cron jobs scheduled.</Text>
           ) : (
@@ -203,9 +249,12 @@ export function PipelinesDomain({
                 <View key={c.jobname} style={styles.cronRow}>
                   <View style={[styles.cronDot, { backgroundColor: c.active ? COLORS.green : COLORS.grey }]} />
                   <View style={styles.cronInfo}>
-                    <Text style={styles.cronName} numberOfLines={1}>{c.jobname}</Text>
+                    <View style={styles.cronNameRow}>
+                      <Text style={styles.cronName} numberOfLines={1}>{c.jobname}</Text>
+                      <InfoTip text={`${cronHelp(c.jobname)} Schedule: ${c.schedule}.`} size={13} />
+                    </View>
                     <Text style={styles.cronMeta} numberOfLines={1}>
-                      {c.schedule}{c.last_status ? ` · ${c.last_status}` : ''}
+                      {humanizeCron(c.schedule)}{c.last_status ? ` · last ${c.last_status}` : ''}
                     </Text>
                   </View>
                   <Pressable
@@ -231,6 +280,7 @@ export function PipelinesDomain({
         <Panel
           title="Needs attention"
           hint={ambiguous.length > 0 ? `${ambiguous.length} to review` : 'Human decisions land here'}
+          action={<InfoTip text="Heroes the resolver couldn't confidently match to one Wikidata identity. Each chip is a candidate (QID · confidence score) — click the correct one to lock it in and let it be enriched." />}
           style={styles.flex1}
         >
           {ambiguous.length === 0 ? (
@@ -300,7 +350,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(41,60,67,0.08)',
   },
   cardBody: { flex: 1, gap: 2, minWidth: 0 },
-  cardName: { fontFamily: 'Flame-Regular', fontSize: 13.5, color: COLORS.black },
+  cardNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  cardName: { fontFamily: 'Flame-Regular', fontSize: 13.5, color: COLORS.black, flexShrink: 1 },
   cardBlurb: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey },
   runBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: COLORS.orange,
@@ -331,7 +382,8 @@ const styles = StyleSheet.create({
   },
   cronDot: { width: 8, height: 8, borderRadius: 8 },
   cronInfo: { flex: 1, minWidth: 0, gap: 2 },
-  cronName: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
+  cronNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  cronName: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black, flexShrink: 1 },
   cronMeta: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey, fontVariant: ['tabular-nums'] },
   cronBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 9,
