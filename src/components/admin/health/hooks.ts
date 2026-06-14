@@ -22,6 +22,7 @@ import {
   getGeminiSpend,
   getAmbiguousHeroes,
   resolveHeroQid,
+  runWikidataResolve,
   type CoverageMetric,
   type RunHistoryPage,
 } from '../../../lib/db/catalogHealth';
@@ -277,6 +278,22 @@ export function useCatalogActions({
     }
   };
 
+  const onRunResolve = async () => {
+    setBusy('resolve');
+    try {
+      await runWikidataResolve(15);
+      flash('Wikidata resolve batch queued — watch it run below.', 'pending');
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] });
+        queryClient.invalidateQueries({ queryKey: ['ambiguousHeroes'] });
+      }, 4000);
+    } catch (e) {
+      flash(`Resolve failed: ${(e as Error).message}`, 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const onResolveQid = async (id: string, qid: string, name: string) => {
     setBusy(`resolveqid-${id}`);
     try {
@@ -323,6 +340,7 @@ export function useCatalogActions({
     onSnapshot,
     onReenrich,
     onResolveQid,
+    onRunResolve,
     onToggleCron,
     onRefresh,
   };

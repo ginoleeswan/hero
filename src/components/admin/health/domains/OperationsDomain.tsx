@@ -50,6 +50,7 @@ export function OperationsDomain({
   onReenrich,
   ambiguous,
   onResolveQid,
+  onRunResolve,
   narrow,
 }: {
   h: CatalogHealth;
@@ -75,6 +76,7 @@ export function OperationsDomain({
   onReenrich: (id: string, name: string) => void;
   ambiguous: AmbiguousHero[];
   onResolveQid: (id: string, qid: string, name: string) => void;
+  onRunResolve: () => void;
   narrow: boolean;
 }) {
   const router = useRouter();
@@ -298,7 +300,24 @@ export function OperationsDomain({
           )}
         </Panel>
 
-        <Panel title="Identity review" hint="Pick the correct Wikidata QID for ambiguous heroes">
+        <Panel
+          title="Identity review"
+          hint="Resolve heroes to Wikidata QIDs; pick the right one for ambiguous cases"
+          action={
+            <Pressable
+              onPress={onRunResolve}
+              disabled={!!busy}
+              style={[styles.idrRunBtn, !!busy && styles.actDim]}
+            >
+              {busy === 'resolve' ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Ionicons name="sparkles" size={13} color="#fff" />
+              )}
+              <Text style={styles.idrRunText}>Resolve 15</Text>
+            </Pressable>
+          }
+        >
           {ambiguous.length === 0 ? (
             <Text style={styles.runsEmpty}>No heroes awaiting review.</Text>
           ) : (
@@ -442,6 +461,16 @@ const styles = StyleSheet.create({
   idrCandidates: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'flex-end', maxWidth: 220 },
   idrChip: { backgroundColor: COLORS.navy + '12', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   idrChipText: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.navy },
+  idrRunBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.orange,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  idrRunText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
   hcName: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
   hcMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   hcPub: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, maxWidth: 150 },

@@ -864,6 +864,10 @@ export type Database = {
       admin_reenrich_hero: { Args: { p_id: string }; Returns: string }
       admin_retry_failed: { Args: never; Returns: number }
       admin_run_drain: { Args: { p_limit?: number }; Returns: string }
+      admin_run_wikidata_resolve: {
+        Args: { p_limit?: number }
+        Returns: string
+      }
       admin_set_drain_cron: { Args: { p_enabled: boolean }; Returns: string }
       admin_snapshot_now: { Args: never; Returns: undefined }
       admin_stop_run: { Args: { p_run_id: number }; Returns: boolean }
