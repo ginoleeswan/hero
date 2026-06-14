@@ -60,7 +60,7 @@ export default function AdminHealthScreen() {
     if (gateResolved && !isAdmin) router.replace('/explore');
   }, [gateResolved, isAdmin, router]);
 
-  const { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ } =
+  const { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ } =
     useCatalogQueries({
       enabled: gateResolved && isAdmin,
       metric,
@@ -81,6 +81,7 @@ export default function AdminHealthScreen() {
     onStop,
     onSnapshot,
     onReenrich,
+    onResolveQid,
     onToggleCron,
     onRefresh,
   } = useCatalogActions({ batchSize, cronOn, flash });
@@ -312,6 +313,8 @@ export default function AdminHealthScreen() {
             onRetryFailed={onRetryFailed}
             onToggleCron={onToggleCron}
             onReenrich={onReenrich}
+            ambiguous={ambiguousQ.data ?? []}
+            onResolveQid={onResolveQid}
             narrow={narrow}
           />
         )}

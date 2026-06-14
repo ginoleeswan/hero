@@ -221,6 +221,41 @@ export async function reenrichHero(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export interface AmbiguousHero {
+  id: string;
+  name: string;
+  publisher: string | null;
+  imageUrl: string | null;
+  candidates: { qid: string; score: number }[];
+}
+
+/** Heroes the Wikidata resolver flagged as ambiguous, marquee-first. */
+export async function getAmbiguousHeroes(limit = 25): Promise<AmbiguousHero[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('id, name, publisher, image_md_url, wikidata_candidates')
+    .eq('wikidata_status', 'ambiguous')
+    .order('issue_count', { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error || !data) return [];
+  return (data as Array<{
+    id: string; name: string; publisher: string | null; image_md_url: string | null;
+    wikidata_candidates: { qid: string; score: number }[] | null;
+  }>).map((r) => ({
+    id: r.id,
+    name: r.name,
+    publisher: r.publisher,
+    imageUrl: r.image_md_url,
+    candidates: r.wikidata_candidates ?? [],
+  }));
+}
+
+/** Set a hero's Wikidata QID by hand (flips status to 'resolved'). */
+export async function resolveHeroQid(heroId: string, qid: string): Promise<void> {
+  const { error } = await supabase.rpc('resolve_hero_qid', { p_hero_id: heroId, p_qid: qid });
+  if (error) throw error;
+}
+
 export type ComicvineStatus = 'ok' | 'limited' | 'error';
 export async function pingComicvine(): Promise<ComicvineStatus> {
   const { data, error } = await supabase.functions.invoke<{ status?: string }>('comicvine-ping');

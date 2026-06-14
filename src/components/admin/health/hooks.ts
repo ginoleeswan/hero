@@ -20,6 +20,8 @@ import {
   reenrichHero,
   setDrainCron,
   getGeminiSpend,
+  getAmbiguousHeroes,
+  resolveHeroQid,
   type CoverageMetric,
   type RunHistoryPage,
 } from '../../../lib/db/catalogHealth';
@@ -109,6 +111,12 @@ export function useCatalogQueries({
     enabled,
     staleTime: 5 * 60_000,
   });
+  const ambiguousQ = useQuery({
+    queryKey: ['ambiguousHeroes'],
+    queryFn: () => getAmbiguousHeroes(25),
+    enabled,
+    staleTime: 30_000,
+  });
 
   // While a run is in flight, poll backlog + usage so the live numbers tick down.
   const runsData = runsQ.data;
@@ -139,7 +147,7 @@ export function useCatalogQueries({
     };
   }, [enabled, queryClient]);
 
-  return { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ };
+  return { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ };
 }
 
 /**
@@ -180,6 +188,7 @@ const REFRESH_KEYS = [
   'distributions',
   'healthSnapshots',
   'geminiSpend',
+  'ambiguousHeroes',
 ];
 
 /**
@@ -268,6 +277,19 @@ export function useCatalogActions({
     }
   };
 
+  const onResolveQid = async (id: string, qid: string, name: string) => {
+    setBusy(`resolveqid-${id}`);
+    try {
+      await resolveHeroQid(id, qid);
+      flash(`Set ${name} → ${qid}`, 'success');
+      queryClient.invalidateQueries({ queryKey: ['ambiguousHeroes'] });
+    } catch (e) {
+      flash(`Set QID failed: ${(e as Error).message}`, 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const onToggleCron = async () => {
     setBusy('cron');
     try {
@@ -300,6 +322,7 @@ export function useCatalogActions({
     onStop,
     onSnapshot,
     onReenrich,
+    onResolveQid,
     onToggleCron,
     onRefresh,
   };
