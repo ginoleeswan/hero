@@ -1,13 +1,17 @@
+import { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import type { CategorySlug } from '../../../lib/db/heroes';
+import { getTagVocab } from '../../../lib/db/heroFacts';
 import {
   type CategoryFilters,
   type FacetCounts,
   type FacetKey,
   visibleFacets,
 } from '../../../lib/db/categoryFilters';
+
+type TagOption = { slug: string; label: string; category: string };
 
 type SetFilter = <K extends keyof CategoryFilters>(k: K, v: CategoryFilters[K]) => void;
 
@@ -109,6 +113,29 @@ export function FilterControls({ slug, filters, counts, setFilter }: Props) {
   const visible = visibleFacets(slug);
   const has = (f: FacetKey) => visible.includes(f);
 
+  const [vocab, setVocab] = useState<TagOption[]>([]);
+  useEffect(() => {
+    let active = true;
+    getTagVocab()
+      .then((v) => {
+        if (active) setVocab(v);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const toggleTag = (slugValue: string) => {
+    const current = filters.tags ?? [];
+    setFilter(
+      'tags',
+      current.includes(slugValue)
+        ? current.filter((t) => t !== slugValue)
+        : [...current, slugValue],
+    );
+  };
+
   return (
     <View style={s.root}>
       <View style={s.group}>
@@ -201,6 +228,19 @@ export function FilterControls({ slug, filters, counts, setFilter }: Props) {
               opt={o}
               active={(filters.hasStats ? 'yes' : 'any') === o.value}
               onPress={() => setFilter('hasStats', o.value === 'yes')}
+            />
+          ))}
+        </Group>
+      )}
+
+      {vocab.length > 0 && (
+        <Group title="Themes">
+          {vocab.map((t) => (
+            <Chip
+              key={t.slug}
+              opt={{ value: t.slug, label: t.label }}
+              active={(filters.tags ?? []).includes(t.slug)}
+              onPress={() => toggleTag(t.slug)}
             />
           ))}
         </Group>

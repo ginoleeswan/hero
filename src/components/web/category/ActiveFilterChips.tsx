@@ -29,8 +29,14 @@ export function ActiveFilterChips({ slug, filters, setFilter }: Props) {
     <View style={s.row as object}>
       {chips.map((c) => (
         <Pressable
-          key={c.key}
-          onPress={() => setFilter(c.key as FacetKey, RESET_VALUE[c.key as FacetKey] as never)}
+          key={`${c.key}-${c.value ?? ''}`}
+          onPress={() => {
+            if (c.key === 'tags' && c.value) {
+              setFilter('tags', (filters.tags ?? []).filter((t) => t !== c.value));
+              return;
+            }
+            setFilter(c.key as FacetKey, RESET_VALUE[c.key as FacetKey] as never);
+          }}
           style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
             [s.chip, hovered && (s.chipHover as object)] as object
           }
