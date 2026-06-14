@@ -188,16 +188,47 @@ function StripCard({ item, onPress }: { item: StripItem; onPress: () => void }) 
   );
 }
 
+const WEB_GRID_INITIAL = 18;
+
 export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleedMargin = 0 }: Props) {
   const router = useRouter();
   const [gridVisible, setGridVisible] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [webShowAll, setWebShowAll] = useState(false);
 
   const allItems = buildItems(films, movies);
   const sorted = sortItems(allItems);
 
   const isFilmsPath = !!(films && films.length > 0);
 
+  const handlePress = (item: StripItem) => {
+    if (item.film) {
+      router.push(`/film/${item.film.tmdbId}`);
+    } else if (item.movie) {
+      const url = item.movie.url ?? `https://www.google.com/search?q=${encodeURIComponent(item.title + ' film')}`;
+      Linking.openURL(url);
+    }
+  };
+
+  // ─── Web wrapping grid (films path only) ────────────────────────────────────
+  if (Platform.OS === 'web' && isFilmsPath) {
+    const webItems = webShowAll ? sorted : sorted.slice(0, WEB_GRID_INITIAL);
+    const hiddenCount = sorted.length - WEB_GRID_INITIAL;
+    return (
+      <View style={webStyles.grid}>
+        {webItems.map((item, i) => (
+          <StripCard key={item.key + i} item={item} onPress={() => handlePress(item)} />
+        ))}
+        {!webShowAll && hiddenCount > 0 ? (
+          <Pressable style={webStyles.showAllBtn} onPress={() => setWebShowAll(true)}>
+            <Text style={webStyles.showAllText}>Show all ({sorted.length})</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    );
+  }
+
+  // ─── Native horizontal strip ─────────────────────────────────────────────────
   // For the films path: featured film uses backdrop card (if any film has one)
   const featuredFilm = isFilmsPath ? pickFeaturedFilm(films ?? []) : null;
   const featuredItem = featuredFilm
@@ -222,15 +253,6 @@ export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleed
   const legacyMovies: MovieAppearance[] = sorted
     .filter((it) => it.movie != null)
     .map((it) => it.movie!);
-
-  const handlePress = (item: StripItem) => {
-    if (item.film) {
-      router.push(`/film/${item.film.tmdbId}`);
-    } else if (item.movie) {
-      const url = item.movie.url ?? `https://www.google.com/search?q=${encodeURIComponent(item.title + ' film')}`;
-      Linking.openURL(url);
-    }
-  };
 
   return (
     <>
@@ -288,6 +310,29 @@ export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleed
     </>
   );
 }
+
+const webStyles = StyleSheet.create({
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 4,
+  },
+  showAllBtn: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 4,
+  },
+  showAllText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 13,
+    color: COLORS.navy,
+    textDecorationLine: 'underline',
+  },
+});
 
 const styles = StyleSheet.create({
   container: {
