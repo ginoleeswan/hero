@@ -4,13 +4,16 @@ import { COLORS } from '../constants/colors';
 import { getPowerIcon, groupPowers } from '../constants/powerIcons';
 import { Skeleton } from './ui/Skeleton';
 import { SkeletonProvider } from './ui/SkeletonProvider';
+import { PowersDecoded } from './character/PowersDecoded';
+import type { PowerExplainer } from '../lib/db/heroFacts';
 
 interface Props {
   powers: string[] | null;
   loading: boolean;
+  explainers?: PowerExplainer[];
 }
 
-export function AbilitiesSection({ powers, loading }: Props) {
+export function AbilitiesSection({ powers, loading, explainers = [] }: Props) {
   if (!loading && (!powers || powers.length === 0)) return null;
 
   const groups = powers ? groupPowers(powers) : [];
@@ -62,6 +65,7 @@ export function AbilitiesSection({ powers, loading }: Props) {
             </View>
           ))
         )}
+        {!loading && powers && powers.length > 0 ? <PowersDecoded explainers={explainers} /> : null}
       </View>
     </View>
   );

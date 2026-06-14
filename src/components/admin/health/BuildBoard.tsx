@@ -1,15 +1,18 @@
 // Build orchestrator — drives a working set of heroes through ComicVine ->
 // Resolve -> Appearances, one hero at a time, live, while you watch. Foreground
 // only (stops if closed); pauses at the ComicVine hourly cap and auto-resumes.
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { HeroThumb } from './atoms';
+import { resolveHeroQid } from '../../../lib/db/catalogHealth';
 import {
   getBuildHeroes, comicvineUsageLastHour, stepComicvine, stepResolve, stepEnrich,
   ACTIONABLE, type BuildHero, type BuildStage,
 } from '../../../lib/db/build';
+
+const wikiUrl = (qid: string) => `https://www.wikidata.org/wiki/${qid}`;
 
 const CV_CAP = 190; // ComicVine ~200/hr; leave headroom
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -43,28 +46,33 @@ export function BuildBoard({
   const [paused, setPaused] = useState(false);
   const [rateLimited, setRateLimited] = useState(false);
   const [currentId, setCurrentId] = useState<string | null>(null);
+  const [resolving, setResolving] = useState<Set<string>>(new Set());
   const [done, setDone] = useState(false);
   const ctrl = useRef({ stopped: false, paused: false });
+  const running = useRef(false);
   const attempts = useRef<Map<string, number>>(new Map());
 
-  useEffect(() => {
-    ctrl.current = { stopped: false, paused: false };
-    let alive = true;
-    (async () => {
-      setHeroes(await getBuildHeroes(heroIds));
+  // The worker: drain the working set until nothing is actionable, then stop.
+  // Re-runnable — picking a Wikidata match inline (below) re-arms and calls it so
+  // the just-resolved hero continues straight into Appearances.
+  const pump = useCallback(async () => {
+    if (running.current) return;
+    running.current = true;
+    try {
       while (!ctrl.current.stopped) {
         if (ctrl.current.paused) { await sleep(400); continue; }
         const rows = await getBuildHeroes(heroIds);
-        if (!alive) return;
+        if (ctrl.current.stopped) break;
         setHeroes(rows);
         const key = (h: BuildHero) => `${h.id}:${h.stage}`;
         const next = rows.find((h) => ACTIONABLE.includes(h.stage) && (attempts.current.get(key(h)) ?? 0) < 3);
-        if (!next) { if (alive) { setDone(true); setCurrentId(null); } break; }
-        if (alive) setCurrentId(next.id);
+        if (!next) { setDone(true); setCurrentId(null); break; }
+        setDone(false);
+        setCurrentId(next.id);
         try {
           if (next.stage === 'comicvine') {
-            if ((await comicvineUsageLastHour()) >= CV_CAP) { if (alive) setRateLimited(true); await sleep(20_000); continue; }
-            if (alive) setRateLimited(false);
+            if ((await comicvineUsageLastHour()) >= CV_CAP) { setRateLimited(true); await sleep(20_000); continue; }
+            setRateLimited(false);
             await stepComicvine(next.id, next.name);
           } else if (next.stage === 'resolve') {
             await stepResolve(next.id);
@@ -75,10 +83,36 @@ export function BuildBoard({
         attempts.current.set(key(next), (attempts.current.get(key(next)) ?? 0) + 1);
         await sleep(400);
       }
-    })();
-    return () => { alive = false; ctrl.current.stopped = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    } finally {
+      running.current = false;
+    }
+  }, [heroIds]);
+
+  useEffect(() => {
+    ctrl.current = { stopped: false, paused: false };
+    pump();
+    return () => { ctrl.current.stopped = true; };
+  }, [pump]);
+
+  // Lock an ambiguous hero to a Wikidata QID right here, then resume the worker so
+  // it flows on into Appearances without leaving the board.
+  const onPickQid = async (heroId: string, qid: string, name: string) => {
+    setResolving((p) => new Set(p).add(heroId));
+    try {
+      await resolveHeroQid(heroId, qid);
+      flash(`Locked ${name} to ${qid}.`, 'success');
+      setHeroes(await getBuildHeroes(heroIds));
+      pump();
+    } catch (e) {
+      flash(`Resolve failed: ${(e as Error).message}`, 'error');
+    } finally {
+      setResolving((p) => { const s = new Set(p); s.delete(heroId); return s; });
+    }
+  };
+
+  const openWiki = (qid: string) => {
+    if (typeof window !== 'undefined') window.open(wikiUrl(qid), '_blank', 'noopener');
+  };
 
   const togglePause = () => { const v = !paused; setPaused(v); ctrl.current.paused = v; };
   const close = () => { ctrl.current.stopped = true; onClose(); };
@@ -127,13 +161,52 @@ export function BuildBoard({
 
         <ScrollView style={styles.list} nestedScrollEnabled>
           {heroes.map((h) => (
-            <View key={h.id} style={[styles.row, currentId === h.id && styles.rowActive]}>
-              <HeroThumb uri={h.image} width={30} height={40} radius={6} />
-              <Text style={styles.name} numberOfLines={1}>{h.name}</Text>
-              <Text style={[styles.stageText, h.stage === 'done' && { color: COLORS.green }, (h.stage === 'failed') && { color: COLORS.red }, h.stage === 'review' && { color: COLORS.yellow }]} numberOfLines={1}>
-                {currentId === h.id && ACTIONABLE.includes(h.stage) ? <ActivityIndicator size="small" color={COLORS.orange} /> : STAGE_LABEL[h.stage]}
-              </Text>
-              <Dots stage={h.stage} active={currentId === h.id} />
+            <View key={h.id} style={[styles.row, currentId === h.id && styles.rowActive, h.stage === 'review' && styles.rowReview]}>
+              <View style={styles.rowMain}>
+                <HeroThumb uri={h.image} width={30} height={40} radius={6} />
+                <Text style={styles.name} numberOfLines={1}>{h.name}</Text>
+                <Text style={[styles.stageText, h.stage === 'done' && { color: COLORS.green }, (h.stage === 'failed') && { color: COLORS.red }, h.stage === 'review' && { color: COLORS.yellow }]} numberOfLines={1}>
+                  {currentId === h.id && ACTIONABLE.includes(h.stage) ? <ActivityIndicator size="small" color={COLORS.orange} /> : STAGE_LABEL[h.stage]}
+                </Text>
+                <Dots stage={h.stage} active={currentId === h.id} />
+              </View>
+
+              {/* Inline review — pick the right Wikidata match without leaving the board. */}
+              {h.stage === 'review' ? (
+                <View style={styles.review}>
+                  <Text style={styles.reviewLabel}>
+                    Pick the right match{h.publisher ? ` · ${h.publisher}` : ''}:
+                  </Text>
+                  {h.candidates.length === 0 ? (
+                    <Text style={styles.reviewEmpty}>No candidates on file — resolve from the Build tab.</Text>
+                  ) : (
+                    <View style={styles.cands}>
+                      {h.candidates.map((c) => {
+                        const busy = resolving.has(h.id);
+                        return (
+                          <View key={c.qid} style={styles.cand}>
+                            <Pressable
+                              onPress={() => onPickQid(h.id, c.qid, h.name)}
+                              disabled={busy}
+                              style={[styles.chip, busy && styles.dim]}
+                              accessibilityLabel={`Pick ${c.qid} for ${h.name}`}
+                            >
+                              <Text style={styles.chipText}>{busy ? '…' : `${c.qid} · ${c.score.toFixed(2)}`}</Text>
+                            </Pressable>
+                            <Pressable
+                              onPress={() => openWiki(c.qid)}
+                              style={styles.chipLink}
+                              accessibilityLabel={`Open ${c.qid} on Wikidata`}
+                            >
+                              <Ionicons name="open-outline" size={12} color={COLORS.navy} />
+                            </Pressable>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+              ) : null}
             </View>
           ))}
         </ScrollView>
@@ -183,10 +256,23 @@ const styles = StyleSheet.create({
   rateText: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
 
   list: { maxHeight: 360 } as object,
-  row: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 7, paddingHorizontal: 8, borderRadius: 9, borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.05)' },
+  row: { paddingVertical: 7, paddingHorizontal: 8, borderRadius: 9, borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.05)' },
+  rowMain: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   rowActive: { backgroundColor: COLORS.orange + '10' },
+  rowReview: { backgroundColor: COLORS.yellow + '12' },
   name: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: COLORS.black, minWidth: 0 },
   stageText: { fontFamily: 'Nunito_700Bold', fontSize: 11.5, color: COLORS.grey, width: 110, textAlign: 'right' },
   dots: { flexDirection: 'row', gap: 4, width: 40, justifyContent: 'flex-end' },
   dot: { width: 8, height: 8, borderRadius: 8 },
+
+  // Inline Wikidata review picker (review-stage rows).
+  review: { marginTop: 8, marginLeft: 41, gap: 6 },
+  reviewLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11.5, color: COLORS.navy },
+  reviewEmpty: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: COLORS.grey },
+  cands: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  cand: { flexDirection: 'row', alignItems: 'stretch', gap: 1 },
+  chip: { backgroundColor: COLORS.navy + '12', borderTopLeftRadius: 8, borderBottomLeftRadius: 8, paddingHorizontal: 9, paddingVertical: 5, justifyContent: 'center' },
+  chipText: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: COLORS.navy },
+  chipLink: { backgroundColor: COLORS.navy + '12', borderTopRightRadius: 8, borderBottomRightRadius: 8, paddingHorizontal: 7, alignItems: 'center', justifyContent: 'center' },
+  dim: { opacity: 0.4 },
 });

@@ -8,17 +8,23 @@ export interface BuildHero {
   name: string;
   image: string | null;
   stage: BuildStage;
+  publisher: string | null;
+  // Wikidata match candidates — only meaningful at the 'review' stage, where the
+  // Build board lets you pick the right one inline.
+  candidates: { qid: string; score: number }[];
 }
 
 interface HeroRow {
   id: string;
   name: string;
+  publisher: string | null;
   image_md_url: string | null;
   image_url: string | null;
   portrait_url: string | null;
   comicvine_status: string | null;
   wikidata_status: string;
   wikidata_enriched_at: string | null;
+  wikidata_candidates: { qid: string; score: number }[] | null;
 }
 
 export function stageOf(h: {
@@ -38,7 +44,7 @@ export async function getBuildHeroes(ids: string[]): Promise<BuildHero[]> {
   if (ids.length === 0) return [];
   const { data, error } = await supabase
     .from('heroes')
-    .select('id, name, image_md_url, image_url, portrait_url, comicvine_status, wikidata_status, wikidata_enriched_at')
+    .select('id, name, publisher, image_md_url, image_url, portrait_url, comicvine_status, wikidata_status, wikidata_enriched_at, wikidata_candidates')
     .in('id', ids);
   if (error || !data) return [];
   return (data as HeroRow[]).map((h) => ({
@@ -46,6 +52,8 @@ export async function getBuildHeroes(ids: string[]): Promise<BuildHero[]> {
     name: h.name,
     image: h.portrait_url ?? h.image_md_url ?? h.image_url,
     stage: stageOf(h),
+    publisher: h.publisher,
+    candidates: h.wikidata_candidates ?? [],
   }));
 }
 

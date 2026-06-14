@@ -9,6 +9,7 @@ export interface PowerExplainer {
 export interface HeroTagChip {
   slug: string;
   label: string;
+  category: string;
 }
 
 export interface HeroNarrative {
@@ -28,7 +29,7 @@ interface FactRow {
 
 interface TagJoinRow {
   tag: string;
-  hero_tag_vocab: { label: string } | null;
+  hero_tag_vocab: { label: string; category: string } | null;
 }
 
 const emptyNarrative = (): HeroNarrative => ({
@@ -56,6 +57,7 @@ export function buildNarrative(facts: FactRow[], tags: TagJoinRow[]): HeroNarrat
   const tagChips: HeroTagChip[] = tags.map((t) => ({
     slug: t.tag,
     label: t.hero_tag_vocab?.label ?? t.tag,
+    category: t.hero_tag_vocab?.category ?? 'archetype',
   }));
 
   const isEmpty =
@@ -76,7 +78,10 @@ export async function getHeroNarrative(heroId: string): Promise<HeroNarrative> {
       .from('hero_narrative_facts')
       .select('kind, content, subject, position')
       .eq('hero_id', heroId),
-    supabase.from('hero_tags').select('tag, hero_tag_vocab(label)').eq('hero_id', heroId),
+    supabase
+      .from('hero_tags')
+      .select('tag, hero_tag_vocab(label, category)')
+      .eq('hero_id', heroId),
   ]);
 
   if (factsRes.error) throw new Error(factsRes.error.message);
