@@ -10,6 +10,7 @@ export interface CategoryFilters {
   alignment: AlignmentOpt;
   gender: GenderOpt;
   hasStats: boolean;
+  tags: string[];
   sort: SortOption; // 'popular' | 'az' | 'power'
   search: string;
 }
@@ -27,6 +28,7 @@ export const DEFAULT_FILTERS: CategoryFilters = {
   alignment: 'any',
   gender: 'any',
   hasStats: false,
+  tags: [],
   sort: 'popular',
   search: '',
 };
@@ -54,6 +56,7 @@ export type FilterParams = Partial<{
   alignment: string;
   gender: string;
   stats: string;
+  tags: string;
   sort: string;
   q: string;
 }>;
@@ -64,6 +67,7 @@ export function filtersToParams(slug: CategorySlug, f: CategoryFilters): FilterP
   if (f.alignment !== 'any') p.alignment = f.alignment;
   if (f.gender !== 'any') p.gender = f.gender;
   if (f.hasStats) p.stats = '1';
+  if (f.tags?.length) p.tags = f.tags.join(',');
   if (f.sort !== defaultSort(slug)) p.sort = f.sort;
   if (f.search.trim()) p.q = f.search.trim();
   return p;
@@ -84,6 +88,7 @@ export function paramsToFilters(slug: CategorySlug, p: FilterParams): CategoryFi
     alignment: pick(ALIGNS, p.alignment, 'any'),
     gender: pick(GENDERS, p.gender, 'any'),
     hasStats: p.stats === '1',
+    tags: p.tags ? p.tags.split(',').filter(Boolean) : [],
     sort: pick(SORTS, p.sort, defaultSort(slug)),
     search: p.q ?? '',
   };
@@ -100,9 +105,48 @@ const LABELS: Record<string, string> = {
   female: 'Female',
 };
 
+const TAG_LABELS: Record<string, string> = {
+  'anti-hero': 'Anti-hero',
+  'reformed-villain': 'Reformed villain',
+  'legacy-hero': 'Legacy hero',
+  vigilante: 'Vigilante',
+  mentor: 'Mentor',
+  sidekick: 'Sidekick',
+  mastermind: 'Mastermind',
+  'monster-hunter': 'Monster hunter',
+  mutant: 'Mutant',
+  mutate: 'Mutate',
+  'cosmic-powered': 'Cosmic-powered',
+  'tech-based': 'Tech-based',
+  'magic-user': 'Magic user',
+  'super-soldier': 'Super-soldier',
+  alien: 'Alien',
+  mythological: 'Mythological',
+  'street-level': 'Street-level',
+  cosmic: 'Cosmic',
+  'reality-warper': 'Reality-warper',
+  powerhouse: 'Powerhouse',
+  gadgeteer: 'Gadgeteer',
+  'tragic-backstory': 'Tragic backstory',
+  'morally-grey': 'Morally grey',
+  brooding: 'Brooding',
+  'comic-relief': 'Comic relief',
+  wholesome: 'Wholesome',
+  noir: 'Noir',
+  'team-leader': 'Team leader',
+  'lone-wolf': 'Lone wolf',
+  'government-agent': 'Government agent',
+  outlaw: 'Outlaw',
+  shapeshifter: 'Shapeshifter',
+  speedster: 'Speedster',
+  telepath: 'Telepath',
+  immortal: 'Immortal',
+};
+
 export interface ActiveChip {
-  key: FacetKey | 'search';
+  key: FacetKey | 'search' | 'tags';
   label: string;
+  value?: string;
 }
 
 export function activeFilterList(slug: CategorySlug, f: CategoryFilters): ActiveChip[] {
@@ -116,5 +160,8 @@ export function activeFilterList(slug: CategorySlug, f: CategoryFilters): Active
     chips.push({ key: 'gender', label: LABELS[f.gender] });
   if (visible.includes('hasStats') && f.hasStats)
     chips.push({ key: 'hasStats', label: 'Rated only' });
+  for (const slug of f.tags ?? []) {
+    chips.push({ key: 'tags', label: TAG_LABELS[slug] ?? slug, value: slug });
+  }
   return chips;
 }

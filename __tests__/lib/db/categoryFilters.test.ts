@@ -94,3 +94,35 @@ describe('activeFilterList', () => {
     expect(chips[0]).toEqual({ key: 'gender', label: 'Female' });
   });
 });
+
+import {
+  DEFAULT_FILTERS as DF_TAGS,
+  filtersToParams as ftp_tags,
+  paramsToFilters as ptf_tags,
+} from '../../../src/lib/db/categoryFilters';
+
+describe('tags facet round-trip', () => {
+  it('defaults to an empty tag list', () => {
+    expect(DF_TAGS.tags).toEqual([]);
+  });
+
+  it('serializes selected tags to a csv param', () => {
+    const p = ftp_tags('popular', { ...DF_TAGS, tags: ['anti-hero', 'cosmic'] });
+    expect(p.tags).toBe('anti-hero,cosmic');
+  });
+
+  it('omits the tags param when none selected', () => {
+    const p = ftp_tags('popular', { ...DF_TAGS, tags: [] });
+    expect(p.tags).toBeUndefined();
+  });
+
+  it('parses a csv tags param back to an array', () => {
+    const f = ptf_tags('popular', { tags: 'anti-hero,cosmic' });
+    expect(f.tags).toEqual(['anti-hero', 'cosmic']);
+  });
+
+  it('parses missing tags param to an empty array', () => {
+    const f = ptf_tags('popular', {});
+    expect(f.tags).toEqual([]);
+  });
+});
