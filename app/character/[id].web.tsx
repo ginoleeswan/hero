@@ -62,34 +62,6 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
   );
 }
 
-function ExpandableTeamsRow({
-  teams,
-  fallback,
-}: {
-  teams: string[] | null | undefined;
-  fallback: string | null | undefined;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  if (teams?.length) {
-    if (teams.length <= 2 || expanded) {
-      return <InfoRow label="Affiliations" value={teams.join(', ')} />;
-    }
-    const remainder = teams.length - 2;
-    return (
-      <View style={styles.infoRow}>
-        <Text style={styles.infoLabel}>Affiliations</Text>
-        <Text style={styles.infoValue}>
-          {teams.slice(0, 2).join(', ')}{' '}
-          <Text onPress={() => setExpanded(true)} style={{ color: COLORS.blue }}>
-            +{remainder} more
-          </Text>
-        </Text>
-      </View>
-    );
-  }
-  return <InfoRow label="Affiliations" value={fallback} />;
-}
-
 function ExpandableChipGroup({
   label,
   chips,
@@ -444,6 +416,15 @@ export default function WebCharacterScreen() {
   }
 
   const { stats, details } = data;
+
+  // Affiliations live in the main "Enemies, Allies & Teams" card (not Quick Facts)
+  // so the sticky side rail stays short enough to fit the viewport.
+  const affiliations: string[] = details.teams?.length
+    ? details.teams
+    : (stats.connections['group-affiliation'] ?? '')
+        .split(/[,;]/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0 && !JUNK_VALUES.has(s.toLowerCase()));
 
   const publisherBrand = brandForPublisher(stats.biography.publisher);
 
@@ -821,7 +802,7 @@ export default function WebCharacterScreen() {
                       ))}
                     </View>
                   </View>
-                ) : enemyNames.length || allyNames.length || teammateNames.length ? (
+                ) : enemyNames.length || allyNames.length || teammateNames.length || affiliations.length ? (
                   <View style={styles.card}>
                     <Text style={styles.cardTitle}>Enemies, Allies &amp; Teams</Text>
                     <View style={styles.cardDivider} />
@@ -861,6 +842,18 @@ export default function WebCharacterScreen() {
                         />
                       ) : null}
                     </View>
+                    {affiliations.length ? (
+                      <View style={styles.affGroup}>
+                        <Text style={styles.chipGroupLabel}>Affiliations</Text>
+                        <View style={styles.chipRow}>
+                          {affiliations.map((t) => (
+                            <View key={t} style={styles.affChip}>
+                              <Text style={styles.affChipText}>{t}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    ) : null}
                   </View>
                 ) : null}
 
@@ -1078,10 +1071,6 @@ export default function WebCharacterScreen() {
                   <InfoRow label="Weight" value={stats.appearance.weight.join(' / ')} />
                   <InfoRow label="Occupation" value={stats.work.occupation} />
                   <InfoRow label="Base" value={stats.work.base} />
-                  <ExpandableTeamsRow
-                    teams={details.teams}
-                    fallback={stats.connections['group-affiliation']}
-                  />
                 </View>
               </View>
             </View>
@@ -2787,6 +2776,20 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  affGroup: { marginTop: 4 },
+  affChip: {
+    backgroundColor: COLORS.navy + '0d',
+    borderWidth: 1,
+    borderColor: COLORS.navy + '1f',
+    borderRadius: 20,
+    paddingVertical: 5,
+    paddingHorizontal: 11,
+  },
+  affChipText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: COLORS.navy,
+  },
   chipEnemy: {
     backgroundColor: 'rgba(181,48,43,0.08)',
     borderWidth: 1,
