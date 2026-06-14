@@ -137,8 +137,13 @@ async function runEnrich(sb: SB, limit: number, retry: boolean, runId: number | 
   if (!retry) q = q.is('wikidata_enriched_at', null);
   const { data: heroes } = await q;
   if (!heroes || heroes.length === 0) return 0;
+  // Marquee heroes have huge appearance lists (hundreds of upserts) — stop taking
+  // new heroes past a wall-clock budget so the run always finishes and marks
+  // itself done, rather than being killed mid-batch and dangling as 'running'.
+  const deadline = Date.now() + 25_000;
   let calls = 0;
   for (const h of heroes as Array<{ id: string; wikidata_qid: string; issue_count: number | null; creators: string[] | null; aliases: string[] | null }>) {
+    if (Date.now() > deadline) break;
     try {
       calls++;
       const titles = await fetchAppearances(h.wikidata_qid);
