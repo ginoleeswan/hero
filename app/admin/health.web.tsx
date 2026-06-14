@@ -27,14 +27,8 @@ import {
   getRunHistory,
   getCronStatus,
   getComicvineUsageLastHour,
-  runDrain,
-  retryFailed,
-  setDrainCron,
-  stopRun,
   searchHeroesAdmin,
-  reenrichHero,
   pingComicvine,
-  snapshotNow,
   getHealthSnapshots,
   getCatalogDistributions,
   GAP_PAGE_SIZE,
@@ -56,8 +50,6 @@ import {
   METRICS,
   WORKLIST_LABEL,
   TABS,
-  type LogTone,
-  type LogEntry,
   type MetricDef,
   type TabKey,
 } from '../../src/components/admin/health/format';
@@ -65,6 +57,7 @@ import { Donut, BarRow, CompletenessChart } from '../../src/components/admin/hea
 import { Masthead } from '../../src/components/admin/health/Masthead';
 import { RunHistory } from '../../src/components/admin/health/RunHistory';
 import { Chip } from '../../src/components/admin/health/atoms';
+import { useActivityLog, useCatalogActions } from '../../src/components/admin/health/hooks';
 
 // Mobile bottom navigation — fixed to the viewport (sticky releases here because
 // #root is clamped to 100dvh; fixed + translateZ pins it like the global TopBar).
@@ -410,84 +403,10 @@ export default function AdminHealthScreen() {
 
   const drainJob = cronQ.data?.find((j) => j.jobname === DRAIN_CRON);
   const cronOn = !!drainJob?.active;
-  const [busy, setBusy] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const { log, toast, flash, logEvent, clearLog } = useActivityLog();
+  const { busy, refreshing, onRunDrain, onRetryFailed, onStop, onSnapshot, onReenrich, onToggleCron, onRefresh } =
+    useCatalogActions({ batchSize, cronOn, flash });
 
-  // Activity log — a durable, session-scoped record of everything the admin runs
-  // and every run transition, so results don't vanish with the 4s toast.
-  const logSeq = useRef(0);
-  const [log, setLog] = useState<LogEntry[]>([]);
-  const logEvent = useCallback((tone: LogTone, text: string) => {
-    setLog((prev) => [{ id: ++logSeq.current, at: Date.now(), tone, text }, ...prev].slice(0, 80));
-  }, []);
-
-  // Every user-facing flash also lands permanently in the log.
-  const flash = (msg: string, tone: LogTone = 'info') => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 4000);
-    logEvent(tone, msg);
-  };
-
-  const onRunDrain = async () => {
-    setBusy('drain');
-    try {
-      await runDrain(batchSize);
-      flash(`Batch of ${batchSize} queued — watch it run below.`, 'pending');
-      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] }), 2000);
-    } catch (e) {
-      flash(`Drain failed: ${(e as Error).message}`, 'error');
-    } finally {
-      setBusy(null);
-    }
-  };
-  const onRetryFailed = async () => {
-    setBusy('retry');
-    try {
-      const n = await retryFailed();
-      flash(`${n.toLocaleString()} failed hero${n === 1 ? '' : 'es'} requeued.`, 'success');
-      queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
-    } catch (e) {
-      flash(`Retry failed: ${(e as Error).message}`, 'error');
-    } finally {
-      setBusy(null);
-    }
-  };
-  const onStop = async (runId: number) => {
-    setBusy('stop');
-    try {
-      const ok = await stopRun(runId);
-      flash(ok ? `Stopping run #${runId} after the current hero…` : 'Run already finished.', 'info');
-      queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] });
-    } catch (e) {
-      flash(`Stop failed: ${(e as Error).message}`, 'error');
-    } finally {
-      setBusy(null);
-    }
-  };
-  const onSnapshot = async () => {
-    setBusy('snapshot');
-    try {
-      await snapshotNow();
-      flash('Snapshot captured.', 'success');
-      queryClient.invalidateQueries({ queryKey: ['healthSnapshots'] });
-    } catch (e) {
-      flash(`Snapshot failed: ${(e as Error).message}`, 'error');
-    } finally {
-      setBusy(null);
-    }
-  };
-  const onReenrich = async (id: string, name: string) => {
-    setBusy(`reenrich-${id}`);
-    try {
-      await reenrichHero(id);
-      flash(`Re-fetching ${name} from ComicVine…`, 'pending');
-      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['adminHeroSearch'] }), 5000);
-    } catch (e) {
-      flash(`Re-fetch failed: ${(e as Error).message}`, 'error');
-    } finally {
-      setBusy(null);
-    }
-  };
   const pickPublisher = (publisher: string) => {
     setPubFilter(publisher);
     setPage(0);
@@ -499,40 +418,6 @@ export default function AdminHealthScreen() {
     setPage(0);
     setPubFilter(null);
     setTab('backfill');
-  };
-  // Manual refresh — refetch this screen's queries (not the whole app cache) and
-  // keep the spinner up until they actually settle, with a small minimum so the
-  // tap registers visually.
-  const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = () => {
-    if (refreshing) return;
-    setRefreshing(true);
-    const started = Date.now();
-    const keys = [
-      'catalogHealth',
-      'coverageGaps',
-      'enrichmentRuns',
-      'cronStatus',
-      'cvPing',
-      'cvUsage',
-      'distributions',
-      'healthSnapshots',
-    ];
-    Promise.all(keys.map((k) => queryClient.invalidateQueries({ queryKey: [k] }))).finally(() =>
-      setTimeout(() => setRefreshing(false), Math.max(0, 450 - (Date.now() - started))),
-    );
-  };
-  const onToggleCron = async () => {
-    setBusy('cron');
-    try {
-      const state = await setDrainCron(!cronOn);
-      flash(`Auto-drain cron ${state}.`, 'success');
-      queryClient.invalidateQueries({ queryKey: ['cronStatus'] });
-    } catch (e) {
-      flash(`Cron toggle failed: ${(e as Error).message}`, 'error');
-    } finally {
-      setBusy(null);
-    }
   };
 
   const h = healthQ.data;
@@ -937,7 +822,7 @@ export default function AdminHealthScreen() {
                 <Text style={[styles.cardHint, narrow && styles.cardHintNarrow]}>Live results of actions & runs this session</Text>
               </View>
               {log.length > 0 && (
-                <Pressable onPress={() => setLog([])} style={styles.miniBtn}>
+                <Pressable onPress={clearLog} style={styles.miniBtn}>
                   <Ionicons name="trash-outline" size={14} color={COLORS.navy} />
                   <Text style={styles.miniBtnText}>Clear</Text>
                 </Pressable>
