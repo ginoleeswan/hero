@@ -54,6 +54,7 @@ describe('filtersToParams / paramsToFilters round-trip', () => {
       hasStats: true,
       sort: 'az',
       search: 'man',
+      tags: [],
     };
     expect(filtersToParams('popular', f)).toEqual({
       publisher: 'marvel',
