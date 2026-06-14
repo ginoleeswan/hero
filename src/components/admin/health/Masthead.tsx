@@ -132,13 +132,12 @@ export function Masthead({
           <View style={styles.mastheadLeft}>
             <Text style={styles.kicker}>MYTHIQUE · ARCHIVE CONTROL</Text>
             <Text style={styles.title}>Catalog Health</Text>
-            <Text style={styles.subtitle}>
-              {h ? 'Live coverage across the archive' : 'Loading the archive…'}
-            </Text>
-            {h && <Scoreboard h={h} onJump={onJump} />}
-            <View style={styles.statusRow}>
-              {h &&
-                Object.entries(h.cvStatus).map(([k, v]) => (
+          </View>
+          {h && (
+            <View style={styles.mastCenter}>
+              <Scoreboard h={h} onJump={onJump} />
+              <View style={styles.statusRow}>
+                {Object.entries(h.cvStatus).map(([k, v]) => (
                   <View key={k} style={styles.statusChip}>
                     <View
                       style={[
@@ -154,13 +153,23 @@ export function Masthead({
                     </Text>
                   </View>
                 ))}
+              </View>
             </View>
-          </View>
-          {h && (
-            <Pressable onPress={() => onJump()} accessibilityLabel="Go to backfill">
-              <Gauge value={overall} size={150} />
-            </Pressable>
           )}
+          <View style={styles.mastRight}>
+            <Pressable onPress={onRefresh} hitSlop={8} style={styles.mastRefresh}>
+              {refreshing ? (
+                <ActivityIndicator size="small" color="rgba(255,255,255,0.85)" />
+              ) : (
+                <Ionicons name="refresh" size={15} color="rgba(255,255,255,0.85)" />
+              )}
+            </Pressable>
+            {h && (
+              <Pressable onPress={() => onJump()} accessibilityLabel="Go to backfill">
+                <Gauge value={overall} size={104} />
+              </Pressable>
+            )}
+          </View>
         </View>
       )}
     </LinearGradient>
@@ -171,8 +180,8 @@ const styles = StyleSheet.create({
   masthead: {
     width: '100%',
     overflow: 'hidden',
-    paddingTop: (`calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 30px)` as unknown) as number,
-    paddingBottom: 30,
+    paddingTop: (`calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 14px)` as unknown) as number,
+    paddingBottom: 16,
   },
   mastheadNarrow: { paddingBottom: 22 },
   mastheadInner: {
@@ -196,9 +205,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.orange,
     opacity: 0.14,
   },
-  mastheadLeft: { gap: 6, flexShrink: 1 },
+  mastheadLeft: { gap: 4, flexShrink: 0 },
+  mastCenter: { flex: 1, gap: 8, alignItems: 'flex-start' },
+  mastRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   kicker: { fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 2.5, color: COLORS.orange },
-  title: { fontFamily: 'Flame-Regular', fontSize: 46, color: '#fff', lineHeight: 50 },
+  title: { fontFamily: 'Flame-Regular', fontSize: 30, color: '#fff', lineHeight: 33 },
   titleNarrow: { fontSize: 28, lineHeight: 31 },
   mastHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 14, alignSelf: 'stretch' },
   mastHeadTitleCol: { flex: 1, gap: 3 },
@@ -213,7 +224,7 @@ const styles = StyleSheet.create({
   },
   kickerNarrow: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 2, color: COLORS.orange },
   subtitle: { fontFamily: 'Nunito_400Regular', fontSize: 15, color: 'rgba(255,255,255,0.6)' },
-  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   statusChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -225,7 +236,7 @@ const styles = StyleSheet.create({
   },
   statusDot: { width: 7, height: 7, borderRadius: 7 },
   statusChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(255,255,255,0.85)' },
-  scoreboard: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 16, flexWrap: 'wrap' },
+  scoreboard: { flexDirection: 'row', alignItems: 'center', gap: 16, flexWrap: 'wrap' },
   scoreboardNarrow: {
     alignSelf: 'stretch',
     marginTop: 0,
@@ -240,7 +251,7 @@ const styles = StyleSheet.create({
   scoreDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.13)' },
   mstat: { gap: 1 },
   mstatPressed: { opacity: 0.5 },
-  mstatNum: { fontFamily: 'Flame-Regular', fontSize: 27, color: '#fff', lineHeight: 29 },
+  mstatNum: { fontFamily: 'Flame-Regular', fontSize: 23, color: '#fff', lineHeight: 25 },
   mstatNumSm: { fontFamily: 'Flame-Regular', fontSize: 19, color: '#fff', lineHeight: 21 },
   mstatLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 0.4, color: 'rgba(255,255,255,0.5)' },
   mstatLabelSm: { fontSize: 9, letterSpacing: 0.2 },

@@ -1204,8 +1204,8 @@ export default function AdminHealthScreen() {
 
 const card = {
   backgroundColor: '#fffdf8',
-  borderRadius: 20,
-  padding: 22,
+  borderRadius: 16,
+  padding: 18,
   borderWidth: 1,
   borderColor: 'rgba(41,60,67,0.06)',
   shadowColor: '#3a2a14',
@@ -1217,7 +1217,7 @@ const card = {
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: COLORS.beige, minHeight: '100%' as unknown as number },
   root: { width: '100%' },
-  body: { width: '100%', maxWidth: 1080, alignSelf: 'center', padding: 24, gap: 18 },
+  body: { width: '100%', maxWidth: 1080, alignSelf: 'center', padding: 24, gap: 14 },
   // Mobile: list-style — content sits on the beige canvas, inset from the screen
   // edges; sections are separated by hairline dividers (see cardNarrow), no gaps.
   bodyNarrow: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8, gap: 0 },
@@ -1385,9 +1385,10 @@ const styles = StyleSheet.create({
   alert: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    padding: 12,
-    borderRadius: 12,
+    gap: 9,
+    paddingVertical: 9,
+    paddingHorizontal: 13,
+    borderRadius: 10,
     borderWidth: 1,
   },
   alertText: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
@@ -1540,7 +1541,7 @@ const styles = StyleSheet.create({
   histLabel: { fontFamily: 'Nunito_400Regular', fontSize: 10, color: COLORS.grey },
 
   coverageCard: { gap: 4 },
-  cardTitle: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.black },
+  cardTitle: { fontFamily: 'Flame-Regular', fontSize: 19, color: COLORS.black },
   // Mobile: lighter section headers create clearer hierarchy under the 28px page title.
   cardTitleNarrow: { fontSize: 18 },
   cardHint: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey, marginBottom: 8 },
