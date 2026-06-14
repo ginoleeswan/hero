@@ -18,6 +18,10 @@ const INITIAL_COUNT = 10;
 const BACKDROP_W = 220;
 const BACKDROP_H = 150;
 
+// Web grid poster dimensions
+const WEB_POSTER_W = 150;
+const WEB_POSTER_H = 225;
+
 interface StripItem {
   key: string;
   title: string;
@@ -188,7 +192,85 @@ function StripCard({ item, onPress }: { item: StripItem; onPress: () => void }) 
   );
 }
 
-const WEB_GRID_INITIAL = 18;
+// ─── Web: cinematic featured film banner (top of the On-Screen grid) ──────────
+function WebFeaturedFilm({ item, onPress }: { item: StripItem; onPress: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  const img = item.backdropUrl ?? item.posterUrl;
+  return (
+    <Pressable
+      onPress={onPress}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      style={[webStyles.featured, hovered && webStyles.featuredHover] as object}
+    >
+      {img ? (
+        <Image source={{ uri: img }} style={StyleSheet.absoluteFill as object} contentFit="cover" cachePolicy="memory-disk" />
+      ) : (
+        <View style={[StyleSheet.absoluteFill, styles.placeholder] as object} />
+      )}
+      <LinearGradient
+        colors={['rgba(11,18,24,0.05)', 'rgba(11,18,24,0.55)', 'rgba(11,18,24,0.94)']}
+        locations={[0, 0.45, 1]}
+        style={StyleSheet.absoluteFill as object}
+      />
+      <View style={webStyles.featuredMeta}>
+        <Text style={webStyles.featuredKicker}>Featured</Text>
+        <Text style={webStyles.featuredTitle} numberOfLines={2}>{item.title}</Text>
+        <View style={webStyles.featuredPills}>
+          {item.year ? <Text style={webStyles.featuredPill}>{item.year}</Text> : null}
+          {item.voteAverage != null ? <Text style={webStyles.featuredPill}>★ {item.voteAverage.toFixed(1)}</Text> : null}
+          {item.film?.runtime ? <Text style={webStyles.featuredPill}>{item.film.runtime} min</Text> : null}
+        </View>
+        {item.film?.overview ? (
+          <Text style={webStyles.featuredOverview} numberOfLines={2}>{item.film.overview}</Text>
+        ) : null}
+        <View style={webStyles.featuredCta}>
+          <Ionicons name={item.hasTrailer ? 'play-circle' : 'open-outline'} size={16} color="#fff" />
+          <Text style={webStyles.featuredCtaText}>{item.hasTrailer ? 'Watch Trailer' : 'View details'}</Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+// ─── Web: refined poster tile with hover lift + trailer reveal ────────────────
+function WebPosterCard({ item, onPress }: { item: StripItem; onPress: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <Pressable
+      onPress={onPress}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      style={webStyles.posterCard}
+    >
+      <View style={[webStyles.posterWrap, hovered && webStyles.posterWrapHover] as object}>
+        {item.posterUrl ? (
+          <Image source={{ uri: item.posterUrl }} style={webStyles.posterImg} contentFit="cover" cachePolicy="memory-disk" />
+        ) : (
+          <View style={[webStyles.posterImg, styles.placeholder] as object}>
+            <Ionicons name="film-outline" size={24} color={COLORS.grey} />
+            <Text style={[styles.placeholderName, { width: WEB_POSTER_W - 16 }]} numberOfLines={3}>{item.title}</Text>
+          </View>
+        )}
+        {item.voteAverage != null ? (
+          <View style={webStyles.posterRating}>
+            <Ionicons name="star" size={9} color={COLORS.orange} />
+            <Text style={webStyles.posterRatingText}>{item.voteAverage.toFixed(1)}</Text>
+          </View>
+        ) : null}
+        {item.hasTrailer ? (
+          <View style={[webStyles.playOverlay, hovered && webStyles.playOverlayShown] as object}>
+            <Ionicons name="play-circle" size={42} color="#fff" />
+          </View>
+        ) : null}
+      </View>
+      <Text style={webStyles.posterTitle} numberOfLines={1}>{item.title}</Text>
+      {item.year ? <Text style={webStyles.posterYear}>{item.year}</Text> : null}
+    </Pressable>
+  );
+}
+
+const WEB_GRID_INITIAL = 17;
 
 export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleedMargin = 0 }: Props) {
   const router = useRouter();
@@ -210,18 +292,28 @@ export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleed
     }
   };
 
-  // ─── Web wrapping grid (films path only) ────────────────────────────────────
+  // ─── Web: featured film banner + refined poster grid (films path only) ───────
   if (Platform.OS === 'web' && isFilmsPath) {
-    const webItems = webShowAll ? sorted : sorted.slice(0, WEB_GRID_INITIAL);
-    const hiddenCount = sorted.length - WEB_GRID_INITIAL;
+    const webFeatured = pickFeaturedFilm(films ?? []);
+    const webFeaturedItem = webFeatured
+      ? sorted.find((it) => it.film?.tmdbId === webFeatured.tmdbId)
+      : null;
+    const webRest = webFeaturedItem ? sorted.filter((it) => it !== webFeaturedItem) : sorted;
+    const shown = webShowAll ? webRest : webRest.slice(0, WEB_GRID_INITIAL);
+    const hiddenCount = webRest.length - shown.length;
     return (
-      <View style={webStyles.grid}>
-        {webItems.map((item, i) => (
-          <StripCard key={item.key + i} item={item} onPress={() => handlePress(item)} />
-        ))}
+      <View style={webStyles.wrap}>
+        {webFeaturedItem ? (
+          <WebFeaturedFilm item={webFeaturedItem} onPress={() => handlePress(webFeaturedItem)} />
+        ) : null}
+        <View style={webStyles.grid}>
+          {shown.map((item, i) => (
+            <WebPosterCard key={item.key + i} item={item} onPress={() => handlePress(item)} />
+          ))}
+        </View>
         {!webShowAll && hiddenCount > 0 ? (
           <Pressable style={webStyles.showAllBtn} onPress={() => setWebShowAll(true)}>
-            <Text style={webStyles.showAllText}>Show all ({sorted.length})</Text>
+            <Text style={webStyles.showAllText}>Show all {sorted.length} titles</Text>
           </Pressable>
         ) : null}
       </View>
@@ -312,24 +404,142 @@ export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleed
 }
 
 const webStyles = StyleSheet.create({
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-    paddingHorizontal: 20,
-    paddingBottom: 4,
+  wrap: { gap: 18 },
+
+  // ── Featured banner ──
+  featured: {
+    width: '100%',
+    height: 248,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+    boxShadow: '0 8px 24px rgba(41,60,67,0.14)',
+    transition: 'transform 180ms ease, box-shadow 180ms ease',
+  } as object,
+  featuredHover: {
+    transform: [{ translateY: -2 }],
+    boxShadow: '0 14px 30px rgba(41,60,67,0.22)',
+  } as object,
+  featuredMeta: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: 22,
+    gap: 8,
+    maxWidth: 640,
+  } as object,
+  featuredKicker: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 10,
+    color: COLORS.orange,
+    textTransform: 'uppercase',
+    letterSpacing: 1.6,
   },
-  showAllBtn: {
-    justifyContent: 'center',
+  featuredTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 26,
+    color: '#fff',
+    lineHeight: 30,
+  },
+  featuredPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+  featuredPill: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.92)',
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    overflow: 'hidden',
+  } as object,
+  featuredOverview: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.84)',
+    lineHeight: 19,
+    marginTop: 1,
+  },
+  featuredCta: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 22,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     marginTop: 4,
+  } as object,
+  featuredCtaText: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: '#fff' },
+
+  // ── Poster grid ──
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 18 },
+  posterCard: { width: WEB_POSTER_W } as object,
+  posterWrap: {
+    width: WEB_POSTER_W,
+    height: WEB_POSTER_H,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginBottom: 8,
+    backgroundColor: COLORS.navy,
+    boxShadow: '0 2px 8px rgba(41,60,67,0.12)',
+    transition: 'transform 160ms ease, box-shadow 160ms ease',
+  } as object,
+  posterWrapHover: {
+    transform: [{ translateY: -4 }],
+    boxShadow: '0 12px 26px rgba(41,60,67,0.24)',
+  } as object,
+  posterImg: { width: WEB_POSTER_W, height: WEB_POSTER_H },
+  posterRating: {
+    position: 'absolute',
+    top: 7,
+    left: 7,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(11,18,24,0.66)',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  } as object,
+  posterRatingText: { fontFamily: 'FlameSans-Regular', fontSize: 11, color: '#fff' },
+  playOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(11,18,24,0.32)',
+    opacity: 0,
+    transition: 'opacity 160ms ease',
+  } as object,
+  playOverlayShown: { opacity: 1 } as object,
+  posterTitle: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12.5,
+    color: COLORS.navy,
+    lineHeight: 16,
+  },
+  posterYear: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 11,
+    color: COLORS.grey,
+    marginTop: 1,
+  },
+
+  showAllBtn: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 2,
   },
   showAllText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13,
-    color: COLORS.navy,
+    color: COLORS.orange,
     textDecorationLine: 'underline',
   },
 });
