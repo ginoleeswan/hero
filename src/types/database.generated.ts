@@ -872,6 +872,10 @@ export type Database = {
       admin_set_drain_cron: { Args: { p_enabled: boolean }; Returns: string }
       admin_snapshot_now: { Args: never; Returns: undefined }
       admin_stop_run: { Args: { p_run_id: number }; Returns: boolean }
+      admin_toggle_cron: {
+        Args: { p_enabled: boolean; p_jobname: string }
+        Returns: string
+      }
       cache_hero_comicvine_data: {
         Args: { p_id: string; p_powers: string[]; p_summary: string }
         Returns: undefined

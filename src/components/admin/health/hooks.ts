@@ -25,6 +25,7 @@ import {
   runWikidataResolve,
   runWikidataEnrich,
   getEnrichmentProgress,
+  toggleCron,
   type CoverageMetric,
   type RunHistoryPage,
 } from '../../../lib/db/catalogHealth';
@@ -333,6 +334,19 @@ export function useCatalogActions({
     }
   };
 
+  const onToggleAnyCron = async (jobname: string, enabled: boolean) => {
+    setBusy(`cron-${jobname}`);
+    try {
+      const state = await toggleCron(jobname, enabled);
+      flash(`Cron "${jobname}" ${state}.`, 'success');
+      queryClient.invalidateQueries({ queryKey: ['cronStatus'] });
+    } catch (e) {
+      flash(`Cron toggle failed: ${(e as Error).message}`, 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const onToggleCron = async () => {
     setBusy('cron');
     try {
@@ -369,6 +383,7 @@ export function useCatalogActions({
     onRunResolve,
     onRunEnrich,
     onToggleCron,
+    onToggleAnyCron,
     onRefresh,
   };
 }

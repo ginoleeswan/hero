@@ -154,6 +154,12 @@ export async function getCronStatus(): Promise<CronJob[]> {
   return (data ?? []) as unknown as CronJob[];
 }
 
+/** Enable/disable any pg_cron job by name (keeps its schedule). */
+export async function toggleCron(jobname: string, enabled: boolean): Promise<void> {
+  const { error } = await supabase.rpc('admin_toggle_cron', { p_jobname: jobname, p_enabled: enabled });
+  if (error) throw error;
+}
+
 /** ComicVine API units consumed in the last hour (rate-limit gauge, ~200/hr). */
 export async function getComicvineUsageLastHour(): Promise<number> {
   const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();

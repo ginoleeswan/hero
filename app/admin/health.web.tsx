@@ -21,8 +21,8 @@ import { VitalsBar } from '../../src/components/admin/health/VitalsBar';
 import { AlertStack, type Alert } from '../../src/components/admin/health/AlertStack';
 import { CommandHome } from '../../src/components/admin/health/domains/CommandHome';
 import { CatalogDomain } from '../../src/components/admin/health/domains/CatalogDomain';
-import { OperationsDomain } from '../../src/components/admin/health/domains/OperationsDomain';
-import { EnrichmentDomain } from '../../src/components/admin/health/domains/EnrichmentDomain';
+import { PipelinesDomain } from '../../src/components/admin/health/domains/PipelinesDomain';
+import { HeroConsole } from '../../src/components/admin/health/HeroConsole';
 import { SpendDomain } from '../../src/components/admin/health/domains/SpendDomain';
 import { PlaceholderDomain } from '../../src/components/admin/health/domains/PlaceholderDomain';
 import {
@@ -86,6 +86,7 @@ export default function AdminHealthScreen() {
     onRunResolve,
     onRunEnrich,
     onToggleCron,
+    onToggleAnyCron,
     onRefresh,
   } = useCatalogActions({ batchSize, cronOn, flash });
 
@@ -277,57 +278,56 @@ export default function AdminHealthScreen() {
           />
         )}
         {h && domain === 'catalog' && (
-          <CatalogDomain
-            h={h}
-            gaps={gapsQ.data}
-            gapsLoading={gapsQ.isLoading}
-            dist={distQ.data}
-            metric={metric}
-            setMetric={setMetric}
-            page={page}
-            setPage={setPage}
-            pubFilter={pubFilter}
-            setPubFilter={setPubFilter}
-            pickPublisher={pickPublisher}
-            anim={anim}
-            narrow={narrow}
-          />
+          <>
+            <CatalogDomain
+              h={h}
+              gaps={gapsQ.data}
+              gapsLoading={gapsQ.isLoading}
+              dist={distQ.data}
+              metric={metric}
+              setMetric={setMetric}
+              page={page}
+              setPage={setPage}
+              pubFilter={pubFilter}
+              setPubFilter={setPubFilter}
+              pickPublisher={pickPublisher}
+              anim={anim}
+              narrow={narrow}
+            />
+            <View style={{ marginTop: 14 }}>
+              <HeroConsole
+                heroQuery={heroQuery}
+                setHeroQuery={setHeroQuery}
+                heroResults={heroSearchQ.data ?? []}
+                heroSearchLoading={heroSearchQ.isLoading}
+                busy={busy}
+                onReenrich={onReenrich}
+              />
+            </View>
+          </>
         )}
-        {h && domain === 'operations' && (
-          <OperationsDomain
+        {h && domain === 'pipelines' && (
+          <PipelinesDomain
             h={h}
+            progress={enrichProgressQ.data}
+            ambiguous={ambiguousQ.data ?? []}
+            busy={busy}
+            batchSize={batchSize}
+            setBatchSize={setBatchSize}
+            crons={cronQ.data ?? []}
+            onRunDrain={onRunDrain}
+            onRetryFailed={onRetryFailed}
+            onToggleAnyCron={onToggleAnyCron}
+            onRunResolve={onRunResolve}
+            onRunEnrich={onRunEnrich}
+            onResolveQid={onResolveQid}
             runs={runs}
             runsTotal={runsQ.data?.total ?? 0}
             runsLoading={runsQ.isLoading}
             runsFetching={runsQ.isFetching}
             onLoadMore={() => setHistoryLimit((l) => l + 30)}
             log={log}
-            toast={toast}
             clearLog={clearLog}
-            heroQuery={heroQuery}
-            setHeroQuery={setHeroQuery}
-            heroResults={heroSearchQ.data ?? []}
-            heroSearchLoading={heroSearchQ.isLoading}
-            batchSize={batchSize}
-            setBatchSize={setBatchSize}
-            busy={busy}
-            cronOn={cronOn}
-            onRunDrain={onRunDrain}
-            onRetryFailed={onRetryFailed}
-            onToggleCron={onToggleCron}
-            onReenrich={onReenrich}
-            narrow={narrow}
-          />
-        )}
-        {domain === 'enrichment' && (
-          <EnrichmentDomain
-            progress={enrichProgressQ.data}
-            ambiguous={ambiguousQ.data ?? []}
-            busy={busy}
-            onRunDrain={onRunDrain}
-            onRunResolve={onRunResolve}
-            onRunEnrich={onRunEnrich}
-            onResolveQid={onResolveQid}
             narrow={narrow}
           />
         )}
