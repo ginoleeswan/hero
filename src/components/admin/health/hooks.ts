@@ -46,6 +46,7 @@ export function useCatalogQueries({
   pubFilter,
   heroQuery,
   historyLimit,
+  ambiguousLimit,
 }: {
   enabled: boolean;
   metric: CoverageMetric;
@@ -53,6 +54,7 @@ export function useCatalogQueries({
   pubFilter: string | null;
   heroQuery: string;
   historyLimit: number;
+  ambiguousLimit: number;
 }) {
   const queryClient = useQueryClient();
 
@@ -117,9 +119,10 @@ export function useCatalogQueries({
     staleTime: 5 * 60_000,
   });
   const ambiguousQ = useQuery({
-    queryKey: ['ambiguousHeroes'],
-    queryFn: () => getAmbiguousHeroes(25),
+    queryKey: ['ambiguousHeroes', ambiguousLimit],
+    queryFn: () => getAmbiguousHeroes(ambiguousLimit),
     enabled,
+    placeholderData: (prev) => prev, // keep the list visible while "load more" fetches
     staleTime: 30_000,
   });
   const enrichProgressQ = useQuery({

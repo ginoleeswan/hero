@@ -1,7 +1,7 @@
-// Pipelines domain — the control room for every drain that fills the catalogue.
-// Compact 2-D dashboard: pipeline cards (with ring gauges) sit beside the live
-// activity log so running a drain and seeing its result need no scrolling; crons
-// and the review queue pair below; full run history underneath.
+// Pipelines ("Build") domain — the control room for every drain that fills the
+// catalogue. The enrichment funnel (shared-denominator stage bars + one "Build
+// next N" action) sits beside "Needs you" review; the live log + recently-built
+// pair below; crons and full-width run history collapse into Advanced.
 import { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,7 +13,6 @@ import { ActivityLog } from '../ActivityLog';
 import { useRouter } from 'expo-router';
 import { InfoTip } from '../InfoTip';
 import { AddHeroesPanel } from '../AddHeroesPanel';
-import { BuildBoard } from '../BuildBoard';
 import { HeroThumb } from '../atoms';
 import { getPendingBuildIds } from '../../../../lib/db/build';
 import { relTime, runTypeLabel, type LogTone } from '../format';
@@ -119,6 +118,10 @@ export function PipelinesDomain({
   h,
   progress,
   ambiguous,
+  ambiguousFetching,
+  onLoadMoreAmbiguous,
+  buildIds,
+  setBuildIds,
   busy,
   batchSize,
   setBatchSize,
@@ -144,6 +147,10 @@ export function PipelinesDomain({
   h: CatalogHealth;
   progress: EnrichmentProgress | undefined;
   ambiguous: AmbiguousHero[];
+  ambiguousFetching: boolean;
+  onLoadMoreAmbiguous: () => void;
+  buildIds: string[] | null;
+  setBuildIds: (ids: string[] | null) => void;
   busy: string | null;
   batchSize: number;
   setBatchSize: (n: number) => void;
@@ -167,7 +174,6 @@ export function PipelinesDomain({
   narrow: boolean;
 }) {
   const router = useRouter();
-  const [buildIds, setBuildIds] = useState<string[] | null>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const p = progress ?? {
     heroesTotal: 0, comicvineDone: 0, resolved: 0, ambiguous: 0, unresolved: 0,
@@ -281,14 +287,14 @@ export function PipelinesDomain({
 
         <Panel
           title="Needs you"
-          hint={ambiguous.length > 0 ? `${ambiguous.length} to review` : 'Decisions land here'}
-          action={<InfoTip text="Heroes the resolver couldn't confidently match to one Wikidata identity. Each chip is a candidate (QID · confidence score) — click the correct one to lock it in and let it be enriched." />}
+          hint={p.ambiguous > 0 ? `${p.ambiguous.toLocaleString()} to review` : 'Decisions land here'}
+          action={<InfoTip text="Heroes the resolver couldn't confidently match to one Wikidata identity. Each chip is a candidate (QID · confidence score) — click the correct one to lock it in, or the ↗ to eyeball it on Wikidata first." />}
           style={styles.flex1}
         >
           {ambiguous.length === 0 ? (
             <Text style={styles.empty}>All clear — nothing waiting on you.</Text>
           ) : (
-            <ScrollView style={styles.reviewScroll} nestedScrollEnabled showsVerticalScrollIndicator>
+            <ScrollView style={narrow ? styles.reviewScrollCap : styles.reviewScrollFill} nestedScrollEnabled showsVerticalScrollIndicator>
             {ambiguous.map((hero) => {
               const busyThis = busy === `resolveqid-${hero.id}`;
               return (
@@ -324,6 +330,22 @@ export function PipelinesDomain({
                 </View>
               );
             })}
+            {ambiguous.length < p.ambiguous ? (
+              <Pressable
+                onPress={onLoadMoreAmbiguous}
+                disabled={ambiguousFetching}
+                style={[styles.loadMore, ambiguousFetching && styles.dim]}
+              >
+                {ambiguousFetching ? (
+                  <ActivityIndicator size="small" color={COLORS.navy} />
+                ) : (
+                  <Ionicons name="chevron-down" size={14} color={COLORS.navy} />
+                )}
+                <Text style={styles.loadMoreText}>
+                  Load more · {(p.ambiguous - ambiguous.length).toLocaleString()} left
+                </Text>
+              </Pressable>
+            ) : null}
             </ScrollView>
           )}
         </Panel>
@@ -343,7 +365,7 @@ export function PipelinesDomain({
           {recentlyEnriched.length === 0 ? (
             <Text style={styles.empty}>Nothing yet — build some heroes and they appear here.</Text>
           ) : (
-            <ScrollView style={styles.reviewScroll} nestedScrollEnabled>
+            <ScrollView style={narrow ? styles.reviewScrollCap : styles.reviewScrollFill} nestedScrollEnabled>
               <View style={styles.reGrid}>
                 {recentlyEnriched.map((r, i) => (
                   <Pressable key={`${r.heroId}-${i}`} onPress={() => router.push(`/character/${r.heroId}`)} style={styles.reCard}>
@@ -366,6 +388,7 @@ export function PipelinesDomain({
         <Text style={styles.advHeadText}>Advanced · scheduled crons & run history</Text>
       </Pressable>
       {advancedOpen ? (
+        <>
         <Bento.Row narrow={narrow}>
         <Panel
           title="Scheduled crons"
@@ -409,12 +432,12 @@ export function PipelinesDomain({
             })
           )}
         </Panel>
+        </Bento.Row>
 
         <Panel
           title="Run history"
           hint={`${runsTotal.toLocaleString()} runs · cron + manual`}
           action={<InfoTip text="Every drain that has run — automatic crons and manual batches alike — newest first. Hover a row to see what it processed." />}
-          style={styles.flex1}
         >
           <RunHistory
             runs={runs}
@@ -425,11 +448,7 @@ export function PipelinesDomain({
             onLoadMore={onLoadMore}
           />
         </Panel>
-      </Bento.Row>
-      ) : null}
-
-      {buildIds ? (
-        <BuildBoard heroIds={buildIds} flash={flash} onClose={() => setBuildIds(null)} />
+        </>
       ) : null}
     </Bento>
   );
@@ -527,7 +546,10 @@ const styles = StyleSheet.create({
   reSub: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.orange },
 
   // Needs attention
-  reviewScroll: { maxHeight: 320 } as object,
+  // Wide: fill the row-stretched panel so it matches its neighbour's height.
+  // Narrow (stacked, no definite parent height): cap instead, or flex:1 collapses to 0.
+  reviewScrollFill: { flex: 1, minHeight: 0 } as object,
+  reviewScrollCap: { maxHeight: 460 } as object,
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 13.5, color: COLORS.grey },
   reviewRow: {
     flexDirection: 'column', gap: 8, paddingVertical: 9,
@@ -542,4 +564,9 @@ const styles = StyleSheet.create({
   chip: { backgroundColor: COLORS.navy + '12', borderTopLeftRadius: 8, borderBottomLeftRadius: 8, paddingHorizontal: 9, paddingVertical: 5, justifyContent: 'center' },
   chipText: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: COLORS.navy },
   chipLink: { backgroundColor: COLORS.navy + '12', borderTopRightRadius: 8, borderBottomRightRadius: 8, paddingHorizontal: 7, alignItems: 'center', justifyContent: 'center' },
+  loadMore: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    backgroundColor: '#efe6d6', borderRadius: 9, paddingVertical: 9, marginTop: 10,
+  },
+  loadMoreText: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: COLORS.navy },
 });

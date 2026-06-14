@@ -22,6 +22,7 @@ import { AlertStack, type Alert } from '../../src/components/admin/health/AlertS
 import { CommandHome } from '../../src/components/admin/health/domains/CommandHome';
 import { CatalogDomain } from '../../src/components/admin/health/domains/CatalogDomain';
 import { PipelinesDomain } from '../../src/components/admin/health/domains/PipelinesDomain';
+import { BuildBoard } from '../../src/components/admin/health/BuildBoard';
 import { HeroConsole } from '../../src/components/admin/health/HeroConsole';
 import { SpendDomain } from '../../src/components/admin/health/domains/SpendDomain';
 import { PlaceholderDomain } from '../../src/components/admin/health/domains/PlaceholderDomain';
@@ -49,6 +50,10 @@ export default function AdminHealthScreen() {
   const [pubFilter, setPubFilter] = useState<string | null>(null);
   const [alertsOpen, setAlertsOpen] = useState(false);
   const [historyLimit, setHistoryLimit] = useState(30);
+  const [ambiguousLimit, setAmbiguousLimit] = useState(25);
+  // The live foreground Build board's working set. Lifted here so the top-strip
+  // Stop can halt it too — a true universal kill switch across server + client runs.
+  const [buildIds, setBuildIds] = useState<string[] | null>(null);
 
   const profileQ = useQuery({
     queryKey: ['profile', user?.id],
@@ -69,6 +74,7 @@ export default function AdminHealthScreen() {
       pubFilter,
       heroQuery,
       historyLimit,
+      ambiguousLimit,
     });
 
   const drainJob = cronQ.data?.find((j) => j.jobname === DRAIN_CRON);
@@ -239,6 +245,8 @@ export default function AdminHealthScreen() {
       activeRun={activeRun}
       stopping={busy === 'stop'}
       onStop={onStop}
+      buildActive={!!buildIds}
+      onStopBuild={() => setBuildIds(null)}
       cronOn={cronOn}
       drainJob={drainJob}
       spend={spendQ.data}
@@ -318,6 +326,10 @@ export default function AdminHealthScreen() {
             h={h}
             progress={enrichProgressQ.data}
             ambiguous={ambiguousQ.data ?? []}
+            ambiguousFetching={ambiguousQ.isFetching}
+            onLoadMoreAmbiguous={() => setAmbiguousLimit((l) => l + 25)}
+            buildIds={buildIds}
+            setBuildIds={setBuildIds}
             busy={busy}
             batchSize={batchSize}
             setBatchSize={setBatchSize}
@@ -360,6 +372,10 @@ export default function AdminHealthScreen() {
           />
         )}
       </CommandShell>
+      {/* Foreground Build board lives at page level so the top-strip Stop can halt it. */}
+      {buildIds ? (
+        <BuildBoard heroIds={buildIds} flash={flash} onClose={() => setBuildIds(null)} />
+      ) : null}
     </Animated.View>
   );
 }

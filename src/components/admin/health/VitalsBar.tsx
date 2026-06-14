@@ -25,6 +25,8 @@ interface Props {
   activeRun?: EnrichmentRun;
   stopping: boolean;
   onStop: (id: number) => void;
+  buildActive?: boolean;
+  onStopBuild?: () => void;
   cronOn: boolean;
   drainJob?: CronJob;
   spend?: GeminiSpend;
@@ -43,6 +45,8 @@ export function VitalsBar({
   activeRun,
   stopping,
   onStop,
+  buildActive,
+  onStopBuild,
   cronOn,
   drainJob,
   spend,
@@ -106,6 +110,17 @@ export function VitalsBar({
                 <Ionicons name="stop" size={11} color="#fff" />
               )}
               <Text style={s.stopText}>{activeRun.cancel_requested ? 'Stopping…' : 'Stop'}</Text>
+            </Pressable>
+          </>
+        ) : buildActive ? (
+          <>
+            <View style={s.row}>
+              <View style={[s.dot, { backgroundColor: COLORS.orange }]} />
+              <Text style={[s.value, { color: COLORS.orange }]}>build</Text>
+            </View>
+            <Pressable onPress={onStopBuild} style={s.stopBtn}>
+              <Ionicons name="stop" size={11} color="#fff" />
+              <Text style={s.stopText}>Stop</Text>
             </Pressable>
           </>
         ) : (
