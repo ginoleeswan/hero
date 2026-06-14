@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, type ComponentProps } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -58,6 +58,49 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
       <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  );
+}
+
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
+
+// A value that's blank or only separators (e.g. "/" when height fields are empty)
+// counts as missing — keeps the Quick Facts grid free of empty tiles.
+function cleanFact(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const v = value.trim();
+  if (v === '' || JUNK_VALUES.has(v.toLowerCase())) return null;
+  if (/^[\s/–-]*$/.test(v)) return null;
+  return v;
+}
+
+function genderIcon(value: string | null | undefined): IoniconName {
+  const v = (value ?? '').toLowerCase();
+  if (v.includes('female')) return 'female-outline';
+  if (v.includes('male')) return 'male-outline';
+  return 'transgender-outline';
+}
+
+// One Quick-Facts tile: icon, value, small label. Short facts sit two-up; long
+// ones (full name, birthplace…) span the row via `wide`.
+function FactTile({
+  icon,
+  label,
+  value,
+  wide,
+}: {
+  icon: IoniconName;
+  label: string;
+  value: string | null | undefined;
+  wide?: boolean;
+}) {
+  const v = cleanFact(value);
+  if (!v) return null;
+  return (
+    <View style={[styles.factTile, wide && styles.factTileWide] as object}>
+      <Ionicons name={icon} size={15} color={COLORS.navy + '70'} style={styles.factIcon} />
+      <Text style={styles.factValue} numberOfLines={2}>{v}</Text>
+      <Text style={styles.factLabel}>{label}</Text>
     </View>
   );
 }
@@ -1061,16 +1104,18 @@ export default function WebCharacterScreen() {
                 <View style={styles.card}>
                   <Text style={styles.cardTitle}>Quick Facts</Text>
                   <View style={styles.cardDivider} />
-                  <InfoRow label="Full name" value={stats.biography['full-name']} />
-                  <InfoRow label="Origin" value={details.origin} />
-                  <InfoRow label="Place of birth" value={stats.biography['place-of-birth']} />
-                  <InfoRow label="Alignment" value={stats.biography.alignment} />
-                  <InfoRow label="Gender" value={stats.appearance.gender} />
-                  <InfoRow label="Race" value={stats.appearance.race} />
-                  <InfoRow label="Height" value={stats.appearance.height.join(' / ')} />
-                  <InfoRow label="Weight" value={stats.appearance.weight.join(' / ')} />
-                  <InfoRow label="Occupation" value={stats.work.occupation} />
-                  <InfoRow label="Base" value={stats.work.base} />
+                  <View style={styles.factGrid}>
+                    <FactTile icon="shield-half-outline" label="Alignment" value={stats.biography.alignment} />
+                    <FactTile icon="planet-outline" label="Origin" value={details.origin} />
+                    <FactTile icon={genderIcon(stats.appearance.gender)} label="Gender" value={stats.appearance.gender} />
+                    <FactTile icon="people-outline" label="Race" value={stats.appearance.race} />
+                    <FactTile icon="swap-vertical-outline" label="Height" value={stats.appearance.height.join(' / ')} />
+                    <FactTile icon="barbell-outline" label="Weight" value={stats.appearance.weight.join(' / ')} />
+                    <FactTile icon="id-card-outline" label="Full name" value={stats.biography['full-name']} wide />
+                    <FactTile icon="location-outline" label="Place of birth" value={stats.biography['place-of-birth']} wide />
+                    <FactTile icon="briefcase-outline" label="Occupation" value={stats.work.occupation} wide />
+                    <FactTile icon="business-outline" label="Base" value={stats.work.base} wide />
+                  </View>
                 </View>
               </View>
             </View>
@@ -2762,6 +2807,32 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     flex: 1,
     textTransform: 'capitalize',
+  },
+  // Quick Facts icon-tile grid
+  factGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  factTile: {
+    width: '48%',
+    backgroundColor: COLORS.navy + '07',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 11,
+    gap: 2,
+  } as object,
+  factTileWide: { width: '100%' } as object,
+  factIcon: { marginBottom: 3 },
+  factValue: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 14,
+    color: COLORS.navy,
+    lineHeight: 18,
+    textTransform: 'capitalize',
+  },
+  factLabel: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 9.5,
+    color: COLORS.grey,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
 
   // Enemies & Allies chips
