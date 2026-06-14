@@ -6,6 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { HeroFilm } from '../../lib/db/films';
 import { COLORS } from '../../constants/colors';
 
+const TOPBAR_HEIGHT = 64;
+
 function formatRevenue(n: number | null): string | null {
   if (!n || n <= 0) return null;
   if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1)}B`;
@@ -45,26 +47,45 @@ export function FilmBackdropHeader({
         <View style={[StyleSheet.absoluteFill, styles.backdropPlaceholder]} />
       )}
 
-      {/* Dark gradient scrim */}
+      {/* Dark vertical gradient scrim (bottom) */}
       <LinearGradient
         colors={['rgba(10,14,18,0.55)', 'rgba(10,14,18,0.72)', 'rgba(10,14,18,0.92)']}
         locations={[0, 0.5, 1]}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Back button */}
-      <TouchableOpacity
-        onPress={onBack}
-        style={[styles.backBtn, { top: insets.top + 12 }]}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        accessibilityRole="button"
-        accessibilityLabel="Go back"
-      >
-        <Ionicons name="chevron-back" size={20} color="#fff" />
-      </TouchableOpacity>
+      {/* Horizontal left-to-right gradient for web — keeps poster/title legible over bright backdrops */}
+      {wide ? (
+        <LinearGradient
+          colors={['rgba(10,14,18,0.85)', 'rgba(10,14,18,0.0)']}
+          locations={[0, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.6, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
+
+      {/* Back button — native only; web has the floating TopBar for navigation */}
+      {Platform.OS !== 'web' ? (
+        <TouchableOpacity
+          onPress={onBack}
+          style={[styles.backBtn, { top: insets.top + 12 }]}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="chevron-back" size={20} color="#fff" />
+        </TouchableOpacity>
+      ) : null}
 
       {/* Poster + meta row */}
-      <View style={[styles.contentRow, wide && styles.contentRowWide, { paddingTop: insets.top + 56 }]}>
+      <View
+        style={[
+          styles.contentRow,
+          wide && styles.contentRowWide,
+          { paddingTop: wide ? TOPBAR_HEIGHT + 32 : insets.top + 56 },
+        ]}
+      >
         {film.posterUrl ? (
           <View style={styles.posterShadow}>
             <View style={styles.posterClip}>
@@ -102,7 +123,7 @@ export function FilmBackdropHeader({
 const styles = StyleSheet.create({
   root: {
     width: '100%',
-    minHeight: Platform.OS === 'web' ? 360 : 280,
+    minHeight: Platform.OS === 'web' ? 420 : 280,
     justifyContent: 'flex-end',
     paddingBottom: 24,
   },
@@ -162,9 +183,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Flame-Regular',
-    fontSize: 26,
+    fontSize: Platform.OS === 'web' ? 32 : 26,
     color: '#fff',
-    lineHeight: 31,
+    lineHeight: Platform.OS === 'web' ? 38 : 31,
   },
   pillRow: {
     flexDirection: 'row',

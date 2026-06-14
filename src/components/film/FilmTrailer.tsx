@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, Platform, Linking } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Platform, Linking, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 
@@ -21,14 +21,19 @@ if (Platform.OS !== 'web') {
 
 export function FilmTrailer({ trailerKey }: { trailerKey: string }) {
   const [expanded, setExpanded] = useState(false);
+  const { width } = useWindowDimensions();
+  const wide = Platform.OS === 'web' && width >= 900;
   const embedUrl = `https://www.youtube.com/embed/${trailerKey}`;
 
   if (!expanded) {
+    // On web/wide: left-aligned button with sensible max width
     return (
-      <TouchableOpacity style={styles.btn} onPress={() => setExpanded(true)} activeOpacity={0.8}>
-        <Ionicons name="play-circle" size={18} color="#fff" />
-        <Text style={styles.btnText}>Watch Trailer</Text>
-      </TouchableOpacity>
+      <View style={wide ? webStyles.btnWrap : undefined}>
+        <TouchableOpacity style={styles.btn} onPress={() => setExpanded(true)} activeOpacity={0.8}>
+          <Ionicons name="play-circle" size={18} color="#fff" />
+          <Text style={styles.btnText}>Watch Trailer</Text>
+        </TouchableOpacity>
+      </View>
     );
   }
 
@@ -76,8 +81,15 @@ export function FilmTrailer({ trailerKey }: { trailerKey: string }) {
   );
 }
 
-// Web-only: larger 16:9 player centered, max 720px wide
+// Web-only styles
 const webStyles = StyleSheet.create({
+  // Collapsed button: left-aligned, max 300px — keeps it proportionate on wide viewports
+  btnWrap: {
+    alignSelf: 'flex-start',
+    maxWidth: 300,
+    width: '100%',
+  },
+  // Expanded 16:9 player centered, max 720px wide
   frameWrap: {
     alignItems: 'center',
   },

@@ -116,13 +116,14 @@ export default function FilmScreen() {
                 <HeroesInFilmRail heroes={heroes} />
               </View>
             ) : null}
+            {/* Web: subtle left-aligned text link instead of a giant filled button */}
             <TouchableOpacity
-              style={[styles.linkBtn, styles.linkBtnWide]}
+              style={styles.tmdbLinkWide}
               onPress={() => Linking.openURL(tmdbUrl)}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
             >
-              <Ionicons name="open-outline" size={14} color="#fff" />
-              <Text style={styles.linkBtnText}>View on TMDB</Text>
+              <Ionicons name="open-outline" size={13} color={COLORS.orange} />
+              <Text style={styles.tmdbLinkTextWide}>View on TMDB</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -243,5 +244,21 @@ const styles = StyleSheet.create({
   linkBtnWide: {
     marginHorizontal: 32,
     marginBottom: 16,
+  },
+  // Web: subtle TMDB link (text + icon, left-aligned) instead of full-width filled button
+  tmdbLinkWide: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    marginHorizontal: 32,
+    marginBottom: 16,
+    paddingVertical: 4,
+  },
+  tmdbLinkTextWide: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 13,
+    color: COLORS.orange,
+    letterSpacing: 0.2,
   },
 });
