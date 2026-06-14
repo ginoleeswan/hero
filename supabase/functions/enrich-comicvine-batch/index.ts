@@ -92,10 +92,12 @@ async function enrichHero(
   let cvId = hero.comicvine_id;
   let summary: string | null = null;
   let publisher: string | null = null;
+  let charImageUrl: string | null = null;
   let firstIssueId: string | null = null;
 
   const CHAR_FIELDS = [
     'id',
+    'image',
     'deck',
     'publisher',
     'first_appeared_in_issue',
@@ -151,6 +153,11 @@ async function enrichHero(
 
   summary = (d.deck as string | null) ?? null;
   publisher = (d.publisher as { name?: string } | null)?.name ?? null;
+  // Character art — store the largest variant into image_url (the source the AI
+  // portrait generator reads). Only set when ComicVine returns art (never null it).
+  const cvImage = d.image as Record<string, string> | null;
+  charImageUrl =
+    cvImage?.super_url ?? cvImage?.original_url ?? cvImage?.screen_large_url ?? cvImage?.medium_url ?? null;
   const fai = d.first_appeared_in_issue as { id?: number | string } | null;
   firstIssueId = fai?.id != null ? String(fai.id) : null;
 
@@ -286,6 +293,7 @@ async function enrichHero(
   await sb
     .from('heroes')
     .update({
+      ...(charImageUrl ? { image_url: charImageUrl } : {}),
       summary,
       publisher,
       comicvine_status: 'done',
