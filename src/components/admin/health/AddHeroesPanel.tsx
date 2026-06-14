@@ -9,7 +9,6 @@ import { COLORS } from '../../../constants/colors';
 import { Panel } from './Panel';
 import { HeroThumb } from './atoms';
 import { InfoTip } from './InfoTip';
-import { BuildBoard } from './BuildBoard';
 import {
   searchComicvineCharacters,
   searchComicvineGroups,
@@ -31,9 +30,8 @@ const MODES: { key: Mode; label: string }[] = [
 ];
 
 export function AddHeroesPanel({
-  flash, onAdded,
-}: { flash: Flash; onAdded: () => void }) {
-  const [building, setBuilding] = useState<string[] | null>(null);
+  flash, onAdded, onBuild,
+}: { flash: Flash; onAdded: () => void; onBuild: (heroIds: string[]) => void }) {
   const [mode, setMode] = useState<Mode>('name');
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -235,15 +233,11 @@ export function AddHeroesPanel({
         <View style={styles.loopBar}>
           <Ionicons name="information-circle" size={15} color={COLORS.orange} />
           <Text style={styles.loopText}>{addedSession.size} added this session.</Text>
-          <Pressable onPress={() => setBuilding([...addedSession].map((cid) => `cv-${cid}`))} style={styles.loopBtn}>
+          <Pressable onPress={() => onBuild([...addedSession].map((cid) => `cv-${cid}`))} style={styles.loopBtn}>
             <Ionicons name="construct" size={12} color="#fff" />
             <Text style={styles.loopBtnText}>Build now</Text>
           </Pressable>
         </View>
-      ) : null}
-
-      {building ? (
-        <BuildBoard heroIds={building} flash={flash} onClose={() => setBuilding(null)} />
       ) : null}
     </Panel>
   );

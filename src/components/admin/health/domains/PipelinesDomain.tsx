@@ -2,6 +2,7 @@
 // Compact 2-D dashboard: pipeline cards (with ring gauges) sit beside the live
 // activity log so running a drain and seeing its result need no scrolling; crons
 // and the review queue pair below; full run history underneath.
+import { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,7 +14,9 @@ import { ActivityLog } from '../ActivityLog';
 import { useRouter } from 'expo-router';
 import { InfoTip } from '../InfoTip';
 import { AddHeroesPanel } from '../AddHeroesPanel';
+import { BuildBoard } from '../BuildBoard';
 import { HeroThumb } from '../atoms';
+import { getPendingBuildIds } from '../../../../lib/db/build';
 import { relTime, runTypeLabel, type LogTone } from '../format';
 import type {
   AmbiguousHero,
@@ -176,11 +179,19 @@ export function PipelinesDomain({
   narrow: boolean;
 }) {
   const router = useRouter();
+  const [buildIds, setBuildIds] = useState<string[] | null>(null);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const p = progress ?? {
     heroesTotal: 0, comicvineDone: 0, resolved: 0, ambiguous: 0, unresolved: 0,
     enriched: 0, filmTitles: 0, tvTitles: 0, gameTitles: 0, mediaDone: 0,
   };
   const failed = h.cvStatus.failed ?? 0;
+
+  const buildNextPending = async () => {
+    const ids = await getPendingBuildIds(25);
+    if (ids.length === 0) { flash('Nothing pending to build.', 'info'); return; }
+    setBuildIds(ids);
+  };
 
   // Assembly line: each step feeds the next, so they render top-to-bottom in order.
   const pipelines: Pipeline[] = [
@@ -213,15 +224,15 @@ export function PipelinesDomain({
 
   return (
     <Bento>
-      {/* Step 0 — bring new characters in from ComicVine. */}
-      <AddHeroesPanel flash={flash} onAdded={onHeroesAdded} />
+      {/* 1 · Add characters — name / team / series, multi-select, build live. */}
+      <AddHeroesPanel flash={flash} onAdded={onHeroesAdded} onBuild={setBuildIds} />
 
-      {/* Top: controls + their live feedback, side by side. */}
+      {/* 2 · Build & status — backlog runs + live build, beside what needs you. */}
       <Bento.Row narrow={narrow}>
         <Panel
-          title="Pipelines"
-          hint="An assembly line — run top to bottom; each step feeds the next."
-          action={<InfoTip text="Each step pulls a different kind of data and depends on the one above it. Run 1 → 2 → 3 in order; step 4 (TMDB) runs itself. The ring is how complete each step is." />}
+          title="2 · Build & status"
+          hint="Each ring is a stage's coverage. Press a ring to run that stage over the backlog, or build the next batch live."
+          action={<InfoTip text="Each ring is a stage and how complete it is. Press a ring to run that stage across the whole backlog (a batch drain). 'Build next 25' opens the live board for the next pending heroes. Stages depend on the one before them." />}
           style={styles.flex15}
         >
           <View style={styles.flow}>
@@ -259,18 +270,98 @@ export function PipelinesDomain({
             </Pressable>
             <InfoTip text="Re-queues heroes whose last ComicVine fetch errored, so the next run tries them again." size={13} />
           </View>
+          {/* Live, watched build of the next pending heroes (the global backlog). */}
+          <View style={styles.buildRow}>
+            <Pressable onPress={buildNextPending} disabled={!!buildIds} style={[styles.buildBtn, !!buildIds && styles.dim]}>
+              <Ionicons name="construct" size={14} color="#fff" />
+              <Text style={styles.buildBtnText}>Build next 25 pending</Text>
+            </Pressable>
+            <InfoTip text="Opens the live Build board for the next 25 heroes that still need a stage — you watch them go through ComicVine → Resolve → Appearances, with Pause/Stop. (Your just-added characters get their own Build button up in Add.)" size={13} />
+          </View>
         </Panel>
 
+        <Panel
+          title="Needs you"
+          hint={ambiguous.length > 0 ? `${ambiguous.length} to review` : 'Decisions land here'}
+          action={<InfoTip text="Heroes the resolver couldn't confidently match to one Wikidata identity. Each chip is a candidate (QID · confidence score) — click the correct one to lock it in and let it be enriched." />}
+          style={styles.flex1}
+        >
+          {ambiguous.length === 0 ? (
+            <Text style={styles.empty}>All clear — nothing waiting on you.</Text>
+          ) : (
+            <ScrollView style={styles.reviewScroll} nestedScrollEnabled showsVerticalScrollIndicator>
+            {ambiguous.map((hero) => {
+              const busyThis = busy === `resolveqid-${hero.id}`;
+              return (
+                <View key={hero.id} style={styles.reviewRow}>
+                  <View style={styles.reviewWho}>
+                    <HeroThumb uri={hero.imageUrl} width={30} height={40} radius={6} />
+                    <View style={styles.reviewMeta}>
+                      <Text style={styles.reviewName} numberOfLines={1}>{hero.name}</Text>
+                      <Text style={styles.reviewPub} numberOfLines={1}>{hero.publisher ?? '—'}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.candidates}>
+                    {hero.candidates.map((c) => (
+                      <Pressable
+                        key={c.qid}
+                        onPress={() => onResolveQid(hero.id, c.qid, hero.name)}
+                        disabled={!!busy}
+                        style={[styles.chip, !!busy && styles.dim]}
+                      >
+                        <Text style={styles.chipText}>{busyThis ? '…' : `${c.qid} · ${c.score.toFixed(2)}`}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              );
+            })}
+            </ScrollView>
+          )}
+        </Panel>
+      </Bento.Row>
+
+      {/* 3 · Monitor — live log + who just got built. */}
+      <Bento.Row narrow={narrow}>
         <View style={styles.flex1}>
           <ActivityLog log={log} clearLog={clearLog} />
         </View>
+        <Panel
+          title="Recently built"
+          hint="The exact heroes each run just touched — click one to open it."
+          action={<InfoTip text="Every hero a run processed is logged here, newest first; the chip shows which stage did it and when. Use it to confirm a build actually did what you expected." />}
+          style={styles.flex1}
+        >
+          {recentlyEnriched.length === 0 ? (
+            <Text style={styles.empty}>Nothing yet — build some heroes and they appear here.</Text>
+          ) : (
+            <ScrollView style={styles.reviewScroll} nestedScrollEnabled>
+              <View style={styles.reGrid}>
+                {recentlyEnriched.map((r, i) => (
+                  <Pressable key={`${r.heroId}-${i}`} onPress={() => router.push(`/character/${r.heroId}`)} style={styles.reCard}>
+                    <HeroThumb uri={r.imageUrl} width={30} height={40} radius={6} />
+                    <View style={styles.reMeta}>
+                      <Text style={styles.reName} numberOfLines={1}>{r.name}</Text>
+                      <Text style={styles.reSub} numberOfLines={1}>{runTypeLabel(r.runType)}{r.at ? ` · ${relTime(r.at)}` : ''}</Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
+          )}
+        </Panel>
       </Bento.Row>
 
-      {/* Middle: scheduled automation + the human review queue. */}
-      <Bento.Row narrow={narrow}>
+      {/* Advanced — automation + history, collapsed by default. */}
+      <Pressable onPress={() => setAdvancedOpen((v) => !v)} style={styles.advHead}>
+        <Ionicons name={advancedOpen ? 'chevron-down' : 'chevron-forward'} size={16} color={COLORS.navy} />
+        <Text style={styles.advHeadText}>Advanced · scheduled crons & run history</Text>
+      </Pressable>
+      {advancedOpen ? (
+        <Bento.Row narrow={narrow}>
         <Panel
           title="Scheduled crons"
-          hint="Background jobs that run the drains for you."
+          hint="Background jobs that fill the backlog for you."
           action={<InfoTip text="These jobs run automatically on a schedule. A green dot means active; Stop pauses it (keeping its schedule), Start resumes it. Hover the ? on a job to see what it does." />}
           style={styles.flex1}
         >
@@ -312,86 +403,26 @@ export function PipelinesDomain({
         </Panel>
 
         <Panel
-          title="Needs attention"
-          hint={ambiguous.length > 0 ? `${ambiguous.length} to review` : 'Human decisions land here'}
-          action={<InfoTip text="Heroes the resolver couldn't confidently match to one Wikidata identity. Each chip is a candidate (QID · confidence score) — click the correct one to lock it in and let it be enriched." />}
+          title="Run history"
+          hint={`${runsTotal.toLocaleString()} runs · cron + manual`}
+          action={<InfoTip text="Every drain that has run — automatic crons and manual batches alike — newest first. Hover a row to see what it processed." />}
           style={styles.flex1}
         >
-          {ambiguous.length === 0 ? (
-            <Text style={styles.empty}>All clear — nothing waiting on you.</Text>
-          ) : (
-            <ScrollView style={styles.reviewScroll} nestedScrollEnabled showsVerticalScrollIndicator>
-            {ambiguous.map((hero) => {
-              const busyThis = busy === `resolveqid-${hero.id}`;
-              return (
-                <View key={hero.id} style={styles.reviewRow}>
-                  <View style={styles.reviewWho}>
-                    <HeroThumb uri={hero.imageUrl} width={30} height={40} radius={6} />
-                    <View style={styles.reviewMeta}>
-                      <Text style={styles.reviewName} numberOfLines={1}>{hero.name}</Text>
-                      <Text style={styles.reviewPub} numberOfLines={1}>{hero.publisher ?? '—'}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.candidates}>
-                    {hero.candidates.map((c) => (
-                      <Pressable
-                        key={c.qid}
-                        onPress={() => onResolveQid(hero.id, c.qid, hero.name)}
-                        disabled={!!busy}
-                        style={[styles.chip, !!busy && styles.dim]}
-                      >
-                        <Text style={styles.chipText}>{busyThis ? '…' : `${c.qid} · ${c.score.toFixed(2)}`}</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-              );
-            })}
-            </ScrollView>
-          )}
+          <RunHistory
+            runs={runs}
+            total={runsTotal}
+            narrow={narrow}
+            loading={runsLoading}
+            fetching={runsFetching}
+            onLoadMore={onLoadMore}
+          />
         </Panel>
       </Bento.Row>
+      ) : null}
 
-      {/* Who actually got enriched, newest first (per-run audit log). */}
-      <Panel
-        title="Recently enriched"
-        hint="The exact heroes each drain just touched — click one to open it."
-        action={<InfoTip text="Every hero a run processed is logged here. Newest first; the chip shows which pipeline did it and when. Use this to confirm a run actually did what you expected." />}
-      >
-        {recentlyEnriched.length === 0 ? (
-          <Text style={styles.empty}>Nothing yet — run a drain and the heroes it touches appear here.</Text>
-        ) : (
-          <View style={styles.reGrid}>
-            {recentlyEnriched.map((r, i) => (
-              <Pressable
-                key={`${r.heroId}-${i}`}
-                onPress={() => router.push(`/character/${r.heroId}`)}
-                style={styles.reCard}
-              >
-                <HeroThumb uri={r.imageUrl} width={30} height={40} radius={6} />
-                <View style={styles.reMeta}>
-                  <Text style={styles.reName} numberOfLines={1}>{r.name}</Text>
-                  <Text style={styles.reSub} numberOfLines={1}>
-                    {runTypeLabel(r.runType)}{r.at ? ` · ${relTime(r.at)}` : ''}
-                  </Text>
-                </View>
-              </Pressable>
-            ))}
-          </View>
-        )}
-      </Panel>
-
-      {/* Bottom: full run history across every drain. */}
-      <Panel title="Run history" hint={`${runsTotal.toLocaleString()} runs · cron + manual · auto-refreshes`}>
-        <RunHistory
-          runs={runs}
-          total={runsTotal}
-          narrow={narrow}
-          loading={runsLoading}
-          fetching={runsFetching}
-          onLoadMore={onLoadMore}
-        />
-      </Panel>
+      {buildIds ? (
+        <BuildBoard heroIds={buildIds} flash={flash} onClose={() => setBuildIds(null)} />
+      ) : null}
     </Bento>
   );
 }
@@ -423,6 +454,18 @@ const styles = StyleSheet.create({
   nodePct: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.orange },
   nodeCount: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey },
   dim: { opacity: 0.4 },
+
+  // "Build next N" — opens the live board for the global backlog.
+  buildRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14 },
+  buildBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: COLORS.orange,
+    borderRadius: 10, paddingHorizontal: 15, paddingVertical: 10,
+  },
+  buildBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: '#fff' },
+
+  // Advanced (crons + run history) collapsible header.
+  advHead: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingVertical: 6, marginTop: 2 },
+  advHeadText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
 
   // ComicVine compact controls
   cvControls: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 12 },

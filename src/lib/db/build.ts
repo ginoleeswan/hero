@@ -61,6 +61,21 @@ export const stepResolve = (id: string) =>
 export const stepEnrich = (id: string) =>
   invoke('enrich-wikidata-batch', { heroId: id, triggeredBy: 'build' });
 
+/** The next heroes that still need a build step, highest-priority first (capped).
+ *  Powers the global "Build next N" button (the Add panel builds your added set). */
+export async function getPendingBuildIds(limit = 25): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('id, comicvine_status, wikidata_status, wikidata_enriched_at, issue_count')
+    .order('issue_count', { ascending: false, nullsFirst: false })
+    .limit(limit * 5);
+  if (error || !data) return [];
+  return (data as Array<HeroRow & { issue_count: number | null }>)
+    .filter((h) => ACTIONABLE.includes(stageOf(h)))
+    .slice(0, limit)
+    .map((h) => h.id);
+}
+
 /** ComicVine API units used in the last hour (its ~200/hr cap is the gate). */
 export async function comicvineUsageLastHour(): Promise<number> {
   const since = new Date(Date.now() - 3600_000).toISOString();
