@@ -182,6 +182,11 @@ export function PipelinesDomain({
     setBuildIds(ids);
   };
 
+  // Open a candidate's Wikidata page in a new tab so you can eyeball the match.
+  const openWiki = (qid: string) => {
+    if (typeof window !== 'undefined') window.open(`https://www.wikidata.org/wiki/${qid}`, '_blank', 'noopener');
+  };
+
   // Pending (still actionable) at each stage, in funnel order.
   const cvPending = Math.max(0, p.heroesTotal - p.comicvineDone - failed);
   const resolvePending = Math.max(0, p.comicvineDone - p.resolved - p.ambiguous - p.unresolved);
@@ -297,14 +302,23 @@ export function PipelinesDomain({
                   </View>
                   <View style={styles.candidates}>
                     {hero.candidates.map((c) => (
-                      <Pressable
-                        key={c.qid}
-                        onPress={() => onResolveQid(hero.id, c.qid, hero.name)}
-                        disabled={!!busy}
-                        style={[styles.chip, !!busy && styles.dim]}
-                      >
-                        <Text style={styles.chipText}>{busyThis ? '…' : `${c.qid} · ${c.score.toFixed(2)}`}</Text>
-                      </Pressable>
+                      <View key={c.qid} style={styles.cand}>
+                        <Pressable
+                          onPress={() => onResolveQid(hero.id, c.qid, hero.name)}
+                          disabled={!!busy}
+                          style={[styles.chip, !!busy && styles.dim]}
+                          accessibilityLabel={`Pick ${c.qid} for ${hero.name}`}
+                        >
+                          <Text style={styles.chipText}>{busyThis ? '…' : `${c.qid} · ${c.score.toFixed(2)}`}</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => openWiki(c.qid)}
+                          style={styles.chipLink}
+                          accessibilityLabel={`Open ${c.qid} on Wikidata to verify`}
+                        >
+                          <Ionicons name="open-outline" size={13} color={COLORS.navy} />
+                        </Pressable>
+                      </View>
                     ))}
                   </View>
                 </View>
@@ -524,6 +538,8 @@ const styles = StyleSheet.create({
   reviewName: { fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: COLORS.black },
   reviewPub: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: COLORS.grey },
   candidates: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: { backgroundColor: COLORS.navy + '12', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 },
+  cand: { flexDirection: 'row', alignItems: 'stretch', gap: 1 },
+  chip: { backgroundColor: COLORS.navy + '12', borderTopLeftRadius: 8, borderBottomLeftRadius: 8, paddingHorizontal: 9, paddingVertical: 5, justifyContent: 'center' },
   chipText: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: COLORS.navy },
+  chipLink: { backgroundColor: COLORS.navy + '12', borderTopRightRadius: 8, borderBottomRightRadius: 8, paddingHorizontal: 7, alignItems: 'center', justifyContent: 'center' },
 });
