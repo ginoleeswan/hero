@@ -1,13 +1,21 @@
 // Small hover tooltip for the (web) command center. A "?" icon that reveals an
-// explanation bubble on hover. The bubble is rendered with fixed positioning at
-// the icon's measured screen position so it escapes every parent's stacking
-// context / overflow and never hides behind sibling panels.
-import { useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+// explanation bubble on hover. The bubble is portalled to document.body and
+// positioned (fixed) at the icon's measured screen coordinates, so it sits above
+// every panel regardless of stacking context / overflow.
+import { useRef, useState, type ReactNode } from 'react';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 
 const BUBBLE_W = 240;
+
+// Web-only: portal the bubble out to <body> so no panel can paint over it.
+// Guarded require keeps react-dom out of the native runtime path.
+let portal: ((node: ReactNode, container: Element) => ReactNode) | null = null;
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  portal = require('react-dom').createPortal;
+}
 
 export function InfoTip({ text, size = 14 }: { text: string; size?: number }) {
   const ref = useRef<View>(null);
@@ -19,13 +27,19 @@ export function InfoTip({ text, size = 14 }: { text: string; size?: number }) {
     } | null;
     if (node?.measureInWindow) {
       node.measureInWindow((x, y, w, h) => {
-        // Right-align the bubble to the icon, clamp to the left viewport edge.
         setPos({ top: y + h + 6, left: Math.max(8, x + w - BUBBLE_W) });
       });
     } else {
       setPos({ top: 0, left: 0 });
     }
   };
+
+  const bubble =
+    pos != null ? (
+      <View style={[styles.bubble, { top: pos.top, left: pos.left }] as object} pointerEvents="none">
+        <Text style={styles.bubbleText}>{text}</Text>
+      </View>
+    ) : null;
 
   return (
     <>
@@ -39,11 +53,7 @@ export function InfoTip({ text, size = 14 }: { text: string; size?: number }) {
       >
         <Ionicons name="help-circle-outline" size={size} color={COLORS.grey} />
       </Pressable>
-      {pos ? (
-        <View style={[styles.bubble, { top: pos.top, left: pos.left }] as object} pointerEvents="none">
-          <Text style={styles.bubbleText}>{text}</Text>
-        </View>
-      ) : null}
+      {bubble && portal ? portal(bubble, document.body) : bubble}
     </>
   );
 }
