@@ -331,8 +331,7 @@ SELECT ?item ?itemLabel ?desc
 WHERE {
   VALUES ?item { ${values} }
   ?item wdt:P31/wdt:P279* wd:Q95074 .
-  OPTIONAL { ?item wdt:P123 ?pub. ?pub rdfs:label ?pubLabel. FILTER(LANG(?pubLabel)="en") }
-  OPTIONAL { ?item wdt:P1080 ?uni. ?uni rdfs:label ?pubLabel2. FILTER(LANG(?pubLabel2)="en") }
+  OPTIONAL { ?item (wdt:P123|wdt:P1080) ?pub. ?pub rdfs:label ?pubLabel. FILTER(LANG(?pubLabel)="en") }
   OPTIONAL { ?item wdt:P170 ?cr. ?cr rdfs:label ?creatorLabel. FILTER(LANG(?creatorLabel)="en") }
   OPTIONAL { ?item wdt:P571 ?inception. }
   OPTIONAL { ?item schema:description ?desc. FILTER(LANG(?desc)="en") }
