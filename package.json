@@ -62,6 +62,7 @@
     "react-native-touchable-scale": "^2.2.0",
     "react-native-url-polyfill": "^3.0.0",
     "react-native-web": "~0.21.0",
+    "react-native-webview": "13.16.1",
     "react-native-worklets": "0.8.3",
     "sharp": "^0.34.5"
   },

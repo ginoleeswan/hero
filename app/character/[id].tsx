@@ -48,6 +48,7 @@ import {
   removeFavourite,
   getHeroFavouriteCount,
 } from '../../src/lib/db/favourites';
+import { getHeroFilms, type HeroFilm } from '../../src/lib/db/films';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useRecordView } from '../../src/hooks/useViewHistory';
 import { HeroImage } from '../../src/components/HeroImage';
@@ -474,6 +475,7 @@ export default function CharacterScreen() {
   const [favourited, setFavourited] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
   const [favCount, setFavCount] = useState<number>(0);
+  const [films, setFilms] = useState<HeroFilm[] | null>(null);
   const [issueCovers, setIssueCovers] = useState<IssueCover[] | null>(null);
   const [galleryLoading, setGalleryLoading] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<{ url: string; caption?: string | null }[]>(
@@ -643,7 +645,7 @@ export default function CharacterScreen() {
     if (hasDossierData(data, !hasFirstVisual)) s.push({ key: 'dossier', label: 'Dossier' });
     if (comicVineLoading || enemyNames.length || allyNames.length || teammateNames.length)
       s.push({ key: 'allies', label: 'Allies' });
-    if (comicVineLoading || data.details.movies?.length)
+    if (comicVineLoading || (films && films.length > 0) || data.details.movies?.length)
       s.push({ key: 'screen', label: 'On Screen' });
     // In Print consolidates the debut feature + cover gallery into one section.
     if (
@@ -657,6 +659,7 @@ export default function CharacterScreen() {
   }, [
     data,
     comicVineLoading,
+    films,
     issueCovers,
     galleryLoading,
     hasFirstVisual,
@@ -674,6 +677,13 @@ export default function CharacterScreen() {
       .then(setFamily)
       .catch(() => setFamily([]));
   }, [id]);
+
+  useEffect(() => {
+    if (!data?.stats.id) return;
+    let active = true;
+    getHeroFilms(data.stats.id).then((f) => { if (active) setFilms(f); });
+    return () => { active = false; };
+  }, [data?.stats.id]);
 
   useEffect(() => {
     if (!id) return;
@@ -1323,6 +1333,15 @@ export default function CharacterScreen() {
                       ))}
                     </ScrollView>
                   </SkeletonProvider>
+                ) : films && films.length > 0 ? (
+                  <>
+                    <SectionHeader title={`On Screen (${films.length})`} />
+                    <MovieStrip
+                      films={films}
+                      totalCount={films.length}
+                      contentInset={20}
+                    />
+                  </>
                 ) : data.details.movies?.length ? (
                   <>
                     <SectionHeader

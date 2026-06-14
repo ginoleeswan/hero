@@ -6,6 +6,7 @@ import type { MovieAppearance } from '../types';
 import { COLORS } from '../constants/colors';
 import { MovieDetailSheet } from './MovieDetailSheet';
 import { MovieGridModal } from './MovieGridModal';
+import type { HeroFilm } from '../lib/db/films';
 
 const FEATURED_W = 120;
 const FEATURED_H = 180;
@@ -13,8 +14,19 @@ const CARD_W = 100;
 const CARD_H = 150;
 const INITIAL_COUNT = 10;
 
+interface StripItem {
+  key: string;
+  title: string;
+  year: string | null;
+  posterUrl: string | null;
+  hasTrailer: boolean;
+  film?: HeroFilm;
+  movie?: MovieAppearance;
+}
+
 interface Props {
-  movies: MovieAppearance[];
+  films?: HeroFilm[];
+  movies?: MovieAppearance[];
   totalCount: number;
   // Horizontal inset of the first/last card from the scroll viewport edges.
   contentInset?: number;
@@ -23,8 +35,8 @@ interface Props {
   bleedMargin?: number;
 }
 
-function sortByYear(movies: MovieAppearance[]): MovieAppearance[] {
-  return [...movies].sort((a, b) => {
+function sortItems(items: StripItem[]): StripItem[] {
+  return [...items].sort((a, b) => {
     if (!a.year && !b.year) return 0;
     if (!a.year) return 1;
     if (!b.year) return -1;
@@ -32,12 +44,36 @@ function sortByYear(movies: MovieAppearance[]): MovieAppearance[] {
   });
 }
 
-function MovieCard({
-  movie,
+function buildItems(films?: HeroFilm[], movies?: MovieAppearance[]): StripItem[] {
+  if (films && films.length > 0) {
+    return films.map((f) => ({
+      key: f.tmdbId,
+      title: f.title,
+      year: f.year ? String(f.year) : null,
+      posterUrl: f.posterUrl,
+      hasTrailer: !!f.trailerKey,
+      film: f,
+    }));
+  }
+  if (movies && movies.length > 0) {
+    return movies.map((m) => ({
+      key: m.name,
+      title: m.name,
+      year: m.year ?? null,
+      posterUrl: m.imageUrl ?? null,
+      hasTrailer: false,
+      movie: m,
+    }));
+  }
+  return [];
+}
+
+function StripCard({
+  item,
   featured,
   onPress,
 }: {
-  movie: MovieAppearance;
+  item: StripItem;
   featured?: boolean;
   onPress: () => void;
 }) {
@@ -70,9 +106,9 @@ function MovieCard({
           { width: w, height: h },
         ]}
       >
-        {movie.imageUrl ? (
+        {item.posterUrl ? (
           <Image
-            source={{ uri: movie.imageUrl }}
+            source={{ uri: item.posterUrl }}
             style={{ width: w, height: h }}
             contentFit="cover"
             cachePolicy="memory-disk"
@@ -81,7 +117,7 @@ function MovieCard({
           <View style={[styles.placeholder, { width: w, height: h }]}>
             <Ionicons name="film-outline" size={featured ? 28 : 22} color={COLORS.grey} />
             <Text style={[styles.placeholderName, { width: w - 16 }]} numberOfLines={3}>
-              {movie.name}
+              {item.title}
             </Text>
           </View>
         )}
@@ -90,32 +126,49 @@ function MovieCard({
             <Text style={styles.firstBadgeText}>LATEST</Text>
           </View>
         ) : null}
+        {item.hasTrailer ? (
+          <View style={styles.trailerBadge}>
+            <Ionicons name="play-circle" size={22} color="#fff" />
+          </View>
+        ) : null}
       </View>
       <Text style={[styles.title, { width: w }]} numberOfLines={2}>
-        {movie.name}
+        {item.title}
       </Text>
-      {movie.year ? <Text style={styles.year}>{movie.year}</Text> : null}
+      {item.year ? <Text style={styles.year}>{item.year}</Text> : null}
     </Pressable>
   );
 }
 
-export function MovieStrip({ movies, totalCount, contentInset = 16, bleedMargin = 0 }: Props) {
-  const [selectedMovie, setSelectedMovie] = useState<MovieAppearance | null>(null);
+export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleedMargin = 0 }: Props) {
+  const [selectedItem, setSelectedItem] = useState<StripItem | null>(null);
   const [gridVisible, setGridVisible] = useState(false);
 
-  const sorted = sortByYear(movies);
+  const allItems = buildItems(films, movies);
+  const sorted = sortItems(allItems);
 
-  // Keep selectedMovie in sync when movies prop updates (re-enrichment)
+  // Keep selectedItem in sync when films/movies prop updates (re-enrichment).
+  // Only applies to legacy movie path (films are immutable snapshots).
   useEffect(() => {
-    if (!selectedMovie) return;
-    const updated = movies.find(
-      (m) => m.name === selectedMovie.name && m.year === selectedMovie.year,
+    if (!selectedItem || selectedItem.movie) return;
+    const updated = movies?.find(
+      (m) => m.name === selectedItem.title && m.year === selectedItem.year,
     );
-    if (updated && updated !== selectedMovie) setSelectedMovie(updated);
+    if (updated && updated !== selectedItem.movie) {
+      setSelectedItem((prev) =>
+        prev ? { ...prev, movie: updated, posterUrl: updated.imageUrl ?? null } : prev,
+      );
+    }
   }, [movies]);
+
   const visible = sorted.slice(0, INITIAL_COUNT);
   const overflow = totalCount - visible.length;
   const [featured, ...rest] = visible;
+
+  // For the legacy grid modal we still need MovieAppearance[].
+  const legacyMovies: MovieAppearance[] = sorted
+    .filter((it) => it.movie != null)
+    .map((it) => it.movie!);
 
   return (
     <>
@@ -126,15 +179,15 @@ export function MovieStrip({ movies, totalCount, contentInset = 16, bleedMargin 
         contentContainerStyle={[styles.container, { paddingHorizontal: contentInset }]}
       >
         {featured ? (
-          <MovieCard
+          <StripCard
             key="featured"
-            movie={featured}
+            item={featured}
             featured
-            onPress={() => setSelectedMovie(featured)}
+            onPress={() => setSelectedItem(featured)}
           />
         ) : null}
-        {rest.map((movie, i) => (
-          <MovieCard key={i} movie={movie} onPress={() => setSelectedMovie(movie)} />
+        {rest.map((item, i) => (
+          <StripCard key={item.key + i} item={item} onPress={() => setSelectedItem(item)} />
         ))}
         {overflow > 0 ? (
           <Pressable
@@ -147,17 +200,22 @@ export function MovieStrip({ movies, totalCount, contentInset = 16, bleedMargin 
         ) : null}
       </ScrollView>
 
-      {selectedMovie ? (
-        <MovieDetailSheet movie={selectedMovie} onClose={() => setSelectedMovie(null)} />
+      {selectedItem ? (
+        <MovieDetailSheet
+          film={selectedItem.film}
+          movie={selectedItem.movie}
+          onClose={() => setSelectedItem(null)}
+        />
       ) : null}
 
-      {gridVisible ? (
+      {gridVisible && legacyMovies.length > 0 ? (
         <MovieGridModal
-          movies={sorted}
+          movies={legacyMovies}
           onClose={() => setGridVisible(false)}
           onSelectMovie={(movie) => {
             setGridVisible(false);
-            setSelectedMovie(movie);
+            const found = sorted.find((it) => it.movie === movie) ?? null;
+            setSelectedItem(found);
           }}
         />
       ) : null}
@@ -220,6 +278,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     letterSpacing: 0.5,
   },
+  trailerBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+  },
   title: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 11,
@@ -241,7 +304,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   overflowCount: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 18,
     color: COLORS.navy,
     textAlign: 'center',
