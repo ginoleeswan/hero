@@ -21,9 +21,21 @@ import {
   type CvGroup,
   type GroupResource,
 } from '../../../lib/db/cvIngest';
+import { getBuildHeroes, type BuildStage } from '../../../lib/db/build';
 
 // A character added during this session — enough to show it, build it, or undo it.
 type AddedHero = { id: string; name: string; image: string | null };
+
+// Live build-stage badge for an added hero (updates as the pipeline runs).
+const STAGE_BADGE: Record<BuildStage, { label: string; color: string }> = {
+  comicvine: { label: 'ComicVine', color: COLORS.orange },
+  resolve: { label: 'resolving', color: COLORS.orange },
+  appearances: { label: 'appearances', color: COLORS.orange },
+  review: { label: 'needs review', color: COLORS.yellow },
+  unresolved: { label: 'no match', color: COLORS.grey },
+  failed: { label: 'failed', color: COLORS.red },
+  done: { label: 'built', color: COLORS.green },
+};
 
 type Mode = 'name' | 'team' | 'volume' | 'person' | 'movie';
 type Flash = (msg: string, tone?: 'info' | 'success' | 'error' | 'pending') => void;
@@ -65,7 +77,24 @@ export function AddHeroesPanel({
   const [addedSession, setAddedSession] = useState<AddedHero[]>([]);
   const [removing, setRemoving] = useState<Set<string>>(new Set());
   const [rosterOpen, setRosterOpen] = useState(false);
+  const [stages, setStages] = useState<Record<string, BuildStage>>({});
   const [newOnly, setNewOnly] = useState(true);
+
+  // Poll the live build stage of this session's heroes so the roster reflects
+  // progress (queued → ComicVine → … → built) and doesn't sit stale after a build.
+  useEffect(() => {
+    if (addedSession.length === 0) { setStages({}); return; }
+    let alive = true;
+    const ids = addedSession.map((a) => `cv-${a.id}`);
+    const tick = async () => {
+      const rows = await getBuildHeroes(ids);
+      if (alive) setStages(Object.fromEntries(rows.map((r) => [r.id, r.stage])));
+    };
+    tick();
+    const t = setInterval(tick, 4000);
+    return () => { alive = false; clearInterval(t); };
+  }, [addedSession]);
+  const builtCount = addedSession.filter((a) => stages[`cv-${a.id}`] === 'done').length;
 
   const addedIds = useMemo(() => new Set(addedSession.map((a) => a.id)), [addedSession]);
   const reset = () => { setChars([]); setGroups([]); setGroup(null); setMembers([]); setSelected(new Set()); };
@@ -190,7 +219,11 @@ export function AddHeroesPanel({
         <ScrollView style={styles.scroll} nestedScrollEnabled>
           {groups.map((g) => (
             <Pressable key={g.id} onPress={() => openGroup(g)} style={styles.row}>
-              <View style={styles.groupIcon}><Ionicons name={GROUP_ICON[mode] ?? 'book'} size={16} color={COLORS.orange} /></View>
+              {g.image ? (
+                <HeroThumb uri={g.image} width={34} height={44} radius={7} />
+              ) : (
+                <View style={styles.groupIcon}><Ionicons name={GROUP_ICON[mode] ?? 'book'} size={16} color={COLORS.orange} /></View>
+              )}
               <View style={styles.meta}>
                 <Text style={styles.name} numberOfLines={1}>{g.name}</Text>
                 <Text style={styles.sub} numberOfLines={1}>
@@ -268,6 +301,7 @@ export function AddHeroesPanel({
             <Ionicons name="information-circle" size={15} color={COLORS.orange} />
             <Text style={styles.loopText}>
               {addedSession.length} added this session
+              {builtCount > 0 ? ` · ${builtCount} built` : ''}
             </Text>
             <Ionicons name={rosterOpen ? 'chevron-up' : 'chevron-down'} size={15} color={COLORS.navy} />
             <Pressable onPress={() => onBuild(addedSession.map((a) => `cv-${a.id}`))} style={styles.loopBtn}>
@@ -283,6 +317,13 @@ export function AddHeroesPanel({
                   <View key={a.id} style={styles.addedRow}>
                     <HeroThumb uri={a.image} width={28} height={37} radius={5} />
                     <Text style={styles.addedName} numberOfLines={1}>{a.name}</Text>
+                    {(() => {
+                      const st = stages[`cv-${a.id}`];
+                      const badge = st ? STAGE_BADGE[st] : null;
+                      return badge ? (
+                        <Text style={[styles.stageBadge, { color: badge.color }]} numberOfLines={1}>{badge.label}</Text>
+                      ) : null;
+                    })()}
                     <Pressable
                       onPress={() => removeAdded(a)}
                       disabled={busyThis}
@@ -378,6 +419,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.06)',
   },
   addedName: { flex: 1, minWidth: 0, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
+  stageBadge: { fontFamily: 'Nunito_700Bold', fontSize: 11, fontVariant: ['tabular-nums'] },
   removeBtn: {
     width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
     backgroundColor: COLORS.red + '12',

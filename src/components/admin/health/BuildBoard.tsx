@@ -15,6 +15,7 @@ import {
 const wikiUrl = (qid: string) => `https://www.wikidata.org/wiki/${qid}`;
 
 const CV_CAP = 190; // ComicVine ~200/hr; leave headroom
+const CONCURRENCY = 3; // worker lanes — ComicVine stays single-in-flight (see cvBusy)
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const STAGE_LABEL: Record<BuildStage, string> = {
@@ -45,44 +46,79 @@ export function BuildBoard({
   const [heroes, setHeroes] = useState<BuildHero[]>([]);
   const [paused, setPaused] = useState(false);
   const [rateLimited, setRateLimited] = useState(false);
-  const [currentId, setCurrentId] = useState<string | null>(null);
+  const [activeIds, setActiveIds] = useState<Set<string>>(new Set());
   const [resolving, setResolving] = useState<Set<string>>(new Set());
   const [done, setDone] = useState(false);
   const ctrl = useRef({ stopped: false, paused: false });
   const running = useRef(false);
+  const inFlight = useRef<Set<string>>(new Set());
+  const cvBusy = useRef(false); // only one ComicVine call at a time (rate limit)
   const attempts = useRef<Map<string, number>>(new Map());
 
-  // The worker: drain the working set until nothing is actionable, then stop.
-  // Re-runnable — picking a Wikidata match inline (below) re-arms and calls it so
-  // the just-resolved hero continues straight into Appearances.
+  // The worker pool: a few lanes drain the set concurrently so the stages
+  // pipeline — hero N+1's ComicVine starts the moment hero N's finishes, while
+  // hero N's Resolve/Appearances run in parallel. ComicVine is capped to one
+  // in-flight call (its rate limit); Wikidata stages parallelise freely.
+  // Re-runnable — an inline match-pick (below) re-arms and calls it.
   const pump = useCallback(async () => {
     if (running.current) return;
     running.current = true;
-    try {
+    setDone(false);
+    const key = (h: BuildHero) => `${h.id}:${h.stage}`;
+    const syncActive = () => setActiveIds(new Set(inFlight.current));
+
+    const lane = async () => {
       while (!ctrl.current.stopped) {
         if (ctrl.current.paused) { await sleep(400); continue; }
         const rows = await getBuildHeroes(heroIds);
         if (ctrl.current.stopped) break;
         setHeroes(rows);
-        const key = (h: BuildHero) => `${h.id}:${h.stage}`;
-        const next = rows.find((h) => ACTIONABLE.includes(h.stage) && (attempts.current.get(key(h)) ?? 0) < 3);
-        if (!next) { setDone(true); setCurrentId(null); break; }
-        setDone(false);
-        setCurrentId(next.id);
+        const next = rows.find((h) =>
+          ACTIONABLE.includes(h.stage)
+          && !inFlight.current.has(h.id)
+          && (attempts.current.get(key(h)) ?? 0) < 3
+          && (h.stage !== 'comicvine' || !cvBusy.current),
+        );
+        if (!next) {
+          // Nothing claimable now; quit only once no lane is still working.
+          if (inFlight.current.size === 0) break;
+          await sleep(350);
+          continue;
+        }
+        // Claim synchronously (no await between find and claim) so two lanes can
+        // never both grab the single ComicVine slot.
+        inFlight.current.add(next.id);
+        if (next.stage === 'comicvine') cvBusy.current = true;
+        syncActive();
+        let counted = true; // a rate-limit wait must not burn one of the 3 attempts
         try {
           if (next.stage === 'comicvine') {
-            if ((await comicvineUsageLastHour()) >= CV_CAP) { setRateLimited(true); await sleep(20_000); continue; }
-            setRateLimited(false);
-            await stepComicvine(next.id, next.name);
+            if ((await comicvineUsageLastHour()) >= CV_CAP) {
+              setRateLimited(true);
+              counted = false;
+              await sleep(20_000);
+            } else {
+              setRateLimited(false);
+              await stepComicvine(next.id, next.name);
+            }
           } else if (next.stage === 'resolve') {
             await stepResolve(next.id);
           } else {
             await stepEnrich(next.id);
           }
-        } catch { /* counted below, skipped after 3 */ }
-        attempts.current.set(key(next), (attempts.current.get(key(next)) ?? 0) + 1);
-        await sleep(400);
+        } catch { /* counted below, skipped after 3 */ } finally {
+          if (counted) attempts.current.set(key(next), (attempts.current.get(key(next)) ?? 0) + 1);
+          inFlight.current.delete(next.id);
+          if (next.stage === 'comicvine') cvBusy.current = false;
+          syncActive();
+        }
+        await sleep(250);
       }
+    };
+
+    try {
+      await Promise.all(Array.from({ length: CONCURRENCY }, lane));
+      if (!ctrl.current.stopped) { setDone(true); syncActive(); }
     } finally {
       running.current = false;
     }
@@ -161,14 +197,14 @@ export function BuildBoard({
 
         <ScrollView style={styles.list} nestedScrollEnabled>
           {heroes.map((h) => (
-            <View key={h.id} style={[styles.row, currentId === h.id && styles.rowActive, h.stage === 'review' && styles.rowReview]}>
+            <View key={h.id} style={[styles.row, activeIds.has(h.id) && styles.rowActive, h.stage === 'review' && styles.rowReview]}>
               <View style={styles.rowMain}>
                 <HeroThumb uri={h.image} width={30} height={40} radius={6} />
                 <Text style={styles.name} numberOfLines={1}>{h.name}</Text>
                 <Text style={[styles.stageText, h.stage === 'done' && { color: COLORS.green }, (h.stage === 'failed') && { color: COLORS.red }, h.stage === 'review' && { color: COLORS.yellow }]} numberOfLines={1}>
-                  {currentId === h.id && ACTIONABLE.includes(h.stage) ? <ActivityIndicator size="small" color={COLORS.orange} /> : STAGE_LABEL[h.stage]}
+                  {activeIds.has(h.id) && ACTIONABLE.includes(h.stage) ? <ActivityIndicator size="small" color={COLORS.orange} /> : STAGE_LABEL[h.stage]}
                 </Text>
-                <Dots stage={h.stage} active={currentId === h.id} />
+                <Dots stage={h.stage} active={activeIds.has(h.id)} />
               </View>
 
               {/* Inline review — pick the right Wikidata match without leaving the board. */}

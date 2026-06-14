@@ -13,6 +13,7 @@ export interface CvCharacter {
 export interface CvGroup {
   id: string;
   name: string;
+  image: string | null;
   members: number | null;
   hint: string | null; // start year (series) or publisher
 }

@@ -59,12 +59,13 @@ serve(async (req: Request) => {
       };
     } else if (kind === 'group') {
       if (query.length < 2 || !PREFIX[resource]) return json({ results: [] });
-      const url = `${CV}/search/?api_key=${KEY}&format=json&query=${encodeURIComponent(query)}&resources=${resource}&field_list=id,name,count_of_team_members,start_year,publisher,deck&limit=15`;
+      const url = `${CV}/search/?api_key=${KEY}&format=json&query=${encodeURIComponent(query)}&resources=${resource}&field_list=id,name,image,count_of_team_members,start_year,publisher,deck&limit=15`;
       const body = await (await fetch(url, { headers: UA })).json();
       out = {
         results: (body.results ?? []).map((r: Record<string, any>) => ({
           id: String(r.id),
           name: r.name,
+          image: img(r.image),
           members: typeof r.count_of_team_members === 'number' ? r.count_of_team_members : null,
           hint:
             r.start_year ? String(r.start_year)
