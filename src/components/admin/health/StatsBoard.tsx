@@ -1,26 +1,72 @@
 // Powerstats generator — drives a working set of heroes through Gemini stats
-// generation, one at a time, live, while you watch. Foreground only (stops if
-// closed). Sibling of BuildBoard; single-step (no funnel). Spend is gated before
-// this ever opens, so here we just run.
+// generation, one at a time, live. A spotlight card shows the hero generating
+// right now with its six dials counting up the instant the result lands; a
+// progress grid below ticks each hero to a check as it finishes. Foreground only
+// (stops if closed). Spend is gated before this opens, so here we just run.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ScrollView, Animated, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { HeroThumb } from './atoms';
-import { getStatsHeroes, stepStats, type StatsHero } from '../../../lib/db/stats';
+import { getStatsHeroes, stepStats, STAT_KEYS, type StatsHero, type HeroStatValues } from '../../../lib/db/stats';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const STATUS_LABEL: Record<StatsHero['status'], string> = {
-  pending: 'queued', done: 'stats ready', failed: 'failed',
-};
+type Spot = { hero: StatsHero; stats: HeroStatValues | null };
+
+// One animated dial: bar fills and the number counts up to the value on reveal.
+function Dial({ label, value }: { label: string; value: number | null }) {
+  const a = useRef(new Animated.Value(0)).current;
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    if (value == null) { a.stopAnimation(); a.setValue(0); setShown(0); return; }
+    const id = a.addListener(({ value: v }) => setShown(Math.round(v)));
+    Animated.timing(a, { toValue: value, duration: 750, useNativeDriver: false }).start();
+    return () => a.removeListener(id);
+  }, [value, a]);
+  const width = a.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'], extrapolate: 'clamp' });
+  return (
+    <View style={styles.dialRow}>
+      <Text style={styles.dialLabel}>{label}</Text>
+      <View style={styles.dialTrack}>
+        <Animated.View style={[styles.dialFill, { width }]} />
+      </View>
+      <Text style={styles.dialVal}>{value == null ? '··' : shown}</Text>
+    </View>
+  );
+}
+
+function Spotlight({ spot }: { spot: Spot }) {
+  const generating = spot.stats == null;
+  return (
+    <View style={styles.spot}>
+      <View style={styles.spotThumbWrap}>
+        <HeroThumb uri={spot.hero.image} width={68} height={90} radius={10} />
+        {generating ? (
+          <View style={styles.spotBadge}><ActivityIndicator size="small" color="#fff" /></View>
+        ) : (
+          <View style={[styles.spotBadge, styles.spotBadgeDone]}><Ionicons name="checkmark" size={14} color="#fff" /></View>
+        )}
+      </View>
+      <View style={styles.spotBody}>
+        <Text style={styles.spotKicker}>{generating ? 'GENERATING NOW' : 'STATS READY'}</Text>
+        <Text style={styles.spotName} numberOfLines={1}>{spot.hero.name}</Text>
+        <View style={styles.dials}>
+          {STAT_KEYS.map((s) => (
+            <Dial key={s.key} label={s.label} value={spot.stats ? spot.stats[s.key] : null} />
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
 
 export function StatsBoard({
   heroIds, onClose, flash,
 }: { heroIds: string[]; onClose: () => void; flash: (m: string, t?: 'info' | 'success' | 'error' | 'pending') => void }) {
   const [heroes, setHeroes] = useState<StatsHero[]>([]);
+  const [spot, setSpot] = useState<Spot | null>(null);
   const [paused, setPaused] = useState(false);
-  const [currentId, setCurrentId] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const ctrl = useRef({ stopped: false, paused: false });
   const running = useRef(false);
@@ -36,14 +82,20 @@ export function StatsBoard({
         if (ctrl.current.stopped) break;
         setHeroes(rows);
         const next = rows.find((h) => h.status === 'pending' && (attempts.current.get(h.id) ?? 0) < 3);
-        if (!next) { setDone(true); setCurrentId(null); break; }
+        if (!next) { setDone(true); setSpot(null); break; }
         setDone(false);
-        setCurrentId(next.id);
+        setSpot({ hero: next, stats: null }); // generating — empty dials
+        let revealed = false;
         try {
           await stepStats(next.id);
+          const fresh = (await getStatsHeroes([next.id]))[0];
+          if (fresh?.status === 'done' && fresh.stats) {
+            setSpot({ hero: fresh, stats: fresh.stats }); // reveal — dials animate up
+            revealed = true;
+          }
         } catch { /* counted below, skipped after 3 */ }
         attempts.current.set(next.id, (attempts.current.get(next.id) ?? 0) + 1);
-        await sleep(400);
+        await sleep(revealed ? 1200 : 400); // linger on a successful reveal
       }
     } finally {
       running.current = false;
@@ -100,19 +152,34 @@ export function StatsBoard({
           </View>
         </View>
 
-        <ScrollView style={styles.list} nestedScrollEnabled>
-          {heroes.map((h) => (
-            <View key={h.id} style={[styles.row, currentId === h.id && styles.rowActive]}>
-              <HeroThumb uri={h.image} width={30} height={40} radius={6} />
-              <Text style={styles.name} numberOfLines={1}>{h.name}</Text>
-              <Text
-                style={[styles.stageText, h.status === 'done' && { color: COLORS.green }, h.status === 'failed' && { color: COLORS.red }]}
-                numberOfLines={1}
-              >
-                {currentId === h.id && h.status === 'pending' ? <ActivityIndicator size="small" color={COLORS.orange} /> : STATUS_LABEL[h.status]}
-              </Text>
-            </View>
-          ))}
+        {spot ? <Spotlight spot={spot} /> : null}
+
+        {done ? (
+          <View style={styles.doneNote}>
+            <Ionicons name="checkmark-done" size={16} color={COLORS.green} />
+            <Text style={styles.doneText}>All {made} done{failed > 0 ? ` · ${failed} failed` : ''}.</Text>
+          </View>
+        ) : null}
+
+        {/* Progress grid — every hero, ticking to a check as it lands. */}
+        <ScrollView style={styles.grid} nestedScrollEnabled contentContainerStyle={styles.gridInner}>
+          {heroes.map((h) => {
+            const isNow = spot?.hero.id === h.id && h.status !== 'done';
+            return (
+              <View key={h.id} style={[styles.chip, h.status === 'done' && styles.chipDone, isNow && styles.chipNow]}>
+                {h.status === 'done' ? (
+                  <Ionicons name="checkmark-circle" size={13} color={COLORS.green} />
+                ) : h.status === 'failed' ? (
+                  <Ionicons name="close-circle" size={13} color={COLORS.red} />
+                ) : isNow ? (
+                  <ActivityIndicator size="small" color={COLORS.orange} />
+                ) : (
+                  <View style={styles.chipDot} />
+                )}
+                <Text style={styles.chipName} numberOfLines={1}>{h.name}</Text>
+              </View>
+            );
+          })}
         </ScrollView>
       </View>
     </View>
@@ -125,7 +192,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(11,18,24,0.55)', alignItems: 'center', justifyContent: 'center', padding: 24,
   },
   card: {
-    width: '100%', maxWidth: 680, maxHeight: '82%', backgroundColor: '#fffdf8',
+    width: '100%', maxWidth: 680, maxHeight: '86%', backgroundColor: '#fffdf8',
     borderRadius: 16, padding: 20, gap: 14, boxShadow: '0 24px 60px rgba(11,18,24,0.4)',
   } as object,
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
@@ -142,9 +209,39 @@ const styles = StyleSheet.create({
   track: { height: 6, borderRadius: 3, backgroundColor: COLORS.navy + '12', overflow: 'hidden' },
   fill: { height: 6, borderRadius: 3, backgroundColor: COLORS.orange },
 
-  list: { maxHeight: 360 } as object,
-  row: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 7, paddingHorizontal: 8, borderRadius: 9, borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.05)' },
-  rowActive: { backgroundColor: COLORS.orange + '10' },
-  name: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: COLORS.black, minWidth: 0 },
-  stageText: { fontFamily: 'Nunito_700Bold', fontSize: 11.5, color: COLORS.grey, width: 110, textAlign: 'right' },
+  // Spotlight
+  spot: {
+    flexDirection: 'row', gap: 14, padding: 14, borderRadius: 14,
+    backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(41,60,67,0.08)',
+  },
+  spotThumbWrap: { position: 'relative' },
+  spotBadge: {
+    position: 'absolute', bottom: -4, right: -4, width: 24, height: 24, borderRadius: 12,
+    backgroundColor: COLORS.orange, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: '#fff',
+  },
+  spotBadgeDone: { backgroundColor: COLORS.green },
+  spotBody: { flex: 1, minWidth: 0, gap: 3, justifyContent: 'center' },
+  spotKicker: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 0.8, color: COLORS.orange },
+  spotName: { fontFamily: 'Flame-Regular', fontSize: 17, color: COLORS.black, marginBottom: 4 },
+  dials: { gap: 5 },
+  dialRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dialLabel: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 0.5, color: COLORS.grey, width: 28 },
+  dialTrack: { flex: 1, height: 7, borderRadius: 4, backgroundColor: '#efe6d6', overflow: 'hidden' },
+  dialFill: { height: 7, borderRadius: 4, backgroundColor: COLORS.orange },
+  dialVal: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy, width: 22, textAlign: 'right', fontVariant: ['tabular-nums'] },
+
+  doneNote: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  doneText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
+
+  grid: { maxHeight: 200 } as object,
+  gridInner: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 5, paddingHorizontal: 9,
+    borderRadius: 8, backgroundColor: '#f3ecdd', maxWidth: 200,
+  },
+  chipDone: { backgroundColor: COLORS.green + '14' },
+  chipNow: { backgroundColor: COLORS.orange + '18' },
+  chipDot: { width: 8, height: 8, borderRadius: 8, backgroundColor: '#d8cdbb' },
+  chipName: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.black, flexShrink: 1, minWidth: 0 },
 });
