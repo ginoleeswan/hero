@@ -15,9 +15,27 @@ export type Database = {
   public: {
     Tables: {
       api_usage: {
-        Row: { api: string; created_at: string; endpoint: string | null; id: number; units: number }
-        Insert: { api: string; created_at?: string; endpoint?: string | null; id?: number; units?: number }
-        Update: { api?: string; created_at?: string; endpoint?: string | null; id?: number; units?: number }
+        Row: {
+          api: string
+          created_at: string
+          endpoint: string | null
+          id: number
+          units: number
+        }
+        Insert: {
+          api: string
+          created_at?: string
+          endpoint?: string | null
+          id?: never
+          units?: number
+        }
+        Update: {
+          api?: string
+          created_at?: string
+          endpoint?: string | null
+          id?: never
+          units?: number
+        }
         Relationships: []
       }
       catalog_health_snapshots: {
@@ -34,7 +52,7 @@ export type Database = {
         Insert: {
           captured_at?: string
           first_issue: number
-          id?: number
+          id?: never
           image: number
           portrait: number
           stats: number
@@ -44,60 +62,12 @@ export type Database = {
         Update: {
           captured_at?: string
           first_issue?: number
-          id?: number
+          id?: never
           image?: number
           portrait?: number
           stats?: number
           summary?: number
           total?: number
-        }
-        Relationships: []
-      }
-      enrichment_runs: {
-        Row: {
-          cancel_requested: boolean
-          created_at: string
-          done: number
-          duration_ms: number | null
-          failed: number
-          id: number
-          processed: number
-          remaining: number | null
-          retry: number
-          run_type: string
-          started_at: string | null
-          status: string
-          triggered_by: string
-        }
-        Insert: {
-          cancel_requested?: boolean
-          created_at?: string
-          done?: number
-          duration_ms?: number | null
-          failed?: number
-          id?: number
-          processed?: number
-          remaining?: number | null
-          retry?: number
-          run_type: string
-          started_at?: string | null
-          status?: string
-          triggered_by?: string
-        }
-        Update: {
-          cancel_requested?: boolean
-          created_at?: string
-          done?: number
-          duration_ms?: number | null
-          failed?: number
-          id?: number
-          processed?: number
-          remaining?: number | null
-          retry?: number
-          run_type?: string
-          started_at?: string | null
-          status?: string
-          triggered_by?: string
         }
         Relationships: []
       }
@@ -130,6 +100,153 @@ export type Database = {
           total_ingested?: number
         }
         Relationships: []
+      }
+      enrichment_runs: {
+        Row: {
+          cancel_requested: boolean
+          created_at: string
+          done: number
+          duration_ms: number | null
+          failed: number
+          id: number
+          processed: number
+          remaining: number | null
+          retry: number
+          run_type: string
+          started_at: string | null
+          status: string
+          triggered_by: string
+        }
+        Insert: {
+          cancel_requested?: boolean
+          created_at?: string
+          done?: number
+          duration_ms?: number | null
+          failed?: number
+          id?: never
+          processed?: number
+          remaining?: number | null
+          retry?: number
+          run_type: string
+          started_at?: string | null
+          status?: string
+          triggered_by?: string
+        }
+        Update: {
+          cancel_requested?: boolean
+          created_at?: string
+          done?: number
+          duration_ms?: number | null
+          failed?: number
+          id?: never
+          processed?: number
+          remaining?: number | null
+          retry?: number
+          run_type?: string
+          started_at?: string | null
+          status?: string
+          triggered_by?: string
+        }
+        Relationships: []
+      }
+      films: {
+        Row: {
+          backdrop_url: string | null
+          cast_members: Json | null
+          media_type: string
+          overview: string | null
+          poster_url: string | null
+          release_date: string | null
+          revenue: number | null
+          runtime: number | null
+          stills: Json | null
+          title: string
+          tmdb_enriched_at: string | null
+          tmdb_id: string
+          tmdb_status: string
+          trailer_key: string | null
+          vote_average: number | null
+          watch_providers: Json | null
+          year: number | null
+        }
+        Insert: {
+          backdrop_url?: string | null
+          cast_members?: Json | null
+          media_type?: string
+          overview?: string | null
+          poster_url?: string | null
+          release_date?: string | null
+          revenue?: number | null
+          runtime?: number | null
+          stills?: Json | null
+          title: string
+          tmdb_enriched_at?: string | null
+          tmdb_id: string
+          tmdb_status?: string
+          trailer_key?: string | null
+          vote_average?: number | null
+          watch_providers?: Json | null
+          year?: number | null
+        }
+        Update: {
+          backdrop_url?: string | null
+          cast_members?: Json | null
+          media_type?: string
+          overview?: string | null
+          poster_url?: string | null
+          release_date?: string | null
+          revenue?: number | null
+          runtime?: number | null
+          stills?: Json | null
+          title?: string
+          tmdb_enriched_at?: string | null
+          tmdb_id?: string
+          tmdb_status?: string
+          trailer_key?: string | null
+          vote_average?: number | null
+          watch_providers?: Json | null
+          year?: number | null
+        }
+        Relationships: []
+      }
+      hero_film_appearances: {
+        Row: {
+          cv_name: string | null
+          cv_url: string | null
+          hero_id: string
+          rank: number | null
+          tmdb_id: string
+        }
+        Insert: {
+          cv_name?: string | null
+          cv_url?: string | null
+          hero_id: string
+          rank?: number | null
+          tmdb_id: string
+        }
+        Update: {
+          cv_name?: string | null
+          cv_url?: string | null
+          hero_id?: string
+          rank?: number | null
+          tmdb_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hero_film_appearances_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hero_film_appearances_tmdb_id_fkey"
+            columns: ["tmdb_id"]
+            isOneToOne: false
+            referencedRelation: "films"
+            referencedColumns: ["tmdb_id"]
+          },
+        ]
       }
       hero_relationships: {
         Row: {
@@ -417,6 +534,30 @@ export type Database = {
         }
         Relationships: []
       }
+      tmdb_match_queue: {
+        Row: {
+          attempts: number
+          cv_name: string
+          cv_year: string | null
+          status: string
+          tmdb_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          cv_name: string
+          cv_year?: string | null
+          status?: string
+          tmdb_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          cv_name?: string
+          cv_year?: string | null
+          status?: string
+          tmdb_id?: string | null
+        }
+        Relationships: []
+      }
       user_favourites: {
         Row: {
           created_at: string | null
@@ -525,15 +666,14 @@ export type Database = {
       admin_retry_failed: { Args: never; Returns: number }
       admin_run_drain: { Args: { p_limit?: number }; Returns: string }
       admin_set_drain_cron: { Args: { p_enabled: boolean }; Returns: string }
+      admin_snapshot_now: { Args: never; Returns: undefined }
       admin_stop_run: { Args: { p_run_id: number }; Returns: boolean }
       cache_hero_comicvine_data: {
         Args: { p_id: string; p_powers: string[]; p_summary: string }
         Returns: undefined
       }
       catalog_distributions: { Args: never; Returns: Json }
-      admin_snapshot_now: { Args: never; Returns: undefined }
       catalog_health: { Args: never; Returns: Json }
-      snapshot_catalog_health: { Args: never; Returns: undefined }
       category_facet_counts: {
         Args: {
           p_alignment?: string
@@ -629,6 +769,15 @@ export type Database = {
       }
       heroes_aliases_text: { Args: { arr: string[] }; Returns: string }
       rebuild_hero_relationships: { Args: never; Returns: undefined }
+      register_film_match: {
+        Args: {
+          p_cv_name: string
+          p_media_type: string
+          p_title: string
+          p_tmdb_id: string
+        }
+        Returns: undefined
+      }
       search_heroes: {
         Args: {
           alignment_filter?: string
@@ -651,6 +800,7 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      snapshot_catalog_health: { Args: never; Returns: undefined }
     }
     Enums: {
       relation_kind:
