@@ -315,9 +315,7 @@ export default function AdminHealthScreen() {
             narrow={narrow}
           />
         )}
-        {domain === 'spend' && (
-          <SpendDomain spend={spendQ.data} loading={spendQ.isLoading} narrow={narrow} />
-        )}
+        {domain === 'spend' && <SpendDomain spend={spendQ.data} loading={spendQ.isLoading} />}
         {domain === 'users' && (
           <PlaceholderDomain
             label="Users"

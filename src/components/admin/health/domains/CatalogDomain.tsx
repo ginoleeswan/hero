@@ -520,7 +520,6 @@ const styles = StyleSheet.create({
   covGap: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
 
   // Queue
-  queueHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   tabs: { flexDirection: 'row', gap: 8, marginTop: 6, marginBottom: 8, flexWrap: 'wrap' },
   tab: {
     flexDirection: 'row',

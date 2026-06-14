@@ -7,15 +7,7 @@ import { Panel } from '../Panel';
 const money = (n: number, cur?: string) =>
   cur && cur !== 'USD' ? `${n.toFixed(2)} ${cur}` : `$${n.toFixed(2)}`;
 
-export function SpendDomain({
-  spend,
-  loading,
-  narrow: _narrow,
-}: {
-  spend?: GeminiSpend;
-  loading: boolean;
-  narrow: boolean;
-}) {
+export function SpendDomain({ spend, loading }: { spend?: GeminiSpend; loading: boolean }) {
   if (loading || !spend) {
     return (
       <Panel title="Gemini / GCP Spend">

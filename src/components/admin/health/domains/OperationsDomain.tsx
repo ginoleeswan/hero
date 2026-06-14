@@ -339,7 +339,6 @@ const styles = StyleSheet.create({
   toast: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.orange },
 
   // Activity log
-  logHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   logPanel: {
     maxHeight: 300,
     marginTop: 6,
@@ -425,7 +424,4 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.navy,
   },
   hcBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
-
-  // Equal-width column for paired cards (Activity log + Hero console)
-  opsHalf: { flex: 1, minWidth: 0 },
 });
