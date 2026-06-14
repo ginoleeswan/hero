@@ -51,20 +51,62 @@ function cronHelp(jobname: string): string {
   return 'A scheduled background job.';
 }
 
-function Ring({ percent, size = 44, stroke = 5 }: { percent: number; size?: number; stroke?: number }) {
+// Progress ring (arc only). The centre is filled by the run control in the node.
+function Ring({ percent, size, stroke = 6 }: { percent: number; size: number; stroke?: number }) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const frac = Math.max(0, Math.min(1, percent / 100));
   return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
-        <Circle cx={size / 2} cy={size / 2} r={r} stroke="#efe6d6" strokeWidth={stroke} fill="none" />
-        <Circle
-          cx={size / 2} cy={size / 2} r={r} stroke={COLORS.orange} strokeWidth={stroke} fill="none"
-          strokeDasharray={`${frac * c} ${c}`} strokeLinecap="round"
-        />
-      </Svg>
-      <Text style={styles.ringText}>{percent}</Text>
+    <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
+      <Circle cx={size / 2} cy={size / 2} r={r} stroke="#efe6d6" strokeWidth={stroke} fill="none" />
+      <Circle
+        cx={size / 2} cy={size / 2} r={r} stroke={COLORS.orange} strokeWidth={stroke} fill="none"
+        strokeDasharray={`${frac * c} ${c}`} strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+const RING = 72;
+
+// One node of the horizontal assembly line: a progress ring with the run button
+// inside it, a step-number badge, and the label below.
+function PipelineNode({ p, step, busy }: { p: Pipeline; step: number; busy: string | null }) {
+  const percent = pctOf(p.have, p.total);
+  const running = p.run && busy === p.run.busyKey;
+  const disabled = !!busy;
+  return (
+    <View style={styles.node}>
+      <View style={styles.ringWrap}>
+        <Ring percent={percent} size={RING} />
+        <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>{step}</Text></View>
+        {p.run ? (
+          <Pressable
+            onPress={p.run.onPress}
+            disabled={disabled}
+            style={[styles.ringCenter, styles.ringCenterRun, disabled && styles.dim]}
+            accessibilityLabel={`${p.run.label} ${p.name}`}
+          >
+            {running ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="play" size={20} color="#fff" />
+            )}
+          </Pressable>
+        ) : (
+          <View style={[styles.ringCenter, styles.ringCenterAuto]}>
+            <Ionicons name="time-outline" size={18} color={COLORS.grey} />
+          </View>
+        )}
+      </View>
+      <View style={styles.nodeNameRow}>
+        <Text style={styles.nodeName} numberOfLines={1}>{p.name}</Text>
+        <InfoTip text={p.tip} size={13} />
+      </View>
+      <Text style={styles.nodePct}>
+        {p.run ? `${percent}%` : p.note ?? 'auto'}
+        <Text style={styles.nodeCount}>  ·  {p.have.toLocaleString()}/{p.total.toLocaleString()}</Text>
+      </Text>
     </View>
   );
 }
@@ -79,49 +121,6 @@ interface Pipeline {
   total: number;
   note?: string;
   run?: { label: string; busyKey: string; onPress: () => void };
-}
-
-// One step of the assembly line: a numbered badge + connector rail, then the card.
-function PipelineStep({ p, step, isLast, busy }: { p: Pipeline; step: number; isLast: boolean; busy: string | null }) {
-  const percent = pctOf(p.have, p.total);
-  const running = p.run && busy === p.run.busyKey;
-  return (
-    <View style={styles.step}>
-      <View style={styles.rail}>
-        <View style={styles.railLine} />
-        <View style={styles.stepNum}><Text style={styles.stepNumText}>{step}</Text></View>
-        <View style={[styles.railLine, isLast && styles.railLineHidden]} />
-      </View>
-      <View style={styles.card}>
-        <Ring percent={percent} />
-        <View style={styles.cardBody}>
-          <View style={styles.cardNameRow}>
-            <Text style={styles.cardName} numberOfLines={1}>{p.name}</Text>
-            <InfoTip text={p.tip} size={13} />
-          </View>
-          <Text style={styles.cardBlurb} numberOfLines={1}>{p.blurb}</Text>
-          {p.dependsOn ? (
-            <View style={styles.dependsRow}>
-              <Ionicons name="arrow-up" size={10} color={COLORS.grey} />
-              <Text style={styles.dependsText}>{p.dependsOn}</Text>
-            </View>
-          ) : null}
-        </View>
-        {p.run ? (
-          <Pressable onPress={p.run.onPress} disabled={!!busy} style={[styles.runBtn, !!busy && styles.dim]}>
-            {running ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Ionicons name="play" size={12} color="#fff" />
-            )}
-            <Text style={styles.runText}>{p.run.label}</Text>
-          </Pressable>
-        ) : (
-          <Text style={styles.note}>{p.note ?? 'auto'}</Text>
-        )}
-      </View>
-    </View>
-  );
 }
 
 export function PipelinesDomain({
@@ -217,9 +216,14 @@ export function PipelinesDomain({
           action={<InfoTip text="Each step pulls a different kind of data and depends on the one above it. Run 1 → 2 → 3 in order; step 4 (TMDB) runs itself. The ring is how complete each step is." />}
           style={styles.flex15}
         >
-          <View style={styles.steps}>
+          <View style={styles.flow}>
             {pipelines.map((pl, i) => (
-              <PipelineStep key={pl.key} p={pl} step={i + 1} isLast={i === pipelines.length - 1} busy={busy} />
+              <View key={pl.key} style={styles.flowItem}>
+                <PipelineNode p={pl} step={i + 1} busy={busy} />
+                {i < pipelines.length - 1 ? (
+                  <Ionicons name="chevron-forward" size={18} color="rgba(41,60,67,0.28)" style={styles.flowArrow as object} />
+                ) : null}
+              </View>
             ))}
           </View>
           {/* ComicVine batch + retry, kept compact under the grid. */}
@@ -388,41 +392,28 @@ const styles = StyleSheet.create({
   flex1: { flex: 1 },
   flex15: { flex: 1.5 },
 
-  // Ring gauge
-  ringText: {
-    position: 'absolute', fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy,
-    fontVariant: ['tabular-nums'],
+  // Pipeline assembly-line flow (horizontal nodes + arrows)
+  flow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between' },
+  flowItem: { flexDirection: 'row', alignItems: 'center', flexGrow: 1 },
+  flowArrow: { marginHorizontal: 4 },
+  node: { alignItems: 'center', gap: 7, paddingVertical: 6, minWidth: 104, flex: 1 },
+  ringWrap: { width: RING, height: RING, alignItems: 'center', justifyContent: 'center' },
+  ringCenter: {
+    position: 'absolute', width: RING - 22, height: RING - 22, borderRadius: (RING - 22) / 2,
+    alignItems: 'center', justifyContent: 'center',
   },
-
-  // Pipeline assembly-line stepper
-  steps: { gap: 0 },
-  step: { flexDirection: 'row', alignItems: 'stretch', gap: 11 },
-  rail: { width: 26, alignItems: 'center' },
-  railLine: { width: 2, flex: 1, backgroundColor: 'rgba(41,60,67,0.14)' },
-  railLineHidden: { backgroundColor: 'transparent' },
-  stepNum: {
-    width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.orange,
-    alignItems: 'center', justifyContent: 'center', marginVertical: 4,
+  ringCenterRun: { backgroundColor: COLORS.orange, cursor: 'pointer' } as object,
+  ringCenterAuto: { backgroundColor: '#f1ece2' },
+  stepBadge: {
+    position: 'absolute', top: -2, left: -2, width: 20, height: 20, borderRadius: 10,
+    backgroundColor: COLORS.navy, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: '#fffdf8',
   },
-  stepNumText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
-  card: {
-    flex: 1,
-    flexDirection: 'row', alignItems: 'center', gap: 11,
-    paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12, marginVertical: 5,
-    backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(41,60,67,0.08)',
-  },
-  cardBody: { flex: 1, gap: 2, minWidth: 0 },
-  dependsRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
-  dependsText: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: COLORS.grey, textTransform: 'uppercase', letterSpacing: 0.4 },
-  cardNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  cardName: { fontFamily: 'Flame-Regular', fontSize: 13.5, color: COLORS.black, flexShrink: 1 },
-  cardBlurb: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey },
-  runBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: COLORS.orange,
-    borderRadius: 8, paddingHorizontal: 11, paddingVertical: 7,
-  },
-  runText: { fontFamily: 'Nunito_700Bold', fontSize: 11.5, color: '#fff' },
-  note: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: COLORS.grey, textTransform: 'uppercase', letterSpacing: 0.6 },
+  stepBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#fff' },
+  nodeNameRow: { flexDirection: 'row', alignItems: 'center', gap: 4, maxWidth: 150 },
+  nodeName: { fontFamily: 'Flame-Regular', fontSize: 12.5, color: COLORS.black, textAlign: 'center', flexShrink: 1 },
+  nodePct: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.orange },
+  nodeCount: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey },
   dim: { opacity: 0.4 },
 
   // ComicVine compact controls
