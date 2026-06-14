@@ -22,6 +22,9 @@ const BACKDROP_H = 150;
 const WEB_POSTER_W = 150;
 const WEB_POSTER_H = 225;
 
+// Decade shelves shown before the "show more" toggle
+const WEB_DEFAULT_SHELVES = 2;
+
 interface StripItem {
   key: string;
   title: string;
@@ -362,6 +365,7 @@ export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleed
   const router = useRouter();
   const [gridVisible, setGridVisible] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [webShowAll, setWebShowAll] = useState(false);
 
   const allItems = buildItems(films, movies);
   const sorted = sortItems(allItems);
@@ -386,12 +390,19 @@ export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleed
     const webRest = webFeaturedItem ? sorted.filter((it) => it !== webFeaturedItem) : sorted;
     const groups = groupByDecade(webRest);
 
+    // Show the featured banner + the most recent decade shelves; collapse older
+    // decades behind a toggle so the section doesn't run on forever vertically.
+    const visibleGroups = webShowAll ? groups : groups.slice(0, WEB_DEFAULT_SHELVES);
+    const hiddenTitles = groups
+      .slice(WEB_DEFAULT_SHELVES)
+      .reduce((n, g) => n + g.items.length, 0);
+
     return (
       <View style={webStyles.wrap}>
         {webFeaturedItem ? (
           <WebFeaturedFilm item={webFeaturedItem} onPress={() => handlePress(webFeaturedItem)} />
         ) : null}
-        {groups.map((g) => (
+        {visibleGroups.map((g) => (
           <View key={g.label} style={webStyles.group}>
             <Text style={webStyles.groupLabel}>
               {g.label} · {g.items.length}
@@ -399,6 +410,16 @@ export function MovieStrip({ films, movies, totalCount, contentInset = 16, bleed
             <WebShelf items={g.items} onItemPress={handlePress} bleed={bleedMargin} inset={contentInset} />
           </View>
         ))}
+        {!webShowAll && hiddenTitles > 0 ? (
+          <Pressable style={webStyles.showAllBtn} onPress={() => setWebShowAll(true)}>
+            <Text style={webStyles.showAllText}>Show {hiddenTitles} more from earlier decades</Text>
+          </Pressable>
+        ) : null}
+        {webShowAll && groups.length > WEB_DEFAULT_SHELVES ? (
+          <Pressable style={webStyles.showAllBtn} onPress={() => setWebShowAll(false)}>
+            <Text style={webStyles.showAllText}>Show less</Text>
+          </Pressable>
+        ) : null}
       </View>
     );
   }
@@ -640,6 +661,18 @@ const webStyles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.grey,
     marginTop: 1,
+  },
+
+  showAllBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+    marginTop: 2,
+  },
+  showAllText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 13,
+    color: COLORS.orange,
+    textDecorationLine: 'underline',
   },
 });
 
