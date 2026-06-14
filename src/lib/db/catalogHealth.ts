@@ -262,6 +262,12 @@ export async function runWikidataResolve(limit = 10): Promise<void> {
   if (error) throw error;
 }
 
+/** Queue a Wikidata enrich batch (appearance edges + performers for resolved heroes). */
+export async function runWikidataEnrich(limit = 10): Promise<void> {
+  const { error } = await supabase.rpc('admin_run_wikidata_enrich', { p_limit: limit });
+  if (error) throw error;
+}
+
 export type ComicvineStatus = 'ok' | 'limited' | 'error';
 export async function pingComicvine(): Promise<ComicvineStatus> {
   const { data, error } = await supabase.functions.invoke<{ status?: string }>('comicvine-ping');

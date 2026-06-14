@@ -23,6 +23,7 @@ import {
   getAmbiguousHeroes,
   resolveHeroQid,
   runWikidataResolve,
+  runWikidataEnrich,
   type CoverageMetric,
   type RunHistoryPage,
 } from '../../../lib/db/catalogHealth';
@@ -294,6 +295,19 @@ export function useCatalogActions({
     }
   };
 
+  const onRunEnrich = async () => {
+    setBusy('enrich');
+    try {
+      await runWikidataEnrich(10);
+      flash('Wikidata enrich batch queued — watch it run below.', 'pending');
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['enrichmentRuns'] }), 4000);
+    } catch (e) {
+      flash(`Enrich failed: ${(e as Error).message}`, 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const onResolveQid = async (id: string, qid: string, name: string) => {
     setBusy(`resolveqid-${id}`);
     try {
@@ -341,6 +355,7 @@ export function useCatalogActions({
     onReenrich,
     onResolveQid,
     onRunResolve,
+    onRunEnrich,
     onToggleCron,
     onRefresh,
   };

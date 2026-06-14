@@ -51,6 +51,7 @@ export function OperationsDomain({
   ambiguous,
   onResolveQid,
   onRunResolve,
+  onRunEnrich,
   narrow,
 }: {
   h: CatalogHealth;
@@ -77,6 +78,7 @@ export function OperationsDomain({
   ambiguous: AmbiguousHero[];
   onResolveQid: (id: string, qid: string, name: string) => void;
   onRunResolve: () => void;
+  onRunEnrich: () => void;
   narrow: boolean;
 }) {
   const router = useRouter();
@@ -304,18 +306,32 @@ export function OperationsDomain({
           title="Identity review"
           hint="Resolve heroes to Wikidata QIDs; pick the right one for ambiguous cases"
           action={
-            <Pressable
-              onPress={onRunResolve}
-              disabled={!!busy}
-              style={[styles.idrRunBtn, !!busy && styles.actDim]}
-            >
-              {busy === 'resolve' ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Ionicons name="sparkles" size={13} color="#fff" />
-              )}
-              <Text style={styles.idrRunText}>Resolve 15</Text>
-            </Pressable>
+            <View style={styles.idrActions}>
+              <Pressable
+                onPress={onRunResolve}
+                disabled={!!busy}
+                style={[styles.idrRunBtn, styles.idrRunGhost, !!busy && styles.actDim]}
+              >
+                {busy === 'resolve' ? (
+                  <ActivityIndicator size="small" color={COLORS.navy} />
+                ) : (
+                  <Ionicons name="search" size={13} color={COLORS.navy} />
+                )}
+                <Text style={styles.idrRunGhostText}>Resolve 15</Text>
+              </Pressable>
+              <Pressable
+                onPress={onRunEnrich}
+                disabled={!!busy}
+                style={[styles.idrRunBtn, !!busy && styles.actDim]}
+              >
+                {busy === 'enrich' ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="sparkles" size={13} color="#fff" />
+                )}
+                <Text style={styles.idrRunText}>Enrich 10</Text>
+              </Pressable>
+            </View>
           }
         >
           {ambiguous.length === 0 ? (
@@ -471,6 +487,9 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   idrRunText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
+  idrActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  idrRunGhost: { backgroundColor: COLORS.navy + '12' },
+  idrRunGhostText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   hcName: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
   hcMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   hcPub: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, maxWidth: 150 },

@@ -187,7 +187,7 @@ export type Database = {
           rank: number | null
           source: string | null
           title_id: string
-          tmdb_id: string
+          tmdb_id: string | null
         }
         Insert: {
           cv_name?: string | null
@@ -197,7 +197,7 @@ export type Database = {
           rank?: number | null
           source?: string | null
           title_id: string
-          tmdb_id: string
+          tmdb_id?: string | null
         }
         Update: {
           cv_name?: string | null
@@ -207,7 +207,7 @@ export type Database = {
           rank?: number | null
           source?: string | null
           title_id?: string
-          tmdb_id?: string
+          tmdb_id?: string | null
         }
         Relationships: [
           {
@@ -276,21 +276,21 @@ export type Database = {
           person_name: string
           role: string
           source: string
-          title_id: string
+          title_id: string | null
         }
         Insert: {
           hero_id: string
           person_name: string
           role: string
           source?: string
-          title_id: string
+          title_id?: string | null
         }
         Update: {
           hero_id?: string
           person_name?: string
           role?: string
           source?: string
-          title_id?: string
+          title_id?: string | null
         }
         Relationships: [
           {
@@ -679,7 +679,7 @@ export type Database = {
           source: string
           stills: Json | null
           title: string
-          tmdb_id: string
+          tmdb_id: string | null
           trailer_key: string | null
           vote_average: number | null
           watch_providers: Json | null
@@ -702,7 +702,7 @@ export type Database = {
           source: string
           stills?: Json | null
           title: string
-          tmdb_id: string
+          tmdb_id?: string | null
           trailer_key?: string | null
           vote_average?: number | null
           watch_providers?: Json | null
@@ -725,7 +725,7 @@ export type Database = {
           source?: string
           stills?: Json | null
           title?: string
-          tmdb_id?: string
+          tmdb_id?: string | null
           trailer_key?: string | null
           vote_average?: number | null
           watch_providers?: Json | null
@@ -864,6 +864,7 @@ export type Database = {
       admin_reenrich_hero: { Args: { p_id: string }; Returns: string }
       admin_retry_failed: { Args: never; Returns: number }
       admin_run_drain: { Args: { p_limit?: number }; Returns: string }
+      admin_run_wikidata_enrich: { Args: { p_limit?: number }; Returns: string }
       admin_run_wikidata_resolve: {
         Args: { p_limit?: number }
         Returns: string

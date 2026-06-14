@@ -83,6 +83,7 @@ export default function AdminHealthScreen() {
     onReenrich,
     onResolveQid,
     onRunResolve,
+    onRunEnrich,
     onToggleCron,
     onRefresh,
   } = useCatalogActions({ batchSize, cronOn, flash });
@@ -317,6 +318,7 @@ export default function AdminHealthScreen() {
             ambiguous={ambiguousQ.data ?? []}
             onResolveQid={onResolveQid}
             onRunResolve={onRunResolve}
+            onRunEnrich={onRunEnrich}
             narrow={narrow}
           />
         )}
