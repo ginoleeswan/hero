@@ -540,6 +540,7 @@ export default function WebProfileScreen() {
                       id={hero.id}
                       name={hero.name}
                       imageUrl={hero.image_url}
+                      portraitUrl={hero.portrait_url}
                       onPress={() => router.push(`/character/${hero.id}`)}
                     />
                   </Pressable>
@@ -995,6 +996,7 @@ export default function WebProfileScreen() {
                       id={hero.id}
                       name={hero.name}
                       imageUrl={hero.image_url}
+                      portraitUrl={hero.portrait_url}
                       onPress={() => router.push(`/character/${hero.id}`)}
                     />
                   </Pressable>

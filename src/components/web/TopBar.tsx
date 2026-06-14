@@ -1,10 +1,12 @@
 import React, { type ComponentProps, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
+import { useProfile } from '../../hooks/useProfile';
 import { useSearch } from '../../contexts/SearchContext';
 import { useWebChrome } from '../../contexts/WebChromeContext';
 import { HeroLogo } from './HeroLogo';
@@ -33,6 +35,7 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
+  const { profile } = useProfile(user?.id);
   const { searchFocused, setSearchFocused } = useSearch();
   const initial = user?.email?.charAt(0).toUpperCase() ?? '';
   const { width } = useWindowDimensions();
@@ -201,7 +204,15 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
               }
             >
               <View style={c.avatar}>
-                <Text style={c.avatarText}>{initial}</Text>
+                {profile?.avatar_url ? (
+                  <Image
+                    source={{ uri: profile.avatar_url }}
+                    style={StyleSheet.absoluteFill}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <Text style={c.avatarText}>{initial}</Text>
+                )}
               </View>
             </Pressable>
           ) : (
@@ -364,6 +375,7 @@ const c = StyleSheet.create({
     backgroundColor: COLORS.orange,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   } as object,
   avatarText: { fontFamily: 'Flame-Regular', fontSize: 14, color: '#fff' },
 });

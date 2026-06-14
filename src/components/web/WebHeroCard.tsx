@@ -11,6 +11,7 @@ interface WebHeroCardProps {
   id: string;
   name: string;
   imageUrl: string | null;
+  portraitUrl?: string | null;
   featured?: boolean;
   publisher?: string;
   onPress: () => void;
@@ -20,6 +21,7 @@ export function WebHeroCard({
   id,
   name,
   imageUrl,
+  portraitUrl,
   featured = false,
   publisher,
   onPress,
@@ -44,6 +46,7 @@ export function WebHeroCard({
         id={id}
         name={name}
         imageUrl={imageUrl}
+        portraitUrl={portraitUrl}
         contentFit="cover"
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         recyclingKey={id}
