@@ -294,7 +294,7 @@ export function PipelinesDomain({
           {ambiguous.length === 0 ? (
             <Text style={styles.empty}>All clear — nothing waiting on you.</Text>
           ) : (
-            <ScrollView style={narrow ? styles.reviewScrollCap : styles.reviewScrollFill} nestedScrollEnabled showsVerticalScrollIndicator>
+            <ScrollView style={styles.reviewScroll} nestedScrollEnabled showsVerticalScrollIndicator>
             {ambiguous.map((hero) => {
               const busyThis = busy === `resolveqid-${hero.id}`;
               return (
@@ -365,7 +365,7 @@ export function PipelinesDomain({
           {recentlyEnriched.length === 0 ? (
             <Text style={styles.empty}>Nothing yet — build some heroes and they appear here.</Text>
           ) : (
-            <ScrollView style={narrow ? styles.reviewScrollCap : styles.reviewScrollFill} nestedScrollEnabled>
+            <ScrollView style={styles.reviewScroll} nestedScrollEnabled>
               <View style={styles.reGrid}>
                 {recentlyEnriched.map((r, i) => (
                   <Pressable key={`${r.heroId}-${i}`} onPress={() => router.push(`/character/${r.heroId}`)} style={styles.reCard}>
@@ -546,10 +546,7 @@ const styles = StyleSheet.create({
   reSub: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.orange },
 
   // Needs attention
-  // Wide: fill the row-stretched panel so it matches its neighbour's height.
-  // Narrow (stacked, no definite parent height): cap instead, or flex:1 collapses to 0.
-  reviewScrollFill: { flex: 1, minHeight: 0 } as object,
-  reviewScrollCap: { maxHeight: 460 } as object,
+  reviewScroll: { maxHeight: 340 } as object,
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 13.5, color: COLORS.grey },
   reviewRow: {
     flexDirection: 'column', gap: 8, paddingVertical: 9,
