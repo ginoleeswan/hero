@@ -72,7 +72,17 @@ const config: ExpoConfig = {
         },
       },
     ],
-    ['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme }],
+    // The native Google Sign-In plugin requires iosUrlScheme. It's derived from
+    // EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID, which isn't present on the web build host
+    // (Vercel) — and isn't needed there. Only register the plugin when available.
+    ...(googleIosUrlScheme
+      ? [
+          ['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme }] as [
+            string,
+            Record<string, unknown>,
+          ],
+        ]
+      : []),
     'expo-apple-authentication',
     'expo-router',
     'expo-image',
