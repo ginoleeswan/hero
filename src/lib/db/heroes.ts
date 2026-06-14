@@ -617,15 +617,22 @@ export async function getCategoryPage(
     alignment,
     gender,
     hasStats,
+    tags,
     search,
   } = options;
+  const tagList = tags ?? [];
   const from = page * pageSize;
   const to = from + pageSize - 1;
+
+  // Inner-join hero_tags only when filtering by tag, so the base query is unchanged.
+  const selectCols = tagList.length
+    ? `${CATEGORY_LIST_COLUMNS}, hero_tags!inner(tag)`
+    : CATEGORY_LIST_COLUMNS;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let q: any = supabase
     .from('heroes')
-    .select(CATEGORY_LIST_COLUMNS, withCount ? { count: 'exact' } : undefined);
+    .select(selectCols, withCount ? { count: 'exact' } : undefined);
 
   switch (slug) {
     case 'popular':
@@ -682,6 +689,11 @@ export async function getCategoryPage(
 
   // Has-powerstats facet
   if (hasStats) q = q.gte('powerstats_total', 1);
+
+  // Tag facet — inner join on hero_tags; filter by each selected tag.
+  for (const tag of tagList) {
+    q = q.eq('hero_tags.tag', tag);
+  }
 
   // Search
   if (search.trim()) q = q.or(`name.ilike.%${search.trim()}%,full_name.ilike.%${search.trim()}%`);
