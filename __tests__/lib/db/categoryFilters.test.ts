@@ -74,6 +74,7 @@ describe('filtersToParams / paramsToFilters round-trip', () => {
       alignment: 'good',
       gender: 'male',
       hasStats: true,
+      tags: [],
       sort: 'power',
       search: 'bat',
     };
