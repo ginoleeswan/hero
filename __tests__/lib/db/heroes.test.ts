@@ -213,6 +213,7 @@ describe('heroRowToCharacterData', () => {
     wikidata_status: 'pending',
     wikidata_candidates: null,
     wikidata_enriched_at: null,
+    narrative_status: 'pending',
   } satisfies Hero;
 
   it('maps powerstats to string values', () => {
@@ -397,6 +398,7 @@ const baseHero: HeroRow = {
   wikidata_status: 'pending',
   wikidata_candidates: null,
   wikidata_enriched_at: null,
+  narrative_status: 'pending',
 };
 
 describe('heroRowToCharacterData — powers mapping', () => {
