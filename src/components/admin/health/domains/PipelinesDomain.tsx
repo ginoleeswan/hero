@@ -214,7 +214,7 @@ export function PipelinesDomain({
   return (
     <Bento>
       {/* Step 0 — bring new characters in from ComicVine. */}
-      <AddHeroesPanel flash={flash} onAdded={onHeroesAdded} />
+      <AddHeroesPanel flash={flash} onAdded={onHeroesAdded} onEnrich={onRunDrain} />
 
       {/* Top: controls + their live feedback, side by side. */}
       <Bento.Row narrow={narrow}>

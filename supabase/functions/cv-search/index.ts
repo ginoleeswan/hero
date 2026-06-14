@@ -1,9 +1,9 @@
 // cv-search: ComicVine lookup proxy for the admin ingestion console.
 // POST body:
-//   { kind: 'character', query }      -> characters matching a name
-//   { kind: 'team', query }           -> teams matching a name
-//   { kind: 'team_members', teamId }  -> a team's character roster
-// Server-side ComicVine key; logs a unit to api_usage.
+//   { kind: 'character', query }                  -> characters matching a name
+//   { kind: 'group', resource, query }            -> teams / series matching a name
+//   { kind: 'group_members', resource, id }       -> a group's character roster
+// resource ∈ 'team' | 'volume'. Server-side ComicVine key; logs to api_usage.
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -11,6 +11,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const CV = 'https://comicvine.gamespot.com/api';
 const KEY = Deno.env.get('COMICVINE_API_KEY') ?? '';
 const UA = { 'User-Agent': 'mythique/1.0 (admin ingestion)' };
+const PREFIX: Record<string, string> = { team: '4060', volume: '4050' };
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -24,12 +25,13 @@ const img = (image: Record<string, string> | null | undefined): string | null =>
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
-  let kind = '', query = '', teamId = '';
+  let kind = '', query = '', resource = '', id = '';
   try {
     const b = await req.json();
     kind = String(b?.kind ?? '');
     query = String(b?.query ?? '').trim();
-    teamId = String(b?.teamId ?? '').trim();
+    resource = String(b?.resource ?? '');
+    id = String(b?.id ?? '').trim();
   } catch { /* ignore */ }
 
   try {
@@ -37,8 +39,7 @@ serve(async (req: Request) => {
     if (kind === 'character') {
       if (query.length < 2) return json({ results: [] });
       const url = `${CV}/characters/?api_key=${KEY}&format=json&filter=name:${encodeURIComponent(query)}&field_list=id,name,publisher,image,deck&limit=24`;
-      const res = await fetch(url, { headers: UA });
-      const body = await res.json();
+      const body = await (await fetch(url, { headers: UA })).json();
       out = {
         results: (body.results ?? []).map((r: Record<string, any>) => ({
           id: String(r.id),
@@ -48,26 +49,25 @@ serve(async (req: Request) => {
           deck: r.deck ?? null,
         })),
       };
-    } else if (kind === 'team') {
-      if (query.length < 2) return json({ results: [] });
-      const url = `${CV}/search/?api_key=${KEY}&format=json&query=${encodeURIComponent(query)}&resources=team&field_list=id,name,count_of_team_members&limit=15`;
-      const res = await fetch(url, { headers: UA });
-      const body = await res.json();
+    } else if (kind === 'group') {
+      if (query.length < 2 || !PREFIX[resource]) return json({ results: [] });
+      const url = `${CV}/search/?api_key=${KEY}&format=json&query=${encodeURIComponent(query)}&resources=${resource}&field_list=id,name,count_of_team_members,start_year,publisher&limit=15`;
+      const body = await (await fetch(url, { headers: UA })).json();
       out = {
         results: (body.results ?? []).map((r: Record<string, any>) => ({
           id: String(r.id),
           name: r.name,
           members: typeof r.count_of_team_members === 'number' ? r.count_of_team_members : null,
+          hint: r.start_year ? String(r.start_year) : r.publisher?.name ?? null,
         })),
       };
-    } else if (kind === 'team_members') {
-      if (!teamId) return json({ teamName: null, characters: [] });
-      const url = `${CV}/team/4060-${teamId}/?api_key=${KEY}&format=json&field_list=name,characters`;
-      const res = await fetch(url, { headers: UA });
-      const body = await res.json();
+    } else if (kind === 'group_members') {
+      if (!id || !PREFIX[resource]) return json({ groupName: null, characters: [] });
+      const url = `${CV}/${resource}/${PREFIX[resource]}-${id}/?api_key=${KEY}&format=json&field_list=name,characters`;
+      const body = await (await fetch(url, { headers: UA })).json();
       const r = body.results ?? {};
       out = {
-        teamName: r.name ?? null,
+        groupName: r.name ?? null,
         characters: (r.characters ?? []).map((c: Record<string, any>) => ({ id: String(c.id), name: c.name })),
       };
     } else {

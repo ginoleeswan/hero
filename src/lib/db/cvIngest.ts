@@ -1,5 +1,7 @@
 import { supabase } from '../supabase';
 
+export type GroupResource = 'team' | 'volume';
+
 export interface CvCharacter {
   id: string;
   name: string;
@@ -8,14 +10,15 @@ export interface CvCharacter {
   deck: string | null;
 }
 
-export interface CvTeam {
+export interface CvGroup {
   id: string;
   name: string;
   members: number | null;
+  hint: string | null; // start year (series) or publisher
 }
 
-export interface CvTeamMembers {
-  teamName: string | null;
+export interface CvGroupMembers {
+  groupName: string | null;
   characters: { id: string; name: string }[];
 }
 
@@ -31,26 +34,32 @@ export async function searchComicvineCharacters(query: string): Promise<CvCharac
   return d?.results ?? [];
 }
 
-export async function searchComicvineTeams(query: string): Promise<CvTeam[]> {
+export async function searchComicvineGroups(resource: GroupResource, query: string): Promise<CvGroup[]> {
   if (query.trim().length < 2) return [];
-  const d = await invoke<{ results: CvTeam[] }>({ kind: 'team', query });
+  const d = await invoke<{ results: CvGroup[] }>({ kind: 'group', resource, query });
   return d?.results ?? [];
 }
 
-export async function getComicvineTeamMembers(teamId: string): Promise<CvTeamMembers> {
-  const d = await invoke<CvTeamMembers>({ kind: 'team_members', teamId });
-  return d ?? { teamName: null, characters: [] };
+export async function getComicvineGroupMembers(resource: GroupResource, id: string): Promise<CvGroupMembers> {
+  const d = await invoke<CvGroupMembers>({ kind: 'group_members', resource, id });
+  return d ?? { groupName: null, characters: [] };
 }
 
 /** Of the given ComicVine ids, which already exist in the catalogue. */
 export async function existingComicvineIds(ids: string[]): Promise<Set<string>> {
   if (ids.length === 0) return new Set();
-  const { data, error } = await supabase
-    .from('heroes')
-    .select('comicvine_id')
-    .in('comicvine_id', ids);
+  const { data, error } = await supabase.from('heroes').select('comicvine_id').in('comicvine_id', ids);
   if (error || !data) return new Set();
   return new Set((data as Array<{ comicvine_id: string | null }>).map((r) => r.comicvine_id).filter((x): x is string => !!x));
+}
+
+/** Lowercased names already in the catalogue (cross-source duplicate guard). */
+export async function existingHeroNames(names: string[]): Promise<Set<string>> {
+  const cleaned = [...new Set(names.map((n) => n.trim()).filter(Boolean))];
+  if (cleaned.length === 0) return new Set();
+  const { data, error } = await supabase.from('heroes').select('name').in('name', cleaned);
+  if (error || !data) return new Set();
+  return new Set((data as Array<{ name: string }>).map((r) => r.name.toLowerCase()));
 }
 
 /** Add ComicVine characters to the catalogue (as pending). Returns count added. */
