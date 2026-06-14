@@ -27,18 +27,22 @@ function CastMember({ member }: { member: HeroFilmCastMember }) {
   );
 }
 
-export function CastRail({ cast }: { cast: HeroFilmCastMember[] }) {
+export function CastRail({ cast, inCard }: { cast: HeroFilmCastMember[]; inCard?: boolean }) {
   if (cast.length === 0) return null;
 
   if (Platform.OS === 'web') {
+    const grid = (
+      <View style={[webStyles.grid, inCard && webStyles.bare] as object}>
+        {cast.map((member, i) => (
+          <CastMember key={`${member.name}-${i}`} member={member} />
+        ))}
+      </View>
+    );
+    if (inCard) return grid;
     return (
       <View style={styles.block}>
         <Text style={styles.label}>Cast</Text>
-        <View style={webStyles.grid}>
-          {cast.map((member, i) => (
-            <CastMember key={`${member.name}-${i}`} member={member} />
-          ))}
-        </View>
+        {grid}
       </View>
     );
   }
@@ -66,6 +70,7 @@ const webStyles = StyleSheet.create({
     gap: 14,
     paddingHorizontal: 20,
   },
+  bare: { paddingHorizontal: 0 },
 });
 
 const styles = StyleSheet.create({

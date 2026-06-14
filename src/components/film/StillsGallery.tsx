@@ -4,39 +4,48 @@ import { Image } from 'expo-image';
 import { COLORS } from '../../constants/colors';
 import { ImageLightbox } from '../ImageLightbox';
 
-export function StillsGallery({ stills }: { stills: string[] }) {
+export function StillsGallery({ stills, inCard }: { stills: string[]; inCard?: boolean }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   if (stills.length === 0) return null;
 
   const images = stills.map((url) => ({ url }));
 
   if (Platform.OS === 'web') {
+    const lightbox =
+      lightboxIndex !== null ? (
+        <ImageLightbox
+          images={images}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      ) : null;
+    const grid = (
+      <View style={[webStyles.grid, inCard && webStyles.bare] as object}>
+        {stills.map((url, i) => (
+          <TouchableOpacity key={i} activeOpacity={0.85} onPress={() => setLightboxIndex(i)}>
+            <Image
+              source={{ uri: url }}
+              style={webStyles.still}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+            />
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+    if (inCard) {
+      return (
+        <>
+          {grid}
+          {lightbox}
+        </>
+      );
+    }
     return (
       <View style={styles.block}>
         <Text style={styles.label}>Stills</Text>
-        <View style={webStyles.grid}>
-          {stills.map((url, i) => (
-            <TouchableOpacity
-              key={i}
-              activeOpacity={0.85}
-              onPress={() => setLightboxIndex(i)}
-            >
-              <Image
-                source={{ uri: url }}
-                style={webStyles.still}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-              />
-            </TouchableOpacity>
-          ))}
-        </View>
-        {lightboxIndex !== null ? (
-          <ImageLightbox
-            images={images}
-            initialIndex={lightboxIndex}
-            onClose={() => setLightboxIndex(null)}
-          />
-        ) : null}
+        {grid}
+        {lightbox}
       </View>
     );
   }
@@ -83,6 +92,7 @@ const webStyles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 20,
   },
+  bare: { paddingHorizontal: 0 },
   still: {
     width: 256,
     height: 144,

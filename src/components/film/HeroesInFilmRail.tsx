@@ -40,7 +40,7 @@ function HeroCard({ hero, onPress }: { hero: RelatedHeroCard; onPress: () => voi
   );
 }
 
-export function HeroesInFilmRail({ heroes }: { heroes: RelatedHeroCard[] }) {
+export function HeroesInFilmRail({ heroes, inCard }: { heroes: RelatedHeroCard[]; inCard?: boolean }) {
   const router = useRouter();
   if (heroes.length === 0) return null;
 
@@ -48,14 +48,18 @@ export function HeroesInFilmRail({ heroes }: { heroes: RelatedHeroCard[] }) {
     router.push(`/character/${hero.id}?name=${encodeURIComponent(hero.name)}`);
 
   if (Platform.OS === 'web') {
+    const grid = (
+      <View style={[webStyles.grid, inCard && webStyles.bare] as object}>
+        {heroes.map((hero) => (
+          <HeroCard key={hero.id} hero={hero} onPress={() => handlePress(hero)} />
+        ))}
+      </View>
+    );
+    if (inCard) return grid;
     return (
       <View style={styles.block}>
         <Text style={styles.label}>Heroes in this Film</Text>
-        <View style={webStyles.grid}>
-          {heroes.map((hero) => (
-            <HeroCard key={hero.id} hero={hero} onPress={() => handlePress(hero)} />
-          ))}
-        </View>
+        {grid}
       </View>
     );
   }
@@ -84,6 +88,7 @@ const webStyles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 2,
   },
+  bare: { paddingHorizontal: 0, paddingBottom: 0 },
 });
 
 const styles = StyleSheet.create({

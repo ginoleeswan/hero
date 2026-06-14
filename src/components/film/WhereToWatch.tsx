@@ -19,18 +19,22 @@ function ProviderChip({ p }: { p: WatchProvider }) {
   );
 }
 
-export function WhereToWatch({ providers }: { providers: WatchProvider[] }) {
+export function WhereToWatch({ providers, inCard }: { providers: WatchProvider[]; inCard?: boolean }) {
   if (providers.length === 0) return null;
 
   if (Platform.OS === 'web') {
+    const wrap = (
+      <View style={[webStyles.wrap, inCard && webStyles.bare] as object}>
+        {providers.map((p) => (
+          <ProviderChip key={p.name} p={p} />
+        ))}
+      </View>
+    );
+    if (inCard) return wrap;
     return (
       <View style={styles.block}>
         <Text style={styles.label}>Where to Watch</Text>
-        <View style={webStyles.wrap}>
-          {providers.map((p) => (
-            <ProviderChip key={p.name} p={p} />
-          ))}
-        </View>
+        {wrap}
       </View>
     );
   }
@@ -58,6 +62,7 @@ const webStyles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 20,
   },
+  bare: { paddingHorizontal: 0 },
 });
 
 const styles = StyleSheet.create({
