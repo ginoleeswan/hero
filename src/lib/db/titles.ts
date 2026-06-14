@@ -1,0 +1,186 @@
+import { supabase } from '../supabase';
+import type { RelatedHeroCard } from './heroes';
+
+export type MediaType = 'film' | 'tv' | 'game';
+export type TitleSource = 'tmdb' | 'igdb';
+
+export interface HeroTitleCastMember {
+  name: string;
+  character: string | null;
+  profile_url: string | null;
+}
+
+export interface HeroTitle {
+  id: string; // '<source>:<external_id>', e.g. 'tmdb:603'
+  source: TitleSource;
+  mediaType: MediaType;
+  externalId: string;
+  title: string;
+  year: number | null;
+  posterUrl: string | null;
+  backdropUrl: string | null;
+  voteAverage: number | null;
+  runtime: number | null;
+  overview: string | null;
+  trailerKey: string | null;
+  watchProviders: Record<string, unknown> | null;
+  cast: HeroTitleCastMember[] | null;
+  stills: string[] | null;
+  revenue: number | null;
+  details: Record<string, unknown> | null;
+}
+
+export interface WatchProvider {
+  name: string;
+  logoUrl: string | null;
+}
+
+export interface TitlesByMedia {
+  film: HeroTitle[];
+  tv: HeroTitle[];
+  game: HeroTitle[];
+}
+
+export function buildTitleId(source: TitleSource, externalId: string): string {
+  return `${source}:${externalId}`;
+}
+
+export function parseTitleId(id: string): { source: string; externalId: string } {
+  const i = id.indexOf(':');
+  return i === -1
+    ? { source: id, externalId: '' }
+    : { source: id.slice(0, i), externalId: id.slice(i + 1) };
+}
+
+/** Strongest title to feature: highest-rated with a backdrop, else highest-rated. */
+export function pickFeaturedTitle(titles: HeroTitle[]): HeroTitle | null {
+  if (titles.length === 0) return null;
+  const withBackdrop = titles.filter((tt) => !!tt.backdropUrl);
+  const pool = withBackdrop.length > 0 ? withBackdrop : titles;
+  return pool.reduce(
+    (best, tt) => ((tt.voteAverage ?? 0) > (best.voteAverage ?? 0) ? tt : best),
+    pool[0],
+  );
+}
+
+/** Split a flat title list into per-media-type buckets, preserving order. */
+export function groupTitlesByMedia(titles: HeroTitle[]): TitlesByMedia {
+  const out: TitlesByMedia = { film: [], tv: [], game: [] };
+  for (const tt of titles) out[tt.mediaType].push(tt);
+  return out;
+}
+
+const TMDB_LOGO_BASE = 'https://image.tmdb.org/t/p/w92';
+
+/** Watch providers from the raw TMDB blob: prefer US, dedupe by provider_name. */
+export function extractProviders(blob: Record<string, unknown> | null): WatchProvider[] {
+  if (!blob) return [];
+  const regionData =
+    (blob['US'] as Record<string, unknown> | undefined) ??
+    Object.values(blob).find(
+      (v): v is Record<string, unknown> => typeof v === 'object' && v !== null,
+    );
+  if (!regionData) return [];
+  const seen = new Map<string, WatchProvider>();
+  for (const key of ['flatrate', 'rent', 'buy'] as const) {
+    const arr = regionData[key];
+    if (!Array.isArray(arr)) continue;
+    for (const p of arr) {
+      if (typeof p !== 'object' || p === null) continue;
+      const row = p as Record<string, unknown>;
+      const name = typeof row['provider_name'] === 'string' ? row['provider_name'] : null;
+      if (!name || seen.has(name)) continue;
+      const logoPath = typeof row['logo_path'] === 'string' ? row['logo_path'] : null;
+      seen.set(name, { name, logoUrl: logoPath ? TMDB_LOGO_BASE + logoPath : null });
+    }
+  }
+  return Array.from(seen.values());
+}
+
+interface TitleRow {
+  id: string;
+  source: TitleSource;
+  media_type: MediaType;
+  external_id: string;
+  title: string;
+  year: number | null;
+  poster_url: string | null;
+  backdrop_url: string | null;
+  vote_average: number | null;
+  runtime: number | null;
+  overview: string | null;
+  trailer_key: string | null;
+  watch_providers: Record<string, unknown> | null;
+  cast_members: HeroTitleCastMember[] | null;
+  stills: string[] | null;
+  revenue: number | null;
+  details: Record<string, unknown> | null;
+}
+
+const TITLE_SELECT =
+  'id, source, media_type, external_id, title, year, poster_url, backdrop_url, vote_average, runtime, overview, trailer_key, watch_providers, cast_members, stills, revenue, details';
+
+function titleRowToHeroTitle(r: TitleRow): HeroTitle {
+  return {
+    id: r.id,
+    source: r.source,
+    mediaType: r.media_type,
+    externalId: r.external_id,
+    title: r.title,
+    year: r.year,
+    posterUrl: r.poster_url,
+    backdropUrl: r.backdrop_url,
+    voteAverage: r.vote_average,
+    runtime: r.runtime,
+    overview: r.overview,
+    trailerKey: r.trailer_key,
+    watchProviders: r.watch_providers,
+    cast: r.cast_members,
+    stills: r.stills,
+    revenue: r.revenue,
+    details: r.details,
+  };
+}
+
+interface JoinRow {
+  rank: number | null;
+  titles: TitleRow | null;
+}
+
+/** Titles a hero appears in, richest-first (rank = issue_count). */
+export async function getHeroTitles(heroId: string): Promise<HeroTitle[]> {
+  const { data, error } = await supabase
+    .from('hero_media_appearances')
+    .select(`rank, titles ( ${TITLE_SELECT} )`)
+    .eq('hero_id', heroId)
+    .order('rank', { ascending: false, nullsFirst: false });
+  if (error || !data) return [];
+  return (data as unknown as JoinRow[])
+    .filter((r) => r.titles !== null)
+    .map((r) => titleRowToHeroTitle(r.titles!));
+}
+
+/** A single title by composite id ('tmdb:603'). Null on error/not found. */
+export async function getTitleById(id: string): Promise<HeroTitle | null> {
+  const { data, error } = await supabase
+    .from('titles')
+    .select(TITLE_SELECT)
+    .eq('id', id)
+    .single();
+  if (error || !data) return null;
+  return titleRowToHeroTitle(data as unknown as TitleRow);
+}
+
+/** Heroes appearing in a title, ranked desc. */
+export async function getTitleHeroes(id: string): Promise<RelatedHeroCard[]> {
+  const { data, error } = await supabase
+    .from('hero_media_appearances')
+    .select('heroes ( id, name, image_url, image_md_url, portrait_url, publisher, alignment )')
+    .eq('title_id', id)
+    .order('rank', { ascending: false, nullsFirst: false })
+    .limit(30);
+  if (error || !data) return [];
+  return (data as unknown as Array<{ heroes: RelatedHeroCard | null }>)
+    .filter((r) => r.heroes !== null)
+    .map((r) => r.heroes!);
+}
