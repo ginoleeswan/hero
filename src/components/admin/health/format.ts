@@ -95,3 +95,40 @@ export const TABS: { key: TabKey; label: string; icon: keyof typeof Ionicons.gly
   { key: 'backfill', label: 'Backfill', icon: 'construct' },
   { key: 'operations', label: 'Operations', icon: 'pulse' },
 ];
+
+// ── Domains (command-center rail; replaces TABS in Task 6) ─────────────────────
+export type DomainKey = 'command' | 'catalog' | 'operations' | 'spend' | 'users' | 'traffic';
+
+export interface DomainDef {
+  key: DomainKey;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  /** Future app-wide domains: render a "coming soon" placeholder. */
+  placeholder?: boolean;
+  /** Show the pending backlog badge on this rail item. */
+  badge?: 'pending';
+}
+
+export const DOMAINS: DomainDef[] = [
+  { key: 'command', label: 'Command', icon: 'grid' },
+  { key: 'catalog', label: 'Catalog', icon: 'albums', badge: 'pending' },
+  { key: 'operations', label: 'Operations', icon: 'pulse' },
+  { key: 'spend', label: 'Spend', icon: 'cash-outline' },
+  { key: 'users', label: 'Users', icon: 'people-outline', placeholder: true },
+  { key: 'traffic', label: 'Traffic', icon: 'trending-up-outline', placeholder: true },
+];
+
+/** Primary (non-placeholder) domain keys — the mobile bottom-bar set. */
+export const primaryDomainKeys = (): DomainKey[] =>
+  DOMAINS.filter((d) => !d.placeholder).map((d) => d.key);
+
+// ── Density scale (compact command-center spacing/sizing) ──────────────────────
+export const DENSITY = {
+  panelPad: 12,
+  panelPadNarrow: 12,
+  radius: 12,
+  gap: 10,
+  rowH: 28,
+  labelSize: 10,
+  hintSize: 11,
+} as const;
