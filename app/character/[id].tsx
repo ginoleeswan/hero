@@ -48,7 +48,7 @@ import {
   removeFavourite,
   getHeroFavouriteCount,
 } from '../../src/lib/db/favourites';
-import { getHeroTitles, type HeroTitle } from '../../src/lib/db/titles';
+import { getHeroTitles, groupTitlesByMedia, type HeroTitle } from '../../src/lib/db/titles';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useRecordView } from '../../src/hooks/useViewHistory';
 import { HeroImage } from '../../src/components/HeroImage';
@@ -1363,14 +1363,33 @@ export default function CharacterScreen() {
                     </ScrollView>
                   </SkeletonProvider>
                 ) : titles && titles.length > 0 ? (
-                  <>
-                    <SectionHeader title={`On Screen (${titles.length})`} />
-                    <MovieStrip
-                      titles={titles}
-                      totalCount={titles.length}
-                      contentInset={20}
-                    />
-                  </>
+                  (() => {
+                    const groups = groupTitlesByMedia(titles);
+                    return (
+                      <>
+                        {groups.film.length > 0 ? (
+                          <>
+                            <SectionHeader title={`On Screen (${groups.film.length})`} />
+                            <MovieStrip
+                              titles={groups.film}
+                              totalCount={groups.film.length}
+                              contentInset={20}
+                            />
+                          </>
+                        ) : null}
+                        {groups.tv.length > 0 ? (
+                          <View style={groups.film.length > 0 ? styles.onScreenSubsection : undefined}>
+                            <SectionHeader title={`Television (${groups.tv.length})`} />
+                            <MovieStrip
+                              titles={groups.tv}
+                              totalCount={groups.tv.length}
+                              contentInset={20}
+                            />
+                          </View>
+                        ) : null}
+                      </>
+                    );
+                  })()
                 ) : null}
               </View>
 
@@ -1753,6 +1772,7 @@ const styles = StyleSheet.create({
   // Full-bleed sections — padded header, edge-to-edge horizontal body.
   sectionHeaderPad: { paddingHorizontal: 20, paddingTop: 20 },
   bleedSection: { paddingBottom: 12 },
+  onScreenSubsection: { marginTop: 20 },
   bleedPad: { paddingHorizontal: 20 },
   bleedRow: { flexDirection: 'row', gap: 10, paddingLeft: 20, paddingRight: 20 },
 

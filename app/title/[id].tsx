@@ -77,7 +77,7 @@ export default function TitleScreen() {
   }
 
   const providers = extractProviders(film.watchProviders);
-  const tmdbUrl = `https://www.themoviedb.org/movie/${film.externalId}`;
+  const tmdbUrl = `https://www.themoviedb.org/${film.mediaType === 'tv' ? 'tv' : 'movie'}/${film.externalId}`;
 
   // ── Dossier cards (web) — match the character page's white-card design system ──
   const overviewCard =
@@ -121,13 +121,28 @@ export default function TitleScreen() {
       </View>
     ) : null;
 
+  const isTv = film.mediaType === 'tv';
+  const tv = (film.details ?? {}) as {
+    seasons?: number | null;
+    episodes?: number | null;
+    episode_runtime?: number | null;
+    networks?: string[] | null;
+  };
+
   const detailRows: { label: string; value: string }[] = [];
-  if (film.year != null) detailRows.push({ label: 'Released', value: String(film.year) });
-  if (film.runtime) detailRows.push({ label: 'Runtime', value: `${film.runtime} min` });
+  if (film.year != null) detailRows.push({ label: isTv ? 'First aired' : 'Released', value: String(film.year) });
+  if (isTv) {
+    if (tv.seasons) detailRows.push({ label: 'Seasons', value: String(tv.seasons) });
+    if (tv.episodes) detailRows.push({ label: 'Episodes', value: String(tv.episodes) });
+    if (tv.episode_runtime) detailRows.push({ label: 'Episode', value: `${tv.episode_runtime} min` });
+    if (tv.networks && tv.networks.length > 0) detailRows.push({ label: 'Network', value: tv.networks.join(', ') });
+  } else if (film.runtime) {
+    detailRows.push({ label: 'Runtime', value: `${film.runtime} min` });
+  }
   if (film.voteAverage != null)
     detailRows.push({ label: 'Rating', value: `★ ${film.voteAverage.toFixed(1)} / 10` });
   const revenue = formatRevenue(film.revenue);
-  if (revenue) detailRows.push({ label: 'Box office', value: revenue });
+  if (!isTv && revenue) detailRows.push({ label: 'Box office', value: revenue });
 
   const detailsCard =
     detailRows.length > 0 ? (

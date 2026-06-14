@@ -19,7 +19,7 @@ import { COLORS } from '../../src/constants/colors';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { StatBar } from '../../src/components/web/StatBar';
 import { MovieStrip } from '../../src/components/MovieStrip';
-import { getHeroTitles, type HeroTitle } from '../../src/lib/db/titles';
+import { getHeroTitles, groupTitlesByMedia, type HeroTitle } from '../../src/lib/db/titles';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
 import { NarrativeSection } from '../../src/components/character/NarrativeSection';
 import { getHeroNarrative, type HeroNarrative } from '../../src/lib/db/heroFacts';
@@ -951,18 +951,27 @@ export default function WebCharacterScreen() {
                     </View>
                   </View>
                 ) : titles && titles.length > 0 ? (
-                  <View style={styles.card}>
-                    <Text style={styles.cardTitle}>
-                      On Screen ({titles.length})
-                    </Text>
-                    <View style={styles.cardDivider} />
-                    <MovieStrip
-                      titles={titles}
-                      totalCount={titles.length}
-                      contentInset={20}
-                      bleedMargin={20}
-                    />
-                  </View>
+                  (() => {
+                    const groups = groupTitlesByMedia(titles);
+                    return (
+                      <View style={styles.card}>
+                        {groups.film.length > 0 ? (
+                          <>
+                            <Text style={styles.cardTitle}>On Screen ({groups.film.length})</Text>
+                            <View style={styles.cardDivider} />
+                            <MovieStrip titles={groups.film} totalCount={groups.film.length} contentInset={20} bleedMargin={20} />
+                          </>
+                        ) : null}
+                        {groups.tv.length > 0 ? (
+                          <View style={groups.film.length > 0 ? { marginTop: 22 } : undefined}>
+                            <Text style={styles.cardTitle}>Television ({groups.tv.length})</Text>
+                            <View style={styles.cardDivider} />
+                            <MovieStrip titles={groups.tv} totalCount={groups.tv.length} contentInset={20} bleedMargin={20} />
+                          </View>
+                        ) : null}
+                      </View>
+                    );
+                  })()
                 ) : null}
 
                 {/* In Print — debut feature + cover gallery */}
@@ -1449,19 +1458,31 @@ export default function WebCharacterScreen() {
 
                 {/* On Screen */}
                 {titles && titles.length > 0 ? (
-                  <View style={styles.mSection}>
-                    <View style={styles.mSectionHead}>
-                      <Text style={styles.mSectionTitle}>
-                        On Screen ({titles.length})
-                      </Text>
-                      <View style={styles.mSectionDivider} />
-                    </View>
-                    <MovieStrip
-                      titles={titles}
-                      totalCount={titles.length}
-                      contentInset={16}
-                    />
-                  </View>
+                  (() => {
+                    const groups = groupTitlesByMedia(titles);
+                    return (
+                      <>
+                        {groups.film.length > 0 ? (
+                          <View style={styles.mSection}>
+                            <View style={styles.mSectionHead}>
+                              <Text style={styles.mSectionTitle}>On Screen ({groups.film.length})</Text>
+                              <View style={styles.mSectionDivider} />
+                            </View>
+                            <MovieStrip titles={groups.film} totalCount={groups.film.length} contentInset={16} />
+                          </View>
+                        ) : null}
+                        {groups.tv.length > 0 ? (
+                          <View style={styles.mSection}>
+                            <View style={styles.mSectionHead}>
+                              <Text style={styles.mSectionTitle}>Television ({groups.tv.length})</Text>
+                              <View style={styles.mSectionDivider} />
+                            </View>
+                            <MovieStrip titles={groups.tv} totalCount={groups.tv.length} contentInset={16} />
+                          </View>
+                        ) : null}
+                      </>
+                    );
+                  })()
                 ) : null}
 
                 {/* In Print */}
