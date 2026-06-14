@@ -15,7 +15,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Path, Polyline } from 'react-native-svg';
 import { useAuth } from '../../src/hooks/useAuth';
 import { supabase } from '../../src/lib/supabase';
 import { getProfile } from '../../src/lib/db/profiles';
@@ -46,102 +45,29 @@ import {
   type PublisherCoverage,
   type EnrichmentRun,
   type RunHistoryPage,
-  type HealthSnapshot,
   type AdminHeroResult,
 } from '../../src/lib/db/catalogHealth';
-
-const DRAIN_CRON = 'enrich-comicvine-pending';
-const CV_HOURLY_CAP = 200;
-
-const relTime = (iso: string) => {
-  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return `${s}s ago`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
-};
-
-// Day bucketing for the run-history dashboard.
-const dayKey = (iso: string) => new Date(iso).toDateString();
-const dayLabel = (iso: string) => {
-  const d = new Date(iso);
-  const today = new Date();
-  const yest = new Date();
-  yest.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return 'Today';
-  if (d.toDateString() === yest.toDateString()) return 'Yesterday';
-  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-};
-
-const pct = (have: number, total: number) => (total > 0 ? Math.round((have / total) * 100) : 0);
-
-/** Wall-clock HH:MM:SS for log lines (24h, no locale surprises). */
-const logClock = (ms: number) => new Date(ms).toLocaleTimeString([], { hour12: false });
-
-/** Shared status → colour for runs (table + mobile cards + log). */
-const runStatusColor = (status: string) =>
-  status === 'running'
-    ? COLORS.orange
-    : status === 'error'
-      ? COLORS.red
-      : status === 'stopped'
-        ? COLORS.navy
-        : COLORS.green;
-
-/** Shared source ("admin"/cron) chip colours for runs (table + mobile cards). */
-const runSourceChip = (by: string) => ({
-  bg: by === 'admin' ? COLORS.orange + '22' : '#efe6d6',
-  fg: by === 'admin' ? COLORS.orange : COLORS.navy,
-});
-
-// ── Activity log ──────────────────────────────────────────────────────────────
-type LogTone = 'info' | 'success' | 'error' | 'pending';
-interface LogEntry {
-  id: number;
-  at: number;
-  tone: LogTone;
-  text: string;
-}
-const LOG_TONE_COLOR: Record<LogTone, string> = {
-  success: COLORS.green,
-  error: COLORS.red,
-  pending: COLORS.orange,
-  info: COLORS.navy,
-};
-
-/** Health colour ramp: red (poor) → gold (partial) → green (strong). */
-const healthColor = (p: number) =>
-  p >= 80 ? COLORS.green : p >= 50 ? COLORS.yellow : COLORS.red;
-
-// ── Coverage metric catalogue (label, tint, whether it has a worklist) ────────
-interface MetricDef {
-  key: keyof CatalogHealth['metrics'];
-  label: string;
-  blurb: string;
-  tint: string;
-  worklist?: CoverageMetric;
-}
-const METRICS: MetricDef[] = [
-  { key: 'portrait', label: 'AI Portraits', blurb: 'Styled hero art', tint: COLORS.orange, worklist: 'portrait' },
-  { key: 'summary', label: 'Summaries', blurb: 'Short bio deck', tint: COLORS.blue, worklist: 'summary' },
-  { key: 'firstIssue', label: 'First Issue', blurb: 'Debut + cover', tint: COLORS.gold, worklist: 'firstIssue' },
-  { key: 'image', label: 'Source Image', blurb: 'ComicVine art', tint: COLORS.green },
-  { key: 'stats', label: 'Powerstats', blurb: 'The six dials', tint: COLORS.green },
-];
-
-const WORKLIST_LABEL: Record<CoverageMetric, string> = {
-  portrait: 'AI Portraits',
-  summary: 'Summaries',
-  firstIssue: 'First Issue',
-};
-
-// ── Tabs (shared by the desktop pill row and the mobile bottom bar) ───────────
-type TabKey = 'overview' | 'backfill' | 'operations';
-const TABS: { key: TabKey; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'overview', label: 'Overview', icon: 'stats-chart' },
-  { key: 'backfill', label: 'Backfill', icon: 'construct' },
-  { key: 'operations', label: 'Operations', icon: 'pulse' },
-];
+import {
+  DRAIN_CRON,
+  CV_HOURLY_CAP,
+  relTime,
+  dayKey,
+  dayLabel,
+  pct,
+  logClock,
+  runStatusColor,
+  runSourceChip,
+  healthColor,
+  LOG_TONE_COLOR,
+  METRICS,
+  WORKLIST_LABEL,
+  TABS,
+  type LogTone,
+  type LogEntry,
+  type MetricDef,
+  type TabKey,
+} from '../../src/components/admin/health/format';
+import { Gauge, Donut, BarRow, CompletenessChart } from '../../src/components/admin/health/charts';
 
 // Mobile bottom navigation — fixed to the viewport (sticky releases here because
 // #root is clamped to 100dvh; fixed + translateZ pins it like the global TopBar).
@@ -247,44 +173,6 @@ function AlertPill({
     </Pressable>
   ) : (
     <View style={style}>{inner}</View>
-  );
-}
-
-// ── Completeness gauge ────────────────────────────────────────────────────────
-function Gauge({ value, size = 150 }: { value: number; size?: number }) {
-  const small = size < 110;
-  const stroke = small ? 8 : size < 130 ? 10 : 12;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const tint = healthColor(value);
-  const offset = c * (1 - value / 100);
-  // Scale the centre readout to the ring (≈46px at the 150 desktop size, so the
-  // desktop gauge is unchanged) so a 76px mobile gauge stays legible & tight.
-  const numSize = Math.round(size * 0.31);
-  return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
-        <Circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,0.12)" strokeWidth={stroke} fill="none" />
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke={tint}
-          strokeWidth={stroke}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={offset}
-        />
-      </Svg>
-      <View style={styles.gaugeCenter}>
-        <View style={styles.gaugeNumRow}>
-          <Text style={[styles.gaugeNum, { fontSize: numSize, lineHeight: numSize + 2 }]}>{value}</Text>
-          <Text style={[styles.gaugePct, { fontSize: Math.round(numSize * 0.42) }]}>%</Text>
-        </View>
-        {!small && <Text style={[styles.gaugeCaption, { color: tint }]}>complete</Text>}
-      </View>
-    </View>
   );
 }
 
@@ -586,123 +474,6 @@ function RunItem({ run: r, narrow }: { run: EnrichmentRun; narrow: boolean }) {
       <Text style={styles.runDur}>
         {r.duration_ms != null ? `${(r.duration_ms / 1000).toFixed(1)}s` : '—'}
       </Text>
-    </View>
-  );
-}
-
-// Segmented ring (alignment split).
-function Donut({
-  segments,
-  total,
-}: {
-  segments: { value: number; color: string; label: string }[];
-  total: number;
-}) {
-  const size = 132;
-  const stroke = 17;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  let acc = 0;
-  return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
-        <Circle cx={size / 2} cy={size / 2} r={r} stroke="#efe6d6" strokeWidth={stroke} fill="none" />
-        {segments.map((s, i) => {
-          const frac = total > 0 ? s.value / total : 0;
-          const el = (
-            <Circle
-              key={i}
-              cx={size / 2}
-              cy={size / 2}
-              r={r}
-              stroke={s.color}
-              strokeWidth={stroke}
-              fill="none"
-              strokeDasharray={`${frac * c} ${c}`}
-              strokeDashoffset={-acc * c}
-            />
-          );
-          acc += frac;
-          return el;
-        })}
-      </Svg>
-      <View style={{ position: 'absolute', alignItems: 'center' }}>
-        <Text style={styles.donutNum}>{total.toLocaleString()}</Text>
-        <Text style={styles.donutLabel}>heroes</Text>
-      </View>
-    </View>
-  );
-}
-
-// Horizontal stat row — label + value on top, then a FULL-WIDTH bar beneath.
-// The track is a plain block (stretched to full width by its column parent), so
-// the % fill resolves; a % inside a flex-sized track collapses to 0 in Yoga.
-function BarRow({
-  label,
-  value,
-  max,
-  color,
-}: {
-  label: string;
-  value: number;
-  max: number;
-  color: string;
-}) {
-  const p = max > 0 ? Math.round((value / max) * 100) : 0;
-  return (
-    <View style={styles.barRow}>
-      <View style={styles.barHead}>
-        <Text style={styles.barLabel} numberOfLines={1}>
-          {label}
-        </Text>
-        <Text style={styles.barValue}>{value.toLocaleString()}</Text>
-      </View>
-      <View style={styles.barTrack}>
-        <View style={[styles.barFill, { width: `${p}%`, backgroundColor: color }]} />
-      </View>
-    </View>
-  );
-}
-
-// Completeness-over-time area+line. Fixed 0–100 Y scale; width measured on layout.
-function CompletenessChart({ snaps }: { snaps: HealthSnapshot[] }) {
-  const [w, setW] = useState(0);
-  const H = 160;
-  const padT = 12;
-  const padB = 22;
-  const vals = snaps.map((s) => {
-    const ms = [s.portrait, s.image, s.stats, s.summary, s.first_issue].map((m) =>
-      s.total > 0 ? (m / s.total) * 100 : 0,
-    );
-    return Math.round(ms.reduce((a, b) => a + b, 0) / ms.length);
-  });
-  const yOf = (v: number) => padT + (1 - v / 100) * (H - padT - padB);
-  const xOf = (i: number) => (vals.length <= 1 ? w / 2 : (i / (vals.length - 1)) * w);
-  const line = vals.map((v, i) => `${xOf(i)},${yOf(v)}`).join(' ');
-  const area = vals.length
-    ? `M0,${H - padB} ` + vals.map((v, i) => `L${xOf(i)},${yOf(v)}`).join(' ') + ` L${w},${H - padB} Z`
-    : '';
-  return (
-    <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ height: H }}>
-      {w > 0 && (
-        <Svg width={w} height={H}>
-          {[0, 50, 100].map((g) => (
-            <Polyline
-              key={g}
-              points={`0,${yOf(g)} ${w},${yOf(g)}`}
-              stroke="#efe6d6"
-              strokeWidth={1}
-            />
-          ))}
-          {area ? <Path d={area} fill={COLORS.green + '1f'} /> : null}
-          {vals.length > 1 && (
-            <Polyline points={line} fill="none" stroke={COLORS.green} strokeWidth={2.5} />
-          )}
-          {vals.map((v, i) => (
-            <Circle key={i} cx={xOf(i)} cy={yOf(v)} r={vals.length === 1 ? 5 : 3.5} fill={COLORS.green} />
-          ))}
-        </Svg>
-      )}
     </View>
   );
 }
@@ -2040,19 +1811,6 @@ const styles = StyleSheet.create({
   statusDot: { width: 7, height: 7, borderRadius: 7 },
   statusChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(255,255,255,0.85)' },
 
-  // Gauge
-  gaugeCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  gaugeNumRow: { flexDirection: 'row', alignItems: 'baseline' },
-  gaugeNum: { fontFamily: 'Flame-Regular', fontSize: 46, color: '#fff', lineHeight: 48 },
-  gaugePct: { fontFamily: 'Flame-Regular', fontSize: 19, color: 'rgba(255,255,255,0.55)' },
-  gaugeCaption: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    marginTop: 2,
-  },
-
   // Masthead scoreboard
   scoreboard: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 16, flexWrap: 'wrap' },
   // Mobile: a tidy single-row stat strip on a translucent panel, no dividers.
@@ -2440,14 +2198,6 @@ const styles = StyleSheet.create({
   // Horizontal stat bars (mobile Alignment + Power, desktop Largest publishers):
   // full-width bar under a label/value line.
   barList: { gap: 10, marginTop: 8 },
-  barRow: { gap: 8, paddingVertical: 6 },
-  barHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 },
-  barLabel: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
-  barTrack: { height: 12, backgroundColor: 'rgba(41,60,67,0.08)', borderRadius: 6, overflow: 'hidden' },
-  barFill: { height: 12, borderRadius: 6 },
-  barValue: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.navy },
-  donutNum: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.black, lineHeight: 28 },
-  donutLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey },
   donutWrap: { flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 8 },
   legend: { flex: 1, gap: 8 },
   legendRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
