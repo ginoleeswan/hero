@@ -1,10 +1,52 @@
 // Run-history dashboard — KPI summary + per-day grouped runs + load-more.
+import { useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
-import type { EnrichmentRun } from '../../../lib/db/catalogHealth';
+import { getRunHeroes, type EnrichmentRun } from '../../../lib/db/catalogHealth';
 import { relTime, runStatusColor, runSourceChip, runTypeLabel, dayKey, dayLabel } from './format';
 import { Chip } from './atoms';
+
+// Lazy-loaded list of the heroes a run touched (per-run audit). Click to open.
+function RunHeroes({ runId }: { runId: number }) {
+  const router = useRouter();
+  const { data, isLoading } = useQuery({
+    queryKey: ['runHeroes', runId],
+    queryFn: () => getRunHeroes(runId),
+    staleTime: 60_000,
+  });
+  if (isLoading) return <ActivityIndicator size="small" color={COLORS.orange} style={{ marginVertical: 10 }} />;
+  if (!data || data.length === 0) {
+    return <Text style={styles.runHeroesEmpty}>No per-hero audit recorded for this run.</Text>;
+  }
+  return (
+    <View style={styles.runHeroesWrap}>
+      <Text style={styles.runHeroesHead}>{data.length} hero{data.length === 1 ? '' : 'es'}</Text>
+      <View style={styles.runHeroesChips}>
+        {data.map((h) => (
+          <Pressable key={h.id} onPress={() => router.push(`/character/${h.id}`)} style={styles.runHeroChip}>
+            <Text style={styles.runHeroChipText}>{h.name}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// A run + its expandable per-hero audit.
+function RunRow({ run, narrow }: { run: EnrichmentRun; narrow: boolean }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <View>
+      <Pressable onPress={() => setOpen((v) => !v)} style={styles.runPressable}>
+        <RunItem run={run} narrow={narrow} open={open} />
+      </Pressable>
+      {open ? <RunHeroes runId={run.id} /> : null}
+    </View>
+  );
+}
 
 // Compact labelled stat used by the mobile run cards.
 function RunStat({ label, value, tint }: { label: string; value: string; tint: string }) {
@@ -28,13 +70,14 @@ function KpiTile({ label, value, tint }: { label: string; value: string; tint: s
 
 // One run — a stacked card on mobile, a table row on desktop. Shared by the
 // grouped list so both layouts stay in lockstep.
-function RunItem({ run: r, narrow }: { run: EnrichmentRun; narrow: boolean }) {
+function RunItem({ run: r, narrow, open }: { run: EnrichmentRun; narrow: boolean; open: boolean }) {
   const c = runStatusColor(r.status);
   const src = runSourceChip(r.triggered_by);
   if (narrow) {
     return (
       <View style={styles.runCard}>
         <View style={styles.runCardHead}>
+          <Ionicons name={open ? 'chevron-down' : 'chevron-forward'} size={14} color={COLORS.grey} />
           <Text style={styles.runCardType} numberOfLines={1}>{runTypeLabel(r.run_type)}</Text>
           <Text style={styles.runCardWhen}>{relTime(r.created_at)}</Text>
         </View>
@@ -70,7 +113,10 @@ function RunItem({ run: r, narrow }: { run: EnrichmentRun; narrow: boolean }) {
   }
   return (
     <View style={styles.runRow}>
-      <Text style={styles.runWhen}>{relTime(r.created_at)}</Text>
+      <View style={styles.runWhen}>
+        <Ionicons name={open ? 'chevron-down' : 'chevron-forward'} size={13} color={COLORS.grey} />
+        <Text style={styles.runWhenText}>{relTime(r.created_at)}</Text>
+      </View>
       <Text style={styles.runType} numberOfLines={1}>{runTypeLabel(r.run_type)}</Text>
       <View style={styles.runStatusCol}>
         <Chip bg={c + '22'} fg={c} text={r.status} spinner={r.status === 'running'} capitalize />
@@ -188,7 +234,7 @@ export function RunHistory({
           )}
           <View style={narrow ? styles.runCards : undefined}>
             {g.runs.map((r) => (
-              <RunItem key={r.id} run={r} narrow={narrow} />
+              <RunRow key={r.id} run={r} narrow={narrow} />
             ))}
           </View>
         </View>
@@ -282,7 +328,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f6f0e6',
   },
-  runWhen: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
+  runWhen: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  runWhenText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
   runType: { flex: 1.3, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.orange },
   runStatusCol: { width: 96 },
   runBy: { width: 84 },
@@ -294,6 +341,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.grey,
   },
+
+  // Expandable per-run audit
+  runPressable: { cursor: 'pointer' } as object,
+  runHeroesWrap: {
+    backgroundColor: '#faf6ee', borderRadius: 10, padding: 11, marginTop: 4, marginBottom: 6, gap: 8,
+  },
+  runHeroesHead: {
+    fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey,
+    textTransform: 'uppercase', letterSpacing: 0.5,
+  },
+  runHeroesChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  runHeroChip: {
+    backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(41,60,67,0.1)',
+    borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5,
+  } as object,
+  runHeroChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
+  runHeroesEmpty: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, marginVertical: 8, marginLeft: 4 },
 
   // Mobile run cards
   runCards: { gap: 10, marginTop: 8 },

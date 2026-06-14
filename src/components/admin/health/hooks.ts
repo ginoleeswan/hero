@@ -25,6 +25,7 @@ import {
   runWikidataResolve,
   runWikidataEnrich,
   getEnrichmentProgress,
+  getRecentlyEnriched,
   toggleCron,
   type CoverageMetric,
   type RunHistoryPage,
@@ -127,6 +128,12 @@ export function useCatalogQueries({
     enabled,
     staleTime: 30_000,
   });
+  const recentEnrichedQ = useQuery({
+    queryKey: ['recentlyEnriched'],
+    queryFn: () => getRecentlyEnriched(24),
+    enabled,
+    staleTime: 15_000,
+  });
 
   // While a run is in flight, poll backlog + usage so the live numbers tick down.
   const runsData = runsQ.data;
@@ -157,7 +164,7 @@ export function useCatalogQueries({
     };
   }, [enabled, queryClient]);
 
-  return { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ, enrichProgressQ };
+  return { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ, enrichProgressQ, recentEnrichedQ };
 }
 
 /**
@@ -200,6 +207,7 @@ const REFRESH_KEYS = [
   'geminiSpend',
   'ambiguousHeroes',
   'enrichmentProgress',
+  'recentlyEnriched',
 ];
 
 /**

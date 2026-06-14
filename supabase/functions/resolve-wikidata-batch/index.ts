@@ -127,7 +127,7 @@ interface HeroRow {
   first_appearance: string | null; creators: string[] | null;
 }
 
-async function runResolve(sb: SB, limit: number, retryUnresolved: boolean): Promise<number> {
+async function runResolve(sb: SB, limit: number, retryUnresolved: boolean, runId: number | null): Promise<number> {
   const statuses = retryUnresolved ? ['pending', 'unresolved'] : ['pending'];
   const { data: heroes } = await sb
     .from('heroes')
@@ -157,6 +157,7 @@ async function runResolve(sb: SB, limit: number, retryUnresolved: boolean): Prom
         wikidata_qid: outcome.qid,
         wikidata_candidates: outcome.candidates.length > 0 ? outcome.candidates : null,
       }).eq('id', h.id);
+      if (runId != null) await sb.from('enrichment_run_heroes').insert({ run_id: runId, hero_id: h.id });
     } catch (err) {
       console.error('[resolve-wikidata-batch] threw', h.id, err); // leave pending
     }
@@ -185,7 +186,7 @@ serve(async (req: Request) => {
 
   let calls = 0;
   try {
-    calls = await runResolve(sb, limit, retryUnresolved);
+    calls = await runResolve(sb, limit, retryUnresolved, runId);
   } catch (err) {
     if (runId != null) await sb.from('enrichment_runs').update({ status: 'error' }).eq('id', runId);
     return json({ error: String(err) }, 500);

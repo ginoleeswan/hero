@@ -101,6 +101,36 @@ export type Database = {
         }
         Relationships: []
       }
+      enrichment_run_heroes: {
+        Row: {
+          hero_id: string
+          run_id: number
+        }
+        Insert: {
+          hero_id: string
+          run_id: number
+        }
+        Update: {
+          hero_id?: string
+          run_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrichment_run_heroes_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrichment_run_heroes_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "enrichment_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enrichment_runs: {
         Row: {
           cancel_requested: boolean

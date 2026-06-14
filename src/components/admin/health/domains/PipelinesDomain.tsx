@@ -2,7 +2,7 @@
 // Compact 2-D dashboard: pipeline cards (with ring gauges) sit beside the live
 // activity log so running a drain and seeing its result need no scrolling; crons
 // and the review queue pair below; full run history underneath.
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
@@ -10,14 +10,17 @@ import { Bento } from '../Bento';
 import { Panel } from '../Panel';
 import { RunHistory } from '../RunHistory';
 import { ActivityLog } from '../ActivityLog';
+import { useRouter } from 'expo-router';
 import { InfoTip } from '../InfoTip';
 import { HeroThumb } from '../atoms';
+import { relTime, runTypeLabel } from '../format';
 import type {
   AmbiguousHero,
   CatalogHealth,
   CronJob,
   EnrichmentProgress,
   EnrichmentRun,
+  RecentlyEnriched,
 } from '../../../../lib/db/catalogHealth';
 import type { LogEntry } from '../format';
 
@@ -125,6 +128,7 @@ export function PipelinesDomain({
   runsLoading,
   runsFetching,
   onLoadMore,
+  recentlyEnriched,
   log,
   clearLog,
   narrow,
@@ -147,13 +151,15 @@ export function PipelinesDomain({
   runsLoading: boolean;
   runsFetching: boolean;
   onLoadMore: () => void;
+  recentlyEnriched: RecentlyEnriched[];
   log: LogEntry[];
   clearLog: () => void;
   narrow: boolean;
 }) {
+  const router = useRouter();
   const p = progress ?? {
     heroesTotal: 0, comicvineDone: 0, resolved: 0, ambiguous: 0, unresolved: 0,
-    enriched: 0, filmTitles: 0, tvTitles: 0, gameTitles: 0,
+    enriched: 0, filmTitles: 0, tvTitles: 0, gameTitles: 0, mediaDone: 0,
   };
   const failed = h.cvStatus.failed ?? 0;
 
@@ -165,9 +171,9 @@ export function PipelinesDomain({
       run: { label: `Run ${batchSize}`, busyKey: 'drain', onPress: onRunDrain },
     },
     {
-      key: 'tmdb', name: 'TMDB · film', blurb: `${p.filmTitles.toLocaleString()} film titles`,
-      tip: 'Adds rich media to matched film & TV titles — posters, backdrops, trailers, cast and where-to-watch. Runs automatically on a schedule (see Scheduled crons).',
-      have: p.filmTitles, total: p.filmTitles, note: 'cron',
+      key: 'tmdb', name: 'TMDB · media', blurb: `${p.mediaDone.toLocaleString()} of ${(p.filmTitles + p.tvTitles).toLocaleString()} film/TV enriched`,
+      tip: 'Adds rich media to matched film & TV titles — posters, backdrops, trailers, cast and where-to-watch. Runs automatically on a schedule; it keeps working as Wikidata discovers new titles.',
+      have: p.mediaDone, total: p.filmTitles + p.tvTitles, note: 'cron',
     },
     {
       key: 'wd-resolve', name: 'Wikidata · resolve', blurb: 'Hero → QID identity',
@@ -286,7 +292,8 @@ export function PipelinesDomain({
           {ambiguous.length === 0 ? (
             <Text style={styles.empty}>All clear — nothing waiting on you.</Text>
           ) : (
-            ambiguous.map((hero) => {
+            <ScrollView style={styles.reviewScroll} nestedScrollEnabled showsVerticalScrollIndicator>
+            {ambiguous.map((hero) => {
               const busyThis = busy === `resolveqid-${hero.id}`;
               return (
                 <View key={hero.id} style={styles.reviewRow}>
@@ -311,10 +318,40 @@ export function PipelinesDomain({
                   </View>
                 </View>
               );
-            })
+            })}
+            </ScrollView>
           )}
         </Panel>
       </Bento.Row>
+
+      {/* Who actually got enriched, newest first (per-run audit log). */}
+      <Panel
+        title="Recently enriched"
+        hint="The exact heroes each drain just touched — click one to open it."
+        action={<InfoTip text="Every hero a run processed is logged here. Newest first; the chip shows which pipeline did it and when. Use this to confirm a run actually did what you expected." />}
+      >
+        {recentlyEnriched.length === 0 ? (
+          <Text style={styles.empty}>Nothing yet — run a drain and the heroes it touches appear here.</Text>
+        ) : (
+          <View style={styles.reGrid}>
+            {recentlyEnriched.map((r, i) => (
+              <Pressable
+                key={`${r.heroId}-${i}`}
+                onPress={() => router.push(`/character/${r.heroId}`)}
+                style={styles.reCard}
+              >
+                <HeroThumb uri={r.imageUrl} width={30} height={40} radius={6} />
+                <View style={styles.reMeta}>
+                  <Text style={styles.reName} numberOfLines={1}>{r.name}</Text>
+                  <Text style={styles.reSub} numberOfLines={1}>
+                    {runTypeLabel(r.runType)}{r.at ? ` · ${relTime(r.at)}` : ''}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        )}
+      </Panel>
 
       {/* Bottom: full run history across every drain. */}
       <Panel title="Run history" hint={`${runsTotal.toLocaleString()} runs · cron + manual · auto-refreshes`}>
@@ -395,7 +432,20 @@ const styles = StyleSheet.create({
   cronBtnTextStart: { color: '#fff' },
   cronBtnTextStop: { color: COLORS.navy },
 
+  // Recently enriched
+  reGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  reCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 9,
+    flexBasis: '31%', flexGrow: 1, minWidth: 190,
+    backgroundColor: '#fff', borderRadius: 10, borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.08)', paddingVertical: 7, paddingHorizontal: 9,
+  } as object,
+  reMeta: { flex: 1, minWidth: 0, gap: 1 },
+  reName: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
+  reSub: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.orange },
+
   // Needs attention
+  reviewScroll: { maxHeight: 320 } as object,
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 13.5, color: COLORS.grey },
   reviewRow: {
     flexDirection: 'column', gap: 8, paddingVertical: 9,

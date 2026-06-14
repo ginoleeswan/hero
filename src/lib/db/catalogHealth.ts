@@ -140,6 +140,37 @@ export async function getRunHistory(limit = 30): Promise<RunHistoryPage> {
   return { runs: (data ?? []) as EnrichmentRun[], total: count ?? 0 };
 }
 
+export interface RecentlyEnriched {
+  heroId: string;
+  name: string;
+  imageUrl: string | null;
+  runType: string;
+  at: string;
+}
+
+/** The heroes most-recently touched by any drain, newest run first (audit log). */
+export async function getRecentlyEnriched(limit = 24): Promise<RecentlyEnriched[]> {
+  const { data, error } = await supabase
+    .from('enrichment_run_heroes')
+    .select('run_id, heroes ( id, name, image_md_url, portrait_url ), enrichment_runs ( run_type, created_at )')
+    .order('run_id', { ascending: false })
+    .limit(limit);
+  if (error || !data) return [];
+  type Row = {
+    heroes: { id: string; name: string; image_md_url: string | null; portrait_url: string | null } | null;
+    enrichment_runs: { run_type: string; created_at: string } | null;
+  };
+  return (data as unknown as Row[])
+    .filter((r) => r.heroes !== null)
+    .map((r) => ({
+      heroId: r.heroes!.id,
+      name: r.heroes!.name,
+      imageUrl: r.heroes!.portrait_url ?? r.heroes!.image_md_url,
+      runType: r.enrichment_runs?.run_type ?? '',
+      at: r.enrichment_runs?.created_at ?? '',
+    }));
+}
+
 export interface CronJob {
   jobname: string;
   schedule: string;
@@ -284,6 +315,19 @@ export interface EnrichmentProgress {
   filmTitles: number;
   tvTitles: number;
   gameTitles: number;
+  mediaDone: number; // tmdb (film+tv) titles enriched
+}
+
+/** Hero names a given run touched (per-run audit). */
+export async function getRunHeroes(runId: number): Promise<{ id: string; name: string }[]> {
+  const { data, error } = await supabase
+    .from('enrichment_run_heroes')
+    .select('heroes ( id, name )')
+    .eq('run_id', runId)
+    .limit(200);
+  if (error || !data) return [];
+  type Row = { heroes: { id: string; name: string } | null };
+  return (data as unknown as Row[]).filter((r) => r.heroes !== null).map((r) => r.heroes!);
 }
 
 async function awaitCount(qb: PromiseLike<{ count: number | null }>): Promise<number> {
@@ -297,7 +341,7 @@ export async function getEnrichmentProgress(): Promise<EnrichmentProgress> {
   const titleCount = () => supabase.from('titles').select('*', { count: 'exact', head: true });
   const [
     heroesTotal, comicvineDone, resolved, ambiguous, unresolved, enriched,
-    filmTitles, tvTitles, gameTitles,
+    filmTitles, tvTitles, gameTitles, mediaDone,
   ] = await Promise.all([
     awaitCount(heroCount()),
     awaitCount(heroCount().eq('comicvine_status', 'done')),
@@ -308,8 +352,9 @@ export async function getEnrichmentProgress(): Promise<EnrichmentProgress> {
     awaitCount(titleCount().eq('media_type', 'film')),
     awaitCount(titleCount().eq('media_type', 'tv')),
     awaitCount(titleCount().eq('media_type', 'game')),
+    awaitCount(titleCount().eq('source', 'tmdb').eq('enrich_status', 'done')),
   ]);
-  return { heroesTotal, comicvineDone, resolved, ambiguous, unresolved, enriched, filmTitles, tvTitles, gameTitles };
+  return { heroesTotal, comicvineDone, resolved, ambiguous, unresolved, enriched, filmTitles, tvTitles, gameTitles, mediaDone };
 }
 
 export type ComicvineStatus = 'ok' | 'limited' | 'error';

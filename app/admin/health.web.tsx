@@ -61,7 +61,7 @@ export default function AdminHealthScreen() {
     if (gateResolved && !isAdmin) router.replace('/explore');
   }, [gateResolved, isAdmin, router]);
 
-  const { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ, enrichProgressQ } =
+  const { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ, enrichProgressQ, recentEnrichedQ } =
     useCatalogQueries({
       enabled: gateResolved && isAdmin,
       metric,
@@ -326,6 +326,7 @@ export default function AdminHealthScreen() {
             runsLoading={runsQ.isLoading}
             runsFetching={runsQ.isFetching}
             onLoadMore={() => setHistoryLimit((l) => l + 30)}
+            recentlyEnriched={recentEnrichedQ.data ?? []}
             log={log}
             clearLog={clearLog}
             narrow={narrow}

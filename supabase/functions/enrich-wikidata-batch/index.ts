@@ -94,7 +94,7 @@ SELECT DISTINCT ?performerLabel ?kind WHERE {
   return out;
 }
 
-async function runEnrich(sb: SB, limit: number, retry: boolean): Promise<number> {
+async function runEnrich(sb: SB, limit: number, retry: boolean, runId: number | null): Promise<number> {
   let q = sb.from('heroes').select('id, wikidata_qid, issue_count')
     .eq('wikidata_status', 'resolved').not('wikidata_qid', 'is', null)
     .order('issue_count', { ascending: false, nullsFirst: false }).limit(limit);
@@ -131,6 +131,7 @@ async function runEnrich(sb: SB, limit: number, retry: boolean): Promise<number>
         );
       }
       await sb.from('heroes').update({ wikidata_enriched_at: new Date().toISOString() }).eq('id', h.id);
+      if (runId != null) await sb.from('enrichment_run_heroes').insert({ run_id: runId, hero_id: h.id });
     } catch (err) {
       console.error('[enrich-wikidata-batch] threw', h.id, err);
     }
@@ -158,7 +159,7 @@ serve(async (req: Request) => {
   const runId = (runRow as { id?: number } | null)?.id ?? null;
 
   let calls = 0;
-  try { calls = await runEnrich(sb, limit, retry); }
+  try { calls = await runEnrich(sb, limit, retry, runId); }
   catch (err) {
     if (runId != null) await sb.from('enrichment_runs').update({ status: 'error' }).eq('id', runId);
     return json({ error: String(err) }, 500);
