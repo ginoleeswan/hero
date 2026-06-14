@@ -21,6 +21,8 @@ import { StatBar } from '../../src/components/web/StatBar';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { getHeroTitles, type HeroTitle } from '../../src/lib/db/titles';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
+import { NarrativeSection } from '../../src/components/character/NarrativeSection';
+import { getHeroNarrative, type HeroNarrative } from '../../src/lib/db/heroFacts';
 import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
 import { useHeroPercentile, useRelatedHeroes } from '../../src/lib/query/heroQueries';
 import type { RelatedHeroCard } from '../../src/lib/db/heroes';
@@ -171,6 +173,7 @@ export default function WebCharacterScreen() {
   // constant top position regardless of how much identity content the stage has.
   const [stageHeight, setStageHeight] = useState(0);
   const [family, setFamily] = useState<FamilyMember[]>([]);
+  const [narrative, setNarrative] = useState<HeroNarrative | null>(null);
   const [titles, setTitles] = useState<HeroTitle[] | null>(null);
 
   useEffect(() => {
@@ -179,6 +182,16 @@ export default function WebCharacterScreen() {
     getHeroFamily(id)
       .then(setFamily)
       .catch(() => setFamily([]));
+  }, [id]);
+
+  useEffect(() => {
+    setNarrative(null);
+    if (!id) return;
+    let active = true;
+    getHeroNarrative(id)
+      .then((n) => { if (active) setNarrative(n); })
+      .catch(() => { if (active) setNarrative(null); });
+    return () => { active = false; };
   }, [id]);
 
   useEffect(() => {
@@ -815,6 +828,13 @@ export default function WebCharacterScreen() {
                   skeletonOpacity={skeletonOpacity}
                 />
 
+                {/* Lore */}
+                {narrative && !narrative.isEmpty ? (
+                  <View style={styles.card}>
+                    <NarrativeSection narrative={narrative} />
+                  </View>
+                ) : null}
+
                 {/* Enemies & Allies */}
                 {comicVineLoading ? (
                   <View style={styles.card}>
@@ -1360,6 +1380,17 @@ export default function WebCharacterScreen() {
 
                 {/* Abilities */}
                 <AbilitiesSection powers={details.powers} loading={comicVineLoading} />
+
+                {/* Lore */}
+                {narrative && !narrative.isEmpty ? (
+                  <View style={styles.mSection}>
+                    <View style={styles.mSectionHead}>
+                      <Text style={styles.mSectionTitle}>Lore</Text>
+                      <View style={styles.mSectionDivider} />
+                    </View>
+                    <NarrativeSection narrative={narrative} />
+                  </View>
+                ) : null}
 
                 {/* Family tree */}
                 {family.length > 0 ? (
