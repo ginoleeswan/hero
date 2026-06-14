@@ -645,7 +645,7 @@ export default function CharacterScreen() {
     if (hasDossierData(data, !hasFirstVisual)) s.push({ key: 'dossier', label: 'Dossier' });
     if (comicVineLoading || enemyNames.length || allyNames.length || teammateNames.length)
       s.push({ key: 'allies', label: 'Allies' });
-    if (comicVineLoading || (films && films.length > 0) || data.details.movies?.length)
+    if (comicVineLoading || (films && films.length > 0))
       s.push({ key: 'screen', label: 'On Screen' });
     // In Print consolidates the debut feature + cover gallery into one section.
     if (
@@ -1339,17 +1339,6 @@ export default function CharacterScreen() {
                     <MovieStrip
                       films={films}
                       totalCount={films.length}
-                      contentInset={20}
-                    />
-                  </>
-                ) : data.details.movies?.length ? (
-                  <>
-                    <SectionHeader
-                      title={`On Screen (${data.details.movieCount ?? data.details.movies.length})`}
-                    />
-                    <MovieStrip
-                      movies={data.details.movies}
-                      totalCount={data.details.movieCount ?? data.details.movies.length}
                       contentInset={20}
                     />
                   </>
