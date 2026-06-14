@@ -12,7 +12,7 @@ const CARD_GAP = 12;
 const H_PAD = 16;
 const TILE_GAP = 10;
 const TILE_W = (SCREEN_WIDTH - H_PAD * 2 - TILE_GAP) / 2;
-const TILE_H = Math.round(TILE_W * 0.56);
+const TILE_H = 88; // matches PublisherGrid card minHeight
 
 function SpotlightSkeleton({ insetTop }: { insetTop: number }) {
   const height = insetTop + Math.round(SCREEN_HEIGHT * 0.5);
@@ -41,7 +41,7 @@ function PublisherGridSkeleton() {
   return (
     <View style={styles.publisherGrid}>
       {Array.from({ length: 4 }).map((_, i) => (
-        <Skeleton key={i} width={TILE_W} height={TILE_H} borderRadius={16} />
+        <Skeleton key={i} width={TILE_W} height={TILE_H} borderRadius={14} />
       ))}
     </View>
   );
