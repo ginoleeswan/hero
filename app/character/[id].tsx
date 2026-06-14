@@ -57,6 +57,8 @@ import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkele
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
+import { NarrativeSection } from '../../src/components/character/NarrativeSection';
+import { getHeroNarrative, type HeroNarrative } from '../../src/lib/db/heroFacts';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import { GalleryStrip } from '../../src/components/GalleryStrip';
@@ -463,6 +465,7 @@ export default function CharacterScreen() {
   const { user } = useAuth();
   useRecordView(user?.id, id);
   const [data, setData] = useState<CharacterData | null>(null);
+  const [narrative, setNarrative] = useState<HeroNarrative | null>(null);
   const [family, setFamily] = useState<FamilyMember[]>([]);
   const [comicVineLoading, setComicVineLoading] = useState(true);
   const [showIssueModal, setShowIssueModal] = useState(false);
@@ -640,6 +643,7 @@ export default function CharacterScreen() {
     s.push({ key: 'stats', label: 'Stats' });
     if (comicVineLoading || data.details.powers?.length)
       s.push({ key: 'abilities', label: 'Abilities' });
+    if (narrative && !narrative.isEmpty) s.push({ key: 'narrative', label: 'Lore' });
     // Dossier (the bio infobox) caps the intrinsic-character block, before the
     // relational/media sections below.
     if (hasDossierData(data, !hasFirstVisual)) s.push({ key: 'dossier', label: 'Dossier' });
@@ -667,6 +671,7 @@ export default function CharacterScreen() {
     enemyNames,
     allyNames,
     teammateNames,
+    narrative,
   ]);
   sectionOrder.current = presentSections.map((s) => s.key);
 
@@ -676,6 +681,22 @@ export default function CharacterScreen() {
     getHeroFamily(id)
       .then(setFamily)
       .catch(() => setFamily([]));
+  }, [id]);
+
+  useEffect(() => {
+    setNarrative(null);
+    if (!id) return;
+    let active = true;
+    getHeroNarrative(id)
+      .then((n) => {
+        if (active) setNarrative(n);
+      })
+      .catch(() => {
+        if (active) setNarrative(null);
+      });
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   useEffect(() => {
@@ -1241,6 +1262,14 @@ export default function CharacterScreen() {
               <View onLayout={registerAnchor('abilities')}>
                 <AbilitiesSection powers={data.details.powers} loading={comicVineLoading} />
               </View>
+
+              {narrative && !narrative.isEmpty && (
+                <View onLayout={registerAnchor('narrative')}>
+                  <Section title="Lore">
+                    <NarrativeSection narrative={narrative} />
+                  </Section>
+                </View>
+              )}
 
               {/* Dossier — the bio infobox (Profile + Appearance + Connections),
                   collapsed by default. Caps the intrinsic-character block before
