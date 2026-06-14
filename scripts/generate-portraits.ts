@@ -2,11 +2,15 @@
 /**
  * Hero portrait generation script.
  *
- * Phase 1: Upload the 34 existing curated local images to Supabase Storage.
- * Phase 2: For each remaining hero (portrait_url IS NULL), fetch their API
- *          image, send it + wolverine/deadpool/thor refs to Gemini 3.1 Flash Image for style
- *          transfer, upload result to Supabase Storage, and write portrait_url
- *          back to the DB.
+ * For each hero with portrait_url IS NULL, fetch their source image, send it +
+ * wolverine/deadpool/thor refs to Gemini 3.1 Flash Image for style transfer,
+ * upload the result straight to Cloudinary (public_id `hero-portraits/{id}`,
+ * overwrite:true — same scheme the app reads), and write the Cloudinary
+ * secure_url back to heroes.portrait_url.
+ *
+ * Portraits go directly to Cloudinary — no Supabase Storage hop, so no
+ * migrate-portraits-to-cloudinary pass is ever needed. Supabase is used only to
+ * read the working set and write portrait_url back.
  *
  * Usage:
  *   bun scripts/generate-portraits.ts               # full batch
@@ -17,6 +21,7 @@
 
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { createHash } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
 import 'dotenv/config';
@@ -27,7 +32,11 @@ const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const GEMINI_API_KEY = process.env.GOOGLE_AI_STUDIO_API_KEY!;
 
-const BUCKET = 'hero-portraits';
+// Cloudinary (portrait host). Signed uploads — same target as the app's URLs.
+const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME!;
+const CLOUD_KEY = process.env.CLOUDINARY_API_KEY!;
+const CLOUD_SECRET = process.env.CLOUDINARY_API_SECRET!;
+
 const GEMINI_MODEL = 'gemini-3.1-flash-image';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
@@ -168,16 +177,36 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-async function uploadToStorage(heroId: string, imageBytes: Uint8Array): Promise<string> {
-  const fileName = `${heroId}.jpg`;
-  const { error } = await supabase.storage.from(BUCKET).upload(fileName, imageBytes, {
-    contentType: 'image/jpeg',
-    upsert: true,
-  });
-  if (error) throw new Error(`Storage upload failed for ${heroId}: ${error.message}`);
+/**
+ * Signed Cloudinary upload of in-memory image bytes. Signs sha1 of the
+ * alphabetically-sorted signable params + api_secret (Cloudinary's spec), then
+ * POSTs ourselves — the SDK uploader is unreliable under Bun. public_id
+ * `hero-portraits/{id}` + overwrite:true keeps re-runs idempotent and matches
+ * the URLs the app already serves.
+ */
+async function uploadToCloudinary(heroId: string, imageBytes: Uint8Array): Promise<string> {
+  const publicId = `hero-portraits/${heroId}`;
+  const timestamp = Math.floor(Date.now() / 1000);
+  const toSign = `overwrite=true&public_id=${publicId}&timestamp=${timestamp}`;
+  const signature = createHash('sha1').update(toSign + CLOUD_SECRET).digest('hex');
 
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(fileName);
-  return data.publicUrl;
+  const form = new FormData();
+  form.append('file', new Blob([Buffer.from(imageBytes)], { type: 'image/jpeg' }), `${heroId}.jpg`);
+  form.append('api_key', CLOUD_KEY);
+  form.append('timestamp', String(timestamp));
+  form.append('public_id', publicId);
+  form.append('overwrite', 'true');
+  form.append('signature', signature);
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+    method: 'POST',
+    body: form,
+  });
+  const body = (await res.json()) as { secure_url?: string; error?: { message?: string } };
+  if (!res.ok || !body.secure_url) {
+    throw new Error(`Cloudinary upload failed for ${heroId}: ${body.error?.message ?? res.status}`);
+  }
+  return body.secure_url;
 }
 
 async function setPortraitUrl(heroId: string, url: string): Promise<void> {
@@ -405,7 +434,7 @@ async function phase2(filterHeroId?: string): Promise<void> {
       console.log(`  ⟳ ${label}`);
       const { base64, mimeType } = await fetchImageAsBase64(hero.image_url!);
       const imageBytes = await generatePortrait(base64, mimeType, hero.name, hero.id);
-      const url = await uploadToStorage(hero.id, imageBytes);
+      const url = await uploadToCloudinary(hero.id, imageBytes);
       await setPortraitUrl(hero.id, url);
       console.log(`  ✓ ${label} → ${url}`);
     } catch (err) {
@@ -425,6 +454,11 @@ async function main() {
   }
   if (!GEMINI_API_KEY) {
     throw new Error('GOOGLE_AI_STUDIO_API_KEY must be set in .env.local');
+  }
+  if (!CLOUD_NAME || !CLOUD_KEY || !CLOUD_SECRET) {
+    throw new Error(
+      'CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET must be set in .env.local',
+    );
   }
 
   console.log(`Hero Portrait Generator`);
