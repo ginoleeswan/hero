@@ -14,9 +14,11 @@ import { useRouter } from 'expo-router';
 import { InfoTip } from '../InfoTip';
 import { AddHeroesPanel } from '../AddHeroesPanel';
 import { StatsBoard } from '../StatsBoard';
+import { PortraitBoard } from '../PortraitBoard';
 import { HeroThumb } from '../atoms';
 import { getPendingBuildIds } from '../../../../lib/db/build';
 import { getPendingStatsIds } from '../../../../lib/db/stats';
+import { getPendingPortraitIds } from '../../../../lib/db/portraits';
 import { relTime, runTypeLabel, GEMINI_MONTHLY_BUDGET, type LogTone } from '../format';
 import type {
   AmbiguousHero,
@@ -117,6 +119,107 @@ function FunnelStage({ s, n, busy, bottleneck }: { s: Stage; n: number; busy: st
   );
 }
 
+// Cadence presets the cron editor offers (label → 5-field cron expression).
+const CADENCE: { label: string; expr: string }[] = [
+  { label: '1m', expr: '* * * * *' },
+  { label: '2m', expr: '*/2 * * * *' },
+  { label: '3m', expr: '*/3 * * * *' },
+  { label: '5m', expr: '*/5 * * * *' },
+  { label: '15m', expr: '*/15 * * * *' },
+  { label: 'hourly', expr: '0 * * * *' },
+  { label: 'daily', expr: '5 0 * * *' },
+];
+const BATCHES = [5, 10, 15, 25, 50];
+
+// One scheduled-cron row: status + Start/Stop, plus an inline editor to change
+// its cadence and batch size (admin_reschedule_cron rebuilds the job in place).
+function CronRow({
+  c, busy, onToggle, onReschedule,
+}: {
+  c: CronJob;
+  busy: string | null;
+  onToggle: (jobname: string, enabled: boolean) => void;
+  onReschedule: (jobname: string, schedule: string, limit: number | null) => void;
+}) {
+  const busyThis = busy === `cron-${c.jobname}`;
+  const [editing, setEditing] = useState(false);
+  const [sched, setSched] = useState(c.schedule);
+  const [lim, setLim] = useState<number | null>(c.lim);
+  const open = () => { setSched(c.schedule); setLim(c.lim); setEditing(true); };
+  const save = () => { onReschedule(c.jobname, sched, c.lim != null ? lim : null); setEditing(false); };
+
+  return (
+    <View style={styles.cronWrap}>
+      <View style={styles.cronRow}>
+        <View style={[styles.cronDot, { backgroundColor: c.active ? COLORS.green : COLORS.grey }]} />
+        <View style={styles.cronInfo}>
+          <View style={styles.cronNameRow}>
+            <Text style={styles.cronName} numberOfLines={1}>{c.jobname}</Text>
+            <InfoTip text={`${cronHelp(c.jobname)} Schedule: ${c.schedule}.`} size={13} />
+          </View>
+          <Text style={styles.cronMeta} numberOfLines={1}>
+            {humanizeCron(c.schedule)}{c.lim != null ? ` · ${c.lim}/run` : ''}{c.last_status ? ` · last ${c.last_status}` : ''}
+          </Text>
+        </View>
+        <Pressable
+          onPress={() => (editing ? setEditing(false) : open())}
+          style={[styles.cronEdit, editing && styles.cronEditOn]}
+          accessibilityLabel={`Configure ${c.jobname}`}
+        >
+          <Ionicons name="options-outline" size={15} color={editing ? '#fff' : COLORS.navy} />
+        </Pressable>
+        <Pressable
+          onPress={() => onToggle(c.jobname, !c.active)}
+          disabled={!!busy}
+          style={[styles.cronBtn, c.active ? styles.cronBtnStop : styles.cronBtnStart, !!busy && styles.dim]}
+        >
+          {busyThis ? (
+            <ActivityIndicator size="small" color={c.active ? COLORS.navy : '#fff'} />
+          ) : (
+            <Ionicons name={c.active ? 'pause' : 'play'} size={12} color={c.active ? COLORS.navy : '#fff'} />
+          )}
+          <Text style={[styles.cronBtnText, c.active ? styles.cronBtnTextStop : styles.cronBtnTextStart]}>
+            {c.active ? 'Stop' : 'Start'}
+          </Text>
+        </Pressable>
+      </View>
+
+      {editing ? (
+        <View style={styles.cronEditor}>
+          <Text style={styles.cronEditLabel}>Cadence</Text>
+          <View style={styles.cronPills}>
+            {CADENCE.map((p) => (
+              <Pressable key={p.expr} onPress={() => setSched(p.expr)} style={[styles.cronPill, sched === p.expr && styles.cronPillOn]}>
+                <Text style={[styles.cronPillText, sched === p.expr && styles.cronPillTextOn]}>{p.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          {c.lim != null ? (
+            <>
+              <Text style={styles.cronEditLabel}>Batch size</Text>
+              <View style={styles.cronPills}>
+                {BATCHES.map((n) => (
+                  <Pressable key={n} onPress={() => setLim(n)} style={[styles.cronPill, lim === n && styles.cronPillOn]}>
+                    <Text style={[styles.cronPillText, lim === n && styles.cronPillTextOn]}>{n}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          ) : null}
+          <View style={styles.cronEditActions}>
+            <Pressable onPress={() => setEditing(false)} style={styles.cronCancel}>
+              <Text style={styles.cronCancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable onPress={save} disabled={busyThis} style={[styles.cronSave, busyThis && styles.dim]}>
+              {busyThis ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.cronSaveText}>Save</Text>}
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 export function PipelinesDomain({
   h,
   progress,
@@ -126,6 +229,7 @@ export function PipelinesDomain({
   buildIds,
   setBuildIds,
   statsPending,
+  portraitsPending,
   spend,
   busy,
   batchSize,
@@ -134,6 +238,7 @@ export function PipelinesDomain({
   onRunDrain,
   onRetryFailed,
   onToggleAnyCron,
+  onRescheduleCron,
   onRunResolve,
   onRunEnrich,
   onResolveQid,
@@ -157,6 +262,7 @@ export function PipelinesDomain({
   buildIds: string[] | null;
   setBuildIds: (ids: string[] | null) => void;
   statsPending: number;
+  portraitsPending: number;
   spend: GeminiSpend | undefined;
   busy: string | null;
   batchSize: number;
@@ -165,6 +271,7 @@ export function PipelinesDomain({
   onRunDrain: () => void;
   onRetryFailed: () => void;
   onToggleAnyCron: (jobname: string, enabled: boolean) => void;
+  onRescheduleCron: (jobname: string, schedule: string, limit: number | null) => void;
   onRunResolve: () => void;
   onRunEnrich: () => void;
   onResolveQid: (id: string, qid: string, name: string) => void;
@@ -184,6 +291,8 @@ export function PipelinesDomain({
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [statsIds, setStatsIds] = useState<string[] | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [portraitIds, setPortraitIds] = useState<string[] | null>(null);
+  const [loadingPortraits, setLoadingPortraits] = useState(false);
   const p = progress ?? {
     heroesTotal: 0, comicvineDone: 0, resolved: 0, ambiguous: 0, unresolved: 0,
     enriched: 0, filmTitles: 0, tvTitles: 0, gameTitles: 0, mediaDone: 0,
@@ -210,6 +319,18 @@ export function PipelinesDomain({
       setStatsIds(ids);
     } finally {
       setLoadingStats(false);
+    }
+  };
+
+  const generatePortraits = async () => {
+    if (overBudget) { flash('Over the monthly Gemini budget — generation paused.', 'info'); return; }
+    setLoadingPortraits(true);
+    try {
+      const ids = await getPendingPortraitIds(batchSize);
+      if (ids.length === 0) { flash('No heroes need a portrait.', 'info'); return; }
+      setPortraitIds(ids);
+    } finally {
+      setLoadingPortraits(false);
     }
   };
 
@@ -409,12 +530,25 @@ export function PipelinesDomain({
           <View style={styles.genItem}>
             <View style={styles.genInfo}>
               <Text style={styles.genName}>AI Portraits</Text>
-              <Text style={styles.genSub}>Run via the generate-portraits script · in-app runner coming next</Text>
+              <Text style={styles.genSub}>
+                {portraitsPending > 0 ? `${portraitsPending.toLocaleString()} heroes need a portrait` : 'All portraits generated'}
+                {overBudget ? ' · over budget' : ''}
+              </Text>
             </View>
-            <View style={[styles.genBtn, styles.genBtnGhost]}>
-              <Ionicons name="time-outline" size={14} color={COLORS.grey} />
-              <Text style={[styles.genBtnText, { color: COLORS.grey }]}>Soon</Text>
-            </View>
+            <Pressable
+              onPress={generatePortraits}
+              disabled={overBudget || portraitsPending === 0 || loadingPortraits || !!portraitIds}
+              style={[styles.genBtn, (overBudget || portraitsPending === 0 || loadingPortraits || !!portraitIds) && styles.dim]}
+            >
+              {loadingPortraits ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Ionicons name={overBudget ? 'lock-closed' : 'color-palette'} size={14} color="#fff" />
+              )}
+              <Text style={styles.genBtnText}>
+                {overBudget ? 'Over budget' : `Generate ${Math.min(batchSize, portraitsPending || batchSize)}`}
+              </Text>
+            </Pressable>
           </View>
         </View>
       </Panel>
@@ -467,37 +601,9 @@ export function PipelinesDomain({
           {crons.length === 0 ? (
             <Text style={styles.empty}>No cron jobs scheduled.</Text>
           ) : (
-            crons.map((c) => {
-              const busyThis = busy === `cron-${c.jobname}`;
-              return (
-                <View key={c.jobname} style={styles.cronRow}>
-                  <View style={[styles.cronDot, { backgroundColor: c.active ? COLORS.green : COLORS.grey }]} />
-                  <View style={styles.cronInfo}>
-                    <View style={styles.cronNameRow}>
-                      <Text style={styles.cronName} numberOfLines={1}>{c.jobname}</Text>
-                      <InfoTip text={`${cronHelp(c.jobname)} Schedule: ${c.schedule}.`} size={13} />
-                    </View>
-                    <Text style={styles.cronMeta} numberOfLines={1}>
-                      {humanizeCron(c.schedule)}{c.last_status ? ` · last ${c.last_status}` : ''}
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={() => onToggleAnyCron(c.jobname, !c.active)}
-                    disabled={!!busy}
-                    style={[styles.cronBtn, c.active ? styles.cronBtnStop : styles.cronBtnStart, !!busy && styles.dim]}
-                  >
-                    {busyThis ? (
-                      <ActivityIndicator size="small" color={c.active ? COLORS.navy : '#fff'} />
-                    ) : (
-                      <Ionicons name={c.active ? 'pause' : 'play'} size={12} color={c.active ? COLORS.navy : '#fff'} />
-                    )}
-                    <Text style={[styles.cronBtnText, c.active ? styles.cronBtnTextStop : styles.cronBtnTextStart]}>
-                      {c.active ? 'Stop' : 'Start'}
-                    </Text>
-                  </Pressable>
-                </View>
-              );
-            })
+            crons.map((c) => (
+              <CronRow key={c.jobname} c={c} busy={busy} onToggle={onToggleAnyCron} onReschedule={onRescheduleCron} />
+            ))
           )}
         </Panel>
         </Bento.Row>
@@ -521,6 +627,9 @@ export function PipelinesDomain({
 
       {statsIds ? (
         <StatsBoard heroIds={statsIds} flash={flash} onClose={() => { setStatsIds(null); onHeroesAdded(); }} />
+      ) : null}
+      {portraitIds ? (
+        <PortraitBoard heroIds={portraitIds} flash={flash} onClose={() => { setPortraitIds(null); onHeroesAdded(); }} />
       ) : null}
     </Bento>
   );
@@ -586,10 +695,27 @@ const styles = StyleSheet.create({
   ctrlText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
 
   // Crons
+  cronWrap: { borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.06)' },
   cronRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8,
-    borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.06)',
   },
+  cronEdit: {
+    width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#efe6d6',
+  },
+  cronEditOn: { backgroundColor: COLORS.navy },
+  cronEditor: { gap: 6, paddingBottom: 10, paddingLeft: 18 },
+  cronEditLabel: { fontFamily: 'Nunito_700Bold', fontSize: 10.5, letterSpacing: 0.5, color: COLORS.grey, textTransform: 'uppercase' },
+  cronPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  cronPill: { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 8, backgroundColor: '#efe6d6' },
+  cronPillOn: { backgroundColor: COLORS.navy },
+  cronPillText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
+  cronPillTextOn: { color: '#fff' },
+  cronEditActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  cronCancel: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 9, backgroundColor: '#efe6d6' },
+  cronCancelText: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: COLORS.navy },
+  cronSave: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 9, backgroundColor: COLORS.orange, minWidth: 64, alignItems: 'center' },
+  cronSaveText: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: '#fff' },
   cronDot: { width: 8, height: 8, borderRadius: 8 },
   cronInfo: { flex: 1, minWidth: 0, gap: 2 },
   cronNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },

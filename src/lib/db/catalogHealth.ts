@@ -175,6 +175,7 @@ export interface CronJob {
   jobname: string;
   schedule: string;
   active: boolean;
+  lim: number | null; // batch size parsed from the job command (null = no limit, e.g. snapshot)
   last_run: string | null;
   last_status: string | null;
 }
@@ -188,6 +189,16 @@ export async function getCronStatus(): Promise<CronJob[]> {
 /** Enable/disable any pg_cron job by name (keeps its schedule). */
 export async function toggleCron(jobname: string, enabled: boolean): Promise<void> {
   const { error } = await supabase.rpc('admin_toggle_cron', { p_jobname: jobname, p_enabled: enabled });
+  if (error) throw error;
+}
+
+/** Reconfigure a cron's cadence (5-field schedule) and optional batch size. */
+export async function rescheduleCron(jobname: string, schedule: string, limit: number | null): Promise<void> {
+  const { error } = await supabase.rpc('admin_reschedule_cron', {
+    p_jobname: jobname,
+    p_schedule: schedule,
+    p_limit: limit ?? undefined,
+  });
   if (error) throw error;
 }
 

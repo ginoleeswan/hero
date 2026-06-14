@@ -66,7 +66,7 @@ export default function AdminHealthScreen() {
     if (gateResolved && !isAdmin) router.replace('/explore');
   }, [gateResolved, isAdmin, router]);
 
-  const { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ, enrichProgressQ, statsPendingQ, recentEnrichedQ } =
+  const { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ, enrichProgressQ, statsPendingQ, portraitsPendingQ, recentEnrichedQ } =
     useCatalogQueries({
       enabled: gateResolved && isAdmin,
       metric,
@@ -94,6 +94,7 @@ export default function AdminHealthScreen() {
     onRunEnrich,
     onToggleCron,
     onToggleAnyCron,
+    onRescheduleCron,
     onRefresh,
   } = useCatalogActions({ batchSize, cronOn, flash });
 
@@ -331,6 +332,7 @@ export default function AdminHealthScreen() {
             buildIds={buildIds}
             setBuildIds={setBuildIds}
             statsPending={statsPendingQ.data ?? 0}
+            portraitsPending={portraitsPendingQ.data ?? 0}
             spend={spendQ.data}
             busy={busy}
             batchSize={batchSize}
@@ -339,6 +341,7 @@ export default function AdminHealthScreen() {
             onRunDrain={onRunDrain}
             onRetryFailed={onRetryFailed}
             onToggleAnyCron={onToggleAnyCron}
+            onRescheduleCron={onRescheduleCron}
             onRunResolve={onRunResolve}
             onRunEnrich={onRunEnrich}
             onResolveQid={onResolveQid}
@@ -355,6 +358,7 @@ export default function AdminHealthScreen() {
               queryClient.invalidateQueries({ queryKey: ['enrichmentProgress'] });
               queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
               queryClient.invalidateQueries({ queryKey: ['statsPending'] });
+              queryClient.invalidateQueries({ queryKey: ['portraitsPending'] });
             }}
             narrow={narrow}
           />

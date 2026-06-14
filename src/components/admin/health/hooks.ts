@@ -19,6 +19,7 @@ import {
   snapshotNow,
   reenrichHero,
   setDrainCron,
+  rescheduleCron,
   getGeminiSpend,
   getAmbiguousHeroes,
   resolveHeroQid,
@@ -31,6 +32,7 @@ import {
   type RunHistoryPage,
 } from '../../../lib/db/catalogHealth';
 import { getPendingStatsCount } from '../../../lib/db/stats';
+import { getPendingPortraitCount } from '../../../lib/db/portraits';
 import type { LogTone, LogEntry } from './format';
 
 type Flash = (msg: string, tone?: LogTone) => void;
@@ -138,6 +140,12 @@ export function useCatalogQueries({
     enabled,
     staleTime: 30_000,
   });
+  const portraitsPendingQ = useQuery({
+    queryKey: ['portraitsPending'],
+    queryFn: getPendingPortraitCount,
+    enabled,
+    staleTime: 30_000,
+  });
   const recentEnrichedQ = useQuery({
     queryKey: ['recentlyEnriched'],
     queryFn: () => getRecentlyEnriched(24),
@@ -174,7 +182,7 @@ export function useCatalogQueries({
     };
   }, [enabled, queryClient]);
 
-  return { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ, enrichProgressQ, statsPendingQ, recentEnrichedQ };
+  return { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ, enrichProgressQ, statsPendingQ, portraitsPendingQ, recentEnrichedQ };
 }
 
 /**
@@ -365,6 +373,19 @@ export function useCatalogActions({
     }
   };
 
+  const onRescheduleCron = async (jobname: string, schedule: string, limit: number | null) => {
+    setBusy(`cron-${jobname}`);
+    try {
+      await rescheduleCron(jobname, schedule, limit);
+      flash(`Cron "${jobname}" updated.`, 'success');
+      queryClient.invalidateQueries({ queryKey: ['cronStatus'] });
+    } catch (e) {
+      flash(`Cron update failed: ${(e as Error).message}`, 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const onToggleCron = async () => {
     setBusy('cron');
     try {
@@ -402,6 +423,7 @@ export function useCatalogActions({
     onRunEnrich,
     onToggleCron,
     onToggleAnyCron,
+    onRescheduleCron,
     onRefresh,
   };
 }
