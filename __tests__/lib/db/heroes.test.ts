@@ -28,7 +28,10 @@ import {
 //
 
 // eslint-disable-next-line prefer-const
-let mockResolveWith: { data: unknown; error: unknown; count?: number | null } = { data: null, error: null };
+let mockResolveWith: { data: unknown; error: unknown; count?: number | null } = {
+  data: null,
+  error: null,
+};
 
 jest.mock('../../../src/lib/supabase', () => {
   const chainMethods = [
@@ -214,6 +217,8 @@ describe('heroRowToCharacterData', () => {
     wikidata_candidates: null,
     wikidata_enriched_at: null,
     narrative_status: 'pending',
+    added_at: '2026-04-04T00:00:00Z',
+    franchise: null,
   } satisfies Hero;
 
   it('maps powerstats to string values', () => {
@@ -399,6 +404,8 @@ const baseHero: HeroRow = {
   wikidata_candidates: null,
   wikidata_enriched_at: null,
   narrative_status: 'pending',
+  added_at: '2026-04-04T00:00:00Z',
+  franchise: null,
 };
 
 describe('heroRowToCharacterData — powers mapping', () => {
@@ -599,7 +606,10 @@ describe('getTopHeroByStat', () => {
   });
 
   it('passes the correct stat field to the query chain', async () => {
-    mockResolveWith = { data: { id: 297, name: 'Brainiac', strength: 28, intelligence: 100, speed: 42 }, error: null };
+    mockResolveWith = {
+      data: { id: 297, name: 'Brainiac', strength: 28, intelligence: 100, speed: 42 },
+      error: null,
+    };
 
     await getTopHeroByStat('intelligence');
 
@@ -653,7 +663,12 @@ describe('getFirstAppearanceCovers', () => {
           first_appearance: 'Detective Comics #27',
           first_issue_image_url: 'https://x/dc27.jpg',
         },
-        { id: '1', name: 'Blank', first_appearance: null, first_issue_image_url: 'https://x/blank.png' },
+        {
+          id: '1',
+          name: 'Blank',
+          first_appearance: null,
+          first_issue_image_url: 'https://x/blank.png',
+        },
         { id: '2', name: 'NoHttp', first_appearance: null, first_issue_image_url: '/relative.jpg' },
       ],
       error: null,

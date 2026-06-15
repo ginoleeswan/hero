@@ -48,6 +48,10 @@ const VALID_SLUGS = new Set<CategorySlug>([
   'strongest',
   'most-intelligent',
   'most-iconic',
+  'franchise-icons',
+  'anime',
+  'video-games',
+  'horror',
 ]);
 
 // ── Skeleton card (matches HeroCard layout) ───────────────────────────────────

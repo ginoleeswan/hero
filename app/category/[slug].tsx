@@ -49,6 +49,10 @@ const VALID_SLUGS = new Set<CategorySlug>([
   'strongest',
   'most-intelligent',
   'most-iconic',
+  'franchise-icons',
+  'anime',
+  'video-games',
+  'horror',
 ]);
 
 // A one-line editorial tagline per category — gives the navy header warmth and
@@ -65,6 +69,10 @@ const CATEGORY_TAGLINES: Record<CategorySlug, string> = {
   strongest: 'Raw power at the very top of the scale.',
   'most-intelligent': 'The sharpest minds in comics.',
   'most-iconic': 'The faces that defined the medium.',
+  'franchise-icons': 'Icons from famous shows, movies, games, and anime.',
+  anime: 'Heroes and villains from the biggest anime and manga.',
+  'video-games': 'Legends straight out of video-game history.',
+  horror: 'The slashers and monsters of horror cinema.',
 };
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const NUM_COLUMNS = SCREEN_WIDTH >= 768 ? 4 : 3;

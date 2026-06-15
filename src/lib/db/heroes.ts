@@ -345,6 +345,41 @@ export async function getNewlyAddedCV(limit = 25): Promise<Hero[]> {
     .select(HOME_ROW)
     .like('id', 'cv-%')
     .not('publisher', 'in', '("Non-Fictional","In the Public Domain")')
+    // Order by when the hero entered the catalog, not issue_count — otherwise the
+    // genuinely-new characters (low issue_count) sink below long-running heroes.
+    .order('added_at', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as Hero[];
+}
+
+// ── Franchise / pop-culture cohort (famous shows · movies · games · anime) ────
+// These characters arrive enriched (portraits, summaries, curated stats) but with
+// tiny issue_counts, so every issue_count-ranked row buries them. The franchise
+// column + media tags let the Explore page feature them on their own terms.
+
+/** The marquee "Beyond the Comics" row — characters tagged with a franchise,
+ *  ranked by power so the lineup leads with heavy hitters and reads premium.
+ *  Portrait required (these fill hero cards). */
+export async function getFranchiseIcons(limit = 20): Promise<Hero[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select(HOME_ROW)
+    .not('franchise', 'is', null)
+    .not('portrait_url', 'is', null)
+    .order('powerstats_total', { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as Hero[];
+}
+
+/** Themed franchise row by media tag (anime / video-game / horror-icon /
+ *  screen-icon / toy-cartoon), ranked by popularity within the theme. */
+export async function getHeroesByMediaTag(tag: string, limit = 20): Promise<Hero[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select(`${HOME_ROW}, hero_tags!inner(tag)`)
+    .eq('hero_tags.tag', tag)
     .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
@@ -469,7 +504,19 @@ export type CategorySlug =
   | 'dark-horse'
   | 'strongest'
   | 'most-intelligent'
-  | 'most-iconic';
+  | 'most-iconic'
+  | 'franchise-icons'
+  | 'anime'
+  | 'video-games'
+  | 'horror';
+
+// Category slugs that resolve to a hero_tags media tag rather than a base
+// publisher/alignment predicate. Keyed by slug → tag vocabulary slug.
+export const CATEGORY_MEDIA_TAG: Partial<Record<CategorySlug, string>> = {
+  anime: 'anime',
+  'video-games': 'video-game',
+  horror: 'horror-icon',
+};
 
 export type SortOption = 'popular' | 'az' | 'power';
 export type CategoryPublisher = 'all' | 'marvel' | 'dc';
@@ -486,6 +533,10 @@ export const CATEGORY_LABELS: Record<CategorySlug, string> = {
   strongest: 'Strongest Heroes',
   'most-intelligent': 'Most Intelligent',
   'most-iconic': 'Most Iconic',
+  'franchise-icons': 'Beyond the Comics',
+  anime: 'Anime Legends',
+  'video-games': 'Video Game Heroes',
+  horror: 'Horror Icons',
 };
 
 export const CATEGORY_DESCRIPTIONS: Record<CategorySlug, string> = {
@@ -500,6 +551,10 @@ export const CATEGORY_DESCRIPTIONS: Record<CategorySlug, string> = {
   strongest: 'Ranked by raw physical power',
   'most-intelligent': 'The greatest minds in all of comics',
   'most-iconic': 'Ranked by total comic book appearances',
+  'franchise-icons': 'Icons from famous shows, movies, games, and anime',
+  anime: 'Heroes and villains from the biggest anime and manga',
+  'video-games': 'Legends straight out of video-game history',
+  horror: 'The slashers and monsters of horror cinema',
 };
 
 /** Fetches all rows from a query that may exceed Supabase's 1000-row default cap. */
@@ -592,6 +647,29 @@ export async function getAllHeroesBySlug(slug: CategorySlug): Promise<Hero[]> {
           .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
           .order('issue_count', { ascending: false, nullsFirst: false }),
       );
+    case 'franchise-icons':
+      return fetchAllPages(() =>
+        supabase
+          .from('heroes')
+          .select('*')
+          .not('franchise', 'is', null)
+          .order('issue_count', { ascending: false, nullsFirst: false }),
+      );
+    case 'anime':
+    case 'video-games':
+    case 'horror': {
+      const tag = CATEGORY_MEDIA_TAG[slug]!;
+      return fetchAllPages(
+        () =>
+          supabase
+            .from('heroes')
+            .select('*, hero_tags!inner(tag)')
+            .eq('hero_tags.tag', tag)
+            .order('issue_count', { ascending: false, nullsFirst: false }) as unknown as ReturnType<
+            Parameters<typeof fetchAllPages>[0]
+          >,
+      );
+    }
   }
 }
 
@@ -617,7 +695,10 @@ export async function getCategoryPage(
     tags,
     search,
   } = options;
-  const tagList = tags ?? [];
+  // Media-themed category slugs (anime / video-games / horror) resolve to a
+  // hero_tags tag; fold it into the tag list so the same inner-join path applies.
+  const implicitTag = CATEGORY_MEDIA_TAG[slug];
+  const tagList = [...(implicitTag ? [implicitTag] : []), ...(tags ?? [])];
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
@@ -667,6 +748,11 @@ export async function getCategoryPage(
     case 'most-iconic':
       q = q.not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")');
       break;
+    case 'franchise-icons':
+      q = q.not('franchise', 'is', null);
+      break;
+    // anime / video-games / horror: the implicit media tag (folded into tagList
+    // above) is the filter — no base publisher/alignment predicate.
   }
 
   // Publisher facet

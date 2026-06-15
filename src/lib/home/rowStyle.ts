@@ -18,12 +18,16 @@ const DEFAULT: RowStyle = {
 // Per-category overrides keyed by the catalog `key` used in explore.tsx.
 const MAP: Record<string, Partial<RowStyle>> = {
   iconic: { feature: true, ranked: true, accent: COLORS.orange },
+  franchise: { feature: true, accent: COLORS.goldAccent },
   villains: { tone: 'dark', accent: COLORS.red },
+  horror: { tone: 'dark', accent: COLORS.red },
   marvel: { accent: COLORS.red },
   dc: { accent: COLORS.blue },
   anti: { tone: 'dark', accent: COLORS.grey },
   strongest: { tone: 'dark', ranked: true, accent: COLORS.yellow },
   xmen: { accent: COLORS.purple },
+  anime: { accent: COLORS.purple },
+  games: { accent: COLORS.green },
   minds: { ranked: true, accent: COLORS.blue },
   new: { accent: COLORS.green },
 };
