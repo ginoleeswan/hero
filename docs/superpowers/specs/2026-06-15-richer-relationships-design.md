@@ -7,86 +7,96 @@
 
 ## Goal
 
-Extend the existing `hero_relationships` graph beyond `enemy` / `ally` / `teammate`
-to capture richer connection kinds — starting with **`love_interest`**, **`mentor`**
-(and its inverse **`protege`**), and **`rival`**. The edges are produced by
-**Claude Code working in this tab** (not an automated API pipeline) reading each
-hero's ComicVine data, and surfaced on the character screen in a new **Connections**
-section. This lane reuses the existing graph table and its `get_related_heroes` RPC
-almost entirely; the new work is a generation workflow plus one new UI section.
+Capture richer hero-to-hero connection kinds — **`love_interest`**, **`mentor`**
+(and its inverse **`protege`**), and **`rival`** — produced by **Claude Code in this
+tab** (not an automated API pipeline) reading each hero's ComicVine data, and surface
+them on the character screen in a new **Connections** section.
 
-## Decisions (resolved in brainstorming)
+## Architectural decision: a dedicated authored table
+
+The lane brief framed this as "add new `kind` values to `hero_relationships`." We are
+**not** doing that. `hero_relationships` is, by its own migration header, *"a
+NORMALISED, DERIVED table, fully rebuildable by `rebuild_hero_relationships()`"* — its
+lifecycle is truncate-and-regenerate from raw `heroes` columns. Our AI connections are
+the opposite: **authored**, expensive, and **not reproducible**. Injecting them into a
+truncate-prone table and protecting them with a `WHERE source <> 'ai'` exception would
+rest irreplaceable data on a single clause in a load-bearing function.
+
+The codebase already draws this seam: **`hero_relatives`** is a separate *authored*
+table (typed family kinds, never rebuilt) precisely because curated data shouldn't live
+in the derived graph. By lifecycle, our connections belong with `hero_relatives`, not
+`hero_relationships`. So this lane adds a **new authored table `hero_connections`** with
+its own read RPC, mirroring that precedent.
+
+| Table | Lifecycle | Kinds | Owner |
+| --- | --- | --- | --- |
+| `hero_relationships` | derived, rebuilt from `heroes` | enemy / ally / teammate | existing |
+| `hero_relatives` | authored, never rebuilt | family enum | existing |
+| **`hero_connections`** (new) | **authored, never rebuilt** | love_interest / mentor / protege / rival | **this lane** |
+
+This makes "rebuild never destroys authored data" **structural** (the rebuild touches a
+different table) instead of a discipline, lets `confidence` and a kind `CHECK` live
+naturally without polluting the derived graph, and means we **do not modify**
+`rebuild_hero_relationships()` at all.
+
+## Decisions (resolved in brainstorming + DB-maturity review)
 
 | # | Question | Decision |
 | --- | --- | --- |
 | a | Which kinds first? | `love_interest`, `mentor`, `rival` (plus `protege` as the stored inverse of `mentor`). |
-| b | Directionality | Store **both** directed edges explicitly. We write `mentor`/`protege` as a pair, and the symmetric `love_interest`/`rival` in both directions, so `get_related_heroes` works unchanged from either hero's perspective. |
-| c | Confidence + dedup | Hard threshold **0.7**. Add a nullable `confidence` column. Skip any pair that already has a curated (non-AI) edge of the same kind. |
+| b | Directionality | Store **both** directed edges explicitly (`mentor`/`protege` as a pair; `love_interest`/`rival` symmetric), so the read RPC works from either hero's perspective — consistent with how `hero_relationships` models a directed graph. |
+| c | Confidence + integrity | Hard threshold **0.7**, stored in a `confidence` column. Kinds are constrained by a `CHECK` on the new table (no silent typos). Idempotent writes via `ON CONFLICT DO NOTHING`. |
 | d | Rank ordering | Computed at generation time, ordered by the *related* hero's `issue_count` desc — same rule as existing kinds. |
 | e | UI | New `ConnectionsSection` component, rendered on both `app/character/[id].tsx` (native) and `app/character/[id].web.tsx` (web), below the existing relationships card. |
-| f | Who generates the edges? | **Claude Code, in this tab.** No external LLM API, no `ANTHROPIC_API_KEY` secret, no `fetch`, no cron drain. Claude reads hero ComicVine data in-session, reasons about connections, and writes the rows directly. |
+| f | Who generates the edges? | **Claude Code, in this tab.** No external LLM API, no `ANTHROPIC_API_KEY` secret, no `fetch`, no cron drain. |
+| g | Where do edges live? | A **new authored `hero_connections` table** + `get_hero_connections` RPC — *not* `hero_relationships`. `rebuild_hero_relationships()` is left untouched. |
 
 ## What already exists (build on, don't rebuild)
 
-- **`hero_relationships`** table: `(hero_id, related_id, kind, source, rank,
-  cross_universe)`, PK `(hero_id, kind, related_id)`. `kind` is **free-form text**
-  (no check constraint), so new kind values insert with no schema change. `source`
-  already defaults to `'comicvine'` and supports provenance; our rows use
-  `source = 'ai'`.
-- **`get_related_heroes(p_hero_id, p_kind text, ...)`** RPC: accepts any kind
-  string and orders by `rank` / `issue_count`. **Works unchanged for new kinds.**
-- **`rebuild_hero_relationships()`**: rebuilds the table from raw `heroes` columns —
-  see the hard constraint below.
-- **`hero_relatives`** table: the typed family tree with its own `relation_kind`
-  enum. **Stays entirely separate** — this lane does not touch it, and the family
-  tree remains the home for `father`/`mother`/`spouse`/etc. We are not adding
-  `alter_ego` or `successor` in v1, so there is no overlap to reconcile.
-- **`src/lib/db/heroes.ts`**: `RelationKind = 'enemy' | 'ally' | 'teammate'`
-  (TypeScript-only) and `getRelatedHeroes()`.
-- **`src/components/RelatedHeroStrip.tsx`**: `RelatedKind` + `ACCENT` color map +
-  the card/chip strip renderer the new section reuses.
+- **`hero_relationships`** + `get_related_heroes` + `rebuild_hero_relationships()` —
+  the derived graph for enemy/ally/teammate. **This lane does not touch any of it.**
+- **`hero_relatives`** — the authored family tree (its own `relation_kind` enum). The
+  pattern we mirror. **Not touched** — family stays its own domain; we do not add
+  `alter_ego`/`successor`/`spouse` kinds (no overlap to reconcile in v1).
+- **`src/lib/db/heroes.ts`**: `RelatedHeroCard` type + `getRelatedHeroes()`. We reuse
+  the `RelatedHeroCard` shape; the new RPC returns the same columns.
+- **`src/components/RelatedHeroStrip.tsx`**: `RelatedKind` + `ACCENT` color map + the
+  card/chip strip renderer the new section reuses.
 
 ## Hard constraints (from the brief + project conventions)
 
 - **No external LLM API and no secret.** Edges are generated by Claude Code in this
-  tab; nothing about generation ships to the client or to a server function.
-- **AI rows survive `rebuild_hero_relationships()`.** That function currently does a
-  blanket `truncate public.hero_relationships;` (verified — line 34 of
-  `20260610123000_create_hero_relationships.sql`) and rebuilds only the
-  `source = 'comicvine'` rows it derives from raw `heroes` columns. As written it
-  would wipe our rows on every rebuild. **Fix:** change the truncate to
-  `DELETE FROM public.hero_relationships WHERE source <> 'ai';` so AI rows persist.
-  This is the one change to existing SQL this lane makes, and it is what makes the
-  live DB the durable home for the generated edges (consistent with how the project
-  already keeps 3,000+ heroes in the DB rather than in `seed.sql`).
+  tab; nothing about generation ships to the client or a server function.
+- **New table gets RLS + a public-read policy.** RLS is auto-enabled on new tables;
+  without an explicit `select using (true)` policy, anon reads return 0 rows and the
+  RPC returns `[]` silently. (Project gotcha — see memory.)
+- **`rebuild_hero_relationships()` is not modified.** Authored data lives in its own
+  table; the derived rebuild can keep its clean `truncate`.
 - **Screens never import `supabase`** — all DB access via a new
   `src/lib/db/relationships.ts` module.
 - **TypeScript, no `any`** — caught errors typed `unknown`.
-- New columns inherit the table's existing public-read RLS policy.
 
 ## Architecture
 
 ```text
         ┌──────────────────────────────────────────────────────────────┐
-        │  Generation — Claude Code, in THIS tab (a manual, resumable    │
-        │  workflow; no server, no API, no cron)                         │
+        │  Generation — Claude Code, in THIS tab (manual, resumable;     │
+        │  no server, no API, no cron)                                   │
         │                                                                │
         │  1. SELECT a batch of heroes WHERE relationships_ai_status     │
         │     IS NULL, ORDER BY issue_count DESC  (most popular first)   │
-        │  2. For each: read CV description/deck/summary + known related │
-        │     names; reason about love_interest / mentor / protege /     │
-        │     rival edges, each with a 0–1 confidence                    │
+        │  2. For each: read CV deck/description; propose love_interest /│
+        │     mentor / protege / rival edges, each with 0–1 confidence   │
         │  3. Drop confidence < 0.7; resolve related names → hero ids;   │
-        │     skip pairs that already have a curated (source<>'ai') edge;│
         │     compute rank by related hero's issue_count desc            │
-        │  4. Emit INSERTs for BOTH directed edges, source='ai', with    │
-        │     confidence; apply via mcp__supabase execute_sql            │
+        │  4. INSERT both directed edges into hero_connections,          │
+        │     ON CONFLICT DO NOTHING (idempotent)                        │
         │  5. UPDATE heroes.relationships_ai_status = 'done' for the batch│
         └──────────────────────────────────────────────────────────────┘
                                    │ writes
                                    ▼
-                      hero_relationships (+ confidence col)
-                                   │ get_related_heroes RPC
+                       hero_connections  (authored table)
+                                   │ get_hero_connections RPC
                                    ▼
         src/lib/db/relationships.ts  →  ConnectionsSection
                                    │  (one import + placement line each)
@@ -96,122 +106,96 @@ almost entirely; the new work is a generation workflow plus one new UI section.
 
 ## Components
 
-### 1. Migration: `confidence` column + status column + rebuild guard
+### 1. Migration: `hero_connections` table + RPC + status ledger
 
-A single new schema migration `supabase/migrations/<ts>_relationships_ai.sql`:
+A single new migration `supabase/migrations/<ts>_hero_connections.sql`:
 
-- `ALTER TABLE hero_relationships ADD COLUMN confidence real;` (nullable; curated
-  rows stay `NULL`, AI rows carry their score).
-- `ALTER TABLE heroes ADD COLUMN relationships_ai_status text;` (NULL = not yet
-  processed; mirrors the `comicvine_status` pattern — value `'done'` once a hero's
-  connections have been generated). This is the **resumability ledger** so the
-  generation workflow can pick up where a previous session left off.
-- Change `rebuild_hero_relationships()`'s `truncate` to
-  `DELETE FROM public.hero_relationships WHERE source <> 'ai';`.
+- **Table** `hero_connections`:
+  `(hero_id text, related_id text, kind text, rank integer, confidence real,
+  cross_universe boolean, generated_at timestamptz)`, PK `(hero_id, kind, related_id)`,
+  both id columns FK to `heroes(id) ON DELETE CASCADE`, and
+  `CHECK (kind IN ('love_interest','mentor','protege','rival'))`.
+- **RLS**: enable + `for select using (true)` public-read policy.
+- **RPC** `get_hero_connections(p_hero_id text, p_kind text, p_limit integer)`:
+  joins `hero_connections` to `heroes`, returns the `RelatedHeroCard` columns
+  (`id, name, image_url, image_md_url, portrait_url, publisher, alignment`) plus
+  `rank, confidence`, ordered by `rank`. Granted to `anon, authenticated, service_role`.
+- **Status ledger**: `ALTER TABLE heroes ADD COLUMN relationships_ai_status text;`
+  (NULL = not yet processed; `'done'` once processed — including heroes that yielded
+  zero connections, so we don't reprocess them). Mirrors the existing `comicvine_status`
+  column pattern.
 
-No check constraint on `kind` — the column is free-form and only this lane writes
-these values, so a constraint adds merge contention (per the collision map) for
-safety we don't need. **Decision: no check-constraint migration.**
+`rebuild_hero_relationships()` is **not** touched. After applying, regenerate
+`database.generated.ts`.
 
-Apply via `mcp__supabase__apply_migration`, then regenerate `database.generated.ts`.
+### 2. DB module: `src/lib/db/relationships.ts`
 
-### 2. Generation workflow (Claude Code, in this tab)
-
-This is a **documented, resumable manual workflow**, not shipped code. Each session:
-
-1. **Pick a batch.** Query heroes with `relationships_ai_status IS NULL` ordered by
-   `issue_count DESC`, limited to a manageable batch (e.g. 20–50). Most-popular-first
-   means the pages users actually visit get connections soonest.
-2. **Read the source.** For each hero, read its ComicVine `description` / `deck` /
-   summary and its known related names. Claude combines that with its own knowledge
-   of the character to propose typed edges of the three kinds, each with a 0–1
-   confidence.
-3. **Filter + resolve.** Drop edges below 0.7. Resolve each related name to a hero
-   `id` that exists in `heroes` (drop unresolvable names — we only store navigable
-   edges). Skip any `(hero_id, kind, related_id)` already present with
-   `source <> 'ai'` (curated data always wins). Compute `rank` per
-   `(hero_id, kind)` by the related hero's `issue_count` desc.
-4. **Write.** Emit INSERTs for **both** directed edges per relationship
-   (`mentor`→`protege` inverse; `love_interest`/`rival` symmetric), `source = 'ai'`,
-   carrying the confidence. Use `ON CONFLICT (hero_id, kind, related_id) DO NOTHING`
-   so re-running a batch is idempotent. Apply via `mcp__supabase__execute_sql`.
-5. **Mark done.** `UPDATE heroes SET relationships_ai_status = 'done'` for the batch.
-
-Durability comes from the rebuild guard (step 1 migration), not from version-control:
-the rows live in the DB the same way the heroes themselves do. (If a from-scratch
-reproducible snapshot is ever wanted, a batch's INSERTs can be saved to a SQL file,
-but that is explicitly optional and out of scope for v1.)
-
-### 3. DB module: `src/lib/db/relationships.ts`
-
-- A `getConnections(heroId)` helper that fetches the `love_interest` / `mentor` /
-  `protege` / `rival` strips via `get_related_heroes` in popularity order, returning
-  the same `RelatedHeroCard[]` shape the strip already consumes.
+- A `ConnectionKind` type (`'love_interest' | 'mentor' | 'protege' | 'rival'`) and a
+  `getConnections(heroId)` helper that calls the `get_hero_connections` RPC once per
+  kind and returns a typed `HeroConnections` bundle of `RelatedHeroCard[]`.
 - Screens import only from here.
 
-### 4. Type extension: `src/lib/db/heroes.ts`
-
-- Extend `RelationKind` to
-  `'enemy' | 'ally' | 'teammate' | 'love_interest' | 'mentor' | 'protege' | 'rival'`.
-
-### 5. UI: `ConnectionsSection` + `RelatedHeroStrip` extension
+### 3. UI: `ConnectionsSection` + `RelatedHeroStrip` extension
 
 - Extend `RelatedKind` and the `ACCENT` map in `RelatedHeroStrip.tsx` with:
-  `love_interest` → rose, `mentor` → gold, `protege` → amber, `rival` → orange.
-  (Pull exact hex from `COLORS`; add palette entries if missing.)
-- New `src/components/ConnectionsSection.tsx`: renders the available strips
-  (skipping empties via the existing `names.length === 0` guard) under a
-  "Connections" header. Reuses `RelatedHeroStrip` per kind. No new layout logic.
-- `app/character/[id].tsx` and `app/character/[id].web.tsx` each get **one import
-  + one placement line**, below the existing enemies/allies relationships card.
+  `love_interest` → rose (new `COLORS.rose`), `mentor` → gold, `protege` → goldAccent,
+  `rival` → orange. One new palette entry (`rose`); the rest reuse existing colors.
+- New `src/components/ConnectionsSection.tsx`: adapts the resolved `RelatedHeroCard[]`
+  lists to `RelatedHeroStrip`'s `(names + heroMap)` API, renders one strip per non-empty
+  kind, returns `null` when all empty. No new layout logic.
+- `app/character/[id].tsx` and `app/character/[id].web.tsx` each get an import + a
+  placement (web has two layouts), below the existing relationships card.
 
 ## Data flow
 
 1. In this tab, Claude drains a popularity-ordered batch of heroes whose
    `relationships_ai_status` is unset, generates typed edges from their CV data,
-   filters/resolves/dedups, and upserts both directions into `hero_relationships`
-   (`source='ai'`), then marks the batch done.
-2. The character screen calls `getConnections(heroId)` → `get_related_heroes` RPC
-   per kind → `ConnectionsSection` renders strips ordered by `issue_count`.
+   filters/resolves, and inserts both directions into `hero_connections`, then marks
+   the batch `'done'`.
+2. The character screen calls `getConnections(heroId)` → `get_hero_connections` RPC
+   per kind → `ConnectionsSection` renders strips ordered by `rank`.
 
 ## Error handling
 
-- A related name that doesn't resolve to a hero `id` is dropped (no chip fallback
-  for AI edges — only resolved, navigable edges are stored).
-- Confidence below 0.7 → dropped, not stored.
-- An existing curated edge of the same kind → AI edge skipped (curated wins), enforced
-  by both the explicit skip and the `ON CONFLICT DO NOTHING` upsert.
-- Re-running a batch is safe (idempotent upsert + the status ledger).
-- `rebuild_hero_relationships()` re-run → AI rows survive (the `WHERE source <> 'ai'`
-  delete guard).
+- A related name that doesn't resolve to a hero `id` is dropped (only resolved,
+  navigable edges are stored).
+- Confidence below 0.7 → dropped.
+- A bad `kind` string → rejected by the `CHECK` constraint (fails loudly at write time
+  rather than creating a silent dead edge).
+- Re-running a batch is safe (`ON CONFLICT DO NOTHING` + the status ledger).
+- `rebuild_hero_relationships()` cannot affect `hero_connections` — different table.
+- Cross-domain contradictions (e.g. an established married couple surfacing as
+  `love_interest` when they're really family in `hero_relatives`) are a **generation
+  judgment**, handled by guidance in the runbook, not a SQL constraint.
 
 ## Testing
 
-Per project convention (`CLAUDE.md`): unit-test pure logic with mocked Supabase; no
-screen-render tests. There is no shipped extraction code to test — generation is the
-in-tab workflow.
+Per `CLAUDE.md`: unit-test pure logic with mocked Supabase; no screen-render tests.
+There is no shipped extraction code to test — generation is the in-tab workflow.
 
-- `__tests__/lib/db/relationships.test.ts` — `getConnections` shapes the RPC result
-  correctly per kind, applies popularity order, handles empty kinds.
+- `__tests__/lib/db/relationships.test.ts` — `getConnections` calls
+  `get_hero_connections` per kind, shapes the bundle correctly, handles empty/falsy.
 
 ## Out of scope (v1)
 
-- `alter_ego` / `identity`, `successor`, `creator_of` / `created_by`, `team_leader`
-  — deferred. Adding a kind later is: extend the generation prompt-of-record +
-  `RelationKind` + `ACCENT` + the `getConnections` kind list. No schema change.
-- A dedicated relationships screen — the Connections section on the character page
-  is the only surface in v1.
+- `alter_ego` / `identity`, `successor`, `creator_of` / `created_by`, `team_leader` —
+  deferred. Adding a kind later = extend the `CHECK`, the generation runbook,
+  `ConnectionKind`, `RelatedKind`, `ACCENT`, and the `getConnections` kind list.
+- A dedicated relationships screen — the Connections section is the only surface in v1.
 - An automated server/API extraction pipeline (deliberately not built).
-- Touching `hero_relatives` / the family tree.
-- Persisting generated batches as version-controlled SQL files.
+- Touching `hero_relatives`, `hero_relationships`, or `rebuild_hero_relationships()`.
+- A normalized `hero_enrichment_status` table — `relationships_ai_status` stays a column
+  on `heroes`, consistent with `comicvine_status`. Revisit only once several lanes have
+  each added a status column.
+- Persisting generated batches as version-controlled SQL files (durability comes from
+  the DB itself, like the heroes).
 
 ## Collision notes (per roadmap)
 
 - `database.generated.ts` — regenerate after the migration; resolve conflicts by
   re-running the generator, not hand-merging.
-- `hero_relationships` — additive rows + one nullable column; the one existing-SQL
-  change is the rebuild delete guard. Coordinate with any other lane touching that
-  function (none currently).
-- `[id].tsx` / `[id].web.tsx` — one import + one placement line each, merged last.
-- **No AI spend** — generation happens in-tab, so unlike the original API-pipeline
-  idea there is no shared LLM budget with Lane 2 to coordinate.
+- **No `hero_relationships` change** — unlike the original idea, this lane adds a new
+  table and touches no existing relationship SQL, so collision risk on the shared graph
+  drops to zero.
+- `[id].tsx` / `[id].web.tsx` — one import + one placement each (web: two), merged last.
+- **No AI spend** — generation happens in-tab; no shared LLM budget with Lane 2.
