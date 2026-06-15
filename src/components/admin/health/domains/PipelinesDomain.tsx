@@ -3,7 +3,7 @@
 // next N" action) sits beside "Needs you" review; the live log + recently-built
 // pair below; crons and full-width run history collapse into Advanced.
 import { useEffect, useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Pressable, ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Bento } from '../Bento';
@@ -20,7 +20,10 @@ import { getPendingBuildIds } from '../../../../lib/db/build';
 import { getPendingStatsIds } from '../../../../lib/db/stats';
 import { getPendingPortraitIds } from '../../../../lib/db/portraits';
 import { fetchWikidataEntities, type WikidataSummary } from '../../../../lib/api';
-import { relTime, runTypeLabel, GEMINI_MONTHLY_BUDGET, type LogTone } from '../format';
+import {
+  relTime, runTypeLabel, GEMINI_MONTHLY_BUDGET,
+  STATS_COST_PER_ITEM, PORTRAIT_COST_PER_ITEM, estCost, type LogTone,
+} from '../format';
 import type {
   AmbiguousHero,
   CatalogHealth,
@@ -243,6 +246,8 @@ export function PipelinesDomain({
   onRunResolve,
   onRunEnrich,
   onResolveQid,
+  onMarkUnresolved,
+  onBulkAccept,
   runs,
   runsTotal,
   runsLoading,
@@ -276,6 +281,8 @@ export function PipelinesDomain({
   onRunResolve: () => void;
   onRunEnrich: () => void;
   onResolveQid: (id: string, qid: string, name: string) => void;
+  onMarkUnresolved: (id: string, name: string) => void;
+  onBulkAccept: (heroes: AmbiguousHero[], threshold: number) => void;
   runs: EnrichmentRun[];
   runsTotal: number;
   runsLoading: boolean;
@@ -297,6 +304,13 @@ export function PipelinesDomain({
   // Wikidata label + description per candidate QID, so the review choice can be
   // made inline instead of opening each candidate in a new tab.
   const [wdInfo, setWdInfo] = useState<Record<string, WikidataSummary>>({});
+  // Per-hero manual QID entry, for when the resolver missed the right match entirely.
+  const [manualQid, setManualQid] = useState<Record<string, string>>({});
+  const BULK_THRESHOLD = 0.9;
+  const bulkEligible = ambiguous.filter((hero) => {
+    const top = [...hero.candidates].sort((a, b) => b.score - a.score)[0];
+    return top && top.score >= BULK_THRESHOLD;
+  }).length;
   const p = progress ?? {
     heroesTotal: 0, comicvineDone: 0, resolved: 0, ambiguous: 0, unresolved: 0,
     enriched: 0, filmTitles: 0, tvTitles: 0, gameTitles: 0, mediaDone: 0,
@@ -460,6 +474,22 @@ export function PipelinesDomain({
             <Text style={styles.empty}>All clear — nothing waiting on you.</Text>
           ) : (
             <ScrollView style={styles.reviewScroll} nestedScrollEnabled showsVerticalScrollIndicator>
+            {bulkEligible > 0 ? (
+              <Pressable
+                onPress={() => onBulkAccept(ambiguous, BULK_THRESHOLD)}
+                disabled={busy === 'bulk-accept'}
+                style={[styles.bulkBar, busy === 'bulk-accept' && styles.dim]}
+              >
+                {busy === 'bulk-accept' ? (
+                  <ActivityIndicator size="small" color={COLORS.green} />
+                ) : (
+                  <Ionicons name="checkmark-done" size={15} color={COLORS.green} />
+                )}
+                <Text style={styles.bulkText}>
+                  Auto-accept {bulkEligible} confident match{bulkEligible === 1 ? '' : 'es'} (≥ {BULK_THRESHOLD.toFixed(2)})
+                </Text>
+              </Pressable>
+            ) : null}
             {ambiguous.map((hero) => {
               const busyThis = busy === `resolveqid-${hero.id}`;
               return (
@@ -513,6 +543,38 @@ export function PipelinesDomain({
                       );
                     })}
                   </View>
+                  {/* Escape hatch — none of the candidates are right. */}
+                  <View style={styles.reviewActions}>
+                    <Pressable
+                      onPress={() => onMarkUnresolved(hero.id, hero.name)}
+                      disabled={!!busy}
+                      style={[styles.noneBtn, !!busy && styles.dim]}
+                    >
+                      <Ionicons name="close-circle-outline" size={14} color={COLORS.grey} />
+                      <Text style={styles.noneText}>None of these</Text>
+                    </Pressable>
+                    <View style={styles.manualBox}>
+                      <TextInput
+                        value={manualQid[hero.id] ?? ''}
+                        onChangeText={(t) => setManualQid((prev) => ({ ...prev, [hero.id]: t }))}
+                        placeholder="paste QID… (Q12345)"
+                        placeholderTextColor={COLORS.grey}
+                        autoCapitalize="characters"
+                        style={[styles.manualInput, { outlineStyle: 'none' }] as object}
+                      />
+                      <Pressable
+                        onPress={() => {
+                          const q = (manualQid[hero.id] ?? '').trim().toUpperCase();
+                          if (/^Q\d+$/.test(q)) onResolveQid(hero.id, q, hero.name);
+                          else flash('Enter a valid QID like Q12345', 'error');
+                        }}
+                        disabled={!!busy || !(manualQid[hero.id] ?? '').trim()}
+                        style={[styles.manualSet, (!!busy || !(manualQid[hero.id] ?? '').trim()) && styles.dim]}
+                      >
+                        <Text style={styles.manualSetText}>Set</Text>
+                      </Pressable>
+                    </View>
+                  </View>
                 </View>
               );
             })}
@@ -549,6 +611,9 @@ export function PipelinesDomain({
               <Text style={styles.genName}>Powerstats</Text>
               <Text style={styles.genSub}>
                 {spendMtd != null ? `$${spendMtd.toFixed(0)} / $${GEMINI_MONTHLY_BUDGET} this month` : 'spend data unavailable'}
+                {!overBudget && statsPending > 0
+                  ? ` · ~${estCost(Math.min(batchSize, statsPending), STATS_COST_PER_ITEM)}/run`
+                  : ''}
                 {overBudget ? ' · over budget' : ''}
               </Text>
             </View>
@@ -572,6 +637,9 @@ export function PipelinesDomain({
               <Text style={styles.genName}>AI Portraits</Text>
               <Text style={styles.genSub}>
                 {portraitsPending > 0 ? `${portraitsPending.toLocaleString()} heroes need a portrait` : 'All portraits generated'}
+                {!overBudget && portraitsPending > 0
+                  ? ` · ~${estCost(Math.min(batchSize, portraitsPending), PORTRAIT_COST_PER_ITEM)}/run`
+                  : ''}
                 {overBudget ? ' · over budget' : ''}
               </Text>
             </View>
@@ -807,6 +875,21 @@ const styles = StyleSheet.create({
   candScore: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey, fontVariant: ['tabular-nums'] },
   candDesc: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: COLORS.grey, lineHeight: 15 },
   chipLink: { backgroundColor: COLORS.navy + '0d', borderTopRightRadius: 9, borderBottomRightRadius: 9, paddingHorizontal: 9, alignItems: 'center', justifyContent: 'center' },
+  bulkBar: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: COLORS.green + '14', borderRadius: 9, paddingHorizontal: 12, paddingVertical: 9, marginBottom: 4,
+  },
+  bulkText: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: COLORS.green },
+  reviewActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 7, flexWrap: 'wrap' },
+  noneBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 5, paddingHorizontal: 4 },
+  noneText: { fontFamily: 'Nunito_700Bold', fontSize: 11.5, color: COLORS.grey },
+  manualBox: { flexDirection: 'row', alignItems: 'stretch', gap: 1, flex: 1, minWidth: 150, justifyContent: 'flex-end' },
+  manualInput: {
+    fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.navy, flex: 1, maxWidth: 170,
+    backgroundColor: '#f6f0e6', borderTopLeftRadius: 8, borderBottomLeftRadius: 8, paddingHorizontal: 10, paddingVertical: 6,
+  },
+  manualSet: { backgroundColor: COLORS.navy, borderTopRightRadius: 8, borderBottomRightRadius: 8, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
+  manualSetText: { fontFamily: 'Nunito_700Bold', fontSize: 11.5, color: '#fff' },
   loadMore: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     backgroundColor: '#efe6d6', borderRadius: 9, paddingVertical: 9, marginTop: 10,

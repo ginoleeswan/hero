@@ -23,6 +23,7 @@ import {
   getGeminiSpend,
   getAmbiguousHeroes,
   resolveHeroQid,
+  markHeroUnresolved,
   runWikidataResolve,
   runWikidataEnrich,
   getEnrichmentProgress,
@@ -353,8 +354,47 @@ export function useCatalogActions({
       await resolveHeroQid(id, qid);
       flash(`Set ${name} → ${qid}`, 'success');
       queryClient.invalidateQueries({ queryKey: ['ambiguousHeroes'] });
+      queryClient.invalidateQueries({ queryKey: ['enrichmentProgress'] });
     } catch (e) {
       flash(`Set QID failed: ${(e as Error).message}`, 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // "None of these" — drop a hero out of the ambiguous queue as unresolved.
+  const onMarkUnresolved = async (id: string, name: string) => {
+    setBusy(`resolveqid-${id}`);
+    try {
+      await markHeroUnresolved(id);
+      flash(`Marked ${name} unresolved.`, 'info');
+      queryClient.invalidateQueries({ queryKey: ['ambiguousHeroes'] });
+      queryClient.invalidateQueries({ queryKey: ['enrichmentProgress'] });
+    } catch (e) {
+      flash(`Update failed: ${(e as Error).message}`, 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Accept the top candidate for every hero whose best score clears the bar.
+  const onBulkAccept = async (
+    heroes: { id: string; candidates: { qid: string; score: number }[] }[],
+    threshold: number,
+  ) => {
+    const picks = heroes
+      .map((h) => ({ id: h.id, top: [...h.candidates].sort((a, b) => b.score - a.score)[0] }))
+      .filter((p): p is { id: string; top: { qid: string; score: number } } => !!p.top && p.top.score >= threshold);
+    if (picks.length === 0) { flash(`No matches at or above ${threshold.toFixed(2)}.`, 'info'); return; }
+    setBusy('bulk-accept');
+    let ok = 0;
+    try {
+      for (const p of picks) {
+        try { await resolveHeroQid(p.id, p.top.qid); ok++; } catch { /* skip, continue */ }
+      }
+      flash(`Accepted ${ok} confident match${ok === 1 ? '' : 'es'}.`, 'success');
+      queryClient.invalidateQueries({ queryKey: ['ambiguousHeroes'] });
+      queryClient.invalidateQueries({ queryKey: ['enrichmentProgress'] });
     } finally {
       setBusy(null);
     }
@@ -419,6 +459,8 @@ export function useCatalogActions({
     onSnapshot,
     onReenrich,
     onResolveQid,
+    onMarkUnresolved,
+    onBulkAccept,
     onRunResolve,
     onRunEnrich,
     onToggleCron,

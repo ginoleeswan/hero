@@ -304,6 +304,12 @@ export async function resolveHeroQid(heroId: string, qid: string): Promise<void>
   if (error) throw error;
 }
 
+/** Mark a hero unresolved — used when none of the review candidates are right. */
+export async function markHeroUnresolved(heroId: string): Promise<void> {
+  const { error } = await supabase.rpc('mark_hero_unresolved', { p_hero_id: heroId });
+  if (error) throw error;
+}
+
 /** Queue a Wikidata hero->QID resolve batch (mirrors runDrain for ComicVine). */
 export async function runWikidataResolve(limit = 10): Promise<void> {
   const { error } = await supabase.rpc('admin_run_wikidata_resolve', { p_limit: limit });

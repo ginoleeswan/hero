@@ -95,9 +95,13 @@ export function AddHeroesPanel({
     if (addedSession.length === 0) { setStages({}); return; }
     let alive = true;
     const ids = addedSession.map((a) => `cv-${a.id}`);
+    // Once every added hero reaches a terminal stage there's nothing left to poll.
+    const TERMINAL = new Set<BuildStage>(['done', 'failed', 'unresolved']);
     const tick = async () => {
       const rows = await getBuildHeroes(ids);
-      if (alive) setStages(Object.fromEntries(rows.map((r) => [r.id, r.stage])));
+      if (!alive) return;
+      setStages(Object.fromEntries(rows.map((r) => [r.id, r.stage])));
+      if (rows.length === ids.length && rows.every((r) => TERMINAL.has(r.stage))) clearInterval(t);
     };
     tick();
     const t = setInterval(tick, 4000);

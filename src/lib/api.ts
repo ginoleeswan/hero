@@ -302,12 +302,23 @@ async function fetchWikipediaThumbs(titles: string[]): Promise<Record<string, st
   return out;
 }
 
+// Session-lived cache so revisiting the review (or paging in more) never refetches
+// a QID we've already resolved.
+const wikidataCache = new Map<string, WikidataSummary>();
+
 export async function fetchWikidataEntities(
   qids: string[],
 ): Promise<Record<string, WikidataSummary>> {
-  const unique = [...new Set(qids.filter((q) => /^Q\d+$/.test(q)))];
-  if (unique.length === 0) return {};
+  const requested = [...new Set(qids.filter((q) => /^Q\d+$/.test(q)))];
+  if (requested.length === 0) return {};
   const out: Record<string, WikidataSummary> = {};
+  // Serve cached entities immediately; only fetch the ones we haven't seen.
+  const unique = requested.filter((q) => {
+    const hit = wikidataCache.get(q);
+    if (hit) { out[q] = hit; return false; }
+    return true;
+  });
+  if (unique.length === 0) return out;
   const enwikiTitle: Record<string, string> = {}; // qid → enwiki title (for image fallback)
   // wbgetentities accepts up to 50 ids per call. Claims → P18, sitelinks → enwiki.
   for (let i = 0; i < unique.length; i += 50) {
@@ -346,5 +357,7 @@ export async function fetchWikidataEntities(
       if (thumbs[title]) out[qid].image = thumbs[title];
     }
   }
+  // Cache everything we just resolved for the rest of the session.
+  for (const qid of unique) if (out[qid]) wikidataCache.set(qid, out[qid]);
   return out;
 }

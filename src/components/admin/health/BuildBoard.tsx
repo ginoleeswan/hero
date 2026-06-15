@@ -54,6 +54,16 @@ export function BuildBoard({
   const inFlight = useRef<Set<string>>(new Set());
   const cvBusy = useRef(false); // only one ComicVine call at a time (rate limit)
   const attempts = useRef<Map<string, number>>(new Map());
+  // Coalesce the lanes' simultaneous roster reads into one in-flight fetch.
+  const rowsInFlight = useRef<Promise<BuildHero[]> | null>(null);
+  const sharedRows = useCallback(() => {
+    if (rowsInFlight.current) return rowsInFlight.current;
+    const p = getBuildHeroes(heroIds).finally(() => { rowsInFlight.current = null; });
+    rowsInFlight.current = p;
+    return p;
+    // heroIds is a stable prop for the life of the board
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // The worker pool: a few lanes drain the set concurrently so the stages
   // pipeline — hero N+1's ComicVine starts the moment hero N's finishes, while
@@ -70,7 +80,7 @@ export function BuildBoard({
     const lane = async () => {
       while (!ctrl.current.stopped) {
         if (ctrl.current.paused) { await sleep(400); continue; }
-        const rows = await getBuildHeroes(heroIds);
+        const rows = await sharedRows();
         if (ctrl.current.stopped) break;
         setHeroes(rows);
         const next = rows.find((h) =>

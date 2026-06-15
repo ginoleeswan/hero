@@ -90,6 +90,8 @@ export default function AdminHealthScreen() {
     onSnapshot,
     onReenrich,
     onResolveQid,
+    onMarkUnresolved,
+    onBulkAccept,
     onRunResolve,
     onRunEnrich,
     onToggleCron,
@@ -345,6 +347,8 @@ export default function AdminHealthScreen() {
             onRunResolve={onRunResolve}
             onRunEnrich={onRunEnrich}
             onResolveQid={onResolveQid}
+            onMarkUnresolved={onMarkUnresolved}
+            onBulkAccept={onBulkAccept}
             runs={runs}
             runsTotal={runsQ.data?.total ?? 0}
             runsLoading={runsQ.isLoading}

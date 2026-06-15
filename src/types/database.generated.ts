@@ -1012,6 +1012,7 @@ export type Database = {
         }[]
       }
       heroes_aliases_text: { Args: { arr: string[] }; Returns: string }
+      mark_hero_unresolved: { Args: { p_hero_id: string }; Returns: undefined }
       rebuild_hero_relationships: { Args: never; Returns: undefined }
       register_film_match: {
         Args: {

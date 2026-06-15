@@ -11,6 +11,21 @@ export const CV_HOURLY_CAP = 200;
 // you never kick off paid work over budget. Adjust to your actual billing cap.
 export const GEMINI_MONTHLY_BUDGET = 50;
 
+// Rough per-item cost estimates (USD) for the AI runners, so a batch can show an
+// approximate spend before you launch it. Powerstats is a tiny flash-lite text
+// call; a portrait is a Gemini image generation (style transfer / Imagen). These
+// are ballpark figures for the preview only — actual billing is authoritative.
+export const STATS_COST_PER_ITEM = 0.002;
+export const PORTRAIT_COST_PER_ITEM = 0.04;
+
+/** "<$0.01" for tiny sums, otherwise "$0.42" / "$3" — for batch cost previews. */
+export const estCost = (n: number, perItem: number): string => {
+  const total = n * perItem;
+  if (total === 0) return '$0';
+  if (total < 0.01) return '<$0.01';
+  return total < 1 ? `$${total.toFixed(2)}` : `$${total.toFixed(total < 10 ? 1 : 0)}`;
+};
+
 export const relTime = (iso: string) => {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (s < 60) return `${s}s ago`;
