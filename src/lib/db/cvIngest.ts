@@ -1,6 +1,15 @@
 import { supabase } from '../supabase';
 
-export type GroupResource = 'team' | 'volume' | 'person' | 'movie';
+export type GroupResource = 'team' | 'volume' | 'person' | 'movie' | 'publisher' | 'power';
+
+// PostgREST caps URL length, so `.in()` over a big id list (publisher/power
+// rosters run to thousands) must be chunked. 200 ids per query stays well clear.
+const IN_CHUNK = 200;
+function chunk<T>(xs: T[], n: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < xs.length; i += n) out.push(xs.slice(i, i + n));
+  return out;
+}
 
 export interface CvCharacter {
   id: string;
@@ -81,18 +90,32 @@ export async function getComicvineGroupMembers(resource: GroupResource, id: stri
 /** Of the given ComicVine ids, which already exist in the catalogue. */
 export async function existingComicvineIds(ids: string[]): Promise<Set<string>> {
   if (ids.length === 0) return new Set();
-  const { data, error } = await supabase.from('heroes').select('comicvine_id').in('comicvine_id', ids);
-  if (error || !data) return new Set();
-  return new Set((data as Array<{ comicvine_id: string | null }>).map((r) => r.comicvine_id).filter((x): x is string => !!x));
+  const batches = await Promise.all(
+    chunk(ids, IN_CHUNK).map((slice) =>
+      supabase.from('heroes').select('comicvine_id').in('comicvine_id', slice)),
+  );
+  const out = new Set<string>();
+  for (const { data } of batches) {
+    for (const r of (data as Array<{ comicvine_id: string | null }> | null) ?? []) {
+      if (r.comicvine_id) out.add(r.comicvine_id);
+    }
+  }
+  return out;
 }
 
 /** Lowercased names already in the catalogue (cross-source duplicate guard). */
 export async function existingHeroNames(names: string[]): Promise<Set<string>> {
   const cleaned = [...new Set(names.map((n) => n.trim()).filter(Boolean))];
   if (cleaned.length === 0) return new Set();
-  const { data, error } = await supabase.from('heroes').select('name').in('name', cleaned);
-  if (error || !data) return new Set();
-  return new Set((data as Array<{ name: string }>).map((r) => r.name.toLowerCase()));
+  const batches = await Promise.all(
+    chunk(cleaned, IN_CHUNK).map((slice) =>
+      supabase.from('heroes').select('name').in('name', slice)),
+  );
+  const out = new Set<string>();
+  for (const { data } of batches) {
+    for (const r of (data as Array<{ name: string }> | null) ?? []) out.add(r.name.toLowerCase());
+  }
+  return out;
 }
 
 /** Add ComicVine characters to the catalogue (as pending). Returns count added. */

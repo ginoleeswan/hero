@@ -5,7 +5,8 @@
 //   { kind: 'popular', offset }                   -> most-appeared characters (paged)
 //   { kind: 'group', resource, query }            -> groups matching a name
 //   { kind: 'group_members', resource, id }       -> a group's character roster
-// resource ∈ 'team' | 'volume' | 'person' | 'movie'. Server-side key; logs usage.
+// resource ∈ 'team' | 'volume' | 'person' | 'movie' | 'publisher' | 'power'.
+// Server-side key; logs usage.
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -14,14 +15,21 @@ const CV = 'https://comicvine.gamespot.com/api';
 const KEY = Deno.env.get('COMICVINE_API_KEY') ?? '';
 const UA = { 'User-Agent': 'mythique/1.0 (admin ingestion)' };
 // ComicVine type-id prefix per resource path.
-const PREFIX: Record<string, string> = { team: '4060', volume: '4050', person: '4040', movie: '4025' };
+const PREFIX: Record<string, string> = {
+  team: '4060', volume: '4050', person: '4040', movie: '4025', publisher: '4010', power: '4035',
+};
 // Which field on a resource holds its character roster (person uses created_characters).
 const MEMBER_FIELD: Record<string, string> = {
   team: 'characters',
   volume: 'characters',
   movie: 'characters',
   person: 'created_characters',
+  publisher: 'characters',
+  power: 'characters',
 };
+// Resources whose /search support is broken or missing — search their dedicated
+// list endpoint by name instead (the reliable pattern). Value = plural list path.
+const LIST_PATH: Record<string, string> = { movie: 'movies', publisher: 'publishers', power: 'powers' };
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -116,19 +124,21 @@ serve(async (req: Request) => {
       };
     } else if (kind === 'group') {
       if (query.length < 2 || !PREFIX[resource]) return json({ results: [] });
-      if (resource === 'movie') {
-        // ComicVine's /search endpoint doesn't support the 'movie' resource —
-        // it returns nothing. Query the /movies list endpoint by name instead.
-        const url = `${CV}/movies/?api_key=${KEY}&format=json&filter=name:${encodeURIComponent(query)}&field_list=id,name,image,deck,release_date&limit=15`;
+      if (LIST_PATH[resource]) {
+        // movie / publisher / power: ComicVine's /search doesn't return these, so
+        // query the dedicated list endpoint by name. Characters aren't on the list
+        // rows (loaded when the group is opened) — so members stays null here.
+        const extra = resource === 'movie' ? ',release_date' : '';
+        const url = `${CV}/${LIST_PATH[resource]}/?api_key=${KEY}&format=json&filter=name:${encodeURIComponent(query)}&field_list=id,name,image,deck${extra}&limit=15`;
         const body = await (await fetch(url, { headers: UA })).json();
         out = {
           results: (body.results ?? []).map((r: Record<string, any>) => ({
             id: String(r.id),
             name: r.name,
             image: img(r.image),
-            members: null, // characters aren't on the list endpoint; loaded when opened
-            hint: r.release_date ? String(r.release_date).slice(0, 4)
-              : (typeof r.deck === 'string' ? r.deck.slice(0, 60) : null),
+            members: null,
+            hint: resource === 'movie' && r.release_date ? String(r.release_date).slice(0, 4)
+              : (typeof r.deck === 'string' && r.deck ? r.deck.slice(0, 60) : null),
           })),
         };
       } else {

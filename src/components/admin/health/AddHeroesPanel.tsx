@@ -41,7 +41,7 @@ const STAGE_BADGE: Record<BuildStage, { label: string; color: string }> = {
   done: { label: 'built', color: COLORS.green },
 };
 
-type Mode = 'name' | 'popular' | 'team' | 'volume' | 'person' | 'movie';
+type Mode = 'name' | 'popular' | 'team' | 'volume' | 'person' | 'movie' | 'publisher' | 'power';
 type Flash = (msg: string, tone?: 'info' | 'success' | 'error' | 'pending') => void;
 const MODES: { key: Mode; label: string }[] = [
   { key: 'popular', label: '★ Popular gaps' },
@@ -50,10 +50,13 @@ const MODES: { key: Mode; label: string }[] = [
   { key: 'volume', label: 'By series' },
   { key: 'person', label: 'By creator' },
   { key: 'movie', label: 'By film' },
+  { key: 'publisher', label: 'By publisher' },
+  { key: 'power', label: 'By power' },
 ];
 // Group-mode icon + search placeholder per resource.
-const GROUP_ICON: Record<string, 'people' | 'book' | 'brush' | 'film'> = {
-  team: 'people', volume: 'book', person: 'brush', movie: 'film',
+type IconName = 'people' | 'book' | 'brush' | 'film' | 'business' | 'flash';
+const GROUP_ICON: Record<string, IconName> = {
+  team: 'people', volume: 'book', person: 'brush', movie: 'film', publisher: 'business', power: 'flash',
 };
 const PLACEHOLDER: Record<Mode, string> = {
   name: 'Character name… (e.g. Darth Vader)',
@@ -62,6 +65,8 @@ const PLACEHOLDER: Record<Mode, string> = {
   volume: 'Comic series… (e.g. Star Wars)',
   person: 'Creator name… (e.g. Jack Kirby)',
   movie: 'Film title… (e.g. The Empire Strikes Back)',
+  publisher: 'Publisher… (e.g. Valiant)',
+  power: 'Power… (e.g. Telepathy)',
 };
 
 export function AddHeroesPanel({
@@ -145,8 +150,11 @@ export function AddHeroesPanel({
     try {
       const offsets = Array.from({ length: BATCH_PAGES }, (_, i) => off + i * PAGE);
       const pages = await Promise.all(offsets.map((o) => fetchPopularCharacters(o)));
-      const collected = pages.flat();
       const ended = pages.some((p) => p.length < PAGE); // a short page = end of list
+      // ComicVine's appearance-sorted paging can repeat a character across pages on
+      // ties — de-dupe within the batch so React keys stay unique.
+      const batchSeen = new Set<string>();
+      const collected = pages.flat().filter((c) => !batchSeen.has(c.id) && batchSeen.add(c.id));
       const [ex, exN] = await Promise.all([
         existingComicvineIds(collected.map((c) => c.id)),
         existingHeroNames(collected.map((c) => c.name)),
@@ -223,10 +231,11 @@ export function AddHeroesPanel({
   const clearSel = () => setSelected(new Set());
 
   // Add a set of characters to the catalogue (as pending). Shared by the toolbar
-  // "Add N" (the whole selection) and the inline preview's one-tap "Add".
-  const addByIds = async (rawIds: string[]) => {
+  // "Add N" (the whole selection) and the inline preview's one-tap "Add". Returns
+  // the ids actually added (new ones), so callers can chain a build.
+  const addByIds = async (rawIds: string[]): Promise<string[]> => {
     const ids = rawIds.filter((id) => !isIn(id));
-    if (ids.length === 0) return;
+    if (ids.length === 0) return [];
     const payload = ids.map((id) => {
       const c = chars.find((x) => x.id === id);
       const m = members.find((x) => x.id === id);
@@ -242,10 +251,16 @@ export function AddHeroesPanel({
       setSelected((p) => { const s = new Set(p); ids.forEach((id) => s.delete(id)); return s; });
       flash(`Added ${n} hero${n === 1 ? '' : 'es'} — pending at step 1.`, 'success');
       onAdded();
-    } catch (e) { flash(`Add failed: ${(e as Error).message}`, 'error'); }
+      return ids;
+    } catch (e) { flash(`Add failed: ${(e as Error).message}`, 'error'); return []; }
     finally { setBusy(false); }
   };
   const addSelected = () => addByIds([...selected]);
+  // One-shot bulk: add every new row in the current view and immediately build them.
+  const addAllNewAndBuild = async () => {
+    const added = await addByIds(newRows.map((r) => r.id));
+    if (added.length > 0) onBuild(added.map((id) => `cv-${id}`));
+  };
 
   // Undo a just-added character — delete it from the catalogue and drop it here.
   const removeAdded = async (a: AddedHero) => {
@@ -259,13 +274,18 @@ export function AddHeroesPanel({
     finally { setRemoving((p) => { const s = new Set(p); s.delete(a.id); return s; }); }
   };
 
-  const memberView = group ? (newOnly ? members.filter((m) => !isIn(m.id)) : members) : [];
+  // Publisher / power rosters run to thousands; cap what we render so a big roster
+  // can't jank the list. 'New only' (on by default) plus the cap keeps it usable.
+  const ROSTER_CAP = 300;
+  const memberFiltered = group ? (newOnly ? members.filter((m) => !isIn(m.id)) : members) : [];
+  const memberView = memberFiltered.slice(0, ROSTER_CAP);
+  const memberTruncated = memberFiltered.length - memberView.length;
 
   return (
     <Panel
       title="Add heroes · ComicVine"
-      hint="Step 0 — bring new characters in. Search a name, a team, or a comic series; added heroes flow into step 1."
-      action={<InfoTip text="Not sure what's missing? Start with '★ Popular gaps' — ComicVine's most-published characters that aren't in your catalogue yet, most-appeared first. Or live-search by name, team, or comic series. Tick the ones you want (or 'Select all new'), Add them, then build. Already-in-catalogue and same-name duplicates are flagged." />}
+      hint="Step 0 — bring new characters in. Search by name, team, series, creator, film, publisher or power; tap a result to preview it; added heroes flow into step 1."
+      action={<InfoTip text="Not sure what's missing? Start with '★ Popular gaps' — ComicVine's most-published characters that aren't in your catalogue yet, most-appeared first. Or live-search by name, team, series, creator, film, publisher or power. Tap any result to preview its real name, powers, first appearance and more before adding. Tick the ones you want (or 'Select all new') and Add — or 'Add all & build' to do the whole new set in one go. Already-in-catalogue and same-name duplicates are flagged." />}
     >
       {/* Mode + live search */}
       <View style={styles.modeRow}>
@@ -338,6 +358,16 @@ export function AddHeroesPanel({
           <Pressable onPress={addSelected} disabled={busy || selected.size === 0} style={[styles.addBtn, (busy || selected.size === 0) && styles.dim]}>
             {busy ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="add" size={15} color="#fff" />}
             <Text style={styles.addBtnText}>Add {selected.size || ''}</Text>
+          </Pressable>
+          {/* One-shot: add every new row and build them immediately. */}
+          <Pressable
+            onPress={addAllNewAndBuild}
+            disabled={busy || newRows.length === 0}
+            style={[styles.buildAllBtn, (busy || newRows.length === 0) && styles.dim]}
+            accessibilityLabel={`Add all ${newRows.length} new and build`}
+          >
+            <Ionicons name="construct" size={14} color="#fff" />
+            <Text style={styles.buildAllText}>Add all {newRows.length} &amp; build</Text>
           </Pressable>
         </View>
       ) : null}
@@ -414,6 +444,12 @@ export function AddHeroesPanel({
               </Pressable>
             ))}
             {memberView.length === 0 ? <Text style={styles.empty}>{newOnly ? 'No new members — all in catalogue.' : 'No members.'}</Text> : null}
+            {memberTruncated > 0 ? (
+              <Text style={styles.empty}>
+                Showing first {ROSTER_CAP.toLocaleString()} of {(memberView.length + memberTruncated).toLocaleString()}
+                {newOnly ? ' new' : ''} — add these or refine with a narrower search.
+              </Text>
+            ) : null}
           </ScrollView>
         )
       ) : null}
@@ -564,6 +600,8 @@ const styles = StyleSheet.create({
   linkText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange, textDecorationLine: 'underline' },
   addBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: COLORS.orange, borderRadius: 9, paddingHorizontal: 13, paddingVertical: 8 },
   addBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
+  buildAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: COLORS.navy, borderRadius: 9, paddingHorizontal: 13, paddingVertical: 8 },
+  buildAllText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
 
   scroll: { maxHeight: 300, marginTop: 8 } as object,
   charWrap: { borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.06)' },
