@@ -10,6 +10,7 @@ describe('DOMAINS', () => {
       'command',
       'catalog',
       'pipelines',
+      'campaigns',
       'spend',
       'users',
       'traffic',
@@ -30,7 +31,7 @@ describe('DOMAINS', () => {
   });
 
   it('primaryDomainKeys excludes placeholders (mobile bottom bar set)', () => {
-    expect(primaryDomainKeys()).toEqual(['command', 'catalog', 'pipelines', 'spend']);
+    expect(primaryDomainKeys()).toEqual(['command', 'catalog', 'pipelines', 'campaigns', 'spend']);
   });
 });
 
