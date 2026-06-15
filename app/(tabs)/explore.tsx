@@ -30,20 +30,11 @@ import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
 import { HomeSkeleton } from '../../src/components/skeletons/HomeSkeleton';
 import { SpotlightCarousel } from '../../src/components/home/SpotlightCarousel';
-import { PublisherGrid } from '../../src/components/home/PublisherGrid';
 import { rowStyle } from '../../src/lib/home/rowStyle';
 import { HomeHeroRow, type RowHero } from '../../src/components/home/HomeHeroRow';
 import {
   getSpotlightHeroes,
   getIconicHeroes,
-  getNewlyAddedCV,
-  getAntiHeroes,
-  getVillains,
-  getXMen,
-  getHeroesByPublisher,
-  getHeroesByStatRanking,
-  getFranchiseIcons,
-  getHeroesByMediaTag,
   getTrendingSpotlightHeroes,
   type Hero,
 } from '../../src/lib/db/heroes';
@@ -57,6 +48,7 @@ import {
   type TrendingTitleCharacter,
 } from '../../src/lib/db/trending';
 import { RightNowBand } from '../../src/components/home/RightNowBand';
+import { CategoryPodGrid } from '../../src/components/home/CategoryPodGrid';
 import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
@@ -72,7 +64,7 @@ function toRowHero(h: Hero | FavouriteHero): RowHero {
 type FeedRow =
   | { type: 'spotlight'; heroes: Hero[] }
   | { type: 'recent'; heroes: RowHero[] }
-  | { type: 'publishers' }
+  | { type: 'browsegrid' }
   | { type: 'favourites'; heroes: RowHero[] }
   | {
       type: 'rightnow';
@@ -106,20 +98,8 @@ export default function HomeScreen() {
   const [spotlight, setSpotlight] = useState<Hero[]>([]);
   const [initialLoaded, setInitialLoaded] = useState(false);
 
-  // Below-fold rows — each renders as soon as its data arrives
+  // One marquee rail (Most Iconic); everything else lives in the Browse grid.
   const [iconic, setIconic] = useState<Hero[]>([]);
-  const [villains, setVillains] = useState<Hero[]>([]);
-  const [xmen, setXmen] = useState<Hero[]>([]);
-  const [antiHeroes, setAntiHeroes] = useState<Hero[]>([]);
-  const [marvel, setMarvel] = useState<Hero[]>([]);
-  const [dc, setDc] = useState<Hero[]>([]);
-  const [strongest, setStrongest] = useState<Hero[]>([]);
-  const [mostIntelligent, setMostIntelligent] = useState<Hero[]>([]);
-  const [newlyAdded, setNewlyAdded] = useState<Hero[]>([]);
-  const [franchiseIcons, setFranchiseIcons] = useState<Hero[]>([]);
-  const [anime, setAnime] = useState<Hero[]>([]);
-  const [videoGames, setVideoGames] = useState<Hero[]>([]);
-  const [horror, setHorror] = useState<Hero[]>([]);
   const [onScreen, setOnScreen] = useState<TrendingTitle[]>([]);
   const [comingSoon, setComingSoon] = useState<TrendingTitle[]>([]);
   const [streaming, setStreaming] = useState<TrendingTitle[]>([]);
@@ -170,42 +150,6 @@ export default function HomeScreen() {
     getIconicHeroes(20)
       .then(setIconic)
       .catch(() => {});
-    getVillains(20)
-      .then(setVillains)
-      .catch(() => {});
-    getXMen(20)
-      .then(setXmen)
-      .catch(() => {});
-    getAntiHeroes(20)
-      .then(setAntiHeroes)
-      .catch(() => {});
-    getHeroesByPublisher('marvel', 20)
-      .then(setMarvel)
-      .catch(() => {});
-    getHeroesByPublisher('dc', 20)
-      .then(setDc)
-      .catch(() => {});
-    getHeroesByStatRanking('strength', 20)
-      .then(setStrongest)
-      .catch(() => {});
-    getHeroesByStatRanking('intelligence', 20)
-      .then(setMostIntelligent)
-      .catch(() => {});
-    getNewlyAddedCV(20)
-      .then(setNewlyAdded)
-      .catch(() => {});
-    getFranchiseIcons(20)
-      .then(setFranchiseIcons)
-      .catch(() => {});
-    getHeroesByMediaTag('anime', 20)
-      .then(setAnime)
-      .catch(() => {});
-    getHeroesByMediaTag('video-game', 20)
-      .then(setVideoGames)
-      .catch(() => {});
-    getHeroesByMediaTag('horror-icon', 20)
-      .then(setHorror)
-      .catch(() => {});
     getTrendingTitles('on_screen', 6)
       .then(setOnScreen)
       .catch(() => {});
@@ -243,10 +187,10 @@ export default function HomeScreen() {
     [router, navigating],
   );
 
-  const handlePublisherPress = useCallback(
+  const handleCategoryPress = useCallback(
     (slug: string) => {
       Haptics.selectionAsync();
-      router.push(`/publisher/${slug}`);
+      router.push(`/category/${slug}`);
     },
     [router],
   );
@@ -259,103 +203,12 @@ export default function HomeScreen() {
     [router],
   );
 
-  // Fixed catalog order. Tone alternates by catalog index (not by which rows
-  // happen to be loaded), so a row's band colour never flips as data streams in.
-  const curatedCatalog: {
-    key: string;
-    label: string;
-    title: string;
-    heroes: Hero[];
-    route?: Href;
-  }[] = [
-    {
-      key: 'iconic',
-      label: 'By Appearances',
-      title: 'Most Iconic',
-      heroes: iconic,
-      route: '/category/most-iconic',
-    },
-    {
-      key: 'franchise',
-      label: 'Shows · Movies · Games',
-      title: 'Beyond the Comics',
-      heroes: franchiseIcons,
-      route: '/category/franchise-icons',
-    },
-    {
-      key: 'villains',
-      label: 'The Dark Side',
-      title: 'Villains',
-      heroes: villains,
-      route: '/category/villain',
-    },
-    {
-      key: 'horror',
-      label: 'Movie Nightmares',
-      title: 'Horror Icons',
-      heroes: horror,
-      route: '/category/horror',
-    },
-    {
-      key: 'marvel',
-      label: 'Marvel Comics',
-      title: 'Marvel Universe',
-      heroes: marvel,
-      route: '/category/marvel',
-    },
-    { key: 'dc', label: 'DC Comics', title: 'DC Universe', heroes: dc, route: '/category/dc' },
-    {
-      key: 'anti',
-      label: 'Neither Good Nor Evil',
-      title: 'Anti-Heroes',
-      heroes: antiHeroes,
-      route: '/category/anti-heroes',
-    },
-    {
-      key: 'strongest',
-      label: 'By Power Stats',
-      title: 'Strongest Heroes',
-      heroes: strongest,
-      route: '/category/strongest',
-    },
-    {
-      key: 'xmen',
-      label: 'Gifted Youngsters',
-      title: 'X-Men',
-      heroes: xmen,
-      route: '/category/xmen',
-    },
-    {
-      key: 'anime',
-      label: 'Anime & Manga',
-      title: 'Anime Legends',
-      heroes: anime,
-      route: '/category/anime',
-    },
-    {
-      key: 'games',
-      label: 'Video Games',
-      title: 'Video Game Heroes',
-      heroes: videoGames,
-      route: '/category/video-games',
-    },
-    {
-      key: 'minds',
-      label: 'By Power Stats',
-      title: 'Brightest Minds',
-      heroes: mostIntelligent,
-      route: '/category/most-intelligent',
-    },
-    { key: 'new', label: 'New to the Encyclopedia', title: 'Recently Added', heroes: newlyAdded },
-  ];
-
-  // The feed as a flat list of rows. Rows appear as their data streams in
-  // (empty rows are dropped), preserving the original "fill as you go" feel.
+  // The feed as a flat list of rows. A deliberate, short sequence: billboard →
+  // the dynamic "Right Now" zone → your personal rows → one marquee rail → the
+  // Browse grid. No row soup.
   const rows = useMemo<FeedRow[]>(() => {
     const out: FeedRow[] = [];
     if (spotlightPool.length > 0) out.push({ type: 'spotlight', heroes: spotlightPool });
-    // The "Right Now" band — campaign + trending + personalized, all in one
-    // continuous editorial zone directly under the billboard.
     if (
       campaigns[0] ||
       onScreen.length > 0 ||
@@ -374,36 +227,24 @@ export default function HomeScreen() {
     }
     if (recentlyViewed.length > 0)
       out.push({ type: 'recent', heroes: recentlyViewed.map(toRowHero) });
-    out.push({ type: 'publishers' });
     if (favourites.length > 0) out.push({ type: 'favourites', heroes: favourites.map(toRowHero) });
-    // "Browse the Universe" — the evergreen library, as its own chapter beneath
-    // the dynamic zone.
-    const curatedRows = curatedCatalog.filter((r) => r.heroes.length > 0);
-    if (curatedRows.length > 0) out.push({ type: 'browsehead' });
-    for (const r of curatedRows) {
-      out.push({ type: 'curated', ...r });
-    }
+    out.push({ type: 'browsehead' });
+    if (iconic.length > 0)
+      out.push({
+        type: 'curated',
+        key: 'iconic',
+        label: 'By Appearances',
+        title: 'Most Iconic',
+        heroes: iconic,
+        route: '/category/most-iconic',
+      });
+    out.push({ type: 'browsegrid' });
     return out;
-    // curatedCatalog is rebuilt each render from the same state, so depend on
-    // the underlying arrays rather than the wrapper object.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     spotlightPool,
     recentlyViewed,
     favourites,
     iconic,
-    villains,
-    marvel,
-    dc,
-    antiHeroes,
-    strongest,
-    xmen,
-    mostIntelligent,
-    newlyAdded,
-    franchiseIcons,
-    anime,
-    videoGames,
-    horror,
     onScreen,
     comingSoon,
     streaming,
@@ -459,8 +300,8 @@ export default function HomeScreen() {
               <Text style={styles.browseTitle}>Browse the Universe</Text>
             </View>
           );
-        case 'publishers':
-          return <PublisherGrid onPress={handlePublisherPress} />;
+        case 'browsegrid':
+          return <CategoryPodGrid onPress={handleCategoryPress} />;
         case 'favourites':
           return (
             <HomeHeroRow
@@ -491,7 +332,7 @@ export default function HomeScreen() {
         }
       }
     },
-    [insets.top, scrollY, handlePress, handlePublisherPress, handleTitlePress, navigating, router],
+    [insets.top, scrollY, handlePress, handleCategoryPress, handleTitlePress, navigating, router],
   );
 
   // Translate every rendered cell uniformly to counteract the overscroll bounce,

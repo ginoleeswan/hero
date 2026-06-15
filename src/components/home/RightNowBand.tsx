@@ -15,8 +15,13 @@ import Animated, {
 } from 'react-native-reanimated';
 import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
-import { TrendingShelf } from './TrendingShelf';
-import type { Campaign, TrendingTitle, TrendingTitleCharacter } from '../../lib/db/trending';
+import { TitlePosterRail } from './TitlePosterRail';
+import {
+  mergeTrendingTitles,
+  type Campaign,
+  type TrendingTitle,
+  type TrendingTitleCharacter,
+} from '../../lib/db/trending';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -205,35 +210,13 @@ export function RightNowBand({
         <CampaignHero campaign={campaign} onHeroPress={onHeroPress} disabled={disabled} />
       )}
 
-      <TrendingShelf
-        label="In Theaters & Recent"
-        title="On the Big Screen"
-        accent={COLORS.orange}
-        tone="dark"
-        titles={onScreen}
-        onHeroPress={onHeroPress}
+      {/* One calm rail — theatrical, upcoming and streaming merged; the badge
+          on each poster carries the distinction. */}
+      <TitlePosterRail
+        label="In Cinemas & Streaming"
+        title="On Screen Now"
+        titles={mergeTrendingTitles(onScreen, comingSoon, streaming)}
         onTitlePress={onTitlePress}
-        disabled={disabled}
-      />
-      <TrendingShelf
-        label="Releasing Soon"
-        title="Coming Soon"
-        accent={COLORS.gold}
-        tone="dark"
-        titles={comingSoon}
-        onHeroPress={onHeroPress}
-        onTitlePress={onTitlePress}
-        disabled={disabled}
-      />
-      <TrendingShelf
-        label="Now Streaming"
-        title="Streaming Now"
-        accent={COLORS.blue}
-        tone="dark"
-        titles={streaming}
-        onHeroPress={onHeroPress}
-        onTitlePress={onTitlePress}
-        disabled={disabled}
       />
 
       {personalized.length > 0 && (

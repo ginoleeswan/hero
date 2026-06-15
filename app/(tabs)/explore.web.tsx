@@ -32,6 +32,7 @@ import {
   type TrendingTitleCharacter,
 } from '../../src/lib/db/trending';
 import { RightNowBand } from '../../src/components/web/home/RightNowBand';
+import { CategoryPodGrid } from '../../src/components/web/home/CategoryPodGrid';
 import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
@@ -1426,47 +1427,10 @@ export default function WebHomeScreen() {
               onPress={handlePress}
               onViewAll={() => router.push('/category/most-iconic')}
             />
-            <HomeRow
-              label="Shows · Movies · Games"
-              title="Beyond the Comics"
-              heroes={homeData.franchiseIcons ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/franchise-icons')}
-            />
-            <HomeRow
-              label="Marvel Comics"
-              title="Marvel Universe"
-              heroes={homeData.marvel ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/marvel')}
-            />
-            <HomeRow
-              label="DC Comics"
-              title="DC Universe"
-              heroes={homeData.dc ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/dc')}
-            />
-            <HomeRow
-              label="Charles Xavier's School for Gifted Youngsters"
-              title="X-Men"
-              heroes={homeData.xmen ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/xmen')}
-            />
-            <HomeRow
-              label="Anime & Manga"
-              title="Anime Legends"
-              heroes={homeData.anime ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/anime')}
-            />
-            <HomeRow
-              label="Video Games"
-              title="Video Game Heroes"
-              heroes={homeData.videoGames ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/video-games')}
+            <CategoryPodGrid
+              onPress={(slug) =>
+                router.push(`/category/${slug}` as Parameters<typeof router.push>[0])
+              }
             />
 
             {/* ── The Dark Side — one deliberate dark zone ──────────────────── */}
@@ -1501,35 +1465,15 @@ export default function WebHomeScreen() {
               </View>
             )}
 
-            {/* ── Discover — explore deeper ─────────────────────────────────── */}
+            {/* ── Go Deeper — the editorial features ────────────────────────── */}
+            <View style={styles.browseHead}>
+              <Text style={styles.browseKicker as object}>Go Deeper</Text>
+              <Text style={styles.browseTitle as object}>Beyond the Page</Text>
+            </View>
             <GreatestRivalries rivalries={homeData.rivalries ?? []} />
             <HallOfInfamy villains={homeData.mostFeared ?? []} />
             <EraTimeline eras={homeData.eras ?? []} onPress={handlePress} />
             <CoverGallery covers={homeData.covers ?? []} onPress={handlePress} />
-            <HomeRow
-              label="New to the Encyclopedia"
-              title="Recently Added"
-              heroes={homeData.newlyAdded ?? []}
-              onPress={handlePress}
-            />
-
-            {/* ── By the Numbers — the ranking rows ─────────────────────────── */}
-            <HomeRow
-              label="By Power Stats"
-              title="Strongest Heroes"
-              heroes={homeData.strongest ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/strongest')}
-              statKey="strength"
-            />
-            <HomeRow
-              label="By Power Stats"
-              title="Brightest Minds"
-              heroes={homeData.mostIntelligent ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/most-intelligent')}
-              statKey="intelligence"
-            />
 
             {/* ── For You — warm close ──────────────────────────────────────── */}
             <HomeRow

@@ -6,9 +6,9 @@ import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-na
 import { Image } from 'expo-image';
 import { HeroImage } from '../../HeroImage';
 import { COLORS } from '../../../constants/colors';
-import { TrendingShelf } from './TrendingShelf';
 import {
   trendingBadge,
+  mergeTrendingTitles,
   type BadgeTone,
   type Campaign,
   type TrendingTitle,
@@ -201,6 +201,60 @@ function PersonalRow({
   );
 }
 
+function PosterRail({
+  titles,
+  onTitlePress,
+  pagePad,
+}: {
+  titles: TrendingTitle[];
+  onTitlePress: (id: string) => void;
+  pagePad: number;
+}) {
+  if (titles.length === 0) return null;
+  return (
+    <View>
+      <View style={[prw.header, { paddingLeft: pagePad }]}>
+        <Text style={prw.label as object}>In Cinemas &amp; Streaming</Text>
+        <Text style={prw.title as object}>On Screen Now</Text>
+      </View>
+      <View style={[prw.strip, { paddingLeft: pagePad, paddingRight: pagePad }] as object}>
+        {titles.map((t) => {
+          const badge = trendingBadge(t);
+          const uri = t.poster_url ?? t.backdrop_url ?? undefined;
+          return (
+            <Pressable
+              key={t.id}
+              onPress={() => onTitlePress(t.id)}
+              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                [prw.card, hovered && (prw.cardHover as object)] as object
+              }
+            >
+              {uri ? (
+                <Image
+                  source={{ uri }}
+                  contentFit="cover"
+                  style={{ position: 'absolute', inset: 0 } as object}
+                />
+              ) : null}
+              <View style={prw.overlay as object} />
+              {badge && (
+                <View style={[prw.badge, { backgroundColor: BADGE_COLOR[badge.tone] }] as object}>
+                  <Text style={prw.badgeText as object} numberOfLines={1}>
+                    {badge.label}
+                  </Text>
+                </View>
+              )}
+              <Text style={prw.name as object} numberOfLines={2}>
+                {t.title}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 export function RightNowBand({
   campaign,
   onScreen,
@@ -249,33 +303,15 @@ export function RightNowBand({
         )
       )}
 
-      <TrendingShelf
-        label="In Theaters & Recent"
-        title="On the Big Screen"
-        accent={COLORS.orange}
-        tone="dark"
-        titles={onScreen}
-        onHeroPress={onHeroPress}
-        onTitlePress={onTitlePress}
-      />
-      <TrendingShelf
-        label="Releasing Soon"
-        title="Coming Soon"
-        accent={COLORS.gold}
-        tone="dark"
-        titles={comingSoon}
-        onHeroPress={onHeroPress}
-        onTitlePress={onTitlePress}
-      />
-      <TrendingShelf
-        label="Now Streaming"
-        title="Streaming Now"
-        accent={COLORS.blue}
-        tone="dark"
-        titles={streaming}
-        onHeroPress={onHeroPress}
-        onTitlePress={onTitlePress}
-      />
+      {/* On desktop the campaign hero + ranked "What's Hot" sidebar already
+          carry the live slate; elsewhere, one calm merged poster rail does. */}
+      {!(isDesktop && campaign && campaign.characters.length > 0) && (
+        <PosterRail
+          titles={mergeTrendingTitles(onScreen, comingSoon, streaming)}
+          onTitlePress={onTitlePress}
+          pagePad={pagePad}
+        />
+      )}
 
       {personalized.length > 0 && (
         <PersonalRow characters={personalized} onHeroPress={onHeroPress} />
@@ -475,5 +511,74 @@ const pr = StyleSheet.create({
     color: COLORS.beige,
     paddingHorizontal: 8,
     paddingBottom: 8,
+  } as object,
+});
+
+const prw = StyleSheet.create({
+  header: { marginBottom: 14 },
+  label: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: COLORS.orange,
+    marginBottom: 2,
+  } as object,
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 26,
+    color: COLORS.beige,
+    lineHeight: 30,
+  } as object,
+  strip: {
+    flexDirection: 'row',
+    gap: 14,
+    overflowX: 'auto',
+    paddingBottom: 8,
+    scrollbarWidth: 'none',
+  } as object,
+  card: {
+    width: 150,
+    height: 225,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+    flexShrink: 0,
+    cursor: 'pointer',
+    justifyContent: 'flex-end',
+    transition: 'transform 200ms ease, box-shadow 200ms ease',
+  } as object,
+  cardHover: {
+    transform: [{ translateY: -5 }],
+    boxShadow: '0 18px 44px rgba(0,0,0,0.4)',
+  } as object,
+  overlay: {
+    position: 'absolute',
+    inset: 0,
+    backgroundImage: 'linear-gradient(to top, rgba(11,24,32,0.9) 0%, transparent 55%)',
+  } as object,
+  badge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    maxWidth: 130,
+  } as object,
+  badgeText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: '#fff',
+  } as object,
+  name: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.beige,
+    lineHeight: 15,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
   } as object,
 });
