@@ -262,3 +262,44 @@ export async function generateVerdict(input: VerdictInput): Promise<string> {
     return verdictFallback(input);
   }
 }
+
+// --- Wikidata entity summaries (admin review) -------------------------------
+// Label + description for a batch of QIDs, so the admin "Needs you" review can
+// show what each candidate actually is inline instead of linking out. Wikidata's
+// API is CORS-enabled (origin=*), so the web console calls it directly.
+export interface WikidataSummary {
+  label: string;
+  description: string;
+}
+
+export async function fetchWikidataEntities(
+  qids: string[],
+): Promise<Record<string, WikidataSummary>> {
+  const unique = [...new Set(qids.filter((q) => /^Q\d+$/.test(q)))];
+  if (unique.length === 0) return {};
+  const out: Record<string, WikidataSummary> = {};
+  // wbgetentities accepts up to 50 ids per call.
+  for (let i = 0; i < unique.length; i += 50) {
+    const batch = unique.slice(i, i + 50);
+    const url =
+      'https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&origin=*' +
+      `&props=labels|descriptions&languages=en&ids=${batch.join('|')}`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const body = (await res.json()) as {
+        entities?: Record<string, {
+          labels?: { en?: { value?: string } };
+          descriptions?: { en?: { value?: string } };
+        }>;
+      };
+      for (const [qid, ent] of Object.entries(body.entities ?? {})) {
+        out[qid] = {
+          label: ent.labels?.en?.value ?? qid,
+          description: ent.descriptions?.en?.value ?? '',
+        };
+      }
+    } catch { /* leave this batch unresolved; UI falls back to the QID */ }
+  }
+  return out;
+}

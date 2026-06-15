@@ -2,7 +2,7 @@
 // catalogue. The enrichment funnel (shared-denominator stage bars + one "Build
 // next N" action) sits beside "Needs you" review; the live log + recently-built
 // pair below; crons and full-width run history collapse into Advanced.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
@@ -19,6 +19,7 @@ import { HeroThumb } from '../atoms';
 import { getPendingBuildIds } from '../../../../lib/db/build';
 import { getPendingStatsIds } from '../../../../lib/db/stats';
 import { getPendingPortraitIds } from '../../../../lib/db/portraits';
+import { fetchWikidataEntities, type WikidataSummary } from '../../../../lib/api';
 import { relTime, runTypeLabel, GEMINI_MONTHLY_BUDGET, type LogTone } from '../format';
 import type {
   AmbiguousHero,
@@ -293,6 +294,9 @@ export function PipelinesDomain({
   const [loadingStats, setLoadingStats] = useState(false);
   const [portraitIds, setPortraitIds] = useState<string[] | null>(null);
   const [loadingPortraits, setLoadingPortraits] = useState(false);
+  // Wikidata label + description per candidate QID, so the review choice can be
+  // made inline instead of opening each candidate in a new tab.
+  const [wdInfo, setWdInfo] = useState<Record<string, WikidataSummary>>({});
   const p = progress ?? {
     heroesTotal: 0, comicvineDone: 0, resolved: 0, ambiguous: 0, unresolved: 0,
     enriched: 0, filmTitles: 0, tvTitles: 0, gameTitles: 0, mediaDone: 0,
@@ -338,6 +342,21 @@ export function PipelinesDomain({
   const openWiki = (qid: string) => {
     if (typeof window !== 'undefined') window.open(`https://www.wikidata.org/wiki/${qid}`, '_blank', 'noopener');
   };
+
+  // Pull labels + descriptions for any candidate QIDs we haven't fetched yet, so
+  // each candidate reads as e.g. "Batman · fictional superhero in DC Comics".
+  useEffect(() => {
+    const missing = ambiguous
+      .flatMap((hero) => hero.candidates.map((c) => c.qid))
+      .filter((qid) => !(qid in wdInfo));
+    if (missing.length === 0) return;
+    let alive = true;
+    fetchWikidataEntities(missing).then((found) => {
+      if (alive && Object.keys(found).length > 0) setWdInfo((prev) => ({ ...prev, ...found }));
+    });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ambiguous]);
 
   // Pending (still actionable) at each stage, in funnel order.
   const cvPending = Math.max(0, p.heroesTotal - p.comicvineDone - failed);
@@ -434,7 +453,7 @@ export function PipelinesDomain({
         <Panel
           title="Needs you"
           hint={p.ambiguous > 0 ? `${p.ambiguous.toLocaleString()} to review` : 'Decisions land here'}
-          action={<InfoTip text="Heroes the resolver couldn't confidently match to one Wikidata identity. Each chip is a candidate (QID · confidence score) — click the correct one to lock it in, or the ↗ to eyeball it on Wikidata first." />}
+          action={<InfoTip text="Heroes the resolver couldn't confidently match to one Wikidata identity. Each candidate shows its Wikidata name, description and confidence score — tap the right one to lock it in, no need to leave the page. The ↗ still opens Wikidata if you want to dig deeper." />}
           style={styles.flex1}
         >
           {ambiguous.length === 0 ? (
@@ -453,25 +472,41 @@ export function PipelinesDomain({
                     </View>
                   </View>
                   <View style={styles.candidates}>
-                    {hero.candidates.map((c) => (
-                      <View key={c.qid} style={styles.cand}>
-                        <Pressable
-                          onPress={() => onResolveQid(hero.id, c.qid, hero.name)}
-                          disabled={!!busy}
-                          style={[styles.chip, !!busy && styles.dim]}
-                          accessibilityLabel={`Pick ${c.qid} for ${hero.name}`}
-                        >
-                          <Text style={styles.chipText}>{busyThis ? '…' : `${c.qid} · ${c.score.toFixed(2)}`}</Text>
-                        </Pressable>
-                        <Pressable
-                          onPress={() => openWiki(c.qid)}
-                          style={styles.chipLink}
-                          accessibilityLabel={`Open ${c.qid} on Wikidata to verify`}
-                        >
-                          <Ionicons name="open-outline" size={13} color={COLORS.navy} />
-                        </Pressable>
-                      </View>
-                    ))}
+                    {hero.candidates.map((c) => {
+                      const info = wdInfo[c.qid];
+                      return (
+                        <View key={c.qid} style={styles.cand}>
+                          <Pressable
+                            onPress={() => onResolveQid(hero.id, c.qid, hero.name)}
+                            disabled={!!busy}
+                            style={[styles.candMainBtn, !!busy && styles.dim]}
+                            accessibilityLabel={`Pick ${info?.label ?? c.qid} for ${hero.name}`}
+                          >
+                            <View style={styles.candText}>
+                              <Text style={styles.candLabel} numberOfLines={1}>
+                                {info?.label ?? c.qid}
+                                <Text style={styles.candScore}>{`  ·  ${c.score.toFixed(2)}`}</Text>
+                              </Text>
+                              <Text style={styles.candDesc} numberOfLines={2}>
+                                {info ? (info.description || 'no Wikidata description') : `${c.qid} · loading…`}
+                              </Text>
+                            </View>
+                            <Ionicons
+                              name={busyThis ? 'ellipsis-horizontal' : 'checkmark-circle-outline'}
+                              size={18}
+                              color={COLORS.orange}
+                            />
+                          </Pressable>
+                          <Pressable
+                            onPress={() => openWiki(c.qid)}
+                            style={styles.chipLink}
+                            accessibilityLabel={`Open ${c.qid} on Wikidata to verify`}
+                          >
+                            <Ionicons name="open-outline" size={14} color={COLORS.navy} />
+                          </Pressable>
+                        </View>
+                      );
+                    })}
                   </View>
                 </View>
               );
@@ -754,11 +789,18 @@ const styles = StyleSheet.create({
   reviewMeta: { flex: 1, minWidth: 0 },
   reviewName: { fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: COLORS.black },
   reviewPub: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: COLORS.grey },
-  candidates: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  candidates: { gap: 5 },
   cand: { flexDirection: 'row', alignItems: 'stretch', gap: 1 },
-  chip: { backgroundColor: COLORS.navy + '12', borderTopLeftRadius: 8, borderBottomLeftRadius: 8, paddingHorizontal: 9, paddingVertical: 5, justifyContent: 'center' },
-  chipText: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: COLORS.navy },
-  chipLink: { backgroundColor: COLORS.navy + '12', borderTopRightRadius: 8, borderBottomRightRadius: 8, paddingHorizontal: 7, alignItems: 'center', justifyContent: 'center' },
+  candMainBtn: {
+    flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: COLORS.navy + '0d', borderTopLeftRadius: 9, borderBottomLeftRadius: 9,
+    paddingHorizontal: 11, paddingVertical: 8,
+  },
+  candText: { flex: 1, minWidth: 0, gap: 1 },
+  candLabel: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: COLORS.navy },
+  candScore: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey, fontVariant: ['tabular-nums'] },
+  candDesc: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: COLORS.grey, lineHeight: 15 },
+  chipLink: { backgroundColor: COLORS.navy + '0d', borderTopRightRadius: 9, borderBottomRightRadius: 9, paddingHorizontal: 9, alignItems: 'center', justifyContent: 'center' },
   loadMore: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     backgroundColor: '#efe6d6', borderRadius: 9, paddingVertical: 9, marginTop: 10,
