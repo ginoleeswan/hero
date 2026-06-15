@@ -17,6 +17,8 @@ import {
   getNewlyAddedCV,
   getHeroesByPublisher,
   getHeroesByStatRanking,
+  getFranchiseIcons,
+  getHeroesByMediaTag,
   type Hero,
 } from '../../src/lib/db/heroes';
 import { getUserFavouriteHeroes } from '../../src/lib/db/favourites';
@@ -1170,6 +1172,10 @@ export default function WebHomeScreen() {
     strongest: Hero[];
     mostIntelligent: Hero[];
     newlyAdded: Hero[];
+    franchiseIcons: Hero[];
+    anime: Hero[];
+    videoGames: Hero[];
+    horror: Hero[];
     strongestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
     smartestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
     fastestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
@@ -1232,6 +1238,18 @@ export default function WebHomeScreen() {
     getNewlyAddedCV(25)
       .then(set('newlyAdded'))
       .catch(() => {});
+    getFranchiseIcons(25)
+      .then(set('franchiseIcons'))
+      .catch(() => {});
+    getHeroesByMediaTag('anime', 25)
+      .then(set('anime'))
+      .catch(() => {});
+    getHeroesByMediaTag('video-game', 25)
+      .then(set('videoGames'))
+      .catch(() => {});
+    getHeroesByMediaTag('horror-icon', 25)
+      .then(set('horror'))
+      .catch(() => {});
     getFirstAppearanceCovers(14)
       .then(set('covers'))
       .catch(() => {});
@@ -1293,27 +1311,29 @@ export default function WebHomeScreen() {
                Renders at all widths; each child handles its own responsive
                layout. The stage clears the floating header via its own
                paddingTop so the screen owns its clearance (bleedBehindNav). */}
-          <View style={[styles.darkStage, isMobile && (styles.darkStageMobile as object)] as object}>
-              {(homeData.spotlight?.length ?? 0) > 0 && (
-                <PortraitStripSpotlight
-                  heroes={homeData.spotlight!.slice(
-                    0,
-                    Math.min(optimalPoolSize, homeData.spotlight!.length),
-                  )}
-                  onViewProfile={handlePress}
-                />
-              )}
-              <PublisherPods
-                onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
+          <View
+            style={[styles.darkStage, isMobile && (styles.darkStageMobile as object)] as object}
+          >
+            {(homeData.spotlight?.length ?? 0) > 0 && (
+              <PortraitStripSpotlight
+                heroes={homeData.spotlight!.slice(
+                  0,
+                  Math.min(optimalPoolSize, homeData.spotlight!.length),
+                )}
+                onViewProfile={handlePress}
               />
-              {homeData.matchup === undefined ? (
-                <TodaysMatchupSkeleton />
-              ) : homeData.matchup ? (
-                <TodaysMatchupCard
-                  matchup={homeData.matchup}
-                  onOpen={(path) => router.push(path as Parameters<typeof router.push>[0])}
-                />
-              ) : null}
+            )}
+            <PublisherPods
+              onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
+            />
+            {homeData.matchup === undefined ? (
+              <TodaysMatchupSkeleton />
+            ) : homeData.matchup ? (
+              <TodaysMatchupCard
+                matchup={homeData.matchup}
+                onOpen={(path) => router.push(path as Parameters<typeof router.push>[0])}
+              />
+            ) : null}
           </View>
 
           {/* ── Orange ticker strip ────────────────────────────────────────── */}
@@ -1342,6 +1362,13 @@ export default function WebHomeScreen() {
               onViewAll={() => router.push('/category/most-iconic')}
             />
             <HomeRow
+              label="Shows · Movies · Games"
+              title="Beyond the Comics"
+              heroes={homeData.franchiseIcons ?? []}
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/franchise-icons')}
+            />
+            <HomeRow
               label="Marvel Comics"
               title="Marvel Universe"
               heroes={homeData.marvel ?? []}
@@ -1362,10 +1389,25 @@ export default function WebHomeScreen() {
               onPress={handlePress}
               onViewAll={() => router.push('/category/xmen')}
             />
+            <HomeRow
+              label="Anime & Manga"
+              title="Anime Legends"
+              heroes={homeData.anime ?? []}
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/anime')}
+            />
+            <HomeRow
+              label="Video Games"
+              title="Video Game Heroes"
+              heroes={homeData.videoGames ?? []}
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/video-games')}
+            />
 
             {/* ── The Dark Side — one deliberate dark zone ──────────────────── */}
             {((homeData.villains?.length ?? 0) > 0 ||
-              (homeData.antiHeroes?.length ?? 0) > 0) && (
+              (homeData.antiHeroes?.length ?? 0) > 0 ||
+              (homeData.horror?.length ?? 0) > 0) && (
               <View style={styles.darkZone}>
                 <DarkHomeRow
                   grouped
@@ -1374,6 +1416,14 @@ export default function WebHomeScreen() {
                   heroes={homeData.villains ?? []}
                   onPress={handlePress}
                   onViewAll={() => router.push('/category/villain')}
+                />
+                <DarkHomeRow
+                  grouped
+                  label="Movie Nightmares"
+                  title="Horror Icons"
+                  heroes={homeData.horror ?? []}
+                  onPress={handlePress}
+                  onViewAll={() => router.push('/category/horror')}
                 />
                 <DarkHomeRow
                   grouped

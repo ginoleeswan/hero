@@ -41,6 +41,8 @@ import {
   getXMen,
   getHeroesByPublisher,
   getHeroesByStatRanking,
+  getFranchiseIcons,
+  getHeroesByMediaTag,
   type Hero,
 } from '../../src/lib/db/heroes';
 import { getUserFavouriteHeroes } from '../../src/lib/db/favourites';
@@ -94,6 +96,10 @@ export default function HomeScreen() {
   const [strongest, setStrongest] = useState<Hero[]>([]);
   const [mostIntelligent, setMostIntelligent] = useState<Hero[]>([]);
   const [newlyAdded, setNewlyAdded] = useState<Hero[]>([]);
+  const [franchiseIcons, setFranchiseIcons] = useState<Hero[]>([]);
+  const [anime, setAnime] = useState<Hero[]>([]);
+  const [videoGames, setVideoGames] = useState<Hero[]>([]);
+  const [horror, setHorror] = useState<Hero[]>([]);
 
   const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
@@ -149,6 +155,18 @@ export default function HomeScreen() {
     getNewlyAddedCV(20)
       .then(setNewlyAdded)
       .catch(() => {});
+    getFranchiseIcons(20)
+      .then(setFranchiseIcons)
+      .catch(() => {});
+    getHeroesByMediaTag('anime', 20)
+      .then(setAnime)
+      .catch(() => {});
+    getHeroesByMediaTag('video-game', 20)
+      .then(setVideoGames)
+      .catch(() => {});
+    getHeroesByMediaTag('horror-icon', 20)
+      .then(setHorror)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -199,11 +217,25 @@ export default function HomeScreen() {
       route: '/category/most-iconic',
     },
     {
+      key: 'franchise',
+      label: 'Shows · Movies · Games',
+      title: 'Beyond the Comics',
+      heroes: franchiseIcons,
+      route: '/category/franchise-icons',
+    },
+    {
       key: 'villains',
       label: 'The Dark Side',
       title: 'Villains',
       heroes: villains,
       route: '/category/villain',
+    },
+    {
+      key: 'horror',
+      label: 'Movie Nightmares',
+      title: 'Horror Icons',
+      heroes: horror,
+      route: '/category/horror',
     },
     {
       key: 'marvel',
@@ -233,6 +265,20 @@ export default function HomeScreen() {
       title: 'X-Men',
       heroes: xmen,
       route: '/category/xmen',
+    },
+    {
+      key: 'anime',
+      label: 'Anime & Manga',
+      title: 'Anime Legends',
+      heroes: anime,
+      route: '/category/anime',
+    },
+    {
+      key: 'games',
+      label: 'Video Games',
+      title: 'Video Game Heroes',
+      heroes: videoGames,
+      route: '/category/video-games',
     },
     {
       key: 'minds',
@@ -274,6 +320,10 @@ export default function HomeScreen() {
     xmen,
     mostIntelligent,
     newlyAdded,
+    franchiseIcons,
+    anime,
+    videoGames,
+    horror,
   ]);
 
   const keyExtractor = useCallback(

@@ -507,6 +507,7 @@ export type Database = {
       }
       heroes: {
         Row: {
+          added_at: string
           ai_stats_status: string | null
           aliases: string[] | null
           alignment: string | null
@@ -527,6 +528,7 @@ export type Database = {
           first_issue_data: Json | null
           first_issue_id: string | null
           first_issue_image_url: string | null
+          franchise: string | null
           friends: string[] | null
           full_name: string | null
           gallery_enriched_at: string | null
@@ -568,6 +570,7 @@ export type Database = {
           wikidata_status: string
         }
         Insert: {
+          added_at?: string
           ai_stats_status?: string | null
           aliases?: string[] | null
           alignment?: string | null
@@ -588,6 +591,7 @@ export type Database = {
           first_issue_data?: Json | null
           first_issue_id?: string | null
           first_issue_image_url?: string | null
+          franchise?: string | null
           friends?: string[] | null
           full_name?: string | null
           gallery_enriched_at?: string | null
@@ -629,6 +633,7 @@ export type Database = {
           wikidata_status?: string
         }
         Update: {
+          added_at?: string
           ai_stats_status?: string | null
           aliases?: string[] | null
           alignment?: string | null
@@ -649,6 +654,7 @@ export type Database = {
           first_issue_data?: Json | null
           first_issue_id?: string | null
           first_issue_image_url?: string | null
+          franchise?: string | null
           friends?: string[] | null
           full_name?: string | null
           gallery_enriched_at?: string | null
