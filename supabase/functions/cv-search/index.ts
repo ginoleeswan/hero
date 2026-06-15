@@ -1,6 +1,7 @@
 // cv-search: ComicVine lookup proxy for the admin ingestion console.
 // POST body:
 //   { kind: 'character', query }                  -> characters matching a name
+//   { kind: 'popular', offset }                   -> most-appeared characters (paged)
 //   { kind: 'group', resource, query }            -> groups matching a name
 //   { kind: 'group_members', resource, id }       -> a group's character roster
 // resource ∈ 'team' | 'volume' | 'person' | 'movie'. Server-side key; logs usage.
@@ -33,13 +34,14 @@ const img = (image: Record<string, string> | null | undefined): string | null =>
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
-  let kind = '', query = '', resource = '', id = '';
+  let kind = '', query = '', resource = '', id = '', offset = 0;
   try {
     const b = await req.json();
     kind = String(b?.kind ?? '');
     query = String(b?.query ?? '').trim();
     resource = String(b?.resource ?? '');
     id = String(b?.id ?? '').trim();
+    offset = Math.max(0, Number(b?.offset ?? 0) | 0);
   } catch { /* ignore */ }
 
   try {
@@ -55,6 +57,21 @@ serve(async (req: Request) => {
           publisher: r.publisher?.name ?? null,
           image: img(r.image),
           deck: r.deck ?? null,
+        })),
+      };
+    } else if (kind === 'popular') {
+      // Most-appeared characters first, paged. The client filters out ones already
+      // in the catalogue, surfacing the popular gaps.
+      const url = `${CV}/characters/?api_key=${KEY}&format=json&sort=count_of_issue_appearances:desc&field_list=id,name,publisher,image,deck,count_of_issue_appearances&limit=30&offset=${offset}`;
+      const body = await (await fetch(url, { headers: UA })).json();
+      out = {
+        results: (body.results ?? []).map((r: Record<string, any>) => ({
+          id: String(r.id),
+          name: r.name,
+          publisher: r.publisher?.name ?? null,
+          image: img(r.image),
+          deck: r.deck ?? null,
+          appearances: typeof r.count_of_issue_appearances === 'number' ? r.count_of_issue_appearances : null,
         })),
       };
     } else if (kind === 'group') {

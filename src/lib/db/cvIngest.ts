@@ -8,6 +8,7 @@ export interface CvCharacter {
   publisher: string | null;
   image: string | null;
   deck: string | null;
+  appearances?: number | null; // issue appearances (only on the 'popular' feed)
 }
 
 export interface CvGroup {
@@ -32,6 +33,12 @@ async function invoke<T>(body: Record<string, unknown>): Promise<T | null> {
 export async function searchComicvineCharacters(query: string): Promise<CvCharacter[]> {
   if (query.trim().length < 2) return [];
   const d = await invoke<{ results: CvCharacter[] }>({ kind: 'character', query });
+  return d?.results ?? [];
+}
+
+/** ComicVine's most-appeared characters, paged — used to surface popular gaps. */
+export async function fetchPopularCharacters(offset = 0): Promise<CvCharacter[]> {
+  const d = await invoke<{ results: CvCharacter[] }>({ kind: 'popular', offset });
   return d?.results ?? [];
 }
 

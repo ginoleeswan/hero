@@ -11,6 +11,7 @@ import { HeroThumb } from './atoms';
 import { InfoTip } from './InfoTip';
 import {
   searchComicvineCharacters,
+  fetchPopularCharacters,
   searchComicvineGroups,
   getComicvineGroupMembers,
   existingComicvineIds,
@@ -37,9 +38,10 @@ const STAGE_BADGE: Record<BuildStage, { label: string; color: string }> = {
   done: { label: 'built', color: COLORS.green },
 };
 
-type Mode = 'name' | 'team' | 'volume' | 'person' | 'movie';
+type Mode = 'name' | 'popular' | 'team' | 'volume' | 'person' | 'movie';
 type Flash = (msg: string, tone?: 'info' | 'success' | 'error' | 'pending') => void;
 const MODES: { key: Mode; label: string }[] = [
+  { key: 'popular', label: '★ Popular gaps' },
   { key: 'name', label: 'By name' },
   { key: 'team', label: 'By team' },
   { key: 'volume', label: 'By series' },
@@ -52,6 +54,7 @@ const GROUP_ICON: Record<string, 'people' | 'book' | 'brush' | 'film'> = {
 };
 const PLACEHOLDER: Record<Mode, string> = {
   name: 'Character name… (e.g. Darth Vader)',
+  popular: '',
   team: 'Team name… (e.g. Jedi Order)',
   volume: 'Comic series… (e.g. Star Wars)',
   person: 'Creator name… (e.g. Jack Kirby)',
@@ -80,6 +83,12 @@ export function AddHeroesPanel({
   const [stages, setStages] = useState<Record<string, BuildStage>>({});
   const [newOnly, setNewOnly] = useState(true);
 
+  // 'Popular gaps' paging — keep scanning ComicVine's most-appeared characters,
+  // showing only the ones missing from the catalogue.
+  const [popularOffset, setPopularOffset] = useState(0);
+  const [popularLoading, setPopularLoading] = useState(false);
+  const [popularEnd, setPopularEnd] = useState(false);
+
   // Poll the live build stage of this session's heroes so the roster reflects
   // progress (queued → ComicVine → … → built) and doesn't sit stale after a build.
   useEffect(() => {
@@ -101,8 +110,55 @@ export function AddHeroesPanel({
   const isIn = (id: string) => existingIds.has(id) || addedIds.has(id);
   const isDup = (id: string, name: string) => !isIn(id) && existingNames.has(name.toLowerCase().trim());
 
+  // Scan popular characters until we actually surface some gaps. The catalogue is
+  // popularity-seeded, so the top pages are mostly already in it — paging one page
+  // at a time would keep landing on all-in-catalogue pages. Instead, fetch pages
+  // until we've found enough new characters (or hit a scan cap / the end).
+  const PAGE = 30;
+  const GAP_TARGET = 6; // stop a click once this many new gaps are found
+  const MAX_PAGES_PER_CLICK = 8; // …but never scan more than this per click
+  const loadPopular = async (off: number, append: boolean) => {
+    append ? setPopularLoading(true) : setLoading(true);
+    try {
+      let cursor = off;
+      const collected: CvCharacter[] = [];
+      const exAll = new Set<string>();
+      const exNAll = new Set<string>();
+      let gaps = 0;
+      let ended = false;
+      for (let page = 0; page < MAX_PAGES_PER_CLICK; page++) {
+        const r = await fetchPopularCharacters(cursor);
+        cursor += PAGE;
+        if (r.length === 0) { ended = true; break; }
+        const ex = await existingComicvineIds(r.map((c) => c.id));
+        const exN = await existingHeroNames(r.map((c) => c.name));
+        ex.forEach((id) => exAll.add(id));
+        exN.forEach((n) => exNAll.add(n));
+        collected.push(...r);
+        gaps += r.filter((c) => !exAll.has(c.id) && !addedIds.has(c.id)).length;
+        if (r.length < PAGE) { ended = true; break; }
+        if (gaps >= GAP_TARGET) break;
+      }
+      setChars((prev) => (append ? [...prev, ...collected] : collected));
+      setExistingIds((prev) => (append ? new Set([...prev, ...exAll]) : exAll));
+      setExistingNames((prev) => (append ? new Set([...prev, ...exNAll]) : exNAll));
+      setPopularOffset(cursor);
+      setPopularEnd(ended);
+    } catch (e) { flash(`Couldn't load popular: ${(e as Error).message}`, 'error'); }
+    finally { append ? setPopularLoading(false) : setLoading(false); }
+  };
+
+  // Load the first page of popular gaps when that mode is entered.
+  useEffect(() => {
+    if (mode !== 'popular') return;
+    setPopularEnd(false); setSelected(new Set());
+    loadPopular(0, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
   // Live (debounced) search whenever the query or mode changes.
   useEffect(() => {
+    if (mode === 'popular') return; // discovery mode handles its own loading
     if (group) return; // browsing a roster, don't re-search
     if (query.trim().length < 2) { reset(); return; }
     let active = true;
@@ -140,7 +196,7 @@ export function AddHeroesPanel({
 
   // The current addable rows (characters in name mode, members in group mode).
   const rows = useMemo(
-    () => (mode === 'name' ? chars.map((c) => ({ id: c.id, name: c.name })) : members),
+    () => (mode === 'name' || mode === 'popular' ? chars.map((c) => ({ id: c.id, name: c.name })) : members),
     [mode, chars, members],
   );
   const newRows = rows.filter((r) => !isIn(r.id));
@@ -188,7 +244,7 @@ export function AddHeroesPanel({
     <Panel
       title="Add heroes · ComicVine"
       hint="Step 0 — bring new characters in. Search a name, a team, or a comic series; added heroes flow into step 1."
-      action={<InfoTip text="Live-search ComicVine by character name, team, or comic series. Tick the ones you want (or 'Select all new'), Add them, then 'Enrich now' to build them. Already-in-catalogue and same-name duplicates are flagged." />}
+      action={<InfoTip text="Not sure what's missing? Start with '★ Popular gaps' — ComicVine's most-published characters that aren't in your catalogue yet, most-appeared first. Or live-search by name, team, or comic series. Tick the ones you want (or 'Select all new'), Add them, then build. Already-in-catalogue and same-name duplicates are flagged." />}
     >
       {/* Mode + live search */}
       <View style={styles.modeRow}>
@@ -198,7 +254,11 @@ export function AddHeroesPanel({
           </Pressable>
         ))}
       </View>
-      {!group ? (
+      {mode === 'popular' ? (
+        <Text style={styles.popularHint}>
+          ComicVine's most-published characters that aren't in your catalogue yet — top appearances first. Tick the ones worth adding.
+        </Text>
+      ) : !group ? (
         <View style={styles.searchBox}>
           <Ionicons name="search" size={16} color={COLORS.grey} />
           <TextInput
@@ -237,7 +297,7 @@ export function AddHeroesPanel({
       ) : null}
 
       {/* Selection toolbar (shared by name results + open roster) */}
-      {(mode === 'name' && chars.length > 0) || group ? (
+      {((mode === 'name' || mode === 'popular') && chars.length > 0) || group ? (
         <View style={styles.toolbar}>
           {group ? (
             <Pressable onPress={() => { setGroup(null); setMembers([]); clearSel(); }} style={styles.backBtn}>
@@ -276,6 +336,43 @@ export function AddHeroesPanel({
             </Pressable>
           ))}
         </ScrollView>
+      ) : null}
+
+      {/* Popular gaps (missing-only, paged) */}
+      {mode === 'popular' ? (
+        loading && chars.length === 0 ? <ActivityIndicator color={COLORS.orange} style={{ marginTop: 14 }} /> : (
+          <ScrollView style={styles.scroll} nestedScrollEnabled>
+            {newRows.length === 0 && !loading ? (
+              <Text style={styles.empty}>No gaps on the pages loaded so far — they're all in your catalogue. Load more to dig deeper.</Text>
+            ) : null}
+            {chars.filter((c) => !isIn(c.id)).map((c) => (
+              <Pressable key={c.id} onPress={() => toggle(c.id)} style={styles.row}>
+                <Checkbox checked={selected.has(c.id)} disabled={false} />
+                <HeroThumb uri={c.image} width={32} height={42} radius={6} />
+                <View style={styles.meta}>
+                  <Text style={styles.name} numberOfLines={1}>{c.name}</Text>
+                  <Text style={styles.sub} numberOfLines={1}>
+                    {c.appearances != null ? `${c.appearances.toLocaleString()} appearances` : ''}
+                    {c.appearances != null && c.publisher ? ' · ' : ''}
+                    {c.publisher ?? (c.appearances == null ? (c.deck ?? '—') : '')}
+                  </Text>
+                </View>
+                {isDup(c.id, c.name) ? <StatusBadge inCat={false} dup /> : null}
+              </Pressable>
+            ))}
+            <Pressable
+              onPress={() => loadPopular(popularOffset, true)}
+              disabled={popularLoading || popularEnd}
+              style={[styles.loadMore, (popularLoading || popularEnd) && styles.dim]}
+            >
+              {popularLoading ? (
+                <ActivityIndicator size="small" color={COLORS.orange} />
+              ) : (
+                <Text style={styles.loadMoreText}>{popularEnd ? 'End of list' : 'Load more'}</Text>
+              )}
+            </Pressable>
+          </ScrollView>
+        )
       ) : null}
 
       {/* Roster (team / series members) */}
@@ -373,6 +470,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f6f0e6', borderRadius: 10, paddingHorizontal: 13, paddingVertical: 10,
   },
   searchInput: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
+  popularHint: { fontFamily: 'Nunito_400Regular', fontSize: 12.5, color: COLORS.grey, lineHeight: 18 },
+  loadMore: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, marginTop: 4 },
+  loadMoreText: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: COLORS.orange, textDecorationLine: 'underline' },
   dim: { opacity: 0.4 },
 
   toolbar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, flexWrap: 'wrap' },
