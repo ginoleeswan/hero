@@ -8,7 +8,13 @@ import { COLORS } from '../../constants/colors';
 // proven web-carousel pattern — a plain View whose RNW node IS the scrollable
 // div, driven by DOM scroll listeners (a ScrollView ref would not expose
 // scrollLeft directly).
-export function DidYouKnowDeck({ facts }: { facts: string[] }) {
+export function DidYouKnowDeck({
+  facts,
+  contentInset = 0,
+}: {
+  facts: string[];
+  contentInset?: number;
+}) {
   const sectionRef = useRef<View>(null);
   const scrollRef = useRef<View>(null);
   const [hovered, setHovered] = useState(false);
@@ -66,10 +72,32 @@ export function DidYouKnowDeck({ facts }: { facts: string[] }) {
       <View style={styles.viewport}>
         <View
           ref={scrollRef}
-          style={[styles.scroller, single && (styles.scrollerSingle as object)] as object}
+          style={
+            [
+              styles.scroller,
+              single && (styles.scrollerSingle as object),
+              // Snap must rest at the inset, otherwise scroll-snap scrolls past
+              // the first card's leading margin and pins it back to the edge.
+              contentInset
+                ? ({ scrollPaddingLeft: contentInset, scrollPaddingRight: contentInset } as object)
+                : null,
+            ] as object
+          }
         >
           {facts.map((f, i) => (
-            <View key={i} style={[styles.slot, single && (styles.slotSingle as object)] as object}>
+            <View
+              key={i}
+              style={
+                [
+                  styles.slot,
+                  single && (styles.slotSingle as object),
+                  // Inset the first/last cards via item margins — padding on the
+                  // overflow:auto scroller collapses at the scroll origin in Chrome.
+                  contentInset && i === 0 ? { marginLeft: contentInset } : null,
+                  contentInset && i === facts.length - 1 ? { marginRight: contentInset } : null,
+                ] as object
+              }
+            >
               <FactCard index={i} total={facts.length} text={f} />
             </View>
           ))}

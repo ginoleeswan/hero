@@ -149,6 +149,7 @@ function FamilyStage({
   heroImage,
   fullscreen,
   showAxis,
+  compact = false,
   onToggleFullscreen,
   onClose,
   onNavigate,
@@ -158,6 +159,7 @@ function FamilyStage({
   heroImage: string | null;
   fullscreen: boolean;
   showAxis: boolean;
+  compact?: boolean;
   onToggleFullscreen: () => void;
   onClose?: () => void;
   onNavigate?: () => void;
@@ -228,7 +230,12 @@ function FamilyStage({
   };
 
   return (
-    <View style={[styles.stage, fullscreen ? styles.stageFlat : styles.stageInline]}>
+    <View
+      style={[
+        styles.stage,
+        fullscreen ? styles.stageFlat : compact ? styles.stageInlineCompact : styles.stageInline,
+      ]}
+    >
       {showAxis ? (
         <View style={styles.axisGutter} pointerEvents="none">
           {layout.rows.map((row) => (
@@ -394,18 +401,36 @@ export function FamilyCanvas({
 
   const linkedCount = members.filter((m) => m.heroId).length;
 
+  const relativesCount = (
+    <>
+      {members.length} {members.length === 1 ? 'relative' : 'relatives'}
+      {linkedCount > 0 ? ` · ${linkedCount} on Mythique` : ''}
+    </>
+  );
+
   return (
     <>
-      <View style={styles.card}>
-        {/* Card chrome */}
-        <View style={styles.header}>
-          <Text style={styles.eyebrow}>Family</Text>
-          <Text style={styles.count}>
-            {members.length} {members.length === 1 ? 'relative' : 'relatives'}
-            {linkedCount > 0 ? ` · ${linkedCount} on Mythique` : ''}
-          </Text>
-        </View>
-        <View style={styles.divider} />
+      <View style={isDesktop ? styles.card : undefined}>
+        {isDesktop ? (
+          <>
+            {/* Card chrome */}
+            <View style={styles.header}>
+              <Text style={styles.eyebrow}>Family</Text>
+              <Text style={styles.count}>{relativesCount}</Text>
+            </View>
+            <View style={styles.divider} />
+          </>
+        ) : (
+          <>
+            {/* Mobile: bare section header that matches the native screen —
+              relatives count on the left, navy "Family" title + rule on the right. */}
+            <View style={styles.mHeader}>
+              <Text style={styles.mCount}>{relativesCount}</Text>
+              <Text style={styles.mTitle}>Family</Text>
+            </View>
+            <View style={styles.mDivider} />
+          </>
+        )}
 
         <FamilyStage
           layout={layout}
@@ -413,6 +438,7 @@ export function FamilyCanvas({
           heroImage={heroImage}
           fullscreen={false}
           showAxis={isDesktop}
+          compact={!isDesktop}
           onToggleFullscreen={() => setFullscreen(true)}
         />
 
@@ -563,6 +589,34 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
 
+  // Mobile header — mirrors the native FamilyCanvas + the other mobile sections.
+  mHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  mTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 20,
+    color: COLORS.navy,
+    textAlign: 'right',
+    paddingVertical: 5,
+  },
+  mCount: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: '#54606A',
+    letterSpacing: 0.3,
+    paddingBottom: 7,
+  },
+  mDivider: {
+    height: 1,
+    backgroundColor: COLORS.navy,
+    borderRadius: 30,
+    marginBottom: 16,
+  },
+
   stage: {
     flexDirection: 'row',
     borderRadius: 10,
@@ -571,6 +625,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   stageInline: { height: 460 },
+  stageInlineCompact: { height: 360 },
   stageFlat: { flex: 1, borderWidth: 0, borderRadius: 0 },
   fsRoot: { flex: 1, backgroundColor: '#fdf9f4' },
   axisGutter: {

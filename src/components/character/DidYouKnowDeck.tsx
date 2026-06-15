@@ -22,7 +22,15 @@ const SNAP = CARD_W + GAP;
 // against the beige page — the one deliberately playful moment in the otherwise
 // light, scannable character screen. Cards size to their text (the row takes the
 // tallest), so nothing is clipped regardless of fact length.
-export function DidYouKnowDeck({ facts }: { facts: string[] }) {
+// `contentInset` is accepted for parity with the web variant; native keeps its
+// own SIDE padding unless an explicit inset is passed.
+export function DidYouKnowDeck({
+  facts,
+  contentInset,
+}: {
+  facts: string[];
+  contentInset?: number;
+}) {
   const [active, setActive] = useState(0);
   if (facts.length === 0) return null;
 
@@ -49,7 +57,10 @@ export function DidYouKnowDeck({ facts }: { facts: string[] }) {
           snapToInterval={SNAP}
           snapToAlignment="start"
           decelerationRate="fast"
-          contentContainerStyle={styles.track}
+          contentContainerStyle={[
+            styles.track,
+            contentInset != null && { paddingHorizontal: contentInset },
+          ]}
           onMomentumScrollEnd={onEnd}
         >
           {facts.map((f, i) => (

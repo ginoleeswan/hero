@@ -51,7 +51,7 @@ import { GalleryStrip } from '../../src/components/GalleryStrip';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
 import { PublisherLogoChip } from '../../src/components/PublisherBadge';
 import { brandForPublisher } from '../../src/constants/publishers';
-import type { CharacterData, IssueCover } from '../../src/types';
+import type { CharacterData, HeroStats, IssueCover } from '../../src/types';
 
 const STAT_CONFIG = [
   { key: 'intelligence', label: 'Intelligence', color: COLORS.blue },
@@ -79,6 +79,121 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
       <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  );
+}
+
+// The dry label/value data (Profile + Appearance + Connections, plus the debut
+// blurb) folded into one collapsed-by-default card — mirrors the native
+// <Dossier> so web mobile reads the same way.
+function MobileDossier({
+  stats,
+  teams,
+  eraSummary,
+}: {
+  stats: HeroStats;
+  teams?: string[] | null;
+  eraSummary?: string | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const { biography: bio, appearance: app, work, connections } = stats;
+
+  const valid = (v?: string | null) =>
+    !!v && v !== '' && !JUNK_VALUES.has(v.toLowerCase().trim());
+  const aliases = bio.aliases.filter(valid);
+  const heightStr = app.height.filter(valid).join(' / ');
+  const weightStr = app.weight.filter(valid).join(' / ');
+  const affiliation = teams?.length ? teams.join(', ') : connections['group-affiliation'];
+
+  const hasProfile =
+    valid(bio['full-name']) ||
+    valid(bio['alter-egos']) ||
+    valid(bio['place-of-birth']) ||
+    valid(bio['first-appearance']) ||
+    aliases.length > 0;
+  const hasAppearance =
+    valid(app.gender) ||
+    valid(app.race) ||
+    !!heightStr ||
+    !!weightStr ||
+    valid(app['eye-color']) ||
+    valid(app['hair-color']);
+  const hasConnections = valid(work.occupation) || valid(work.base) || valid(affiliation);
+  const hasEra = !!eraSummary;
+
+  if (!hasProfile && !hasAppearance && !hasConnections && !hasEra) return null;
+
+  return (
+    <View>
+      <Pressable
+        onPress={() => setOpen((o) => !o)}
+        style={[styles.dossierBar, open && (styles.dossierBarOpen as object)]}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+      >
+        <View style={styles.dossierBarText}>
+          <Text style={styles.dossierTitle}>Dossier</Text>
+          {!open ? (
+            <Text style={styles.dossierHint}>Appearance, affiliations, relatives &amp; more</Text>
+          ) : null}
+        </View>
+        <View style={styles.dossierToggle}>
+          <Text style={styles.dossierToggleText}>{open ? 'Hide' : 'View'}</Text>
+          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={15} color={COLORS.navy} />
+        </View>
+      </Pressable>
+      {open ? (
+        <View style={styles.dossierBody}>
+          {hasEra ? (
+            <>
+              <Text style={styles.dossierGroupLabel}>Debut</Text>
+              <Text style={styles.dossierEra}>{eraSummary}</Text>
+            </>
+          ) : null}
+          {hasProfile ? (
+            <>
+              <Text style={[styles.dossierGroupLabel, hasEra && (styles.dossierGroupSpacing as object)]}>
+                Profile
+              </Text>
+              <InfoRow label="Full name" value={bio['full-name']} />
+              <InfoRow label="Alter egos" value={bio['alter-egos']} />
+              <InfoRow label="Place of birth" value={bio['place-of-birth']} />
+              <InfoRow label="First appearance" value={bio['first-appearance']} />
+              {aliases.length > 0 ? <InfoRow label="Aliases" value={aliases.join(', ')} /> : null}
+            </>
+          ) : null}
+          {hasAppearance ? (
+            <>
+              <Text
+                style={[styles.dossierGroupLabel, hasProfile && (styles.dossierGroupSpacing as object)]}
+              >
+                Appearance
+              </Text>
+              <InfoRow label="Gender" value={app.gender} />
+              <InfoRow label="Race" value={app.race} />
+              <InfoRow label="Height" value={heightStr} />
+              <InfoRow label="Weight" value={weightStr} />
+              <InfoRow label="Eyes" value={app['eye-color']} />
+              <InfoRow label="Hair" value={app['hair-color']} />
+            </>
+          ) : null}
+          {hasConnections ? (
+            <>
+              <Text
+                style={[
+                  styles.dossierGroupLabel,
+                  (hasProfile || hasAppearance) && (styles.dossierGroupSpacing as object),
+                ]}
+              >
+                Connections
+              </Text>
+              <InfoRow label="Occupation" value={work.occupation} />
+              <InfoRow label="Base" value={work.base} />
+              <InfoRow label="Group affiliation" value={affiliation} />
+            </>
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -1573,7 +1688,7 @@ export default function WebCharacterScreen() {
                       <Text style={styles.mSectionTitle}>Did You Know</Text>
                       <View style={styles.mSectionDivider} />
                     </View>
-                    <DidYouKnowDeck facts={narrative.didYouKnow} />
+                    <DidYouKnowDeck facts={narrative.didYouKnow} contentInset={20} />
                   </View>
                 ) : null}
 
@@ -1632,43 +1747,50 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : null}
 
-                {/* On Screen */}
+                {/* On Screen — film + TV grouped in one section, mirroring web desktop */}
                 {titles && titles.length > 0
                   ? (() => {
                       const groups = groupTitlesByMedia(titles);
+                      if (groups.film.length === 0 && groups.tv.length === 0) return null;
                       return (
-                        <>
+                        <View style={styles.mSection}>
                           {groups.film.length > 0 ? (
-                            <View style={styles.mSection}>
+                            <>
                               <View style={styles.mSectionHead}>
                                 <Text style={styles.mSectionTitle}>
                                   On Screen ({groups.film.length})
                                 </Text>
                                 <View style={styles.mSectionDivider} />
                               </View>
-                              <MovieStrip
-                                titles={groups.film}
-                                totalCount={groups.film.length}
-                                contentInset={16}
-                              />
-                            </View>
+                              <View style={styles.mRail}>
+                                <MovieStrip
+                                  titles={groups.film}
+                                  totalCount={groups.film.length}
+                                  contentInset={20}
+                                  bleedMargin={20}
+                                />
+                              </View>
+                            </>
                           ) : null}
                           {groups.tv.length > 0 ? (
-                            <View style={styles.mSection}>
+                            <View style={groups.film.length > 0 ? styles.mSubBlock : undefined}>
                               <View style={styles.mSectionHead}>
                                 <Text style={styles.mSectionTitle}>
                                   Television ({groups.tv.length})
                                 </Text>
                                 <View style={styles.mSectionDivider} />
                               </View>
-                              <MovieStrip
-                                titles={groups.tv}
-                                totalCount={groups.tv.length}
-                                contentInset={16}
-                              />
+                              <View style={styles.mRail}>
+                                <MovieStrip
+                                  titles={groups.tv}
+                                  totalCount={groups.tv.length}
+                                  contentInset={20}
+                                  bleedMargin={20}
+                                />
+                              </View>
                             </View>
                           ) : null}
-                        </>
+                        </View>
                       );
                     })()
                   : null}
@@ -1681,7 +1803,7 @@ export default function WebCharacterScreen() {
                       <Text style={styles.mSectionTitle}>Portrayed By</Text>
                       <View style={styles.mSectionDivider} />
                     </View>
-                    <PortrayedBySection portrayals={portrayals} contentInset={0} />
+                    <PortrayedBySection portrayals={portrayals} contentInset={20} />
                   </View>
                 ) : null}
 
@@ -1692,7 +1814,7 @@ export default function WebCharacterScreen() {
                       <Text style={styles.mSectionTitle}>Links</Text>
                       <View style={styles.mSectionDivider} />
                     </View>
-                    <HeroLinksRow links={links!} contentInset={0} />
+                    <HeroLinksRow links={links!} contentInset={20} />
                   </View>
                 ) : null}
 
@@ -1747,49 +1869,13 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : null}
 
-                {/* Debut — era summary folded into the dossier */}
-                {narrative?.eraSummary ? (
-                  <View style={styles.mBlock}>
-                    <Text style={styles.mSectionTitle}>Debut</Text>
-                    <View style={styles.mSectionDivider} />
-                    <Text style={styles.eraText}>{narrative.eraSummary}</Text>
-                  </View>
-                ) : null}
-
-                {/* Dossier */}
+                {/* Dossier — Profile / Appearance / Connections + debut, folded
+                  into one collapsed-by-default card to match the native screen. */}
                 <View style={styles.mBlock}>
-                  <Text style={styles.mSectionTitle}>Overview</Text>
-                  <View style={styles.mSectionDivider} />
-                  <InfoRow label="Full name" value={stats.biography['full-name']} />
-                  <InfoRow label="Alter egos" value={stats.biography['alter-egos']} />
-                  <InfoRow label="Place of birth" value={stats.biography['place-of-birth']} />
-                  <InfoRow label="First appearance" value={stats.biography['first-appearance']} />
-                  {stats.biography.aliases.filter((a) => a && a !== '-').length > 0 ? (
-                    <InfoRow label="Aliases" value={stats.biography.aliases.join(', ')} />
-                  ) : null}
-                </View>
-                <View style={styles.mBlock}>
-                  <Text style={styles.mSectionTitle}>Appearance</Text>
-                  <View style={styles.mSectionDivider} />
-                  <InfoRow label="Gender" value={stats.appearance.gender} />
-                  <InfoRow label="Race" value={stats.appearance.race} />
-                  <InfoRow label="Height" value={stats.appearance.height.join(' / ')} />
-                  <InfoRow label="Weight" value={stats.appearance.weight.join(' / ')} />
-                  <InfoRow label="Eyes" value={stats.appearance['eye-color']} />
-                  <InfoRow label="Hair" value={stats.appearance['hair-color']} />
-                </View>
-                <View style={styles.mBlock}>
-                  <Text style={styles.mSectionTitle}>Connections</Text>
-                  <View style={styles.mSectionDivider} />
-                  <InfoRow label="Occupation" value={stats.work.occupation} />
-                  <InfoRow label="Base" value={stats.work.base} />
-                  <InfoRow
-                    label="Group affiliation"
-                    value={
-                      details.teams?.length
-                        ? details.teams.join(', ')
-                        : stats.connections['group-affiliation']
-                    }
+                  <MobileDossier
+                    stats={stats}
+                    teams={details.teams}
+                    eraSummary={narrative?.eraSummary}
                   />
                 </View>
               </View>
@@ -2961,7 +3047,63 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   mBlock: { paddingHorizontal: 20, paddingTop: 18 },
-  mFamilyBlock: { paddingHorizontal: 12, paddingTop: 16 },
+
+  // Dossier — collapsible card ported from the native screen.
+  dossierBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    backgroundColor: 'rgba(41,60,67,0.05)',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    cursor: 'pointer',
+  } as object,
+  dossierBarOpen: { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
+  dossierBarText: { flex: 1 },
+  dossierTitle: { fontFamily: 'Flame-Regular', fontSize: 18, color: COLORS.navy },
+  dossierHint: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: '#54606A',
+    marginTop: 3,
+  },
+  dossierToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(41,60,67,0.08)',
+    borderRadius: 16,
+    paddingLeft: 12,
+    paddingRight: 9,
+    paddingVertical: 7,
+  },
+  dossierToggleText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
+  dossierBody: {
+    backgroundColor: 'rgba(41,60,67,0.035)',
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 4,
+  },
+  dossierGroupLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: COLORS.orange,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 10,
+  },
+  dossierGroupSpacing: { marginTop: 18 },
+  dossierEra: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 14.5,
+    lineHeight: 22,
+    color: COLORS.navy,
+  },
+  mFamilyBlock: { paddingHorizontal: 20, paddingTop: 18 },
   mSummary: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
@@ -2971,6 +3113,10 @@ const styles = StyleSheet.create({
   },
   mStatsCard: { backgroundColor: 'rgba(41,60,67,0.05)', borderRadius: 16, padding: 16 },
   mSection: { paddingTop: 18 },
+  mSubBlock: { marginTop: 22 },
+  // Padding for edge-to-edge rails (MovieStrip) so the featured card + decade
+  // labels inset to 20 while the shelves still bleed out via bleedMargin.
+  mRail: { paddingHorizontal: 20 },
   mSectionTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 20,
