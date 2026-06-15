@@ -112,6 +112,87 @@ export async function getTrendingTitles(
   return [...byTitle.values()];
 }
 
+// ── Editorial campaigns (Phase 3) ────────────────────────────────────────────
+
+export interface Campaign {
+  id: string;
+  label: string;
+  headline: string;
+  blurb: string | null;
+  accent: string | null;
+  characters: TrendingTitleCharacter[];
+}
+
+/** Active editorial campaigns (premieres, events, launches) resolved to their
+ *  characters. Empty when nothing is scheduled for right now. */
+export async function getActiveCampaigns(limit = 3, chars = 16): Promise<Campaign[]> {
+  const { data, error } = await supabase.rpc('get_active_campaigns', {
+    p_limit: limit,
+    p_chars: chars,
+  });
+  if (error) {
+    console.warn('[getActiveCampaigns] error:', error.message);
+    return [];
+  }
+  const byId = new Map<string, Campaign>();
+  for (const r of (data ?? []) as {
+    campaign_id: string;
+    label: string;
+    headline: string;
+    blurb: string | null;
+    accent: string | null;
+    hero_id: string;
+    hero_name: string;
+    hero_image_url: string | null;
+    hero_portrait_url: string | null;
+  }[]) {
+    let c = byId.get(r.campaign_id);
+    if (!c) {
+      c = {
+        id: r.campaign_id,
+        label: r.label,
+        headline: r.headline,
+        blurb: r.blurb,
+        accent: r.accent,
+        characters: [],
+      };
+      byId.set(r.campaign_id, c);
+    }
+    c.characters.push({
+      id: r.hero_id,
+      name: r.hero_name,
+      image_url: r.hero_image_url,
+      portrait_url: r.hero_portrait_url,
+    });
+  }
+  return [...byId.values()];
+}
+
+// ── Personalized trending (Phase 3) ──────────────────────────────────────────
+
+/** Characters from the current film/TV window that share a publisher or franchise
+ *  with what the user has favourited or recently viewed. Empty for signed-out or
+ *  affinity-less users (the caller hides the row). */
+export async function getTrendingForUser(
+  userId: string,
+  limit = 20,
+): Promise<TrendingTitleCharacter[]> {
+  const { data, error } = await supabase.rpc('get_trending_for_user', {
+    p_user_id: userId,
+    p_limit: limit,
+  });
+  if (error) {
+    console.warn('[getTrendingForUser] error:', error.message);
+    return [];
+  }
+  return ((data ?? []) as TrendingTitleCharacter[]).map((r) => ({
+    id: r.id,
+    name: r.name,
+    image_url: r.image_url,
+    portrait_url: r.portrait_url,
+  }));
+}
+
 /** A short meta line for a trending title — provider, upcoming date, or year. */
 export function trendingTitleMeta(t: TrendingTitle): string | null {
   if (t.provider) return `On ${t.provider}`;

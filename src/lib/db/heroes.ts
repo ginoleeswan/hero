@@ -339,6 +339,36 @@ export async function getSpotlightHeroes(limit = 5): Promise<Hero[]> {
   return sampleN([...famous, ...discovery], limit);
 }
 
+/**
+ * Billboard-ready heroes who are currently on screen — the top of the on_screen
+ * trending bucket, filtered to those that satisfy the spotlight's gates (portrait
+ * + summary + real powerstats). Prepended to the spotlight pool so the billboard
+ * leads with characters audiences are seeing in theaters right now.
+ */
+export async function getTrendingSpotlightHeroes(limit = 2): Promise<Hero[]> {
+  const { data: trend, error: trendErr } = await supabase.rpc('get_trending_heroes', {
+    p_bucket: 'on_screen',
+    p_limit: 40,
+  });
+  if (trendErr || !trend?.length) return [];
+  const ids = (trend as { id: string }[]).map((t) => t.id);
+  const { data, error } = await supabase
+    .from('heroes')
+    .select(HOME_SPOT)
+    .in('id', ids)
+    .not('portrait_url', 'is', null)
+    .not('summary', 'is', null)
+    .gte('powerstats_total', SPOT_MIN_POWERSTATS);
+  if (error) {
+    console.warn('[getTrendingSpotlightHeroes] error:', error.message);
+    return [];
+  }
+  const order = new Map(ids.map((id, i) => [id, i]));
+  return ((data ?? []) as unknown as Hero[])
+    .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
+    .slice(0, limit);
+}
+
 export async function getNewlyAddedCV(limit = 25): Promise<Hero[]> {
   const { data, error } = await supabase
     .from('heroes')
