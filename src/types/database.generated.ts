@@ -954,6 +954,7 @@ export type Database = {
     Functions: {
       admin_add_comicvine_heroes: { Args: { p_heroes: Json }; Returns: number }
       admin_cron_status: { Args: never; Returns: Json }
+      admin_delete_campaign: { Args: { p_id: string }; Returns: number }
       admin_delete_hero: { Args: { p_hero_id: string }; Returns: number }
       admin_reenrich_hero: { Args: { p_id: string }; Returns: string }
       admin_reschedule_cron: {

@@ -25,6 +25,7 @@ import { PipelinesDomain } from '../../src/components/admin/health/domains/Pipel
 import { BuildBoard } from '../../src/components/admin/health/BuildBoard';
 import { HeroConsole } from '../../src/components/admin/health/HeroConsole';
 import { SpendDomain } from '../../src/components/admin/health/domains/SpendDomain';
+import { CampaignsDomain } from '../../src/components/admin/health/domains/CampaignsDomain';
 import { PlaceholderDomain } from '../../src/components/admin/health/domains/PlaceholderDomain';
 import {
   useActivityLog,
@@ -66,16 +67,31 @@ export default function AdminHealthScreen() {
     if (gateResolved && !isAdmin) router.replace('/explore');
   }, [gateResolved, isAdmin, router]);
 
-  const { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ, enrichProgressQ, statsPendingQ, portraitsPendingQ, recentEnrichedQ } =
-    useCatalogQueries({
-      enabled: gateResolved && isAdmin,
-      metric,
-      page,
-      pubFilter,
-      heroQuery,
-      historyLimit,
-      ambiguousLimit,
-    });
+  const {
+    healthQ,
+    gapsQ,
+    runsQ,
+    cronQ,
+    heroSearchQ,
+    pingQ,
+    usageQ,
+    distQ,
+    snapsQ,
+    spendQ,
+    ambiguousQ,
+    enrichProgressQ,
+    statsPendingQ,
+    portraitsPendingQ,
+    recentEnrichedQ,
+  } = useCatalogQueries({
+    enabled: gateResolved && isAdmin,
+    metric,
+    page,
+    pubFilter,
+    heroQuery,
+    historyLimit,
+    ambiguousLimit,
+  });
 
   const drainJob = cronQ.data?.find((j) => j.jobname === DRAIN_CRON);
   const cronOn = !!drainJob?.active;
@@ -226,7 +242,10 @@ export default function AdminHealthScreen() {
   // not yet fully enriched, and not terminally failed / awaiting review / unresolvable.
   const ep = enrichProgressQ.data;
   const actionable = ep
-    ? Math.max(0, ep.heroesTotal - ep.enriched - (h?.cvStatus.failed ?? 0) - ep.ambiguous - ep.unresolved)
+    ? Math.max(
+        0,
+        ep.heroesTotal - ep.enriched - (h?.cvStatus.failed ?? 0) - ep.ambiguous - ep.unresolved,
+      )
     : pendingNow;
   const etaMin = perMin > 0 ? actionable / perMin : 0;
   const etaLabel =
@@ -367,6 +386,7 @@ export default function AdminHealthScreen() {
             narrow={narrow}
           />
         )}
+        {domain === 'campaigns' && <CampaignsDomain />}
         {domain === 'spend' && <SpendDomain spend={spendQ.data} loading={spendQ.isLoading} />}
         {domain === 'users' && (
           <PlaceholderDomain

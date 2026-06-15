@@ -140,7 +140,14 @@ export const WORKLIST_LABEL: Record<CoverageMetric, string> = {
 };
 
 // ── Domains (command-center rail) ─────────────────────────────────────────────
-export type DomainKey = 'command' | 'catalog' | 'pipelines' | 'spend' | 'users' | 'traffic';
+export type DomainKey =
+  | 'command'
+  | 'catalog'
+  | 'pipelines'
+  | 'campaigns'
+  | 'spend'
+  | 'users'
+  | 'traffic';
 
 export interface DomainDef {
   key: DomainKey;
@@ -156,6 +163,7 @@ export const DOMAINS: DomainDef[] = [
   { key: 'command', label: 'Overview', icon: 'grid' },
   { key: 'catalog', label: 'Catalog', icon: 'albums', badge: 'pending' },
   { key: 'pipelines', label: 'Build', icon: 'construct-outline' },
+  { key: 'campaigns', label: 'Campaigns', icon: 'megaphone-outline' },
   { key: 'spend', label: 'Spend', icon: 'cash-outline' },
   { key: 'users', label: 'Users', icon: 'people-outline', placeholder: true },
   { key: 'traffic', label: 'Traffic', icon: 'trending-up-outline', placeholder: true },
