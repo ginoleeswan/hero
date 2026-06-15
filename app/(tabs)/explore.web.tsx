@@ -20,7 +20,10 @@ import {
   getFranchiseIcons,
   getHeroesByMediaTag,
   getTrendingSpotlightHeroes,
+  getBrowseCovers,
   type Hero,
+  type BrowseCover,
+  type CategorySlug,
 } from '../../src/lib/db/heroes';
 import { getUserFavouriteHeroes } from '../../src/lib/db/favourites';
 import {
@@ -33,6 +36,7 @@ import {
 } from '../../src/lib/db/trending';
 import { RightNowBand } from '../../src/components/web/home/RightNowBand';
 import { CategoryPodGrid } from '../../src/components/web/home/CategoryPodGrid';
+import { BROWSE_PODS } from '../../src/components/home/CategoryPodGrid';
 import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
@@ -1192,6 +1196,7 @@ export default function WebHomeScreen() {
     streaming: TrendingTitle[];
     campaigns: Campaign[];
     trendingForUser: TrendingTitleCharacter[];
+    browseCovers: Record<string, BrowseCover>;
     strongestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
     smartestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
     fastestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
@@ -1287,6 +1292,9 @@ export default function WebHomeScreen() {
       .catch(() => {});
     getTrendingTitles('streaming', 6)
       .then(set('streaming'))
+      .catch(() => {});
+    getBrowseCovers(BROWSE_PODS.map((p) => p.slug as CategorySlug))
+      .then(set('browseCovers'))
       .catch(() => {});
     getFirstAppearanceCovers(14)
       .then(set('covers'))
@@ -1428,6 +1436,7 @@ export default function WebHomeScreen() {
               onViewAll={() => router.push('/category/most-iconic')}
             />
             <CategoryPodGrid
+              covers={homeData.browseCovers}
               onPress={(slug) =>
                 router.push(`/category/${slug}` as Parameters<typeof router.push>[0])
               }

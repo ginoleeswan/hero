@@ -36,7 +36,10 @@ import {
   getSpotlightHeroes,
   getIconicHeroes,
   getTrendingSpotlightHeroes,
+  getBrowseCovers,
   type Hero,
+  type BrowseCover,
+  type CategorySlug,
 } from '../../src/lib/db/heroes';
 import { getUserFavouriteHeroes } from '../../src/lib/db/favourites';
 import {
@@ -48,7 +51,7 @@ import {
   type TrendingTitleCharacter,
 } from '../../src/lib/db/trending';
 import { RightNowBand } from '../../src/components/home/RightNowBand';
-import { CategoryPodGrid } from '../../src/components/home/CategoryPodGrid';
+import { CategoryPodGrid, BROWSE_PODS } from '../../src/components/home/CategoryPodGrid';
 import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
@@ -100,6 +103,7 @@ export default function HomeScreen() {
 
   // One marquee rail (Most Iconic); everything else lives in the Browse grid.
   const [iconic, setIconic] = useState<Hero[]>([]);
+  const [browseCovers, setBrowseCovers] = useState<Record<string, BrowseCover>>({});
   const [onScreen, setOnScreen] = useState<TrendingTitle[]>([]);
   const [comingSoon, setComingSoon] = useState<TrendingTitle[]>([]);
   const [streaming, setStreaming] = useState<TrendingTitle[]>([]);
@@ -149,6 +153,9 @@ export default function HomeScreen() {
 
     getIconicHeroes(20)
       .then(setIconic)
+      .catch(() => {});
+    getBrowseCovers(BROWSE_PODS.map((p) => p.slug as CategorySlug))
+      .then(setBrowseCovers)
       .catch(() => {});
     getTrendingTitles('on_screen', 6)
       .then(setOnScreen)
@@ -301,7 +308,7 @@ export default function HomeScreen() {
             </View>
           );
         case 'browsegrid':
-          return <CategoryPodGrid onPress={handleCategoryPress} />;
+          return <CategoryPodGrid covers={browseCovers} onPress={handleCategoryPress} />;
         case 'favourites':
           return (
             <HomeHeroRow
@@ -332,7 +339,16 @@ export default function HomeScreen() {
         }
       }
     },
-    [insets.top, scrollY, handlePress, handleCategoryPress, handleTitlePress, navigating, router],
+    [
+      insets.top,
+      scrollY,
+      handlePress,
+      handleCategoryPress,
+      handleTitlePress,
+      navigating,
+      router,
+      browseCovers,
+    ],
   );
 
   // Translate every rendered cell uniformly to counteract the overscroll bounce,

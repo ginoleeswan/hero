@@ -1,8 +1,17 @@
-// src/components/home/CategoryPodGrid.tsx — the calm "Browse" block. Replaces a
-// dozen look-alike catalog carousels with one scannable grid of tiles, each a
-// doorway into the category page that already exists. One restrained accent.
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+// src/components/home/CategoryPodGrid.tsx — the "Browse" block. Image-backed
+// category tiles in a real two-up grid (each wears a representative character's
+// art), so browse reads as premium as the rest of the page — not a text menu.
+import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
+import type { BrowseCover } from '../../lib/db/heroes';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const H_PAD = 16;
+const GAP = 12;
+const TILE_W = Math.floor((SCREEN_WIDTH - H_PAD * 2 - GAP) / 2);
+const TILE_H = Math.round(TILE_W * 0.82);
 
 export interface CategoryPod {
   slug: string;
@@ -24,18 +33,41 @@ export const BROWSE_PODS: CategoryPod[] = [
   { slug: 'most-intelligent', label: 'Smartest' },
 ];
 
-export function CategoryPodGrid({ onPress }: { onPress: (slug: string) => void }) {
+export function CategoryPodGrid({
+  covers,
+  onPress,
+}: {
+  covers?: Record<string, BrowseCover>;
+  onPress: (slug: string) => void;
+}) {
   return (
     <View style={s.grid}>
-      {BROWSE_PODS.map((p) => (
-        <Pressable key={p.slug} style={s.pod} onPress={() => onPress(p.slug)}>
-          <View style={s.accent} />
-          <Text style={s.label} numberOfLines={1}>
-            {p.label}
-          </Text>
-          <Text style={s.chevron}>›</Text>
-        </Pressable>
-      ))}
+      {BROWSE_PODS.map((p) => {
+        const c = covers?.[p.slug];
+        return (
+          <Pressable key={p.slug} style={s.tile} onPress={() => onPress(p.slug)}>
+            <HeroImage
+              id={p.slug}
+              name={c?.name ?? p.label}
+              imageUrl={c?.image_url ?? c?.image_md_url}
+              portraitUrl={c?.portrait_url}
+              grid
+              contentFit="cover"
+              contentPosition="top"
+              style={StyleSheet.absoluteFill as object}
+              recyclingKey={p.slug}
+            />
+            <LinearGradient
+              colors={['transparent', 'rgba(11,24,32,0.55)', 'rgba(11,24,32,0.94)']}
+              locations={[0.25, 0.6, 1]}
+              style={StyleSheet.absoluteFill}
+            />
+            <Text style={s.label} numberOfLines={2}>
+              {p.label}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -44,40 +76,28 @@ const s = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    paddingHorizontal: 16,
+    gap: GAP,
+    paddingHorizontal: H_PAD,
     paddingTop: 4,
   },
-  pod: {
-    flexGrow: 1,
-    flexBasis: '46%',
-    minHeight: 58,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fffdf8',
-    borderRadius: 14,
+  tile: {
+    width: TILE_W,
+    height: TILE_H,
+    borderRadius: 16,
     borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: 'rgba(41,60,67,0.08)',
-    paddingHorizontal: 14,
-    gap: 10,
-  },
-  accent: {
-    width: 4,
-    height: 26,
-    borderRadius: 2,
-    backgroundColor: COLORS.orange,
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+    justifyContent: 'flex-end',
   },
   label: {
-    flex: 1,
-    fontFamily: 'Flame-Regular',
-    fontSize: 16,
-    color: COLORS.navy,
-  },
-  chevron: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 22,
-    color: 'rgba(41,60,67,0.35)',
-    marginTop: -2,
+    fontFamily: 'Flame-Bold',
+    fontSize: 19,
+    color: COLORS.beige,
+    lineHeight: 21,
+    paddingHorizontal: 12,
+    paddingBottom: 11,
+    textShadowColor: 'rgba(0,0,0,0.7)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 8,
   },
 });

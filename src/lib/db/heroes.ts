@@ -1,7 +1,7 @@
 import { supabase } from '../supabase';
 import type { Tables } from '../../types/database.generated';
 import type { CharacterData, MovieAppearance, StatsSource } from '../../types';
-import type { CategoryFilters, FacetCounts } from './categoryFilters';
+import { DEFAULT_FILTERS, type CategoryFilters, type FacetCounts } from './categoryFilters';
 import { rowToMember, type FamilyRow } from '../family/rowToMember';
 import type { FamilyMember } from '../family/types';
 
@@ -820,6 +820,52 @@ export async function getCategoryPage(
   const { data, error, count } = await q.range(from, to);
   if (error) throw new Error(error.message);
   return { heroes: (data ?? []) as Hero[], total: count ?? 0 };
+}
+
+export interface BrowseCover {
+  name: string;
+  image_url: string | null;
+  image_md_url: string | null;
+  portrait_url: string | null;
+}
+
+/**
+ * One representative (most-popular) hero per browse category, for the image-backed
+ * category tiles on the home screen. Fires a light single-row query per slug in
+ * parallel; missing/empty categories simply don't get a cover (the tile falls
+ * back to a solid colour).
+ */
+export async function getBrowseCovers(slugs: CategorySlug[]): Promise<Record<string, BrowseCover>> {
+  const entries = await Promise.all(
+    slugs.map(async (slug) => {
+      try {
+        const { heroes } = await getCategoryPage(slug, {
+          ...DEFAULT_FILTERS,
+          page: 0,
+          pageSize: 1,
+          withCount: false,
+          sort: 'popular',
+        });
+        const h = heroes[0];
+        return [
+          slug,
+          h
+            ? {
+                name: h.name,
+                image_url: h.image_url,
+                image_md_url: h.image_md_url,
+                portrait_url: h.portrait_url,
+              }
+            : null,
+        ] as const;
+      } catch {
+        return [slug, null] as const;
+      }
+    }),
+  );
+  const out: Record<string, BrowseCover> = {};
+  for (const [slug, cover] of entries) if (cover) out[slug] = cover;
+  return out;
 }
 
 export async function getCategoryFacetCounts(
