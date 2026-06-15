@@ -46,6 +46,7 @@ import {
   type Hero,
 } from '../../src/lib/db/heroes';
 import { getUserFavouriteHeroes } from '../../src/lib/db/favourites';
+import { getTrendingHeroes, type TrendingHero } from '../../src/lib/db/trending';
 import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
@@ -100,6 +101,9 @@ export default function HomeScreen() {
   const [anime, setAnime] = useState<Hero[]>([]);
   const [videoGames, setVideoGames] = useState<Hero[]>([]);
   const [horror, setHorror] = useState<Hero[]>([]);
+  const [onScreen, setOnScreen] = useState<TrendingHero[]>([]);
+  const [comingSoon, setComingSoon] = useState<TrendingHero[]>([]);
+  const [streaming, setStreaming] = useState<TrendingHero[]>([]);
 
   const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
@@ -167,6 +171,15 @@ export default function HomeScreen() {
     getHeroesByMediaTag('horror-icon', 20)
       .then(setHorror)
       .catch(() => {});
+    getTrendingHeroes('on_screen', 20)
+      .then(setOnScreen)
+      .catch(() => {});
+    getTrendingHeroes('coming_soon', 20)
+      .then(setComingSoon)
+      .catch(() => {});
+    getTrendingHeroes('streaming', 20)
+      .then(setStreaming)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -209,6 +222,24 @@ export default function HomeScreen() {
     heroes: Hero[];
     route?: Href;
   }[] = [
+    {
+      key: 'onscreen',
+      label: 'In Theaters & Recent',
+      title: 'On the Big Screen',
+      heroes: onScreen as unknown as Hero[],
+    },
+    {
+      key: 'comingsoon',
+      label: 'Releasing Soon',
+      title: 'Coming Soon',
+      heroes: comingSoon as unknown as Hero[],
+    },
+    {
+      key: 'streaming',
+      label: 'Now Streaming',
+      title: 'Streaming Now',
+      heroes: streaming as unknown as Hero[],
+    },
     {
       key: 'iconic',
       label: 'By Appearances',
@@ -324,6 +355,9 @@ export default function HomeScreen() {
     anime,
     videoGames,
     horror,
+    onScreen,
+    comingSoon,
+    streaming,
   ]);
 
   const keyExtractor = useCallback(
