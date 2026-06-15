@@ -22,7 +22,8 @@ import {
   type Hero,
 } from '../../src/lib/db/heroes';
 import { getUserFavouriteHeroes } from '../../src/lib/db/favourites';
-import { getTrendingHeroes, type TrendingHero } from '../../src/lib/db/trending';
+import { getTrendingTitles, type TrendingTitle } from '../../src/lib/db/trending';
+import { TrendingShelf } from '../../src/components/web/home/TrendingShelf';
 import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
@@ -1177,9 +1178,9 @@ export default function WebHomeScreen() {
     anime: Hero[];
     videoGames: Hero[];
     horror: Hero[];
-    onScreen: TrendingHero[];
-    comingSoon: TrendingHero[];
-    streaming: TrendingHero[];
+    onScreen: TrendingTitle[];
+    comingSoon: TrendingTitle[];
+    streaming: TrendingTitle[];
     strongestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
     smartestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
     fastestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
@@ -1254,13 +1255,13 @@ export default function WebHomeScreen() {
     getHeroesByMediaTag('horror-icon', 25)
       .then(set('horror'))
       .catch(() => {});
-    getTrendingHeroes('on_screen', 25)
+    getTrendingTitles('on_screen', 6)
       .then(set('onScreen'))
       .catch(() => {});
-    getTrendingHeroes('coming_soon', 25)
+    getTrendingTitles('coming_soon', 6)
       .then(set('comingSoon'))
       .catch(() => {});
-    getTrendingHeroes('streaming', 25)
+    getTrendingTitles('streaming', 6)
       .then(set('streaming'))
       .catch(() => {});
     getFirstAppearanceCovers(14)
@@ -1306,6 +1307,13 @@ export default function WebHomeScreen() {
   const handlePress = useCallback(
     (id: string) => {
       router.push(`/character/${id}`);
+    },
+    [router],
+  );
+
+  const handleTitlePress = useCallback(
+    (id: string) => {
+      router.push(`/title/${id}` as Parameters<typeof router.push>[0]);
     },
     [router],
   );
@@ -1366,24 +1374,30 @@ export default function WebHomeScreen() {
               onPress={handlePress}
             />
 
-            {/* ── On Screen Now — keep Explore tied to the real-world slate ─── */}
-            <HomeRow
+            {/* ── What's current — grouped by title (poster + cast) ─────────── */}
+            <TrendingShelf
               label="In Theaters & Recent"
               title="On the Big Screen"
-              heroes={(homeData.onScreen ?? []) as unknown as Hero[]}
-              onPress={handlePress}
+              accent={COLORS.orange}
+              titles={homeData.onScreen ?? []}
+              onHeroPress={handlePress}
+              onTitlePress={handleTitlePress}
             />
-            <HomeRow
+            <TrendingShelf
               label="Releasing Soon"
               title="Coming Soon"
-              heroes={(homeData.comingSoon ?? []) as unknown as Hero[]}
-              onPress={handlePress}
+              accent={COLORS.gold}
+              titles={homeData.comingSoon ?? []}
+              onHeroPress={handlePress}
+              onTitlePress={handleTitlePress}
             />
-            <HomeRow
+            <TrendingShelf
               label="Now Streaming"
               title="Streaming Now"
-              heroes={(homeData.streaming ?? []) as unknown as Hero[]}
-              onPress={handlePress}
+              accent={COLORS.blue}
+              titles={homeData.streaming ?? []}
+              onHeroPress={handlePress}
+              onTitlePress={handleTitlePress}
             />
 
             {/* ── The Universe — the marquee browse ─────────────────────────── */}

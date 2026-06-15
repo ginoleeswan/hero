@@ -6,8 +6,16 @@ const IMG = 'https://image.tmdb.org/t/p';
 const img = (path: string | null | undefined, size: string): string | null =>
   path ? `${IMG}/${size}${path}` : null;
 
-interface TmdbVideo { site: string; type: string; key: string }
-interface TmdbCastMember { name: string; character?: string; profile_path: string | null }
+interface TmdbVideo {
+  site: string;
+  type: string;
+  key: string;
+}
+interface TmdbCastMember {
+  name: string;
+  character?: string;
+  profile_path: string | null;
+}
 
 export interface TmdbTvDetails {
   id: number;
@@ -15,6 +23,7 @@ export interface TmdbTvDetails {
   first_air_date?: string | null;
   overview?: string | null;
   vote_average?: number | null;
+  popularity?: number | null;
   number_of_seasons?: number | null;
   number_of_episodes?: number | null;
   episode_run_time?: number[] | null;
@@ -41,6 +50,7 @@ export interface TvRow {
   backdrop_url: string | null;
   overview: string | null;
   vote_average: number | null;
+  popularity: number | null;
   trailer_key: string | null;
   watch_providers: Record<string, unknown> | null;
   cast_members: { name: string; character: string | null; profile_url: string | null }[] | null;
@@ -77,6 +87,7 @@ export function mapTmdbDetailsToTv(d: TmdbTvDetails): TvRow {
     backdrop_url: img(d.backdrop_path, 'w1280'),
     overview: d.overview?.trim() ? d.overview : null,
     vote_average: typeof d.vote_average === 'number' ? d.vote_average : null,
+    popularity: typeof d.popularity === 'number' ? d.popularity : null,
     trailer_key: trailer?.key ?? null,
     watch_providers: providers && Object.keys(providers).length > 0 ? providers : null,
     cast_members: cast && cast.length > 0 ? cast : null,
@@ -84,7 +95,10 @@ export function mapTmdbDetailsToTv(d: TmdbTvDetails): TvRow {
     details: {
       seasons: typeof d.number_of_seasons === 'number' ? d.number_of_seasons : null,
       episodes: typeof d.number_of_episodes === 'number' ? d.number_of_episodes : null,
-      episode_runtime: Array.isArray(d.episode_run_time) && d.episode_run_time.length > 0 ? d.episode_run_time[0] : null,
+      episode_runtime:
+        Array.isArray(d.episode_run_time) && d.episode_run_time.length > 0
+          ? d.episode_run_time[0]
+          : null,
       networks: networks && networks.length > 0 ? networks : null,
     },
   };

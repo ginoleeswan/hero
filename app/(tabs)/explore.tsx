@@ -46,7 +46,8 @@ import {
   type Hero,
 } from '../../src/lib/db/heroes';
 import { getUserFavouriteHeroes } from '../../src/lib/db/favourites';
-import { getTrendingHeroes, type TrendingHero } from '../../src/lib/db/trending';
+import { getTrendingTitles, type TrendingTitle } from '../../src/lib/db/trending';
+import { TrendingShelf } from '../../src/components/home/TrendingShelf';
 import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
@@ -64,6 +65,14 @@ type FeedRow =
   | { type: 'recent'; heroes: RowHero[] }
   | { type: 'publishers' }
   | { type: 'favourites'; heroes: RowHero[] }
+  | {
+      type: 'trending';
+      key: string;
+      label: string;
+      title: string;
+      accent: string;
+      titles: TrendingTitle[];
+    }
   | {
       type: 'curated';
       key: string;
@@ -101,9 +110,9 @@ export default function HomeScreen() {
   const [anime, setAnime] = useState<Hero[]>([]);
   const [videoGames, setVideoGames] = useState<Hero[]>([]);
   const [horror, setHorror] = useState<Hero[]>([]);
-  const [onScreen, setOnScreen] = useState<TrendingHero[]>([]);
-  const [comingSoon, setComingSoon] = useState<TrendingHero[]>([]);
-  const [streaming, setStreaming] = useState<TrendingHero[]>([]);
+  const [onScreen, setOnScreen] = useState<TrendingTitle[]>([]);
+  const [comingSoon, setComingSoon] = useState<TrendingTitle[]>([]);
+  const [streaming, setStreaming] = useState<TrendingTitle[]>([]);
 
   const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
@@ -171,13 +180,13 @@ export default function HomeScreen() {
     getHeroesByMediaTag('horror-icon', 20)
       .then(setHorror)
       .catch(() => {});
-    getTrendingHeroes('on_screen', 20)
+    getTrendingTitles('on_screen', 6)
       .then(setOnScreen)
       .catch(() => {});
-    getTrendingHeroes('coming_soon', 20)
+    getTrendingTitles('coming_soon', 6)
       .then(setComingSoon)
       .catch(() => {});
-    getTrendingHeroes('streaming', 20)
+    getTrendingTitles('streaming', 6)
       .then(setStreaming)
       .catch(() => {});
   }, []);
@@ -213,6 +222,14 @@ export default function HomeScreen() {
     [router],
   );
 
+  const handleTitlePress = useCallback(
+    (titleId: string) => {
+      Haptics.selectionAsync();
+      router.push(`/title/${titleId}`);
+    },
+    [router],
+  );
+
   // Fixed catalog order. Tone alternates by catalog index (not by which rows
   // happen to be loaded), so a row's band colour never flips as data streams in.
   const curatedCatalog: {
@@ -222,24 +239,6 @@ export default function HomeScreen() {
     heroes: Hero[];
     route?: Href;
   }[] = [
-    {
-      key: 'onscreen',
-      label: 'In Theaters & Recent',
-      title: 'On the Big Screen',
-      heroes: onScreen as unknown as Hero[],
-    },
-    {
-      key: 'comingsoon',
-      label: 'Releasing Soon',
-      title: 'Coming Soon',
-      heroes: comingSoon as unknown as Hero[],
-    },
-    {
-      key: 'streaming',
-      label: 'Now Streaming',
-      title: 'Streaming Now',
-      heroes: streaming as unknown as Hero[],
-    },
     {
       key: 'iconic',
       label: 'By Appearances',
@@ -326,6 +325,34 @@ export default function HomeScreen() {
   const rows = useMemo<FeedRow[]>(() => {
     const out: FeedRow[] = [];
     if (spotlightPool.length > 0) out.push({ type: 'spotlight', heroes: spotlightPool });
+    // "What's current" zone — directly under the billboard so Explore leads with
+    // the real-world slate. Grouped by title (poster + cast), not flat cards.
+    const trendingShelves = [
+      {
+        key: 'onscreen',
+        label: 'In Theaters & Recent',
+        title: 'On the Big Screen',
+        accent: COLORS.orange,
+        titles: onScreen,
+      },
+      {
+        key: 'comingsoon',
+        label: 'Releasing Soon',
+        title: 'Coming Soon',
+        accent: COLORS.gold,
+        titles: comingSoon,
+      },
+      {
+        key: 'streaming',
+        label: 'Now Streaming',
+        title: 'Streaming Now',
+        accent: COLORS.blue,
+        titles: streaming,
+      },
+    ];
+    for (const sh of trendingShelves) {
+      if (sh.titles.length > 0) out.push({ type: 'trending', ...sh });
+    }
     if (recentlyViewed.length > 0)
       out.push({ type: 'recent', heroes: recentlyViewed.map(toRowHero) });
     out.push({ type: 'publishers' });
@@ -361,7 +388,12 @@ export default function HomeScreen() {
   ]);
 
   const keyExtractor = useCallback(
-    (row: FeedRow) => (row.type === 'curated' ? `curated-${row.key}` : row.type),
+    (row: FeedRow) =>
+      row.type === 'curated'
+        ? `curated-${row.key}`
+        : row.type === 'trending'
+          ? `trending-${row.key}`
+          : row.type,
     [],
   );
 
@@ -385,6 +417,18 @@ export default function HomeScreen() {
               heroes={item.heroes}
               variant="thumb"
               onPress={handlePress}
+              disabled={navigating}
+            />
+          );
+        case 'trending':
+          return (
+            <TrendingShelf
+              label={item.label}
+              title={item.title}
+              accent={item.accent}
+              titles={item.titles}
+              onHeroPress={handlePress}
+              onTitlePress={handleTitlePress}
               disabled={navigating}
             />
           );
@@ -420,7 +464,7 @@ export default function HomeScreen() {
         }
       }
     },
-    [insets.top, scrollY, handlePress, handlePublisherPress, navigating, router],
+    [insets.top, scrollY, handlePress, handlePublisherPress, handleTitlePress, navigating, router],
   );
 
   // Translate every rendered cell uniformly to counteract the overscroll bounce,
