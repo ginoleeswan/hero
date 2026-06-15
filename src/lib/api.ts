@@ -270,6 +270,12 @@ export async function generateVerdict(input: VerdictInput): Promise<string> {
 export interface WikidataSummary {
   label: string;
   description: string;
+  image: string | null; // P18 thumbnail, for visual disambiguation
+}
+
+/** Commons thumbnail URL for a P18 filename (Special:FilePath handles spaces). */
+function commonsThumb(filename: string, width = 96): string {
+  return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=${width}`;
 }
 
 export async function fetchWikidataEntities(
@@ -278,12 +284,12 @@ export async function fetchWikidataEntities(
   const unique = [...new Set(qids.filter((q) => /^Q\d+$/.test(q)))];
   if (unique.length === 0) return {};
   const out: Record<string, WikidataSummary> = {};
-  // wbgetentities accepts up to 50 ids per call.
+  // wbgetentities accepts up to 50 ids per call. Claims are pulled for P18 (image).
   for (let i = 0; i < unique.length; i += 50) {
     const batch = unique.slice(i, i + 50);
     const url =
       'https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&origin=*' +
-      `&props=labels|descriptions&languages=en&ids=${batch.join('|')}`;
+      `&props=labels|descriptions|claims&languages=en&ids=${batch.join('|')}`;
     try {
       const res = await fetch(url);
       if (!res.ok) continue;
@@ -291,12 +297,15 @@ export async function fetchWikidataEntities(
         entities?: Record<string, {
           labels?: { en?: { value?: string } };
           descriptions?: { en?: { value?: string } };
+          claims?: { P18?: Array<{ mainsnak?: { datavalue?: { value?: string } } }> };
         }>;
       };
       for (const [qid, ent] of Object.entries(body.entities ?? {})) {
+        const file = ent.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
         out[qid] = {
           label: ent.labels?.en?.value ?? qid,
           description: ent.descriptions?.en?.value ?? '',
+          image: typeof file === 'string' && file ? commonsThumb(file) : null,
         };
       }
     } catch { /* leave this batch unresolved; UI falls back to the QID */ }

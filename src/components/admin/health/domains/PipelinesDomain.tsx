@@ -482,6 +482,11 @@ export function PipelinesDomain({
                             style={[styles.candMainBtn, !!busy && styles.dim]}
                             accessibilityLabel={`Pick ${info?.label ?? c.qid} for ${hero.name}`}
                           >
+                            {info?.image ? (
+                              <HeroThumb uri={info.image} width={30} height={40} radius={6} />
+                            ) : (
+                              <View style={styles.candNoImg}><Ionicons name="help" size={14} color={COLORS.grey} /></View>
+                            )}
                             <View style={styles.candText}>
                               <Text style={styles.candLabel} numberOfLines={1}>
                                 {info?.label ?? c.qid}
@@ -796,6 +801,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.navy + '0d', borderTopLeftRadius: 9, borderBottomLeftRadius: 9,
     paddingHorizontal: 11, paddingVertical: 8,
   },
+  candNoImg: { width: 30, height: 40, borderRadius: 6, backgroundColor: COLORS.navy + '0d', alignItems: 'center', justifyContent: 'center' },
   candText: { flex: 1, minWidth: 0, gap: 1 },
   candLabel: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: COLORS.navy },
   candScore: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey, fontVariant: ['tabular-nums'] },
