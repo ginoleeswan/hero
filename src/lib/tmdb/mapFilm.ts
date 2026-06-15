@@ -6,8 +6,16 @@ const IMG = 'https://image.tmdb.org/t/p';
 const img = (path: string | null | undefined, size: string): string | null =>
   path ? `${IMG}/${size}${path}` : null;
 
-interface TmdbVideo { site: string; type: string; key: string }
-interface TmdbCastMember { name: string; character?: string; profile_path: string | null }
+interface TmdbVideo {
+  site: string;
+  type: string;
+  key: string;
+}
+interface TmdbCastMember {
+  name: string;
+  character?: string;
+  profile_path: string | null;
+}
 
 export interface TmdbDetails {
   id: number;
@@ -15,6 +23,7 @@ export interface TmdbDetails {
   release_date: string | null;
   overview?: string | null;
   vote_average?: number | null;
+  popularity?: number | null;
   runtime?: number | null;
   revenue?: number | null;
   poster_path?: string | null;
@@ -33,6 +42,7 @@ export interface FilmRow {
   backdrop_url: string | null;
   overview: string | null;
   vote_average: number | null;
+  popularity: number | null;
   runtime: number | null;
   revenue: number | null;
   trailer_key: string | null;
@@ -70,6 +80,7 @@ export function mapTmdbDetailsToFilm(d: TmdbDetails): FilmRow {
     backdrop_url: img(d.backdrop_path, 'w1280'),
     overview: d.overview?.trim() ? d.overview : null,
     vote_average: typeof d.vote_average === 'number' ? d.vote_average : null,
+    popularity: typeof d.popularity === 'number' ? d.popularity : null,
     runtime: typeof d.runtime === 'number' ? d.runtime : null,
     revenue: typeof d.revenue === 'number' && d.revenue > 0 ? d.revenue : null,
     trailer_key: trailer?.key ?? null,

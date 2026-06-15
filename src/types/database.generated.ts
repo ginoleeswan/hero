@@ -708,6 +708,7 @@ export type Database = {
           id: string
           media_type: string
           overview: string | null
+          popularity: number | null
           poster_url: string | null
           release_date: string | null
           revenue: number | null
@@ -731,6 +732,7 @@ export type Database = {
           id: string
           media_type?: string
           overview?: string | null
+          popularity?: number | null
           poster_url?: string | null
           release_date?: string | null
           revenue?: number | null
@@ -754,6 +756,7 @@ export type Database = {
           id?: string
           media_type?: string
           overview?: string | null
+          popularity?: number | null
           poster_url?: string | null
           release_date?: string | null
           revenue?: number | null
@@ -1028,6 +1031,26 @@ export type Database = {
           portrait_url: string
           provider: string
           release_date: string
+        }[]
+      }
+      get_trending_titles: {
+        Args: {
+          p_bucket?: string
+          p_chars_per_title?: number
+          p_title_limit?: number
+        }
+        Returns: {
+          backdrop_url: string
+          hero_id: string
+          hero_image_url: string
+          hero_name: string
+          hero_portrait_url: string
+          media_type: string
+          poster_url: string
+          provider: string
+          release_date: string
+          title: string
+          title_id: string
         }[]
       }
       heroes_aliases_text: { Args: { arr: string[] }; Returns: string }
