@@ -7,7 +7,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
-import { trendingTitleMeta, type TrendingTitle } from '../../lib/db/trending';
+import { trendingBadge, type BadgeTone, type TrendingTitle } from '../../lib/db/trending';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const POSTER_W = Math.round(SCREEN_WIDTH * 0.28);
@@ -15,10 +15,18 @@ const POSTER_H = Math.round(POSTER_W * 1.5); // 2:3 poster
 const CHAR_W = Math.round(POSTER_H * 0.62);
 const CHAR_H = POSTER_H;
 
+export const BADGE_COLOR: Record<BadgeTone, string> = {
+  theaters: COLORS.orange,
+  streaming: COLORS.blue,
+  coming: COLORS.gold,
+};
+
 export interface TrendingShelfProps {
   label: string;
   title: string;
   accent?: string;
+  /** 'dark' renders the header text light, for use inside the Right Now band. */
+  tone?: 'light' | 'dark';
   titles: TrendingTitle[];
   onHeroPress: (item: {
     id: string;
@@ -74,7 +82,7 @@ function TitleBlock({
   onTitlePress: TrendingShelfProps['onTitlePress'];
   disabled?: boolean;
 }) {
-  const meta = trendingTitleMeta(t);
+  const badge = trendingBadge(t);
   const posterUri = t.poster_url ?? t.backdrop_url ?? undefined;
   return (
     <View style={s.block}>
@@ -89,15 +97,17 @@ function TitleBlock({
           locations={[0.4, 1]}
           style={StyleSheet.absoluteFill}
         />
+        {badge && (
+          <View style={[s.badge, { backgroundColor: BADGE_COLOR[badge.tone] }]}>
+            <Text style={s.badgeText} numberOfLines={1}>
+              {badge.label}
+            </Text>
+          </View>
+        )}
         <View style={s.posterText}>
           <Text style={s.posterTitle} numberOfLines={2}>
             {t.title}
           </Text>
-          {!!meta && (
-            <Text style={s.posterMeta} numberOfLines={1}>
-              {meta}
-            </Text>
-          )}
         </View>
       </Pressable>
 
@@ -123,6 +133,7 @@ export function TrendingShelf({
   label,
   title,
   accent = COLORS.orange,
+  tone = 'light',
   titles,
   onHeroPress,
   onTitlePress,
@@ -135,7 +146,7 @@ export function TrendingShelf({
         <View style={[s.accentBar, { backgroundColor: accent }]} />
         <View style={s.headerText}>
           <Text style={[s.label, { color: accent }]}>{label}</Text>
-          <Text style={s.title}>{title}</Text>
+          <Text style={[s.title, tone === 'dark' && s.titleDark]}>{title}</Text>
         </View>
       </View>
       {titles.map((t) => (
@@ -170,6 +181,24 @@ const s = StyleSheet.create({
     textTransform: 'uppercase',
   },
   title: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.navy, lineHeight: 28 },
+  titleDark: { color: COLORS.beige },
+
+  badge: {
+    position: 'absolute',
+    top: 7,
+    left: 7,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    maxWidth: POSTER_W - 14,
+  },
+  badgeText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 8,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    color: '#fff',
+  },
 
   block: { flexDirection: 'row', paddingLeft: 15, marginBottom: 16, gap: 10 },
   poster: {

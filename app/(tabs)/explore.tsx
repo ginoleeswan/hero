@@ -9,6 +9,7 @@ import {
 } from 'react';
 import {
   View,
+  Text,
   StyleSheet,
   StatusBar,
   type ListRenderItem,
@@ -55,7 +56,7 @@ import {
   type Campaign,
   type TrendingTitleCharacter,
 } from '../../src/lib/db/trending';
-import { TrendingShelf } from '../../src/components/home/TrendingShelf';
+import { RightNowBand } from '../../src/components/home/RightNowBand';
 import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
@@ -74,13 +75,14 @@ type FeedRow =
   | { type: 'publishers' }
   | { type: 'favourites'; heroes: RowHero[] }
   | {
-      type: 'trending';
-      key: string;
-      label: string;
-      title: string;
-      accent: string;
-      titles: TrendingTitle[];
+      type: 'rightnow';
+      campaign: Campaign | null;
+      onScreen: TrendingTitle[];
+      comingSoon: TrendingTitle[];
+      streaming: TrendingTitle[];
+      personalized: TrendingTitleCharacter[];
     }
+  | { type: 'browsehead' }
   | {
       type: 'curated';
       key: string;
@@ -352,63 +354,33 @@ export default function HomeScreen() {
   const rows = useMemo<FeedRow[]>(() => {
     const out: FeedRow[] = [];
     if (spotlightPool.length > 0) out.push({ type: 'spotlight', heroes: spotlightPool });
-    // Editorial campaign (premiere / event / launch) — the top scheduled moment,
-    // right under the billboard.
-    const campaign = campaigns[0];
-    if (campaign && campaign.characters.length > 0) {
+    // The "Right Now" band — campaign + trending + personalized, all in one
+    // continuous editorial zone directly under the billboard.
+    if (
+      campaigns[0] ||
+      onScreen.length > 0 ||
+      comingSoon.length > 0 ||
+      streaming.length > 0 ||
+      trendingForUser.length > 0
+    ) {
       out.push({
-        type: 'curated',
-        key: 'campaign',
-        label: campaign.label,
-        title: campaign.headline,
-        heroes: campaign.characters as unknown as Hero[],
-      });
-    }
-    // "What's current" zone — directly under the billboard so Explore leads with
-    // the real-world slate. Grouped by title (poster + cast), not flat cards.
-    const trendingShelves = [
-      {
-        key: 'onscreen',
-        label: 'In Theaters & Recent',
-        title: 'On the Big Screen',
-        accent: COLORS.orange,
-        titles: onScreen,
-      },
-      {
-        key: 'comingsoon',
-        label: 'Releasing Soon',
-        title: 'Coming Soon',
-        accent: COLORS.gold,
-        titles: comingSoon,
-      },
-      {
-        key: 'streaming',
-        label: 'Now Streaming',
-        title: 'Streaming Now',
-        accent: COLORS.blue,
-        titles: streaming,
-      },
-    ];
-    for (const sh of trendingShelves) {
-      if (sh.titles.length > 0) out.push({ type: 'trending', ...sh });
-    }
-    // Personalized: current characters sharing a publisher/franchise with the
-    // user's favourites + history. Hidden when signed-out or affinity-less.
-    if (trendingForUser.length > 0) {
-      out.push({
-        type: 'curated',
-        key: 'youruniverse',
-        label: 'For You',
-        title: 'Trending in Your Universe',
-        heroes: trendingForUser as unknown as Hero[],
+        type: 'rightnow',
+        campaign: campaigns[0] ?? null,
+        onScreen,
+        comingSoon,
+        streaming,
+        personalized: trendingForUser,
       });
     }
     if (recentlyViewed.length > 0)
       out.push({ type: 'recent', heroes: recentlyViewed.map(toRowHero) });
     out.push({ type: 'publishers' });
     if (favourites.length > 0) out.push({ type: 'favourites', heroes: favourites.map(toRowHero) });
-    for (const r of curatedCatalog) {
-      if (r.heroes.length === 0) continue;
+    // "Browse the Universe" — the evergreen library, as its own chapter beneath
+    // the dynamic zone.
+    const curatedRows = curatedCatalog.filter((r) => r.heroes.length > 0);
+    if (curatedRows.length > 0) out.push({ type: 'browsehead' });
+    for (const r of curatedRows) {
       out.push({ type: 'curated', ...r });
     }
     return out;
@@ -440,12 +412,7 @@ export default function HomeScreen() {
   ]);
 
   const keyExtractor = useCallback(
-    (row: FeedRow) =>
-      row.type === 'curated'
-        ? `curated-${row.key}`
-        : row.type === 'trending'
-          ? `trending-${row.key}`
-          : row.type,
+    (row: FeedRow) => (row.type === 'curated' ? `curated-${row.key}` : row.type),
     [],
   );
 
@@ -472,17 +439,25 @@ export default function HomeScreen() {
               disabled={navigating}
             />
           );
-        case 'trending':
+        case 'rightnow':
           return (
-            <TrendingShelf
-              label={item.label}
-              title={item.title}
-              accent={item.accent}
-              titles={item.titles}
+            <RightNowBand
+              campaign={item.campaign}
+              onScreen={item.onScreen}
+              comingSoon={item.comingSoon}
+              streaming={item.streaming}
+              personalized={item.personalized}
               onHeroPress={handlePress}
               onTitlePress={handleTitlePress}
               disabled={navigating}
             />
+          );
+        case 'browsehead':
+          return (
+            <View style={styles.browseHead}>
+              <Text style={styles.browseKicker}>The Library</Text>
+              <Text style={styles.browseTitle}>Browse the Universe</Text>
+            </View>
           );
         case 'publishers':
           return <PublisherGrid onPress={handlePublisherPress} />;
@@ -568,4 +543,15 @@ const styles = StyleSheet.create({
   // Beige content sheet. The spotlight (first row) is opaque navy and covers the
   // beige behind it; the rows below sit on this beige, as the old sheet did.
   content: { flexGrow: 1, backgroundColor: COLORS.beige, paddingBottom: 120 },
+  // "Browse the Universe" chapter break between the dynamic zone and the library.
+  browseHead: { paddingHorizontal: 16, paddingTop: 22, paddingBottom: 4 },
+  browseKicker: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    color: COLORS.orange,
+    marginBottom: 3,
+  },
+  browseTitle: { fontFamily: 'Flame-Bold', fontSize: 30, color: COLORS.navy, lineHeight: 32 },
 });

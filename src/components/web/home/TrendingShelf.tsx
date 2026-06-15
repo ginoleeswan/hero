@@ -5,12 +5,18 @@ import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-na
 import { Image } from 'expo-image';
 import { HeroImage } from '../../HeroImage';
 import { COLORS } from '../../../constants/colors';
-import { trendingTitleMeta, type TrendingTitle } from '../../../lib/db/trending';
+import { trendingBadge, type BadgeTone, type TrendingTitle } from '../../../lib/db/trending';
 
 const POSTER_W = 150;
 const POSTER_H = 225;
 const CHAR_W = 132;
 const CHAR_H = 190;
+
+const BADGE_COLOR: Record<BadgeTone, string> = {
+  theaters: COLORS.orange,
+  streaming: COLORS.blue,
+  coming: COLORS.gold,
+};
 
 function CharacterCard({
   character,
@@ -54,7 +60,7 @@ function TitleBlock({
   onHeroPress: (id: string) => void;
   onTitlePress: (id: string) => void;
 }) {
-  const meta = trendingTitleMeta(t);
+  const badge = trendingBadge(t);
   const posterUri = t.poster_url ?? t.backdrop_url ?? undefined;
   return (
     <View style={blk.row}>
@@ -74,15 +80,17 @@ function TitleBlock({
           <View style={[blk.posterFallback, { position: 'absolute', inset: 0 }] as object} />
         )}
         <View style={blk.posterOverlay as object} />
+        {badge && (
+          <View style={[blk.badge, { backgroundColor: BADGE_COLOR[badge.tone] }] as object}>
+            <Text style={blk.badgeText as object} numberOfLines={1}>
+              {badge.label}
+            </Text>
+          </View>
+        )}
         <View style={blk.posterText}>
           <Text style={blk.posterTitle as object} numberOfLines={2}>
             {t.title}
           </Text>
-          {!!meta && (
-            <Text style={blk.posterMeta as object} numberOfLines={1}>
-              {meta}
-            </Text>
-          )}
         </View>
       </Pressable>
 
@@ -99,6 +107,7 @@ export function TrendingShelf({
   label,
   title,
   accent = COLORS.orange,
+  tone = 'light',
   titles,
   onHeroPress,
   onTitlePress,
@@ -106,6 +115,7 @@ export function TrendingShelf({
   label: string;
   title: string;
   accent?: string;
+  tone?: 'light' | 'dark';
   titles: TrendingTitle[];
   onHeroPress: (id: string) => void;
   onTitlePress: (id: string) => void;
@@ -119,7 +129,7 @@ export function TrendingShelf({
         <View style={[sec.accentBar, { backgroundColor: accent }]} />
         <View style={sec.headerText}>
           <Text style={[sec.label, { color: accent }] as object}>{label}</Text>
-          <Text style={sec.title as object}>{title}</Text>
+          <Text style={[sec.title, tone === 'dark' && sec.titleDark] as object}>{title}</Text>
         </View>
       </View>
       <View style={{ paddingLeft: pagePad, paddingRight: pagePad }}>
@@ -154,6 +164,7 @@ const sec = StyleSheet.create({
     color: COLORS.navy,
     lineHeight: 34,
   } as object,
+  titleDark: { color: COLORS.beige } as object,
 });
 
 const blk = StyleSheet.create({
@@ -196,6 +207,22 @@ const blk = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     marginTop: 4,
+  } as object,
+  badge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    maxWidth: POSTER_W - 20,
+  } as object,
+  badgeText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: '#fff',
   } as object,
   strip: {
     flex: 1,

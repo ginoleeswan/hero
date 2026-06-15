@@ -31,7 +31,7 @@ import {
   type Campaign,
   type TrendingTitleCharacter,
 } from '../../src/lib/db/trending';
-import { TrendingShelf } from '../../src/components/web/home/TrendingShelf';
+import { RightNowBand } from '../../src/components/web/home/RightNowBand';
 import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
@@ -1389,6 +1389,18 @@ export default function WebHomeScreen() {
             newlyAddedCount={homeData.newlyAdded?.length ?? 0}
           />
 
+          {/* ── Right Now — the dynamic editorial zone (campaign + trending +
+               personalized), its own dark chapter under the ticker. ───────── */}
+          <RightNowBand
+            campaign={homeData.campaigns?.[0] ?? null}
+            onScreen={homeData.onScreen ?? []}
+            comingSoon={homeData.comingSoon ?? []}
+            streaming={homeData.streaming ?? []}
+            personalized={homeData.trendingForUser ?? []}
+            onHeroPress={handlePress}
+            onTitlePress={handleTitlePress}
+          />
+
           {/* Beige canvas — owns the carousel surface so the dark scroll
               background only shows on the dark stage and on overscroll. */}
           <View style={styles.beigeCanvas}>
@@ -1400,51 +1412,11 @@ export default function WebHomeScreen() {
               onPress={handlePress}
             />
 
-            {/* ── Editorial campaign — the top scheduled moment ─────────────── */}
-            {(homeData.campaigns?.[0]?.characters.length ?? 0) > 0 && (
-              <HomeRow
-                label={homeData.campaigns![0].label}
-                title={homeData.campaigns![0].headline}
-                heroes={homeData.campaigns![0].characters as unknown as Hero[]}
-                onPress={handlePress}
-              />
-            )}
-
-            {/* ── What's current — grouped by title (poster + cast) ─────────── */}
-            <TrendingShelf
-              label="In Theaters & Recent"
-              title="On the Big Screen"
-              accent={COLORS.orange}
-              titles={homeData.onScreen ?? []}
-              onHeroPress={handlePress}
-              onTitlePress={handleTitlePress}
-            />
-            <TrendingShelf
-              label="Releasing Soon"
-              title="Coming Soon"
-              accent={COLORS.gold}
-              titles={homeData.comingSoon ?? []}
-              onHeroPress={handlePress}
-              onTitlePress={handleTitlePress}
-            />
-            <TrendingShelf
-              label="Now Streaming"
-              title="Streaming Now"
-              accent={COLORS.blue}
-              titles={homeData.streaming ?? []}
-              onHeroPress={handlePress}
-              onTitlePress={handleTitlePress}
-            />
-
-            {/* ── Personalized — current characters in the user's universe ──── */}
-            {(homeData.trendingForUser?.length ?? 0) > 0 && (
-              <HomeRow
-                label="For You"
-                title="Trending in Your Universe"
-                heroes={(homeData.trendingForUser ?? []) as unknown as Hero[]}
-                onPress={handlePress}
-              />
-            )}
+            {/* ── Browse the Universe — the evergreen library, its own chapter ─ */}
+            <View style={styles.browseHead}>
+              <Text style={styles.browseKicker as object}>The Library</Text>
+              <Text style={styles.browseTitle as object}>Browse the Universe</Text>
+            </View>
 
             {/* ── The Universe — the marquee browse ─────────────────────────── */}
             <HomeRow
@@ -1602,6 +1574,23 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingBottom: 24,
   },
+
+  // "Browse the Universe" chapter break between the dynamic zone and the library.
+  browseHead: { paddingHorizontal: 32, paddingTop: 8, paddingBottom: 18 } as object,
+  browseKicker: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    color: COLORS.orange,
+    marginBottom: 4,
+  } as object,
+  browseTitle: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 40,
+    color: COLORS.navy,
+    lineHeight: 42,
+  } as object,
 
   // The one deliberate dark moment in the canvas — the "Dark Side" zone holds
   // the villain/grey-morality rows in a single continuous navy band.
