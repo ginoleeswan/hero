@@ -206,3 +206,33 @@ export function trendingTitleMeta(t: TrendingTitle): string | null {
   }
   return null;
 }
+
+// ── Contextual badges (Phase 5) ──────────────────────────────────────────────
+// The card's "why": in theaters, new on a streamer, or coming soon. Tone keys a
+// colour in the UI so a card reads its status at a glance.
+export type BadgeTone = 'theaters' | 'streaming' | 'coming';
+export interface TrendingBadge {
+  tone: BadgeTone;
+  label: string;
+}
+
+export function trendingBadge(
+  t: Pick<TrendingTitle, 'provider' | 'release_date'>,
+): TrendingBadge | null {
+  if (t.release_date) {
+    const d = new Date(t.release_date);
+    if (!Number.isNaN(d.getTime()) && d.getTime() > Date.now()) {
+      return {
+        tone: 'coming',
+        label: `Coming ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+      };
+    }
+  }
+  if (t.provider) {
+    const short =
+      t.provider.length <= 16 ? t.provider : t.provider.split(' ').slice(0, 2).join(' ');
+    return { tone: 'streaming', label: short };
+  }
+  if (t.release_date) return { tone: 'theaters', label: 'In Theaters' };
+  return null;
+}
