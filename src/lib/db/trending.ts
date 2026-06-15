@@ -207,6 +207,26 @@ export function trendingTitleMeta(t: TrendingTitle): string | null {
   return null;
 }
 
+/** Merge the three trending buckets into one ordered, de-duplicated list —
+ *  theatrical first, then upcoming, then streaming — so "On Screen Now" is a
+ *  single calm rail whose per-title badge carries the distinction. */
+export function mergeTrendingTitles(
+  onScreen: TrendingTitle[],
+  comingSoon: TrendingTitle[],
+  streaming: TrendingTitle[],
+  cap = 12,
+): TrendingTitle[] {
+  const seen = new Set<string>();
+  const out: TrendingTitle[] = [];
+  for (const t of [...onScreen, ...comingSoon, ...streaming]) {
+    if (seen.has(t.id)) continue;
+    seen.add(t.id);
+    out.push(t);
+    if (out.length >= cap) break;
+  }
+  return out;
+}
+
 // ── Contextual badges (Phase 5) ──────────────────────────────────────────────
 // The card's "why": in theaters, new on a streamer, or coming soon. Tone keys a
 // colour in the UI so a card reads its status at a glance.
