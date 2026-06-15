@@ -43,10 +43,18 @@ import {
   getHeroesByStatRanking,
   getFranchiseIcons,
   getHeroesByMediaTag,
+  getTrendingSpotlightHeroes,
   type Hero,
 } from '../../src/lib/db/heroes';
 import { getUserFavouriteHeroes } from '../../src/lib/db/favourites';
-import { getTrendingTitles, type TrendingTitle } from '../../src/lib/db/trending';
+import {
+  getTrendingTitles,
+  getActiveCampaigns,
+  getTrendingForUser,
+  type TrendingTitle,
+  type Campaign,
+  type TrendingTitleCharacter,
+} from '../../src/lib/db/trending';
 import { TrendingShelf } from '../../src/components/home/TrendingShelf';
 import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
@@ -113,6 +121,8 @@ export default function HomeScreen() {
   const [onScreen, setOnScreen] = useState<TrendingTitle[]>([]);
   const [comingSoon, setComingSoon] = useState<TrendingTitle[]>([]);
   const [streaming, setStreaming] = useState<TrendingTitle[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [trendingForUser, setTrendingForUser] = useState<TrendingTitleCharacter[]>([]);
 
   const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
@@ -134,12 +144,26 @@ export default function HomeScreen() {
   // arrive. getSpotlightHeroes gates on portraits + enrichment and rotates a
   // mostly-marquee, partly-discovery lineup, so the billboard always looks right.
   useEffect(() => {
-    getSpotlightHeroes(SPOTLIGHT_POOL)
-      .then((heroes) => {
-        setSpotlight(heroes);
+    // Lead the billboard with up to 2 characters who are on screen right now,
+    // then fill with the curated spotlight pool (deduped).
+    Promise.all([getSpotlightHeroes(SPOTLIGHT_POOL), getTrendingSpotlightHeroes(2)])
+      .then(([base, trend]) => {
+        const seen = new Set<string>();
+        const merged: Hero[] = [];
+        for (const h of [...trend, ...base]) {
+          if (!seen.has(h.id)) {
+            seen.add(h.id);
+            merged.push(h);
+          }
+        }
+        setSpotlight(merged.slice(0, SPOTLIGHT_POOL));
         setInitialLoaded(true);
       })
       .catch(() => setInitialLoaded(true));
+
+    getActiveCampaigns()
+      .then(setCampaigns)
+      .catch(() => {});
 
     getIconicHeroes(20)
       .then(setIconic)
@@ -198,6 +222,9 @@ export default function HomeScreen() {
       .catch(() => {});
     getUserFavouriteHeroes(user.id)
       .then(setFavourites)
+      .catch(() => {});
+    getTrendingForUser(user.id)
+      .then(setTrendingForUser)
       .catch(() => {});
   }, [user?.id]);
 
@@ -325,6 +352,18 @@ export default function HomeScreen() {
   const rows = useMemo<FeedRow[]>(() => {
     const out: FeedRow[] = [];
     if (spotlightPool.length > 0) out.push({ type: 'spotlight', heroes: spotlightPool });
+    // Editorial campaign (premiere / event / launch) — the top scheduled moment,
+    // right under the billboard.
+    const campaign = campaigns[0];
+    if (campaign && campaign.characters.length > 0) {
+      out.push({
+        type: 'curated',
+        key: 'campaign',
+        label: campaign.label,
+        title: campaign.headline,
+        heroes: campaign.characters as unknown as Hero[],
+      });
+    }
     // "What's current" zone — directly under the billboard so Explore leads with
     // the real-world slate. Grouped by title (poster + cast), not flat cards.
     const trendingShelves = [
@@ -352,6 +391,17 @@ export default function HomeScreen() {
     ];
     for (const sh of trendingShelves) {
       if (sh.titles.length > 0) out.push({ type: 'trending', ...sh });
+    }
+    // Personalized: current characters sharing a publisher/franchise with the
+    // user's favourites + history. Hidden when signed-out or affinity-less.
+    if (trendingForUser.length > 0) {
+      out.push({
+        type: 'curated',
+        key: 'youruniverse',
+        label: 'For You',
+        title: 'Trending in Your Universe',
+        heroes: trendingForUser as unknown as Hero[],
+      });
     }
     if (recentlyViewed.length > 0)
       out.push({ type: 'recent', heroes: recentlyViewed.map(toRowHero) });
@@ -385,6 +435,8 @@ export default function HomeScreen() {
     onScreen,
     comingSoon,
     streaming,
+    campaigns,
+    trendingForUser,
   ]);
 
   const keyExtractor = useCallback(

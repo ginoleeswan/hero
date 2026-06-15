@@ -179,6 +179,59 @@ export type Database = {
         }
         Relationships: []
       }
+      featured_campaigns: {
+        Row: {
+          accent: string | null
+          blurb: string | null
+          created_at: string
+          ends_at: string
+          franchise: string | null
+          headline: string
+          hero_ids: string[] | null
+          id: string
+          label: string
+          priority: number
+          starts_at: string
+          title_id: string | null
+        }
+        Insert: {
+          accent?: string | null
+          blurb?: string | null
+          created_at?: string
+          ends_at: string
+          franchise?: string | null
+          headline: string
+          hero_ids?: string[] | null
+          id?: string
+          label: string
+          priority?: number
+          starts_at?: string
+          title_id?: string | null
+        }
+        Update: {
+          accent?: string | null
+          blurb?: string | null
+          created_at?: string
+          ends_at?: string
+          franchise?: string | null
+          headline?: string
+          hero_ids?: string[] | null
+          id?: string
+          label?: string
+          priority?: number
+          starts_at?: string
+          title_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_campaigns_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "titles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hero_facts: {
         Row: {
           hero_id: string
@@ -921,6 +974,22 @@ export type Database = {
         Args: { p_enabled: boolean; p_jobname: string }
         Returns: string
       }
+      admin_upsert_campaign: {
+        Args: {
+          p_accent?: string
+          p_blurb?: string
+          p_ends_at: string
+          p_franchise?: string
+          p_headline: string
+          p_hero_ids?: string[]
+          p_id?: string
+          p_label: string
+          p_priority?: number
+          p_starts_at?: string
+          p_title_id?: string
+        }
+        Returns: string
+      }
       cache_hero_comicvine_data: {
         Args: { p_id: string; p_powers: string[]; p_summary: string }
         Returns: undefined
@@ -937,6 +1006,20 @@ export type Database = {
           p_slug: string
         }
         Returns: Json
+      }
+      get_active_campaigns: {
+        Args: { p_chars?: number; p_limit?: number }
+        Returns: {
+          accent: string
+          blurb: string
+          campaign_id: string
+          headline: string
+          hero_id: string
+          hero_image_url: string
+          hero_name: string
+          hero_portrait_url: string
+          label: string
+        }[]
       }
       get_era_timeline: {
         Args: { per_era?: number }
@@ -1018,6 +1101,16 @@ export type Database = {
           b_portrait_url: string
           b_publisher: string
           cross_universe: boolean
+        }[]
+      }
+      get_trending_for_user: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          context_title: string
+          id: string
+          image_url: string
+          name: string
+          portrait_url: string
         }[]
       }
       get_trending_heroes: {

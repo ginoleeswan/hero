@@ -19,10 +19,18 @@ import {
   getHeroesByStatRanking,
   getFranchiseIcons,
   getHeroesByMediaTag,
+  getTrendingSpotlightHeroes,
   type Hero,
 } from '../../src/lib/db/heroes';
 import { getUserFavouriteHeroes } from '../../src/lib/db/favourites';
-import { getTrendingTitles, type TrendingTitle } from '../../src/lib/db/trending';
+import {
+  getTrendingTitles,
+  getActiveCampaigns,
+  getTrendingForUser,
+  type TrendingTitle,
+  type Campaign,
+  type TrendingTitleCharacter,
+} from '../../src/lib/db/trending';
 import { TrendingShelf } from '../../src/components/web/home/TrendingShelf';
 import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
@@ -1181,6 +1189,8 @@ export default function WebHomeScreen() {
     onScreen: TrendingTitle[];
     comingSoon: TrendingTitle[];
     streaming: TrendingTitle[];
+    campaigns: Campaign[];
+    trendingForUser: TrendingTitleCharacter[];
     strongestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
     smartestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
     fastestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
@@ -1209,12 +1219,25 @@ export default function WebHomeScreen() {
       (val: HomeData[K]) =>
         setHomeData((d) => ({ ...d, [key]: val }));
 
-    getSpotlightHeroes(10)
-      .then((v) => {
-        set('spotlight')(v);
+    // Lead the billboard with characters on screen right now, then the pool.
+    Promise.all([getSpotlightHeroes(10), getTrendingSpotlightHeroes(2)])
+      .then(([base, trend]) => {
+        const seen = new Set<string>();
+        const merged: Hero[] = [];
+        for (const h of [...trend, ...base]) {
+          if (!seen.has(h.id)) {
+            seen.add(h.id);
+            merged.push(h);
+          }
+        }
+        set('spotlight')(merged);
         setHomeStarted(true);
       })
       .catch(() => setHomeStarted(true));
+
+    getActiveCampaigns()
+      .then(set('campaigns'))
+      .catch(() => {});
 
     getIconicHeroes(25)
       .then(set('iconic'))
@@ -1302,6 +1325,9 @@ export default function WebHomeScreen() {
     getUserFavouriteHeroes(user.id)
       .then(setFavourites)
       .catch(() => {});
+    getTrendingForUser(user.id)
+      .then((v) => setHomeData((d) => ({ ...d, trendingForUser: v })))
+      .catch(() => {});
   }, [user?.id]);
 
   const handlePress = useCallback(
@@ -1374,6 +1400,16 @@ export default function WebHomeScreen() {
               onPress={handlePress}
             />
 
+            {/* ── Editorial campaign — the top scheduled moment ─────────────── */}
+            {(homeData.campaigns?.[0]?.characters.length ?? 0) > 0 && (
+              <HomeRow
+                label={homeData.campaigns![0].label}
+                title={homeData.campaigns![0].headline}
+                heroes={homeData.campaigns![0].characters as unknown as Hero[]}
+                onPress={handlePress}
+              />
+            )}
+
             {/* ── What's current — grouped by title (poster + cast) ─────────── */}
             <TrendingShelf
               label="In Theaters & Recent"
@@ -1399,6 +1435,16 @@ export default function WebHomeScreen() {
               onHeroPress={handlePress}
               onTitlePress={handleTitlePress}
             />
+
+            {/* ── Personalized — current characters in the user's universe ──── */}
+            {(homeData.trendingForUser?.length ?? 0) > 0 && (
+              <HomeRow
+                label="For You"
+                title="Trending in Your Universe"
+                heroes={(homeData.trendingForUser ?? []) as unknown as Hero[]}
+                onPress={handlePress}
+              />
+            )}
 
             {/* ── The Universe — the marquee browse ─────────────────────────── */}
             <HomeRow
