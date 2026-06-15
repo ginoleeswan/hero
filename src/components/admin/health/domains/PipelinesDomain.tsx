@@ -485,7 +485,7 @@ export function PipelinesDomain({
                             {info?.image ? (
                               <HeroThumb uri={info.image} width={30} height={40} radius={6} />
                             ) : (
-                              <View style={styles.candNoImg}><Ionicons name="help" size={14} color={COLORS.grey} /></View>
+                              <View style={styles.candNoImg}><Ionicons name="image-outline" size={14} color={COLORS.grey} /></View>
                             )}
                             <View style={styles.candText}>
                               <Text style={styles.candLabel} numberOfLines={1}>

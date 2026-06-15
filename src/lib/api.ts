@@ -278,18 +278,43 @@ function commonsThumb(filename: string, width = 96): string {
   return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=${width}`;
 }
 
+/** Lead-image thumbnails for a batch of enwiki page titles → { title: url }. */
+async function fetchWikipediaThumbs(titles: string[]): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  for (let i = 0; i < titles.length; i += 50) {
+    const batch = titles.slice(i, i + 50);
+    // pilicense=any is essential here: comic-character lead images are almost
+    // always non-free fair-use, which the default (free-only) would exclude.
+    const url =
+      'https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*' +
+      `&prop=pageimages&piprop=thumbnail&pithumbsize=96&pilicense=any&titles=${batch.map(encodeURIComponent).join('|')}`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const body = (await res.json()) as {
+        query?: { pages?: Record<string, { title?: string; thumbnail?: { source?: string } }> };
+      };
+      for (const page of Object.values(body.query?.pages ?? {})) {
+        if (page.title && page.thumbnail?.source) out[page.title] = page.thumbnail.source;
+      }
+    } catch { /* ignore — entity just stays imageless */ }
+  }
+  return out;
+}
+
 export async function fetchWikidataEntities(
   qids: string[],
 ): Promise<Record<string, WikidataSummary>> {
   const unique = [...new Set(qids.filter((q) => /^Q\d+$/.test(q)))];
   if (unique.length === 0) return {};
   const out: Record<string, WikidataSummary> = {};
-  // wbgetentities accepts up to 50 ids per call. Claims are pulled for P18 (image).
+  const enwikiTitle: Record<string, string> = {}; // qid → enwiki title (for image fallback)
+  // wbgetentities accepts up to 50 ids per call. Claims → P18, sitelinks → enwiki.
   for (let i = 0; i < unique.length; i += 50) {
     const batch = unique.slice(i, i + 50);
     const url =
       'https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&origin=*' +
-      `&props=labels|descriptions|claims&languages=en&ids=${batch.join('|')}`;
+      `&props=labels|descriptions|claims|sitelinks&languages=en&ids=${batch.join('|')}`;
     try {
       const res = await fetch(url);
       if (!res.ok) continue;
@@ -298,6 +323,7 @@ export async function fetchWikidataEntities(
           labels?: { en?: { value?: string } };
           descriptions?: { en?: { value?: string } };
           claims?: { P18?: Array<{ mainsnak?: { datavalue?: { value?: string } } }> };
+          sitelinks?: { enwiki?: { title?: string } };
         }>;
       };
       for (const [qid, ent] of Object.entries(body.entities ?? {})) {
@@ -307,8 +333,18 @@ export async function fetchWikidataEntities(
           description: ent.descriptions?.en?.value ?? '',
           image: typeof file === 'string' && file ? commonsThumb(file) : null,
         };
+        if (!out[qid].image && ent.sitelinks?.enwiki?.title) enwikiTitle[qid] = ent.sitelinks.enwiki.title;
       }
     } catch { /* leave this batch unresolved; UI falls back to the QID */ }
+  }
+
+  // Fallback: pull the Wikipedia lead image for entities that lack a P18.
+  const titles = Object.values(enwikiTitle);
+  if (titles.length > 0) {
+    const thumbs = await fetchWikipediaThumbs(titles);
+    for (const [qid, title] of Object.entries(enwikiTitle)) {
+      if (thumbs[title]) out[qid].image = thumbs[title];
+    }
   }
   return out;
 }
