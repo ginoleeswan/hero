@@ -1,6 +1,7 @@
 // cv-search: ComicVine lookup proxy for the admin ingestion console.
 // POST body:
 //   { kind: 'character', query }                  -> characters matching a name
+//   { kind: 'character_detail', id }              -> rich detail for one character
 //   { kind: 'popular', offset }                   -> most-appeared characters (paged)
 //   { kind: 'group', resource, query }            -> groups matching a name
 //   { kind: 'group_members', resource, id }       -> a group's character roster
@@ -48,21 +49,60 @@ serve(async (req: Request) => {
     let out: unknown;
     if (kind === 'character') {
       if (query.length < 2) return json({ results: [] });
-      const url = `${CV}/characters/?api_key=${KEY}&format=json&filter=name:${encodeURIComponent(query)}&field_list=id,name,publisher,image,deck&limit=24`;
+      // ComicVine ignores sort= when a name filter is present, so we sort the page
+      // ourselves by issue appearances — the obvious (most-published) match leads.
+      const url = `${CV}/characters/?api_key=${KEY}&format=json&filter=name:${encodeURIComponent(query)}&field_list=id,name,publisher,image,deck,count_of_issue_appearances&limit=24`;
       const body = await (await fetch(url, { headers: UA })).json();
       out = {
-        results: (body.results ?? []).map((r: Record<string, any>) => ({
+        results: (body.results ?? [])
+          .map((r: Record<string, any>) => ({
+            id: String(r.id),
+            name: r.name,
+            publisher: r.publisher?.name ?? null,
+            image: img(r.image),
+            deck: r.deck ?? null,
+            appearances: typeof r.count_of_issue_appearances === 'number' ? r.count_of_issue_appearances : null,
+          }))
+          .sort((a: { appearances: number | null }, b: { appearances: number | null }) =>
+            (b.appearances ?? 0) - (a.appearances ?? 0)),
+      };
+    } else if (kind === 'character_detail') {
+      // Rich detail for one character — powers a confidence-building preview before
+      // the character is added. ComicVine character type-id prefix is 4005.
+      if (!id) return json({ detail: null });
+      const url = `${CV}/character/4005-${id}/?api_key=${KEY}&format=json&field_list=id,name,real_name,aliases,deck,count_of_issue_appearances,first_appeared_in_issue,powers,publisher,origin,gender,character_enemies,teams,image`;
+      const r = (await (await fetch(url, { headers: UA })).json()).results ?? null;
+      const GENDER: Record<number, string> = { 1: 'Male', 2: 'Female' };
+      out = {
+        detail: r ? {
           id: String(r.id),
-          name: r.name,
-          publisher: r.publisher?.name ?? null,
-          image: img(r.image),
+          name: r.name ?? null,
+          realName: r.real_name || null,
+          // ComicVine returns aliases as a newline-separated string.
+          aliases: typeof r.aliases === 'string'
+            ? r.aliases.split('\n').map((a: string) => a.trim()).filter(Boolean)
+            : [],
           deck: r.deck ?? null,
-        })),
+          image: img(r.image),
+          appearances: typeof r.count_of_issue_appearances === 'number' ? r.count_of_issue_appearances : null,
+          publisher: r.publisher?.name ?? null,
+          origin: r.origin?.name ?? null,
+          gender: GENDER[r.gender as number] ?? null,
+          firstAppearance: r.first_appeared_in_issue
+            ? {
+                name: r.first_appeared_in_issue.name ?? null,
+                issueNumber: r.first_appeared_in_issue.issue_number ?? null,
+              }
+            : null,
+          powers: (r.powers ?? []).map((p: Record<string, any>) => p.name).filter(Boolean),
+          teams: (r.teams ?? []).map((t: Record<string, any>) => t.name).filter(Boolean),
+          enemyCount: Array.isArray(r.character_enemies) ? r.character_enemies.length : 0,
+        } : null,
       };
     } else if (kind === 'popular') {
       // Most-appeared characters first, paged. The client filters out ones already
       // in the catalogue, surfacing the popular gaps.
-      const url = `${CV}/characters/?api_key=${KEY}&format=json&sort=count_of_issue_appearances:desc&field_list=id,name,publisher,image,deck,count_of_issue_appearances&limit=30&offset=${offset}`;
+      const url = `${CV}/characters/?api_key=${KEY}&format=json&sort=count_of_issue_appearances:desc&field_list=id,name,publisher,image,deck,count_of_issue_appearances&limit=100&offset=${offset}`;
       const body = await (await fetch(url, { headers: UA })).json();
       out = {
         results: (body.results ?? []).map((r: Record<string, any>) => ({
@@ -76,19 +116,36 @@ serve(async (req: Request) => {
       };
     } else if (kind === 'group') {
       if (query.length < 2 || !PREFIX[resource]) return json({ results: [] });
-      const url = `${CV}/search/?api_key=${KEY}&format=json&query=${encodeURIComponent(query)}&resources=${resource}&field_list=id,name,image,count_of_team_members,start_year,publisher,deck&limit=15`;
-      const body = await (await fetch(url, { headers: UA })).json();
-      out = {
-        results: (body.results ?? []).map((r: Record<string, any>) => ({
-          id: String(r.id),
-          name: r.name,
-          image: img(r.image),
-          members: typeof r.count_of_team_members === 'number' ? r.count_of_team_members : null,
-          hint:
-            r.start_year ? String(r.start_year)
-            : r.publisher?.name ?? (typeof r.deck === 'string' ? r.deck.slice(0, 60) : null),
-        })),
-      };
+      if (resource === 'movie') {
+        // ComicVine's /search endpoint doesn't support the 'movie' resource —
+        // it returns nothing. Query the /movies list endpoint by name instead.
+        const url = `${CV}/movies/?api_key=${KEY}&format=json&filter=name:${encodeURIComponent(query)}&field_list=id,name,image,deck,release_date&limit=15`;
+        const body = await (await fetch(url, { headers: UA })).json();
+        out = {
+          results: (body.results ?? []).map((r: Record<string, any>) => ({
+            id: String(r.id),
+            name: r.name,
+            image: img(r.image),
+            members: null, // characters aren't on the list endpoint; loaded when opened
+            hint: r.release_date ? String(r.release_date).slice(0, 4)
+              : (typeof r.deck === 'string' ? r.deck.slice(0, 60) : null),
+          })),
+        };
+      } else {
+        const url = `${CV}/search/?api_key=${KEY}&format=json&query=${encodeURIComponent(query)}&resources=${resource}&field_list=id,name,image,count_of_team_members,start_year,publisher,deck&limit=15`;
+        const body = await (await fetch(url, { headers: UA })).json();
+        out = {
+          results: (body.results ?? []).map((r: Record<string, any>) => ({
+            id: String(r.id),
+            name: r.name,
+            image: img(r.image),
+            members: typeof r.count_of_team_members === 'number' ? r.count_of_team_members : null,
+            hint:
+              r.start_year ? String(r.start_year)
+              : r.publisher?.name ?? (typeof r.deck === 'string' ? r.deck.slice(0, 60) : null),
+          })),
+        };
+      }
     } else if (kind === 'group_members') {
       if (!id || !PREFIX[resource]) return json({ groupName: null, characters: [] });
       const field = MEMBER_FIELD[resource] ?? 'characters';

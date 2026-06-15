@@ -11,6 +11,24 @@ export interface CvCharacter {
   appearances?: number | null; // issue appearances (only on the 'popular' feed)
 }
 
+/** Rich detail for one character — backs the inline preview before adding. */
+export interface CvCharacterDetail {
+  id: string;
+  name: string | null;
+  realName: string | null;
+  aliases: string[];
+  deck: string | null;
+  image: string | null;
+  appearances: number | null;
+  publisher: string | null;
+  origin: string | null;
+  gender: string | null;
+  firstAppearance: { name: string | null; issueNumber: string | null } | null;
+  powers: string[];
+  teams: string[];
+  enemyCount: number;
+}
+
 export interface CvGroup {
   id: string;
   name: string;
@@ -34,6 +52,13 @@ export async function searchComicvineCharacters(query: string): Promise<CvCharac
   if (query.trim().length < 2) return [];
   const d = await invoke<{ results: CvCharacter[] }>({ kind: 'character', query });
   return d?.results ?? [];
+}
+
+/** Rich detail for one ComicVine character — for the inline add-time preview. */
+export async function fetchCharacterDetail(id: string): Promise<CvCharacterDetail | null> {
+  if (!id) return null;
+  const d = await invoke<{ detail: CvCharacterDetail | null }>({ kind: 'character_detail', id });
+  return d?.detail ?? null;
 }
 
 /** ComicVine's most-appeared characters, paged — used to surface popular gaps. */

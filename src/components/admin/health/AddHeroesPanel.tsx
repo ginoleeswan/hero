@@ -12,6 +12,7 @@ import { InfoTip } from './InfoTip';
 import {
   searchComicvineCharacters,
   fetchPopularCharacters,
+  fetchCharacterDetail,
   searchComicvineGroups,
   getComicvineGroupMembers,
   existingComicvineIds,
@@ -19,10 +20,12 @@ import {
   addComicvineHeroes,
   deleteHero,
   type CvCharacter,
+  type CvCharacterDetail,
   type CvGroup,
   type GroupResource,
 } from '../../../lib/db/cvIngest';
 import { getBuildHeroes, type BuildStage } from '../../../lib/db/build';
+import { CharacterPreview } from './CharacterPreview';
 
 // A character added during this session — enough to show it, build it, or undo it.
 type AddedHero = { id: string; name: string; image: string | null };
@@ -89,6 +92,22 @@ export function AddHeroesPanel({
   const [popularLoading, setPopularLoading] = useState(false);
   const [popularEnd, setPopularEnd] = useState(false);
 
+  // Inline preview — which result row is expanded, and a lazy cache of the rich
+  // ComicVine detail per character id (fetched once, on first expand).
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [detailCache, setDetailCache] = useState<Record<string, CvCharacterDetail | null>>({});
+  const [detailLoading, setDetailLoading] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (id: string) => {
+    setExpandedId((cur) => (cur === id ? null : id));
+    if (id in detailCache || detailLoading.has(id)) return;
+    setDetailLoading((p) => new Set(p).add(id));
+    fetchCharacterDetail(id)
+      .then((d) => setDetailCache((p) => ({ ...p, [id]: d })))
+      .catch(() => setDetailCache((p) => ({ ...p, [id]: null })))
+      .finally(() => setDetailLoading((p) => { const s = new Set(p); s.delete(id); return s; }));
+  };
+
   // Poll the live build stage of this session's heroes so the roster reflects
   // progress (queued → ComicVine → … → built) and doesn't sit stale after a build.
   useEffect(() => {
@@ -110,43 +129,36 @@ export function AddHeroesPanel({
   const builtCount = addedSession.filter((a) => stages[`cv-${a.id}`] === 'done').length;
 
   const addedIds = useMemo(() => new Set(addedSession.map((a) => a.id)), [addedSession]);
-  const reset = () => { setChars([]); setGroups([]); setGroup(null); setMembers([]); setSelected(new Set()); };
+  const reset = () => { setChars([]); setGroups([]); setGroup(null); setMembers([]); setSelected(new Set()); setExpandedId(null); };
   const isIn = (id: string) => existingIds.has(id) || addedIds.has(id);
   const isDup = (id: string, name: string) => !isIn(id) && existingNames.has(name.toLowerCase().trim());
 
-  // Scan popular characters until we actually surface some gaps. The catalogue is
-  // popularity-seeded, so the top pages are mostly already in it — paging one page
-  // at a time would keep landing on all-in-catalogue pages. Instead, fetch pages
-  // until we've found enough new characters (or hit a scan cap / the end).
-  const PAGE = 30;
-  const GAP_TARGET = 6; // stop a click once this many new gaps are found
-  const MAX_PAGES_PER_CLICK = 8; // …but never scan more than this per click
+  // Scan popular characters to surface gaps. The catalogue is popularity-seeded,
+  // so the top pages are mostly already in it and we need to cover a lot of ground.
+  // Fetch a batch of pages in parallel (instead of one slow sequential page at a
+  // time) and run the catalogue-existence checks together — a click resolves in
+  // one round-trip's worth of latency rather than a dozen stacked on each other.
+  const PAGE = 100; // ComicVine's max page size — fewer, denser calls
+  const BATCH_PAGES = 3; // pages fetched per click, concurrently
   const loadPopular = async (off: number, append: boolean) => {
     append ? setPopularLoading(true) : setLoading(true);
     try {
-      let cursor = off;
-      const collected: CvCharacter[] = [];
-      const exAll = new Set<string>();
-      const exNAll = new Set<string>();
-      let gaps = 0;
-      let ended = false;
-      for (let page = 0; page < MAX_PAGES_PER_CLICK; page++) {
-        const r = await fetchPopularCharacters(cursor);
-        cursor += PAGE;
-        if (r.length === 0) { ended = true; break; }
-        const ex = await existingComicvineIds(r.map((c) => c.id));
-        const exN = await existingHeroNames(r.map((c) => c.name));
-        ex.forEach((id) => exAll.add(id));
-        exN.forEach((n) => exNAll.add(n));
-        collected.push(...r);
-        gaps += r.filter((c) => !exAll.has(c.id) && !addedIds.has(c.id)).length;
-        if (r.length < PAGE) { ended = true; break; }
-        if (gaps >= GAP_TARGET) break;
-      }
-      setChars((prev) => (append ? [...prev, ...collected] : collected));
-      setExistingIds((prev) => (append ? new Set([...prev, ...exAll]) : exAll));
-      setExistingNames((prev) => (append ? new Set([...prev, ...exNAll]) : exNAll));
-      setPopularOffset(cursor);
+      const offsets = Array.from({ length: BATCH_PAGES }, (_, i) => off + i * PAGE);
+      const pages = await Promise.all(offsets.map((o) => fetchPopularCharacters(o)));
+      const collected = pages.flat();
+      const ended = pages.some((p) => p.length < PAGE); // a short page = end of list
+      const [ex, exN] = await Promise.all([
+        existingComicvineIds(collected.map((c) => c.id)),
+        existingHeroNames(collected.map((c) => c.name)),
+      ]);
+      setChars((prev) => {
+        if (!append) return collected;
+        const seen = new Set(prev.map((c) => c.id));
+        return [...prev, ...collected.filter((c) => !seen.has(c.id))];
+      });
+      setExistingIds((prev) => (append ? new Set([...prev, ...ex]) : ex));
+      setExistingNames((prev) => (append ? new Set([...prev, ...exN]) : exN));
+      setPopularOffset(off + BATCH_PAGES * PAGE);
       setPopularEnd(ended);
     } catch (e) { flash(`Couldn't load popular: ${(e as Error).message}`, 'error'); }
     finally { append ? setPopularLoading(false) : setLoading(false); }
@@ -210,25 +222,30 @@ export function AddHeroesPanel({
   const selectAllNew = () => setSelected(new Set(newRows.map((r) => r.id)));
   const clearSel = () => setSelected(new Set());
 
-  const addSelected = async () => {
-    const ids = [...selected].filter((id) => !isIn(id));
+  // Add a set of characters to the catalogue (as pending). Shared by the toolbar
+  // "Add N" (the whole selection) and the inline preview's one-tap "Add".
+  const addByIds = async (rawIds: string[]) => {
+    const ids = rawIds.filter((id) => !isIn(id));
     if (ids.length === 0) return;
     const payload = ids.map((id) => {
       const c = chars.find((x) => x.id === id);
       const m = members.find((x) => x.id === id);
-      return { id, name: c?.name ?? m?.name ?? '', image: c?.image ?? null };
+      const d = detailCache[id];
+      return { id, name: c?.name ?? m?.name ?? d?.name ?? '', image: c?.image ?? d?.image ?? null };
     });
     setBusy(true);
     try {
       const n = await addComicvineHeroes(payload);
       setAddedSession((p) => [...payload.filter((x) => !p.some((a) => a.id === x.id)), ...p]);
       setRosterOpen(true);
-      setSelected(new Set());
+      // Drop just-added ids from the selection; keep any other ticked rows intact.
+      setSelected((p) => { const s = new Set(p); ids.forEach((id) => s.delete(id)); return s; });
       flash(`Added ${n} hero${n === 1 ? '' : 'es'} — pending at step 1.`, 'success');
       onAdded();
     } catch (e) { flash(`Add failed: ${(e as Error).message}`, 'error'); }
     finally { setBusy(false); }
   };
+  const addSelected = () => addByIds([...selected]);
 
   // Undo a just-added character — delete it from the catalogue and drop it here.
   const removeAdded = async (a: AddedHero) => {
@@ -282,7 +299,7 @@ export function AddHeroesPanel({
       {mode !== 'name' && !group && groups.length > 0 ? (
         <ScrollView style={styles.scroll} nestedScrollEnabled>
           {groups.map((g) => (
-            <Pressable key={g.id} onPress={() => openGroup(g)} style={styles.row}>
+            <Pressable key={g.id} onPress={() => openGroup(g)} style={styles.groupRow}>
               {g.image ? (
                 <HeroThumb uri={g.image} width={34} height={44} radius={7} />
               ) : (
@@ -325,24 +342,29 @@ export function AddHeroesPanel({
         </View>
       ) : null}
 
-      {/* Name results (with art) */}
+      {/* Name results (with art + inline preview) */}
       {mode === 'name' && chars.length > 0 ? (
         <ScrollView style={styles.scroll} nestedScrollEnabled>
           {chars.map((c) => (
-            <Pressable key={c.id} onPress={() => !isIn(c.id) && toggle(c.id)} style={styles.row}>
-              <Checkbox checked={selected.has(c.id)} disabled={isIn(c.id)} />
-              <HeroThumb uri={c.image} width={32} height={42} radius={6} />
-              <View style={styles.meta}>
-                <Text style={styles.name} numberOfLines={1}>{c.name}</Text>
-                <Text style={styles.sub} numberOfLines={1}>{c.publisher ?? c.deck ?? '—'}</Text>
-              </View>
-              <StatusBadge inCat={isIn(c.id)} dup={isDup(c.id, c.name)} />
-            </Pressable>
+            <CharacterRow
+              key={c.id}
+              c={c}
+              selected={selected.has(c.id)}
+              inCat={isIn(c.id)}
+              dup={isDup(c.id, c.name)}
+              expanded={expandedId === c.id}
+              detail={detailCache[c.id]}
+              detailLoading={detailLoading.has(c.id)}
+              busy={busy}
+              onToggleSelect={() => !isIn(c.id) && toggle(c.id)}
+              onToggleExpand={() => toggleExpand(c.id)}
+              onAdd={() => addByIds([c.id])}
+            />
           ))}
         </ScrollView>
       ) : null}
 
-      {/* Popular gaps (missing-only, paged) */}
+      {/* Popular gaps (missing-only, paged, with inline preview) */}
       {mode === 'popular' ? (
         loading && chars.length === 0 ? <ActivityIndicator color={COLORS.orange} style={{ marginTop: 14 }} /> : (
           <ScrollView style={styles.scroll} nestedScrollEnabled>
@@ -350,19 +372,20 @@ export function AddHeroesPanel({
               <Text style={styles.empty}>No gaps on the pages loaded so far — they're all in your catalogue. Load more to dig deeper.</Text>
             ) : null}
             {chars.filter((c) => !isIn(c.id)).map((c) => (
-              <Pressable key={c.id} onPress={() => toggle(c.id)} style={styles.row}>
-                <Checkbox checked={selected.has(c.id)} disabled={false} />
-                <HeroThumb uri={c.image} width={32} height={42} radius={6} />
-                <View style={styles.meta}>
-                  <Text style={styles.name} numberOfLines={1}>{c.name}</Text>
-                  <Text style={styles.sub} numberOfLines={1}>
-                    {c.appearances != null ? `${c.appearances.toLocaleString()} appearances` : ''}
-                    {c.appearances != null && c.publisher ? ' · ' : ''}
-                    {c.publisher ?? (c.appearances == null ? (c.deck ?? '—') : '')}
-                  </Text>
-                </View>
-                {isDup(c.id, c.name) ? <StatusBadge inCat={false} dup /> : null}
-              </Pressable>
+              <CharacterRow
+                key={c.id}
+                c={c}
+                selected={selected.has(c.id)}
+                inCat={false}
+                dup={isDup(c.id, c.name)}
+                expanded={expandedId === c.id}
+                detail={detailCache[c.id]}
+                detailLoading={detailLoading.has(c.id)}
+                busy={busy}
+                onToggleSelect={() => toggle(c.id)}
+                onToggleExpand={() => toggleExpand(c.id)}
+                onAdd={() => addByIds([c.id])}
+              />
             ))}
             <Pressable
               onPress={() => loadPopular(popularOffset, true)}
@@ -448,6 +471,56 @@ export function AddHeroesPanel({
   );
 }
 
+// The result sub-line: appearances + publisher when we have a popularity count
+// (name + popular feeds both carry it now), otherwise publisher or the deck.
+function charSub(c: CvCharacter): string {
+  if (c.appearances != null) {
+    return `${c.appearances.toLocaleString()} appearances${c.publisher ? ` · ${c.publisher}` : ''}`;
+  }
+  return c.publisher ?? c.deck ?? '—';
+}
+
+// One character result: checkbox (multi-select) + tappable body (expand preview).
+// The checkbox and the body are separate hit targets so ticking doesn't expand.
+function CharacterRow({
+  c, selected, inCat, dup, expanded, detail, detailLoading, busy,
+  onToggleSelect, onToggleExpand, onAdd,
+}: {
+  c: CvCharacter;
+  selected: boolean; inCat: boolean; dup: boolean; expanded: boolean;
+  detail: CvCharacterDetail | null | undefined; detailLoading: boolean; busy: boolean;
+  onToggleSelect: () => void; onToggleExpand: () => void; onAdd: () => void;
+}) {
+  return (
+    <View style={[styles.charWrap, expanded && styles.charWrapOpen]}>
+      <View style={styles.row}>
+        <Pressable onPress={onToggleSelect} disabled={inCat} hitSlop={8}>
+          <Checkbox checked={selected} disabled={inCat} />
+        </Pressable>
+        <Pressable onPress={onToggleExpand} style={styles.rowBody}>
+          <HeroThumb uri={c.image} width={32} height={42} radius={6} />
+          <View style={styles.meta}>
+            <Text style={styles.name} numberOfLines={1}>{c.name}</Text>
+            <Text style={styles.sub} numberOfLines={1}>{charSub(c)}</Text>
+          </View>
+          <StatusBadge inCat={inCat} dup={dup} />
+          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={COLORS.grey} />
+        </Pressable>
+      </View>
+      {expanded ? (
+        <CharacterPreview
+          detail={detail}
+          loading={detailLoading}
+          fallbackImage={c.image}
+          inCat={inCat}
+          busy={busy}
+          onAdd={onAdd}
+        />
+      ) : null}
+    </View>
+  );
+}
+
 function Checkbox({ checked, disabled }: { checked: boolean; disabled: boolean }) {
   return (
     <View style={[styles.cb, checked && styles.cbOn, disabled && styles.cbDisabled]}>
@@ -493,7 +566,11 @@ const styles = StyleSheet.create({
   addBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
 
   scroll: { maxHeight: 300, marginTop: 8 } as object,
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.06)' },
+  charWrap: { borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.06)' },
+  charWrapOpen: { backgroundColor: '#faf5ec', borderRadius: 10, borderBottomColor: 'transparent', marginVertical: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7 },
+  rowBody: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  groupRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.06)' },
   groupIcon: { width: 34, height: 44, borderRadius: 7, backgroundColor: COLORS.orange + '14', alignItems: 'center', justifyContent: 'center' },
   meta: { flex: 1, minWidth: 0, gap: 2 },
   name: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
