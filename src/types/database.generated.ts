@@ -1017,6 +1017,19 @@ export type Database = {
           cross_universe: boolean
         }[]
       }
+      get_trending_heroes: {
+        Args: { p_bucket?: string; p_limit?: number }
+        Returns: {
+          context_title: string
+          id: string
+          image_url: string
+          media_type: string
+          name: string
+          portrait_url: string
+          provider: string
+          release_date: string
+        }[]
+      }
       heroes_aliases_text: { Args: { arr: string[] }; Returns: string }
       mark_hero_unresolved: { Args: { p_hero_id: string }; Returns: undefined }
       rebuild_hero_relationships: { Args: never; Returns: undefined }

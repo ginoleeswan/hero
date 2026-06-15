@@ -22,6 +22,7 @@ import {
   type Hero,
 } from '../../src/lib/db/heroes';
 import { getUserFavouriteHeroes } from '../../src/lib/db/favourites';
+import { getTrendingHeroes, type TrendingHero } from '../../src/lib/db/trending';
 import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
@@ -1176,6 +1177,9 @@ export default function WebHomeScreen() {
     anime: Hero[];
     videoGames: Hero[];
     horror: Hero[];
+    onScreen: TrendingHero[];
+    comingSoon: TrendingHero[];
+    streaming: TrendingHero[];
     strongestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
     smartestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
     fastestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
@@ -1249,6 +1253,15 @@ export default function WebHomeScreen() {
       .catch(() => {});
     getHeroesByMediaTag('horror-icon', 25)
       .then(set('horror'))
+      .catch(() => {});
+    getTrendingHeroes('on_screen', 25)
+      .then(set('onScreen'))
+      .catch(() => {});
+    getTrendingHeroes('coming_soon', 25)
+      .then(set('comingSoon'))
+      .catch(() => {});
+    getTrendingHeroes('streaming', 25)
+      .then(set('streaming'))
       .catch(() => {});
     getFirstAppearanceCovers(14)
       .then(set('covers'))
@@ -1350,6 +1363,26 @@ export default function WebHomeScreen() {
               label="Personal"
               title="Jump Back In"
               heroes={recentlyViewed}
+              onPress={handlePress}
+            />
+
+            {/* ── On Screen Now — keep Explore tied to the real-world slate ─── */}
+            <HomeRow
+              label="In Theaters & Recent"
+              title="On the Big Screen"
+              heroes={(homeData.onScreen ?? []) as unknown as Hero[]}
+              onPress={handlePress}
+            />
+            <HomeRow
+              label="Releasing Soon"
+              title="Coming Soon"
+              heroes={(homeData.comingSoon ?? []) as unknown as Hero[]}
+              onPress={handlePress}
+            />
+            <HomeRow
+              label="Now Streaming"
+              title="Streaming Now"
+              heroes={(homeData.streaming ?? []) as unknown as Hero[]}
               onPress={handlePress}
             />
 

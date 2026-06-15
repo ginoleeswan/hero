@@ -17,6 +17,9 @@ const DEFAULT: RowStyle = {
 
 // Per-category overrides keyed by the catalog `key` used in explore.tsx.
 const MAP: Record<string, Partial<RowStyle>> = {
+  onscreen: { feature: true, accent: COLORS.orange },
+  comingsoon: { accent: COLORS.gold },
+  streaming: { accent: COLORS.blue },
   iconic: { feature: true, ranked: true, accent: COLORS.orange },
   franchise: { feature: true, accent: COLORS.goldAccent },
   villains: { tone: 'dark', accent: COLORS.red },
