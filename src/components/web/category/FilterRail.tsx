@@ -102,12 +102,15 @@ const s = StyleSheet.create({
     boxShadow: '0 30px 60px -30px rgba(0,0,0,0.65)',
     display: 'flex',
     flexDirection: 'column',
-    maxHeight: '70vh',
   } as object,
+  // The rail itself hugs its content (no fixed/min height, so short filter sets
+  // don't leave a dead navy void). Only the scrollable control area is capped —
+  // to the space below the sticky top (136) — so a long, expanded list scrolls
+  // internally instead of running off-screen.
   scroll: {
-    flex: 1,
     paddingHorizontal: 20,
     paddingVertical: 16,
+    maxHeight: 'calc(100vh - 300px)',
     overflowY: 'auto',
   } as object,
   header: {

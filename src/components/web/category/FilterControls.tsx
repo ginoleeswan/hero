@@ -27,6 +27,10 @@ interface Opt {
   label: string;
   count?: number;
   icon?: string;
+  // The neutral "no filter" choice (All / Any). When selected it gets a quiet
+  // beige active state, not the orange brand accent — orange is reserved for
+  // genuine narrowing so the page never *looks* filtered when it isn't.
+  neutral?: boolean;
 }
 
 // ── Sort: a true segmented control (solid beige active = primary hierarchy) ──────
@@ -68,6 +72,8 @@ function Segmented({
 // ── Facet chips: orange brand accent on active (secondary tier) ──────────────────
 function Chip({ opt, active, onPress }: { opt: Opt; active: boolean; onPress: () => void }) {
   const disabled = opt.count === 0 && !active;
+  const neutralActive = active && opt.neutral;
+  const brandActive = active && !opt.neutral;
   return (
     <Pressable
       disabled={disabled}
@@ -75,7 +81,8 @@ function Chip({ opt, active, onPress }: { opt: Opt; active: boolean; onPress: ()
       style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [
           s.chip,
-          active && (s.chipActive as object),
+          neutralActive && (s.chipActiveNeutral as object),
+          brandActive && (s.chipActive as object),
           !active && !disabled && hovered && (s.chipHover as object),
           disabled && (s.chipDisabled as object),
         ] as object
@@ -199,7 +206,7 @@ export function FilterControls({ slug, filters, counts, setFilter }: Props) {
         <Group title="Universe">
           {(
             [
-              { value: 'all', label: 'All' },
+              { value: 'all', label: 'All', neutral: true },
               { value: 'marvel', label: 'Marvel', count: counts?.publisher.marvel },
               { value: 'dc', label: 'DC', count: counts?.publisher.dc },
               { value: 'other', label: 'Other', count: counts?.publisher.other },
@@ -219,7 +226,7 @@ export function FilterControls({ slug, filters, counts, setFilter }: Props) {
         <Group title="Alignment">
           {(
             [
-              { value: 'any', label: 'Any' },
+              { value: 'any', label: 'Any', neutral: true },
               { value: 'good', label: 'Good', count: counts?.alignment.good, icon: 'thumbs-up' },
               { value: 'bad', label: 'Bad', count: counts?.alignment.bad, icon: 'thumbs-down' },
               {
@@ -244,7 +251,7 @@ export function FilterControls({ slug, filters, counts, setFilter }: Props) {
         <Group title="Gender">
           {(
             [
-              { value: 'any', label: 'Any' },
+              { value: 'any', label: 'Any', neutral: true },
               { value: 'male', label: 'Male', count: counts?.gender.male, icon: 'male' },
               { value: 'female', label: 'Female', count: counts?.gender.female, icon: 'female' },
             ] as Opt[]
@@ -263,7 +270,7 @@ export function FilterControls({ slug, filters, counts, setFilter }: Props) {
         <Group title="Power stats">
           {(
             [
-              { value: 'any', label: 'Any' },
+              { value: 'any', label: 'Any', neutral: true },
               { value: 'yes', label: 'Rated only', count: counts?.has_stats },
             ] as Opt[]
           ).map((o) => (
@@ -404,6 +411,11 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(231,115,51,0.16)',
     borderColor: 'rgba(231,115,51,0.6)',
     boxShadow: '0 4px 16px -4px rgba(231,115,51,0.5)',
+  } as object,
+  // Neutral default (All / Any) selected: quiet beige fill, no brand accent.
+  chipActiveNeutral: {
+    backgroundColor: 'rgba(245,235,220,0.12)',
+    borderColor: 'rgba(245,235,220,0.34)',
   } as object,
   chipDisabled: { opacity: 0.3, cursor: 'default' } as object,
   chipText: {

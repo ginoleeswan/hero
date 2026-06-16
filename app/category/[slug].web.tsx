@@ -156,7 +156,7 @@ const card = StyleSheet.create({
     backgroundImage:
       'linear-gradient(to top, rgba(29,45,51,0.97) 0%, rgba(29,45,51,0.08) 55%, transparent 100%)',
   } as object,
-  bottom: { position: 'absolute', bottom: 10, left: 10, right: 10 },
+  bottom: { position: 'absolute', bottom: 12, left: 12, right: 12 },
   name: {
     fontFamily: 'Flame-Regular',
     fontSize: 15,
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
   descriptionInline: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: 'rgba(245,235,220,0.4)',
+    color: 'rgba(245,235,220,0.58)',
     flexShrink: 1,
     minWidth: 0,
   } as object,
