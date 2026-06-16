@@ -897,7 +897,7 @@ export function PipelinesDomain({
 
       {/* Activity — live log, recently built, scheduled crons & run history. */}
       {sub === 'activity' ? (
-        <Bento fill={fill}>
+        <>
           <Bento.Row narrow={narrow} fill={fill}>
             <View style={styles.flex1}>
               <ActivityLog log={log} clearLog={clearLog} />
@@ -984,7 +984,7 @@ export function PipelinesDomain({
               />
             </Panel>
           </Bento.Row>
-        </Bento>
+        </>
       ) : null}
 
       {statsIds ? (

@@ -242,7 +242,6 @@ const styles = StyleSheet.create({
   },
   topInner: {
     width: '100%',
-    maxWidth: 1760,
     alignSelf: 'center',
     paddingHorizontal: 20,
     flexDirection: 'row',
@@ -326,7 +325,6 @@ const styles = StyleSheet.create({
   bodyBg: { flex: 1, width: '100%' },
   body: {
     width: '100%',
-    maxWidth: 1760,
     alignSelf: 'center',
     flexDirection: 'row',
     gap: 14,
