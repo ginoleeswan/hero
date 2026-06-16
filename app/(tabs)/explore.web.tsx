@@ -1419,13 +1419,7 @@ export default function WebHomeScreen() {
               onPress={handlePress}
             />
 
-            {/* ── Browse the Universe — the evergreen library, its own chapter ─ */}
-            <View style={styles.browseHead}>
-              <Text style={styles.browseKicker as object}>The Library</Text>
-              <Text style={styles.browseTitle as object}>Browse the Universe</Text>
-            </View>
-
-            {/* ── The Universe — the marquee browse ─────────────────────────── */}
+            {/* ── The marquee browse row ────────────────────────────────────── */}
             <HomeRow
               label="By Appearances"
               title="Most Iconic"
@@ -1433,6 +1427,17 @@ export default function WebHomeScreen() {
               onPress={handlePress}
               onViewAll={() => router.push('/category/most-iconic')}
             />
+
+            {/* ── Browse the Universe — the category doorways, with their own
+                 header so the grid reads as a deliberate browse block, not an
+                 orphaned slab under the carousel. ──────────────────────────── */}
+            <View style={styles.browseHead}>
+              <Text style={styles.browseKicker as object}>The Library</Text>
+              <Text style={styles.browseTitle as object}>Browse the Universe</Text>
+              <Text style={styles.browseSubtitle as object}>
+                Pick your corner of the multiverse — publishers, teams, media and power rankings.
+              </Text>
+            </View>
             <CategoryPodGrid
               covers={homeData.browseCovers}
               onPress={(slug) =>
@@ -1541,6 +1546,14 @@ const styles = StyleSheet.create({
     fontSize: 40,
     color: COLORS.navy,
     lineHeight: 42,
+  } as object,
+  browseSubtitle: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14,
+    color: 'rgba(41,60,67,0.6)',
+    lineHeight: 19,
+    marginTop: 6,
+    maxWidth: 560,
   } as object,
 
   // The one deliberate dark moment in the canvas — the "Dark Side" zone holds

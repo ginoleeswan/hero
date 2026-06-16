@@ -21,7 +21,6 @@ import { ActivityLog } from '../ActivityLog';
 import { useRouter } from 'expo-router';
 import { InfoTip } from '../InfoTip';
 import { AddHeroesPanel } from '../AddHeroesPanel';
-import { DuplicatesPanel } from '../DuplicatesPanel';
 import { StatsBoard } from '../StatsBoard';
 import { PortraitBoard } from '../PortraitBoard';
 import { HeroThumb } from '../atoms';
@@ -386,6 +385,10 @@ export function PipelinesDomain({
   narrow: boolean;
 }) {
   const router = useRouter();
+  // Secondary sections collapse by default to keep the active pipeline (add →
+  // build → review) front and centre.
+  const [genOpen, setGenOpen] = useState(false);
+  const [monitorOpen, setMonitorOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [statsIds, setStatsIds] = useState<string[] | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
@@ -772,137 +775,161 @@ export function PipelinesDomain({
         </Panel>
       </Bento.Row>
 
-      {/* AI generation (Gemini) — paid work, gated on your monthly budget. */}
-      <Panel
-        title="AI generation · Gemini"
-        hint={
-          statsPending > 0
-            ? `${statsPending.toLocaleString()} heroes need powerstats`
-            : 'Powerstats all generated'
-        }
-        action={
-          <InfoTip text="Generates the six powerstat dials with Gemini for heroes that have ComicVine data but no stats yet. This costs money, so it's gated on your monthly budget. AI Portraits will join here next." />
-        }
-      >
-        <View style={styles.gen}>
-          <View style={styles.genItem}>
-            <View style={styles.genInfo}>
-              <Text style={styles.genName}>Powerstats</Text>
-              <Text style={styles.genSub}>
-                {spendMtd != null
-                  ? `$${spendMtd.toFixed(0)} / $${GEMINI_MONTHLY_BUDGET} this month`
-                  : 'spend data unavailable'}
-                {!overBudget && statsPending > 0
-                  ? ` · ~${estCost(Math.min(batchSize, statsPending), STATS_COST_PER_ITEM)}/run`
-                  : ''}
-                {overBudget ? ' · over budget' : ''}
-              </Text>
-            </View>
-            <Pressable
-              onPress={generateStats}
-              disabled={overBudget || statsPending === 0 || loadingStats || !!statsIds}
-              style={[
-                styles.genBtn,
-                (overBudget || statsPending === 0 || loadingStats || !!statsIds) && styles.dim,
-              ]}
-            >
-              {loadingStats ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Ionicons name={overBudget ? 'lock-closed' : 'sparkles'} size={14} color="#fff" />
-              )}
-              <Text style={styles.genBtnText}>
-                {overBudget
-                  ? 'Over budget'
-                  : `Generate ${Math.min(batchSize, statsPending || batchSize)}`}
-              </Text>
-            </Pressable>
-          </View>
-          <View style={styles.genItem}>
-            <View style={styles.genInfo}>
-              <Text style={styles.genName}>AI Portraits</Text>
-              <Text style={styles.genSub}>
-                {portraitsPending > 0
-                  ? `${portraitsPending.toLocaleString()} heroes need a portrait`
-                  : 'All portraits generated'}
-                {!overBudget && portraitsPending > 0
-                  ? ` · ~${estCost(Math.min(batchSize, portraitsPending), PORTRAIT_COST_PER_ITEM)}/run`
-                  : ''}
-                {overBudget ? ' · over budget' : ''}
-              </Text>
-            </View>
-            <Pressable
-              onPress={generatePortraits}
-              disabled={overBudget || portraitsPending === 0 || loadingPortraits || !!portraitIds}
-              style={[
-                styles.genBtn,
-                (overBudget || portraitsPending === 0 || loadingPortraits || !!portraitIds) &&
-                  styles.dim,
-              ]}
-            >
-              {loadingPortraits ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Ionicons
-                  name={overBudget ? 'lock-closed' : 'color-palette'}
-                  size={14}
-                  color="#fff"
-                />
-              )}
-              <Text style={styles.genBtnText}>
-                {overBudget
-                  ? 'Over budget'
-                  : `Generate ${Math.min(batchSize, portraitsPending || batchSize)}`}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </Panel>
-
-      {/* Catalogue hygiene — only appears when there are possible duplicates. */}
-      <DuplicatesPanel flash={flash} onChanged={onHeroesAdded} />
-
-      {/* 3 · Monitor — live log + who just got built. */}
-      <Bento.Row narrow={narrow}>
-        <View style={styles.flex1}>
-          <ActivityLog log={log} clearLog={clearLog} />
-        </View>
+      {/* Generate (Gemini) — paid AI work, collapsed by default. */}
+      <Pressable onPress={() => setGenOpen((v) => !v)} style={styles.advHead}>
+        <Ionicons
+          name={genOpen ? 'chevron-down' : 'chevron-forward'}
+          size={16}
+          color={COLORS.navy}
+        />
+        <Text style={styles.advHeadText}>
+          Generate · AI powerstats & portraits
+          {statsPending + portraitsPending > 0
+            ? ` · ${(statsPending + portraitsPending).toLocaleString()} pending`
+            : ''}
+        </Text>
+      </Pressable>
+      {genOpen ? (
         <Panel
-          title="Recently built"
-          hint="The exact heroes each run just touched — click one to open it."
-          action={
-            <InfoTip text="Every hero a run processed is logged here, newest first; the chip shows which stage did it and when. Use it to confirm a build actually did what you expected." />
+          title="AI generation · Gemini"
+          hint={
+            statsPending > 0
+              ? `${statsPending.toLocaleString()} heroes need powerstats`
+              : 'Powerstats all generated'
           }
-          style={styles.flex1}
+          action={
+            <InfoTip text="Generates the six powerstat dials with Gemini for heroes that have ComicVine data but no stats yet. This costs money, so it's gated on your monthly budget. AI Portraits will join here next." />
+          }
         >
-          {recentlyEnriched.length === 0 ? (
-            <Text style={styles.empty}>Nothing yet — build some heroes and they appear here.</Text>
-          ) : (
-            <ScrollView style={styles.reviewScroll} nestedScrollEnabled>
-              <View style={styles.reGrid}>
-                {recentlyEnriched.map((r, i) => (
-                  <Pressable
-                    key={`${r.heroId}-${i}`}
-                    onPress={() => router.push(`/character/${r.heroId}`)}
-                    style={styles.reCard}
-                  >
-                    <HeroThumb uri={r.imageUrl} width={30} height={40} radius={6} />
-                    <View style={styles.reMeta}>
-                      <Text style={styles.reName} numberOfLines={1}>
-                        {r.name}
-                      </Text>
-                      <Text style={styles.reSub} numberOfLines={1}>
-                        {runTypeLabel(r.runType)}
-                        {r.at ? ` · ${relTime(r.at)}` : ''}
-                      </Text>
-                    </View>
-                  </Pressable>
-                ))}
+          <View style={styles.gen}>
+            <View style={styles.genItem}>
+              <View style={styles.genInfo}>
+                <Text style={styles.genName}>Powerstats</Text>
+                <Text style={styles.genSub}>
+                  {spendMtd != null
+                    ? `$${spendMtd.toFixed(0)} / $${GEMINI_MONTHLY_BUDGET} this month`
+                    : 'spend data unavailable'}
+                  {!overBudget && statsPending > 0
+                    ? ` · ~${estCost(Math.min(batchSize, statsPending), STATS_COST_PER_ITEM)}/run`
+                    : ''}
+                  {overBudget ? ' · over budget' : ''}
+                </Text>
               </View>
-            </ScrollView>
-          )}
+              <Pressable
+                onPress={generateStats}
+                disabled={overBudget || statsPending === 0 || loadingStats || !!statsIds}
+                style={[
+                  styles.genBtn,
+                  (overBudget || statsPending === 0 || loadingStats || !!statsIds) && styles.dim,
+                ]}
+              >
+                {loadingStats ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name={overBudget ? 'lock-closed' : 'sparkles'} size={14} color="#fff" />
+                )}
+                <Text style={styles.genBtnText}>
+                  {overBudget
+                    ? 'Over budget'
+                    : `Generate ${Math.min(batchSize, statsPending || batchSize)}`}
+                </Text>
+              </Pressable>
+            </View>
+            <View style={styles.genItem}>
+              <View style={styles.genInfo}>
+                <Text style={styles.genName}>AI Portraits</Text>
+                <Text style={styles.genSub}>
+                  {portraitsPending > 0
+                    ? `${portraitsPending.toLocaleString()} heroes need a portrait`
+                    : 'All portraits generated'}
+                  {!overBudget && portraitsPending > 0
+                    ? ` · ~${estCost(Math.min(batchSize, portraitsPending), PORTRAIT_COST_PER_ITEM)}/run`
+                    : ''}
+                  {overBudget ? ' · over budget' : ''}
+                </Text>
+              </View>
+              <Pressable
+                onPress={generatePortraits}
+                disabled={overBudget || portraitsPending === 0 || loadingPortraits || !!portraitIds}
+                style={[
+                  styles.genBtn,
+                  (overBudget || portraitsPending === 0 || loadingPortraits || !!portraitIds) &&
+                    styles.dim,
+                ]}
+              >
+                {loadingPortraits ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons
+                    name={overBudget ? 'lock-closed' : 'color-palette'}
+                    size={14}
+                    color="#fff"
+                  />
+                )}
+                <Text style={styles.genBtnText}>
+                  {overBudget
+                    ? 'Over budget'
+                    : `Generate ${Math.min(batchSize, portraitsPending || batchSize)}`}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
         </Panel>
-      </Bento.Row>
+      ) : null}
+
+      {/* Monitor — live log + who just got built, collapsed by default. */}
+      <Pressable onPress={() => setMonitorOpen((v) => !v)} style={styles.advHead}>
+        <Ionicons
+          name={monitorOpen ? 'chevron-down' : 'chevron-forward'}
+          size={16}
+          color={COLORS.navy}
+        />
+        <Text style={styles.advHeadText}>Monitor · live log & recently built</Text>
+      </Pressable>
+      {monitorOpen ? (
+        <Bento.Row narrow={narrow}>
+          <View style={styles.flex1}>
+            <ActivityLog log={log} clearLog={clearLog} />
+          </View>
+          <Panel
+            title="Recently built"
+            hint="The exact heroes each run just touched — click one to open it."
+            action={
+              <InfoTip text="Every hero a run processed is logged here, newest first; the chip shows which stage did it and when. Use it to confirm a build actually did what you expected." />
+            }
+            style={styles.flex1}
+          >
+            {recentlyEnriched.length === 0 ? (
+              <Text style={styles.empty}>
+                Nothing yet — build some heroes and they appear here.
+              </Text>
+            ) : (
+              <ScrollView style={styles.reviewScroll} nestedScrollEnabled>
+                <View style={styles.reGrid}>
+                  {recentlyEnriched.map((r, i) => (
+                    <Pressable
+                      key={`${r.heroId}-${i}`}
+                      onPress={() => router.push(`/character/${r.heroId}`)}
+                      style={styles.reCard}
+                    >
+                      <HeroThumb uri={r.imageUrl} width={30} height={40} radius={6} />
+                      <View style={styles.reMeta}>
+                        <Text style={styles.reName} numberOfLines={1}>
+                          {r.name}
+                        </Text>
+                        <Text style={styles.reSub} numberOfLines={1}>
+                          {runTypeLabel(r.runType)}
+                          {r.at ? ` · ${relTime(r.at)}` : ''}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              </ScrollView>
+            )}
+          </Panel>
+        </Bento.Row>
+      ) : null}
 
       {/* Advanced — automation + history, collapsed by default. */}
       <Pressable onPress={() => setAdvancedOpen((v) => !v)} style={styles.advHead}>

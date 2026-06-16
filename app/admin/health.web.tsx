@@ -24,6 +24,7 @@ import { CatalogDomain } from '../../src/components/admin/health/domains/Catalog
 import { PipelinesDomain } from '../../src/components/admin/health/domains/PipelinesDomain';
 import { BuildBoard } from '../../src/components/admin/health/BuildBoard';
 import { HeroConsole } from '../../src/components/admin/health/HeroConsole';
+import { DuplicatesPanel } from '../../src/components/admin/health/DuplicatesPanel';
 import { SpendDomain } from '../../src/components/admin/health/domains/SpendDomain';
 import { CampaignsDomain } from '../../src/components/admin/health/domains/CampaignsDomain';
 import { PlaceholderDomain } from '../../src/components/admin/health/domains/PlaceholderDomain';
@@ -303,13 +304,13 @@ export default function AdminHealthScreen() {
             h={h}
             overall={overall}
             snaps={snapsQ.data ?? []}
-            dist={distQ.data}
             gaps={gapsQ.data}
             spend={spendQ.data}
-            anim={anim}
+            progress={enrichProgressQ.data}
             narrow={narrow}
             onJump={goToBackfill}
             onOpenSpend={() => setDomain('spend')}
+            onOpenBuild={() => setDomain('pipelines')}
             onSnapshot={onSnapshot}
             snapshotting={busy === 'snapshot'}
           />
@@ -339,6 +340,17 @@ export default function AdminHealthScreen() {
                 heroSearchLoading={heroSearchQ.isLoading}
                 busy={busy}
                 onReenrich={onReenrich}
+              />
+            </View>
+            {/* Catalogue hygiene — only appears when there are possible duplicates. */}
+            <View style={{ marginTop: 14 }}>
+              <DuplicatesPanel
+                flash={flash}
+                onChanged={() => {
+                  queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
+                  queryClient.invalidateQueries({ queryKey: ['catalogDistributions'] });
+                  queryClient.invalidateQueries({ queryKey: ['backfillGaps'] });
+                }}
               />
             </View>
           </>

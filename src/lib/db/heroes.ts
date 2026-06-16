@@ -835,35 +835,40 @@ export interface BrowseCover {
  * back to a solid colour).
  */
 export async function getBrowseCovers(slugs: CategorySlug[]): Promise<Record<string, BrowseCover>> {
-  const entries = await Promise.all(
+  // Fetch several candidates per category in parallel, then greedily assign a
+  // *distinct* representative hero to each pod in slug order. The same
+  // most-popular hero otherwise tops multiple categories (Batman leads DC,
+  // Strongest and Smartest), repeating the identical portrait across tiles and
+  // making the browse grid look broken.
+  const candidateLists = await Promise.all(
     slugs.map(async (slug) => {
       try {
         const { heroes } = await getCategoryPage(slug, {
           ...DEFAULT_FILTERS,
           page: 0,
-          pageSize: 1,
+          pageSize: 6,
           withCount: false,
           sort: 'popular',
         });
-        const h = heroes[0];
-        return [
-          slug,
-          h
-            ? {
-                name: h.name,
-                image_url: h.image_url,
-                image_md_url: h.image_md_url,
-                portrait_url: h.portrait_url,
-              }
-            : null,
-        ] as const;
+        return [slug, heroes] as const;
       } catch {
-        return [slug, null] as const;
+        return [slug, [] as Hero[]] as const;
       }
     }),
   );
+  const used = new Set<string>();
   const out: Record<string, BrowseCover> = {};
-  for (const [slug, cover] of entries) if (cover) out[slug] = cover;
+  for (const [slug, heroes] of candidateLists) {
+    const pick = heroes.find((h) => !used.has(String(h.id))) ?? heroes[0];
+    if (!pick) continue;
+    used.add(String(pick.id));
+    out[slug] = {
+      name: pick.name,
+      image_url: pick.image_url,
+      image_md_url: pick.image_md_url,
+      portrait_url: pick.portrait_url,
+    };
+  }
   return out;
 }
 

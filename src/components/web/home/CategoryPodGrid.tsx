@@ -37,18 +37,21 @@ export function CategoryPodGrid({
               portraitUrl={c?.portrait_url}
               grid
               contentFit="cover"
-              contentPosition="top"
+              contentPosition={{ top: 0, left: '50%' }}
               style={{ position: 'absolute', inset: 0 } as object}
               recyclingKey={p.slug}
             />
             <LinearGradient
               colors={['transparent', 'rgba(11,24,32,0.5)', 'rgba(11,24,32,0.95)']}
-              locations={[0.25, 0.6, 1]}
+              locations={[0.2, 0.58, 1]}
               style={{ position: 'absolute', inset: 0 } as object}
             />
-            <Text style={g.label as object} numberOfLines={2}>
-              {p.label}
-            </Text>
+            <View style={g.caption as object}>
+              <Text style={g.kicker as object}>{p.kind}</Text>
+              <Text style={g.label as object} numberOfLines={2}>
+                {p.label}
+              </Text>
+            </View>
           </Pressable>
         );
       })}
@@ -67,6 +70,8 @@ const g = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.08)',
     justifyContent: 'flex-end',
     cursor: 'pointer',
     transition: 'transform 180ms ease, box-shadow 180ms ease',
@@ -75,13 +80,24 @@ const g = StyleSheet.create({
     transform: [{ translateY: -4 }],
     boxShadow: '0 20px 46px rgba(0,0,0,0.34)',
   } as object,
-  label: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 24,
-    color: COLORS.beige,
-    lineHeight: 26,
+  caption: {
     paddingHorizontal: 16,
     paddingBottom: 14,
+    gap: 3,
+  } as object,
+  kicker: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9.5,
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    color: COLORS.orange,
+    textShadow: '0 1px 6px rgba(0,0,0,0.8)',
+  } as object,
+  label: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 23,
+    color: COLORS.beige,
+    lineHeight: 25,
     textShadow: '0 1px 10px rgba(0,0,0,0.7)',
   } as object,
 });

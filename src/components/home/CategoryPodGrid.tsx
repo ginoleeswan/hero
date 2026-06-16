@@ -16,21 +16,24 @@ const TILE_H = Math.round(TILE_W * 0.82);
 export interface CategoryPod {
   slug: string;
   label: string;
+  /** The browse axis this doorway belongs to — shown as a small kicker so a
+   *  publisher tile reads differently from a media or ranking tile. */
+  kind: string;
 }
 
-// A deliberate, finite set — the publisher/archetype/stat browse axes.
+// A deliberate, finite set — the publisher/archetype/media/ranking browse axes.
 export const BROWSE_PODS: CategoryPod[] = [
-  { slug: 'marvel', label: 'Marvel' },
-  { slug: 'dc', label: 'DC' },
-  { slug: 'villain', label: 'Villains' },
-  { slug: 'xmen', label: 'X-Men' },
-  { slug: 'anti-heroes', label: 'Anti-Heroes' },
-  { slug: 'franchise-icons', label: 'Beyond the Comics' },
-  { slug: 'anime', label: 'Anime' },
-  { slug: 'video-games', label: 'Video Games' },
-  { slug: 'horror', label: 'Horror' },
-  { slug: 'strongest', label: 'Strongest' },
-  { slug: 'most-intelligent', label: 'Smartest' },
+  { slug: 'marvel', label: 'Marvel', kind: 'Publisher' },
+  { slug: 'dc', label: 'DC', kind: 'Publisher' },
+  { slug: 'villain', label: 'Villains', kind: 'Archetype' },
+  { slug: 'xmen', label: 'X-Men', kind: 'Team' },
+  { slug: 'anti-heroes', label: 'Anti-Heroes', kind: 'Archetype' },
+  { slug: 'franchise-icons', label: 'Beyond the Comics', kind: 'Crossover' },
+  { slug: 'anime', label: 'Anime', kind: 'Media' },
+  { slug: 'video-games', label: 'Video Games', kind: 'Media' },
+  { slug: 'horror', label: 'Horror', kind: 'Media' },
+  { slug: 'strongest', label: 'Strongest', kind: 'Ranking' },
+  { slug: 'most-intelligent', label: 'Smartest', kind: 'Ranking' },
 ];
 
 export function CategoryPodGrid({

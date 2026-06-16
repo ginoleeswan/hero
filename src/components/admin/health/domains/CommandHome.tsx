@@ -1,50 +1,49 @@
 // Command home — the read-only glance. Synthesises the catalogue's state from
 // existing primitives and deep-links into each domain. No mutations live here
 // (actions live on the Build tab); no big gauge (the dark top bar owns it).
-import { View, Text, Pressable, Animated, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';
 import { Bento } from '../Bento';
 import { HeroThumb } from '../atoms';
-import { Donut, CompletenessChart } from '../charts';
-import { pct, healthColor, METRICS } from '../format';
+import { CompletenessChart } from '../charts';
+import { healthColor, GEMINI_MONTHLY_BUDGET } from '../format';
 import type {
   CatalogHealth,
   GapPage,
-  Distributions,
   HealthSnapshot,
   GeminiSpend,
   CoverageMetric,
+  EnrichmentProgress,
 } from '../../../../lib/db/catalogHealth';
 
-function CoverageBar({
-  label,
+// One actionable line on the "Needs attention" card — a count, what it means, and
+// where tapping takes you (the tab that can clear it).
+function AttentionRow({
+  icon,
   tint,
-  have,
-  total,
-  anim,
+  count,
+  label,
   onPress,
 }: {
-  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
   tint: string;
-  have: number;
-  total: number;
-  anim: Animated.Value;
-  onPress?: () => void;
+  count: number | string;
+  label: string;
+  onPress: () => void;
 }) {
-  const p = pct(have, total);
-  const width = anim.interpolate({ inputRange: [0, 1], outputRange: ['0%', `${p}%`] });
   return (
-    <Pressable onPress={onPress} disabled={!onPress} style={s.cbRow}>
-      <View style={s.cbHead}>
-        <Text style={s.cbLabel}>{label}</Text>
-        <Text style={[s.cbPct, { color: tint }]}>{p}%</Text>
+    <Pressable onPress={onPress} style={s.atRow}>
+      <View style={[s.atIcon, { backgroundColor: tint + '1a' }]}>
+        <Ionicons name={icon} size={15} color={tint} />
       </View>
-      <View style={s.cbTrack}>
-        <Animated.View style={[s.cbFill, { width, backgroundColor: tint }]} />
-      </View>
+      <Text style={s.atCount}>{count}</Text>
+      <Text style={s.atLabel} numberOfLines={1}>
+        {label}
+      </Text>
+      <Ionicons name="chevron-forward" size={14} color="rgba(41,60,67,0.3)" />
     </Pressable>
   );
 }
@@ -53,78 +52,67 @@ export function CommandHome({
   h,
   overall,
   snaps,
-  dist,
   gaps,
   spend,
-  anim,
+  progress,
   narrow,
   onJump,
   onOpenSpend,
+  onOpenBuild,
   onSnapshot,
   snapshotting,
 }: {
   h: CatalogHealth;
   overall: number;
   snaps: HealthSnapshot[];
-  dist?: Distributions;
   gaps?: GapPage;
   spend?: GeminiSpend;
-  anim: Animated.Value;
+  progress?: EnrichmentProgress;
   narrow: boolean;
   onJump: (metric?: CoverageMetric) => void;
   onOpenSpend: () => void;
+  onOpenBuild: () => void;
   onSnapshot: () => void;
   snapshotting: boolean;
 }) {
   const router = useRouter();
-  const align = dist?.alignment;
-  const alignTotal = align ? align.good + align.bad + align.neutral + align.unknown : 0;
   const queue = gaps?.heroes.slice(0, 4) ?? [];
   const days = spend?.available ? (spend.days ?? []) : [];
   const spendMax = Math.max(1, ...days.map((d) => d.cost));
 
+  // What needs a human or a run, derived from the enrichment funnel.
+  const p = progress;
+  const failed = h.cvStatus.failed ?? 0;
+  const needsYou = p?.ambiguous ?? 0;
+  const toEnrich = p
+    ? Math.max(0, p.heroesTotal - p.comicvineDone - failed) +
+      Math.max(0, p.comicvineDone - p.resolved - p.ambiguous - p.unresolved) +
+      Math.max(0, p.resolved - p.enriched)
+    : 0;
+  const spendMtd = spend?.available ? (spend.monthToDate ?? 0) : null;
+  const overBudget = spendMtd != null && spendMtd >= GEMINI_MONTHLY_BUDGET;
+  const allClear = needsYou === 0 && failed === 0 && toEnrich === 0 && !overBudget;
+
   return (
     <Bento>
       <Bento.Row narrow={narrow}>
-        {/* Coverage */}
+        {/* Catalogue health — headline % + completeness trend */}
         <Panel
-          title="Catalog coverage"
-          hint="Tap a metric to load its backfill queue"
+          title="Catalogue health"
+          hint={`${h.total.toLocaleString()} heroes tracked`}
           style={s.flex15}
+          action={
+            <Pressable onPress={() => onJump()} style={s.mini}>
+              <Text style={s.miniText}>View coverage</Text>
+              <Ionicons name="chevron-forward" size={13} color={COLORS.navy} />
+            </Pressable>
+          }
         >
           <View style={s.headline}>
             <View>
               <Text style={[s.bigPct, { color: healthColor(overall) }]}>{overall}%</Text>
               <Text style={s.bigCaption}>catalogue complete</Text>
             </View>
-            <View style={s.headlineStat}>
-              <Text style={s.statNum}>{h.total.toLocaleString()}</Text>
-              <Text style={s.statLabel}>heroes tracked</Text>
-            </View>
-          </View>
-          <View style={s.bars}>
-            {[...METRICS]
-              .sort((a, b) => pct(h.metrics[a.key], h.total) - pct(h.metrics[b.key], h.total))
-              .map((def) => (
-                <CoverageBar
-                  key={def.key}
-                  label={def.label}
-                  tint={def.tint}
-                  have={h.metrics[def.key]}
-                  total={h.total}
-                  anim={anim}
-                  onPress={def.worklist ? () => onJump(def.worklist) : undefined}
-                />
-              ))}
-          </View>
-        </Panel>
-
-        {/* Completeness trend */}
-        <Panel
-          title="Completeness over time"
-          hint={`Daily snapshots · now ${overall}%`}
-          style={s.flex1}
-          action={
             <Pressable
               onPress={onSnapshot}
               disabled={snapshotting}
@@ -137,14 +125,62 @@ export function CommandHome({
               )}
               <Text style={s.miniText}>Snapshot</Text>
             </Pressable>
-          }
-        >
+          </View>
           {snaps.length >= 2 ? (
             <CompletenessChart snaps={snaps} />
           ) : (
             <View style={s.empty}>
               <Ionicons name="trending-up-outline" size={18} color={COLORS.grey} />
               <Text style={s.emptyText}>History begins today — the trend line fills in daily.</Text>
+            </View>
+          )}
+        </Panel>
+
+        {/* Needs attention — the actionable glance; each row deep-links to its tab */}
+        <Panel title="Needs attention" hint="What's waiting on a run or on you" style={s.flex1}>
+          {allClear ? (
+            <View style={s.empty}>
+              <Ionicons name="checkmark-done-circle" size={22} color={COLORS.green} />
+              <Text style={s.emptyText}>All clear — nothing needs you right now.</Text>
+            </View>
+          ) : (
+            <View style={s.atList}>
+              {needsYou > 0 ? (
+                <AttentionRow
+                  icon="git-pull-request-outline"
+                  tint={COLORS.yellow}
+                  count={needsYou.toLocaleString()}
+                  label="need your review"
+                  onPress={onOpenBuild}
+                />
+              ) : null}
+              {failed > 0 ? (
+                <AttentionRow
+                  icon="close-circle-outline"
+                  tint={COLORS.red}
+                  count={failed.toLocaleString()}
+                  label="failed to enrich"
+                  onPress={onOpenBuild}
+                />
+              ) : null}
+              {toEnrich > 0 ? (
+                <AttentionRow
+                  icon="construct-outline"
+                  tint={COLORS.orange}
+                  count={toEnrich.toLocaleString()}
+                  label="waiting to enrich"
+                  onPress={onOpenBuild}
+                />
+              ) : null}
+              {overBudget ? (
+                <AttentionRow
+                  icon="lock-closed-outline"
+                  tint={COLORS.red}
+                  count="!"
+                  label="over monthly AI budget"
+                  onPress={onOpenSpend}
+                />
+              ) : null}
             </View>
           )}
         </Panel>
@@ -188,39 +224,6 @@ export function CommandHome({
                 <Ionicons name="open-outline" size={15} color="rgba(41,60,67,0.3)" />
               </Pressable>
             ))
-          )}
-        </Panel>
-
-        {/* Alignment */}
-        <Panel title="Alignment" hint="Hero vs villain split" style={s.flex1}>
-          {align ? (
-            <View style={s.alignWrap}>
-              <Donut
-                total={alignTotal}
-                segments={[
-                  { value: align.good, color: COLORS.green, label: 'Heroes' },
-                  { value: align.bad, color: COLORS.red, label: 'Villains' },
-                  { value: align.neutral, color: COLORS.yellow, label: 'Neutral' },
-                  { value: align.unknown, color: COLORS.grey, label: 'Unknown' },
-                ]}
-              />
-              <View style={s.legend}>
-                {[
-                  { c: COLORS.green, l: 'Heroes', v: align.good },
-                  { c: COLORS.red, l: 'Villains', v: align.bad },
-                  { c: COLORS.yellow, l: 'Neutral', v: align.neutral },
-                  { c: COLORS.grey, l: 'Unknown', v: align.unknown },
-                ].map((seg) => (
-                  <View key={seg.l} style={s.legendRow}>
-                    <View style={[s.legendDot, { backgroundColor: seg.c }]} />
-                    <Text style={s.legendLabel}>{seg.l}</Text>
-                    <Text style={s.legendVal}>{seg.v.toLocaleString()}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ) : (
-            <ActivityIndicator color={COLORS.orange} style={{ marginTop: 16 }} />
           )}
         </Panel>
 
@@ -270,16 +273,18 @@ const s = StyleSheet.create({
     color: COLORS.grey,
     textTransform: 'uppercase',
   },
-  headlineStat: { alignItems: 'flex-end' },
-  statNum: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.black, lineHeight: 24 },
-  statLabel: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 0.4, color: COLORS.grey },
-  bars: { gap: 9 },
-  cbRow: { gap: 4 },
-  cbHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  cbLabel: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.black },
-  cbPct: { fontFamily: 'Flame-Regular', fontSize: 13 },
-  cbTrack: { height: 6, borderRadius: 4, backgroundColor: '#ece2cf', overflow: 'hidden' },
-  cbFill: { height: 6, borderRadius: 4 },
+  // Needs-attention rows
+  atList: { gap: 4 },
+  atRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7 },
+  atIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  atCount: { fontFamily: 'Flame-Regular', fontSize: 18, color: COLORS.black, minWidth: 30 },
+  atLabel: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
   mini: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -303,12 +308,6 @@ const s = StyleSheet.create({
   qInfo: { flex: 1, gap: 1 },
   qName: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
   qSub: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey },
-  alignWrap: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  legend: { flex: 1, gap: 5 },
-  legendRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot: { width: 8, height: 8, borderRadius: 8 },
-  legendLabel: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.black },
-  legendVal: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   spendWrap: { gap: 2 },
   spendBig: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.black, lineHeight: 28 },
   spendLabel: {

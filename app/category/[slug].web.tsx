@@ -457,7 +457,10 @@ export default function WebCategoryScreen() {
                   <Pressable
                     onPress={reset}
                     style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                      [styles.resultsClear, hovered && (styles.resultsClearHover as object)] as object
+                      [
+                        styles.resultsClear,
+                        hovered && (styles.resultsClearHover as object),
+                      ] as object
                     }
                   >
                     <Text style={styles.resultsClearText as object}>Clear all</Text>
@@ -478,9 +481,7 @@ export default function WebCategoryScreen() {
             <View style={styles.center}>
               <Ionicons name="search-outline" size={34} color="rgba(29,45,51,0.25)" />
               <Text style={styles.empty}>
-                {activeChips.length > 0
-                  ? 'No heroes match these filters'
-                  : 'No heroes found'}
+                {activeChips.length > 0 ? 'No heroes match these filters' : 'No heroes found'}
               </Text>
               {activeChips.length > 0 && (
                 <Pressable
