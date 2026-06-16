@@ -42,7 +42,7 @@ function CoverageRow({
     <Pressable
       onPress={onPress}
       disabled={!tappable}
-      style={({ hovered }: { hovered?: boolean }) =>
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [
           styles.covRow,
           compact && styles.covRowNarrow,
@@ -111,7 +111,7 @@ function PublisherTable({
         <Pressable
           key={p.publisher}
           onPress={() => onPick(p.publisher)}
-          style={({ hovered }: { hovered?: boolean }) =>
+          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
             [styles.pubRow, hovered && styles.pubRowHover] as object
           }
         >
@@ -297,7 +297,7 @@ export function CatalogDomain({
                 <Pressable
                   key={hero.id}
                   onPress={() => router.push(`/character/${hero.id}`)}
-                  style={({ hovered }: { hovered?: boolean }) =>
+                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                     [styles.gapRow, hovered && styles.gapRowHover] as object
                   }
                 >
