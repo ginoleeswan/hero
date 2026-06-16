@@ -36,6 +36,7 @@ import {
   PORTRAIT_COST_PER_ITEM,
   estCost,
   type LogTone,
+  LogEntry,
 } from '../format';
 import type {
   AmbiguousHero,
@@ -46,7 +47,6 @@ import type {
   GeminiSpend,
   RecentlyEnriched,
 } from '../../../../lib/db/catalogHealth';
-import type { LogEntry } from '../format';
 
 const pctOf = (have: number, total: number) => (total > 0 ? Math.round((have / total) * 100) : 0);
 

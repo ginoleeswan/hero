@@ -43,12 +43,12 @@ export async function getPortraitHeroes(ids: string[]): Promise<PortraitHero[]> 
     .in('id', ids);
   if (error || !data) return [];
   return (
-    data as Array<{
+    data as {
       id: string;
       name: string;
       image_url: string | null;
       portrait_url: string | null;
-    }>
+    }[]
   ).map((h) => ({
     id: h.id,
     name: h.name,

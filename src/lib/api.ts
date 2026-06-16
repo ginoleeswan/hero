@@ -344,7 +344,7 @@ export async function fetchWikidataEntities(
           {
             labels?: { en?: { value?: string } };
             descriptions?: { en?: { value?: string } };
-            claims?: { P18?: Array<{ mainsnak?: { datavalue?: { value?: string } } }> };
+            claims?: { P18?: { mainsnak?: { datavalue?: { value?: string } } }[] };
             sitelinks?: { enwiki?: { title?: string } };
           }
         >;

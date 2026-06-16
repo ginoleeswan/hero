@@ -1,0 +1,32 @@
+version: 2
+updates:
+  # JS dependencies — monthly and grouped into as few PRs as possible so a
+  # solo maintainer isn't drowned in churn. Expo SDK packages are pinned by
+  # `expo install` to the SDK, so ignore their majors here.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      dev-dependencies:
+        dependency-type: development
+      production-dependencies:
+        dependency-type: production
+    ignore:
+      - dependency-name: expo
+        update-types: [version-update:semver-major]
+      - dependency-name: expo-*
+        update-types: [version-update:semver-major]
+      - dependency-name: react-native
+        update-types: [version-update:semver-major]
+
+  # Keep the GitHub Actions themselves current (addresses the Node 20
+  # deprecation warnings on the runner).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ['*']

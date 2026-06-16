@@ -4,3 +4,7 @@ web-build/
 dist/
 src/types/database.generated.ts
 bun.lockb
+
+# Deno edge functions — own toolchain (deno fmt); already excluded from
+# tsconfig and eslint, so keep prettier's boundary consistent.
+supabase/functions/

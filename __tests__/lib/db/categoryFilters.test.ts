@@ -8,6 +8,12 @@ import {
   type CategoryFilters,
 } from '../../../src/lib/db/categoryFilters';
 
+import {
+  DEFAULT_FILTERS as DF_TAGS,
+  filtersToParams as ftp_tags,
+  paramsToFilters as ptf_tags,
+} from '../../../src/lib/db/categoryFilters';
+
 describe('defaultSort', () => {
   it('defaults strongest and most-intelligent to power', () => {
     expect(defaultSort('strongest')).toBe('power');
@@ -96,12 +102,6 @@ describe('activeFilterList', () => {
     expect(chips[0]).toEqual({ key: 'gender', label: 'Female' });
   });
 });
-
-import {
-  DEFAULT_FILTERS as DF_TAGS,
-  filtersToParams as ftp_tags,
-  paramsToFilters as ptf_tags,
-} from '../../../src/lib/db/categoryFilters';
 
 describe('tags facet round-trip', () => {
   it('defaults to an empty tag list', () => {

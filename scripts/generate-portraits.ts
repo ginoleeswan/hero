@@ -248,7 +248,7 @@ async function describeCharacterVisually(
   });
   if (!res.ok) return '';
   const json = (await res.json()) as {
-    candidates: Array<{ content: { parts: Array<{ text?: string }> } }>;
+    candidates: { content: { parts: { text?: string }[] } }[];
   };
   return json.candidates?.[0]?.content?.parts?.find((p) => p.text)?.text?.trim() ?? '';
 }
@@ -286,7 +286,7 @@ No hard white outline — clean natural painted edge. Portrait orientation, tall
     throw new Error(`Imagen API error ${res.status}: ${text}`);
   }
   const json = (await res.json()) as {
-    predictions?: Array<{ bytesBase64Encoded?: string }>;
+    predictions?: { bytesBase64Encoded?: string }[];
     error?: { message: string };
   };
   const b64 = json.predictions?.[0]?.bytesBase64Encoded;
@@ -325,12 +325,12 @@ async function callImageModel(parts: object[]): Promise<Uint8Array | 'PROHIBITED
     }
 
     const json = (await res.json()) as {
-      candidates: Array<{
+      candidates: {
         finishReason?: string;
         content: {
-          parts: Array<{ inlineData?: { data: string }; inline_data?: { data: string } }>;
+          parts: { inlineData?: { data: string }; inline_data?: { data: string } }[];
         };
-      }>;
+      }[];
     };
 
     if (json.candidates?.[0]?.finishReason === 'PROHIBITED_CONTENT') return 'PROHIBITED';

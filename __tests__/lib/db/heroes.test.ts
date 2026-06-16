@@ -15,6 +15,14 @@ import {
   type PublisherCounts,
 } from '../../../src/lib/db/heroes';
 
+// ─── heroRowToCharacterData — powers mapping ──────────────────────────────────
+
+import type { Tables } from '../../../src/types/database.generated';
+
+// ─── getHeroesByPowerRange ────────────────────────────────────────────────────
+
+import { getHeroesByPowerRange } from '../../../src/lib/db/heroes';
+
 // ─── Mock Supabase ────────────────────────────────────────────────────────────
 //
 // Supabase's query builder is "thenable" — it can be both chained and awaited.
@@ -27,7 +35,6 @@ import {
 // either be prefixed with `mock` or be built-ins — hence `mockResolveWith`.
 //
 
-// eslint-disable-next-line prefer-const
 let mockResolveWith: { data: unknown; error: unknown; count?: number | null } = {
   data: null,
   error: null,
@@ -338,10 +345,6 @@ describe('getHeroesByStatRanking', () => {
   });
 });
 
-// ─── heroRowToCharacterData — powers mapping ──────────────────────────────────
-
-import type { Tables } from '../../../src/types/database.generated';
-
 type HeroRow = Tables<'heroes'>;
 
 const baseHero: HeroRow = {
@@ -577,10 +580,6 @@ describe('searchHeroes ordering', () => {
     expect(spiderManIdx).toBeLessThan(spiderWomanIdx);
   });
 });
-
-// ─── getHeroesByPowerRange ────────────────────────────────────────────────────
-
-import { getHeroesByPowerRange } from '../../../src/lib/db/heroes';
 
 describe('getHeroesByPowerRange', () => {
   it('returns an array (even empty) without throwing', async () => {

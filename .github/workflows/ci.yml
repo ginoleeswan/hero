@@ -6,6 +6,11 @@ on:
   push:
     branches: [master]
 
+# Cancel superseded runs on the same ref so rapid pushes don't pile up.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: Lint
@@ -15,9 +20,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: yarn
       - run: corepack enable
       - run: yarn install --immutable
       - run: yarn format:check
+      - run: yarn lint
 
   typecheck:
     name: Type Check
@@ -27,6 +34,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: yarn
       - run: corepack enable
       - run: yarn install --immutable
       - run: yarn typecheck
@@ -39,6 +47,42 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: yarn
       - run: corepack enable
       - run: yarn install --immutable
       - run: yarn test:ci --passWithNoTests
+
+  web-build:
+    name: Web Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+      - run: corepack enable
+      - run: yarn install --immutable
+      # Smoke-test the Metro web bundle — catches bundling errors typecheck
+      # can't see. Dummy public env so the bundle builds without real secrets.
+      - run: yarn expo export -p web
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          EXPO_PUBLIC_SUPABASE_KEY: dummy-anon-key-for-ci-build
+
+  doctor:
+    name: Expo Doctor (informational)
+    runs-on: ubuntu-latest
+    # Non-blocking: surfaces dependency drift / config issues without gating.
+    # (The repo intentionally commits android/ alongside app.config.ts, which
+    # doctor flags — see the prebuild-properties warning.)
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: npx expo-doctor

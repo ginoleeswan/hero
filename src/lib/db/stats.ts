@@ -67,7 +67,7 @@ export async function getStatsHeroes(ids: string[]): Promise<StatsHero[]> {
     .in('id', ids);
   if (error || !data) return [];
   return (
-    data as Array<{
+    data as {
       id: string;
       name: string;
       image_md_url: string | null;
@@ -80,7 +80,7 @@ export async function getStatsHeroes(ids: string[]): Promise<StatsHero[]> {
       durability: number | null;
       power: number | null;
       combat: number | null;
-    }>
+    }[]
   ).map((h) => {
     const status =
       h.ai_stats_status === 'done' ? 'done' : h.ai_stats_status === 'failed' ? 'failed' : 'pending';

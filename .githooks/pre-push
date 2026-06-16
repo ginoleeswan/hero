@@ -1,0 +1,12 @@
+#!/bin/sh
+# Fast local gate before code leaves your machine — mirrors the cheap CI
+# checks so you find breakage in seconds, not via a red badge you'll ignore.
+# Wired by the package.json "prepare" script (git config core.hooksPath
+# .githooks). Skip a one-off push with: git push --no-verify
+set -e
+
+echo "pre-push: format:check + typecheck + lint…"
+yarn format:check
+yarn typecheck
+yarn lint
+echo "pre-push: ok"

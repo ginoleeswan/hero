@@ -2,7 +2,7 @@ import { getHeroFavouriteCount } from '../../../src/lib/db/favourites';
 
 // Supabase chain mock — same pattern as heroes.test.ts.
 // `mockResolveWith` must start with "mock" so babel doesn't hoist it.
-// eslint-disable-next-line prefer-const
+
 let mockResolveWith: { count: number | null; error: unknown } = { count: null, error: null };
 
 jest.mock('../../../src/lib/supabase', () => {

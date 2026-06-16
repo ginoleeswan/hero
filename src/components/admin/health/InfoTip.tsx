@@ -13,7 +13,6 @@ const BUBBLE_W = 240;
 // Guarded require keeps react-dom out of the native runtime path.
 let portal: ((node: ReactNode, container: Element) => ReactNode) | null = null;
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   portal = require('react-dom').createPortal;
 }
 

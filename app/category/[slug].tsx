@@ -255,7 +255,7 @@ export default function CategoryScreen() {
         <View style={styles.sheetTop} />
       </>
     ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     [eyebrow, tagline, title, headerHeight],
   );
 

@@ -24,6 +24,17 @@ import {
   type Hero,
   type BrowseCover,
   type CategorySlug,
+  getTopHeroByStat,
+  getPublisherCounts,
+  getFirstAppearanceCovers,
+  getEraTimeline,
+  getTopRivalries,
+  getMostFeared,
+  type PublisherCounts,
+  type FirstAppearanceCover,
+  type EraBucket,
+  type Rivalry,
+  type FearedVillain,
 } from '../../src/lib/db/heroes';
 import { getUserFavouriteHeroes } from '../../src/lib/db/favourites';
 import {
@@ -54,19 +65,6 @@ import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { useChromeColor } from '../../src/contexts/WebChromeContext';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { PublisherPods } from '../../src/components/web/home/PublisherPods';
-import {
-  getTopHeroByStat,
-  getPublisherCounts,
-  getFirstAppearanceCovers,
-  getEraTimeline,
-  getTopRivalries,
-  getMostFeared,
-  type PublisherCounts,
-  type FirstAppearanceCover,
-  type EraBucket,
-  type Rivalry,
-  type FearedVillain,
-} from '../../src/lib/db/heroes';
 import { GreatestRivalries } from '../../src/components/web/home/GreatestRivalries';
 import { HallOfInfamy } from '../../src/components/web/home/HallOfInfamy';
 

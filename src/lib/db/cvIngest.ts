@@ -103,7 +103,7 @@ export async function existingComicvineIds(ids: string[]): Promise<Set<string>> 
   );
   const out = new Set<string>();
   for (const { data } of batches) {
-    for (const r of (data as Array<{ comicvine_id: string | null }> | null) ?? []) {
+    for (const r of (data as { comicvine_id: string | null }[] | null) ?? []) {
       if (r.comicvine_id) out.add(r.comicvine_id);
     }
   }
@@ -121,7 +121,7 @@ export async function existingHeroNames(names: string[]): Promise<Set<string>> {
   );
   const out = new Set<string>();
   for (const { data } of batches) {
-    for (const r of (data as Array<{ name: string }> | null) ?? []) out.add(r.name.toLowerCase());
+    for (const r of (data as { name: string }[] | null) ?? []) out.add(r.name.toLowerCase());
   }
   return out;
 }

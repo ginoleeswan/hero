@@ -176,7 +176,7 @@ export async function getTitleHeroes(id: string): Promise<RelatedHeroCard[]> {
     .order('rank', { ascending: false, nullsFirst: false })
     .limit(30);
   if (error || !data) return [];
-  return (data as unknown as Array<{ heroes: RelatedHeroCard | null }>)
+  return (data as unknown as { heroes: RelatedHeroCard | null }[])
     .filter((r) => r.heroes !== null)
     .map((r) => r.heroes!);
 }

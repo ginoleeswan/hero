@@ -2,7 +2,7 @@ import { getCategoryPage } from '../../../src/lib/db/heroes';
 import { DEFAULT_FILTERS } from '../../../src/lib/db/categoryFilters';
 
 // Chain mock that records calls and resolves the range() terminal.
-// eslint-disable-next-line prefer-const
+
 let mockResult: { data: unknown[]; error: unknown; count: number } = {
   data: [],
   error: null,

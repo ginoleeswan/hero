@@ -302,14 +302,14 @@ export async function getAmbiguousHeroes(limit = 25): Promise<AmbiguousHero[]> {
     .limit(limit);
   if (error || !data) return [];
   return (
-    data as Array<{
+    data as {
       id: string;
       name: string;
       publisher: string | null;
       image_md_url: string | null;
       image_url: string | null;
       wikidata_candidates: { qid: string; score: number }[] | null;
-    }>
+    }[]
   ).map((r) => ({
     id: r.id,
     name: r.name,

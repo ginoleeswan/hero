@@ -90,7 +90,7 @@ export async function getPendingBuildIds(limit = 25): Promise<string[]> {
     .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit * 5);
   if (error || !data) return [];
-  return (data as Array<HeroRow & { issue_count: number | null }>)
+  return (data as (HeroRow & { issue_count: number | null })[])
     .filter((h) => ACTIONABLE.includes(stageOf(h)))
     .slice(0, limit)
     .map((h) => h.id);

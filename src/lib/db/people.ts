@@ -16,7 +16,7 @@ export async function getHeroPortrayals(heroId: string): Promise<HeroPortrayals>
 
   const performers: string[] = [];
   const voiceActors: string[] = [];
-  for (const r of data as Array<{ person_name: string; role: string }>) {
+  for (const r of data as { person_name: string; role: string }[]) {
     if (r.role === 'voice_actor') voiceActors.push(r.person_name);
     else performers.push(r.person_name);
   }
@@ -38,7 +38,7 @@ export async function getHeroLinks(heroId: string): Promise<HeroLinks> {
     .eq('hero_id', heroId);
   if (error || !data)
     return { imdb: null, site: null, wikidataQid: null, firstAppearanceYear: null };
-  const m = new Map((data as Array<{ key: string; value: string }>).map((r) => [r.key, r.value]));
+  const m = new Map((data as { key: string; value: string }[]).map((r) => [r.key, r.value]));
   const yr = m.get('first_appearance_year');
   return {
     imdb: m.get('imdb_id') ?? null,

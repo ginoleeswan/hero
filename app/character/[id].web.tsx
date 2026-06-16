@@ -448,11 +448,11 @@ export default function WebCharacterScreen() {
             hero.movies != null &&
             (hero.movies as unknown[]).length > 0 &&
             (
-              hero.movies as Array<{
+              hero.movies as {
                 deck?: string | null;
                 rating?: string | null;
                 runtime?: string | null;
-              }>
+              }[]
             )
               .slice(0, 5)
               .every((m) => m.deck === null && m.rating === null && m.runtime === null);
@@ -532,7 +532,6 @@ export default function WebCharacterScreen() {
         loadFromApi();
       })
       .catch(loadFromApi);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, retryToken]);
 
   const retryLoad = useCallback(() => {

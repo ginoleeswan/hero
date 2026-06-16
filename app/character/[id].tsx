@@ -840,11 +840,11 @@ export default function CharacterScreen() {
         heroRow.movies != null &&
         (heroRow.movies as unknown[]).length > 0 &&
         (
-          heroRow.movies as Array<{
+          heroRow.movies as {
             deck?: string | null;
             rating?: string | null;
             runtime?: string | null;
-          }>
+          }[]
         )
           .slice(0, 5)
           .every((m) => m.deck === null && m.rating === null && m.runtime === null);

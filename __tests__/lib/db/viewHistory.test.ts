@@ -2,7 +2,7 @@ import { recordView, getRecentlyViewed } from '../../../src/lib/db/viewHistory';
 
 // Variables accessed inside jest.mock() factory must be prefixed with "mock"
 // (babel-jest hoisting restriction).
-// eslint-disable-next-line prefer-const
+
 let mockResolvers: Record<string, { data: unknown; error: unknown }> = {};
 
 jest.mock('../../../src/lib/supabase', () => {

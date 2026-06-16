@@ -737,7 +737,6 @@ export async function getCategoryPage(
     ? `${CATEGORY_LIST_COLUMNS}, hero_tags!inner(tag)`
     : CATEGORY_LIST_COLUMNS;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let q: any = supabase
     .from('heroes')
     .select(selectCols, withCount ? { count: 'exact' } : undefined);
