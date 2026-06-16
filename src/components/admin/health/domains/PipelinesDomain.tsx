@@ -21,6 +21,7 @@ import { ActivityLog } from '../ActivityLog';
 import { useRouter } from 'expo-router';
 import { InfoTip } from '../InfoTip';
 import { AddHeroesPanel } from '../AddHeroesPanel';
+import { DuplicatesPanel } from '../DuplicatesPanel';
 import { StatsBoard } from '../StatsBoard';
 import { PortraitBoard } from '../PortraitBoard';
 import { HeroThumb } from '../atoms';
@@ -857,6 +858,9 @@ export function PipelinesDomain({
           </View>
         </View>
       </Panel>
+
+      {/* Catalogue hygiene — only appears when there are possible duplicates. */}
+      <DuplicatesPanel flash={flash} onChanged={onHeroesAdded} />
 
       {/* 3 · Monitor — live log + who just got built. */}
       <Bento.Row narrow={narrow}>

@@ -126,14 +126,25 @@ export async function existingHeroNames(names: string[]): Promise<Set<string>> {
   return out;
 }
 
-/** Add ComicVine characters to the catalogue (as pending). Returns count added. */
+/** A character added to the catalogue: its minted internal hero id + source id. */
+export interface AddedComicvineHero {
+  heroId: string; // source-neutral internal id (the heroes PK)
+  comicvineId: string;
+}
+
+/** Add ComicVine characters to the catalogue (as pending). Returns the minted
+ *  rows — the internal hero id is source-neutral (not derivable from the CV id),
+ *  so callers must use what's returned rather than assuming a 'cv-<id>' shape. */
 export async function addComicvineHeroes(
   heroes: { id: string; name: string; image: string | null }[],
-): Promise<number> {
-  if (heroes.length === 0) return 0;
+): Promise<AddedComicvineHero[]> {
+  if (heroes.length === 0) return [];
   const { data, error } = await supabase.rpc('admin_add_comicvine_heroes', { p_heroes: heroes });
   if (error) throw error;
-  return (data as number) ?? 0;
+  return ((data ?? []) as { id: string; comicvine_id: string }[]).map((r) => ({
+    heroId: r.id,
+    comicvineId: r.comicvine_id,
+  }));
 }
 
 /** Remove a hero from the catalogue by id (undo a just-added character). */

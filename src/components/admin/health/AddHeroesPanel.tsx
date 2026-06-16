@@ -36,7 +36,9 @@ import { getBuildHeroes, type BuildStage } from '../../../lib/db/build';
 import { CharacterPreview } from './CharacterPreview';
 
 // A character added during this session — enough to show it, build it, or undo it.
-type AddedHero = { id: string; name: string; image: string | null };
+// heroId is the minted internal id (PK, used to build/delete/poll); comicvineId is
+// the source id (used to dedupe against ComicVine search results).
+type AddedHero = { heroId: string; comicvineId: string; name: string; image: string | null };
 
 // Live build-stage badge for an added hero (updates as the pipeline runs).
 const STAGE_BADGE: Record<BuildStage, { label: string; color: string }> = {
@@ -146,7 +148,7 @@ export function AddHeroesPanel({
       return;
     }
     let alive = true;
-    const ids = addedSession.map((a) => `cv-${a.id}`);
+    const ids = addedSession.map((a) => a.heroId);
     // Once every added hero reaches a terminal stage there's nothing left to poll.
     const TERMINAL = new Set<BuildStage>(['done', 'failed', 'unresolved']);
     const tick = async () => {
@@ -162,9 +164,10 @@ export function AddHeroesPanel({
       clearInterval(t);
     };
   }, [addedSession]);
-  const builtCount = addedSession.filter((a) => stages[`cv-${a.id}`] === 'done').length;
+  const builtCount = addedSession.filter((a) => stages[a.heroId] === 'done').length;
 
-  const addedIds = useMemo(() => new Set(addedSession.map((a) => a.id)), [addedSession]);
+  // Dedup against search results is by ComicVine id; build/delete use the hero id.
+  const addedIds = useMemo(() => new Set(addedSession.map((a) => a.comicvineId)), [addedSession]);
   const reset = () => {
     setChars([]);
     setGroups([]);
@@ -300,29 +303,52 @@ export function AddHeroesPanel({
   // Add a set of characters to the catalogue (as pending). Shared by the toolbar
   // "Add N" (the whole selection) and the inline preview's one-tap "Add". Returns
   // the ids actually added (new ones), so callers can chain a build.
-  const addByIds = async (rawIds: string[]): Promise<string[]> => {
-    const ids = rawIds.filter((id) => !isIn(id));
-    if (ids.length === 0) return [];
-    const payload = ids.map((id) => {
-      const c = chars.find((x) => x.id === id);
-      const m = members.find((x) => x.id === id);
-      const d = detailCache[id];
-      return { id, name: c?.name ?? m?.name ?? d?.name ?? '', image: c?.image ?? d?.image ?? null };
-    });
+  const addByIds = async (rawCvIds: string[]): Promise<string[]> => {
+    const cvIds = rawCvIds.filter((id) => !isIn(id));
+    if (cvIds.length === 0) return [];
+    const meta = new Map(
+      cvIds.map((id) => {
+        const c = chars.find((x) => x.id === id);
+        const m = members.find((x) => x.id === id);
+        const d = detailCache[id];
+        return [
+          id,
+          { name: c?.name ?? m?.name ?? d?.name ?? '', image: c?.image ?? d?.image ?? null },
+        ];
+      }),
+    );
+    const payload = cvIds.map((id) => ({
+      id,
+      name: meta.get(id)!.name,
+      image: meta.get(id)!.image,
+    }));
     setBusy(true);
     try {
-      const n = await addComicvineHeroes(payload);
-      setAddedSession((p) => [...payload.filter((x) => !p.some((a) => a.id === x.id)), ...p]);
+      // The RPC returns the minted internal hero ids (source-neutral) — track those.
+      const added = await addComicvineHeroes(payload);
+      const items: AddedHero[] = added.map((a) => ({
+        heroId: a.heroId,
+        comicvineId: a.comicvineId,
+        name: meta.get(a.comicvineId)?.name ?? '',
+        image: meta.get(a.comicvineId)?.image ?? null,
+      }));
+      setAddedSession((p) => [
+        ...items.filter((x) => !p.some((a) => a.comicvineId === x.comicvineId)),
+        ...p,
+      ]);
       setRosterOpen(true);
       // Drop just-added ids from the selection; keep any other ticked rows intact.
       setSelected((p) => {
         const s = new Set(p);
-        ids.forEach((id) => s.delete(id));
+        cvIds.forEach((id) => s.delete(id));
         return s;
       });
-      flash(`Added ${n} hero${n === 1 ? '' : 'es'} — pending at step 1.`, 'success');
+      flash(
+        `Added ${added.length} hero${added.length === 1 ? '' : 'es'} — pending at step 1.`,
+        'success',
+      );
       onAdded();
-      return ids;
+      return items.map((x) => x.heroId);
     } catch (e) {
       flash(`Add failed: ${(e as Error).message}`, 'error');
       return [];
@@ -333,16 +359,16 @@ export function AddHeroesPanel({
   const addSelected = () => addByIds([...selected]);
   // One-shot bulk: add every new row in the current view and immediately build them.
   const addAllNewAndBuild = async () => {
-    const added = await addByIds(newRows.map((r) => r.id));
-    if (added.length > 0) onBuild(added.map((id) => `cv-${id}`));
+    const addedHeroIds = await addByIds(newRows.map((r) => r.id));
+    if (addedHeroIds.length > 0) onBuild(addedHeroIds);
   };
 
   // Undo a just-added character — delete it from the catalogue and drop it here.
   const removeAdded = async (a: AddedHero) => {
-    setRemoving((p) => new Set(p).add(a.id));
+    setRemoving((p) => new Set(p).add(a.heroId));
     try {
-      await deleteHero(`cv-${a.id}`);
-      setAddedSession((p) => p.filter((x) => x.id !== a.id));
+      await deleteHero(a.heroId);
+      setAddedSession((p) => p.filter((x) => x.comicvineId !== a.comicvineId));
       flash(`Removed ${a.name}.`, 'info');
       onAdded();
     } catch (e) {
@@ -350,7 +376,7 @@ export function AddHeroesPanel({
     } finally {
       setRemoving((p) => {
         const s = new Set(p);
-        s.delete(a.id);
+        s.delete(a.heroId);
         return s;
       });
     }
@@ -625,7 +651,7 @@ export function AddHeroesPanel({
               color={COLORS.navy}
             />
             <Pressable
-              onPress={() => onBuild(addedSession.map((a) => `cv-${a.id}`))}
+              onPress={() => onBuild(addedSession.map((a) => a.heroId))}
               style={styles.loopBtn}
             >
               <Ionicons name="construct" size={12} color="#fff" />
@@ -635,15 +661,15 @@ export function AddHeroesPanel({
           {rosterOpen ? (
             <View style={styles.addedList}>
               {addedSession.map((a) => {
-                const busyThis = removing.has(a.id);
+                const busyThis = removing.has(a.heroId);
                 return (
-                  <View key={a.id} style={styles.addedRow}>
+                  <View key={a.comicvineId} style={styles.addedRow}>
                     <HeroThumb uri={a.image} width={28} height={37} radius={5} />
                     <Text style={styles.addedName} numberOfLines={1}>
                       {a.name}
                     </Text>
                     {(() => {
-                      const st = stages[`cv-${a.id}`];
+                      const st = stages[a.heroId];
                       const badge = st ? STAGE_BADGE[st] : null;
                       return badge ? (
                         <Text style={[styles.stageBadge, { color: badge.color }]} numberOfLines={1}>

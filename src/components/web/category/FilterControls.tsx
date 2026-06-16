@@ -102,8 +102,51 @@ function Chip({ opt, active, onPress }: { opt: Opt; active: boolean; onPress: ()
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <View style={s.group}>
+    <View style={s.group as object}>
       <Text style={s.groupTitle as object}>{title}</Text>
+      <View style={s.chips as object}>{children}</View>
+    </View>
+  );
+}
+
+// Themes can hold many tags — collapse to a preview row with a Show all/less
+// toggle so the rail doesn't become a wall of chips.
+const THEME_PREVIEW = 8;
+function CollapsibleGroup({
+  title,
+  count,
+  collapsed,
+  onToggle,
+  children,
+}: {
+  title: string;
+  count: number;
+  collapsed: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={s.group as object}>
+      <View style={s.groupHeaderRow as object}>
+        <Text style={s.groupTitle as object}>{title}</Text>
+        {count > THEME_PREVIEW && (
+          <Pressable
+            onPress={onToggle}
+            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+              [s.toggle, hovered && (s.toggleHover as object)] as object
+            }
+          >
+            <Text style={s.toggleText as object}>
+              {collapsed ? `Show all ${count}` : 'Show less'}
+            </Text>
+            <Ionicons
+              name={collapsed ? 'chevron-down' : 'chevron-up'}
+              size={12}
+              color={COLORS.orange}
+            />
+          </Pressable>
+        )}
+      </View>
       <View style={s.chips as object}>{children}</View>
     </View>
   );
@@ -114,6 +157,7 @@ export function FilterControls({ slug, filters, counts, setFilter }: Props) {
   const has = (f: FacetKey) => visible.includes(f);
 
   const [vocab, setVocab] = useState<TagOption[]>([]);
+  const [themesOpen, setThemesOpen] = useState(false);
   useEffect(() => {
     let active = true;
     getTagVocab()
@@ -138,7 +182,7 @@ export function FilterControls({ slug, filters, counts, setFilter }: Props) {
 
   return (
     <View style={s.root}>
-      <View style={s.group}>
+      <View style={s.groupFirst as object}>
         <Text style={s.groupTitle as object}>Sort by</Text>
         <Segmented
           selected={filters.sort}
@@ -155,7 +199,7 @@ export function FilterControls({ slug, filters, counts, setFilter }: Props) {
         <Group title="Universe">
           {(
             [
-              { value: 'all', label: 'All', count: counts?.publisher.all },
+              { value: 'all', label: 'All' },
               { value: 'marvel', label: 'Marvel', count: counts?.publisher.marvel },
               { value: 'dc', label: 'DC', count: counts?.publisher.dc },
               { value: 'other', label: 'Other', count: counts?.publisher.other },
@@ -233,25 +277,70 @@ export function FilterControls({ slug, filters, counts, setFilter }: Props) {
         </Group>
       )}
 
-      {vocab.length > 0 && (
-        <Group title="Themes">
-          {vocab.map((t) => (
-            <Chip
-              key={t.slug}
-              opt={{ value: t.slug, label: t.label }}
-              active={(filters.tags ?? []).includes(t.slug)}
-              onPress={() => toggleTag(t.slug)}
-            />
-          ))}
-        </Group>
-      )}
+      {vocab.length > 0 &&
+        (() => {
+          const selected = filters.tags ?? [];
+          // When collapsed, always surface selected themes plus a preview of the
+          // rest so active filters never hide behind the toggle.
+          const shown = themesOpen
+            ? vocab
+            : vocab
+                .filter((t) => selected.includes(t.slug))
+                .concat(vocab.filter((t) => !selected.includes(t.slug)))
+                .slice(0, Math.max(THEME_PREVIEW, selected.length));
+          return (
+            <CollapsibleGroup
+              title="Themes"
+              count={vocab.length}
+              collapsed={!themesOpen}
+              onToggle={() => setThemesOpen((v) => !v)}
+            >
+              {shown.map((t) => (
+                <Chip
+                  key={t.slug}
+                  opt={{ value: t.slug, label: t.label }}
+                  active={selected.includes(t.slug)}
+                  onPress={() => toggleTag(t.slug)}
+                />
+              ))}
+            </CollapsibleGroup>
+          );
+        })()}
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  root: { gap: 22 },
-  group: { gap: 11 },
+  root: { gap: 0 },
+  groupFirst: { gap: 11 } as object,
+  // Sort sits first with no hairline; faceted groups carry a top hairline so the
+  // rail reads as distinct sections rather than one continuous stream.
+  group: {
+    gap: 11,
+    paddingTop: 18,
+    marginTop: 18,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(245,235,220,0.08)',
+  } as object,
+  groupHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  } as object,
+  toggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    cursor: 'pointer',
+    transition: 'opacity 150ms ease',
+  } as object,
+  toggleHover: { opacity: 0.6 } as object,
+  toggleText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.orange,
+    letterSpacing: 0.2,
+  } as object,
   groupTitle: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10.5,

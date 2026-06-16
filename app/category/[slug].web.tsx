@@ -335,13 +335,6 @@ export default function WebCategoryScreen() {
                 {description}
               </Text>
             ) : null}
-            <View style={styles.identityRight}>
-              {!loading && total > 0 && (
-                <View style={styles.countPill}>
-                  <Text style={styles.countText as object}>{total.toLocaleString()}</Text>
-                </View>
-              )}
-            </View>
           </View>
 
           {/* Row 2 — mobile only: full-width search + Filters button.

@@ -617,6 +617,7 @@ export type Database = {
           stats_source: string | null
           strength: number | null
           summary: string | null
+          superhero_api_id: string | null
           teams: string[] | null
           weight_imperial: string | null
           weight_metric: string | null
@@ -680,6 +681,7 @@ export type Database = {
           stats_source?: string | null
           strength?: number | null
           summary?: string | null
+          superhero_api_id?: string | null
           teams?: string[] | null
           weight_imperial?: string | null
           weight_metric?: string | null
@@ -743,6 +745,7 @@ export type Database = {
           stats_source?: string | null
           strength?: number | null
           summary?: string | null
+          superhero_api_id?: string | null
           teams?: string[] | null
           weight_imperial?: string | null
           weight_metric?: string | null
@@ -955,10 +958,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      admin_add_comicvine_heroes: { Args: { p_heroes: Json }; Returns: number }
+      admin_add_comicvine_heroes: {
+        Args: { p_heroes: Json }
+        Returns: { comicvine_id: string; id: string }[]
+      }
       admin_cron_status: { Args: never; Returns: Json }
       admin_delete_campaign: { Args: { p_id: string }; Returns: number }
       admin_delete_hero: { Args: { p_hero_id: string }; Returns: number }
+      admin_merge_heroes: {
+        Args: { p_loser: string; p_winner: string }
+        Returns: undefined
+      }
       admin_reenrich_hero: { Args: { p_id: string }; Returns: string }
       admin_reschedule_cron: {
         Args: { p_jobname: string; p_schedule: string; p_limit?: number }
@@ -1000,6 +1010,20 @@ export type Database = {
       }
       catalog_distributions: { Args: never; Returns: Json }
       catalog_health: { Args: never; Returns: Json }
+      find_duplicate_heroes: {
+        Args: { p_limit?: number }
+        Returns: {
+          name: string
+          hero_id: string
+          publisher: string
+          comicvine_id: string
+          superhero_api_id: string
+          issue_count: number
+          image_url: string
+          comicvine_status: string
+          wikidata_qid: string
+        }[]
+      }
       category_facet_counts: {
         Args: {
           p_alignment?: string

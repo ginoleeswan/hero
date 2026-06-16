@@ -212,6 +212,7 @@ describe('heroRowToCharacterData', () => {
     teams: null,
     ai_stats_status: null,
     comicvine_id: null,
+    superhero_api_id: null,
     first_issue_data: null,
     first_issue_id: null,
     movie_count: null,
@@ -350,6 +351,7 @@ type HeroRow = Tables<'heroes'>;
 const baseHero: HeroRow = {
   id: '1',
   name: 'Test Hero',
+  superhero_api_id: null,
   powers: null,
   intelligence: 80,
   strength: 90,
