@@ -11,25 +11,19 @@ const IMAGES = [
 
 describe('GalleryStrip', () => {
   it('renders the correct number of image cards', () => {
-    const { getAllByTestId } = render(
-      <GalleryStrip images={IMAGES} onPress={jest.fn()} />,
-    );
+    const { getAllByTestId } = render(<GalleryStrip images={IMAGES} onPress={jest.fn()} />);
     expect(getAllByTestId('gallery-card')).toHaveLength(2);
   });
 
   it('calls onPress with the correct index', () => {
     const onPress = jest.fn();
-    const { getAllByTestId } = render(
-      <GalleryStrip images={IMAGES} onPress={onPress} />,
-    );
+    const { getAllByTestId } = render(<GalleryStrip images={IMAGES} onPress={onPress} />);
     fireEvent.press(getAllByTestId('gallery-card')[1]);
     expect(onPress).toHaveBeenCalledWith(1);
   });
 
   it('renders nothing when images array is empty', () => {
-    const { queryByTestId } = render(
-      <GalleryStrip images={[]} onPress={jest.fn()} />,
-    );
+    const { queryByTestId } = render(<GalleryStrip images={[]} onPress={jest.fn()} />);
     expect(queryByTestId('gallery-card')).toBeNull();
   });
 });

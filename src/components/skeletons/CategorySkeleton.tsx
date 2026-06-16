@@ -37,8 +37,20 @@ export function CategorySkeleton({ topPadding = 0 }: { topPadding?: number }) {
       <View style={styles.root}>
         {/* Navy stage */}
         <View style={[styles.stage, { paddingTop: topPadding }]}>
-          <Skeleton width={140} height={11} borderRadius={4} color={STAGE_TINT} style={styles.eyebrow} />
-          <Skeleton width="50%" height={30} borderRadius={6} color={STAGE_TINT} style={styles.title} />
+          <Skeleton
+            width={140}
+            height={11}
+            borderRadius={4}
+            color={STAGE_TINT}
+            style={styles.eyebrow}
+          />
+          <Skeleton
+            width="50%"
+            height={30}
+            borderRadius={6}
+            color={STAGE_TINT}
+            style={styles.title}
+          />
           <Skeleton width="72%" height={13} borderRadius={4} color={STAGE_TINT} />
         </View>
 

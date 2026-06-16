@@ -7,7 +7,15 @@ import type { FearedVillain } from '../../../lib/db/heroes';
 const CARD_W = 176;
 const CARD_H = 234;
 
-function FearedCard({ villain, rank, onPress }: { villain: FearedVillain; rank: number; onPress: () => void }) {
+function FearedCard({
+  villain,
+  rank,
+  onPress,
+}: {
+  villain: FearedVillain;
+  rank: number;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
@@ -96,7 +104,10 @@ const c = StyleSheet.create({
     cursor: 'pointer',
     transition: 'transform 200ms ease, box-shadow 200ms ease',
   } as object,
-  cardHover: { transform: [{ translateY: -5 }], boxShadow: '0 18px 44px rgba(0,0,0,0.34)' } as object,
+  cardHover: {
+    transform: [{ translateY: -5 }],
+    boxShadow: '0 18px 44px rgba(0,0,0,0.34)',
+  } as object,
   overlay: {
     position: 'absolute',
     top: 0,

@@ -93,8 +93,12 @@ serve(async (req: Request) => {
       const validCovers = covers.filter(
         (
           c,
-        ): c is { url: string; name: string | null; issueNumber: string | null; year: string | null } =>
-          c !== null,
+        ): c is {
+          url: string;
+          name: string | null;
+          issueNumber: string | null;
+          year: string | null;
+        } => c !== null,
       );
       issueCovers = validCovers.length > 0 ? validCovers : null;
     }

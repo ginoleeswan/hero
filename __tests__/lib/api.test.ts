@@ -229,7 +229,14 @@ describe('generateVerdict', () => {
 describe('fetchHeroGallery', () => {
   it('returns issueCovers on success', async () => {
     const payload = {
-      issueCovers: [{ url: 'https://cv.example.com/cover1.jpg', name: 'ASM #1', issueNumber: '1', year: '1963' }],
+      issueCovers: [
+        {
+          url: 'https://cv.example.com/cover1.jpg',
+          name: 'ASM #1',
+          issueNumber: '1',
+          year: '1963',
+        },
+      ],
     };
     mockInvoke.mockResolvedValueOnce({ data: payload, error: null });
 

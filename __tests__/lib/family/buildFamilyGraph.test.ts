@@ -3,10 +3,20 @@ import type { FamilyMember } from '../../../src/lib/family/types';
 
 function m(p: Partial<FamilyMember> & { id: string }): FamilyMember {
   return {
-    name: 'X', alias: null, role: 'role', relation: 'other', tier: 0,
-    modifiers: [], status: null, position: 0,
-    heroId: null, heroImage: null, heroPower: null, heroAlignment: null,
-    treeParentId: null, branchSide: null,
+    name: 'X',
+    alias: null,
+    role: 'role',
+    relation: 'other',
+    tier: 0,
+    modifiers: [],
+    status: null,
+    position: 0,
+    heroId: null,
+    heroImage: null,
+    heroPower: null,
+    heroAlignment: null,
+    treeParentId: null,
+    branchSide: null,
     ...p,
   };
 }
@@ -33,7 +43,9 @@ describe('buildFamilyGraph', () => {
   });
 
   it('falls back to hero when treeParentId is not present in the set', () => {
-    const g = buildFamilyGraph([m({ id: 'gf', relation: 'grandparent', tier: 2, treeParentId: 'missing' })]);
+    const g = buildFamilyGraph([
+      m({ id: 'gf', relation: 'grandparent', tier: 2, treeParentId: 'missing' }),
+    ]);
     expect(g.tiers[0].nodes[0].connectTo).toEqual({ kind: 'hero' });
   });
 
@@ -44,7 +56,10 @@ describe('buildFamilyGraph', () => {
       m({ id: 'pgf', relation: 'grandparent', tier: 2, treeParentId: 'f', position: 5 }),
       m({ id: 'mgf', relation: 'grandparent', tier: 2, treeParentId: 'mo', position: 6 }),
     ]);
-    expect(g.tiers.find((t) => t.tier === 2)!.nodes.map((x) => x.member.id)).toEqual(['pgf', 'mgf']);
+    expect(g.tiers.find((t) => t.tier === 2)!.nodes.map((x) => x.member.id)).toEqual([
+      'pgf',
+      'mgf',
+    ]);
   });
 
   it('extracts the spouse and flags ancestors + big tiers as collapsed', () => {

@@ -38,9 +38,7 @@ export function buildFamilyGraph(members: FamilyMember[]): FamilyGraph {
   // cluster a tier's resolved children next to their parent's column.
   const orderInTier = new Map<string, number>();
   for (const [, list] of byTier) {
-    [...list]
-      .sort((a, b) => a.position - b.position)
-      .forEach((x, i) => orderInTier.set(x.id, i));
+    [...list].sort((a, b) => a.position - b.position).forEach((x, i) => orderInTier.set(x.id, i));
   }
 
   const connFor = (x: FamilyMember): ConnTarget =>

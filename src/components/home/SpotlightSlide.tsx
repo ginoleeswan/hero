@@ -67,7 +67,12 @@ export function SpotlightSlide({
       </Animated.View>
 
       <LinearGradient
-        colors={['transparent', 'rgba(13,20,24,0.12)', 'rgba(13,20,24,0.82)', 'rgba(13,20,24,0.97)']}
+        colors={[
+          'transparent',
+          'rgba(13,20,24,0.12)',
+          'rgba(13,20,24,0.82)',
+          'rgba(13,20,24,0.97)',
+        ]}
         locations={[0.26, 0.46, 0.76, 1]}
         style={StyleSheet.absoluteFill}
       />

@@ -19,14 +19,36 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 const json = (d: unknown, s = 200) =>
-  new Response(JSON.stringify(d), { status: s, headers: { 'Content-Type': 'application/json', ...CORS } });
+  new Response(JSON.stringify(d), {
+    status: s,
+    headers: { 'Content-Type': 'application/json', ...CORS },
+  });
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // ── scorer mirror of src/lib/wikidata/score.ts ──────────────────────────────
-interface HeroHints { name: string; aliases: string[]; publisher: string | null; firstAppearanceYear: number | null; creators: string[]; }
-interface QidCandidate { qid: string; label: string; description: string | null; publisherLabels: string[]; inceptionYear: number | null; creatorLabels: string[]; }
-const STRONG = 0.6, GAP = 0.25, WEAK = 0.35;
-const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+interface HeroHints {
+  name: string;
+  aliases: string[];
+  publisher: string | null;
+  firstAppearanceYear: number | null;
+  creators: string[];
+}
+interface QidCandidate {
+  qid: string;
+  label: string;
+  description: string | null;
+  publisherLabels: string[];
+  inceptionYear: number | null;
+  creatorLabels: string[];
+}
+const STRONG = 0.6,
+  GAP = 0.25,
+  WEAK = 0.35;
+const norm = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 const tokenSet = (s: string) => new Set(norm(s).split(' ').filter(Boolean));
 const surname = (s: string) => norm(s).split(' ').filter(Boolean).pop() ?? '';
 const GENERIC_PUB = new Set(['comics', 'entertainment', 'group', 'inc', 'the']);
@@ -34,7 +56,10 @@ function publisherMatch(heroPub: string | null, labels: string[]): boolean {
   if (!heroPub) return false;
   const ht = [...tokenSet(heroPub)].filter((t) => !GENERIC_PUB.has(t));
   if (ht.length === 0) return false;
-  return labels.some((l) => { const lt = tokenSet(l); return ht.some((t) => lt.has(t)); });
+  return labels.some((l) => {
+    const lt = tokenSet(l);
+    return ht.some((t) => lt.has(t));
+  });
 }
 function creatorOverlap(h: string[], c: string[]): boolean {
   if (h.length === 0 || c.length === 0) return false;
@@ -49,18 +74,28 @@ function scoreCandidate(hero: HeroHints, c: QidCandidate): number {
   else if (c.description && publisherMatch(hero.publisher, [c.description])) s += 0.15;
   if (hero.firstAppearanceYear != null && c.inceptionYear != null) {
     const d = Math.abs(hero.firstAppearanceYear - c.inceptionYear);
-    if (d <= 2) s += 0.2; else if (d <= 5) s += 0.1;
+    if (d <= 2) s += 0.2;
+    else if (d <= 5) s += 0.1;
   }
   if (creatorOverlap(hero.creators, c.creatorLabels)) s += 0.25;
   return s;
 }
 function resolveHero(hero: HeroHints, cands: QidCandidate[]) {
-  if (cands.length === 0) return { tier: 'unresolved' as const, qid: null, candidates: [] as { qid: string; score: number }[] };
-  const scored = cands.map((c) => ({ qid: c.qid, score: scoreCandidate(hero, c) })).sort((a, b) => b.score - a.score);
-  const top = scored[0], second = scored[1];
+  if (cands.length === 0)
+    return {
+      tier: 'unresolved' as const,
+      qid: null,
+      candidates: [] as { qid: string; score: number }[],
+    };
+  const scored = cands
+    .map((c) => ({ qid: c.qid, score: scoreCandidate(hero, c) }))
+    .sort((a, b) => b.score - a.score);
+  const top = scored[0],
+    second = scored[1];
   const gapOk = !second || top.score - second.score >= GAP;
   const topN = scored.slice(0, 3);
-  if (top.score >= STRONG && gapOk) return { tier: 'resolved' as const, qid: top.qid, candidates: topN };
+  if (top.score >= STRONG && gapOk)
+    return { tier: 'resolved' as const, qid: top.qid, candidates: topN };
   if (top.score >= WEAK) return { tier: 'ambiguous' as const, qid: null, candidates: topN };
   return { tier: 'unresolved' as const, qid: null, candidates: topN };
 }
@@ -123,11 +158,21 @@ GROUP BY ?item ?itemLabel ?desc`;
 }
 
 interface HeroRow {
-  id: string; name: string; aliases: string[] | null; publisher: string | null;
-  first_appearance: string | null; creators: string[] | null;
+  id: string;
+  name: string;
+  aliases: string[] | null;
+  publisher: string | null;
+  first_appearance: string | null;
+  creators: string[] | null;
 }
 
-async function runResolve(sb: SB, limit: number, retryUnresolved: boolean, runId: number | null, heroId: string | null): Promise<number> {
+async function runResolve(
+  sb: SB,
+  limit: number,
+  retryUnresolved: boolean,
+  runId: number | null,
+  heroId: string | null,
+): Promise<number> {
   // Single-hero mode (used by the Build orchestrator) processes exactly one hero
   // regardless of status; batch mode drains the pending queue popularity-first.
   let heroes: HeroRow[] | null;
@@ -165,12 +210,16 @@ async function runResolve(sb: SB, limit: number, retryUnresolved: boolean, runId
         creators: h.creators ?? [],
       };
       const outcome = resolveHero(hero, cands);
-      await sb.from('heroes').update({
-        wikidata_status: outcome.tier,
-        wikidata_qid: outcome.qid,
-        wikidata_candidates: outcome.candidates.length > 0 ? outcome.candidates : null,
-      }).eq('id', h.id);
-      if (runId != null) await sb.from('enrichment_run_heroes').insert({ run_id: runId, hero_id: h.id });
+      await sb
+        .from('heroes')
+        .update({
+          wikidata_status: outcome.tier,
+          wikidata_qid: outcome.qid,
+          wikidata_candidates: outcome.candidates.length > 0 ? outcome.candidates : null,
+        })
+        .eq('id', h.id);
+      if (runId != null)
+        await sb.from('enrichment_run_heroes').insert({ run_id: runId, hero_id: h.id });
     } catch (err) {
       console.error('[resolve-wikidata-batch] threw', h.id, err); // leave pending
     }
@@ -182,20 +231,34 @@ async function runResolve(sb: SB, limit: number, retryUnresolved: boolean, runId
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   const startedAt = Date.now();
-  let limit = 10, retryUnresolved = false, triggeredBy = 'cron', heroId: string | null = null;
+  let limit = 10,
+    retryUnresolved = false,
+    triggeredBy = 'cron',
+    heroId: string | null = null;
   try {
     const body = await req.json().catch(() => ({}));
     if (typeof body?.limit === 'number') limit = Math.min(Math.max(1, body.limit), 25);
     if (body?.retryUnresolved === true) retryUnresolved = true;
     if (typeof body?.triggeredBy === 'string') triggeredBy = body.triggeredBy;
     if (typeof body?.heroId === 'string') heroId = body.heroId;
-  } catch { /* empty body ok */ }
+  } catch {
+    /* empty body ok */
+  }
 
-  const sb = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-  const { data: runRow } = await sb.from('enrichment_runs').insert({
-    run_type: 'wikidata_resolve', triggered_by: triggeredBy, status: 'running',
-    started_at: new Date(startedAt).toISOString(),
-  }).select('id').single();
+  const sb = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  );
+  const { data: runRow } = await sb
+    .from('enrichment_runs')
+    .insert({
+      run_type: 'wikidata_resolve',
+      triggered_by: triggeredBy,
+      status: 'running',
+      started_at: new Date(startedAt).toISOString(),
+    })
+    .select('id')
+    .single();
   const runId = (runRow as { id?: number } | null)?.id ?? null;
 
   let calls = 0;
@@ -206,10 +269,18 @@ serve(async (req: Request) => {
     return json({ error: String(err) }, 500);
   }
 
-  if (calls > 0) await sb.from('api_usage').insert({ api: 'wikidata', endpoint: 'resolve', units: calls });
-  if (runId != null) await sb.from('enrichment_runs').update({
-    status: 'done', done: calls, processed: calls, duration_ms: Date.now() - startedAt,
-  }).eq('id', runId);
+  if (calls > 0)
+    await sb.from('api_usage').insert({ api: 'wikidata', endpoint: 'resolve', units: calls });
+  if (runId != null)
+    await sb
+      .from('enrichment_runs')
+      .update({
+        status: 'done',
+        done: calls,
+        processed: calls,
+        duration_ms: Date.now() - startedAt,
+      })
+      .eq('id', runId);
 
   return json({ calls, message: calls === 0 ? 'nothing to do' : 'ok' });
 });

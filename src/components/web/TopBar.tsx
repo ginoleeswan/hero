@@ -118,11 +118,7 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
         aria-label={it.key}
         onPress={() => (it.key === 'search' ? openSearch() : go(it.path))}
         style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-          [
-            c.item,
-            active && (c.itemActive as object),
-            !active && hovered && hoverStyle,
-          ] as object
+          [c.item, active && (c.itemActive as object), !active && hovered && hoverStyle] as object
         }
       >
         {it.key === 'versus' ? (
@@ -185,7 +181,10 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
           </View>
         </>
       )}
-      <View style={[c.inner, { paddingHorizontal: isMobile ? 16 : 28 }] as object} pointerEvents="box-none">
+      <View
+        style={[c.inner, { paddingHorizontal: isMobile ? 16 : 28 }] as object}
+        pointerEvents="box-none"
+      >
         <Pressable onPress={() => router.push('/explore')} style={c.logo}>
           <HeroLogo iconSize={24} fontSize={19} color={foreground} gap={8} />
         </Pressable>
@@ -193,44 +192,44 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
         {!isMobile && !logoOnly && <View style={c.center}>{NAV.map(renderItem)}</View>}
 
         {!logoOnly && (
-        <View style={c.right}>
-          {isMobile && NAV.filter((it) => it.key !== 'home').map(renderItem)}
-          {user ? (
-            <Pressable
-              aria-label="Profile"
-              onPress={() => router.push('/profile')}
-              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [c.item, hovered && hoverStyle] as object
-              }
-            >
-              <View style={c.avatar}>
-                {profile?.avatar_url ? (
-                  <Image
-                    source={{ uri: profile.avatar_url }}
-                    style={StyleSheet.absoluteFill}
-                    contentFit="cover"
-                  />
-                ) : (
-                  <Text style={c.avatarText}>{initial}</Text>
-                )}
-              </View>
-            </Pressable>
-          ) : (
-            <Pressable
-              aria-label="Sign in"
-              // RN-web drops the `title` prop, so set the tooltip on the DOM node.
-              ref={(node) => {
-                if (node) (node as unknown as HTMLElement).title = 'Sign in';
-              }}
-              onPress={() => router.push('/(auth)/login')}
-              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [c.item, hovered && hoverStyle] as object
-              }
-            >
-              <Ionicons name="person-outline" size={20} color={foreground} style={c.iconTint} />
-            </Pressable>
-          )}
-        </View>
+          <View style={c.right}>
+            {isMobile && NAV.filter((it) => it.key !== 'home').map(renderItem)}
+            {user ? (
+              <Pressable
+                aria-label="Profile"
+                onPress={() => router.push('/profile')}
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                  [c.item, hovered && hoverStyle] as object
+                }
+              >
+                <View style={c.avatar}>
+                  {profile?.avatar_url ? (
+                    <Image
+                      source={{ uri: profile.avatar_url }}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <Text style={c.avatarText}>{initial}</Text>
+                  )}
+                </View>
+              </Pressable>
+            ) : (
+              <Pressable
+                aria-label="Sign in"
+                // RN-web drops the `title` prop, so set the tooltip on the DOM node.
+                ref={(node) => {
+                  if (node) (node as unknown as HTMLElement).title = 'Sign in';
+                }}
+                onPress={() => router.push('/(auth)/login')}
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                  [c.item, hovered && hoverStyle] as object
+                }
+              >
+                <Ionicons name="person-outline" size={20} color={foreground} style={c.iconTint} />
+              </Pressable>
+            )}
+          </View>
         )}
       </View>
       {!isMobile && !logoOnly && <SearchPalette />}
@@ -352,7 +351,13 @@ const c = StyleSheet.create({
   },
   logo: { flex: 1 } as object,
   center: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  right: { flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 6 },
+  right: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 6,
+  },
 
   item: {
     width: 44,

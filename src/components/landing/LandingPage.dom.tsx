@@ -465,13 +465,20 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
 
         {/* Mobile hero strip */}
         <div className="hero-strip" aria-hidden="true">
-          {[spiderman, ironman, batman, deadpool, wonderWoman, captainAmerica, wolverine, blackPanther].map(
-            (src, i) => (
-              <div key={i} className="hero-strip-card">
-                <img src={src} alt="" loading="lazy" />
-              </div>
-            ),
-          )}
+          {[
+            spiderman,
+            ironman,
+            batman,
+            deadpool,
+            wonderWoman,
+            captainAmerica,
+            wolverine,
+            blackPanther,
+          ].map((src, i) => (
+            <div key={i} className="hero-strip-card">
+              <img src={src} alt="" loading="lazy" />
+            </div>
+          ))}
         </div>
 
         <div className="scroll-hint" aria-hidden="true">

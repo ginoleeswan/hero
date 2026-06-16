@@ -31,10 +31,19 @@ export function mapWorkRow(r: WorkRow): MappedTitle | null {
   let source: TitleSource;
   let mediaType: MediaType;
   let externalId: string;
-  if (r.tmdbMovie) { source = 'tmdb'; mediaType = 'film'; externalId = r.tmdbMovie; }
-  else if (r.tmdbTv) { source = 'tmdb'; mediaType = 'tv'; externalId = r.tmdbTv; }
-  else if (r.igdb) { source = 'igdb'; mediaType = 'game'; externalId = r.igdb; }
-  else return null;
+  if (r.tmdbMovie) {
+    source = 'tmdb';
+    mediaType = 'film';
+    externalId = r.tmdbMovie;
+  } else if (r.tmdbTv) {
+    source = 'tmdb';
+    mediaType = 'tv';
+    externalId = r.tmdbTv;
+  } else if (r.igdb) {
+    source = 'igdb';
+    mediaType = 'game';
+    externalId = r.igdb;
+  } else return null;
   return {
     id: `${source}:${externalId}`,
     source,

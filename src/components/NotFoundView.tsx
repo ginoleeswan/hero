@@ -1,7 +1,16 @@
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Defs, Pattern, ClipPath, RadialGradient, Stop, Circle, Rect, G } from 'react-native-svg';
+import Svg, {
+  Defs,
+  Pattern,
+  ClipPath,
+  RadialGradient,
+  Stop,
+  Circle,
+  Rect,
+  G,
+} from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../constants/colors';
 
@@ -125,7 +134,9 @@ export function NotFoundView({
 }: NotFoundViewProps) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
+    <View
+      style={[styles.screen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}
+    >
       <View style={styles.center}>
         <WantedPoster
           stamp={stamp}
@@ -157,7 +168,9 @@ export function LoadErrorView({
 }) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
+    <View
+      style={[styles.screen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}
+    >
       <View style={styles.center}>
         <View style={styles.loadIcon}>
           <Ionicons name="cloud-offline-outline" size={34} color={COLORS.navy} />
@@ -296,5 +309,14 @@ const styles = StyleSheet.create({
   btnPressed: { opacity: 0.7 },
 
   halftone: { width: 96, height: 96 },
-  halftoneIcon: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, textAlign: 'center', lineHeight: 96, zIndex: 1 },
+  halftoneIcon: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    textAlign: 'center',
+    lineHeight: 96,
+    zIndex: 1,
+  },
 });

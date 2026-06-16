@@ -429,7 +429,9 @@ export default function WebBiographyScreen() {
       {isDesktop ? (
         <View style={styles.desktopBody}>
           {/* Sticky sidebar */}
-          <View style={[styles.sidebar, { position: 'sticky' as 'relative', top: TOPBAR_HEIGHT + 16 }]}>
+          <View
+            style={[styles.sidebar, { position: 'sticky' as 'relative', top: TOPBAR_HEIGHT + 16 }]}
+          >
             {hero ? (
               <View style={styles.sidebarPortrait}>
                 <HeroImage

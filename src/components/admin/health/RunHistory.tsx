@@ -17,16 +17,23 @@ function RunHeroes({ runId }: { runId: number }) {
     queryFn: () => getRunHeroes(runId),
     staleTime: 60_000,
   });
-  if (isLoading) return <ActivityIndicator size="small" color={COLORS.orange} style={{ marginVertical: 10 }} />;
+  if (isLoading)
+    return <ActivityIndicator size="small" color={COLORS.orange} style={{ marginVertical: 10 }} />;
   if (!data || data.length === 0) {
     return <Text style={styles.runHeroesEmpty}>No per-hero audit recorded for this run.</Text>;
   }
   return (
     <View style={styles.runHeroesWrap}>
-      <Text style={styles.runHeroesHead}>{data.length} hero{data.length === 1 ? '' : 'es'}</Text>
+      <Text style={styles.runHeroesHead}>
+        {data.length} hero{data.length === 1 ? '' : 'es'}
+      </Text>
       <View style={styles.runHeroesChips}>
         {data.map((h) => (
-          <Pressable key={h.id} onPress={() => router.push(`/character/${h.id}`)} style={styles.runHeroChip}>
+          <Pressable
+            key={h.id}
+            onPress={() => router.push(`/character/${h.id}`)}
+            style={styles.runHeroChip}
+          >
             <Text style={styles.runHeroChipText}>{h.name}</Text>
           </Pressable>
         ))}
@@ -77,8 +84,14 @@ function RunItem({ run: r, narrow, open }: { run: EnrichmentRun; narrow: boolean
     return (
       <View style={styles.runCard}>
         <View style={styles.runCardHead}>
-          <Ionicons name={open ? 'chevron-down' : 'chevron-forward'} size={14} color={COLORS.grey} />
-          <Text style={styles.runCardType} numberOfLines={1}>{runTypeLabel(r.run_type)}</Text>
+          <Ionicons
+            name={open ? 'chevron-down' : 'chevron-forward'}
+            size={14}
+            color={COLORS.grey}
+          />
+          <Text style={styles.runCardType} numberOfLines={1}>
+            {runTypeLabel(r.run_type)}
+          </Text>
           <Text style={styles.runCardWhen}>{relTime(r.created_at)}</Text>
         </View>
         <View style={styles.runCardHead}>
@@ -117,7 +130,9 @@ function RunItem({ run: r, narrow, open }: { run: EnrichmentRun; narrow: boolean
         <Ionicons name={open ? 'chevron-down' : 'chevron-forward'} size={13} color={COLORS.grey} />
         <Text style={styles.runWhenText}>{relTime(r.created_at)}</Text>
       </View>
-      <Text style={styles.runType} numberOfLines={1}>{runTypeLabel(r.run_type)}</Text>
+      <Text style={styles.runType} numberOfLines={1}>
+        {runTypeLabel(r.run_type)}
+      </Text>
       <View style={styles.runStatusCol}>
         <Chip bg={c + '22'} fg={c} text={r.status} spinner={r.status === 'running'} capitalize />
       </View>
@@ -345,19 +360,37 @@ const styles = StyleSheet.create({
   // Expandable per-run audit
   runPressable: { cursor: 'pointer' } as object,
   runHeroesWrap: {
-    backgroundColor: '#faf6ee', borderRadius: 10, padding: 11, marginTop: 4, marginBottom: 6, gap: 8,
+    backgroundColor: '#faf6ee',
+    borderRadius: 10,
+    padding: 11,
+    marginTop: 4,
+    marginBottom: 6,
+    gap: 8,
   },
   runHeroesHead: {
-    fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey,
-    textTransform: 'uppercase', letterSpacing: 0.5,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.grey,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   runHeroesChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   runHeroChip: {
-    backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(41,60,67,0.1)',
-    borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.1)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   } as object,
   runHeroChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
-  runHeroesEmpty: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, marginVertical: 8, marginLeft: 4 },
+  runHeroesEmpty: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: COLORS.grey,
+    marginVertical: 8,
+    marginLeft: 4,
+  },
 
   // Mobile run cards
   runCards: { gap: 10, marginTop: 8 },

@@ -8,10 +8,24 @@ import {
 
 function t(over: Partial<HeroTitle>): HeroTitle {
   return {
-    id: 'tmdb:1', source: 'tmdb', mediaType: 'film', externalId: '1',
-    title: 'X', year: null, posterUrl: null, backdropUrl: null, voteAverage: null,
-    runtime: null, overview: null, trailerKey: null, watchProviders: null,
-    cast: null, stills: null, revenue: null, details: null, ...over,
+    id: 'tmdb:1',
+    source: 'tmdb',
+    mediaType: 'film',
+    externalId: '1',
+    title: 'X',
+    year: null,
+    posterUrl: null,
+    backdropUrl: null,
+    voteAverage: null,
+    runtime: null,
+    overview: null,
+    trailerKey: null,
+    watchProviders: null,
+    cast: null,
+    stills: null,
+    revenue: null,
+    details: null,
+    ...over,
   };
 }
 

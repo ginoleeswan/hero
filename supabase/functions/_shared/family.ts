@@ -8,9 +8,19 @@
 // ---------------------------------------------------------------------------
 
 export type FamilyRelation =
-  | 'parent' | 'child' | 'sibling' | 'spouse'
-  | 'grandparent' | 'grandchild' | 'aunt_uncle' | 'niece_nephew'
-  | 'cousin' | 'in_law' | 'ancestor' | 'clone' | 'other';
+  | 'parent'
+  | 'child'
+  | 'sibling'
+  | 'spouse'
+  | 'grandparent'
+  | 'grandchild'
+  | 'aunt_uncle'
+  | 'niece_nephew'
+  | 'cousin'
+  | 'in_law'
+  | 'ancestor'
+  | 'clone'
+  | 'other';
 
 export type RelativeStatus = 'deceased' | 'estranged' | 'formerly' | 'alleged' | null;
 
@@ -18,14 +28,14 @@ export type RelativeStatus = 'deceased' | 'estranged' | 'formerly' | 'alleged' |
 export interface ParsedRelative {
   name: string;
   alias: string | null;
-  role: string;        // raw role text inside parens, '' if none
-  position: number;    // source order
+  role: string; // raw role text inside parens, '' if none
+  position: number; // source order
 }
 
 /** Result of classifying a role string. */
 export interface Classification {
   relation: FamilyRelation;
-  tier: number;        // +2..-2, or 9 for clone/aside
+  tier: number; // +2..-2, or 9 for clone/aside
   modifiers: string[]; // adoptive | step | foster | half
   status: RelativeStatus;
 }
@@ -127,8 +137,13 @@ export function parseRelatives(raw: string | null | undefined): ParsedRelative[]
     if (open !== -1) {
       name = trimmed.slice(0, open).trim();
       const close = trimmed.lastIndexOf(')');
-      const inner = (close > open ? trimmed.slice(open + 1, close) : trimmed.slice(open + 1)).trim();
-      const parts = inner.split(',').map((s) => s.trim()).filter(Boolean);
+      const inner = (
+        close > open ? trimmed.slice(open + 1, close) : trimmed.slice(open + 1)
+      ).trim();
+      const parts = inner
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       if (parts.length > 1 && isAliasSegment(parts[0])) {
         alias = parts[0];
         role = parts.slice(1).join(', ');

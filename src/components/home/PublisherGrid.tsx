@@ -30,11 +30,7 @@ function Tile({ publisher, onPress }: { publisher: PublisherBrand; onPress: () =
       style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
     >
       {logo && badgeSize ? (
-        <Image
-          source={logo}
-          contentFit="contain"
-          style={{ width: logoWidth, height: LOGO_H }}
-        />
+        <Image source={logo} contentFit="contain" style={{ width: logoWidth, height: LOGO_H }} />
       ) : (
         <Text style={[styles.wordmark, { color }]} numberOfLines={1}>
           {name}

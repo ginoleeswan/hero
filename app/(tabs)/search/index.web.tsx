@@ -244,7 +244,9 @@ export default function WebSearchScreen() {
           style={[styles.pill, publisher === p && (styles.pillActive as object)] as object}
         >
           <Text
-            style={[styles.pillText, publisher === p && (styles.pillTextActive as object)] as object}
+            style={
+              [styles.pillText, publisher === p && (styles.pillTextActive as object)] as object
+            }
           >
             {p}
           </Text>
@@ -255,7 +257,6 @@ export default function WebSearchScreen() {
 
   return (
     <View style={styles.root}>
-
       {isDesktop ? (
         <>
           {/* ── Desktop: search hero zone (scrolls away) + sticky pill bar ── */}
@@ -281,7 +282,11 @@ export default function WebSearchScreen() {
               </View>
             </View>
           </View>
-          <View style={[styles.pillBar, styles.pillBarDesktop, { paddingHorizontal: contentPad }] as object}>
+          <View
+            style={
+              [styles.pillBar, styles.pillBarDesktop, { paddingHorizontal: contentPad }] as object
+            }
+          >
             <View style={styles.pillBarInner as object}>
               {pills}
               {hasCriteria && <Text style={styles.countLabel as object}>{countLabel}</Text>}
@@ -342,7 +347,9 @@ export default function WebSearchScreen() {
                 {history.map((h) => (
                   <Pressable key={h} onPress={() => setInputQuery(h)} style={styles.chip as object}>
                     <Ionicons name="time-outline" size={13} color={COLORS.grey} />
-                    <Text style={styles.chipText as object} numberOfLines={1}>{h}</Text>
+                    <Text style={styles.chipText as object} numberOfLines={1}>
+                      {h}
+                    </Text>
                   </Pressable>
                 ))}
               </View>
@@ -353,9 +360,17 @@ export default function WebSearchScreen() {
           </Text>
           <View style={gridStyle as object}>
             {trendingLoading
-              ? Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} opacity={skeletonOpacity} />)
+              ? Array.from({ length: 12 }).map((_, i) => (
+                  <SkeletonCard key={i} opacity={skeletonOpacity} />
+                ))
               : trending.map((hero) => (
-                  <HeroCard key={hero.id} hero={hero} onPress={() => goToHero(hero.id)} onLongPress={() => setPeek(hero)} onInfo={() => setPeek(hero)} />
+                  <HeroCard
+                    key={hero.id}
+                    hero={hero}
+                    onPress={() => goToHero(hero.id)}
+                    onLongPress={() => setPeek(hero)}
+                    onInfo={() => setPeek(hero)}
+                  />
                 ))}
           </View>
         </View>
@@ -367,9 +382,17 @@ export default function WebSearchScreen() {
         <View style={[styles.gridWrap, { paddingHorizontal: contentPad }]}>
           <View style={gridStyle as object}>
             {loading
-              ? Array.from({ length: 18 }).map((_, i) => <SkeletonCard key={i} opacity={skeletonOpacity} />)
+              ? Array.from({ length: 18 }).map((_, i) => (
+                  <SkeletonCard key={i} opacity={skeletonOpacity} />
+                ))
               : heroes.map((hero) => (
-                  <HeroCard key={hero.id} hero={hero} onPress={() => goToHero(hero.id)} onLongPress={() => setPeek(hero)} onInfo={() => setPeek(hero)} />
+                  <HeroCard
+                    key={hero.id}
+                    hero={hero}
+                    onPress={() => goToHero(hero.id)}
+                    onLongPress={() => setPeek(hero)}
+                    onInfo={() => setPeek(hero)}
+                  />
                 ))}
           </View>
           {!loading && heroes.length === 0 && (

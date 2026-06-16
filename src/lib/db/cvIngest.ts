@@ -76,13 +76,19 @@ export async function fetchPopularCharacters(offset = 0): Promise<CvCharacter[]>
   return d?.results ?? [];
 }
 
-export async function searchComicvineGroups(resource: GroupResource, query: string): Promise<CvGroup[]> {
+export async function searchComicvineGroups(
+  resource: GroupResource,
+  query: string,
+): Promise<CvGroup[]> {
   if (query.trim().length < 2) return [];
   const d = await invoke<{ results: CvGroup[] }>({ kind: 'group', resource, query });
   return d?.results ?? [];
 }
 
-export async function getComicvineGroupMembers(resource: GroupResource, id: string): Promise<CvGroupMembers> {
+export async function getComicvineGroupMembers(
+  resource: GroupResource,
+  id: string,
+): Promise<CvGroupMembers> {
   const d = await invoke<CvGroupMembers>({ kind: 'group_members', resource, id });
   return d ?? { groupName: null, characters: [] };
 }
@@ -92,7 +98,8 @@ export async function existingComicvineIds(ids: string[]): Promise<Set<string>> 
   if (ids.length === 0) return new Set();
   const batches = await Promise.all(
     chunk(ids, IN_CHUNK).map((slice) =>
-      supabase.from('heroes').select('comicvine_id').in('comicvine_id', slice)),
+      supabase.from('heroes').select('comicvine_id').in('comicvine_id', slice),
+    ),
   );
   const out = new Set<string>();
   for (const { data } of batches) {
@@ -109,7 +116,8 @@ export async function existingHeroNames(names: string[]): Promise<Set<string>> {
   if (cleaned.length === 0) return new Set();
   const batches = await Promise.all(
     chunk(cleaned, IN_CHUNK).map((slice) =>
-      supabase.from('heroes').select('name').in('name', slice)),
+      supabase.from('heroes').select('name').in('name', slice),
+    ),
   );
   const out = new Set<string>();
   for (const { data } of batches) {
@@ -119,7 +127,9 @@ export async function existingHeroNames(names: string[]): Promise<Set<string>> {
 }
 
 /** Add ComicVine characters to the catalogue (as pending). Returns count added. */
-export async function addComicvineHeroes(heroes: { id: string; name: string; image: string | null }[]): Promise<number> {
+export async function addComicvineHeroes(
+  heroes: { id: string; name: string; image: string | null }[],
+): Promise<number> {
   if (heroes.length === 0) return 0;
   const { data, error } = await supabase.rpc('admin_add_comicvine_heroes', { p_heroes: heroes });
   if (error) throw error;

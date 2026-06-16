@@ -76,7 +76,9 @@ function OpponentCardBase({
   // top of it and covers it once loaded, so the skeleton never lingers even if
   // an onLoad event is missed; onLoad just stops the animation to save cycles.
   const [loaded, setLoaded] = useState(false);
-  useEffect(() => { setLoaded(false); }, [item.id]);
+  useEffect(() => {
+    setLoaded(false);
+  }, [item.id]);
 
   const pulse = useSharedValue(0.65);
   useEffect(() => {
@@ -85,10 +87,7 @@ function OpponentCardBase({
       return;
     }
     pulse.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 750 }),
-        withTiming(0.65, { duration: 750 }),
-      ),
+      withSequence(withTiming(1, { duration: 750 }), withTiming(0.65, { duration: 750 })),
       -1,
       false,
     );
@@ -245,7 +244,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth * 2,
     borderColor: 'rgba(245,235,220,0.4)',
     ...Platform.select({
-      web: { cursor: 'pointer', transition: 'opacity 150ms ease, background-color 150ms ease' } as object,
+      web: {
+        cursor: 'pointer',
+        transition: 'opacity 150ms ease, background-color 150ms ease',
+      } as object,
       default: {},
     }),
   } as object,

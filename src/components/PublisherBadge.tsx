@@ -27,7 +27,11 @@ export function PublisherLogoChip({
   const width = height * (brand.badgeSize.width / brand.badgeSize.height);
   return (
     <View style={styles.inlineLogo}>
-      <Image source={brand.logo} style={[{ width, height }, styles.logoShadow]} contentFit="contain" />
+      <Image
+        source={brand.logo}
+        style={[{ width, height }, styles.logoShadow]}
+        contentFit="contain"
+      />
     </View>
   );
 }

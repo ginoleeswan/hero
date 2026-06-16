@@ -155,7 +155,11 @@ export function HomeHeroRow({
     : feature
       ? featW
       : PORTRAIT_CARD_WIDTH;
-  const cardH = ranked ? Math.round(cardW * DETAIL_HERO_RATIO) : feature ? featH : PORTRAIT_CARD_HEIGHT;
+  const cardH = ranked
+    ? Math.round(cardW * DETAIL_HERO_RATIO)
+    : feature
+      ? featH
+      : PORTRAIT_CARD_HEIGHT;
   // The numeral sits to the left, bottom-aligned, with the card overlapping just
   // its right edge (so the whole digit still reads — a thin "1" was being hidden).
   const rankSize = Math.round(cardH * 0.7);

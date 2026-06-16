@@ -18,7 +18,7 @@ export async function getPendingPortraitCount(): Promise<number> {
     .select('id', { count: 'exact', head: true })
     .is('portrait_url', null)
     .not('image_url', 'is', null);
-  return error ? 0 : count ?? 0;
+  return error ? 0 : (count ?? 0);
 }
 
 /** The next heroes that still need a portrait, most-viewed first (capped). */
@@ -42,7 +42,14 @@ export async function getPortraitHeroes(ids: string[]): Promise<PortraitHero[]> 
     .select('id, name, image_url, portrait_url')
     .in('id', ids);
   if (error || !data) return [];
-  return (data as Array<{ id: string; name: string; image_url: string | null; portrait_url: string | null }>).map((h) => ({
+  return (
+    data as Array<{
+      id: string;
+      name: string;
+      image_url: string | null;
+      portrait_url: string | null;
+    }>
+  ).map((h) => ({
     id: h.id,
     name: h.name,
     source: h.image_url,
@@ -53,6 +60,8 @@ export async function getPortraitHeroes(ids: string[]): Promise<PortraitHero[]> 
 
 /** Generate the AI portrait for one hero (Gemini → Cloudinary). Idempotent. */
 export async function stepPortrait(id: string): Promise<void> {
-  const { error } = await supabase.functions.invoke('generate-hero-portrait', { body: { heroId: id } });
+  const { error } = await supabase.functions.invoke('generate-hero-portrait', {
+    body: { heroId: id },
+  });
   if (error) throw error;
 }

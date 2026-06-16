@@ -49,8 +49,13 @@ export function parseRelatives(raw: string | null | undefined): ParsedRelative[]
     if (open !== -1) {
       name = trimmed.slice(0, open).trim();
       const close = trimmed.lastIndexOf(')');
-      const inner = (close > open ? trimmed.slice(open + 1, close) : trimmed.slice(open + 1)).trim();
-      const parts = inner.split(',').map((s) => s.trim()).filter(Boolean);
+      const inner = (
+        close > open ? trimmed.slice(open + 1, close) : trimmed.slice(open + 1)
+      ).trim();
+      const parts = inner
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       if (parts.length > 1 && isAliasSegment(parts[0])) {
         alias = parts[0];
         role = parts.slice(1).join(', ');

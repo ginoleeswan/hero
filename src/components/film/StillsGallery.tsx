@@ -59,11 +59,7 @@ export function StillsGallery({ stills, inCard }: { stills: string[]; inCard?: b
         contentContainerStyle={styles.row}
       >
         {stills.map((url, i) => (
-          <TouchableOpacity
-            key={i}
-            activeOpacity={0.85}
-            onPress={() => setLightboxIndex(i)}
-          >
+          <TouchableOpacity key={i} activeOpacity={0.85} onPress={() => setLightboxIndex(i)}>
             <Image
               source={{ uri: url }}
               style={styles.still}

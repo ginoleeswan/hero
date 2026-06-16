@@ -7,11 +7,36 @@ const TONE: Record<
   RelationshipTone,
   { color: string; bg: string; border: string; icon: keyof typeof Ionicons.glyphMap }
 > = {
-  rivalry: { color: '#E8543B', bg: 'rgba(232,84,59,0.14)', border: 'rgba(232,84,59,0.42)', icon: 'flame' },
-  dream: { color: COLORS.goldAccent, bg: 'rgba(206,155,51,0.16)', border: 'rgba(206,155,51,0.5)', icon: 'sparkles' },
-  family: { color: COLORS.orange, bg: 'rgba(231,115,51,0.14)', border: 'rgba(231,115,51,0.42)', icon: 'people' },
-  team: { color: COLORS.blue, bg: 'rgba(21,161,171,0.15)', border: 'rgba(21,161,171,0.45)', icon: 'shield' },
-  ally: { color: COLORS.green, bg: 'rgba(106,168,79,0.15)', border: 'rgba(106,168,79,0.45)', icon: 'hand-left' },
+  rivalry: {
+    color: '#E8543B',
+    bg: 'rgba(232,84,59,0.14)',
+    border: 'rgba(232,84,59,0.42)',
+    icon: 'flame',
+  },
+  dream: {
+    color: COLORS.goldAccent,
+    bg: 'rgba(206,155,51,0.16)',
+    border: 'rgba(206,155,51,0.5)',
+    icon: 'sparkles',
+  },
+  family: {
+    color: COLORS.orange,
+    bg: 'rgba(231,115,51,0.14)',
+    border: 'rgba(231,115,51,0.42)',
+    icon: 'people',
+  },
+  team: {
+    color: COLORS.blue,
+    bg: 'rgba(21,161,171,0.15)',
+    border: 'rgba(21,161,171,0.45)',
+    icon: 'shield',
+  },
+  ally: {
+    color: COLORS.green,
+    bg: 'rgba(106,168,79,0.15)',
+    border: 'rgba(106,168,79,0.45)',
+    icon: 'hand-left',
+  },
 };
 
 /**

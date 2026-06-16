@@ -68,10 +68,7 @@ export default function PickFirstFighterScreen() {
   const debouncedQuery = useDebounce(query, 200);
 
   const searchQ = useHeroSearchInfinite(debouncedQuery, 'All', 'All');
-  const heroes = useMemo(
-    () => (searchQ.data?.pages ?? []).flat().slice(0, 120),
-    [searchQ.data],
-  );
+  const heroes = useMemo(() => (searchQ.data?.pages ?? []).flat().slice(0, 120), [searchQ.data]);
   const loading = searchQ.isPending;
 
   const handlePick = (id: string, name: string) => {
@@ -123,11 +120,7 @@ export default function PickFirstFighterScreen() {
         keyboardDismissMode="on-drag"
         ListHeaderComponent={header}
         ListEmptyComponent={
-          loading ? (
-            <PickSkeleton />
-          ) : (
-            <Text style={styles.empty}>No heroes found</Text>
-          )
+          loading ? <PickSkeleton /> : <Text style={styles.empty}>No heroes found</Text>
         }
         onEndReached={() => {
           if (searchQ.hasNextPage && !searchQ.isFetchingNextPage) searchQ.fetchNextPage();

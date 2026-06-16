@@ -75,7 +75,7 @@ export function WebChromeProvider({ children }: { children: ReactNode }) {
 
   const setColor = useCallback(
     (next: string) => setColorState((prev) => (prev === next ? prev : next)),
-    []
+    [],
   );
 
   const isLight = isLightColor(color);

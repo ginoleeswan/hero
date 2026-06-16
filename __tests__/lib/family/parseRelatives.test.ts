@@ -20,7 +20,11 @@ describe('parseRelatives', () => {
 
   it('keeps status inside the role segment', () => {
     const out = parseRelatives('Warren McGinnis (father, deceased)');
-    expect(out[0]).toMatchObject({ name: 'Warren McGinnis', role: 'father, deceased', alias: null });
+    expect(out[0]).toMatchObject({
+      name: 'Warren McGinnis',
+      role: 'father, deceased',
+      alias: null,
+    });
   });
 
   it('does not split on commas inside parentheses', () => {
@@ -30,7 +34,9 @@ describe('parseRelatives', () => {
   });
 
   it('splits on semicolons too', () => {
-    const out = parseRelatives('Jarvis Pennyworth (father, deceased); Bruce Wayne (Batman, legal ward)');
+    const out = parseRelatives(
+      'Jarvis Pennyworth (father, deceased); Bruce Wayne (Batman, legal ward)',
+    );
     expect(out).toHaveLength(2);
     expect(out[1]).toMatchObject({ name: 'Bruce Wayne', alias: 'Batman', role: 'legal ward' });
   });

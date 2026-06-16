@@ -111,7 +111,9 @@ export function publisherBySlug(slug: string | undefined): PublisherBrand | unde
  * Resolve a raw `publisher` string from the DB to its brand, or undefined when
  * it isn't one we badge. Matches by substring in registry order.
  */
-export function brandForPublisher(publisher: string | null | undefined): PublisherBrand | undefined {
+export function brandForPublisher(
+  publisher: string | null | undefined,
+): PublisherBrand | undefined {
   if (!publisher) return undefined;
   const p = publisher.toLowerCase();
   return PUBLISHER_BRANDS.find((brand) => brand.match.some((m) => p.includes(m)));

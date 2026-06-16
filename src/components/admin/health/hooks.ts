@@ -183,7 +183,23 @@ export function useCatalogQueries({
     };
   }, [enabled, queryClient]);
 
-  return { healthQ, gapsQ, runsQ, cronQ, heroSearchQ, pingQ, usageQ, distQ, snapsQ, spendQ, ambiguousQ, enrichProgressQ, statsPendingQ, portraitsPendingQ, recentEnrichedQ };
+  return {
+    healthQ,
+    gapsQ,
+    runsQ,
+    cronQ,
+    heroSearchQ,
+    pingQ,
+    usageQ,
+    distQ,
+    snapsQ,
+    spendQ,
+    ambiguousQ,
+    enrichProgressQ,
+    statsPendingQ,
+    portraitsPendingQ,
+    recentEnrichedQ,
+  };
 }
 
 /**
@@ -384,13 +400,24 @@ export function useCatalogActions({
   ) => {
     const picks = heroes
       .map((h) => ({ id: h.id, top: [...h.candidates].sort((a, b) => b.score - a.score)[0] }))
-      .filter((p): p is { id: string; top: { qid: string; score: number } } => !!p.top && p.top.score >= threshold);
-    if (picks.length === 0) { flash(`No matches at or above ${threshold.toFixed(2)}.`, 'info'); return; }
+      .filter(
+        (p): p is { id: string; top: { qid: string; score: number } } =>
+          !!p.top && p.top.score >= threshold,
+      );
+    if (picks.length === 0) {
+      flash(`No matches at or above ${threshold.toFixed(2)}.`, 'info');
+      return;
+    }
     setBusy('bulk-accept');
     let ok = 0;
     try {
       for (const p of picks) {
-        try { await resolveHeroQid(p.id, p.top.qid); ok++; } catch { /* skip, continue */ }
+        try {
+          await resolveHeroQid(p.id, p.top.qid);
+          ok++;
+        } catch {
+          /* skip, continue */
+        }
       }
       flash(`Accepted ${ok} confident match${ok === 1 ? '' : 'es'}.`, 'success');
       queryClient.invalidateQueries({ queryKey: ['ambiguousHeroes'] });

@@ -1,4 +1,11 @@
-import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  useWindowDimensions,
+  Platform,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,13 +22,7 @@ function formatRevenue(n: number | null): string | null {
   return `$${n.toLocaleString()}`;
 }
 
-export function FilmBackdropHeader({
-  film,
-  onBack,
-}: {
-  film: HeroTitle;
-  onBack: () => void;
-}) {
+export function FilmBackdropHeader({ film, onBack }: { film: HeroTitle; onBack: () => void }) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const wide = Platform.OS === 'web' && width >= 900;
@@ -104,7 +105,9 @@ export function FilmBackdropHeader({
         )}
 
         <View style={styles.meta}>
-          <Text style={styles.title} numberOfLines={3}>{film.title}</Text>
+          <Text style={styles.title} numberOfLines={3}>
+            {film.title}
+          </Text>
           {metaPills.length > 0 ? (
             <View style={styles.pillRow}>
               {metaPills.map((p, i) => (

@@ -82,7 +82,10 @@ export function ClashPortraits({
       resultOp.value = 0;
       return;
     }
-    resultOp.value = withDelay(200, withTiming(1, { duration: 460, easing: Easing.out(Easing.cubic) }));
+    resultOp.value = withDelay(
+      200,
+      withTiming(1, { duration: 460, easing: Easing.out(Easing.cubic) }),
+    );
   }, [winner]);
 
   const leftStyle = useAnimatedStyle(() => ({ transform: [{ translateX: leftX.value }] }));

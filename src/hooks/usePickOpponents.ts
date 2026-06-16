@@ -175,5 +175,15 @@ export function usePickOpponents(hero: string, fallbackName?: string): PickOppon
     };
   }, [hero, fallbackName]);
 
-  return { subject, rivals, friendlyFire, family, sameUniverse, dreamMatches, similar, all, loading };
+  return {
+    subject,
+    rivals,
+    friendlyFire,
+    family,
+    sameUniverse,
+    dreamMatches,
+    similar,
+    all,
+    loading,
+  };
 }

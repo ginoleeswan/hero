@@ -3,7 +3,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import type { HeroPortrayals } from '../lib/db/people';
 
-function Group({ icon, label, names }: { icon: keyof typeof Ionicons.glyphMap; label: string; names: string[] }) {
+function Group({
+  icon,
+  label,
+  names,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  names: string[];
+}) {
   return (
     <View style={styles.group}>
       <View style={styles.groupHead}>
@@ -34,7 +42,9 @@ export function PortrayedBySection({
   if (performers.length === 0 && voiceActors.length === 0) return null;
   return (
     <View style={{ paddingHorizontal: contentInset, gap: 16 }}>
-      {performers.length > 0 ? <Group icon="person" label="Live action" names={performers} /> : null}
+      {performers.length > 0 ? (
+        <Group icon="person" label="Live action" names={performers} />
+      ) : null}
       {voiceActors.length > 0 ? <Group icon="mic" label="Voice" names={voiceActors} /> : null}
     </View>
   );

@@ -28,9 +28,7 @@ export function WebHeroCard({
 }: WebHeroCardProps) {
   const brand = featured ? brandForPublisher(publisher) : undefined;
   const logoWidth =
-    brand?.logo && brand.badgeSize
-      ? LOGO_H * (brand.badgeSize.width / brand.badgeSize.height)
-      : 0;
+    brand?.logo && brand.badgeSize ? LOGO_H * (brand.badgeSize.width / brand.badgeSize.height) : 0;
   return (
     <Pressable
       onPress={onPress}

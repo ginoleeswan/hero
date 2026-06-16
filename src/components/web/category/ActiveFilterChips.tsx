@@ -32,7 +32,10 @@ export function ActiveFilterChips({ slug, filters, setFilter }: Props) {
           key={`${c.key}-${c.value ?? ''}`}
           onPress={() => {
             if (c.key === 'tags' && c.value) {
-              setFilter('tags', (filters.tags ?? []).filter((t) => t !== c.value));
+              setFilter(
+                'tags',
+                (filters.tags ?? []).filter((t) => t !== c.value),
+              );
               return;
             }
             setFilter(c.key as FacetKey, RESET_VALUE[c.key as FacetKey] as never);

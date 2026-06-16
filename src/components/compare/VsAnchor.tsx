@@ -37,13 +37,7 @@ export function VsAnchor({
       {stage && <View style={styles.spotlight as object} />}
 
       <View style={styles.row}>
-        <FighterAnchor
-          fighter={subject}
-          seatLabel={name}
-          lit
-          tone={tone}
-          vtName={morphName}
-        />
+        <FighterAnchor fighter={subject} seatLabel={name} lit tone={tone} vtName={morphName} />
 
         <View style={styles.vsWrap}>
           <VsBadge size={48} variant={stage ? 'glass' : 'solid'} />

@@ -162,11 +162,7 @@ export async function getHeroTitles(heroId: string): Promise<HeroTitle[]> {
 
 /** A single title by composite id ('tmdb:603'). Null on error/not found. */
 export async function getTitleById(id: string): Promise<HeroTitle | null> {
-  const { data, error } = await supabase
-    .from('titles')
-    .select(TITLE_SELECT)
-    .eq('id', id)
-    .single();
+  const { data, error } = await supabase.from('titles').select(TITLE_SELECT).eq('id', id).single();
   if (error || !data) return null;
   return titleRowToHeroTitle(data as unknown as TitleRow);
 }

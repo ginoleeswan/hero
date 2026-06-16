@@ -1,4 +1,9 @@
-import { getHeroTitles, getTitleById, getTitleHeroes, extractProviders } from '../../../src/lib/db/titles';
+import {
+  getHeroTitles,
+  getTitleById,
+  getTitleHeroes,
+  extractProviders,
+} from '../../../src/lib/db/titles';
 import { supabase } from '../../../src/lib/supabase';
 
 jest.mock('../../../src/lib/supabase', () => ({ supabase: { from: jest.fn() } }));
@@ -35,8 +40,14 @@ describe('getHeroTitles', () => {
     expect(supabase.from).toHaveBeenCalledWith('hero_media_appearances');
     expect(titles).toHaveLength(1);
     expect(titles[0]).toMatchObject({
-      id: 'tmdb:268', mediaType: 'film', source: 'tmdb', externalId: '268',
-      title: 'Batman', year: 1989, trailerKey: 'bbb', revenue: 411000000,
+      id: 'tmdb:268',
+      mediaType: 'film',
+      source: 'tmdb',
+      externalId: '268',
+      title: 'Batman',
+      year: 1989,
+      trailerKey: 'bbb',
+      revenue: 411000000,
     });
   });
 
@@ -71,7 +82,15 @@ describe('getTitleById', () => {
 
 describe('getTitleHeroes', () => {
   it('returns RelatedHeroCard array from join rows', async () => {
-    const heroRow = { id: 'h1', name: 'Batman', image_url: null, image_md_url: null, portrait_url: null, publisher: 'DC', alignment: 'good' };
+    const heroRow = {
+      id: 'h1',
+      name: 'Batman',
+      image_url: null,
+      image_md_url: null,
+      portrait_url: null,
+      publisher: 'DC',
+      alignment: 'good',
+    };
     const rows = [{ heroes: heroRow }, { heroes: null }];
     const limit = jest.fn().mockResolvedValue({ data: rows, error: null });
     const order = jest.fn(() => ({ limit }));
@@ -86,7 +105,9 @@ describe('getTitleHeroes', () => {
 
   it('returns [] on error', async () => {
     const limit = jest.fn().mockResolvedValue({ data: null, error: { message: 'err' } });
-    (supabase.from as jest.Mock).mockReturnValue({ select: () => ({ eq: () => ({ order: () => ({ limit }) }) }) });
+    (supabase.from as jest.Mock).mockReturnValue({
+      select: () => ({ eq: () => ({ order: () => ({ limit }) }) }),
+    });
     expect(await getTitleHeroes('tmdb:268')).toEqual([]);
   });
 });
@@ -100,7 +121,10 @@ describe('extractProviders', () => {
     const blob = { US: { flatrate: [{ provider_name: 'Netflix', logo_path: '/nfx.png' }] } };
     const result = extractProviders(blob);
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({ name: 'Netflix', logoUrl: 'https://image.tmdb.org/t/p/w92/nfx.png' });
+    expect(result[0]).toEqual({
+      name: 'Netflix',
+      logoUrl: 'https://image.tmdb.org/t/p/w92/nfx.png',
+    });
   });
 
   it('sets logoUrl to null when logo_path is absent', () => {
@@ -112,7 +136,7 @@ describe('extractProviders', () => {
     const blob = {
       US: {
         flatrate: [{ provider_name: 'Disney+', logo_path: '/d.png' }],
-        rent:     [{ provider_name: 'Disney+', logo_path: '/d.png' }],
+        rent: [{ provider_name: 'Disney+', logo_path: '/d.png' }],
       },
     };
     expect(extractProviders(blob)).toHaveLength(1);

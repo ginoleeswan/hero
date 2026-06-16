@@ -56,7 +56,9 @@ async function main() {
     .select('*', { count: 'exact', head: true })
     .like('portrait_url', '%supabase.co/storage%');
   if ((count ?? 0) > 0) {
-    console.error(`ABORT: ${count} heroes still reference Supabase Storage. Run the migration first.`);
+    console.error(
+      `ABORT: ${count} heroes still reference Supabase Storage. Run the migration first.`,
+    );
     process.exit(1);
   }
 

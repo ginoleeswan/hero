@@ -40,7 +40,7 @@ export async function getPendingStatsCount(): Promise<number> {
     .select('id', { count: 'exact', head: true })
     .eq('comicvine_status', 'done')
     .or(PENDING);
-  return error ? 0 : count ?? 0;
+  return error ? 0 : (count ?? 0);
 }
 
 /** The next heroes that still need powerstats, most-viewed first (capped). */
@@ -61,35 +61,53 @@ export async function getStatsHeroes(ids: string[]): Promise<StatsHero[]> {
   if (ids.length === 0) return [];
   const { data, error } = await supabase
     .from('heroes')
-    .select('id, name, image_md_url, image_url, portrait_url, ai_stats_status, intelligence, strength, speed, durability, power, combat')
+    .select(
+      'id, name, image_md_url, image_url, portrait_url, ai_stats_status, intelligence, strength, speed, durability, power, combat',
+    )
     .in('id', ids);
   if (error || !data) return [];
-  return (data as Array<{
-    id: string; name: string; image_md_url: string | null; image_url: string | null;
-    portrait_url: string | null; ai_stats_status: string | null;
-    intelligence: number | null; strength: number | null; speed: number | null;
-    durability: number | null; power: number | null; combat: number | null;
-  }>).map((h) => {
-    const status = h.ai_stats_status === 'done' ? 'done' : h.ai_stats_status === 'failed' ? 'failed' : 'pending';
+  return (
+    data as Array<{
+      id: string;
+      name: string;
+      image_md_url: string | null;
+      image_url: string | null;
+      portrait_url: string | null;
+      ai_stats_status: string | null;
+      intelligence: number | null;
+      strength: number | null;
+      speed: number | null;
+      durability: number | null;
+      power: number | null;
+      combat: number | null;
+    }>
+  ).map((h) => {
+    const status =
+      h.ai_stats_status === 'done' ? 'done' : h.ai_stats_status === 'failed' ? 'failed' : 'pending';
     return {
       id: h.id,
       name: h.name,
       image: h.portrait_url ?? h.image_md_url ?? h.image_url,
       status,
-      stats: status === 'done' ? {
-        intelligence: h.intelligence ?? 0,
-        strength: h.strength ?? 0,
-        speed: h.speed ?? 0,
-        durability: h.durability ?? 0,
-        power: h.power ?? 0,
-        combat: h.combat ?? 0,
-      } : null,
+      stats:
+        status === 'done'
+          ? {
+              intelligence: h.intelligence ?? 0,
+              strength: h.strength ?? 0,
+              speed: h.speed ?? 0,
+              durability: h.durability ?? 0,
+              power: h.power ?? 0,
+              combat: h.combat ?? 0,
+            }
+          : null,
     };
   });
 }
 
 /** Generate powerstats for one hero (Gemini). Idempotent — done/failed are skipped. */
 export async function stepStats(id: string): Promise<void> {
-  const { error } = await supabase.functions.invoke('generate-hero-stats', { body: { heroId: id } });
+  const { error } = await supabase.functions.invoke('generate-hero-stats', {
+    body: { heroId: id },
+  });
   if (error) throw error;
 }

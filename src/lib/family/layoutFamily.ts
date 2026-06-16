@@ -100,14 +100,34 @@ export function layoutFamily(graph: FamilyGraph): FamilyLayout {
   ancRoot.each((d) => {
     if (d.data.id === HERO_ID) return;
     const tier = d.data.member?.tier ?? 1;
-    nodes.push({ id: d.data.id, member: d.data.member, x: d.x - ancHeroX, y: -tier * ROW_H, isHero: false });
-    edges.push({ fromId: d.parent ? d.parent.data.id : HERO_ID, toId: d.data.id, kind: 'bloodline' });
+    nodes.push({
+      id: d.data.id,
+      member: d.data.member,
+      x: d.x - ancHeroX,
+      y: -tier * ROW_H,
+      isHero: false,
+    });
+    edges.push({
+      fromId: d.parent ? d.parent.data.id : HERO_ID,
+      toId: d.data.id,
+      kind: 'bloodline',
+    });
   });
   descRoot.each((d) => {
     if (d.data.id === HERO_ID) return;
     const tier = d.data.member?.tier ?? -1;
-    nodes.push({ id: d.data.id, member: d.data.member, x: d.x - descHeroX, y: -tier * ROW_H, isHero: false });
-    edges.push({ fromId: d.parent ? d.parent.data.id : HERO_ID, toId: d.data.id, kind: 'bloodline' });
+    nodes.push({
+      id: d.data.id,
+      member: d.data.member,
+      x: d.x - descHeroX,
+      y: -tier * ROW_H,
+      isHero: false,
+    });
+    edges.push({
+      fromId: d.parent ? d.parent.data.id : HERO_ID,
+      toId: d.data.id,
+      kind: 'bloodline',
+    });
   });
 
   // Hero generation: siblings to the left, spouse(s) then cousins/others to the

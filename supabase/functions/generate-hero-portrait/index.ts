@@ -15,8 +15,7 @@ const CLOUD_SECRET = Deno.env.get('CLOUDINARY_API_SECRET') ?? '';
 
 const GEMINI = (model: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-const IMAGEN_URL =
-  `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${GEMINI_API_KEY}`;
+const IMAGEN_URL = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${GEMINI_API_KEY}`;
 
 // Heroes whose curated Cloudinary portraits serve as the style references
 // (Wolverine, Deadpool, Thor — the proven painterly side-profile look).
@@ -27,7 +26,10 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 const json = (data: unknown, status = 200) =>
-  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...CORS } });
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...CORS },
+  });
 
 function buildPrompt(heroName: string): string {
   return `Character name: ${heroName}. The first image is the character to redraw. Images 2, 3, and 4 are style reference illustrations — study every detail and match the style exactly.
@@ -62,7 +64,9 @@ function b64ToBytes(b64: string): Uint8Array {
 
 async function sha1Hex(input: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(input));
-  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 // Signed Cloudinary upload of in-memory bytes → secure_url (same scheme the app
@@ -70,7 +74,9 @@ async function sha1Hex(input: string): Promise<string> {
 async function uploadToCloudinary(heroId: string, bytes: Uint8Array): Promise<string> {
   const publicId = `hero-portraits/${heroId}`;
   const timestamp = Math.floor(Date.now() / 1000);
-  const signature = await sha1Hex(`overwrite=true&public_id=${publicId}&timestamp=${timestamp}${CLOUD_SECRET}`);
+  const signature = await sha1Hex(
+    `overwrite=true&public_id=${publicId}&timestamp=${timestamp}${CLOUD_SECRET}`,
+  );
   const form = new FormData();
   form.append('file', new Blob([bytes], { type: 'image/jpeg' }), `${heroId}.jpg`);
   form.append('api_key', CLOUD_KEY);
@@ -78,9 +84,13 @@ async function uploadToCloudinary(heroId: string, bytes: Uint8Array): Promise<st
   form.append('public_id', publicId);
   form.append('overwrite', 'true');
   form.append('signature', signature);
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: form });
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+    method: 'POST',
+    body: form,
+  });
   const body = (await res.json()) as { secure_url?: string; error?: { message?: string } };
-  if (!res.ok || !body.secure_url) throw new Error(`cloudinary ${res.status}: ${body.error?.message ?? 'no secure_url'}`);
+  if (!res.ok || !body.secure_url)
+    throw new Error(`cloudinary ${res.status}: ${body.error?.message ?? 'no secure_url'}`);
   return body.secure_url;
 }
 
@@ -88,22 +98,37 @@ type ImgPart = { inline_data: { mime_type: string; data: string } };
 
 // Gemini 3.1 Flash Image style transfer. Returns bytes, or 'PROHIBITED' if the
 // content filter blocks the character (villains often trip it → Imagen fallback).
-async function geminiStyleTransfer(parts: (ImgPart | { text: string })[]): Promise<Uint8Array | 'PROHIBITED'> {
+async function geminiStyleTransfer(
+  parts: (ImgPart | { text: string })[],
+): Promise<Uint8Array | 'PROHIBITED'> {
   let lastErr: Error | null = null;
   for (let attempt = 0; attempt < 4; attempt++) {
     if (attempt > 0) await new Promise((r) => setTimeout(r, 1000 * 2 ** (attempt - 1)));
     const res = await fetch(GEMINI('gemini-3.1-flash-image'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseModalities: ['IMAGE', 'TEXT'] } }),
+      body: JSON.stringify({
+        contents: [{ parts }],
+        generationConfig: { responseModalities: ['IMAGE', 'TEXT'] },
+      }),
     });
-    if (res.status === 429) { lastErr = new Error('rate limited'); continue; }
+    if (res.status === 429) {
+      lastErr = new Error('rate limited');
+      continue;
+    }
     if (!res.ok) throw new Error(`gemini ${res.status}: ${await res.text()}`);
     const j = (await res.json()) as {
-      candidates?: Array<{ finishReason?: string; content?: { parts?: Array<{ inlineData?: { data: string }; inline_data?: { data: string } }> } }>;
+      candidates?: Array<{
+        finishReason?: string;
+        content?: {
+          parts?: Array<{ inlineData?: { data: string }; inline_data?: { data: string } }>;
+        };
+      }>;
     };
     if (j.candidates?.[0]?.finishReason === 'PROHIBITED_CONTENT') return 'PROHIBITED';
-    const p = j.candidates?.[0]?.content?.parts?.find((x) => x.inlineData?.data ?? x.inline_data?.data);
+    const p = j.candidates?.[0]?.content?.parts?.find(
+      (x) => x.inlineData?.data ?? x.inline_data?.data,
+    );
     const data = p?.inlineData?.data ?? p?.inline_data?.data;
     if (!data) throw new Error('no image in gemini response');
     return b64ToBytes(data);
@@ -116,28 +141,46 @@ async function describeCharacter(base64: string, mime: string): Promise<string> 
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{ parts: [
-        { text: 'Describe only the visual appearance of this character — costume colours, materials, distinctive physical features. Do not name the character. 2-3 sentences.' },
-        { inline_data: { mime_type: mime, data: base64 } },
-      ] }],
+      contents: [
+        {
+          parts: [
+            {
+              text: 'Describe only the visual appearance of this character — costume colours, materials, distinctive physical features. Do not name the character. 2-3 sentences.',
+            },
+            { inline_data: { mime_type: mime, data: base64 } },
+          ],
+        },
+      ],
     }),
   });
   if (!res.ok) return '';
-  const j = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+  const j = (await res.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
   return j.candidates?.[0]?.content?.parts?.find((p) => p.text)?.text?.trim() ?? '';
 }
 
 // Fallback when Gemini refuses: Imagen 4 from a text description (no source image).
-async function imagenFromDescription(heroName: string, base64: string, mime: string): Promise<Uint8Array> {
+async function imagenFromDescription(
+  heroName: string,
+  base64: string,
+  mime: string,
+): Promise<Uint8Array> {
   const description = await describeCharacter(base64, mime);
   const prompt = `Limited edition Mondo poster art. ${heroName}${description ? ` — ${description}` : ''}. Pure 90-degree side profile facing RIGHT, one eye visible, still like a coin portrait. Extreme close-up headshot: the face and head fill the ENTIRE canvas, only the very top of the shoulders visible. Clean painterly digital illustration, graphic poster quality. Background: a single vivid bold colour that maximally contrasts the character's costume/skin. No hard white outline, portrait orientation, no text, no logos, no weapons.`;
   const res = await fetch(IMAGEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ instances: [{ prompt }], parameters: { sampleCount: 1, aspectRatio: '3:4' } }),
+    body: JSON.stringify({
+      instances: [{ prompt }],
+      parameters: { sampleCount: 1, aspectRatio: '3:4' },
+    }),
   });
   if (!res.ok) throw new Error(`imagen ${res.status}: ${await res.text()}`);
-  const j = (await res.json()) as { predictions?: Array<{ bytesBase64Encoded?: string }>; error?: { message: string } };
+  const j = (await res.json()) as {
+    predictions?: Array<{ bytesBase64Encoded?: string }>;
+    error?: { message: string };
+  };
   const b64 = j.predictions?.[0]?.bytesBase64Encoded;
   if (!b64) throw new Error(`no image from imagen: ${j.error?.message ?? 'unknown'}`);
   return b64ToBytes(b64);
@@ -146,13 +189,17 @@ async function imagenFromDescription(heroName: string, base64: string, mime: str
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (!GEMINI_API_KEY) return json({ error: 'GEMINI_API_KEY not set' }, 500);
-  if (!CLOUD_NAME || !CLOUD_KEY || !CLOUD_SECRET) return json({ error: 'Cloudinary secrets not set' }, 500);
+  if (!CLOUD_NAME || !CLOUD_KEY || !CLOUD_SECRET)
+    return json({ error: 'Cloudinary secrets not set' }, 500);
 
   try {
     const { heroId } = (await req.json()) as { heroId: string };
     if (!heroId) return json({ error: 'heroId required' }, 400);
 
-    const sb = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+    const sb = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    );
 
     // Admin gate: verify_jwt only proves the caller is signed in. This spends
     // Gemini money, so require an actual admin (not just any registered user).
@@ -160,8 +207,13 @@ serve(async (req: Request) => {
     const { data: auth } = await sb.auth.getUser(jwt);
     const uid = auth?.user?.id;
     if (!uid) return json({ error: 'unauthorized' }, 401);
-    const { data: prof } = await sb.from('user_profiles').select('is_admin').eq('id', uid).maybeSingle();
-    if (!(prof as { is_admin?: boolean } | null)?.is_admin) return json({ error: 'forbidden' }, 403);
+    const { data: prof } = await sb
+      .from('user_profiles')
+      .select('is_admin')
+      .eq('id', uid)
+      .maybeSingle();
+    if (!(prof as { is_admin?: boolean } | null)?.is_admin)
+      return json({ error: 'forbidden' }, 403);
 
     const { data: hero, error } = await sb
       .from('heroes')
@@ -175,7 +227,10 @@ serve(async (req: Request) => {
     const source = await fetchAsBase64(hero.image_url as string);
 
     // Style refs (curated Cloudinary portraits). Fetched fresh each call.
-    const { data: refRows } = await sb.from('heroes').select('id, portrait_url').in('id', STYLE_REF_IDS);
+    const { data: refRows } = await sb
+      .from('heroes')
+      .select('id, portrait_url')
+      .in('id', STYLE_REF_IDS);
     const refUrls = (refRows ?? [])
       .map((r) => (r as { portrait_url: string | null }).portrait_url)
       .filter((u): u is string => !!u);

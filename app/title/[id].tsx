@@ -44,11 +44,20 @@ export default function TitleScreen() {
   const [heroes, setHeroes] = useState<RelatedHeroCard[]>([]);
 
   useEffect(() => {
-    if (!id) { setFilm(null); return; }
+    if (!id) {
+      setFilm(null);
+      return;
+    }
     let active = true;
-    getTitleById(id).then((f) => { if (active) setFilm(f); });
-    getTitleHeroes(id).then((h) => { if (active) setHeroes(h); });
-    return () => { active = false; };
+    getTitleById(id).then((f) => {
+      if (active) setFilm(f);
+    });
+    getTitleHeroes(id).then((h) => {
+      if (active) setHeroes(h);
+    });
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   if (film === undefined) {
@@ -130,12 +139,15 @@ export default function TitleScreen() {
   };
 
   const detailRows: { label: string; value: string }[] = [];
-  if (film.year != null) detailRows.push({ label: isTv ? 'First aired' : 'Released', value: String(film.year) });
+  if (film.year != null)
+    detailRows.push({ label: isTv ? 'First aired' : 'Released', value: String(film.year) });
   if (isTv) {
     if (tv.seasons) detailRows.push({ label: 'Seasons', value: String(tv.seasons) });
     if (tv.episodes) detailRows.push({ label: 'Episodes', value: String(tv.episodes) });
-    if (tv.episode_runtime) detailRows.push({ label: 'Episode', value: `${tv.episode_runtime} min` });
-    if (tv.networks && tv.networks.length > 0) detailRows.push({ label: 'Network', value: tv.networks.join(', ') });
+    if (tv.episode_runtime)
+      detailRows.push({ label: 'Episode', value: `${tv.episode_runtime} min` });
+    if (tv.networks && tv.networks.length > 0)
+      detailRows.push({ label: 'Network', value: tv.networks.join(', ') });
   } else if (film.runtime) {
     detailRows.push({ label: 'Runtime', value: `${film.runtime} min` });
   }

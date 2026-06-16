@@ -20,7 +20,13 @@ function Fighter({
 }) {
   return (
     <View
-      style={[m.portrait, { width: size, height: size }, side === 'b' && (m.portraitB as object)] as object}
+      style={
+        [
+          m.portrait,
+          { width: size, height: size },
+          side === 'b' && (m.portraitB as object),
+        ] as object
+      }
     >
       <HeroImage
         id={hero.id}
@@ -40,7 +46,8 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const { heroA, heroB, winsA, winsB } = matchup;
-  const lead = winsA === winsB ? 'Evenly matched' : `${winsA > winsB ? heroA.name : heroB.name} leads`;
+  const lead =
+    winsA === winsB ? 'Evenly matched' : `${winsA > winsB ? heroA.name : heroB.name} leads`;
 
   // ── Mobile: a centred "fight poster" — face-off portraits on top, then the
   // verdict. Same content + tokens as the desktop card, reflowed vertically. ──
@@ -138,16 +145,39 @@ export function TodaysMatchupSkeleton() {
   return (
     <View style={[m.card, m.cardDesktop] as object}>
       <View style={m.fighters}>
-        <SkeletonBlock opacity={opacity} dark width={PORTRAIT} height={PORTRAIT} borderRadius={14} />
-        <View
-          style={[m.vsBadge, { marginHorizontal: -12, backgroundColor: 'rgba(245,235,220,0.15)' }] as object}
+        <SkeletonBlock
+          opacity={opacity}
+          dark
+          width={PORTRAIT}
+          height={PORTRAIT}
+          borderRadius={14}
         />
-        <SkeletonBlock opacity={opacity} dark width={PORTRAIT} height={PORTRAIT} borderRadius={14} />
+        <View
+          style={
+            [
+              m.vsBadge,
+              { marginHorizontal: -12, backgroundColor: 'rgba(245,235,220,0.15)' },
+            ] as object
+          }
+        />
+        <SkeletonBlock
+          opacity={opacity}
+          dark
+          width={PORTRAIT}
+          height={PORTRAIT}
+          borderRadius={14}
+        />
       </View>
       <View style={m.info}>
         <SkeletonBlock opacity={opacity} dark width={110} height={9} style={{ marginBottom: 8 }} />
         <SkeletonBlock opacity={opacity} dark width={220} height={20} style={{ marginBottom: 8 }} />
-        <SkeletonBlock opacity={opacity} dark width="80%" height={14} style={{ marginBottom: 12 }} />
+        <SkeletonBlock
+          opacity={opacity}
+          dark
+          width="80%"
+          height={14}
+          style={{ marginBottom: 12 }}
+        />
         <View style={m.footer}>
           <SkeletonBlock opacity={opacity} dark width={90} height={10} />
           <SkeletonBlock opacity={opacity} dark width={120} height={10} />

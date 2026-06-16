@@ -8,14 +8,26 @@ describe('classifyRole', () => {
   });
 
   it('captures adoptive/step/foster/half modifiers', () => {
-    expect(classifyRole('adoptive father')).toMatchObject({ relation: 'parent', modifiers: ['adoptive'] });
-    expect(classifyRole('foster daughter')).toMatchObject({ relation: 'child', modifiers: ['foster'] });
-    expect(classifyRole('half-brother')).toMatchObject({ relation: 'sibling', modifiers: ['half'] });
+    expect(classifyRole('adoptive father')).toMatchObject({
+      relation: 'parent',
+      modifiers: ['adoptive'],
+    });
+    expect(classifyRole('foster daughter')).toMatchObject({
+      relation: 'child',
+      modifiers: ['foster'],
+    });
+    expect(classifyRole('half-brother')).toMatchObject({
+      relation: 'sibling',
+      modifiers: ['half'],
+    });
   });
 
   it('does not confuse grandfather with father', () => {
     expect(classifyRole('grandfather')).toMatchObject({ relation: 'grandparent', tier: 2 });
-    expect(classifyRole('paternal grandfather')).toMatchObject({ relation: 'grandparent', tier: 2 });
+    expect(classifyRole('paternal grandfather')).toMatchObject({
+      relation: 'grandparent',
+      tier: 2,
+    });
   });
 
   it('does not confuse grandson with son', () => {
@@ -38,7 +50,11 @@ describe('classifyRole', () => {
   });
 
   it('detects deceased status without changing tier', () => {
-    expect(classifyRole('father, deceased')).toMatchObject({ relation: 'parent', tier: 1, status: 'deceased' });
+    expect(classifyRole('father, deceased')).toMatchObject({
+      relation: 'parent',
+      tier: 1,
+      status: 'deceased',
+    });
   });
 
   it('routes clones to the aside tier 9', () => {

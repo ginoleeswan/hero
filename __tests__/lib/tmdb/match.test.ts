@@ -15,7 +15,11 @@ describe('normalizeTitle', () => {
 
 describe('pickBestMatch', () => {
   it('returns the exact-title candidate', () => {
-    const best = pickBestMatch('Superman', [r(1, 'Superman Returns', '2006'), r(2, 'Superman', '1978')], null);
+    const best = pickBestMatch(
+      'Superman',
+      [r(1, 'Superman Returns', '2006'), r(2, 'Superman', '1978')],
+      null,
+    );
     expect(best?.id).toBe(2);
   });
 
@@ -25,7 +29,9 @@ describe('pickBestMatch', () => {
   });
 
   it('returns null when nothing clears the similarity threshold', () => {
-    expect(pickBestMatch('Aztec Batman Clash of Empires', [r(1, 'Unrelated Film', '2001')], null)).toBeNull();
+    expect(
+      pickBestMatch('Aztec Batman Clash of Empires', [r(1, 'Unrelated Film', '2001')], null),
+    ).toBeNull();
   });
 
   it('returns null for an empty candidate list', () => {

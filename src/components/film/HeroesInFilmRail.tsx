@@ -35,12 +35,20 @@ function HeroCard({ hero, onPress }: { hero: RelatedHeroCard; onPress: () => voi
         locations={[0.4, 1]}
         style={StyleSheet.absoluteFill}
       />
-      <Text style={styles.cardName} numberOfLines={2}>{hero.name}</Text>
+      <Text style={styles.cardName} numberOfLines={2}>
+        {hero.name}
+      </Text>
     </TouchableOpacity>
   );
 }
 
-export function HeroesInFilmRail({ heroes, inCard }: { heroes: RelatedHeroCard[]; inCard?: boolean }) {
+export function HeroesInFilmRail({
+  heroes,
+  inCard,
+}: {
+  heroes: RelatedHeroCard[];
+  inCard?: boolean;
+}) {
   const router = useRouter();
   if (heroes.length === 0) return null;
 

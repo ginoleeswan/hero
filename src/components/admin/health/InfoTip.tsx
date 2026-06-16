@@ -36,7 +36,10 @@ export function InfoTip({ text, size = 14 }: { text: string; size?: number }) {
 
   const bubble =
     pos != null ? (
-      <View style={[styles.bubble, { top: pos.top, left: pos.left }] as object} pointerEvents="none">
+      <View
+        style={[styles.bubble, { top: pos.top, left: pos.left }] as object}
+        pointerEvents="none"
+      >
         <Text style={styles.bubbleText}>{text}</Text>
       </View>
     ) : null;

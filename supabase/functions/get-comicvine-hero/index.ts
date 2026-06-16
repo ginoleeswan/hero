@@ -52,8 +52,7 @@ const cvParams = (extra: Record<string, string>) =>
 
 // Whether a non-OK ComicVine HTTP status is transient (retry later) vs terminal.
 // 420 is ComicVine's own "rate limit exceeded"; 429/5xx are transient too.
-const isTransient = (status: number): boolean =>
-  status === 420 || status === 429 || status >= 500;
+const isTransient = (status: number): boolean => status === 420 || status === 429 || status >= 500;
 
 // One character call carries both the lightweight fields (deck/publisher/first
 // issue) and the heavy detail fields — so resolving by comicvine_id needs a
@@ -172,8 +171,7 @@ serve(async (req: Request) => {
       cvImage?.screen_large_url ??
       cvImage?.medium_url ??
       null;
-    const publisher: string | null =
-      (detail.publisher as { name?: string } | null)?.name ?? null;
+    const publisher: string | null = (detail.publisher as { name?: string } | null)?.name ?? null;
     const fai = detail.first_appeared_in_issue as { id?: number | string } | null;
     const firstIssueId: string | null = fai?.id != null ? String(fai.id) : null;
 

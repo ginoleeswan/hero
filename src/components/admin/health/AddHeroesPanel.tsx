@@ -3,7 +3,15 @@
 // roster filter, a duplicate guard, and a one-click "enrich now" to close the
 // loop. Added heroes enter as 'pending' and flow into step 1.
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { Panel } from './Panel';
@@ -56,7 +64,12 @@ const MODES: { key: Mode; label: string }[] = [
 // Group-mode icon + search placeholder per resource.
 type IconName = 'people' | 'book' | 'brush' | 'film' | 'business' | 'flash';
 const GROUP_ICON: Record<string, IconName> = {
-  team: 'people', volume: 'book', person: 'brush', movie: 'film', publisher: 'business', power: 'flash',
+  team: 'people',
+  volume: 'book',
+  person: 'brush',
+  movie: 'film',
+  publisher: 'business',
+  power: 'flash',
 };
 const PLACEHOLDER: Record<Mode, string> = {
   name: 'Character name… (e.g. Darth Vader)',
@@ -70,8 +83,14 @@ const PLACEHOLDER: Record<Mode, string> = {
 };
 
 export function AddHeroesPanel({
-  flash, onAdded, onBuild,
-}: { flash: Flash; onAdded: () => void; onBuild: (heroIds: string[]) => void }) {
+  flash,
+  onAdded,
+  onBuild,
+}: {
+  flash: Flash;
+  onAdded: () => void;
+  onBuild: (heroIds: string[]) => void;
+}) {
   const [mode, setMode] = useState<Mode>('name');
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -110,13 +129,22 @@ export function AddHeroesPanel({
     fetchCharacterDetail(id)
       .then((d) => setDetailCache((p) => ({ ...p, [id]: d })))
       .catch(() => setDetailCache((p) => ({ ...p, [id]: null })))
-      .finally(() => setDetailLoading((p) => { const s = new Set(p); s.delete(id); return s; }));
+      .finally(() =>
+        setDetailLoading((p) => {
+          const s = new Set(p);
+          s.delete(id);
+          return s;
+        }),
+      );
   };
 
   // Poll the live build stage of this session's heroes so the roster reflects
   // progress (queued → ComicVine → … → built) and doesn't sit stale after a build.
   useEffect(() => {
-    if (addedSession.length === 0) { setStages({}); return; }
+    if (addedSession.length === 0) {
+      setStages({});
+      return;
+    }
     let alive = true;
     const ids = addedSession.map((a) => `cv-${a.id}`);
     // Once every added hero reaches a terminal stage there's nothing left to poll.
@@ -129,14 +157,25 @@ export function AddHeroesPanel({
     };
     tick();
     const t = setInterval(tick, 4000);
-    return () => { alive = false; clearInterval(t); };
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
   }, [addedSession]);
   const builtCount = addedSession.filter((a) => stages[`cv-${a.id}`] === 'done').length;
 
   const addedIds = useMemo(() => new Set(addedSession.map((a) => a.id)), [addedSession]);
-  const reset = () => { setChars([]); setGroups([]); setGroup(null); setMembers([]); setSelected(new Set()); setExpandedId(null); };
+  const reset = () => {
+    setChars([]);
+    setGroups([]);
+    setGroup(null);
+    setMembers([]);
+    setSelected(new Set());
+    setExpandedId(null);
+  };
   const isIn = (id: string) => existingIds.has(id) || addedIds.has(id);
-  const isDup = (id: string, name: string) => !isIn(id) && existingNames.has(name.toLowerCase().trim());
+  const isDup = (id: string, name: string) =>
+    !isIn(id) && existingNames.has(name.toLowerCase().trim());
 
   // Scan popular characters to surface gaps. The catalogue is popularity-seeded,
   // so the top pages are mostly already in it and we need to cover a lot of ground.
@@ -168,14 +207,18 @@ export function AddHeroesPanel({
       setExistingNames((prev) => (append ? new Set([...prev, ...exN]) : exN));
       setPopularOffset(off + BATCH_PAGES * PAGE);
       setPopularEnd(ended);
-    } catch (e) { flash(`Couldn't load popular: ${(e as Error).message}`, 'error'); }
-    finally { append ? setPopularLoading(false) : setLoading(false); }
+    } catch (e) {
+      flash(`Couldn't load popular: ${(e as Error).message}`, 'error');
+    } finally {
+      append ? setPopularLoading(false) : setLoading(false);
+    }
   };
 
   // Load the first page of popular gaps when that mode is entered.
   useEffect(() => {
     if (mode !== 'popular') return;
-    setPopularEnd(false); setSelected(new Set());
+    setPopularEnd(false);
+    setSelected(new Set());
     loadPopular(0, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
@@ -184,7 +227,10 @@ export function AddHeroesPanel({
   useEffect(() => {
     if (mode === 'popular') return; // discovery mode handles its own loading
     if (group) return; // browsing a roster, don't re-search
-    if (query.trim().length < 2) { reset(); return; }
+    if (query.trim().length < 2) {
+      reset();
+      return;
+    }
     let active = true;
     setLoading(true);
     const t = setTimeout(async () => {
@@ -192,41 +238,62 @@ export function AddHeroesPanel({
         if (mode === 'name') {
           const r = await searchComicvineCharacters(query);
           if (!active) return;
-          setChars(r); setGroups([]); setSelected(new Set());
+          setChars(r);
+          setGroups([]);
+          setSelected(new Set());
           setExistingIds(await existingComicvineIds(r.map((c) => c.id)));
           setExistingNames(await existingHeroNames(r.map((c) => c.name)));
         } else {
           const r = await searchComicvineGroups(mode as GroupResource, query);
           if (!active) return;
-          setGroups(r); setChars([]);
+          setGroups(r);
+          setChars([]);
         }
-      } catch (e) { if (active) flash(`Search failed: ${(e as Error).message}`, 'error'); }
-      finally { if (active) setLoading(false); }
+      } catch (e) {
+        if (active) flash(`Search failed: ${(e as Error).message}`, 'error');
+      } finally {
+        if (active) setLoading(false);
+      }
     }, 350);
-    return () => { active = false; clearTimeout(t); };
+    return () => {
+      active = false;
+      clearTimeout(t);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, mode]);
 
   const openGroup = async (g: CvGroup) => {
-    setGroup(g); setLoading(true); setSelected(new Set());
+    setGroup(g);
+    setLoading(true);
+    setSelected(new Set());
     try {
       const m = await getComicvineGroupMembers(mode as GroupResource, g.id);
       setMembers(m.characters);
       setExistingIds(await existingComicvineIds(m.characters.map((c) => c.id)));
       setExistingNames(await existingHeroNames(m.characters.map((c) => c.name)));
-    } catch (e) { flash(`Load failed: ${(e as Error).message}`, 'error'); }
-    finally { setLoading(false); }
+    } catch (e) {
+      flash(`Load failed: ${(e as Error).message}`, 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // The current addable rows (characters in name mode, members in group mode).
   const rows = useMemo(
-    () => (mode === 'name' || mode === 'popular' ? chars.map((c) => ({ id: c.id, name: c.name })) : members),
+    () =>
+      mode === 'name' || mode === 'popular'
+        ? chars.map((c) => ({ id: c.id, name: c.name }))
+        : members,
     [mode, chars, members],
   );
   const newRows = rows.filter((r) => !isIn(r.id));
 
   const toggle = (id: string) =>
-    setSelected((p) => { const s = new Set(p); s.has(id) ? s.delete(id) : s.add(id); return s; });
+    setSelected((p) => {
+      const s = new Set(p);
+      s.has(id) ? s.delete(id) : s.add(id);
+      return s;
+    });
   const selectAllNew = () => setSelected(new Set(newRows.map((r) => r.id)));
   const clearSel = () => setSelected(new Set());
 
@@ -248,12 +315,20 @@ export function AddHeroesPanel({
       setAddedSession((p) => [...payload.filter((x) => !p.some((a) => a.id === x.id)), ...p]);
       setRosterOpen(true);
       // Drop just-added ids from the selection; keep any other ticked rows intact.
-      setSelected((p) => { const s = new Set(p); ids.forEach((id) => s.delete(id)); return s; });
+      setSelected((p) => {
+        const s = new Set(p);
+        ids.forEach((id) => s.delete(id));
+        return s;
+      });
       flash(`Added ${n} hero${n === 1 ? '' : 'es'} — pending at step 1.`, 'success');
       onAdded();
       return ids;
-    } catch (e) { flash(`Add failed: ${(e as Error).message}`, 'error'); return []; }
-    finally { setBusy(false); }
+    } catch (e) {
+      flash(`Add failed: ${(e as Error).message}`, 'error');
+      return [];
+    } finally {
+      setBusy(false);
+    }
   };
   const addSelected = () => addByIds([...selected]);
   // One-shot bulk: add every new row in the current view and immediately build them.
@@ -270,8 +345,15 @@ export function AddHeroesPanel({
       setAddedSession((p) => p.filter((x) => x.id !== a.id));
       flash(`Removed ${a.name}.`, 'info');
       onAdded();
-    } catch (e) { flash(`Remove failed: ${(e as Error).message}`, 'error'); }
-    finally { setRemoving((p) => { const s = new Set(p); s.delete(a.id); return s; }); }
+    } catch (e) {
+      flash(`Remove failed: ${(e as Error).message}`, 'error');
+    } finally {
+      setRemoving((p) => {
+        const s = new Set(p);
+        s.delete(a.id);
+        return s;
+      });
+    }
   };
 
   // Publisher / power rosters run to thousands; cap what we render so a big roster
@@ -285,19 +367,32 @@ export function AddHeroesPanel({
     <Panel
       title="Add heroes · ComicVine"
       hint="Step 0 — bring new characters in. Search by name, team, series, creator, film, publisher or power; tap a result to preview it; added heroes flow into step 1."
-      action={<InfoTip text="Not sure what's missing? Start with '★ Popular gaps' — ComicVine's most-published characters that aren't in your catalogue yet, most-appeared first. Or live-search by name, team, series, creator, film, publisher or power. Tap any result to preview its real name, powers, first appearance and more before adding. Tick the ones you want (or 'Select all new') and Add — or 'Add all & build' to do the whole new set in one go. Already-in-catalogue and same-name duplicates are flagged." />}
+      action={
+        <InfoTip text="Not sure what's missing? Start with '★ Popular gaps' — ComicVine's most-published characters that aren't in your catalogue yet, most-appeared first. Or live-search by name, team, series, creator, film, publisher or power. Tap any result to preview its real name, powers, first appearance and more before adding. Tick the ones you want (or 'Select all new') and Add — or 'Add all & build' to do the whole new set in one go. Already-in-catalogue and same-name duplicates are flagged." />
+      }
     >
       {/* Mode + live search */}
       <View style={styles.modeRow}>
         {MODES.map((m) => (
-          <Pressable key={m.key} onPress={() => { setMode(m.key); setQuery(''); reset(); }} style={[styles.modePill, mode === m.key && styles.modePillOn]}>
-            <Text style={[styles.modePillText, mode === m.key && styles.modePillTextOn]}>{m.label}</Text>
+          <Pressable
+            key={m.key}
+            onPress={() => {
+              setMode(m.key);
+              setQuery('');
+              reset();
+            }}
+            style={[styles.modePill, mode === m.key && styles.modePillOn]}
+          >
+            <Text style={[styles.modePillText, mode === m.key && styles.modePillTextOn]}>
+              {m.label}
+            </Text>
           </Pressable>
         ))}
       </View>
       {mode === 'popular' ? (
         <Text style={styles.popularHint}>
-          ComicVine's most-published characters that aren't in your catalogue yet — top appearances first. Tick the ones worth adding.
+          ComicVine's most-published characters that aren't in your catalogue yet — top appearances
+          first. Tick the ones worth adding.
         </Text>
       ) : !group ? (
         <View style={styles.searchBox}>
@@ -309,8 +404,12 @@ export function AddHeroesPanel({
             placeholderTextColor={COLORS.grey}
             style={[styles.searchInput, { outlineStyle: 'none' }] as object}
           />
-          {loading ? <ActivityIndicator size="small" color={COLORS.orange} /> : query.length > 0 ? (
-            <Pressable onPress={() => setQuery('')}><Ionicons name="close-circle" size={16} color={COLORS.grey} /></Pressable>
+          {loading ? (
+            <ActivityIndicator size="small" color={COLORS.orange} />
+          ) : query.length > 0 ? (
+            <Pressable onPress={() => setQuery('')}>
+              <Ionicons name="close-circle" size={16} color={COLORS.grey} />
+            </Pressable>
           ) : null}
         </View>
       ) : null}
@@ -323,10 +422,14 @@ export function AddHeroesPanel({
               {g.image ? (
                 <HeroThumb uri={g.image} width={34} height={44} radius={7} />
               ) : (
-                <View style={styles.groupIcon}><Ionicons name={GROUP_ICON[mode] ?? 'book'} size={16} color={COLORS.orange} /></View>
+                <View style={styles.groupIcon}>
+                  <Ionicons name={GROUP_ICON[mode] ?? 'book'} size={16} color={COLORS.orange} />
+                </View>
               )}
               <View style={styles.meta}>
-                <Text style={styles.name} numberOfLines={1}>{g.name}</Text>
+                <Text style={styles.name} numberOfLines={1}>
+                  {g.name}
+                </Text>
                 <Text style={styles.sub} numberOfLines={1}>
                   {g.members != null ? `${g.members} members` : (g.hint ?? mode)}
                 </Text>
@@ -341,22 +444,52 @@ export function AddHeroesPanel({
       {((mode === 'name' || mode === 'popular') && chars.length > 0) || group ? (
         <View style={styles.toolbar}>
           {group ? (
-            <Pressable onPress={() => { setGroup(null); setMembers([]); clearSel(); }} style={styles.backBtn}>
+            <Pressable
+              onPress={() => {
+                setGroup(null);
+                setMembers([]);
+                clearSel();
+              }}
+              style={styles.backBtn}
+            >
               <Ionicons name="chevron-back" size={15} color={COLORS.navy} />
-              <Text style={styles.backText} numberOfLines={1}>{group.name}</Text>
+              <Text style={styles.backText} numberOfLines={1}>
+                {group.name}
+              </Text>
             </Pressable>
-          ) : <View style={{ flex: 1 }} />}
-          <Text style={styles.countText}>{newRows.length} new{rows.length ? ` of ${rows.length}` : ''}</Text>
+          ) : (
+            <View style={{ flex: 1 }} />
+          )}
+          <Text style={styles.countText}>
+            {newRows.length} new{rows.length ? ` of ${rows.length}` : ''}
+          </Text>
           {group ? (
-            <Pressable onPress={() => setNewOnly((v) => !v)} style={[styles.miniToggle, newOnly && styles.miniToggleOn]}>
-              <Text style={[styles.miniToggleText, newOnly && styles.miniToggleTextOn]}>New only</Text>
+            <Pressable
+              onPress={() => setNewOnly((v) => !v)}
+              style={[styles.miniToggle, newOnly && styles.miniToggleOn]}
+            >
+              <Text style={[styles.miniToggleText, newOnly && styles.miniToggleTextOn]}>
+                New only
+              </Text>
             </Pressable>
           ) : null}
-          <Pressable onPress={selectAllNew} disabled={newRows.length === 0} style={[styles.linkBtn, newRows.length === 0 && styles.dim]}>
+          <Pressable
+            onPress={selectAllNew}
+            disabled={newRows.length === 0}
+            style={[styles.linkBtn, newRows.length === 0 && styles.dim]}
+          >
             <Text style={styles.linkText}>Select all new</Text>
           </Pressable>
-          <Pressable onPress={addSelected} disabled={busy || selected.size === 0} style={[styles.addBtn, (busy || selected.size === 0) && styles.dim]}>
-            {busy ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="add" size={15} color="#fff" />}
+          <Pressable
+            onPress={addSelected}
+            disabled={busy || selected.size === 0}
+            style={[styles.addBtn, (busy || selected.size === 0) && styles.dim]}
+          >
+            {busy ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="add" size={15} color="#fff" />
+            )}
             <Text style={styles.addBtnText}>Add {selected.size || ''}</Text>
           </Pressable>
           {/* One-shot: add every new row and build them immediately. */}
@@ -396,27 +529,34 @@ export function AddHeroesPanel({
 
       {/* Popular gaps (missing-only, paged, with inline preview) */}
       {mode === 'popular' ? (
-        loading && chars.length === 0 ? <ActivityIndicator color={COLORS.orange} style={{ marginTop: 14 }} /> : (
+        loading && chars.length === 0 ? (
+          <ActivityIndicator color={COLORS.orange} style={{ marginTop: 14 }} />
+        ) : (
           <ScrollView style={styles.scroll} nestedScrollEnabled>
             {newRows.length === 0 && !loading ? (
-              <Text style={styles.empty}>No gaps on the pages loaded so far — they're all in your catalogue. Load more to dig deeper.</Text>
+              <Text style={styles.empty}>
+                No gaps on the pages loaded so far — they're all in your catalogue. Load more to dig
+                deeper.
+              </Text>
             ) : null}
-            {chars.filter((c) => !isIn(c.id)).map((c) => (
-              <CharacterRow
-                key={c.id}
-                c={c}
-                selected={selected.has(c.id)}
-                inCat={false}
-                dup={isDup(c.id, c.name)}
-                expanded={expandedId === c.id}
-                detail={detailCache[c.id]}
-                detailLoading={detailLoading.has(c.id)}
-                busy={busy}
-                onToggleSelect={() => toggle(c.id)}
-                onToggleExpand={() => toggleExpand(c.id)}
-                onAdd={() => addByIds([c.id])}
-              />
-            ))}
+            {chars
+              .filter((c) => !isIn(c.id))
+              .map((c) => (
+                <CharacterRow
+                  key={c.id}
+                  c={c}
+                  selected={selected.has(c.id)}
+                  inCat={false}
+                  dup={isDup(c.id, c.name)}
+                  expanded={expandedId === c.id}
+                  detail={detailCache[c.id]}
+                  detailLoading={detailLoading.has(c.id)}
+                  busy={busy}
+                  onToggleSelect={() => toggle(c.id)}
+                  onToggleExpand={() => toggleExpand(c.id)}
+                  onAdd={() => addByIds([c.id])}
+                />
+              ))}
             <Pressable
               onPress={() => loadPopular(popularOffset, true)}
               disabled={popularLoading || popularEnd}
@@ -434,7 +574,9 @@ export function AddHeroesPanel({
 
       {/* Roster (team / series members) */}
       {group ? (
-        loading ? <ActivityIndicator color={COLORS.orange} style={{ marginTop: 14 }} /> : (
+        loading ? (
+          <ActivityIndicator color={COLORS.orange} style={{ marginTop: 14 }} />
+        ) : (
           <ScrollView style={styles.scroll} nestedScrollEnabled>
             {memberView.map((m) => (
               <MemberRow
@@ -452,10 +594,15 @@ export function AddHeroesPanel({
                 onAdd={() => addByIds([m.id])}
               />
             ))}
-            {memberView.length === 0 ? <Text style={styles.empty}>{newOnly ? 'No new members — all in catalogue.' : 'No members.'}</Text> : null}
+            {memberView.length === 0 ? (
+              <Text style={styles.empty}>
+                {newOnly ? 'No new members — all in catalogue.' : 'No members.'}
+              </Text>
+            ) : null}
             {memberTruncated > 0 ? (
               <Text style={styles.empty}>
-                Showing first {ROSTER_CAP.toLocaleString()} of {(memberView.length + memberTruncated).toLocaleString()}
+                Showing first {ROSTER_CAP.toLocaleString()} of{' '}
+                {(memberView.length + memberTruncated).toLocaleString()}
                 {newOnly ? ' new' : ''} — add these or refine with a narrower search.
               </Text>
             ) : null}
@@ -472,8 +619,15 @@ export function AddHeroesPanel({
               {addedSession.length} added this session
               {builtCount > 0 ? ` · ${builtCount} built` : ''}
             </Text>
-            <Ionicons name={rosterOpen ? 'chevron-up' : 'chevron-down'} size={15} color={COLORS.navy} />
-            <Pressable onPress={() => onBuild(addedSession.map((a) => `cv-${a.id}`))} style={styles.loopBtn}>
+            <Ionicons
+              name={rosterOpen ? 'chevron-up' : 'chevron-down'}
+              size={15}
+              color={COLORS.navy}
+            />
+            <Pressable
+              onPress={() => onBuild(addedSession.map((a) => `cv-${a.id}`))}
+              style={styles.loopBtn}
+            >
               <Ionicons name="construct" size={12} color="#fff" />
               <Text style={styles.loopBtnText}>Build {addedSession.length}</Text>
             </Pressable>
@@ -485,12 +639,16 @@ export function AddHeroesPanel({
                 return (
                   <View key={a.id} style={styles.addedRow}>
                     <HeroThumb uri={a.image} width={28} height={37} radius={5} />
-                    <Text style={styles.addedName} numberOfLines={1}>{a.name}</Text>
+                    <Text style={styles.addedName} numberOfLines={1}>
+                      {a.name}
+                    </Text>
                     {(() => {
                       const st = stages[`cv-${a.id}`];
                       const badge = st ? STAGE_BADGE[st] : null;
                       return badge ? (
-                        <Text style={[styles.stageBadge, { color: badge.color }]} numberOfLines={1}>{badge.label}</Text>
+                        <Text style={[styles.stageBadge, { color: badge.color }]} numberOfLines={1}>
+                          {badge.label}
+                        </Text>
                       ) : null;
                     })()}
                     <Pressable
@@ -528,13 +686,29 @@ function charSub(c: CvCharacter): string {
 // One character result: checkbox (multi-select) + tappable body (expand preview).
 // The checkbox and the body are separate hit targets so ticking doesn't expand.
 function CharacterRow({
-  c, selected, inCat, dup, expanded, detail, detailLoading, busy,
-  onToggleSelect, onToggleExpand, onAdd,
+  c,
+  selected,
+  inCat,
+  dup,
+  expanded,
+  detail,
+  detailLoading,
+  busy,
+  onToggleSelect,
+  onToggleExpand,
+  onAdd,
 }: {
   c: CvCharacter;
-  selected: boolean; inCat: boolean; dup: boolean; expanded: boolean;
-  detail: CvCharacterDetail | null | undefined; detailLoading: boolean; busy: boolean;
-  onToggleSelect: () => void; onToggleExpand: () => void; onAdd: () => void;
+  selected: boolean;
+  inCat: boolean;
+  dup: boolean;
+  expanded: boolean;
+  detail: CvCharacterDetail | null | undefined;
+  detailLoading: boolean;
+  busy: boolean;
+  onToggleSelect: () => void;
+  onToggleExpand: () => void;
+  onAdd: () => void;
 }) {
   return (
     <View style={[styles.charWrap, expanded && styles.charWrapOpen]}>
@@ -545,8 +719,12 @@ function CharacterRow({
         <Pressable onPress={onToggleExpand} style={styles.rowBody}>
           <HeroThumb uri={c.image} width={32} height={42} radius={6} />
           <View style={styles.meta}>
-            <Text style={styles.name} numberOfLines={1}>{c.name}</Text>
-            <Text style={styles.sub} numberOfLines={1}>{charSub(c)}</Text>
+            <Text style={styles.name} numberOfLines={1}>
+              {c.name}
+            </Text>
+            <Text style={styles.sub} numberOfLines={1}>
+              {charSub(c)}
+            </Text>
           </View>
           <StatusBadge inCat={inCat} dup={dup} />
           <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={COLORS.grey} />
@@ -570,13 +748,29 @@ function CharacterRow({
 // arrive as just id + name, so the collapsed row is compact — tapping the body
 // expands the same preview (its detail is fetched lazily from the id).
 function MemberRow({
-  m, selected, inCat, dup, expanded, detail, detailLoading, busy,
-  onToggleSelect, onToggleExpand, onAdd,
+  m,
+  selected,
+  inCat,
+  dup,
+  expanded,
+  detail,
+  detailLoading,
+  busy,
+  onToggleSelect,
+  onToggleExpand,
+  onAdd,
 }: {
   m: { id: string; name: string };
-  selected: boolean; inCat: boolean; dup: boolean; expanded: boolean;
-  detail: CvCharacterDetail | null | undefined; detailLoading: boolean; busy: boolean;
-  onToggleSelect: () => void; onToggleExpand: () => void; onAdd: () => void;
+  selected: boolean;
+  inCat: boolean;
+  dup: boolean;
+  expanded: boolean;
+  detail: CvCharacterDetail | null | undefined;
+  detailLoading: boolean;
+  busy: boolean;
+  onToggleSelect: () => void;
+  onToggleExpand: () => void;
+  onAdd: () => void;
 }) {
   return (
     <View style={[styles.charWrap, expanded && styles.charWrapOpen]}>
@@ -585,7 +779,9 @@ function MemberRow({
           <Checkbox checked={selected} disabled={inCat} />
         </Pressable>
         <Pressable onPress={onToggleExpand} style={styles.memberBody}>
-          <Text style={styles.memberName} numberOfLines={1}>{m.name}</Text>
+          <Text style={styles.memberName} numberOfLines={1}>
+            {m.name}
+          </Text>
           <StatusBadge inCat={inCat} dup={dup} />
           <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={COLORS.grey} />
         </Pressable>
@@ -613,50 +809,127 @@ function Checkbox({ checked, disabled }: { checked: boolean; disabled: boolean }
 }
 
 function StatusBadge({ inCat, dup }: { inCat: boolean; dup: boolean }) {
-  if (inCat) return <View style={styles.badge}><Ionicons name="checkmark" size={12} color={COLORS.green} /><Text style={[styles.badgeText, { color: COLORS.green }]}>in catalogue</Text></View>;
-  if (dup) return <View style={styles.badge}><Ionicons name="warning" size={12} color={COLORS.yellow} /><Text style={[styles.badgeText, { color: COLORS.yellow }]}>possible dup</Text></View>;
+  if (inCat)
+    return (
+      <View style={styles.badge}>
+        <Ionicons name="checkmark" size={12} color={COLORS.green} />
+        <Text style={[styles.badgeText, { color: COLORS.green }]}>in catalogue</Text>
+      </View>
+    );
+  if (dup)
+    return (
+      <View style={styles.badge}>
+        <Ionicons name="warning" size={12} color={COLORS.yellow} />
+        <Text style={[styles.badgeText, { color: COLORS.yellow }]}>possible dup</Text>
+      </View>
+    );
   return null;
 }
 
 const styles = StyleSheet.create({
   modeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, rowGap: 6, marginBottom: 10 },
-  modePill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: '#efe6d6' },
+  modePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#efe6d6',
+  },
   modePillOn: { backgroundColor: COLORS.navy },
   modePillText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   modePillTextOn: { color: '#fff' },
 
   searchBox: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#f6f0e6', borderRadius: 10, paddingHorizontal: 13, paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#f6f0e6',
+    borderRadius: 10,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
   },
   searchInput: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
-  popularHint: { fontFamily: 'Nunito_400Regular', fontSize: 12.5, color: COLORS.grey, lineHeight: 18 },
+  popularHint: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12.5,
+    color: COLORS.grey,
+    lineHeight: 18,
+  },
   loadMore: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12, marginTop: 4 },
-  loadMoreText: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: COLORS.orange, textDecorationLine: 'underline' },
+  loadMoreText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12.5,
+    color: COLORS.orange,
+    textDecorationLine: 'underline',
+  },
   dim: { opacity: 0.4 },
 
   toolbar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, flexWrap: 'wrap' },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 3, flex: 1, minWidth: 0 },
   backText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy, flexShrink: 1 },
   countText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.grey },
-  miniToggle: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 7, backgroundColor: '#efe6d6' },
+  miniToggle: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 7,
+    backgroundColor: '#efe6d6',
+  },
   miniToggleOn: { backgroundColor: COLORS.navy },
   miniToggleText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.navy },
   miniToggleTextOn: { color: '#fff' },
   linkBtn: { paddingVertical: 4 },
-  linkText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange, textDecorationLine: 'underline' },
-  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: COLORS.orange, borderRadius: 9, paddingHorizontal: 13, paddingVertical: 8 },
+  linkText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: COLORS.orange,
+    textDecorationLine: 'underline',
+  },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: COLORS.orange,
+    borderRadius: 9,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+  },
   addBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
-  buildAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: COLORS.navy, borderRadius: 9, paddingHorizontal: 13, paddingVertical: 8 },
+  buildAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: COLORS.navy,
+    borderRadius: 9,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+  },
   buildAllText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
 
   scroll: { maxHeight: 300, marginTop: 8 } as object,
   charWrap: { borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.06)' },
-  charWrapOpen: { backgroundColor: '#faf5ec', borderRadius: 10, borderBottomColor: 'transparent', marginVertical: 2 },
+  charWrapOpen: {
+    backgroundColor: '#faf5ec',
+    borderRadius: 10,
+    borderBottomColor: 'transparent',
+    marginVertical: 2,
+  },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7 },
   rowBody: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  groupRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.06)' },
-  groupIcon: { width: 34, height: 44, borderRadius: 7, backgroundColor: COLORS.orange + '14', alignItems: 'center', justifyContent: 'center' },
+  groupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 7,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(41,60,67,0.06)',
+  },
+  groupIcon: {
+    width: 34,
+    height: 44,
+    borderRadius: 7,
+    backgroundColor: COLORS.orange + '14',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   meta: { flex: 1, minWidth: 0, gap: 2 },
   name: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
   sub: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey },
@@ -665,7 +938,15 @@ const styles = StyleSheet.create({
   memberName: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.black },
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey, marginTop: 12 },
 
-  cb: { width: 19, height: 19, borderRadius: 5, borderWidth: 2, borderColor: 'rgba(41,60,67,0.3)', alignItems: 'center', justifyContent: 'center' },
+  cb: {
+    width: 19,
+    height: 19,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: 'rgba(41,60,67,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cbOn: { backgroundColor: COLORS.orange, borderColor: COLORS.orange },
   cbDisabled: { borderColor: 'rgba(41,60,67,0.12)', backgroundColor: 'rgba(41,60,67,0.05)' },
 
@@ -674,21 +955,48 @@ const styles = StyleSheet.create({
 
   session: { marginTop: 12, gap: 8 },
   loopBar: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: COLORS.orange + '12', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: COLORS.orange + '12',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
   },
   loopText: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: COLORS.navy },
-  loopBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: COLORS.orange, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7 },
+  loopBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: COLORS.orange,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
   loopBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
   addedList: { gap: 2 },
   addedRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 5,
-    borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.06)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(41,60,67,0.06)',
   },
-  addedName: { flex: 1, minWidth: 0, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
+  addedName: {
+    flex: 1,
+    minWidth: 0,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.black,
+  },
   stageBadge: { fontFamily: 'Nunito_700Bold', fontSize: 11, fontVariant: ['tabular-nums'] },
   removeBtn: {
-    width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: COLORS.red + '12',
   },
 });

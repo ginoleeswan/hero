@@ -14,8 +14,24 @@ function RivalryCard({ r, onPress }: { r: Rivalry; onPress: () => void }) {
       accessibilityLabel={`${r.a.name} versus ${r.b.name}`}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
-      <HeroImage id={r.a.id} name={r.a.name} imageUrl={r.a.image_url} portraitUrl={r.a.portrait_url} contentFit="cover" contentPosition="top" style={styles.half} />
-      <HeroImage id={r.b.id} name={r.b.name} imageUrl={r.b.image_url} portraitUrl={r.b.portrait_url} contentFit="cover" contentPosition="top" style={styles.half} />
+      <HeroImage
+        id={r.a.id}
+        name={r.a.name}
+        imageUrl={r.a.image_url}
+        portraitUrl={r.a.portrait_url}
+        contentFit="cover"
+        contentPosition="top"
+        style={styles.half}
+      />
+      <HeroImage
+        id={r.b.id}
+        name={r.b.name}
+        imageUrl={r.b.image_url}
+        portraitUrl={r.b.portrait_url}
+        contentFit="cover"
+        contentPosition="top"
+        style={styles.half}
+      />
       <View style={[StyleSheet.absoluteFill, styles.scrim]} />
       <View style={styles.badge}>
         <VsBadge size={34} variant="solid" />

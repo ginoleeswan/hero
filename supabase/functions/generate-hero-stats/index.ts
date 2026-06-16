@@ -65,8 +65,13 @@ serve(async (req: Request) => {
     const { data: auth } = await sb.auth.getUser(jwt);
     const uid = auth?.user?.id;
     if (!uid) return json({ error: 'unauthorized' }, 401);
-    const { data: prof } = await sb.from('user_profiles').select('is_admin').eq('id', uid).maybeSingle();
-    if (!(prof as { is_admin?: boolean } | null)?.is_admin) return json({ error: 'forbidden' }, 403);
+    const { data: prof } = await sb
+      .from('user_profiles')
+      .select('is_admin')
+      .eq('id', uid)
+      .maybeSingle();
+    if (!(prof as { is_admin?: boolean } | null)?.is_admin)
+      return json({ error: 'forbidden' }, 403);
 
     // Fetch hero row
     const { data: hero, error: heroErr } = await sb

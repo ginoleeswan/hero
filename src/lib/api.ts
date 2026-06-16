@@ -297,7 +297,9 @@ async function fetchWikipediaThumbs(titles: string[]): Promise<Record<string, st
       for (const page of Object.values(body.query?.pages ?? {})) {
         if (page.title && page.thumbnail?.source) out[page.title] = page.thumbnail.source;
       }
-    } catch { /* ignore — entity just stays imageless */ }
+    } catch {
+      /* ignore — entity just stays imageless */
+    }
   }
   return out;
 }
@@ -315,7 +317,10 @@ export async function fetchWikidataEntities(
   // Serve cached entities immediately; only fetch the ones we haven't seen.
   const unique = requested.filter((q) => {
     const hit = wikidataCache.get(q);
-    if (hit) { out[q] = hit; return false; }
+    if (hit) {
+      out[q] = hit;
+      return false;
+    }
     return true;
   });
   if (unique.length === 0) return out;
@@ -330,12 +335,15 @@ export async function fetchWikidataEntities(
       const res = await fetch(url);
       if (!res.ok) continue;
       const body = (await res.json()) as {
-        entities?: Record<string, {
-          labels?: { en?: { value?: string } };
-          descriptions?: { en?: { value?: string } };
-          claims?: { P18?: Array<{ mainsnak?: { datavalue?: { value?: string } } }> };
-          sitelinks?: { enwiki?: { title?: string } };
-        }>;
+        entities?: Record<
+          string,
+          {
+            labels?: { en?: { value?: string } };
+            descriptions?: { en?: { value?: string } };
+            claims?: { P18?: Array<{ mainsnak?: { datavalue?: { value?: string } } }> };
+            sitelinks?: { enwiki?: { title?: string } };
+          }
+        >;
       };
       for (const [qid, ent] of Object.entries(body.entities ?? {})) {
         const file = ent.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
@@ -344,9 +352,12 @@ export async function fetchWikidataEntities(
           description: ent.descriptions?.en?.value ?? '',
           image: typeof file === 'string' && file ? commonsThumb(file) : null,
         };
-        if (!out[qid].image && ent.sitelinks?.enwiki?.title) enwikiTitle[qid] = ent.sitelinks.enwiki.title;
+        if (!out[qid].image && ent.sitelinks?.enwiki?.title)
+          enwikiTitle[qid] = ent.sitelinks.enwiki.title;
       }
-    } catch { /* leave this batch unresolved; UI falls back to the QID */ }
+    } catch {
+      /* leave this batch unresolved; UI falls back to the QID */
+    }
   }
 
   // Fallback: pull the Wikipedia lead image for entities that lack a P18.

@@ -1,6 +1,13 @@
 import { supabase } from '../supabase';
 
-export type BuildStage = 'comicvine' | 'resolve' | 'appearances' | 'review' | 'unresolved' | 'failed' | 'done';
+export type BuildStage =
+  | 'comicvine'
+  | 'resolve'
+  | 'appearances'
+  | 'review'
+  | 'unresolved'
+  | 'failed'
+  | 'done';
 export const ACTIONABLE: BuildStage[] = ['comicvine', 'resolve', 'appearances'];
 
 export interface BuildHero {
@@ -28,7 +35,9 @@ interface HeroRow {
 }
 
 export function stageOf(h: {
-  comicvine_status: string | null; wikidata_status: string; wikidata_enriched_at: string | null;
+  comicvine_status: string | null;
+  wikidata_status: string;
+  wikidata_enriched_at: string | null;
 }): BuildStage {
   if (h.comicvine_status === 'failed') return 'failed';
   if (h.comicvine_status !== 'done') return 'comicvine';
@@ -44,7 +53,9 @@ export async function getBuildHeroes(ids: string[]): Promise<BuildHero[]> {
   if (ids.length === 0) return [];
   const { data, error } = await supabase
     .from('heroes')
-    .select('id, name, publisher, image_md_url, image_url, portrait_url, comicvine_status, wikidata_status, wikidata_enriched_at, wikidata_candidates')
+    .select(
+      'id, name, publisher, image_md_url, image_url, portrait_url, comicvine_status, wikidata_status, wikidata_enriched_at, wikidata_candidates',
+    )
     .in('id', ids);
   if (error || !data) return [];
   return (data as HeroRow[]).map((h) => ({

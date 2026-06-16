@@ -98,8 +98,7 @@ function MobileDossier({
   const [open, setOpen] = useState(false);
   const { biography: bio, appearance: app, work, connections } = stats;
 
-  const valid = (v?: string | null) =>
-    !!v && v !== '' && !JUNK_VALUES.has(v.toLowerCase().trim());
+  const valid = (v?: string | null) => !!v && v !== '' && !JUNK_VALUES.has(v.toLowerCase().trim());
   const aliases = bio.aliases.filter(valid);
   const heightStr = app.height.filter(valid).join(' / ');
   const weightStr = app.weight.filter(valid).join(' / ');
@@ -152,7 +151,9 @@ function MobileDossier({
           ) : null}
           {hasProfile ? (
             <>
-              <Text style={[styles.dossierGroupLabel, hasEra && (styles.dossierGroupSpacing as object)]}>
+              <Text
+                style={[styles.dossierGroupLabel, hasEra && (styles.dossierGroupSpacing as object)]}
+              >
                 Profile
               </Text>
               <InfoRow label="Full name" value={bio['full-name']} />
@@ -165,7 +166,10 @@ function MobileDossier({
           {hasAppearance ? (
             <>
               <Text
-                style={[styles.dossierGroupLabel, hasProfile && (styles.dossierGroupSpacing as object)]}
+                style={[
+                  styles.dossierGroupLabel,
+                  hasProfile && (styles.dossierGroupSpacing as object),
+                ]}
               >
                 Appearance
               </Text>

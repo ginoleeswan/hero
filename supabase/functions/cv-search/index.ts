@@ -16,7 +16,12 @@ const KEY = Deno.env.get('COMICVINE_API_KEY') ?? '';
 const UA = { 'User-Agent': 'mythique/1.0 (admin ingestion)' };
 // ComicVine type-id prefix per resource path.
 const PREFIX: Record<string, string> = {
-  team: '4060', volume: '4050', person: '4040', movie: '4025', publisher: '4010', power: '4035',
+  team: '4060',
+  volume: '4050',
+  person: '4040',
+  movie: '4025',
+  publisher: '4010',
+  power: '4035',
 };
 // Which field on a resource holds its character roster (person uses created_characters).
 const MEMBER_FIELD: Record<string, string> = {
@@ -29,21 +34,32 @@ const MEMBER_FIELD: Record<string, string> = {
 };
 // Resources whose /search support is broken or missing — search their dedicated
 // list endpoint by name instead (the reliable pattern). Value = plural list path.
-const LIST_PATH: Record<string, string> = { movie: 'movies', publisher: 'publishers', power: 'powers' };
+const LIST_PATH: Record<string, string> = {
+  movie: 'movies',
+  publisher: 'publishers',
+  power: 'powers',
+};
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 const json = (d: unknown, s = 200) =>
-  new Response(JSON.stringify(d), { status: s, headers: { 'Content-Type': 'application/json', ...CORS } });
+  new Response(JSON.stringify(d), {
+    status: s,
+    headers: { 'Content-Type': 'application/json', ...CORS },
+  });
 
 const img = (image: Record<string, string> | null | undefined): string | null =>
   image?.small_url ?? image?.medium_url ?? image?.icon_url ?? null;
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
-  let kind = '', query = '', resource = '', id = '', offset = 0;
+  let kind = '',
+    query = '',
+    resource = '',
+    id = '',
+    offset = 0;
   try {
     const b = await req.json();
     kind = String(b?.kind ?? '');
@@ -51,7 +67,9 @@ serve(async (req: Request) => {
     resource = String(b?.resource ?? '');
     id = String(b?.id ?? '').trim();
     offset = Math.max(0, Number(b?.offset ?? 0) | 0);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   try {
     let out: unknown;
@@ -69,10 +87,15 @@ serve(async (req: Request) => {
             publisher: r.publisher?.name ?? null,
             image: img(r.image),
             deck: r.deck ?? null,
-            appearances: typeof r.count_of_issue_appearances === 'number' ? r.count_of_issue_appearances : null,
+            appearances:
+              typeof r.count_of_issue_appearances === 'number'
+                ? r.count_of_issue_appearances
+                : null,
           }))
-          .sort((a: { appearances: number | null }, b: { appearances: number | null }) =>
-            (b.appearances ?? 0) - (a.appearances ?? 0)),
+          .sort(
+            (a: { appearances: number | null }, b: { appearances: number | null }) =>
+              (b.appearances ?? 0) - (a.appearances ?? 0),
+          ),
       };
     } else if (kind === 'character_detail') {
       // Rich detail for one character — powers a confidence-building preview before
@@ -82,30 +105,39 @@ serve(async (req: Request) => {
       const r = (await (await fetch(url, { headers: UA })).json()).results ?? null;
       const GENDER: Record<number, string> = { 1: 'Male', 2: 'Female' };
       out = {
-        detail: r ? {
-          id: String(r.id),
-          name: r.name ?? null,
-          realName: r.real_name || null,
-          // ComicVine returns aliases as a newline-separated string.
-          aliases: typeof r.aliases === 'string'
-            ? r.aliases.split('\n').map((a: string) => a.trim()).filter(Boolean)
-            : [],
-          deck: r.deck ?? null,
-          image: img(r.image),
-          appearances: typeof r.count_of_issue_appearances === 'number' ? r.count_of_issue_appearances : null,
-          publisher: r.publisher?.name ?? null,
-          origin: r.origin?.name ?? null,
-          gender: GENDER[r.gender as number] ?? null,
-          firstAppearance: r.first_appeared_in_issue
-            ? {
-                name: r.first_appeared_in_issue.name ?? null,
-                issueNumber: r.first_appeared_in_issue.issue_number ?? null,
-              }
-            : null,
-          powers: (r.powers ?? []).map((p: Record<string, any>) => p.name).filter(Boolean),
-          teams: (r.teams ?? []).map((t: Record<string, any>) => t.name).filter(Boolean),
-          enemyCount: Array.isArray(r.character_enemies) ? r.character_enemies.length : 0,
-        } : null,
+        detail: r
+          ? {
+              id: String(r.id),
+              name: r.name ?? null,
+              realName: r.real_name || null,
+              // ComicVine returns aliases as a newline-separated string.
+              aliases:
+                typeof r.aliases === 'string'
+                  ? r.aliases
+                      .split('\n')
+                      .map((a: string) => a.trim())
+                      .filter(Boolean)
+                  : [],
+              deck: r.deck ?? null,
+              image: img(r.image),
+              appearances:
+                typeof r.count_of_issue_appearances === 'number'
+                  ? r.count_of_issue_appearances
+                  : null,
+              publisher: r.publisher?.name ?? null,
+              origin: r.origin?.name ?? null,
+              gender: GENDER[r.gender as number] ?? null,
+              firstAppearance: r.first_appeared_in_issue
+                ? {
+                    name: r.first_appeared_in_issue.name ?? null,
+                    issueNumber: r.first_appeared_in_issue.issue_number ?? null,
+                  }
+                : null,
+              powers: (r.powers ?? []).map((p: Record<string, any>) => p.name).filter(Boolean),
+              teams: (r.teams ?? []).map((t: Record<string, any>) => t.name).filter(Boolean),
+              enemyCount: Array.isArray(r.character_enemies) ? r.character_enemies.length : 0,
+            }
+          : null,
       };
     } else if (kind === 'popular') {
       // Most-appeared characters first, paged. The client filters out ones already
@@ -119,7 +151,8 @@ serve(async (req: Request) => {
           publisher: r.publisher?.name ?? null,
           image: img(r.image),
           deck: r.deck ?? null,
-          appearances: typeof r.count_of_issue_appearances === 'number' ? r.count_of_issue_appearances : null,
+          appearances:
+            typeof r.count_of_issue_appearances === 'number' ? r.count_of_issue_appearances : null,
         })),
       };
     } else if (kind === 'group') {
@@ -137,8 +170,12 @@ serve(async (req: Request) => {
             name: r.name,
             image: img(r.image),
             members: null,
-            hint: resource === 'movie' && r.release_date ? String(r.release_date).slice(0, 4)
-              : (typeof r.deck === 'string' && r.deck ? r.deck.slice(0, 60) : null),
+            hint:
+              resource === 'movie' && r.release_date
+                ? String(r.release_date).slice(0, 4)
+                : typeof r.deck === 'string' && r.deck
+                  ? r.deck.slice(0, 60)
+                  : null,
           })),
         };
       } else {
@@ -150,9 +187,9 @@ serve(async (req: Request) => {
             name: r.name,
             image: img(r.image),
             members: typeof r.count_of_team_members === 'number' ? r.count_of_team_members : null,
-            hint:
-              r.start_year ? String(r.start_year)
-              : r.publisher?.name ?? (typeof r.deck === 'string' ? r.deck.slice(0, 60) : null),
+            hint: r.start_year
+              ? String(r.start_year)
+              : (r.publisher?.name ?? (typeof r.deck === 'string' ? r.deck.slice(0, 60) : null)),
           })),
         };
       }
@@ -164,13 +201,19 @@ serve(async (req: Request) => {
       const r = body.results ?? {};
       out = {
         groupName: r.name ?? null,
-        characters: (r[field] ?? []).map((c: Record<string, any>) => ({ id: String(c.id), name: c.name })),
+        characters: (r[field] ?? []).map((c: Record<string, any>) => ({
+          id: String(c.id),
+          name: c.name,
+        })),
       };
     } else {
       return json({ error: 'bad kind' }, 400);
     }
 
-    const sb = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+    const sb = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    );
     await sb.from('api_usage').insert({ api: 'comicvine', endpoint: `search:${kind}`, units: 1 });
     return json(out);
   } catch (err) {

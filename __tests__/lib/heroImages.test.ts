@@ -17,7 +17,11 @@ describe('heroImageSource', () => {
   });
 
   it('prefers portraitUrl over imageUrl', () => {
-    const result = heroImageSource('620', 'https://cdn.example.com/620.jpg', 'https://storage.example.com/620.jpg');
+    const result = heroImageSource(
+      '620',
+      'https://cdn.example.com/620.jpg',
+      'https://storage.example.com/620.jpg',
+    );
     expect(result).toEqual({ uri: 'https://storage.example.com/620.jpg' });
   });
 
@@ -37,7 +41,8 @@ describe('heroImageSource', () => {
   });
 
   it('treats blank/no-portrait placeholders as missing', () => {
-    const blank = 'https://comicvine.gamespot.com/a/uploads/scale_medium/11122/111222211/6373148-blank.png';
+    const blank =
+      'https://comicvine.gamespot.com/a/uploads/scale_medium/11122/111222211/6373148-blank.png';
     // numeric id → falls through the placeholder to the CDN
     expect(heroImageSource('999', blank, blank)).toEqual({ uri: `${CDN}/999.jpg` });
     // cv id → nothing real left, empty uri
@@ -144,7 +149,16 @@ describe('monogramColor', () => {
   });
 
   it('always returns a colour from the palette', () => {
-    const palette = ['#293C43', '#0b1820', '#502314', '#7c3aed', '#b07d00', '#15A1AB', '#63A936', '#B5302B'];
+    const palette = [
+      '#293C43',
+      '#0b1820',
+      '#502314',
+      '#7c3aed',
+      '#b07d00',
+      '#15A1AB',
+      '#63A936',
+      '#B5302B',
+    ];
     for (const id of ['a', 'b', 'cv-1', 'cv-9999', '12345', 'Spider-Man']) {
       expect(palette).toContain(monogramColor(id));
     }

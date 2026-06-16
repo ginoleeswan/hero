@@ -14,12 +14,20 @@ function ProviderChip({ p }: { p: WatchProvider }) {
           cachePolicy="memory-disk"
         />
       ) : null}
-      <Text style={styles.name} numberOfLines={1}>{p.name}</Text>
+      <Text style={styles.name} numberOfLines={1}>
+        {p.name}
+      </Text>
     </View>
   );
 }
 
-export function WhereToWatch({ providers, inCard }: { providers: WatchProvider[]; inCard?: boolean }) {
+export function WhereToWatch({
+  providers,
+  inCard,
+}: {
+  providers: WatchProvider[];
+  inCard?: boolean;
+}) {
   if (providers.length === 0) return null;
 
   if (Platform.OS === 'web') {

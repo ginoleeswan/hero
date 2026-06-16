@@ -112,9 +112,7 @@ function PortraitLabel({
           ] as object
         }
       >
-        {right && (
-          <Ionicons name="chevron-back" size={17} color="rgba(245,235,220,0.7)" />
-        )}
+        {right && <Ionicons name="chevron-back" size={17} color="rgba(245,235,220,0.7)" />}
         <Text
           style={
             [
@@ -126,9 +124,7 @@ function PortraitLabel({
         >
           {name}
         </Text>
-        {!right && (
-          <Ionicons name="chevron-forward" size={17} color="rgba(245,235,220,0.7)" />
-        )}
+        {!right && <Ionicons name="chevron-forward" size={17} color="rgba(245,235,220,0.7)" />}
       </Pressable>
       {state === 'win' && (
         <View style={[styles.winRule, right && (styles.winRuleRight as object)] as object} />

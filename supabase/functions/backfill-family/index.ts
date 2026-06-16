@@ -111,7 +111,12 @@ serve(async (req: Request) => {
         };
       });
       const kin = resolveKinship(
-        built.map((b) => ({ id: b.id, relation: b.relation, role: b.role, modifiers: b.modifiers })),
+        built.map((b) => ({
+          id: b.id,
+          relation: b.relation,
+          role: b.role,
+          modifiers: b.modifiers,
+        })),
       );
       const rows = built.map((b) => ({
         ...b,

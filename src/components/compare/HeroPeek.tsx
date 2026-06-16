@@ -36,7 +36,9 @@ const STATS = [
 function PeekStat({ label, value }: { label: string; value: number }) {
   return (
     <View style={styles.statRow}>
-      <Text style={styles.statLabel} numberOfLines={1}>{label}</Text>
+      <Text style={styles.statLabel} numberOfLines={1}>
+        {label}
+      </Text>
       <View style={styles.statTrack}>
         <View style={[styles.statFill, { width: `${value}%` }]} />
       </View>
@@ -95,7 +97,9 @@ export function HeroPeek({
     key: s.key as string,
     label: s.label as string,
     value: (row?.[s.key] ?? null) as number | null,
-  })).filter((s): s is { key: string; label: string; value: number } => typeof s.value === 'number');
+  })).filter(
+    (s): s is { key: string; label: string; value: number } => typeof s.value === 'number',
+  );
 
   return (
     <View style={styles.overlay} pointerEvents="box-none">
@@ -124,8 +128,14 @@ export function HeroPeek({
             />
           </View>
           <View style={styles.identity}>
-            <Text style={styles.name} numberOfLines={2}>{name}</Text>
-            {showRealName && <Text style={styles.realName} numberOfLines={1}>{realName}</Text>}
+            <Text style={styles.name} numberOfLines={2}>
+              {name}
+            </Text>
+            {showRealName && (
+              <Text style={styles.realName} numberOfLines={1}>
+                {realName}
+              </Text>
+            )}
             <View style={styles.chips}>
               {!!publisher && (
                 <View style={styles.chip}>
@@ -174,7 +184,12 @@ export function HeroPeek({
 }
 
 const styles = StyleSheet.create({
-  overlay: { ...StyleSheet.absoluteFill, justifyContent: 'flex-end', alignItems: 'center', zIndex: 100 },
+  overlay: {
+    ...StyleSheet.absoluteFill,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    zIndex: 100,
+  },
   backdrop: { backgroundColor: 'rgba(12,18,22,0.55)' },
   sheet: {
     width: '100%',

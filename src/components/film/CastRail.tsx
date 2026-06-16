@@ -19,9 +19,13 @@ function CastMember({ member }: { member: HeroTitleCastMember }) {
           <Ionicons name="person" size={20} color={COLORS.grey} />
         </View>
       )}
-      <Text style={styles.name} numberOfLines={2}>{member.name}</Text>
+      <Text style={styles.name} numberOfLines={2}>
+        {member.name}
+      </Text>
       {member.character ? (
-        <Text style={styles.character} numberOfLines={2}>{member.character}</Text>
+        <Text style={styles.character} numberOfLines={2}>
+          {member.character}
+        </Text>
       ) : null}
     </View>
   );

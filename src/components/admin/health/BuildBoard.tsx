@@ -8,8 +8,14 @@ import { COLORS } from '../../../constants/colors';
 import { HeroThumb } from './atoms';
 import { resolveHeroQid } from '../../../lib/db/catalogHealth';
 import {
-  getBuildHeroes, comicvineUsageLastHour, stepComicvine, stepResolve, stepEnrich,
-  ACTIONABLE, type BuildHero, type BuildStage,
+  getBuildHeroes,
+  comicvineUsageLastHour,
+  stepComicvine,
+  stepResolve,
+  stepEnrich,
+  ACTIONABLE,
+  type BuildHero,
+  type BuildStage,
 } from '../../../lib/db/build';
 
 const wikiUrl = (qid: string) => `https://www.wikidata.org/wiki/${qid}`;
@@ -19,18 +25,42 @@ const CONCURRENCY = 3; // worker lanes — ComicVine stays single-in-flight (see
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const STAGE_LABEL: Record<BuildStage, string> = {
-  comicvine: 'ComicVine', resolve: 'Resolving', appearances: 'Appearances',
-  review: 'needs review', unresolved: 'no Wikidata match', failed: 'ComicVine failed', done: 'done',
+  comicvine: 'ComicVine',
+  resolve: 'Resolving',
+  appearances: 'Appearances',
+  review: 'needs review',
+  unresolved: 'no Wikidata match',
+  failed: 'ComicVine failed',
+  done: 'done',
 };
 
 // Three-dot progress for a hero: ComicVine · Resolve · Appearances.
-function passedCv(s: BuildStage) { return s !== 'comicvine' && s !== 'failed'; }
-function passedResolve(s: BuildStage) { return s === 'appearances' || s === 'review' || s === 'unresolved' || s === 'done'; }
+function passedCv(s: BuildStage) {
+  return s !== 'comicvine' && s !== 'failed';
+}
+function passedResolve(s: BuildStage) {
+  return s === 'appearances' || s === 'review' || s === 'unresolved' || s === 'done';
+}
 
 function Dots({ stage, active }: { stage: BuildStage; active: boolean }) {
-  const cv = stage === 'failed' ? COLORS.red : passedCv(stage) ? COLORS.green : (active && stage === 'comicvine') ? COLORS.orange : '#d8cdbb';
-  const rs = stage === 'review' ? COLORS.yellow : passedResolve(stage) ? COLORS.green : (active && stage === 'resolve') ? COLORS.orange : '#d8cdbb';
-  const ap = stage === 'done' ? COLORS.green : (active && stage === 'appearances') ? COLORS.orange : '#d8cdbb';
+  const cv =
+    stage === 'failed'
+      ? COLORS.red
+      : passedCv(stage)
+        ? COLORS.green
+        : active && stage === 'comicvine'
+          ? COLORS.orange
+          : '#d8cdbb';
+  const rs =
+    stage === 'review'
+      ? COLORS.yellow
+      : passedResolve(stage)
+        ? COLORS.green
+        : active && stage === 'resolve'
+          ? COLORS.orange
+          : '#d8cdbb';
+  const ap =
+    stage === 'done' ? COLORS.green : active && stage === 'appearances' ? COLORS.orange : '#d8cdbb';
   return (
     <View style={styles.dots}>
       <View style={[styles.dot, { backgroundColor: cv }]} />
@@ -41,8 +71,14 @@ function Dots({ stage, active }: { stage: BuildStage; active: boolean }) {
 }
 
 export function BuildBoard({
-  heroIds, onClose, flash,
-}: { heroIds: string[]; onClose: () => void; flash: (m: string, t?: 'info' | 'success' | 'error' | 'pending') => void }) {
+  heroIds,
+  onClose,
+  flash,
+}: {
+  heroIds: string[];
+  onClose: () => void;
+  flash: (m: string, t?: 'info' | 'success' | 'error' | 'pending') => void;
+}) {
   const [heroes, setHeroes] = useState<BuildHero[]>([]);
   const [paused, setPaused] = useState(false);
   const [rateLimited, setRateLimited] = useState(false);
@@ -58,7 +94,9 @@ export function BuildBoard({
   const rowsInFlight = useRef<Promise<BuildHero[]> | null>(null);
   const sharedRows = useCallback(() => {
     if (rowsInFlight.current) return rowsInFlight.current;
-    const p = getBuildHeroes(heroIds).finally(() => { rowsInFlight.current = null; });
+    const p = getBuildHeroes(heroIds).finally(() => {
+      rowsInFlight.current = null;
+    });
     rowsInFlight.current = p;
     return p;
     // heroIds is a stable prop for the life of the board
@@ -79,15 +117,19 @@ export function BuildBoard({
 
     const lane = async () => {
       while (!ctrl.current.stopped) {
-        if (ctrl.current.paused) { await sleep(400); continue; }
+        if (ctrl.current.paused) {
+          await sleep(400);
+          continue;
+        }
         const rows = await sharedRows();
         if (ctrl.current.stopped) break;
         setHeroes(rows);
-        const next = rows.find((h) =>
-          ACTIONABLE.includes(h.stage)
-          && !inFlight.current.has(h.id)
-          && (attempts.current.get(key(h)) ?? 0) < 3
-          && (h.stage !== 'comicvine' || !cvBusy.current),
+        const next = rows.find(
+          (h) =>
+            ACTIONABLE.includes(h.stage) &&
+            !inFlight.current.has(h.id) &&
+            (attempts.current.get(key(h)) ?? 0) < 3 &&
+            (h.stage !== 'comicvine' || !cvBusy.current),
         );
         if (!next) {
           // Nothing claimable now; quit only once no lane is still working.
@@ -116,7 +158,9 @@ export function BuildBoard({
           } else {
             await stepEnrich(next.id);
           }
-        } catch { /* counted below, skipped after 3 */ } finally {
+        } catch {
+          /* counted below, skipped after 3 */
+        } finally {
           if (counted) attempts.current.set(key(next), (attempts.current.get(key(next)) ?? 0) + 1);
           inFlight.current.delete(next.id);
           if (next.stage === 'comicvine') cvBusy.current = false;
@@ -128,7 +172,10 @@ export function BuildBoard({
 
     try {
       await Promise.all(Array.from({ length: CONCURRENCY }, lane));
-      if (!ctrl.current.stopped) { setDone(true); syncActive(); }
+      if (!ctrl.current.stopped) {
+        setDone(true);
+        syncActive();
+      }
     } finally {
       running.current = false;
     }
@@ -137,7 +184,9 @@ export function BuildBoard({
   useEffect(() => {
     ctrl.current = { stopped: false, paused: false };
     pump();
-    return () => { ctrl.current.stopped = true; };
+    return () => {
+      ctrl.current.stopped = true;
+    };
   }, [pump]);
 
   // Lock an ambiguous hero to a Wikidata QID right here, then resume the worker so
@@ -152,7 +201,11 @@ export function BuildBoard({
     } catch (e) {
       flash(`Resolve failed: ${(e as Error).message}`, 'error');
     } finally {
-      setResolving((p) => { const s = new Set(p); s.delete(heroId); return s; });
+      setResolving((p) => {
+        const s = new Set(p);
+        s.delete(heroId);
+        return s;
+      });
     }
   };
 
@@ -160,8 +213,15 @@ export function BuildBoard({
     if (typeof window !== 'undefined') window.open(wikiUrl(qid), '_blank', 'noopener');
   };
 
-  const togglePause = () => { const v = !paused; setPaused(v); ctrl.current.paused = v; };
-  const close = () => { ctrl.current.stopped = true; onClose(); };
+  const togglePause = () => {
+    const v = !paused;
+    setPaused(v);
+    ctrl.current.paused = v;
+  };
+  const close = () => {
+    ctrl.current.stopped = true;
+    onClose();
+  };
 
   const total = heroes.length;
   const cvDone = heroes.filter((h) => passedCv(h.stage)).length;
@@ -175,10 +235,13 @@ export function BuildBoard({
       <View style={styles.card}>
         <View style={styles.head}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Build · {total} hero{total === 1 ? '' : 'es'}</Text>
+            <Text style={styles.title}>
+              Build · {total} hero{total === 1 ? '' : 'es'}
+            </Text>
             <Text style={styles.sub}>
               {done ? 'Finished.' : paused ? 'Paused.' : 'Running — keep this tab open.'}
-              {review > 0 ? `  ·  ${review} need review` : ''}{failed > 0 ? `  ·  ${failed} failed` : ''}
+              {review > 0 ? `  ·  ${review} need review` : ''}
+              {failed > 0 ? `  ·  ${failed} failed` : ''}
             </Text>
           </View>
           {!done ? (
@@ -188,7 +251,9 @@ export function BuildBoard({
             </Pressable>
           ) : null}
           <Pressable onPress={close} style={[styles.headBtn, done && styles.headBtnPrimary]}>
-            <Text style={[styles.headBtnText, done && { color: '#fff' }]}>{done ? 'Done' : 'Stop'}</Text>
+            <Text style={[styles.headBtnText, done && { color: '#fff' }]}>
+              {done ? 'Done' : 'Stop'}
+            </Text>
           </Pressable>
         </View>
 
@@ -201,18 +266,41 @@ export function BuildBoard({
         {rateLimited ? (
           <View style={styles.rateBar}>
             <Ionicons name="hourglass-outline" size={14} color={COLORS.orange} />
-            <Text style={styles.rateText}>ComicVine hourly limit reached — waiting for the window to open, then auto-resuming.</Text>
+            <Text style={styles.rateText}>
+              ComicVine hourly limit reached — waiting for the window to open, then auto-resuming.
+            </Text>
           </View>
         ) : null}
 
         <ScrollView style={styles.list} nestedScrollEnabled>
           {heroes.map((h) => (
-            <View key={h.id} style={[styles.row, activeIds.has(h.id) && styles.rowActive, h.stage === 'review' && styles.rowReview]}>
+            <View
+              key={h.id}
+              style={[
+                styles.row,
+                activeIds.has(h.id) && styles.rowActive,
+                h.stage === 'review' && styles.rowReview,
+              ]}
+            >
               <View style={styles.rowMain}>
                 <HeroThumb uri={h.image} width={30} height={40} radius={6} />
-                <Text style={styles.name} numberOfLines={1}>{h.name}</Text>
-                <Text style={[styles.stageText, h.stage === 'done' && { color: COLORS.green }, (h.stage === 'failed') && { color: COLORS.red }, h.stage === 'review' && { color: COLORS.yellow }]} numberOfLines={1}>
-                  {activeIds.has(h.id) && ACTIONABLE.includes(h.stage) ? <ActivityIndicator size="small" color={COLORS.orange} /> : STAGE_LABEL[h.stage]}
+                <Text style={styles.name} numberOfLines={1}>
+                  {h.name}
+                </Text>
+                <Text
+                  style={[
+                    styles.stageText,
+                    h.stage === 'done' && { color: COLORS.green },
+                    h.stage === 'failed' && { color: COLORS.red },
+                    h.stage === 'review' && { color: COLORS.yellow },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {activeIds.has(h.id) && ACTIONABLE.includes(h.stage) ? (
+                    <ActivityIndicator size="small" color={COLORS.orange} />
+                  ) : (
+                    STAGE_LABEL[h.stage]
+                  )}
                 </Text>
                 <Dots stage={h.stage} active={activeIds.has(h.id)} />
               </View>
@@ -224,7 +312,9 @@ export function BuildBoard({
                     Pick the right match{h.publisher ? ` · ${h.publisher}` : ''}:
                   </Text>
                   {h.candidates.length === 0 ? (
-                    <Text style={styles.reviewEmpty}>No candidates on file — resolve from the Build tab.</Text>
+                    <Text style={styles.reviewEmpty}>
+                      No candidates on file — resolve from the Build tab.
+                    </Text>
                   ) : (
                     <View style={styles.cands}>
                       {h.candidates.map((c) => {
@@ -237,7 +327,9 @@ export function BuildBoard({
                               style={[styles.chip, busy && styles.dim]}
                               accessibilityLabel={`Pick ${c.qid} for ${h.name}`}
                             >
-                              <Text style={styles.chipText}>{busy ? '…' : `${c.qid} · ${c.score.toFixed(2)}`}</Text>
+                              <Text style={styles.chipText}>
+                                {busy ? '…' : `${c.qid} · ${c.score.toFixed(2)}`}
+                              </Text>
                             </Pressable>
                             <Pressable
                               onPress={() => openWiki(c.qid)}
@@ -267,47 +359,99 @@ function Bar({ label, have, total }: { label: string; have: number; total: numbe
     <View style={styles.bar}>
       <View style={styles.barHead}>
         <Text style={styles.barLabel}>{label}</Text>
-        <Text style={styles.barNum}>{have}/{total}</Text>
+        <Text style={styles.barNum}>
+          {have}/{total}
+        </Text>
       </View>
-      <View style={styles.track}><View style={[styles.fill, { width: `${pct}%` }]} /></View>
+      <View style={styles.track}>
+        <View style={[styles.fill, { width: `${pct}%` }]} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9000,
-    backgroundColor: 'rgba(11,18,24,0.55)', alignItems: 'center', justifyContent: 'center', padding: 24,
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9000,
+    backgroundColor: 'rgba(11,18,24,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
   },
   card: {
-    width: '100%', maxWidth: 680, maxHeight: '82%', backgroundColor: '#fffdf8',
-    borderRadius: 16, padding: 20, gap: 14, boxShadow: '0 24px 60px rgba(11,18,24,0.4)',
+    width: '100%',
+    maxWidth: 680,
+    maxHeight: '82%',
+    backgroundColor: '#fffdf8',
+    borderRadius: 16,
+    padding: 20,
+    gap: 14,
+    boxShadow: '0 24px 60px rgba(11,18,24,0.4)',
   } as object,
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   title: { fontFamily: 'Flame-Regular', fontSize: 18, color: COLORS.black },
   sub: { fontFamily: 'Nunito_400Regular', fontSize: 12.5, color: COLORS.grey, marginTop: 2 },
-  headBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#efe6d6', borderRadius: 9, paddingHorizontal: 13, paddingVertical: 8 },
+  headBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#efe6d6',
+    borderRadius: 9,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+  },
   headBtnPrimary: { backgroundColor: COLORS.orange },
   headBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
 
   progressRow: { flexDirection: 'row', gap: 12 },
   bar: { flex: 1, gap: 4 },
   barHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  barLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey, textTransform: 'uppercase', letterSpacing: 0.5 },
+  barLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.grey,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   barNum: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   track: { height: 6, borderRadius: 3, backgroundColor: COLORS.navy + '12', overflow: 'hidden' },
   fill: { height: 6, borderRadius: 3, backgroundColor: COLORS.orange },
 
-  rateBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.orange + '14', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9 },
+  rateBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: COLORS.orange + '14',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
   rateText: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
 
   list: { maxHeight: 360 } as object,
-  row: { paddingVertical: 7, paddingHorizontal: 8, borderRadius: 9, borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.05)' },
+  row: {
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+    borderRadius: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(41,60,67,0.05)',
+  },
   rowMain: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   rowActive: { backgroundColor: COLORS.orange + '10' },
   rowReview: { backgroundColor: COLORS.yellow + '12' },
   name: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: COLORS.black, minWidth: 0 },
-  stageText: { fontFamily: 'Nunito_700Bold', fontSize: 11.5, color: COLORS.grey, width: 110, textAlign: 'right' },
+  stageText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11.5,
+    color: COLORS.grey,
+    width: 110,
+    textAlign: 'right',
+  },
   dots: { flexDirection: 'row', gap: 4, width: 40, justifyContent: 'flex-end' },
   dot: { width: 8, height: 8, borderRadius: 8 },
 
@@ -317,8 +461,22 @@ const styles = StyleSheet.create({
   reviewEmpty: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: COLORS.grey },
   cands: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   cand: { flexDirection: 'row', alignItems: 'stretch', gap: 1 },
-  chip: { backgroundColor: COLORS.navy + '12', borderTopLeftRadius: 8, borderBottomLeftRadius: 8, paddingHorizontal: 9, paddingVertical: 5, justifyContent: 'center' },
+  chip: {
+    backgroundColor: COLORS.navy + '12',
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    justifyContent: 'center',
+  },
   chipText: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: COLORS.navy },
-  chipLink: { backgroundColor: COLORS.navy + '12', borderTopRightRadius: 8, borderBottomRightRadius: 8, paddingHorizontal: 7, alignItems: 'center', justifyContent: 'center' },
+  chipLink: {
+    backgroundColor: COLORS.navy + '12',
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+    paddingHorizontal: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dim: { opacity: 0.4 },
 });

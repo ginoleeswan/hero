@@ -27,7 +27,13 @@ export function UniverseBreakdown({ counts, total, onNavigate }: UniverseBreakdo
 
   const denom = total > 0 ? total : counts.marvel + counts.dc + counts.other || 1;
   const segments: Segment[] = [
-    { key: 'marvel', label: 'Marvel', value: counts.marvel, color: MARVEL, path: '/category/marvel' },
+    {
+      key: 'marvel',
+      label: 'Marvel',
+      value: counts.marvel,
+      color: MARVEL,
+      path: '/category/marvel',
+    },
     { key: 'dc', label: 'DC', value: counts.dc, color: DC, path: '/category/dc' },
     { key: 'other', label: 'Other publishers', value: counts.other, color: OTHER },
   ];

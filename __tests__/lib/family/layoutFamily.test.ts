@@ -4,17 +4,31 @@ import type { FamilyMember } from '../../../src/lib/family/types';
 
 function m(p: Partial<FamilyMember> & { id: string }): FamilyMember {
   return {
-    name: p.id, alias: null, role: 'role', relation: 'other', tier: 0,
-    modifiers: [], status: null, position: 0,
-    heroId: null, heroImage: null, heroPower: null, heroAlignment: null,
-    treeParentId: null, branchSide: null, ...p,
+    name: p.id,
+    alias: null,
+    role: 'role',
+    relation: 'other',
+    tier: 0,
+    modifiers: [],
+    status: null,
+    position: 0,
+    heroId: null,
+    heroImage: null,
+    heroPower: null,
+    heroAlignment: null,
+    treeParentId: null,
+    branchSide: null,
+    ...p,
   };
 }
 const layout = (members: FamilyMember[]) => layoutFamily(buildFamilyGraph(members));
 
 describe('layoutFamily', () => {
   it('includes the hero node and one node per member', () => {
-    const out = layout([m({ id: 'f', relation: 'parent', tier: 1 }), m({ id: 'c', relation: 'child', tier: -1 })]);
+    const out = layout([
+      m({ id: 'f', relation: 'parent', tier: 1 }),
+      m({ id: 'c', relation: 'child', tier: -1 }),
+    ]);
     expect(out.nodes.map((n) => n.id).sort()).toEqual([HERO_ID, 'c', 'f'].sort());
     expect(out.nodes.find((n) => n.isHero)?.id).toBe(HERO_ID);
   });
@@ -34,7 +48,10 @@ describe('layoutFamily', () => {
   });
 
   it('puts siblings on one side of the hero and the spouse on the other', () => {
-    const out = layout([m({ id: 'b', relation: 'sibling', tier: 0 }), m({ id: 'w', relation: 'spouse', tier: 0 })]);
+    const out = layout([
+      m({ id: 'b', relation: 'sibling', tier: 0 }),
+      m({ id: 'w', relation: 'spouse', tier: 0 }),
+    ]);
     const x = (id: string) => out.nodes.find((n) => n.id === id)!.x;
     expect(x('b')).toBeLessThan(x(HERO_ID));
     expect(x('w')).toBeGreaterThan(x(HERO_ID));

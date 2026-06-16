@@ -2,9 +2,19 @@
 import type { BranchSide } from './resolveKinship';
 
 export type FamilyRelation =
-  | 'parent' | 'child' | 'sibling' | 'spouse'
-  | 'grandparent' | 'grandchild' | 'aunt_uncle' | 'niece_nephew'
-  | 'cousin' | 'in_law' | 'ancestor' | 'clone' | 'other';
+  | 'parent'
+  | 'child'
+  | 'sibling'
+  | 'spouse'
+  | 'grandparent'
+  | 'grandchild'
+  | 'aunt_uncle'
+  | 'niece_nephew'
+  | 'cousin'
+  | 'in_law'
+  | 'ancestor'
+  | 'clone'
+  | 'other';
 
 export type RelativeStatus = 'deceased' | 'estranged' | 'formerly' | 'alleged' | null;
 
@@ -12,14 +22,14 @@ export type RelativeStatus = 'deceased' | 'estranged' | 'formerly' | 'alleged' |
 export interface ParsedRelative {
   name: string;
   alias: string | null;
-  role: string;        // raw role text inside parens, '' if none
-  position: number;    // source order
+  role: string; // raw role text inside parens, '' if none
+  position: number; // source order
 }
 
 /** Result of classifying a role string. */
 export interface Classification {
   relation: FamilyRelation;
-  tier: number;        // +2..-2, or 9 for clone/aside
+  tier: number; // +2..-2, or 9 for clone/aside
   modifiers: string[]; // adoptive | step | foster | half
   status: RelativeStatus;
 }
@@ -35,12 +45,12 @@ export interface FamilyMember {
   modifiers: string[];
   status: RelativeStatus;
   position: number;
-  heroId: string | null;       // related_hero_id, if it resolved to a page
-  heroImage: string | null;    // portrait for linked nodes
-  heroPower: number | null;    // power badge for linked nodes
+  heroId: string | null; // related_hero_id, if it resolved to a page
+  heroImage: string | null; // portrait for linked nodes
+  heroPower: number | null; // power badge for linked nodes
   heroAlignment: string | null;
   treeParentId: string | null; // the member this node hangs from (null = hero spine)
-  branchSide: BranchSide;      // paternal | maternal | spouse | null
+  branchSide: BranchSide; // paternal | maternal | spouse | null
 }
 
 /** Where a node's connector attaches: the hero spine, or a specific parent node. */

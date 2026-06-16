@@ -157,7 +157,11 @@ async function enrichHero(
   // portrait generator reads). Only set when ComicVine returns art (never null it).
   const cvImage = d.image as Record<string, string> | null;
   charImageUrl =
-    cvImage?.super_url ?? cvImage?.original_url ?? cvImage?.screen_large_url ?? cvImage?.medium_url ?? null;
+    cvImage?.super_url ??
+    cvImage?.original_url ??
+    cvImage?.screen_large_url ??
+    cvImage?.medium_url ??
+    null;
   const fai = d.first_appeared_in_issue as { id?: number | string } | null;
   firstIssueId = fai?.id != null ? String(fai.id) : null;
 
@@ -198,9 +202,10 @@ async function enrichHero(
   const rawDesc = typeof d.description === 'string' ? d.description.trim() : '';
   const description = rawDesc.length > 0 ? rawDesc : null;
 
-  const origin = typeof (d.origin as { name?: string } | null)?.name === 'string'
-    ? (d.origin as { name: string }).name
-    : null;
+  const origin =
+    typeof (d.origin as { name?: string } | null)?.name === 'string'
+      ? (d.origin as { name: string }).name
+      : null;
 
   const issueCount =
     typeof d.count_of_issue_appearances === 'number' ? d.count_of_issue_appearances : null;
@@ -429,7 +434,9 @@ serve(async (req: Request) => {
         })
         .eq('id', runId);
     }
-    await sb.from('api_usage').insert({ api: 'comicvine', endpoint: 'character', units: batch.length });
+    await sb
+      .from('api_usage')
+      .insert({ api: 'comicvine', endpoint: 'character', units: batch.length });
 
     return json({ processed: batch.length, done, failed, retry, remaining: remaining ?? null });
   } catch (err) {

@@ -149,11 +149,11 @@ function FeaturedFilmCard({ item, onPress }: { item: StripItem; onPress: () => v
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.backdropMeta}>
-        <Text style={styles.backdropTitle} numberOfLines={2}>{item.title}</Text>
+        <Text style={styles.backdropTitle} numberOfLines={2}>
+          {item.title}
+        </Text>
         <View style={styles.backdropPillRow}>
-          {item.year ? (
-            <Text style={styles.backdropPill}>{item.year}</Text>
-          ) : null}
+          {item.year ? <Text style={styles.backdropPill}>{item.year}</Text> : null}
           {item.voteAverage != null ? (
             <Text style={styles.backdropPill}>★ {item.voteAverage.toFixed(1)}</Text>
           ) : null}
@@ -215,7 +215,9 @@ function StripCard({ item, onPress }: { item: StripItem; onPress: () => void }) 
         ) : null}
       </View>
 
-      <Text style={[styles.title, { width: CARD_W }]} numberOfLines={2}>{item.title}</Text>
+      <Text style={[styles.title, { width: CARD_W }]} numberOfLines={2}>
+        {item.title}
+      </Text>
       {item.year ? <Text style={styles.year}>{item.year}</Text> : null}
     </Pressable>
   );
@@ -233,7 +235,12 @@ function WebFeaturedFilm({ item, onPress }: { item: StripItem; onPress: () => vo
       style={[webStyles.featured, hovered && webStyles.featuredHover] as object}
     >
       {img ? (
-        <Image source={{ uri: img }} style={StyleSheet.absoluteFill as object} contentFit="cover" cachePolicy="memory-disk" />
+        <Image
+          source={{ uri: img }}
+          style={StyleSheet.absoluteFill as object}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+        />
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.placeholder] as object} />
       )}
@@ -244,18 +251,32 @@ function WebFeaturedFilm({ item, onPress }: { item: StripItem; onPress: () => vo
       />
       <View style={webStyles.featuredMeta}>
         <Text style={webStyles.featuredKicker}>Featured</Text>
-        <Text style={webStyles.featuredTitle} numberOfLines={2}>{item.title}</Text>
+        <Text style={webStyles.featuredTitle} numberOfLines={2}>
+          {item.title}
+        </Text>
         <View style={webStyles.featuredPills}>
           {item.year ? <Text style={webStyles.featuredPill}>{item.year}</Text> : null}
-          {item.voteAverage != null ? <Text style={webStyles.featuredPill}>★ {item.voteAverage.toFixed(1)}</Text> : null}
-          {item.title_ref?.runtime ? <Text style={webStyles.featuredPill}>{item.title_ref.runtime} min</Text> : null}
+          {item.voteAverage != null ? (
+            <Text style={webStyles.featuredPill}>★ {item.voteAverage.toFixed(1)}</Text>
+          ) : null}
+          {item.title_ref?.runtime ? (
+            <Text style={webStyles.featuredPill}>{item.title_ref.runtime} min</Text>
+          ) : null}
         </View>
         {item.title_ref?.overview ? (
-          <Text style={webStyles.featuredOverview} numberOfLines={2}>{item.title_ref.overview}</Text>
+          <Text style={webStyles.featuredOverview} numberOfLines={2}>
+            {item.title_ref.overview}
+          </Text>
         ) : null}
         <View style={webStyles.featuredCta}>
-          <Ionicons name={item.hasTrailer ? 'play-circle' : 'open-outline'} size={16} color="#fff" />
-          <Text style={webStyles.featuredCtaText}>{item.hasTrailer ? 'Watch Trailer' : 'View details'}</Text>
+          <Ionicons
+            name={item.hasTrailer ? 'play-circle' : 'open-outline'}
+            size={16}
+            color="#fff"
+          />
+          <Text style={webStyles.featuredCtaText}>
+            {item.hasTrailer ? 'Watch Trailer' : 'View details'}
+          </Text>
         </View>
       </View>
     </Pressable>
@@ -274,11 +295,18 @@ function WebPosterCard({ item, onPress }: { item: StripItem; onPress: () => void
     >
       <View style={[webStyles.posterWrap, hovered && webStyles.posterWrapHover] as object}>
         {item.posterUrl ? (
-          <Image source={{ uri: item.posterUrl }} style={webStyles.posterImg} contentFit="cover" cachePolicy="memory-disk" />
+          <Image
+            source={{ uri: item.posterUrl }}
+            style={webStyles.posterImg}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
         ) : (
           <View style={[webStyles.posterImg, styles.placeholder] as object}>
             <Ionicons name="film-outline" size={24} color={COLORS.grey} />
-            <Text style={[styles.placeholderName, { width: WEB_POSTER_W - 16 }]} numberOfLines={3}>{item.title}</Text>
+            <Text style={[styles.placeholderName, { width: WEB_POSTER_W - 16 }]} numberOfLines={3}>
+              {item.title}
+            </Text>
           </View>
         )}
         {item.voteAverage != null ? (
@@ -293,7 +321,9 @@ function WebPosterCard({ item, onPress }: { item: StripItem; onPress: () => void
           </View>
         ) : null}
       </View>
-      <Text style={webStyles.posterTitle} numberOfLines={2}>{item.title}</Text>
+      <Text style={webStyles.posterTitle} numberOfLines={2}>
+        {item.title}
+      </Text>
       {item.year ? <Text style={webStyles.posterYear}>{item.year}</Text> : null}
     </Pressable>
   );
@@ -319,7 +349,8 @@ function WebShelf({
   const nudge = (dir: 1 | -1) => {
     const sv = ref.current as unknown as { getScrollableNode?: () => HTMLElement } | null;
     const node = sv?.getScrollableNode?.();
-    if (node) node.scrollBy({ left: dir * Math.round(node.clientWidth * 0.85), behavior: 'smooth' });
+    if (node)
+      node.scrollBy({ left: dir * Math.round(node.clientWidth * 0.85), behavior: 'smooth' });
   };
 
   const hoverProps =
@@ -361,7 +392,13 @@ function WebShelf({
   );
 }
 
-export function MovieStrip({ titles, movies, totalCount, contentInset = 16, bleedMargin = 0 }: Props) {
+export function MovieStrip({
+  titles,
+  movies,
+  totalCount,
+  contentInset = 16,
+  bleedMargin = 0,
+}: Props) {
   const router = useRouter();
   const [gridVisible, setGridVisible] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -376,7 +413,9 @@ export function MovieStrip({ titles, movies, totalCount, contentInset = 16, blee
     if (item.title_ref) {
       router.push(`/title/${item.title_ref.id}`);
     } else if (item.movie) {
-      const url = item.movie.url ?? `https://www.google.com/search?q=${encodeURIComponent(item.title + ' film')}`;
+      const url =
+        item.movie.url ??
+        `https://www.google.com/search?q=${encodeURIComponent(item.title + ' film')}`;
       Linking.openURL(url);
     }
   };
@@ -393,9 +432,7 @@ export function MovieStrip({ titles, movies, totalCount, contentInset = 16, blee
     // Show the featured banner + the most recent decade shelves; collapse older
     // decades behind a toggle so the section doesn't run on forever vertically.
     const visibleGroups = webShowAll ? groups : groups.slice(0, WEB_DEFAULT_SHELVES);
-    const hiddenTitles = groups
-      .slice(WEB_DEFAULT_SHELVES)
-      .reduce((n, g) => n + g.items.length, 0);
+    const hiddenTitles = groups.slice(WEB_DEFAULT_SHELVES).reduce((n, g) => n + g.items.length, 0);
 
     return (
       <View style={webStyles.wrap}>
@@ -407,7 +444,12 @@ export function MovieStrip({ titles, movies, totalCount, contentInset = 16, blee
             <Text style={webStyles.groupLabel}>
               {g.label} · {g.items.length}
             </Text>
-            <WebShelf items={g.items} onItemPress={handlePress} bleed={bleedMargin} inset={contentInset} />
+            <WebShelf
+              items={g.items}
+              onItemPress={handlePress}
+              bleed={bleedMargin}
+              inset={contentInset}
+            />
           </View>
         ))}
         {!webShowAll && hiddenTitles > 0 ? (
@@ -430,21 +472,20 @@ export function MovieStrip({ titles, movies, totalCount, contentInset = 16, blee
   const featuredItem = featuredFilm
     ? sorted.find((it) => it.title_ref?.id === featuredFilm.id)
     : null;
-  const restItems = featuredItem
-    ? sorted.filter((it) => it !== featuredItem)
-    : sorted.slice(1);
+  const restItems = featuredItem ? sorted.filter((it) => it !== featuredItem) : sorted.slice(1);
   const legacyFeatured = !featuredItem ? sorted[0] : null;
 
   const cappedRest = isFilmsPath
-    ? (showAll ? restItems : restItems.slice(0, INITIAL_COUNT - 1))
+    ? showAll
+      ? restItems
+      : restItems.slice(0, INITIAL_COUNT - 1)
     : restItems.slice(0, INITIAL_COUNT - 1);
 
-  const filmOverflow = isFilmsPath && !showAll && restItems.length > INITIAL_COUNT - 1
-    ? restItems.length - (INITIAL_COUNT - 1)
-    : 0;
-  const legacyOverflow = !isFilmsPath
-    ? totalCount - Math.min(sorted.length, INITIAL_COUNT)
-    : 0;
+  const filmOverflow =
+    isFilmsPath && !showAll && restItems.length > INITIAL_COUNT - 1
+      ? restItems.length - (INITIAL_COUNT - 1)
+      : 0;
+  const legacyOverflow = !isFilmsPath ? totalCount - Math.min(sorted.length, INITIAL_COUNT) : 0;
 
   const legacyMovies: MovieAppearance[] = sorted
     .filter((it) => it.movie != null)
@@ -471,10 +512,7 @@ export function MovieStrip({ titles, movies, totalCount, contentInset = 16, blee
 
         {/* Films overflow: reveal all in-place */}
         {filmOverflow > 0 ? (
-          <Pressable
-            style={[styles.card, styles.overflowCard]}
-            onPress={() => setShowAll(true)}
-          >
+          <Pressable style={[styles.card, styles.overflowCard]} onPress={() => setShowAll(true)}>
             <Text style={styles.overflowCount}>+{filmOverflow}</Text>
             <Text style={styles.overflowLabel}>more</Text>
           </Pressable>
@@ -498,7 +536,9 @@ export function MovieStrip({ titles, movies, totalCount, contentInset = 16, blee
           onClose={() => setGridVisible(false)}
           onSelectMovie={(movie) => {
             setGridVisible(false);
-            const url = movie.url ?? `https://www.google.com/search?q=${encodeURIComponent(movie.name + ' film')}`;
+            const url =
+              movie.url ??
+              `https://www.google.com/search?q=${encodeURIComponent(movie.name + ' film')}`;
             Linking.openURL(url);
           }}
         />

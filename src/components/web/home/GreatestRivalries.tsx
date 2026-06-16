@@ -16,8 +16,26 @@ function RivalryCard({ r, onPress }: { r: Rivalry; onPress: () => void }) {
         [c.card, hovered && (c.cardHover as object)] as object
       }
     >
-      <HeroImage id={r.a.id} name={r.a.name} imageUrl={r.a.image_url} portraitUrl={r.a.portrait_url} style={c.faceA as object} contentFit="cover" contentPosition="top" transition={180} />
-      <HeroImage id={r.b.id} name={r.b.name} imageUrl={r.b.image_url} portraitUrl={r.b.portrait_url} style={c.faceB as object} contentFit="cover" contentPosition="top" transition={180} />
+      <HeroImage
+        id={r.a.id}
+        name={r.a.name}
+        imageUrl={r.a.image_url}
+        portraitUrl={r.a.portrait_url}
+        style={c.faceA as object}
+        contentFit="cover"
+        contentPosition="top"
+        transition={180}
+      />
+      <HeroImage
+        id={r.b.id}
+        name={r.b.name}
+        imageUrl={r.b.image_url}
+        portraitUrl={r.b.portrait_url}
+        style={c.faceB as object}
+        contentFit="cover"
+        contentPosition="top"
+        transition={180}
+      />
       <View style={c.seam as object} />
       <View style={c.overlay as object} />
       <View style={c.vsWrap as object}>
@@ -65,7 +83,9 @@ export function GreatestRivalries({ rivalries }: { rivalries: Rivalry[] }) {
           <RivalryCard
             key={`${r.a.id}-${r.b.id}`}
             r={r}
-            onPress={() => router.push(`/compare/${r.a.id}/${r.b.id}` as Parameters<typeof router.push>[0])}
+            onPress={() =>
+              router.push(`/compare/${r.a.id}/${r.b.id}` as Parameters<typeof router.push>[0])
+            }
           />
         ))}
       </ScrollView>
@@ -123,7 +143,13 @@ const c = StyleSheet.create({
     height: 64,
     backgroundImage: 'linear-gradient(to top, rgba(11,24,32,0.95) 0%, transparent 100%)',
   } as object,
-  vsWrap: { position: 'absolute', top: '50%', left: '50%', marginLeft: -21, marginTop: -28 } as object,
+  vsWrap: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginLeft: -21,
+    marginTop: -28,
+  } as object,
   dreamTag: {
     position: 'absolute',
     top: 9,

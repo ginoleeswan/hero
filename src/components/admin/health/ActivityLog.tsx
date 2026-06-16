@@ -15,9 +15,15 @@ export function ActivityLog({ log, clearLog }: { log: LogEntry[]; clearLog: () =
     ) : undefined;
 
   return (
-    <Panel title="Activity log" hint="Live results of actions & runs this session" action={clearAction}>
+    <Panel
+      title="Activity log"
+      hint="Live results of actions & runs this session"
+      action={clearAction}
+    >
       {log.length === 0 ? (
-        <Text style={styles.empty}>Nothing yet — run a batch or action and results stream in here.</Text>
+        <Text style={styles.empty}>
+          Nothing yet — run a batch or action and results stream in here.
+        </Text>
       ) : (
         <ScrollView style={styles.panel} contentContainerStyle={styles.inner} nestedScrollEnabled>
           {log.map((e) => (
@@ -36,23 +42,40 @@ export function ActivityLog({ log, clearLog }: { log: LogEntry[]; clearLog: () =
 const styles = StyleSheet.create({
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: COLORS.grey, marginTop: 12 },
   panel: {
-    maxHeight: 300, marginTop: 6, backgroundColor: '#faf6ee', borderRadius: 12,
-    borderWidth: 1, borderColor: 'rgba(41,60,67,0.06)',
+    maxHeight: 300,
+    marginTop: 6,
+    backgroundColor: '#faf6ee',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.06)',
   },
   inner: { paddingVertical: 2 },
   row: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingHorizontal: 13,
-    borderBottomWidth: 1, borderBottomColor: '#f1ece2',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1ece2',
   },
   time: {
-    width: 62, fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey,
+    width: 62,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.grey,
     fontVariant: ['tabular-nums'],
   },
   dot: { width: 8, height: 8, borderRadius: 8 },
   text: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.black },
   miniBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7,
-    borderRadius: 999, backgroundColor: '#efe6d6',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: '#efe6d6',
   },
   miniBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
 });

@@ -63,7 +63,13 @@ export function EraTimeline({ eras, onPress }: EraTimelineProps) {
 
       {/* Desktop: a soft inset frame (deliberate "chapter"). Mobile: no frame so
           the hero carousels run edge-to-edge. The spine stays at both widths. */}
-      <View style={isMobile ? [t.bodyMobile, { paddingLeft: pagePad }] : [t.frame, { marginHorizontal: pagePad }]}>
+      <View
+        style={
+          isMobile
+            ? [t.bodyMobile, { paddingLeft: pagePad }]
+            : [t.frame, { marginHorizontal: pagePad }]
+        }
+      >
         <View style={t.timeline}>
           <View style={t.spine as object} pointerEvents="none" />
           {eras.map((bucket) => (

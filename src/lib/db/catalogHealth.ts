@@ -152,12 +152,20 @@ export interface RecentlyEnriched {
 export async function getRecentlyEnriched(limit = 24): Promise<RecentlyEnriched[]> {
   const { data, error } = await supabase
     .from('enrichment_run_heroes')
-    .select('run_id, heroes ( id, name, image_md_url, image_url, portrait_url ), enrichment_runs ( run_type, created_at )')
+    .select(
+      'run_id, heroes ( id, name, image_md_url, image_url, portrait_url ), enrichment_runs ( run_type, created_at )',
+    )
     .order('run_id', { ascending: false })
     .limit(limit);
   if (error || !data) return [];
   type Row = {
-    heroes: { id: string; name: string; image_md_url: string | null; image_url: string | null; portrait_url: string | null } | null;
+    heroes: {
+      id: string;
+      name: string;
+      image_md_url: string | null;
+      image_url: string | null;
+      portrait_url: string | null;
+    } | null;
     enrichment_runs: { run_type: string; created_at: string } | null;
   };
   return (data as unknown as Row[])
@@ -188,12 +196,19 @@ export async function getCronStatus(): Promise<CronJob[]> {
 
 /** Enable/disable any pg_cron job by name (keeps its schedule). */
 export async function toggleCron(jobname: string, enabled: boolean): Promise<void> {
-  const { error } = await supabase.rpc('admin_toggle_cron', { p_jobname: jobname, p_enabled: enabled });
+  const { error } = await supabase.rpc('admin_toggle_cron', {
+    p_jobname: jobname,
+    p_enabled: enabled,
+  });
   if (error) throw error;
 }
 
 /** Reconfigure a cron's cadence (5-field schedule) and optional batch size. */
-export async function rescheduleCron(jobname: string, schedule: string, limit: number | null): Promise<void> {
+export async function rescheduleCron(
+  jobname: string,
+  schedule: string,
+  limit: number | null,
+): Promise<void> {
   const { error } = await supabase.rpc('admin_reschedule_cron', {
     p_jobname: jobname,
     p_schedule: schedule,
@@ -286,10 +301,16 @@ export async function getAmbiguousHeroes(limit = 25): Promise<AmbiguousHero[]> {
     .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error || !data) return [];
-  return (data as Array<{
-    id: string; name: string; publisher: string | null; image_md_url: string | null; image_url: string | null;
-    wikidata_candidates: { qid: string; score: number }[] | null;
-  }>).map((r) => ({
+  return (
+    data as Array<{
+      id: string;
+      name: string;
+      publisher: string | null;
+      image_md_url: string | null;
+      image_url: string | null;
+      wikidata_candidates: { qid: string; score: number }[] | null;
+    }>
+  ).map((r) => ({
     id: r.id,
     name: r.name,
     publisher: r.publisher,
@@ -357,21 +378,42 @@ export async function getEnrichmentProgress(): Promise<EnrichmentProgress> {
   const heroCount = () => supabase.from('heroes').select('*', { count: 'exact', head: true });
   const titleCount = () => supabase.from('titles').select('*', { count: 'exact', head: true });
   const [
-    heroesTotal, comicvineDone, resolved, ambiguous, unresolved, enriched,
-    filmTitles, tvTitles, gameTitles, mediaDone,
+    heroesTotal,
+    comicvineDone,
+    resolved,
+    ambiguous,
+    unresolved,
+    enriched,
+    filmTitles,
+    tvTitles,
+    gameTitles,
+    mediaDone,
   ] = await Promise.all([
     awaitCount(heroCount()),
     awaitCount(heroCount().eq('comicvine_status', 'done')),
     awaitCount(heroCount().eq('wikidata_status', 'resolved')),
     awaitCount(heroCount().eq('wikidata_status', 'ambiguous')),
     awaitCount(heroCount().eq('wikidata_status', 'unresolved')),
-    awaitCount(heroCount().eq('wikidata_status', 'resolved').not('wikidata_enriched_at', 'is', null)),
+    awaitCount(
+      heroCount().eq('wikidata_status', 'resolved').not('wikidata_enriched_at', 'is', null),
+    ),
     awaitCount(titleCount().eq('media_type', 'film')),
     awaitCount(titleCount().eq('media_type', 'tv')),
     awaitCount(titleCount().eq('media_type', 'game')),
     awaitCount(titleCount().eq('source', 'tmdb').eq('enrich_status', 'done')),
   ]);
-  return { heroesTotal, comicvineDone, resolved, ambiguous, unresolved, enriched, filmTitles, tvTitles, gameTitles, mediaDone };
+  return {
+    heroesTotal,
+    comicvineDone,
+    resolved,
+    ambiguous,
+    unresolved,
+    enriched,
+    filmTitles,
+    tvTitles,
+    gameTitles,
+    mediaDone,
+  };
 }
 
 export type ComicvineStatus = 'ok' | 'limited' | 'error';

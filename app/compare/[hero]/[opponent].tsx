@@ -161,9 +161,7 @@ export default function NativeCompareScreen() {
               onSwapA={() =>
                 router.push(`/compare/${opponent}/pick?name=${encodeURIComponent(nameB)}`)
               }
-              onSwapB={() =>
-                router.push(`/compare/${hero}/pick?name=${encodeURIComponent(nameA)}`)
-              }
+              onSwapB={() => router.push(`/compare/${hero}/pick?name=${encodeURIComponent(nameA)}`)}
               onViewProfileA={() => router.push(`/character/${hero}`)}
               onViewProfileB={() => router.push(`/character/${opponent}`)}
             />

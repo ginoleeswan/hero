@@ -36,7 +36,8 @@ export async function getHeroLinks(heroId: string): Promise<HeroLinks> {
     .from('hero_facts')
     .select('key, value')
     .eq('hero_id', heroId);
-  if (error || !data) return { imdb: null, site: null, wikidataQid: null, firstAppearanceYear: null };
+  if (error || !data)
+    return { imdb: null, site: null, wikidataQid: null, firstAppearanceYear: null };
   const m = new Map((data as Array<{ key: string; value: string }>).map((r) => [r.key, r.value]));
   const yr = m.get('first_appearance_year');
   return {

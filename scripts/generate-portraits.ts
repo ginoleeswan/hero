@@ -188,7 +188,9 @@ async function uploadToCloudinary(heroId: string, imageBytes: Uint8Array): Promi
   const publicId = `hero-portraits/${heroId}`;
   const timestamp = Math.floor(Date.now() / 1000);
   const toSign = `overwrite=true&public_id=${publicId}&timestamp=${timestamp}`;
-  const signature = createHash('sha1').update(toSign + CLOUD_SECRET).digest('hex');
+  const signature = createHash('sha1')
+    .update(toSign + CLOUD_SECRET)
+    .digest('hex');
 
   const form = new FormData();
   form.append('file', new Blob([Buffer.from(imageBytes)], { type: 'image/jpeg' }), `${heroId}.jpg`);

@@ -48,9 +48,13 @@ export function StatBattleRow({
   return (
     <View>
       <View style={styles.head}>
-        <Text style={[styles.val, styles.valLeft, aStrong ? styles.valStrong : styles.valDim]}>{stat.valueA}</Text>
+        <Text style={[styles.val, styles.valLeft, aStrong ? styles.valStrong : styles.valDim]}>
+          {stat.valueA}
+        </Text>
         <Text style={styles.label}>{stat.label}</Text>
-        <Text style={[styles.val, styles.valRight, bStrong ? styles.valStrong : styles.valDim]}>{stat.valueB}</Text>
+        <Text style={[styles.val, styles.valRight, bStrong ? styles.valStrong : styles.valDim]}>
+          {stat.valueB}
+        </Text>
       </View>
       <View style={styles.track}>
         <View style={[styles.half, styles.halfLeft]}>

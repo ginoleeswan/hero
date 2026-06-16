@@ -18,11 +18,7 @@ import { OpponentCard } from '../../../src/components/compare/OpponentCard';
 import { CardSkeleton } from '../../../src/components/compare/CardSkeleton';
 import { VsAnchor, type AnchorPreview } from '../../../src/components/compare/VsAnchor';
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
-import {
-  stashFighters,
-  getFighterArt,
-  type FighterArt,
-} from '../../../src/lib/compareHandoff';
+import { stashFighters, getFighterArt, type FighterArt } from '../../../src/lib/compareHandoff';
 import { withViewTransition } from '../../../src/lib/viewTransition';
 import { COLORS } from '../../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
@@ -151,8 +147,17 @@ export default function WebPickOpponentScreen() {
   const [morphKey, setMorphKey] = useState<string | null>(null);
   const [peek, setPeek] = useState<PeekHero | null>(null);
   const debouncedQuery = useDebounce(query, 200);
-  const { subject, rivals, friendlyFire, family, sameUniverse, dreamMatches, similar, all, loading } =
-    usePickOpponents(hero ?? '', name);
+  const {
+    subject,
+    rivals,
+    friendlyFire,
+    family,
+    sameUniverse,
+    dreamMatches,
+    similar,
+    all,
+    loading,
+  } = usePickOpponents(hero ?? '', name);
 
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 120);

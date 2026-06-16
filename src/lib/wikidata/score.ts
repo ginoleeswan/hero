@@ -34,7 +34,11 @@ export const STRONG = 0.6;
 export const GAP = 0.25;
 export const WEAK = 0.35;
 
-const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const norm = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 const tokenSet = (s: string) => new Set(norm(s).split(' ').filter(Boolean));
 const surname = (s: string) => norm(s).split(' ').filter(Boolean).pop() ?? '';
 const GENERIC_PUB = new Set(['comics', 'entertainment', 'group', 'inc', 'the']);
@@ -82,7 +86,8 @@ export function resolveHero(hero: HeroHints, candidates: QidCandidate[]): Resolu
   const second = scored[1];
   const gapOk = !second || top.score - second.score >= GAP;
   const topCandidates = scored.slice(0, 3);
-  if (top.score >= STRONG && gapOk) return { tier: 'resolved', qid: top.qid, candidates: topCandidates };
+  if (top.score >= STRONG && gapOk)
+    return { tier: 'resolved', qid: top.qid, candidates: topCandidates };
   if (top.score >= WEAK) return { tier: 'ambiguous', qid: null, candidates: topCandidates };
   return { tier: 'unresolved', qid: null, candidates: topCandidates };
 }

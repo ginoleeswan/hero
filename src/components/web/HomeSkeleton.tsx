@@ -97,7 +97,15 @@ function StatPodsSkeleton({ opacity, pagePad }: { opacity: Opacity; pagePad: num
   );
 }
 
-function RowHeader({ opacity, pagePad, dark = false }: { opacity: Opacity; pagePad: number; dark?: boolean }) {
+function RowHeader({
+  opacity,
+  pagePad,
+  dark = false,
+}: {
+  opacity: Opacity;
+  pagePad: number;
+  dark?: boolean;
+}) {
   return (
     <View
       style={{

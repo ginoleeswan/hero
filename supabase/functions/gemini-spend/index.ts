@@ -29,9 +29,11 @@ const DATASET = Deno.env.get('GCP_BILLING_DATASET') ?? 'billing_export';
 
 // ── Service-account → OAuth access token (RS256 JWT, signed via Web Crypto) ───
 const b64url = (bytes: Uint8Array) =>
-  btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-const strB64url = (s: string) =>
-  btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+const strB64url = (s: string) => btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
 function pemToDer(pem: string): ArrayBuffer {
   const body = pem
@@ -71,11 +73,7 @@ async function accessToken(sa: SA): Promise<string> {
     false,
     ['sign'],
   );
-  const sig = await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5',
-    key,
-    new TextEncoder().encode(input),
-  );
+  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(input));
   const jwt = `${input}.${b64url(new Uint8Array(sig))}`;
   const res = await fetch(sa.token_uri, {
     method: 'POST',
@@ -114,7 +112,9 @@ serve(async (req: Request) => {
     const anon = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
     const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const authHeader = req.headers.get('Authorization') ?? '';
-    const userClient = createClient(url, anon, { global: { headers: { Authorization: authHeader } } });
+    const userClient = createClient(url, anon, {
+      global: { headers: { Authorization: authHeader } },
+    });
     const {
       data: { user },
     } = await userClient.auth.getUser();
@@ -125,7 +125,8 @@ serve(async (req: Request) => {
       .select('is_admin')
       .eq('id', user.id)
       .single();
-    if (!(prof as { is_admin?: boolean } | null)?.is_admin) return json({ error: 'forbidden' }, 403);
+    if (!(prof as { is_admin?: boolean } | null)?.is_admin)
+      return json({ error: 'forbidden' }, 403);
 
     // ── Credentials ─────────────────────────────────────────────────────────────
     const raw = Deno.env.get('GCP_SA_KEY');

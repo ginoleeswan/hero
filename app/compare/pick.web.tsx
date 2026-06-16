@@ -62,7 +62,7 @@ export default function PickArena() {
   const debouncedQuery = useDebounce(query, 200);
 
   // The roster reacts to the *other* slot — its rivals / same-universe lead.
-  const contextId = active === 'a' ? b?.id ?? '' : a?.id ?? '';
+  const contextId = active === 'a' ? (b?.id ?? '') : (a?.id ?? '');
   const contextName = active === 'a' ? b?.name : a?.name;
   const { rivals, friendlyFire, family, sameUniverse, dreamMatches, similar, all, loading } =
     usePickOpponents(contextId);
@@ -87,7 +87,9 @@ export default function PickArena() {
       dreamMatches.length > 0 ||
       similar.length > 0);
   const displayed = q
-    ? rankResults(all, q).filter((h) => !pickedIds.has(h.id)).slice(0, 120)
+    ? rankResults(all, q)
+        .filter((h) => !pickedIds.has(h.id))
+        .slice(0, 120)
     : exclude(all).slice(0, 120);
 
   const pick = useCallback(
@@ -392,7 +394,12 @@ const s = StyleSheet.create({
     transition: 'transform 150ms ease',
   } as object,
   fightHover: { transform: [{ translateY: -2 }] } as object,
-  fightText: { fontFamily: 'Flame-Regular', fontSize: 16, color: '#fff', letterSpacing: 0.3 } as object,
+  fightText: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 16,
+    color: '#fff',
+    letterSpacing: 0.3,
+  } as object,
   chooseEyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11.5,
@@ -443,7 +450,12 @@ const s = StyleSheet.create({
     outlineStyle: 'none',
   } as object,
 
-  prompt: { fontFamily: 'Flame-Regular', fontSize: 21, color: COLORS.navy, marginBottom: 18 } as object,
+  prompt: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 21,
+    color: COLORS.navy,
+    marginBottom: 18,
+  } as object,
 
   sections: { marginBottom: 6 },
   section: { marginBottom: 6 },

@@ -50,10 +50,7 @@ export function VerdictReveal({
   }
 
   return (
-    <Animated.View
-      style={[styles.skeleton, skeletonStyle]}
-      accessibilityLabel="Generating verdict"
-    >
+    <Animated.View style={[styles.skeleton, skeletonStyle]} accessibilityLabel="Generating verdict">
       <View style={[styles.line, dark && styles.lineDark, styles.lineWide]} />
       <View style={[styles.line, dark && styles.lineDark, styles.lineNarrow]} />
     </Animated.View>

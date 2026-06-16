@@ -1,12 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  LayoutChangeEvent,
-  StyleProp,
-  StyleSheet,
-  Text,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { LayoutChangeEvent, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { Image, ImageContentFit, ImageContentPosition, ImageStyle } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
@@ -127,12 +120,7 @@ export function HeroMonogram({
       style={[style as StyleProp<ViewStyle>, styles.monogram, { backgroundColor: background }]}
     >
       {glyphSize > 0 ? (
-        <Ionicons
-          name="person"
-          size={glyphSize}
-          color={COLORS.beige}
-          style={styles.glyph}
-        />
+        <Ionicons name="person" size={glyphSize} color={COLORS.beige} style={styles.glyph} />
       ) : null}
       {initialsSize > 0 ? (
         <Text style={[styles.initials, { fontSize: initialsSize }]} numberOfLines={1}>

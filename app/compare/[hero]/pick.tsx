@@ -153,10 +153,20 @@ export default function PickOpponentScreen() {
               />
             )}
             {sameUniverse.length > 0 && (
-              <AccentRail label="Same Universe" items={sameUniverse} onPick={handlePick} onPeek={openPeek} />
+              <AccentRail
+                label="Same Universe"
+                items={sameUniverse}
+                onPick={handlePick}
+                onPeek={openPeek}
+              />
             )}
             {similar.length > 0 && (
-              <AccentRail label="Similar Power" items={similar} onPick={handlePick} onPeek={openPeek} />
+              <AccentRail
+                label="Similar Power"
+                items={similar}
+                onPick={handlePick}
+                onPeek={openPeek}
+              />
             )}
             <Text style={[styles.sectionLabel, styles.allLabel]}>All Heroes</Text>
           </>

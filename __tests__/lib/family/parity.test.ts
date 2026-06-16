@@ -21,12 +21,17 @@ describe('src vs _shared parity', () => {
     expect(shParse(raw)).toEqual(srcParse(raw));
   });
 
-  it.each(['father', 'adoptive mother', 'grandson', 'ex-wife', 'partial clone', 'fiancée', 'alleged descendants'])(
-    'classifyRole matches for: %s',
-    (role) => {
-      expect(shClassify(role)).toEqual(srcClassify(role));
-    },
-  );
+  it.each([
+    'father',
+    'adoptive mother',
+    'grandson',
+    'ex-wife',
+    'partial clone',
+    'fiancée',
+    'alleged descendants',
+  ])('classifyRole matches for: %s', (role) => {
+    expect(shClassify(role)).toEqual(srcClassify(role));
+  });
 
   it('resolveKinship matches between src and _shared', () => {
     const nodes = [

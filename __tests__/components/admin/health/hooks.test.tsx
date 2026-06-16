@@ -47,7 +47,10 @@ describe('useCatalogActions', () => {
   it('onRetryFailed flashes success with the requeued count', async () => {
     (db.retryFailed as jest.Mock).mockResolvedValue(3);
     const flash = jest.fn();
-    const { result } = renderHook(() => useCatalogActions({ batchSize: 25, cronOn: false, flash }), { wrapper });
+    const { result } = renderHook(
+      () => useCatalogActions({ batchSize: 25, cronOn: false, flash }),
+      { wrapper },
+    );
     await act(async () => {
       await result.current.onRetryFailed();
     });
@@ -58,7 +61,10 @@ describe('useCatalogActions', () => {
   it('reports a failed mutation via flash(error)', async () => {
     (db.runDrain as jest.Mock).mockRejectedValue(new Error('boom'));
     const flash = jest.fn();
-    const { result } = renderHook(() => useCatalogActions({ batchSize: 10, cronOn: false, flash }), { wrapper });
+    const { result } = renderHook(
+      () => useCatalogActions({ batchSize: 10, cronOn: false, flash }),
+      { wrapper },
+    );
     await act(async () => {
       await result.current.onRunDrain();
     });
@@ -68,7 +74,9 @@ describe('useCatalogActions', () => {
   it('onToggleCron sends the negated cron state', async () => {
     (db.setDrainCron as jest.Mock).mockResolvedValue('disabled');
     const flash = jest.fn();
-    const { result } = renderHook(() => useCatalogActions({ batchSize: 25, cronOn: true, flash }), { wrapper });
+    const { result } = renderHook(() => useCatalogActions({ batchSize: 25, cronOn: true, flash }), {
+      wrapper,
+    });
     await act(async () => {
       await result.current.onToggleCron();
     });

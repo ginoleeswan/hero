@@ -75,12 +75,7 @@ export function hasHeroImage(
   portraitUrl?: string | null,
   imageMdUrl?: string | null,
 ): boolean {
-  return !!(
-    realUrl(portraitUrl) ||
-    realUrl(imageMdUrl) ||
-    realUrl(imageUrl) ||
-    isNumericId(id)
-  );
+  return !!(realUrl(portraitUrl) || realUrl(imageMdUrl) || realUrl(imageUrl) || isNumericId(id));
 }
 
 /**

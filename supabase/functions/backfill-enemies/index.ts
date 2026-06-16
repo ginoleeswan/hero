@@ -92,9 +92,16 @@ serve(async (req: Request) => {
     const { data, error } = await q;
     if (error) return json({ error: error.message }, 500);
 
-    let heroes = (data ?? []) as { id: string; name: string; comicvine_id: string; enemies: string[] | null }[];
+    let heroes = (data ?? []) as {
+      id: string;
+      name: string;
+      comicvine_id: string;
+      enemies: string[] | null;
+    }[];
     if (capped) {
-      heroes = heroes.filter((h) => Array.isArray(h.enemies) && h.enemies.length === 20).slice(0, limit);
+      heroes = heroes
+        .filter((h) => Array.isArray(h.enemies) && h.enemies.length === 20)
+        .slice(0, limit);
     }
 
     let updated = 0;

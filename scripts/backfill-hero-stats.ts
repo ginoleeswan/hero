@@ -64,14 +64,21 @@ type Stats = {
 };
 
 const stripHtml = (html: string) =>
-  html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  html
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 function validate(o: unknown): o is Stats {
   if (!o || typeof o !== 'object') return false;
   const r = o as Record<string, unknown>;
   const statKeys = ['intelligence', 'strength', 'speed', 'durability', 'power', 'combat'] as const;
   const statsOk = statKeys.every(
-    (k) => typeof r[k] === 'number' && Number.isInteger(r[k]) && (r[k] as number) >= 0 && (r[k] as number) <= 100,
+    (k) =>
+      typeof r[k] === 'number' &&
+      Number.isInteger(r[k]) &&
+      (r[k] as number) >= 0 &&
+      (r[k] as number) <= 100,
   );
   const alignOk = r.alignment === 'good' || r.alignment === 'bad' || r.alignment === 'neutral';
   return statsOk && alignOk;
@@ -195,7 +202,9 @@ async function processOne(h: Row): Promise<'done' | 'failed'> {
 async function main() {
   console.log(`Fetching pending heroes${LIMIT !== Infinity ? ` (limit ${LIMIT})` : ''}…`);
   const rows = await fetchPending();
-  console.log(`${rows.length} to process · concurrency ${CONCURRENCY}${DRY_RUN ? ' · DRY RUN' : ''}\n`);
+  console.log(
+    `${rows.length} to process · concurrency ${CONCURRENCY}${DRY_RUN ? ' · DRY RUN' : ''}\n`,
+  );
 
   let done = 0;
   let failed = 0;

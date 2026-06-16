@@ -24,7 +24,15 @@ export function TodaysMatchupCard({
     >
       <View style={styles.portraits}>
         <View style={styles.portraitWrap}>
-          <HeroImage id={heroA.id} name={heroA.name} imageUrl={heroA.image_url} portraitUrl={heroA.portrait_url} contentFit="cover" contentPosition="top" style={[StyleSheet.absoluteFill, styles.portrait]} />
+          <HeroImage
+            id={heroA.id}
+            name={heroA.name}
+            imageUrl={heroA.image_url}
+            portraitUrl={heroA.portrait_url}
+            contentFit="cover"
+            contentPosition="top"
+            style={[StyleSheet.absoluteFill, styles.portrait]}
+          />
           <View style={styles.scrim} />
           <Text style={styles.name} numberOfLines={1}>
             {heroA.name}
@@ -36,7 +44,15 @@ export function TodaysMatchupCard({
         </View>
 
         <View style={styles.portraitWrap}>
-          <HeroImage id={heroB.id} name={heroB.name} imageUrl={heroB.image_url} portraitUrl={heroB.portrait_url} contentFit="cover" contentPosition="top" style={[StyleSheet.absoluteFill, styles.portrait]} />
+          <HeroImage
+            id={heroB.id}
+            name={heroB.name}
+            imageUrl={heroB.image_url}
+            portraitUrl={heroB.portrait_url}
+            contentFit="cover"
+            contentPosition="top"
+            style={[StyleSheet.absoluteFill, styles.portrait]}
+          />
           <View style={styles.scrim} />
           <Text style={[styles.name, styles.nameRight]} numberOfLines={1}>
             {heroB.name}

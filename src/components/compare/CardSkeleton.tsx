@@ -29,7 +29,11 @@ export function CardSkeleton({
 
   useEffect(() => {
     if (!measured) return;
-    x.value = withRepeat(withTiming(1, { duration: 1300, easing: Easing.inOut(Easing.ease) }), -1, false);
+    x.value = withRepeat(
+      withTiming(1, { duration: 1300, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      false,
+    );
     return () => cancelAnimation(x);
   }, [measured, x]);
 
