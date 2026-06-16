@@ -114,7 +114,7 @@ export function CommandShell({
   const future = DOMAINS.filter((d) => d.placeholder);
 
   return (
-    <View style={[styles.page, fill && !narrow && styles.pageFill]}>
+    <View style={[styles.page, !narrow && styles.pageLock]}>
       {/* Top bar — full-bleed dark band fusing with the floating nav */}
       <LinearGradient
         colors={[CHROME_TOP, COLORS.deepNavy]}
@@ -144,9 +144,9 @@ export function CommandShell({
       {/* Body: rail (desktop) + content */}
       <LinearGradient
         colors={[COLORS.deepNavy, '#081218']}
-        style={[styles.bodyBg, fill && !narrow && styles.minH0]}
+        style={[styles.bodyBg, !narrow && styles.minH0]}
       >
-        <View style={[styles.body, narrow && styles.bodyNarrow, fill && !narrow && styles.minH0]}>
+        <View style={[styles.body, narrow && styles.bodyNarrow, !narrow && styles.minH0]}>
           {!narrow && (
             <View style={styles.rail}>
               {primary.map((d) => (
@@ -175,7 +175,7 @@ export function CommandShell({
             style={[
               styles.content,
               narrow && styles.contentNarrow,
-              fill && !narrow && styles.minH0,
+              !narrow && (fill ? styles.noScroll : styles.scrollY),
             ]}
           >
             {ribbon}
@@ -214,10 +214,15 @@ export function CommandShell({
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: COLORS.deepNavy, minHeight: '100%' as unknown as number },
-  // Dashboard fill mode: lock to the viewport so the content area fills the screen
-  // and long lists scroll inside their panels instead of the whole page scrolling.
-  pageFill: { height: '100dvh' as unknown as number, minHeight: 0, overflow: 'hidden' },
+  // Desktop: lock the whole shell to the viewport so the header + rail stay fixed
+  // and only the content area scrolls — the "app, not webpage" feel. (Mobile keeps
+  // natural page scroll.)
+  pageLock: { height: '100dvh' as unknown as number, minHeight: 0, overflow: 'hidden' },
   minH0: { minHeight: 0 },
+  // Work tabs: the content region scrolls inside itself. Dashboard (fill) tabs:
+  // no scroll — the bento divides the height and any list scrolls within a panel.
+  scrollY: { minHeight: 0, overflow: 'scroll' },
+  noScroll: { minHeight: 0, overflow: 'hidden' },
   top: {
     width: '100%',
     paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 12px)` as unknown as number,
