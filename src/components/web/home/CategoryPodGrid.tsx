@@ -17,9 +17,21 @@ export function CategoryPodGrid({
   onPress: (slug: string) => void;
 }) {
   const { width } = useWindowDimensions();
-  const pagePad = width < 640 ? 16 : 32;
+  const isMobile = width < 640;
+  const pagePad = isMobile ? 16 : 32;
+  // Mobile: a lower column-min gives two columns on a phone (instead of one
+  // full-width letterbox banner per tile), so tiles stay near-square and the
+  // character's face frames instead of being cropped to the scalp.
+  const minCol = isMobile ? 150 : 220;
   return (
-    <View style={[g.grid, { marginHorizontal: pagePad }] as object}>
+    <View
+      style={
+        [
+          g.grid,
+          { marginHorizontal: pagePad, gridTemplateColumns: `repeat(auto-fill, minmax(${minCol}px, 1fr))` },
+        ] as object
+      }
+    >
       {BROWSE_PODS.map((p) => {
         const c = covers?.[p.slug];
         return (
@@ -62,7 +74,7 @@ export function CategoryPodGrid({
 const g = StyleSheet.create({
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+    // gridTemplateColumns is set inline (responsive column-min); see component.
     gap: 14,
     marginBottom: 52, // match the carousel rows' section rhythm before the next chapter
   } as object,

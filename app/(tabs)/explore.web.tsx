@@ -1433,7 +1433,13 @@ export default function WebHomeScreen() {
                  orphaned slab under the carousel. ──────────────────────────── */}
             <View style={styles.browseHead}>
               <Text style={styles.browseKicker as object}>The Library</Text>
-              <Text style={styles.browseTitle as object}>Browse the Universe</Text>
+              <Text
+                style={
+                  [styles.browseTitle, isMobile && (styles.browseTitleMobile as object)] as object
+                }
+              >
+                Browse the Universe
+              </Text>
               <Text style={styles.browseSubtitle as object}>
                 Pick your corner of the multiverse — publishers, teams, media and power rankings.
               </Text>
@@ -1480,7 +1486,13 @@ export default function WebHomeScreen() {
             {/* ── Go Deeper — the editorial features ────────────────────────── */}
             <View style={styles.browseHead}>
               <Text style={styles.browseKicker as object}>Go Deeper</Text>
-              <Text style={styles.browseTitle as object}>Beyond the Page</Text>
+              <Text
+                style={
+                  [styles.browseTitle, isMobile && (styles.browseTitleMobile as object)] as object
+                }
+              >
+                Beyond the Page
+              </Text>
             </View>
             <GreatestRivalries rivalries={homeData.rivalries ?? []} />
             <HallOfInfamy villains={homeData.mostFeared ?? []} />
@@ -1546,6 +1558,10 @@ const styles = StyleSheet.create({
     fontSize: 40,
     color: COLORS.navy,
     lineHeight: 42,
+  } as object,
+  browseTitleMobile: {
+    fontSize: 30,
+    lineHeight: 32,
   } as object,
   browseSubtitle: {
     fontFamily: 'Nunito_400Regular',
