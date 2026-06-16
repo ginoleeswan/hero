@@ -18,7 +18,7 @@ import {
 } from '../../src/components/admin/health/format';
 import { CommandShell } from '../../src/components/admin/health/CommandShell';
 import { VitalsBar } from '../../src/components/admin/health/VitalsBar';
-import { AlertStack, type Alert } from '../../src/components/admin/health/AlertStack';
+import { type Alert } from '../../src/components/admin/health/AlertStack';
 import { CommandHome } from '../../src/components/admin/health/domains/CommandHome';
 import { CatalogDomain } from '../../src/components/admin/health/domains/CatalogDomain';
 import { PipelinesDomain } from '../../src/components/admin/health/domains/PipelinesDomain';
@@ -52,7 +52,6 @@ export default function AdminHealthScreen() {
   const [heroQuery, setHeroQuery] = useState('');
   const [batchSize, setBatchSize] = useState(25);
   const [pubFilter, setPubFilter] = useState<string | null>(null);
-  const [alertsOpen, setAlertsOpen] = useState(false);
   const [historyLimit, setHistoryLimit] = useState(30);
   const [ambiguousLimit, setAmbiguousLimit] = useState(25);
   // The live foreground Build board's working set. Lifted here so the top-strip
@@ -221,12 +220,6 @@ export default function AdminHealthScreen() {
     return a;
   }, [pingQ.data, usageQ.data, runsQ.data, h]);
 
-  // Once alerts fall back to one (or none), reset the mobile banner so the next
-  // time multiple appear it starts collapsed again instead of staying expanded.
-  useEffect(() => {
-    if (alerts.length <= 1) setAlertsOpen(false);
-  }, [alerts.length]);
-
   if (!gateResolved || !isAdmin) return <LogoLoader />;
 
   // ── Live ops derivations (feed the always-on vitals ribbon) ─────────────────
@@ -283,18 +276,9 @@ export default function AdminHealthScreen() {
     />
   ) : null;
 
-  // Ops vitals + alerts (ComicVine rate-limit, run status, retry) only show on the
-  // Build tab, where you act on them — not as a fat ribbon on every screen.
+  // The ops vitals ribbon (ComicVine rate-limit, run status) only shows on the
+  // Build tab; alerts live in the header notification bell (no banner real estate).
   const onlyOnBuild = domain === 'pipelines';
-  const alertSlot = (
-    <AlertStack
-      alerts={alerts}
-      narrow={narrow}
-      open={alertsOpen}
-      onOpen={() => setAlertsOpen(true)}
-      onClose={() => setAlertsOpen(false)}
-    />
-  );
 
   return (
     <Animated.View style={[styles.root, { opacity: enter }]}>
@@ -308,7 +292,7 @@ export default function AdminHealthScreen() {
         narrow={narrow}
         fill={domain === 'command' || domain === 'sources'}
         ribbon={onlyOnBuild ? ribbon : null}
-        alerts={onlyOnBuild ? alertSlot : null}
+        alerts={alerts}
       >
         {h && domain === 'command' && (
           <CommandHome
