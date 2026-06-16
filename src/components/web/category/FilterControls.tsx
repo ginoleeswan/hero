@@ -233,7 +233,7 @@ export function FilterControls({ slug, filters, counts, setFilter }: Props) {
                 value: 'neutral',
                 label: 'Neutral',
                 count: counts?.alignment.neutral,
-                icon: 'minus-circle',
+                icon: 'remove-circle-outline',
               },
             ] as Opt[]
           ).map((o) => (
