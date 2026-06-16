@@ -18,13 +18,5 @@ export async function getCachedVerdict(heroAId: string, heroBId: string): Promis
   return data?.verdict ?? null;
 }
 
-export async function saveVerdict(
-  heroAId: string,
-  heroBId: string,
-  verdict: string,
-): Promise<void> {
-  const [a, b] = normalizeKey(heroAId, heroBId);
-  await supabase
-    .from('verdicts')
-    .upsert({ hero_a_id: a, hero_b_id: b, verdict }, { onConflict: 'hero_a_id,hero_b_id' });
-}
+// Writes happen server-side: the generate-verdict edge function persists the
+// cache with the service_role key. The verdicts table is read-only to clients.

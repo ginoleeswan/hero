@@ -1,5 +1,5 @@
 import { getIconicHeroes, type Hero } from './db/heroes';
-import { getCachedVerdict, saveVerdict } from './db/verdicts';
+import { getCachedVerdict } from './db/verdicts';
 import { compareStats } from './compare';
 import { generateVerdict } from './api';
 
@@ -70,6 +70,8 @@ export async function getTodaysMatchup(): Promise<TodaysMatchup | null> {
   let verdict = await getCachedVerdict(a.id, b.id);
   if (!verdict) {
     verdict = await generateVerdict({
+      heroAId: a.id,
+      heroBId: b.id,
       heroA: a.name,
       heroB: b.name,
       winsA: cmp.winsA,
@@ -77,7 +79,6 @@ export async function getTodaysMatchup(): Promise<TodaysMatchup | null> {
       statsA: statsNumber(a),
       statsB: statsNumber(b),
     });
-    saveVerdict(a.id, b.id, verdict).catch(() => {});
   }
 
   return {
