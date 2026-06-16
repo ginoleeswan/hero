@@ -20,7 +20,7 @@ import {
 } from '../db/heroes';
 import { DEFAULT_FILTERS, type CategoryFilters } from '../db/categoryFilters';
 import { generateVerdict, type VerdictInput } from '../api';
-import { getCachedVerdict, saveVerdict } from '../db/verdicts';
+import { getCachedVerdict } from '../db/verdicts';
 import { queryKeys } from './keys';
 import { findCachedHero } from './heroCache';
 
@@ -181,9 +181,9 @@ export function useVerdict(heroId: string, opponentId: string, input: VerdictInp
     queryFn: async () => {
       const cached = await getCachedVerdict(heroId, opponentId);
       if (cached) return cached;
-      const verdict = await generateVerdict(input!);
-      await saveVerdict(heroId, opponentId, verdict);
-      return verdict;
+      // The edge function persists the cache server-side (service_role); pass the
+      // ids so it can key the write to this matchup pair.
+      return generateVerdict({ ...input!, heroAId: heroId, heroBId: opponentId });
     },
     staleTime: Infinity,
     gcTime: Infinity,

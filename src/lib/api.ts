@@ -225,6 +225,10 @@ export async function fetchHeroGallery(
 }
 
 export interface VerdictInput {
+  // Hero ids let the edge function read/write the shared verdict cache. Optional
+  // so callers that only have names still get a (non-cached) verdict.
+  heroAId?: string;
+  heroBId?: string;
   heroA: string;
   heroB: string;
   winsA: number;
