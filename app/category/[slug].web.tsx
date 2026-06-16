@@ -442,6 +442,30 @@ export default function WebCategoryScreen() {
           />
         )}
         <View style={styles.contentMain as object}>
+          {/* Result count + active filters live with the grid on desktop, where
+              they're actionable — not orphaned in the header corner. */}
+          {isDesktop && categorySlug && (
+            <View style={styles.resultsBar as object}>
+              <Text style={styles.resultsCount as object}>
+                {loading
+                  ? 'Searching…'
+                  : `${total.toLocaleString()} ${total === 1 ? 'result' : 'results'}`}
+              </Text>
+              {activeChips.length > 0 && (
+                <View style={styles.resultsBarFilters as object}>
+                  <ActiveFilterChips slug={categorySlug} filters={filters} setFilter={setFilter} />
+                  <Pressable
+                    onPress={reset}
+                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                      [styles.resultsClear, hovered && (styles.resultsClearHover as object)] as object
+                    }
+                  >
+                    <Text style={styles.resultsClearText as object}>Clear all</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          )}
           {loading ? (
             <View style={styles.gridWrap}>
               <View style={gridStyle as object}>
@@ -452,7 +476,23 @@ export default function WebCategoryScreen() {
             </View>
           ) : heroes.length === 0 ? (
             <View style={styles.center}>
-              <Text style={styles.empty}>No heroes found</Text>
+              <Ionicons name="search-outline" size={34} color="rgba(29,45,51,0.25)" />
+              <Text style={styles.empty}>
+                {activeChips.length > 0
+                  ? 'No heroes match these filters'
+                  : 'No heroes found'}
+              </Text>
+              {activeChips.length > 0 && (
+                <Pressable
+                  onPress={reset}
+                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                    [styles.emptyClear, hovered && (styles.emptyClearHover as object)] as object
+                  }
+                >
+                  <Ionicons name="close" size={15} color={COLORS.beige} />
+                  <Text style={styles.emptyClearText as object}>Clear filters</Text>
+                </Pressable>
+              )}
             </View>
           ) : (
             // Plain View (no nested ScrollView) so the grid flows in the
@@ -505,6 +545,8 @@ const styles = StyleSheet.create({
     position: 'sticky',
     top: 0,
     zIndex: 40,
+    // Soft drop so the beige grid reads as scrolling *under* the sticky header.
+    boxShadow: '0 14px 28px -20px rgba(0,0,0,0.7)',
   } as object,
   headerInner: {
     maxWidth: 1200,
@@ -518,11 +560,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-  } as object,
-  identityRight: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
   } as object,
   accentBar: {
     width: 3,
@@ -549,22 +586,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     minWidth: 0,
   } as object,
-  countPill: {
-    backgroundColor: 'rgba(232,98,26,0.15)',
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(232,98,26,0.3)',
-    flexShrink: 0,
-  },
-  countText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: COLORS.orange,
-    letterSpacing: 0.3,
-  } as object,
-
   // Row 2 — controls (mobile only: search + Filters button on one row)
   controlsRow: {
     flexDirection: 'row',
@@ -684,6 +705,61 @@ const styles = StyleSheet.create({
   // grows to the full grid height — its beige fill backs every card, including
   // the ones that scroll under the toolbar, instead of the navy body showing.
   gridWrap: { paddingTop: 16, backgroundColor: COLORS.beige } as object,
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+
+  // ── Desktop results bar (count + active filters, above the grid) ─────────────
+  resultsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 12,
+    minHeight: 30,
+  } as object,
+  resultsCount: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: 'rgba(29,45,51,0.55)',
+    letterSpacing: 0.2,
+  } as object,
+  resultsBarFilters: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  } as object,
+  resultsClear: {
+    height: 30,
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    cursor: 'pointer',
+    transition: 'opacity 150ms ease',
+  } as object,
+  resultsClearHover: { opacity: 0.6 } as object,
+  resultsClearText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12.5,
+    color: COLORS.orange,
+    letterSpacing: 0.2,
+  } as object,
+
+  // ── Empty state ──────────────────────────────────────────────────────────────
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, paddingVertical: 80 },
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
+  emptyClear: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    height: 40,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    backgroundColor: COLORS.orange,
+    cursor: 'pointer',
+    transition: 'opacity 150ms ease',
+  } as object,
+  emptyClearHover: { opacity: 0.85 } as object,
+  emptyClearText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13.5,
+    color: COLORS.beige,
+    letterSpacing: 0.2,
+  } as object,
 });

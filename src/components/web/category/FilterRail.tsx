@@ -91,7 +91,9 @@ const s = StyleSheet.create({
     flexShrink: 0,
     alignSelf: 'flex-start',
     position: 'sticky',
-    top: 120,
+    // Clear the sticky category header (~120px tall) with a 16px gap so the rail
+    // doesn't kiss the header edge when scrolled.
+    top: 136,
     backgroundImage: 'linear-gradient(180deg, rgba(48,69,77,0.96) 0%, rgba(32,47,54,0.98) 100%)',
     backgroundColor: COLORS.navy,
     borderRadius: 18,
@@ -162,6 +164,7 @@ const s = StyleSheet.create({
     transition: 'border-color 160ms ease, box-shadow 160ms ease',
     marginHorizontal: 20,
     marginBottom: 4,
+    overflow: 'hidden', // clip a long placeholder instead of letting it bleed past the border
   } as object,
   searchFocused: {
     borderColor: 'rgba(231,115,51,0.7)',
@@ -169,6 +172,7 @@ const s = StyleSheet.create({
   } as object,
   searchInput: {
     flex: 1,
+    minWidth: 0, // let the field shrink within the rail instead of pushing past it
     fontFamily: 'Nunito_400Regular',
     fontSize: 13.5,
     color: COLORS.beige,
