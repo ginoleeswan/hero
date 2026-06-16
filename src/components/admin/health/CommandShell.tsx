@@ -222,6 +222,8 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 12px)` as unknown as number,
     paddingBottom: 12,
+    // Header (and its notification dropdown) must stack above the body below it.
+    zIndex: 100,
   },
   topInner: {
     width: '100%',
@@ -236,7 +238,7 @@ const styles = StyleSheet.create({
   brandCol: { gap: 2 },
   kicker: { fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 2.4, color: COLORS.orange },
   brand: { fontFamily: 'Flame-Regular', fontSize: 26, color: '#fff', lineHeight: 29 },
-  topRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  topRight: { flexDirection: 'row', alignItems: 'center', gap: 12, zIndex: 100 },
   refresh: {
     width: 30,
     height: 30,
@@ -278,7 +280,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     gap: 8,
-    zIndex: 50,
+    zIndex: 1000,
+    elevation: 24,
     shadowColor: '#000',
     shadowOpacity: 0.22,
     shadowRadius: 18,
