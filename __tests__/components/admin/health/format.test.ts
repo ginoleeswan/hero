@@ -9,6 +9,7 @@ describe('DOMAINS', () => {
     expect(DOMAINS.map((d) => d.key)).toEqual([
       'command',
       'catalog',
+      'sources',
       'pipelines',
       'campaigns',
       'spend',
@@ -31,7 +32,14 @@ describe('DOMAINS', () => {
   });
 
   it('primaryDomainKeys excludes placeholders (mobile bottom bar set)', () => {
-    expect(primaryDomainKeys()).toEqual(['command', 'catalog', 'pipelines', 'campaigns', 'spend']);
+    expect(primaryDomainKeys()).toEqual([
+      'command',
+      'catalog',
+      'sources',
+      'pipelines',
+      'campaigns',
+      'spend',
+    ]);
   });
 });
 
