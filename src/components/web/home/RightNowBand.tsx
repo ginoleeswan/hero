@@ -7,8 +7,8 @@ import { Image } from 'expo-image';
 import { HeroImage } from '../../HeroImage';
 import { COLORS } from '../../../constants/colors';
 import {
-  trendingBadge,
   mergeTrendingTitles,
+  trendingBadge,
   type BadgeTone,
   type Campaign,
   type TrendingTitle,
@@ -275,8 +275,9 @@ export function RightNowBand({
     personalized.length > 0;
   if (!hasAny) return null;
 
-  // "What's Hot" ranks the live slate by popularity — on_screen leads, then streaming.
-  const hotTitles = [...onScreen, ...streaming];
+  // "What's Hot" ranks the live slate by popularity — on_screen leads, then
+  // streaming. Dedupe by id: a title can be both in theaters and streaming.
+  const hotTitles = mergeTrendingTitles(onScreen, [], streaming);
 
   return (
     <View style={band.band}>
