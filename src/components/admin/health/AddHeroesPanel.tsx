@@ -437,11 +437,20 @@ export function AddHeroesPanel({
         loading ? <ActivityIndicator color={COLORS.orange} style={{ marginTop: 14 }} /> : (
           <ScrollView style={styles.scroll} nestedScrollEnabled>
             {memberView.map((m) => (
-              <Pressable key={m.id} onPress={() => !isIn(m.id) && toggle(m.id)} style={styles.memberRow}>
-                <Checkbox checked={selected.has(m.id)} disabled={isIn(m.id)} />
-                <Text style={styles.memberName} numberOfLines={1}>{m.name}</Text>
-                <StatusBadge inCat={isIn(m.id)} dup={isDup(m.id, m.name)} />
-              </Pressable>
+              <MemberRow
+                key={m.id}
+                m={m}
+                selected={selected.has(m.id)}
+                inCat={isIn(m.id)}
+                dup={isDup(m.id, m.name)}
+                expanded={expandedId === m.id}
+                detail={detailCache[m.id]}
+                detailLoading={detailLoading.has(m.id)}
+                busy={busy}
+                onToggleSelect={() => !isIn(m.id) && toggle(m.id)}
+                onToggleExpand={() => toggleExpand(m.id)}
+                onAdd={() => addByIds([m.id])}
+              />
             ))}
             {memberView.length === 0 ? <Text style={styles.empty}>{newOnly ? 'No new members — all in catalogue.' : 'No members.'}</Text> : null}
             {memberTruncated > 0 ? (
@@ -557,6 +566,44 @@ function CharacterRow({
   );
 }
 
+// A roster member (team / series / creator / film / publisher / power). Members
+// arrive as just id + name, so the collapsed row is compact — tapping the body
+// expands the same preview (its detail is fetched lazily from the id).
+function MemberRow({
+  m, selected, inCat, dup, expanded, detail, detailLoading, busy,
+  onToggleSelect, onToggleExpand, onAdd,
+}: {
+  m: { id: string; name: string };
+  selected: boolean; inCat: boolean; dup: boolean; expanded: boolean;
+  detail: CvCharacterDetail | null | undefined; detailLoading: boolean; busy: boolean;
+  onToggleSelect: () => void; onToggleExpand: () => void; onAdd: () => void;
+}) {
+  return (
+    <View style={[styles.charWrap, expanded && styles.charWrapOpen]}>
+      <View style={styles.memberRow}>
+        <Pressable onPress={onToggleSelect} disabled={inCat} hitSlop={8}>
+          <Checkbox checked={selected} disabled={inCat} />
+        </Pressable>
+        <Pressable onPress={onToggleExpand} style={styles.memberBody}>
+          <Text style={styles.memberName} numberOfLines={1}>{m.name}</Text>
+          <StatusBadge inCat={inCat} dup={dup} />
+          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={COLORS.grey} />
+        </Pressable>
+      </View>
+      {expanded ? (
+        <CharacterPreview
+          detail={detail}
+          loading={detailLoading}
+          fallbackImage={null}
+          inCat={inCat}
+          busy={busy}
+          onAdd={onAdd}
+        />
+      ) : null}
+    </View>
+  );
+}
+
 function Checkbox({ checked, disabled }: { checked: boolean; disabled: boolean }) {
   return (
     <View style={[styles.cb, checked && styles.cbOn, disabled && styles.cbDisabled]}>
@@ -613,7 +660,8 @@ const styles = StyleSheet.create({
   meta: { flex: 1, minWidth: 0, gap: 2 },
   name: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.black },
   sub: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey },
-  memberRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: 'rgba(41,60,67,0.06)' },
+  memberRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
+  memberBody: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },
   memberName: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.black },
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey, marginTop: 12 },
 
