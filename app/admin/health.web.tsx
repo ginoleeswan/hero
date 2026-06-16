@@ -26,6 +26,8 @@ import { BuildBoard } from '../../src/components/admin/health/BuildBoard';
 import { HeroConsole } from '../../src/components/admin/health/HeroConsole';
 import { DuplicatesPanel } from '../../src/components/admin/health/DuplicatesPanel';
 import { SpendDomain } from '../../src/components/admin/health/domains/SpendDomain';
+import { SourcesDomain } from '../../src/components/admin/health/domains/SourcesDomain';
+import { fetchSourceCoverage } from '../../src/lib/db/catalogHealth';
 import { CampaignsDomain } from '../../src/components/admin/health/domains/CampaignsDomain';
 import { PlaceholderDomain } from '../../src/components/admin/health/domains/PlaceholderDomain';
 import {
@@ -61,6 +63,11 @@ export default function AdminHealthScreen() {
     queryKey: ['profile', user?.id],
     queryFn: () => getProfile(user!.id),
     enabled: !!user,
+  });
+  const sourceCovQ = useQuery({
+    queryKey: ['sourceCoverage'],
+    queryFn: fetchSourceCoverage,
+    enabled: !!user && domain === 'sources',
   });
   const gateResolved = !authLoading && (!user || profileQ.isSuccess || profileQ.isError);
   const isAdmin = !!profileQ.data?.is_admin;
@@ -299,6 +306,7 @@ export default function AdminHealthScreen() {
         refreshing={refreshing}
         onRefresh={onRefresh}
         narrow={narrow}
+        fill={domain === 'command' || domain === 'sources'}
         ribbon={onlyOnBuild ? ribbon : null}
         alerts={onlyOnBuild ? alertSlot : null}
       >
@@ -400,6 +408,9 @@ export default function AdminHealthScreen() {
             }}
             narrow={narrow}
           />
+        )}
+        {domain === 'sources' && (
+          <SourcesDomain cov={sourceCovQ.data} loading={sourceCovQ.isLoading} narrow={narrow} />
         )}
         {domain === 'campaigns' && <CampaignsDomain />}
         {domain === 'spend' && <SpendDomain spend={spendQ.data} loading={spendQ.isLoading} />}

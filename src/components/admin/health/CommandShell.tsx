@@ -50,12 +50,14 @@ export function CommandShell({
   refreshing,
   onRefresh,
   narrow,
+  fill,
   ribbon,
   alerts,
   children,
 }: {
   domain: DomainKey;
   onDomain: (k: DomainKey) => void;
+  fill?: boolean;
   overall: number;
   pending: number;
   refreshing: boolean;
@@ -69,7 +71,7 @@ export function CommandShell({
   const future = DOMAINS.filter((d) => d.placeholder);
 
   return (
-    <View style={styles.page}>
+    <View style={[styles.page, fill && !narrow && styles.pageFill]}>
       {/* Top bar — full-bleed dark band fusing with the floating nav */}
       <LinearGradient
         colors={[CHROME_TOP, COLORS.deepNavy]}
@@ -96,8 +98,11 @@ export function CommandShell({
       </LinearGradient>
 
       {/* Body: rail (desktop) + content */}
-      <LinearGradient colors={[COLORS.deepNavy, '#081218']} style={styles.bodyBg}>
-        <View style={[styles.body, narrow && styles.bodyNarrow]}>
+      <LinearGradient
+        colors={[COLORS.deepNavy, '#081218']}
+        style={[styles.bodyBg, fill && !narrow && styles.minH0]}
+      >
+        <View style={[styles.body, narrow && styles.bodyNarrow, fill && !narrow && styles.minH0]}>
           {!narrow && (
             <View style={styles.rail}>
               {primary.map((d) => (
@@ -122,7 +127,13 @@ export function CommandShell({
             </View>
           )}
 
-          <View style={[styles.content, narrow && styles.contentNarrow]}>
+          <View
+            style={[
+              styles.content,
+              narrow && styles.contentNarrow,
+              fill && !narrow && styles.minH0,
+            ]}
+          >
             {ribbon}
             {alerts}
             {children}
@@ -160,6 +171,10 @@ export function CommandShell({
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: COLORS.deepNavy, minHeight: '100%' as unknown as number },
+  // Dashboard fill mode: lock to the viewport so the content area fills the screen
+  // and long lists scroll inside their panels instead of the whole page scrolling.
+  pageFill: { height: '100dvh' as unknown as number, minHeight: 0, overflow: 'hidden' },
+  minH0: { minHeight: 0 },
   top: {
     width: '100%',
     paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 12px)` as unknown as number,

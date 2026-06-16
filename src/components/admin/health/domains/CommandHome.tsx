@@ -94,8 +94,8 @@ export function CommandHome({
   const allClear = needsYou === 0 && failed === 0 && toEnrich === 0 && !overBudget;
 
   return (
-    <Bento>
-      <Bento.Row narrow={narrow}>
+    <Bento fill>
+      <Bento.Row narrow={narrow} fill>
         {/* Catalogue health — headline % + completeness trend */}
         <Panel
           title="Catalogue health"
@@ -186,7 +186,7 @@ export function CommandHome({
         </Panel>
       </Bento.Row>
 
-      <Bento.Row narrow={narrow}>
+      <Bento.Row narrow={narrow} fill>
         {/* Backfill queue preview */}
         <Panel
           title="Backfill queue"

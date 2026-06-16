@@ -5,12 +5,16 @@ import { View, StyleSheet } from 'react-native';
 import { type ReactNode } from 'react';
 import { DENSITY } from './format';
 
-function Grid({ children }: { children: ReactNode }) {
-  return <View style={styles.grid}>{children}</View>;
+function Grid({ children, fill }: { children: ReactNode; fill?: boolean }) {
+  return <View style={[styles.grid, fill && styles.fill]}>{children}</View>;
 }
 
-function Row({ children, narrow }: { children: ReactNode; narrow: boolean }) {
-  return <View style={narrow ? styles.rowNarrow : styles.row}>{children}</View>;
+function Row({ children, narrow, fill }: { children: ReactNode; narrow: boolean; fill?: boolean }) {
+  return (
+    <View style={[narrow ? styles.rowNarrow : styles.row, fill && !narrow && styles.fill]}>
+      {children}
+    </View>
+  );
 }
 
 export const Bento = Object.assign(Grid, { Row });
@@ -19,4 +23,6 @@ const styles = StyleSheet.create({
   grid: { gap: DENSITY.gap, width: '100%' },
   row: { flexDirection: 'row', gap: DENSITY.gap, alignItems: 'stretch' },
   rowNarrow: { flexDirection: 'column', gap: DENSITY.gap },
+  // Height-filling dashboard mode: rows divide the available height; panels stretch.
+  fill: { flex: 1, minHeight: 0 },
 });

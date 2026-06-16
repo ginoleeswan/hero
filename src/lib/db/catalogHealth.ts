@@ -483,3 +483,19 @@ export async function getCatalogDistributions(): Promise<Distributions> {
     power_hist: d.power_hist ?? [],
   };
 }
+
+// ── Per-source coverage (for the Sources view) ─────────────────────────────────
+export interface SourceCoverage {
+  total: number;
+  superhero_api: { linked: number };
+  comicvine: { linked: number; done: number; pending: number; failed: number };
+  wikidata: { resolved: number; ambiguous: number; unresolved: number; enriched: number };
+  tmdb: { titles: number; enriched: number; films: number; tv: number };
+}
+
+/** How much of the catalogue each external source accounts for + its health. */
+export async function fetchSourceCoverage(): Promise<SourceCoverage | null> {
+  const { data, error } = await supabase.rpc('get_source_coverage');
+  if (error || !data) return null;
+  return data as unknown as SourceCoverage;
+}

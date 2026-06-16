@@ -1010,6 +1010,7 @@ export type Database = {
       }
       catalog_distributions: { Args: never; Returns: Json }
       catalog_health: { Args: never; Returns: Json }
+      get_source_coverage: { Args: Record<PropertyKey, never>; Returns: Json }
       find_duplicate_heroes: {
         Args: { p_limit?: number }
         Returns: {
