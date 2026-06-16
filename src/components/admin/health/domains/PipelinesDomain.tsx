@@ -1,7 +1,7 @@
 // Pipelines ("Build") domain — the control room for every drain that fills the
-// catalogue. The enrichment funnel (shared-denominator stage bars + one "Build
-// next N" action) sits beside "Needs you" review; the live log + recently-built
-// pair below; crons and full-width run history collapse into Advanced.
+// catalogue. Split into focused sub-tabs so each is a compact, near-no-scroll
+// view: Add (bring characters in) · Enrich (the funnel + "Needs you" review) ·
+// Generate (AI powerstats/portraits) · Activity (log, recently built, crons, runs).
 import { useEffect, useState } from 'react';
 import {
   View,
@@ -21,6 +21,7 @@ import { ActivityLog } from '../ActivityLog';
 import { useRouter } from 'expo-router';
 import { InfoTip } from '../InfoTip';
 import { AddHeroesPanel } from '../AddHeroesPanel';
+import { SubTabs } from '../SubTabs';
 import { StatsBoard } from '../StatsBoard';
 import { PortraitBoard } from '../PortraitBoard';
 import { HeroThumb } from '../atoms';
@@ -385,11 +386,8 @@ export function PipelinesDomain({
   narrow: boolean;
 }) {
   const router = useRouter();
-  // Secondary sections collapse by default to keep the active pipeline (add →
-  // build → review) front and centre.
-  const [genOpen, setGenOpen] = useState(false);
-  const [monitorOpen, setMonitorOpen] = useState(false);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
+  // Sub-tabs split the dense Build domain into focused, no-scroll views.
+  const [sub, setSub] = useState<'add' | 'enrich' | 'generate' | 'activity'>('add');
   const [statsIds, setStatsIds] = useState<string[] | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
   const [portraitIds, setPortraitIds] = useState<string[] | null>(null);
@@ -547,249 +545,260 @@ export function PipelinesDomain({
 
   return (
     <Bento>
-      {/* 1 · Add characters — name / team / series, multi-select, build live. */}
-      <AddHeroesPanel flash={flash} onAdded={onHeroesAdded} onBuild={setBuildIds} />
+      <SubTabs
+        tabs={[
+          { key: 'add', label: 'Add', icon: 'add-circle-outline' },
+          { key: 'enrich', label: 'Enrich', icon: 'construct-outline', badge: reviewN },
+          {
+            key: 'generate',
+            label: 'Generate',
+            icon: 'sparkles-outline',
+            badge: statsPending + portraitsPending,
+          },
+          { key: 'activity', label: 'Activity', icon: 'pulse-outline' },
+        ]}
+        active={sub}
+        onChange={setSub}
+      />
 
-      {/* 2 · Build & status — the funnel + one primary action, beside what needs you. */}
-      <Bento.Row narrow={narrow}>
-        <Panel
-          title="Build & status"
-          hint={`${p.enriched.toLocaleString()} of ${p.heroesTotal.toLocaleString()} fully enriched · ${totalActionable.toLocaleString()} to go`}
-          action={
-            <InfoTip text="The enrichment funnel. Each bar is how many heroes have reached that stage, all on the same scale, so you can see where they pile up. 'Build next' works the backlog one hero at a time; 'Run all' on a stage drains just that stage." />
-          }
-          style={styles.flex15}
-        >
-          <View style={styles.funnel}>
-            {stages.map((s, i) => (
-              <FunnelStage
-                key={s.key}
-                s={s}
-                n={i + 1}
-                busy={busy}
-                bottleneck={s.key === bottleneckKey}
-              />
-            ))}
-          </View>
+      {/* Add — bring new characters in. */}
+      {sub === 'add' ? (
+        <AddHeroesPanel flash={flash} onAdded={onHeroesAdded} onBuild={setBuildIds} />
+      ) : null}
 
-          {/* Primary action: work the whole backlog, one hero at a time, live. */}
-          <View style={styles.primary}>
-            <Pressable
-              onPress={buildNextPending}
-              disabled={!!buildIds || totalActionable === 0}
-              style={[styles.buildBtn, (!!buildIds || totalActionable === 0) && styles.dim]}
-            >
-              <Ionicons name="construct" size={16} color="#fff" />
-              <Text style={styles.buildBtnText}>
-                Build next {Math.min(batchSize, totalActionable || batchSize)}
-              </Text>
-            </Pressable>
-            <View style={styles.sizeSel}>
-              {[10, 25, 50].map((n) => (
-                <Pressable
-                  key={n}
-                  onPress={() => setBatchSize(n)}
-                  style={[styles.sizePill, batchSize === n && styles.sizePillOn]}
-                >
-                  <Text style={[styles.sizePillText, batchSize === n && styles.sizePillTextOn]}>
-                    {n}
-                  </Text>
-                </Pressable>
+      {/* Enrich — the funnel + one primary action, beside what needs you. */}
+      {sub === 'enrich' ? (
+        <Bento.Row narrow={narrow}>
+          <Panel
+            title="Build & status"
+            hint={`${p.enriched.toLocaleString()} of ${p.heroesTotal.toLocaleString()} fully enriched · ${totalActionable.toLocaleString()} to go`}
+            action={
+              <InfoTip text="The enrichment funnel. Each bar is how many heroes have reached that stage, all on the same scale, so you can see where they pile up. 'Build next' works the backlog one hero at a time; 'Run all' on a stage drains just that stage." />
+            }
+            style={styles.flex15}
+          >
+            <View style={styles.funnel}>
+              {stages.map((s, i) => (
+                <FunnelStage
+                  key={s.key}
+                  s={s}
+                  n={i + 1}
+                  busy={busy}
+                  bottleneck={s.key === bottleneckKey}
+                />
               ))}
             </View>
-            <InfoTip
-              text={`Opens the live Build board for the next ${batchSize} heroes in the backlog — you watch each go ComicVine → Resolve → Appearances, with Pause/Stop. The 10/25/50 sets how many. (Just-added characters get their own Build button up top.)`}
-              size={13}
-            />
-            {failed > 0 ? (
-              <Pressable
-                onPress={onRetryFailed}
-                disabled={!!busy}
-                style={[styles.ctrlBtn, !!busy && styles.dim]}
-              >
-                {busy === 'retry' ? (
-                  <ActivityIndicator size="small" color={COLORS.navy} />
-                ) : (
-                  <Ionicons name="refresh" size={13} color={COLORS.navy} />
-                )}
-                <Text style={styles.ctrlText}>Retry {failed} failed</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        </Panel>
 
-        <Panel
-          title="Needs you"
-          hint={
-            p.ambiguous > 0 ? `${p.ambiguous.toLocaleString()} to review` : 'Decisions land here'
-          }
-          action={
-            <InfoTip text="Heroes the resolver couldn't confidently match to one Wikidata identity. Each candidate shows its Wikidata name, description and confidence score — tap the right one to lock it in, no need to leave the page. The ↗ still opens Wikidata if you want to dig deeper." />
-          }
-          style={styles.flex1}
-        >
-          {ambiguous.length === 0 ? (
-            <Text style={styles.empty}>All clear — nothing waiting on you.</Text>
-          ) : (
-            <ScrollView
-              style={styles.reviewScroll}
-              nestedScrollEnabled
-              showsVerticalScrollIndicator
-            >
-              {bulkEligible > 0 ? (
+            {/* Primary action: work the whole backlog, one hero at a time, live. */}
+            <View style={styles.primary}>
+              <Pressable
+                onPress={buildNextPending}
+                disabled={!!buildIds || totalActionable === 0}
+                style={[styles.buildBtn, (!!buildIds || totalActionable === 0) && styles.dim]}
+              >
+                <Ionicons name="construct" size={16} color="#fff" />
+                <Text style={styles.buildBtnText}>
+                  Build next {Math.min(batchSize, totalActionable || batchSize)}
+                </Text>
+              </Pressable>
+              <View style={styles.sizeSel}>
+                {[10, 25, 50].map((n) => (
+                  <Pressable
+                    key={n}
+                    onPress={() => setBatchSize(n)}
+                    style={[styles.sizePill, batchSize === n && styles.sizePillOn]}
+                  >
+                    <Text style={[styles.sizePillText, batchSize === n && styles.sizePillTextOn]}>
+                      {n}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              <InfoTip
+                text={`Opens the live Build board for the next ${batchSize} heroes in the backlog — you watch each go ComicVine → Resolve → Appearances, with Pause/Stop. The 10/25/50 sets how many. (Just-added characters get their own Build button up top.)`}
+                size={13}
+              />
+              {failed > 0 ? (
                 <Pressable
-                  onPress={() => onBulkAccept(ambiguous, BULK_THRESHOLD)}
-                  disabled={busy === 'bulk-accept'}
-                  style={[styles.bulkBar, busy === 'bulk-accept' && styles.dim]}
+                  onPress={onRetryFailed}
+                  disabled={!!busy}
+                  style={[styles.ctrlBtn, !!busy && styles.dim]}
                 >
-                  {busy === 'bulk-accept' ? (
-                    <ActivityIndicator size="small" color={COLORS.green} />
-                  ) : (
-                    <Ionicons name="checkmark-done" size={15} color={COLORS.green} />
-                  )}
-                  <Text style={styles.bulkText}>
-                    Auto-accept {bulkEligible} confident match{bulkEligible === 1 ? '' : 'es'} (≥{' '}
-                    {BULK_THRESHOLD.toFixed(2)})
-                  </Text>
-                </Pressable>
-              ) : null}
-              {ambiguous.map((hero) => {
-                const busyThis = busy === `resolveqid-${hero.id}`;
-                return (
-                  <View key={hero.id} style={styles.reviewRow}>
-                    <View style={styles.reviewWho}>
-                      <HeroThumb uri={hero.imageUrl} width={30} height={40} radius={6} />
-                      <View style={styles.reviewMeta}>
-                        <Text style={styles.reviewName} numberOfLines={1}>
-                          {hero.name}
-                        </Text>
-                        <Text style={styles.reviewPub} numberOfLines={1}>
-                          {hero.publisher ?? '—'}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.candidates}>
-                      {hero.candidates.map((c) => {
-                        const info = wdInfo[c.qid];
-                        return (
-                          <View key={c.qid} style={styles.cand}>
-                            <Pressable
-                              onPress={() => onResolveQid(hero.id, c.qid, hero.name)}
-                              disabled={!!busy}
-                              style={[styles.candMainBtn, !!busy && styles.dim]}
-                              accessibilityLabel={`Pick ${info?.label ?? c.qid} for ${hero.name}`}
-                            >
-                              {info?.image ? (
-                                <HeroThumb uri={info.image} width={30} height={40} radius={6} />
-                              ) : (
-                                <View style={styles.candNoImg}>
-                                  <Ionicons name="image-outline" size={14} color={COLORS.grey} />
-                                </View>
-                              )}
-                              <View style={styles.candText}>
-                                <Text style={styles.candLabel} numberOfLines={1}>
-                                  {info?.label ?? c.qid}
-                                  <Text
-                                    style={styles.candScore}
-                                  >{`  ·  ${c.score.toFixed(2)}`}</Text>
-                                </Text>
-                                <Text style={styles.candDesc} numberOfLines={2}>
-                                  {info
-                                    ? info.description || 'no Wikidata description'
-                                    : `${c.qid} · loading…`}
-                                </Text>
-                              </View>
-                              <Ionicons
-                                name={busyThis ? 'ellipsis-horizontal' : 'checkmark-circle-outline'}
-                                size={18}
-                                color={COLORS.orange}
-                              />
-                            </Pressable>
-                            <Pressable
-                              onPress={() => openWiki(c.qid)}
-                              style={styles.chipLink}
-                              accessibilityLabel={`Open ${c.qid} on Wikidata to verify`}
-                            >
-                              <Ionicons name="open-outline" size={14} color={COLORS.navy} />
-                            </Pressable>
-                          </View>
-                        );
-                      })}
-                    </View>
-                    {/* Escape hatch — none of the candidates are right. */}
-                    <View style={styles.reviewActions}>
-                      <Pressable
-                        onPress={() => onMarkUnresolved(hero.id, hero.name)}
-                        disabled={!!busy}
-                        style={[styles.noneBtn, !!busy && styles.dim]}
-                      >
-                        <Ionicons name="close-circle-outline" size={14} color={COLORS.grey} />
-                        <Text style={styles.noneText}>None of these</Text>
-                      </Pressable>
-                      <View style={styles.manualBox}>
-                        <TextInput
-                          value={manualQid[hero.id] ?? ''}
-                          onChangeText={(t) => setManualQid((prev) => ({ ...prev, [hero.id]: t }))}
-                          placeholder="paste QID… (Q12345)"
-                          placeholderTextColor={COLORS.grey}
-                          autoCapitalize="characters"
-                          style={[styles.manualInput, { outlineStyle: 'none' }] as object}
-                        />
-                        <Pressable
-                          onPress={() => {
-                            const q = (manualQid[hero.id] ?? '').trim().toUpperCase();
-                            if (/^Q\d+$/.test(q)) onResolveQid(hero.id, q, hero.name);
-                            else flash('Enter a valid QID like Q12345', 'error');
-                          }}
-                          disabled={!!busy || !(manualQid[hero.id] ?? '').trim()}
-                          style={[
-                            styles.manualSet,
-                            (!!busy || !(manualQid[hero.id] ?? '').trim()) && styles.dim,
-                          ]}
-                        >
-                          <Text style={styles.manualSetText}>Set</Text>
-                        </Pressable>
-                      </View>
-                    </View>
-                  </View>
-                );
-              })}
-              {ambiguous.length < p.ambiguous ? (
-                <Pressable
-                  onPress={onLoadMoreAmbiguous}
-                  disabled={ambiguousFetching}
-                  style={[styles.loadMore, ambiguousFetching && styles.dim]}
-                >
-                  {ambiguousFetching ? (
+                  {busy === 'retry' ? (
                     <ActivityIndicator size="small" color={COLORS.navy} />
                   ) : (
-                    <Ionicons name="chevron-down" size={14} color={COLORS.navy} />
+                    <Ionicons name="refresh" size={13} color={COLORS.navy} />
                   )}
-                  <Text style={styles.loadMoreText}>
-                    Load more · {(p.ambiguous - ambiguous.length).toLocaleString()} left
-                  </Text>
+                  <Text style={styles.ctrlText}>Retry {failed} failed</Text>
                 </Pressable>
               ) : null}
-            </ScrollView>
-          )}
-        </Panel>
-      </Bento.Row>
+            </View>
+          </Panel>
 
-      {/* Generate (Gemini) — paid AI work, collapsed by default. */}
-      <Pressable onPress={() => setGenOpen((v) => !v)} style={styles.advHead}>
-        <Ionicons
-          name={genOpen ? 'chevron-down' : 'chevron-forward'}
-          size={16}
-          color={COLORS.navy}
-        />
-        <Text style={styles.advHeadText}>
-          Generate · AI powerstats & portraits
-          {statsPending + portraitsPending > 0
-            ? ` · ${(statsPending + portraitsPending).toLocaleString()} pending`
-            : ''}
-        </Text>
-      </Pressable>
-      {genOpen ? (
+          <Panel
+            title="Needs you"
+            hint={
+              p.ambiguous > 0 ? `${p.ambiguous.toLocaleString()} to review` : 'Decisions land here'
+            }
+            action={
+              <InfoTip text="Heroes the resolver couldn't confidently match to one Wikidata identity. Each candidate shows its Wikidata name, description and confidence score — tap the right one to lock it in, no need to leave the page. The ↗ still opens Wikidata if you want to dig deeper." />
+            }
+            style={styles.flex1}
+          >
+            {ambiguous.length === 0 ? (
+              <Text style={styles.empty}>All clear — nothing waiting on you.</Text>
+            ) : (
+              <ScrollView
+                style={styles.reviewScroll}
+                nestedScrollEnabled
+                showsVerticalScrollIndicator
+              >
+                {bulkEligible > 0 ? (
+                  <Pressable
+                    onPress={() => onBulkAccept(ambiguous, BULK_THRESHOLD)}
+                    disabled={busy === 'bulk-accept'}
+                    style={[styles.bulkBar, busy === 'bulk-accept' && styles.dim]}
+                  >
+                    {busy === 'bulk-accept' ? (
+                      <ActivityIndicator size="small" color={COLORS.green} />
+                    ) : (
+                      <Ionicons name="checkmark-done" size={15} color={COLORS.green} />
+                    )}
+                    <Text style={styles.bulkText}>
+                      Auto-accept {bulkEligible} confident match{bulkEligible === 1 ? '' : 'es'} (≥{' '}
+                      {BULK_THRESHOLD.toFixed(2)})
+                    </Text>
+                  </Pressable>
+                ) : null}
+                {ambiguous.map((hero) => {
+                  const busyThis = busy === `resolveqid-${hero.id}`;
+                  return (
+                    <View key={hero.id} style={styles.reviewRow}>
+                      <View style={styles.reviewWho}>
+                        <HeroThumb uri={hero.imageUrl} width={30} height={40} radius={6} />
+                        <View style={styles.reviewMeta}>
+                          <Text style={styles.reviewName} numberOfLines={1}>
+                            {hero.name}
+                          </Text>
+                          <Text style={styles.reviewPub} numberOfLines={1}>
+                            {hero.publisher ?? '—'}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.candidates}>
+                        {hero.candidates.map((c) => {
+                          const info = wdInfo[c.qid];
+                          return (
+                            <View key={c.qid} style={styles.cand}>
+                              <Pressable
+                                onPress={() => onResolveQid(hero.id, c.qid, hero.name)}
+                                disabled={!!busy}
+                                style={[styles.candMainBtn, !!busy && styles.dim]}
+                                accessibilityLabel={`Pick ${info?.label ?? c.qid} for ${hero.name}`}
+                              >
+                                {info?.image ? (
+                                  <HeroThumb uri={info.image} width={30} height={40} radius={6} />
+                                ) : (
+                                  <View style={styles.candNoImg}>
+                                    <Ionicons name="image-outline" size={14} color={COLORS.grey} />
+                                  </View>
+                                )}
+                                <View style={styles.candText}>
+                                  <Text style={styles.candLabel} numberOfLines={1}>
+                                    {info?.label ?? c.qid}
+                                    <Text
+                                      style={styles.candScore}
+                                    >{`  ·  ${c.score.toFixed(2)}`}</Text>
+                                  </Text>
+                                  <Text style={styles.candDesc} numberOfLines={2}>
+                                    {info
+                                      ? info.description || 'no Wikidata description'
+                                      : `${c.qid} · loading…`}
+                                  </Text>
+                                </View>
+                                <Ionicons
+                                  name={
+                                    busyThis ? 'ellipsis-horizontal' : 'checkmark-circle-outline'
+                                  }
+                                  size={18}
+                                  color={COLORS.orange}
+                                />
+                              </Pressable>
+                              <Pressable
+                                onPress={() => openWiki(c.qid)}
+                                style={styles.chipLink}
+                                accessibilityLabel={`Open ${c.qid} on Wikidata to verify`}
+                              >
+                                <Ionicons name="open-outline" size={14} color={COLORS.navy} />
+                              </Pressable>
+                            </View>
+                          );
+                        })}
+                      </View>
+                      {/* Escape hatch — none of the candidates are right. */}
+                      <View style={styles.reviewActions}>
+                        <Pressable
+                          onPress={() => onMarkUnresolved(hero.id, hero.name)}
+                          disabled={!!busy}
+                          style={[styles.noneBtn, !!busy && styles.dim]}
+                        >
+                          <Ionicons name="close-circle-outline" size={14} color={COLORS.grey} />
+                          <Text style={styles.noneText}>None of these</Text>
+                        </Pressable>
+                        <View style={styles.manualBox}>
+                          <TextInput
+                            value={manualQid[hero.id] ?? ''}
+                            onChangeText={(t) =>
+                              setManualQid((prev) => ({ ...prev, [hero.id]: t }))
+                            }
+                            placeholder="paste QID… (Q12345)"
+                            placeholderTextColor={COLORS.grey}
+                            autoCapitalize="characters"
+                            style={[styles.manualInput, { outlineStyle: 'none' }] as object}
+                          />
+                          <Pressable
+                            onPress={() => {
+                              const q = (manualQid[hero.id] ?? '').trim().toUpperCase();
+                              if (/^Q\d+$/.test(q)) onResolveQid(hero.id, q, hero.name);
+                              else flash('Enter a valid QID like Q12345', 'error');
+                            }}
+                            disabled={!!busy || !(manualQid[hero.id] ?? '').trim()}
+                            style={[
+                              styles.manualSet,
+                              (!!busy || !(manualQid[hero.id] ?? '').trim()) && styles.dim,
+                            ]}
+                          >
+                            <Text style={styles.manualSetText}>Set</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+                {ambiguous.length < p.ambiguous ? (
+                  <Pressable
+                    onPress={onLoadMoreAmbiguous}
+                    disabled={ambiguousFetching}
+                    style={[styles.loadMore, ambiguousFetching && styles.dim]}
+                  >
+                    {ambiguousFetching ? (
+                      <ActivityIndicator size="small" color={COLORS.navy} />
+                    ) : (
+                      <Ionicons name="chevron-down" size={14} color={COLORS.navy} />
+                    )}
+                    <Text style={styles.loadMoreText}>
+                      Load more · {(p.ambiguous - ambiguous.length).toLocaleString()} left
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </ScrollView>
+            )}
+          </Panel>
+        </Bento.Row>
+      ) : null}
+
+      {/* Generate — AI powerstats + portraits (paid, Gemini). */}
+      {sub === 'generate' ? (
         <Panel
           title="AI generation · Gemini"
           hint={
@@ -877,71 +886,51 @@ export function PipelinesDomain({
         </Panel>
       ) : null}
 
-      {/* Monitor — live log + who just got built, collapsed by default. */}
-      <Pressable onPress={() => setMonitorOpen((v) => !v)} style={styles.advHead}>
-        <Ionicons
-          name={monitorOpen ? 'chevron-down' : 'chevron-forward'}
-          size={16}
-          color={COLORS.navy}
-        />
-        <Text style={styles.advHeadText}>Monitor · live log & recently built</Text>
-      </Pressable>
-      {monitorOpen ? (
-        <Bento.Row narrow={narrow}>
-          <View style={styles.flex1}>
-            <ActivityLog log={log} clearLog={clearLog} />
-          </View>
-          <Panel
-            title="Recently built"
-            hint="The exact heroes each run just touched — click one to open it."
-            action={
-              <InfoTip text="Every hero a run processed is logged here, newest first; the chip shows which stage did it and when. Use it to confirm a build actually did what you expected." />
-            }
-            style={styles.flex1}
-          >
-            {recentlyEnriched.length === 0 ? (
-              <Text style={styles.empty}>
-                Nothing yet — build some heroes and they appear here.
-              </Text>
-            ) : (
-              <ScrollView style={styles.reviewScroll} nestedScrollEnabled>
-                <View style={styles.reGrid}>
-                  {recentlyEnriched.map((r, i) => (
-                    <Pressable
-                      key={`${r.heroId}-${i}`}
-                      onPress={() => router.push(`/character/${r.heroId}`)}
-                      style={styles.reCard}
-                    >
-                      <HeroThumb uri={r.imageUrl} width={30} height={40} radius={6} />
-                      <View style={styles.reMeta}>
-                        <Text style={styles.reName} numberOfLines={1}>
-                          {r.name}
-                        </Text>
-                        <Text style={styles.reSub} numberOfLines={1}>
-                          {runTypeLabel(r.runType)}
-                          {r.at ? ` · ${relTime(r.at)}` : ''}
-                        </Text>
-                      </View>
-                    </Pressable>
-                  ))}
-                </View>
-              </ScrollView>
-            )}
-          </Panel>
-        </Bento.Row>
-      ) : null}
-
-      {/* Advanced — automation + history, collapsed by default. */}
-      <Pressable onPress={() => setAdvancedOpen((v) => !v)} style={styles.advHead}>
-        <Ionicons
-          name={advancedOpen ? 'chevron-down' : 'chevron-forward'}
-          size={16}
-          color={COLORS.navy}
-        />
-        <Text style={styles.advHeadText}>Advanced · scheduled crons & run history</Text>
-      </Pressable>
-      {advancedOpen ? (
+      {/* Activity — live log, recently built, scheduled crons & run history. */}
+      {sub === 'activity' ? (
         <>
+          <Bento.Row narrow={narrow}>
+            <View style={styles.flex1}>
+              <ActivityLog log={log} clearLog={clearLog} />
+            </View>
+            <Panel
+              title="Recently built"
+              hint="The exact heroes each run just touched — click one to open it."
+              action={
+                <InfoTip text="Every hero a run processed is logged here, newest first; the chip shows which stage did it and when. Use it to confirm a build actually did what you expected." />
+              }
+              style={styles.flex1}
+            >
+              {recentlyEnriched.length === 0 ? (
+                <Text style={styles.empty}>
+                  Nothing yet — build some heroes and they appear here.
+                </Text>
+              ) : (
+                <ScrollView style={styles.reviewScroll} nestedScrollEnabled>
+                  <View style={styles.reGrid}>
+                    {recentlyEnriched.map((r, i) => (
+                      <Pressable
+                        key={`${r.heroId}-${i}`}
+                        onPress={() => router.push(`/character/${r.heroId}`)}
+                        style={styles.reCard}
+                      >
+                        <HeroThumb uri={r.imageUrl} width={30} height={40} radius={6} />
+                        <View style={styles.reMeta}>
+                          <Text style={styles.reName} numberOfLines={1}>
+                            {r.name}
+                          </Text>
+                          <Text style={styles.reSub} numberOfLines={1}>
+                            {runTypeLabel(r.runType)}
+                            {r.at ? ` · ${relTime(r.at)}` : ''}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    ))}
+                  </View>
+                </ScrollView>
+              )}
+            </Panel>
+          </Bento.Row>
           <Bento.Row narrow={narrow}>
             <Panel
               title="Scheduled crons"
