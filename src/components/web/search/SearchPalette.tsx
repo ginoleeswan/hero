@@ -19,12 +19,15 @@ export function SearchPalette() {
 
   const close = () => setSearchFocused(false);
 
-  // Focus the field whenever the palette opens.
+  // Open fresh: clear any term left in the shared query (the results page mirrors
+  // ?q= into context) and focus the field. An empty query surfaces the idle view
+  // — trending + recent searches — so a new search starts from a clean slate.
   useEffect(() => {
     if (!searchFocused) return;
+    setQuery('');
     const t = setTimeout(() => inputRef.current?.focus(), 20);
     return () => clearTimeout(t);
-  }, [searchFocused]);
+  }, [searchFocused]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Escape closes from anywhere while open.
   useEffect(() => {
