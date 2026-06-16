@@ -1,7 +1,14 @@
 // Dark command-center chrome. Renders the pinned top bar (brand + overall gauge +
 // refresh), the domain switcher (left rail on desktop, bottom tab bar on mobile),
 // and slots for the vitals ribbon, alerts, and the active domain content.
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  ActivityIndicator,
+  StyleSheet,
+  useWindowDimensions,
+} from 'react-native';
 import { type ReactNode, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -112,9 +119,12 @@ export function CommandShell({
 }) {
   const primary = DOMAINS.filter((d) => !d.placeholder);
   const future = DOMAINS.filter((d) => d.placeholder);
+  // Lock the shell to a real pixel viewport height (RN-web drops '100dvh'), so the
+  // content area can divide that height instead of growing the page.
+  const { height: winH } = useWindowDimensions();
 
   return (
-    <View style={[styles.page, !narrow && styles.pageLock]}>
+    <View style={[styles.page, !narrow && { height: winH, overflow: 'hidden', minHeight: 0 }]}>
       {/* Top bar — full-bleed dark band fusing with the floating nav */}
       <LinearGradient
         colors={[CHROME_TOP, COLORS.deepNavy]}
