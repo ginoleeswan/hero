@@ -356,6 +356,7 @@ export type Database = {
       hero_people: {
         Row: {
           hero_id: string
+          id: number
           person_name: string
           role: string
           source: string
@@ -363,6 +364,7 @@ export type Database = {
         }
         Insert: {
           hero_id: string
+          id?: never
           person_name: string
           role: string
           source?: string
@@ -370,6 +372,7 @@ export type Database = {
         }
         Update: {
           hero_id?: string
+          id?: never
           person_name?: string
           role?: string
           source?: string
