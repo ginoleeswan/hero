@@ -12,6 +12,7 @@ import {
 } from '../../src/lib/api';
 import { NotFoundView, LoadErrorView } from '../../src/components/NotFoundView';
 import { getHeroById, getHeroFamily, heroRowToCharacterData } from '../../src/lib/db/heroes';
+import { isSuperheroApiId } from '../../src/lib/query/heroLoadPlan';
 import type { FamilyMember } from '../../src/lib/family/types';
 import { FamilyCanvas } from '../../src/components/family/FamilyCanvas.web';
 import { supabase } from '../../src/lib/supabase';
@@ -413,7 +414,13 @@ export default function WebCharacterScreen() {
 
     getHeroById(id)
       .then((hero) => {
-        if (hero?.enriched_at) {
+        // Render straight from a real DB row when it carries base data
+        // (`enriched_at` set) OR when its id isn't a SuperheroAPI id — a `cv-`
+        // ComicVine-only hero (built from the pipeline) never gets `enriched_at`,
+        // so the row is the only base layer it will ever have. Gating purely on
+        // `enriched_at` routed those heroes to the SuperheroAPI/CDN fetch, which
+        // 404s on a non-numeric id and flipped the screen to "couldn't load".
+        if (hero && (hero.enriched_at != null || !isSuperheroApiId(hero.id))) {
           setData(heroRowToCharacterData(hero));
 
           // In-Print covers: seed from the DB row, lazy-fetch once if never enriched.
