@@ -13,13 +13,25 @@ updates:
         dependency-type: development
       production-dependencies:
         dependency-type: production
+    # These packages are pinned to the Expo SDK — bump them via `expo install`
+    # / an SDK upgrade, NOT Dependabot, or the project desyncs from its SDK
+    # (e.g. react-native 0.85→0.86 belongs to SDK 57, jest 30 breaks jest-expo).
+    # Dependabot here manages only the SDK-independent deps.
     ignore:
       - dependency-name: expo
-        update-types: [version-update:semver-major]
       - dependency-name: expo-*
-        update-types: [version-update:semver-major]
+      - dependency-name: react
+      - dependency-name: react-dom
       - dependency-name: react-native
-        update-types: [version-update:semver-major]
+      - dependency-name: react-native-*
+      - dependency-name: '@react-native/*'
+      - dependency-name: '@react-native-*/*'
+      - dependency-name: react-test-renderer
+      - dependency-name: jest
+      - dependency-name: jest-expo
+      - dependency-name: eslint-config-expo
+      - dependency-name: '@types/react'
+      - dependency-name: '@types/react-dom'
 
   # Keep the GitHub Actions themselves current (addresses the Node 20
   # deprecation warnings on the runner).
