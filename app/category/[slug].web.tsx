@@ -667,14 +667,20 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   } as object,
 
-  // Content layout — desktop rail + grid (centered, max width)
+  // Content layout — desktop rail + grid (centered, max width).
+  // flexGrow:1 + flexShrink:0 (not flex:1) so the row grows to the full grid
+  // height instead of being capped at one viewport by RNW's min-height:0. The
+  // sticky rail's containing block is this row, so it must span the whole
+  // scrollable content for the rail to stay stuck past the first fold — while
+  // flexGrow still fills the viewport when the grid is short.
   contentRow: {
     flexDirection: 'row',
     gap: 24,
     maxWidth: 1200,
     width: '100%',
     alignSelf: 'center',
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 0,
     paddingTop: 16,
   } as object,
   contentMain: { flex: 1, minWidth: 0 } as object,
