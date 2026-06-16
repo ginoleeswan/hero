@@ -64,14 +64,13 @@ const g = StyleSheet.create({
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
     gap: 14,
+    marginBottom: 52, // match the carousel rows' section rhythm before the next chapter
   } as object,
   tile: {
     height: 168,
     borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
-    borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.08)',
     justifyContent: 'flex-end',
     cursor: 'pointer',
     transition: 'transform 180ms ease, box-shadow 180ms ease',
