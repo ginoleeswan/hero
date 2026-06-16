@@ -156,7 +156,7 @@ export function CommandShell({
         colors={[COLORS.deepNavy, '#081218']}
         style={[styles.bodyBg, !narrow && styles.minH0]}
       >
-        <View style={[styles.body, narrow && styles.bodyNarrow, !narrow && styles.minH0]}>
+        <View style={[styles.body, narrow && styles.bodyNarrow, !narrow && styles.bodyFill]}>
           {!narrow && (
             <View style={styles.rail}>
               {primary.map((d) => (
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   },
   topInner: {
     width: '100%',
-    maxWidth: 1180,
+    maxWidth: 1760,
     alignSelf: 'center',
     paddingHorizontal: 20,
     flexDirection: 'row',
@@ -326,13 +326,16 @@ const styles = StyleSheet.create({
   bodyBg: { flex: 1, width: '100%' },
   body: {
     width: '100%',
-    maxWidth: 1180,
+    maxWidth: 1760,
     alignSelf: 'center',
     flexDirection: 'row',
     gap: 14,
     padding: 16,
     alignItems: 'flex-start',
   },
+  // Desktop: body fills the locked viewport height and stretches the rail +
+  // content so the content's fill bento can divide that height (no page scroll).
+  bodyFill: { flex: 1, minHeight: 0, alignItems: 'stretch' },
   bodyNarrow: { flexDirection: 'column', paddingHorizontal: 12, paddingTop: 12, gap: 12 },
   rail: {
     width: 84,
