@@ -146,7 +146,7 @@ export function CommandShell({
                 <Ionicons name="refresh" size={15} color="rgba(255,255,255,0.85)" />
               )}
             </Pressable>
-            <Gauge value={overall} size={narrow ? 56 : 64} />
+            <Gauge value={overall} size={narrow ? 40 : 46} />
           </View>
         </View>
       </LinearGradient>
@@ -235,8 +235,8 @@ const styles = StyleSheet.create({
   noScroll: { minHeight: 0, overflow: 'hidden' },
   top: {
     width: '100%',
-    paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 12px)` as unknown as number,
-    paddingBottom: 12,
+    paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 4px)` as unknown as number,
+    paddingBottom: 8,
     // Header (and its notification dropdown) must stack above the body below it.
     zIndex: 100,
   },
@@ -249,9 +249,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 16,
   },
-  brandCol: { gap: 2 },
-  kicker: { fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 2.4, color: COLORS.orange },
-  brand: { fontFamily: 'Flame-Regular', fontSize: 26, color: '#fff', lineHeight: 29 },
+  brandCol: { gap: 1 },
+  kicker: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 2.2, color: COLORS.orange },
+  brand: { fontFamily: 'Flame-Regular', fontSize: 19, color: '#fff', lineHeight: 23 },
   topRight: { flexDirection: 'row', alignItems: 'center', gap: 12, zIndex: 100 },
   refresh: {
     width: 30,
