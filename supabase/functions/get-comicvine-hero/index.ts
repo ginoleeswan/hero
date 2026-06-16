@@ -131,8 +131,8 @@ serve(async (req: Request) => {
       const listRes = await fetch(
         `${COMICVINE_BASE}/characters/?${cvParams({
           filter: `name:${heroName}`,
-          field_list: 'id',
-          limit: '1',
+          field_list: 'id,name,count_of_issue_appearances',
+          limit: '20',
         })}`,
       );
       if (!listRes.ok) {
@@ -143,9 +143,21 @@ serve(async (req: Request) => {
       const listBody = await listRes.json();
       // Rate limited (HTTP 200 + status_code 107) — transient, don't mark failed.
       if (listBody?.status_code === 107) return json(NULL_RESPONSE);
-      const match = listBody.results?.[0];
+      // ComicVine's name filter is an UNSORTED SUBSTRING match — "Bane" returns
+      // "Wolfsbane" as result #1. Taking results[0] blindly resolves heroes to the
+      // wrong character (corrupting their data and colliding on the unique
+      // comicvine_id). Only accept an EXACT, case-insensitive name match, and among
+      // those prefer the most-published. No exact match → don't guess, mark failed.
+      const wanted = heroName.trim().toLowerCase();
+      const match = ((listBody.results ?? []) as Array<Record<string, unknown>>)
+        .filter((c) => typeof c.name === 'string' && (c.name as string).trim().toLowerCase() === wanted)
+        .sort(
+          (a, b) =>
+            ((b.count_of_issue_appearances as number) ?? 0) -
+            ((a.count_of_issue_appearances as number) ?? 0),
+        )[0];
       if (!match?.id) {
-        // No ComicVine character matches this name — terminal.
+        // No ComicVine character with this exact name — terminal.
         await markFailed();
         return json(NULL_RESPONSE);
       }
@@ -306,7 +318,7 @@ serve(async (req: Request) => {
     const movies = [...enrichedMovies, ...restMovies];
 
     // ── Persist (terminal success) ──────────────────────────────────────────────
-    await supabase
+    const { error: persistError } = await supabase
       .from('heroes')
       .update({
         // Only overwrite when ComicVine actually returned art — never blank an
@@ -332,6 +344,18 @@ serve(async (req: Request) => {
         comicvine_id: cvId ?? undefined,
       })
       .eq('id', heroId);
+
+    // NEVER report success on a write that didn't happen. A 23505 unique-violation
+    // means the resolved comicvine_id already belongs to another hero — i.e. this
+    // row duplicates a character already in the catalogue (e.g. a legacy
+    // SuperheroAPI hero resolving to one already added as cv-<id>). Park it as
+    // failed so it leaves the actionable backlog instead of being re-picked every
+    // build forever. Other (transient) DB errors leave the row pending to retry.
+    if (persistError) {
+      console.error('[get-comicvine-hero] persist failed', heroId, persistError);
+      if (persistError.code === '23505') await markFailed();
+      return json(NULL_RESPONSE);
+    }
 
     return json({
       summary,
