@@ -25,11 +25,6 @@ const config: ExpoConfig = {
   runtimeVersion: {
     policy: 'appVersion',
   },
-  splash: {
-    image: './assets/splash.png',
-    resizeMode: 'contain',
-    backgroundColor: '#293c43',
-  },
   ios: {
     supportsTablet: false,
     bundleIdentifier: IS_DEV ? 'com.ginoswanepoel.mythique.dev' : 'com.ginoswanepoel.mythique',

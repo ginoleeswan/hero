@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   } as object,
   pressed: { transform: [{ scale: 0.96 }], opacity: 0.92 },
   scrim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     ...Platform.select({
       web: {
         backgroundImage:

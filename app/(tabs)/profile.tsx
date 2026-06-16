@@ -855,7 +855,7 @@ const styles = StyleSheet.create({
     opacity: 0.18,
   },
   coverUploadOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.4)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -907,7 +907,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   avatarUploadOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.4)',
     alignItems: 'center',
     justifyContent: 'center',

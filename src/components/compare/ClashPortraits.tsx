@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   panelBg: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: COLORS.navy,
   },
   bottomGrad: {

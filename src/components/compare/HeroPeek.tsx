@@ -174,7 +174,7 @@ export function HeroPeek({
 }
 
 const styles = StyleSheet.create({
-  overlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end', alignItems: 'center', zIndex: 100 },
+  overlay: { ...StyleSheet.absoluteFill, justifyContent: 'flex-end', alignItems: 'center', zIndex: 100 },
   backdrop: { backgroundColor: 'rgba(12,18,22,0.55)' },
   sheet: {
     width: '100%',

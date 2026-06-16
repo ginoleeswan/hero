@@ -1044,7 +1044,7 @@ const mob = StyleSheet.create({
     backgroundSize: '14px 14px',
   } as object,
   coverOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.4)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1099,7 +1099,7 @@ const mob = StyleSheet.create({
   },
   avatarInitials: { fontFamily: 'Flame-Regular', fontSize: 28, color: '#fff' },
   avatarOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.4)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1362,7 +1362,7 @@ const desk = StyleSheet.create({
     opacity: 0.18,
   },
   coverOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.4)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1430,7 +1430,7 @@ const desk = StyleSheet.create({
   },
   avatarInitials: { fontFamily: 'Flame-Regular', fontSize: 34, color: '#fff' },
   avatarOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.4)',
     alignItems: 'center',
     justifyContent: 'center',

@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     backgroundImage: 'linear-gradient(to top, rgba(0,0,0,0.78) 0%, transparent 100%)',
   } as object,
   lostOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(12,17,20,0.32)',
   } as object,
   portraitLabel: {
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
 
   // ── Swap affordance ────────────────────────────────────────────
   swapHit: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     cursor: 'pointer',
   } as object,
   swapHitHover: { backgroundColor: 'rgba(0,0,0,0.12)' } as object,
