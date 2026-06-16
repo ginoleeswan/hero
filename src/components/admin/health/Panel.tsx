@@ -1,7 +1,7 @@
 // Dense data panel — the command center's standard light card. Title + optional
 // hint + optional right-aligned action, then children. One source of truth for
 // panel chrome so every domain stays visually in lockstep.
-import { View, Text, StyleSheet, type ViewStyle } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, type ViewStyle } from 'react-native';
 import { type ReactNode } from 'react';
 import { COLORS } from '../../../constants/colors';
 import { DENSITY } from './format';
@@ -12,15 +12,19 @@ export function Panel({
   action,
   children,
   style,
+  scroll,
 }: {
   title?: string;
   hint?: string;
   action?: ReactNode;
   children?: ReactNode;
   style?: ViewStyle | ViewStyle[];
+  // Fill the cell and scroll the body internally (keeps the page from scrolling
+  // in a no-scroll dashboard). Pass only on desktop fill layouts.
+  scroll?: boolean;
 }) {
   return (
-    <View style={[styles.panel, style as ViewStyle]}>
+    <View style={[styles.panel, scroll && styles.panelScroll, style as ViewStyle]}>
       {(title || action) && (
         <View style={styles.head}>
           <View style={styles.headText}>
@@ -30,7 +34,13 @@ export function Panel({
           {action}
         </View>
       )}
-      {children}
+      {scroll ? (
+        <ScrollView style={styles.scrollBody} nestedScrollEnabled showsVerticalScrollIndicator>
+          {children}
+        </ScrollView>
+      ) : (
+        children
+      )}
     </View>
   );
 }
@@ -47,6 +57,9 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
   },
+  // Internal-scroll mode: fill the cell, clip, and let the body ScrollView scroll.
+  panelScroll: { flex: 1, minHeight: 0, overflow: 'hidden' },
+  scrollBody: { flex: 1, minHeight: 0 } as object,
   head: {
     flexDirection: 'row',
     alignItems: 'flex-start',

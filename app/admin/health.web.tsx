@@ -290,7 +290,7 @@ export default function AdminHealthScreen() {
         refreshing={refreshing}
         onRefresh={onRefresh}
         narrow={narrow}
-        fill={domain === 'command' || domain === 'sources'}
+        fill={domain === 'command' || domain === 'sources' || domain === 'pipelines'}
         ribbon={onlyOnBuild ? ribbon : null}
         alerts={alerts}
       >

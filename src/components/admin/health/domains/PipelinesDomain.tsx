@@ -543,8 +543,9 @@ export function PipelinesDomain({
   const bottleneckKey =
     maxPending > 0 ? stages.find((s) => !s.auto && s.pending === maxPending)?.key : undefined;
 
+  const fill = !narrow;
   return (
-    <Bento>
+    <Bento fill={fill}>
       <SubTabs
         tabs={[
           { key: 'add', label: 'Add', icon: 'add-circle-outline' },
@@ -561,15 +562,22 @@ export function PipelinesDomain({
         onChange={setSub}
       />
 
-      {/* Add — bring new characters in. */}
+      {/* Add — bring new characters in (scrolls within its area if tall). */}
       {sub === 'add' ? (
-        <AddHeroesPanel flash={flash} onAdded={onHeroesAdded} onBuild={setBuildIds} />
+        fill ? (
+          <ScrollView style={styles.subFill} nestedScrollEnabled>
+            <AddHeroesPanel flash={flash} onAdded={onHeroesAdded} onBuild={setBuildIds} />
+          </ScrollView>
+        ) : (
+          <AddHeroesPanel flash={flash} onAdded={onHeroesAdded} onBuild={setBuildIds} />
+        )
       ) : null}
 
       {/* Enrich — the funnel + one primary action, beside what needs you. */}
       {sub === 'enrich' ? (
-        <Bento.Row narrow={narrow}>
+        <Bento.Row narrow={narrow} fill={fill}>
           <Panel
+            scroll={fill}
             title="Build & status"
             hint={`${p.enriched.toLocaleString()} of ${p.heroesTotal.toLocaleString()} fully enriched · ${totalActionable.toLocaleString()} to go`}
             action={
@@ -800,6 +808,7 @@ export function PipelinesDomain({
       {/* Generate — AI powerstats + portraits (paid, Gemini). */}
       {sub === 'generate' ? (
         <Panel
+          scroll={fill}
           title="AI generation · Gemini"
           hint={
             statsPending > 0
@@ -888,12 +897,13 @@ export function PipelinesDomain({
 
       {/* Activity — live log, recently built, scheduled crons & run history. */}
       {sub === 'activity' ? (
-        <>
-          <Bento.Row narrow={narrow}>
+        <Bento fill={fill}>
+          <Bento.Row narrow={narrow} fill={fill}>
             <View style={styles.flex1}>
               <ActivityLog log={log} clearLog={clearLog} />
             </View>
             <Panel
+              scroll={fill}
               title="Recently built"
               hint="The exact heroes each run just touched — click one to open it."
               action={
@@ -931,8 +941,9 @@ export function PipelinesDomain({
               )}
             </Panel>
           </Bento.Row>
-          <Bento.Row narrow={narrow}>
+          <Bento.Row narrow={narrow} fill={fill}>
             <Panel
+              scroll={fill}
               title="Scheduled crons"
               hint="Background jobs that fill the backlog for you."
               action={
@@ -954,25 +965,26 @@ export function PipelinesDomain({
                 ))
               )}
             </Panel>
+            <Panel
+              scroll={fill}
+              title="Run history"
+              hint={`${runsTotal.toLocaleString()} runs · cron + manual`}
+              action={
+                <InfoTip text="Every drain that has run — automatic crons and manual batches alike — newest first. Hover a row to see what it processed." />
+              }
+              style={styles.flex1}
+            >
+              <RunHistory
+                runs={runs}
+                total={runsTotal}
+                narrow={narrow}
+                loading={runsLoading}
+                fetching={runsFetching}
+                onLoadMore={onLoadMore}
+              />
+            </Panel>
           </Bento.Row>
-
-          <Panel
-            title="Run history"
-            hint={`${runsTotal.toLocaleString()} runs · cron + manual`}
-            action={
-              <InfoTip text="Every drain that has run — automatic crons and manual batches alike — newest first. Hover a row to see what it processed." />
-            }
-          >
-            <RunHistory
-              runs={runs}
-              total={runsTotal}
-              narrow={narrow}
-              loading={runsLoading}
-              fetching={runsFetching}
-              onLoadMore={onLoadMore}
-            />
-          </Panel>
-        </>
+        </Bento>
       ) : null}
 
       {statsIds ? (
@@ -1189,6 +1201,7 @@ const styles = StyleSheet.create({
 
   // Needs attention
   reviewScroll: { maxHeight: 340 } as object,
+  subFill: { flex: 1, minHeight: 0 } as object,
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 13.5, color: COLORS.grey },
   reviewRow: {
     flexDirection: 'column',
