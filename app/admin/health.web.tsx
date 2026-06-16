@@ -276,6 +276,9 @@ export default function AdminHealthScreen() {
     />
   ) : null;
 
+  // Ops vitals + alerts (ComicVine rate-limit, run status, retry) only show on the
+  // Build tab, where you act on them — not as a fat ribbon on every screen.
+  const onlyOnBuild = domain === 'pipelines';
   const alertSlot = (
     <AlertStack
       alerts={alerts}
@@ -296,8 +299,8 @@ export default function AdminHealthScreen() {
         refreshing={refreshing}
         onRefresh={onRefresh}
         narrow={narrow}
-        ribbon={ribbon}
-        alerts={alertSlot}
+        ribbon={onlyOnBuild ? ribbon : null}
+        alerts={onlyOnBuild ? alertSlot : null}
       >
         {h && domain === 'command' && (
           <CommandHome

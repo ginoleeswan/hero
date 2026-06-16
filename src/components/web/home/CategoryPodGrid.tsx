@@ -28,7 +28,10 @@ export function CategoryPodGrid({
       style={
         [
           g.grid,
-          { marginHorizontal: pagePad, gridTemplateColumns: `repeat(auto-fill, minmax(${minCol}px, 1fr))` },
+          {
+            marginHorizontal: pagePad,
+            gridTemplateColumns: `repeat(auto-fill, minmax(${minCol}px, 1fr))`,
+          },
         ] as object
       }
     >
