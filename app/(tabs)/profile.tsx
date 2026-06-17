@@ -76,7 +76,6 @@ const STATUS_FG: Record<MyContribution['status'], string> = {
   superseded: COLORS.grey,
 };
 
-
 function FavouriteThumb({
   hero,
   onPress,

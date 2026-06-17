@@ -1,4 +1,8 @@
-import { isBlankValue, missingFields, presentFields } from '../../../src/lib/contribute/missingFields';
+import {
+  isBlankValue,
+  missingFields,
+  presentFields,
+} from '../../../src/lib/contribute/missingFields';
 
 describe('isBlankValue', () => {
   it('treats null/undefined/empty and DB sentinels as blank', () => {

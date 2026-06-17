@@ -8,7 +8,11 @@ import { Modal, View, Text, TextInput, Pressable, StyleSheet } from 'react-nativ
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../constants/colors';
-import { submitContribution, adminEditHero, type EditableFieldDef } from '../../lib/db/contributions';
+import {
+  submitContribution,
+  adminEditHero,
+  type EditableFieldDef,
+} from '../../lib/db/contributions';
 import { rewardLine } from '../../lib/contribute/reward';
 
 export interface ContributeSheetProps {

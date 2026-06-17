@@ -10,11 +10,15 @@ export function isBlankValue(v?: string | null): boolean {
 }
 
 /** The editable fields that are currently empty for this hero. */
-export function missingFields(values: Record<string, string | null | undefined>): EditableFieldDef[] {
+export function missingFields(
+  values: Record<string, string | null | undefined>,
+): EditableFieldDef[] {
   return EDITABLE_FIELDS.filter((f) => isBlankValue(values[f.field]));
 }
 
 /** The editable fields that already have a value (candidates for "suggest a fix"). */
-export function presentFields(values: Record<string, string | null | undefined>): EditableFieldDef[] {
+export function presentFields(
+  values: Record<string, string | null | undefined>,
+): EditableFieldDef[] {
   return EDITABLE_FIELDS.filter((f) => !isBlankValue(values[f.field]));
 }
