@@ -3,6 +3,7 @@ import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { Panel } from './Panel';
+import { EmptyState } from './ui';
 import { LOG_TONE_COLOR, logClock, type LogEntry } from './format';
 
 // `fill` makes the log a height-filling dashboard cell: it clips and scrolls
@@ -30,12 +31,11 @@ export function ActivityLog({
       title="Activity log"
       hint="Live results of actions & runs this session"
       action={clearAction}
-      style={fill ? styles.cellFill : undefined}
+      fill={fill}
+      scroll={false}
     >
       {log.length === 0 ? (
-        <Text style={styles.empty}>
-          Nothing yet — run a batch or action and results stream in here.
-        </Text>
+        <EmptyState text="Nothing yet — run a batch or action and results stream in here." />
       ) : (
         <ScrollView
           style={[styles.panel, fill ? styles.panelFill : styles.panelCap]}
@@ -56,10 +56,6 @@ export function ActivityLog({
 }
 
 const styles = StyleSheet.create({
-  empty: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: COLORS.grey, marginTop: 12 },
-  // Fill mode: clip to the cell and let the body scroll, so a long log can't
-  // overflow and overlap the panel beneath it.
-  cellFill: { flex: 1, minHeight: 0, overflow: 'hidden' } as object,
   panel: {
     marginTop: 6,
     backgroundColor: '#faf6ee',

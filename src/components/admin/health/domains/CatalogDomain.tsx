@@ -249,7 +249,7 @@ export function CatalogDomain({
           </Panel>
 
           {/* Backfill queue */}
-          <Panel scroll={fill} title="Backfill queue" hint="Most-viewed first" style={{ flex: 1 }}>
+          <Panel fill={fill} title="Backfill queue" hint="Most-viewed first">
             <View style={styles.tabs}>
               {(Object.keys(WORKLIST_LABEL) as CoverageMetric[]).map((m) => {
                 const def = METRICS.find((d) => d.worklist === m)!;
