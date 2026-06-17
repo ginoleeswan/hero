@@ -213,9 +213,8 @@ export function CatalogDomain({
       {/* ── Coverage + Backfill queue ── */}
       {sub === 'coverage' ? (
         <Bento.Row narrow={narrow} fill={fill}>
-          {/* Coverage */}
+          {/* Coverage — fixed width; short list, no internal scroll needed. */}
           <Panel
-            scroll={fill}
             title="Coverage"
             hint="Sorted by weakest first · tap one to load its queue"
             style={
