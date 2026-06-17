@@ -24,6 +24,11 @@ import {
 } from '../../src/lib/db/favourites';
 import { getBattleRecord, type BattleRecord } from '../../src/lib/db/matchupVotes';
 import {
+  getMyContributions,
+  describeContribution,
+  type MyContribution,
+} from '../../src/lib/db/contributions';
+import {
   getTasteProfile,
   dominantAlignment,
   shortPublisher,
@@ -77,6 +82,19 @@ function DeskFavSkeleton() {
 function username(email: string) {
   return email.split('@')[0] ?? email;
 }
+
+const STATUS_BG: Record<MyContribution['status'], string> = {
+  pending: 'rgba(231,115,51,0.14)',
+  approved: 'rgba(99,169,54,0.16)',
+  rejected: '#e8ddd0',
+  superseded: '#e8ddd0',
+};
+const STATUS_FG: Record<MyContribution['status'], string> = {
+  pending: COLORS.orange,
+  approved: COLORS.green,
+  rejected: COLORS.grey,
+  superseded: COLORS.grey,
+};
 
 function GuestWebProfileScreen() {
   const router = useRouter();
@@ -289,6 +307,7 @@ export default function WebProfileScreen() {
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
   const [battle, setBattle] = useState<BattleRecord | null>(null);
   const [taste, setTaste] = useState<TasteProfile | null>(null);
+  const [contributions, setContributions] = useState<MyContribution[]>([]);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -303,6 +322,9 @@ export default function WebProfileScreen() {
       .catch(() => {});
     getTasteProfile()
       .then(setTaste)
+      .catch(() => {});
+    getMyContributions()
+      .then(setContributions)
       .catch(() => {});
     getUserFavouriteHeroes(user.id)
       .then(setFavourites)
@@ -637,6 +659,38 @@ export default function WebProfileScreen() {
             </View>
           </View>
           <View style={mob.hairline} />
+
+          {/* ── My Contributions ── */}
+          {contributions.length > 0 && (
+            <>
+              <View style={mob.section}>
+                <View style={mob.sectionHeader}>
+                  <Text style={mob.sectionTitle}>My Contributions</Text>
+                  <Text style={mob.sectionCount}>{contributions.length}</Text>
+                </View>
+                <View style={mob.contribList}>
+                  {contributions.slice(0, 12).map((c) => (
+                    <View key={c.id} style={mob.contribRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={mob.contribHero} numberOfLines={1}>
+                          {c.hero_name}
+                        </Text>
+                        <Text style={mob.contribWhat} numberOfLines={1}>
+                          {describeContribution(c)}
+                        </Text>
+                      </View>
+                      <View style={[mob.statusPill, { backgroundColor: STATUS_BG[c.status] }]}>
+                        <Text style={[mob.statusText, { color: STATUS_FG[c.status] }]}>
+                          {c.status}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+              <View style={mob.hairline} />
+            </>
+          )}
 
           {/* ── My Favourites ── */}
           <View style={mob.section}>
@@ -1177,6 +1231,30 @@ export default function WebProfileScreen() {
                 ))}
               </View>
             </View>
+            {contributions.length > 0 && (
+              <View style={desk.battleBlock}>
+                <Text style={desk.sectionTitle}>My Contributions</Text>
+                <View style={desk.contribList}>
+                  {contributions.slice(0, 12).map((c) => (
+                    <View key={c.id} style={desk.contribRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={desk.contribHero} numberOfLines={1}>
+                          {c.hero_name}
+                        </Text>
+                        <Text style={desk.contribWhat} numberOfLines={1}>
+                          {describeContribution(c)}
+                        </Text>
+                      </View>
+                      <View style={[desk.statusPill, { backgroundColor: STATUS_BG[c.status] }]}>
+                        <Text style={[desk.statusText, { color: STATUS_FG[c.status] }]}>
+                          {c.status}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
             <View style={desk.sectionHeader}>
               <Text style={desk.sectionTitle}>My Favourites</Text>
               {!loading && favourites.length > 0 && (
@@ -1467,6 +1545,27 @@ const mob = StyleSheet.create({
   },
 
   // Badges
+  contribList: { gap: 8 },
+  contribRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.08)',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  contribHero: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.navy },
+  contribWhat: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, marginTop: 1 },
+  statusPill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  statusText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
   badgeWall: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   badgeTile: { width: 80, alignItems: 'center', gap: 6 },
   badgeTileLocked: { opacity: 0.55 } as object,
@@ -1923,6 +2022,27 @@ const desk = StyleSheet.create({
   tasteFootnote: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
   // Badges
   badgeHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  contribList: { gap: 8 },
+  contribRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.08)',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+  contribHero: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.navy },
+  contribWhat: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey, marginTop: 1 },
+  statusPill: { borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 },
+  statusText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
   badgeWall: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
   badgeTile: { width: 88, alignItems: 'center', gap: 7 },
   badgeTileLocked: { opacity: 0.55 } as object,

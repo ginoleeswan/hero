@@ -63,6 +63,7 @@ import {
 import { PortrayedBySection } from '../../src/components/PortrayedBySection';
 import { HeroLinksRow, heroLinksHasContent } from '../../src/components/HeroLinksRow';
 import { useAuth } from '../../src/hooks/useAuth';
+import { HelpCompleteCard } from '../../src/components/contribute/HelpCompleteCard';
 import { useRecordView } from '../../src/hooks/useViewHistory';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
@@ -1324,6 +1325,23 @@ export default function CharacterScreen() {
                   eraSummary={narrative?.eraSummary}
                 />
               </View>
+
+              {/* Help complete this page — contributor entry point (gaps + facts). */}
+              <HelpCompleteCard
+                heroId={data.stats.id}
+                heroName={data.stats.name}
+                values={{
+                  origin: data.details.origin,
+                  occupation: data.stats.work.occupation,
+                  base: data.stats.work.base,
+                  place_of_birth: data.stats.biography['place-of-birth'],
+                  first_appearance: data.stats.biography['first-appearance'],
+                  full_name: data.stats.biography['full-name'],
+                }}
+                user={user}
+                onRequestSignIn={() => router.push('/(auth)/login')}
+                onEdited={() => heroRowQuery.refetch()}
+              />
 
               {/* Enemies, Allies & Teams — full-bleed card strips off the
                   relationship graph (same-universe, popularity-ranked). */}

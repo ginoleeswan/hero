@@ -10,6 +10,9 @@ export type ContributionKind = 'field' | 'fact' | 'report';
 export interface EditableFieldDef {
   field: string;
   label: string;
+  /** A friendly question used as the prompt — "Where was X born?" reads easier
+   *  than a form label and makes the ask feel like a one-tap answer. */
+  question: string;
   guideline?: string;
   multiline?: boolean;
 }
@@ -20,19 +23,35 @@ export const EDITABLE_FIELDS: EditableFieldDef[] = [
   {
     field: 'origin',
     label: 'Origin',
-    guideline: 'Where this hero comes from — a sentence or two.',
+    question: 'Where does this hero come from?',
+    guideline: 'Their origin story — a sentence or two.',
     multiline: true,
   },
-  { field: 'full_name', label: 'Full name', guideline: 'Their real or birth name.' },
-  { field: 'occupation', label: 'Occupation', guideline: 'What they do.' },
-  { field: 'base', label: 'Base of operations', guideline: 'Where they operate from.' },
-  { field: 'place_of_birth', label: 'Place of birth' },
+  { field: 'full_name', label: 'Full name', question: "What's their real name?" },
+  { field: 'occupation', label: 'Occupation', question: 'What do they do?' },
+  { field: 'base', label: 'Base of operations', question: 'Where do they operate from?' },
+  { field: 'place_of_birth', label: 'Place of birth', question: 'Where were they born?' },
   {
     field: 'first_appearance',
     label: 'First appearance',
+    question: 'Where did they first appear?',
     guideline: 'The issue or title they debuted in.',
   },
 ];
+
+const FIELD_LABEL: Record<string, string> = Object.fromEntries(
+  EDITABLE_FIELDS.map((f) => [f.field, f.label]),
+);
+
+/** Human description of what a contribution changed, for the profile list. */
+export function describeContribution(c: {
+  kind: ContributionKind;
+  target_field: string | null;
+}): string {
+  if (c.kind === 'fact') return 'Did You Know fact';
+  if (c.kind === 'report') return 'Reported an issue';
+  return FIELD_LABEL[c.target_field ?? ''] ?? c.target_field ?? 'Edit';
+}
 
 export interface MyContribution {
   id: number;
@@ -119,6 +138,27 @@ export async function reviewContribution(
     p_id: id,
     p_decision: decision,
     p_reason: reason ?? '',
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/**
+ * Admin direct-edit — applies a field edit or fact immediately (no queue) and
+ * logs an auto-approved contribution for the audit trail. Admin-only (guarded
+ * server-side). Used by the on-page contribute flow when the viewer is an admin.
+ */
+export async function adminEditHero(opts: {
+  heroId: string;
+  kind: 'field' | 'fact';
+  targetField?: string | null;
+  newValue: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.rpc('admin_edit_hero', {
+    p_hero_id: opts.heroId,
+    p_kind: opts.kind,
+    p_target_field: opts.targetField ?? '',
+    p_new_value: opts.newValue,
   });
   if (error) return { ok: false, error: error.message };
   return { ok: true };

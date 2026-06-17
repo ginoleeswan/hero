@@ -19,6 +19,7 @@ import { supabase } from '../../src/lib/supabase';
 import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
 import { getPowerIcon, groupPowers } from '../../src/constants/powerIcons';
 import { useAuth } from '../../src/hooks/useAuth';
+import { HelpCompleteCard } from '../../src/components/contribute/HelpCompleteCard';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
@@ -649,6 +650,32 @@ export default function WebCharacterScreen() {
 
   const { stats, details } = data;
 
+  // Contributor entry point — defined once, placed in both the desktop and
+  // mobile-web content trees below. Flush (no side margin) to sit in the column.
+  const contributeCard = (
+    <HelpCompleteCard
+      heroId={stats.id}
+      heroName={stats.name}
+      values={{
+        origin: details.origin,
+        occupation: stats.work.occupation,
+        base: stats.work.base,
+        place_of_birth: stats.biography['place-of-birth'],
+        first_appearance: stats.biography['first-appearance'],
+        full_name: stats.biography['full-name'],
+      }}
+      user={user}
+      onRequestSignIn={() => router.push('/(auth)/login')}
+      onEdited={() => {
+        // Re-derive from the freshly-edited DB row so the page reflects the change.
+        getHeroById(stats.id)
+          .then((hero) => hero && setData(heroRowToCharacterData(hero)))
+          .catch(() => {});
+      }}
+      style={{ marginHorizontal: 0 }}
+    />
+  );
+
   // Affiliations live in the main "Enemies, Allies & Teams" card (not Quick Facts)
   // so the sticky side rail stays short enough to fit the viewport.
   const affiliations: string[] = details.teams?.length
@@ -1027,6 +1054,8 @@ export default function WebCharacterScreen() {
                       <DidYouKnowDeck facts={narrative.didYouKnow} />
                     </View>
                   ) : null}
+
+                  {contributeCard}
 
                   {/* Enemies & Allies */}
                   {comicVineLoading ? (
@@ -1701,6 +1730,8 @@ export default function WebCharacterScreen() {
                     <DidYouKnowDeck facts={narrative.didYouKnow} contentInset={20} />
                   </View>
                 ) : null}
+
+                <View style={{ paddingHorizontal: 20 }}>{contributeCard}</View>
 
                 {/* Family tree */}
                 {family.length > 0 ? (
