@@ -17,12 +17,21 @@ export interface EditableFieldDef {
 /** The heroes text columns a contributor may propose. Mirrors the allow-list
  *  enforced server-side in submit_contribution / admin_review_contribution. */
 export const EDITABLE_FIELDS: EditableFieldDef[] = [
-  { field: 'origin', label: 'Origin', guideline: 'Where this hero comes from — a sentence or two.', multiline: true },
+  {
+    field: 'origin',
+    label: 'Origin',
+    guideline: 'Where this hero comes from — a sentence or two.',
+    multiline: true,
+  },
   { field: 'full_name', label: 'Full name', guideline: 'Their real or birth name.' },
   { field: 'occupation', label: 'Occupation', guideline: 'What they do.' },
   { field: 'base', label: 'Base of operations', guideline: 'Where they operate from.' },
   { field: 'place_of_birth', label: 'Place of birth' },
-  { field: 'first_appearance', label: 'First appearance', guideline: 'The issue or title they debuted in.' },
+  {
+    field: 'first_appearance',
+    label: 'First appearance',
+    guideline: 'The issue or title they debuted in.',
+  },
 ];
 
 export interface MyContribution {

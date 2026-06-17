@@ -646,7 +646,10 @@ export default function ProfileScreen() {
             {badges.map((b) => (
               <View key={b.id} style={[styles.badgeTile, !b.earned && styles.badgeTileLocked]}>
                 <View
-                  style={[styles.badgeIcon, b.earned ? styles.badgeIconEarned : styles.badgeIconLocked]}
+                  style={[
+                    styles.badgeIcon,
+                    b.earned ? styles.badgeIconEarned : styles.badgeIconLocked,
+                  ]}
                 >
                   <Ionicons
                     name={b.icon as keyof typeof Ionicons.glyphMap}

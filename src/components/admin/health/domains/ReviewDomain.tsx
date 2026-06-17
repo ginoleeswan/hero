@@ -148,9 +148,7 @@ function ReviewRow({
         <Text style={s.report}>{item.note || 'Flagged as incorrect.'}</Text>
       )}
 
-      {item.kind !== 'report' && !!item.note && (
-        <Text style={s.note}>Note: {item.note}</Text>
-      )}
+      {item.kind !== 'report' && !!item.note && <Text style={s.note}>Note: {item.note}</Text>}
 
       {rejecting ? (
         <View style={s.rejectBox}>
