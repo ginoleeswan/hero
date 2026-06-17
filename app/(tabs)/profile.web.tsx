@@ -29,6 +29,7 @@ import {
   shortPublisher,
   type TasteProfile,
 } from '../../src/lib/db/taste';
+import { computeBadges, earnedCount } from '../../src/lib/profile/badges';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { COLORS } from '../../src/constants/colors';
@@ -396,6 +397,16 @@ export default function WebProfileScreen() {
     ? `Based on ${taste.basedOn} ${taste.basedOn === 1 ? 'hero' : 'heroes'} you've saved & viewed`
     : '';
 
+  // Badges — derived from account age + favourites + matchup record + taste.
+  const badges = computeBadges({
+    accountCreatedAt: user?.created_at ?? null,
+    favourites: favourites.length,
+    votes: battle?.total ?? 0,
+    streak: battle?.streak ?? 0,
+    topPublisher: taste?.publishers[0]?.name ?? null,
+  });
+  const badgesEarned = earnedCount(badges);
+
   const handleUpdateName = async (newName: string) => {
     await updateDisplayName(newName);
     showToast('Display name updated');
@@ -581,6 +592,48 @@ export default function WebProfileScreen() {
               <View style={mob.hairline} />
             </>
           )}
+
+          {/* ── Badges ── */}
+          <View style={mob.section}>
+            <View style={mob.sectionHeader}>
+              <Text style={mob.sectionTitle}>Badges</Text>
+              <Text style={mob.sectionCount}>
+                {badgesEarned}/{badges.length}
+              </Text>
+            </View>
+            <View style={mob.badgeWall}>
+              {badges.map((b) => (
+                <View key={b.id} style={[mob.badgeTile, !b.earned && (mob.badgeTileLocked as object)]}>
+                  <View
+                    style={[
+                      mob.badgeIcon,
+                      b.earned ? (mob.badgeIconEarned as object) : (mob.badgeIconLocked as object),
+                    ]}
+                  >
+                    <Ionicons
+                      name={b.icon as keyof typeof Ionicons.glyphMap}
+                      size={22}
+                      color={b.earned ? '#fff' : COLORS.grey}
+                    />
+                  </View>
+                  <Text
+                    style={[mob.badgeLabel, !b.earned && (mob.badgeLabelLocked as object)]}
+                    numberOfLines={1}
+                  >
+                    {b.label}
+                  </Text>
+                  <Text style={mob.badgeSub} numberOfLines={1}>
+                    {!b.earned && b.progress
+                      ? `${Math.min(b.progress.current, b.progress.target)}/${b.progress.target}`
+                      : b.earned
+                        ? 'Earned'
+                        : ''}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+          <View style={mob.hairline} />
 
           {/* ── My Favourites ── */}
           <View style={mob.section}>
@@ -1077,6 +1130,45 @@ export default function WebProfileScreen() {
                 <Text style={desk.tasteFootnote}>{tasteFootnote}</Text>
               </View>
             )}
+            <View style={desk.battleBlock}>
+              <View style={desk.badgeHead}>
+                <Text style={desk.sectionTitle}>Badges</Text>
+                <Text style={desk.sectionCount}>
+                  {badgesEarned}/{badges.length}
+                </Text>
+              </View>
+              <View style={desk.badgeWall}>
+                {badges.map((b) => (
+                  <View key={b.id} style={[desk.badgeTile, !b.earned && (desk.badgeTileLocked as object)]}>
+                    <View
+                      style={[
+                        desk.badgeIcon,
+                        b.earned ? (desk.badgeIconEarned as object) : (desk.badgeIconLocked as object),
+                      ]}
+                    >
+                      <Ionicons
+                        name={b.icon as keyof typeof Ionicons.glyphMap}
+                        size={24}
+                        color={b.earned ? '#fff' : COLORS.grey}
+                      />
+                    </View>
+                    <Text
+                      style={[desk.badgeLabel, !b.earned && (desk.badgeLabelLocked as object)]}
+                      numberOfLines={1}
+                    >
+                      {b.label}
+                    </Text>
+                    <Text style={desk.badgeSub} numberOfLines={1}>
+                      {!b.earned && b.progress
+                        ? `${Math.min(b.progress.current, b.progress.target)}/${b.progress.target}`
+                        : b.earned
+                          ? 'Earned'
+                          : ''}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
             <View style={desk.sectionHeader}>
               <Text style={desk.sectionTitle}>My Favourites</Text>
               {!loading && favourites.length > 0 && (
@@ -1365,6 +1457,34 @@ const mob = StyleSheet.create({
     color: COLORS.grey,
     marginTop: 12,
   },
+
+  // Badges
+  badgeWall: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  badgeTile: { width: 80, alignItems: 'center', gap: 6 },
+  badgeTileLocked: { opacity: 0.55 } as object,
+  badgeIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeIconEarned: { backgroundColor: COLORS.orange } as object,
+  badgeIconLocked: { backgroundColor: '#e8ddd0' } as object,
+  badgeLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.navy,
+    textAlign: 'center',
+  } as object,
+  badgeLabelLocked: { color: COLORS.grey } as object,
+  badgeSub: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: COLORS.grey,
+  } as object,
 
   // Favourites
   section: { paddingHorizontal: 16, marginBottom: 24 },
@@ -1793,6 +1913,34 @@ const desk = StyleSheet.create({
   },
   tasteChipText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
   tasteFootnote: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
+  // Badges
+  badgeHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  badgeWall: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  badgeTile: { width: 88, alignItems: 'center', gap: 7 },
+  badgeTileLocked: { opacity: 0.55 } as object,
+  badgeIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeIconEarned: { backgroundColor: COLORS.orange } as object,
+  badgeIconLocked: { backgroundColor: '#e8ddd0' } as object,
+  badgeLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: COLORS.navy,
+    textAlign: 'center',
+  } as object,
+  badgeLabelLocked: { color: COLORS.grey } as object,
+  badgeSub: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: COLORS.grey,
+  } as object,
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
