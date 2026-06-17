@@ -87,6 +87,12 @@ serve(async (req: Request) => {
     );
     const markFailed = () =>
       supabase.from('heroes').update({ comicvine_status: 'failed' }).eq('id', heroId);
+    // Distinct from 'failed': ComicVine simply has no character by this name (a
+    // mantle alias like "Venom III", or a non-comic figure like "Jason Bourne").
+    // Terminal and NOT an error — it leaves the actionable backlog, isn't retried,
+    // and surfaces neutrally (these need another source, not a ComicVine retry).
+    const markUnmatched = () =>
+      supabase.from('heroes').update({ comicvine_status: 'unmatched' }).eq('id', heroId);
 
     // ── Resolve the ComicVine character ─────────────────────────────────────────
     // Prefer the stored comicvine_id: one direct call, no name ambiguity. Fall back
@@ -157,8 +163,9 @@ serve(async (req: Request) => {
             ((a.count_of_issue_appearances as number) ?? 0),
         )[0];
       if (!match?.id) {
-        // No ComicVine character with this exact name — terminal.
-        await markFailed();
+        // No ComicVine character with this exact name — terminal, but not an
+        // error: park as 'unmatched' (these need another source, not a retry).
+        await markUnmatched();
         return json(NULL_RESPONSE);
       }
       cvId = String(match.id);

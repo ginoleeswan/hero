@@ -87,6 +87,7 @@ export function PipelinesDomain({
   const p = progress ?? {
     heroesTotal: 0,
     comicvineDone: 0,
+    comicvineUnmatched: 0,
     resolved: 0,
     ambiguous: 0,
     unresolved: 0,
@@ -148,8 +149,11 @@ export function PipelinesDomain({
     }
   };
 
-  // Pending (still actionable) at each stage, in funnel order.
-  const cvPending = Math.max(0, p.heroesTotal - p.comicvineDone - failed);
+  // Pending (still actionable) at each stage, in funnel order. Both `failed`
+  // (real errors) and `comicvineUnmatched` (no ComicVine character by this name)
+  // are terminal — they leave the actionable ComicVine backlog.
+  const cvUnmatched = p.comicvineUnmatched;
+  const cvPending = Math.max(0, p.heroesTotal - p.comicvineDone - failed - cvUnmatched);
   const resolvePending = Math.max(0, p.comicvineDone - p.resolved - p.ambiguous - p.unresolved);
   const appearPending = Math.max(0, p.resolved - p.enriched);
   // The whole enrichment backlog — what "Build" works through, one hero at a time.
@@ -165,7 +169,14 @@ export function PipelinesDomain({
       reached: p.comicvineDone,
       total: p.heroesTotal,
       pending: cvPending,
-      stuck: failed > 0 ? { label: `${failed} failed`, tone: COLORS.red } : null,
+      // Real errors (red) take priority; otherwise show "no ComicVine match"
+      // neutrally — these are terminal and need another source, not a retry.
+      stuck:
+        failed > 0
+          ? { label: `${failed} failed`, tone: COLORS.red }
+          : cvUnmatched > 0
+            ? { label: `${cvUnmatched.toLocaleString()} no ComicVine match`, tone: COLORS.grey }
+            : null,
       run: { busyKey: 'drain', onPress: onRunDrain },
     },
     {

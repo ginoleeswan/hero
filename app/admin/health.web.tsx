@@ -252,7 +252,12 @@ export default function AdminHealthScreen() {
   const actionable = ep
     ? Math.max(
         0,
-        ep.heroesTotal - ep.enriched - (h?.cvStatus.failed ?? 0) - ep.ambiguous - ep.unresolved,
+        ep.heroesTotal -
+          ep.enriched -
+          (h?.cvStatus.failed ?? 0) -
+          ep.comicvineUnmatched -
+          ep.ambiguous -
+          ep.unresolved,
       )
     : pendingNow;
   const etaMin = perMin > 0 ? actionable / perMin : 0;

@@ -346,6 +346,9 @@ export async function runWikidataEnrich(limit = 10): Promise<void> {
 export interface EnrichmentProgress {
   heroesTotal: number;
   comicvineDone: number;
+  // Terminal "no ComicVine character by this name" (mantle aliases / non-comic
+  // figures). Not an error — excluded from the actionable backlog, never retried.
+  comicvineUnmatched: number;
   resolved: number;
   ambiguous: number;
   unresolved: number;
@@ -380,6 +383,7 @@ export async function getEnrichmentProgress(): Promise<EnrichmentProgress> {
   const [
     heroesTotal,
     comicvineDone,
+    comicvineUnmatched,
     resolved,
     ambiguous,
     unresolved,
@@ -391,6 +395,7 @@ export async function getEnrichmentProgress(): Promise<EnrichmentProgress> {
   ] = await Promise.all([
     awaitCount(heroCount()),
     awaitCount(heroCount().eq('comicvine_status', 'done')),
+    awaitCount(heroCount().eq('comicvine_status', 'unmatched')),
     awaitCount(heroCount().eq('wikidata_status', 'resolved')),
     awaitCount(heroCount().eq('wikidata_status', 'ambiguous')),
     awaitCount(heroCount().eq('wikidata_status', 'unresolved')),
@@ -405,6 +410,7 @@ export async function getEnrichmentProgress(): Promise<EnrichmentProgress> {
   return {
     heroesTotal,
     comicvineDone,
+    comicvineUnmatched,
     resolved,
     ambiguous,
     unresolved,
