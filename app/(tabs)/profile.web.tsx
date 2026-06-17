@@ -23,6 +23,12 @@ import {
   type FavouriteHero,
 } from '../../src/lib/db/favourites';
 import { getBattleRecord, type BattleRecord } from '../../src/lib/db/matchupVotes';
+import {
+  getTasteProfile,
+  dominantAlignment,
+  shortPublisher,
+  type TasteProfile,
+} from '../../src/lib/db/taste';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { COLORS } from '../../src/constants/colors';
@@ -281,6 +287,7 @@ export default function WebProfileScreen() {
   } = useProfile(user?.id);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
   const [battle, setBattle] = useState<BattleRecord | null>(null);
+  const [taste, setTaste] = useState<TasteProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -292,6 +299,9 @@ export default function WebProfileScreen() {
     if (!user) return;
     getBattleRecord()
       .then(setBattle)
+      .catch(() => {});
+    getTasteProfile()
+      .then(setTaste)
       .catch(() => {});
     getUserFavouriteHeroes(user.id)
       .then(setFavourites)
@@ -366,6 +376,22 @@ export default function WebProfileScreen() {
   const joinedDate = user?.created_at
     ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : null;
+
+  // "Your Universe" — a one-line lean + a handful of franchise/tag chips.
+  const tasteChips = taste
+    ? Array.from(
+        new Set([...taste.franchises.map((f) => f.name), ...taste.tags.map((t) => t.label)]),
+      ).slice(0, 8)
+    : [];
+  const tasteInsight = taste
+    ? [dominantAlignment(taste), taste.publishers[0]?.name && shortPublisher(taste.publishers[0].name)]
+        .filter(Boolean)
+        .join(' · ')
+    : '';
+  const showTaste = !!taste && taste.basedOn > 0 && (!!tasteInsight || tasteChips.length > 0);
+  const tasteFootnote = taste
+    ? `Based on ${taste.basedOn} ${taste.basedOn === 1 ? 'hero' : 'heroes'} you've saved & viewed`
+    : '';
 
   const handleUpdateName = async (newName: string) => {
     await updateDisplayName(newName);
@@ -527,6 +553,29 @@ export default function WebProfileScreen() {
                     <Text style={mob.battleLabel}>Day streak</Text>
                   </View>
                 </View>
+              </View>
+              <View style={mob.hairline} />
+            </>
+          )}
+
+          {/* ── Your Universe ── */}
+          {showTaste && (
+            <>
+              <View style={mob.section}>
+                <View style={mob.sectionHeader}>
+                  <Text style={mob.sectionTitle}>Your Universe</Text>
+                </View>
+                {!!tasteInsight && <Text style={mob.tasteInsight}>{tasteInsight}</Text>}
+                {tasteChips.length > 0 && (
+                  <View style={mob.tasteChipRow}>
+                    {tasteChips.map((c) => (
+                      <View key={c} style={mob.tasteChip}>
+                        <Text style={mob.tasteChipText}>{c}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+                <Text style={mob.tasteFootnote}>{tasteFootnote}</Text>
               </View>
               <View style={mob.hairline} />
             </>
@@ -1011,6 +1060,22 @@ export default function WebProfileScreen() {
                 </View>
               </View>
             )}
+            {showTaste && (
+              <View style={desk.battleBlock}>
+                <Text style={desk.sectionTitle}>Your Universe</Text>
+                {!!tasteInsight && <Text style={desk.tasteInsight}>{tasteInsight}</Text>}
+                {tasteChips.length > 0 && (
+                  <View style={desk.tasteChipRow}>
+                    {tasteChips.map((c) => (
+                      <View key={c} style={desk.tasteChip}>
+                        <Text style={desk.tasteChipText}>{c}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+                <Text style={desk.tasteFootnote}>{tasteFootnote}</Text>
+              </View>
+            )}
             <View style={desk.sectionHeader}>
               <Text style={desk.sectionTitle}>My Favourites</Text>
               {!loading && favourites.length > 0 && (
@@ -1282,6 +1347,18 @@ const mob = StyleSheet.create({
     textTransform: 'uppercase',
     color: 'rgba(245,235,220,0.55)',
   } as object,
+
+  // Your Universe
+  tasteInsight: { fontFamily: 'Flame-Regular', fontSize: 18, color: COLORS.navy, marginBottom: 12 },
+  tasteChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tasteChip: {
+    backgroundColor: '#e8ddd0',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  tasteChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
+  tasteFootnote: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, marginTop: 12 },
 
   // Favourites
   section: { paddingHorizontal: 16, marginBottom: 24 },
@@ -1699,6 +1776,17 @@ const desk = StyleSheet.create({
     textTransform: 'uppercase',
     color: 'rgba(245,235,220,0.55)',
   } as object,
+  // Your Universe
+  tasteInsight: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.navy, marginBottom: 4 },
+  tasteChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tasteChip: {
+    backgroundColor: '#e8ddd0',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  tasteChipText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
+  tasteFootnote: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
