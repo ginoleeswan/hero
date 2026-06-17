@@ -182,6 +182,8 @@ export function CatalogDomain({
   pickPublisher,
   anim,
   narrow,
+  sub = 'coverage',
+  fill,
 }: {
   h?: CatalogHealth;
   gaps?: GapPage;
@@ -196,6 +198,8 @@ export function CatalogDomain({
   pickPublisher: (publisher: string) => void;
   anim: Animated.Value;
   narrow: boolean;
+  sub?: 'coverage' | 'distributions';
+  fill?: boolean;
 }) {
   const router = useRouter();
 
@@ -205,154 +209,163 @@ export function CatalogDomain({
   const pubMax = h && h.byPublisher.length ? h.byPublisher[0].total : 1;
 
   return (
-    <Bento>
+    <>
       {/* ── Coverage + Backfill queue ── */}
-      <Bento.Row narrow={narrow}>
-        {/* Coverage */}
-        <Panel
-          title="Coverage"
-          hint="Sorted by weakest first · tap one to load its queue"
-          style={{ width: narrow ? undefined : 360, flexGrow: 0, flexShrink: 0, gap: 4 } as object}
-        >
-          {!h ? (
-            <ActivityIndicator color={COLORS.orange} style={{ marginTop: 20 }} />
-          ) : (
-            [...METRICS]
-              .sort((a, b) => pct(h.metrics[a.key], h.total) - pct(h.metrics[b.key], h.total))
-              .map((def) => (
-                <CoverageRow
-                  key={def.key}
-                  def={def}
-                  have={h.metrics[def.key]}
-                  total={h.total}
-                  anim={anim}
-                  compact={narrow}
-                  active={def.worklist === metric}
-                  onPress={
-                    def.worklist
-                      ? () => {
-                          setMetric(def.worklist!);
-                          setPage(() => 0);
-                        }
-                      : undefined
-                  }
-                />
-              ))
-          )}
-        </Panel>
+      {sub === 'coverage' ? (
+        <Bento.Row narrow={narrow} fill={fill}>
+          {/* Coverage */}
+          <Panel
+            scroll={fill}
+            title="Coverage"
+            hint="Sorted by weakest first · tap one to load its queue"
+            style={
+              { width: narrow ? undefined : 360, flexGrow: 0, flexShrink: 0, gap: 4 } as object
+            }
+          >
+            {!h ? (
+              <ActivityIndicator color={COLORS.orange} style={{ marginTop: 20 }} />
+            ) : (
+              [...METRICS]
+                .sort((a, b) => pct(h.metrics[a.key], h.total) - pct(h.metrics[b.key], h.total))
+                .map((def) => (
+                  <CoverageRow
+                    key={def.key}
+                    def={def}
+                    have={h.metrics[def.key]}
+                    total={h.total}
+                    anim={anim}
+                    compact={narrow}
+                    active={def.worklist === metric}
+                    onPress={
+                      def.worklist
+                        ? () => {
+                            setMetric(def.worklist!);
+                            setPage(() => 0);
+                          }
+                        : undefined
+                    }
+                  />
+                ))
+            )}
+          </Panel>
 
-        {/* Backfill queue */}
-        <Panel title="Backfill queue" hint="Most-viewed first" style={{ flex: 1 }}>
-          <View style={styles.tabs}>
-            {(Object.keys(WORKLIST_LABEL) as CoverageMetric[]).map((m) => {
-              const def = METRICS.find((d) => d.worklist === m)!;
-              const gap = h ? h.total - h.metrics[def.key] : 0;
-              const on = metric === m;
-              return (
-                <Pressable
-                  key={m}
-                  onPress={() => {
-                    setMetric(m);
-                    setPage(() => 0);
-                  }}
-                  style={[styles.tab, on && { backgroundColor: def.tint }]}
-                >
-                  <Text style={[styles.tabText, on && styles.tabTextOn]}>{WORKLIST_LABEL[m]}</Text>
-                  {h && (
-                    <View style={[styles.tabBadge, on && styles.tabBadgeOn]}>
-                      <Text style={[styles.tabBadgeText, on && { color: def.tint }]}>
-                        {gap.toLocaleString()}
-                      </Text>
-                    </View>
-                  )}
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {pubFilter && (
-            <Pressable
-              onPress={() => {
-                setPubFilter(null);
-                setPage(() => 0);
-              }}
-              style={styles.filterChip}
-            >
-              <Ionicons name="funnel" size={12} color={COLORS.orange} />
-              <Text style={styles.filterChipText}>{pubFilter}</Text>
-              <Ionicons name="close" size={13} color={COLORS.navy} />
-            </Pressable>
-          )}
-
-          {gapsLoading || !gaps ? (
-            <ActivityIndicator color={COLORS.orange} style={{ marginTop: 24 }} />
-          ) : gaps.heroes.length === 0 ? (
-            <View style={styles.empty}>
-              <Ionicons name="checkmark-done-circle" size={40} color={COLORS.green} />
-              <Text style={styles.emptyText}>Queue clear — every hero has this.</Text>
-            </View>
-          ) : (
-            <>
-              {gaps.heroes.map((hero, i) => (
-                <Pressable
-                  key={hero.id}
-                  onPress={() => router.push(`/character/${hero.id}`)}
-                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                    [styles.gapRow, hovered && styles.gapRowHover] as object
-                  }
-                >
-                  <Text style={styles.gapRank}>{page * GAP_PAGE_SIZE + i + 1}</Text>
-                  <HeroThumb uri={hero.image_url} width={38} height={48} radius={8} />
-                  <View style={styles.gapInfo}>
-                    <Text style={styles.gapName} numberOfLines={1}>
-                      {hero.name}
+          {/* Backfill queue */}
+          <Panel scroll={fill} title="Backfill queue" hint="Most-viewed first" style={{ flex: 1 }}>
+            <View style={styles.tabs}>
+              {(Object.keys(WORKLIST_LABEL) as CoverageMetric[]).map((m) => {
+                const def = METRICS.find((d) => d.worklist === m)!;
+                const gap = h ? h.total - h.metrics[def.key] : 0;
+                const on = metric === m;
+                return (
+                  <Pressable
+                    key={m}
+                    onPress={() => {
+                      setMetric(m);
+                      setPage(() => 0);
+                    }}
+                    style={[styles.tab, on && { backgroundColor: def.tint }]}
+                  >
+                    <Text style={[styles.tabText, on && styles.tabTextOn]}>
+                      {WORKLIST_LABEL[m]}
                     </Text>
-                    <View style={styles.gapSub}>
-                      <View style={styles.pubChip}>
-                        <Text style={styles.pubChipText} numberOfLines={1}>
-                          {hero.publisher ?? '—'}
+                    {h && (
+                      <View style={[styles.tabBadge, on && styles.tabBadgeOn]}>
+                        <Text style={[styles.tabBadgeText, on && { color: def.tint }]}>
+                          {gap.toLocaleString()}
                         </Text>
                       </View>
-                      {hero.issue_count != null && (
-                        <Text style={styles.gapApps}>{hero.issue_count.toLocaleString()} apps</Text>
-                      )}
-                    </View>
-                  </View>
-                  <Ionicons name="open-outline" size={16} color="rgba(41,60,67,0.3)" />
-                </Pressable>
-              ))}
-              <View style={styles.pager}>
-                <Pressable
-                  disabled={page === 0}
-                  onPress={() => setPage((p) => Math.max(0, p - 1))}
-                  style={[styles.pageBtn, page === 0 && styles.pageBtnOff]}
-                >
-                  <Ionicons name="arrow-back" size={15} color="#fff" />
-                </Pressable>
-                <Text style={styles.pageInfo}>
-                  {(page * GAP_PAGE_SIZE + 1).toLocaleString()}–
-                  {Math.min((page + 1) * GAP_PAGE_SIZE, gaps.total).toLocaleString()} of{' '}
-                  {gaps.total.toLocaleString()}
-                </Text>
-                <Pressable
-                  disabled={(page + 1) * GAP_PAGE_SIZE >= gaps.total}
-                  onPress={() => setPage((p) => p + 1)}
-                  style={[
-                    styles.pageBtn,
-                    (page + 1) * GAP_PAGE_SIZE >= gaps.total && styles.pageBtnOff,
-                  ]}
-                >
-                  <Ionicons name="arrow-forward" size={15} color="#fff" />
-                </Pressable>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {pubFilter && (
+              <Pressable
+                onPress={() => {
+                  setPubFilter(null);
+                  setPage(() => 0);
+                }}
+                style={styles.filterChip}
+              >
+                <Ionicons name="funnel" size={12} color={COLORS.orange} />
+                <Text style={styles.filterChipText}>{pubFilter}</Text>
+                <Ionicons name="close" size={13} color={COLORS.navy} />
+              </Pressable>
+            )}
+
+            {gapsLoading || !gaps ? (
+              <ActivityIndicator color={COLORS.orange} style={{ marginTop: 24 }} />
+            ) : gaps.heroes.length === 0 ? (
+              <View style={styles.empty}>
+                <Ionicons name="checkmark-done-circle" size={40} color={COLORS.green} />
+                <Text style={styles.emptyText}>Queue clear — every hero has this.</Text>
               </View>
-            </>
-          )}
-        </Panel>
-      </Bento.Row>
+            ) : (
+              <>
+                {gaps.heroes.map((hero, i) => (
+                  <Pressable
+                    key={hero.id}
+                    onPress={() => router.push(`/character/${hero.id}`)}
+                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                      [styles.gapRow, hovered && styles.gapRowHover] as object
+                    }
+                  >
+                    <Text style={styles.gapRank}>{page * GAP_PAGE_SIZE + i + 1}</Text>
+                    <HeroThumb uri={hero.image_url} width={38} height={48} radius={8} />
+                    <View style={styles.gapInfo}>
+                      <Text style={styles.gapName} numberOfLines={1}>
+                        {hero.name}
+                      </Text>
+                      <View style={styles.gapSub}>
+                        <View style={styles.pubChip}>
+                          <Text style={styles.pubChipText} numberOfLines={1}>
+                            {hero.publisher ?? '—'}
+                          </Text>
+                        </View>
+                        {hero.issue_count != null && (
+                          <Text style={styles.gapApps}>
+                            {hero.issue_count.toLocaleString()} apps
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                    <Ionicons name="open-outline" size={16} color="rgba(41,60,67,0.3)" />
+                  </Pressable>
+                ))}
+                <View style={styles.pager}>
+                  <Pressable
+                    disabled={page === 0}
+                    onPress={() => setPage((p) => Math.max(0, p - 1))}
+                    style={[styles.pageBtn, page === 0 && styles.pageBtnOff]}
+                  >
+                    <Ionicons name="arrow-back" size={15} color="#fff" />
+                  </Pressable>
+                  <Text style={styles.pageInfo}>
+                    {(page * GAP_PAGE_SIZE + 1).toLocaleString()}–
+                    {Math.min((page + 1) * GAP_PAGE_SIZE, gaps.total).toLocaleString()} of{' '}
+                    {gaps.total.toLocaleString()}
+                  </Text>
+                  <Pressable
+                    disabled={(page + 1) * GAP_PAGE_SIZE >= gaps.total}
+                    onPress={() => setPage((p) => p + 1)}
+                    style={[
+                      styles.pageBtn,
+                      (page + 1) * GAP_PAGE_SIZE >= gaps.total && styles.pageBtnOff,
+                    ]}
+                  >
+                    <Ionicons name="arrow-forward" size={15} color="#fff" />
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </Panel>
+        </Bento.Row>
+      ) : null}
 
       {/* ── Distributions: Alignment + Power + Largest publishers ── */}
-      {dist && h && (
-        <Bento.Row narrow={narrow}>
+      {sub === 'distributions' && dist && h && (
+        <Bento.Row narrow={narrow} fill={fill}>
           {/* Alignment */}
           <Panel title="Alignment" hint="Hero vs villain split" style={{ flex: 1 }}>
             {narrow ? (
@@ -449,9 +462,10 @@ export function CatalogDomain({
       )}
 
       {/* ── Coverage by publisher heatmap ── */}
-      {h && h.byPublisher.length > 0 && (
-        <Bento.Row narrow={narrow}>
+      {sub === 'distributions' && h && h.byPublisher.length > 0 && (
+        <Bento.Row narrow={narrow} fill={fill}>
           <Panel
+            scroll={fill}
             title="Coverage by publisher"
             hint={`Top ${h.byPublisher.length} by catalogue size`}
             style={{ flex: 1 }}
@@ -478,7 +492,7 @@ export function CatalogDomain({
           </Panel>
         </Bento.Row>
       )}
-    </Bento>
+    </>
   );
 }
 

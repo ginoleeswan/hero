@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Animated, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Animated, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../src/hooks/useAuth';
@@ -21,6 +21,8 @@ import { VitalsBar } from '../../src/components/admin/health/VitalsBar';
 import { type Alert } from '../../src/components/admin/health/AlertStack';
 import { CommandHome } from '../../src/components/admin/health/domains/CommandHome';
 import { CatalogDomain } from '../../src/components/admin/health/domains/CatalogDomain';
+import { Bento } from '../../src/components/admin/health/Bento';
+import { SubTabs } from '../../src/components/admin/health/SubTabs';
 import { PipelinesDomain } from '../../src/components/admin/health/domains/PipelinesDomain';
 import { BuildBoard } from '../../src/components/admin/health/BuildBoard';
 import { HeroConsole } from '../../src/components/admin/health/HeroConsole';
@@ -47,6 +49,7 @@ export default function AdminHealthScreen() {
   const { user, loading: authLoading } = useAuth();
 
   const [metric, setMetric] = useState<CoverageMetric>('portrait');
+  const [catSub, setCatSub] = useState<'coverage' | 'distributions' | 'hygiene'>('coverage');
   const [page, setPage] = useState(0);
   const [domain, setDomain] = useState<DomainKey>('command');
   const [heroQuery, setHeroQuery] = useState('');
@@ -290,7 +293,12 @@ export default function AdminHealthScreen() {
         refreshing={refreshing}
         onRefresh={onRefresh}
         narrow={narrow}
-        fill={domain === 'command' || domain === 'sources' || domain === 'pipelines'}
+        fill={
+          domain === 'command' ||
+          domain === 'sources' ||
+          domain === 'pipelines' ||
+          domain === 'catalog'
+        }
         ribbon={onlyOnBuild ? ribbon : null}
         alerts={alerts}
       >
@@ -311,44 +319,61 @@ export default function AdminHealthScreen() {
           />
         )}
         {h && domain === 'catalog' && (
-          <>
-            <CatalogDomain
-              h={h}
-              gaps={gapsQ.data}
-              gapsLoading={gapsQ.isLoading}
-              dist={distQ.data}
-              metric={metric}
-              setMetric={setMetric}
-              page={page}
-              setPage={setPage}
-              pubFilter={pubFilter}
-              setPubFilter={setPubFilter}
-              pickPublisher={pickPublisher}
-              anim={anim}
-              narrow={narrow}
+          <Bento fill={!narrow}>
+            <SubTabs
+              tabs={[
+                { key: 'coverage', label: 'Coverage', icon: 'stats-chart-outline' },
+                { key: 'distributions', label: 'Distributions', icon: 'pie-chart-outline' },
+                { key: 'hygiene', label: 'Hygiene', icon: 'git-merge-outline' },
+              ]}
+              active={catSub}
+              onChange={setCatSub}
             />
-            <View style={{ marginTop: 14 }}>
-              <HeroConsole
-                heroQuery={heroQuery}
-                setHeroQuery={setHeroQuery}
-                heroResults={heroSearchQ.data ?? []}
-                heroSearchLoading={heroSearchQ.isLoading}
-                busy={busy}
-                onReenrich={onReenrich}
+            {catSub === 'coverage' || catSub === 'distributions' ? (
+              <CatalogDomain
+                h={h}
+                gaps={gapsQ.data}
+                gapsLoading={gapsQ.isLoading}
+                dist={distQ.data}
+                metric={metric}
+                setMetric={setMetric}
+                page={page}
+                setPage={setPage}
+                pubFilter={pubFilter}
+                setPubFilter={setPubFilter}
+                pickPublisher={pickPublisher}
+                anim={anim}
+                narrow={narrow}
+                sub={catSub}
+                fill={!narrow}
               />
-            </View>
-            {/* Catalogue hygiene — only appears when there are possible duplicates. */}
-            <View style={{ marginTop: 14 }}>
-              <DuplicatesPanel
-                flash={flash}
-                onChanged={() => {
-                  queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
-                  queryClient.invalidateQueries({ queryKey: ['catalogDistributions'] });
-                  queryClient.invalidateQueries({ queryKey: ['backfillGaps'] });
-                }}
-              />
-            </View>
-          </>
+            ) : null}
+            {catSub === 'hygiene' ? (
+              <ScrollView
+                style={!narrow ? { flex: 1, minHeight: 0 } : undefined}
+                nestedScrollEnabled
+              >
+                <HeroConsole
+                  heroQuery={heroQuery}
+                  setHeroQuery={setHeroQuery}
+                  heroResults={heroSearchQ.data ?? []}
+                  heroSearchLoading={heroSearchQ.isLoading}
+                  busy={busy}
+                  onReenrich={onReenrich}
+                />
+                <View style={{ marginTop: 14 }}>
+                  <DuplicatesPanel
+                    flash={flash}
+                    onChanged={() => {
+                      queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
+                      queryClient.invalidateQueries({ queryKey: ['catalogDistributions'] });
+                      queryClient.invalidateQueries({ queryKey: ['backfillGaps'] });
+                    }}
+                  />
+                </View>
+              </ScrollView>
+            ) : null}
+          </Bento>
         )}
         {h && domain === 'pipelines' && (
           <PipelinesDomain
