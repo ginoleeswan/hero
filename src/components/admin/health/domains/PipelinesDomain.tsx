@@ -809,6 +809,7 @@ export function PipelinesDomain({
       {sub === 'generate' ? (
         <Panel
           scroll={fill}
+          style={fill ? styles.flex1 : undefined}
           title="AI generation · Gemini"
           hint={
             statsPending > 0

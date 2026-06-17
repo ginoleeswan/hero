@@ -57,8 +57,10 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
   },
-  // Internal-scroll mode: fill the cell, clip, and let the body ScrollView scroll.
-  panelScroll: { flex: 1, minHeight: 0, overflow: 'hidden' },
+  // Internal-scroll mode: clip + let the body ScrollView scroll. Height is bounded
+  // by the row's `align-items: stretch`; width/grow stays the panel's own (so a
+  // fixed-width panel like Coverage isn't collapsed by an imposed flex).
+  panelScroll: { minHeight: 0, overflow: 'hidden' },
   scrollBody: { flex: 1, minHeight: 0 } as object,
   head: {
     flexDirection: 'row',
