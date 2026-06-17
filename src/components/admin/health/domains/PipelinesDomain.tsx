@@ -387,7 +387,7 @@ export function PipelinesDomain({
 }) {
   const router = useRouter();
   // Sub-tabs split the dense Build domain into focused, no-scroll views.
-  const [sub, setSub] = useState<'add' | 'enrich' | 'generate' | 'activity'>('add');
+  const [sub, setSub] = useState<'add' | 'enrich' | 'generate' | 'activity' | 'runs'>('add');
   const [statsIds, setStatsIds] = useState<string[] | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
   const [portraitIds, setPortraitIds] = useState<string[] | null>(null);
@@ -557,6 +557,7 @@ export function PipelinesDomain({
             badge: statsPending + portraitsPending,
           },
           { key: 'activity', label: 'Activity', icon: 'pulse-outline' },
+          { key: 'runs', label: 'Runs', icon: 'time-outline' },
         ]}
         active={sub}
         onChange={setSub}
@@ -651,13 +652,13 @@ export function PipelinesDomain({
             action={
               <InfoTip text="Heroes the resolver couldn't confidently match to one Wikidata identity. Each candidate shows its Wikidata name, description and confidence score — tap the right one to lock it in, no need to leave the page. The ↗ still opens Wikidata if you want to dig deeper." />
             }
-            style={styles.flex1}
+            style={fill ? styles.cellFill : styles.flex1}
           >
             {ambiguous.length === 0 ? (
               <Text style={styles.empty}>All clear — nothing waiting on you.</Text>
             ) : (
               <ScrollView
-                style={styles.reviewScroll}
+                style={fill ? styles.reviewFill : styles.reviewScroll}
                 nestedScrollEnabled
                 showsVerticalScrollIndicator
               >
@@ -896,97 +897,102 @@ export function PipelinesDomain({
         </Panel>
       ) : null}
 
-      {/* Activity — three compact panels on top (log · recently built · crons),
-          with Run history given its own full-width row below so its wide table
-          (9 columns) has room to breathe. Every cell clips + scrolls internally
-          so nothing overflows into the row beneath it. */}
+      {/* Activity — three compact panels (log · recently built · crons) that now
+          own the full content height. Run history lives on its own "Runs" sub-tab
+          so its wide 9-column table gets the whole screen instead of half of it. */}
       {sub === 'activity' ? (
-        <>
-          <Bento.Row narrow={narrow} fill={fill}>
-            <ActivityLog log={log} clearLog={clearLog} fill={fill} />
-            <Panel
-              scroll={fill}
-              title="Recently built"
-              hint="The exact heroes each run just touched — click one to open it."
-              action={
-                <InfoTip text="Every hero a run processed is logged here, newest first; the chip shows which stage did it and when. Use it to confirm a build actually did what you expected." />
-              }
-              style={styles.flex1}
-            >
-              {recentlyEnriched.length === 0 ? (
-                <Text style={styles.empty}>
-                  Nothing yet — build some heroes and they appear here.
-                </Text>
-              ) : (
-                <ScrollView style={styles.reviewScroll} nestedScrollEnabled>
-                  <View style={styles.reGrid}>
-                    {recentlyEnriched.map((r, i) => (
-                      <Pressable
-                        key={`${r.heroId}-${i}`}
-                        onPress={() => router.push(`/character/${r.heroId}`)}
-                        style={styles.reCard}
-                      >
-                        <HeroThumb uri={r.imageUrl} width={30} height={40} radius={6} />
-                        <View style={styles.reMeta}>
-                          <Text style={styles.reName} numberOfLines={1}>
-                            {r.name}
-                          </Text>
-                          <Text style={styles.reSub} numberOfLines={1}>
-                            {runTypeLabel(r.runType)}
-                            {r.at ? ` · ${relTime(r.at)}` : ''}
-                          </Text>
-                        </View>
-                      </Pressable>
-                    ))}
-                  </View>
-                </ScrollView>
-              )}
-            </Panel>
-            <Panel
-              scroll={fill}
-              title="Scheduled crons"
-              hint="Background jobs that fill the backlog for you."
-              action={
-                <InfoTip text="These jobs run automatically on a schedule. A green dot means active; Stop pauses it (keeping its schedule), Start resumes it. Hover the ? on a job to see what it does." />
-              }
-              style={styles.flex1}
-            >
-              {crons.length === 0 ? (
-                <Text style={styles.empty}>No cron jobs scheduled.</Text>
-              ) : (
-                crons.map((c) => (
-                  <CronRow
-                    key={c.jobname}
-                    c={c}
-                    busy={busy}
-                    onToggle={onToggleAnyCron}
-                    onReschedule={onRescheduleCron}
-                  />
-                ))
-              )}
-            </Panel>
-          </Bento.Row>
-          <Bento.Row narrow={narrow} fill={fill}>
-            <Panel
-              scroll={fill}
-              title="Run history"
-              hint={`${runsTotal.toLocaleString()} runs · cron + manual`}
-              action={
-                <InfoTip text="Every drain that has run — automatic crons and manual batches alike — newest first. Hover a row to see what it processed." />
-              }
-              style={styles.flex1}
-            >
-              <RunHistory
-                runs={runs}
-                total={runsTotal}
-                narrow={narrow}
-                loading={runsLoading}
-                fetching={runsFetching}
-                onLoadMore={onLoadMore}
-              />
-            </Panel>
-          </Bento.Row>
-        </>
+        <Bento.Row narrow={narrow} fill={fill}>
+          <ActivityLog log={log} clearLog={clearLog} fill={fill} />
+          <Panel
+            title="Recently built"
+            hint="The exact heroes each run just touched — click one to open it."
+            action={
+              <InfoTip text="Every hero a run processed is logged here, newest first; the chip shows which stage did it and when. Use it to confirm a build actually did what you expected." />
+            }
+            style={fill ? styles.cellFill : styles.flex1}
+          >
+            {recentlyEnriched.length === 0 ? (
+              <Text style={styles.empty}>
+                Nothing yet — build some heroes and they appear here.
+              </Text>
+            ) : (
+              <ScrollView
+                style={fill ? styles.reviewFill : styles.reviewScroll}
+                nestedScrollEnabled
+              >
+                <View style={styles.reGrid}>
+                  {recentlyEnriched.map((r, i) => (
+                    <Pressable
+                      key={`${r.heroId}-${i}`}
+                      onPress={() => router.push(`/character/${r.heroId}`)}
+                      style={styles.reCard}
+                    >
+                      <HeroThumb uri={r.imageUrl} width={30} height={40} radius={6} />
+                      <View style={styles.reMeta}>
+                        <Text style={styles.reName} numberOfLines={1}>
+                          {r.name}
+                        </Text>
+                        <Text style={styles.reSub} numberOfLines={1}>
+                          {runTypeLabel(r.runType)}
+                          {r.at ? ` · ${relTime(r.at)}` : ''}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              </ScrollView>
+            )}
+          </Panel>
+          <Panel
+            scroll={fill}
+            title="Scheduled crons"
+            hint="Background jobs that fill the backlog for you."
+            action={
+              <InfoTip text="These jobs run automatically on a schedule. A green dot means active; Stop pauses it (keeping its schedule), Start resumes it. Hover the ? on a job to see what it does." />
+            }
+            style={styles.flex1}
+          >
+            {crons.length === 0 ? (
+              <Text style={styles.empty}>No cron jobs scheduled.</Text>
+            ) : (
+              crons.map((c) => (
+                <CronRow
+                  key={c.jobname}
+                  c={c}
+                  busy={busy}
+                  onToggle={onToggleAnyCron}
+                  onReschedule={onRescheduleCron}
+                />
+              ))
+            )}
+          </Panel>
+        </Bento.Row>
+      ) : null}
+
+      {/* Runs — the full run-history dashboard gets the whole content area, so its
+          wide 9-column table and per-day groups breathe instead of scrolling
+          inside a half-height row. */}
+      {sub === 'runs' ? (
+        <Bento.Row narrow={narrow} fill={fill}>
+          <Panel
+            scroll={fill}
+            title="Run history"
+            hint={`${runsTotal.toLocaleString()} runs · cron + manual`}
+            action={
+              <InfoTip text="Every drain that has run — automatic crons and manual batches alike — newest first. Hover a row to see what it processed." />
+            }
+            style={styles.flex1}
+          >
+            <RunHistory
+              runs={runs}
+              total={runsTotal}
+              narrow={narrow}
+              loading={runsLoading}
+              fetching={runsFetching}
+              onLoadMore={onLoadMore}
+            />
+          </Panel>
+        </Bento.Row>
       ) : null}
 
       {statsIds ? (
@@ -1203,6 +1209,10 @@ const styles = StyleSheet.create({
 
   // Needs attention
   reviewScroll: { maxHeight: 340 } as object,
+  // Fill mode: the panel cell clips and its body scrolls to the cell's full height
+  // (set by the row's stretch), so content fills the box instead of capping at 340.
+  cellFill: { flex: 1, minHeight: 0, overflow: 'hidden' } as object,
+  reviewFill: { flex: 1, minHeight: 0 } as object,
   subFill: { flex: 1, minHeight: 0 } as object,
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 13.5, color: COLORS.grey },
   reviewRow: {
