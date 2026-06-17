@@ -756,6 +756,30 @@ export type Database = {
         }
         Relationships: []
       }
+      matchup_votes: {
+        Row: {
+          created_at: string
+          hero_a_id: string
+          hero_b_id: string
+          picked_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          hero_a_id: string
+          hero_b_id: string
+          picked_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          hero_a_id?: string
+          hero_b_id?: string
+          picked_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       titles: {
         Row: {
           backdrop_url: string | null
@@ -1008,6 +1032,10 @@ export type Database = {
         Args: { p_id: string; p_powers: string[]; p_summary: string }
         Returns: undefined
       }
+      cast_matchup_vote: {
+        Args: { p_a: string; p_b: string; p_picked: string }
+        Returns: Json
+      }
       catalog_distributions: { Args: never; Returns: Json }
       catalog_health: { Args: never; Returns: Json }
       get_source_coverage: { Args: Record<PropertyKey, never>; Returns: Json }
@@ -1073,6 +1101,7 @@ export type Database = {
           publisher: string
         }[]
       }
+      get_matchup_tally: { Args: { p_a: string; p_b: string }; Returns: Json }
       get_most_feared: {
         Args: { p_limit?: number }
         Returns: {

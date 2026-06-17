@@ -4,12 +4,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import { useSkeletonAnim, SkeletonBlock } from '../Skeleton';
+import { matchupVoteKey, statSplit, statLead, type MatchupSide } from '../../../lib/home/matchupVote';
 import {
-  matchupVoteKey,
-  statSplit,
-  statLead,
-  type MatchupSide,
-} from '../../../lib/home/matchupVote';
+  getMatchupTally,
+  castMatchupVote,
+  type MatchupTally,
+} from '../../../lib/db/matchupVotes';
 import type { TodaysMatchup as Matchup } from '../../../lib/matchup';
 
 interface TodaysMatchupProps {
@@ -52,7 +52,7 @@ function Fighter({
         portraitUrl={hero.portrait_url}
         contentFit="cover"
         contentPosition="top"
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, side === 'b' && (m.faceInward as object)]}
         recyclingKey={hero.id}
       />
       {picked && (
@@ -64,18 +64,27 @@ function Fighter({
   );
 }
 
-// The post-vote reveal: stat scorecard split bar + lead line + AI verdict + link.
+// The post-vote reveal: crowd split bar (falls back to the stat scorecard until
+// anyone has voted) + caption + AI verdict + link to the full breakdown.
 function Result({
   matchup,
+  tally,
   onOpen,
   centered,
 }: {
   matchup: Matchup;
+  tally: MatchupTally | null;
   onOpen: (path: string) => void;
   centered?: boolean;
 }) {
   const { heroA, heroB, winsA, winsB } = matchup;
-  const { pctA, pctB } = statSplit(winsA, winsB);
+  const usingVotes = !!tally && tally.total > 0;
+  const { pctA, pctB } = usingVotes
+    ? statSplit(tally!.votesA, tally!.votesB)
+    : statSplit(winsA, winsB);
+  const caption = usingVotes
+    ? `${tally!.total} ${tally!.total === 1 ? 'fan' : 'fans'} voted`
+    : statLead(winsA, winsB, heroA.name, heroB.name);
   return (
     <>
       <View style={m.barTrack as object}>
@@ -84,7 +93,7 @@ function Result({
       </View>
       <View style={m.barLabels as object}>
         <Text style={[m.barPct, { color: COLORS.orange }] as object}>{pctA}%</Text>
-        <Text style={m.lead as object}>{statLead(winsA, winsB, heroA.name, heroB.name)}</Text>
+        <Text style={m.lead as object}>{caption}</Text>
         <Text style={[m.barPct, { color: COLORS.blue }] as object}>{pctB}%</Text>
       </View>
       <Text style={[m.verdict, centered && (m.textCenter as object)] as object} numberOfLines={3}>
@@ -144,34 +153,48 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
   const isDesktop = width >= 768;
   const { heroA, heroB } = matchup;
 
-  const [vote, setVote] = useState<MatchupSide | null>(null);
+  const [pickedId, setPickedId] = useState<string | null>(null);
+  const [tally, setTally] = useState<MatchupTally | null>(null);
   const [loaded, setLoaded] = useState(false);
   const key = matchupVoteKey(heroA.id, heroB.id);
 
   useEffect(() => {
     let active = true;
-    AsyncStorage.getItem(key)
-      .then((v) => {
+    getMatchupTally(heroA.id, heroB.id)
+      .then(async (t) => {
         if (!active) return;
-        if (v === 'a' || v === 'b') setVote(v);
-        setLoaded(true);
+        if (t) {
+          setTally(t);
+          if (t.myPick) setPickedId(t.myPick);
+        }
+        if (!t || !t.myPick) {
+          const local = await AsyncStorage.getItem(key).catch(() => null);
+          if (active && (local === 'a' || local === 'b')) {
+            setPickedId(local === 'a' ? heroA.id : heroB.id);
+          }
+        }
+        if (active) setLoaded(true);
       })
       .catch(() => active && setLoaded(true));
     return () => {
       active = false;
     };
-  }, [key]);
+  }, [key, heroA.id, heroB.id]);
 
   const castVote = useCallback(
     (side: MatchupSide) => {
-      if (vote) return;
-      setVote(side);
+      if (pickedId) return;
+      const picked = side === 'a' ? heroA.id : heroB.id;
+      setPickedId(picked);
       AsyncStorage.setItem(key, side).catch(() => {});
+      castMatchupVote(heroA.id, heroB.id, picked)
+        .then((t) => t && setTally(t))
+        .catch(() => {});
     },
-    [vote, key],
+    [pickedId, key, heroA.id, heroB.id],
   );
 
-  const revealed = vote !== null;
+  const revealed = pickedId !== null;
 
   // ── Mobile: a centred "fight poster" — face-off portraits, then vote / reveal ──
   if (!isDesktop) {
@@ -183,8 +206,8 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
             hero={heroA}
             side="a"
             size={92}
-            picked={vote === 'a'}
-            dimmed={revealed && vote !== 'a'}
+            picked={pickedId === heroA.id}
+            dimmed={revealed && pickedId !== heroA.id}
             onVote={() => castVote('a')}
           />
           <View style={m.vsBadge as object}>
@@ -194,8 +217,8 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
             hero={heroB}
             side="b"
             size={92}
-            picked={vote === 'b'}
-            dimmed={revealed && vote !== 'b'}
+            picked={pickedId === heroB.id}
+            dimmed={revealed && pickedId !== heroB.id}
             onVote={() => castVote('b')}
           />
         </View>
@@ -203,7 +226,7 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
           {heroA.name} vs {heroB.name}
         </Text>
         {!loaded ? null : revealed ? (
-          <Result matchup={matchup} onOpen={onOpen} centered />
+          <Result matchup={matchup} tally={tally} onOpen={onOpen} centered />
         ) : (
           <VotePrompt heroA={heroA} heroB={heroB} onVote={castVote} centered />
         )}
@@ -217,8 +240,8 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
         <Fighter
           hero={heroA}
           side="a"
-          picked={vote === 'a'}
-          dimmed={revealed && vote !== 'a'}
+          picked={pickedId === heroA.id}
+          dimmed={revealed && pickedId !== heroA.id}
           onVote={() => castVote('a')}
         />
         <View style={m.vsBadge as object}>
@@ -227,8 +250,8 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
         <Fighter
           hero={heroB}
           side="b"
-          picked={vote === 'b'}
-          dimmed={revealed && vote !== 'b'}
+          picked={pickedId === heroB.id}
+          dimmed={revealed && pickedId !== heroB.id}
           onVote={() => castVote('b')}
         />
       </View>
@@ -239,7 +262,7 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
           {heroA.name} vs {heroB.name}
         </Text>
         {!loaded ? null : revealed ? (
-          <Result matchup={matchup} onOpen={onOpen} />
+          <Result matchup={matchup} tally={tally} onOpen={onOpen} />
         ) : (
           <VotePrompt heroA={heroA} heroB={heroB} onVote={castVote} />
         )}
@@ -355,6 +378,8 @@ const m = StyleSheet.create({
     transition: 'opacity 150ms ease, border-color 150ms ease',
   } as object,
   portraitB: { marginLeft: -16 } as object,
+  // Mirror the right fighter so they face inward, toward the left fighter.
+  faceInward: { transform: [{ scaleX: -1 }] } as object,
   portraitPicked: { borderColor: COLORS.orange } as object,
   portraitDimmed: { opacity: 0.5 } as object,
   pickedTag: {

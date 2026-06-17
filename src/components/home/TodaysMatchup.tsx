@@ -1,20 +1,17 @@
 // src/components/home/TodaysMatchup.tsx — native "Today's Battle" card.
 // A daily, deterministic matchup (see src/lib/matchup.ts) with a "Who would win?"
-// vote: tap a fighter to cast a pick, which persists for the day and reveals the
-// stat scorecard ("tale of the tape") + the AI verdict. The card taps through to
-// the full compare arena.
+// vote. Tapping a fighter casts a community vote (matchup_votes via the
+// cast_matchup_vote RPC) and reveals the crowd split + AI verdict. The local
+// AsyncStorage pick is kept as an offline fallback so the reveal still persists
+// when the network call fails. The card taps through to the full compare arena.
 import { useEffect, useState, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
-import {
-  matchupVoteKey,
-  statSplit,
-  statLead,
-  type MatchupSide,
-} from '../../lib/home/matchupVote';
+import { matchupVoteKey, statSplit, statLead, type MatchupSide } from '../../lib/home/matchupVote';
+import { getMatchupTally, castMatchupVote, type MatchupTally } from '../../lib/db/matchupVotes';
 import type { TodaysMatchup as Matchup } from '../../lib/matchup';
 
 const PORTRAIT = 96;
@@ -49,7 +46,7 @@ function Fighter({
         portraitUrl={hero.portrait_url}
         contentFit="cover"
         contentPosition="top"
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, side === 'b' && m.faceInward]}
         recyclingKey={hero.id}
       />
       {picked && (
@@ -69,37 +66,60 @@ export function TodaysMatchup({
   onOpen: (path: string) => void;
 }) {
   const { heroA, heroB, winsA, winsB } = matchup;
-  const [vote, setVote] = useState<MatchupSide | null>(null);
+  const [pickedId, setPickedId] = useState<string | null>(null);
+  const [tally, setTally] = useState<MatchupTally | null>(null);
   const [loaded, setLoaded] = useState(false);
   const key = matchupVoteKey(heroA.id, heroB.id);
 
-  // Restore any pick made earlier today so the reveal persists across launches.
+  // Restore the crowd tally (and the caller's prior pick) from the server, with
+  // the local pick as an offline fallback so the reveal persists either way.
   useEffect(() => {
     let active = true;
-    AsyncStorage.getItem(key)
-      .then((v) => {
+    getMatchupTally(heroA.id, heroB.id)
+      .then(async (t) => {
         if (!active) return;
-        if (v === 'a' || v === 'b') setVote(v);
-        setLoaded(true);
+        if (t) {
+          setTally(t);
+          if (t.myPick) setPickedId(t.myPick);
+        }
+        if (!t || !t.myPick) {
+          const local = await AsyncStorage.getItem(key).catch(() => null);
+          if (active && (local === 'a' || local === 'b')) {
+            setPickedId(local === 'a' ? heroA.id : heroB.id);
+          }
+        }
+        if (active) setLoaded(true);
       })
       .catch(() => active && setLoaded(true));
     return () => {
       active = false;
     };
-  }, [key]);
+  }, [key, heroA.id, heroB.id]);
 
   const castVote = useCallback(
     (side: MatchupSide) => {
-      if (vote) return; // one vote per day's matchup
-      setVote(side);
+      if (pickedId) return; // one vote per day's matchup
+      const picked = side === 'a' ? heroA.id : heroB.id;
+      setPickedId(picked); // optimistic
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       AsyncStorage.setItem(key, side).catch(() => {});
+      castMatchupVote(heroA.id, heroB.id, picked)
+        .then((t) => t && setTally(t))
+        .catch(() => {});
     },
-    [vote, key],
+    [pickedId, key, heroA.id, heroB.id],
   );
 
-  const { pctA, pctB } = statSplit(winsA, winsB);
-  const revealed = vote !== null;
+  const revealed = pickedId !== null;
+  // The bar shows the crowd split once anyone has voted; before that it falls
+  // back to the stat scorecard so the reveal is never an empty 50/50.
+  const usingVotes = !!tally && tally.total > 0;
+  const { pctA, pctB } = usingVotes
+    ? statSplit(tally!.votesA, tally!.votesB)
+    : statSplit(winsA, winsB);
+  const caption = usingVotes
+    ? `${tally!.total} ${tally!.total === 1 ? 'fan' : 'fans'} voted`
+    : statLead(winsA, winsB, heroA.name, heroB.name);
 
   return (
     <View style={m.section}>
@@ -116,8 +136,8 @@ export function TodaysMatchup({
           <Fighter
             hero={heroA}
             side="a"
-            picked={vote === 'a'}
-            dimmed={revealed && vote !== 'a'}
+            picked={pickedId === heroA.id}
+            dimmed={revealed && pickedId !== heroA.id}
             onVote={() => castVote('a')}
           />
           <View style={m.vsBadge}>
@@ -126,8 +146,8 @@ export function TodaysMatchup({
           <Fighter
             hero={heroB}
             side="b"
-            picked={vote === 'b'}
-            dimmed={revealed && vote !== 'b'}
+            picked={pickedId === heroB.id}
+            dimmed={revealed && pickedId !== heroB.id}
             onVote={() => castVote('b')}
           />
         </View>
@@ -154,23 +174,19 @@ export function TodaysMatchup({
           </>
         ) : (
           <>
-            {/* Tale of the tape — the stat scorecard split. */}
             <View style={m.barTrack}>
               <View style={[m.barFillA, { flex: Math.max(pctA, 1) }]} />
               <View style={[m.barFillB, { flex: Math.max(pctB, 1) }]} />
             </View>
             <View style={m.barLabels}>
               <Text style={[m.barPct, { color: COLORS.orange }]}>{pctA}%</Text>
-              <Text style={m.lead}>{statLead(winsA, winsB, heroA.name, heroB.name)}</Text>
+              <Text style={m.lead}>{caption}</Text>
               <Text style={[m.barPct, { color: COLORS.blue }]}>{pctB}%</Text>
             </View>
             <Text style={m.verdict} numberOfLines={3}>
               “{matchup.verdict}”
             </Text>
-            <Pressable
-              onPress={() => onOpen(`/compare/${heroA.id}/${heroB.id}`)}
-              style={m.linkRow}
-            >
+            <Pressable onPress={() => onOpen(`/compare/${heroA.id}/${heroB.id}`)} style={m.linkRow}>
               <Text style={m.link}>See full breakdown →</Text>
             </Pressable>
           </>
@@ -221,6 +237,8 @@ const m = StyleSheet.create({
     borderColor: 'rgba(11,24,32,0.9)',
   },
   portraitB: { marginLeft: -14 },
+  // Mirror the right fighter so they face inward, toward the left fighter.
+  faceInward: { transform: [{ scaleX: -1 }] },
   portraitPicked: { borderColor: COLORS.orange },
   portraitDimmed: { opacity: 0.5 },
   pickedTag: {
