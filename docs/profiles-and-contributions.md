@@ -34,10 +34,12 @@ A profile should answer three questions, each a layer we build in order:
    picks, debate, leaderboards.
 
 Guiding principle for stewardship: **review-queued, not live.** Contributions are
-*suggestions* until an admin (later: a trusted contributor) approves them. We get
-the "I contributed" feeling without importing the open-wiki vandalism problem
-before we have the contributor mass to police it. Quality of the existing
-enriched data is never put at risk by an anonymous edit.
+*suggestions* until an admin approves them. **Decision: every contribution is
+admin-vetted — there is no auto-approve path, regardless of contributor
+reputation.** We get the "I contributed" feeling without importing the open-wiki
+vandalism problem, and the quality of the existing enriched data is never put at
+risk by an unreviewed edit. Reputation (below) is cosmetic — it earns badges, not
+a bypass of review.
 
 ---
 
@@ -89,7 +91,7 @@ draft? → pending → (approved | rejected | superseded)
 ```
 
 - **pending**: queued for review. Visible to the author as "under review."
-- **approved**: an admin (or trusted contributor) accepts → the change is applied
+- **approved**: an admin accepts → the change is applied
   to the target table with `source = 'community'` and the author credited.
 - **rejected**: with an optional reason; counts against nothing fatal but affects
   trust weighting.
@@ -135,7 +137,7 @@ create table public.contributor_stats (
   approved   int not null default 0,
   rejected   int not null default 0,
   pending    int not null default 0,
-  trust      text not null default 'new',  -- new|trusted|steward (drives auto-approve)
+  level      text not null default 'new',  -- cosmetic badge tier (new|curator|steward); NEVER gates review
   updated_at timestamptz not null default now()
 );
 ```
@@ -154,10 +156,11 @@ explicitly permit.
   submitter context.
 - `review_contribution(p_id, p_decision, p_reason)` — admin only. On `approve`:
   apply to the target table inside the same transaction (set `source='community'`),
-  mark `approved`, set `reviewed_by/at`, update both parties' `contributor_stats`,
-  re-evaluate trust tier. On `reject`: mark `rejected` + reason.
-- (later) auto-approve path: when a `trusted`/`steward` user submits a low-risk
-  kind (tag add, fact), insert directly as `approved` + applied, skipping the queue.
+  mark `approved`, set `reviewed_by/at`, update the author's `contributor_stats`
+  and recompute their cosmetic `level`. On `reject`: mark `rejected` + reason.
+
+There is intentionally **no** client-callable apply path — every approval goes
+through the admin-only `review_contribution`.
 
 ### 4.5 RLS
 
@@ -192,25 +195,108 @@ Deferred until Layers 1–2 prove engagement.
   the RPC also enforces `auth.uid()`).
 - **Rate limits**: cap pending contributions per user per day (checked in
   `submit_contribution`), and one open contribution per (user, hero, field).
-- **Trust tiers** (`contributor_stats.trust`): `new` → everything queues;
-  `trusted` (e.g. ≥10 approved, <20% reject) → low-risk kinds auto-approve;
-  `steward` → may also review others' low-risk items (future).
+- **Everything queues**: there is no reputation-based bypass. A `steward` badge is
+  recognition only; their submissions are reviewed like everyone's. This keeps the
+  moderation surface a single, predictable admin queue.
 - **Reversibility**: every applied change keeps `old_value`, so an approval can be
   rolled back. Approvals are admin-audited via `reviewed_by`.
 - **Reports** (`kind='report'`) never mutate data — they only raise a flag in the
   queue for an admin to act on.
 
-## 7. UI surfaces
+## 7. Editability UX (hero pages)
 
-- **Hero page**: "Help complete this page" card on under-enriched heroes (driven by
-  empty fields); inline "suggest an edit" / "add a fact" / "flag" affordances.
+### 7.1 The core tension
+
+Today, empty fields render as `null` — `InfoRow` and the `valid()` guard drop any
+missing value, and whole sections are conditionally hidden. **Incompleteness is
+invisible.** That's great for the reader (the page always looks finished and
+premium) but fatal for contribution (you can't fill a gap you can't see).
+
+We resolve this with a **mode split**, not by littering the page with controls:
+
+- **Read mode (default):** unchanged. Pristine, gaps hidden, zero edit chrome. The
+  reading experience we have today is never degraded.
+- **Contribute mode (opt-in):** the page shifts into a "completion view" that
+  *reveals* gaps as fillable slots and adds a quiet "suggest" affordance to filled
+  fields. Entered deliberately; exited with **Done**.
+
+This is the Wikipedia-app / Notion pattern: editing is a chosen activity, not
+ambient noise. It keeps the design-led reader UI intact while giving contributors
+a focused surface.
+
+### 7.2 Entry points (how a user discovers they *can* help)
+
+1. **Data-driven nudge (primary, high-intent).** On under-enriched heroes — which
+   `catalog_health` lets us detect per hero — show a calm card under the identity
+   block: *"Help complete V. Mortis's profile — 4 details missing."* Tapping it
+   enters contribute mode with the missing fields scrolled into view. On a complete
+   hero, this card is absent.
+2. **Always-available, low-key entry.** A subtle *"Suggest an edit"* / *"Improve
+   this page"* action in the overflow menu or page footer, for corrections even
+   when nothing is "missing."
+3. **No always-on inline pencils.** Edit affordances exist only inside contribute
+   mode, so read mode stays clean.
+
+### 7.3 Two interaction patterns, by intent
+
+- **Fill a missing field (add).** In contribute mode, a hidden field appears as a
+  **ghost slot** that matches the `InfoRow` layout: a dashed row reading
+  *"Origin — + Add"* in muted/orange. Tapping opens a focused sheet for that one
+  field. This is the emotional core — turning a blank into a contribution.
+- **Suggest a correction (existing value).** Filled fields gain a small, quiet
+  edit glyph in contribute mode (web: reveal on hover). The sheet shows the
+  **current value** alongside the proposed one. Framing is *"Suggest a change,"*
+  never *"Edit"* — the user must understand they are not overwriting curated data.
+
+### 7.4 The submission sheet
+
+One squircle bottom sheet, scoped to a **single** field or fact:
+
+- **Header**: the field name + a one-line guideline (*"Where does this hero come
+  from? A sentence or two."*). For corrections, the current value is shown above.
+- **Input** matched to type: single-line, multiline (origin/summary), chip editor
+  (powers/aliases), or a `hero_tag_vocab` picker (tags). Never free-form HTML.
+- **Optional source/note** field (*"Where did you find this? (optional)"*) — feeds
+  the contribution `note` and helps the reviewer.
+- **Primary action**: **"Submit for review."** Copy is explicit that a moderator
+  checks it before it goes live — this is *required* given the admin-vetted
+  decision, so expectations are set up front.
+
+### 7.5 Post-submission feedback (honoring admin-vetted)
+
+Because nothing publishes instantly, the UI must make "pending" feel like success,
+not failure:
+
+- **Immediate**: optimistic toast — *"Thanks — sent for review."*
+- **Author-only pending marker**: the field shows a subtle *"Your suggestion is
+  under review"* pill **to that user only**. The live page does **not** change for
+  anyone else. (This is the most important detail — without it, users think their
+  edit "didn't work.")
+- **Cross-user dedupe**: if any suggestion is already pending for a field, other
+  contributors in contribute mode see a quiet *"a suggestion is pending review"*
+  marker so they don't pile on duplicates.
+- **On approval**: the value appears live with attribution (§4.6), the author's
+  `contributor_stats` ticks up, and (later) a notification / badge progress.
+- **On rejection**: surfaced gently in the user's profile Contributions list with
+  the reason; never a punitive interruption.
+
+### 7.6 Visual language (fits the design system)
+
+- Ghost/add slots: dashed beige rows, `+ Add` in `COLORS.orange`, aligned to the
+  existing `InfoRow` grid so they read as part of the section.
+- Edit glyph + pending pill: muted navy/orange, low-emphasis.
+- Sheets: the app's squircle bottom-sheet treatment; Flame headings, Nunito body.
+- Contribute-mode chrome: a slim top bar — *"Contributing · Done"* — to signal the
+  mode and offer a clean exit.
+
+### 7.7 Other surfaces
+
 - **Profile**: identity layer (collections, taste, battle record, badges) + a
-  **Contributions** section ("12 accepted · 3 pending") and a Steward badge.
-- **Admin console**: a new **Review** domain alongside Campaigns / Catalog /
-  Pipelines / Sources / Spend — the pending queue with approve/reject, reusing the
-  existing `is_admin`-gated command-centre patterns.
-- **Submission UX**: a small modal/sheet per contribution kind; optimistic "under
-  review" state; the author sees status in their profile.
+  **Contributions** section (*"12 accepted · 3 pending"*) and the cosmetic level
+  badge (Curator / Steward).
+- **Admin console**: a new **Review** domain beside Campaigns / Catalog / Pipelines
+  / Sources / Spend — the pending queue with side-by-side old/new values and
+  approve/reject, reusing the existing `is_admin`-gated command-centre patterns.
 
 ## 8. Rollout phases
 
@@ -219,14 +305,14 @@ Deferred until Layers 1–2 prove engagement.
 | **0** | This doc, agreed scope | — |
 | **1** | Identity layer (taste profile, battle record, streaks, badges) | none |
 | **2a** | `contributions` + `contributor_stats` tables, `submit_contribution` + admin review RPCs, **Review** admin domain | low (admin-only review) |
-| **2b** | Hero-page "Help complete this page" + suggest/flag UI; profile Contributions section + attribution | low |
-| **2c** | Trust tiers + auto-approve for trusted contributors | medium (relaxes the gate) |
+| **2b** | Hero-page contribution mode + "Help complete this page" + suggest/flag UI; profile Contributions section + attribution | low |
 | **3** | Social (follows, public profiles, leaderboard) | medium |
+
+(No auto-approve phase — admin review is permanent by decision.)
 
 ## 9. Open questions (need product calls)
 
-1. **Auto-approve threshold** — do we ever let `trusted` users skip the queue, or
-   keep everything admin-reviewed until volume forces the issue?
+1. ~~Auto-approve threshold~~ — **decided: everything is admin-vetted, always.**
 2. **Public profiles** — are profiles public (`/u/handle`) or private-by-default?
    Affects RLS on `user_profiles` and whether `display_name` must be unique.
 3. **Anonymous read of contributor credit** — do logged-out web visitors see
