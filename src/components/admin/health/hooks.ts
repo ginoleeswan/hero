@@ -34,7 +34,7 @@ import {
 } from '../../../lib/db/catalogHealth';
 import { getPendingStatsCount } from '../../../lib/db/stats';
 import { getPendingPortraitCount } from '../../../lib/db/portraits';
-import type { LogTone, LogEntry } from './format';
+import type { LogTone, LogEntry, DomainKey } from './format';
 
 type Flash = (msg: string, tone?: LogTone) => void;
 
@@ -45,6 +45,7 @@ type Flash = (msg: string, tone?: LogTone) => void;
  */
 export function useCatalogQueries({
   enabled,
+  domain,
   metric,
   page,
   pubFilter,
@@ -53,6 +54,7 @@ export function useCatalogQueries({
   ambiguousLimit,
 }: {
   enabled: boolean;
+  domain: DomainKey;
   metric: CoverageMetric;
   page: number;
   pubFilter: string | null;
@@ -61,6 +63,13 @@ export function useCatalogQueries({
   ambiguousLimit: number;
 }) {
   const queryClient = useQueryClient();
+  // Only run/poll a query on the tab(s) that actually render its data — avoids
+  // continuous ComicVine pings + DB polling on tabs that never show them. The
+  // overall gauge (healthQ) is the one thing every tab needs.
+  const onHome = domain === 'command';
+  const onCatalog = domain === 'catalog';
+  const onBuild = domain === 'pipelines';
+  const onSpend = domain === 'spend';
 
   const healthQ = useQuery({
     queryKey: ['catalogHealth'],
@@ -71,13 +80,13 @@ export function useCatalogQueries({
   const gapsQ = useQuery({
     queryKey: ['coverageGaps', metric, page, pubFilter],
     queryFn: () => getCoverageGaps(metric, { page, publisher: pubFilter }),
-    enabled,
+    enabled: enabled && (onHome || onCatalog),
     staleTime: 60_000,
   });
   const runsQ = useQuery({
     queryKey: ['enrichmentRuns', historyLimit],
     queryFn: () => getRunHistory(historyLimit),
-    enabled,
+    enabled: enabled && onBuild,
     placeholderData: (prev) => prev, // keep history visible while "load more" fetches
     // Poll fast while a run is in flight, slow otherwise.
     refetchInterval: (q) =>
@@ -85,7 +94,11 @@ export function useCatalogQueries({
         ? 2500
         : 15_000,
   });
-  const cronQ = useQuery({ queryKey: ['cronStatus'], queryFn: getCronStatus, enabled });
+  const cronQ = useQuery({
+    queryKey: ['cronStatus'],
+    queryFn: getCronStatus,
+    enabled: enabled && onBuild,
+  });
   const heroSearchQ = useQuery({
     queryKey: ['adminHeroSearch', heroQuery],
     queryFn: () => searchHeroesAdmin(heroQuery),
@@ -95,62 +108,62 @@ export function useCatalogQueries({
   const pingQ = useQuery({
     queryKey: ['cvPing'],
     queryFn: pingComicvine,
-    enabled,
+    enabled: enabled && onBuild,
     refetchInterval: 60_000,
   });
   const usageQ = useQuery({
     queryKey: ['cvUsage'],
     queryFn: getComicvineUsageLastHour,
-    enabled,
+    enabled: enabled && onBuild,
     refetchInterval: 30_000,
   });
   const distQ = useQuery({
     queryKey: ['distributions'],
     queryFn: getCatalogDistributions,
-    enabled,
+    enabled: enabled && onCatalog,
     staleTime: 60_000,
   });
   const snapsQ = useQuery({
     queryKey: ['healthSnapshots'],
     queryFn: () => getHealthSnapshots(60),
-    enabled,
+    enabled: enabled && onHome,
     staleTime: 60_000,
   });
   const spendQ = useQuery({
     queryKey: ['geminiSpend'],
     queryFn: getGeminiSpend,
-    enabled,
+    enabled: enabled && (onHome || onSpend || onBuild),
     staleTime: 5 * 60_000,
   });
   const ambiguousQ = useQuery({
     queryKey: ['ambiguousHeroes', ambiguousLimit],
     queryFn: () => getAmbiguousHeroes(ambiguousLimit),
-    enabled,
+    enabled: enabled && onBuild,
     placeholderData: (prev) => prev, // keep the list visible while "load more" fetches
     staleTime: 30_000,
   });
   const enrichProgressQ = useQuery({
     queryKey: ['enrichmentProgress'],
     queryFn: getEnrichmentProgress,
-    enabled,
+    enabled: enabled && (onHome || onBuild),
     staleTime: 30_000,
   });
   const statsPendingQ = useQuery({
     queryKey: ['statsPending'],
     queryFn: getPendingStatsCount,
-    enabled,
+    enabled: enabled && onBuild,
     staleTime: 30_000,
   });
   const portraitsPendingQ = useQuery({
     queryKey: ['portraitsPending'],
     queryFn: getPendingPortraitCount,
-    enabled,
+    enabled: enabled && onBuild,
     staleTime: 30_000,
   });
   const recentEnrichedQ = useQuery({
     queryKey: ['recentlyEnriched'],
     queryFn: () => getRecentlyEnriched(24),
-    enabled,
+    enabled: enabled && onBuild,
     staleTime: 15_000,
   });
 

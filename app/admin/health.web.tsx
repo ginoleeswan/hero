@@ -95,6 +95,7 @@ export default function AdminHealthScreen() {
     recentEnrichedQ,
   } = useCatalogQueries({
     enabled: gateResolved && isAdmin,
+    domain,
     metric,
     page,
     pubFilter,
