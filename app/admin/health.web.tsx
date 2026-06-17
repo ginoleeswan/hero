@@ -31,6 +31,7 @@ import { SpendDomain } from '../../src/components/admin/health/domains/SpendDoma
 import { SourcesDomain } from '../../src/components/admin/health/domains/SourcesDomain';
 import { fetchSourceCoverage } from '../../src/lib/db/catalogHealth';
 import { CampaignsDomain } from '../../src/components/admin/health/domains/CampaignsDomain';
+import { ReviewDomain } from '../../src/components/admin/health/domains/ReviewDomain';
 import { PlaceholderDomain } from '../../src/components/admin/health/domains/PlaceholderDomain';
 import {
   useActivityLog,
@@ -49,7 +50,9 @@ export default function AdminHealthScreen() {
   const { user, loading: authLoading } = useAuth();
 
   const [metric, setMetric] = useState<CoverageMetric>('portrait');
-  const [catSub, setCatSub] = useState<'coverage' | 'distributions' | 'hygiene'>('coverage');
+  const [catSub, setCatSub] = useState<'coverage' | 'distributions' | 'hygiene' | 'review'>(
+    'coverage',
+  );
   const [page, setPage] = useState(0);
   const [domain, setDomain] = useState<DomainKey>('command');
   const [heroQuery, setHeroQuery] = useState('');
@@ -326,6 +329,7 @@ export default function AdminHealthScreen() {
                 { key: 'coverage', label: 'Coverage', icon: 'stats-chart-outline' },
                 { key: 'distributions', label: 'Distributions', icon: 'pie-chart-outline' },
                 { key: 'hygiene', label: 'Hygiene', icon: 'git-merge-outline' },
+                { key: 'review', label: 'Review', icon: 'shield-checkmark-outline' },
               ]}
               active={catSub}
               onChange={setCatSub}
@@ -372,6 +376,14 @@ export default function AdminHealthScreen() {
                     }}
                   />
                 </View>
+              </ScrollView>
+            ) : null}
+            {catSub === 'review' ? (
+              <ScrollView
+                style={!narrow ? { flex: 1, minHeight: 0 } : undefined}
+                nestedScrollEnabled
+              >
+                <ReviewDomain />
               </ScrollView>
             ) : null}
           </Bento>

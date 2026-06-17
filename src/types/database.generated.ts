@@ -71,6 +71,81 @@ export type Database = {
         }
         Relationships: []
       }
+      contributions: {
+        Row: {
+          created_at: string
+          hero_id: string
+          id: number
+          kind: string
+          new_value: string | null
+          note: string | null
+          old_value: string | null
+          reject_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          target_field: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          hero_id: string
+          id?: never
+          kind: string
+          new_value?: string | null
+          note?: string | null
+          old_value?: string | null
+          reject_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_field?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          hero_id?: string
+          id?: never
+          kind?: string
+          new_value?: string | null
+          note?: string | null
+          old_value?: string | null
+          reject_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_field?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      contributor_stats: {
+        Row: {
+          approved: number
+          level: string
+          pending: number
+          rejected: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved?: number
+          level?: string
+          pending?: number
+          rejected?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved?: number
+          level?: string
+          pending?: number
+          rejected?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cv_ingestion_state: {
         Row: {
           error: string | null
@@ -999,6 +1074,11 @@ export type Database = {
         Returns: string
       }
       admin_retry_failed: { Args: never; Returns: number }
+      admin_review_contribution: {
+        Args: { p_id: number; p_decision: string; p_reason: string }
+        Returns: Json
+      }
+      admin_review_queue: { Args: { p_limit?: number; p_offset?: number }; Returns: Json }
       admin_run_drain: { Args: { p_limit?: number }; Returns: string }
       admin_run_wikidata_enrich: { Args: { p_limit?: number }; Returns: string }
       admin_run_wikidata_resolve: {
@@ -1116,6 +1196,7 @@ export type Database = {
         }[]
       }
       get_my_battle_record: { Args: never; Returns: Json }
+      get_my_contributions: { Args: never; Returns: Json }
       get_my_taste_profile: { Args: never; Returns: Json }
       get_pending_build_ids: { Args: { p_limit?: number }; Returns: string[] }
       get_related_heroes: {
@@ -1256,6 +1337,16 @@ export type Database = {
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       snapshot_catalog_health: { Args: never; Returns: undefined }
+      submit_contribution: {
+        Args: {
+          p_hero_id: string
+          p_kind: string
+          p_new_value: string
+          p_note: string
+          p_target_field: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       relation_kind:
