@@ -10,6 +10,9 @@ export type ContributionKind = 'field' | 'fact' | 'report';
 export interface EditableFieldDef {
   field: string;
   label: string;
+  /** A friendly question used as the prompt — "Where was X born?" reads easier
+   *  than a form label and makes the ask feel like a one-tap answer. */
+  question: string;
   guideline?: string;
   multiline?: boolean;
 }
@@ -17,12 +20,23 @@ export interface EditableFieldDef {
 /** The heroes text columns a contributor may propose. Mirrors the allow-list
  *  enforced server-side in submit_contribution / admin_review_contribution. */
 export const EDITABLE_FIELDS: EditableFieldDef[] = [
-  { field: 'origin', label: 'Origin', guideline: 'Where this hero comes from — a sentence or two.', multiline: true },
-  { field: 'full_name', label: 'Full name', guideline: 'Their real or birth name.' },
-  { field: 'occupation', label: 'Occupation', guideline: 'What they do.' },
-  { field: 'base', label: 'Base of operations', guideline: 'Where they operate from.' },
-  { field: 'place_of_birth', label: 'Place of birth' },
-  { field: 'first_appearance', label: 'First appearance', guideline: 'The issue or title they debuted in.' },
+  {
+    field: 'origin',
+    label: 'Origin',
+    question: 'Where does this hero come from?',
+    guideline: 'Their origin story — a sentence or two.',
+    multiline: true,
+  },
+  { field: 'full_name', label: 'Full name', question: "What's their real name?" },
+  { field: 'occupation', label: 'Occupation', question: 'What do they do?' },
+  { field: 'base', label: 'Base of operations', question: 'Where do they operate from?' },
+  { field: 'place_of_birth', label: 'Place of birth', question: 'Where were they born?' },
+  {
+    field: 'first_appearance',
+    label: 'First appearance',
+    question: 'Where did they first appear?',
+    guideline: 'The issue or title they debuted in.',
+  },
 ];
 
 export interface MyContribution {
