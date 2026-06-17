@@ -39,6 +39,20 @@ export const EDITABLE_FIELDS: EditableFieldDef[] = [
   },
 ];
 
+const FIELD_LABEL: Record<string, string> = Object.fromEntries(
+  EDITABLE_FIELDS.map((f) => [f.field, f.label]),
+);
+
+/** Human description of what a contribution changed, for the profile list. */
+export function describeContribution(c: {
+  kind: ContributionKind;
+  target_field: string | null;
+}): string {
+  if (c.kind === 'fact') return 'Did You Know fact';
+  if (c.kind === 'report') return 'Reported an issue';
+  return FIELD_LABEL[c.target_field ?? ''] ?? c.target_field ?? 'Edit';
+}
+
 export interface MyContribution {
   id: number;
   hero_id: string;

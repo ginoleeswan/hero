@@ -28,6 +28,8 @@ export interface HelpCompleteCardProps {
   values: Record<string, string | null | undefined>;
   user: { id: string } | null | undefined;
   onRequestSignIn: () => void;
+  /** Called after an admin direct-edit so the screen can refresh the hero. */
+  onEdited?: () => void;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -40,6 +42,7 @@ export function HelpCompleteCard({
   values,
   user,
   onRequestSignIn,
+  onEdited,
   style,
 }: HelpCompleteCardProps) {
   const [target, setTarget] = useState<SheetTarget>(undefined);
@@ -96,6 +99,7 @@ export function HelpCompleteCard({
   const onSubmitted = (field: EditableFieldDef | null) => {
     if (isAdmin) {
       setSavedKeys((prev) => new Set(prev).add(field ? field.field : FACT_KEY));
+      onEdited?.(); // let the screen refetch so the live value updates too
       return;
     }
     setTotal((t) => t + 1);

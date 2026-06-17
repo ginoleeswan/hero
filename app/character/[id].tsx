@@ -1340,6 +1340,7 @@ export default function CharacterScreen() {
                 }}
                 user={user}
                 onRequestSignIn={() => router.push('/(auth)/login')}
+                onEdited={() => heroRowQuery.refetch()}
               />
 
               {/* Enemies, Allies & Teams — full-bleed card strips off the

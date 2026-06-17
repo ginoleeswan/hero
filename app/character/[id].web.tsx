@@ -666,6 +666,12 @@ export default function WebCharacterScreen() {
       }}
       user={user}
       onRequestSignIn={() => router.push('/(auth)/login')}
+      onEdited={() => {
+        // Re-derive from the freshly-edited DB row so the page reflects the change.
+        getHeroById(stats.id)
+          .then((hero) => hero && setData(heroRowToCharacterData(hero)))
+          .catch(() => {});
+      }}
       style={{ marginHorizontal: 0 }}
     />
   );
