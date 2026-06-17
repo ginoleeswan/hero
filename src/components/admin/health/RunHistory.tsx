@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { getRunHeroes, type EnrichmentRun } from '../../../lib/db/catalogHealth';
 import { relTime, runStatusColor, runSourceChip, runTypeLabel, dayKey, dayLabel } from './format';
-import { Chip } from './atoms';
+import { Chip, StatTile, LoadMore, EmptyState } from './ui';
 
 // Lazy-loaded list of the heroes a run touched (per-run audit). Click to open.
 function RunHeroes({ runId }: { runId: number }) {
@@ -61,16 +61,6 @@ function RunStat({ label, value, tint }: { label: string; value: string; tint: s
     <View style={styles.runStatCell}>
       <Text style={[styles.runStatValue, { color: tint }]}>{value}</Text>
       <Text style={styles.runStatLabel}>{label}</Text>
-    </View>
-  );
-}
-
-// A KPI tile for the run-history summary (Enriched / Failed / Success / rate).
-function KpiTile({ label, value, tint }: { label: string; value: string; tint: string }) {
-  return (
-    <View style={styles.kpiTile}>
-      <Text style={[styles.kpiValue, { color: tint }]}>{value}</Text>
-      <Text style={styles.kpiLabel}>{label}</Text>
     </View>
   );
 }
@@ -173,7 +163,7 @@ export function RunHistory({
 }) {
   if (loading) return <ActivityIndicator color={COLORS.orange} style={{ marginTop: 16 }} />;
   if (runs.length === 0) {
-    return <Text style={styles.empty}>No runs logged yet — hit “Run batch · 25”.</Text>;
+    return <EmptyState text="No runs logged yet — hit “Run batch · 25”." />;
   }
 
   // KPI summary over the loaded window.
@@ -203,22 +193,22 @@ export function RunHistory({
   return (
     <>
       <View style={styles.kpiRow}>
-        <KpiTile
+        <StatTile
           label={`Enriched · last ${runs.length}`}
           value={winDone.toLocaleString()}
           tint={COLORS.green}
         />
-        <KpiTile
+        <StatTile
           label="Failed"
           value={winFailed.toLocaleString()}
           tint={winFailed ? COLORS.red : COLORS.grey}
         />
-        <KpiTile
+        <StatTile
           label="Success rate"
           value={`${successRate}%`}
           tint={successRate >= 95 ? COLORS.green : successRate >= 80 ? COLORS.yellow : COLORS.red}
         />
-        <KpiTile
+        <StatTile
           label="Throughput"
           value={throughput > 0 ? `${throughput}/min` : '—'}
           tint={COLORS.navy}
@@ -256,45 +246,19 @@ export function RunHistory({
       ))}
 
       {runs.length < total && (
-        <Pressable
+        <LoadMore
           onPress={onLoadMore}
-          disabled={fetching}
-          style={[styles.loadMore, fetching && styles.dim]}
-        >
-          {fetching ? (
-            <ActivityIndicator size="small" color={COLORS.navy} />
-          ) : (
-            <Ionicons name="chevron-down" size={15} color={COLORS.navy} />
-          )}
-          <Text style={styles.loadMoreText}>
-            Load more · {runs.length} of {total.toLocaleString()}
-          </Text>
-        </Pressable>
+          loading={fetching}
+          label={`Load more · ${runs.length} of ${total.toLocaleString()}`}
+        />
       )}
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  empty: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: COLORS.grey, marginTop: 12 },
-  dim: { opacity: 0.4 },
-
-  // KPI tiles
+  // KPI summary row (tiles are the shared <StatTile>)
   kpiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4, marginBottom: 4 },
-  kpiTile: {
-    flexGrow: 1,
-    flexBasis: 120,
-    minWidth: 110,
-    backgroundColor: '#faf6ee',
-    borderWidth: 1,
-    borderColor: 'rgba(41,60,67,0.06)',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 13,
-    gap: 2,
-  },
-  kpiValue: { fontFamily: 'Flame-Regular', fontSize: 24, lineHeight: 26 },
-  kpiLabel: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey },
 
   // Per-day grouping
   dayGroup: { marginTop: 16 },
@@ -309,17 +273,6 @@ const styles = StyleSheet.create({
   },
   dayLabel: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black, letterSpacing: 0.3 },
   daySub: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey },
-  loadMore: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    marginTop: 16,
-    paddingVertical: 11,
-    borderRadius: 12,
-    backgroundColor: '#efe6d6',
-  },
-  loadMoreText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
 
   // Desktop table
   runHeadRow: {

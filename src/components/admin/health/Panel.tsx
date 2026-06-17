@@ -12,6 +12,7 @@ export function Panel({
   action,
   children,
   style,
+  fill,
   scroll,
 }: {
   title?: string;
@@ -19,12 +20,18 @@ export function Panel({
   action?: ReactNode;
   children?: ReactNode;
   style?: ViewStyle | ViewStyle[];
-  // Fill the cell and scroll the body internally (keeps the page from scrolling
-  // in a no-scroll dashboard). Pass only on desktop fill layouts.
+  // Height-filling dashboard cell: stretch to the row's height and clip, so the
+  // body can scroll internally instead of growing the page. The single source of
+  // truth for the desktop "divide the viewport" layout.
+  fill?: boolean;
+  // Whether the body is an internally-scrolling ScrollView. Defaults to `fill`
+  // (a fill cell scrolls its overflow). Pass `scroll={false}` when the child owns
+  // its own scroller (e.g. a styled, self-scrolling list box).
   scroll?: boolean;
 }) {
+  const scrolls = scroll ?? fill;
   return (
-    <View style={[styles.panel, scroll && styles.panelScroll, style as ViewStyle]}>
+    <View style={[styles.panel, fill && styles.fill, style as ViewStyle]}>
       {(title || action) && (
         <View style={styles.head}>
           <View style={styles.headText}>
@@ -34,7 +41,7 @@ export function Panel({
           {action}
         </View>
       )}
-      {scroll ? (
+      {scrolls ? (
         <ScrollView style={styles.scrollBody} nestedScrollEnabled showsVerticalScrollIndicator>
           {children}
         </ScrollView>
@@ -57,10 +64,11 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
   },
-  // Internal-scroll mode: clip + let the body ScrollView scroll. Height is bounded
-  // by the row's `align-items: stretch`; width/grow stays the panel's own (so a
-  // fixed-width panel like Coverage isn't collapsed by an imposed flex).
-  panelScroll: { minHeight: 0, overflow: 'hidden' },
+  // Fill mode: stretch into the row's height (align-items: stretch) and clip, so
+  // the body ScrollView can bound itself and scroll instead of growing the page.
+  // A caller may override `flex` (e.g. flex: 1.5) via `style`; minHeight/overflow
+  // stay from here.
+  fill: { flex: 1, minHeight: 0, overflow: 'hidden' },
   scrollBody: { flex: 1, minHeight: 0 } as object,
   head: {
     flexDirection: 'row',

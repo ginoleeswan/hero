@@ -49,6 +49,17 @@ export const dayLabel = (iso: string) => {
 export const pct = (have: number, total: number) =>
   total > 0 ? Math.round((have / total) * 100) : 0;
 
+/**
+ * Overlay an opacity (0–1) onto a 6-digit hex colour → 8-digit `#RRGGBBAA`.
+ * One home for the dashboard's many translucent tints, replacing scattered
+ * `COLORS.navy + '12'` string math with `withAlpha(COLORS.navy, 0.07)`.
+ */
+export const withAlpha = (hex: string, opacity: number): string =>
+  hex +
+  Math.round(Math.min(1, Math.max(0, opacity)) * 255)
+    .toString(16)
+    .padStart(2, '0');
+
 /** Wall-clock HH:MM:SS for log lines (24h, no locale surprises). */
 export const logClock = (ms: number) => new Date(ms).toLocaleTimeString([], { hour12: false });
 

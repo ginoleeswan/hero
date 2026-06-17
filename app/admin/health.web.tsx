@@ -390,45 +390,44 @@ export default function AdminHealthScreen() {
         )}
         {h && domain === 'pipelines' && (
           <PipelinesDomain
-            h={h}
-            progress={enrichProgressQ.data}
-            ambiguous={ambiguousQ.data ?? []}
-            ambiguousFetching={ambiguousQ.isFetching}
-            onLoadMoreAmbiguous={() => setAmbiguousLimit((l) => l + 25)}
-            buildIds={buildIds}
-            setBuildIds={setBuildIds}
-            statsPending={statsPendingQ.data ?? 0}
-            portraitsPending={portraitsPendingQ.data ?? 0}
-            spend={spendQ.data}
-            busy={busy}
-            batchSize={batchSize}
-            setBatchSize={setBatchSize}
-            crons={cronQ.data ?? []}
-            onRunDrain={onRunDrain}
-            onRetryFailed={onRetryFailed}
-            onToggleAnyCron={onToggleAnyCron}
-            onRescheduleCron={onRescheduleCron}
-            onRunResolve={onRunResolve}
-            onRunEnrich={onRunEnrich}
-            onResolveQid={onResolveQid}
-            onMarkUnresolved={onMarkUnresolved}
-            onBulkAccept={onBulkAccept}
-            runs={runs}
-            runsTotal={runsQ.data?.total ?? 0}
-            runsLoading={runsQ.isLoading}
-            runsFetching={runsQ.isFetching}
-            onLoadMore={() => setHistoryLimit((l) => l + 30)}
-            recentlyEnriched={recentEnrichedQ.data ?? []}
-            log={log}
-            clearLog={clearLog}
-            flash={flash}
-            onHeroesAdded={() => {
-              queryClient.invalidateQueries({ queryKey: ['enrichmentProgress'] });
-              queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
-              queryClient.invalidateQueries({ queryKey: ['statsPending'] });
-              queryClient.invalidateQueries({ queryKey: ['portraitsPending'] });
+            data={{
+              h,
+              progress: enrichProgressQ.data,
+              ambiguous: ambiguousQ.data ?? [],
+              ambiguousFetching: ambiguousQ.isFetching,
+              statsPending: statsPendingQ.data ?? 0,
+              portraitsPending: portraitsPendingQ.data ?? 0,
+              spend: spendQ.data,
+              crons: cronQ.data ?? [],
+              runs,
+              runsTotal: runsQ.data?.total ?? 0,
+              runsLoading: runsQ.isLoading,
+              runsFetching: runsQ.isFetching,
+              recentlyEnriched: recentEnrichedQ.data ?? [],
+              log,
             }}
-            narrow={narrow}
+            actions={{
+              onLoadMoreAmbiguous: () => setAmbiguousLimit((l) => l + 25),
+              onRunDrain,
+              onRetryFailed,
+              onToggleAnyCron,
+              onRescheduleCron,
+              onRunResolve,
+              onRunEnrich,
+              onResolveQid,
+              onMarkUnresolved,
+              onBulkAccept,
+              onLoadMore: () => setHistoryLimit((l) => l + 30),
+              clearLog,
+              flash,
+              onHeroesAdded: () => {
+                queryClient.invalidateQueries({ queryKey: ['enrichmentProgress'] });
+                queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
+                queryClient.invalidateQueries({ queryKey: ['statsPending'] });
+                queryClient.invalidateQueries({ queryKey: ['portraitsPending'] });
+              },
+            }}
+            controls={{ buildIds, setBuildIds, busy, batchSize, setBatchSize, narrow }}
           />
         )}
         {domain === 'sources' && (
