@@ -5,7 +5,18 @@ import { COLORS } from '../../../constants/colors';
 import { Panel } from './Panel';
 import { LOG_TONE_COLOR, logClock, type LogEntry } from './format';
 
-export function ActivityLog({ log, clearLog }: { log: LogEntry[]; clearLog: () => void }) {
+// `fill` makes the log a height-filling dashboard cell: it clips and scrolls
+// internally to the row's height instead of capping at a fixed 300px (which, when
+// uncapped in a fill grid, would spill over the panel below it).
+export function ActivityLog({
+  log,
+  clearLog,
+  fill,
+}: {
+  log: LogEntry[];
+  clearLog: () => void;
+  fill?: boolean;
+}) {
   const clearAction =
     log.length > 0 ? (
       <Pressable onPress={clearLog} style={styles.miniBtn}>
@@ -19,13 +30,18 @@ export function ActivityLog({ log, clearLog }: { log: LogEntry[]; clearLog: () =
       title="Activity log"
       hint="Live results of actions & runs this session"
       action={clearAction}
+      style={fill ? styles.cellFill : undefined}
     >
       {log.length === 0 ? (
         <Text style={styles.empty}>
           Nothing yet — run a batch or action and results stream in here.
         </Text>
       ) : (
-        <ScrollView style={styles.panel} contentContainerStyle={styles.inner} nestedScrollEnabled>
+        <ScrollView
+          style={[styles.panel, fill ? styles.panelFill : styles.panelCap]}
+          contentContainerStyle={styles.inner}
+          nestedScrollEnabled
+        >
           {log.map((e) => (
             <View key={e.id} style={styles.row}>
               <Text style={styles.time}>{logClock(e.at)}</Text>
@@ -41,14 +57,18 @@ export function ActivityLog({ log, clearLog }: { log: LogEntry[]; clearLog: () =
 
 const styles = StyleSheet.create({
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: COLORS.grey, marginTop: 12 },
+  // Fill mode: clip to the cell and let the body scroll, so a long log can't
+  // overflow and overlap the panel beneath it.
+  cellFill: { flex: 1, minHeight: 0, overflow: 'hidden' } as object,
   panel: {
-    maxHeight: 300,
     marginTop: 6,
     backgroundColor: '#faf6ee',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(41,60,67,0.06)',
   },
+  panelCap: { maxHeight: 300 } as object,
+  panelFill: { flex: 1, minHeight: 0 } as object,
   inner: { paddingVertical: 2 },
   row: {
     flexDirection: 'row',

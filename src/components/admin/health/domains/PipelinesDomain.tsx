@@ -896,13 +896,14 @@ export function PipelinesDomain({
         </Panel>
       ) : null}
 
-      {/* Activity — live log, recently built, scheduled crons & run history. */}
+      {/* Activity — three compact panels on top (log · recently built · crons),
+          with Run history given its own full-width row below so its wide table
+          (9 columns) has room to breathe. Every cell clips + scrolls internally
+          so nothing overflows into the row beneath it. */}
       {sub === 'activity' ? (
         <>
           <Bento.Row narrow={narrow} fill={fill}>
-            <View style={styles.flex1}>
-              <ActivityLog log={log} clearLog={clearLog} />
-            </View>
+            <ActivityLog log={log} clearLog={clearLog} fill={fill} />
             <Panel
               scroll={fill}
               title="Recently built"
@@ -941,8 +942,6 @@ export function PipelinesDomain({
                 </ScrollView>
               )}
             </Panel>
-          </Bento.Row>
-          <Bento.Row narrow={narrow} fill={fill}>
             <Panel
               scroll={fill}
               title="Scheduled crons"
@@ -966,6 +965,8 @@ export function PipelinesDomain({
                 ))
               )}
             </Panel>
+          </Bento.Row>
+          <Bento.Row narrow={narrow} fill={fill}>
             <Panel
               scroll={fill}
               title="Run history"
