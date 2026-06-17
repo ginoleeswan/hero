@@ -38,7 +38,9 @@ describe('computeBadges', () => {
   });
 
   it('labels the loyalty badge by top publisher and needs 5 favourites', () => {
-    expect(find({ topPublisher: 'Marvel', favourites: 5 }, 'loyalist').label).toBe('Marvel Loyalist');
+    expect(find({ topPublisher: 'Marvel', favourites: 5 }, 'loyalist').label).toBe(
+      'Marvel Loyalist',
+    );
     expect(find({ topPublisher: 'DC', favourites: 5 }, 'loyalist').label).toBe('DC Devotee');
     expect(find({ topPublisher: 'Image', favourites: 5 }, 'loyalist').label).toBe('Image Fan');
     expect(find({ topPublisher: 'Marvel', favourites: 4 }, 'loyalist').earned).toBe(false);

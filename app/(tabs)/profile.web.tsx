@@ -603,7 +603,10 @@ export default function WebProfileScreen() {
             </View>
             <View style={mob.badgeWall}>
               {badges.map((b) => (
-                <View key={b.id} style={[mob.badgeTile, !b.earned && (mob.badgeTileLocked as object)]}>
+                <View
+                  key={b.id}
+                  style={[mob.badgeTile, !b.earned && (mob.badgeTileLocked as object)]}
+                >
                   <View
                     style={[
                       mob.badgeIcon,
@@ -1139,11 +1142,16 @@ export default function WebProfileScreen() {
               </View>
               <View style={desk.badgeWall}>
                 {badges.map((b) => (
-                  <View key={b.id} style={[desk.badgeTile, !b.earned && (desk.badgeTileLocked as object)]}>
+                  <View
+                    key={b.id}
+                    style={[desk.badgeTile, !b.earned && (desk.badgeTileLocked as object)]}
+                  >
                     <View
                       style={[
                         desk.badgeIcon,
-                        b.earned ? (desk.badgeIconEarned as object) : (desk.badgeIconLocked as object),
+                        b.earned
+                          ? (desk.badgeIconEarned as object)
+                          : (desk.badgeIconLocked as object),
                       ]}
                     >
                       <Ionicons

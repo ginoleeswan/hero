@@ -139,7 +139,7 @@ function VotePrompt({
 }) {
   return (
     <>
-      <Text style={[m.prompt, centered && (m.textCenter as object)] as object}>
+      <Text style={[m.prompt, centered && (m.promptCentered as object)] as object}>
         Who would win? Cast your vote.
       </Text>
       <View style={m.voteRow as object}>
@@ -536,6 +536,9 @@ const m = StyleSheet.create({
     color: 'rgba(245,235,220,0.7)',
     marginBottom: 10,
   } as object,
+  // Centred layouts have no parent row-gap, so the prompt owns its breathing
+  // room above the vote buttons (textCenter would otherwise zero the margin).
+  promptCentered: { textAlign: 'center', marginBottom: 16 } as object,
   voteRow: { flexDirection: 'row', gap: 10, alignSelf: 'stretch' } as object,
   voteBtn: {
     flex: 1,
