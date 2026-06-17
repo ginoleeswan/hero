@@ -109,8 +109,9 @@ Stored in `.env.local` (gitignored). See `.env.example` for required keys.
 
 `app/_layout.tsx` renders an `AuthGate` child component (must be a child, not the root, so the router context exists). It uses `useSegments` + `useRouter` to redirect:
 
-- Unauthenticated → `/(auth)/login`
-- Authenticated landing on auth screen → `/(tabs)`
+- Authenticated landing on an auth screen or the root → `/explore`
+
+The app is **not** fully auth-gated: logged-out users can browse `/explore` and the rest of the catalogue. Actions that write per-user data (e.g. matchup votes, favourites) must check `useAuth().user` themselves and route to `/(auth)/login` when absent — the RLS-locked RPCs reject anon and otherwise fail silently.
 
 ## Testing
 

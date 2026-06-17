@@ -13,7 +13,9 @@
 --   * The table is locked by RLS to each user's own row; aggregate tallies are
 --     read/written only through the two SECURITY DEFINER RPCs below (which pin
 --     search_path and are revoked from PUBLIC + anon, matching the hardening
---     migration). Explore is auth-gated, so anon never needs access.
+--     migration). Explore itself is publicly viewable, so the "Today's Battle"
+--     card guards the vote action client-side and routes logged-out users to
+--     sign in before these (authenticated-only) RPCs are ever called.
 
 create table if not exists public.matchup_votes (
   hero_a_id  text not null,

@@ -1,15 +1,18 @@
 import { useEffect, useState, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../../../constants/colors';
+import { useAuth } from '../../../hooks/useAuth';
 import { HeroImage } from '../../HeroImage';
 import { useSkeletonAnim, SkeletonBlock } from '../Skeleton';
-import { matchupVoteKey, statSplit, statLead, type MatchupSide } from '../../../lib/home/matchupVote';
 import {
-  getMatchupTally,
-  castMatchupVote,
-  type MatchupTally,
-} from '../../../lib/db/matchupVotes';
+  matchupVoteKey,
+  statSplit,
+  statLead,
+  type MatchupSide,
+} from '../../../lib/home/matchupVote';
+import { getMatchupTally, castMatchupVote, type MatchupTally } from '../../../lib/db/matchupVotes';
 import type { TodaysMatchup as Matchup } from '../../../lib/matchup';
 
 interface TodaysMatchupProps {
@@ -17,10 +20,22 @@ interface TodaysMatchupProps {
   onOpen: (path: string) => void;
 }
 
+// "⚔ Today's Battle" kicker — uses the same sword-cross mark as the top bar's
+// versus tab (the bare emoji rendered as tofu in the web font stack).
+function Eyebrow() {
+  return (
+    <View style={m.eyebrowRow as object}>
+      <MaterialCommunityIcons name="sword-cross" size={12} color={COLORS.orange} />
+      <Text style={m.eyebrow as object}>Today&apos;s Battle</Text>
+    </View>
+  );
+}
+
 function Fighter({
   hero,
   side,
   size = PORTRAIT,
+  overlap = false,
   picked,
   dimmed,
   onVote,
@@ -28,6 +43,7 @@ function Fighter({
   hero: Matchup['heroA'];
   side: 'a' | 'b';
   size?: number;
+  overlap?: boolean;
   picked: boolean;
   dimmed: boolean;
   onVote: () => void;
@@ -35,13 +51,14 @@ function Fighter({
   return (
     <Pressable
       onPress={onVote}
-      style={
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [
           m.portrait,
           { width: size, height: size },
-          side === 'b' && (m.portraitB as object),
+          overlap && side === 'b' && (m.portraitB as object),
           picked && (m.portraitPicked as object),
           dimmed && (m.portraitDimmed as object),
+          hovered && !picked && !dimmed && (m.portraitHover as object),
         ] as object
       }
     >
@@ -99,7 +116,10 @@ function Result({
       <Text style={[m.verdict, centered && (m.textCenter as object)] as object} numberOfLines={3}>
         “{matchup.verdict}”
       </Text>
-      <Pressable onPress={() => onOpen(`/compare/${heroA.id}/${heroB.id}`)} style={m.linkRow as object}>
+      <Pressable
+        onPress={() => onOpen(`/compare/${heroA.id}/${heroB.id}`)}
+        style={[m.linkRow, centered && (m.linkRowCentered as object)] as object}
+      >
         <Text style={m.link}>See full breakdown →</Text>
       </Pressable>
     </>
@@ -151,6 +171,7 @@ function VotePrompt({
 export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
+  const { user } = useAuth();
   const { heroA, heroB } = matchup;
 
   const [pickedId, setPickedId] = useState<string | null>(null);
@@ -184,6 +205,13 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
   const castVote = useCallback(
     (side: MatchupSide) => {
       if (pickedId) return;
+      // Voting is per-user (RLS-locked rows); an anonymous tap would silently
+      // fail server-side, so send logged-out fans to sign in instead of faking
+      // a reveal. They land back here to cast a real vote.
+      if (!user) {
+        onOpen('/(auth)/login');
+        return;
+      }
       const picked = side === 'a' ? heroA.id : heroB.id;
       setPickedId(picked);
       AsyncStorage.setItem(key, side).catch(() => {});
@@ -191,7 +219,7 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
         .then((t) => t && setTally(t))
         .catch(() => {});
     },
-    [pickedId, key, heroA.id, heroB.id],
+    [pickedId, user, onOpen, key, heroA.id, heroB.id],
   );
 
   const revealed = pickedId !== null;
@@ -200,12 +228,13 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
   if (!isDesktop) {
     return (
       <View style={[m.card, m.cardMobile] as object}>
-        <Text style={[m.eyebrow, m.textCenter] as object}>⚔ Today&apos;s Battle</Text>
+        <Eyebrow />
         <View style={m.fightersMobile as object}>
           <Fighter
             hero={heroA}
             side="a"
             size={92}
+            overlap
             picked={pickedId === heroA.id}
             dimmed={revealed && pickedId !== heroA.id}
             onVote={() => castVote('a')}
@@ -217,6 +246,7 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
             hero={heroB}
             side="b"
             size={92}
+            overlap
             picked={pickedId === heroB.id}
             dimmed={revealed && pickedId !== heroB.id}
             onVote={() => castVote('b')}
@@ -234,39 +264,48 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
     );
   }
 
+  // ── Desktop: a symmetric "fight poster" — large portraits flank a centred
+  // content column so the card fills the wide dark stage as a balanced matchup
+  // rather than tiny portraits beside a bar stretched across the whole page. ──
   return (
     <View style={[m.card, m.cardDesktop] as object}>
-      <View style={m.fighters}>
-        <Fighter
-          hero={heroA}
-          side="a"
-          picked={pickedId === heroA.id}
-          dimmed={revealed && pickedId !== heroA.id}
-          onVote={() => castVote('a')}
-        />
-        <View style={m.vsBadge as object}>
-          <Text style={m.vsText}>VS</Text>
-        </View>
-        <Fighter
-          hero={heroB}
-          side="b"
-          picked={pickedId === heroB.id}
-          dimmed={revealed && pickedId !== heroB.id}
-          onVote={() => castVote('b')}
-        />
-      </View>
+      <Fighter
+        hero={heroA}
+        side="a"
+        size={DESKTOP_PORTRAIT}
+        picked={pickedId === heroA.id}
+        dimmed={revealed && pickedId !== heroA.id}
+        onVote={() => castVote('a')}
+      />
 
-      <View style={m.info}>
-        <Text style={m.eyebrow as object}>⚔ Today&apos;s Battle</Text>
-        <Text style={m.title} numberOfLines={1}>
-          {heroA.name} vs {heroB.name}
-        </Text>
+      <View style={m.infoCenter as object}>
+        <Eyebrow />
+        <View style={m.titleRow as object}>
+          <Text style={[m.title, m.titleDesktop] as object} numberOfLines={1}>
+            {heroA.name}
+          </Text>
+          <View style={m.vsBadgeInline as object}>
+            <Text style={m.vsText}>VS</Text>
+          </View>
+          <Text style={[m.title, m.titleDesktop] as object} numberOfLines={1}>
+            {heroB.name}
+          </Text>
+        </View>
         {!loaded ? null : revealed ? (
-          <Result matchup={matchup} tally={tally} onOpen={onOpen} />
+          <Result matchup={matchup} tally={tally} onOpen={onOpen} centered />
         ) : (
-          <VotePrompt heroA={heroA} heroB={heroB} onVote={castVote} />
+          <VotePrompt heroA={heroA} heroB={heroB} onVote={castVote} centered />
         )}
       </View>
+
+      <Fighter
+        hero={heroB}
+        side="b"
+        size={DESKTOP_PORTRAIT}
+        picked={pickedId === heroB.id}
+        dimmed={revealed && pickedId !== heroB.id}
+        onVote={() => castVote('b')}
+      />
     </View>
   );
 }
@@ -302,32 +341,45 @@ export function TodaysMatchupSkeleton() {
 
   return (
     <View style={[m.card, m.cardDesktop] as object}>
-      <View style={m.fighters}>
-        <SkeletonBlock opacity={opacity} dark width={PORTRAIT} height={PORTRAIT} borderRadius={14} />
-        <View
-          style={
-            [
-              m.vsBadge,
-              { marginHorizontal: -12, backgroundColor: 'rgba(245,235,220,0.15)' },
-            ] as object
-          }
+      <SkeletonBlock
+        opacity={opacity}
+        dark
+        width={DESKTOP_PORTRAIT}
+        height={DESKTOP_PORTRAIT}
+        borderRadius={16}
+      />
+      <View style={m.infoCenter as object}>
+        <SkeletonBlock opacity={opacity} dark width={110} height={9} style={{ marginBottom: 10 }} />
+        <SkeletonBlock
+          opacity={opacity}
+          dark
+          width={300}
+          height={24}
+          style={{ marginBottom: 14 }}
         />
-        <SkeletonBlock opacity={opacity} dark width={PORTRAIT} height={PORTRAIT} borderRadius={14} />
+        <SkeletonBlock
+          opacity={opacity}
+          dark
+          width="100%"
+          height={10}
+          borderRadius={5}
+          style={{ marginBottom: 12 }}
+        />
+        <SkeletonBlock opacity={opacity} dark width="70%" height={14} />
       </View>
-      <View style={m.info}>
-        <SkeletonBlock opacity={opacity} dark width={110} height={9} style={{ marginBottom: 8 }} />
-        <SkeletonBlock opacity={opacity} dark width={220} height={20} style={{ marginBottom: 8 }} />
-        <SkeletonBlock opacity={opacity} dark width="80%" height={14} style={{ marginBottom: 12 }} />
-        <View style={m.footer}>
-          <SkeletonBlock opacity={opacity} dark width={90} height={10} />
-          <SkeletonBlock opacity={opacity} dark width={120} height={10} />
-        </View>
-      </View>
+      <SkeletonBlock
+        opacity={opacity}
+        dark
+        width={DESKTOP_PORTRAIT}
+        height={DESKTOP_PORTRAIT}
+        borderRadius={16}
+      />
     </View>
   );
 }
 
 const PORTRAIT = 76;
+const DESKTOP_PORTRAIT = 140;
 
 const m = StyleSheet.create({
   card: {
@@ -341,7 +393,12 @@ const m = StyleSheet.create({
     padding: 18,
     marginTop: 12,
   } as object,
-  cardDesktop: { marginHorizontal: 32 } as object,
+  cardDesktop: {
+    marginHorizontal: 32,
+    justifyContent: 'center',
+    gap: 40,
+    paddingVertical: 26,
+  } as object,
   cardMobile: {
     flexDirection: 'column',
     alignItems: 'center',
@@ -350,7 +407,6 @@ const m = StyleSheet.create({
     marginHorizontal: 16,
   } as object,
 
-  fighters: { flexDirection: 'row', alignItems: 'center', flexShrink: 0 },
   fightersMobile: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -369,17 +425,22 @@ const m = StyleSheet.create({
   portrait: {
     width: PORTRAIT,
     height: PORTRAIT,
-    borderRadius: 14,
+    borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
     borderWidth: 2,
     borderColor: 'rgba(11,24,32,0.9)',
     cursor: 'pointer',
-    transition: 'opacity 150ms ease, border-color 150ms ease',
+    boxShadow: '0 10px 28px rgba(0,0,0,0.4)',
+    transition: 'opacity 150ms ease, border-color 150ms ease, transform 150ms ease',
   } as object,
   portraitB: { marginLeft: -16 } as object,
   // Mirror the right fighter so they face inward, toward the left fighter.
   faceInward: { transform: [{ scaleX: -1 }] } as object,
+  portraitHover: {
+    transform: [{ translateY: -4 }],
+    borderColor: 'rgba(245,235,220,0.35)',
+  } as object,
   portraitPicked: { borderColor: COLORS.orange } as object,
   portraitDimmed: { opacity: 0.5 } as object,
   pickedTag: {
@@ -412,14 +473,48 @@ const m = StyleSheet.create({
   } as object,
   vsText: { fontFamily: 'Flame-Regular', fontSize: 12, color: '#fff' },
 
-  info: { flex: 1, minWidth: 0 },
+  // Desktop centre column — grows to fill the space between the flanking
+  // portraits but caps its width so the vote bar reads as a deliberate element
+  // rather than a hairline stretched across the full page.
+  infoCenter: {
+    flex: 1,
+    minWidth: 0,
+    maxWidth: 460,
+    alignItems: 'center',
+  } as object,
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'nowrap',
+    gap: 12,
+    alignSelf: 'stretch',
+    marginBottom: 12,
+  } as object,
+  vsBadgeInline: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    flexShrink: 0,
+    backgroundColor: COLORS.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#0b1820',
+  } as object,
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    marginBottom: 7,
+  } as object,
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 8,
+    fontSize: 9,
     letterSpacing: 2.5,
     textTransform: 'uppercase',
     color: COLORS.orange,
-    marginBottom: 5,
   } as object,
   title: {
     fontFamily: 'Flame-Regular',
@@ -428,6 +523,13 @@ const m = StyleSheet.create({
     lineHeight: 25,
     marginBottom: 8,
   },
+  titleDesktop: {
+    fontSize: 26,
+    lineHeight: 30,
+    marginBottom: 0,
+    flexShrink: 1,
+    textAlign: 'center',
+  } as object,
   prompt: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
@@ -478,7 +580,6 @@ const m = StyleSheet.create({
     lineHeight: 19,
     marginBottom: 10,
   },
-  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   lead: {
     flex: 1,
     textAlign: 'center',
@@ -489,6 +590,7 @@ const m = StyleSheet.create({
     color: 'rgba(245,235,220,0.45)',
   } as object,
   linkRow: { alignSelf: 'flex-start', cursor: 'pointer' } as object,
+  linkRowCentered: { alignSelf: 'center' } as object,
   link: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,

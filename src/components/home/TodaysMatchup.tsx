@@ -12,6 +12,7 @@ import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 import { matchupVoteKey, statSplit, statLead, type MatchupSide } from '../../lib/home/matchupVote';
 import { getMatchupTally, castMatchupVote, type MatchupTally } from '../../lib/db/matchupVotes';
+import { useAuth } from '../../hooks/useAuth';
 import type { TodaysMatchup as Matchup } from '../../lib/matchup';
 
 const PORTRAIT = 96;
@@ -66,6 +67,7 @@ export function TodaysMatchup({
   onOpen: (path: string) => void;
 }) {
   const { heroA, heroB, winsA, winsB } = matchup;
+  const { user } = useAuth();
   const [pickedId, setPickedId] = useState<string | null>(null);
   const [tally, setTally] = useState<MatchupTally | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -99,6 +101,13 @@ export function TodaysMatchup({
   const castVote = useCallback(
     (side: MatchupSide) => {
       if (pickedId) return; // one vote per day's matchup
+      // Votes are per-user (RLS-locked rows); an anonymous tap fails silently
+      // server-side, so send logged-out fans to sign in rather than faking a
+      // reveal. They land back here to cast a real vote.
+      if (!user) {
+        onOpen('/(auth)/login');
+        return;
+      }
       const picked = side === 'a' ? heroA.id : heroB.id;
       setPickedId(picked); // optimistic
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -107,7 +116,7 @@ export function TodaysMatchup({
         .then((t) => t && setTally(t))
         .catch(() => {});
     },
-    [pickedId, key, heroA.id, heroB.id],
+    [pickedId, user, onOpen, key, heroA.id, heroB.id],
   );
 
   const revealed = pickedId !== null;
