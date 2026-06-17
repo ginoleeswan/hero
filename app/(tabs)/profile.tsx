@@ -39,6 +39,7 @@ import {
   shortPublisher,
   type TasteProfile,
 } from '../../src/lib/db/taste';
+import { computeBadges, earnedCount } from '../../src/lib/profile/badges';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
@@ -387,6 +388,16 @@ export default function ProfileScreen() {
         .join(' · ')
     : '';
 
+  // Badges — derived from account age + favourites + matchup record + taste.
+  const badges = computeBadges({
+    accountCreatedAt: user?.created_at ?? null,
+    favourites: favourites.length,
+    votes: battle?.total ?? 0,
+    streak: battle?.streak ?? 0,
+    topPublisher: taste?.publishers[0]?.name ?? null,
+  });
+  const badgesEarned = earnedCount(badges);
+
   const handleUnfavourite = (hero: FavouriteHero) => {
     if (!user) return;
     const confirm = () => {
@@ -618,6 +629,50 @@ export default function ProfileScreen() {
             <View style={styles.hairline} />
           </>
         )}
+
+        {/* Badges — derived achievements (account age, favourites, votes, taste). */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Badges</Text>
+            <Text style={styles.sectionCount}>
+              {badgesEarned}/{badges.length}
+            </Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.badgeRow}
+          >
+            {badges.map((b) => (
+              <View key={b.id} style={[styles.badgeTile, !b.earned && styles.badgeTileLocked]}>
+                <View
+                  style={[styles.badgeIcon, b.earned ? styles.badgeIconEarned : styles.badgeIconLocked]}
+                >
+                  <Ionicons
+                    name={b.icon as keyof typeof Ionicons.glyphMap}
+                    size={22}
+                    color={b.earned ? '#fff' : COLORS.grey}
+                  />
+                </View>
+                <Text
+                  style={[styles.badgeLabel, !b.earned && styles.badgeLabelLocked]}
+                  numberOfLines={1}
+                >
+                  {b.label}
+                </Text>
+                <Text style={styles.badgeSub} numberOfLines={1}>
+                  {!b.earned && b.progress
+                    ? `${Math.min(b.progress.current, b.progress.target)}/${b.progress.target}`
+                    : b.earned
+                      ? 'Earned'
+                      : ''}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+
+        <View style={styles.hairline} />
 
         {/* My Favourites */}
         <View style={styles.section}>
@@ -1157,6 +1212,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.grey,
     marginTop: 12,
+  },
+
+  // Badges
+  badgeRow: { gap: 10, paddingRight: 16 },
+  badgeTile: { width: 92, alignItems: 'center', gap: 6 },
+  badgeTileLocked: { opacity: 0.55 },
+  badgeIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeIconEarned: { backgroundColor: COLORS.orange },
+  badgeIconLocked: { backgroundColor: '#e8ddd0' },
+  badgeLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.navy,
+    textAlign: 'center',
+  },
+  badgeLabelLocked: { color: COLORS.grey },
+  badgeSub: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: COLORS.grey,
   },
 
   // Favourites
