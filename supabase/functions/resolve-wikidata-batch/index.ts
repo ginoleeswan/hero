@@ -209,6 +209,56 @@ async function fetchByComicvineIds(cvIds: string[]): Promise<Map<string, string>
   return map;
 }
 
+// Deterministic full sweep: walk the entire unresolved-with-comicvine_id set in
+// id order (cursor = afterId), resolve everything that has a P5905 link, and
+// leave the rest untouched. Popularity order is irrelevant here and would only
+// re-pick the same unmatched heroes every call (a clog), so we paginate by id.
+// One SPARQL covers a whole page (sub-chunked at 250 ids). Returns a cursor so
+// the caller can loop until the page comes back short.
+async function sweepDeterministic(
+  sb: SB,
+  afterId: string,
+  pageSize: number,
+): Promise<{ lastId: string; scanned: number; matched: number; calls: number }> {
+  const { data } = await sb
+    .from('heroes')
+    .select('id, comicvine_id')
+    .eq('wikidata_status', 'unresolved')
+    .not('comicvine_id', 'is', null)
+    .gt('id', afterId)
+    .order('id', { ascending: true })
+    .limit(pageSize);
+  const rows = (data as { id: string; comicvine_id: string }[] | null) ?? [];
+  if (rows.length === 0) return { lastId: afterId, scanned: 0, matched: 0, calls: 0 };
+
+  // Bulk P5905 lookup in sub-chunks (URL length safety on the SPARQL VALUES set).
+  const map = new Map<string, string>();
+  let calls = 0;
+  for (let i = 0; i < rows.length; i += 250) {
+    const ids = rows.slice(i, i + 250).map((r) => r.comicvine_id);
+    const part = await fetchByComicvineIds(ids);
+    calls++;
+    for (const [k, v] of part) map.set(k, v);
+    if (i + 250 < rows.length) await sleep(150);
+  }
+
+  let matched = 0;
+  for (const r of rows) {
+    const qid = map.get(`4005-${r.comicvine_id}`);
+    if (!qid) continue;
+    await sb
+      .from('heroes')
+      .update({
+        wikidata_status: 'resolved',
+        wikidata_qid: qid,
+        wikidata_candidates: [{ qid, score: 1 }],
+      })
+      .eq('id', r.id);
+    matched++;
+  }
+  return { lastId: rows[rows.length - 1].id, scanned: rows.length, matched, calls };
+}
+
 async function runResolve(
   sb: SB,
   limit: number,
@@ -290,12 +340,18 @@ serve(async (req: Request) => {
     retryUnresolved = false,
     triggeredBy = 'cron',
     heroId: string | null = null;
+  let deterministicSweep = false,
+    afterId = '',
+    pageSize = 500;
   try {
     const body = await req.json().catch(() => ({}));
     if (typeof body?.limit === 'number') limit = Math.min(Math.max(1, body.limit), 25);
     if (body?.retryUnresolved === true) retryUnresolved = true;
     if (typeof body?.triggeredBy === 'string') triggeredBy = body.triggeredBy;
     if (typeof body?.heroId === 'string') heroId = body.heroId;
+    if (body?.deterministicSweep === true) deterministicSweep = true;
+    if (typeof body?.afterId === 'string') afterId = body.afterId;
+    if (typeof body?.pageSize === 'number') pageSize = Math.min(Math.max(50, body.pageSize), 1000);
   } catch {
     /* empty body ok */
   }
@@ -304,6 +360,18 @@ serve(async (req: Request) => {
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   );
+
+  // Deterministic sweep is self-contained (no per-hero scoring, no run row).
+  if (deterministicSweep) {
+    try {
+      const r = await sweepDeterministic(sb, afterId, pageSize);
+      if (r.calls > 0)
+        await sb.from('api_usage').insert({ api: 'wikidata', endpoint: 'sweep', units: r.calls });
+      return json({ ...r, done: r.scanned < pageSize });
+    } catch (err) {
+      return json({ error: String(err) }, 500);
+    }
+  }
   const { data: runRow } = await sb
     .from('enrichment_runs')
     .insert({
