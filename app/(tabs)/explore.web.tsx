@@ -1,7 +1,7 @@
 // app/(tabs)/explore.web.tsx — Home screen for web (spotlight + horizontal scroll rows).
 // Search lives on the dedicated /search route; this screen is home-only.
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../src/constants/colors';
@@ -1449,6 +1449,72 @@ export default function WebHomeScreen() {
               onPress={(slug) =>
                 router.push(`/category/${slug}` as Parameters<typeof router.push>[0])
               }
+            />
+
+            {/* ── More of the Library — publishers, teams, media & power ────── */}
+            <HomeRow
+              label="Publisher"
+              title="Marvel Universe"
+              heroes={homeData.marvel ?? []}
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/marvel')}
+            />
+            <HomeRow
+              label="Publisher"
+              title="DC Universe"
+              heroes={homeData.dc ?? []}
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/dc')}
+            />
+            <HomeRow
+              label="Mutantkind"
+              title="X-Men"
+              heroes={homeData.xmen ?? []}
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/xmen')}
+            />
+            <HomeRow
+              label="Raw Power"
+              title="Strongest"
+              heroes={homeData.strongest ?? []}
+              statKey="strength"
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/strongest')}
+            />
+            <HomeRow
+              label="Great Minds"
+              title="Most Intelligent"
+              heroes={homeData.mostIntelligent ?? []}
+              statKey="intelligence"
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/most-intelligent')}
+            />
+            <HomeRow
+              label="Beyond the Comics"
+              title="Anime Legends"
+              heroes={homeData.anime ?? []}
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/anime')}
+            />
+            <HomeRow
+              label="Press Start"
+              title="Video Game Heroes"
+              heroes={homeData.videoGames ?? []}
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/video-games')}
+            />
+            <HomeRow
+              label="Franchise Icons"
+              title="Beyond the Comics"
+              heroes={homeData.franchiseIcons ?? []}
+              onPress={handlePress}
+              onViewAll={() => router.push('/category/franchise-icons')}
+            />
+            <HomeRow
+              label="Fresh to the Vault"
+              title="Newly Added"
+              heroes={homeData.newlyAdded ?? []}
+              onPress={handlePress}
             />
 
             {/* ── The Dark Side — one deliberate dark zone ──────────────────── */}

@@ -52,6 +52,7 @@ import {
   getMostFeared,
   getEraTimeline,
   getFirstAppearanceCovers,
+  getHeroCount,
   type Hero,
   type BrowseCover,
   type CategorySlug,
@@ -77,6 +78,8 @@ import { HallOfInfamy } from '../../src/components/home/HallOfInfamy';
 import { EraTimeline } from '../../src/components/home/EraTimeline';
 import { CoverGallery } from '../../src/components/home/CoverGallery';
 import { CategoryPodGrid, BROWSE_PODS } from '../../src/components/home/CategoryPodGrid';
+import { PublisherGrid } from '../../src/components/home/PublisherGrid';
+import { PulseTicker } from '../../src/components/home/PulseTicker';
 import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { FavouriteHero } from '../../src/types';
@@ -101,7 +104,9 @@ interface CuratedRow {
 // the viewport stay mounted (the old ScrollView mounted all ~12 at once).
 type FeedRow =
   | { type: 'spotlight'; heroes: Hero[] }
+  | { type: 'publishers' }
   | { type: 'matchup'; matchup: Matchup }
+  | { type: 'ticker'; heroCount: number; newlyAddedCount: number }
   | { type: 'recent'; heroes: RowHero[] }
   | { type: 'browsegrid' }
   | { type: 'favourites'; heroes: RowHero[] }
@@ -142,6 +147,7 @@ export default function HomeScreen() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [trendingForUser, setTrendingForUser] = useState<TrendingTitleCharacter[]>([]);
   const [matchup, setMatchup] = useState<Matchup | null>(null);
+  const [heroCount, setHeroCount] = useState(0);
 
   // Curated catalogue rows (the dormant depth, now surfaced on native).
   const [villains, setVillains] = useState<Hero[]>([]);
@@ -205,6 +211,9 @@ export default function HomeScreen() {
       .catch(() => {});
     getTodaysMatchup()
       .then(setMatchup)
+      .catch(() => {});
+    getHeroCount()
+      .then(setHeroCount)
       .catch(() => {});
 
     getIconicHeroes(20)
@@ -335,7 +344,10 @@ export default function HomeScreen() {
   const rows = useMemo<FeedRow[]>(() => {
     const out: FeedRow[] = [];
     if (spotlightPool.length > 0) out.push({ type: 'spotlight', heroes: spotlightPool });
+    out.push({ type: 'publishers' });
     if (matchup) out.push({ type: 'matchup', matchup });
+    if (heroCount > 0)
+      out.push({ type: 'ticker', heroCount, newlyAddedCount: newlyAdded.length });
     if (
       campaigns[0] ||
       onScreen.length > 0 ||
@@ -404,6 +416,7 @@ export default function HomeScreen() {
   }, [
     spotlightPool,
     matchup,
+    heroCount,
     recentlyViewed,
     favourites,
     iconic,
@@ -452,8 +465,14 @@ export default function HomeScreen() {
               onHeroPress={handlePress}
             />
           );
+        case 'publishers':
+          return <PublisherGrid onPress={handleCategoryPress} />;
         case 'matchup':
           return <TodaysMatchup matchup={item.matchup} onOpen={handleOpenPath} />;
+        case 'ticker':
+          return (
+            <PulseTicker heroCount={item.heroCount} newlyAddedCount={item.newlyAddedCount} />
+          );
         case 'recent':
           return (
             <HomeHeroRow
