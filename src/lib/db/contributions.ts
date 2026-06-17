@@ -128,3 +128,24 @@ export async function reviewContribution(
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
+/**
+ * Admin direct-edit — applies a field edit or fact immediately (no queue) and
+ * logs an auto-approved contribution for the audit trail. Admin-only (guarded
+ * server-side). Used by the on-page contribute flow when the viewer is an admin.
+ */
+export async function adminEditHero(opts: {
+  heroId: string;
+  kind: 'field' | 'fact';
+  targetField?: string | null;
+  newValue: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.rpc('admin_edit_hero', {
+    p_hero_id: opts.heroId,
+    p_kind: opts.kind,
+    p_target_field: opts.targetField ?? '',
+    p_new_value: opts.newValue,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

@@ -1064,6 +1064,10 @@ export type Database = {
       admin_cron_status: { Args: never; Returns: Json }
       admin_delete_campaign: { Args: { p_id: string }; Returns: number }
       admin_delete_hero: { Args: { p_hero_id: string }; Returns: number }
+      admin_edit_hero: {
+        Args: { p_hero_id: string; p_kind: string; p_new_value: string; p_target_field: string }
+        Returns: Json
+      }
       admin_merge_heroes: {
         Args: { p_loser: string; p_winner: string }
         Returns: undefined

@@ -8,7 +8,7 @@ import { Modal, View, Text, TextInput, Pressable, StyleSheet } from 'react-nativ
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../constants/colors';
-import { submitContribution, type EditableFieldDef } from '../../lib/db/contributions';
+import { submitContribution, adminEditHero, type EditableFieldDef } from '../../lib/db/contributions';
 import { rewardLine } from '../../lib/contribute/reward';
 
 export interface ContributeSheetProps {
@@ -21,8 +21,12 @@ export interface ContributeSheetProps {
   user: { id: string } | null | undefined;
   /** The user's contribution count BEFORE this one (for the reward number). */
   priorCount: number;
+  /** Admin = direct apply (no queue): "Save" instead of "Submit for review". */
+  isAdmin?: boolean;
+  /** Current value when editing a field that already has one. */
+  currentValue?: string | null;
   onRequestSignIn: () => void;
-  /** Called after a successful submit (so the card can mark the field pending). */
+  /** Called after a successful submit (so the card can mark the field pending/saved). */
   onSubmitted?: (field: EditableFieldDef | null) => void;
 }
 
@@ -34,6 +38,8 @@ export function ContributeSheet({
   field,
   user,
   priorCount,
+  isAdmin = false,
+  currentValue,
   onRequestSignIn,
   onSubmitted,
 }: ContributeSheetProps) {
@@ -65,12 +71,13 @@ export function ContributeSheet({
     }
     setSubmitting(true);
     setError(null);
-    const res = await submitContribution({
+    const payload = {
       heroId,
-      kind: isFact ? 'fact' : 'field',
+      kind: (isFact ? 'fact' : 'field') as 'fact' | 'field',
       targetField: field?.field ?? null,
       newValue: value.trim(),
-    });
+    };
+    const res = isAdmin ? await adminEditHero(payload) : await submitContribution(payload);
     setSubmitting(false);
     if (!res.ok) {
       setError(res.error ?? 'Could not submit — please try again.');
@@ -103,9 +110,13 @@ export function ContributeSheet({
               <View style={s.doneIcon}>
                 <Ionicons name="checkmark" size={28} color="#fff" />
               </View>
-              <Text style={s.doneTitle}>Sent for review</Text>
-              <Text style={s.doneSub}>{rewardLine(priorCount + 1)}</Text>
-              <Text style={s.doneMeta}>A moderator will take a look before it goes live.</Text>
+              <Text style={s.doneTitle}>{isAdmin ? 'Saved' : 'Sent for review'}</Text>
+              <Text style={s.doneSub}>
+                {isAdmin ? "It's live now." : rewardLine(priorCount + 1)}
+              </Text>
+              {!isAdmin && (
+                <Text style={s.doneMeta}>A moderator will take a look before it goes live.</Text>
+              )}
               <Pressable onPress={onClose} style={[s.btn, s.btnPrimary]}>
                 <Text style={s.btnPrimaryText}>Done</Text>
               </Pressable>
@@ -115,6 +126,12 @@ export function ContributeSheet({
               <Text style={s.kicker}>{heroName}</Text>
               <Text style={s.prompt}>{prompt}</Text>
               {!!guideline && <Text style={s.guideline}>{guideline}</Text>}
+              {isAdmin && !!currentValue && (
+                <View style={s.current}>
+                  <Text style={s.currentLabel}>Current</Text>
+                  <Text style={s.currentValue}>{currentValue}</Text>
+                </View>
+              )}
               <TextInput
                 value={value}
                 onChangeText={setValue}
@@ -132,9 +149,13 @@ export function ContributeSheet({
                 disabled={submitting}
                 style={[s.btn, s.btnPrimary, submitting && s.btnDisabled]}
               >
-                <Text style={s.btnPrimaryText}>{submitting ? 'Submitting…' : 'Submit for review'}</Text>
+                <Text style={s.btnPrimaryText}>
+                  {submitting ? 'Saving…' : isAdmin ? 'Save' : 'Submit for review'}
+                </Text>
               </Pressable>
-              <Text style={s.reviewNote}>Suggestions are reviewed before they appear.</Text>
+              {!isAdmin && (
+                <Text style={s.reviewNote}>Suggestions are reviewed before they appear.</Text>
+              )}
             </View>
           )}
         </Pressable>
@@ -194,6 +215,21 @@ const s = StyleSheet.create({
     marginTop: 16,
   },
   inputMultiline: { minHeight: 110, textAlignVertical: 'top' },
+  current: { backgroundColor: '#e8ddd0', borderRadius: 10, padding: 12, marginTop: 14 },
+  currentLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: COLORS.grey,
+    marginBottom: 3,
+  },
+  currentValue: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.navy,
+    lineHeight: 18,
+  },
   error: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.red, marginTop: 10 },
   btn: { paddingVertical: 14, borderRadius: 26, alignItems: 'center', marginTop: 16 },
   btnPrimary: { backgroundColor: COLORS.orange },
