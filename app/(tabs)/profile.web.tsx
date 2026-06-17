@@ -22,6 +22,7 @@ import {
   removeFavourite,
   type FavouriteHero,
 } from '../../src/lib/db/favourites';
+import { getBattleRecord, type BattleRecord } from '../../src/lib/db/matchupVotes';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { COLORS } from '../../src/constants/colors';
@@ -279,6 +280,7 @@ export default function WebProfileScreen() {
     updateDisplayName,
   } = useProfile(user?.id);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
+  const [battle, setBattle] = useState<BattleRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -288,6 +290,9 @@ export default function WebProfileScreen() {
 
   const fetchFavourites = useCallback(() => {
     if (!user) return;
+    getBattleRecord()
+      .then(setBattle)
+      .catch(() => {});
     getUserFavouriteHeroes(user.id)
       .then(setFavourites)
       .catch(() => {})
@@ -498,6 +503,34 @@ export default function WebProfileScreen() {
           </View>
 
           <View style={mob.hairline} />
+
+          {/* ── Battle Record ── */}
+          {battle && battle.total > 0 && (
+            <>
+              <View style={mob.section}>
+                <View style={mob.sectionHeader}>
+                  <Text style={mob.sectionTitle}>Battle Record</Text>
+                </View>
+                <View style={mob.battleRow}>
+                  <View style={mob.battleTile}>
+                    <Text style={mob.battleValue}>{battle.total}</Text>
+                    <Text style={mob.battleLabel}>
+                      {battle.total === 1 ? 'Battle' : 'Battles'}
+                    </Text>
+                  </View>
+                  <View style={mob.battleTile}>
+                    <Text style={mob.battleValue}>{battle.agreePct}%</Text>
+                    <Text style={mob.battleLabel}>With the crowd</Text>
+                  </View>
+                  <View style={mob.battleTile}>
+                    <Text style={mob.battleValue}>{battle.streak}</Text>
+                    <Text style={mob.battleLabel}>Day streak</Text>
+                  </View>
+                </View>
+              </View>
+              <View style={mob.hairline} />
+            </>
+          )}
 
           {/* ── My Favourites ── */}
           <View style={mob.section}>
@@ -955,8 +988,29 @@ export default function WebProfileScreen() {
             </Text>
           </View>
 
-          {/* ── Main: My Favourites ── */}
+          {/* ── Main: Battle Record + My Favourites ── */}
           <View style={desk.main}>
+            {battle && battle.total > 0 && (
+              <View style={desk.battleBlock}>
+                <Text style={desk.sectionTitle}>Battle Record</Text>
+                <View style={desk.battleRow}>
+                  <View style={desk.battleTile}>
+                    <Text style={desk.battleValue}>{battle.total}</Text>
+                    <Text style={desk.battleLabel}>
+                      {battle.total === 1 ? 'Battle' : 'Battles'}
+                    </Text>
+                  </View>
+                  <View style={desk.battleTile}>
+                    <Text style={desk.battleValue}>{battle.agreePct}%</Text>
+                    <Text style={desk.battleLabel}>With the crowd</Text>
+                  </View>
+                  <View style={desk.battleTile}>
+                    <Text style={desk.battleValue}>{battle.streak}</Text>
+                    <Text style={desk.battleLabel}>Day streak</Text>
+                  </View>
+                </View>
+              </View>
+            )}
             <View style={desk.sectionHeader}>
               <Text style={desk.sectionTitle}>My Favourites</Text>
               {!loading && favourites.length > 0 && (
@@ -1209,6 +1263,25 @@ const mob = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 20,
   },
+
+  // Battle Record
+  battleRow: { flexDirection: 'row', gap: 10 },
+  battleTile: {
+    flex: 1,
+    backgroundColor: COLORS.navy,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+    gap: 3,
+  } as object,
+  battleValue: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.beige, lineHeight: 28 },
+  battleLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: 'rgba(245,235,220,0.55)',
+  } as object,
 
   // Favourites
   section: { paddingHorizontal: 16, marginBottom: 24 },
@@ -1607,6 +1680,25 @@ const desk = StyleSheet.create({
     flex: 1,
     paddingTop: 24,
   },
+  // Battle Record
+  battleBlock: { marginBottom: 28, gap: 14 },
+  battleRow: { flexDirection: 'row', gap: 12 },
+  battleTile: {
+    flex: 1,
+    backgroundColor: COLORS.navy,
+    borderRadius: 16,
+    paddingVertical: 20,
+    alignItems: 'center',
+    gap: 4,
+  } as object,
+  battleValue: { fontFamily: 'Flame-Regular', fontSize: 34, color: COLORS.beige, lineHeight: 36 },
+  battleLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: 'rgba(245,235,220,0.55)',
+  } as object,
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
