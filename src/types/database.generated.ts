@@ -1116,6 +1116,7 @@ export type Database = {
         }[]
       }
       get_my_battle_record: { Args: never; Returns: Json }
+      get_my_taste_profile: { Args: never; Returns: Json }
       get_pending_build_ids: { Args: { p_limit?: number }; Returns: string[] }
       get_related_heroes: {
         Args: {

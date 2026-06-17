@@ -33,6 +33,12 @@ import {
   type FavouriteHero,
 } from '../../src/lib/db/favourites';
 import { getBattleRecord, type BattleRecord } from '../../src/lib/db/matchupVotes';
+import {
+  getTasteProfile,
+  dominantAlignment,
+  shortPublisher,
+  type TasteProfile,
+} from '../../src/lib/db/taste';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
@@ -257,6 +263,7 @@ export default function ProfileScreen() {
   } = useProfile(user?.id);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
   const [battle, setBattle] = useState<BattleRecord | null>(null);
+  const [taste, setTaste] = useState<TasteProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -269,6 +276,9 @@ export default function ProfileScreen() {
     if (!user) return;
     getBattleRecord()
       .then(setBattle)
+      .catch(() => {});
+    getTasteProfile()
+      .then(setTaste)
       .catch(() => {});
     getUserFavouriteHeroes(user.id)
       .then(setFavourites)
@@ -361,6 +371,18 @@ export default function ProfileScreen() {
   const joinedDate = user?.created_at
     ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : null;
+
+  // "Your Universe" — a one-line lean + a handful of franchise/tag chips.
+  const tasteChips = taste
+    ? Array.from(
+        new Set([...taste.franchises.map((f) => f.name), ...taste.tags.map((t) => t.label)]),
+      ).slice(0, 7)
+    : [];
+  const tasteInsight = taste
+    ? [dominantAlignment(taste), taste.publishers[0]?.name && shortPublisher(taste.publishers[0].name)]
+        .filter(Boolean)
+        .join(' · ')
+    : '';
 
   const handleUnfavourite = (hero: FavouriteHero) => {
     if (!user) return;
@@ -564,6 +586,31 @@ export default function ProfileScreen() {
                   <Text style={styles.battleLabel}>Day streak</Text>
                 </View>
               </View>
+            </View>
+            <View style={styles.hairline} />
+          </>
+        )}
+
+        {/* Your Universe — taste profile from favourites + view history. */}
+        {taste && taste.basedOn > 0 && (!!tasteInsight || tasteChips.length > 0) && (
+          <>
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Your Universe</Text>
+              </View>
+              {!!tasteInsight && <Text style={styles.tasteInsight}>{tasteInsight}</Text>}
+              {tasteChips.length > 0 && (
+                <View style={styles.tasteChipRow}>
+                  {tasteChips.map((c) => (
+                    <View key={c} style={styles.tasteChip}>
+                      <Text style={styles.tasteChipText}>{c}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+              <Text style={styles.tasteFootnote}>
+                {`Based on ${taste.basedOn} ${taste.basedOn === 1 ? 'hero' : 'heroes'} you've saved & viewed`}
+              </Text>
             </View>
             <View style={styles.hairline} />
           </>
@@ -1085,6 +1132,28 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     color: 'rgba(245,235,220,0.55)',
+  },
+
+  // Your Universe (taste profile)
+  tasteInsight: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 18,
+    color: COLORS.navy,
+    marginBottom: 12,
+  },
+  tasteChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tasteChip: {
+    backgroundColor: '#e8ddd0',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  tasteChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
+  tasteFootnote: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: COLORS.grey,
+    marginTop: 12,
   },
 
   // Favourites
