@@ -1,10 +1,5 @@
 // __tests__/lib/home/matchupVote.test.ts
-import {
-  dayStamp,
-  matchupVoteKey,
-  statSplit,
-  statLead,
-} from '../../../src/lib/home/matchupVote';
+import { dayStamp, matchupVoteKey, statSplit, statLead } from '../../../src/lib/home/matchupVote';
 
 describe('dayStamp', () => {
   it('formats the local calendar day as YYYY-MM-DD with zero-padding', () => {

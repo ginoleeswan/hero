@@ -346,8 +346,7 @@ export default function HomeScreen() {
     if (spotlightPool.length > 0) out.push({ type: 'spotlight', heroes: spotlightPool });
     out.push({ type: 'publishers' });
     if (matchup) out.push({ type: 'matchup', matchup });
-    if (heroCount > 0)
-      out.push({ type: 'ticker', heroCount, newlyAddedCount: newlyAdded.length });
+    if (heroCount > 0) out.push({ type: 'ticker', heroCount, newlyAddedCount: newlyAdded.length });
     if (
       campaigns[0] ||
       onScreen.length > 0 ||
@@ -384,29 +383,89 @@ export default function HomeScreen() {
     // row's `key` (see rowStyle): the dark-toned villain/horror/anti rows render
     // on navy bands; strongest/minds get leaderboard numerals.
     const curated: CuratedRow[] = [
-      { key: 'villains', label: 'The Dark Side', title: 'Villains', heroes: villains, route: '/category/villain' },
-      { key: 'horror', label: 'Movie Nightmares', title: 'Horror Icons', heroes: horror, route: '/category/horror' },
-      { key: 'anti', label: 'Grey Morality', title: 'Anti-Heroes', heroes: antiHeroes, route: '/category/anti-heroes' },
-      { key: 'marvel', label: 'Publisher', title: 'Marvel Universe', heroes: marvel, route: '/category/marvel' },
+      {
+        key: 'villains',
+        label: 'The Dark Side',
+        title: 'Villains',
+        heroes: villains,
+        route: '/category/villain',
+      },
+      {
+        key: 'horror',
+        label: 'Movie Nightmares',
+        title: 'Horror Icons',
+        heroes: horror,
+        route: '/category/horror',
+      },
+      {
+        key: 'anti',
+        label: 'Grey Morality',
+        title: 'Anti-Heroes',
+        heroes: antiHeroes,
+        route: '/category/anti-heroes',
+      },
+      {
+        key: 'marvel',
+        label: 'Publisher',
+        title: 'Marvel Universe',
+        heroes: marvel,
+        route: '/category/marvel',
+      },
       { key: 'dc', label: 'Publisher', title: 'DC Universe', heroes: dc, route: '/category/dc' },
-      { key: 'strongest', label: 'Raw Power', title: 'Strongest', heroes: strongest, route: '/category/strongest' },
-      { key: 'minds', label: 'Great Minds', title: 'Most Intelligent', heroes: mostIntelligent, route: '/category/most-intelligent' },
+      {
+        key: 'strongest',
+        label: 'Raw Power',
+        title: 'Strongest',
+        heroes: strongest,
+        route: '/category/strongest',
+      },
+      {
+        key: 'minds',
+        label: 'Great Minds',
+        title: 'Most Intelligent',
+        heroes: mostIntelligent,
+        route: '/category/most-intelligent',
+      },
       { key: 'xmen', label: 'Mutantkind', title: 'X-Men', heroes: xmen, route: '/category/xmen' },
-      { key: 'anime', label: 'Beyond the Comics', title: 'Anime Legends', heroes: anime, route: '/category/anime' },
-      { key: 'games', label: 'Press Start', title: 'Video Game Heroes', heroes: videoGames, route: '/category/video-games' },
-      { key: 'franchise', label: 'Franchise Icons', title: 'Beyond the Comics', heroes: franchise, route: '/category/franchise-icons' },
+      {
+        key: 'anime',
+        label: 'Beyond the Comics',
+        title: 'Anime Legends',
+        heroes: anime,
+        route: '/category/anime',
+      },
+      {
+        key: 'games',
+        label: 'Press Start',
+        title: 'Video Game Heroes',
+        heroes: videoGames,
+        route: '/category/video-games',
+      },
+      {
+        key: 'franchise',
+        label: 'Franchise Icons',
+        title: 'Beyond the Comics',
+        heroes: franchise,
+        route: '/category/franchise-icons',
+      },
       { key: 'new', label: 'Fresh to the Vault', title: 'Newly Added', heroes: newlyAdded },
     ];
     for (const r of curated) {
       if (r.heroes.length > 0)
-        out.push({ type: 'curated', key: r.key, label: r.label, title: r.title, heroes: r.heroes, route: r.route });
+        out.push({
+          type: 'curated',
+          key: r.key,
+          label: r.label,
+          title: r.title,
+          heroes: r.heroes,
+          route: r.route,
+        });
     }
 
     // "Beyond the Page" — the editorial chapter.
     const hasEditorial =
       rivalries.length > 0 || mostFeared.length > 0 || eras.length > 0 || covers.length > 0;
-    if (hasEditorial)
-      out.push({ type: 'chapter', kicker: 'Go Deeper', title: 'Beyond the Page' });
+    if (hasEditorial) out.push({ type: 'chapter', kicker: 'Go Deeper', title: 'Beyond the Page' });
     if (rivalries.length > 0) out.push({ type: 'rivalries', rivalries });
     if (mostFeared.length > 0) out.push({ type: 'infamy', villains: mostFeared });
     if (eras.length > 0) out.push({ type: 'era', eras });
@@ -470,9 +529,7 @@ export default function HomeScreen() {
         case 'matchup':
           return <TodaysMatchup matchup={item.matchup} onOpen={handleOpenPath} />;
         case 'ticker':
-          return (
-            <PulseTicker heroCount={item.heroCount} newlyAddedCount={item.newlyAddedCount} />
-          );
+          return <PulseTicker heroCount={item.heroCount} newlyAddedCount={item.newlyAddedCount} />;
         case 'recent':
           return (
             <HomeHeroRow

@@ -143,5 +143,10 @@ const t = StyleSheet.create({
     marginBottom: 6,
   },
   cardName: { fontFamily: 'Flame-Regular', fontSize: 13, color: COLORS.navy, lineHeight: 15 },
-  cardYear: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: 'rgba(41,60,67,0.5)', marginTop: 1 },
+  cardYear: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11,
+    color: 'rgba(41,60,67,0.5)',
+    marginTop: 1,
+  },
 });

@@ -379,7 +379,10 @@ export default function ProfileScreen() {
       ).slice(0, 7)
     : [];
   const tasteInsight = taste
-    ? [dominantAlignment(taste), taste.publishers[0]?.name && shortPublisher(taste.publishers[0].name)]
+    ? [
+        dominantAlignment(taste),
+        taste.publishers[0]?.name && shortPublisher(taste.publishers[0].name),
+      ]
         .filter(Boolean)
         .join(' · ')
     : '';

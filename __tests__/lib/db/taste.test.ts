@@ -10,9 +10,15 @@ const base: TasteProfile = {
 
 describe('dominantAlignment', () => {
   it('returns the label of the highest-weighted alignment', () => {
-    expect(dominantAlignment({ ...base, alignment: { good: 10, bad: 3, neutral: 1 } })).toBe('Heroes');
-    expect(dominantAlignment({ ...base, alignment: { good: 2, bad: 9, neutral: 1 } })).toBe('Villains');
-    expect(dominantAlignment({ ...base, alignment: { good: 1, bad: 2, neutral: 8 } })).toBe('Anti-Heroes');
+    expect(dominantAlignment({ ...base, alignment: { good: 10, bad: 3, neutral: 1 } })).toBe(
+      'Heroes',
+    );
+    expect(dominantAlignment({ ...base, alignment: { good: 2, bad: 9, neutral: 1 } })).toBe(
+      'Villains',
+    );
+    expect(dominantAlignment({ ...base, alignment: { good: 1, bad: 2, neutral: 8 } })).toBe(
+      'Anti-Heroes',
+    );
   });
 
   it('returns null when there is no alignment signal', () => {
@@ -20,8 +26,12 @@ describe('dominantAlignment', () => {
   });
 
   it('breaks ties toward Heroes, then Villains', () => {
-    expect(dominantAlignment({ ...base, alignment: { good: 5, bad: 5, neutral: 0 } })).toBe('Heroes');
-    expect(dominantAlignment({ ...base, alignment: { good: 0, bad: 5, neutral: 5 } })).toBe('Villains');
+    expect(dominantAlignment({ ...base, alignment: { good: 5, bad: 5, neutral: 0 } })).toBe(
+      'Heroes',
+    );
+    expect(dominantAlignment({ ...base, alignment: { good: 0, bad: 5, neutral: 5 } })).toBe(
+      'Villains',
+    );
   });
 });
 

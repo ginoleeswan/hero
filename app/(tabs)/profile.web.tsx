@@ -384,7 +384,10 @@ export default function WebProfileScreen() {
       ).slice(0, 8)
     : [];
   const tasteInsight = taste
-    ? [dominantAlignment(taste), taste.publishers[0]?.name && shortPublisher(taste.publishers[0].name)]
+    ? [
+        dominantAlignment(taste),
+        taste.publishers[0]?.name && shortPublisher(taste.publishers[0].name),
+      ]
         .filter(Boolean)
         .join(' · ')
     : '';
@@ -540,9 +543,7 @@ export default function WebProfileScreen() {
                 <View style={mob.battleRow}>
                   <View style={mob.battleTile}>
                     <Text style={mob.battleValue}>{battle.total}</Text>
-                    <Text style={mob.battleLabel}>
-                      {battle.total === 1 ? 'Battle' : 'Battles'}
-                    </Text>
+                    <Text style={mob.battleLabel}>{battle.total === 1 ? 'Battle' : 'Battles'}</Text>
                   </View>
                   <View style={mob.battleTile}>
                     <Text style={mob.battleValue}>{battle.agreePct}%</Text>
@@ -1358,7 +1359,12 @@ const mob = StyleSheet.create({
     paddingVertical: 6,
   },
   tasteChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
-  tasteFootnote: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, marginTop: 12 },
+  tasteFootnote: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: COLORS.grey,
+    marginTop: 12,
+  },
 
   // Favourites
   section: { paddingHorizontal: 16, marginBottom: 24 },
