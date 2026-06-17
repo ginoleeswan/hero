@@ -1115,6 +1115,7 @@ export type Database = {
           publisher: string
         }[]
       }
+      get_my_battle_record: { Args: never; Returns: Json }
       get_pending_build_ids: { Args: { p_limit?: number }; Returns: string[] }
       get_related_heroes: {
         Args: {

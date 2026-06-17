@@ -44,6 +44,35 @@ export async function getMatchupTally(a: string, b: string): Promise<MatchupTall
   return toTally(data);
 }
 
+export interface BattleRecord {
+  /** Total matchups the user has voted on. */
+  total: number;
+  /** How many of those votes sided with the crowd majority. */
+  agree: number;
+  /** agree / total as a whole percentage (0 when no votes). */
+  agreePct: number;
+  /** Consecutive days with a vote, ending today or yesterday (0 if broken). */
+  streak: number;
+}
+
+/** The signed-in user's matchup voting record, for the profile. Null on error. */
+export async function getBattleRecord(): Promise<BattleRecord | null> {
+  const { data, error } = await supabase.rpc('get_my_battle_record');
+  if (error) {
+    console.warn('[getBattleRecord] error:', error.message);
+    return null;
+  }
+  const d = (data ?? {}) as { total?: number; agree?: number; streak?: number };
+  const total = d.total ?? 0;
+  const agree = d.agree ?? 0;
+  return {
+    total,
+    agree,
+    agreePct: total > 0 ? Math.round((agree / total) * 100) : 0,
+    streak: d.streak ?? 0,
+  };
+}
+
 /** Cast (or change) the caller's pick; returns the fresh tally. Null on error. */
 export async function castMatchupVote(
   a: string,

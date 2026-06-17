@@ -32,6 +32,7 @@ import {
   removeFavourite,
   type FavouriteHero,
 } from '../../src/lib/db/favourites';
+import { getBattleRecord, type BattleRecord } from '../../src/lib/db/matchupVotes';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
@@ -255,6 +256,7 @@ export default function ProfileScreen() {
     updateDisplayName,
   } = useProfile(user?.id);
   const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
+  const [battle, setBattle] = useState<BattleRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -265,6 +267,9 @@ export default function ProfileScreen() {
 
   const fetchFavourites = useCallback(() => {
     if (!user) return;
+    getBattleRecord()
+      .then(setBattle)
+      .catch(() => {});
     getUserFavouriteHeroes(user.id)
       .then(setFavourites)
       .catch(() => setFavourites([]))
@@ -535,6 +540,34 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.hairline} />
+
+        {/* Battle Record — surfaces the user's matchup votes (Today's Battle). */}
+        {battle && battle.total > 0 && (
+          <>
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Battle Record</Text>
+              </View>
+              <View style={styles.battleRow}>
+                <View style={styles.battleTile}>
+                  <Text style={styles.battleValue}>{battle.total}</Text>
+                  <Text style={styles.battleLabel}>
+                    {battle.total === 1 ? 'Battle' : 'Battles'}
+                  </Text>
+                </View>
+                <View style={styles.battleTile}>
+                  <Text style={styles.battleValue}>{battle.agreePct}%</Text>
+                  <Text style={styles.battleLabel}>With the crowd</Text>
+                </View>
+                <View style={styles.battleTile}>
+                  <Text style={styles.battleValue}>{battle.streak}</Text>
+                  <Text style={styles.battleLabel}>Day streak</Text>
+                </View>
+              </View>
+            </View>
+            <View style={styles.hairline} />
+          </>
+        )}
 
         {/* My Favourites */}
         <View style={styles.section}>
@@ -1024,6 +1057,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#e8ddd0',
     marginHorizontal: 16,
     marginBottom: 20,
+  },
+
+  // Battle Record — three stat tiles on the navy card surface.
+  battleRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  battleTile: {
+    flex: 1,
+    backgroundColor: COLORS.navy,
+    borderRadius: 14,
+    borderCurve: 'continuous',
+    paddingVertical: 16,
+    alignItems: 'center',
+    gap: 3,
+  },
+  battleValue: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 26,
+    color: COLORS.beige,
+    lineHeight: 28,
+  },
+  battleLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: 'rgba(245,235,220,0.55)',
   },
 
   // Favourites
