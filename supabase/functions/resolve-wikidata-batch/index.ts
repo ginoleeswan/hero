@@ -52,11 +52,31 @@ const norm = (s: string) =>
 const tokenSet = (s: string) => new Set(norm(s).split(' ').filter(Boolean));
 const surname = (s: string) => norm(s).split(' ').filter(Boolean).pop() ?? '';
 const GENERIC_PUB = new Set(['comics', 'entertainment', 'group', 'inc', 'the']);
+// Wikidata's P1080 returns the fictional UNIVERSE ("Prime Earth", "Earth-616")
+// rather than the publisher, so map common universes to their publisher token —
+// the main reason marquee DC/Marvel characters went unresolved. (norm() form.)
+const UNIVERSE_PUBLISHER: Record<string, string> = {
+  'prime earth': 'dc',
+  'new earth': 'dc',
+  'dc universe': 'dc',
+  'earth two': 'dc',
+  'earth one': 'dc',
+  'earth 0': 'dc',
+  'dc extended universe': 'dc',
+  arrowverse: 'dc',
+  'marvel universe': 'marvel',
+  'earth 616': 'marvel',
+  'earth 1610': 'marvel',
+  'ultimate marvel': 'marvel',
+  'marvel cinematic universe': 'marvel',
+};
 function publisherMatch(heroPub: string | null, labels: string[]): boolean {
   if (!heroPub) return false;
   const ht = [...tokenSet(heroPub)].filter((t) => !GENERIC_PUB.has(t));
   if (ht.length === 0) return false;
   return labels.some((l) => {
+    const mapped = UNIVERSE_PUBLISHER[norm(l)];
+    if (mapped && ht.includes(mapped)) return true;
     const lt = tokenSet(l);
     return ht.some((t) => lt.has(t));
   });
@@ -164,6 +184,29 @@ interface HeroRow {
   publisher: string | null;
   first_appearance: string | null;
   creators: string[] | null;
+  comicvine_id: string | null;
+}
+
+// Deterministic match: Wikidata stores the Comic Vine ID as P5905, formatted
+// "4005-<id>" for characters. One SPARQL query maps a whole batch of our
+// comicvine_ids straight to QIDs — far higher precision than fuzzy name scoring,
+// so we try this first and only fall back to scoring for the unmatched.
+async function fetchByComicvineIds(cvIds: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (cvIds.length === 0) return map;
+  const values = [...new Set(cvIds)].map((id) => `"4005-${id}"`).join(' ');
+  const sparql = `SELECT ?item ?cv WHERE { VALUES ?cv { ${values} } ?item wdt:P5905 ?cv. }`;
+  const res = await fetch(`${WD_SPARQL}?query=${encodeURIComponent(sparql)}&format=json`, {
+    headers: { 'User-Agent': UA, Accept: 'application/sparql-results+json' },
+  });
+  if (!res.ok) return map;
+  const rows = (await res.json()).results?.bindings ?? [];
+  for (const r of rows as Record<string, { value: string }>[]) {
+    const cv = r.cv?.value;
+    const qid = r.item?.value?.split('/').pop();
+    if (cv && qid && !map.has(cv)) map.set(cv, qid);
+  }
+  return map;
 }
 
 async function runResolve(
@@ -179,7 +222,7 @@ async function runResolve(
   if (heroId) {
     const { data } = await sb
       .from('heroes')
-      .select('id, name, aliases, publisher, first_appearance, creators')
+      .select('id, name, aliases, publisher, first_appearance, creators, comicvine_id')
       .eq('id', heroId)
       .limit(1);
     heroes = data as HeroRow[] | null;
@@ -187,7 +230,7 @@ async function runResolve(
     const statuses = retryUnresolved ? ['pending', 'unresolved'] : ['pending'];
     const { data } = await sb
       .from('heroes')
-      .select('id, name, aliases, publisher, first_appearance, creators')
+      .select('id, name, aliases, publisher, first_appearance, creators, comicvine_id')
       .in('wikidata_status', statuses)
       .order('issue_count', { ascending: false, nullsFirst: false })
       .limit(limit);
@@ -195,21 +238,33 @@ async function runResolve(
   }
   if (!heroes || heroes.length === 0) return 0;
   let calls = 0;
+  // Deterministic pass: one SPARQL maps the batch's comicvine_ids → QIDs via P5905.
+  const cvByKey = await fetchByComicvineIds(
+    (heroes as HeroRow[]).map((h) => h.comicvine_id).filter((x): x is string => !!x),
+  );
+  if (cvByKey.size > 0) calls++;
   for (const h of heroes as HeroRow[]) {
     try {
-      calls++;
-      const qids = await searchCandidates(h.name);
-      await sleep(150);
-      calls++;
-      const cands = await fetchClaims(qids);
-      const hero: HeroHints = {
-        name: h.name,
-        aliases: h.aliases ?? [],
-        publisher: h.publisher,
-        firstAppearanceYear: firstYear(h.first_appearance),
-        creators: h.creators ?? [],
-      };
-      const outcome = resolveHero(hero, cands);
+      const directQid = h.comicvine_id ? cvByKey.get(`4005-${h.comicvine_id}`) : undefined;
+      let outcome: ReturnType<typeof resolveHero>;
+      if (directQid) {
+        // Exact ComicVine→Wikidata link — resolved with full confidence, no scoring.
+        outcome = { tier: 'resolved' as const, qid: directQid, candidates: [{ qid: directQid, score: 1 }] };
+      } else {
+        calls++;
+        const qids = await searchCandidates(h.name);
+        await sleep(150);
+        calls++;
+        const cands = await fetchClaims(qids);
+        const hero: HeroHints = {
+          name: h.name,
+          aliases: h.aliases ?? [],
+          publisher: h.publisher,
+          firstAppearanceYear: firstYear(h.first_appearance),
+          creators: h.creators ?? [],
+        };
+        outcome = resolveHero(hero, cands);
+      }
       await sb
         .from('heroes')
         .update({

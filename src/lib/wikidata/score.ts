@@ -43,11 +43,34 @@ const tokenSet = (s: string) => new Set(norm(s).split(' ').filter(Boolean));
 const surname = (s: string) => norm(s).split(' ').filter(Boolean).pop() ?? '';
 const GENERIC_PUB = new Set(['comics', 'entertainment', 'group', 'inc', 'the']);
 
+// Wikidata rarely puts the real publisher (P123) on a character; P1080 returns the
+// fictional UNIVERSE instead ("Prime Earth", "Earth-616", …). Map the common
+// universes to their publisher token so the publisher signal isn't lost — the
+// single biggest reason marquee DC/Marvel characters were going unresolved. Keys
+// are in norm() form (non-alphanumerics → spaces).
+const UNIVERSE_PUBLISHER: Record<string, string> = {
+  'prime earth': 'dc',
+  'new earth': 'dc',
+  'dc universe': 'dc',
+  'earth two': 'dc',
+  'earth one': 'dc',
+  'earth 0': 'dc',
+  'dc extended universe': 'dc',
+  arrowverse: 'dc',
+  'marvel universe': 'marvel',
+  'earth 616': 'marvel',
+  'earth 1610': 'marvel',
+  'ultimate marvel': 'marvel',
+  'marvel cinematic universe': 'marvel',
+};
+
 function publisherMatch(heroPub: string | null, labels: string[]): boolean {
   if (!heroPub) return false;
   const ht = [...tokenSet(heroPub)].filter((t) => !GENERIC_PUB.has(t));
   if (ht.length === 0) return false;
   return labels.some((l) => {
+    const mapped = UNIVERSE_PUBLISHER[norm(l)];
+    if (mapped && ht.includes(mapped)) return true;
     const lt = tokenSet(l);
     return ht.some((t) => lt.has(t));
   });
