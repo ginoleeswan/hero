@@ -47,11 +47,14 @@ export function useMatchupShareImage(input: MatchupShareInput): {
       return await captureAndShareMatchup(ref, {
         title: `${nameA} vs ${nameB}`,
         filename: `${nameA}-vs-${nameB}.png`.replace(/\s+/g, '-'),
+        // Web draws the poster from this data (its DOM-snapshot path renders
+        // blank); native ignores it and snapshots the rendered card via the ref.
+        poster: { nameA, nameB, imageA, imageB, winner, verdict, pctA, pctB, caption },
       });
     } finally {
       setBusy(false);
     }
-  }, [busy, nameA, nameB, imageA, imageB]);
+  }, [busy, nameA, nameB, imageA, imageB, winner, verdict, pctA, pctB, caption]);
 
   const hiddenCard = (
     <View ref={ref} collapsable={false} pointerEvents="none" style={styles.offscreen}>

@@ -11,7 +11,9 @@ export type ShareImageResult = 'shared' | 'downloaded' | 'unsupported' | 'error'
 
 export async function captureAndShareMatchup(
   ref: RefObject<View | null>,
-  opts: { title: string; filename: string },
+  // `poster` is web-only (its canvas renderer draws from data); native snapshots
+  // the already-rendered ShareableMatchupCard via the ref, so it's ignored here.
+  opts: { title: string; filename: string; poster?: unknown },
 ): Promise<ShareImageResult> {
   try {
     if (!ref.current) return 'error';
