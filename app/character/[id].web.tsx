@@ -182,11 +182,7 @@ function MobileDossier({
           {hasAny ? (
             <>
               <Text style={styles.dossierToggleText}>{open ? 'Hide' : 'View'}</Text>
-              <Ionicons
-                name={open ? 'chevron-up' : 'chevron-down'}
-                size={15}
-                color={COLORS.navy}
-              />
+              <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={15} color={COLORS.navy} />
             </>
           ) : null}
         </View>
@@ -307,8 +303,18 @@ const s2 = StyleSheet.create({
     cursor: 'pointer',
   } as object,
   editRowLabel: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
-  editRowRight: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1, maxWidth: '60%' } as object,
-  editRowValue: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: 'rgba(41,60,67,0.7)' } as object,
+  editRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 1,
+    maxWidth: '60%',
+  } as object,
+  editRowValue: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: 'rgba(41,60,67,0.7)',
+  } as object,
   editRowAdd: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
