@@ -19,7 +19,6 @@ import { supabase } from '../../src/lib/supabase';
 import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
 import { getPowerIcon, groupPowers } from '../../src/constants/powerIcons';
 import { useAuth } from '../../src/hooks/useAuth';
-import { HelpCompleteCard } from '../../src/components/contribute/HelpCompleteCard';
 import { ContributeSheet } from '../../src/components/contribute/ContributeSheet';
 import { isBlankValue } from '../../src/lib/contribute/missingFields';
 import { EDITABLE_FIELDS, type EditableFieldDef } from '../../src/lib/db/contributions';
@@ -806,19 +805,6 @@ export default function WebCharacterScreen() {
       .catch(() => {});
   };
 
-  // Desktop keeps the card for now; mobile uses the in-place dossier editor.
-  const contributeCard = (
-    <HelpCompleteCard
-      heroId={stats.id}
-      heroName={stats.name}
-      values={editValues}
-      user={user}
-      onRequestSignIn={() => router.push('/(auth)/login')}
-      onEdited={reloadHero}
-      style={{ marginHorizontal: 0 }}
-    />
-  );
-
   // Affiliations live in the main "Enemies, Allies & Teams" card (not Quick Facts)
   // so the sticky side rail stays short enough to fit the viewport.
   const affiliations: string[] = details.teams?.length
@@ -1198,8 +1184,6 @@ export default function WebCharacterScreen() {
                     </View>
                   ) : null}
 
-                  {contributeCard}
-
                   {/* Enemies & Allies */}
                   {comicVineLoading ? (
                     <View style={styles.card}>
@@ -1530,7 +1514,64 @@ export default function WebCharacterScreen() {
                     ) : null}
                   </View>
 
-                  <View style={styles.card}>
+                  <View style={[styles.card, { position: 'relative' }] as object}>
+                    {/* Edit pen — contributes in place; reading view unchanged. */}
+                    <Pressable
+                      onPress={() => setEditing(true)}
+                      hitSlop={8}
+                      style={[s2.penBtn, { position: 'absolute', top: 10, right: 10, zIndex: 2 }] as object}
+                      accessibilityLabel="Edit details"
+                    >
+                      <Ionicons
+                        name="create-outline"
+                        size={16}
+                        color={editing ? COLORS.orange : COLORS.navy}
+                      />
+                    </Pressable>
+                    {editing ? (
+                      <View>
+                        <Text style={styles.cardTitle}>Edit details</Text>
+                        <View style={styles.cardDivider} />
+                        {EDITABLE_FIELDS.map((f) => {
+                          const v = editValues[f.field];
+                          const filled = !isBlankValue(v);
+                          return (
+                            <Pressable
+                              key={f.field}
+                              onPress={() =>
+                                setEditTarget({ field: f, current: filled ? (v ?? null) : null })
+                              }
+                              style={s2.editRow as object}
+                            >
+                              <Text style={s2.editRowLabel}>{f.label}</Text>
+                              <View style={s2.editRowRight as object}>
+                                <Text
+                                  style={(filled ? s2.editRowValue : s2.editRowAdd) as object}
+                                  numberOfLines={1}
+                                >
+                                  {filled ? v : 'Add'}
+                                </Text>
+                                <Ionicons
+                                  name={filled ? 'pencil' : 'add'}
+                                  size={14}
+                                  color={COLORS.orange}
+                                />
+                              </View>
+                            </Pressable>
+                          );
+                        })}
+                        <Pressable
+                          onPress={() => setEditTarget({ field: null, current: null })}
+                          style={s2.editRow as object}
+                        >
+                          <Text style={s2.editRowLabel}>Did You Know fact</Text>
+                          <View style={s2.editRowRight as object}>
+                            <Text style={s2.editRowAdd as object}>Add</Text>
+                            <Ionicons name="bulb-outline" size={14} color={COLORS.orange} />
+                          </View>
+                        </Pressable>
+                      </View>
+                    ) : (
                     <View style={styles.factGrid}>
                       {(() => {
                         const rows = (
@@ -1602,6 +1643,7 @@ export default function WebCharacterScreen() {
                         ));
                       })()}
                     </View>
+                    )}
                   </View>
 
                   {/* Debut — era summary folded into the sidebar */}
