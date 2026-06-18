@@ -436,23 +436,34 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             >
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-            Settle the greatest debates
+            The living superhero universe
           </div>
           <span className="hero-wordmark-large">mythique</span>
-          <p className="hero-tagline">Who would win?</p>
+          <p className="hero-tagline">Know every hero. Settle every debate.</p>
           <p className="hero-sub">
-            Pit any two heroes head-to-head, cast your vote, and see what the crowd — and the tale
-            of the tape — really think. The argument ends here.
+            Explore 3,000+ characters in rich detail, trace how they&apos;re connected, and pit any
+            two head-to-head to settle who&apos;d really win. The whole universe — alive, connected,
+            and yours to argue about.
           </p>
           <div className="hero-ctas">
-            <button className="btn-primary" onClick={() => router.push('/versus')}>
-              <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            <button className="btn-primary" onClick={() => router.push('/explore')}>
+              <svg
+                className="btn-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
               </svg>
-              Settle a debate
+              Explore the universe
             </button>
-            <button className="btn-secondary" onClick={() => router.push('/explore')}>
-              Browse the roster →
+            <button className="btn-secondary" onClick={() => router.push('/versus')}>
+              Settle a debate →
             </button>
           </div>
         </div>
@@ -496,11 +507,11 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       <div className="stats">
         <div className="stat-item">
           <span className="stat-num">3,000+</span>
-          <span className="stat-label">Fighters</span>
+          <span className="stat-label">Characters</span>
         </div>
         <div className="stat-item">
-          <span className="stat-num">Millions</span>
-          <span className="stat-label">Of Matchups</span>
+          <span className="stat-num">Every</span>
+          <span className="stat-label">Universe</span>
         </div>
         <div className="stat-item">
           <span className="stat-num">Free</span>
@@ -553,19 +564,51 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
         <div className="section-inner">
           <p className="section-eyebrow">Why it&apos;s different</p>
           <h2 className="section-heading">
-            Not a wiki.
-            <br />
-            An argument settler.
+            More than a wiki.
+            <br />A universe you can play with.
           </h2>
           <p className="section-sub">
-            Anyone can list power stats. Mythique lets you take a side, rally the crowd, and finally
-            settle who&apos;d actually win.
+            Explore every hero in depth, see how they all connect, and settle the debates a static
+            list never could. One living, opinionated superhero universe.
           </p>
           <div className="features-grid">
             {[
               {
+                title: 'Explore the Universe',
+                desc: 'Browse 3,000+ heroes and villains across Marvel, DC, anime, games and beyond — curated collections that surface someone new every scroll.',
+                icon: (
+                  <>
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </>
+                ),
+              },
+              {
+                title: 'Deep Profiles',
+                desc: 'Powers, origins, abilities, real names and did-you-knows — the full dossier behind every character, not just a stat block.',
+                icon: (
+                  <>
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                  </>
+                ),
+              },
+              {
+                title: 'Rivalries & Family Trees',
+                desc: 'See who they fight, who they love, and who they’re related to — every hero mapped into a living web of allies, enemies and kin.',
+                icon: (
+                  <>
+                    <circle cx="18" cy="5" r="3" />
+                    <circle cx="6" cy="12" r="3" />
+                    <circle cx="18" cy="19" r="3" />
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                  </>
+                ),
+              },
+              {
                 title: 'Settle the Debate',
-                desc: 'Pick any two fighters, take a side, and watch the winner reveal. The deterministic "who wins" argument, finally put to rest.',
+                desc: 'Pit any two head-to-head, take a side, and watch the winner reveal — crowd vote plus the tale of the tape. The "who’d win" argument, finally settled.',
                 icon: (
                   <>
                     <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
@@ -580,57 +623,22 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 ),
               },
               {
-                title: 'Cast Your Vote',
-                desc: 'Every matchup is a live poll. Commit to your pick, then see whether the crowd backs you or leaves you out on a limb.',
+                title: 'On Screen',
+                desc: 'Every film, show and game a character appears in — with trailers and where to stream them next.',
                 icon: (
                   <>
-                    <line x1="6" y1="20" x2="6" y2="14" />
-                    <line x1="12" y1="20" x2="12" y2="4" />
-                    <line x1="18" y1="20" x2="18" y2="10" />
+                    <polygon points="23 7 16 12 23 17 23 7" />
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
                   </>
                 ),
               },
               {
-                title: 'Tale of the Tape',
-                desc: 'Six power stats clash side by side — intelligence, strength, speed, durability, power, combat. The evidence behind every verdict.',
+                title: 'Instant Search',
+                desc: 'Find any of 3,000+ characters in seconds — search by name, power, publisher or team affiliation.',
                 icon: (
                   <>
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                  </>
-                ),
-              },
-              {
-                title: 'Share the Beef',
-                desc: 'Turn any matchup into a poster and drop it in the group chat. Some arguments are too good to keep to yourself.',
-                icon: (
-                  <>
-                    <circle cx="18" cy="5" r="3" />
-                    <circle cx="6" cy="12" r="3" />
-                    <circle cx="18" cy="19" r="3" />
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                  </>
-                ),
-              },
-              {
-                title: '3,000+ Fighters',
-                desc: 'Marvel, DC, anime, video games and beyond. If they throw hands, they belong in the ring — every one with deep stats.',
-                icon: (
-                  <>
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </>
-                ),
-              },
-              {
-                title: 'Know the Fighter',
-                desc: 'Powers, origins, rivalries, family trees and on-screen appearances — the dossier behind every name on the card.',
-                icon: (
-                  <>
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
                   </>
                 ),
               },
@@ -669,19 +677,19 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             <div className="screenshots-text">
               <p className="section-eyebrow">The experience</p>
               <h2 className="section-heading">
-                Take a side.
+                Made to
                 <br />
-                Back it up.
+                get lost in.
               </h2>
               <p className="section-sub">
-                Fast, beautiful, and built for the back-and-forth — on the web or in your pocket.
+                Fast, beautiful, and endlessly deep — on the web or in your pocket.
               </p>
               <ul className="feature-list">
                 {[
-                  'Vote on any matchup — your pick, always remembered',
-                  'Live crowd verdicts that shift as fans weigh in',
-                  'AI commentary that calls every fight',
-                  'Share matchup posters straight to the group chat',
+                  'Rich profiles — powers, origins, abilities & trivia',
+                  'Rivalry and family-tree graphs you can explore',
+                  'Head-to-head matchups with live crowd verdicts',
+                  'Film, TV and game appearances for every hero',
                 ].map((item, i) => (
                   <li key={i}>
                     <span className="check" aria-hidden="true">
@@ -702,10 +710,10 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       <section className="showcase">
         <div className="showcase-inner">
           <p className="section-eyebrow">The roster</p>
-          <h2 className="section-heading">Everyone&apos;s in the ring</h2>
+          <h2 className="section-heading">From every universe</h2>
           <p className="section-sub">
-            Marvel. DC. Anime. Video games. Pick any two — we&apos;ve got 3,000+ fighters ready to
-            throw down.
+            Marvel, DC, anime, video games and beyond — 3,000+ characters, deeply detailed, all in
+            one place.
           </p>
           <div className="hero-mosaic">
             {[
@@ -732,21 +740,31 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* FINAL CTA */}
       <section className="cta-section">
         <div className="cta-inner">
-          <p className="section-eyebrow">Pick a fight</p>
-          <h2 className="cta-glow">Who would win?</h2>
+          <p className="section-eyebrow">Dive in</p>
+          <h2 className="cta-glow">Explore. Compare. Argue.</h2>
           <p className="cta-sub">
-            Cast your vote. Share the verdict. Settle the greatest debates in comics — free, no ads,
-            on the web or in the app.
+            3,000+ heroes, deep profiles, living rivalries, and the only place to settle who&apos;d
+            really win — free, no ads, on the web or in the app.
           </p>
           <button
             className="btn-primary"
             style={{ marginBottom: 28 }}
-            onClick={() => router.push('/versus')}
+            onClick={() => router.push('/explore')}
           >
-            <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            <svg
+              className="btn-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
             </svg>
-            Settle a debate
+            Explore the universe
           </button>
           <div className="cta-buttons">
             <button className="app-store-badge" aria-label="Download on the App Store">
