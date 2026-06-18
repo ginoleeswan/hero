@@ -19,6 +19,7 @@ import { useWebCanvas } from '../../../src/hooks/useWebCanvas';
 import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
 import { HeroMonogram } from '../../../src/components/HeroImage';
 import { VerdictReveal } from '../../../src/components/compare/VerdictReveal';
+import { ArenaVote } from '../../../src/components/compare/ArenaVote';
 import { StatBattleRow } from '../../../src/components/compare/StatBattleRow';
 import { VsBadge } from '../../../src/components/compare/VsBadge';
 import { MatchupBadge } from '../../../src/components/compare/MatchupBadge';
@@ -26,6 +27,7 @@ import { useRelationship } from '../../../src/lib/query/heroQueries';
 import { relationshipBadge } from '../../../src/lib/db/heroes';
 import { getFighterArt, stashFighters } from '../../../src/lib/compareHandoff';
 import { withViewTransition } from '../../../src/lib/viewTransition';
+import { useMatchupShareImage } from '../../../src/hooks/useMatchupShareImage';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
 
 // Must match the picker — the locked hero (A) and chosen card (B) morph in.
@@ -209,7 +211,7 @@ export default function WebCompareScreen() {
   const { data: relationship } = useRelationship(hero, opponent);
   const badge = relationshipBadge(relationship);
 
-  const [copied, setCopied] = useState(false);
+  const [shareMsg, setShareMsg] = useState('');
   // When swapping back to the picker, the *kept* fighter morphs into the pick
   // page's locked portrait — so it must carry VT_HERO and the discarded side
   // must drop its name (two elements can't share one view-transition-name).
@@ -239,6 +241,20 @@ export default function WebCompareScreen() {
   const nameB = statsB?.name ?? artB?.name ?? '';
   const stateA: PortraitState = ready ? portraitState(overallWinner!, 'A') : 'neutral';
   const stateB: PortraitState = ready ? portraitState(overallWinner!, 'B') : 'neutral';
+
+  // Highest-res portrait URLs for the shareable poster (prefer the portrait crop).
+  const shareImgA = portraitUrlA || rawUrlA ? { uri: (portraitUrlA ?? rawUrlA) as string } : null;
+  const shareImgB = portraitUrlB || rawUrlB ? { uri: (portraitUrlB ?? rawUrlB) as string } : null;
+  const { hiddenCard, share: shareImage } = useMatchupShareImage({
+    nameA,
+    nameB,
+    imageA: shareImgA,
+    imageB: shareImgB,
+    winner: overallWinner ?? 'tie',
+    verdict,
+    winsA: result?.winsA ?? 0,
+    winsB: result?.winsB ?? 0,
+  });
 
   if (error) {
     return (
@@ -274,16 +290,28 @@ export default function WebCompareScreen() {
     );
   };
 
+  const flash = (msg: string) => {
+    setShareMsg(msg);
+    setTimeout(() => setShareMsg(''), 2200);
+  };
+
   const handleShare = async () => {
+    // Lead with the generated VS poster (the thing worth posting). Fall back to
+    // sharing/copying the link when image share isn't available (e.g. desktop
+    // browsers with no Web Share file support, or a tainted-canvas failure).
+    const outcome = await shareImage();
+    if (outcome === 'shared') return;
+    if (outcome === 'downloaded') {
+      flash('Image saved!');
+      return;
+    }
     const url = typeof window !== 'undefined' ? window.location.href : '';
-    const shareData = { title: `${nameA} vs ${nameB}`, url };
     try {
-      if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare?.(shareData)) {
-        await navigator.share(shareData);
+      if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare?.({ url })) {
+        await navigator.share({ title: `${nameA} vs ${nameB}`, url });
       } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
         await navigator.clipboard.writeText(url);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        flash('Link copied!');
       }
     } catch {
       // user cancelled or API unavailable — silent
@@ -321,7 +349,7 @@ export default function WebCompareScreen() {
         }
       >
         <Ionicons name="share-outline" size={15} color="rgba(245,235,220,0.75)" />
-        <Text style={styles.controlText}>{copied ? 'Copied!' : 'Share'}</Text>
+        <Text style={styles.controlText}>{shareMsg || 'Share'}</Text>
       </Pressable>
     </>
   );
@@ -331,6 +359,7 @@ export default function WebCompareScreen() {
        over the navy; portraits flank a centered scorecard ("Tale of the Tape"). */
     return (
       <View style={styles.desktopRoot}>
+        {hiddenCard}
         <View style={[styles.controls, styles.controlsDesktop] as object}>{controlButtons}</View>
         <View style={styles.arena}>
           <View style={styles.arenaInner as object}>
@@ -352,6 +381,17 @@ export default function WebCompareScreen() {
               {ready && result ? (
                 <>
                   <VerdictReveal verdict={verdict} tone="dark" />
+                  <View style={styles.scorecardVote}>
+                    <ArenaVote
+                      heroAId={hero}
+                      heroBId={opponent}
+                      nameA={nameA}
+                      nameB={nameB}
+                      winsA={result.winsA}
+                      winsB={result.winsB}
+                      tone="light"
+                    />
+                  </View>
                   <View style={styles.scorecardStats}>
                     {result.stats.map((stat, i) => (
                       <StatBattleRow key={stat.key} stat={stat} animateIn animationDelay={i * 55} />
@@ -395,6 +435,7 @@ export default function WebCompareScreen() {
      a full stat list. */
   return (
     <View style={[styles.scroll, styles.contentOuter] as object}>
+      {hiddenCard}
       <View style={styles.mobileNavyTop as object}>
         <View style={[styles.mobileCard, { width: mobileCardW }]}>
           <ClashPortraits
@@ -414,6 +455,17 @@ export default function WebCompareScreen() {
         <MatchupBadge badge={badge} style={{ marginTop: 14, marginBottom: 2 }} />
         <View style={styles.verdictBlock}>
           <VerdictReveal verdict={verdict} />
+          <View style={styles.mobileVote}>
+            <ArenaVote
+              heroAId={hero}
+              heroBId={opponent}
+              nameA={statsA.name}
+              nameB={statsB.name}
+              winsA={result.winsA}
+              winsB={result.winsB}
+              tone="dark"
+            />
+          </View>
           <Pressable
             onPress={handleShare}
             accessibilityLabel="Share matchup"
@@ -422,7 +474,7 @@ export default function WebCompareScreen() {
             }
           >
             <Ionicons name="share-outline" size={14} color="rgba(245,235,220,0.7)" />
-            <Text style={styles.shareRowText}>{copied ? 'Link copied!' : 'Share result'}</Text>
+            <Text style={styles.shareRowText}>{shareMsg || 'Share result'}</Text>
           </Pressable>
         </View>
       </View>
@@ -558,6 +610,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 2,
   } as object,
+  scorecardVote: {
+    marginTop: 18,
+    paddingTop: 18,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(41,60,67,0.14)',
+  },
   scorecardStats: {
     gap: 16,
     marginTop: 18,
@@ -678,6 +736,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  mobileVote: {
+    alignSelf: 'stretch',
+    maxWidth: 380,
+    marginTop: 16,
+  } as object,
   mobileSheet: {
     flexGrow: 1,
     backgroundColor: COLORS.beige,

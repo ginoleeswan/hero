@@ -16,6 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { heroImageSource } from '../../../src/constants/heroImages';
 import { useCompareMatchup } from '../../../src/hooks/useCompareMatchup';
+import { useMatchupShareImage } from '../../../src/hooks/useMatchupShareImage';
 import { getFighterArt } from '../../../src/lib/compareHandoff';
 import { COLORS } from '../../../src/constants/colors';
 import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
@@ -55,6 +56,28 @@ export default function NativeCompareScreen() {
   const { data: relationship } = useRelationship(hero, opponent);
   const badge = relationshipBadge(relationship);
 
+  // Portrait art comes from the picker handoff (pure lookups) so it's available
+  // before any early return — the share-image hook below must run unconditionally.
+  const artA = getFighterArt(hero);
+  const artB = getFighterArt(opponent);
+  const nameA = statsA?.name ?? artA?.name ?? '';
+  const nameB = statsB?.name ?? artB?.name ?? '';
+
+  const shareUrlA =
+    statsA?.image.portraitUrl ?? statsA?.image.url ?? artA?.portrait_url ?? artA?.image_url;
+  const shareUrlB =
+    statsB?.image.portraitUrl ?? statsB?.image.url ?? artB?.portrait_url ?? artB?.image_url;
+  const { hiddenCard, share: shareImage } = useMatchupShareImage({
+    nameA,
+    nameB,
+    imageA: shareUrlA ? { uri: shareUrlA } : null,
+    imageB: shareUrlB ? { uri: shareUrlB } : null,
+    winner: overallWinner ?? 'tie',
+    verdict,
+    winsA: result?.winsA ?? 0,
+    winsB: result?.winsB ?? 0,
+  });
+
   if (error) {
     return (
       <View style={styles.center}>
@@ -76,8 +99,6 @@ export default function NativeCompareScreen() {
   // Paint portraits instantly from the picker handoff so there's no blank navy
   // gap before stats load — the slide-in entrance plays over the real art, and
   // the winner cue reveals once the result resolves (winner: 'neutral' → real).
-  const artA = getFighterArt(hero);
-  const artB = getFighterArt(opponent);
   const imageA = heroImageSource(
     hero,
     statsA?.image.url ?? artA?.image_url,
@@ -88,12 +109,14 @@ export default function NativeCompareScreen() {
     statsB?.image.url ?? artB?.image_url,
     statsB?.image.portraitUrl ?? artB?.portrait_url,
   );
-  const nameA = statsA?.name ?? artA?.name ?? '';
-  const nameB = statsB?.name ?? artB?.name ?? '';
 
-  const handleShare = () => {
+  const handleShare = async () => {
+    // Lead with the generated VS poster; fall back to a text share if the OS
+    // share sheet or the snapshot is unavailable.
+    const outcome = await shareImage();
+    if (outcome === 'shared' || outcome === 'downloaded') return;
     Share.share({
-      message: `${nameA} vs ${nameB} — ${verdict ?? result?.verdict ?? ''}. Check it out on Hero app!`,
+      message: `${nameA} vs ${nameB} — ${verdict ?? ''}. Settle it on mythique.`,
     }).catch(() => {});
   };
 
@@ -107,6 +130,7 @@ export default function NativeCompareScreen() {
 
   return (
     <View style={styles.root}>
+      {hiddenCard}
       <Stack.Screen
         options={{
           ...headerBase,

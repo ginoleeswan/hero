@@ -1,18 +1,16 @@
 // src/components/home/TodaysMatchup.tsx — native "Today's Battle" card.
 // A daily, deterministic matchup (see src/lib/matchup.ts) with a "Who would win?"
-// vote. Tapping a fighter casts a community vote (matchup_votes via the
-// cast_matchup_vote RPC) and reveals the crowd split + AI verdict. The local
-// AsyncStorage pick is kept as an offline fallback so the reveal still persists
-// when the network call fails. The card taps through to the full compare arena.
-import { useEffect, useState, useCallback } from 'react';
+// vote. Vote state (load tally, optimistic local reveal, server persist for
+// signed-in users) lives in the shared useMatchupVote hook so this card and the
+// web card / compare arena never drift. Logged-out fans vote with no sign-up
+// wall — their pick is an on-device reveal. The card taps through to the arena.
+import { useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
-import { matchupVoteKey, statSplit, statLead, type MatchupSide } from '../../lib/home/matchupVote';
-import { getMatchupTally, castMatchupVote, type MatchupTally } from '../../lib/db/matchupVotes';
-import { useAuth } from '../../hooks/useAuth';
+import { statSplit, statLead, type MatchupSide } from '../../lib/home/matchupVote';
+import { useMatchupVote } from '../../hooks/useMatchupVote';
 import type { TodaysMatchup as Matchup } from '../../lib/matchup';
 
 const PORTRAIT = 96;
@@ -67,59 +65,17 @@ export function TodaysMatchup({
   onOpen: (path: string) => void;
 }) {
   const { heroA, heroB, winsA, winsB } = matchup;
-  const { user } = useAuth();
-  const [pickedId, setPickedId] = useState<string | null>(null);
-  const [tally, setTally] = useState<MatchupTally | null>(null);
-  const [loaded, setLoaded] = useState(false);
-  const key = matchupVoteKey(heroA.id, heroB.id);
+  const { pickedId, tally, loaded, revealed, castVote } = useMatchupVote(heroA.id, heroB.id);
 
-  // Restore the crowd tally (and the caller's prior pick) from the server, with
-  // the local pick as an offline fallback so the reveal persists either way.
-  useEffect(() => {
-    let active = true;
-    getMatchupTally(heroA.id, heroB.id)
-      .then(async (t) => {
-        if (!active) return;
-        if (t) {
-          setTally(t);
-          if (t.myPick) setPickedId(t.myPick);
-        }
-        if (!t || !t.myPick) {
-          const local = await AsyncStorage.getItem(key).catch(() => null);
-          if (active && (local === 'a' || local === 'b')) {
-            setPickedId(local === 'a' ? heroA.id : heroB.id);
-          }
-        }
-        if (active) setLoaded(true);
-      })
-      .catch(() => active && setLoaded(true));
-    return () => {
-      active = false;
-    };
-  }, [key, heroA.id, heroB.id]);
-
-  const castVote = useCallback(
+  // Add a haptic tap to the shared vote handler on native (only on a fresh vote).
+  const vote = useCallback(
     (side: MatchupSide) => {
-      if (pickedId) return; // one vote per day's matchup
-      // Votes are per-user (RLS-locked rows); an anonymous tap fails silently
-      // server-side, so send logged-out fans to sign in rather than faking a
-      // reveal. They land back here to cast a real vote.
-      if (!user) {
-        onOpen('/(auth)/login');
-        return;
-      }
-      const picked = side === 'a' ? heroA.id : heroB.id;
-      setPickedId(picked); // optimistic
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      AsyncStorage.setItem(key, side).catch(() => {});
-      castMatchupVote(heroA.id, heroB.id, picked)
-        .then((t) => t && setTally(t))
-        .catch(() => {});
+      if (!revealed) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      castVote(side);
     },
-    [pickedId, user, onOpen, key, heroA.id, heroB.id],
+    [revealed, castVote],
   );
 
-  const revealed = pickedId !== null;
   // The bar shows the crowd split once anyone has voted; before that it falls
   // back to the stat scorecard so the reveal is never an empty 50/50.
   const usingVotes = !!tally && tally.total > 0;
@@ -147,7 +103,7 @@ export function TodaysMatchup({
             side="a"
             picked={pickedId === heroA.id}
             dimmed={revealed && pickedId !== heroA.id}
-            onVote={() => castVote('a')}
+            onVote={() => vote('a')}
           />
           <View style={m.vsBadge}>
             <Text style={m.vsText}>VS</Text>
@@ -157,7 +113,7 @@ export function TodaysMatchup({
             side="b"
             picked={pickedId === heroB.id}
             dimmed={revealed && pickedId !== heroB.id}
-            onVote={() => castVote('b')}
+            onVote={() => vote('b')}
           />
         </View>
 
@@ -169,12 +125,12 @@ export function TodaysMatchup({
           <>
             <Text style={m.prompt}>Who would win? Tap your pick.</Text>
             <View style={m.voteRow}>
-              <Pressable style={m.voteBtn} onPress={() => castVote('a')}>
+              <Pressable style={m.voteBtn} onPress={() => vote('a')}>
                 <Text style={m.voteBtnText} numberOfLines={1}>
                   {heroA.name}
                 </Text>
               </Pressable>
-              <Pressable style={m.voteBtn} onPress={() => castVote('b')}>
+              <Pressable style={m.voteBtn} onPress={() => vote('b')}>
                 <Text style={m.voteBtnText} numberOfLines={1}>
                   {heroB.name}
                 </Text>

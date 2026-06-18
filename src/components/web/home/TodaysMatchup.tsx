@@ -1,18 +1,11 @@
-import { useEffect, useState, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { useWindowDimensions, View, Text, Pressable, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../../../constants/colors';
-import { useAuth } from '../../../hooks/useAuth';
 import { HeroImage } from '../../HeroImage';
 import { useSkeletonAnim, SkeletonBlock } from '../Skeleton';
-import {
-  matchupVoteKey,
-  statSplit,
-  statLead,
-  type MatchupSide,
-} from '../../../lib/home/matchupVote';
-import { getMatchupTally, castMatchupVote, type MatchupTally } from '../../../lib/db/matchupVotes';
+import { statSplit, statLead, type MatchupSide } from '../../../lib/home/matchupVote';
+import { type MatchupTally } from '../../../lib/db/matchupVotes';
+import { useMatchupVote } from '../../../hooks/useMatchupVote';
 import type { TodaysMatchup as Matchup } from '../../../lib/matchup';
 
 interface TodaysMatchupProps {
@@ -171,58 +164,9 @@ function VotePrompt({
 export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
-  const { user } = useAuth();
   const { heroA, heroB } = matchup;
 
-  const [pickedId, setPickedId] = useState<string | null>(null);
-  const [tally, setTally] = useState<MatchupTally | null>(null);
-  const [loaded, setLoaded] = useState(false);
-  const key = matchupVoteKey(heroA.id, heroB.id);
-
-  useEffect(() => {
-    let active = true;
-    getMatchupTally(heroA.id, heroB.id)
-      .then(async (t) => {
-        if (!active) return;
-        if (t) {
-          setTally(t);
-          if (t.myPick) setPickedId(t.myPick);
-        }
-        if (!t || !t.myPick) {
-          const local = await AsyncStorage.getItem(key).catch(() => null);
-          if (active && (local === 'a' || local === 'b')) {
-            setPickedId(local === 'a' ? heroA.id : heroB.id);
-          }
-        }
-        if (active) setLoaded(true);
-      })
-      .catch(() => active && setLoaded(true));
-    return () => {
-      active = false;
-    };
-  }, [key, heroA.id, heroB.id]);
-
-  const castVote = useCallback(
-    (side: MatchupSide) => {
-      if (pickedId) return;
-      // Voting is per-user (RLS-locked rows); an anonymous tap would silently
-      // fail server-side, so send logged-out fans to sign in instead of faking
-      // a reveal. They land back here to cast a real vote.
-      if (!user) {
-        onOpen('/(auth)/login');
-        return;
-      }
-      const picked = side === 'a' ? heroA.id : heroB.id;
-      setPickedId(picked);
-      AsyncStorage.setItem(key, side).catch(() => {});
-      castMatchupVote(heroA.id, heroB.id, picked)
-        .then((t) => t && setTally(t))
-        .catch(() => {});
-    },
-    [pickedId, user, onOpen, key, heroA.id, heroB.id],
-  );
-
-  const revealed = pickedId !== null;
+  const { pickedId, tally, loaded, revealed, castVote } = useMatchupVote(heroA.id, heroB.id);
 
   // ── Mobile: a centred "fight poster" — face-off portraits, then vote / reveal ──
   if (!isDesktop) {

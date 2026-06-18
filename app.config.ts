@@ -51,6 +51,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     './plugins/withAndroidIconPadding',
+    'expo-sharing',
     [
       'expo-build-properties',
       {
