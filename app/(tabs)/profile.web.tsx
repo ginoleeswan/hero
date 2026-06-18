@@ -19,10 +19,7 @@ import { useProfile } from '../../src/hooks/useProfile';
 import { useProfileData } from '../../src/hooks/useProfileData';
 import { ChangePasswordModal } from '../../src/components/ui/ChangePasswordModal';
 import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
-import {
-  describeContribution,
-  type MyContribution,
-} from '../../src/lib/db/contributions';
+import { describeContribution, type MyContribution } from '../../src/lib/db/contributions';
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
 import { computeBadges, earnedCount } from '../../src/lib/profile/badges';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';

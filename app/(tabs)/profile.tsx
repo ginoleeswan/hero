@@ -29,10 +29,7 @@ import { useProfileData } from '../../src/hooks/useProfileData';
 import { ChangePasswordModal } from '../../src/components/ui/ChangePasswordModal';
 import { EditDisplayNameModal } from '../../src/components/ui/EditDisplayNameModal';
 import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
-import {
-  describeContribution,
-  type MyContribution,
-} from '../../src/lib/db/contributions';
+import { describeContribution, type MyContribution } from '../../src/lib/db/contributions';
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
 import { computeBadges, earnedCount } from '../../src/lib/profile/badges';
 import { HeroImage } from '../../src/components/HeroImage';
