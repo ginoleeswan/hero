@@ -1403,7 +1403,7 @@ const styles = StyleSheet.create({
   },
 
   // "Browse the Universe" chapter break between the dynamic zone and the library.
-  browseHead: { paddingHorizontal: 32, paddingTop: 8, paddingBottom: 18 } as object,
+  browseHead: { paddingHorizontal: 24, paddingBottom: 30, marginTop: -36 } as object,
   browseKicker: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
