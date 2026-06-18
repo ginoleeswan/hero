@@ -28,6 +28,8 @@ import { relationshipBadge } from '../../../src/lib/db/heroes';
 import { getFighterArt, stashFighters } from '../../../src/lib/compareHandoff';
 import { withViewTransition } from '../../../src/lib/viewTransition';
 import { useMatchupShareImage } from '../../../src/hooks/useMatchupShareImage';
+import { useMatchupVote } from '../../../src/hooks/useMatchupVote';
+import type { MatchupSide } from '../../../src/lib/home/matchupVote';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
 
 // Must match the picker — the locked hero (A) and chosen card (B) morph in.
@@ -239,8 +241,30 @@ export default function WebCompareScreen() {
   const imageB = rawUrlB || portraitUrlB ? heroImageSource(opponent, rawUrlB, portraitUrlB) : null;
   const nameA = statsA?.name ?? artA?.name ?? '';
   const nameB = statsB?.name ?? artB?.name ?? '';
-  const stateA: PortraitState = ready ? portraitState(overallWinner!, 'A') : 'neutral';
-  const stateB: PortraitState = ready ? portraitState(overallWinner!, 'B') : 'neutral';
+
+  // Commit-then-reveal: the debate is the hero. Nothing is decided until the
+  // viewer votes — portraits stay neutral and the scorecard hides the stats /
+  // verdict. After they commit, the "result" leans on the crowd (once a crowd
+  // exists) and falls back to the stat tape; the deterministic stat winner is
+  // demoted to evidence ("tale of the tape"), never the up-front answer.
+  const {
+    revealed,
+    pickedId,
+    tally,
+    castVote,
+    loaded: voteLoaded,
+  } = useMatchupVote(hero, opponent);
+  const onVote = (side: MatchupSide) => castVote(side);
+  const resultWinner: 'A' | 'B' | 'tie' =
+    tally && tally.total > 0
+      ? tally.votesA === tally.votesB
+        ? 'tie'
+        : tally.votesA > tally.votesB
+          ? 'A'
+          : 'B'
+      : (overallWinner ?? 'tie');
+  const stateA: PortraitState = revealed && ready ? portraitState(resultWinner, 'A') : 'neutral';
+  const stateB: PortraitState = revealed && ready ? portraitState(resultWinner, 'B') : 'neutral';
 
   // Highest-res portrait URLs for the shareable poster (prefer the portrait crop).
   const shareImgA = portraitUrlA || rawUrlA ? { uri: (portraitUrlA ?? rawUrlA) as string } : null;
@@ -378,25 +402,38 @@ export default function WebCompareScreen() {
                 <VsBadge size={52} variant="solid" />
               </View>
               <MatchupBadge badge={badge} style={{ marginBottom: 14 }} />
-              {ready && result ? (
+              {ready && result && voteLoaded ? (
                 <>
-                  <VerdictReveal verdict={verdict} tone="dark" />
-                  <View style={styles.scorecardVote}>
-                    <ArenaVote
-                      heroAId={hero}
-                      heroBId={opponent}
-                      nameA={nameA}
-                      nameB={nameB}
-                      winsA={result.winsA}
-                      winsB={result.winsB}
-                      tone="light"
-                    />
-                  </View>
-                  <View style={styles.scorecardStats}>
-                    {result.stats.map((stat, i) => (
-                      <StatBattleRow key={stat.key} stat={stat} animateIn animationDelay={i * 55} />
-                    ))}
-                  </View>
+                  <ArenaVote
+                    revealed={revealed}
+                    pickedId={pickedId}
+                    tally={tally}
+                    heroAId={hero}
+                    nameA={nameA}
+                    nameB={nameB}
+                    winsA={result.winsA}
+                    winsB={result.winsB}
+                    onVote={onVote}
+                    tone="light"
+                  />
+                  {revealed ? (
+                    <>
+                      <View style={styles.scorecardVerdict}>
+                        <VerdictReveal verdict={verdict} tone="dark" />
+                      </View>
+                      <Text style={styles.tapeHeading}>TALE OF THE TAPE</Text>
+                      <View style={styles.scorecardStats}>
+                        {result.stats.map((stat, i) => (
+                          <StatBattleRow
+                            key={stat.key}
+                            stat={stat}
+                            animateIn
+                            animationDelay={i * 55}
+                          />
+                        ))}
+                      </View>
+                    </>
+                  ) : null}
                 </>
               ) : (
                 <View style={styles.scorecardLoading}>
@@ -443,7 +480,7 @@ export default function WebCompareScreen() {
             imageB={imageB ?? { uri: '' }}
             nameA={statsA.name}
             nameB={statsB.name}
-            winner={overallWinner}
+            winner={revealed ? resultWinner : 'neutral'}
             width={mobileCardW}
             height={286}
             onSwapA={swapA}
@@ -454,38 +491,48 @@ export default function WebCompareScreen() {
         </View>
         <MatchupBadge badge={badge} style={{ marginTop: 14, marginBottom: 2 }} />
         <View style={styles.verdictBlock}>
-          <VerdictReveal verdict={verdict} />
           <View style={styles.mobileVote}>
             <ArenaVote
+              revealed={revealed}
+              pickedId={pickedId}
+              tally={tally}
               heroAId={hero}
-              heroBId={opponent}
               nameA={statsA.name}
               nameB={statsB.name}
               winsA={result.winsA}
               winsB={result.winsB}
+              onVote={onVote}
               tone="dark"
             />
           </View>
-          <Pressable
-            onPress={handleShare}
-            accessibilityLabel="Share matchup"
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-              [styles.shareRow, hovered && (styles.shareRowHover as object)] as object
-            }
-          >
-            <Ionicons name="share-outline" size={14} color="rgba(245,235,220,0.7)" />
-            <Text style={styles.shareRowText}>{shareMsg || 'Share result'}</Text>
-          </Pressable>
+          {revealed ? (
+            <>
+              <VerdictReveal verdict={verdict} />
+              <Pressable
+                onPress={handleShare}
+                accessibilityLabel="Share matchup"
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                  [styles.shareRow, hovered && (styles.shareRowHover as object)] as object
+                }
+              >
+                <Ionicons name="share-outline" size={14} color="rgba(245,235,220,0.7)" />
+                <Text style={styles.shareRowText}>{shareMsg || 'Share result'}</Text>
+              </Pressable>
+            </>
+          ) : null}
         </View>
       </View>
 
-      <View style={styles.mobileSheet}>
-        <View style={styles.mobileStats}>
-          {result.stats.map((stat) => (
-            <StatBattleRow key={stat.key} stat={stat} />
-          ))}
+      {revealed ? (
+        <View style={styles.mobileSheet}>
+          <Text style={styles.mobileTapeHeading}>TALE OF THE TAPE</Text>
+          <View style={styles.mobileStats}>
+            {result.stats.map((stat) => (
+              <StatBattleRow key={stat.key} stat={stat} />
+            ))}
+          </View>
         </View>
-      </View>
+      ) : null}
     </View>
   );
 }
@@ -610,15 +657,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 2,
   } as object,
-  scorecardVote: {
-    marginTop: 18,
+  scorecardVerdict: {
+    marginTop: 20,
     paddingTop: 18,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(41,60,67,0.14)',
   },
+  tapeHeading: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: 'rgba(41,60,67,0.45)',
+    textAlign: 'center',
+    marginTop: 18,
+    marginBottom: 2,
+  },
   scorecardStats: {
     gap: 16,
-    marginTop: 18,
+    marginTop: 10,
   },
   scorecardLoading: {
     minHeight: 220,
@@ -750,6 +807,15 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
   } as object,
+  mobileTapeHeading: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: 'rgba(41,60,67,0.45)',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
   mobileStats: {
     gap: 18,
     paddingHorizontal: 20,

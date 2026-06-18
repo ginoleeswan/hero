@@ -436,29 +436,23 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             >
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-            3,000+ Heroes &amp; Villains
+            Settle the greatest debates
           </div>
           <span className="hero-wordmark-large">mythique</span>
-          <p className="hero-tagline">The Universe's Greatest Heroes</p>
+          <p className="hero-tagline">Who would win?</p>
           <p className="hero-sub">
-            Discover the powers, origins, and stories of 3,000+ characters from Marvel, DC, and
-            beyond — all in your pocket.
+            Pit any two heroes head-to-head, cast your vote, and see what the crowd — and the tale
+            of the tape — really think. The argument ends here.
           </p>
           <div className="hero-ctas">
-            <button className="btn-primary">
+            <button className="btn-primary" onClick={() => router.push('/versus')}>
               <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>
-              App Store
-            </button>
-            <button className="btn-secondary" onClick={() => router.push('/(auth)/signup')}>
-              <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M3.18 23.76c.28.16.6.22.93.17l12.81-7.4-2.79-2.79-10.95 10zM.29 1.52A1.5 1.5 0 0 0 0 2.39v19.22c0 .31.09.6.29.87l.09.09 10.77-10.77v-.25L.38 1.43l-.09.09zM20.9 10.77l-2.71-1.56-3.07 3.08 3.07 3.07 2.74-1.58c.78-.45.78-1.58-.03-2.01zM4.11.24L16.92 7.63l-2.79 2.79L3.18.24A1.08 1.08 0 0 1 4.11.24z" />
-              </svg>
-              Google Play
+              Settle a debate
             </button>
             <button className="btn-secondary" onClick={() => router.push('/explore')}>
-              Try on Web →
+              Browse the roster →
             </button>
           </div>
         </div>
@@ -502,19 +496,19 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       <div className="stats">
         <div className="stat-item">
           <span className="stat-num">3,000+</span>
-          <span className="stat-label">Heroes &amp; Villains</span>
+          <span className="stat-label">Fighters</span>
         </div>
         <div className="stat-item">
-          <span className="stat-num">130+</span>
-          <span className="stat-label">Publishers</span>
+          <span className="stat-num">Millions</span>
+          <span className="stat-label">Of Matchups</span>
         </div>
         <div className="stat-item">
           <span className="stat-num">Free</span>
-          <span className="stat-label">To Download</span>
+          <span className="stat-label">No Ads</span>
         </div>
         <div className="stat-item">
-          <span className="stat-num">iOS &amp; Android</span>
-          <span className="stat-label">Platforms</span>
+          <span className="stat-num">Web &amp; App</span>
+          <span className="stat-label">Play Anywhere</span>
         </div>
       </div>
 
@@ -557,59 +551,21 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* FEATURES */}
       <section className="section">
         <div className="section-inner">
-          <p className="section-eyebrow">What's inside</p>
+          <p className="section-eyebrow">Why it&apos;s different</p>
           <h2 className="section-heading">
-            Everything you need to
+            Not a wiki.
             <br />
-            know your heroes
+            An argument settler.
           </h2>
           <p className="section-sub">
-            From first appearances to power stats — the most complete superhero companion app on the
-            planet.
+            Anyone can list power stats. Mythique lets you take a side, rally the crowd, and finally
+            settle who&apos;d actually win.
           </p>
           <div className="features-grid">
             {[
               {
-                title: 'Discover Heroes',
-                desc: 'Browse curated collections of heroes by universe, team, or power set. New favourites await every scroll.',
-                icon: (
-                  <>
-                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </>
-                ),
-              },
-              {
-                title: 'Instant Search',
-                desc: 'Find any of 3,000+ characters in seconds. Search by name, power, publisher, or team affiliation.',
-                icon: (
-                  <>
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </>
-                ),
-              },
-              {
-                title: 'Save Favourites',
-                desc: 'Build your personal hero roster. Track your favourite characters and revisit them any time.',
-                icon: (
-                  <>
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                  </>
-                ),
-              },
-              {
-                title: 'Power Stats',
-                desc: 'Dive deep into intelligence, strength, speed, durability, power, and combat ratings for every hero.',
-                icon: (
-                  <>
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                  </>
-                ),
-              },
-              {
-                title: 'Compare Heroes',
-                desc: 'Pit any two characters head-to-head and watch their power stats clash, stat by stat, in the versus arena.',
+                title: 'Settle the Debate',
+                desc: 'Pick any two fighters, take a side, and watch the winner reveal. The deterministic "who wins" argument, finally put to rest.',
                 icon: (
                   <>
                     <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
@@ -624,22 +580,57 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 ),
               },
               {
-                title: 'Origin Stories',
-                desc: 'First issue data, publisher history, and real names — the complete origin story behind every icon.',
+                title: 'Cast Your Vote',
+                desc: 'Every matchup is a live poll. Commit to your pick, then see whether the crowd backs you or leaves you out on a limb.',
                 icon: (
                   <>
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                    <line x1="6" y1="20" x2="6" y2="14" />
+                    <line x1="12" y1="20" x2="12" y2="4" />
+                    <line x1="18" y1="20" x2="18" y2="10" />
                   </>
                 ),
               },
               {
-                title: 'Universe Browser',
-                desc: 'Explore Marvel, DC, Dark Horse and more. Organised by publisher, team, and comic era.',
+                title: 'Tale of the Tape',
+                desc: 'Six power stats clash side by side — intelligence, strength, speed, durability, power, combat. The evidence behind every verdict.',
                 icon: (
                   <>
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <path d="M3 9h18M3 15h18M9 3v18" />
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </>
+                ),
+              },
+              {
+                title: 'Share the Beef',
+                desc: 'Turn any matchup into a poster and drop it in the group chat. Some arguments are too good to keep to yourself.',
+                icon: (
+                  <>
+                    <circle cx="18" cy="5" r="3" />
+                    <circle cx="6" cy="12" r="3" />
+                    <circle cx="18" cy="19" r="3" />
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                  </>
+                ),
+              },
+              {
+                title: '3,000+ Fighters',
+                desc: 'Marvel, DC, anime, video games and beyond. If they throw hands, they belong in the ring — every one with deep stats.',
+                icon: (
+                  <>
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </>
+                ),
+              },
+              {
+                title: 'Know the Fighter',
+                desc: 'Powers, origins, rivalries, family trees and on-screen appearances — the dossier behind every name on the card.',
+                icon: (
+                  <>
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
                   </>
                 ),
               },
@@ -676,21 +667,21 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
               </div>
             </div>
             <div className="screenshots-text">
-              <p className="section-eyebrow">The app</p>
+              <p className="section-eyebrow">The experience</p>
               <h2 className="section-heading">
-                Designed for
+                Take a side.
                 <br />
-                true fans
+                Back it up.
               </h2>
               <p className="section-sub">
-                A beautiful, fast, and intuitive experience — built by fans, for fans.
+                Fast, beautiful, and built for the back-and-forth — on the web or in your pocket.
               </p>
               <ul className="feature-list">
                 {[
-                  'Curated hero carousels updated regularly',
-                  'Detailed character info from trusted sources',
-                  'Beautiful card UI with squircle artwork',
-                  'Works offline — your heroes, always available',
+                  'Vote on any matchup — your pick, always remembered',
+                  'Live crowd verdicts that shift as fans weigh in',
+                  'AI commentary that calls every fight',
+                  'Share matchup posters straight to the group chat',
                 ].map((item, i) => (
                   <li key={i}>
                     <span className="check" aria-hidden="true">
@@ -711,9 +702,10 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       <section className="showcase">
         <div className="showcase-inner">
           <p className="section-eyebrow">The roster</p>
-          <h2 className="section-heading">From every universe</h2>
+          <h2 className="section-heading">Everyone&apos;s in the ring</h2>
           <p className="section-sub">
-            Marvel. DC. Dark Horse. If they wear a cape (or don't), we've got them covered.
+            Marvel. DC. Anime. Video games. Pick any two — we&apos;ve got 3,000+ fighters ready to
+            throw down.
           </p>
           <div className="hero-mosaic">
             {[
@@ -740,11 +732,22 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* FINAL CTA */}
       <section className="cta-section">
         <div className="cta-inner">
-          <p className="section-eyebrow">Download now</p>
-          <h2 className="cta-glow">Your heroes await.</h2>
+          <p className="section-eyebrow">Pick a fight</p>
+          <h2 className="cta-glow">Who would win?</h2>
           <p className="cta-sub">
-            Free to download. No ads. Just the greatest heroes ever created — right in your pocket.
+            Cast your vote. Share the verdict. Settle the greatest debates in comics — free, no ads,
+            on the web or in the app.
           </p>
+          <button
+            className="btn-primary"
+            style={{ marginBottom: 28 }}
+            onClick={() => router.push('/versus')}
+          >
+            <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            Settle a debate
+          </button>
           <div className="cta-buttons">
             <button className="app-store-badge" aria-label="Download on the App Store">
               <svg
