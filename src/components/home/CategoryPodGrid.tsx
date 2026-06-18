@@ -59,7 +59,10 @@ export function CategoryPodGrid({
               portraitUrl={c?.portrait_url}
               grid
               contentFit="cover"
-              contentPosition="top"
+              // Bias the crop a touch below the top: anchoring hard to the top
+              // fills the short tile with headroom/hair and clips the face off the
+              // bottom edge. Nudging down brings the face into the frame.
+              contentPosition={{ top: '35%', left: '50%' }}
               style={StyleSheet.absoluteFill as object}
               recyclingKey={p.slug}
             />
@@ -96,7 +99,7 @@ const s = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   label: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 19,
     color: COLORS.beige,
     lineHeight: 21,

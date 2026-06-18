@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   headerTitle: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 16,
     color: COLORS.navy,
   },

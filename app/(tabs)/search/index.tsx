@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   list: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingHorizontal: H_PAD, paddingTop: 4 },
   screenTitle: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 30,
     color: COLORS.beige,
     marginTop: 2,

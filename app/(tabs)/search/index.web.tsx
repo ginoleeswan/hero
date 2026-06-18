@@ -1,6 +1,6 @@
 // app/search.web.tsx — Search experience (web).
 // Desktop: committed results driven by the nav field (?q= in the URL).
-// Mobile: full-screen live search with its own input, plus Recent + Trending.
+// Idle (any width): full-screen browse surface — Recent searches + category pods.
 import { useEffect, useState } from 'react';
 import {
   View,

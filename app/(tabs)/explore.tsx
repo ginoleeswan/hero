@@ -521,5 +521,5 @@ const styles = StyleSheet.create({
     color: COLORS.orange,
     marginBottom: 3,
   },
-  browseTitle: { fontFamily: 'Flame-Bold', fontSize: 30, color: COLORS.navy, lineHeight: 32 },
+  browseTitle: { fontFamily: 'Flame-Regular', fontSize: 30, color: COLORS.navy, lineHeight: 32 },
 });

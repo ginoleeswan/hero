@@ -56,7 +56,9 @@ export function CategoryPodGrid({
               portraitUrl={c?.portrait_url}
               grid
               contentFit="cover"
-              contentPosition={{ top: 0, left: '50%' }}
+              // Bias the crop a touch below the top so the face lands in the short
+              // tile instead of headroom/hair (see the native pod grid).
+              contentPosition={{ top: '35%', left: '50%' }}
               style={{ position: 'absolute', inset: 0 } as object}
               recyclingKey={p.slug}
             />
