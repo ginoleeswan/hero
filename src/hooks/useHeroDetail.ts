@@ -32,6 +32,7 @@ import { getProfile } from '../lib/db/profiles';
 import { getHeroNarrative, type HeroNarrative } from '../lib/db/heroFacts';
 import { useAuth } from './useAuth';
 import { useRecordView } from './useViewHistory';
+import { supabase } from '../lib/supabase';
 import type { CharacterData, IssueCover } from '../types';
 
 // Power-stat keys in dial order. The view keeps its own STAT_CONFIG (keys + tints
@@ -61,6 +62,7 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
   const [narrative, setNarrative] = useState<HeroNarrative | null>(null);
   const [family, setFamily] = useState<FamilyMember[]>([]);
   const [comicVineLoading, setComicVineLoading] = useState(true);
+  const [statsGenerating, setStatsGenerating] = useState(false);
   // Two distinct failure modes: the hero genuinely doesn't exist (404 → poster),
   // versus a transient load failure (network/server → retryable). `retryToken`
   // re-runs the load effect when the user taps Retry.
@@ -324,6 +326,38 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
             if (needsComicVine) setComicVineLoading(false);
           });
       }
+
+      // Lazy AI stat generation for ComicVine characters with no stats yet. The
+      // generate-hero-stats edge fn fills powerstats and tags the source as 'ai'.
+      if (heroRow.intelligence === null && heroRow.ai_stats_status === 'pending') {
+        setStatsGenerating(true);
+        supabase.functions
+          .invoke<Record<string, number>>('generate-hero-stats', { body: { heroId: heroRow.id } })
+          .then(({ data: stats }) => {
+            if (stats && typeof stats.intelligence === 'number') {
+              setData((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  statsSource: 'ai',
+                  stats: {
+                    ...prev.stats,
+                    powerstats: {
+                      intelligence: String(stats.intelligence),
+                      strength: String(stats.strength),
+                      speed: String(stats.speed),
+                      durability: String(stats.durability),
+                      power: String(stats.power),
+                      combat: String(stats.combat),
+                    },
+                  },
+                };
+              });
+            }
+          })
+          .catch(() => {})
+          .finally(() => setStatsGenerating(false));
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -397,6 +431,7 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
     narrative,
     family,
     comicVineLoading,
+    statsGenerating,
     notFound,
     loadError,
     favourited,
