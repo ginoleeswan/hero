@@ -65,7 +65,13 @@ import { HeroLinksRow, heroLinksHasContent } from '../../src/components/HeroLink
 import { useAuth } from '../../src/hooks/useAuth';
 import { ContributeSheet } from '../../src/components/contribute/ContributeSheet';
 import { isBlankValue } from '../../src/lib/contribute/missingFields';
-import { EDITABLE_FIELDS, type EditableFieldDef } from '../../src/lib/db/contributions';
+import {
+  DOSSIER_GROUPS,
+  SUMMARY_FIELD,
+  POWERS_FIELD,
+  STAT_FIELDS,
+  type EditableFieldDef,
+} from '../../src/lib/db/contributions';
 import { getProfile } from '../../src/lib/db/profiles';
 import { useRecordView } from '../../src/hooks/useViewHistory';
 import { HeroImage } from '../../src/components/HeroImage';
@@ -196,10 +202,37 @@ function StatDial({ label, value, tint }: { label: string; value: string; tint: 
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+// Subtle pen that sits to the left of a right-aligned section title, opening that
+// section's inline edit. Reading view stays pristine; the pen is the only tell.
+function SectionPen({ onPress, active }: { onPress: () => void; active?: boolean }) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      hitSlop={8}
+      style={styles.sectionPen}
+      accessibilityRole="button"
+      accessibilityLabel="Edit section"
+    >
+      <Ionicons name="create-outline" size={16} color={active ? COLORS.orange : COLORS.navy} />
+    </TouchableOpacity>
+  );
+}
+
+function Section({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.sectionTitleRow}>
+        {action ?? null}
+        <Text style={[styles.sectionTitle, styles.sectionTitleGrow]}>{title}</Text>
+      </View>
       <View style={styles.divider} />
       {children}
     </View>
@@ -208,10 +241,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 // Padded title + divider with no body padding — used for sections whose body is
 // a full-bleed horizontal scroller (the scroller carries its own edge insets).
-function SectionHeader({ title }: { title: string }) {
+function SectionHeader({ title, action }: { title: string; action?: React.ReactNode }) {
   return (
     <View style={styles.sectionHeaderPad}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.sectionTitleRow}>
+        {action ?? null}
+        <Text style={[styles.sectionTitle, styles.sectionTitleGrow]}>{title}</Text>
+      </View>
       <View style={styles.divider} />
     </View>
   );
@@ -462,30 +498,37 @@ function Dossier({
       </TouchableOpacity>
       {open && editing ? (
         <View style={styles.dossierBody}>
-          <Text style={styles.dossierGroupLabel}>Edit details</Text>
-          {EDITABLE_FIELDS.map((f) => {
-            const v = editValues?.[f.field];
-            const filled = !isBlankValue(v);
-            return (
-              <TouchableOpacity
-                key={f.field}
-                onPress={() => onEditField?.(f, filled ? (v ?? null) : null)}
-                style={styles.editRow}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.editRowLabel}>{f.label}</Text>
-                <View style={styles.editRowRight}>
-                  <Text
-                    style={filled ? styles.editRowValue : styles.editRowAdd}
-                    numberOfLines={1}
+          {DOSSIER_GROUPS.map((group, gi) => (
+            <Fragment key={group.key}>
+              <Text style={[styles.dossierGroupLabel, gi > 0 && styles.dossierGroupSpacing]}>
+                {group.label}
+              </Text>
+              {group.fields.map((f) => {
+                const v = editValues?.[f.field];
+                const filled = !isBlankValue(v);
+                return (
+                  <TouchableOpacity
+                    key={f.field}
+                    onPress={() => onEditField?.(f, filled ? (v ?? null) : null)}
+                    style={styles.editRow}
+                    activeOpacity={0.7}
                   >
-                    {filled ? v : 'Add'}
-                  </Text>
-                  <Ionicons name={filled ? 'pencil' : 'add'} size={14} color={COLORS.orange} />
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+                    <Text style={styles.editRowLabel}>{f.label}</Text>
+                    <View style={styles.editRowRight}>
+                      <Text
+                        style={filled ? styles.editRowValue : styles.editRowAdd}
+                        numberOfLines={1}
+                      >
+                        {filled ? v : 'Add'}
+                      </Text>
+                      <Ionicons name={filled ? 'pencil' : 'add'} size={14} color={COLORS.orange} />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </Fragment>
+          ))}
+          <Text style={[styles.dossierGroupLabel, styles.dossierGroupSpacing]}>Trivia</Text>
           <TouchableOpacity
             onPress={() => onEditField?.(null, null)}
             style={styles.editRow}
@@ -575,6 +618,7 @@ export default function CharacterScreen() {
     current: string | null;
   } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [editingStats, setEditingStats] = useState(false);
   const [narrative, setNarrative] = useState<HeroNarrative | null>(null);
   const [family, setFamily] = useState<FamilyMember[]>([]);
   const [comicVineLoading, setComicVineLoading] = useState(true);
@@ -1357,6 +1401,13 @@ export default function CharacterScreen() {
                   </SkeletonProvider>
                 ) : data.details.summary || data.details.description ? (
                   <View style={styles.summaryBlock}>
+                    <View style={styles.summaryHead}>
+                      <SectionPen
+                        onPress={() =>
+                          setEditTarget({ field: SUMMARY_FIELD, current: data.details.summary ?? null })
+                        }
+                      />
+                    </View>
                     {data.details.summary ? (
                       <Text style={styles.summary}>{data.details.summary}</Text>
                     ) : null}
@@ -1370,43 +1421,103 @@ export default function CharacterScreen() {
                       </TouchableOpacity>
                     ) : null}
                   </View>
-                ) : null}
+                ) : (
+                  <View style={styles.summaryBlock}>
+                    <View style={styles.summaryHead}>
+                      <SectionPen
+                        onPress={() => setEditTarget({ field: SUMMARY_FIELD, current: null })}
+                      />
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => setEditTarget({ field: SUMMARY_FIELD, current: null })}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.summaryEmpty}>Add a short summary for this hero.</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
 
-              {/* Power Stats — circular dials, 3×2 grid + percentile hook */}
+              {/* Power Stats — circular dials, 3×2 grid + percentile hook. Admins
+                  get a pen that swaps the dials for an editable list (0–100). */}
               <View onLayout={registerAnchor('stats')}>
-                <Section title="Power Stats">
-                  <View style={styles.statsCard}>
-                    <View style={styles.statsGrid}>
-                      {STAT_CONFIG.map(({ key, label, tint }) => (
-                        <StatDial
-                          key={key}
-                          label={label}
-                          value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
-                          tint={tint}
-                        />
-                      ))}
+                <Section
+                  title="Power Stats"
+                  action={
+                    isAdmin ? (
+                      <SectionPen
+                        active={editingStats}
+                        onPress={() => setEditingStats((s) => !s)}
+                      />
+                    ) : undefined
+                  }
+                >
+                  {isAdmin && editingStats ? (
+                    <View style={styles.statsCard}>
+                      {STAT_FIELDS.map((f) => {
+                        const cur =
+                          (data.stats.powerstats as Record<string, string>)[f.field] ?? '0';
+                        return (
+                          <TouchableOpacity
+                            key={f.field}
+                            onPress={() => setEditTarget({ field: f, current: cur })}
+                            style={styles.editRow}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.editRowLabel}>{f.label}</Text>
+                            <View style={styles.editRowRight}>
+                              <Text style={styles.editRowValue}>{cur}</Text>
+                              <Ionicons name="pencil" size={14} color={COLORS.orange} />
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
                     </View>
-                    {powerTotal > 0 ? (
-                      <View style={styles.statTotalRow}>
-                        <Text style={styles.statTotal}>Total {powerTotal} / 600</Text>
-                        {percentile != null && percentile > 0 ? (
-                          <Text style={styles.statPercentile}>
-                            Stronger than {percentile}% of heroes
-                          </Text>
-                        ) : null}
+                  ) : (
+                    <View style={styles.statsCard}>
+                      <View style={styles.statsGrid}>
+                        {STAT_CONFIG.map(({ key, label, tint }) => (
+                          <StatDial
+                            key={key}
+                            label={label}
+                            value={(data.stats.powerstats as Record<string, string>)[key] ?? '0'}
+                            tint={tint}
+                          />
+                        ))}
                       </View>
-                    ) : null}
-                  </View>
+                      {powerTotal > 0 ? (
+                        <View style={styles.statTotalRow}>
+                          <Text style={styles.statTotal}>Total {powerTotal} / 600</Text>
+                          {percentile != null && percentile > 0 ? (
+                            <Text style={styles.statPercentile}>
+                              Stronger than {percentile}% of heroes
+                            </Text>
+                          ) : null}
+                        </View>
+                      ) : null}
+                    </View>
+                  )}
                 </Section>
               </View>
 
-              {/* Abilities — power explainers fold in as the "Decoded" strip */}
+              {/* Abilities — power explainers fold in as the "Decoded" strip. The
+                  pen edits the whole powers list (one per line). */}
               <View onLayout={registerAnchor('abilities')}>
                 <AbilitiesSection
                   powers={data.details.powers}
                   loading={comicVineLoading}
                   explainers={narrative?.powerExplainers ?? []}
+                  onEdit={
+                    comicVineLoading
+                      ? undefined
+                      : () =>
+                          setEditTarget({
+                            field: POWERS_FIELD,
+                            current: data.details.powers?.length
+                              ? data.details.powers.join('\n')
+                              : null,
+                          })
+                  }
                 />
               </View>
 
@@ -1431,12 +1542,24 @@ export default function CharacterScreen() {
                   editing={editing}
                   onToggleEdit={() => setEditing((e) => !e)}
                   editValues={{
-                    origin: data.details.origin,
-                    occupation: data.stats.work.occupation,
-                    base: data.stats.work.base,
+                    // Profile
+                    full_name: data.stats.biography['full-name'],
+                    alter_egos: data.stats.biography['alter-egos'],
+                    aliases: (data.stats.biography.aliases ?? []).filter(valid).join('\n'),
                     place_of_birth: data.stats.biography['place-of-birth'],
                     first_appearance: data.stats.biography['first-appearance'],
-                    full_name: data.stats.biography['full-name'],
+                    origin: data.details.origin,
+                    // Appearance
+                    gender: data.stats.appearance.gender,
+                    race: data.stats.appearance.race,
+                    height_imperial: data.stats.appearance.height?.[0],
+                    weight_imperial: data.stats.appearance.weight?.[0],
+                    eye_color: data.stats.appearance['eye-color'],
+                    hair_color: data.stats.appearance['hair-color'],
+                    // Connections
+                    occupation: data.stats.work.occupation,
+                    base: data.stats.work.base,
+                    group_affiliation: data.stats.connections['group-affiliation'],
                   }}
                   onEditField={(field, current) => setEditTarget({ field, current })}
                 />
@@ -1755,8 +1878,12 @@ export default function CharacterScreen() {
           isAdmin={isAdmin}
           priorCount={0}
           onRequestSignIn={() => router.push('/(auth)/login')}
-          onSubmitted={() => {
-            if (isAdmin) heroRowQuery.refetch();
+          onSubmitted={async () => {
+            // Admin edits apply immediately — pull the fresh row so the change
+            // shows on the page without a manual reload.
+            if (!isAdmin) return;
+            const { data: fresh } = await heroRowQuery.refetch();
+            if (fresh) setData(heroRowToCharacterData(fresh));
           }}
         />
       ) : null}
@@ -1945,6 +2072,14 @@ const styles = StyleSheet.create({
 
   // Summary
   summaryBlock: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10 },
+  summaryHead: { alignItems: 'flex-end', marginBottom: 2 },
+  summaryEmpty: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 14,
+    color: COLORS.grey,
+    fontStyle: 'italic',
+    lineHeight: 22,
+  },
   biographyLink: { alignSelf: 'flex-end', paddingTop: 8 },
   biographyLinkText: {
     fontFamily: 'FlameSans-Regular',
@@ -1962,6 +2097,16 @@ const styles = StyleSheet.create({
   // Sections
   section: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
   traitBandWrap: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 4 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center' },
+  sectionTitleGrow: { flex: 1 },
+  sectionPen: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(41,60,67,0.06)',
+  },
   sectionTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 20,
