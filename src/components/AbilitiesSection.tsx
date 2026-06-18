@@ -11,24 +11,27 @@ interface Props {
   powers: string[] | null;
   loading: boolean;
   explainers?: PowerExplainer[];
-  /** When set, a subtle pen appears in the header to edit the whole powers list
-   *  (one per line) — and an empty section still renders so it can be filled. */
+  /** Page-wide edit mode. The "Edit powers" chip and the empty-state affordance
+   *  appear only while editing — reading view stays pristine. */
+  editing?: boolean;
+  /** Edits the whole powers list (one per line). */
   onEdit?: () => void;
 }
 
-function Header({ onEdit }: { onEdit?: () => void }) {
+function Header({ editing, onEdit }: { editing?: boolean; onEdit?: () => void }) {
   return (
     <View style={styles.sectionHeader}>
       <View style={styles.headerRow}>
-        {onEdit ? (
+        {editing && onEdit ? (
           <TouchableOpacity
             onPress={onEdit}
-            hitSlop={8}
-            style={styles.pen}
+            hitSlop={6}
+            style={styles.editChip}
             accessibilityRole="button"
-            accessibilityLabel="Edit abilities"
+            accessibilityLabel="Edit powers"
           >
-            <Ionicons name="create-outline" size={16} color={COLORS.navy} />
+            <Ionicons name="create-outline" size={13} color={COLORS.orange} />
+            <Text style={styles.editChipText}>Edit powers</Text>
           </TouchableOpacity>
         ) : null}
         <Text style={styles.sectionTitle}>Abilities</Text>
@@ -38,17 +41,18 @@ function Header({ onEdit }: { onEdit?: () => void }) {
   );
 }
 
-export function AbilitiesSection({ powers, loading, explainers = [], onEdit }: Props) {
+export function AbilitiesSection({ powers, loading, explainers = [], editing, onEdit }: Props) {
   if (!loading && (!powers || powers.length === 0)) {
-    // Nothing to show and nothing to add → hide entirely. With an editor, keep
-    // the section so a contributor can fill it.
-    if (!onEdit) return null;
+    // Pristine when empty + reading. In edit mode, keep the section so a
+    // contributor can fill it.
+    if (!editing) return null;
     return (
       <View style={styles.container}>
-        <Header onEdit={onEdit} />
+        <Header editing={editing} onEdit={onEdit} />
         <View style={styles.body}>
-          <TouchableOpacity onPress={onEdit} activeOpacity={0.7}>
-            <Text style={styles.emptyAdd}>Add powers & abilities for this hero.</Text>
+          <TouchableOpacity onPress={onEdit} activeOpacity={0.7} style={styles.addRow}>
+            <Ionicons name="add-circle-outline" size={18} color={COLORS.orange} />
+            <Text style={styles.addRowText}>Add powers & abilities</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -59,7 +63,7 @@ export function AbilitiesSection({ powers, loading, explainers = [], onEdit }: P
 
   return (
     <View style={styles.container}>
-      <Header onEdit={onEdit} />
+      <Header editing={editing} onEdit={onEdit} />
 
       <View style={styles.body}>
         {loading && !powers ? (
@@ -116,13 +120,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   headerRow: { flexDirection: 'row', alignItems: 'center' },
-  pen: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+  editChip: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(41,60,67,0.06)',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(231,115,51,0.12)',
+  },
+  editChipText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: COLORS.orange,
   },
   sectionTitle: {
     flex: 1,
@@ -132,12 +142,16 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     paddingVertical: 5,
   },
-  emptyAdd: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 14,
-    color: COLORS.grey,
-    fontStyle: 'italic',
+  addRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     paddingBottom: 8,
+  },
+  addRowText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: COLORS.orange,
   },
   divider: {
     height: 2,

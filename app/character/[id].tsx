@@ -202,18 +202,38 @@ function StatDial({ label, value, tint }: { label: string; value: string; tint: 
   );
 }
 
-// Subtle pen that sits to the left of a right-aligned section title, opening that
-// section's inline edit. Reading view stays pristine; the pen is the only tell.
-function SectionPen({ onPress, active }: { onPress: () => void; active?: boolean }) {
+// Edit affordances are shown ONLY in edit mode — reading view is pristine, with
+// no pens or extra rows. A single header pencil flips the page into edit mode,
+// this banner anchors it, and each editable section reveals an EditChip.
+function EditModeBanner({ isAdmin, onDone }: { isAdmin: boolean; onDone: () => void }) {
+  return (
+    <View style={styles.editBanner}>
+      <View style={styles.editBannerLeft}>
+        <Ionicons name="create" size={14} color={COLORS.orange} />
+        <Text style={styles.editBannerText} numberOfLines={1}>
+          {isAdmin ? 'Editing — changes go live instantly' : 'Tap a section to suggest an edit'}
+        </Text>
+      </View>
+      <TouchableOpacity onPress={onDone} style={styles.editBannerDone} hitSlop={6}>
+        <Text style={styles.editBannerDoneText}>Done</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// A small labelled "Edit" pill shown in a section header while editing. Replaces
+// the old always-on grey pen circle that cluttered the reading view.
+function EditChip({ label = 'Edit', onPress }: { label?: string; onPress: () => void }) {
   return (
     <TouchableOpacity
       onPress={onPress}
-      hitSlop={8}
-      style={styles.sectionPen}
+      hitSlop={6}
+      style={styles.editChip}
       accessibilityRole="button"
-      accessibilityLabel="Edit section"
+      accessibilityLabel={label}
     >
-      <Ionicons name="create-outline" size={16} color={active ? COLORS.orange : COLORS.navy} />
+      <Ionicons name="create-outline" size={13} color={COLORS.orange} />
+      <Text style={styles.editChipText}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -395,18 +415,14 @@ function Dossier({
   data,
   includeFirstAppearance,
   eraSummary,
-  canEdit = false,
   editing = false,
-  onToggleEdit,
   editValues,
   onEditField,
 }: {
   data: CharacterData;
   includeFirstAppearance: boolean;
   eraSummary?: string | null;
-  canEdit?: boolean;
   editing?: boolean;
-  onToggleEdit?: () => void;
   editValues?: Record<string, string | null | undefined>;
   onEditField?: (field: EditableFieldDef | null, current: string | null) => void;
 }) {
@@ -435,19 +451,13 @@ function Dossier({
 
   const hasEra = !!eraSummary;
   const hasAny = hasProfile || hasAppearance || hasConnections || hasEra;
-  // Readers of an empty dossier see nothing; but if the viewer can contribute,
-  // the bar + pen still appear so the page can be completed.
-  if (!hasAny && !canEdit) return null;
+  // Reading mode stays pristine: an empty dossier shows nothing. In edit mode the
+  // bar + field list appear regardless, so the page can be completed.
+  if (!hasAny && !editing) return null;
 
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setOpen((o) => !o);
-    Haptics.selectionAsync();
-  };
-  const enterEdit = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setOpen(true);
-    onToggleEdit?.();
     Haptics.selectionAsync();
   };
 
@@ -456,43 +466,26 @@ function Dossier({
       <TouchableOpacity
         onPress={toggle}
         activeOpacity={0.7}
-        style={[styles.dossierBar, open && styles.dossierBarOpen]}
+        disabled={editing}
+        style={[styles.dossierBar, (open || editing) && styles.dossierBarOpen]}
         accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
+        accessibilityState={{ expanded: open || editing }}
         accessibilityLabel={open ? 'Collapse dossier' : 'Expand dossier'}
       >
         <View style={styles.dossierBarText}>
           <Text style={styles.dossierTitle}>Dossier</Text>
-          {!open ? (
-            <Text style={styles.dossierHint}>
-              {hasAny ? 'Appearance, affiliations, relatives & more' : 'Help complete this page'}
-            </Text>
+          {!open && !editing ? (
+            <Text style={styles.dossierHint}>Appearance, affiliations, relatives & more</Text>
           ) : null}
         </View>
-        <View style={styles.dossierToggle}>
-          {canEdit ? (
-            <TouchableOpacity
-              onPress={enterEdit}
-              hitSlop={8}
-              style={styles.dossierPen}
-              accessibilityLabel="Edit dossier"
-            >
-              <Ionicons
-                name="create-outline"
-                size={16}
-                color={editing ? COLORS.orange : COLORS.navy}
-              />
-            </TouchableOpacity>
-          ) : null}
-          {hasAny ? (
-            <>
-              <Text style={styles.dossierToggleText}>{open ? 'Hide' : 'View'}</Text>
-              <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={15} color={COLORS.navy} />
-            </>
-          ) : null}
-        </View>
+        {!editing && hasAny ? (
+          <View style={styles.dossierToggle}>
+            <Text style={styles.dossierToggleText}>{open ? 'Hide' : 'View'}</Text>
+            <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={15} color={COLORS.navy} />
+          </View>
+        ) : null}
       </TouchableOpacity>
-      {open && editing ? (
+      {editing ? (
         <View style={styles.dossierBody}>
           {DOSSIER_GROUPS.map((group, gi) => (
             <Fragment key={group.key}>
@@ -614,7 +607,6 @@ export default function CharacterScreen() {
     current: string | null;
   } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [editingStats, setEditingStats] = useState(false);
   const [narrative, setNarrative] = useState<HeroNarrative | null>(null);
   const [family, setFamily] = useState<FamilyMember[]>([]);
   const [comicVineLoading, setComicVineLoading] = useState(true);
@@ -1188,6 +1180,22 @@ export default function CharacterScreen() {
           headerRight: () => (
             <View style={styles.headerActions}>
               <TouchableOpacity
+                onPress={() => {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  setEditing((e) => !e);
+                  Haptics.selectionAsync();
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel={editing ? 'Done editing' : 'Suggest an edit'}
+              >
+                <Ionicons
+                  name={editing ? 'checkmark-circle' : 'create-outline'}
+                  size={23}
+                  color={editing ? COLORS.orange : COLORS.black}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
                 onPress={handleShare}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 accessibilityRole="button"
@@ -1367,6 +1375,12 @@ export default function CharacterScreen() {
             </ReAnimated.View>
           ) : (
             <ReAnimated.View entering={FadeIn.duration(320)}>
+              {/* Edit mode is a deliberate, page-wide state entered from the header
+                  pencil; this banner anchors it and offers the way out. */}
+              {editing ? (
+                <EditModeBanner isAdmin={isAdmin} onDone={() => setEditing(false)} />
+              ) : null}
+
               {/* Theme trait band — colour-coded by vocab category; sits at the
                   top of the sheet as a sibling to the identity header badges. */}
               {narrative && narrative.tags.length > 0 ? (
@@ -1397,16 +1411,19 @@ export default function CharacterScreen() {
                   </SkeletonProvider>
                 ) : data.details.summary || data.details.description ? (
                   <View style={styles.summaryBlock}>
-                    <View style={styles.summaryHead}>
-                      <SectionPen
-                        onPress={() =>
-                          setEditTarget({
-                            field: SUMMARY_FIELD,
-                            current: data.details.summary ?? null,
-                          })
-                        }
-                      />
-                    </View>
+                    {editing ? (
+                      <View style={styles.summaryEditHead}>
+                        <EditChip
+                          label={data.details.summary ? 'Edit summary' : 'Add summary'}
+                          onPress={() =>
+                            setEditTarget({
+                              field: SUMMARY_FIELD,
+                              current: data.details.summary ?? null,
+                            })
+                          }
+                        />
+                      </View>
+                    ) : null}
                     {data.details.summary ? (
                       <Text style={styles.summary}>{data.details.summary}</Text>
                     ) : null}
@@ -1420,38 +1437,25 @@ export default function CharacterScreen() {
                       </TouchableOpacity>
                     ) : null}
                   </View>
-                ) : (
+                ) : editing ? (
                   <View style={styles.summaryBlock}>
-                    <View style={styles.summaryHead}>
-                      <SectionPen
-                        onPress={() => setEditTarget({ field: SUMMARY_FIELD, current: null })}
-                      />
-                    </View>
                     <TouchableOpacity
                       onPress={() => setEditTarget({ field: SUMMARY_FIELD, current: null })}
                       activeOpacity={0.7}
+                      style={styles.addRow}
                     >
-                      <Text style={styles.summaryEmpty}>Add a short summary for this hero.</Text>
+                      <Ionicons name="add-circle-outline" size={18} color={COLORS.orange} />
+                      <Text style={styles.addRowText}>Add a summary for this hero</Text>
                     </TouchableOpacity>
                   </View>
-                )}
+                ) : null}
               </View>
 
-              {/* Power Stats — circular dials, 3×2 grid + percentile hook. Admins
-                  get a pen that swaps the dials for an editable list (0–100). */}
+              {/* Power Stats — circular dials, 3×2 grid + percentile hook. In edit
+                  mode an admin sees an editable list (0–100); stats are admin-only. */}
               <View onLayout={registerAnchor('stats')}>
-                <Section
-                  title="Power Stats"
-                  action={
-                    isAdmin ? (
-                      <SectionPen
-                        active={editingStats}
-                        onPress={() => setEditingStats((s) => !s)}
-                      />
-                    ) : undefined
-                  }
-                >
-                  {isAdmin && editingStats ? (
+                <Section title="Power Stats">
+                  {isAdmin && editing ? (
                     <View style={styles.statsCard}>
                       {STAT_FIELDS.map((f) => {
                         const cur =
@@ -1499,23 +1503,19 @@ export default function CharacterScreen() {
                 </Section>
               </View>
 
-              {/* Abilities — power explainers fold in as the "Decoded" strip. The
-                  pen edits the whole powers list (one per line). */}
+              {/* Abilities — power explainers fold in as the "Decoded" strip. In
+                  edit mode, an "Edit powers" chip edits the whole list (one per line). */}
               <View onLayout={registerAnchor('abilities')}>
                 <AbilitiesSection
                   powers={data.details.powers}
                   loading={comicVineLoading}
                   explainers={narrative?.powerExplainers ?? []}
-                  onEdit={
-                    comicVineLoading
-                      ? undefined
-                      : () =>
-                          setEditTarget({
-                            field: POWERS_FIELD,
-                            current: data.details.powers?.length
-                              ? data.details.powers.join('\n')
-                              : null,
-                          })
+                  editing={editing}
+                  onEdit={() =>
+                    setEditTarget({
+                      field: POWERS_FIELD,
+                      current: data.details.powers?.length ? data.details.powers.join('\n') : null,
+                    })
                   }
                 />
               </View>
@@ -1537,9 +1537,7 @@ export default function CharacterScreen() {
                   data={data}
                   includeFirstAppearance={!hasFirstVisual}
                   eraSummary={narrative?.eraSummary}
-                  canEdit
                   editing={editing}
-                  onToggleEdit={() => setEditing((e) => !e)}
                   editValues={{
                     // Profile
                     full_name: data.stats.biography['full-name'],
@@ -2069,16 +2067,51 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
 
+  // Edit mode — banner + chips (shown only while editing; reading view is clean)
+  editBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginHorizontal: 20,
+    marginTop: 14,
+    paddingVertical: 9,
+    paddingHorizontal: 13,
+    borderRadius: 12,
+    backgroundColor: 'rgba(231,115,51,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(231,115,51,0.25)',
+  },
+  editBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1 },
+  editBannerText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12.5,
+    color: COLORS.navy,
+    flexShrink: 1,
+  },
+  editBannerDone: {
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: COLORS.orange,
+  },
+  editBannerDoneText: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: '#fff' },
+  editChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(231,115,51,0.12)',
+  },
+  editChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange },
+  addRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
+  addRowText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.orange },
+
   // Summary
   summaryBlock: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10 },
-  summaryHead: { alignItems: 'flex-end', marginBottom: 2 },
-  summaryEmpty: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 14,
-    color: COLORS.grey,
-    fontStyle: 'italic',
-    lineHeight: 22,
-  },
+  summaryEditHead: { alignItems: 'flex-start', marginBottom: 8 },
   biographyLink: { alignSelf: 'flex-end', paddingTop: 8 },
   biographyLinkText: {
     fontFamily: 'FlameSans-Regular',
@@ -2098,14 +2131,6 @@ const styles = StyleSheet.create({
   traitBandWrap: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 4 },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center' },
   sectionTitleGrow: { flex: 1 },
-  sectionPen: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(41,60,67,0.06)',
-  },
   sectionTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 20,
@@ -2177,15 +2202,6 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   // Dossier edit mode
-  dossierPen: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(41,60,67,0.06)',
-    marginRight: 4,
-  },
   editRow: {
     flexDirection: 'row',
     alignItems: 'center',
