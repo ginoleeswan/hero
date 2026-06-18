@@ -63,7 +63,10 @@ import {
 import { PortrayedBySection } from '../../src/components/PortrayedBySection';
 import { HeroLinksRow, heroLinksHasContent } from '../../src/components/HeroLinksRow';
 import { useAuth } from '../../src/hooks/useAuth';
-import { HelpCompleteCard } from '../../src/components/contribute/HelpCompleteCard';
+import { ContributeSheet } from '../../src/components/contribute/ContributeSheet';
+import { isBlankValue } from '../../src/lib/contribute/missingFields';
+import { EDITABLE_FIELDS, type EditableFieldDef } from '../../src/lib/db/contributions';
+import { getProfile } from '../../src/lib/db/profiles';
 import { useRecordView } from '../../src/hooks/useViewHistory';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
@@ -356,10 +359,20 @@ function Dossier({
   data,
   includeFirstAppearance,
   eraSummary,
+  canEdit = false,
+  editing = false,
+  onToggleEdit,
+  editValues,
+  onEditField,
 }: {
   data: CharacterData;
   includeFirstAppearance: boolean;
   eraSummary?: string | null;
+  canEdit?: boolean;
+  editing?: boolean;
+  onToggleEdit?: () => void;
+  editValues?: Record<string, string | null | undefined>;
+  onEditField?: (field: EditableFieldDef | null, current: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const { biography: bio, appearance: app, work, connections } = data.stats;
@@ -385,11 +398,20 @@ function Dossier({
   const hasConnections = valid(work.occupation) || valid(work.base) || valid(affiliation);
 
   const hasEra = !!eraSummary;
-  if (!hasProfile && !hasAppearance && !hasConnections && !hasEra) return null;
+  const hasAny = hasProfile || hasAppearance || hasConnections || hasEra;
+  // Readers of an empty dossier see nothing; but if the viewer can contribute,
+  // the bar + pen still appear so the page can be completed.
+  if (!hasAny && !canEdit) return null;
 
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setOpen((o) => !o);
+    Haptics.selectionAsync();
+  };
+  const enterEdit = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setOpen(true);
+    onToggleEdit?.();
     Haptics.selectionAsync();
   };
 
@@ -406,15 +428,77 @@ function Dossier({
         <View style={styles.dossierBarText}>
           <Text style={styles.dossierTitle}>Dossier</Text>
           {!open ? (
-            <Text style={styles.dossierHint}>Appearance, affiliations, relatives & more</Text>
+            <Text style={styles.dossierHint}>
+              {hasAny ? 'Appearance, affiliations, relatives & more' : 'Help complete this page'}
+            </Text>
           ) : null}
         </View>
         <View style={styles.dossierToggle}>
-          <Text style={styles.dossierToggleText}>{open ? 'Hide' : 'View'}</Text>
-          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={15} color={COLORS.navy} />
+          {canEdit ? (
+            <TouchableOpacity
+              onPress={enterEdit}
+              hitSlop={8}
+              style={styles.dossierPen}
+              accessibilityLabel="Edit dossier"
+            >
+              <Ionicons
+                name="create-outline"
+                size={16}
+                color={editing ? COLORS.orange : COLORS.navy}
+              />
+            </TouchableOpacity>
+          ) : null}
+          {hasAny ? (
+            <>
+              <Text style={styles.dossierToggleText}>{open ? 'Hide' : 'View'}</Text>
+              <Ionicons
+                name={open ? 'chevron-up' : 'chevron-down'}
+                size={15}
+                color={COLORS.navy}
+              />
+            </>
+          ) : null}
         </View>
       </TouchableOpacity>
-      {open ? (
+      {open && editing ? (
+        <View style={styles.dossierBody}>
+          <Text style={styles.dossierGroupLabel}>Edit details</Text>
+          {EDITABLE_FIELDS.map((f) => {
+            const v = editValues?.[f.field];
+            const filled = !isBlankValue(v);
+            return (
+              <TouchableOpacity
+                key={f.field}
+                onPress={() => onEditField?.(f, filled ? (v ?? null) : null)}
+                style={styles.editRow}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.editRowLabel}>{f.label}</Text>
+                <View style={styles.editRowRight}>
+                  <Text
+                    style={filled ? styles.editRowValue : styles.editRowAdd}
+                    numberOfLines={1}
+                  >
+                    {filled ? v : 'Add'}
+                  </Text>
+                  <Ionicons name={filled ? 'pencil' : 'add'} size={14} color={COLORS.orange} />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+          <TouchableOpacity
+            onPress={() => onEditField?.(null, null)}
+            style={styles.editRow}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.editRowLabel}>Did You Know fact</Text>
+            <View style={styles.editRowRight}>
+              <Text style={styles.editRowAdd}>Add</Text>
+              <Ionicons name="bulb-outline" size={14} color={COLORS.orange} />
+            </View>
+          </TouchableOpacity>
+        </View>
+      ) : open ? (
         <View style={styles.dossierBody}>
           {hasEra ? (
             <>
@@ -485,6 +569,12 @@ export default function CharacterScreen() {
   const { user } = useAuth();
   useRecordView(user?.id, id);
   const [data, setData] = useState<CharacterData | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editTarget, setEditTarget] = useState<{
+    field: EditableFieldDef | null;
+    current: string | null;
+  } | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [narrative, setNarrative] = useState<HeroNarrative | null>(null);
   const [family, setFamily] = useState<FamilyMember[]>([]);
   const [comicVineLoading, setComicVineLoading] = useState(true);
@@ -510,6 +600,20 @@ export default function CharacterScreen() {
 
   const heroRowQuery = useHeroRow(id);
   const heroRow = heroRowQuery.data;
+
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+    let active = true;
+    getProfile(user.id)
+      .then((p) => active && setIsAdmin(!!p?.is_admin))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const compareScale = useRef(new Animated.Value(1)).current;
@@ -1323,25 +1427,20 @@ export default function CharacterScreen() {
                   data={data}
                   includeFirstAppearance={!hasFirstVisual}
                   eraSummary={narrative?.eraSummary}
+                  canEdit
+                  editing={editing}
+                  onToggleEdit={() => setEditing((e) => !e)}
+                  editValues={{
+                    origin: data.details.origin,
+                    occupation: data.stats.work.occupation,
+                    base: data.stats.work.base,
+                    place_of_birth: data.stats.biography['place-of-birth'],
+                    first_appearance: data.stats.biography['first-appearance'],
+                    full_name: data.stats.biography['full-name'],
+                  }}
+                  onEditField={(field, current) => setEditTarget({ field, current })}
                 />
               </View>
-
-              {/* Help complete this page — contributor entry point (gaps + facts). */}
-              <HelpCompleteCard
-                heroId={data.stats.id}
-                heroName={data.stats.name}
-                values={{
-                  origin: data.details.origin,
-                  occupation: data.stats.work.occupation,
-                  base: data.stats.work.base,
-                  place_of_birth: data.stats.biography['place-of-birth'],
-                  first_appearance: data.stats.biography['first-appearance'],
-                  full_name: data.stats.biography['full-name'],
-                }}
-                user={user}
-                onRequestSignIn={() => router.push('/(auth)/login')}
-                onEdited={() => heroRowQuery.refetch()}
-              />
 
               {/* Enemies, Allies & Teams — full-bleed card strips off the
                   relationship graph (same-universe, popularity-ranked). */}
@@ -1644,6 +1743,24 @@ export default function CharacterScreen() {
         />
       ) : null}
 
+      {data ? (
+        <ContributeSheet
+          visible={editTarget !== null}
+          onClose={() => setEditTarget(null)}
+          heroId={data.stats.id}
+          heroName={data.stats.name}
+          field={editTarget?.field ?? null}
+          currentValue={editTarget?.current ?? null}
+          user={user}
+          isAdmin={isAdmin}
+          priorCount={0}
+          onRequestSignIn={() => router.push('/(auth)/login')}
+          onSubmitted={() => {
+            if (isAdmin) heroRowQuery.refetch();
+          }}
+        />
+      ) : null}
+
       {/* Floating Compare pill — hovers above the safe area; content scrolls
           under it (box-none lets touches pass through the transparent margins). */}
       {data && (
@@ -1915,6 +2032,35 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 4,
   },
+  // Dossier edit mode
+  dossierPen: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(41,60,67,0.06)',
+    marginRight: 4,
+  },
+  editRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 11,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(41,60,67,0.1)',
+  },
+  editRowLabel: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.navy },
+  editRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 1,
+    maxWidth: '60%',
+  },
+  editRowValue: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: 'rgba(41,60,67,0.7)' },
+  editRowAdd: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.orange },
   dossierGroupLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,

@@ -2,7 +2,8 @@
 // question-framed thing (a field edit or a "Did You Know" fact) and submits it
 // for review. Everything is admin-vetted, so copy makes clear it's a suggestion;
 // the reward is immediate (a warm, status-building confirmation) since the live
-// change is deferred. Used by HelpCompleteCard (native + web via RNW).
+// change is deferred. Opened by the in-place dossier editor on the character
+// screen (native + web via RNW).
 import { useEffect, useState } from 'react';
 import { Modal, View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
