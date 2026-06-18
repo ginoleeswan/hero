@@ -63,13 +63,17 @@ const nameList = (arr: unknown, cap: number): string[] =>
 const cvParams = (extra: Record<string, string>) =>
   new URLSearchParams({ api_key: COMICVINE_API_KEY, format: 'json', ...extra });
 
-// done  -> enriched and written
-// failed-> ComicVine genuinely has no match for this hero (terminal; won't retry
-//          unless explicitly asked via retryFailed)
-// retry -> transient (rate limit / 5xx / network) — leave the row `pending` so
-//          the next run picks it up again. Critical for the unattended cron:
-//          a momentary ComicVine throttle must NOT permanently park a real hero.
-type EnrichOutcome = 'done' | 'failed' | 'retry';
+// done     -> enriched and written
+// unmatched-> ComicVine has no character by this exact name (mantle alias /
+//             non-comic figure). Terminal, NOT an error — leaves the backlog and
+//             surfaces neutrally; needs another source, not a retry.
+// failed   -> a genuine error: a stored id 404s, or the resolved comicvine_id
+//             collides with another hero (23505 — this row duplicates one already
+//             in the catalogue). Terminal.
+// retry    -> transient (rate limit / 5xx / network) — leave the row `pending` so
+//             the next run picks it up again. Critical for the unattended cron:
+//             a momentary ComicVine throttle must NOT permanently park a real hero.
+type EnrichOutcome = 'done' | 'unmatched' | 'failed' | 'retry';
 
 // Classify a non-OK ComicVine HTTP response. 420 is ComicVine's own
 // "rate limit exceeded"; 429/5xx are transient too. Anything else (404, etc.)
@@ -129,16 +133,28 @@ async function enrichHero(
     const listRes = await fetch(
       `${COMICVINE_BASE}/characters/?${cvParams({
         filter: `name:${hero.name}`,
-        field_list: 'id',
-        limit: '1',
+        field_list: 'id,name,count_of_issue_appearances',
+        limit: '20',
       })}`,
     );
     if (!listRes.ok) return classifyHttp(listRes.status);
     const listBody = await listRes.json();
     // Rate limited (HTTP 200 + status_code 107) — transient, leave row pending.
     if (listBody?.status_code === 107) return 'retry';
-    const match = listBody.results?.[0];
-    if (!match?.id) return 'failed';
+    // ComicVine's name filter is an UNSORTED SUBSTRING match — "Bane" returns
+    // "Wolfsbane" as result #1. Taking results[0] blindly resolves heroes to the
+    // wrong character (corrupting data + colliding on the unique comicvine_id).
+    // Only accept an EXACT, case-insensitive name match, most-published first.
+    const wanted = hero.name.trim().toLowerCase();
+    const match = ((listBody.results ?? []) as Array<Record<string, unknown>>)
+      .filter((c) => typeof c.name === 'string' && (c.name as string).trim().toLowerCase() === wanted)
+      .sort(
+        (a, b) =>
+          ((b.count_of_issue_appearances as number) ?? 0) -
+          ((a.count_of_issue_appearances as number) ?? 0),
+      )[0];
+    // No ComicVine character with this exact name — terminal, but not an error.
+    if (!match?.id) return 'unmatched';
     cvId = String(match.id);
     const res = await fetch(
       `${COMICVINE_BASE}/character/4005-${cvId}/?${cvParams({ field_list: CHAR_FIELDS })}`,
@@ -295,7 +311,7 @@ async function enrichHero(
   const movies = [...enrichedMovies, ...restMovies];
 
   // ── Persist ─────────────────────────────────────────────────────────────────
-  await sb
+  const { error: persistError } = await sb
     .from('heroes')
     .update({
       ...(charImageUrl ? { image_url: charImageUrl } : {}),
@@ -319,6 +335,15 @@ async function enrichHero(
       comicvine_id: cvId ?? undefined,
     })
     .eq('id', hero.id);
+
+  // Never report success on a write that didn't happen. A 23505 unique-violation
+  // means the resolved comicvine_id already belongs to another hero — this row
+  // duplicates a character already in the catalogue. Park it as failed (terminal)
+  // so it leaves the backlog; other DB errors are transient → leave pending.
+  if (persistError) {
+    console.error('[enrich-comicvine-batch] persist failed', hero.id, persistError);
+    return (persistError as { code?: string }).code === '23505' ? 'failed' : 'retry';
+  }
 
   return 'done';
 }
@@ -359,6 +384,7 @@ serve(async (req: Request) => {
   }
 
   let done = 0;
+  let unmatched = 0;
   let failed = 0;
   let retry = 0;
   let cancelled = false;
@@ -389,8 +415,12 @@ serve(async (req: Request) => {
       }
       if (outcome === 'done') {
         done++;
+      } else if (outcome === 'unmatched') {
+        // Terminal, not an error: no ComicVine character by this exact name.
+        unmatched++;
+        await sb.from('heroes').update({ comicvine_status: 'unmatched' }).eq('id', hero.id);
       } else if (outcome === 'failed') {
-        // Terminal: ComicVine has no match. Park it so we stop retrying.
+        // Terminal error: stored id 404 or duplicate collision. Park it.
         failed++;
         await sb.from('heroes').update({ comicvine_status: 'failed' }).eq('id', hero.id);
       } else {
@@ -399,7 +429,7 @@ serve(async (req: Request) => {
       }
       // Push live progress every few heroes AND check for a stop request in the
       // same round trip (the admin console sets cancel_requested via RPC).
-      if (runId != null && (done + failed + retry) % 3 === 0) {
+      if (runId != null && (done + unmatched + failed + retry) % 3 === 0) {
         const { data: ctrl } = await sb
           .from('enrichment_runs')
           .update({ done, failed, retry })
@@ -438,7 +468,14 @@ serve(async (req: Request) => {
       .from('api_usage')
       .insert({ api: 'comicvine', endpoint: 'character', units: batch.length });
 
-    return json({ processed: batch.length, done, failed, retry, remaining: remaining ?? null });
+    return json({
+      processed: batch.length,
+      done,
+      unmatched,
+      failed,
+      retry,
+      remaining: remaining ?? null,
+    });
   } catch (err) {
     // Hard failure mid-run — mark the run errored so it never silently vanishes.
     if (runId != null) {
