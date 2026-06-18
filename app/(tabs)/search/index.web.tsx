@@ -364,7 +364,9 @@ export default function WebSearchScreen() {
           </Text>
           <CategoryPodGrid
             covers={browseCovers}
-            onPress={(slug) => router.push(`/category/${slug}` as Parameters<typeof router.push>[0])}
+            onPress={(slug) =>
+              router.push(`/category/${slug}` as Parameters<typeof router.push>[0])
+            }
             flush
           />
         </View>
