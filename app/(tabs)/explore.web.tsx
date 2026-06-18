@@ -7,49 +7,10 @@ import { useRouter } from 'expo-router';
 import { COLORS } from '../../src/constants/colors';
 import { HeroImage } from '../../src/components/HeroImage';
 import { WebHomeSkeleton } from '../../src/components/web/HomeSkeleton';
-import {
-  getHeroCount,
-  getXMen,
-  getAntiHeroes,
-  getVillains,
-  getIconicHeroes,
-  getSpotlightHeroes,
-  getNewlyAddedCV,
-  getHeroesByPublisher,
-  getHeroesByStatRanking,
-  getFranchiseIcons,
-  getHeroesByMediaTag,
-  getTrendingSpotlightHeroes,
-  getBrowseCovers,
-  type Hero,
-  type BrowseCover,
-  type CategorySlug,
-  getTopHeroByStat,
-  getPublisherCounts,
-  getFirstAppearanceCovers,
-  getEraTimeline,
-  getTopRivalries,
-  getMostFeared,
-  type PublisherCounts,
-  type FirstAppearanceCover,
-  type EraBucket,
-  type Rivalry,
-  type FearedVillain,
-} from '../../src/lib/db/heroes';
-import { getUserFavouriteHeroes } from '../../src/lib/db/favourites';
-import {
-  getTrendingTitles,
-  getActiveCampaigns,
-  getTrendingForUser,
-  type TrendingTitle,
-  type Campaign,
-  type TrendingTitleCharacter,
-} from '../../src/lib/db/trending';
+import { type Hero } from '../../src/lib/db/heroes';
 import { RightNowBand } from '../../src/components/web/home/RightNowBand';
 import { CategoryPodGrid } from '../../src/components/web/home/CategoryPodGrid';
-import { BROWSE_PODS } from '../../src/components/home/CategoryPodGrid';
-import { getRecentlyViewed } from '../../src/lib/db/viewHistory';
-import { useAuth } from '../../src/hooks/useAuth';
+import { useExploreData } from '../../src/hooks/useExploreData';
 import type { FavouriteHero } from '../../src/types';
 import { RankingCard } from '../../src/components/web/home/RankingCard';
 import { HomeFooter } from '../../src/components/web/home/HomeFooter';
@@ -59,7 +20,6 @@ import {
   TodaysMatchup as TodaysMatchupCard,
   TodaysMatchupSkeleton,
 } from '../../src/components/web/home/TodaysMatchup';
-import { getTodaysMatchup, type TodaysMatchup } from '../../src/lib/matchup';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { useChromeColor } from '../../src/contexts/WebChromeContext';
@@ -1171,172 +1131,12 @@ export default function WebHomeScreen() {
   // 1. MATCH THE ACCORDION_SCALES EXACTLY
   const optimalPoolSize = width >= 1280 ? 8 : width >= 900 ? 6 : 3;
 
-  const { user } = useAuth();
-
-  // Home data — partial so rows render as each query resolves
-  interface HomeData {
-    spotlight: Hero[];
-    iconic: Hero[];
-    xmen: Hero[];
-    villains: Hero[];
-    antiHeroes: Hero[];
-    marvel: Hero[];
-    dc: Hero[];
-    strongest: Hero[];
-    mostIntelligent: Hero[];
-    newlyAdded: Hero[];
-    franchiseIcons: Hero[];
-    anime: Hero[];
-    videoGames: Hero[];
-    horror: Hero[];
-    onScreen: TrendingTitle[];
-    comingSoon: TrendingTitle[];
-    streaming: TrendingTitle[];
-    campaigns: Campaign[];
-    trendingForUser: TrendingTitleCharacter[];
-    browseCovers: Record<string, BrowseCover>;
-    strongestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
-    smartestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
-    fastestHero: Pick<Hero, 'id' | 'name' | 'strength' | 'intelligence' | 'speed'> | null;
-    publisherCounts: PublisherCounts | null;
-    covers: FirstAppearanceCover[];
-    eras: EraBucket[];
-    matchup: TodaysMatchup | null;
-    rivalries: Rivalry[];
-    mostFeared: FearedVillain[];
-  }
-  const [homeData, setHomeData] = useState<Partial<HomeData>>({});
-  const [homeStarted, setHomeStarted] = useState(false); // true once spotlight arrives
-  const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
-  const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
-  const [totalHeroCount, setTotalHeroCount] = useState<number | null>(null);
-
-  // Fire every query independently — rows appear as each resolves.
-  // Spotlight fires first since it's above the fold.
-  useEffect(() => {
-    getHeroCount()
-      .then(setTotalHeroCount)
-      .catch(() => {});
-
-    const set =
-      <K extends keyof HomeData>(key: K) =>
-      (val: HomeData[K]) =>
-        setHomeData((d) => ({ ...d, [key]: val }));
-
-    // Lead the billboard with characters on screen right now, then the pool.
-    Promise.all([getSpotlightHeroes(10), getTrendingSpotlightHeroes(2)])
-      .then(([base, trend]) => {
-        const seen = new Set<string>();
-        const merged: Hero[] = [];
-        for (const h of [...trend, ...base]) {
-          if (!seen.has(h.id)) {
-            seen.add(h.id);
-            merged.push(h);
-          }
-        }
-        set('spotlight')(merged);
-        setHomeStarted(true);
-      })
-      .catch(() => setHomeStarted(true));
-
-    getActiveCampaigns()
-      .then(set('campaigns'))
-      .catch(() => {});
-
-    getIconicHeroes(25)
-      .then(set('iconic'))
-      .catch(() => {});
-    getXMen(25)
-      .then(set('xmen'))
-      .catch(() => {});
-    getAntiHeroes(20)
-      .then(set('antiHeroes'))
-      .catch(() => {});
-    getVillains(25)
-      .then(set('villains'))
-      .catch(() => {});
-    getHeroesByPublisher('marvel', 25)
-      .then(set('marvel'))
-      .catch(() => {});
-    getHeroesByPublisher('dc', 25)
-      .then(set('dc'))
-      .catch(() => {});
-    getHeroesByStatRanking('strength', 20)
-      .then(set('strongest'))
-      .catch(() => {});
-    getHeroesByStatRanking('intelligence', 20)
-      .then(set('mostIntelligent'))
-      .catch(() => {});
-    getNewlyAddedCV(25)
-      .then(set('newlyAdded'))
-      .catch(() => {});
-    getFranchiseIcons(25)
-      .then(set('franchiseIcons'))
-      .catch(() => {});
-    getHeroesByMediaTag('anime', 25)
-      .then(set('anime'))
-      .catch(() => {});
-    getHeroesByMediaTag('video-game', 25)
-      .then(set('videoGames'))
-      .catch(() => {});
-    getHeroesByMediaTag('horror-icon', 25)
-      .then(set('horror'))
-      .catch(() => {});
-    getTrendingTitles('on_screen', 6)
-      .then(set('onScreen'))
-      .catch(() => {});
-    getTrendingTitles('coming_soon', 6)
-      .then(set('comingSoon'))
-      .catch(() => {});
-    getTrendingTitles('streaming', 6)
-      .then(set('streaming'))
-      .catch(() => {});
-    getBrowseCovers(BROWSE_PODS.map((p) => p.slug as CategorySlug))
-      .then(set('browseCovers'))
-      .catch(() => {});
-    getFirstAppearanceCovers(14)
-      .then(set('covers'))
-      .catch(() => {});
-    getEraTimeline(8)
-      .then(set('eras'))
-      .catch(() => {});
-    getTopRivalries(12)
-      .then(set('rivalries'))
-      .catch(() => {});
-    getMostFeared(12)
-      .then(set('mostFeared'))
-      .catch(() => {});
-    getTodaysMatchup()
-      .then(set('matchup'))
-      .catch(() => set('matchup')(null));
-    getTopHeroByStat('strength')
-      .then(set('strongestHero'))
-      .catch(() => {});
-    getTopHeroByStat('intelligence')
-      .then(set('smartestHero'))
-      .catch(() => {});
-    getTopHeroByStat('speed')
-      .then(set('fastestHero'))
-      .catch(() => {});
-    getPublisherCounts()
-      .then(set('publisherCounts'))
-      .catch(() => {});
-  }, []);
-
-  // Personal rows
-  useEffect(() => {
-    if (!user?.id) return;
-    getRecentlyViewed(user.id)
-      .then(setRecentlyViewed)
-      .catch(() => {});
-    getUserFavouriteHeroes(user.id)
-      .then(setFavourites)
-      .catch(() => {});
-    getTrendingForUser(user.id)
-      .then((v) => setHomeData((d) => ({ ...d, trendingForUser: v })))
-      .catch(() => {});
-  }, [user?.id]);
-
+  // Shared, platform-neutral data layer (see useExploreData). Web keeps reading
+  // rows via `homeData.*`; these aliases preserve the existing render references.
+  const homeData = useExploreData();
+  const { recentlyViewed, favourites } = homeData;
+  const homeStarted = homeData.started;
+  const totalHeroCount = homeData.heroCount;
   const handlePress = useCallback(
     (id: string) => {
       router.push(`/character/${id}`);
