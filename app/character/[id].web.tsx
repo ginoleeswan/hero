@@ -20,6 +20,10 @@ import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/fa
 import { getPowerIcon, groupPowers } from '../../src/constants/powerIcons';
 import { useAuth } from '../../src/hooks/useAuth';
 import { HelpCompleteCard } from '../../src/components/contribute/HelpCompleteCard';
+import { ContributeSheet } from '../../src/components/contribute/ContributeSheet';
+import { isBlankValue } from '../../src/lib/contribute/missingFields';
+import { EDITABLE_FIELDS, type EditableFieldDef } from '../../src/lib/db/contributions';
+import { getProfile } from '../../src/lib/db/profiles';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
@@ -92,10 +96,22 @@ function MobileDossier({
   stats,
   teams,
   eraSummary,
+  canEdit = false,
+  editing = false,
+  onToggleEdit,
+  editValues,
+  onEditField,
 }: {
   stats: HeroStats;
   teams?: string[] | null;
   eraSummary?: string | null;
+  /** Show the edit pen on the header (the contribution entry point). */
+  canEdit?: boolean;
+  editing?: boolean;
+  onToggleEdit?: () => void;
+  /** Editable field → current value, supplied by the screen (has both stats + details). */
+  editValues?: Record<string, string | null | undefined>;
+  onEditField?: (field: EditableFieldDef | null, current: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const { biography: bio, appearance: app, work, connections } = stats;
@@ -121,8 +137,16 @@ function MobileDossier({
     valid(app['hair-color']);
   const hasConnections = valid(work.occupation) || valid(work.base) || valid(affiliation);
   const hasEra = !!eraSummary;
+  const hasAny = hasProfile || hasAppearance || hasConnections || hasEra;
 
-  if (!hasProfile && !hasAppearance && !hasConnections && !hasEra) return null;
+  // Readers of an empty dossier see nothing (pristine); but if the viewer can
+  // contribute, the bar + pen still appear so the page can be completed.
+  if (!hasAny && !canEdit) return null;
+
+  const enterEdit = () => {
+    setOpen(true);
+    onToggleEdit?.();
+  };
 
   return (
     <View>
@@ -135,15 +159,72 @@ function MobileDossier({
         <View style={styles.dossierBarText}>
           <Text style={styles.dossierTitle}>Dossier</Text>
           {!open ? (
-            <Text style={styles.dossierHint}>Appearance, affiliations, relatives &amp; more</Text>
+            <Text style={styles.dossierHint}>
+              {hasAny ? 'Appearance, affiliations, relatives & more' : 'Help complete this page'}
+            </Text>
           ) : null}
         </View>
         <View style={styles.dossierToggle}>
-          <Text style={styles.dossierToggleText}>{open ? 'Hide' : 'View'}</Text>
-          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={15} color={COLORS.navy} />
+          {canEdit ? (
+            <Pressable
+              onPress={enterEdit}
+              hitSlop={8}
+              style={s2.penBtn as object}
+              accessibilityLabel="Edit dossier"
+            >
+              <Ionicons
+                name="create-outline"
+                size={16}
+                color={editing ? COLORS.orange : COLORS.navy}
+              />
+            </Pressable>
+          ) : null}
+          {hasAny ? (
+            <>
+              <Text style={styles.dossierToggleText}>{open ? 'Hide' : 'View'}</Text>
+              <Ionicons
+                name={open ? 'chevron-up' : 'chevron-down'}
+                size={15}
+                color={COLORS.navy}
+              />
+            </>
+          ) : null}
         </View>
       </Pressable>
-      {open ? (
+      {open && editing ? (
+        <View style={styles.dossierBody}>
+          <Text style={styles.dossierGroupLabel}>Edit details</Text>
+          {EDITABLE_FIELDS.map((f) => {
+            const v = editValues?.[f.field];
+            const filled = !isBlankValue(v);
+            return (
+              <Pressable
+                key={f.field}
+                onPress={() => onEditField?.(f, filled ? (v ?? null) : null)}
+                style={s2.editRow as object}
+              >
+                <Text style={s2.editRowLabel}>{f.label}</Text>
+                <View style={s2.editRowRight as object}>
+                  <Text
+                    style={(filled ? s2.editRowValue : s2.editRowAdd) as object}
+                    numberOfLines={1}
+                  >
+                    {filled ? v : 'Add'}
+                  </Text>
+                  <Ionicons name={filled ? 'pencil' : 'add'} size={14} color={COLORS.orange} />
+                </View>
+              </Pressable>
+            );
+          })}
+          <Pressable onPress={() => onEditField?.(null, null)} style={s2.editRow as object}>
+            <Text style={s2.editRowLabel}>Did You Know fact</Text>
+            <View style={s2.editRowRight as object}>
+              <Text style={s2.editRowAdd as object}>Add</Text>
+              <Ionicons name="bulb-outline" size={14} color={COLORS.orange} />
+            </View>
+          </Pressable>
+        </View>
+      ) : open ? (
         <View style={styles.dossierBody}>
           {hasEra ? (
             <>
@@ -203,6 +284,37 @@ function MobileDossier({
     </View>
   );
 }
+
+// Edit-mode affordances for the dossier (pen on the header, editable field rows).
+const s2 = StyleSheet.create({
+  penBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(41,60,67,0.06)',
+    cursor: 'pointer',
+  } as object,
+  editRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 9,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(41,60,67,0.1)',
+    cursor: 'pointer',
+  } as object,
+  editRowLabel: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
+  editRowRight: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1, maxWidth: '60%' } as object,
+  editRowValue: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: 'rgba(41,60,67,0.7)' } as object,
+  editRowAdd: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.orange,
+  } as object,
+});
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -306,6 +418,12 @@ export default function WebCharacterScreen() {
 
   const skeletonOpacity = useSkeletonAnim();
   const [data, setData] = useState<CharacterData | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editTarget, setEditTarget] = useState<{
+    field: EditableFieldDef | null;
+    current: string | null;
+  } | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [comicVineLoading, setComicVineLoading] = useState(true);
   const [statsGenerating, setStatsGenerating] = useState(false);
@@ -329,6 +447,20 @@ export default function WebCharacterScreen() {
   const [titles, setTitles] = useState<HeroTitle[] | null>(null);
   const [portrayals, setPortrayals] = useState<HeroPortrayals | null>(null);
   const [links, setLinks] = useState<HeroLinks | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+    let active = true;
+    getProfile(user.id)
+      .then((p) => active && setIsAdmin(!!p?.is_admin))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   useEffect(() => {
     setFamily([]);
@@ -650,28 +782,33 @@ export default function WebCharacterScreen() {
 
   const { stats, details } = data;
 
-  // Contributor entry point — defined once, placed in both the desktop and
-  // mobile-web content trees below. Flush (no side margin) to sit in the column.
+  // Editable-field → current value, shared by the mobile dossier editor and the
+  // desktop contribute card (the screen has both stats + details).
+  const editValues: Record<string, string | null | undefined> = {
+    origin: details.origin,
+    occupation: stats.work.occupation,
+    base: stats.work.base,
+    place_of_birth: stats.biography['place-of-birth'],
+    first_appearance: stats.biography['first-appearance'],
+    full_name: stats.biography['full-name'],
+  };
+
+  // Re-derive from the freshly-edited DB row so the page reflects the change.
+  const reloadHero = () => {
+    getHeroById(stats.id)
+      .then((hero) => hero && setData(heroRowToCharacterData(hero)))
+      .catch(() => {});
+  };
+
+  // Desktop keeps the card for now; mobile uses the in-place dossier editor.
   const contributeCard = (
     <HelpCompleteCard
       heroId={stats.id}
       heroName={stats.name}
-      values={{
-        origin: details.origin,
-        occupation: stats.work.occupation,
-        base: stats.work.base,
-        place_of_birth: stats.biography['place-of-birth'],
-        first_appearance: stats.biography['first-appearance'],
-        full_name: stats.biography['full-name'],
-      }}
+      values={editValues}
       user={user}
       onRequestSignIn={() => router.push('/(auth)/login')}
-      onEdited={() => {
-        // Re-derive from the freshly-edited DB row so the page reflects the change.
-        getHeroById(stats.id)
-          .then((hero) => hero && setData(heroRowToCharacterData(hero)))
-          .catch(() => {});
-      }}
+      onEdited={reloadHero}
       style={{ marginHorizontal: 0 }}
     />
   );
@@ -1731,8 +1868,6 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : null}
 
-                <View style={{ paddingHorizontal: 20 }}>{contributeCard}</View>
-
                 {/* Family tree */}
                 {family.length > 0 ? (
                   <View style={styles.mFamilyBlock}>
@@ -1917,12 +2052,34 @@ export default function WebCharacterScreen() {
                     stats={stats}
                     teams={details.teams}
                     eraSummary={narrative?.eraSummary}
+                    canEdit
+                    editing={editing}
+                    onToggleEdit={() => setEditing((e) => !e)}
+                    editValues={editValues}
+                    onEditField={(field, current) => setEditTarget({ field, current })}
                   />
                 </View>
               </View>
             </View>
           )}
         </View>
+
+        <ContributeSheet
+          visible={editTarget !== null}
+          onClose={() => setEditTarget(null)}
+          heroId={stats.id}
+          heroName={stats.name}
+          field={editTarget?.field ?? null}
+          currentValue={editTarget?.current ?? null}
+          user={user}
+          isAdmin={isAdmin}
+          priorCount={0}
+          onRequestSignIn={() => router.push('/(auth)/login')}
+          onSubmitted={() => {
+            if (isAdmin) reloadHero();
+          }}
+        />
+        {/* end mobile */}
       </View>
       {showIssueModal && data?.firstIssue ? (
         <FirstIssueModal firstIssue={data.firstIssue} onClose={() => setShowIssueModal(false)} />
