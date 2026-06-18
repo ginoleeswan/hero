@@ -30,7 +30,11 @@ function Fighter({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Vote for ${hero.name}`}
-      style={[styles.portraitWrap, picked && styles.portraitPicked, dimmed && styles.portraitDimmed]}
+      style={[
+        styles.portraitWrap,
+        picked && styles.portraitPicked,
+        dimmed && styles.portraitDimmed,
+      ]}
     >
       <HeroImage
         id={hero.id}

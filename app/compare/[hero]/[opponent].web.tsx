@@ -389,12 +389,7 @@ export default function WebCompareScreen() {
                 <>
                   <VerdictReveal verdict={verdict} tone="dark" />
                   <View style={styles.scorecardCommunity}>
-                    <CommunityVotes
-                      tally={tally}
-                      pickedId={pickedId}
-                      heroAId={hero}
-                      tone="light"
-                    />
+                    <CommunityVotes tally={tally} pickedId={pickedId} heroAId={hero} tone="light" />
                   </View>
                   <View style={styles.scorecardStats}>
                     {result.stats.map((stat, i) => (
