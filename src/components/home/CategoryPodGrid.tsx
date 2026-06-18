@@ -22,9 +22,12 @@ export interface CategoryPod {
 }
 
 // A deliberate, finite set — the publisher/archetype/media/ranking browse axes.
+// Kept to an even count so a two-column grid (mobile native + web) never strands
+// a lone tile on the last row; 12 also divides cleanly into 3- and 4-up desktop.
 export const BROWSE_PODS: CategoryPod[] = [
   { slug: 'marvel', label: 'Marvel', kind: 'Publisher' },
   { slug: 'dc', label: 'DC', kind: 'Publisher' },
+  { slug: 'image', label: 'Image', kind: 'Publisher' },
   { slug: 'villain', label: 'Villains', kind: 'Archetype' },
   { slug: 'xmen', label: 'X-Men', kind: 'Team' },
   { slug: 'anti-heroes', label: 'Anti-Heroes', kind: 'Archetype' },

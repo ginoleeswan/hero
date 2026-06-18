@@ -47,7 +47,6 @@ import { GreatestRivalries } from '../../src/components/home/GreatestRivalries';
 import { HallOfInfamy } from '../../src/components/home/HallOfInfamy';
 import { EraTimeline } from '../../src/components/home/EraTimeline';
 import { CoverGallery } from '../../src/components/home/CoverGallery';
-import { CategoryPodGrid } from '../../src/components/home/CategoryPodGrid';
 import { PublisherGrid } from '../../src/components/home/PublisherGrid';
 import { PulseTicker } from '../../src/components/home/PulseTicker';
 import { useExploreData } from '../../src/hooks/useExploreData';
@@ -77,7 +76,6 @@ type FeedRow =
   | { type: 'matchup'; matchup: Matchup }
   | { type: 'ticker'; heroCount: number; newlyAddedCount: number }
   | { type: 'recent'; heroes: RowHero[] }
-  | { type: 'browsegrid' }
   | { type: 'favourites'; heroes: RowHero[] }
   | {
       type: 'rightnow';
@@ -110,7 +108,6 @@ export default function HomeScreen() {
     started: initialLoaded,
     spotlight: spotlightAll,
     iconic,
-    browseCovers,
     onScreen,
     comingSoon,
     streaming,
@@ -231,7 +228,6 @@ export default function HomeScreen() {
         heroes: iconic,
         route: '/category/most-iconic',
       });
-    out.push({ type: 'browsegrid' });
 
     // Curated catalogue rows, declared in catalogue order. Style comes from the
     // row's `key` (see rowStyle): the dark-toned villain/horror/anti rows render
@@ -415,8 +411,6 @@ export default function HomeScreen() {
               <Text style={styles.browseTitle}>{item.title}</Text>
             </View>
           );
-        case 'browsegrid':
-          return <CategoryPodGrid covers={browseCovers} onPress={handleCategoryPress} />;
         case 'favourites':
           return (
             <HomeHeroRow
@@ -465,7 +459,6 @@ export default function HomeScreen() {
       handleTitlePress,
       navigating,
       router,
-      browseCovers,
     ],
   );
 

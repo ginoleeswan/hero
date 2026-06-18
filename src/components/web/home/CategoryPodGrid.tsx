@@ -12,13 +12,17 @@ import type { BrowseCover } from '../../../lib/db/heroes';
 export function CategoryPodGrid({
   covers,
   onPress,
+  flush = false,
 }: {
   covers?: Record<string, BrowseCover>;
   onPress: (slug: string) => void;
+  /** Drop the component's own horizontal gutter when the parent already supplies
+   *  one (e.g. the Search idle column, which is padded + max-width centred). */
+  flush?: boolean;
 }) {
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
-  const pagePad = isMobile ? 16 : 32;
+  const pagePad = flush ? 0 : isMobile ? 16 : 32;
   // Mobile: a lower column-min gives two columns on a phone (instead of one
   // full-width letterbox banner per tile), so tiles stay near-square and the
   // character's face frames instead of being cropped to the scalp.

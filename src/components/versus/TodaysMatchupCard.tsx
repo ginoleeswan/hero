@@ -13,13 +13,16 @@ export function TodaysMatchupCard({
   matchup: TodaysMatchup;
   onOpen: (a: FighterArt, b: FighterArt) => void;
 }) {
-  const { heroA, heroB, verdict } = matchup;
+  // The card poses the question — it never shows the verdict. The answer (vote →
+  // crowd split → tale of the tape) lives in the arena, so we don't spoil the
+  // result before the user has taken a side.
+  const { heroA, heroB } = matchup;
 
   return (
     <Pressable
       onPress={() => onOpen(heroA, heroB)}
       accessibilityRole="button"
-      accessibilityLabel={`Open today's matchup: ${heroA.name} versus ${heroB.name}`}
+      accessibilityLabel={`Settle today's matchup: ${heroA.name} versus ${heroB.name}`}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
       <View style={styles.portraits}>
@@ -60,11 +63,10 @@ export function TodaysMatchupCard({
         </View>
       </View>
 
-      {verdict ? (
-        <Text style={styles.verdict} numberOfLines={3}>
-          "{verdict}"
-        </Text>
-      ) : null}
+      <View style={styles.prompt}>
+        <Text style={styles.promptQ}>Who would win?</Text>
+        <Text style={styles.promptCta}>Tap to settle it →</Text>
+      </View>
     </Pressable>
   );
 }
@@ -106,13 +108,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 2,
   },
-  verdict: {
-    fontFamily: 'Nunito_400Regular',
-    fontStyle: 'italic',
-    fontSize: 13,
-    lineHeight: 19,
-    color: 'rgba(245,235,220,0.82)',
+  prompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
+  },
+  promptQ: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 18,
+    color: COLORS.beige,
+  },
+  promptCta: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12.5,
+    letterSpacing: 0.3,
+    color: COLORS.orange,
   },
 });
