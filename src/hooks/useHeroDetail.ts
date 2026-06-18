@@ -1,17 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import {
-  fetchHeroStats,
-  fetchHeroDetails,
-  fetchHeroGallery,
-  HeroNotFoundError,
-} from '../lib/api';
-import {
-  heroRowToCharacterData,
-  getHeroFamily,
-  type RelatedHeroCard,
-} from '../lib/db/heroes';
+import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery, HeroNotFoundError } from '../lib/api';
+import { heroRowToCharacterData, getHeroFamily, type RelatedHeroCard } from '../lib/db/heroes';
 import type { FamilyMember } from '../lib/family/types';
 import { useHeroRow, useHeroPercentile, useRelatedHeroes } from '../lib/query/heroQueries';
 import { planHeroLoad } from '../lib/query/heroLoadPlan';

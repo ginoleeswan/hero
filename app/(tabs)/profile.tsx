@@ -25,25 +25,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
+import { useProfileData } from '../../src/hooks/useProfileData';
 import { ChangePasswordModal } from '../../src/components/ui/ChangePasswordModal';
 import { EditDisplayNameModal } from '../../src/components/ui/EditDisplayNameModal';
-import {
-  getUserFavouriteHeroes,
-  removeFavourite,
-  type FavouriteHero,
-} from '../../src/lib/db/favourites';
-import { getBattleRecord, type BattleRecord } from '../../src/lib/db/matchupVotes';
-import {
-  getMyContributions,
-  describeContribution,
-  type MyContribution,
-} from '../../src/lib/db/contributions';
-import {
-  getTasteProfile,
-  dominantAlignment,
-  shortPublisher,
-  type TasteProfile,
-} from '../../src/lib/db/taste';
+import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
+import { describeContribution, type MyContribution } from '../../src/lib/db/contributions';
+import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
 import { computeBadges, earnedCount } from '../../src/lib/profile/badges';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
@@ -281,11 +268,8 @@ export default function ProfileScreen() {
     removeCover,
     updateDisplayName,
   } = useProfile(user?.id);
-  const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
-  const [battle, setBattle] = useState<BattleRecord | null>(null);
-  const [contributions, setContributions] = useState<MyContribution[]>([]);
-  const [taste, setTaste] = useState<TasteProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { favourites, setFavourites, battle, contributions, taste, loading, refetch } =
+    useProfileData(user?.id);
   const [refreshing, setRefreshing] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -293,36 +277,16 @@ export default function ProfileScreen() {
   const [showEditName, setShowEditName] = useState(false);
   const { toast, showToast } = useToast();
 
-  const fetchFavourites = useCallback(() => {
-    if (!user) return;
-    getBattleRecord()
-      .then(setBattle)
-      .catch(() => {});
-    getTasteProfile()
-      .then(setTaste)
-      .catch(() => {});
-    getMyContributions()
-      .then(setContributions)
-      .catch(() => {});
-    getUserFavouriteHeroes(user.id)
-      .then(setFavourites)
-      .catch(() => setFavourites([]))
-      .finally(() => {
-        setLoading(false);
-        setRefreshing(false);
-      });
-  }, [user]);
-
   useFocusEffect(
     useCallback(() => {
-      fetchFavourites();
-    }, [fetchFavourites]),
+      refetch();
+    }, [refetch]),
   );
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchFavourites();
-  }, [fetchFavourites]);
+    refetch().finally(() => setRefreshing(false));
+  }, [refetch]);
 
   if (!user) return <GuestProfileScreen />;
 
