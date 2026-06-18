@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -16,24 +16,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
+import { useProfileData } from '../../src/hooks/useProfileData';
 import { ChangePasswordModal } from '../../src/components/ui/ChangePasswordModal';
+import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
 import {
-  getUserFavouriteHeroes,
-  removeFavourite,
-  type FavouriteHero,
-} from '../../src/lib/db/favourites';
-import { getBattleRecord, type BattleRecord } from '../../src/lib/db/matchupVotes';
-import {
-  getMyContributions,
   describeContribution,
   type MyContribution,
 } from '../../src/lib/db/contributions';
-import {
-  getTasteProfile,
-  dominantAlignment,
-  shortPublisher,
-  type TasteProfile,
-} from '../../src/lib/db/taste';
+import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
 import { computeBadges, earnedCount } from '../../src/lib/profile/badges';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
@@ -304,45 +294,25 @@ export default function WebProfileScreen() {
     removeCover,
     updateDisplayName,
   } = useProfile(user?.id);
-  const [favourites, setFavourites] = useState<FavouriteHero[]>([]);
-  const [battle, setBattle] = useState<BattleRecord | null>(null);
-  const [taste, setTaste] = useState<TasteProfile | null>(null);
-  const [contributions, setContributions] = useState<MyContribution[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { favourites, setFavourites, battle, contributions, taste, loading, refetch } =
+    useProfileData(user?.id);
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showEditName, setShowEditName] = useState(false);
   const { toast, showToast } = useToast();
 
-  const fetchFavourites = useCallback(() => {
-    if (!user) return;
-    getBattleRecord()
-      .then(setBattle)
-      .catch(() => {});
-    getTasteProfile()
-      .then(setTaste)
-      .catch(() => {});
-    getMyContributions()
-      .then(setContributions)
-      .catch(() => {});
-    getUserFavouriteHeroes(user.id)
-      .then(setFavourites)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [user]);
-
   useEffect(() => {
-    fetchFavourites();
-  }, [fetchFavourites]);
+    refetch();
+  }, [refetch]);
 
   useEffect(() => {
     const handler = () => {
-      if (!document.hidden) fetchFavourites();
+      if (!document.hidden) refetch();
     };
     document.addEventListener('visibilitychange', handler);
     return () => document.removeEventListener('visibilitychange', handler);
-  }, [fetchFavourites]);
+  }, [refetch]);
 
   if (!user) return <GuestWebProfileScreen />;
 
