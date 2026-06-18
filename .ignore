@@ -1,0 +1,11 @@
+# ripgrep / agent-search ignore (does NOT affect git — these files stay tracked).
+# Keeps high-volume, low-signal files out of Grep/Glob results so coding agents
+# (and `rg`) don't burn time/tokens scanning them. Add to .gitignore separately
+# if you also want git to ignore something.
+
+# ~43k lines of historical planning/spec docs — useful as history, pure noise in
+# code searches. Read them explicitly by path when you actually need one.
+docs/superpowers/
+
+# Lockfile: 14k lines, never a meaningful search hit.
+yarn.lock

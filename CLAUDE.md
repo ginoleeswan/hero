@@ -128,3 +128,40 @@ Tests live in `__tests__/` mirroring the source tree. Run with `yarn test:ci`.
 - `StyleSheet.create` for all styles — no inline style objects except `StyleSheet.absoluteFill`.
 - Font families: `Flame-Bold` for headings, `FlameSans-Regular` for body, `Nunito_*` for UI text.
 - Background colour: `#f5ebdc` (`COLORS.beige`) — the app's base canvas.
+
+## Platform-specific files (`.web.tsx` / `.tsx`)
+
+Several screens have a native (`foo.tsx`) and web (`foo.web.tsx`) version; Metro
+picks by platform extension. Keep these as **thin view layers**: shared data
+fetching, state, and derived values belong in a platform-neutral hook in
+`src/hooks/` (no `.web`/`.native` suffix, so both views import the same one).
+Do **not** duplicate `useEffect`/fetch logic across the pair — change it once in
+the hook. When adding a screen with a web variant, both `foo.tsx` and
+`foo.web.tsx` must exist or expo-router throws a resolution error.
+
+## Working efficiently in this repo (for agents)
+
+- **Find the hook first.** Screen logic lives in `src/hooks/` and
+  `src/lib/query/`. Read the hook, not the giant view file, to understand data
+  flow.
+- **Don't read these unless required:** `src/types/database.generated.ts`
+  (1.5k auto-generated lines — use `src/types/index.ts` for app types instead),
+  and the `.web.tsx` view files (large JSX). They're excluded from search via
+  `.ignore` where appropriate.
+- **Scope searches** to `src/` and `app/`. `docs/superpowers/**` and `yarn.lock`
+  are excluded from `rg`/Grep via the repo's `.ignore` file — read them by
+  explicit path only when needed.
+
+## Map: where things live
+
+| Concern | Path |
+| --- | --- |
+| Screens / routes | `app/` (expo-router file-based) |
+| Reusable hooks | `src/hooks/` |
+| React-Query data hooks + cache | `src/lib/query/` |
+| DB access (per-table modules) | `src/lib/db/` |
+| External REST APIs | `src/lib/api.ts` |
+| UI components | `src/components/` (admin → `admin/`, web-only → `web/`) |
+| Types | `src/types/index.ts` (app) · `database.generated.ts` (generated) |
+| Palette / constants | `src/constants/` |
+| SQL migrations | `supabase/migrations/` |
