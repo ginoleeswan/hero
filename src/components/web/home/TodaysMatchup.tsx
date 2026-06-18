@@ -61,7 +61,9 @@ function Fighter({
         imageUrl={hero.image_url}
         portraitUrl={hero.portrait_url}
         contentFit="cover"
-        contentPosition="top"
+        // Anchor below the top so the face is framed, not the very top of the
+        // head/headroom.
+        contentPosition={{ top: '26%', left: '50%' }}
         style={[StyleSheet.absoluteFill, side === 'b' && (m.faceInward as object)]}
         recyclingKey={hero.id}
       />
