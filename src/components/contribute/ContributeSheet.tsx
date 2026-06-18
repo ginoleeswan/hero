@@ -55,24 +55,45 @@ export function ContributeSheet({
 
   useEffect(() => {
     if (visible) {
-      setValue('');
+      // Lists and stats are edited in place (retyping a whole list is hostile),
+      // so seed the input with the current value. Free text starts blank — the
+      // "Current" reference is shown separately for admins.
+      const seed =
+        (field?.type === 'list' || field?.type === 'stat') && currentValue ? currentValue : '';
+      setValue(seed);
       setError(null);
       setDone(false);
       setSubmitting(false);
     }
-  }, [visible, field]);
+  }, [visible, field, currentValue]);
 
   const isFact = !field;
+  const isStat = field?.type === 'stat';
+  const isList = field?.type === 'list';
   const prompt = isFact ? 'Know a fun fact about this hero?' : field!.question;
   const guideline = isFact
     ? 'Share a "Did You Know" — one or two sentences.'
     : (field!.guideline ?? '');
   const multiline = isFact || !!field?.multiline;
+  const placeholder = isFact
+    ? 'Did you know…'
+    : isStat
+      ? '0–100'
+      : isList
+        ? 'One per line'
+        : 'Type your answer';
 
   const submit = async () => {
     if (!value.trim()) {
       setError('Add something first.');
       return;
+    }
+    if (isStat) {
+      const n = Number(value.trim());
+      if (!/^\d{1,3}$/.test(value.trim()) || !Number.isInteger(n) || n < 0 || n > 100) {
+        setError('Enter a whole number from 0 to 100.');
+        return;
+      }
     }
     setSubmitting(true);
     setError(null);
@@ -140,9 +161,11 @@ export function ContributeSheet({
               <TextInput
                 value={value}
                 onChangeText={setValue}
-                placeholder={isFact ? 'Did you know…' : 'Type your answer'}
+                placeholder={placeholder}
                 placeholderTextColor={COLORS.grey}
                 multiline={multiline}
+                keyboardType={isStat ? 'number-pad' : 'default'}
+                maxLength={isStat ? 3 : undefined}
                 style={[s.input, multiline && s.inputMultiline]}
                 autoFocus
                 onSubmitEditing={multiline ? undefined : submit}

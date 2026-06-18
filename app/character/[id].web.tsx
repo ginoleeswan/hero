@@ -1,4 +1,11 @@
-import { useEffect, useState, useCallback, useMemo, type ComponentProps } from 'react';
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  Fragment,
+  type ComponentProps,
+} from 'react';
 import { View, Text, Pressable, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -21,7 +28,13 @@ import { getPowerIcon, groupPowers } from '../../src/constants/powerIcons';
 import { useAuth } from '../../src/hooks/useAuth';
 import { ContributeSheet } from '../../src/components/contribute/ContributeSheet';
 import { isBlankValue } from '../../src/lib/contribute/missingFields';
-import { EDITABLE_FIELDS, type EditableFieldDef } from '../../src/lib/db/contributions';
+import {
+  DOSSIER_GROUPS,
+  SUMMARY_FIELD,
+  POWERS_FIELD,
+  STAT_FIELDS,
+  type EditableFieldDef,
+} from '../../src/lib/db/contributions';
 import { getProfile } from '../../src/lib/db/profiles';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
@@ -188,29 +201,40 @@ function MobileDossier({
       </Pressable>
       {open && editing ? (
         <View style={styles.dossierBody}>
-          <Text style={styles.dossierGroupLabel}>Edit details</Text>
-          {EDITABLE_FIELDS.map((f) => {
-            const v = editValues?.[f.field];
-            const filled = !isBlankValue(v);
-            return (
-              <Pressable
-                key={f.field}
-                onPress={() => onEditField?.(f, filled ? (v ?? null) : null)}
-                style={s2.editRow as object}
+          {DOSSIER_GROUPS.map((group, gi) => (
+            <Fragment key={group.key}>
+              <Text
+                style={[styles.dossierGroupLabel, gi > 0 && (styles.dossierGroupSpacing as object)]}
               >
-                <Text style={s2.editRowLabel}>{f.label}</Text>
-                <View style={s2.editRowRight as object}>
-                  <Text
-                    style={(filled ? s2.editRowValue : s2.editRowAdd) as object}
-                    numberOfLines={1}
+                {group.label}
+              </Text>
+              {group.fields.map((f) => {
+                const v = editValues?.[f.field];
+                const filled = !isBlankValue(v);
+                return (
+                  <Pressable
+                    key={f.field}
+                    onPress={() => onEditField?.(f, filled ? (v ?? null) : null)}
+                    style={s2.editRow as object}
                   >
-                    {filled ? v : 'Add'}
-                  </Text>
-                  <Ionicons name={filled ? 'pencil' : 'add'} size={14} color={COLORS.orange} />
-                </View>
-              </Pressable>
-            );
-          })}
+                    <Text style={s2.editRowLabel}>{f.label}</Text>
+                    <View style={s2.editRowRight as object}>
+                      <Text
+                        style={(filled ? s2.editRowValue : s2.editRowAdd) as object}
+                        numberOfLines={1}
+                      >
+                        {filled ? v : 'Add'}
+                      </Text>
+                      <Ionicons name={filled ? 'pencil' : 'add'} size={14} color={COLORS.orange} />
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </Fragment>
+          ))}
+          <Text style={[styles.dossierGroupLabel, styles.dossierGroupSpacing as object]}>
+            Trivia
+          </Text>
           <Pressable onPress={() => onEditField?.(null, null)} style={s2.editRow as object}>
             <Text style={s2.editRowLabel}>Did You Know fact</Text>
             <View style={s2.editRowRight as object}>
@@ -301,6 +325,15 @@ const s2 = StyleSheet.create({
     borderBottomColor: 'rgba(41,60,67,0.1)',
     cursor: 'pointer',
   } as object,
+  editGroupLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: COLORS.orange,
+    marginTop: 14,
+    marginBottom: 2,
+  } as object,
   editRowLabel: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
   editRowRight: {
     flexDirection: 'row',
@@ -319,7 +352,42 @@ const s2 = StyleSheet.create({
     fontSize: 13,
     color: COLORS.orange,
   } as object,
+  summaryHead: { alignItems: 'flex-end', marginBottom: 4 } as object,
+  summaryEmpty: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14,
+    fontStyle: 'italic',
+    color: COLORS.grey,
+    cursor: 'pointer',
+  } as object,
 });
+
+// Admin-only editable power-stat list — swaps in for the dial/bar view when an
+// admin taps the stats pen. Shared by the desktop and mobile-web layouts.
+function StatEditList({
+  stats,
+  onPick,
+}: {
+  stats: HeroStats;
+  onPick: (field: EditableFieldDef, current: string) => void;
+}) {
+  return (
+    <View>
+      {STAT_FIELDS.map((f) => {
+        const cur = (stats.powerstats as Record<string, string>)[f.field] ?? '0';
+        return (
+          <Pressable key={f.field} onPress={() => onPick(f, cur)} style={s2.editRow as object}>
+            <Text style={s2.editRowLabel}>{f.label}</Text>
+            <View style={s2.editRowRight as object}>
+              <Text style={s2.editRowValue as object}>{cur}</Text>
+              <Ionicons name="pencil" size={14} color={COLORS.orange} />
+            </View>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -429,6 +497,7 @@ export default function WebCharacterScreen() {
     current: string | null;
   } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [editingStats, setEditingStats] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [comicVineLoading, setComicVineLoading] = useState(true);
   const [statsGenerating, setStatsGenerating] = useState(false);
@@ -790,12 +859,26 @@ export default function WebCharacterScreen() {
   // Editable-field → current value, shared by the mobile dossier editor and the
   // desktop contribute card (the screen has both stats + details).
   const editValues: Record<string, string | null | undefined> = {
-    origin: details.origin,
-    occupation: stats.work.occupation,
-    base: stats.work.base,
+    // Profile
+    full_name: stats.biography['full-name'],
+    alter_egos: stats.biography['alter-egos'],
+    aliases: (stats.biography.aliases ?? [])
+      .filter((a) => a && !JUNK_VALUES.has(a.toLowerCase().trim()))
+      .join('\n'),
     place_of_birth: stats.biography['place-of-birth'],
     first_appearance: stats.biography['first-appearance'],
-    full_name: stats.biography['full-name'],
+    origin: details.origin,
+    // Appearance
+    gender: stats.appearance.gender,
+    race: stats.appearance.race,
+    height_imperial: stats.appearance.height?.[0],
+    weight_imperial: stats.appearance.weight?.[0],
+    eye_color: stats.appearance['eye-color'],
+    hair_color: stats.appearance['hair-color'],
+    // Connections
+    occupation: stats.work.occupation,
+    base: stats.work.base,
+    group_affiliation: stats.connections['group-affiliation'],
   };
 
   // Re-derive from the freshly-edited DB row so the page reflects the change.
@@ -1035,6 +1118,20 @@ export default function WebCharacterScreen() {
                         ) : null}
                       </View>
                       <View style={styles.statHeaderRight}>
+                        {isAdmin ? (
+                          <Pressable
+                            onPress={() => setEditingStats((s) => !s)}
+                            hitSlop={8}
+                            style={s2.penBtn as object}
+                            accessibilityLabel="Edit power stats"
+                          >
+                            <Ionicons
+                              name="create-outline"
+                              size={16}
+                              color={editingStats ? COLORS.orange : COLORS.navy}
+                            />
+                          </Pressable>
+                        ) : null}
                         {powerScore !== null || statsGenerating ? (
                           <Pressable
                             onPress={() =>
@@ -1070,6 +1167,12 @@ export default function WebCharacterScreen() {
                       </View>
                     </View>
                     <View style={styles.cardDivider} />
+                    {isAdmin && editingStats ? (
+                      <StatEditList
+                        stats={stats}
+                        onPick={(field, current) => setEditTarget({ field, current })}
+                      />
+                    ) : (
                     <View style={styles.statBand}>
                       {STAT_CONFIG.map(({ key, label, color }) => {
                         if (statsGenerating) {
@@ -1122,6 +1225,7 @@ export default function WebCharacterScreen() {
                         );
                       })}
                     </View>
+                    )}
                     {percentile != null && percentile > 0 ? (
                       <Text style={styles.percentileText}>
                         Stronger than {percentile}% of heroes
@@ -1147,6 +1251,21 @@ export default function WebCharacterScreen() {
                     </View>
                   ) : details.summary || details.description ? (
                     <View style={styles.summaryBox}>
+                      <View style={s2.summaryHead as object}>
+                        <Pressable
+                          onPress={() =>
+                            setEditTarget({
+                              field: SUMMARY_FIELD,
+                              current: details.summary ?? null,
+                            })
+                          }
+                          hitSlop={8}
+                          style={s2.penBtn as object}
+                          accessibilityLabel="Edit summary"
+                        >
+                          <Ionicons name="create-outline" size={16} color={COLORS.navy} />
+                        </Pressable>
+                      </View>
                       {details.summary ? (
                         <Text style={styles.summaryText}>{details.summary}</Text>
                       ) : null}
@@ -1165,7 +1284,27 @@ export default function WebCharacterScreen() {
                         </Pressable>
                       ) : null}
                     </View>
-                  ) : null}
+                  ) : (
+                    <View style={styles.summaryBox}>
+                      <View style={s2.summaryHead as object}>
+                        <Pressable
+                          onPress={() => setEditTarget({ field: SUMMARY_FIELD, current: null })}
+                          hitSlop={8}
+                          style={s2.penBtn as object}
+                          accessibilityLabel="Edit summary"
+                        >
+                          <Ionicons name="create-outline" size={16} color={COLORS.navy} />
+                        </Pressable>
+                      </View>
+                      <Pressable
+                        onPress={() => setEditTarget({ field: SUMMARY_FIELD, current: null })}
+                      >
+                        <Text style={s2.summaryEmpty as object}>
+                          Add a short summary for this hero.
+                        </Text>
+                      </Pressable>
+                    </View>
+                  )}
 
                   {/* Abilities — power explainers fold in as the "Decoded" strip */}
                   <WebAbilitiesCard
@@ -1173,6 +1312,15 @@ export default function WebCharacterScreen() {
                     loading={comicVineLoading}
                     skeletonOpacity={skeletonOpacity}
                     explainers={narrative?.powerExplainers ?? []}
+                    onEdit={
+                      comicVineLoading
+                        ? undefined
+                        : () =>
+                            setEditTarget({
+                              field: POWERS_FIELD,
+                              current: details.powers?.length ? details.powers.join('\n') : null,
+                            })
+                    }
                   />
 
                   {/* Did You Know — swipeable trivia deck */}
@@ -1532,34 +1680,43 @@ export default function WebCharacterScreen() {
                       <View>
                         <Text style={styles.cardTitle}>Edit details</Text>
                         <View style={styles.cardDivider} />
-                        {EDITABLE_FIELDS.map((f) => {
-                          const v = editValues[f.field];
-                          const filled = !isBlankValue(v);
-                          return (
-                            <Pressable
-                              key={f.field}
-                              onPress={() =>
-                                setEditTarget({ field: f, current: filled ? (v ?? null) : null })
-                              }
-                              style={s2.editRow as object}
-                            >
-                              <Text style={s2.editRowLabel}>{f.label}</Text>
-                              <View style={s2.editRowRight as object}>
-                                <Text
-                                  style={(filled ? s2.editRowValue : s2.editRowAdd) as object}
-                                  numberOfLines={1}
+                        {DOSSIER_GROUPS.map((group) => (
+                          <Fragment key={group.key}>
+                            <Text style={s2.editGroupLabel}>{group.label}</Text>
+                            {group.fields.map((f) => {
+                              const v = editValues[f.field];
+                              const filled = !isBlankValue(v);
+                              return (
+                                <Pressable
+                                  key={f.field}
+                                  onPress={() =>
+                                    setEditTarget({
+                                      field: f,
+                                      current: filled ? (v ?? null) : null,
+                                    })
+                                  }
+                                  style={s2.editRow as object}
                                 >
-                                  {filled ? v : 'Add'}
-                                </Text>
-                                <Ionicons
-                                  name={filled ? 'pencil' : 'add'}
-                                  size={14}
-                                  color={COLORS.orange}
-                                />
-                              </View>
-                            </Pressable>
-                          );
-                        })}
+                                  <Text style={s2.editRowLabel}>{f.label}</Text>
+                                  <View style={s2.editRowRight as object}>
+                                    <Text
+                                      style={(filled ? s2.editRowValue : s2.editRowAdd) as object}
+                                      numberOfLines={1}
+                                    >
+                                      {filled ? v : 'Add'}
+                                    </Text>
+                                    <Ionicons
+                                      name={filled ? 'pencil' : 'add'}
+                                      size={14}
+                                      color={COLORS.orange}
+                                    />
+                                  </View>
+                                </Pressable>
+                              );
+                            })}
+                          </Fragment>
+                        ))}
+                        <Text style={s2.editGroupLabel}>Trivia</Text>
                         <Pressable
                           onPress={() => setEditTarget({ field: null, current: null })}
                           style={s2.editRow as object}
@@ -1804,6 +1961,18 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : details.summary || details.description ? (
                   <View style={styles.mBlock}>
+                    <View style={s2.summaryHead as object}>
+                      <Pressable
+                        onPress={() =>
+                          setEditTarget({ field: SUMMARY_FIELD, current: details.summary ?? null })
+                        }
+                        hitSlop={8}
+                        style={s2.penBtn as object}
+                        accessibilityLabel="Edit summary"
+                      >
+                        <Ionicons name="create-outline" size={16} color={COLORS.navy} />
+                      </Pressable>
+                    </View>
                     {details.summary ? (
                       <Text style={styles.mSummary}>{details.summary}</Text>
                     ) : null}
@@ -1822,7 +1991,25 @@ export default function WebCharacterScreen() {
                       </Pressable>
                     ) : null}
                   </View>
-                ) : null}
+                ) : (
+                  <View style={styles.mBlock}>
+                    <View style={s2.summaryHead as object}>
+                      <Pressable
+                        onPress={() => setEditTarget({ field: SUMMARY_FIELD, current: null })}
+                        hitSlop={8}
+                        style={s2.penBtn as object}
+                        accessibilityLabel="Edit summary"
+                      >
+                        <Ionicons name="create-outline" size={16} color={COLORS.navy} />
+                      </Pressable>
+                    </View>
+                    <Pressable onPress={() => setEditTarget({ field: SUMMARY_FIELD, current: null })}>
+                      <Text style={s2.summaryEmpty as object}>
+                        Add a short summary for this hero.
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
 
                 {/* Power Stats */}
                 <View style={styles.mBlock}>
@@ -1837,6 +2024,20 @@ export default function WebCharacterScreen() {
                         ) : null}
                       </View>
                       <View style={styles.statHeaderRight}>
+                        {isAdmin ? (
+                          <Pressable
+                            onPress={() => setEditingStats((s) => !s)}
+                            hitSlop={8}
+                            style={s2.penBtn as object}
+                            accessibilityLabel="Edit power stats"
+                          >
+                            <Ionicons
+                              name="create-outline"
+                              size={16}
+                              color={editingStats ? COLORS.orange : COLORS.navy}
+                            />
+                          </Pressable>
+                        ) : null}
                         {powerScore !== null || statsGenerating ? (
                           <Pressable
                             onPress={() =>
@@ -1872,24 +2073,31 @@ export default function WebCharacterScreen() {
                       </View>
                     </View>
                     <View style={styles.cardDivider} />
-                    {statsGenerating
-                      ? STAT_CONFIG.map(({ key }) => (
-                          <SkeletonBlock
-                            key={key}
-                            opacity={skeletonOpacity}
-                            height={10}
-                            borderRadius={5}
-                            style={{ marginBottom: 14 }}
-                          />
-                        ))
-                      : STAT_CONFIG.map(({ key, label, color }) => (
-                          <StatBar
-                            key={key}
-                            label={label}
-                            value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
-                            color={color}
-                          />
-                        ))}
+                    {isAdmin && editingStats ? (
+                      <StatEditList
+                        stats={stats}
+                        onPick={(field, current) => setEditTarget({ field, current })}
+                      />
+                    ) : statsGenerating ? (
+                      STAT_CONFIG.map(({ key }) => (
+                        <SkeletonBlock
+                          key={key}
+                          opacity={skeletonOpacity}
+                          height={10}
+                          borderRadius={5}
+                          style={{ marginBottom: 14 }}
+                        />
+                      ))
+                    ) : (
+                      STAT_CONFIG.map(({ key, label, color }) => (
+                        <StatBar
+                          key={key}
+                          label={label}
+                          value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
+                          color={color}
+                        />
+                      ))
+                    )}
                     {percentile != null && percentile > 0 ? (
                       <Text style={styles.percentileText}>
                         Stronger than {percentile}% of heroes
@@ -1903,6 +2111,15 @@ export default function WebCharacterScreen() {
                   powers={details.powers}
                   loading={comicVineLoading}
                   explainers={narrative?.powerExplainers ?? []}
+                  onEdit={
+                    comicVineLoading
+                      ? undefined
+                      : () =>
+                          setEditTarget({
+                            field: POWERS_FIELD,
+                            current: details.powers?.length ? details.powers.join('\n') : null,
+                          })
+                  }
                 />
 
                 {/* Did You Know — swipeable trivia deck */}
@@ -2144,18 +2361,51 @@ export default function WebCharacterScreen() {
 }
 
 // ── Web abilities card — categorized power profile (card-styled) ─────────────
+function AbilitiesHead({ onEdit }: { onEdit?: () => void }) {
+  return (
+    <>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={styles.cardTitle}>Abilities</Text>
+        {onEdit ? (
+          <Pressable
+            onPress={onEdit}
+            hitSlop={8}
+            style={s2.penBtn as object}
+            accessibilityLabel="Edit abilities"
+          >
+            <Ionicons name="create-outline" size={16} color={COLORS.navy} />
+          </Pressable>
+        ) : null}
+      </View>
+      <View style={styles.cardDivider} />
+    </>
+  );
+}
+
 function WebAbilitiesCard({
   powers,
   loading,
   skeletonOpacity,
   explainers = [],
+  onEdit,
 }: {
   powers: string[] | null;
   loading: boolean;
   skeletonOpacity: ReturnType<typeof useSkeletonAnim>;
   explainers?: PowerExplainer[];
+  onEdit?: () => void;
 }) {
-  if (!loading && (!powers || powers.length === 0)) return null;
+  if (!loading && (!powers || powers.length === 0)) {
+    if (!onEdit) return null;
+    return (
+      <View style={styles.card}>
+        <AbilitiesHead onEdit={onEdit} />
+        <Pressable onPress={onEdit}>
+          <Text style={s2.summaryEmpty as object}>Add powers & abilities for this hero.</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   const groups = powers ? groupPowers(powers) : [];
 
@@ -2188,8 +2438,7 @@ function WebAbilitiesCard({
         </>
       ) : powers && powers.length > 0 ? (
         <>
-          <Text style={styles.cardTitle}>Abilities</Text>
-          <View style={styles.cardDivider} />
+          <AbilitiesHead onEdit={onEdit} />
           {groups.map((g, gi) => (
             <View
               key={g.category}
