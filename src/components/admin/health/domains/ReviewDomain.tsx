@@ -10,6 +10,9 @@ import { COLORS } from '../../../../constants/colors';
 import {
   getReviewQueue,
   reviewContribution,
+  fieldTypeOf,
+  fieldLabelOf,
+  diffListValues,
   type ReviewItem,
   type ContributionKind,
 } from '../../../../lib/db/contributions';
@@ -95,6 +98,65 @@ export function ReviewDomain() {
   );
 }
 
+// Field edits render differently by shape: lists as added/removed chips, stats
+// as old → new, plain text as a strike-through current + proposed. A reviewer
+// should be able to judge the change at a glance without parsing array literals.
+function FieldDiff({ item }: { item: ReviewItem }) {
+  const type = fieldTypeOf(item.target_field);
+
+  if (type === 'list') {
+    const { added, removed, next } = diffListValues(item.old_value, item.new_value);
+    return (
+      <View style={s.diff}>
+        <View style={s.chips}>
+          {next.map((v) => {
+            const isNew = added.some((a) => a.toLowerCase() === v.toLowerCase());
+            return (
+              <View key={`n-${v}`} style={[s.chip, isNew && (s.chipAdded as object)]}>
+                <Text style={[s.chipText, isNew && (s.chipAddedText as object)]}>{v}</Text>
+              </View>
+            );
+          })}
+          {removed.map((v) => (
+            <View key={`r-${v}`} style={[s.chip, s.chipRemoved as object]}>
+              <Text style={[s.chipText, s.chipRemovedText as object]}>{v}</Text>
+            </View>
+          ))}
+        </View>
+        {added.length + removed.length > 0 ? (
+          <Text style={s.diffMeta}>
+            {added.length} added · {removed.length} removed
+          </Text>
+        ) : (
+          <Text style={s.diffMeta}>No net change</Text>
+        )}
+      </View>
+    );
+  }
+
+  if (type === 'stat') {
+    return (
+      <View style={s.statDiff}>
+        <Text style={s.statOld}>{item.old_value || '—'}</Text>
+        <Text style={s.statArrow}>→</Text>
+        <Text style={s.statNew}>{item.new_value}</Text>
+      </View>
+    );
+  }
+
+  // Plain text (and any unknown field): current struck through, proposed below.
+  return (
+    <View style={s.diff}>
+      {!!item.old_value && (
+        <Text style={s.old} numberOfLines={4}>
+          {item.old_value}
+        </Text>
+      )}
+      <Text style={s.new}>{item.new_value}</Text>
+    </View>
+  );
+}
+
 function ReviewRow({
   item,
   busy,
@@ -122,7 +184,9 @@ function ReviewRow({
         <View style={[s.kindTag, { backgroundColor: KIND_COLOR[item.kind] + '1c' }]}>
           <Text style={[s.kindTagText, { color: KIND_COLOR[item.kind] }]}>
             {KIND_LABEL[item.kind]}
-            {item.kind === 'field' && item.target_field ? ` · ${item.target_field}` : ''}
+            {item.kind === 'field' && item.target_field
+              ? ` · ${fieldLabelOf(item.target_field)}`
+              : ''}
           </Text>
         </View>
         <Text style={s.hero} numberOfLines={1}>
@@ -134,14 +198,7 @@ function ReviewRow({
       </View>
 
       {item.kind === 'field' ? (
-        <View style={s.diff}>
-          {!!item.old_value && (
-            <Text style={s.old} numberOfLines={3}>
-              {item.old_value}
-            </Text>
-          )}
-          <Text style={s.new}>{item.new_value}</Text>
-        </View>
+        <FieldDiff item={item} />
       ) : item.kind === 'fact' ? (
         <Text style={s.new}>{item.new_value}</Text>
       ) : (
@@ -209,7 +266,14 @@ const s = StyleSheet.create({
   },
   hero: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.black, flex: 1 },
   meta: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey },
-  diff: { gap: 3 },
+  diff: { gap: 4 },
+  diffMeta: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+    color: COLORS.grey,
+  },
   old: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
@@ -217,6 +281,24 @@ const s = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   new: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: COLORS.black, lineHeight: 20 },
+  // List diff — added/removed chips.
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: {
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: '#eadfce',
+  },
+  chipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
+  chipAdded: { backgroundColor: COLORS.green + '22' } as object,
+  chipAddedText: { color: COLORS.green } as object,
+  chipRemoved: { backgroundColor: COLORS.red + '18' } as object,
+  chipRemovedText: { color: COLORS.red, textDecorationLine: 'line-through' } as object,
+  // Stat diff — old → new.
+  statDiff: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  statOld: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.grey },
+  statArrow: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: COLORS.grey },
+  statNew: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.green },
   report: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: COLORS.red, lineHeight: 20 },
   note: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, fontStyle: 'italic' },
   input: {
