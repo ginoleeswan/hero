@@ -84,8 +84,18 @@ export const EDITABLE_FIELDS: EditableFieldDef[] = [
     guideline: 'e.g. 200 lb',
     group: 'appearance',
   },
-  { field: 'eye_color', label: 'Eyes', question: 'What colour are their eyes?', group: 'appearance' },
-  { field: 'hair_color', label: 'Hair', question: 'What colour is their hair?', group: 'appearance' },
+  {
+    field: 'eye_color',
+    label: 'Eyes',
+    question: 'What colour are their eyes?',
+    group: 'appearance',
+  },
+  {
+    field: 'hair_color',
+    label: 'Hair',
+    question: 'What colour is their hair?',
+    group: 'appearance',
+  },
   // Connections
   { field: 'occupation', label: 'Occupation', question: 'What do they do?', group: 'connections' },
   {
@@ -135,7 +145,11 @@ export const STAT_FIELDS: EditableFieldDef[] = [
 
 /** Dossier edit list, grouped to read like the section it replaces. */
 export const DOSSIER_GROUPS: { key: string; label: string; fields: EditableFieldDef[] }[] = [
-  { key: 'profile', label: 'Profile', fields: EDITABLE_FIELDS.filter((f) => f.group === 'profile') },
+  {
+    key: 'profile',
+    label: 'Profile',
+    fields: EDITABLE_FIELDS.filter((f) => f.group === 'profile'),
+  },
   {
     key: 'appearance',
     label: 'Appearance',
@@ -151,6 +165,100 @@ export const DOSSIER_GROUPS: { key: string; label: string; fields: EditableField
 const FIELD_LABEL: Record<string, string> = Object.fromEntries(
   [...EDITABLE_FIELDS, SUMMARY_FIELD, POWERS_FIELD, ...STAT_FIELDS].map((f) => [f.field, f.label]),
 );
+
+const FIELD_TYPE: Record<string, FieldType> = Object.fromEntries(
+  [...EDITABLE_FIELDS, SUMMARY_FIELD, POWERS_FIELD, ...STAT_FIELDS].map((f) => [
+    f.field,
+    f.type ?? 'text',
+  ]),
+);
+
+/** The shape of a field (text/list/stat), or null if it's not an editable field. */
+export function fieldTypeOf(targetField: string | null): FieldType | null {
+  return targetField ? (FIELD_TYPE[targetField] ?? null) : null;
+}
+
+/** Human label for an editable field column ('place_of_birth' → 'Place of birth'). */
+export function fieldLabelOf(targetField: string | null): string {
+  return FIELD_LABEL[targetField ?? ''] ?? targetField ?? '';
+}
+
+/** Parse a Postgres text[] literal ('{a,"b c",NULL}') into a string[]. Used to
+ *  read a list field's snapshot (old_value), which is stored as the array's
+ *  ::text form. Quoted elements are unescaped; NULL/empty are dropped. */
+export function parsePgArrayLiteral(literal: string | null | undefined): string[] {
+  if (!literal) return [];
+  const s = literal.trim();
+  if (!s.startsWith('{') || !s.endsWith('}')) {
+    // Not an array literal — fall back to the one-per-line/comma form.
+    return splitListInput(literal);
+  }
+  const inner = s.slice(1, -1);
+  if (inner.trim() === '') return [];
+  const out: string[] = [];
+  let i = 0;
+  while (i < inner.length) {
+    let val = '';
+    if (inner[i] === '"') {
+      i++;
+      while (i < inner.length && inner[i] !== '"') {
+        if (inner[i] === '\\') {
+          i++;
+          val += inner[i] ?? '';
+        } else {
+          val += inner[i];
+        }
+        i++;
+      }
+      i++; // closing quote
+    } else {
+      while (i < inner.length && inner[i] !== ',') {
+        val += inner[i];
+        i++;
+      }
+      val = val.trim();
+      if (val === 'NULL') val = '';
+    }
+    if (val !== '') out.push(val);
+    while (i < inner.length && inner[i] === ',') i++;
+  }
+  return out;
+}
+
+/** Split a "one per line" (or comma-separated) intake into a trimmed list,
+ *  dropping blanks — mirrors the server's _parse_str_list so the review diff
+ *  matches what will actually be written. */
+export function splitListInput(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split(/[\n,]/)
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0);
+}
+
+export interface ListDiff {
+  added: string[];
+  removed: string[];
+  /** The resulting list (what the field becomes), in order. */
+  next: string[];
+}
+
+/** Diff a list field for review: what's added vs. removed between the stored
+ *  old value (array literal) and the proposed new value (one-per-line). */
+export function diffListValues(
+  oldLiteral: string | null | undefined,
+  newRaw: string | null | undefined,
+): ListDiff {
+  const prev = parsePgArrayLiteral(oldLiteral);
+  const next = splitListInput(newRaw);
+  const prevSet = new Set(prev.map((v) => v.toLowerCase()));
+  const nextSet = new Set(next.map((v) => v.toLowerCase()));
+  return {
+    added: next.filter((v) => !prevSet.has(v.toLowerCase())),
+    removed: prev.filter((v) => !nextSet.has(v.toLowerCase())),
+    next,
+  };
+}
 
 /** Human description of what a contribution changed, for the profile list. */
 export function describeContribution(c: {
