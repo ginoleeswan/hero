@@ -155,13 +155,20 @@ serve(async (req: Request) => {
       // comicvine_id). Only accept an EXACT, case-insensitive name match, and among
       // those prefer the most-published. No exact match → don't guess, mark failed.
       const wanted = heroName.trim().toLowerCase();
-      const match = ((listBody.results ?? []) as Array<Record<string, unknown>>)
-        .filter((c) => typeof c.name === 'string' && (c.name as string).trim().toLowerCase() === wanted)
-        .sort(
-          (a, b) =>
-            ((b.count_of_issue_appearances as number) ?? 0) -
-            ((a.count_of_issue_appearances as number) ?? 0),
-        )[0];
+      // ComicVine often disambiguates with a parenthetical ("Spawn (Simmons)").
+      // Prefer a true-exact name; fall back to the name BEFORE the "(" equalling
+      // ours. Never a bare substring (that's the Bane↛Wolfsbane trap).
+      const base = (n: string) => n.split('(')[0].trim().toLowerCase();
+      const byPop = (a: Record<string, unknown>, b: Record<string, unknown>) =>
+        ((b.count_of_issue_appearances as number) ?? 0) -
+        ((a.count_of_issue_appearances as number) ?? 0);
+      const named = ((listBody.results ?? []) as Array<Record<string, unknown>>).filter(
+        (c) => typeof c.name === 'string',
+      );
+      const exact = named.filter((c) => (c.name as string).trim().toLowerCase() === wanted);
+      const match = (exact.length > 0 ? exact : named.filter((c) => base(c.name as string) === wanted)).sort(
+        byPop,
+      )[0];
       if (!match?.id) {
         // No ComicVine character with this exact name — terminal, but not an
         // error: park as 'unmatched' (these need another source, not a retry).
