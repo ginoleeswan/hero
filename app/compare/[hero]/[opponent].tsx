@@ -17,6 +17,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { heroImageSource } from '../../../src/constants/heroImages';
 import { useCompareMatchup } from '../../../src/hooks/useCompareMatchup';
 import { useMatchupShareImage } from '../../../src/hooks/useMatchupShareImage';
+import { useMatchupVote } from '../../../src/hooks/useMatchupVote';
+import { ArenaVote } from '../../../src/components/compare/ArenaVote';
+import type { MatchupSide } from '../../../src/lib/home/matchupVote';
+import * as Haptics from 'expo-haptics';
 import { getFighterArt } from '../../../src/lib/compareHandoff';
 import { COLORS } from '../../../src/constants/colors';
 import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
@@ -77,6 +81,27 @@ export default function NativeCompareScreen() {
     winsA: result?.winsA ?? 0,
     winsB: result?.winsB ?? 0,
   });
+
+  // Commit-then-reveal: nothing is decided until the viewer votes (matches web).
+  const {
+    revealed,
+    pickedId,
+    tally,
+    castVote,
+    loaded: voteLoaded,
+  } = useMatchupVote(hero, opponent);
+  const onVote = (side: MatchupSide) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    castVote(side);
+  };
+  const resultWinner: 'A' | 'B' | 'tie' =
+    tally && tally.total > 0
+      ? tally.votesA === tally.votesB
+        ? 'tie'
+        : tally.votesA > tally.votesB
+          ? 'A'
+          : 'B'
+      : (overallWinner ?? 'tie');
 
   if (error) {
     return (
@@ -179,7 +204,7 @@ export default function NativeCompareScreen() {
               imageB={imageB}
               nameA={nameA}
               nameB={nameB}
-              winner={overallWinner ?? 'neutral'}
+              winner={revealed ? resultWinner : 'neutral'}
               width={CARD_WIDTH}
               height={CARD_HEIGHT}
               onSwapA={() =>
@@ -194,33 +219,54 @@ export default function NativeCompareScreen() {
           <MatchupBadge badge={badge} style={styles.matchupBadge} />
 
           <View style={styles.verdictBlock}>
-            <VerdictReveal verdict={verdict} />
-            <TouchableOpacity
-              onPress={handleShare}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel="Share matchup"
-              style={styles.shareRow}
-            >
-              <Ionicons name="share-outline" size={14} color="rgba(245,235,220,0.7)" />
-              <Text style={styles.shareRowText}>Share result</Text>
-            </TouchableOpacity>
+            {ready && result && voteLoaded ? (
+              <ArenaVote
+                revealed={revealed}
+                pickedId={pickedId}
+                tally={tally}
+                heroAId={hero}
+                nameA={nameA}
+                nameB={nameB}
+                winsA={result.winsA}
+                winsB={result.winsB}
+                onVote={onVote}
+                tone="dark"
+              />
+            ) : null}
+            {revealed ? (
+              <>
+                <VerdictReveal verdict={verdict} />
+                <TouchableOpacity
+                  onPress={handleShare}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Share matchup"
+                  style={styles.shareRow}
+                >
+                  <Ionicons name="share-outline" size={14} color="rgba(245,235,220,0.7)" />
+                  <Text style={styles.shareRowText}>Share result</Text>
+                </TouchableOpacity>
+              </>
+            ) : null}
           </View>
         </View>
 
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]}>
-          <View style={styles.battleWrap}>
-            {ready && result ? (
-              result.stats.map((stat, i) => (
-                <StatBattleRow key={stat.key} stat={stat} animateIn animationDelay={i * 70} />
-              ))
-            ) : (
-              <View style={styles.statsLoading}>
-                <ActivityIndicator color={COLORS.orange} />
-              </View>
-            )}
+        {revealed ? (
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]}>
+            <Text style={styles.tapeHeading}>TALE OF THE TAPE</Text>
+            <View style={styles.battleWrap}>
+              {ready && result ? (
+                result.stats.map((stat, i) => (
+                  <StatBattleRow key={stat.key} stat={stat} animateIn animationDelay={i * 70} />
+                ))
+              ) : (
+                <View style={styles.statsLoading}>
+                  <ActivityIndicator color={COLORS.orange} />
+                </View>
+              )}
+            </View>
           </View>
-        </View>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -309,7 +355,15 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     marginTop: -14,
-    paddingTop: 12,
+    paddingTop: 24,
+  },
+  tapeHeading: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: 'rgba(41,60,67,0.45)',
+    textAlign: 'center',
   },
   battleWrap: {
     gap: 24,
