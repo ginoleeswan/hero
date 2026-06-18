@@ -487,11 +487,7 @@ function Dossier({
           {hasAny ? (
             <>
               <Text style={styles.dossierToggleText}>{open ? 'Hide' : 'View'}</Text>
-              <Ionicons
-                name={open ? 'chevron-up' : 'chevron-down'}
-                size={15}
-                color={COLORS.navy}
-              />
+              <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={15} color={COLORS.navy} />
             </>
           ) : null}
         </View>
@@ -1404,7 +1400,10 @@ export default function CharacterScreen() {
                     <View style={styles.summaryHead}>
                       <SectionPen
                         onPress={() =>
-                          setEditTarget({ field: SUMMARY_FIELD, current: data.details.summary ?? null })
+                          setEditTarget({
+                            field: SUMMARY_FIELD,
+                            current: data.details.summary ?? null,
+                          })
                         }
                       />
                     </View>

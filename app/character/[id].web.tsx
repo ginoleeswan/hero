@@ -1,11 +1,4 @@
-import {
-  useEffect,
-  useState,
-  useCallback,
-  useMemo,
-  Fragment,
-  type ComponentProps,
-} from 'react';
+import { useEffect, useState, useCallback, useMemo, Fragment, type ComponentProps } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -1173,58 +1166,58 @@ export default function WebCharacterScreen() {
                         onPick={(field, current) => setEditTarget({ field, current })}
                       />
                     ) : (
-                    <View style={styles.statBand}>
-                      {STAT_CONFIG.map(({ key, label, color }) => {
-                        if (statsGenerating) {
+                      <View style={styles.statBand}>
+                        {STAT_CONFIG.map(({ key, label, color }) => {
+                          if (statsGenerating) {
+                            return (
+                              <View key={key} style={styles.bandCell}>
+                                <SkeletonBlock
+                                  opacity={skeletonOpacity}
+                                  width={42}
+                                  height={28}
+                                  borderRadius={5}
+                                />
+                                <SkeletonBlock
+                                  opacity={skeletonOpacity}
+                                  width="70%"
+                                  height={5}
+                                  borderRadius={3}
+                                />
+                                <SkeletonBlock
+                                  opacity={skeletonOpacity}
+                                  width={28}
+                                  height={9}
+                                  borderRadius={3}
+                                />
+                              </View>
+                            );
+                          }
+                          const raw = parseInt(
+                            (stats.powerstats as Record<string, string>)[key] ?? '0',
+                            10,
+                          );
+                          const fill = isNaN(raw) ? 0 : Math.min(raw, 100);
                           return (
                             <View key={key} style={styles.bandCell}>
-                              <SkeletonBlock
-                                opacity={skeletonOpacity}
-                                width={42}
-                                height={28}
-                                borderRadius={5}
-                              />
-                              <SkeletonBlock
-                                opacity={skeletonOpacity}
-                                width="70%"
-                                height={5}
-                                borderRadius={3}
-                              />
-                              <SkeletonBlock
-                                opacity={skeletonOpacity}
-                                width={28}
-                                height={9}
-                                borderRadius={3}
-                              />
+                              <Text style={[styles.bandVal, { color }]}>
+                                {isNaN(raw) ? '—' : raw}
+                              </Text>
+                              <View style={styles.bandTrack}>
+                                <View
+                                  style={[
+                                    styles.bandFill,
+                                    {
+                                      width: `${fill}%` as unknown as number,
+                                      backgroundColor: color,
+                                    },
+                                  ]}
+                                />
+                              </View>
+                              <Text style={styles.bandLabel}>{label}</Text>
                             </View>
                           );
-                        }
-                        const raw = parseInt(
-                          (stats.powerstats as Record<string, string>)[key] ?? '0',
-                          10,
-                        );
-                        const fill = isNaN(raw) ? 0 : Math.min(raw, 100);
-                        return (
-                          <View key={key} style={styles.bandCell}>
-                            <Text style={[styles.bandVal, { color }]}>
-                              {isNaN(raw) ? '—' : raw}
-                            </Text>
-                            <View style={styles.bandTrack}>
-                              <View
-                                style={[
-                                  styles.bandFill,
-                                  {
-                                    width: `${fill}%` as unknown as number,
-                                    backgroundColor: color,
-                                  },
-                                ]}
-                              />
-                            </View>
-                            <Text style={styles.bandLabel}>{label}</Text>
-                          </View>
-                        );
-                      })}
-                    </View>
+                        })}
+                      </View>
                     )}
                     {percentile != null && percentile > 0 ? (
                       <Text style={styles.percentileText}>
@@ -1667,7 +1660,12 @@ export default function WebCharacterScreen() {
                     <Pressable
                       onPress={() => setEditing(true)}
                       hitSlop={8}
-                      style={[s2.penBtn, { position: 'absolute', top: 10, right: 10, zIndex: 2 }] as object}
+                      style={
+                        [
+                          s2.penBtn,
+                          { position: 'absolute', top: 10, right: 10, zIndex: 2 },
+                        ] as object
+                      }
                       accessibilityLabel="Edit details"
                     >
                       <Ionicons
@@ -1729,77 +1727,81 @@ export default function WebCharacterScreen() {
                         </Pressable>
                       </View>
                     ) : (
-                    <View style={styles.factGrid}>
-                      {(() => {
-                        const rows = (
-                          [
-                            {
-                              icon: 'shield-half-outline',
-                              label: 'Alignment',
-                              value: stats.biography.alignment,
-                              accent: alignmentColor,
-                            },
-                            { icon: 'planet-outline', label: 'Origin', value: details.origin },
-                            {
-                              icon: genderIcon(stats.appearance.gender),
-                              label: 'Gender',
-                              value: stats.appearance.gender,
-                            },
-                            { icon: 'people-outline', label: 'Race', value: stats.appearance.race },
-                            {
-                              icon: 'swap-vertical-outline',
-                              label: 'Height',
-                              value: stats.appearance.height.join(' / '),
-                            },
-                            {
-                              icon: 'barbell-outline',
-                              label: 'Weight',
-                              value: stats.appearance.weight.join(' / '),
-                            },
-                            {
-                              icon: 'id-card-outline',
-                              label: 'Full name',
-                              value: stats.biography['full-name'],
-                              wide: true,
-                            },
-                            {
-                              icon: 'location-outline',
-                              label: 'Place of birth',
-                              value: stats.biography['place-of-birth'],
-                              wide: true,
-                            },
-                            {
-                              icon: 'briefcase-outline',
-                              label: 'Occupation',
-                              value: stats.work.occupation,
-                              wide: true,
-                            },
-                            {
-                              icon: 'business-outline',
-                              label: 'Base',
-                              value: stats.work.base,
-                              wide: true,
-                            },
-                          ] as {
-                            icon: IoniconName;
-                            label: string;
-                            value: string | null | undefined;
-                            wide?: boolean;
-                            accent?: string;
-                          }[]
-                        ).filter((r) => cleanFact(r.value));
-                        return rows.map((r) => (
-                          <FactTile
-                            key={r.label}
-                            icon={r.icon}
-                            label={r.label}
-                            value={r.value}
-                            wide={r.wide}
-                            accent={r.accent}
-                          />
-                        ));
-                      })()}
-                    </View>
+                      <View style={styles.factGrid}>
+                        {(() => {
+                          const rows = (
+                            [
+                              {
+                                icon: 'shield-half-outline',
+                                label: 'Alignment',
+                                value: stats.biography.alignment,
+                                accent: alignmentColor,
+                              },
+                              { icon: 'planet-outline', label: 'Origin', value: details.origin },
+                              {
+                                icon: genderIcon(stats.appearance.gender),
+                                label: 'Gender',
+                                value: stats.appearance.gender,
+                              },
+                              {
+                                icon: 'people-outline',
+                                label: 'Race',
+                                value: stats.appearance.race,
+                              },
+                              {
+                                icon: 'swap-vertical-outline',
+                                label: 'Height',
+                                value: stats.appearance.height.join(' / '),
+                              },
+                              {
+                                icon: 'barbell-outline',
+                                label: 'Weight',
+                                value: stats.appearance.weight.join(' / '),
+                              },
+                              {
+                                icon: 'id-card-outline',
+                                label: 'Full name',
+                                value: stats.biography['full-name'],
+                                wide: true,
+                              },
+                              {
+                                icon: 'location-outline',
+                                label: 'Place of birth',
+                                value: stats.biography['place-of-birth'],
+                                wide: true,
+                              },
+                              {
+                                icon: 'briefcase-outline',
+                                label: 'Occupation',
+                                value: stats.work.occupation,
+                                wide: true,
+                              },
+                              {
+                                icon: 'business-outline',
+                                label: 'Base',
+                                value: stats.work.base,
+                                wide: true,
+                              },
+                            ] as {
+                              icon: IoniconName;
+                              label: string;
+                              value: string | null | undefined;
+                              wide?: boolean;
+                              accent?: string;
+                            }[]
+                          ).filter((r) => cleanFact(r.value));
+                          return rows.map((r) => (
+                            <FactTile
+                              key={r.label}
+                              icon={r.icon}
+                              label={r.label}
+                              value={r.value}
+                              wide={r.wide}
+                              accent={r.accent}
+                            />
+                          ));
+                        })()}
+                      </View>
                     )}
                   </View>
 
@@ -2003,7 +2005,9 @@ export default function WebCharacterScreen() {
                         <Ionicons name="create-outline" size={16} color={COLORS.navy} />
                       </Pressable>
                     </View>
-                    <Pressable onPress={() => setEditTarget({ field: SUMMARY_FIELD, current: null })}>
+                    <Pressable
+                      onPress={() => setEditTarget({ field: SUMMARY_FIELD, current: null })}
+                    >
                       <Text style={s2.summaryEmpty as object}>
                         Add a short summary for this hero.
                       </Text>

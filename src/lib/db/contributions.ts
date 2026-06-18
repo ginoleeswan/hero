@@ -84,8 +84,18 @@ export const EDITABLE_FIELDS: EditableFieldDef[] = [
     guideline: 'e.g. 200 lb',
     group: 'appearance',
   },
-  { field: 'eye_color', label: 'Eyes', question: 'What colour are their eyes?', group: 'appearance' },
-  { field: 'hair_color', label: 'Hair', question: 'What colour is their hair?', group: 'appearance' },
+  {
+    field: 'eye_color',
+    label: 'Eyes',
+    question: 'What colour are their eyes?',
+    group: 'appearance',
+  },
+  {
+    field: 'hair_color',
+    label: 'Hair',
+    question: 'What colour is their hair?',
+    group: 'appearance',
+  },
   // Connections
   { field: 'occupation', label: 'Occupation', question: 'What do they do?', group: 'connections' },
   {
@@ -135,7 +145,11 @@ export const STAT_FIELDS: EditableFieldDef[] = [
 
 /** Dossier edit list, grouped to read like the section it replaces. */
 export const DOSSIER_GROUPS: { key: string; label: string; fields: EditableFieldDef[] }[] = [
-  { key: 'profile', label: 'Profile', fields: EDITABLE_FIELDS.filter((f) => f.group === 'profile') },
+  {
+    key: 'profile',
+    label: 'Profile',
+    fields: EDITABLE_FIELDS.filter((f) => f.group === 'profile'),
+  },
   {
     key: 'appearance',
     label: 'Appearance',
