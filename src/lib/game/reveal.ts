@@ -6,6 +6,9 @@
 export interface RevealHero {
   id: string;
   name: string;
+  fullName: string | null;
+  aliases: string[];
+  summary: string | null;
   imageUrl: string | null;
   portraitUrl: string | null;
   publisher: string | null;

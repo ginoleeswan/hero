@@ -13,6 +13,9 @@ import { buildShareGrid } from '../../../src/lib/game/shareGrid';
 const hero = (overrides: Partial<RevealHero> = {}): RevealHero => ({
   id: 'superman',
   name: 'Superman',
+  fullName: 'Clark Kent',
+  aliases: [],
+  summary: null,
   imageUrl: null,
   portraitUrl: null,
   publisher: 'DC Comics',

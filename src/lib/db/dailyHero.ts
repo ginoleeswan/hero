@@ -19,6 +19,9 @@ export interface DailyPuzzle {
 interface RawDailyHero {
   id: string;
   name: string;
+  full_name: string | null;
+  aliases: string[] | null;
+  summary: string | null;
   image_url: string | null;
   portrait_url: string | null;
   publisher: string | null;
@@ -34,6 +37,9 @@ function rawToRevealHero(h: RawDailyHero): RevealHero {
   return {
     id: h.id,
     name: h.name,
+    fullName: h.full_name,
+    aliases: h.aliases ?? [],
+    summary: h.summary,
     imageUrl: h.image_url,
     portraitUrl: h.portrait_url,
     publisher: h.publisher,

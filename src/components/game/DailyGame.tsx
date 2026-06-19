@@ -24,6 +24,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/colors';
 import { MysteryPortrait } from './MysteryPortrait';
+import { StatsSheet } from './StatsSheet';
 import { useDailyHero } from '../../hooks/useDailyHero';
 import type { Clue } from '../../lib/game/reveal';
 
@@ -78,13 +79,17 @@ export function DailyGame() {
     remaining,
     blur,
     clues,
+    dossier,
     streak,
+    stats,
+    percentile,
     finished,
     shareText,
     submitGuess,
   } = useDailyHero();
 
   const [copied, setCopied] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
 
   const won = status === 'won';
   const guessedIds = new Set(guesses.map((g) => g.id));
@@ -226,6 +231,17 @@ export function DailyGame() {
                 </View>
               </View>
 
+              {/* Persistent "case file" anchor clue */}
+              {dossier ? (
+                <View style={styles.dossier}>
+                  <View style={styles.dossierTab}>
+                    <Ionicons name="document-text-outline" size={11} color="rgba(206,155,51,0.9)" />
+                    <Text style={styles.dossierKicker}>Case file</Text>
+                  </View>
+                  <Text style={styles.dossierText}>{dossier}</Text>
+                </View>
+              ) : null}
+
               {/* Guess pips */}
               <View style={styles.pips}>
                 {Array.from({ length: maxGuesses }).map((_, i) => {
@@ -258,10 +274,22 @@ export function DailyGame() {
                         }.`
                       : `It was ${hero.name}.`}
                   </Text>
-                  <Pressable onPress={onShare} style={styles.shareBtn}>
-                    <Ionicons name="share-social-outline" size={16} color="#fff" />
-                    <Text style={styles.shareLabel}>{copied ? 'Copied!' : 'Share result'}</Text>
-                  </Pressable>
+                  {percentile != null ? (
+                    <Text style={styles.percentile}>
+                      You beat <Text style={styles.percentileNum}>{percentile}%</Text> of players
+                      today.
+                    </Text>
+                  ) : null}
+                  <View style={styles.resultBtns}>
+                    <Pressable onPress={() => setStatsOpen(true)} style={styles.statsBtn}>
+                      <Ionicons name="stats-chart" size={16} color={COLORS.beige} />
+                      <Text style={styles.statsLabel}>Stats</Text>
+                    </Pressable>
+                    <Pressable onPress={onShare} style={styles.shareBtn}>
+                      <Ionicons name="share-social-outline" size={16} color="#fff" />
+                      <Text style={styles.shareLabel}>{copied ? 'Copied!' : 'Share'}</Text>
+                    </Pressable>
+                  </View>
                   <Text style={styles.tomorrow}>A new hero drops tomorrow.</Text>
                 </>
               ) : (
@@ -305,6 +333,18 @@ export function DailyGame() {
           </>
         )}
       </ScrollView>
+
+      <StatsSheet
+        visible={statsOpen}
+        onClose={() => setStatsOpen(false)}
+        stats={stats}
+        streak={streak}
+        maxGuesses={maxGuesses}
+        todayGuess={won ? guesses.length : null}
+        percentile={percentile}
+        copied={copied}
+        onShare={onShare}
+      />
     </View>
   );
 }
@@ -362,7 +402,7 @@ const styles = StyleSheet.create({
   },
 
   // Stage takes the slack so the card sits optically centred above the footer.
-  stage: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10 },
+  stage: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },
   glow: {
     position: 'absolute',
     top: '50%',
@@ -443,7 +483,33 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
 
-  pips: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 22 },
+  dossier: {
+    width: '100%',
+    maxWidth: 380,
+    marginTop: 20,
+    backgroundColor: 'rgba(245,235,220,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.1)',
+    borderRadius: 12,
+    borderCurve: 'continuous',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+  dossierTab: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 },
+  dossierKicker: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    color: 'rgba(206,155,51,0.9)',
+  },
+  dossierText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13.5,
+    lineHeight: 19,
+    color: 'rgba(245,235,220,0.84)',
+  },
+  pips: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 16 },
   pip: { width: 11, height: 11, borderRadius: 6, backgroundColor: 'rgba(245,235,220,0.18)' },
   pipActive: { backgroundColor: COLORS.orange },
   pipMiss: { backgroundColor: COLORS.red },
@@ -498,9 +564,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'rgba(245,235,220,0.7)',
     marginTop: 2,
-    marginBottom: 16,
   },
+  percentile: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: 'rgba(245,235,220,0.7)',
+    marginTop: 8,
+  },
+  percentileNum: { fontFamily: 'Nunito_700Bold', color: COLORS.orange },
+  resultBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  statsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    borderRadius: 999,
+    backgroundColor: 'rgba(245,235,220,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.16)',
+    paddingVertical: 14,
+  },
+  statsLabel: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: COLORS.beige },
   shareBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
