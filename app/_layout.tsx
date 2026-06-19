@@ -47,7 +47,9 @@ function AuthGate() {
     if (loading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    const atRoot = (segments.length as number) === 0;
+    // On web, root is the landing page — always accessible. On native (incl. Expo Go),
+    // authenticated users must be bounced out of "/" since there's no landing page there.
+    const atRoot = Platform.OS !== 'web' && (segments.length as number) === 0;
 
     if (user && (inAuthGroup || atRoot)) {
       router.replace('/explore');

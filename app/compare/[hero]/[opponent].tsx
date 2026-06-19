@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { heroImageSource } from '../../../src/constants/heroImages';
 import { useCompareMatchup } from '../../../src/hooks/useCompareMatchup';
 import { useMatchupShareImage } from '../../../src/hooks/useMatchupShareImage';
+import { useMatchupVote } from '../../../src/hooks/useMatchupVote';
+import { CommunityVotes } from '../../../src/components/compare/CommunityVotes';
 import { getFighterArt } from '../../../src/lib/compareHandoff';
 import { COLORS } from '../../../src/constants/colors';
 import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
@@ -77,6 +79,11 @@ export default function NativeCompareScreen() {
     winsA: result?.winsA ?? 0,
     winsB: result?.winsB ?? 0,
   });
+
+  // The arena is the READ-ONLY result page (matches web): show who wins (stats +
+  // verdict) and the fan-vote tally. Voting happens earlier, as an in-place poll
+  // on the matchup cards — never here.
+  const { tally, pickedId } = useMatchupVote(hero, opponent);
 
   if (error) {
     return (
@@ -195,6 +202,9 @@ export default function NativeCompareScreen() {
 
           <View style={styles.verdictBlock}>
             <VerdictReveal verdict={verdict} />
+            <View style={styles.communityWrap}>
+              <CommunityVotes tally={tally} pickedId={pickedId} heroAId={hero} tone="dark" />
+            </View>
             <TouchableOpacity
               onPress={handleShare}
               activeOpacity={0.7}
@@ -309,7 +319,12 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     marginTop: -14,
-    paddingTop: 12,
+    paddingTop: 24,
+  },
+  communityWrap: {
+    alignSelf: 'stretch',
+    marginTop: 14,
+    marginBottom: 2,
   },
   battleWrap: {
     gap: 24,

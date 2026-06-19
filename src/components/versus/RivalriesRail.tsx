@@ -1,8 +1,12 @@
-// src/components/versus/RivalriesRail.tsx
+// src/components/versus/RivalriesRail.tsx — the "Greatest Rivalries" deck on the
+// native Arena hub. Split-portrait collectible cards under a holographic sheen
+// with a gold-rimmed VS coin; tapping one opens that matchup in the arena.
+// Matches the web RivalryDeck (src/components/web/versus) so both platforms read
+// as one design.
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
-import { VsBadge } from '../compare/VsBadge';
 import type { Rivalry } from '../../lib/db/heroes';
 import type { FighterArt } from '../../lib/compareHandoff';
 
@@ -32,12 +36,25 @@ function RivalryCard({ r, onPress }: { r: Rivalry; onPress: () => void }) {
         contentPosition="top"
         style={styles.half}
       />
-      <View style={[StyleSheet.absoluteFill, styles.scrim]} />
-      <View style={styles.badge}>
-        <VsBadge size={34} variant="solid" />
+      <LinearGradient
+        colors={['rgba(231,115,51,0.12)', 'transparent', 'rgba(21,161,171,0.12)']}
+        locations={[0, 0.5, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        colors={['transparent', 'rgba(8,12,24,0.9)']}
+        locations={[0.5, 1]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      <View style={styles.coin}>
+        <Text style={styles.coinText}>VS</Text>
       </View>
       <Text style={styles.label} numberOfLines={1}>
-        {r.a.name} vs {r.b.name}
+        {r.a.name} · {r.b.name}
       </Text>
     </Pressable>
   );
@@ -53,7 +70,10 @@ export function RivalriesRail({
   if (rivalries.length === 0) return null;
   return (
     <View>
-      <Text style={styles.heading}>Greatest Rivalries</Text>
+      <View style={styles.head}>
+        <Text style={styles.heading}>Greatest Rivalries</Text>
+        <Text style={styles.sub}>the grudge matches fans want to see</Text>
+      </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -68,15 +88,16 @@ export function RivalriesRail({
 }
 
 const CARD_W = 220;
-const CARD_H = 132;
+const CARD_H = 140;
 
 const styles = StyleSheet.create({
-  heading: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 20,
-    color: COLORS.beige,
-    marginBottom: 12,
-    paddingHorizontal: 16,
+  head: { paddingHorizontal: 16, marginBottom: 14 },
+  heading: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.beige },
+  sub: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12.5,
+    color: 'rgba(245,235,220,0.45)',
+    marginTop: 2,
   },
   row: { gap: 12, paddingHorizontal: 16, paddingBottom: 4 },
   card: {
@@ -85,30 +106,37 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     flexDirection: 'row',
-    backgroundColor: '#1b2a30',
-    justifyContent: 'flex-end',
+    backgroundColor: COLORS.deepNavy,
   },
   cardPressed: { opacity: 0.9 },
   half: { width: CARD_W / 2, height: CARD_H },
-  scrim: { backgroundColor: 'rgba(12,17,20,0.28)' },
-  badge: {
+  coin: {
     position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
+    top: '50%',
+    left: '50%',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginTop: -16,
+    marginLeft: -16,
+    backgroundColor: COLORS.deepNavy,
+    borderWidth: 1.5,
+    borderColor: COLORS.goldAccent,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  coinText: { fontFamily: 'Flame-Regular', fontSize: 12, color: COLORS.goldAccent },
   label: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
     padding: 10,
+    textAlign: 'center',
     fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
+    fontSize: 11.5,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
     color: COLORS.beige,
-    backgroundColor: 'rgba(12,17,20,0.5)',
   },
 });

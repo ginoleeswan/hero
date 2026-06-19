@@ -22,9 +22,12 @@ export interface CategoryPod {
 }
 
 // A deliberate, finite set — the publisher/archetype/media/ranking browse axes.
+// Kept to an even count so a two-column grid (mobile native + web) never strands
+// a lone tile on the last row; 12 also divides cleanly into 3- and 4-up desktop.
 export const BROWSE_PODS: CategoryPod[] = [
   { slug: 'marvel', label: 'Marvel', kind: 'Publisher' },
   { slug: 'dc', label: 'DC', kind: 'Publisher' },
+  { slug: 'image', label: 'Image', kind: 'Publisher' },
   { slug: 'villain', label: 'Villains', kind: 'Archetype' },
   { slug: 'xmen', label: 'X-Men', kind: 'Team' },
   { slug: 'anti-heroes', label: 'Anti-Heroes', kind: 'Archetype' },
@@ -56,7 +59,10 @@ export function CategoryPodGrid({
               portraitUrl={c?.portrait_url}
               grid
               contentFit="cover"
-              contentPosition="top"
+              // Bias the crop a touch below the top: anchoring hard to the top
+              // fills the short tile with headroom/hair and clips the face off the
+              // bottom edge. Nudging down brings the face into the frame.
+              contentPosition={{ top: '35%', left: '50%' }}
               style={StyleSheet.absoluteFill as object}
               recyclingKey={p.slug}
             />
@@ -93,7 +99,7 @@ const s = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   label: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 19,
     color: COLORS.beige,
     lineHeight: 21,

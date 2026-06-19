@@ -8468,13 +8468,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"html-to-image@npm:^1.11.13":
-  version: 1.11.13
-  resolution: "html-to-image@npm:1.11.13"
-  checksum: 10c0/03bd7192d87b99499e37ff12a8e2b41ddce4cf8e33a93dfadff18df0f213434c7f1ba8328db2158f4805da07b7aec3c90aec3152908281153217e86784218b10
-  languageName: node
-  linkType: hard
-
 "html2canvas@npm:^1.4.1":
   version: 1.4.1
   resolution: "html2canvas@npm:1.4.1"
@@ -10809,7 +10802,6 @@ __metadata:
     expo-system-ui: "npm:~56.0.5"
     expo-updates: "npm:~56.0.19"
     expo-web-browser: "npm:~56.0.5"
-    html-to-image: "npm:^1.11.13"
     jest: "npm:^29.2.1"
     jest-expo: "npm:~56.0.5"
     node-addon-api: "npm:^8.8.0"

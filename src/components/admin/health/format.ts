@@ -9,7 +9,7 @@ export const CV_HOURLY_CAP = 200;
 // Soft monthly Gemini budget (USD). The AI-generation runners (powerstats, later
 // portraits) disable their Run button once month-to-date spend reaches this, so
 // you never kick off paid work over budget. Adjust to your actual billing cap.
-export const GEMINI_MONTHLY_BUDGET = 50;
+export const GEMINI_MONTHLY_BUDGET = 150;
 
 // Rough per-item cost estimates (USD) for the AI runners, so a batch can show an
 // approximate spend before you launch it. Powerstats is a tiny flash-lite text

@@ -28,6 +28,7 @@ import { COLORS } from '../../../src/constants/colors';
 import { PortraitCard } from '../../../src/components/search/PortraitCard';
 import { FilterChips, type FilterOption } from '../../../src/components/search/FilterChips';
 import { AccentRail } from '../../../src/components/search/AccentRail';
+import { CategoryPodGrid } from '../../../src/components/home/CategoryPodGrid';
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { Skeleton } from '../../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../../src/components/ui/SkeletonProvider';
@@ -36,6 +37,7 @@ import { useHeroSearchInfinite, prefetchHeroSearch } from '../../../src/lib/quer
 import { getRecentlyViewed } from '../../../src/lib/db/viewHistory';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { useRecentSearches } from '../../../src/hooks/useRecentSearches';
+import { useBrowseCovers } from '../../../src/hooks/useBrowseCovers';
 import type { FavouriteHero } from '../../../src/types';
 
 const SEARCH_NAVY = '#1a262b';
@@ -75,6 +77,7 @@ export default function SearchScreen() {
   const searchRef = useRef<SearchBarCommands>(null);
   const queryClient = useQueryClient();
   const { recent, addRecent, clearRecent } = useRecentSearches();
+  const browseCovers = useBrowseCovers();
 
   const [recentlyViewed, setRecentlyViewed] = useState<FavouriteHero[]>([]);
   const [query, setQuery] = useState('');
@@ -140,8 +143,20 @@ export default function SearchScreen() {
     setPeek(item);
   }, []);
 
+  const handleCategoryPress = useCallback(
+    (slug: string) => {
+      Haptics.selectionAsync();
+      router.push(`/category/${slug}`);
+    },
+    [router],
+  );
+
   const isIdle = !debouncedQuery.trim();
   const showIdleExtras = !query.trim();
+  // When idle, the screen is a browse surface (recent · recently viewed · the
+  // category pods) — not a results grid. Suppress the hero list so the pods read
+  // as the primary doorway instead of competing with a "Popular" wall.
+  const listData = isIdle ? [] : displayedHeroes;
 
   const listHeader = (
     <>
@@ -198,19 +213,30 @@ export default function SearchScreen() {
         />
       )}
 
-      {!isPending && (
+      {showIdleExtras && (
+        <>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionLabel}>Browse</Text>
+          </View>
+          {/* CategoryPodGrid owns its 16px gutter (tiles sized from the screen
+              width), so cancel the list's content padding to align it edge-to-edge. */}
+          <View style={styles.browseGrid}>
+            <CategoryPodGrid covers={browseCovers} onPress={handleCategoryPress} />
+          </View>
+        </>
+      )}
+
+      {!isIdle && !isPending && (
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>
-            {isIdle
-              ? 'Popular'
-              : `${displayedHeroes.length} result${displayedHeroes.length !== 1 ? 's' : ''}`}
+            {`${displayedHeroes.length} result${displayedHeroes.length !== 1 ? 's' : ''}`}
           </Text>
         </View>
       )}
     </>
   );
 
-  const listEmpty = isPending ? (
+  const listEmpty = isIdle ? null : isPending ? (
     <SkeletonProvider>
       <View style={styles.skelGrid}>
         {Array.from({ length: 8 }).map((_, i) => (
@@ -290,7 +316,7 @@ export default function SearchScreen() {
 
       <FlatList
         style={styles.list}
-        data={displayedHeroes}
+        data={listData}
         keyExtractor={(h) => h.id}
         numColumns={GRID_COLUMNS}
         keyboardShouldPersistTaps="handled"
@@ -309,7 +335,7 @@ export default function SearchScreen() {
         onEndReachedThreshold={0.6}
         onEndReached={loadMore}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 150 }]}
-        columnWrapperStyle={displayedHeroes.length > 0 ? styles.gridRow : undefined}
+        columnWrapperStyle={listData.length > 0 ? styles.gridRow : undefined}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         renderItem={({ item }) => (
           <PortraitCard
@@ -351,13 +377,14 @@ const styles = StyleSheet.create({
   list: { flex: 1, backgroundColor: 'transparent' },
   content: { paddingHorizontal: H_PAD, paddingTop: 4 },
   screenTitle: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 30,
     color: COLORS.beige,
     marginTop: 2,
     marginBottom: 12,
   },
   chipStack: { marginHorizontal: -H_PAD, paddingBottom: 2 },
+  browseGrid: { marginHorizontal: -H_PAD, paddingBottom: 4 },
   skelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingTop: 4 },
   gridRow: { gap: GAP },
   footer: { paddingVertical: 24, alignItems: 'center' },

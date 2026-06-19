@@ -14,8 +14,10 @@ import { SearchPalette } from './search/SearchPalette';
 
 export const TOPBAR_HEIGHT = 64;
 
-// Versus/Arena entry — the two-slot matchup builder (pick both fighters).
-const VERSUS_PATH = '/compare/pick';
+// Versus/Arena entry — the web Arena hub (today's showdown + rivalries + the
+// build-your-own / surprise-me actions). The two-slot matchup builder lives one
+// step deeper at /compare/pick, reached from the hub's "Build your own".
+const VERSUS_PATH = '/versus';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -97,7 +99,7 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   // Versus highlights across the whole /compare flow; others match their route.
   const navActive = (key: string, path: string) =>
     key === 'versus'
-      ? pathname.startsWith('/compare')
+      ? pathname.startsWith('/versus') || pathname.startsWith('/compare')
       : key === 'search'
         ? searchFocused || pathname === path
         : pathname === path;

@@ -51,10 +51,10 @@ export function LogoLoader() {
           d={LOGO_PATH}
           // @ts-expect-error pathLength is a valid SVG attribute but missing from AnimatedPath types
           pathLength={100}
-          stroke={COLORS.navy}
+          stroke={COLORS.beige}
           strokeWidth={12}
           strokeDasharray={100}
-          fill={COLORS.navy}
+          fill={COLORS.beige}
           animatedProps={animatedProps}
         />
       </Svg>
@@ -65,7 +65,7 @@ export function LogoLoader() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.beige,
+    backgroundColor: COLORS.deepNavy,
     alignItems: 'center',
     justifyContent: 'center',
   },

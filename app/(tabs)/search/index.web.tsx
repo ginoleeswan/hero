@@ -1,6 +1,6 @@
 // app/search.web.tsx — Search experience (web).
 // Desktop: committed results driven by the nav field (?q= in the URL).
-// Mobile: full-screen live search with its own input, plus Recent + Trending.
+// Idle (any width): full-screen browse surface — Recent searches + category pods.
 import { useEffect, useState } from 'react';
 import {
   View,
@@ -20,7 +20,8 @@ import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPee
 import { useSearch } from '../../../src/contexts/SearchContext';
 import { useSearchHistory } from '../../../src/hooks/useSearchHistory';
 import { useHeroSearch } from '../../../src/hooks/useHeroSearch';
-import { useIdleHeroes } from '../../../src/hooks/useIdleHeroes';
+import { useBrowseCovers } from '../../../src/hooks/useBrowseCovers';
+import { CategoryPodGrid } from '../../../src/components/web/home/CategoryPodGrid';
 import { useSkeletonAnim } from '../../../src/components/web/Skeleton';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
 import { useWebDocumentScroll } from '../../../src/hooks/useWebDocumentScroll';
@@ -196,8 +197,11 @@ export default function WebSearchScreen() {
     return () => clearTimeout(t);
   }, [trimmed, urlQ]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const showIdle = !isDesktop && !hasCriteria;
-  const { heroes: trending, isLoading: trendingLoading } = useIdleHeroes(showIdle, 12);
+  // Idle (no query, no publisher filter) is now a browse surface on every width:
+  // recent searches + the category pods. The old "Trending" hero wall is gone —
+  // the pods are the doorway, so desktop no longer shows a bare empty prompt.
+  const showIdle = !hasCriteria;
+  const browseCovers = useBrowseCovers(showIdle);
 
   const goToHero = (id: string) => {
     if (trimmed) addSearch(trimmed);
@@ -356,27 +360,15 @@ export default function WebSearchScreen() {
             </>
           )}
           <Text style={[styles.idleLabel, { marginTop: history.length > 0 ? 24 : 4 }] as object}>
-            Trending
+            Browse
           </Text>
-          <View style={gridStyle as object}>
-            {trendingLoading
-              ? Array.from({ length: 12 }).map((_, i) => (
-                  <SkeletonCard key={i} opacity={skeletonOpacity} />
-                ))
-              : trending.map((hero) => (
-                  <HeroCard
-                    key={hero.id}
-                    hero={hero}
-                    onPress={() => goToHero(hero.id)}
-                    onLongPress={() => setPeek(hero)}
-                    onInfo={() => setPeek(hero)}
-                  />
-                ))}
-          </View>
-        </View>
-      ) : !hasCriteria ? (
-        <View style={styles.center}>
-          <Text style={styles.empty}>Search for a hero to see results.</Text>
+          <CategoryPodGrid
+            covers={browseCovers}
+            onPress={(slug) =>
+              router.push(`/category/${slug}` as Parameters<typeof router.push>[0])
+            }
+            flush
+          />
         </View>
       ) : (
         <View style={[styles.gridWrap, { paddingHorizontal: contentPad }]}>

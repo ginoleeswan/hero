@@ -1,24 +1,14 @@
-import { useEffect, useState, useCallback, useMemo, Fragment, type ComponentProps } from 'react';
+import { useEffect, useState, Fragment, type ComponentProps } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import {
-  fetchHeroStats,
-  fetchHeroDetails,
-  fetchHeroGallery,
-  HeroNotFoundError,
-} from '../../src/lib/api';
 import { NotFoundView, LoadErrorView } from '../../src/components/NotFoundView';
-import { getHeroById, getHeroFamily, heroRowToCharacterData } from '../../src/lib/db/heroes';
-import { isSuperheroApiId } from '../../src/lib/query/heroLoadPlan';
-import type { FamilyMember } from '../../src/lib/family/types';
+import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
 import { FamilyCanvas } from '../../src/components/family/FamilyCanvas.web';
-import { supabase } from '../../src/lib/supabase';
-import { isFavourited, addFavourite, removeFavourite } from '../../src/lib/db/favourites';
 import { getPowerIcon, groupPowers } from '../../src/constants/powerIcons';
-import { useAuth } from '../../src/hooks/useAuth';
+import { useHeroDetail } from '../../src/hooks/useHeroDetail';
 import { ContributeSheet } from '../../src/components/contribute/ContributeSheet';
 import { isBlankValue } from '../../src/lib/contribute/missingFields';
 import {
@@ -28,41 +18,28 @@ import {
   STAT_FIELDS,
   type EditableFieldDef,
 } from '../../src/lib/db/contributions';
-import { getProfile } from '../../src/lib/db/profiles';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { StatBar } from '../../src/components/web/StatBar';
 import { MovieStrip } from '../../src/components/MovieStrip';
-import { getHeroTitles, groupTitlesByMedia, type HeroTitle } from '../../src/lib/db/titles';
-import {
-  getHeroPortrayals,
-  getHeroLinks,
-  type HeroPortrayals,
-  type HeroLinks,
-} from '../../src/lib/db/people';
+import { groupTitlesByMedia } from '../../src/lib/db/titles';
 import { PortrayedBySection } from '../../src/components/PortrayedBySection';
 import { HeroLinksRow, heroLinksHasContent } from '../../src/components/HeroLinksRow';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
 import { TraitBand } from '../../src/components/character/TraitBand';
 import { DidYouKnowDeck } from '../../src/components/character/DidYouKnowDeck';
 import { PowersDecoded } from '../../src/components/character/PowersDecoded';
-import {
-  getHeroNarrative,
-  type HeroNarrative,
-  type PowerExplainer,
-} from '../../src/lib/db/heroFacts';
+import { type PowerExplainer } from '../../src/lib/db/heroFacts';
 import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
-import { useHeroPercentile, useRelatedHeroes } from '../../src/lib/query/heroQueries';
-import type { RelatedHeroCard } from '../../src/lib/db/heroes';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { GalleryStrip } from '../../src/components/GalleryStrip';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
 import { PublisherLogoChip } from '../../src/components/PublisherBadge';
 import { brandForPublisher } from '../../src/constants/publishers';
-import type { CharacterData, HeroStats, IssueCover } from '../../src/types';
+import type { HeroStats } from '../../src/types';
 
 const STAT_CONFIG = [
   { key: 'intelligence', label: 'Intelligence', color: COLORS.blue },
@@ -508,7 +485,6 @@ function ExpandableChipGroup({
 export default function WebCharacterScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { user } = useAuth();
   const { width, height: winHeight } = useWindowDimensions();
   const mHeroHeight = Math.round(winHeight * 0.9);
   const isDesktop = width >= 700;
@@ -518,27 +494,44 @@ export default function WebCharacterScreen() {
   useWebCanvas(COLORS.beige);
 
   const skeletonOpacity = useSkeletonAnim();
-  const [data, setData] = useState<CharacterData | null>(null);
+  const {
+    data,
+    setData,
+    user,
+    isAdmin,
+    comicVineLoading,
+    statsGenerating,
+    notFound,
+    loadError,
+    favourited,
+    favLoading,
+    issueCovers,
+    family,
+    narrative,
+    titles,
+    portrayals,
+    links,
+    retryLoad,
+    toggleFavourite,
+    powerTotal,
+    percentile,
+    relatedHeroMap,
+    enemyNames,
+    allyNames,
+    teammateNames,
+  } = useHeroDetail({ id });
+
+  // View-only UI state (edit affordances, first-issue modal, tabs, lightbox, stage).
   const [statsEditing, setStatsEditing] = useState(false);
   const [factsEditing, setFactsEditing] = useState(false);
+  const [contributeMenu, setContributeMenu] = useState(false);
   const [editTarget, setEditTarget] = useState<{
     field: EditableFieldDef | null;
     current: string | null;
     report?: boolean;
   } | null>(null);
-  const [contributeMenu, setContributeMenu] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
-  const [comicVineLoading, setComicVineLoading] = useState(true);
-  const [statsGenerating, setStatsGenerating] = useState(false);
-  // Genuine 404 (poster) vs. transient load failure (retryable) — mirrors native.
-  const [notFound, setNotFound] = useState(false);
-  const [loadError, setLoadError] = useState(false);
-  const [retryToken, setRetryToken] = useState(0);
-  const [favourited, setFavourited] = useState(false);
-  const [favLoading, setFavLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'universe'>('overview');
-  const [issueCovers, setIssueCovers] = useState<IssueCover[] | null>(null);
   const [lightboxImages, setLightboxImages] = useState<{ url: string; caption?: string | null }[]>(
     [],
   );
@@ -546,300 +539,11 @@ export default function WebCharacterScreen() {
   // Measured desktop stage height — lets the overlapping portrait anchor to a
   // constant top position regardless of how much identity content the stage has.
   const [stageHeight, setStageHeight] = useState(0);
-  const [family, setFamily] = useState<FamilyMember[]>([]);
-  const [narrative, setNarrative] = useState<HeroNarrative | null>(null);
-  const [titles, setTitles] = useState<HeroTitle[] | null>(null);
-  const [portrayals, setPortrayals] = useState<HeroPortrayals | null>(null);
-  const [links, setLinks] = useState<HeroLinks | null>(null);
-
-  useEffect(() => {
-    if (!user) {
-      setIsAdmin(false);
-      return;
-    }
-    let active = true;
-    getProfile(user.id)
-      .then((p) => active && setIsAdmin(!!p?.is_admin))
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [user]);
-
-  useEffect(() => {
-    setFamily([]);
-    if (!id) return;
-    getHeroFamily(id)
-      .then(setFamily)
-      .catch(() => setFamily([]));
-  }, [id]);
-
-  useEffect(() => {
-    setNarrative(null);
-    if (!id) return;
-    let active = true;
-    getHeroNarrative(id)
-      .then((n) => {
-        if (active) setNarrative(n);
-      })
-      .catch(() => {
-        if (active) setNarrative(null);
-      });
-    return () => {
-      active = false;
-    };
-  }, [id]);
-
-  useEffect(() => {
-    setTitles(null);
-    setPortrayals(null);
-    setLinks(null);
-    if (!id) return;
-    let active = true;
-    getHeroTitles(id).then((f) => {
-      if (active) setTitles(f);
-    });
-    getHeroPortrayals(id).then((pp) => {
-      if (active) setPortrayals(pp);
-    });
-    getHeroLinks(id).then((l) => {
-      if (active) setLinks(l);
-    });
-    return () => {
-      active = false;
-    };
-  }, [id]);
-
-  useEffect(() => {
-    if (!id) return;
-
-    const loadFromApi = () => {
-      fetchHeroStats(id)
-        .then((stats) => {
-          setData({
-            stats,
-            details: {
-              summary: null,
-              publisher: null,
-              firstIssueId: null,
-              firstIssueData: null,
-              powers: null,
-              description: null,
-              origin: null,
-              issueCount: null,
-              creators: null,
-              enemies: null,
-              friends: null,
-              movies: null,
-              movieCount: null,
-              teams: null,
-            },
-            firstIssue: null,
-          });
-          fetchHeroDetails(stats.id, stats.name)
-            .then((details) => {
-              setData({ stats, details, firstIssue: details.firstIssueData });
-            })
-            .catch(() => {})
-            .finally(() => setComicVineLoading(false));
-        })
-        .catch((e: unknown) => {
-          if (e instanceof HeroNotFoundError) setNotFound(true);
-          else setLoadError(true);
-        });
-    };
-
-    getHeroById(id)
-      .then((hero) => {
-        // Render straight from a real DB row when it carries base data
-        // (`enriched_at` set) OR when its id isn't a SuperheroAPI id — a `cv-`
-        // ComicVine-only hero (built from the pipeline) never gets `enriched_at`,
-        // so the row is the only base layer it will ever have. Gating purely on
-        // `enriched_at` routed those heroes to the SuperheroAPI/CDN fetch, which
-        // 404s on a non-numeric id and flipped the screen to "couldn't load".
-        if (hero && (hero.enriched_at != null || !isSuperheroApiId(hero.id))) {
-          setData(heroRowToCharacterData(hero));
-
-          // In-Print covers: seed from the DB row, lazy-fetch once if never enriched.
-          if (hero.issue_covers) {
-            setIssueCovers(hero.issue_covers as unknown as IssueCover[]);
-          }
-          if (hero.comicvine_id != null && hero.gallery_enriched_at === null) {
-            fetchHeroGallery(hero.id, hero.comicvine_id)
-              .then(({ issueCovers: covers }) => {
-                if (covers) setIssueCovers(covers);
-              })
-              .catch(() => {});
-          }
-
-          // Refetch ComicVine only when this hero has never been successfully
-          // enriched. Gate on the terminal `comicvine_status` (written by the
-          // get-comicvine-hero edge fn) — NOT on individual fields being null.
-          // ComicVine legitimately returns no powers/movies for civilians, and the
-          // old field-nullness gate treated that as "unfetched", so heroes
-          // re-fetched ComicVine on every view — and a rate-limited NULL_RESPONSE
-          // then blanked the row each time.
-          const cvStatus = hero.comicvine_status;
-          const needsComicVine = cvStatus == null || cvStatus === 'pending';
-          const moviesIncomplete =
-            !needsComicVine &&
-            hero.movie_count != null &&
-            hero.movies != null &&
-            hero.movie_count > (hero.movies as unknown[]).length;
-          const moviesLackDetail =
-            !needsComicVine &&
-            !moviesIncomplete &&
-            hero.movies != null &&
-            (hero.movies as unknown[]).length > 0 &&
-            (
-              hero.movies as {
-                deck?: string | null;
-                rating?: string | null;
-                runtime?: string | null;
-              }[]
-            )
-              .slice(0, 5)
-              .every((m) => m.deck === null && m.rating === null && m.runtime === null);
-          setComicVineLoading(needsComicVine);
-          if (needsComicVine || moviesIncomplete || moviesLackDetail) {
-            fetchHeroDetails(hero.id, hero.name)
-              .then((details) => {
-                setData((prev) => {
-                  if (!prev) return prev;
-                  const p = prev.details;
-                  // Additive merge: the live ComicVine fetch FILLS gaps, it must
-                  // never ERASE a good DB value. Every field ComicVine returns as
-                  // null falls back to what the row already had — so a partial
-                  // response (or an all-null NULL_RESPONSE when ComicVine is
-                  // throttled/unmatched) keeps the DB data on screen instead of
-                  // flashing it then blanking it.
-                  return {
-                    ...prev,
-                    details: {
-                      summary: details.summary ?? p.summary,
-                      publisher: details.publisher ?? p.publisher,
-                      firstIssueId: details.firstIssueId ?? p.firstIssueId,
-                      firstIssueData: details.firstIssueData ?? p.firstIssueData,
-                      powers: details.powers ?? p.powers,
-                      description: details.description ?? p.description,
-                      origin: details.origin ?? p.origin,
-                      issueCount: details.issueCount ?? p.issueCount,
-                      creators: details.creators ?? p.creators,
-                      enemies: details.enemies ?? p.enemies,
-                      friends: details.friends ?? p.friends,
-                      movies: details.movies ?? p.movies,
-                      movieCount: details.movieCount ?? p.movieCount,
-                      teams: details.teams ?? p.teams,
-                    },
-                    firstIssue: details.firstIssueData ?? prev.firstIssue,
-                  };
-                });
-              })
-              .catch(() => {})
-              .finally(() => {
-                if (needsComicVine) setComicVineLoading(false);
-              });
-          }
-
-          // Lazy AI stat generation for CV characters with no stats yet
-          if (hero.intelligence === null && hero.ai_stats_status === 'pending') {
-            setStatsGenerating(true);
-            supabase.functions
-              .invoke<Record<string, number>>('generate-hero-stats', { body: { heroId: hero.id } })
-              .then(({ data: stats }) => {
-                if (stats && typeof stats.intelligence === 'number') {
-                  setData((prev) => {
-                    if (!prev) return prev;
-                    return {
-                      ...prev,
-                      statsSource: 'ai',
-                      stats: {
-                        ...prev.stats,
-                        powerstats: {
-                          intelligence: String(stats.intelligence),
-                          strength: String(stats.strength),
-                          speed: String(stats.speed),
-                          durability: String(stats.durability),
-                          power: String(stats.power),
-                          combat: String(stats.combat),
-                        },
-                      },
-                    };
-                  });
-                }
-              })
-              .catch(() => {})
-              .finally(() => setStatsGenerating(false));
-          }
-          return;
-        }
-        loadFromApi();
-      })
-      .catch(loadFromApi);
-  }, [id, retryToken]);
-
-  const retryLoad = useCallback(() => {
-    setLoadError(false);
-    setRetryToken((t) => t + 1);
-  }, []);
-
-  useEffect(() => {
-    if (!user || !id) return;
-    isFavourited(user.id, id)
-      .then(setFavourited)
-      .catch(() => {});
-  }, [user, id]);
-
-  const toggleFavourite = useCallback(async () => {
-    if (!user || !id || favLoading) return;
-    setFavLoading(true);
-    const next = !favourited;
-    setFavourited(next);
-    try {
-      await (next ? addFavourite(user.id, id) : removeFavourite(user.id, id));
-    } catch {
-      setFavourited(!next);
-    } finally {
-      setFavLoading(false);
-    }
-  }, [user, id, favourited, favLoading]);
 
   // Priority: Supabase portrait → local bundled → API image → CDN
   const heroImage = id
     ? heroImageSource(id, data?.stats.image.url ?? null, data?.stats.image.portraitUrl ?? null)
     : null;
-
-  // Power percentile + resolved enemy/ally hero cards (shared with native).
-  const powerTotal = useMemo(() => {
-    if (!data) return 0;
-    return STAT_CONFIG.map(({ key }) =>
-      parseInt((data.stats.powerstats as Record<string, string>)[key] ?? '0', 10),
-    )
-      .filter((n) => !isNaN(n) && n > 0)
-      .reduce((a, b) => a + b, 0);
-  }, [data]);
-  const { data: percentile } = useHeroPercentile(powerTotal || null);
-
-  // Enemies / allies / teammates from the relationship graph (same-universe,
-  // popularity-ranked). The map drives the enemy/ally strips; teammates render
-  // straight from the graph (there's no ComicVine "teammates" name list).
-  const { data: related } = useRelatedHeroes(id);
-  const relatedHeroMap = useMemo(() => {
-    const m = new Map<string, RelatedHeroCard>();
-    for (const h of [
-      ...(related?.enemies ?? []),
-      ...(related?.allies ?? []),
-      ...(related?.teammates ?? []),
-    ]) {
-      m.set(h.name, h);
-    }
-    return m;
-  }, [related]);
-  // Names in the graph's popularity-ranked order so the strips lead with the
-  // recognisable foes/allies/teammates (every one resolves to a card).
-  const enemyNames = useMemo(() => (related?.enemies ?? []).map((h) => h.name), [related]);
-  const allyNames = useMemo(() => (related?.allies ?? []).map((h) => h.name), [related]);
-  const teammateNames = useMemo(() => (related?.teammates ?? []).map((h) => h.name), [related]);
 
   // Once the stage (with the big hero name) has scrolled out of view, fade the
   // name into the sticky portrait so you always know who you're looking at.

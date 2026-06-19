@@ -4,17 +4,21 @@
 import type { RefObject } from 'react';
 import type { View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
 import { SHARE_CARD_SIZE } from '../components/compare/ShareableMatchupCard';
 
 export type ShareImageResult = 'shared' | 'downloaded' | 'unsupported' | 'error';
 
 export async function captureAndShareMatchup(
   ref: RefObject<View | null>,
-  opts: { title: string; filename: string },
+  // `poster` is web-only (its canvas renderer draws from data); native snapshots
+  // the already-rendered ShareableMatchupCard via the ref, so it's ignored here.
+  opts: { title: string; filename: string; poster?: unknown },
 ): Promise<ShareImageResult> {
   try {
     if (!ref.current) return 'error';
+    // Lazy-import so Expo Go (which lacks the ExpoSharing native module) doesn't
+    // crash on module load — the import only runs when sharing is actually invoked.
+    const Sharing = await import('expo-sharing');
     const uri = await captureRef(ref, {
       format: 'png',
       quality: 1,

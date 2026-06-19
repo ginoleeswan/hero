@@ -831,6 +831,27 @@ export type Database = {
         }
         Relationships: []
       }
+      matchup_vote_seeds: {
+        Row: {
+          hero_a_id: string
+          hero_b_id: string
+          votes_a: number
+          votes_b: number
+        }
+        Insert: {
+          hero_a_id: string
+          hero_b_id: string
+          votes_a?: number
+          votes_b?: number
+        }
+        Update: {
+          hero_a_id?: string
+          hero_b_id?: string
+          votes_a?: number
+          votes_b?: number
+        }
+        Relationships: []
+      }
       matchup_votes: {
         Row: {
           created_at: string

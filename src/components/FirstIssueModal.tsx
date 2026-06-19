@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   seriesName: {
-    fontFamily: 'Flame-Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 23,
     color: COLORS.navy,
     marginBottom: 5,

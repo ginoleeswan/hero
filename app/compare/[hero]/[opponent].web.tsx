@@ -19,7 +19,7 @@ import { useWebCanvas } from '../../../src/hooks/useWebCanvas';
 import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
 import { HeroMonogram } from '../../../src/components/HeroImage';
 import { VerdictReveal } from '../../../src/components/compare/VerdictReveal';
-import { ArenaVote } from '../../../src/components/compare/ArenaVote';
+import { CommunityVotes } from '../../../src/components/compare/CommunityVotes';
 import { StatBattleRow } from '../../../src/components/compare/StatBattleRow';
 import { VsBadge } from '../../../src/components/compare/VsBadge';
 import { MatchupBadge } from '../../../src/components/compare/MatchupBadge';
@@ -28,6 +28,7 @@ import { relationshipBadge } from '../../../src/lib/db/heroes';
 import { getFighterArt, stashFighters } from '../../../src/lib/compareHandoff';
 import { withViewTransition } from '../../../src/lib/viewTransition';
 import { useMatchupShareImage } from '../../../src/hooks/useMatchupShareImage';
+import { useMatchupVote } from '../../../src/hooks/useMatchupVote';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
 
 // Must match the picker — the locked hero (A) and chosen card (B) morph in.
@@ -239,6 +240,12 @@ export default function WebCompareScreen() {
   const imageB = rawUrlB || portraitUrlB ? heroImageSource(opponent, rawUrlB, portraitUrlB) : null;
   const nameA = statsA?.name ?? artA?.name ?? '';
   const nameB = statsB?.name ?? artB?.name ?? '';
+
+  // The arena is the RESULT page — read-only. Voting happens earlier, as an
+  // in-place poll on the matchup cards; here we only display who wins (stats +
+  // verdict) and the fan-vote tally. We read the tally (+ the viewer's own pick
+  // to highlight it) but never cast a vote from this screen.
+  const { tally, pickedId } = useMatchupVote(hero, opponent);
   const stateA: PortraitState = ready ? portraitState(overallWinner!, 'A') : 'neutral';
   const stateB: PortraitState = ready ? portraitState(overallWinner!, 'B') : 'neutral';
 
@@ -381,16 +388,8 @@ export default function WebCompareScreen() {
               {ready && result ? (
                 <>
                   <VerdictReveal verdict={verdict} tone="dark" />
-                  <View style={styles.scorecardVote}>
-                    <ArenaVote
-                      heroAId={hero}
-                      heroBId={opponent}
-                      nameA={nameA}
-                      nameB={nameB}
-                      winsA={result.winsA}
-                      winsB={result.winsB}
-                      tone="light"
-                    />
+                  <View style={styles.scorecardCommunity}>
+                    <CommunityVotes tally={tally} pickedId={pickedId} heroAId={hero} tone="light" />
                   </View>
                   <View style={styles.scorecardStats}>
                     {result.stats.map((stat, i) => (
@@ -455,16 +454,8 @@ export default function WebCompareScreen() {
         <MatchupBadge badge={badge} style={{ marginTop: 14, marginBottom: 2 }} />
         <View style={styles.verdictBlock}>
           <VerdictReveal verdict={verdict} />
-          <View style={styles.mobileVote}>
-            <ArenaVote
-              heroAId={hero}
-              heroBId={opponent}
-              nameA={statsA.name}
-              nameB={statsB.name}
-              winsA={result.winsA}
-              winsB={result.winsB}
-              tone="dark"
-            />
+          <View style={styles.mobileCommunity}>
+            <CommunityVotes tally={tally} pickedId={pickedId} heroAId={hero} tone="dark" />
           </View>
           <Pressable
             onPress={handleShare}
@@ -610,8 +601,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 2,
   } as object,
-  scorecardVote: {
+  scorecardCommunity: {
     marginTop: 18,
+    marginBottom: 4,
     paddingTop: 18,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(41,60,67,0.14)',
@@ -736,10 +728,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  mobileVote: {
+  mobileCommunity: {
     alignSelf: 'stretch',
     maxWidth: 380,
     marginTop: 16,
+    marginBottom: 4,
   } as object,
   mobileSheet: {
     flexGrow: 1,

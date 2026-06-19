@@ -1,5 +1,6 @@
 'use dom';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 
 const logoMark = require('../../../assets/mythique-logo.svg');
@@ -9,16 +10,61 @@ const screenshotSearch = require('../../../assets/images/screenshots/search.PNG'
 const P = (id: string) =>
   `https://res.cloudinary.com/dgrsb5o4p/image/upload/f_auto,q_auto,w_400/hero-portraits/${id}.jpg`;
 
-const spiderman = P('620');
-const batman = P('69');
-const ironman = P('346');
-const deadpool = P('213');
-const wolverine = P('717');
-const wonderWoman = P('720');
-const captainAmerica = P('149');
-const blackPanther = P('106');
-const docStrange = P('226');
-const hulk = P('332');
+// [id, name, weight] — higher weight = more likely to appear each load
+const HERO_POOL: [string, string, number][] = [
+  ['620', 'Spider-Man', 10],
+  ['69', 'Batman', 10],
+  ['346', 'Iron Man', 10],
+  ['717', 'Wolverine', 10],
+  ['644', 'Superman', 10],
+  ['149', 'Captain America', 9],
+  ['659', 'Thor', 9],
+  ['720', 'Wonder Woman', 9],
+  ['213', 'Deadpool', 8],
+  ['332', 'Hulk', 8],
+  ['106', 'Black Panther', 8],
+  ['226', 'Doctor Strange', 7],
+  ['423', 'Magneto', 7],
+  ['579', 'Scarlet Witch', 7],
+  ['370', 'Joker', 7],
+  ['687', 'Venom', 6],
+  ['cv-4324', 'Loki', 6],
+  ['201', 'Daredevil', 6],
+  ['638', 'Storm', 6],
+  ['196', 'Cyclops', 5],
+  ['cv-3552', 'Jean Grey', 5],
+  ['241', 'Emma Frost', 5],
+  ['165', 'Catwoman', 5],
+  ['38', 'Aquaman', 5],
+  ['306', 'Hal Jordan', 5],
+  ['298', 'Green Arrow', 4],
+  ['567', 'Rogue', 4],
+  ['274', 'Gambit', 4],
+  ['222', 'Doctor Doom', 4],
+  ['cv-21561', 'Carol Danvers', 4],
+  ['cv-3200', 'Black Widow', 4],
+  ['697', 'Vision', 3],
+  ['185', 'Colossus', 3],
+  ['490', 'Nightcrawler', 3],
+  ['481', 'Namor', 3],
+  ['cv-1691', 'Dick Grayson', 3],
+  ['cv-5368', 'Barbara Gordon', 3],
+  ['432', 'Martian Manhunter', 3],
+];
+
+const weightedShuffle = () =>
+  [...HERO_POOL]
+    .map((entry) => ({ entry, key: Math.random() ** (1 / entry[2]) }))
+    .sort((a, b) => b.key - a.key)
+    .map(({ entry }) => entry);
+
+// Each section gets its own independent shuffle so collage ≠ mosaic
+const collageShuffled = weightedShuffle();
+const mosaicShuffled = weightedShuffle();
+
+const collageChars = collageShuffled.slice(0, 10);
+const mosaicChars = mosaicShuffled.slice(0, 10);
+const stripChars = collageShuffled.slice(0, 8);
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap');
@@ -364,10 +410,41 @@ const CSS = `
     .hero-card,.scroll-hint,.marquee-track { animation:none; }
     * { transition-duration:0.01ms !important; }
   }
+
+  /* Font-loading splash */
+  .page-loader {
+    position:fixed; inset:0; z-index:9999;
+    background:#0b1820;
+    display:flex; align-items:center; justify-content:center;
+    transition:opacity 400ms ease;
+  }
+  .page-loader.ready { opacity:0; pointer-events:none; }
+  @keyframes loaderDraw {
+    0% { stroke-dashoffset:100; }
+    60%,100% { stroke-dashoffset:0; }
+  }
+  @keyframes loaderFill {
+    0%,60% { fill-opacity:0; }
+    100% { fill-opacity:1; }
+  }
+  .loader-path {
+    stroke-dasharray:100;
+    animation:
+      loaderDraw 2s ease-in-out infinite,
+      loaderFill 2s ease-in-out infinite;
+  }
 `;
+
+const LOGO_PATH =
+  'M771.83 359.726C790.233 359.157 809.038 360.561 827.217 363.687C860.194 368.791 880.58 384.832 899.577 411.588C952.323 485.882 910.478 588.451 840.684 635.156C777.716 677.292 684.759 672.267 615.599 648.433C606.232 645.205 596.363 641.14 587.513 636.51C560.951 620.256 539.813 614.985 508.598 616.581C476.925 618.201 457.215 629.785 428.71 641.463C378.199 662.157 312.618 674.016 258.384 663.281C223.369 657.798 188.002 641.874 162.23 617.635C99.3027 558.45 73.5282 462.814 138.958 393.848C166.265 365.064 197.584 361.227 235.229 360.28C291.337 358.869 345.958 367.328 400.078 381.829C413.535 385.43 426.897 389.376 440.151 393.665C470.511 403.519 493.246 412.119 526.372 410.492C544.544 409.599 556.786 403.601 573.782 397.773C584.487 394.125 595.271 390.711 606.126 387.535C659.036 371.973 716.754 361.015 771.83 359.726ZM379.43 580.576C404.316 570.739 422.585 557.516 434.848 532.384C439.037 523.799 439.936 512.178 436.403 503.212C428.365 482.815 393.689 466.137 374.256 457.991C346.125 446.198 312.018 435.868 281.435 435.007C275.287 434.834 268.989 434.216 262.784 434.713C226.343 436.857 209.334 467.83 211.588 501.699C213.173 525.52 224.795 548.661 242.631 564.609C267.287 585.96 306.277 591.723 337.967 589.297C352.112 588.232 366.054 585.299 379.43 580.576ZM669.618 585.812C703.165 593.579 746.514 591.622 776.102 573.056C796.619 559.96 811.158 539.317 816.578 515.588C826.183 473.57 805.637 434.865 760.026 435.926C754.894 436.045 749.642 435.782 744.496 436.282C698.168 440.71 646.68 454.898 608.343 482.267C576.199 505.214 594.861 542.717 619.664 562.508C634.433 574.519 651.324 581.316 669.618 585.812Z';
 
 export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DOMProps }) {
   const router = useRouter();
+  const [fontsReady, setFontsReady] = useState(false);
+
+  useEffect(() => {
+    document.fonts.ready.then(() => setFontsReady(true));
+  }, []);
 
   return (
     <div
@@ -377,6 +454,19 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       }}
     >
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
+
+      <div className={`page-loader${fontsReady ? ' ready' : ''}`} aria-hidden="true">
+        <svg width={100} height={100} viewBox="0 0 1024 1024">
+          <path
+            className="loader-path"
+            pathLength={100}
+            d={LOGO_PATH}
+            stroke="#f5ebdc"
+            strokeWidth={12}
+            fill="#f5ebdc"
+          />
+        </svg>
+      </div>
 
       <nav>
         <div className="nav-brand">
@@ -391,36 +481,11 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* HERO */}
       <section className="hero">
         <div className="hero-collage" aria-hidden="true">
-          <div className="hero-card hc1">
-            <img src={spiderman} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc2">
-            <img src={batman} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc3">
-            <img src={ironman} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc4">
-            <img src={deadpool} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc5">
-            <img src={wolverine} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc6">
-            <img src={wonderWoman} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc7">
-            <img src={captainAmerica} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc8">
-            <img src={blackPanther} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc9">
-            <img src={docStrange} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc10">
-            <img src={hulk} alt="" loading="lazy" />
-          </div>
+          {collageChars.map(([id], i) => (
+            <div key={id} className={`hero-card hc${i + 1}`}>
+              <img src={P(id)} alt="" loading="lazy" />
+            </div>
+          ))}
         </div>
 
         <div className="hero-content">
@@ -436,47 +501,43 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             >
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-            3,000+ Heroes &amp; Villains
+            The living superhero universe
           </div>
           <span className="hero-wordmark-large">mythique</span>
-          <p className="hero-tagline">The Universe's Greatest Heroes</p>
+          <p className="hero-tagline">Know every hero. Settle every debate.</p>
           <p className="hero-sub">
-            Discover the powers, origins, and stories of 3,000+ characters from Marvel, DC, and
-            beyond — all in your pocket.
+            Explore 3,000+ characters in rich detail, trace how they&apos;re connected, and pit any
+            two head-to-head to settle who&apos;d really win. The whole universe — alive, connected,
+            and yours to argue about.
           </p>
           <div className="hero-ctas">
-            <button className="btn-primary">
-              <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+            <button className="btn-primary" onClick={() => router.push('/explore')}>
+              <svg
+                className="btn-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
               </svg>
-              App Store
+              Explore the universe
             </button>
-            <button className="btn-secondary" onClick={() => router.push('/(auth)/signup')}>
-              <svg className="btn-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M3.18 23.76c.28.16.6.22.93.17l12.81-7.4-2.79-2.79-10.95 10zM.29 1.52A1.5 1.5 0 0 0 0 2.39v19.22c0 .31.09.6.29.87l.09.09 10.77-10.77v-.25L.38 1.43l-.09.09zM20.9 10.77l-2.71-1.56-3.07 3.08 3.07 3.07 2.74-1.58c.78-.45.78-1.58-.03-2.01zM4.11.24L16.92 7.63l-2.79 2.79L3.18.24A1.08 1.08 0 0 1 4.11.24z" />
-              </svg>
-              Google Play
-            </button>
-            <button className="btn-secondary" onClick={() => router.push('/explore')}>
-              Try on Web →
+            <button className="btn-secondary" onClick={() => router.push('/versus')}>
+              Settle a debate →
             </button>
           </div>
         </div>
 
         {/* Mobile hero strip */}
         <div className="hero-strip" aria-hidden="true">
-          {[
-            spiderman,
-            ironman,
-            batman,
-            deadpool,
-            wonderWoman,
-            captainAmerica,
-            wolverine,
-            blackPanther,
-          ].map((src, i) => (
-            <div key={i} className="hero-strip-card">
-              <img src={src} alt="" loading="lazy" />
+          {stripChars.map(([id]) => (
+            <div key={id} className="hero-strip-card">
+              <img src={P(id)} alt="" loading="lazy" />
             </div>
           ))}
         </div>
@@ -502,19 +563,19 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       <div className="stats">
         <div className="stat-item">
           <span className="stat-num">3,000+</span>
-          <span className="stat-label">Heroes &amp; Villains</span>
+          <span className="stat-label">Characters</span>
         </div>
         <div className="stat-item">
-          <span className="stat-num">130+</span>
-          <span className="stat-label">Publishers</span>
+          <span className="stat-num">Every</span>
+          <span className="stat-label">Universe</span>
         </div>
         <div className="stat-item">
           <span className="stat-num">Free</span>
-          <span className="stat-label">To Download</span>
+          <span className="stat-label">No Ads</span>
         </div>
         <div className="stat-item">
-          <span className="stat-num">iOS &amp; Android</span>
-          <span className="stat-label">Platforms</span>
+          <span className="stat-num">Web &amp; App</span>
+          <span className="stat-label">Play Anywhere</span>
         </div>
       </div>
 
@@ -557,21 +618,20 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* FEATURES */}
       <section className="section">
         <div className="section-inner">
-          <p className="section-eyebrow">What's inside</p>
+          <p className="section-eyebrow">Why it&apos;s different</p>
           <h2 className="section-heading">
-            Everything you need to
-            <br />
-            know your heroes
+            More than a wiki.
+            <br />A universe you can play with.
           </h2>
           <p className="section-sub">
-            From first appearances to power stats — the most complete superhero companion app on the
-            planet.
+            Explore every hero in depth, see how they all connect, and settle the debates a static
+            list never could. One living, opinionated superhero universe.
           </p>
           <div className="features-grid">
             {[
               {
-                title: 'Discover Heroes',
-                desc: 'Browse curated collections of heroes by universe, team, or power set. New favourites await every scroll.',
+                title: 'Explore the Universe',
+                desc: 'Browse 3,000+ heroes and villains across Marvel, DC, anime, games and beyond — curated collections that surface someone new every scroll.',
                 icon: (
                   <>
                     <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
@@ -580,36 +640,31 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 ),
               },
               {
-                title: 'Instant Search',
-                desc: 'Find any of 3,000+ characters in seconds. Search by name, power, publisher, or team affiliation.',
+                title: 'Deep Profiles',
+                desc: 'Powers, origins, abilities, real names and did-you-knows — the full dossier behind every character, not just a stat block.',
                 icon: (
                   <>
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
                   </>
                 ),
               },
               {
-                title: 'Save Favourites',
-                desc: 'Build your personal hero roster. Track your favourite characters and revisit them any time.',
+                title: 'Rivalries & Family Trees',
+                desc: 'See who they fight, who they love, and who they’re related to — every hero mapped into a living web of allies, enemies and kin.',
                 icon: (
                   <>
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    <circle cx="18" cy="5" r="3" />
+                    <circle cx="6" cy="12" r="3" />
+                    <circle cx="18" cy="19" r="3" />
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                   </>
                 ),
               },
               {
-                title: 'Power Stats',
-                desc: 'Dive deep into intelligence, strength, speed, durability, power, and combat ratings for every hero.',
-                icon: (
-                  <>
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                  </>
-                ),
-              },
-              {
-                title: 'Compare Heroes',
-                desc: 'Pit any two characters head-to-head and watch their power stats clash, stat by stat, in the versus arena.',
+                title: 'Settle the Debate',
+                desc: 'Pit any two head-to-head, take a side, and watch the winner reveal — crowd vote plus the tale of the tape. The "who’d win" argument, finally settled.',
                 icon: (
                   <>
                     <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
@@ -624,22 +679,22 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 ),
               },
               {
-                title: 'Origin Stories',
-                desc: 'First issue data, publisher history, and real names — the complete origin story behind every icon.',
+                title: 'On Screen',
+                desc: 'Every film, show and game a character appears in — with trailers and where to stream them next.',
                 icon: (
                   <>
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                    <polygon points="23 7 16 12 23 17 23 7" />
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
                   </>
                 ),
               },
               {
-                title: 'Universe Browser',
-                desc: 'Explore Marvel, DC, Dark Horse and more. Organised by publisher, team, and comic era.',
+                title: 'Instant Search',
+                desc: 'Find any of 3,000+ characters in seconds — search by name, power, publisher or team affiliation.',
                 icon: (
                   <>
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <path d="M3 9h18M3 15h18M9 3v18" />
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
                   </>
                 ),
               },
@@ -676,21 +731,21 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
               </div>
             </div>
             <div className="screenshots-text">
-              <p className="section-eyebrow">The app</p>
+              <p className="section-eyebrow">The experience</p>
               <h2 className="section-heading">
-                Designed for
+                Made to
                 <br />
-                true fans
+                get lost in.
               </h2>
               <p className="section-sub">
-                A beautiful, fast, and intuitive experience — built by fans, for fans.
+                Fast, beautiful, and endlessly deep — on the web or in your pocket.
               </p>
               <ul className="feature-list">
                 {[
-                  'Curated hero carousels updated regularly',
-                  'Detailed character info from trusted sources',
-                  'Beautiful card UI with squircle artwork',
-                  'Works offline — your heroes, always available',
+                  'Rich profiles — powers, origins, abilities & trivia',
+                  'Rivalry and family-tree graphs you can explore',
+                  'Head-to-head matchups with live crowd verdicts',
+                  'Film, TV and game appearances for every hero',
                 ].map((item, i) => (
                   <li key={i}>
                     <span className="check" aria-hidden="true">
@@ -713,24 +768,14 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           <p className="section-eyebrow">The roster</p>
           <h2 className="section-heading">From every universe</h2>
           <p className="section-sub">
-            Marvel. DC. Dark Horse. If they wear a cape (or don't), we've got them covered.
+            Marvel, DC, anime, video games and beyond — 3,000+ characters, deeply detailed, all in
+            one place.
           </p>
           <div className="hero-mosaic">
-            {[
-              [spiderman, 'Spider-Man'],
-              [batman, 'Batman'],
-              [ironman, 'Iron Man'],
-              [wonderWoman, 'Wonder Woman'],
-              [blackPanther, 'Black Panther'],
-              [deadpool, 'Deadpool'],
-              [wolverine, 'Wolverine'],
-              [captainAmerica, 'Captain America'],
-              [docStrange, 'Doctor Strange'],
-              [hulk, 'Hulk'],
-            ].map(([src, name], i) => (
-              <div key={i} className="mosaic-card">
-                <img src={src as string} alt={name as string} loading="lazy" />
-                <span className="mosaic-name">{name as string}</span>
+            {mosaicChars.map(([id, name]) => (
+              <div key={id} className="mosaic-card">
+                <img src={P(id)} alt={name} loading="lazy" />
+                <span className="mosaic-name">{name}</span>
               </div>
             ))}
           </div>
@@ -740,11 +785,32 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* FINAL CTA */}
       <section className="cta-section">
         <div className="cta-inner">
-          <p className="section-eyebrow">Download now</p>
-          <h2 className="cta-glow">Your heroes await.</h2>
+          <p className="section-eyebrow">Dive in</p>
+          <h2 className="cta-glow">Explore. Compare. Argue.</h2>
           <p className="cta-sub">
-            Free to download. No ads. Just the greatest heroes ever created — right in your pocket.
+            3,000+ heroes, deep profiles, living rivalries, and the only place to settle who&apos;d
+            really win — free, no ads, on the web or in the app.
           </p>
+          <button
+            className="btn-primary"
+            style={{ marginBottom: 28 }}
+            onClick={() => router.push('/explore')}
+          >
+            <svg
+              className="btn-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+            </svg>
+            Explore the universe
+          </button>
           <div className="cta-buttons">
             <button className="app-store-badge" aria-label="Download on the App Store">
               <svg

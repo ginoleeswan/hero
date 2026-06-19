@@ -54,7 +54,12 @@ function Side({
           <Text style={s.crownText}>WINNER</Text>
         </View>
       )}
-      <Text style={[s.name, state === 'loss' && s.nameDim]} numberOfLines={1}>
+      <Text
+        style={[s.name, state === 'loss' && s.nameDim]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.5}
+      >
         {name}
       </Text>
     </View>
