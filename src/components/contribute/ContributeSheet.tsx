@@ -21,8 +21,10 @@ export interface ContributeSheetProps {
   onClose: () => void;
   heroId: string;
   heroName: string;
-  /** Field edit when set; a "Did You Know" fact when null. */
+  /** Field edit when set; a "Did You Know" fact when null (and not a report). */
   field: EditableFieldDef | null;
+  /** Report-incorrect-info mode — always queued for review (never a direct edit). */
+  report?: boolean;
   user: { id: string } | null | undefined;
   /** The user's contribution count BEFORE this one (for the reward number). */
   priorCount: number;
@@ -41,6 +43,7 @@ export function ContributeSheet({
   heroId,
   heroName,
   field,
+  report = false,
   user,
   priorCount,
   isAdmin = false,
@@ -67,21 +70,30 @@ export function ContributeSheet({
     }
   }, [visible, field, currentValue]);
 
-  const isFact = !field;
+  const isReport = report;
+  const isFact = !field && !report;
   const isStat = field?.type === 'stat';
   const isList = field?.type === 'list';
-  const prompt = isFact ? 'Know a fun fact about this hero?' : field!.question;
-  const guideline = isFact
-    ? 'Share a "Did You Know" — one or two sentences.'
-    : (field!.guideline ?? '');
-  const multiline = isFact || !!field?.multiline;
-  const placeholder = isFact
-    ? 'Did you know…'
-    : isStat
-      ? '0–100'
-      : isList
-        ? 'One per line'
-        : 'Type your answer';
+  const prompt = isReport
+    ? 'Something look wrong?'
+    : isFact
+      ? 'Know a fun fact about this hero?'
+      : field!.question;
+  const guideline = isReport
+    ? "Tell us what's incorrect and a moderator will take a look."
+    : isFact
+      ? 'Share a "Did You Know" — one or two sentences.'
+      : (field!.guideline ?? '');
+  const multiline = isReport || isFact || !!field?.multiline;
+  const placeholder = isReport
+    ? "What's incorrect?"
+    : isFact
+      ? 'Did you know…'
+      : isStat
+        ? '0–100'
+        : isList
+          ? 'One per line'
+          : 'Type your answer';
 
   const submit = async () => {
     if (!value.trim()) {
@@ -99,11 +111,15 @@ export function ContributeSheet({
     setError(null);
     const payload = {
       heroId,
-      kind: (isFact ? 'fact' : 'field') as 'fact' | 'field',
+      kind: (isReport ? 'report' : isFact ? 'fact' : 'field') as 'report' | 'fact' | 'field',
       targetField: field?.field ?? null,
       newValue: value.trim(),
     };
-    const res = isAdmin ? await adminEditHero(payload) : await submitContribution(payload);
+    // Reports are always a queued community signal — never a direct admin edit.
+    const res =
+      isAdmin && !isReport
+        ? await adminEditHero({ ...payload, kind: payload.kind as 'field' | 'fact' })
+        : await submitContribution(payload);
     setSubmitting(false);
     if (!res.ok) {
       setError(res.error ?? 'Could not submit — please try again.');
@@ -136,13 +152,21 @@ export function ContributeSheet({
               <View style={s.doneIcon}>
                 <Ionicons name="checkmark" size={28} color="#fff" />
               </View>
-              <Text style={s.doneTitle}>{isAdmin ? 'Saved' : 'Sent for review'}</Text>
-              <Text style={s.doneSub}>
-                {isAdmin ? "It's live now." : rewardLine(priorCount + 1)}
+              <Text style={s.doneTitle}>
+                {isReport ? 'Reported' : isAdmin ? 'Saved' : 'Sent for review'}
               </Text>
-              {!isAdmin && (
+              <Text style={s.doneSub}>
+                {isReport
+                  ? 'Thanks for flagging this.'
+                  : isAdmin
+                    ? "It's live now."
+                    : rewardLine(priorCount + 1)}
+              </Text>
+              {isReport ? (
+                <Text style={s.doneMeta}>A moderator will review it shortly.</Text>
+              ) : !isAdmin ? (
                 <Text style={s.doneMeta}>A moderator will take a look before it goes live.</Text>
-              )}
+              ) : null}
               <Pressable onPress={onClose} style={[s.btn, s.btnPrimary]}>
                 <Text style={s.btnPrimaryText}>Done</Text>
               </Pressable>
@@ -178,12 +202,20 @@ export function ContributeSheet({
                 style={[s.btn, s.btnPrimary, submitting && s.btnDisabled]}
               >
                 <Text style={s.btnPrimaryText}>
-                  {submitting ? 'Saving…' : isAdmin ? 'Save' : 'Submit for review'}
+                  {submitting
+                    ? 'Saving…'
+                    : isReport
+                      ? 'Submit report'
+                      : isAdmin
+                        ? 'Save'
+                        : 'Submit for review'}
                 </Text>
               </Pressable>
-              {!isAdmin && (
+              {isReport ? (
+                <Text style={s.reviewNote}>Reports are reviewed by a moderator.</Text>
+              ) : !isAdmin ? (
                 <Text style={s.reviewNote}>Suggestions are reviewed before they appear.</Text>
-              )}
+              ) : null}
             </View>
           )}
         </Pressable>

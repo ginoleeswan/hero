@@ -27,7 +27,7 @@ import ReAnimated, {
 import Svg, { Path, G } from 'react-native-svg';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -203,8 +203,8 @@ function StatDial({ label, value, tint }: { label: string; value: string; tint: 
 }
 
 // A subtle pencil that sits at the right of a section header, opening that
-// section's edit. Clean glyph (SF Symbol on native, Ionicons fallback), no
-// background chip — turns orange while its section is being edited.
+// section's edit. MaterialCommunityIcons "pencil" — turns orange while its
+// section is being edited.
 function SectionPencil({
   onPress,
   active,
@@ -214,7 +214,7 @@ function SectionPencil({
   active?: boolean;
   label?: string;
 }) {
-  const tint = active ? COLORS.orange : 'rgba(41,60,67,0.5)';
+  const tint = active ? COLORS.orange : 'rgba(41,60,67,0.4)';
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -223,14 +223,7 @@ function SectionPencil({
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <SymbolView
-        name="square.and.pencil"
-        weight="regular"
-        tintColor={tint}
-        size={18}
-        resizeMode="scaleAspectFit"
-        fallback={<Ionicons name="pencil-outline" size={17} color={tint} />}
-      />
+      <MaterialCommunityIcons name="pencil" size={16} color={tint} />
     </TouchableOpacity>
   );
 }
@@ -607,9 +600,11 @@ export default function CharacterScreen() {
   useRecordView(user?.id, id);
   const [data, setData] = useState<CharacterData | null>(null);
   const [statsEditing, setStatsEditing] = useState(false);
+  const [contributeMenu, setContributeMenu] = useState(false);
   const [editTarget, setEditTarget] = useState<{
     field: EditableFieldDef | null;
     current: string | null;
+    report?: boolean;
   } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [narrative, setNarrative] = useState<HeroNarrative | null>(null);
@@ -1396,27 +1391,32 @@ export default function CharacterScreen() {
                 ) : data.details.summary || data.details.description ? (
                   <View style={styles.summaryBlock}>
                     {data.details.summary ? (
-                      <Text style={styles.summary}>{data.details.summary}</Text>
+                      <Text style={styles.summary}>
+                        {data.details.summary}
+                        {'  '}
+                        <MaterialCommunityIcons
+                          name="pencil"
+                          size={14}
+                          color="rgba(41,60,67,0.5)"
+                          suppressHighlighting
+                          onPress={() =>
+                            setEditTarget({
+                              field: SUMMARY_FIELD,
+                              current: data.details.summary ?? null,
+                            })
+                          }
+                        />
+                      </Text>
                     ) : null}
-                    <View style={styles.summaryFooter}>
-                      <SectionPencil
-                        label="Edit summary"
-                        onPress={() =>
-                          setEditTarget({
-                            field: SUMMARY_FIELD,
-                            current: data.details.summary ?? null,
-                          })
-                        }
-                      />
-                      {data.details.description ? (
-                        <TouchableOpacity
-                          onPress={() => router.push(`/biography/${id}`)}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.biographyLinkText}>Full biography →</Text>
-                        </TouchableOpacity>
-                      ) : null}
-                    </View>
+                    {data.details.description ? (
+                      <TouchableOpacity
+                        style={styles.biographyLink}
+                        onPress={() => router.push(`/biography/${id}`)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.biographyLinkText}>Full biography →</Text>
+                      </TouchableOpacity>
+                    ) : null}
                   </View>
                 ) : null}
               </View>
@@ -1793,17 +1793,52 @@ export default function CharacterScreen() {
                 </View>
               ) : null}
 
-              {/* Open invitation to contribute — opens the "Did You Know" fact
-                  prompt (the open-ended, share-what-you-know entry). */}
+              {/* Open invitation to contribute — expands into a small menu of the
+                  contributions not tied to a section (a fact, or a report). */}
               <View style={styles.contributeFooter}>
                 <TouchableOpacity
                   style={styles.contributeBtn}
                   activeOpacity={0.8}
-                  onPress={() => setEditTarget({ field: null, current: null })}
+                  onPress={() => {
+                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                    setContributeMenu((o) => !o);
+                  }}
                 >
                   <Ionicons name="sparkles-outline" size={15} color={COLORS.orange} />
                   <Text style={styles.contributeBtnText}>Contribute to this character</Text>
+                  <Ionicons
+                    name={contributeMenu ? 'chevron-up' : 'chevron-down'}
+                    size={15}
+                    color={COLORS.orange}
+                  />
                 </TouchableOpacity>
+                {contributeMenu ? (
+                  <View style={styles.contributeMenu}>
+                    <TouchableOpacity
+                      style={styles.contributeMenuItem}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setContributeMenu(false);
+                        setEditTarget({ field: null, current: null });
+                      }}
+                    >
+                      <Ionicons name="bulb-outline" size={17} color={COLORS.navy} />
+                      <Text style={styles.contributeMenuText}>Add a “Did You Know” fact</Text>
+                    </TouchableOpacity>
+                    <View style={styles.contributeMenuDivider} />
+                    <TouchableOpacity
+                      style={styles.contributeMenuItem}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setContributeMenu(false);
+                        setEditTarget({ field: null, current: null, report: true });
+                      }}
+                    >
+                      <Ionicons name="flag-outline" size={17} color={COLORS.navy} />
+                      <Text style={styles.contributeMenuText}>Report incorrect info</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
               </View>
             </ReAnimated.View>
           )}
@@ -1862,6 +1897,7 @@ export default function CharacterScreen() {
           heroId={data.stats.id}
           heroName={data.stats.name}
           field={editTarget?.field ?? null}
+          report={editTarget?.report ?? false}
           currentValue={editTarget?.current ?? null}
           user={user}
           isAdmin={isAdmin}
@@ -2086,17 +2122,32 @@ const styles = StyleSheet.create({
     color: COLORS.orange,
     letterSpacing: 0.2,
   },
+  contributeMenu: {
+    marginTop: 12,
+    alignSelf: 'stretch',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.1)',
+    overflow: 'hidden',
+  },
+  contributeMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  contributeMenuText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.navy },
+  contributeMenuDivider: {
+    height: 1,
+    backgroundColor: 'rgba(41,60,67,0.08)',
+    marginHorizontal: 16,
+  },
 
   // Summary
   summaryBlock: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10 },
-  // Footer row: the edit pencil sits to the left of the "Full biography" link.
-  summaryFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 12,
-    paddingTop: 10,
-  },
+  biographyLink: { alignSelf: 'flex-end', paddingTop: 10 },
   biographyLinkText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13,

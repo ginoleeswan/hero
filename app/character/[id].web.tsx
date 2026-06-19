@@ -316,15 +316,9 @@ const s2 = StyleSheet.create({
     fontSize: 13,
     color: COLORS.orange,
   } as object,
-  pencil: { paddingVertical: 2, paddingLeft: 6, cursor: 'pointer' } as object,
-  // Footer row: the edit pencil sits to the left of the "Read biography" link.
-  summaryFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 12,
-    paddingTop: 10,
-  } as object,
+  pencil: { paddingVertical: 2, paddingLeft: 7, cursor: 'pointer' } as object,
+  // Card header row: title + pencil sit together, perfectly centered vertically.
+  cardHeadRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 } as object,
   contributeFooter: { alignItems: 'center', paddingTop: 24, paddingBottom: 8 } as object,
   contributeBtn: {
     flexDirection: 'row',
@@ -344,6 +338,34 @@ const s2 = StyleSheet.create({
     color: COLORS.orange,
     letterSpacing: 0.2,
   } as object,
+  contributeMenu: {
+    marginTop: 12,
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.1)',
+    overflow: 'hidden',
+  } as object,
+  contributeMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    cursor: 'pointer',
+  } as object,
+  contributeMenuText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: COLORS.navy,
+  } as object,
+  contributeMenuDivider: {
+    height: 1,
+    backgroundColor: 'rgba(41,60,67,0.08)',
+    marginHorizontal: 16,
+  } as object,
 });
 
 // A subtle pencil for the right of a section header — clean glyph, no chip
@@ -359,10 +381,10 @@ function WebSectionPencil({
 }) {
   return (
     <Pressable onPress={onPress} style={s2.pencil} accessibilityLabel={label}>
-      <Ionicons
-        name="pencil-outline"
-        size={17}
-        color={active ? COLORS.orange : 'rgba(41,60,67,0.5)'}
+      <MaterialCommunityIcons
+        name="pencil"
+        size={15}
+        color={active ? COLORS.orange : 'rgba(41,60,67,0.4)'}
       />
     </Pressable>
   );
@@ -502,7 +524,9 @@ export default function WebCharacterScreen() {
   const [editTarget, setEditTarget] = useState<{
     field: EditableFieldDef | null;
     current: string | null;
+    report?: boolean;
   } | null>(null);
+  const [contributeMenu, setContributeMenu] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [comicVineLoading, setComicVineLoading] = useState(true);
@@ -1122,8 +1146,6 @@ export default function WebCharacterScreen() {
                             <Text style={styles.aiBadgeText}>AI</Text>
                           </View>
                         ) : null}
-                      </View>
-                      <View style={styles.statHeaderRight}>
                         {isAdmin ? (
                           <WebSectionPencil
                             active={statsEditing}
@@ -1131,6 +1153,8 @@ export default function WebCharacterScreen() {
                             label="Edit power stats"
                           />
                         ) : null}
+                      </View>
+                      <View style={styles.statHeaderRight}>
                         {powerScore !== null || statsGenerating ? (
                           <Pressable
                             onPress={() =>
@@ -1251,33 +1275,36 @@ export default function WebCharacterScreen() {
                   ) : details.summary || details.description ? (
                     <View style={styles.summaryBox}>
                       {details.summary ? (
-                        <Text style={styles.summaryText}>{details.summary}</Text>
-                      ) : null}
-                      <View style={s2.summaryFooter as object}>
-                        <WebSectionPencil
-                          label="Edit summary"
-                          onPress={() =>
-                            setEditTarget({
-                              field: SUMMARY_FIELD,
-                              current: details.summary ?? null,
-                            })
-                          }
-                        />
-                        {details.description ? (
-                          <Pressable
-                            onPress={() => router.push(`/biography/${id}`)}
-                            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                              [
-                                styles.biographyLink,
-                                hovered && (styles.biographyLinkHover as object),
-                              ] as object
+                        <Text style={styles.summaryText}>
+                          {details.summary}
+                          {'  '}
+                          <MaterialCommunityIcons
+                            name="pencil"
+                            size={15}
+                            color="rgba(41,60,67,0.5)"
+                            onPress={() =>
+                              setEditTarget({
+                                field: SUMMARY_FIELD,
+                                current: details.summary ?? null,
+                              })
                             }
-                          >
-                            <Text style={styles.biographyLinkText}>Read biography</Text>
-                            <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
-                          </Pressable>
-                        ) : null}
-                      </View>
+                          />
+                        </Text>
+                      ) : null}
+                      {details.description ? (
+                        <Pressable
+                          onPress={() => router.push(`/biography/${id}`)}
+                          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                            [
+                              styles.biographyLink,
+                              hovered && (styles.biographyLinkHover as object),
+                            ] as object
+                          }
+                        >
+                          <Text style={styles.biographyLinkText}>Read biography</Text>
+                          <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
+                        </Pressable>
+                      ) : null}
                     </View>
                   ) : null}
 
@@ -1635,7 +1662,7 @@ export default function WebCharacterScreen() {
                   </View>
 
                   <View style={styles.card}>
-                    <View style={styles.statCardHeader}>
+                    <View style={s2.cardHeadRow as object}>
                       <Text style={[styles.cardTitle, { marginBottom: 0 }]}>
                         {factsEditing ? 'Edit details' : 'Quick Facts'}
                       </Text>
@@ -1934,33 +1961,36 @@ export default function WebCharacterScreen() {
                 ) : details.summary || details.description ? (
                   <View style={styles.mBlock}>
                     {details.summary ? (
-                      <Text style={styles.mSummary}>{details.summary}</Text>
-                    ) : null}
-                    <View style={s2.summaryFooter as object}>
-                      <WebSectionPencil
-                        label="Edit summary"
-                        onPress={() =>
-                          setEditTarget({
-                            field: SUMMARY_FIELD,
-                            current: details.summary ?? null,
-                          })
-                        }
-                      />
-                      {details.description ? (
-                        <Pressable
-                          onPress={() => router.push(`/biography/${id}`)}
-                          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                            [
-                              styles.biographyLink,
-                              hovered && (styles.biographyLinkHover as object),
-                            ] as object
+                      <Text style={styles.mSummary}>
+                        {details.summary}
+                        {'  '}
+                        <MaterialCommunityIcons
+                          name="pencil"
+                          size={14}
+                          color="rgba(41,60,67,0.5)"
+                          onPress={() =>
+                            setEditTarget({
+                              field: SUMMARY_FIELD,
+                              current: details.summary ?? null,
+                            })
                           }
-                        >
-                          <Text style={styles.biographyLinkText}>Read biography</Text>
-                          <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
-                        </Pressable>
-                      ) : null}
-                    </View>
+                        />
+                      </Text>
+                    ) : null}
+                    {details.description ? (
+                      <Pressable
+                        onPress={() => router.push(`/biography/${id}`)}
+                        style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                          [
+                            styles.biographyLink,
+                            hovered && (styles.biographyLinkHover as object),
+                          ] as object
+                        }
+                      >
+                        <Text style={styles.biographyLinkText}>Read biography</Text>
+                        <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
+                      </Pressable>
+                    ) : null}
                   </View>
                 ) : null}
 
@@ -1975,8 +2005,6 @@ export default function WebCharacterScreen() {
                             <Text style={styles.aiBadgeText}>AI</Text>
                           </View>
                         ) : null}
-                      </View>
-                      <View style={styles.statHeaderRight}>
                         {isAdmin ? (
                           <WebSectionPencil
                             active={statsEditing}
@@ -1984,6 +2012,8 @@ export default function WebCharacterScreen() {
                             label="Edit power stats"
                           />
                         ) : null}
+                      </View>
+                      <View style={styles.statHeaderRight}>
                         {powerScore !== null || statsGenerating ? (
                           <Pressable
                             onPress={() =>
@@ -2268,15 +2298,46 @@ export default function WebCharacterScreen() {
             </View>
           )}
 
-          {/* Open invitation to contribute — opens the "Did You Know" fact prompt. */}
+          {/* Open invitation to contribute — expands into a small menu of the
+              contributions not tied to a section (a fact, or a report). */}
           <View style={s2.contributeFooter as object}>
             <Pressable
               style={s2.contributeBtn as object}
-              onPress={() => setEditTarget({ field: null, current: null })}
+              onPress={() => setContributeMenu((o) => !o)}
             >
               <Ionicons name="sparkles-outline" size={15} color={COLORS.orange} />
               <Text style={s2.contributeBtnText as object}>Contribute to this character</Text>
+              <Ionicons
+                name={contributeMenu ? 'chevron-up' : 'chevron-down'}
+                size={15}
+                color={COLORS.orange}
+              />
             </Pressable>
+            {contributeMenu ? (
+              <View style={s2.contributeMenu as object}>
+                <Pressable
+                  style={s2.contributeMenuItem as object}
+                  onPress={() => {
+                    setContributeMenu(false);
+                    setEditTarget({ field: null, current: null });
+                  }}
+                >
+                  <Ionicons name="bulb-outline" size={17} color={COLORS.navy} />
+                  <Text style={s2.contributeMenuText as object}>Add a “Did You Know” fact</Text>
+                </Pressable>
+                <View style={s2.contributeMenuDivider as object} />
+                <Pressable
+                  style={s2.contributeMenuItem as object}
+                  onPress={() => {
+                    setContributeMenu(false);
+                    setEditTarget({ field: null, current: null, report: true });
+                  }}
+                >
+                  <Ionicons name="flag-outline" size={17} color={COLORS.navy} />
+                  <Text style={s2.contributeMenuText as object}>Report incorrect info</Text>
+                </Pressable>
+              </View>
+            ) : null}
           </View>
         </View>
 
@@ -2286,6 +2347,7 @@ export default function WebCharacterScreen() {
           heroId={stats.id}
           heroName={stats.name}
           field={editTarget?.field ?? null}
+          report={editTarget?.report ?? false}
           currentValue={editTarget?.current ?? null}
           user={user}
           isAdmin={isAdmin}
@@ -2315,8 +2377,8 @@ export default function WebCharacterScreen() {
 function AbilitiesHead({ onEdit }: { onEdit?: () => void }) {
   return (
     <>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={styles.cardTitle}>Abilities</Text>
+      <View style={s2.cardHeadRow as object}>
+        <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Abilities</Text>
         {onEdit ? <WebSectionPencil label="Edit powers" onPress={onEdit} /> : null}
       </View>
       <View style={styles.cardDivider} />

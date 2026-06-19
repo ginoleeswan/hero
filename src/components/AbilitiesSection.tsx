@@ -1,6 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
-import { SymbolView } from 'expo-symbols';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { getPowerIcon, groupPowers } from '../constants/powerIcons';
 import { Skeleton } from './ui/Skeleton';
@@ -30,14 +29,7 @@ function Header({ onEdit }: { onEdit?: () => void }) {
             accessibilityRole="button"
             accessibilityLabel="Edit powers"
           >
-            <SymbolView
-              name="square.and.pencil"
-              weight="regular"
-              tintColor="rgba(41,60,67,0.5)"
-              size={18}
-              resizeMode="scaleAspectFit"
-              fallback={<Ionicons name="pencil-outline" size={17} color="rgba(41,60,67,0.5)" />}
-            />
+            <MaterialCommunityIcons name="pencil" size={16} color="rgba(41,60,67,0.4)" />
           </TouchableOpacity>
         ) : null}
       </View>
