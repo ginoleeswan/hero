@@ -78,24 +78,18 @@ function MobileDossier({
   stats,
   teams,
   eraSummary,
-  canEdit = false,
-  editing = false,
-  onToggleEdit,
   editValues,
   onEditField,
 }: {
   stats: HeroStats;
   teams?: string[] | null;
   eraSummary?: string | null;
-  /** Show the edit pen on the header (the contribution entry point). */
-  canEdit?: boolean;
-  editing?: boolean;
-  onToggleEdit?: () => void;
   /** Editable field → current value, supplied by the screen (has both stats + details). */
   editValues?: Record<string, string | null | undefined>;
   onEditField?: (field: EditableFieldDef | null, current: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
   const { biography: bio, appearance: app, work, connections } = stats;
 
   const valid = (v?: string | null) => !!v && v !== '' && !JUNK_VALUES.has(v.toLowerCase().trim());
@@ -121,55 +115,41 @@ function MobileDossier({
   const hasEra = !!eraSummary;
   const hasAny = hasProfile || hasAppearance || hasConnections || hasEra;
 
-  // Readers of an empty dossier see nothing (pristine); but if the viewer can
-  // contribute, the bar + pen still appear so the page can be completed.
-  if (!hasAny && !canEdit) return null;
-
-  const enterEdit = () => {
-    setOpen(true);
-    onToggleEdit?.();
-  };
+  // Reading mode stays pristine: an empty dossier shows nothing.
+  if (!hasAny) return null;
 
   return (
     <View>
       <Pressable
         onPress={() => setOpen((o) => !o)}
-        style={[styles.dossierBar, open && (styles.dossierBarOpen as object)]}
+        disabled={editing}
+        style={[styles.dossierBar, (open || editing) && (styles.dossierBarOpen as object)]}
         accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
+        accessibilityState={{ expanded: open || editing }}
       >
         <View style={styles.dossierBarText}>
           <Text style={styles.dossierTitle}>Dossier</Text>
-          {!open ? (
-            <Text style={styles.dossierHint}>
-              {hasAny ? 'Appearance, affiliations, relatives & more' : 'Help complete this page'}
-            </Text>
+          {!open && !editing ? (
+            <Text style={styles.dossierHint}>Appearance, affiliations, relatives & more</Text>
           ) : null}
         </View>
         <View style={styles.dossierToggle}>
-          {canEdit ? (
-            <Pressable
-              onPress={enterEdit}
-              hitSlop={8}
-              style={s2.penBtn as object}
-              accessibilityLabel="Edit dossier"
-            >
-              <Ionicons
-                name="create-outline"
-                size={16}
-                color={editing ? COLORS.orange : COLORS.navy}
-              />
-            </Pressable>
-          ) : null}
-          {hasAny ? (
+          {!editing ? (
             <>
               <Text style={styles.dossierToggleText}>{open ? 'Hide' : 'View'}</Text>
               <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={15} color={COLORS.navy} />
             </>
-          ) : null}
+          ) : (
+            <Text style={styles.dossierToggleText}>Done</Text>
+          )}
+          <WebSectionPencil
+            active={editing}
+            onPress={() => setEditing((e) => !e)}
+            label="Edit dossier"
+          />
         </View>
       </Pressable>
-      {open && editing ? (
+      {editing ? (
         <View style={styles.dossierBody}>
           {DOSSIER_GROUPS.map((group, gi) => (
             <Fragment key={group.key}>
@@ -274,17 +254,8 @@ function MobileDossier({
   );
 }
 
-// Edit-mode affordances for the dossier (pen on the header, editable field rows).
+// Edit-mode affordances: banner, chips, and the editable field rows.
 const s2 = StyleSheet.create({
-  penBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(41,60,67,0.06)',
-    cursor: 'pointer',
-  } as object,
   editRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -322,15 +293,79 @@ const s2 = StyleSheet.create({
     fontSize: 13,
     color: COLORS.orange,
   } as object,
-  summaryHead: { alignItems: 'flex-end', marginBottom: 4 } as object,
-  summaryEmpty: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 14,
-    fontStyle: 'italic',
-    color: COLORS.grey,
+  pencil: { paddingVertical: 2, paddingLeft: 7, cursor: 'pointer' } as object,
+  // Card header row: title + pencil sit together, perfectly centered vertically.
+  cardHeadRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 } as object,
+  contributeFooter: { alignItems: 'center', paddingTop: 24, paddingBottom: 8 } as object,
+  contributeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 11,
+    paddingHorizontal: 20,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(231,115,51,0.4)',
+    backgroundColor: 'rgba(231,115,51,0.06)',
     cursor: 'pointer',
   } as object,
+  contributeBtnText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: COLORS.orange,
+    letterSpacing: 0.2,
+  } as object,
+  contributeMenu: {
+    marginTop: 12,
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.1)',
+    overflow: 'hidden',
+  } as object,
+  contributeMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    cursor: 'pointer',
+  } as object,
+  contributeMenuText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: COLORS.navy,
+  } as object,
+  contributeMenuDivider: {
+    height: 1,
+    backgroundColor: 'rgba(41,60,67,0.08)',
+    marginHorizontal: 16,
+  } as object,
 });
+
+// A subtle pencil for the right of a section header — clean glyph, no chip
+// background, orange while its section is being edited.
+function WebSectionPencil({
+  onPress,
+  active,
+  label = 'Edit',
+}: {
+  onPress: () => void;
+  active?: boolean;
+  label?: string;
+}) {
+  return (
+    <Pressable onPress={onPress} style={s2.pencil} accessibilityLabel={label}>
+      <MaterialCommunityIcons
+        name="pencil"
+        size={15}
+        color={active ? COLORS.orange : 'rgba(41,60,67,0.4)'}
+      />
+    </Pressable>
+  );
+}
 
 // Admin-only editable power-stat list — swaps in for the dial/bar view when an
 // admin taps the stats pen. Shared by the desktop and mobile-web layouts.
@@ -486,13 +521,15 @@ export default function WebCharacterScreen() {
     teammateNames,
   } = useHeroDetail({ id });
 
-  // View-only UI state (edit sheet, first-issue modal, tabs, lightbox, stage).
-  const [editing, setEditing] = useState(false);
+  // View-only UI state (edit affordances, first-issue modal, tabs, lightbox, stage).
+  const [statsEditing, setStatsEditing] = useState(false);
+  const [factsEditing, setFactsEditing] = useState(false);
+  const [contributeMenu, setContributeMenu] = useState(false);
   const [editTarget, setEditTarget] = useState<{
     field: EditableFieldDef | null;
     current: string | null;
+    report?: boolean;
   } | null>(null);
-  const [editingStats, setEditingStats] = useState(false);
   const [showIssueModal, setShowIssueModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'universe'>('overview');
   const [lightboxImages, setLightboxImages] = useState<{ url: string; caption?: string | null }[]>(
@@ -813,22 +850,15 @@ export default function WebCharacterScreen() {
                             <Text style={styles.aiBadgeText}>AI</Text>
                           </View>
                         ) : null}
+                        {isAdmin ? (
+                          <WebSectionPencil
+                            active={statsEditing}
+                            onPress={() => setStatsEditing((s) => !s)}
+                            label="Edit power stats"
+                          />
+                        ) : null}
                       </View>
                       <View style={styles.statHeaderRight}>
-                        {isAdmin ? (
-                          <Pressable
-                            onPress={() => setEditingStats((s) => !s)}
-                            hitSlop={8}
-                            style={s2.penBtn as object}
-                            accessibilityLabel="Edit power stats"
-                          >
-                            <Ionicons
-                              name="create-outline"
-                              size={16}
-                              color={editingStats ? COLORS.orange : COLORS.navy}
-                            />
-                          </Pressable>
-                        ) : null}
                         {powerScore !== null || statsGenerating ? (
                           <Pressable
                             onPress={() =>
@@ -864,7 +894,7 @@ export default function WebCharacterScreen() {
                       </View>
                     </View>
                     <View style={styles.cardDivider} />
-                    {isAdmin && editingStats ? (
+                    {isAdmin && statsEditing ? (
                       <StatEditList
                         stats={stats}
                         onPick={(field, current) => setEditTarget({ field, current })}
@@ -948,23 +978,22 @@ export default function WebCharacterScreen() {
                     </View>
                   ) : details.summary || details.description ? (
                     <View style={styles.summaryBox}>
-                      <View style={s2.summaryHead as object}>
-                        <Pressable
-                          onPress={() =>
-                            setEditTarget({
-                              field: SUMMARY_FIELD,
-                              current: details.summary ?? null,
-                            })
-                          }
-                          hitSlop={8}
-                          style={s2.penBtn as object}
-                          accessibilityLabel="Edit summary"
-                        >
-                          <Ionicons name="create-outline" size={16} color={COLORS.navy} />
-                        </Pressable>
-                      </View>
                       {details.summary ? (
-                        <Text style={styles.summaryText}>{details.summary}</Text>
+                        <Text style={styles.summaryText}>
+                          {details.summary}
+                          {'  '}
+                          <MaterialCommunityIcons
+                            name="pencil"
+                            size={15}
+                            color="rgba(41,60,67,0.5)"
+                            onPress={() =>
+                              setEditTarget({
+                                field: SUMMARY_FIELD,
+                                current: details.summary ?? null,
+                              })
+                            }
+                          />
+                        </Text>
                       ) : null}
                       {details.description ? (
                         <Pressable
@@ -981,27 +1010,7 @@ export default function WebCharacterScreen() {
                         </Pressable>
                       ) : null}
                     </View>
-                  ) : (
-                    <View style={styles.summaryBox}>
-                      <View style={s2.summaryHead as object}>
-                        <Pressable
-                          onPress={() => setEditTarget({ field: SUMMARY_FIELD, current: null })}
-                          hitSlop={8}
-                          style={s2.penBtn as object}
-                          accessibilityLabel="Edit summary"
-                        >
-                          <Ionicons name="create-outline" size={16} color={COLORS.navy} />
-                        </Pressable>
-                      </View>
-                      <Pressable
-                        onPress={() => setEditTarget({ field: SUMMARY_FIELD, current: null })}
-                      >
-                        <Text style={s2.summaryEmpty as object}>
-                          Add a short summary for this hero.
-                        </Text>
-                      </Pressable>
-                    </View>
-                  )}
+                  ) : null}
 
                   {/* Abilities — power explainers fold in as the "Decoded" strip */}
                   <WebAbilitiesCard
@@ -1009,14 +1018,11 @@ export default function WebCharacterScreen() {
                     loading={comicVineLoading}
                     skeletonOpacity={skeletonOpacity}
                     explainers={narrative?.powerExplainers ?? []}
-                    onEdit={
-                      comicVineLoading
-                        ? undefined
-                        : () =>
-                            setEditTarget({
-                              field: POWERS_FIELD,
-                              current: details.powers?.length ? details.powers.join('\n') : null,
-                            })
+                    onEdit={() =>
+                      setEditTarget({
+                        field: POWERS_FIELD,
+                        current: details.powers?.length ? details.powers.join('\n') : null,
+                      })
                     }
                   />
 
@@ -1359,29 +1365,20 @@ export default function WebCharacterScreen() {
                     ) : null}
                   </View>
 
-                  <View style={[styles.card, { position: 'relative' }] as object}>
-                    {/* Edit pen — contributes in place; reading view unchanged. */}
-                    <Pressable
-                      onPress={() => setEditing(true)}
-                      hitSlop={8}
-                      style={
-                        [
-                          s2.penBtn,
-                          { position: 'absolute', top: 10, right: 10, zIndex: 2 },
-                        ] as object
-                      }
-                      accessibilityLabel="Edit details"
-                    >
-                      <Ionicons
-                        name="create-outline"
-                        size={16}
-                        color={editing ? COLORS.orange : COLORS.navy}
+                  <View style={styles.card}>
+                    <View style={s2.cardHeadRow as object}>
+                      <Text style={[styles.cardTitle, { marginBottom: 0 }]}>
+                        {factsEditing ? 'Edit details' : 'Quick Facts'}
+                      </Text>
+                      <WebSectionPencil
+                        active={factsEditing}
+                        onPress={() => setFactsEditing((s) => !s)}
+                        label="Edit details"
                       />
-                    </Pressable>
-                    {editing ? (
+                    </View>
+                    <View style={styles.cardDivider} />
+                    {factsEditing ? (
                       <View>
-                        <Text style={styles.cardTitle}>Edit details</Text>
-                        <View style={styles.cardDivider} />
                         {DOSSIER_GROUPS.map((group) => (
                           <Fragment key={group.key}>
                             <Text style={s2.editGroupLabel}>{group.label}</Text>
@@ -1667,20 +1664,22 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : details.summary || details.description ? (
                   <View style={styles.mBlock}>
-                    <View style={s2.summaryHead as object}>
-                      <Pressable
-                        onPress={() =>
-                          setEditTarget({ field: SUMMARY_FIELD, current: details.summary ?? null })
-                        }
-                        hitSlop={8}
-                        style={s2.penBtn as object}
-                        accessibilityLabel="Edit summary"
-                      >
-                        <Ionicons name="create-outline" size={16} color={COLORS.navy} />
-                      </Pressable>
-                    </View>
                     {details.summary ? (
-                      <Text style={styles.mSummary}>{details.summary}</Text>
+                      <Text style={styles.mSummary}>
+                        {details.summary}
+                        {'  '}
+                        <MaterialCommunityIcons
+                          name="pencil"
+                          size={14}
+                          color="rgba(41,60,67,0.5)"
+                          onPress={() =>
+                            setEditTarget({
+                              field: SUMMARY_FIELD,
+                              current: details.summary ?? null,
+                            })
+                          }
+                        />
+                      </Text>
                     ) : null}
                     {details.description ? (
                       <Pressable
@@ -1697,27 +1696,7 @@ export default function WebCharacterScreen() {
                       </Pressable>
                     ) : null}
                   </View>
-                ) : (
-                  <View style={styles.mBlock}>
-                    <View style={s2.summaryHead as object}>
-                      <Pressable
-                        onPress={() => setEditTarget({ field: SUMMARY_FIELD, current: null })}
-                        hitSlop={8}
-                        style={s2.penBtn as object}
-                        accessibilityLabel="Edit summary"
-                      >
-                        <Ionicons name="create-outline" size={16} color={COLORS.navy} />
-                      </Pressable>
-                    </View>
-                    <Pressable
-                      onPress={() => setEditTarget({ field: SUMMARY_FIELD, current: null })}
-                    >
-                      <Text style={s2.summaryEmpty as object}>
-                        Add a short summary for this hero.
-                      </Text>
-                    </Pressable>
-                  </View>
-                )}
+                ) : null}
 
                 {/* Power Stats */}
                 <View style={styles.mBlock}>
@@ -1730,22 +1709,15 @@ export default function WebCharacterScreen() {
                             <Text style={styles.aiBadgeText}>AI</Text>
                           </View>
                         ) : null}
+                        {isAdmin ? (
+                          <WebSectionPencil
+                            active={statsEditing}
+                            onPress={() => setStatsEditing((s) => !s)}
+                            label="Edit power stats"
+                          />
+                        ) : null}
                       </View>
                       <View style={styles.statHeaderRight}>
-                        {isAdmin ? (
-                          <Pressable
-                            onPress={() => setEditingStats((s) => !s)}
-                            hitSlop={8}
-                            style={s2.penBtn as object}
-                            accessibilityLabel="Edit power stats"
-                          >
-                            <Ionicons
-                              name="create-outline"
-                              size={16}
-                              color={editingStats ? COLORS.orange : COLORS.navy}
-                            />
-                          </Pressable>
-                        ) : null}
                         {powerScore !== null || statsGenerating ? (
                           <Pressable
                             onPress={() =>
@@ -1781,7 +1753,7 @@ export default function WebCharacterScreen() {
                       </View>
                     </View>
                     <View style={styles.cardDivider} />
-                    {isAdmin && editingStats ? (
+                    {isAdmin && statsEditing ? (
                       <StatEditList
                         stats={stats}
                         onPick={(field, current) => setEditTarget({ field, current })}
@@ -1819,14 +1791,11 @@ export default function WebCharacterScreen() {
                   powers={details.powers}
                   loading={comicVineLoading}
                   explainers={narrative?.powerExplainers ?? []}
-                  onEdit={
-                    comicVineLoading
-                      ? undefined
-                      : () =>
-                          setEditTarget({
-                            field: POWERS_FIELD,
-                            current: details.powers?.length ? details.powers.join('\n') : null,
-                          })
+                  onEdit={() =>
+                    setEditTarget({
+                      field: POWERS_FIELD,
+                      current: details.powers?.length ? details.powers.join('\n') : null,
+                    })
                   }
                 />
 
@@ -2025,9 +1994,6 @@ export default function WebCharacterScreen() {
                     stats={stats}
                     teams={details.teams}
                     eraSummary={narrative?.eraSummary}
-                    canEdit
-                    editing={editing}
-                    onToggleEdit={() => setEditing((e) => !e)}
                     editValues={editValues}
                     onEditField={(field, current) => setEditTarget({ field, current })}
                   />
@@ -2035,6 +2001,48 @@ export default function WebCharacterScreen() {
               </View>
             </View>
           )}
+
+          {/* Open invitation to contribute — expands into a small menu of the
+              contributions not tied to a section (a fact, or a report). */}
+          <View style={s2.contributeFooter as object}>
+            <Pressable
+              style={s2.contributeBtn as object}
+              onPress={() => setContributeMenu((o) => !o)}
+            >
+              <Ionicons name="sparkles-outline" size={15} color={COLORS.orange} />
+              <Text style={s2.contributeBtnText as object}>Contribute to this character</Text>
+              <Ionicons
+                name={contributeMenu ? 'chevron-up' : 'chevron-down'}
+                size={15}
+                color={COLORS.orange}
+              />
+            </Pressable>
+            {contributeMenu ? (
+              <View style={s2.contributeMenu as object}>
+                <Pressable
+                  style={s2.contributeMenuItem as object}
+                  onPress={() => {
+                    setContributeMenu(false);
+                    setEditTarget({ field: null, current: null });
+                  }}
+                >
+                  <Ionicons name="bulb-outline" size={17} color={COLORS.navy} />
+                  <Text style={s2.contributeMenuText as object}>Add a “Did You Know” fact</Text>
+                </Pressable>
+                <View style={s2.contributeMenuDivider as object} />
+                <Pressable
+                  style={s2.contributeMenuItem as object}
+                  onPress={() => {
+                    setContributeMenu(false);
+                    setEditTarget({ field: null, current: null, report: true });
+                  }}
+                >
+                  <Ionicons name="flag-outline" size={17} color={COLORS.navy} />
+                  <Text style={s2.contributeMenuText as object}>Report incorrect info</Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
         </View>
 
         <ContributeSheet
@@ -2043,6 +2051,7 @@ export default function WebCharacterScreen() {
           heroId={stats.id}
           heroName={stats.name}
           field={editTarget?.field ?? null}
+          report={editTarget?.report ?? false}
           currentValue={editTarget?.current ?? null}
           user={user}
           isAdmin={isAdmin}
@@ -2072,18 +2081,9 @@ export default function WebCharacterScreen() {
 function AbilitiesHead({ onEdit }: { onEdit?: () => void }) {
   return (
     <>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={styles.cardTitle}>Abilities</Text>
-        {onEdit ? (
-          <Pressable
-            onPress={onEdit}
-            hitSlop={8}
-            style={s2.penBtn as object}
-            accessibilityLabel="Edit abilities"
-          >
-            <Ionicons name="create-outline" size={16} color={COLORS.navy} />
-          </Pressable>
-        ) : null}
+      <View style={s2.cardHeadRow as object}>
+        <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Abilities</Text>
+        {onEdit ? <WebSectionPencil label="Edit powers" onPress={onEdit} /> : null}
       </View>
       <View style={styles.cardDivider} />
     </>
@@ -2103,17 +2103,8 @@ function WebAbilitiesCard({
   explainers?: PowerExplainer[];
   onEdit?: () => void;
 }) {
-  if (!loading && (!powers || powers.length === 0)) {
-    if (!onEdit) return null;
-    return (
-      <View style={styles.card}>
-        <AbilitiesHead onEdit={onEdit} />
-        <Pressable onPress={onEdit}>
-          <Text style={s2.summaryEmpty as object}>Add powers & abilities for this hero.</Text>
-        </Pressable>
-      </View>
-    );
-  }
+  // Pristine when empty — the card only appears once a hero has abilities.
+  if (!loading && (!powers || powers.length === 0)) return null;
 
   const groups = powers ? groupPowers(powers) : [];
 

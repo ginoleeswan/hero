@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { getPowerIcon, groupPowers } from '../constants/powerIcons';
 import { Skeleton } from './ui/Skeleton';
@@ -11,8 +11,8 @@ interface Props {
   powers: string[] | null;
   loading: boolean;
   explainers?: PowerExplainer[];
-  /** When set, a subtle pen appears in the header to edit the whole powers list
-   *  (one per line) — and an empty section still renders so it can be filled. */
+  /** When set, a subtle pencil sits at the right of the header to edit the whole
+   *  powers list (one per line). */
   onEdit?: () => void;
 }
 
@@ -20,18 +20,18 @@ function Header({ onEdit }: { onEdit?: () => void }) {
   return (
     <View style={styles.sectionHeader}>
       <View style={styles.headerRow}>
+        <Text style={styles.sectionTitle}>Abilities</Text>
         {onEdit ? (
           <TouchableOpacity
             onPress={onEdit}
-            hitSlop={8}
-            style={styles.pen}
+            hitSlop={10}
+            style={styles.pencil}
             accessibilityRole="button"
-            accessibilityLabel="Edit abilities"
+            accessibilityLabel="Edit powers"
           >
-            <Ionicons name="create-outline" size={16} color={COLORS.navy} />
+            <MaterialCommunityIcons name="pencil" size={16} color="rgba(41,60,67,0.4)" />
           </TouchableOpacity>
         ) : null}
-        <Text style={styles.sectionTitle}>Abilities</Text>
       </View>
       <View style={styles.divider} />
     </View>
@@ -39,21 +39,8 @@ function Header({ onEdit }: { onEdit?: () => void }) {
 }
 
 export function AbilitiesSection({ powers, loading, explainers = [], onEdit }: Props) {
-  if (!loading && (!powers || powers.length === 0)) {
-    // Nothing to show and nothing to add → hide entirely. With an editor, keep
-    // the section so a contributor can fill it.
-    if (!onEdit) return null;
-    return (
-      <View style={styles.container}>
-        <Header onEdit={onEdit} />
-        <View style={styles.body}>
-          <TouchableOpacity onPress={onEdit} activeOpacity={0.7}>
-            <Text style={styles.emptyAdd}>Add powers & abilities for this hero.</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
+  // Pristine when empty — the section only appears once a hero has abilities.
+  if (!loading && (!powers || powers.length === 0)) return null;
 
   const groups = powers ? groupPowers(powers) : [];
 
@@ -115,15 +102,8 @@ const styles = StyleSheet.create({
   sectionHeader: {
     paddingHorizontal: 20,
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center' },
-  pen: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(41,60,67,0.06)',
-  },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  pencil: { paddingVertical: 2 },
   sectionTitle: {
     flex: 1,
     fontFamily: 'Flame-Regular',
@@ -131,13 +111,6 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
     textAlign: 'right',
     paddingVertical: 5,
-  },
-  emptyAdd: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 14,
-    color: COLORS.grey,
-    fontStyle: 'italic',
-    paddingBottom: 8,
   },
   divider: {
     height: 2,
