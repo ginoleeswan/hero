@@ -1184,6 +1184,27 @@ export default function WebHomeScreen() {
             newlyAddedCount={homeData.newlyAdded?.length ?? 0}
           />
 
+          {/* ── Daily Guess-the-Hero entry ─────────────────────────────────── */}
+          <View style={styles.dailyWrap}>
+            <Pressable style={styles.dailyCard} onPress={() => router.push('/play')}>
+              <View style={styles.dailyIcon}>
+                <MaterialCommunityIcons name="incognito" size={24} color={COLORS.orange} />
+              </View>
+              <View style={styles.dailyText}>
+                <Text style={styles.dailyKicker}>Daily Challenge</Text>
+                <Text style={styles.dailyTitle}>Guess the Hero</Text>
+                <Text style={styles.dailySub}>
+                  A new mystery hero every day — solve it in 6 guesses.
+                </Text>
+              </View>
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={24}
+                color="rgba(245,235,220,0.5)"
+              />
+            </Pressable>
+          </View>
+
           {/* ── Right Now — the dynamic editorial zone (campaign + trending +
                personalized), its own dark chapter under the ticker. ───────── */}
           <RightNowBand
@@ -1368,6 +1389,41 @@ export default function WebHomeScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  dailyWrap: { alignItems: 'center', paddingHorizontal: 16, marginTop: 18 },
+  dailyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    width: '100%',
+    maxWidth: 720,
+    padding: 18,
+    borderRadius: 20,
+    backgroundColor: COLORS.navy,
+    cursor: 'pointer',
+  } as object,
+  dailyIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(231,115,51,0.16)',
+  },
+  dailyText: { flex: 1 },
+  dailyKicker: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: COLORS.orange,
+  },
+  dailyTitle: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.beige, lineHeight: 28 },
+  dailySub: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: 'rgba(245,235,220,0.6)',
+    marginTop: 2,
+  },
   root: { flex: 1, backgroundColor: COLORS.beige },
   scroll: { flex: 1 },
   // Desktop: the scroll surface is the dark stage colour, so overscroll at the

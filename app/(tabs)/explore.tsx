@@ -6,6 +6,7 @@ import { useState, useCallback, useMemo, type ReactNode, type ComponentType } fr
 import {
   View,
   Text,
+  Pressable,
   StyleSheet,
   StatusBar,
   type ListRenderItem,
@@ -13,6 +14,7 @@ import {
   type StyleProp,
   type FlatListProps,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   FadeIn,
   useSharedValue,
@@ -74,6 +76,7 @@ type FeedRow =
   | { type: 'spotlight'; heroes: Hero[] }
   | { type: 'publishers' }
   | { type: 'matchup'; matchup: Matchup }
+  | { type: 'daily' }
   | { type: 'ticker'; heroCount: number; newlyAddedCount: number }
   | { type: 'recent'; heroes: RowHero[] }
   | { type: 'favourites'; heroes: RowHero[] }
@@ -196,6 +199,7 @@ export default function HomeScreen() {
     const out: FeedRow[] = [];
     if (spotlightPool.length > 0) out.push({ type: 'spotlight', heroes: spotlightPool });
     out.push({ type: 'publishers' });
+    out.push({ type: 'daily' });
     if (matchup) out.push({ type: 'matchup', matchup });
     if (heroCount > 0) out.push({ type: 'ticker', heroCount, newlyAddedCount: newlyAdded.length });
     if (
@@ -376,6 +380,22 @@ export default function HomeScreen() {
           );
         case 'publishers':
           return <PublisherGrid onPress={handleCategoryPress} />;
+        case 'daily':
+          return (
+            <Pressable style={styles.dailyCard} onPress={() => handleOpenPath('/play')}>
+              <View style={styles.dailyIcon}>
+                <Ionicons name="sparkles" size={20} color={COLORS.orange} />
+              </View>
+              <View style={styles.dailyText}>
+                <Text style={styles.dailyKicker}>Daily Challenge</Text>
+                <Text style={styles.dailyTitle}>Guess the Hero</Text>
+                <Text style={styles.dailySub}>
+                  A new mystery hero every day · play in 6 guesses
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="rgba(245,235,220,0.5)" />
+            </Pressable>
+          );
         case 'matchup':
           return <TodaysMatchup matchup={item.matchup} onOpen={handleOpenPath} />;
         case 'ticker':
@@ -505,6 +525,42 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.navy },
+  // Daily Guess-the-Hero entry banner.
+  dailyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginHorizontal: 15,
+    marginTop: 14,
+    marginBottom: 4,
+    padding: 16,
+    borderRadius: 18,
+    borderCurve: 'continuous',
+    backgroundColor: COLORS.navy,
+  },
+  dailyIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(231,115,51,0.16)',
+  },
+  dailyText: { flex: 1 },
+  dailyKicker: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: COLORS.orange,
+  },
+  dailyTitle: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.beige, lineHeight: 26 },
+  dailySub: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.6)',
+    marginTop: 2,
+  },
   // Transparent so the dark navy root shows under the status bar and on
   // overscroll (matching the spotlight) instead of a beige band.
   scroll: { flex: 1, backgroundColor: 'transparent' },

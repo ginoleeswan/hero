@@ -1183,6 +1183,7 @@ export type Database = {
           label: string
         }[]
       }
+      get_daily_hero: { Args: { p_date?: string }; Returns: Json }
       get_era_timeline: {
         Args: { per_era?: number }
         Returns: {
