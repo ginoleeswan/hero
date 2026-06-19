@@ -317,8 +317,33 @@ const s2 = StyleSheet.create({
     color: COLORS.orange,
   } as object,
   pencil: { paddingVertical: 2, paddingLeft: 6, cursor: 'pointer' } as object,
-  summaryInset: { paddingRight: 28 } as object,
-  summaryPen: { position: 'absolute', top: 8, right: 8 } as object,
+  // Footer row: the edit pencil sits to the left of the "Read biography" link.
+  summaryFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 12,
+    paddingTop: 10,
+  } as object,
+  contributeFooter: { alignItems: 'center', paddingTop: 24, paddingBottom: 8 } as object,
+  contributeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 11,
+    paddingHorizontal: 20,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(231,115,51,0.4)',
+    backgroundColor: 'rgba(231,115,51,0.06)',
+    cursor: 'pointer',
+  } as object,
+  contributeBtnText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: COLORS.orange,
+    letterSpacing: 0.2,
+  } as object,
 });
 
 // A subtle pencil for the right of a section header — clean glyph, no chip
@@ -1224,27 +1249,11 @@ export default function WebCharacterScreen() {
                       <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
                     </View>
                   ) : details.summary || details.description ? (
-                    <View style={[styles.summaryBox, { position: 'relative' }] as object}>
+                    <View style={styles.summaryBox}>
                       {details.summary ? (
-                        <Text style={[styles.summaryText, s2.summaryInset as object]}>
-                          {details.summary}
-                        </Text>
+                        <Text style={styles.summaryText}>{details.summary}</Text>
                       ) : null}
-                      {details.description ? (
-                        <Pressable
-                          onPress={() => router.push(`/biography/${id}`)}
-                          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                            [
-                              styles.biographyLink,
-                              hovered && (styles.biographyLinkHover as object),
-                            ] as object
-                          }
-                        >
-                          <Text style={styles.biographyLinkText}>Read biography</Text>
-                          <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
-                        </Pressable>
-                      ) : null}
-                      <View style={s2.summaryPen as object}>
+                      <View style={s2.summaryFooter as object}>
                         <WebSectionPencil
                           label="Edit summary"
                           onPress={() =>
@@ -1254,6 +1263,20 @@ export default function WebCharacterScreen() {
                             })
                           }
                         />
+                        {details.description ? (
+                          <Pressable
+                            onPress={() => router.push(`/biography/${id}`)}
+                            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                              [
+                                styles.biographyLink,
+                                hovered && (styles.biographyLinkHover as object),
+                              ] as object
+                            }
+                          >
+                            <Text style={styles.biographyLinkText}>Read biography</Text>
+                            <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
+                          </Pressable>
+                        ) : null}
                       </View>
                     </View>
                   ) : null}
@@ -1909,27 +1932,11 @@ export default function WebCharacterScreen() {
                     <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
                   </View>
                 ) : details.summary || details.description ? (
-                  <View style={[styles.mBlock, { position: 'relative' }] as object}>
+                  <View style={styles.mBlock}>
                     {details.summary ? (
-                      <Text style={[styles.mSummary, s2.summaryInset as object]}>
-                        {details.summary}
-                      </Text>
+                      <Text style={styles.mSummary}>{details.summary}</Text>
                     ) : null}
-                    {details.description ? (
-                      <Pressable
-                        onPress={() => router.push(`/biography/${id}`)}
-                        style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                          [
-                            styles.biographyLink,
-                            hovered && (styles.biographyLinkHover as object),
-                          ] as object
-                        }
-                      >
-                        <Text style={styles.biographyLinkText}>Read biography</Text>
-                        <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
-                      </Pressable>
-                    ) : null}
-                    <View style={s2.summaryPen as object}>
+                    <View style={s2.summaryFooter as object}>
                       <WebSectionPencil
                         label="Edit summary"
                         onPress={() =>
@@ -1939,6 +1946,20 @@ export default function WebCharacterScreen() {
                           })
                         }
                       />
+                      {details.description ? (
+                        <Pressable
+                          onPress={() => router.push(`/biography/${id}`)}
+                          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                            [
+                              styles.biographyLink,
+                              hovered && (styles.biographyLinkHover as object),
+                            ] as object
+                          }
+                        >
+                          <Text style={styles.biographyLinkText}>Read biography</Text>
+                          <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
+                        </Pressable>
+                      ) : null}
                     </View>
                   </View>
                 ) : null}
@@ -2246,6 +2267,17 @@ export default function WebCharacterScreen() {
               </View>
             </View>
           )}
+
+          {/* Open invitation to contribute — opens the "Did You Know" fact prompt. */}
+          <View style={s2.contributeFooter as object}>
+            <Pressable
+              style={s2.contributeBtn as object}
+              onPress={() => setEditTarget({ field: null, current: null })}
+            >
+              <Ionicons name="sparkles-outline" size={15} color={COLORS.orange} />
+              <Text style={s2.contributeBtnText as object}>Contribute to this character</Text>
+            </Pressable>
+          </View>
         </View>
 
         <ContributeSheet

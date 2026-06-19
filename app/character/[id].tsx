@@ -1396,20 +1396,9 @@ export default function CharacterScreen() {
                 ) : data.details.summary || data.details.description ? (
                   <View style={styles.summaryBlock}>
                     {data.details.summary ? (
-                      <Text style={[styles.summary, styles.summaryInset]}>
-                        {data.details.summary}
-                      </Text>
+                      <Text style={styles.summary}>{data.details.summary}</Text>
                     ) : null}
-                    {data.details.description ? (
-                      <TouchableOpacity
-                        style={styles.biographyLink}
-                        onPress={() => router.push(`/biography/${id}`)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.biographyLinkText}>Full biography →</Text>
-                      </TouchableOpacity>
-                    ) : null}
-                    <View style={styles.summaryPen}>
+                    <View style={styles.summaryFooter}>
                       <SectionPencil
                         label="Edit summary"
                         onPress={() =>
@@ -1419,6 +1408,14 @@ export default function CharacterScreen() {
                           })
                         }
                       />
+                      {data.details.description ? (
+                        <TouchableOpacity
+                          onPress={() => router.push(`/biography/${id}`)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.biographyLinkText}>Full biography →</Text>
+                        </TouchableOpacity>
+                      ) : null}
                     </View>
                   </View>
                 ) : null}
@@ -1795,6 +1792,19 @@ export default function CharacterScreen() {
                   />
                 </View>
               ) : null}
+
+              {/* Open invitation to contribute — opens the "Did You Know" fact
+                  prompt (the open-ended, share-what-you-know entry). */}
+              <View style={styles.contributeFooter}>
+                <TouchableOpacity
+                  style={styles.contributeBtn}
+                  activeOpacity={0.8}
+                  onPress={() => setEditTarget({ field: null, current: null })}
+                >
+                  <Ionicons name="sparkles-outline" size={15} color={COLORS.orange} />
+                  <Text style={styles.contributeBtnText}>Contribute to this character</Text>
+                </TouchableOpacity>
+              </View>
             </ReAnimated.View>
           )}
         </View>
@@ -2052,12 +2062,41 @@ const styles = StyleSheet.create({
   // A subtle section-header pencil (no background; orange when its section edits)
   sectionPencil: { paddingVertical: 2, paddingLeft: 6 },
 
+  // Bottom "Contribute to this character" CTA
+  contributeFooter: {
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 8,
+    alignItems: 'center',
+  },
+  contributeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(231,115,51,0.4)',
+    backgroundColor: 'rgba(231,115,51,0.06)',
+  },
+  contributeBtnText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: COLORS.orange,
+    letterSpacing: 0.2,
+  },
+
   // Summary
   summaryBlock: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10 },
-  // Right inset so the lede text never runs under the absolute pencil.
-  summaryInset: { paddingRight: 28 },
-  summaryPen: { position: 'absolute', top: 12, right: 16 },
-  biographyLink: { alignSelf: 'flex-end', paddingTop: 8 },
+  // Footer row: the edit pencil sits to the left of the "Full biography" link.
+  summaryFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 12,
+    paddingTop: 10,
+  },
   biographyLinkText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 13,
