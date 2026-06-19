@@ -22,6 +22,7 @@ const KEYFRAMES = `
 }
 .logo-loader-path {
   stroke-dasharray: 100;
+  fill-opacity: 0;
   animation:
     logoLoaderDraw 2s ease-in-out infinite,
     logoLoaderFill 2s ease-in-out infinite;
@@ -44,9 +45,9 @@ export function LogoLoader() {
           className="logo-loader-path"
           pathLength={100}
           d={LOGO_PATH}
-          stroke={COLORS.navy}
+          stroke={COLORS.beige}
           strokeWidth={12}
-          fill={COLORS.navy}
+          fill={COLORS.beige}
         />
       </svg>
     </View>
@@ -56,7 +57,7 @@ export function LogoLoader() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.beige,
+    backgroundColor: COLORS.deepNavy,
     alignItems: 'center',
     justifyContent: 'center',
   },

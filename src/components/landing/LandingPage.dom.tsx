@@ -1,5 +1,6 @@
 'use dom';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 
 const logoMark = require('../../../assets/mythique-logo.svg');
@@ -9,16 +10,61 @@ const screenshotSearch = require('../../../assets/images/screenshots/search.PNG'
 const P = (id: string) =>
   `https://res.cloudinary.com/dgrsb5o4p/image/upload/f_auto,q_auto,w_400/hero-portraits/${id}.jpg`;
 
-const spiderman = P('620');
-const batman = P('69');
-const ironman = P('346');
-const deadpool = P('213');
-const wolverine = P('717');
-const wonderWoman = P('720');
-const captainAmerica = P('149');
-const blackPanther = P('106');
-const docStrange = P('226');
-const hulk = P('332');
+// [id, name, weight] — higher weight = more likely to appear each load
+const HERO_POOL: [string, string, number][] = [
+  ['620', 'Spider-Man', 10],
+  ['69', 'Batman', 10],
+  ['346', 'Iron Man', 10],
+  ['717', 'Wolverine', 10],
+  ['644', 'Superman', 10],
+  ['149', 'Captain America', 9],
+  ['659', 'Thor', 9],
+  ['720', 'Wonder Woman', 9],
+  ['213', 'Deadpool', 8],
+  ['332', 'Hulk', 8],
+  ['106', 'Black Panther', 8],
+  ['226', 'Doctor Strange', 7],
+  ['423', 'Magneto', 7],
+  ['579', 'Scarlet Witch', 7],
+  ['370', 'Joker', 7],
+  ['687', 'Venom', 6],
+  ['cv-4324', 'Loki', 6],
+  ['201', 'Daredevil', 6],
+  ['638', 'Storm', 6],
+  ['196', 'Cyclops', 5],
+  ['cv-3552', 'Jean Grey', 5],
+  ['241', 'Emma Frost', 5],
+  ['165', 'Catwoman', 5],
+  ['38', 'Aquaman', 5],
+  ['306', 'Hal Jordan', 5],
+  ['298', 'Green Arrow', 4],
+  ['567', 'Rogue', 4],
+  ['274', 'Gambit', 4],
+  ['222', 'Doctor Doom', 4],
+  ['cv-21561', 'Carol Danvers', 4],
+  ['cv-3200', 'Black Widow', 4],
+  ['697', 'Vision', 3],
+  ['185', 'Colossus', 3],
+  ['490', 'Nightcrawler', 3],
+  ['481', 'Namor', 3],
+  ['cv-1691', 'Dick Grayson', 3],
+  ['cv-5368', 'Barbara Gordon', 3],
+  ['432', 'Martian Manhunter', 3],
+];
+
+const weightedShuffle = () =>
+  [...HERO_POOL]
+    .map((entry) => ({ entry, key: Math.random() ** (1 / entry[2]) }))
+    .sort((a, b) => b.key - a.key)
+    .map(({ entry }) => entry);
+
+// Each section gets its own independent shuffle so collage ≠ mosaic
+const collageShuffled = weightedShuffle();
+const mosaicShuffled = weightedShuffle();
+
+const collageChars = collageShuffled.slice(0, 10);
+const mosaicChars = mosaicShuffled.slice(0, 10);
+const stripChars = collageShuffled.slice(0, 8);
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap');
@@ -364,10 +410,41 @@ const CSS = `
     .hero-card,.scroll-hint,.marquee-track { animation:none; }
     * { transition-duration:0.01ms !important; }
   }
+
+  /* Font-loading splash */
+  .page-loader {
+    position:fixed; inset:0; z-index:9999;
+    background:#0b1820;
+    display:flex; align-items:center; justify-content:center;
+    transition:opacity 400ms ease;
+  }
+  .page-loader.ready { opacity:0; pointer-events:none; }
+  @keyframes loaderDraw {
+    0% { stroke-dashoffset:100; }
+    60%,100% { stroke-dashoffset:0; }
+  }
+  @keyframes loaderFill {
+    0%,60% { fill-opacity:0; }
+    100% { fill-opacity:1; }
+  }
+  .loader-path {
+    stroke-dasharray:100;
+    animation:
+      loaderDraw 2s ease-in-out infinite,
+      loaderFill 2s ease-in-out infinite;
+  }
 `;
+
+const LOGO_PATH =
+  'M771.83 359.726C790.233 359.157 809.038 360.561 827.217 363.687C860.194 368.791 880.58 384.832 899.577 411.588C952.323 485.882 910.478 588.451 840.684 635.156C777.716 677.292 684.759 672.267 615.599 648.433C606.232 645.205 596.363 641.14 587.513 636.51C560.951 620.256 539.813 614.985 508.598 616.581C476.925 618.201 457.215 629.785 428.71 641.463C378.199 662.157 312.618 674.016 258.384 663.281C223.369 657.798 188.002 641.874 162.23 617.635C99.3027 558.45 73.5282 462.814 138.958 393.848C166.265 365.064 197.584 361.227 235.229 360.28C291.337 358.869 345.958 367.328 400.078 381.829C413.535 385.43 426.897 389.376 440.151 393.665C470.511 403.519 493.246 412.119 526.372 410.492C544.544 409.599 556.786 403.601 573.782 397.773C584.487 394.125 595.271 390.711 606.126 387.535C659.036 371.973 716.754 361.015 771.83 359.726ZM379.43 580.576C404.316 570.739 422.585 557.516 434.848 532.384C439.037 523.799 439.936 512.178 436.403 503.212C428.365 482.815 393.689 466.137 374.256 457.991C346.125 446.198 312.018 435.868 281.435 435.007C275.287 434.834 268.989 434.216 262.784 434.713C226.343 436.857 209.334 467.83 211.588 501.699C213.173 525.52 224.795 548.661 242.631 564.609C267.287 585.96 306.277 591.723 337.967 589.297C352.112 588.232 366.054 585.299 379.43 580.576ZM669.618 585.812C703.165 593.579 746.514 591.622 776.102 573.056C796.619 559.96 811.158 539.317 816.578 515.588C826.183 473.57 805.637 434.865 760.026 435.926C754.894 436.045 749.642 435.782 744.496 436.282C698.168 440.71 646.68 454.898 608.343 482.267C576.199 505.214 594.861 542.717 619.664 562.508C634.433 574.519 651.324 581.316 669.618 585.812Z';
 
 export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DOMProps }) {
   const router = useRouter();
+  const [fontsReady, setFontsReady] = useState(false);
+
+  useEffect(() => {
+    document.fonts.ready.then(() => setFontsReady(true));
+  }, []);
 
   return (
     <div
@@ -377,6 +454,19 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       }}
     >
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
+
+      <div className={`page-loader${fontsReady ? ' ready' : ''}`} aria-hidden="true">
+        <svg width={100} height={100} viewBox="0 0 1024 1024">
+          <path
+            className="loader-path"
+            pathLength={100}
+            d={LOGO_PATH}
+            stroke="#f5ebdc"
+            strokeWidth={12}
+            fill="#f5ebdc"
+          />
+        </svg>
+      </div>
 
       <nav>
         <div className="nav-brand">
@@ -391,36 +481,11 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* HERO */}
       <section className="hero">
         <div className="hero-collage" aria-hidden="true">
-          <div className="hero-card hc1">
-            <img src={spiderman} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc2">
-            <img src={batman} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc3">
-            <img src={ironman} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc4">
-            <img src={deadpool} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc5">
-            <img src={wolverine} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc6">
-            <img src={wonderWoman} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc7">
-            <img src={captainAmerica} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc8">
-            <img src={blackPanther} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc9">
-            <img src={docStrange} alt="" loading="lazy" />
-          </div>
-          <div className="hero-card hc10">
-            <img src={hulk} alt="" loading="lazy" />
-          </div>
+          {collageChars.map(([id], i) => (
+            <div key={id} className={`hero-card hc${i + 1}`}>
+              <img src={P(id)} alt="" loading="lazy" />
+            </div>
+          ))}
         </div>
 
         <div className="hero-content">
@@ -470,18 +535,9 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
 
         {/* Mobile hero strip */}
         <div className="hero-strip" aria-hidden="true">
-          {[
-            spiderman,
-            ironman,
-            batman,
-            deadpool,
-            wonderWoman,
-            captainAmerica,
-            wolverine,
-            blackPanther,
-          ].map((src, i) => (
-            <div key={i} className="hero-strip-card">
-              <img src={src} alt="" loading="lazy" />
+          {stripChars.map(([id]) => (
+            <div key={id} className="hero-strip-card">
+              <img src={P(id)} alt="" loading="lazy" />
             </div>
           ))}
         </div>
@@ -716,21 +772,10 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             one place.
           </p>
           <div className="hero-mosaic">
-            {[
-              [spiderman, 'Spider-Man'],
-              [batman, 'Batman'],
-              [ironman, 'Iron Man'],
-              [wonderWoman, 'Wonder Woman'],
-              [blackPanther, 'Black Panther'],
-              [deadpool, 'Deadpool'],
-              [wolverine, 'Wolverine'],
-              [captainAmerica, 'Captain America'],
-              [docStrange, 'Doctor Strange'],
-              [hulk, 'Hulk'],
-            ].map(([src, name], i) => (
-              <div key={i} className="mosaic-card">
-                <img src={src as string} alt={name as string} loading="lazy" />
-                <span className="mosaic-name">{name as string}</span>
+            {mosaicChars.map(([id, name]) => (
+              <div key={id} className="mosaic-card">
+                <img src={P(id)} alt={name} loading="lazy" />
+                <span className="mosaic-name">{name}</span>
               </div>
             ))}
           </div>
