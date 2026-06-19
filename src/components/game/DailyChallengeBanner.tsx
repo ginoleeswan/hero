@@ -47,7 +47,7 @@ export function DailyChallengeBanner({
               <Text style={styles.sub}>Keep it alive</Text>
             </View>
           ) : (
-            <Text style={styles.sub}>A new mystery hero every day — solve it in 6 guesses</Text>
+            <Text style={styles.sub}>A new mystery hero every day — can you name them?</Text>
           )}
         </View>
 

@@ -10,7 +10,7 @@ import { blurForGuess, buildClues, visibleClues, type Clue } from '../lib/game/r
 import { buildShareGrid } from '../lib/game/shareGrid';
 import { applyResult, EMPTY_STREAK, type StreakState } from '../lib/game/streak';
 
-export const MAX_GUESSES = 6;
+export const MAX_GUESSES = 4;
 export type GameStatus = 'loading' | 'error' | 'playing' | 'won' | 'lost';
 
 export interface Guess {
@@ -19,7 +19,7 @@ export interface Guess {
   correct: boolean;
 }
 
-const dayKey = (date: string) => `dh_v2_${date}`;
+const dayKey = (date: string) => `dh_v3_${date}`;
 const STREAK_KEY = 'dh_streak_v1';
 
 interface SavedDay {
@@ -130,6 +130,7 @@ export function useDailyHero() {
     status,
     puzzleNumber: puzzle?.number ?? null,
     hero: answer, // always present once loaded — the portrait to reveal
+    options: puzzle?.options ?? [],
     guesses,
     maxGuesses: MAX_GUESSES,
     remaining: MAX_GUESSES - guesses.length,

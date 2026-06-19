@@ -1,14 +1,13 @@
 // The daily "Guess the Hero" screen — a thin view over useDailyHero, rendered
 // by both app/play.tsx (native) and app/play.web.tsx (web) via RNW. A mystery
-// portrait starts blurred and sharpens with each wrong guess; a fresh clue is
-// uncovered every miss. Solve it (or run out) to reveal the hero, your streak,
-// and a shareable result.
+// portrait starts blurred and sharpens with each wrong guess; tap one of the
+// candidate names to guess, and a fresh clue is uncovered every miss. Solve it
+// (or run out) to reveal the hero, your streak, and a shareable result.
 import { useCallback, useState } from 'react';
 import {
   View,
   Text,
   Pressable,
-  TextInput,
   ScrollView,
   ActivityIndicator,
   Platform,
@@ -20,10 +19,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/colors';
-import { HeroImage } from '../HeroImage';
 import { MysteryPortrait } from './MysteryPortrait';
 import { useDailyHero } from '../../hooks/useDailyHero';
-import { useHeroSearch } from '../../hooks/useHeroSearch';
 
 export function DailyGame() {
   const insets = useSafeAreaInsets();
@@ -32,6 +29,7 @@ export function DailyGame() {
     status,
     puzzleNumber,
     hero,
+    options,
     guesses,
     maxGuesses,
     remaining,
@@ -39,26 +37,14 @@ export function DailyGame() {
     clues,
     streak,
     finished,
-    answer,
-    error,
     shareText,
     submitGuess,
   } = useDailyHero();
 
-  const [query, setQuery] = useState('');
-  const { results } = useHeroSearch(query, 'All', 12);
   const [copied, setCopied] = useState(false);
 
   const won = status === 'won';
   const guessedIds = new Set(guesses.map((g) => g.id));
-
-  const pick = useCallback(
-    (id: string, name: string) => {
-      setQuery('');
-      submitGuess(id, name);
-    },
-    [submitGuess],
-  );
 
   const onShare = useCallback(async () => {
     if (!shareText) return;
@@ -81,7 +67,6 @@ export function DailyGame() {
     }
   }, [shareText]);
 
-  const suggestions = results.filter((r) => !guessedIds.has(r.id)).slice(0, 8);
   // Lightweight frosted veil so the reveal reads even where blur is subtle.
   const veil = Math.min(blur / 80, 0.46);
 
@@ -93,7 +78,6 @@ export function DailyGame() {
           paddingBottom: insets.bottom + 48,
           paddingHorizontal: 18,
         }}
-        keyboardShouldPersistTaps="handled"
       >
         {/* Top bar */}
         <View style={styles.topBar}>
@@ -214,60 +198,52 @@ export function DailyGame() {
               </Pressable>
             ) : null}
 
-            {/* Guess input */}
-            {!finished ? (
-              <View style={styles.searchWrap}>
-                <Text style={styles.remaining}>
-                  {remaining} {remaining === 1 ? 'guess' : 'guesses'} left
-                </Text>
-                <View style={styles.inputRow}>
-                  <Ionicons name="search" size={18} color={COLORS.grey} />
-                  <TextInput
-                    value={query}
-                    onChangeText={setQuery}
-                    placeholder="Name the hero…"
-                    placeholderTextColor={COLORS.grey}
-                    style={styles.input}
-                    autoCorrect={false}
-                    returnKeyType="search"
-                  />
-                </View>
-                {query.trim().length >= 2 && suggestions.length > 0 ? (
-                  <View style={styles.suggestions}>
-                    {suggestions.map((r) => (
-                      <Pressable
-                        key={r.id}
-                        style={styles.suggestion}
-                        onPress={() => pick(r.id, r.name)}
-                      >
-                        <View style={styles.sThumb}>
-                          <HeroImage
-                            id={r.id}
-                            name={r.name}
-                            imageUrl={r.image_url}
-                            portraitUrl={r.portrait_url}
-                            grid
-                            contentFit="cover"
-                            contentPosition="top"
-                            style={StyleSheet.absoluteFill}
-                            recyclingKey={r.id}
-                          />
-                        </View>
-                        <Text style={styles.sName} numberOfLines={1}>
-                          {r.name}
-                        </Text>
-                        {r.publisher ? (
-                          <Text style={styles.sPublisher} numberOfLines={1}>
-                            {r.publisher}
-                          </Text>
-                        ) : null}
-                      </Pressable>
-                    ))}
-                  </View>
+            {/* Candidate names — tap to guess; wrong picks are struck out */}
+            <View style={styles.optionsWrap}>
+              <View style={styles.optionsHead}>
+                <Text style={styles.optionsHeading}>{finished ? 'The line-up' : 'Who is it?'}</Text>
+                {!finished ? (
+                  <Text style={styles.remaining}>
+                    {remaining} {remaining === 1 ? 'guess' : 'guesses'} left
+                  </Text>
                 ) : null}
-                {!!error && <Text style={styles.error}>{error}</Text>}
               </View>
-            ) : null}
+              <View style={styles.grid}>
+                {options.map((o) => {
+                  const isAnswer = o.id === hero.id;
+                  const guessed = guessedIds.has(o.id);
+                  const eliminated = guessed && !isAnswer;
+                  const reveal = finished && isAnswer;
+                  return (
+                    <Pressable
+                      key={o.id}
+                      disabled={finished || guessed}
+                      onPress={() => submitGuess(o.id, o.name)}
+                      style={[
+                        styles.option,
+                        eliminated && styles.optionEliminated,
+                        reveal && styles.optionCorrect,
+                      ]}
+                    >
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          styles.optionText,
+                          eliminated && styles.optionTextEliminated,
+                          reveal && styles.optionTextCorrect,
+                        ]}
+                      >
+                        {o.name}
+                      </Text>
+                      {eliminated ? <Ionicons name="close" size={15} color={COLORS.red} /> : null}
+                      {reveal ? (
+                        <Ionicons name="checkmark-circle" size={16} color={COLORS.green} />
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
 
             {/* Clues — one uncovered per miss */}
             <View style={styles.clues}>
@@ -283,22 +259,6 @@ export function DailyGame() {
                 ))
               )}
             </View>
-
-            {/* Wrong guesses */}
-            {guesses.some((g) => !g.correct) ? (
-              <View style={styles.wrongList}>
-                {guesses
-                  .filter((g) => !g.correct)
-                  .map((g) => (
-                    <View key={g.id} style={styles.wrong}>
-                      <Ionicons name="close" size={14} color={COLORS.red} />
-                      <Text style={styles.wrongName} numberOfLines={1}>
-                        {g.name}
-                      </Text>
-                    </View>
-                  ))}
-              </View>
-            ) : null}
 
             {finished ? <Text style={styles.tomorrow}>A new hero drops tomorrow.</Text> : null}
           </>
@@ -417,53 +377,51 @@ const styles = StyleSheet.create({
   },
   shareLabel: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: '#fff', letterSpacing: 0.3 },
 
-  searchWrap: { marginBottom: 18, zIndex: 5 },
+  optionsWrap: { marginBottom: 18 },
+  optionsHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  optionsHeading: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.navy },
   remaining: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
     color: COLORS.grey,
-    marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  inputRow: {
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  option: {
+    flexGrow: 1,
+    flexBasis: '47%',
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(41,60,67,0.12)',
+    justifyContent: 'space-between',
+    gap: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
-  },
-  input: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.black },
-  suggestions: {
-    marginTop: 8,
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(41,60,67,0.1)',
-    overflow: 'hidden',
   },
-  suggestion: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(41,60,67,0.08)',
+  optionEliminated: {
+    backgroundColor: 'transparent',
+    borderColor: 'rgba(41,60,67,0.08)',
   },
-  sThumb: {
-    width: 30,
-    height: 30,
-    borderRadius: 7,
-    overflow: 'hidden',
-    backgroundColor: COLORS.deepNavy,
+  optionCorrect: {
+    backgroundColor: 'rgba(99,169,54,0.14)',
+    borderColor: COLORS.green,
   },
-  sName: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.navy },
-  sPublisher: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey },
+  optionText: { flexShrink: 1, fontFamily: 'Nunito_700Bold', fontSize: 15, color: COLORS.navy },
+  optionTextEliminated: {
+    color: COLORS.grey,
+    textDecorationLine: 'line-through',
+  },
+  optionTextCorrect: { color: '#3f7d1f' },
 
   clues: {
     backgroundColor: '#fff',
@@ -505,18 +463,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: COLORS.navy,
   },
-
-  wrongList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
-  wrong: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(217,75,61,0.08)',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  wrongName: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy, maxWidth: 160 },
 
   tomorrow: {
     fontFamily: 'Nunito_400Regular',

@@ -4,10 +4,16 @@
 import { supabase } from '../supabase';
 import type { RevealHero } from '../game/reveal';
 
+export interface GuessOption {
+  id: string;
+  name: string;
+}
+
 export interface DailyPuzzle {
   number: number;
   date: string; // YYYY-MM-DD
   hero: RevealHero;
+  options: GuessOption[]; // the answer + decoys, pre-shuffled, to tap
 }
 
 interface RawDailyHero {
@@ -42,7 +48,17 @@ function rawToRevealHero(h: RawDailyHero): RevealHero {
 export async function getDailyHero(): Promise<DailyPuzzle | null> {
   const { data, error } = await supabase.rpc('get_daily_hero');
   if (error || !data) return null;
-  const d = data as unknown as { number: number; date: string; hero: RawDailyHero | null };
+  const d = data as unknown as {
+    number: number;
+    date: string;
+    hero: RawDailyHero | null;
+    options: GuessOption[] | null;
+  };
   if (!d?.hero) return null;
-  return { number: d.number, date: d.date, hero: rawToRevealHero(d.hero) };
+  return {
+    number: d.number,
+    date: d.date,
+    hero: rawToRevealHero(d.hero),
+    options: d.options ?? [],
+  };
 }
