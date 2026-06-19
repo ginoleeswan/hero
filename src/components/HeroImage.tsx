@@ -25,6 +25,8 @@ interface HeroImageProps {
   cachePolicy?: 'none' | 'disk' | 'memory' | 'memory-disk';
   recyclingKey?: string | null;
   transition?: number | null;
+  /** Gaussian blur radius for the portrait (used by the daily reveal game). */
+  blurRadius?: number;
   /** Fires when the portrait loads, or immediately when the monogram is shown. */
   onLoad?: () => void;
 }
@@ -51,6 +53,7 @@ export function HeroImage({
   cachePolicy = 'memory-disk',
   recyclingKey,
   transition,
+  blurRadius,
   onLoad,
 }: HeroImageProps) {
   const [errored, setErrored] = useState(false);
@@ -74,6 +77,7 @@ export function HeroImage({
       cachePolicy={cachePolicy}
       recyclingKey={recyclingKey ?? String(id)}
       transition={transition ?? 200}
+      blurRadius={blurRadius}
       onLoad={onLoad}
       onError={() => setErrored(true)}
     />

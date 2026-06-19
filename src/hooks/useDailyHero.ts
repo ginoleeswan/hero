@@ -1,32 +1,37 @@
 // Platform-neutral state for the daily "Guess the Hero" game (shared by the
 // native + web screens). Loads the puzzle, restores saved progress + streak
-// from local storage, resolves each guess against today's answer, and tracks
-// win/lose + streak. Logged-in or not — everything is local (Wordle-style).
+// from local storage, and resolves each guess against today's answer — the
+// portrait sharpens and a new clue is revealed on every miss. Win/lose + streak
+// are tracked locally (Wordle-style), so it works logged in or not.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getDailyHero, heroToGuessHero, type DailyPuzzle } from '../lib/db/dailyHero';
-import { getHeroById } from '../lib/db/heroes';
-import { compareGuess, type GuessClue } from '../lib/game/guessCompare';
+import { getDailyHero, type DailyPuzzle } from '../lib/db/dailyHero';
+import { blurForGuess, buildClues, visibleClues, type Clue } from '../lib/game/reveal';
 import { buildShareGrid } from '../lib/game/shareGrid';
 import { applyResult, EMPTY_STREAK, type StreakState } from '../lib/game/streak';
 
 export const MAX_GUESSES = 6;
 export type GameStatus = 'loading' | 'error' | 'playing' | 'won' | 'lost';
 
-const dayKey = (date: string) => `dh_v1_${date}`;
+export interface Guess {
+  id: string;
+  name: string;
+  correct: boolean;
+}
+
+const dayKey = (date: string) => `dh_v2_${date}`;
 const STREAK_KEY = 'dh_streak_v1';
 
 interface SavedDay {
-  guesses: GuessClue[];
+  guesses: Guess[];
   status: 'playing' | 'won' | 'lost';
 }
 
 export function useDailyHero() {
   const [puzzle, setPuzzle] = useState<DailyPuzzle | null>(null);
   const [status, setStatus] = useState<GameStatus>('loading');
-  const [guesses, setGuesses] = useState<GuessClue[]>([]);
+  const [guesses, setGuesses] = useState<Guess[]>([]);
   const [streak, setStreak] = useState<StreakState>(EMPTY_STREAK);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -69,71 +74,70 @@ export function useDailyHero() {
   }, []);
 
   const submitGuess = useCallback(
-    async (heroId: string) => {
-      if (!puzzle || status !== 'playing' || submitting) return;
+    (heroId: string, heroName: string) => {
+      if (!puzzle || status !== 'playing') return;
       if (guesses.some((g) => g.id === heroId)) {
         setError('You already guessed that one.');
         return;
       }
-      setSubmitting(true);
       setError(null);
-      try {
-        const row = await getHeroById(heroId);
-        if (!row) {
-          setError('Could not load that hero.');
-          return;
-        }
-        const clue = compareGuess(heroToGuessHero(row), puzzle.hero);
-        const nextGuesses = [...guesses, clue];
-        const won = clue.correct;
-        const lost = !won && nextGuesses.length >= MAX_GUESSES;
-        const nextStatus: SavedDay['status'] = won ? 'won' : lost ? 'lost' : 'playing';
 
-        setGuesses(nextGuesses);
-        setStatus(nextStatus);
-        AsyncStorage.setItem(
-          dayKey(puzzle.date),
-          JSON.stringify({ guesses: nextGuesses, status: nextStatus } satisfies SavedDay),
-        ).catch(() => {});
+      const correct = heroId === puzzle.hero.id;
+      const next = [...guesses, { id: heroId, name: heroName, correct }];
+      const won = correct;
+      const lost = !won && next.length >= MAX_GUESSES;
+      const nextStatus: SavedDay['status'] = won ? 'won' : lost ? 'lost' : 'playing';
 
-        if (won || lost) {
-          setStreak((prev) => {
-            const next = applyResult(prev, puzzle.date, won);
-            AsyncStorage.setItem(STREAK_KEY, JSON.stringify(next)).catch(() => {});
-            return next;
-          });
-        }
-      } catch {
-        setError('Something went wrong — try again.');
-      } finally {
-        setSubmitting(false);
+      setGuesses(next);
+      setStatus(nextStatus);
+      AsyncStorage.setItem(
+        dayKey(puzzle.date),
+        JSON.stringify({ guesses: next, status: nextStatus } satisfies SavedDay),
+      ).catch(() => {});
+
+      if (won || lost) {
+        setStreak((prev) => {
+          const updated = applyResult(prev, puzzle.date, won);
+          AsyncStorage.setItem(STREAK_KEY, JSON.stringify(updated)).catch(() => {});
+          return updated;
+        });
       }
     },
-    [puzzle, status, submitting, guesses],
+    [puzzle, status, guesses],
   );
 
   const finished = status === 'won' || status === 'lost';
-  const answer = finished ? (puzzle?.hero ?? null) : null;
+  const answer = puzzle?.hero ?? null;
+
+  const allClues = useMemo<Clue[]>(() => (puzzle ? buildClues(puzzle.hero) : []), [puzzle]);
+  const clues = useMemo(
+    () => visibleClues(allClues, guesses.length, finished),
+    [allClues, guesses.length, finished],
+  );
+  const blur = blurForGuess(guesses.length, finished);
 
   const shareText = useMemo(() => {
     if (!puzzle || !finished) return '';
     return buildShareGrid({
       number: puzzle.number,
-      guesses,
+      attempts: guesses.length,
       solved: status === 'won',
       maxGuesses: MAX_GUESSES,
     });
-  }, [puzzle, finished, guesses, status]);
+  }, [puzzle, finished, guesses.length, status]);
 
   return {
     status,
     puzzleNumber: puzzle?.number ?? null,
+    hero: answer, // always present once loaded — the portrait to reveal
     guesses,
     maxGuesses: MAX_GUESSES,
     remaining: MAX_GUESSES - guesses.length,
+    blur,
+    clues,
     streak,
-    answer,
-    submitting,
+    finished,
+    answer: finished ? answer : null,
     error,
     shareText,
     submitGuess,

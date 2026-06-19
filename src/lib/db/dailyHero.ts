@@ -1,14 +1,13 @@
 // Data layer for the daily "Guess the Hero" game. The puzzle (today's answer +
-// its comparison attributes) comes from the get_daily_hero RPC; guesses are
-// resolved client-side against it (honour-system, like Wordle).
+// the fields its portrait/clues are drawn from) comes from the get_daily_hero
+// RPC; guesses are checked client-side against it (honour-system, like Wordle).
 import { supabase } from '../supabase';
-import { parseFirstYear, type GuessHero } from '../game/guessCompare';
-import type { Hero } from './heroes';
+import type { RevealHero } from '../game/reveal';
 
 export interface DailyPuzzle {
   number: number;
   date: string; // YYYY-MM-DD
-  hero: GuessHero;
+  hero: RevealHero;
 }
 
 interface RawDailyHero {
@@ -25,7 +24,7 @@ interface RawDailyHero {
   powers: string[] | null;
 }
 
-function rawToGuessHero(h: RawDailyHero): GuessHero {
+function rawToRevealHero(h: RawDailyHero): RevealHero {
   return {
     id: h.id,
     name: h.name,
@@ -35,41 +34,7 @@ function rawToGuessHero(h: RawDailyHero): GuessHero {
     alignment: h.alignment,
     origin: h.origin,
     gender: h.gender,
-    firstYear: parseFirstYear(h.first_appearance),
-    powerTotal: h.powerstats_total ?? null,
-    powers: h.powers ?? [],
-  };
-}
-
-/** Fields a guessed hero needs for comparison (subset of the heroes row). */
-type GuessableHero = Pick<
-  Hero,
-  | 'id'
-  | 'name'
-  | 'image_url'
-  | 'portrait_url'
-  | 'publisher'
-  | 'alignment'
-  | 'origin'
-  | 'gender'
-  | 'first_appearance'
-  | 'powerstats_total'
-  | 'powers'
->;
-
-/** Convert a full heroes row (from getHeroById) into a comparable guess. */
-export function heroToGuessHero(h: GuessableHero): GuessHero {
-  return {
-    id: h.id,
-    name: h.name,
-    imageUrl: h.image_url,
-    portraitUrl: h.portrait_url,
-    publisher: h.publisher,
-    alignment: h.alignment,
-    origin: h.origin,
-    gender: h.gender,
-    firstYear: parseFirstYear(h.first_appearance),
-    powerTotal: h.powerstats_total ?? null,
+    firstAppearance: h.first_appearance,
     powers: h.powers ?? [],
   };
 }
@@ -79,5 +44,5 @@ export async function getDailyHero(): Promise<DailyPuzzle | null> {
   if (error || !data) return null;
   const d = data as unknown as { number: number; date: string; hero: RawDailyHero | null };
   if (!d?.hero) return null;
-  return { number: d.number, date: d.date, hero: rawToGuessHero(d.hero) };
+  return { number: d.number, date: d.date, hero: rawToRevealHero(d.hero) };
 }
