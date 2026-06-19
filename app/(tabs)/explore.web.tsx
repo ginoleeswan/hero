@@ -344,7 +344,7 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
                 <StatChip icon="brain" label="INT" value={hero.intelligence} />
               )}
               {!!hero.strength && <StatChip icon="arm-flex" label="STR" value={hero.strength} />}
-              {!!hero.speed && <StatChip icon="lightning-bolt" label="SPD" value={hero.speed} />}
+              {!!hero.speed && <StatChip icon="run-fast" label="SPD" value={hero.speed} />}
             </View>
           ) : null}
           {!!hero.first_appearance && (
