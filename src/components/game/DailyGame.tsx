@@ -35,13 +35,23 @@ const CARD_W = 156;
 const CARD_H = 208;
 const STICKER_W = 92;
 
-// Each clue is stuck on at a slightly different angle, like pinned evidence.
+// Each clue is stuck on at a slightly different angle, like a sticker packet.
 const TILTS = [
   { transform: [{ rotate: '-5deg' }] },
   { transform: [{ rotate: '4deg' }] },
   { transform: [{ rotate: '-3deg' }] },
   { transform: [{ rotate: '5deg' }] },
   { transform: [{ rotate: '-4deg' }] },
+];
+
+// Saturated retro fills (the cream die-cut border is shared) so the clues read
+// like a scattered sticker packet around the card.
+const TONES = [
+  { bg: COLORS.orange, fg: COLORS.beige },
+  { bg: COLORS.blue, fg: COLORS.beige },
+  { bg: COLORS.red, fg: COLORS.beige },
+  { bg: COLORS.yellow, fg: COLORS.deepNavy },
+  { bg: COLORS.green, fg: COLORS.deepNavy },
 ];
 
 // Warm spotlight behind the card — a real radial on web, a soft disc on native.
@@ -53,13 +63,13 @@ const GLOW = Platform.select({
 }) as object;
 
 function ClueSticker({ clue, tilt }: { clue: Clue; tilt: number }) {
+  const tone = TONES[tilt % TONES.length];
   return (
-    <View style={[styles.sticker, TILTS[tilt % TILTS.length]]}>
-      <View style={styles.stickerPin} />
-      <Text style={styles.stickerLabel} numberOfLines={1}>
-        {clue.label}
-      </Text>
-      <Text style={styles.stickerValue} numberOfLines={1}>
+    <View
+      style={[styles.sticker, TILTS[tilt % TILTS.length], { backgroundColor: tone.bg }]}
+      accessibilityLabel={`${clue.label}: ${clue.value}`}
+    >
+      <Text style={[styles.stickerValue, { color: tone.fg }]} numberOfLines={2}>
         {clue.value}
       </Text>
     </View>
@@ -446,41 +456,28 @@ const styles = StyleSheet.create({
 
   sticker: {
     width: STICKER_W,
-    backgroundColor: '#fffdf8',
-    borderRadius: 11,
+    borderRadius: 16,
     borderCurve: 'continuous',
-    paddingHorizontal: 10,
-    paddingTop: 9,
-    paddingBottom: 8,
+    borderWidth: 3,
+    borderColor: '#fbf3e4',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.45,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    elevation: 7,
     zIndex: 3,
-  },
-  stickerPin: {
-    position: 'absolute',
-    top: -4,
-    alignSelf: 'center',
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.orange,
-  },
-  stickerLabel: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 8,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: COLORS.orange,
   },
   stickerValue: {
     fontFamily: 'Flame-Regular',
-    fontSize: 14,
-    color: COLORS.navy,
-    lineHeight: 17,
-    marginTop: 1,
+    fontSize: 15,
+    lineHeight: 18,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    textAlign: 'center',
   },
 
   dossier: {
