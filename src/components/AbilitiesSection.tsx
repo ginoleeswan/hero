@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { SymbolView } from 'expo-symbols';
 import { COLORS } from '../constants/colors';
 import { getPowerIcon, groupPowers } from '../constants/powerIcons';
 import { Skeleton } from './ui/Skeleton';
@@ -11,59 +12,49 @@ interface Props {
   powers: string[] | null;
   loading: boolean;
   explainers?: PowerExplainer[];
-  /** Page-wide edit mode. The "Edit powers" chip and the empty-state affordance
-   *  appear only while editing — reading view stays pristine. */
-  editing?: boolean;
-  /** Edits the whole powers list (one per line). */
+  /** When set, a subtle pencil sits at the right of the header to edit the whole
+   *  powers list (one per line). */
   onEdit?: () => void;
 }
 
-function Header({ editing, onEdit }: { editing?: boolean; onEdit?: () => void }) {
+function Header({ onEdit }: { onEdit?: () => void }) {
   return (
     <View style={styles.sectionHeader}>
       <View style={styles.headerRow}>
-        {editing && onEdit ? (
+        <Text style={styles.sectionTitle}>Abilities</Text>
+        {onEdit ? (
           <TouchableOpacity
             onPress={onEdit}
-            hitSlop={6}
-            style={styles.editChip}
+            hitSlop={10}
+            style={styles.pencil}
             accessibilityRole="button"
             accessibilityLabel="Edit powers"
           >
-            <Ionicons name="create-outline" size={13} color={COLORS.orange} />
-            <Text style={styles.editChipText}>Edit powers</Text>
+            <SymbolView
+              name="square.and.pencil"
+              weight="regular"
+              tintColor="rgba(41,60,67,0.5)"
+              size={18}
+              resizeMode="scaleAspectFit"
+              fallback={<Ionicons name="pencil-outline" size={17} color="rgba(41,60,67,0.5)" />}
+            />
           </TouchableOpacity>
         ) : null}
-        <Text style={styles.sectionTitle}>Abilities</Text>
       </View>
       <View style={styles.divider} />
     </View>
   );
 }
 
-export function AbilitiesSection({ powers, loading, explainers = [], editing, onEdit }: Props) {
-  if (!loading && (!powers || powers.length === 0)) {
-    // Pristine when empty + reading. In edit mode, keep the section so a
-    // contributor can fill it.
-    if (!editing) return null;
-    return (
-      <View style={styles.container}>
-        <Header editing={editing} onEdit={onEdit} />
-        <View style={styles.body}>
-          <TouchableOpacity onPress={onEdit} activeOpacity={0.7} style={styles.addRow}>
-            <Ionicons name="add-circle-outline" size={18} color={COLORS.orange} />
-            <Text style={styles.addRowText}>Add powers & abilities</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
+export function AbilitiesSection({ powers, loading, explainers = [], onEdit }: Props) {
+  // Pristine when empty — the section only appears once a hero has abilities.
+  if (!loading && (!powers || powers.length === 0)) return null;
 
   const groups = powers ? groupPowers(powers) : [];
 
   return (
     <View style={styles.container}>
-      <Header editing={editing} onEdit={onEdit} />
+      <Header onEdit={onEdit} />
 
       <View style={styles.body}>
         {loading && !powers ? (
@@ -119,21 +110,8 @@ const styles = StyleSheet.create({
   sectionHeader: {
     paddingHorizontal: 20,
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center' },
-  editChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: 'rgba(231,115,51,0.12)',
-  },
-  editChipText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    color: COLORS.orange,
-  },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  pencil: { paddingVertical: 2 },
   sectionTitle: {
     flex: 1,
     fontFamily: 'Flame-Regular',
@@ -141,17 +119,6 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
     textAlign: 'right',
     paddingVertical: 5,
-  },
-  addRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingBottom: 8,
-  },
-  addRowText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 14,
-    color: COLORS.orange,
   },
   divider: {
     height: 2,
