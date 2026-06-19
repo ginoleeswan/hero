@@ -74,7 +74,11 @@ export function RivalriesRail({
         <Text style={styles.heading}>Greatest Rivalries</Text>
         <Text style={styles.sub}>the grudge matches fans want to see</Text>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.row}
+      >
         {rivalries.map((r) => (
           <RivalryCard key={`${r.a.id}-${r.b.id}`} r={r} onPress={() => onOpen(r.a, r.b)} />
         ))}
@@ -89,7 +93,12 @@ const CARD_H = 140;
 const styles = StyleSheet.create({
   head: { paddingHorizontal: 16, marginBottom: 14 },
   heading: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.beige },
-  sub: { fontFamily: 'Nunito_400Regular', fontSize: 12.5, color: 'rgba(245,235,220,0.45)', marginTop: 2 },
+  sub: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12.5,
+    color: 'rgba(245,235,220,0.45)',
+    marginTop: 2,
+  },
   row: { gap: 12, paddingHorizontal: 16, paddingBottom: 4 },
   card: {
     width: CARD_W,
