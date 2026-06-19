@@ -75,10 +75,10 @@ describe('buildClues / visibleClues', () => {
     expect(clues[3].value).toBe('Flight');
   });
 
-  it('reveals one clue per wrong guess, all when finished', () => {
+  it('reveals one clue free, then one per wrong guess, all when finished', () => {
     const clues = buildClues(hero());
-    expect(visibleClues(clues, 0, false)).toHaveLength(0);
-    expect(visibleClues(clues, 2, false)).toHaveLength(2);
+    expect(visibleClues(clues, 0, false)).toHaveLength(1); // one free at the start
+    expect(visibleClues(clues, 2, false)).toHaveLength(3);
     expect(visibleClues(clues, 1, true)).toEqual(clues); // finished reveals everything
   });
 });

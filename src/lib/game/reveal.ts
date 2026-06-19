@@ -54,9 +54,11 @@ export function alignmentLabel(a: string | null | undefined): string | null {
   return cap(v);
 }
 
-// How blurred the portrait is after N wrong guesses. Heavy at the start, fully
-// clear once the puzzle is over (handled in the hook by passing finished=true).
-const BLUR_LADDER = [42, 30, 20, 12, 6, 2];
+// How blurred the portrait is after N wrong guesses. It starts moderate — the
+// silhouette and colours read, but not the identity — so the very first guess
+// is informed, then sharpens to almost-clear. Fully clear once the puzzle is
+// over (the hook passes finished=true).
+const BLUR_LADDER = [24, 16, 10, 5, 2];
 
 export function blurForGuess(guessesMade: number, finished: boolean): number {
   if (finished) return 0;
@@ -65,8 +67,8 @@ export function blurForGuess(guessesMade: number, finished: boolean): number {
 }
 
 /**
- * The ordered ladder of text clues, blanks dropped. One is uncovered per wrong
- * guess (see `visibleClues`), easiest-to-hardest so early misses still help.
+ * The ordered ladder of text clues, blanks dropped. Easiest-to-hardest so early
+ * clues still help.
  */
 export function buildClues(hero: RevealHero): Clue[] {
   const out: Clue[] = [];
@@ -82,8 +84,11 @@ export function buildClues(hero: RevealHero): Clue[] {
   return out;
 }
 
-/** Clues unlocked so far: one per wrong guess, all of them once finished. */
+/**
+ * Clues unlocked so far. One is free at the start (so the first guess isn't
+ * blind), then a fresh one per wrong guess; all of them once finished.
+ */
 export function visibleClues(clues: Clue[], guessesMade: number, finished: boolean): Clue[] {
   if (finished) return clues;
-  return clues.slice(0, Math.min(guessesMade, clues.length));
+  return clues.slice(0, Math.min(guessesMade + 1, clues.length));
 }

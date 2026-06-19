@@ -1,11 +1,12 @@
 // The daily "Guess the Hero" screen — a thin view over useDailyHero, rendered
 // by both app/play.tsx (native) and app/play.web.tsx (web) via RNW.
 //
-// Design language borrows from the arena (holographic trading card, gold
-// accents, deep navy) and the character pages. The mystery hero is a small
-// blurred card; each wrong guess pins a clue "sticker" beside it and sharpens
-// the art. Tap a name from the line-up to guess. The whole thing fits one
-// screen — no scrolling in the common case.
+// A dramatic dark "reveal stage" (arena language): the mystery hero is a
+// spotlit holographic trading card, its art moderately blurred from the start
+// so the silhouette + colours read — you're never guessing fully blind. One
+// clue is free; each wrong guess pins a fresh clue "sticker" beside the card
+// and sharpens the art. Tap a name from the line-up to guess. Fits one screen
+// and bleeds edge-to-edge behind the floating nav, like Explore.
 import { useCallback, useState } from 'react';
 import {
   View,
@@ -26,11 +27,14 @@ import { MysteryPortrait } from './MysteryPortrait';
 import { useDailyHero } from '../../hooks/useDailyHero';
 import type { Clue } from '../../lib/game/reveal';
 
-const CARD_W = 152;
-const CARD_H = 204;
-const STICKER_W = 90;
+// The floating web nav is 64px tall; the dark stage bleeds up under it, so the
+// screen owns its own clearance below it (matching the other content routes).
+const WEB_NAV_CLEARANCE = 64;
+const CARD_W = 156;
+const CARD_H = 208;
+const STICKER_W = 92;
 
-// A clue pinned beside the card, each stuck on at a slightly different angle.
+// Each clue is stuck on at a slightly different angle, like pinned evidence.
 const TILTS = [
   { transform: [{ rotate: '-5deg' }] },
   { transform: [{ rotate: '4deg' }] },
@@ -38,6 +42,14 @@ const TILTS = [
   { transform: [{ rotate: '5deg' }] },
   { transform: [{ rotate: '-4deg' }] },
 ];
+
+// Warm spotlight behind the card — a real radial on web, a soft disc on native.
+const GLOW = Platform.select({
+  web: {
+    backgroundImage: 'radial-gradient(closest-side, rgba(231,115,51,0.32), rgba(231,115,51,0) 72%)',
+  },
+  default: { backgroundColor: 'rgba(231,115,51,0.12)' },
+}) as object;
 
 function ClueSticker({ clue, tilt }: { clue: Clue; tilt: number }) {
   return (
@@ -98,18 +110,23 @@ export function DailyGame() {
     }
   }, [shareText]);
 
-  // Lightweight frosted veil so the reveal reads even where blur is subtle.
-  const veil = Math.min(blur / 80, 0.46);
   // Clues alternate sides so they flank the card like pinned evidence.
   const leftClues = clues.filter((_, i) => i % 2 === 0);
   const rightClues = clues.filter((_, i) => i % 2 === 1);
+  const topPad = (Platform.OS === 'web' ? WEB_NAV_CLEARANCE : insets.top) + 14;
 
   return (
     <View style={styles.container}>
+      <LinearGradient
+        colors={['#11283440', '#0a1620', '#05090d']}
+        locations={[0, 0.5, 1]}
+        style={styles.bg}
+        pointerEvents="none"
+      />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 },
+          { paddingTop: topPad, paddingBottom: insets.bottom + 20 },
         ]}
       >
         {/* Header */}
@@ -120,7 +137,7 @@ export function DailyGame() {
             style={styles.iconBtn}
             accessibilityLabel="Back"
           >
-            <Ionicons name="chevron-back" size={22} color={COLORS.navy} />
+            <Ionicons name="chevron-back" size={22} color={COLORS.beige} />
           </Pressable>
           <View style={styles.headerMid}>
             <Text style={styles.kicker}>Daily Challenge</Text>
@@ -145,8 +162,9 @@ export function DailyGame() {
           </Text>
         ) : (
           <>
-            {/* Stage — the card flanked by clue stickers, on a soft pedestal */}
+            {/* Stage — the spotlit card flanked by clue stickers */}
             <View style={styles.stage}>
+              <View style={[styles.glow, GLOW]} pointerEvents="none" />
               <View style={styles.cardRow}>
                 <View style={styles.colLeft}>
                   {leftClues.map((c, i) => (
@@ -175,30 +193,20 @@ export function DailyGame() {
                     portraitUrl={hero.portraitUrl}
                     blur={blur}
                   />
-                  {veil > 0 ? (
-                    <View
-                      pointerEvents="none"
-                      style={[styles.veil, { backgroundColor: `rgba(11,24,32,${veil})` }]}
-                    />
-                  ) : null}
                   {/* holographic sheen — same trick as the arena cards */}
                   <LinearGradient
-                    colors={['rgba(255,255,255,0.16)', 'transparent', 'rgba(206,155,51,0.18)']}
+                    colors={['rgba(255,255,255,0.18)', 'transparent', 'rgba(206,155,51,0.20)']}
                     locations={[0, 0.5, 1]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={styles.veil}
+                    style={styles.fill}
                     pointerEvents="none"
                   />
-                  {!finished ? (
-                    <View pointerEvents="none" style={styles.seal}>
-                      <Text style={styles.sealMark}>?</Text>
-                    </View>
-                  ) : (
+                  {finished ? (
                     <LinearGradient
                       colors={['transparent', 'rgba(8,12,20,0.94)']}
                       locations={[0.45, 1]}
-                      style={styles.veil}
+                      style={styles.fill}
                       pointerEvents="none"
                     >
                       <View style={styles.cardFooter}>
@@ -208,7 +216,7 @@ export function DailyGame() {
                         <Text style={styles.cardLink}>View profile →</Text>
                       </View>
                     </LinearGradient>
-                  )}
+                  ) : null}
                 </Pressable>
 
                 <View style={styles.colRight}>
@@ -242,16 +250,14 @@ export function DailyGame() {
             <View style={styles.footer}>
               {finished ? (
                 <>
-                  <View style={[styles.banner, won ? styles.bannerWon : styles.bannerLost]}>
-                    <Text style={styles.bannerTitle}>{won ? 'Solved it!' : 'Out of guesses'}</Text>
-                    <Text style={styles.bannerSub}>
-                      {won
-                        ? `It's ${hero.name} — in ${guesses.length} ${
-                            guesses.length === 1 ? 'guess' : 'guesses'
-                          }.`
-                        : `It was ${hero.name}.`}
-                    </Text>
-                  </View>
+                  <Text style={styles.resultTitle}>{won ? 'Solved it!' : 'Out of guesses'}</Text>
+                  <Text style={styles.resultSub}>
+                    {won
+                      ? `${hero.name} — in ${guesses.length} ${
+                          guesses.length === 1 ? 'guess' : 'guesses'
+                        }.`
+                      : `It was ${hero.name}.`}
+                  </Text>
                   <Pressable onPress={onShare} style={styles.shareBtn}>
                     <Ionicons name="share-social-outline" size={16} color="#fff" />
                     <Text style={styles.shareLabel}>{copied ? 'Copied!' : 'Share result'}</Text>
@@ -274,7 +280,11 @@ export function DailyGame() {
                           key={o.id}
                           disabled={guessed}
                           onPress={() => submitGuess(o.id, o.name)}
-                          style={[styles.option, guessed && styles.optionEliminated]}
+                          style={({ pressed }) => [
+                            styles.option,
+                            pressed && styles.optionPressed,
+                            guessed && styles.optionEliminated,
+                          ]}
                         >
                           <Text
                             numberOfLines={1}
@@ -282,7 +292,9 @@ export function DailyGame() {
                           >
                             {o.name}
                           </Text>
-                          {guessed ? <Ionicons name="close" size={15} color={COLORS.red} /> : null}
+                          {guessed ? (
+                            <Ionicons name="close" size={15} color="rgba(245,235,220,0.5)" />
+                          ) : null}
                         </Pressable>
                       );
                     })}
@@ -298,7 +310,9 @@ export function DailyGame() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.beige },
+  container: { flex: 1, backgroundColor: '#0a1620' },
+  bg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  fill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   scroll: { flexGrow: 1, paddingHorizontal: 18 },
 
   header: {
@@ -313,17 +327,19 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(41,60,67,0.06)',
+    backgroundColor: 'rgba(245,235,220,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.12)',
   },
   headerMid: { flex: 1, alignItems: 'center' },
   kicker: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    letterSpacing: 1.6,
+    letterSpacing: 1.8,
     textTransform: 'uppercase',
     color: COLORS.orange,
   },
-  puzzleNo: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.navy, marginTop: 1 },
+  puzzleNo: { fontFamily: 'Flame-Regular', fontSize: 17, color: COLORS.beige, marginTop: 1 },
   streakPill: {
     minWidth: 38,
     height: 38,
@@ -331,34 +347,40 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(231,115,51,0.12)',
+    backgroundColor: 'rgba(231,115,51,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(231,115,51,0.32)',
   },
   streakText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.orange },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  error: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.red, marginTop: 16 },
+  error: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.beige,
+    textAlign: 'center',
+    marginTop: 40,
+  },
 
   // Stage takes the slack so the card sits optically centred above the footer.
-  stage: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 8 },
+  stage: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10 },
+  glow: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: 340,
+    height: 340,
+    marginLeft: -170,
+    marginTop: -170,
+    borderRadius: 170,
+  },
   cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     maxWidth: '100%',
   },
-  colLeft: {
-    width: STICKER_W,
-    marginRight: -14,
-    gap: 12,
-    alignItems: 'flex-end',
-    zIndex: 3,
-  },
-  colRight: {
-    width: STICKER_W,
-    marginLeft: -14,
-    gap: 12,
-    alignItems: 'flex-start',
-    zIndex: 3,
-  },
+  colLeft: { width: STICKER_W, marginRight: -16, gap: 12, alignItems: 'flex-end', zIndex: 3 },
+  colRight: { width: STICKER_W, marginLeft: -16, gap: 12, alignItems: 'flex-start', zIndex: 3 },
 
   card: {
     width: CARD_W,
@@ -371,32 +393,15 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(206,155,51,0.55)',
     zIndex: 1,
     shadowColor: '#000',
-    shadowOpacity: 0.5,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 14 },
-    elevation: 8,
+    shadowOpacity: 0.6,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 16 },
+    elevation: 10,
   },
   cardDone: { borderColor: COLORS.goldAccent },
   cardWon: { borderColor: COLORS.green },
-  veil: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  seal: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    width: 56,
-    height: 56,
-    marginLeft: -28,
-    marginTop: -28,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(11,24,32,0.5)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(206,155,51,0.7)',
-  },
-  sealMark: { fontFamily: 'Flame-Regular', fontSize: 30, color: COLORS.goldAccent },
   cardFooter: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 12 },
-  cardName: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.beige, lineHeight: 23 },
+  cardName: { fontFamily: 'Flame-Regular', fontSize: 21, color: COLORS.beige, lineHeight: 24 },
   cardLink: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange, marginTop: 1 },
 
   sticker: {
@@ -407,13 +412,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingTop: 9,
     paddingBottom: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(41,60,67,0.06)',
     shadowColor: '#000',
-    shadowOpacity: 0.16,
-    shadowRadius: 9,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
     zIndex: 3,
   },
   stickerPin: {
@@ -424,7 +427,6 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: COLORS.orange,
-    opacity: 0.9,
   },
   stickerLabel: {
     fontFamily: 'Nunito_700Bold',
@@ -441,24 +443,24 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
 
-  pips: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 20 },
-  pip: { width: 11, height: 11, borderRadius: 6, backgroundColor: 'rgba(41,60,67,0.14)' },
-  pipActive: { backgroundColor: 'rgba(231,115,51,0.45)' },
+  pips: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 22 },
+  pip: { width: 11, height: 11, borderRadius: 6, backgroundColor: 'rgba(245,235,220,0.18)' },
+  pipActive: { backgroundColor: COLORS.orange },
   pipMiss: { backgroundColor: COLORS.red },
   pipWon: { backgroundColor: COLORS.green },
 
-  footer: { marginTop: 8 },
+  footer: { marginTop: 10 },
   lineupHead: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  lineupTitle: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.navy },
+  lineupTitle: { fontFamily: 'Flame-Regular', fontSize: 21, color: COLORS.beige },
   remaining: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
-    color: COLORS.grey,
+    color: 'rgba(245,235,220,0.5)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -466,32 +468,37 @@ const styles = StyleSheet.create({
   option: {
     flexGrow: 1,
     flexBasis: '47%',
-    minHeight: 50,
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    backgroundColor: '#fff',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(245,235,220,0.06)',
     borderRadius: 14,
     borderCurve: 'continuous',
     borderWidth: 1,
-    borderColor: 'rgba(41,60,67,0.1)',
+    borderColor: 'rgba(245,235,220,0.16)',
   },
-  optionEliminated: { backgroundColor: 'transparent', borderColor: 'rgba(41,60,67,0.08)' },
-  optionText: { flexShrink: 1, fontFamily: 'Nunito_700Bold', fontSize: 15, color: COLORS.navy },
-  optionTextEliminated: { color: COLORS.grey, textDecorationLine: 'line-through' },
+  optionPressed: { backgroundColor: 'rgba(231,115,51,0.18)', borderColor: COLORS.orange },
+  optionEliminated: {
+    backgroundColor: 'transparent',
+    borderColor: 'rgba(245,235,220,0.07)',
+  },
+  optionText: { flexShrink: 1, fontFamily: 'Nunito_700Bold', fontSize: 15, color: COLORS.beige },
+  optionTextEliminated: {
+    color: 'rgba(245,235,220,0.4)',
+    textDecorationLine: 'line-through',
+  },
 
-  banner: { borderRadius: 14, borderCurve: 'continuous', padding: 14, marginBottom: 12 },
-  bannerWon: { backgroundColor: 'rgba(99,169,54,0.16)' },
-  bannerLost: { backgroundColor: 'rgba(41,60,67,0.08)' },
-  bannerTitle: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.navy },
-  bannerSub: {
+  resultTitle: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.beige },
+  resultSub: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
-    color: 'rgba(41,60,67,0.7)',
+    color: 'rgba(245,235,220,0.7)',
     marginTop: 2,
+    marginBottom: 16,
   },
   shareBtn: {
     flexDirection: 'row',
@@ -500,14 +507,14 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: COLORS.orange,
     borderRadius: 999,
-    paddingVertical: 13,
+    paddingVertical: 14,
   },
   shareLabel: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: '#fff', letterSpacing: 0.3 },
   tomorrow: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: 'rgba(245,235,220,0.5)',
     textAlign: 'center',
-    marginTop: 12,
+    marginTop: 14,
   },
 });
