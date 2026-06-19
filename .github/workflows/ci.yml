@@ -74,8 +74,9 @@ jobs:
     name: Expo Doctor (informational)
     runs-on: ubuntu-latest
     # Non-blocking: surfaces dependency drift / config issues without gating.
-    # (The repo intentionally commits android/ alongside app.config.ts, which
-    # doctor flags — see the prebuild-properties warning.)
+    # The repo intentionally commits android/ alongside app.config.ts; that one
+    # accepted warning is disabled via expo.doctor.appConfigFieldsNotSyncedCheck
+    # in package.json, so doctor otherwise stays green and still catches drift.
     continue-on-error: true
     steps:
       - uses: actions/checkout@v6
