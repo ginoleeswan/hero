@@ -67,7 +67,8 @@ function WebAuthGate() {
   // one seamless surface (the top-scrim falls over the page's own hero), each
   // providing its own top clearance below. This is the DEFAULT — a new page gets
   // the scrim for free. Opt a route OUT here only if its top isn't a dark hero.
-  const NO_BLEED_SEGMENTS: string[] = [];
+  // `play` (daily game) opens on the beige canvas, so it clears the nav normally.
+  const NO_BLEED_SEGMENTS: string[] = ['play'];
   const bleedBehindNav = showNav && !segs.some((s) => NO_BLEED_SEGMENTS.includes(s));
 
   return (
