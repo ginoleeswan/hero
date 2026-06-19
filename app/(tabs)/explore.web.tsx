@@ -282,16 +282,6 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
                   recyclingKey={String(h.id)}
                 />
                 <View style={pss.cardOverlay as object} />
-
-                <Text
-                  style={[
-                    pss.cardBadge as object,
-                    { opacity: isActive ? 1 : 0, transition: 'opacity 250ms ease' } as object,
-                  ]}
-                >
-                  Featured
-                </Text>
-
                 <Text
                   style={[
                     pss.cardName as object,
@@ -391,7 +381,6 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
           recyclingKey={String(hero.id)}
         />
         <View style={pss.cardOverlay as object} />
-        <Text style={pss.cardBadge as object}>Featured</Text>
         <Text style={pss.cardName as object} numberOfLines={2}>
           {hero.name}
         </Text>
