@@ -27,12 +27,12 @@ import {
   type FacetCounts,
 } from '../../src/lib/db/categoryFilters';
 import { useCategoryFilters } from '../../src/hooks/useCategoryFilters';
-import { useWebCanvas } from '../../src/hooks/useWebCanvas';
+import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { FilterRail } from '../../src/components/web/category/FilterRail';
 import { FilterSheet } from '../../src/components/web/category/FilterSheet';
 import { ActiveFilterChips } from '../../src/components/web/category/ActiveFilterChips';
 import { HeroImage } from '../../src/components/HeroImage';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, SURFACE, SURFACE_GRADIENT, SEAM_COLOR } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 
@@ -268,10 +268,10 @@ export default function WebCategoryScreen() {
     loadingMoreRef.current = loadingMore;
   }, [loadingMore]);
 
-  // Document scroll so the grid (a plain View, like the skeleton) bleeds
-  // edge-to-edge under the iOS Safari toolbar. Beige canvas reads continuous to
-  // the bottom past the 100dvh fold.
-  useWebCanvas(COLORS.beige);
+  // Ink-topped over a beige canvas, declared together. The grid bleeds
+  // edge-to-edge under the iOS Safari toolbar and reads continuous to the bottom
+  // past the 100dvh fold.
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
 
   // Infinite load now rides the document scroll (the nested ScrollView is gone),
   // so measure against the window rather than a ScrollView's nativeEvent.
@@ -350,11 +350,7 @@ export default function WebCategoryScreen() {
                   ] as object
                 }
               >
-                <Ionicons
-                  name="search-outline"
-                  size={15}
-                  color={searchFocused ? COLORS.orange : 'rgba(245,235,220,0.35)'}
-                />
+                <Ionicons name="search" size={16} color={COLORS.orange} />
                 <TextInput
                   style={styles.searchInput as object}
                   placeholder={`Search ${title.toLowerCase()}…`}
@@ -536,24 +532,29 @@ export default function WebCategoryScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
 
-  // ── Sticky header (navy) ────────────────────────────────────────────────────
+  // ── Sticky header (ink→navy gradient) ───────────────────────────────────────
   header: {
+    // Ink→navy gradient over a navy base: deepNavy under the status bar easing
+    // into navy where the title/search sit — depth without a flat slab. The
+    // generous top padding keeps the fade well clear of the title.
     backgroundColor: COLORS.navy,
+    backgroundImage: SURFACE_GRADIENT.stage,
+    // Seam: a warm orange hairline + the soft drop below read as an engineered
+    // page edge where the dark band meets the beige grid scrolling under it.
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(245,235,220,0.07)',
-    paddingTop: TOPBAR_HEIGHT + 12,
-    paddingBottom: 14,
+    borderBottomColor: SEAM_COLOR,
+    paddingTop: TOPBAR_HEIGHT + 18,
+    paddingBottom: 18,
     position: 'sticky',
     top: 0,
     zIndex: 40,
-    // Soft drop so the beige grid reads as scrolling *under* the sticky header.
     boxShadow: '0 14px 28px -20px rgba(0,0,0,0.7)',
   } as object,
   headerInner: {
     maxWidth: 1200,
     width: '100%',
     alignSelf: 'center',
-    gap: 10,
+    gap: 14,
   } as object,
 
   // Row 1 — identity
@@ -597,21 +598,22 @@ const styles = StyleSheet.create({
     gap: 8,
   } as object,
 
-  // Mobile search bar — dark inset to match the filter surface
+  // Mobile search bar — frosted beige tint, matching the Search page's field.
   searchBar: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    backgroundColor: 'rgba(0,0,0,0.18)',
+    backgroundColor: 'rgba(245,235,220,0.10)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.12)',
+    borderColor: 'rgba(245,235,220,0.20)',
+    boxShadow: 'inset 0 1px 0 rgba(245,235,220,0.10)',
     paddingHorizontal: 13,
-    height: 44,
+    height: 46,
     transition: 'border-color 160ms ease, box-shadow 160ms ease',
   } as object,
-  searchBarMobile: { flex: 1, minHeight: 44 } as object,
+  searchBarMobile: { flex: 1, minHeight: 46 } as object,
   searchBarFocused: {
     borderColor: 'rgba(231,115,51,0.7)',
     boxShadow: '0 0 0 3px rgba(231,115,51,0.12)',

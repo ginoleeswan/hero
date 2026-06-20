@@ -13,30 +13,20 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { type HeroSearchResult, type PublisherFilter } from '../../../src/lib/db/heroes';
+import { type HeroSearchResult } from '../../../src/lib/db/heroes';
 import { HeroImage } from '../../../src/components/HeroImage';
-import { COLORS } from '../../../src/constants/colors';
+import { COLORS, SURFACE, SURFACE_GRADIENT, SEAM_COLOR } from '../../../src/constants/colors';
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { useSearch } from '../../../src/contexts/SearchContext';
 import { useSearchHistory } from '../../../src/hooks/useSearchHistory';
 import { useHeroSearch } from '../../../src/hooks/useHeroSearch';
 import { useBrowseCovers } from '../../../src/hooks/useBrowseCovers';
-import { CategoryPodGrid } from '../../../src/components/web/home/CategoryPodGrid';
+import { SearchBrowse } from '../../../src/components/web/search/SearchBrowse';
 import { useSkeletonAnim } from '../../../src/components/web/Skeleton';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
-import { useWebDocumentScroll } from '../../../src/hooks/useWebDocumentScroll';
+import { useScreenChrome } from '../../../src/hooks/useScreenChrome';
 
 const RESULT_LIMIT = 300;
-const PUB_OPTS: PublisherFilter[] = ['All', 'Marvel', 'DC', 'Other'];
-
-function normalizePublisher(p?: string | string[]): PublisherFilter {
-  const v = (Array.isArray(p) ? p[0] : (p ?? '')).toLowerCase();
-  if (v === 'marvel') return 'Marvel';
-  if (v === 'dc') return 'DC';
-  if (v === 'other') return 'Other';
-  return 'All';
-}
-
 // ── Skeleton card ──────────────────────────────────────────────────────────────
 function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
   return <Animated.View style={[sk.wrap as object, { opacity }]} />;
@@ -173,16 +163,18 @@ export default function WebSearchScreen() {
   const skeletonOpacity = useSkeletonAnim();
   const { history, addSearch, clearHistory } = useSearchHistory();
 
-  useWebDocumentScroll(COLORS.beige);
+  // Ink-topped over a beige canvas: the status-bar zone is deepNavy so iOS can't
+  // wash it out to a light scrim, and the header fuses from that ink down into
+  // the navy band. Both ends declared together so they can't drift.
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
 
   const urlQ = (Array.isArray(params.q) ? params.q[0] : (params.q ?? '')).toString();
-  const publisher = normalizePublisher(params.publisher);
 
   const [inputQuery, setInputQuery] = useState(urlQ);
   const trimmed = inputQuery.trim();
-  const hasCriteria = trimmed.length > 0 || publisher !== 'All';
+  const hasCriteria = trimmed.length > 0;
 
-  const { results: heroes, loading } = useHeroSearch(inputQuery, publisher, RESULT_LIMIT);
+  const { results: heroes, loading } = useHeroSearch(inputQuery, 'All', RESULT_LIMIT);
 
   // Sync the input FROM the URL (deep links, back/forward, nav palette).
   useEffect(() => {
@@ -214,13 +206,9 @@ export default function WebSearchScreen() {
   // so it's out of flow — reserve its measured height with a spacer below so the
   // grid starts under it instead of behind it. Seeded with a sensible estimate to
   // avoid a first-frame jump before onLayout reports the real height.
-  const [headerH, setHeaderH] = useState(TOPBAR_HEIGHT + 95);
+  const [headerH, setHeaderH] = useState(TOPBAR_HEIGHT + 64);
 
-  const setPublisher = (p: PublisherFilter) => {
-    router.setParams({ publisher: p === 'All' ? '' : p });
-  };
-
-  const title = trimmed ? `"${trimmed}"` : publisher !== 'All' ? publisher : 'Search';
+  const title = trimmed ? `"${trimmed}"` : 'Search';
   const capped = heroes.length >= RESULT_LIMIT;
   const countLabel = loading
     ? 'Searching…'
@@ -239,35 +227,15 @@ export default function WebSearchScreen() {
     gap: 12,
   };
 
-  const pills = (
-    <View style={styles.pills as object}>
-      {PUB_OPTS.map((p) => (
-        <Pressable
-          key={p}
-          onPress={() => setPublisher(p)}
-          style={[styles.pill, publisher === p && (styles.pillActive as object)] as object}
-        >
-          <Text
-            style={
-              [styles.pillText, publisher === p && (styles.pillTextActive as object)] as object
-            }
-          >
-            {p}
-          </Text>
-        </Pressable>
-      ))}
-    </View>
-  );
-
   return (
     <View style={styles.root}>
       {isDesktop ? (
         <>
-          {/* ── Desktop: search hero zone (scrolls away) + sticky pill bar ── */}
+          {/* ── Desktop: search hero zone (scrolls away) ── */}
           <View style={[styles.desktopHeroZone, { paddingHorizontal: contentPad }] as object}>
             <View style={styles.desktopHeroZoneInner}>
               <View style={styles.desktopSearchBar as object}>
-                <Ionicons name="search" size={20} color="rgba(245,235,220,0.5)" />
+                <Ionicons name="search" size={20} color={COLORS.orange} />
                 <TextInput
                   style={styles.desktopInput as object}
                   placeholder="Search heroes…"
@@ -286,20 +254,10 @@ export default function WebSearchScreen() {
               </View>
             </View>
           </View>
-          <View
-            style={
-              [styles.pillBar, styles.pillBarDesktop, { paddingHorizontal: contentPad }] as object
-            }
-          >
-            <View style={styles.pillBarInner as object}>
-              {pills}
-              {hasCriteria && <Text style={styles.countLabel as object}>{countLabel}</Text>}
-            </View>
-          </View>
         </>
       ) : (
-        /* ── Mobile: fixed header (search input + pills) pinned under the TopBar,
-             plus an in-flow spacer that reserves its height. ── */
+        /* ── Mobile: fixed search header pinned under the TopBar, plus an in-flow
+             spacer that reserves its height. ── */
         <>
           <View
             style={styles.mobileFixedHeader as object}
@@ -307,7 +265,7 @@ export default function WebSearchScreen() {
           >
             <View style={styles.mobileSearchRow as object}>
               <View style={styles.mobileSearchBar as object}>
-                <Ionicons name="search" size={16} color="rgba(245,235,220,0.5)" />
+                <Ionicons name="search" size={17} color={COLORS.orange} />
                 <TextInput
                   style={styles.mobileInput as object}
                   placeholder="Search heroes…"
@@ -323,12 +281,6 @@ export default function WebSearchScreen() {
                     <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.5)" />
                   </Pressable>
                 )}
-              </View>
-            </View>
-            <View style={[styles.pillBar, { paddingHorizontal: contentPad }] as object}>
-              <View style={styles.pillBarInner as object}>
-                {pills}
-                {hasCriteria && <Text style={styles.countLabel as object}>{countLabel}</Text>}
               </View>
             </View>
           </View>
@@ -359,19 +311,18 @@ export default function WebSearchScreen() {
               </View>
             </>
           )}
-          <Text style={[styles.idleLabel, { marginTop: history.length > 0 ? 24 : 4 }] as object}>
-            Browse
-          </Text>
-          <CategoryPodGrid
-            covers={browseCovers}
-            onPress={(slug) =>
-              router.push(`/category/${slug}` as Parameters<typeof router.push>[0])
-            }
-            flush
-          />
+          <View style={{ marginTop: history.length > 0 ? 20 : 4 }}>
+            <SearchBrowse
+              covers={browseCovers}
+              onPress={(slug) =>
+                router.push(`/category/${slug}` as Parameters<typeof router.push>[0])
+              }
+            />
+          </View>
         </View>
       ) : (
         <View style={[styles.gridWrap, { paddingHorizontal: contentPad }]}>
+          {hasCriteria && <Text style={styles.resultCount as object}>{countLabel}</Text>}
           <View style={gridStyle as object}>
             {loading
               ? Array.from({ length: 18 }).map((_, i) => (
@@ -420,19 +371,27 @@ const styles = StyleSheet.create({
 
   // ── Desktop ────────────────────────────────────────────────────────────────
   desktopHeroZone: {
+    // Ink→navy gradient over a navy base — depth without a flat slab.
     backgroundColor: COLORS.navy,
-    paddingTop: TOPBAR_HEIGHT + 18,
-    paddingBottom: 22,
-  },
+    backgroundImage: SURFACE_GRADIENT.stage,
+    paddingTop: TOPBAR_HEIGHT + 22,
+    paddingBottom: 24,
+    // The seam: warm orange hairline + drop shadow where the dark band meets the
+    // beige canvas — an engineered page edge, not a flat colour jump.
+    borderBottomWidth: 1,
+    borderBottomColor: SEAM_COLOR,
+    boxShadow: '0 14px 30px -14px rgba(11,24,32,0.55)',
+  } as object,
   desktopHeroZoneInner: { maxWidth: 1200, width: '100%', alignSelf: 'center' },
   desktopSearchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: 'rgba(245,235,220,0.08)',
+    backgroundColor: 'rgba(245,235,220,0.10)',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.16)',
+    borderColor: 'rgba(245,235,220,0.22)',
+    boxShadow: 'inset 0 1px 0 rgba(245,235,220,0.10)',
     paddingHorizontal: 18,
     height: 56,
   } as object,
@@ -443,12 +402,7 @@ const styles = StyleSheet.create({
     color: COLORS.beige,
     outlineStyle: 'none',
   } as object,
-  pillBarDesktop: {
-    position: 'sticky',
-    top: TOPBAR_HEIGHT,
-  } as object,
-
-  // ── Mobile fixed header (search input + pills as one block) ────────────────
+  // ── Mobile fixed search header ─────────────────────────────────────────────
   // position:fixed, NOT sticky. The app scrolls the document while every flex
   // ancestor is clamped to 100dvh (#root { height: 100dvh }), so the containing
   // block for a sticky child is only one viewport tall — sticky would release and
@@ -457,29 +411,36 @@ const styles = StyleSheet.create({
   // under body{overflow:visible} (same fix the TopBar uses). paddingTop clears the
   // TopBar (its height + the status-bar inset) so the search row sits just below.
   mobileFixedHeader: {
+    // Ink→navy gradient over a navy base — deepNavy at the status bar easing in.
     backgroundColor: COLORS.navy,
+    backgroundImage: SURFACE_GRADIENT.stage,
     position: 'fixed',
     top: 0,
     left: 0,
     right: 0,
     zIndex: 50,
-    paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 8px)`,
+    paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 14px)`,
     transform: 'translateZ(0)',
+    // The seam (see desktopHeroZone): warm hairline + shadow at the dark→beige edge.
+    borderBottomWidth: 1,
+    borderBottomColor: SEAM_COLOR,
+    boxShadow: '0 12px 28px -12px rgba(11,24,32,0.55)',
   } as object,
   mobileSearchRow: {
     paddingHorizontal: 12,
-    paddingBottom: 10,
+    paddingBottom: 14,
   },
   mobileSearchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    backgroundColor: 'rgba(245,235,220,0.08)',
+    backgroundColor: 'rgba(245,235,220,0.10)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.14)',
+    borderColor: 'rgba(245,235,220,0.20)',
+    boxShadow: 'inset 0 1px 0 rgba(245,235,220,0.10)',
     paddingHorizontal: 12,
-    height: 42,
+    height: 46,
   } as object,
   mobileInput: {
     flex: 1,
@@ -490,40 +451,14 @@ const styles = StyleSheet.create({
   } as object,
   clearBtn: { padding: 2, cursor: 'pointer' } as object,
 
-  // ── Pill bar (shared, used by both platforms) ──────────────────────────────
-  pillBar: {
-    backgroundColor: COLORS.beige,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(41,60,67,0.12)',
-    paddingVertical: 10,
-    zIndex: 40,
-  } as object,
-  pillBarInner: {
-    maxWidth: 1200,
-    width: '100%',
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  } as object,
-  pills: { flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' } as object,
-  pill: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
-    backgroundColor: 'rgba(29,45,51,0.07)',
-    cursor: 'pointer',
-    transition: 'background-color 150ms ease',
-  } as object,
-  pillActive: { backgroundColor: COLORS.navy } as object,
-  pillText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy } as object,
-  pillTextActive: { color: COLORS.beige } as object,
-  countLabel: {
+  // Result count, shown above the hero grid once a query is committed.
+  resultCount: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
     color: COLORS.grey,
-    marginLeft: 'auto',
     letterSpacing: 0.2,
+    paddingTop: 14,
+    paddingBottom: 4,
   } as object,
 
   // ── Idle state (mobile, no query) ─────────────────────────────────────────

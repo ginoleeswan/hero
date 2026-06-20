@@ -20,8 +20,8 @@ import {
 } from '../../src/lib/db/contributions';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
-import { COLORS } from '../../src/constants/colors';
-import { useWebCanvas } from '../../src/hooks/useWebCanvas';
+import { COLORS, SURFACE } from '../../src/constants/colors';
+import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { StatBar } from '../../src/components/web/StatBar';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { groupTitlesByMedia } from '../../src/lib/db/titles';
@@ -491,7 +491,7 @@ export default function WebCharacterScreen() {
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
   // Before the skeleton early-return so it applies in both states.
-  useWebCanvas(COLORS.beige);
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
 
   const skeletonOpacity = useSkeletonAnim();
   const {

@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { View, StyleSheet } from 'react-native';
 import { COLORS } from '../constants/colors';
 
@@ -137,7 +138,16 @@ export function useWebChrome() {
  */
 export function AdaptiveStatusBarCover() {
   const { color } = useWebChrome();
-  return <View pointerEvents="none" style={[coverStyles.cover, { backgroundColor: color }]} />;
+  const cover = (
+    <View pointerEvents="none" style={[coverStyles.cover, { backgroundColor: color }]} />
+  );
+  // Render into document.body via a portal so position:fixed is always
+  // viewport-relative and can't detach on navigation/scroll (the same fix the
+  // TopBar uses — an in-tree fixed element drifts under body{overflow:visible}
+  // on iOS Safari, exposing the page body as a beige strip until a scroll
+  // repaint). env() → 0 off-iOS, so it collapses to nothing there.
+  if (typeof document === 'undefined') return cover;
+  return createPortal(cover, document.body) as unknown as React.ReactElement;
 }
 
 const coverStyles = StyleSheet.create({

@@ -14,8 +14,8 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { heroImageSource } from '../../../src/constants/heroImages';
 import { useCompareMatchup } from '../../../src/hooks/useCompareMatchup';
-import { COLORS } from '../../../src/constants/colors';
-import { useWebCanvas } from '../../../src/hooks/useWebCanvas';
+import { COLORS, SURFACE } from '../../../src/constants/colors';
+import { useScreenChrome } from '../../../src/hooks/useScreenChrome';
 import { ClashPortraits } from '../../../src/components/compare/ClashPortraits';
 import { HeroMonogram } from '../../../src/components/HeroImage';
 import { VerdictReveal } from '../../../src/components/compare/VerdictReveal';
@@ -203,7 +203,7 @@ export default function WebCompareScreen() {
 
   // Document scroll so the mobile arena bleeds edge-to-edge under the iOS Safari
   // toolbar. Mobile ends on the beige sheet; desktop is a fixed navy arena.
-  useWebCanvas(isDesktop ? COLORS.navy : COLORS.beige);
+  useScreenChrome({ top: SURFACE.ink, canvas: isDesktop ? SURFACE.band : SURFACE.paper });
 
   const { statsA, statsB, result, overallWinner, verdict, error } = useCompareMatchup(
     hero,

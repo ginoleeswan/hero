@@ -23,9 +23,9 @@ import { VsBadge } from '../../src/components/compare/VsBadge';
 import { FighterAnchor, ANCHOR_H } from '../../src/components/compare/FighterAnchor';
 import { stashFighters } from '../../src/lib/compareHandoff';
 import { withViewTransition } from '../../src/lib/viewTransition';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, SURFACE } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
-import { useWebCanvas } from '../../src/hooks/useWebCanvas';
+import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 
 type Fighter = Pick<HeroSearchResult, 'id' | 'name' | 'image_url' | 'portrait_url'>;
 type Slot = 'a' | 'b';
@@ -53,7 +53,7 @@ export default function PickArena() {
   const inputRef = useRef<TextInput>(null);
 
   // Document scroll so content bleeds edge-to-edge under the iOS Safari toolbar.
-  useWebCanvas(COLORS.beige);
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
 
   const [a, setA] = useState<Fighter | null>(null);
   const [b, setB] = useState<Fighter | null>(null);

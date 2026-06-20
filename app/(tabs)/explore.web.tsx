@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, SURFACE } from '../../src/constants/colors';
 import { HeroImage } from '../../src/components/HeroImage';
 import { WebHomeSkeleton } from '../../src/components/web/HomeSkeleton';
 import { type Hero } from '../../src/lib/db/heroes';
@@ -20,8 +20,7 @@ import {
   TodaysMatchupSkeleton,
 } from '../../src/components/web/home/TodaysMatchup';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
-import { useWebCanvas } from '../../src/hooks/useWebCanvas';
-import { useChromeColor } from '../../src/contexts/WebChromeContext';
+import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { DailyChallengeBanner } from '../../src/components/game/DailyChallengeBanner';
 import { PublisherPods } from '../../src/components/web/home/PublisherPods';
@@ -1111,11 +1110,10 @@ export default function WebHomeScreen() {
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
 
-  // Document scroll so content bleeds edge-to-edge under the iOS Safari toolbar.
-  // Explore opens and closes on the deep-navy stage/footer, so the canvas is navy.
-  useWebCanvas(COLORS.deepNavy);
-  // Top chrome (status bar + top bar) locks to the deep-navy stage at the top.
-  useChromeColor(COLORS.deepNavy);
+  // Explore opens on the hero stage and closes on the deep-navy footer, so the
+  // whole screen reads as one immersive ink surface — top chrome and canvas both
+  // lock to ink, declared together so the status bar and toolbar can't drift.
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
   // 1. MATCH THE ACCORDION_SCALES EXACTLY
   const optimalPoolSize = width >= 1280 ? 8 : width >= 900 ? 6 : 3;

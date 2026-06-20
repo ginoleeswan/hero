@@ -6,12 +6,12 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, SURFACE } from '../../src/constants/colors';
 import { useVersusHub } from '../../src/hooks/useVersusHub';
 import { pickRandomPair } from '../../src/lib/versus';
 import { stashFighters, type FighterArt } from '../../src/lib/compareHandoff';
 import { withViewTransition } from '../../src/lib/viewTransition';
-import { useWebCanvas } from '../../src/hooks/useWebCanvas';
+import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { ShowdownStage } from '../../src/components/web/versus/ShowdownStage';
 import { RivalryDeck } from '../../src/components/web/versus/RivalryDeck';
@@ -19,7 +19,7 @@ import { RivalryDeck } from '../../src/components/web/versus/RivalryDeck';
 export default function VersusHubWeb() {
   // The page ends on the dark deck section — keep the canvas deep-navy so it
   // reads continuous to the bottom under the iOS Safari toolbar.
-  useWebCanvas(COLORS.deepNavy);
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;

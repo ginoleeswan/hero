@@ -4,10 +4,9 @@ import { useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../src/hooks/useAuth';
 import { getProfile } from '../../src/lib/db/profiles';
-import { useWebCanvas } from '../../src/hooks/useWebCanvas';
-import { useChromeColor } from '../../src/contexts/WebChromeContext';
+import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { LogoLoader } from '../../src/components/ui/LogoLoader';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, SURFACE } from '../../src/constants/colors';
 import { type CoverageMetric } from '../../src/lib/db/catalogHealth';
 import {
   DRAIN_CRON,
@@ -40,10 +39,9 @@ import {
 } from '../../src/components/admin/health/hooks';
 
 export default function AdminHealthScreen() {
-  // The command center is a dark-chrome surface; lock the web canvas + status-bar
-  // tint to the deep navy so the top band fuses with the floating nav.
-  useWebCanvas(COLORS.deepNavy);
-  useChromeColor('#10242e');
+  // Full-ink command centre: canvas and chrome both ink, declared together so the
+  // top band fuses with the floating nav. (Retires the old #10242e one-off.)
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
   const router = useRouter();
   const { width: winW } = useWindowDimensions();
   const narrow = winW < 760;

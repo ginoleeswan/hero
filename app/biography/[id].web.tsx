@@ -3,11 +3,11 @@ import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-na
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { getHeroById, getHeroByComicvineId } from '../../src/lib/db/heroes';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, SURFACE } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
-import { useWebCanvas } from '../../src/hooks/useWebCanvas';
+import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import type { Tables } from '../../src/types/database.generated';
 
 type HeroRow = Tables<'heroes'>;
@@ -314,7 +314,7 @@ export default function WebBiographyScreen() {
   const isDesktop = width >= 900;
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
-  useWebCanvas(COLORS.beige);
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
 
   const [hero, setHero] = useState<HeroRow | null>(null);
   const [processedHtml, setProcessedHtml] = useState('');

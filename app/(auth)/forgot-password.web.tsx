@@ -11,8 +11,8 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/hooks/useAuth';
-import { useWebCanvas } from '../../src/hooks/useWebCanvas';
-import { COLORS } from '../../src/constants/colors';
+import { useScreenChrome } from '../../src/hooks/useScreenChrome';
+import { COLORS, SURFACE } from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
 import { Image } from 'expo-image';
 
@@ -29,7 +29,7 @@ export default function WebForgotPasswordScreen() {
   // Paint the document canvas beige so the form area (and any overscroll past the
   // 100dvh fold) reads continuous to the very bottom under the iOS Safari toolbar,
   // instead of the layout's navy shell showing through below the card.
-  useWebCanvas(COLORS.beige);
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
 
   const [email, setEmail] = useState(prefillEmail ?? '');
   const [loading, setLoading] = useState(false);
