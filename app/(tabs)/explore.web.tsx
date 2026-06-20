@@ -1377,7 +1377,7 @@ export default function WebHomeScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  dailyWrap: { alignItems: 'center', paddingHorizontal: 16, marginTop: 18 },
+  dailyWrap: { alignItems: 'center', paddingHorizontal: 16, marginTop: 18, marginBottom: 26 },
   // Override the shared banner's phone margins: centre + constrain to the column.
   dailyBanner: {
     width: '100%',
