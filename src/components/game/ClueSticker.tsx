@@ -5,6 +5,7 @@
 // retro sticker packet rather than uniform chips. Pure presentational.
 import { useEffect } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
+import { Image } from 'expo-image';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -14,6 +15,7 @@ import Animated, {
 import Svg, { Path, Circle, G } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
+import { brandForPublisher } from '../../constants/publishers';
 import type { Clue } from '../../lib/game/reveal';
 
 // Web peel: the sticker flips down onto the card from its top edge, with a
@@ -207,6 +209,21 @@ const scaleAbout = (cx: number, cy: number, s: number) =>
 export function ClueSticker({ clue, tilt }: { clue: Clue; tilt: number }) {
   const cfg = CONFIG[clue.label] ?? CONFIG.Publisher;
   const { w, h, bg, fg, accent, icon, pad, font, layout } = cfg;
+
+  // Publishers we recognise become a brand-logo sticker (logo on the brand
+  // colour); everything else keeps its big-text die-cut.
+  const brand = clue.label === 'Publisher' ? brandForPublisher(clue.value) : undefined;
+  const logoBrand = brand?.logo && brand.badgeSize ? brand : undefined;
+  const bgFill = logoBrand ? logoBrand.color : bg;
+  const lineAccent = logoBrand ? 'rgba(255,255,255,0.4)' : accent;
+  let logoW = 0;
+  let logoH = 0;
+  if (logoBrand?.badgeSize) {
+    const aspect = logoBrand.badgeSize.width / logoBrand.badgeSize.height;
+    logoH = Math.min(h - 22, (w - 2 * pad - 4) / aspect);
+    logoW = logoH * aspect;
+  }
+
   const cx = w / 2;
   const cy = h / 2;
   const min = Math.min(w, h);
@@ -235,22 +252,32 @@ export function ClueSticker({ clue, tilt }: { clue: Clue; tilt: number }) {
         </G>
         <ShapeEl cfg={cfg} fill={CREAM} />
         <G transform={scaleAbout(cx, cy, sIn)}>
-          <ShapeEl cfg={cfg} fill={bg} />
+          <ShapeEl cfg={cfg} fill={bgFill} />
         </G>
         <G transform={scaleAbout(cx, cy, sLn)}>
-          <ShapeEl cfg={cfg} fill="none" stroke={accent} strokeWidth={1.6} />
+          <ShapeEl cfg={cfg} fill="none" stroke={lineAccent} strokeWidth={1.6} />
         </G>
       </Svg>
       <View style={[styles.content, { paddingHorizontal: pad }]} pointerEvents="none">
-        {layout === 'iconText' ? (
-          <Ionicons name={icon} size={24} color={fg} style={styles.icon} />
-        ) : null}
-        <Text
-          style={[styles.value, { color: fg, fontSize: font, lineHeight: font + 1 }]}
-          numberOfLines={2}
-        >
-          {clue.value}
-        </Text>
+        {logoBrand ? (
+          <Image
+            source={logoBrand.logo}
+            style={{ width: logoW, height: logoH }}
+            contentFit="contain"
+          />
+        ) : (
+          <>
+            {layout === 'iconText' ? (
+              <Ionicons name={icon} size={24} color={fg} style={styles.icon} />
+            ) : null}
+            <Text
+              style={[styles.value, { color: fg, fontSize: font, lineHeight: font + 1 }]}
+              numberOfLines={2}
+            >
+              {clue.value}
+            </Text>
+          </>
+        )}
       </View>
     </>
   );
