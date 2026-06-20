@@ -34,6 +34,25 @@ const WEB_NAV_CLEARANCE = 64;
 const CARD_W = 156;
 const CARD_H = 208;
 
+// Fixed slot per clue category, anchored to the card's left/right edge (with a
+// little tuck-in via negative margins). Absolute, so each sticker peels into its
+// own spot and never reflows the others; staggered tuck-in lets them overlap a
+// touch for character.
+const STICKER_SLOTS: Record<string, object> = {
+  Publisher: { right: '100%', marginRight: -18, top: -6 },
+  Alignment: { right: '100%', marginRight: -2, top: 58 },
+  'Signature power': { right: '100%', marginRight: -18, top: 116 },
+  'First appeared': { left: '100%', marginLeft: -14, top: 6 },
+  Origin: { left: '100%', marginLeft: -6, top: 98 },
+};
+const STICKER_TILT: Record<string, number> = {
+  Publisher: 0,
+  'First appeared': 1,
+  Alignment: 2,
+  Origin: 3,
+  'Signature power': 4,
+};
+
 // Warm spotlight behind the card — a real radial on web, a soft disc on native.
 const GLOW = Platform.select({
   web: {
@@ -91,9 +110,6 @@ export function DailyGame() {
     }
   }, [shareText]);
 
-  // Clues alternate sides so they flank the card like pinned evidence.
-  const leftClues = clues.filter((_, i) => i % 2 === 0);
-  const rightClues = clues.filter((_, i) => i % 2 === 1);
   const topPad = (Platform.OS === 'web' ? WEB_NAV_CLEARANCE : insets.top) + 14;
 
   return (
@@ -194,18 +210,18 @@ export function DailyGame() {
                   ) : null}
                 </Pressable>
 
-                {/* Stickers float absolutely beside the card so they never
-                    shift it off-centre as clues appear. */}
-                <View style={styles.stickersLeft} pointerEvents="none">
-                  {leftClues.map((c, i) => (
-                    <ClueSticker key={c.label} clue={c} tilt={i * 2} />
-                  ))}
-                </View>
-                <View style={styles.stickersRight} pointerEvents="none">
-                  {rightClues.map((c, i) => (
-                    <ClueSticker key={c.label} clue={c} tilt={i * 2 + 1} />
-                  ))}
-                </View>
+                {/* Each clue sits at its own fixed slot around the card, so a
+                    newly peeled-in sticker never nudges the others — a little
+                    overlap is intentional. */}
+                {clues.map((c) => (
+                  <View
+                    key={c.label}
+                    style={[styles.slot, STICKER_SLOTS[c.label] ?? STICKER_SLOTS.Publisher]}
+                    pointerEvents="none"
+                  >
+                    <ClueSticker clue={c} tilt={STICKER_TILT[c.label] ?? 0} />
+                  </View>
+                ))}
               </View>
 
               {/* Persistent "case file" anchor clue */}
@@ -392,31 +408,10 @@ const styles = StyleSheet.create({
     marginTop: -170,
     borderRadius: 170,
   },
-  // Fixed-size box: the card is always dead-centre of the stage. The sticker
-  // columns are positioned relative to it (absolute) so they can't move it.
+  // Fixed-size box: the card is always dead-centre of the stage. Sticker slots
+  // are positioned relative to it (absolute) so they can't move it.
   cardWrap: { width: CARD_W, height: CARD_H, alignItems: 'center', justifyContent: 'center' },
-  stickersLeft: {
-    position: 'absolute',
-    right: '100%',
-    top: 0,
-    bottom: 0,
-    marginRight: -14,
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    gap: 10,
-    zIndex: 3,
-  },
-  stickersRight: {
-    position: 'absolute',
-    left: '100%',
-    top: 0,
-    bottom: 0,
-    marginLeft: -14,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    gap: 10,
-    zIndex: 3,
-  },
+  slot: { position: 'absolute', zIndex: 3 },
 
   card: {
     width: CARD_W,
@@ -443,7 +438,8 @@ const styles = StyleSheet.create({
   dossier: {
     width: '100%',
     maxWidth: 380,
-    marginTop: 20,
+    marginTop: 24,
+    zIndex: 5,
     backgroundColor: 'rgba(245,235,220,0.05)',
     borderWidth: 1,
     borderColor: 'rgba(245,235,220,0.1)',
