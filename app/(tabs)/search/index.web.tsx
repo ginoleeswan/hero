@@ -25,6 +25,7 @@ import { SearchBrowse } from '../../../src/components/web/search/SearchBrowse';
 import { useSkeletonAnim } from '../../../src/components/web/Skeleton';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
 import { useScreenChrome } from '../../../src/hooks/useScreenChrome';
+import { SeoHead } from '../../../src/components/web/SeoHead';
 
 const RESULT_LIMIT = 300;
 // ── Skeleton card ──────────────────────────────────────────────────────────────
@@ -229,6 +230,12 @@ export default function WebSearchScreen() {
 
   return (
     <View style={styles.root}>
+      <SeoHead
+        title="Search heroes & villains | Mythique"
+        description="Search 3,000+ heroes and villains across Marvel, DC and more on Mythique."
+        path="/search"
+        noindex
+      />
       {isDesktop ? (
         <>
           {/* ── Desktop: search hero zone (scrolls away) ── */}

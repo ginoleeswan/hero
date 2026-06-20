@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Stack, useRouter, useSegments, usePathname } from 'expo-router';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Stack, useRouter, useSegments, usePathname, type ErrorBoundaryProps } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import {
@@ -19,6 +19,60 @@ import { SearchProvider } from '../src/contexts/SearchContext';
 import { WebChromeProvider, AdaptiveStatusBarCover } from '../src/contexts/WebChromeContext';
 import { queryClient } from '../src/lib/query/queryClient';
 import { COLORS } from '../src/constants/colors';
+
+// Expo Router renders this in place of the tree if a render throws, instead of a
+// blank white screen — a graceful, on-brand recovery surface for production.
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return (
+    <View style={eb.root}>
+      <Text style={eb.title}>Something went wrong</Text>
+      <Text style={eb.body}>
+        An unexpected error interrupted the page. You can try again — if it keeps happening, reload
+        the app.
+      </Text>
+      {__DEV__ ? <Text style={eb.detail}>{error.message}</Text> : null}
+      <Pressable onPress={retry} style={eb.btn}>
+        <Text style={eb.btnText}>Try again</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const eb = StyleSheet.create({
+  root: {
+    flex: 1,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0b1820',
+    padding: 28,
+  },
+  title: { fontFamily: 'Flame-Regular', fontSize: 28, color: COLORS.beige, textAlign: 'center' },
+  body: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 15,
+    lineHeight: 22,
+    color: 'rgba(245,235,220,0.7)',
+    textAlign: 'center',
+    maxWidth: 420,
+    marginTop: 10,
+  },
+  detail: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.4)',
+    textAlign: 'center',
+    marginTop: 14,
+  },
+  btn: {
+    marginTop: 24,
+    backgroundColor: COLORS.orange,
+    borderRadius: 999,
+    paddingVertical: 13,
+    paddingHorizontal: 28,
+  },
+  btnText: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: '#fff' },
+});
 
 function WebAuthGate() {
   const { user, loading } = useAuth();

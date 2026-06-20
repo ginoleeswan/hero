@@ -39,6 +39,7 @@ import { GalleryStrip } from '../../src/components/GalleryStrip';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
 import { PublisherLogoChip } from '../../src/components/PublisherBadge';
 import { brandForPublisher } from '../../src/constants/publishers';
+import { SeoHead } from '../../src/components/web/SeoHead';
 import type { HeroStats } from '../../src/types';
 
 const STAT_CONFIG = [
@@ -590,6 +591,22 @@ export default function WebCharacterScreen() {
 
   const { stats, details } = data;
 
+  // Per-page SEO: title from name + publisher, description from the bio (HTML
+  // stripped + truncated), OG image from the hero's portrait.
+  const seoPublisher = stats.biography.publisher || 'Superhero';
+  const seoRaw =
+    details.summary ||
+    details.description ||
+    `${stats.name} — powers, stats, first appearance and more on Mythique.`;
+  const seoDesc =
+    seoRaw
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 155)
+      .trim() + (seoRaw.length > 155 ? '…' : '');
+  const seoImage = stats.image.portraitUrl || stats.image.url || undefined;
+
   // Editable-field → current value, shared by the mobile dossier editor and the
   // desktop contribute card (the screen has both stats + details).
   const editValues: Record<string, string | null | undefined> = {
@@ -689,6 +706,12 @@ export default function WebCharacterScreen() {
 
   return (
     <>
+      <SeoHead
+        title={`${stats.name} — ${seoPublisher} | Mythique`}
+        description={seoDesc}
+        path={`/character/${id}`}
+        image={seoImage}
+      />
       <View style={[styles.scroll, styles.scrollContent] as object}>
         {/* ── Desktop: cinematic identity stage. Mobile uses the native-style
             immersive portrait header inside the body branch below. ── */}

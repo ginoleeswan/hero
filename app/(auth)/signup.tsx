@@ -245,6 +245,18 @@ export default function SignupScreen() {
                   )}
                 </Pressable>
 
+                <Text style={styles.legal}>
+                  By creating an account you agree to our{' '}
+                  <Text style={styles.legalLink} onPress={() => router.push('/terms')}>
+                    Terms
+                  </Text>{' '}
+                  and{' '}
+                  <Text style={styles.legalLink} onPress={() => router.push('/privacy')}>
+                    Privacy Policy
+                  </Text>
+                  .
+                </Text>
+
                 <Pressable onPress={() => router.push('/(auth)/login')} style={styles.switchRow}>
                   <Text style={styles.switchText}>Already have an account? </Text>
                   <Text style={styles.switchLink}>Sign in</Text>
@@ -470,6 +482,19 @@ const styles = StyleSheet.create({
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'center',
+  },
+  legal: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11.5,
+    lineHeight: 17,
+    color: 'rgba(41,60,67,0.45)',
+    textAlign: 'center',
+    marginBottom: 14,
+  },
+  legalLink: {
+    fontFamily: 'Nunito_700Bold',
+    color: COLORS.navy,
+    textDecorationLine: 'underline',
   },
   switchText: {
     fontFamily: 'Nunito_400Regular',

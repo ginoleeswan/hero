@@ -23,6 +23,7 @@ import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { DailyChallengeBanner } from '../../src/components/game/DailyChallengeBanner';
+import { SeoHead } from '../../src/components/web/SeoHead';
 import { PublisherPods } from '../../src/components/web/home/PublisherPods';
 import { GreatestRivalries } from '../../src/components/web/home/GreatestRivalries';
 import { HallOfInfamy } from '../../src/components/web/home/HallOfInfamy';
@@ -1140,6 +1141,11 @@ export default function WebHomeScreen() {
 
   return (
     <View style={styles.root}>
+      <SeoHead
+        title="Mythique — The Superhero Encyclopedia"
+        description="Explore 3,000+ heroes and villains, settle who-would-win debates, and play the daily Guess the Hero. Mythique is the superhero encyclopedia."
+        path="/"
+      />
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       {!homeStarted ? (
         <WebHomeSkeleton />

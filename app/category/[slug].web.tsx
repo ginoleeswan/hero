@@ -21,6 +21,7 @@ import {
   type CategorySlug,
   type Hero,
 } from '../../src/lib/db/heroes';
+import { SeoHead } from '../../src/components/web/SeoHead';
 import {
   activeFilterList,
   type CategoryFilters,
@@ -318,6 +319,11 @@ export default function WebCategoryScreen() {
 
   return (
     <View style={styles.root}>
+      <SeoHead
+        title={`${title} | Mythique`}
+        description={description ?? `Browse ${title} on Mythique — the superhero encyclopedia.`}
+        path={`/category/${slug}`}
+      />
       {/* ── Sticky header — navy ─────────────────────────────────────────────── */}
       <View style={[styles.header, { paddingHorizontal: contentPad }] as object}>
         <View style={styles.headerInner}>
