@@ -112,6 +112,18 @@ export function DailyGame() {
 
   const topPad = (Platform.OS === 'web' ? WEB_NAV_CLEARANCE : insets.top) + 14;
 
+  // The case file sits under the card while playing, and moves down next to the
+  // result once finished (where the space opens up).
+  const dossierBlock = dossier ? (
+    <View style={styles.dossier}>
+      <View style={styles.dossierTab}>
+        <Ionicons name="document-text-outline" size={11} color="rgba(206,155,51,0.9)" />
+        <Text style={styles.dossierKicker}>Case file</Text>
+      </View>
+      <Text style={styles.dossierText}>{dossier}</Text>
+    </View>
+  ) : null;
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -160,7 +172,7 @@ export function DailyGame() {
         ) : (
           <>
             {/* Stage — the spotlit card flanked by clue stickers */}
-            <View style={styles.stage}>
+            <View style={[styles.stage, finished && styles.stageFinished]}>
               <View style={[styles.glow, GLOW]} pointerEvents="none" />
               <View style={styles.cardWrap}>
                 <Pressable
@@ -224,41 +236,34 @@ export function DailyGame() {
                 ))}
               </View>
 
-              {/* Persistent "case file" anchor clue */}
-              {dossier ? (
-                <View style={styles.dossier}>
-                  <View style={styles.dossierTab}>
-                    <Ionicons name="document-text-outline" size={11} color="rgba(206,155,51,0.9)" />
-                    <Text style={styles.dossierKicker}>Case file</Text>
-                  </View>
-                  <Text style={styles.dossierText}>{dossier}</Text>
+              {/* Case file + pips only while playing; on finish they move down. */}
+              {!finished ? dossierBlock : null}
+
+              {!finished ? (
+                <View style={styles.pips}>
+                  {Array.from({ length: maxGuesses }).map((_, i) => {
+                    const g = guesses[i];
+                    const active = i === guesses.length;
+                    return (
+                      <View
+                        key={i}
+                        style={[
+                          styles.pip,
+                          g && !g.correct && styles.pipMiss,
+                          active && styles.pipActive,
+                        ]}
+                      />
+                    );
+                  })}
                 </View>
               ) : null}
-
-              {/* Guess pips */}
-              <View style={styles.pips}>
-                {Array.from({ length: maxGuesses }).map((_, i) => {
-                  const g = guesses[i];
-                  const active = !finished && i === guesses.length;
-                  return (
-                    <View
-                      key={i}
-                      style={[
-                        styles.pip,
-                        g?.correct && styles.pipWon,
-                        g && !g.correct && styles.pipMiss,
-                        active && styles.pipActive,
-                      ]}
-                    />
-                  );
-                })}
-              </View>
             </View>
 
             {/* Footer — line-up while playing, result + share once finished */}
             <View style={styles.footer}>
               {finished ? (
                 <>
+                  {dossierBlock}
                   <Text style={styles.resultTitle}>{won ? 'Solved it!' : 'Out of guesses'}</Text>
                   <Text style={styles.resultSub}>
                     {won
@@ -398,6 +403,9 @@ const styles = StyleSheet.create({
 
   // Stage takes the slack so the card sits optically centred above the footer.
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },
+  // Once finished there are no pips/dossier in the stage, so drop the card to
+  // the bottom so it sits right above the case file + result (no big gap).
+  stageFinished: { justifyContent: 'flex-end' },
   glow: {
     position: 'absolute',
     top: '50%',
@@ -438,7 +446,8 @@ const styles = StyleSheet.create({
   dossier: {
     width: '100%',
     maxWidth: 380,
-    marginTop: 24,
+    marginTop: 20,
+    marginBottom: 16,
     zIndex: 5,
     backgroundColor: 'rgba(245,235,220,0.05)',
     borderWidth: 1,
