@@ -6,6 +6,7 @@ import { useState, useCallback, useMemo, type ReactNode, type ComponentType } fr
 import {
   View,
   Text,
+  Pressable,
   StyleSheet,
   StatusBar,
   type ListRenderItem,
@@ -13,6 +14,7 @@ import {
   type StyleProp,
   type FlatListProps,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   FadeIn,
   useSharedValue,
@@ -49,6 +51,7 @@ import { EraTimeline } from '../../src/components/home/EraTimeline';
 import { CoverGallery } from '../../src/components/home/CoverGallery';
 import { PublisherGrid } from '../../src/components/home/PublisherGrid';
 import { PulseTicker } from '../../src/components/home/PulseTicker';
+import { DailyChallengeBanner } from '../../src/components/game/DailyChallengeBanner';
 import { useExploreData } from '../../src/hooks/useExploreData';
 import type { FavouriteHero } from '../../src/types';
 
@@ -74,6 +77,7 @@ type FeedRow =
   | { type: 'spotlight'; heroes: Hero[] }
   | { type: 'publishers' }
   | { type: 'matchup'; matchup: Matchup }
+  | { type: 'daily' }
   | { type: 'ticker'; heroCount: number; newlyAddedCount: number }
   | { type: 'recent'; heroes: RowHero[] }
   | { type: 'favourites'; heroes: RowHero[] }
@@ -195,6 +199,7 @@ export default function HomeScreen() {
   const rows = useMemo<FeedRow[]>(() => {
     const out: FeedRow[] = [];
     if (spotlightPool.length > 0) out.push({ type: 'spotlight', heroes: spotlightPool });
+    out.push({ type: 'daily' });
     out.push({ type: 'publishers' });
     if (matchup) out.push({ type: 'matchup', matchup });
     if (heroCount > 0) out.push({ type: 'ticker', heroCount, newlyAddedCount: newlyAdded.length });
@@ -376,6 +381,8 @@ export default function HomeScreen() {
           );
         case 'publishers':
           return <PublisherGrid onPress={handleCategoryPress} />;
+        case 'daily':
+          return <DailyChallengeBanner onPress={() => handleOpenPath('/play')} />;
         case 'matchup':
           return <TodaysMatchup matchup={item.matchup} onOpen={handleOpenPath} />;
         case 'ticker':

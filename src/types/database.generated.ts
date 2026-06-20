@@ -1183,6 +1183,12 @@ export type Database = {
           label: string
         }[]
       }
+      get_daily_hero: { Args: { p_date?: string }; Returns: Json }
+      get_daily_distribution: { Args: { p_date: string }; Returns: Json }
+      record_daily_result: {
+        Args: { p_date: string; p_won: boolean; p_guesses: number }
+        Returns: undefined
+      }
       get_era_timeline: {
         Args: { per_era?: number }
         Returns: {

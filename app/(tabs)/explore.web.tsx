@@ -23,6 +23,7 @@ import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { useWebCanvas } from '../../src/hooks/useWebCanvas';
 import { useChromeColor } from '../../src/contexts/WebChromeContext';
 import { PulseTicker } from '../../src/components/web/home/PulseTicker';
+import { DailyChallengeBanner } from '../../src/components/game/DailyChallengeBanner';
 import { PublisherPods } from '../../src/components/web/home/PublisherPods';
 import { GreatestRivalries } from '../../src/components/web/home/GreatestRivalries';
 import { HallOfInfamy } from '../../src/components/web/home/HallOfInfamy';
@@ -1178,6 +1179,14 @@ export default function WebHomeScreen() {
             ) : null}
           </View>
 
+          {/* ── Daily Guess-the-Hero entry — prime spot under the spotlight ── */}
+          <View style={styles.dailyWrap}>
+            <DailyChallengeBanner
+              onPress={() => router.push('/play')}
+              style={styles.dailyBanner as object}
+            />
+          </View>
+
           {/* ── Orange ticker strip ────────────────────────────────────────── */}
           <PulseTicker
             heroCount={totalHeroCount ?? 0}
@@ -1368,6 +1377,15 @@ export default function WebHomeScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  dailyWrap: { alignItems: 'center', paddingHorizontal: 16, marginTop: 18, marginBottom: 26 },
+  // Override the shared banner's phone margins: centre + constrain to the column.
+  dailyBanner: {
+    width: '100%',
+    maxWidth: 720,
+    marginHorizontal: 0,
+    marginTop: 0,
+    cursor: 'pointer',
+  },
   root: { flex: 1, backgroundColor: COLORS.beige },
   scroll: { flex: 1 },
   // Desktop: the scroll surface is the dark stage colour, so overscroll at the
