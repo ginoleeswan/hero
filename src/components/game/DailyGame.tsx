@@ -146,13 +146,7 @@ export function DailyGame() {
             {/* Stage — the spotlit card flanked by clue stickers */}
             <View style={styles.stage}>
               <View style={[styles.glow, GLOW]} pointerEvents="none" />
-              <View style={styles.cardRow}>
-                <View style={styles.colLeft}>
-                  {leftClues.map((c, i) => (
-                    <ClueSticker key={c.label} clue={c} tilt={i * 2} />
-                  ))}
-                </View>
-
+              <View style={styles.cardWrap}>
                 <Pressable
                   disabled={!finished}
                   onPress={() =>
@@ -200,7 +194,14 @@ export function DailyGame() {
                   ) : null}
                 </Pressable>
 
-                <View style={styles.colRight}>
+                {/* Stickers float absolutely beside the card so they never
+                    shift it off-centre as clues appear. */}
+                <View style={styles.stickersLeft} pointerEvents="none">
+                  {leftClues.map((c, i) => (
+                    <ClueSticker key={c.label} clue={c} tilt={i * 2} />
+                  ))}
+                </View>
+                <View style={styles.stickersRight} pointerEvents="none">
                   {rightClues.map((c, i) => (
                     <ClueSticker key={c.label} clue={c} tilt={i * 2 + 1} />
                   ))}
@@ -391,14 +392,31 @@ const styles = StyleSheet.create({
     marginTop: -170,
     borderRadius: 170,
   },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  // Fixed-size box: the card is always dead-centre of the stage. The sticker
+  // columns are positioned relative to it (absolute) so they can't move it.
+  cardWrap: { width: CARD_W, height: CARD_H, alignItems: 'center', justifyContent: 'center' },
+  stickersLeft: {
+    position: 'absolute',
+    right: '100%',
+    top: 0,
+    bottom: 0,
+    marginRight: -14,
     justifyContent: 'center',
-    maxWidth: '100%',
+    alignItems: 'flex-end',
+    gap: 10,
+    zIndex: 3,
   },
-  colLeft: { marginRight: -20, gap: 10, alignItems: 'flex-end', zIndex: 3 },
-  colRight: { marginLeft: -20, gap: 10, alignItems: 'flex-start', zIndex: 3 },
+  stickersRight: {
+    position: 'absolute',
+    left: '100%',
+    top: 0,
+    bottom: 0,
+    marginLeft: -14,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    gap: 10,
+    zIndex: 3,
+  },
 
   card: {
     width: CARD_W,
