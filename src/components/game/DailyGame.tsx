@@ -172,9 +172,9 @@ export function DailyGame() {
         ) : (
           <>
             {/* Stage — the spotlit card flanked by clue stickers */}
-            <View style={[styles.stage, finished && styles.stageFinished]}>
-              <View style={[styles.glow, GLOW]} pointerEvents="none" />
+            <View style={styles.stage}>
               <View style={styles.cardWrap}>
+                <View style={[styles.glow, GLOW]} pointerEvents="none" />
                 <Pressable
                   disabled={!finished}
                   onPress={() =>
@@ -236,8 +236,10 @@ export function DailyGame() {
                 ))}
               </View>
 
-              {/* Case file + pips only while playing; on finish they move down. */}
-              {!finished ? dossierBlock : null}
+              {/* Case file always sits under the card; below it, the progress
+                  pips while playing or the result once finished — all inside the
+                  centred stage so nothing jumps when the game ends. */}
+              {dossierBlock}
 
               {!finished ? (
                 <View style={styles.pips}>
@@ -256,14 +258,8 @@ export function DailyGame() {
                     );
                   })}
                 </View>
-              ) : null}
-            </View>
-
-            {/* Footer — line-up while playing, result + share once finished */}
-            <View style={styles.footer}>
-              {finished ? (
-                <>
-                  {dossierBlock}
+              ) : (
+                <View style={styles.result}>
                   <Text style={styles.resultTitle}>{won ? 'Solved it!' : 'Out of guesses'}</Text>
                   <Text style={styles.resultSub}>
                     {won
@@ -289,45 +285,49 @@ export function DailyGame() {
                     </Pressable>
                   </View>
                   <Text style={styles.tomorrow}>A new hero drops tomorrow.</Text>
-                </>
-              ) : (
-                <>
-                  <View style={styles.lineupHead}>
-                    <Text style={styles.lineupTitle}>Who is it?</Text>
-                    <Text style={styles.remaining}>
-                      {remaining} {remaining === 1 ? 'guess' : 'guesses'} left
-                    </Text>
-                  </View>
-                  <View style={styles.grid}>
-                    {options.map((o) => {
-                      const guessed = guessedIds.has(o.id);
-                      return (
-                        <Pressable
-                          key={o.id}
-                          disabled={guessed}
-                          onPress={() => submitGuess(o.id, o.name)}
-                          style={({ pressed }) => [
-                            styles.option,
-                            pressed && styles.optionPressed,
-                            guessed && styles.optionEliminated,
-                          ]}
-                        >
-                          <Text
-                            numberOfLines={1}
-                            style={[styles.optionText, guessed && styles.optionTextEliminated]}
-                          >
-                            {o.name}
-                          </Text>
-                          {guessed ? (
-                            <Ionicons name="close" size={15} color="rgba(245,235,220,0.5)" />
-                          ) : null}
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </>
+                </View>
               )}
             </View>
+
+            {/* The line-up lives in a bottom footer (thumb reach) while playing;
+                once finished, the result is shown up in the stage instead. */}
+            {!finished ? (
+              <View style={styles.footer}>
+                <View style={styles.lineupHead}>
+                  <Text style={styles.lineupTitle}>Who is it?</Text>
+                  <Text style={styles.remaining}>
+                    {remaining} {remaining === 1 ? 'guess' : 'guesses'} left
+                  </Text>
+                </View>
+                <View style={styles.grid}>
+                  {options.map((o) => {
+                    const guessed = guessedIds.has(o.id);
+                    return (
+                      <Pressable
+                        key={o.id}
+                        disabled={guessed}
+                        onPress={() => submitGuess(o.id, o.name)}
+                        style={({ pressed }) => [
+                          styles.option,
+                          pressed && styles.optionPressed,
+                          guessed && styles.optionEliminated,
+                        ]}
+                      >
+                        <Text
+                          numberOfLines={1}
+                          style={[styles.optionText, guessed && styles.optionTextEliminated]}
+                        >
+                          {o.name}
+                        </Text>
+                        {guessed ? (
+                          <Ionicons name="close" size={15} color="rgba(245,235,220,0.5)" />
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
           </>
         )}
       </ScrollView>
@@ -402,10 +402,10 @@ const styles = StyleSheet.create({
   },
 
   // Stage takes the slack so the card sits optically centred above the footer.
-  stage: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },
-  // Once finished there are no pips/dossier in the stage, so drop the card to
-  // the bottom so it sits right above the case file + result (no big gap).
-  stageFinished: { justifyContent: 'flex-end' },
+  // Top-down flow with consistent spacing (no flex centring) so the card and
+  // case file hold the same position whether you're playing or finished.
+  stage: { flexGrow: 1, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 18 },
+  result: { width: '100%', maxWidth: 380, alignItems: 'stretch', marginTop: 4 },
   glow: {
     position: 'absolute',
     top: '50%',
@@ -475,7 +475,6 @@ const styles = StyleSheet.create({
   pip: { width: 11, height: 11, borderRadius: 6, backgroundColor: 'rgba(245,235,220,0.18)' },
   pipActive: { backgroundColor: COLORS.orange },
   pipMiss: { backgroundColor: COLORS.red },
-  pipWon: { backgroundColor: COLORS.green },
 
   footer: { marginTop: 10 },
   lineupHead: {
