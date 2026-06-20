@@ -24,35 +24,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/colors';
 import { MysteryPortrait } from './MysteryPortrait';
+import { ClueSticker } from './ClueSticker';
 import { StatsSheet } from './StatsSheet';
 import { useDailyHero } from '../../hooks/useDailyHero';
-import type { Clue } from '../../lib/game/reveal';
 
 // The floating web nav is 64px tall; the dark stage bleeds up under it, so the
 // screen owns its own clearance below it (matching the other content routes).
 const WEB_NAV_CLEARANCE = 64;
 const CARD_W = 156;
 const CARD_H = 208;
-const STICKER_W = 92;
-
-// Each clue is stuck on at a slightly different angle, like a sticker packet.
-const TILTS = [
-  { transform: [{ rotate: '-5deg' }] },
-  { transform: [{ rotate: '4deg' }] },
-  { transform: [{ rotate: '-3deg' }] },
-  { transform: [{ rotate: '5deg' }] },
-  { transform: [{ rotate: '-4deg' }] },
-];
-
-// Saturated retro fills (the cream die-cut border is shared) so the clues read
-// like a scattered sticker packet around the card.
-const TONES = [
-  { bg: COLORS.orange, fg: COLORS.beige },
-  { bg: COLORS.blue, fg: COLORS.beige },
-  { bg: COLORS.red, fg: COLORS.beige },
-  { bg: COLORS.yellow, fg: COLORS.deepNavy },
-  { bg: COLORS.green, fg: COLORS.deepNavy },
-];
 
 // Warm spotlight behind the card — a real radial on web, a soft disc on native.
 const GLOW = Platform.select({
@@ -61,20 +41,6 @@ const GLOW = Platform.select({
   },
   default: { backgroundColor: 'rgba(231,115,51,0.12)' },
 }) as object;
-
-function ClueSticker({ clue, tilt }: { clue: Clue; tilt: number }) {
-  const tone = TONES[tilt % TONES.length];
-  return (
-    <View
-      style={[styles.sticker, TILTS[tilt % TILTS.length], { backgroundColor: tone.bg }]}
-      accessibilityLabel={`${clue.label}: ${clue.value}`}
-    >
-      <Text style={[styles.stickerValue, { color: tone.fg }]} numberOfLines={2}>
-        {clue.value}
-      </Text>
-    </View>
-  );
-}
 
 export function DailyGame() {
   const insets = useSafeAreaInsets();
@@ -429,8 +395,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     maxWidth: '100%',
   },
-  colLeft: { width: STICKER_W, marginRight: -16, gap: 12, alignItems: 'flex-end', zIndex: 3 },
-  colRight: { width: STICKER_W, marginLeft: -16, gap: 12, alignItems: 'flex-start', zIndex: 3 },
+  colLeft: { marginRight: -20, gap: 10, alignItems: 'flex-end', zIndex: 3 },
+  colRight: { marginLeft: -20, gap: 10, alignItems: 'flex-start', zIndex: 3 },
 
   card: {
     width: CARD_W,
@@ -453,32 +419,6 @@ const styles = StyleSheet.create({
   cardFooter: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 12 },
   cardName: { fontFamily: 'Flame-Regular', fontSize: 21, color: COLORS.beige, lineHeight: 24 },
   cardLink: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange, marginTop: 1 },
-
-  sticker: {
-    width: STICKER_W,
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    borderWidth: 3,
-    borderColor: '#fbf3e4',
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.45,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 7,
-    zIndex: 3,
-  },
-  stickerValue: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 15,
-    lineHeight: 18,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-  },
 
   dossier: {
     width: '100%',
