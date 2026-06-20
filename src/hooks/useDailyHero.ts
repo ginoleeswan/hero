@@ -163,7 +163,10 @@ export function useDailyHero() {
     [allClues, guesses.length, finished],
   );
   const blur = blurForGuess(guesses.length, finished);
-  const dossier = useMemo(() => (puzzle ? buildDossier(puzzle.hero) : null), [puzzle]);
+  const dossier = useMemo(
+    () => (puzzle ? buildDossier(puzzle.hero, finished) : null),
+    [puzzle, finished],
+  );
   const percentile = finished ? beatPercent(distribution, status === 'won', guesses.length) : null;
 
   const shareText = useMemo(() => {

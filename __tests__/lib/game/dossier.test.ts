@@ -45,6 +45,20 @@ describe('buildDossier', () => {
     expect(line).not.toMatch(/Charles|Xavier/i);
     expect(line).toContain('creator of the');
   });
+  it('reveals the full, un-redacted text when reveal=true', () => {
+    const line = buildDossier(
+      {
+        summary: 'Professor Charles Xavier is the creator of the X-Men.',
+        name: 'Professor X',
+        fullName: 'Charles Francis Xavier',
+        aliases: ['Charles Xavier'],
+      },
+      true,
+    );
+    expect(line).toContain('Charles Xavier');
+    expect(line).not.toContain('█');
+  });
+
   it('returns null when there is no summary', () => {
     expect(buildDossier({ summary: null, name: 'X', fullName: null, aliases: [] })).toBeNull();
     expect(buildDossier({ summary: '   ', name: 'X', fullName: null, aliases: [] })).toBeNull();

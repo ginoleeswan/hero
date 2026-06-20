@@ -13,6 +13,7 @@ type Shape = 'banner' | 'arch' | 'seal' | 'star' | 'hex';
 
 interface Cfg {
   shape: Shape;
+  layout: 'text' | 'iconText';
   w: number;
   h: number;
   bg: string;
@@ -26,24 +27,27 @@ interface Cfg {
 const CREAM = '#fbf3e4';
 const BORDER = 6;
 
-// Category → bespoke shape + retro tone. Longer values (publisher, power) get
-// the roomier silhouettes; short values (decade, alignment) get the compact ones.
+// Category → bespoke shape + retro tone. Most are big-text die-cuts (the value
+// is the hero, like a packet sticker); the arch keeps a badge-style icon-on-top
+// layout. Longer values get the roomier silhouettes.
 const CONFIG: Record<string, Cfg> = {
   Publisher: {
     shape: 'banner',
-    w: 116,
-    h: 54,
+    layout: 'text',
+    w: 120,
+    h: 52,
     bg: COLORS.orange,
     fg: COLORS.beige,
     accent: 'rgba(245,235,220,0.5)',
     icon: 'library',
-    pad: 18,
-    font: 15,
+    pad: 16,
+    font: 18,
   },
   'Signature power': {
     shape: 'arch',
-    w: 96,
-    h: 104,
+    layout: 'iconText',
+    w: 110,
+    h: 106,
     bg: COLORS.green,
     fg: COLORS.deepNavy,
     accent: 'rgba(11,24,32,0.32)',
@@ -53,36 +57,39 @@ const CONFIG: Record<string, Cfg> = {
   },
   Origin: {
     shape: 'hex',
-    w: 102,
-    h: 90,
+    layout: 'text',
+    w: 108,
+    h: 92,
     bg: COLORS.red,
     fg: COLORS.beige,
     accent: 'rgba(245,235,220,0.45)',
     icon: 'planet',
-    pad: 20,
-    font: 14,
+    pad: 18,
+    font: 17,
   },
   Alignment: {
     shape: 'star',
+    layout: 'text',
     w: 104,
     h: 104,
     bg: COLORS.yellow,
     fg: COLORS.deepNavy,
     accent: 'rgba(11,24,32,0.3)',
     icon: 'shield-half',
-    pad: 24,
-    font: 13,
+    pad: 22,
+    font: 16,
   },
   'First appeared': {
     shape: 'seal',
+    layout: 'text',
     w: 88,
     h: 88,
     bg: COLORS.blue,
     fg: COLORS.beige,
     accent: 'rgba(245,235,220,0.5)',
     icon: 'time',
-    pad: 16,
-    font: 15,
+    pad: 13,
+    font: 19,
   },
 };
 
@@ -165,7 +172,7 @@ const scaleAbout = (cx: number, cy: number, s: number) =>
 
 export function ClueSticker({ clue, tilt }: { clue: Clue; tilt: number }) {
   const cfg = CONFIG[clue.label] ?? CONFIG.Publisher;
-  const { w, h, bg, fg, accent, icon, pad, font } = cfg;
+  const { w, h, bg, fg, accent, icon, pad, font, layout } = cfg;
   const cx = w / 2;
   const cy = h / 2;
   const min = Math.min(w, h);
@@ -193,8 +200,13 @@ export function ClueSticker({ clue, tilt }: { clue: Clue; tilt: number }) {
         </G>
       </Svg>
       <View style={[styles.content, { paddingHorizontal: pad }]} pointerEvents="none">
-        <Ionicons name={icon} size={13} color={fg} style={styles.icon} />
-        <Text style={[styles.value, { color: fg, fontSize: font }]} numberOfLines={2}>
+        {layout === 'iconText' ? (
+          <Ionicons name={icon} size={24} color={fg} style={styles.icon} />
+        ) : null}
+        <Text
+          style={[styles.value, { color: fg, fontSize: font, lineHeight: font + 1 }]}
+          numberOfLines={2}
+        >
           {clue.value}
         </Text>
       </View>
@@ -213,10 +225,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  icon: { opacity: 0.85, marginBottom: 1 },
+  icon: { opacity: 0.9, marginBottom: 2 },
   value: {
     fontFamily: 'Flame-Regular',
-    lineHeight: 16,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
     textAlign: 'center',

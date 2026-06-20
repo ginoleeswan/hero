@@ -47,9 +47,11 @@ export function firstSentences(text: string, maxLen = 180): string {
   return (out || text).trim();
 }
 
-export function buildDossier(input: DossierInput): string | null {
+export function buildDossier(input: DossierInput, reveal = false): string | null {
   const summary = input.summary?.trim();
   if (!summary) return null;
-  const line = firstSentences(redactName(summary, input));
+  // While playing, redact identity; once solved or lost, reveal the full text.
+  const text = reveal ? summary : redactName(summary, input);
+  const line = firstSentences(text, reveal ? 260 : 180);
   return line.length > 0 ? line : null;
 }

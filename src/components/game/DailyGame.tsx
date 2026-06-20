@@ -99,8 +99,8 @@ export function DailyGame() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#11283440', '#0a1620', '#05090d']}
-        locations={[0, 0.5, 1]}
+        colors={['#16323d', '#0d2029', '#0b1820']}
+        locations={[0, 0.55, 1]}
         style={styles.bg}
         pointerEvents="none"
       />
@@ -326,7 +326,9 @@ export function DailyGame() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a1620' },
+  // Matches the web document body (#0b1820) so the bleed behind the nav + the
+  // home indicator reads as one continuous surface — no seam at the bottom.
+  container: { flex: 1, backgroundColor: '#0b1820' },
   bg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   fill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   scroll: { flexGrow: 1, paddingHorizontal: 18 },
