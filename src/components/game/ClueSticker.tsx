@@ -3,7 +3,14 @@
 // silhouette (banner / arch / seal / starburst / hexagon), a thick cream
 // die-cut border, an inner keyline, a drop shadow and a category glyph — a
 // retro sticker packet rather than uniform chips. Pure presentational.
+import { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import Svg, { Path, Circle, G } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
@@ -178,13 +185,24 @@ export function ClueSticker({ clue, tilt }: { clue: Clue; tilt: number }) {
   const min = Math.min(w, h);
   const sIn = 1 - (2 * BORDER) / min;
   const sLn = 1 - (2 * (BORDER + 4.5)) / min;
+  const rot = ROT[tilt % ROT.length];
+
+  // "Slap-on": each sticker stamps in with a spring overshoot and fades up at
+  // its resting tilt when its clue is first revealed.
+  const progress = useSharedValue(0);
+  const opacity = useSharedValue(0);
+  useEffect(() => {
+    progress.value = withSpring(1, { damping: 11, stiffness: 150, mass: 0.7 });
+    opacity.value = withTiming(1, { duration: 160 });
+  }, [progress, opacity]);
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: 0.6 + progress.value * 0.4 }, { rotate: `${rot}deg` }],
+  }));
 
   return (
-    <View
-      style={[
-        styles.wrap,
-        { width: w, height: h, transform: [{ rotate: `${ROT[tilt % ROT.length]}deg` }] },
-      ]}
+    <Animated.View
+      style={[styles.wrap, { width: w, height: h }, animStyle]}
       accessibilityLabel={`${clue.label}: ${clue.value}`}
     >
       <Svg width={w} height={h}>
@@ -210,7 +228,7 @@ export function ClueSticker({ clue, tilt }: { clue: Clue; tilt: number }) {
           {clue.value}
         </Text>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
