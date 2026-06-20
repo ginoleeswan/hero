@@ -8,7 +8,6 @@ import { COLORS } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { useProfile } from '../../hooks/useProfile';
 import { useSearch } from '../../contexts/SearchContext';
-import { useWebChrome } from '../../contexts/WebChromeContext';
 import { HeroLogo } from './HeroLogo';
 import { SearchPalette } from './search/SearchPalette';
 
@@ -43,11 +42,9 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
 
-  // The bar is locked to the page's top colour (status bar + bar always match,
-  // so the top edge is seamless). `isLight` flips the icons/tints to dark on the
-  // rare light-topped screen; every current page is dark-topped → dark chrome.
-  const { isLight } = useWebChrome();
-  const lightChrome = isMobile && isLight;
+  // The status-bar inset is owned by AdaptiveStatusBarCover (in _layout.web); the
+  // TopBar is just the nav + its scroll frost. Every page is dark-topped, so the
+  // bar is always dark chrome — no light-mode branching.
 
   // Desktop: the search icon opens a command palette; mobile routes to /search.
   const openSearch = () => (isMobile ? router.push('/search') : setSearchFocused(true));
@@ -56,6 +53,9 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   // scrolls up behind it (keeps light icons readable over the beige body).
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
+    // Only desktop uses `scrolled` (transparent→frosted crossfade); the mobile
+    // scrim is constant, so don't run a scroll listener there.
+    if (isMobile) return undefined;
     // Capture phase catches scroll from the inner RN ScrollView divs (scroll
     // events don't bubble). Vertical-scroller guard ignores horizontal carousels.
     const onScroll = (e: Event) => {
@@ -71,7 +71,7 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
     };
     window.addEventListener('scroll', onScroll, true);
     return () => window.removeEventListener('scroll', onScroll, true);
-  }, []);
+  }, [isMobile]);
   // New routes start at the top — reset until the next scroll event.
   useEffect(() => setScrolled(false), [pathname]);
 
@@ -105,11 +105,10 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
         : pathname === path;
   const go = (path: string) => router.push(path as Parameters<typeof router.push>[0]);
 
-  // Icon/text colour flips with the chrome: dark glyphs on the light bar, light
-  // glyphs on the dark scrim. Active stays orange in both.
-  const inactiveTint = lightChrome ? 'rgba(41,60,67,0.78)' : 'rgba(245,235,220,0.7)';
-  const foreground = lightChrome ? COLORS.navy : COLORS.beige;
-  const hoverStyle = lightChrome ? (c.itemHoverLight as object) : (c.itemHover as object);
+  // Light glyphs on the dark scrim; active stays orange.
+  const inactiveTint = 'rgba(245,235,220,0.7)';
+  const foreground = COLORS.beige;
+  const hoverStyle = c.itemHover as object;
 
   const renderItem = (it: (typeof NAV)[number]) => {
     const active = navActive(it.key, it.path);
@@ -145,12 +144,9 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   // Desktop auth keeps its own branding; the logo-only bar is a mobile affordance.
   if (logoOnly && !isMobile) return null;
 
-  // Mobile keeps ONE consistent scrim at every scroll position — opaque navy at
-  // the top so it fuses with the status bar, easing into the page below — so the
-  // bar never restyles as you scroll. Desktop keeps the classic transparent
-  // scrim-over-hero → frosted-bar-on-scroll.
-  const mobileScrim = lightChrome ? c.frostTintLight : c.frostTintDark;
-
+  // Mobile keeps ONE consistent dark scrim at every scroll position — opaque navy
+  // at the top easing into the page below, so the bar never restyles on scroll.
+  // Desktop keeps the transparent scrim-over-hero → frosted-bar-on-scroll.
   const bar = (
     <View style={c.bar as object} pointerEvents="box-none">
       {isMobile ? (
@@ -160,9 +156,8 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
         // status bar, easing into the page below.
         <View style={c.scrim as object} pointerEvents="none">
           <View style={[StyleSheet.absoluteFill, c.frostA] as object} />
-          <View style={[StyleSheet.absoluteFill, c.frostB] as object} />
           <View style={[StyleSheet.absoluteFill, c.frostC] as object} />
-          <View style={[StyleSheet.absoluteFill, mobileScrim] as object} />
+          <View style={[StyleSheet.absoluteFill, c.frostTintDark] as object} />
         </View>
       ) : (
         <>
@@ -177,7 +172,6 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
             pointerEvents="none"
           >
             <View style={[StyleSheet.absoluteFill, c.frostA] as object} />
-            <View style={[StyleSheet.absoluteFill, c.frostB] as object} />
             <View style={[StyleSheet.absoluteFill, c.frostC] as object} />
             <View style={[StyleSheet.absoluteFill, c.frostTintDesktop] as object} />
           </View>
@@ -288,11 +282,10 @@ const c = StyleSheet.create({
     opacity: 1,
     transition: 'opacity 300ms ease',
   } as object,
-  // Scrolled frost: a stack of blur layers, each masked to a band, so the blur
-  // is heaviest at the top (all three stacked, behind the icons) and tapers to
-  // zero by the bottom — a graduated blur with no hard edge where sharp content
-  // would otherwise snap back. The tint that rides on top is platform-specific
-  // (see frostTintLight / frostTintDesktop below).
+  // Scrolled frost: two blur layers (frostA heavy + frostC light), each masked to
+  // a band, so the blur is heaviest at the top behind the icons and tapers to zero
+  // by the bottom — a graduated blur with no hard edge. The tint that rides on top
+  // is platform-specific (frostTintDark on mobile, frostTintDesktop on desktop).
   frost: {
     position: 'absolute',
     top: 0,
@@ -308,25 +301,11 @@ const c = StyleSheet.create({
     maskImage: 'linear-gradient(to bottom, #000 0%, #000 10%, transparent 44%)',
     WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 10%, transparent 44%)',
   } as object,
-  frostB: {
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
-    maskImage: 'linear-gradient(to bottom, #000 0%, #000 28%, transparent 68%)',
-    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 28%, transparent 68%)',
-  } as object,
   frostC: {
     backdropFilter: 'blur(3px)',
     WebkitBackdropFilter: 'blur(3px)',
     maskImage: 'linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%)',
     WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%)',
-  } as object,
-  // Mobile light mode: a beige tint, opaque at the very top (matching the beige
-  // status-bar cover exactly, so there's no step) then easing out into the
-  // content — the bar reads as one frosted-beige surface flowing off the status
-  // bar, with dark icons on top.
-  frostTintLight: {
-    backgroundImage:
-      'linear-gradient(to bottom, rgba(245,235,220,0.96) 0%, rgba(245,235,220,0.74) 32%, rgba(245,235,220,0.38) 60%, rgba(245,235,220,0.12) 82%, transparent 100%)',
   } as object,
   // Mobile dark-topped pages: opaque deep-navy at the very top so it's identical
   // to the navy status-bar cover above it (one continuous surface), then a
@@ -372,7 +351,6 @@ const c = StyleSheet.create({
   } as object,
   itemActive: { backgroundColor: 'rgba(231,115,51,0.16)' } as object,
   itemHover: { backgroundColor: 'rgba(255,255,255,0.08)' } as object,
-  itemHoverLight: { backgroundColor: 'rgba(41,60,67,0.08)' } as object,
   // Both account states (avatar / logged-out icon) sit inside the shared `item`
   // hover container, so the whole top bar hovers identically.
   avatar: {
