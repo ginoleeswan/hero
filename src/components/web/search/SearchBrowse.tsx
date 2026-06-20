@@ -55,7 +55,10 @@ function PodTile({
       />
       <View style={t.caption as object}>
         <Text style={t.kicker as object}>{pod.kind}</Text>
-        <Text style={[t.label, featured && (t.labelFeatured as object)] as object} numberOfLines={2}>
+        <Text
+          style={[t.label, featured && (t.labelFeatured as object)] as object}
+          numberOfLines={2}
+        >
           {pod.label}
         </Text>
       </View>

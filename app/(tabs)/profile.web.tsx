@@ -30,7 +30,6 @@ import { Toast, useToast } from '../../src/components/ui/Toast';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import Svg, { Path } from 'react-native-svg';
 
-
 const KO_FI_URL = 'https://ko-fi.com/glstudio';
 
 const SIDEBAR_BREAKPOINT = 640;

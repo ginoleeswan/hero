@@ -43,7 +43,6 @@ const THUMB_SIZE = (SCREEN_WIDTH - 32 - 8) / 3;
 
 const KO_FI_URL = 'https://ko-fi.com/glstudio';
 
-
 function username(email: string) {
   return email.split('@')[0] ?? email;
 }

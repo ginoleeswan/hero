@@ -14,7 +14,6 @@ import { COLORS } from '../../constants/colors';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
-
 export function LogoLoader() {
   const progress = useSharedValue(0);
 
