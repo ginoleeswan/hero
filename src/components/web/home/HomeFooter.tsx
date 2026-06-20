@@ -78,6 +78,14 @@ export function HomeFooter({ heroCount, onNavigate }: HomeFooterProps) {
 
         <View style={[s.bottom, !isDesktop && (s.bottomStack as object)] as object}>
           <Text style={s.copy as object}>© 2026 Mythique</Text>
+          <View style={s.legalRow}>
+            <Pressable onPress={() => onNavigate('/privacy')}>
+              <Text style={s.legalLink as object}>Privacy</Text>
+            </Pressable>
+            <Pressable onPress={() => onNavigate('/terms')}>
+              <Text style={s.legalLink as object}>Terms</Text>
+            </Pressable>
+          </View>
           <Text style={s.meta as object}>
             {heroCount != null ? `${heroCount.toLocaleString()} heroes & villains · ` : ''}
             Data from ComicVine & SuperheroAPI
@@ -145,6 +153,13 @@ const s = StyleSheet.create({
     gap: 12,
   },
   bottomStack: { flexDirection: 'column', alignItems: 'flex-start', gap: 8 } as object,
+  legalRow: { flexDirection: 'row', gap: 20 } as object,
+  legalLink: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.6)',
+    cursor: 'pointer',
+  } as object,
   copy: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
