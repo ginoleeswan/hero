@@ -4,7 +4,7 @@
 // die-cut border, an inner keyline, a drop shadow and a category glyph — a
 // retro sticker packet rather than uniform chips. Pure presentational.
 import { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -15,6 +15,33 @@ import Svg, { Path, Circle, G } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import type { Clue } from '../../lib/game/reveal';
+
+// Web peel: the sticker flips down onto the card from its top edge, with a
+// soft shadow that fades as it lands — a sticker being pressed on. Injected once
+// (the RNW escape hatch is a real <style> tag + a data attribute on the node).
+const PEEL_CSS = `
+@keyframes cluePeelIn {
+  0%   { transform: perspective(720px) rotateX(-82deg); opacity: 0;
+         filter: drop-shadow(0 18px 12px rgba(0,0,0,0.45)); }
+  55%  { opacity: 1; }
+  100% { transform: perspective(720px) rotateX(0deg); opacity: 1;
+         filter: drop-shadow(0 4px 4px rgba(0,0,0,0.18)); }
+}
+[data-clue-peel] {
+  transform-origin: top center;
+  animation: cluePeelIn 0.55s cubic-bezier(0.2, 0.85, 0.25, 1) both;
+}`;
+
+if (
+  Platform.OS === 'web' &&
+  typeof document !== 'undefined' &&
+  !document.getElementById('clue-peel-css')
+) {
+  const el = document.createElement('style');
+  el.id = 'clue-peel-css';
+  el.textContent = PEEL_CSS;
+  document.head.appendChild(el);
+}
 
 type Shape = 'banner' | 'arch' | 'seal' | 'star' | 'hex';
 
@@ -200,11 +227,8 @@ export function ClueSticker({ clue, tilt }: { clue: Clue; tilt: number }) {
     transform: [{ scale: 0.6 + progress.value * 0.4 }, { rotate: `${rot}deg` }],
   }));
 
-  return (
-    <Animated.View
-      style={[styles.wrap, { width: w, height: h }, animStyle]}
-      accessibilityLabel={`${clue.label}: ${clue.value}`}
-    >
+  const face = (
+    <>
       <Svg width={w} height={h}>
         <G transform="translate(0, 3)" opacity={0.3}>
           <ShapeEl cfg={cfg} fill="#05090d" />
@@ -228,12 +252,40 @@ export function ClueSticker({ clue, tilt }: { clue: Clue; tilt: number }) {
           {clue.value}
         </Text>
       </View>
+    </>
+  );
+
+  // Web: CSS peel on an inner box so it composes with the resting tilt outside.
+  if (Platform.OS === 'web') {
+    return (
+      <View
+        style={[styles.wrap, { width: w, height: h, transform: [{ rotate: `${rot}deg` }] }]}
+        accessibilityLabel={`${clue.label}: ${clue.value}`}
+      >
+        <View
+          style={[styles.face, { width: w, height: h }]}
+          {...({ dataSet: { cluePeel: '1' } } as object)}
+        >
+          {face}
+        </View>
+      </View>
+    );
+  }
+
+  // Native: a reanimated spring "slap-on".
+  return (
+    <Animated.View
+      style={[styles.wrap, { width: w, height: h }, animStyle]}
+      accessibilityLabel={`${clue.label}: ${clue.value}`}
+    >
+      {face}
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', justifyContent: 'center' },
+  face: { alignItems: 'center', justifyContent: 'center' },
   content: {
     position: 'absolute',
     top: 0,
