@@ -65,6 +65,7 @@ export default function VersusHubWeb() {
               iconicPool={iconicPool}
               isDesktop={isDesktop}
               onOpen={openArena}
+              onShuffle={surprise}
             />
           ) : null}
 

@@ -24,7 +24,7 @@ function RivalryCard({ r, onPress }: { r: Rivalry; onPress: () => void }) {
         imageUrl={r.a.image_url}
         portraitUrl={r.a.portrait_url}
         contentFit="cover"
-        contentPosition="top"
+        contentPosition={{ top: 0, left: '36%' }}
         style={styles.half}
       />
       <HeroImage
@@ -33,7 +33,7 @@ function RivalryCard({ r, onPress }: { r: Rivalry; onPress: () => void }) {
         imageUrl={r.b.image_url}
         portraitUrl={r.b.portrait_url}
         contentFit="cover"
-        contentPosition="top"
+        contentPosition={{ top: 0, left: '36%' }}
         style={[styles.half, styles.mirror]}
       />
       <LinearGradient

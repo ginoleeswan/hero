@@ -4,6 +4,7 @@
 // the native versus hub). "See full breakdown →" then opens the arena. On desktop
 // two dimmed cards peek behind for depth; they're decorative only.
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import { useMatchupVote } from '../../../hooks/useMatchupVote';
@@ -77,12 +78,35 @@ function HoloCard({
   );
 }
 
-// A dimmed card peeking behind the main pair — pure visual depth (the "deck").
-function GhostCard({ hero, side, w, h }: { hero: Hero; side: 'l' | 'r'; w: number; h: number }) {
+// A dimmed card peeking behind the main pair. It's the deck's "shuffle" control:
+// tapping it deals a fresh random matchup (same as Surprise me). The shuffle
+// glyph + hover lift signal it's interactive, not a third fighter.
+function GhostCard({
+  hero,
+  side,
+  w,
+  h,
+  onPress,
+}: {
+  hero: Hero;
+  side: 'l' | 'r';
+  w: number;
+  h: number;
+  onPress: () => void;
+}) {
   return (
-    <View
-      style={[c.ghost, side === 'l' ? c.ghostL : c.ghostR, { width: w, height: h }] as object}
-      pointerEvents="none"
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Shuffle to a random matchup"
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+        [
+          c.ghost,
+          side === 'l' ? c.ghostL : c.ghostR,
+          { width: w, height: h },
+          hovered && (c.ghostHover as object),
+        ] as object
+      }
     >
       <HeroImage
         id={hero.id}
@@ -93,8 +117,11 @@ function GhostCard({ hero, side, w, h }: { hero: Hero; side: 'l' | 'r'; w: numbe
         contentPosition="top"
         style={StyleSheet.absoluteFill}
       />
-      <View style={[StyleSheet.absoluteFill, c.ghostVeil] as object} />
-    </View>
+      <View style={[StyleSheet.absoluteFill, c.ghostVeil] as object} pointerEvents="none" />
+      <View style={c.ghostHint as object} pointerEvents="none">
+        <Ionicons name="shuffle" size={16} color={COLORS.beige} />
+      </View>
+    </Pressable>
   );
 }
 
@@ -103,11 +130,14 @@ export function ShowdownStage({
   iconicPool,
   isDesktop,
   onOpen,
+  onShuffle,
 }: {
   matchup: TodaysMatchup;
   iconicPool: Hero[];
   isDesktop: boolean;
   onOpen: (a: FighterArt, b: FighterArt) => void;
+  /** Deal a fresh random matchup — wired to the peeking "deck" cards. */
+  onShuffle: () => void;
 }) {
   const { heroA, heroB, winsA, winsB } = matchup;
   const { revealed, pickedId, tally, castVote } = useMatchupVote(heroA.id, heroB.id);
@@ -135,7 +165,13 @@ export function ShowdownStage({
     <View style={c.wrap}>
       <View style={c.arena}>
         {ghosts[0] ? (
-          <GhostCard hero={ghosts[0]} side="l" w={cardW * 0.58} h={cardH * 0.76} />
+          <GhostCard
+            hero={ghosts[0]}
+            side="l"
+            w={cardW * 0.58}
+            h={cardH * 0.76}
+            onPress={onShuffle}
+          />
         ) : null}
         <HoloCard
           hero={heroA}
@@ -159,7 +195,13 @@ export function ShowdownStage({
           h={cardH}
         />
         {ghosts[1] ? (
-          <GhostCard hero={ghosts[1]} side="r" w={cardW * 0.58} h={cardH * 0.76} />
+          <GhostCard
+            hero={ghosts[1]}
+            side="r"
+            w={cardW * 0.58}
+            h={cardH * 0.76}
+            onPress={onShuffle}
+          />
         ) : null}
       </View>
 
@@ -246,10 +288,25 @@ const c = StyleSheet.create({
     textTransform: 'uppercase',
   },
 
-  ghost: { borderRadius: 14, overflow: 'hidden', backgroundColor: COLORS.deepNavy, opacity: 0.4 },
+  ghost: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: COLORS.deepNavy,
+    opacity: 0.32,
+    cursor: 'pointer',
+    transition: 'opacity 160ms ease, transform 160ms ease',
+  } as object,
   ghostL: { transform: [{ translateX: 26 }, { rotate: '-6deg' }] } as object,
   ghostR: { transform: [{ translateX: -26 }, { rotate: '6deg' }] } as object,
-  ghostVeil: { backgroundColor: 'rgba(8,12,24,0.45)' } as object,
+  ghostHover: { opacity: 0.7 } as object,
+  ghostVeil: { backgroundColor: 'rgba(8,12,24,0.5)' } as object,
+  ghostHint: {
+    position: 'absolute',
+    top: 8,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  } as object,
 
   coin: {
     marginHorizontal: -18,
