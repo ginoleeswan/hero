@@ -10,6 +10,7 @@ import {
   Linking,
 } from 'react-native';
 import { EditDisplayNameModal } from '../../src/components/ui/EditDisplayNameModal';
+import { BadgeDetailModal } from '../../src/components/ui/BadgeDetailModal';
 import { LOGO_MASK_PATH as HERO_LOGO_PATH } from '../../src/constants/logo';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,7 +23,7 @@ import { ChangePasswordModal } from '../../src/components/ui/ChangePasswordModal
 import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
 import { describeContribution, type MyContribution } from '../../src/lib/db/contributions';
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
-import { computeBadges, earnedCount } from '../../src/lib/profile/badges';
+import { computeBadges, earnedCount, type Badge } from '../../src/lib/profile/badges';
 import { providerMeta } from '../../src/lib/profile/provider';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
@@ -293,6 +294,7 @@ export default function WebProfileScreen() {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showEditName, setShowEditName] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const { toast, showToast } = useToast();
 
   useEffect(() => {
@@ -588,9 +590,12 @@ export default function WebProfileScreen() {
             </View>
             <View style={mob.badgeWall}>
               {badges.map((b) => (
-                <View
+                <Pressable
                   key={b.id}
-                  style={[mob.badgeTile, !b.earned && (mob.badgeTileLocked as object)]}
+                  onPress={() => setSelectedBadge(b)}
+                  style={
+                    [mob.badgeTile, mob.badgeTileBtn, !b.earned && mob.badgeTileLocked] as object
+                  }
                 >
                   <View
                     style={[
@@ -617,7 +622,7 @@ export default function WebProfileScreen() {
                         ? 'Earned'
                         : ''}
                   </Text>
-                </View>
+                </Pressable>
               ))}
             </View>
           </View>
@@ -855,6 +860,7 @@ export default function WebProfileScreen() {
           onClose={() => setShowEditName(false)}
           onSubmit={handleUpdateName}
         />
+        <BadgeDetailModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
         <Toast message={toast.message} visible={toast.visible} />
       </View>
     );
@@ -1155,9 +1161,12 @@ export default function WebProfileScreen() {
               </View>
               <View style={desk.badgeWall}>
                 {badges.map((b) => (
-                  <View
+                  <Pressable
                     key={b.id}
-                    style={[desk.badgeTile, !b.earned && (desk.badgeTileLocked as object)]}
+                    onPress={() => setSelectedBadge(b)}
+                    style={
+                      [desk.badgeTile, desk.badgeTileBtn, !b.earned && desk.badgeTileLocked] as object
+                    }
                   >
                     <View
                       style={[
@@ -1186,7 +1195,7 @@ export default function WebProfileScreen() {
                           ? 'Earned'
                           : ''}
                     </Text>
-                  </View>
+                  </Pressable>
                 ))}
               </View>
             </View>
@@ -1275,6 +1284,7 @@ export default function WebProfileScreen() {
         onClose={() => setShowEditName(false)}
         onSubmit={handleUpdateName}
       />
+      <BadgeDetailModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
       <Toast message={toast.message} visible={toast.visible} />
     </View>
   );
@@ -1527,6 +1537,7 @@ const mob = StyleSheet.create({
   },
   badgeWall: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   badgeTile: { width: 80, alignItems: 'center', gap: 6 },
+  badgeTileBtn: { cursor: 'pointer' } as object,
   badgeTileLocked: { opacity: 0.55 } as object,
   badgeIcon: {
     width: 54,
@@ -2004,6 +2015,7 @@ const desk = StyleSheet.create({
   },
   badgeWall: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
   badgeTile: { width: 88, alignItems: 'center', gap: 7 },
+  badgeTileBtn: { cursor: 'pointer' } as object,
   badgeTileLocked: { opacity: 0.55 } as object,
   badgeIcon: {
     width: 60,

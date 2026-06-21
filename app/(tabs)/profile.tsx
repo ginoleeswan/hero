@@ -29,10 +29,11 @@ import { useProfile } from '../../src/hooks/useProfile';
 import { useProfileData } from '../../src/hooks/useProfileData';
 import { ChangePasswordModal } from '../../src/components/ui/ChangePasswordModal';
 import { EditDisplayNameModal } from '../../src/components/ui/EditDisplayNameModal';
+import { BadgeDetailModal } from '../../src/components/ui/BadgeDetailModal';
 import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
 import { describeContribution, type MyContribution } from '../../src/lib/db/contributions';
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
-import { computeBadges, earnedCount } from '../../src/lib/profile/badges';
+import { computeBadges, earnedCount, type Badge } from '../../src/lib/profile/badges';
 import { providerMeta } from '../../src/lib/profile/provider';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
@@ -274,6 +275,7 @@ export default function ProfileScreen() {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showEditName, setShowEditName] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const { toast, showToast } = useToast();
 
   useFocusEffect(
@@ -630,7 +632,12 @@ export default function ProfileScreen() {
             contentContainerStyle={styles.badgeRow}
           >
             {badges.map((b) => (
-              <View key={b.id} style={[styles.badgeTile, !b.earned && styles.badgeTileLocked]}>
+              <PressScale
+                key={b.id}
+                onPress={() => setSelectedBadge(b)}
+                scale={0.92}
+                style={[styles.badgeTile, !b.earned && styles.badgeTileLocked]}
+              >
                 <View
                   style={[
                     styles.badgeIcon,
@@ -656,7 +663,7 @@ export default function ProfileScreen() {
                       ? 'Earned'
                       : ''}
                 </Text>
-              </View>
+              </PressScale>
             ))}
           </ScrollView>
         </View>
@@ -878,6 +885,7 @@ export default function ProfileScreen() {
         onClose={() => setShowEditName(false)}
         onSubmit={handleUpdateName}
       />
+      <BadgeDetailModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
       <Toast message={toast.message} visible={toast.visible} />
     </View>
   );
