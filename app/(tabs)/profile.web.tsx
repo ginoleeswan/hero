@@ -23,6 +23,7 @@ import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites
 import { describeContribution, type MyContribution } from '../../src/lib/db/contributions';
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
 import { computeBadges, earnedCount } from '../../src/lib/profile/badges';
+import { providerMeta } from '../../src/lib/profile/provider';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { COLORS, SURFACE } from '../../src/constants/colors';
@@ -723,12 +724,10 @@ export default function WebProfileScreen() {
                   <View style={mob.divider} />
                   <View style={mob.accountRow as object}>
                     <View style={[mob.accountIconBadge, mob.accountIconBadgeNavy]}>
-                      <Ionicons name="logo-google" size={16} color={COLORS.navy} />
+                      <Ionicons name={providerMeta(provider).icon} size={16} color={COLORS.navy} />
                     </View>
                     <Text style={mob.accountLabel}>Signed in with</Text>
-                    <Text style={mob.accountValue}>
-                      {provider.charAt(0).toUpperCase() + provider.slice(1)}
-                    </Text>
+                    <Text style={mob.accountValue}>{providerMeta(provider).label}</Text>
                   </View>
                 </>
               )}
@@ -989,12 +988,10 @@ export default function WebProfileScreen() {
                   <View style={desk.divider} />
                   <View style={desk.accountRow as object}>
                     <View style={[desk.accountIconBadge, desk.accountIconBadgeNavy]}>
-                      <Ionicons name="logo-google" size={16} color={COLORS.navy} />
+                      <Ionicons name={providerMeta(provider).icon} size={16} color={COLORS.navy} />
                     </View>
                     <Text style={desk.accountLabel}>Signed in with</Text>
-                    <Text style={desk.accountValue}>
-                      {provider.charAt(0).toUpperCase() + provider.slice(1)}
-                    </Text>
+                    <Text style={desk.accountValue}>{providerMeta(provider).label}</Text>
                   </View>
                 </>
               )}

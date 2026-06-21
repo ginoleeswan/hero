@@ -33,6 +33,7 @@ import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites
 import { describeContribution, type MyContribution } from '../../src/lib/db/contributions';
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
 import { computeBadges, earnedCount } from '../../src/lib/profile/badges';
+import { providerMeta } from '../../src/lib/profile/provider';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
@@ -756,12 +757,10 @@ export default function ProfileScreen() {
                 <View style={styles.divider} />
                 <View style={styles.accountRow}>
                   <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-                    <Ionicons name="logo-google" size={16} color={COLORS.navy} />
+                    <Ionicons name={providerMeta(provider).icon} size={16} color={COLORS.navy} />
                   </View>
                   <Text style={styles.accountLabel}>Signed in with</Text>
-                  <Text style={styles.accountValue}>
-                    {provider.charAt(0).toUpperCase() + provider.slice(1)}
-                  </Text>
+                  <Text style={styles.accountValue}>{providerMeta(provider).label}</Text>
                 </View>
               </>
             )}
