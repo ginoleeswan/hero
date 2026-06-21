@@ -19,6 +19,33 @@ export default function Root({ children }: PropsWithChildren) {
         {/* Tints the iOS status-bar / browser chrome to match the deep-navy backdrop
             so the system UI blends with the page instead of flashing white. */}
         <meta name="theme-color" content="#0b1820" />
+
+        {/* SEO + social sharing. The OG image is an absolute URL on the
+            production domain — update it if you launch on a different host. */}
+        <title>Mythique — The Superhero Encyclopedia</title>
+        <meta
+          name="description"
+          content="Explore 3,000+ heroes and villains, settle who-would-win debates, and play the daily Guess the Hero. Mythique is the superhero encyclopedia."
+        />
+        <link rel="canonical" href="https://mythique.app/" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Mythique" />
+        <meta property="og:title" content="Mythique — The Superhero Encyclopedia" />
+        <meta
+          property="og:description"
+          content="Explore 3,000+ heroes and villains, settle who-would-win debates, and play the daily Guess the Hero."
+        />
+        <meta property="og:url" content="https://mythique.app/" />
+        <meta property="og:image" content="https://mythique.app/og.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Mythique — The Superhero Encyclopedia" />
+        <meta
+          name="twitter:description"
+          content="Explore 3,000+ heroes and villains, settle who-would-win debates, and play the daily Guess the Hero."
+        />
+        <meta name="twitter:image" content="https://mythique.app/og.png" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
         {/* Standalone web-app capability. When the site is added to the iOS Home
             Screen, `black-translucent` makes the status bar fully transparent and
             content flows behind it (true edge-to-edge, no grey scrim, no toolbar) —

@@ -185,6 +185,18 @@ export default function WebSignupScreen() {
         )}
       </Pressable>
 
+      <Text style={styles.legal as object}>
+        By creating an account you agree to our{' '}
+        <Text style={styles.legalLink as object} onPress={() => router.push('/terms')}>
+          Terms
+        </Text>{' '}
+        and{' '}
+        <Text style={styles.legalLink as object} onPress={() => router.push('/privacy')}>
+          Privacy Policy
+        </Text>
+        .
+      </Text>
+
       <Pressable onPress={() => router.push('/(auth)/login')} style={styles.switchRow as object}>
         <Text style={styles.switchText}>Already have an account? </Text>
         <Text style={styles.switchLink}>Sign in</Text>
@@ -478,6 +490,20 @@ const styles = StyleSheet.create({
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'center',
+    cursor: 'pointer',
+  } as object,
+  legal: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11.5,
+    lineHeight: 17,
+    color: 'rgba(41,60,67,0.45)',
+    textAlign: 'center',
+    marginBottom: 14,
+  } as object,
+  legalLink: {
+    fontFamily: 'Nunito_700Bold',
+    color: COLORS.navy,
+    textDecorationLine: 'underline',
     cursor: 'pointer',
   } as object,
   switchText: {
