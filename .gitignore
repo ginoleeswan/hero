@@ -104,3 +104,6 @@ scripts/cloudinary-onboarding.js
 
 # Portrait backup directory (created by migration script — local only)
 portrait-backup/
+
+# Supabase CLI local cache/metadata
+supabase/.temp/
