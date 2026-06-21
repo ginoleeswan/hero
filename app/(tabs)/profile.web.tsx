@@ -11,6 +11,10 @@ import {
 } from 'react-native';
 import { EditDisplayNameModal } from '../../src/components/ui/EditDisplayNameModal';
 import { BadgeDetailModal } from '../../src/components/ui/BadgeDetailModal';
+import {
+  GettingStartedCard,
+  type GettingStartedStep,
+} from '../../src/components/ui/GettingStartedCard';
 import { LOGO_MASK_PATH as HERO_LOGO_PATH } from '../../src/constants/logo';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -394,6 +398,38 @@ export default function WebProfileScreen() {
   });
   const badgesEarned = earnedCount(badges);
 
+  // Onboarding checklist — disappears once every step is complete.
+  const gettingStartedSteps: GettingStartedStep[] = [
+    {
+      id: 'favourite',
+      icon: 'heart-outline',
+      label: 'Save your first hero',
+      done: favourites.length > 0,
+      onPress: () => router.push('/explore'),
+    },
+    {
+      id: 'vote',
+      icon: 'flash-outline',
+      label: 'Call a daily battle',
+      done: (battle?.total ?? 0) > 0,
+      onPress: () => router.push('/versus'),
+    },
+    {
+      id: 'avatar',
+      icon: 'camera-outline',
+      label: 'Add a profile photo',
+      done: !!profile?.avatar_url,
+      onPress: pickAndUploadAvatar,
+    },
+    {
+      id: 'name',
+      icon: 'create-outline',
+      label: 'Set your display name',
+      done: !!profile?.display_name,
+      onPress: () => setShowEditName(true),
+    },
+  ];
+
   const handleUpdateName = async (newName: string) => {
     await updateDisplayName(newName);
     showToast('Display name updated');
@@ -530,6 +566,8 @@ export default function WebProfileScreen() {
           </View>
 
           <View style={mob.hairline} />
+
+          <GettingStartedCard steps={gettingStartedSteps} />
 
           {/* ── Battle Record ── */}
           {battle && battle.total > 0 && (
@@ -1115,6 +1153,8 @@ export default function WebProfileScreen() {
 
           {/* ── Main: Battle Record + My Favourites ── */}
           <View style={desk.main}>
+            <GettingStartedCard steps={gettingStartedSteps} />
+
             {battle && battle.total > 0 && (
               <View style={desk.battleBlock}>
                 <Text style={desk.sectionTitle}>Battle Record</Text>
@@ -1165,7 +1205,11 @@ export default function WebProfileScreen() {
                     key={b.id}
                     onPress={() => setSelectedBadge(b)}
                     style={
-                      [desk.badgeTile, desk.badgeTileBtn, !b.earned && desk.badgeTileLocked] as object
+                      [
+                        desk.badgeTile,
+                        desk.badgeTileBtn,
+                        !b.earned && desk.badgeTileLocked,
+                      ] as object
                     }
                   >
                     <View

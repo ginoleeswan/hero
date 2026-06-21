@@ -30,6 +30,10 @@ import { useProfileData } from '../../src/hooks/useProfileData';
 import { ChangePasswordModal } from '../../src/components/ui/ChangePasswordModal';
 import { EditDisplayNameModal } from '../../src/components/ui/EditDisplayNameModal';
 import { BadgeDetailModal } from '../../src/components/ui/BadgeDetailModal';
+import {
+  GettingStartedCard,
+  type GettingStartedStep,
+} from '../../src/components/ui/GettingStartedCard';
 import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
 import { describeContribution, type MyContribution } from '../../src/lib/db/contributions';
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
@@ -386,6 +390,38 @@ export default function ProfileScreen() {
   });
   const badgesEarned = earnedCount(badges);
 
+  // Onboarding checklist — disappears once every step is complete.
+  const gettingStartedSteps: GettingStartedStep[] = [
+    {
+      id: 'favourite',
+      icon: 'heart-outline',
+      label: 'Save your first hero',
+      done: favourites.length > 0,
+      onPress: () => router.push('/explore'),
+    },
+    {
+      id: 'vote',
+      icon: 'flash-outline',
+      label: 'Call a daily battle',
+      done: (battle?.total ?? 0) > 0,
+      onPress: () => router.push('/versus'),
+    },
+    {
+      id: 'avatar',
+      icon: 'camera-outline',
+      label: 'Add a profile photo',
+      done: !!profile?.avatar_url,
+      onPress: pickAndUploadAvatar,
+    },
+    {
+      id: 'name',
+      icon: 'create-outline',
+      label: 'Set your display name',
+      done: !!profile?.display_name,
+      onPress: () => setShowEditName(true),
+    },
+  ];
+
   const handleUnfavourite = (hero: FavouriteHero) => {
     if (!user) return;
     const confirm = () => {
@@ -564,6 +600,8 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.hairline} />
+
+        <GettingStartedCard steps={gettingStartedSteps} />
 
         {/* Battle Record — surfaces the user's matchup votes (Today's Battle). */}
         {battle && battle.total > 0 && (
