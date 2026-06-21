@@ -438,7 +438,10 @@ export function DailyGame() {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={[styles.scroll, { paddingTop: topPad, paddingBottom: insets.bottom + 20 }]}
+          contentContainerStyle={[
+            styles.scroll,
+            { paddingTop: topPad, paddingBottom: insets.bottom + 20 },
+          ]}
         >
           {headerRow}
           {showError ? loadingOrError : narrowBody}
