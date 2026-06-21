@@ -57,7 +57,7 @@ function HoloCard({
         portraitUrl={hero.portrait_url}
         contentFit="cover"
         contentPosition="top"
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, side === 'b' && c.mirror] as object}
       />
       <View style={[StyleSheet.absoluteFill, c.holo] as object} pointerEvents="none" />
       <View style={[StyleSheet.absoluteFill, c.grad] as object} pointerEvents="none" />
@@ -217,6 +217,8 @@ const c = StyleSheet.create({
     backgroundImage: 'linear-gradient(180deg, transparent 55%, rgba(8,12,24,0.92))',
   } as object,
   frame: { borderWidth: 1.5, borderRadius: 18 } as object,
+  // Mirror the right fighter so the two portraits face inward, toward each other.
+  mirror: { transform: [{ scaleX: -1 }] } as object,
   name: {
     position: 'absolute',
     left: 0,

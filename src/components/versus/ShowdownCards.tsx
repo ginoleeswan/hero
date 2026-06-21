@@ -52,7 +52,7 @@ function HoloCard({
         portraitUrl={hero.portrait_url}
         contentFit="cover"
         contentPosition="top"
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, side === 'b' && styles.mirror]}
       />
       {/* holographic sheen — the native stand-in for the web's blend-mode foil */}
       <LinearGradient
@@ -167,6 +167,8 @@ const styles = StyleSheet.create({
   },
   tiltL: { transform: [{ rotate: '-4deg' }] },
   tiltR: { transform: [{ rotate: '4deg' }] },
+  // Mirror the right fighter so the two portraits face inward, toward each other.
+  mirror: { transform: [{ scaleX: -1 }] },
   cardPressed: { opacity: 0.92 },
   cardDim: { opacity: 0.45 },
   name: {

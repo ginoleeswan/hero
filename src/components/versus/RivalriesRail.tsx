@@ -34,7 +34,7 @@ function RivalryCard({ r, onPress }: { r: Rivalry; onPress: () => void }) {
         portraitUrl={r.b.portrait_url}
         contentFit="cover"
         contentPosition="top"
-        style={styles.half}
+        style={[styles.half, styles.mirror]}
       />
       <LinearGradient
         colors={['rgba(231,115,51,0.12)', 'transparent', 'rgba(21,161,171,0.12)']}
@@ -110,6 +110,8 @@ const styles = StyleSheet.create({
   },
   cardPressed: { opacity: 0.9 },
   half: { width: CARD_W / 2, height: CARD_H },
+  // Mirror the right portrait so the pair faces inward, toward each other.
+  mirror: { transform: [{ scaleX: -1 }] },
   coin: {
     position: 'absolute',
     top: '50%',

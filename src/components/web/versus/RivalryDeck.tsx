@@ -39,7 +39,7 @@ function RivalryMini({ r, onPress }: { r: Rivalry; onPress: () => void }) {
           portraitUrl={r.b.portrait_url}
           contentFit="cover"
           contentPosition="top"
-          style={StyleSheet.absoluteFill}
+          style={[StyleSheet.absoluteFill, c.mirror] as object}
         />
       </View>
       <View style={[StyleSheet.absoluteFill, c.holo] as object} pointerEvents="none" />
@@ -123,6 +123,8 @@ const c = StyleSheet.create({
   } as object,
   miniHover: { transform: [{ translateY: -3 }] } as object,
   half: { flex: 1, height: '100%' },
+  // Mirror the right portrait so the pair faces inward, toward each other.
+  mirror: { transform: [{ scaleX: -1 }] } as object,
   holo: {
     backgroundImage:
       'linear-gradient(135deg, rgba(231,115,51,0.10), transparent, rgba(21,161,171,0.10))',
