@@ -15,6 +15,7 @@ import {
   GettingStartedCard,
   type GettingStartedStep,
 } from '../../src/components/ui/GettingStartedCard';
+import { useUniverseShareImage } from '../../src/hooks/useUniverseShareImage';
 import { LOGO_MASK_PATH as HERO_LOGO_PATH } from '../../src/constants/logo';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -313,8 +314,6 @@ export default function WebProfileScreen() {
     return () => document.removeEventListener('visibilitychange', handler);
   }, [refetch]);
 
-  if (!user) return <GuestWebProfileScreen />;
-
   const handleSignOut = async () => {
     setSigningOut(true);
     await signOut();
@@ -398,6 +397,29 @@ export default function WebProfileScreen() {
   });
   const badgesEarned = earnedCount(badges);
 
+  // Shareable "My Universe" poster — off-screen card + share().
+  const {
+    hiddenCard: universeCard,
+    share: shareUniverse,
+    busy: sharingUniverse,
+  } = useUniverseShareImage({
+    displayName: name,
+    avatarUri: profile?.avatar_url ?? null,
+    insight: tasteInsight,
+    chips: tasteChips,
+    topHeroes: favourites
+      .slice(0, 3)
+      .map((h) => ({ name: h.name, uri: h.portrait_url ?? h.image_url ?? null })),
+    savedCount: favourites.length,
+    badgesEarned,
+  });
+
+  const handleShareUniverse = async () => {
+    const result = await shareUniverse();
+    if (result === 'error') showToast('Could not create your card');
+    else if (result === 'downloaded') showToast('Saved your universe card');
+  };
+
   // Onboarding checklist — disappears once every step is complete.
   const gettingStartedSteps: GettingStartedStep[] = [
     {
@@ -458,6 +480,9 @@ export default function WebProfileScreen() {
   };
 
   const thumbSize = (width - 32 - 8) / 3;
+
+  // All hooks above run unconditionally; the guest view branches only here.
+  if (!user) return <GuestWebProfileScreen />;
 
   if (isMobile) {
     return (
@@ -563,6 +588,21 @@ export default function WebProfileScreen() {
               <Ionicons name="heart" size={14} color={COLORS.orange} />
               <Text style={mob.statPillText}>{loading ? '–' : favourites.length} saved heroes</Text>
             </View>
+
+            <Pressable
+              onPress={handleShareUniverse}
+              disabled={sharingUniverse}
+              style={mob.shareUniverseBtn as object}
+            >
+              {sharingUniverse ? (
+                <ActivityIndicator size="small" color={COLORS.navy} />
+              ) : (
+                <>
+                  <Ionicons name="share-outline" size={15} color={COLORS.navy} />
+                  <Text style={mob.shareUniverseText}>Share my universe</Text>
+                </>
+              )}
+            </Pressable>
           </View>
 
           <View style={mob.hairline} />
@@ -899,6 +939,7 @@ export default function WebProfileScreen() {
           onSubmit={handleUpdateName}
         />
         <BadgeDetailModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
+        {universeCard}
         <Toast message={toast.message} visible={toast.visible} />
       </View>
     );
@@ -1013,6 +1054,21 @@ export default function WebProfileScreen() {
                   {loading ? '–' : favourites.length} saved heroes
                 </Text>
               </View>
+
+              <Pressable
+                onPress={handleShareUniverse}
+                disabled={sharingUniverse}
+                style={desk.shareUniverseBtn as object}
+              >
+                {sharingUniverse ? (
+                  <ActivityIndicator size="small" color={COLORS.navy} />
+                ) : (
+                  <>
+                    <Ionicons name="share-outline" size={15} color={COLORS.navy} />
+                    <Text style={desk.shareUniverseText}>Share my universe</Text>
+                  </>
+                )}
+              </Pressable>
             </View>
 
             {/* Account card */}
@@ -1329,6 +1385,7 @@ export default function WebProfileScreen() {
         onSubmit={handleUpdateName}
       />
       <BadgeDetailModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
+      {universeCard}
       <Toast message={toast.message} visible={toast.visible} />
     </View>
   );
@@ -1512,6 +1569,26 @@ const mob = StyleSheet.create({
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
     color: COLORS.orange,
+  },
+  shareUniverseBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    marginTop: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#d8ccbb',
+    backgroundColor: '#fff',
+    cursor: 'pointer',
+  } as object,
+  shareUniverseText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.navy,
+    letterSpacing: 0.2,
   },
 
   hairline: {
@@ -1940,6 +2017,26 @@ const desk = StyleSheet.create({
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
     color: COLORS.orange,
+  },
+  shareUniverseBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    marginTop: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#d8ccbb',
+    backgroundColor: '#fff',
+    cursor: 'pointer',
+  } as object,
+  shareUniverseText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.navy,
+    letterSpacing: 0.2,
   },
 
   // Account card

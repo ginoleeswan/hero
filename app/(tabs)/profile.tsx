@@ -34,6 +34,7 @@ import {
   GettingStartedCard,
   type GettingStartedStep,
 } from '../../src/components/ui/GettingStartedCard';
+import { useUniverseShareImage } from '../../src/hooks/useUniverseShareImage';
 import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
 import { describeContribution, type MyContribution } from '../../src/lib/db/contributions';
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
@@ -293,8 +294,6 @@ export default function ProfileScreen() {
     refetch().finally(() => setRefreshing(false));
   }, [refetch]);
 
-  if (!user) return <GuestProfileScreen />;
-
   const handleSignOut = async () => {
     setSigningOut(true);
     await signOut();
@@ -390,6 +389,29 @@ export default function ProfileScreen() {
   });
   const badgesEarned = earnedCount(badges);
 
+  // Shareable "My Universe" poster — off-screen card + share().
+  const {
+    hiddenCard: universeCard,
+    share: shareUniverse,
+    busy: sharingUniverse,
+  } = useUniverseShareImage({
+    displayName: name,
+    avatarUri: profile?.avatar_url ?? null,
+    insight: tasteInsight,
+    chips: tasteChips,
+    topHeroes: favourites
+      .slice(0, 3)
+      .map((h) => ({ name: h.name, uri: h.portrait_url ?? h.image_url ?? null })),
+    savedCount: favourites.length,
+    badgesEarned,
+  });
+
+  const handleShareUniverse = async () => {
+    const result = await shareUniverse();
+    if (result === 'error') showToast('Could not create your card');
+    else if (result === 'unsupported') showToast('Sharing not available');
+  };
+
   // Onboarding checklist — disappears once every step is complete.
   const gettingStartedSteps: GettingStartedStep[] = [
     {
@@ -458,6 +480,9 @@ export default function ProfileScreen() {
     if (!result.error) showToast('Password updated');
     return result;
   };
+
+  // All hooks above run unconditionally; the guest view branches only here.
+  if (!user) return <GuestProfileScreen />;
 
   return (
     <View style={styles.container}>
@@ -597,6 +622,22 @@ export default function ProfileScreen() {
               {loading ? '–' : favourites.length} saved heroes
             </Text>
           </View>
+
+          <TouchableOpacity
+            onPress={handleShareUniverse}
+            disabled={sharingUniverse}
+            style={styles.shareUniverseBtn}
+            activeOpacity={0.8}
+          >
+            {sharingUniverse ? (
+              <ActivityIndicator size="small" color={COLORS.navy} />
+            ) : (
+              <>
+                <Ionicons name="share-outline" size={15} color={COLORS.navy} />
+                <Text style={styles.shareUniverseText}>Share my universe</Text>
+              </>
+            )}
+          </TouchableOpacity>
         </View>
 
         <View style={styles.hairline} />
@@ -924,6 +965,7 @@ export default function ProfileScreen() {
         onSubmit={handleUpdateName}
       />
       <BadgeDetailModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
+      {universeCard}
       <Toast message={toast.message} visible={toast.visible} />
     </View>
   );
@@ -1219,6 +1261,25 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
     color: COLORS.orange,
+  },
+  shareUniverseBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    marginTop: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#d8ccbb',
+    backgroundColor: '#fff',
+  },
+  shareUniverseText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.navy,
+    letterSpacing: 0.2,
   },
 
   // Hairline
