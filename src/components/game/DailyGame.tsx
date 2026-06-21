@@ -17,6 +17,7 @@ import {
   Platform,
   Share,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,6 +35,12 @@ const WEB_NAV_CLEARANCE = 64;
 const CARD_W = 156;
 const CARD_H = 208;
 
+// Desktop two-panel layout kicks in on wide web screens; the card grows and the
+// stickers fan out with more room. Mobile web + all native keep the column.
+const WIDE_BREAKPOINT = 960;
+const CARD_W_WIDE = 240;
+const CARD_H_WIDE = 320;
+
 // Fixed slot per clue category, anchored to the card's left/right edge (with a
 // little tuck-in via negative margins). Absolute, so each sticker peels into its
 // own spot and never reflows the others; staggered tuck-in lets them overlap a
@@ -44,6 +51,15 @@ const STICKER_SLOTS: Record<string, object> = {
   'Signature power': { right: '100%', marginRight: -18, top: 116 },
   'First appeared': { left: '100%', marginLeft: -14, top: 6 },
   Origin: { left: '100%', marginLeft: -6, top: 98 },
+};
+// Desktop variant — same five keys, retuned so the fan sits clear of the bigger
+// card with more spread.
+const STICKER_SLOTS_WIDE: Record<string, object> = {
+  Publisher: { right: '100%', marginRight: -10, top: -10 },
+  Alignment: { right: '100%', marginRight: 6, top: 96 },
+  'Signature power': { right: '100%', marginRight: -10, top: 196 },
+  'First appeared': { left: '100%', marginLeft: -6, top: 14 },
+  Origin: { left: '100%', marginLeft: 2, top: 168 },
 };
 const STICKER_TILT: Record<string, number> = {
   Publisher: 0,
@@ -110,6 +126,9 @@ export function DailyGame() {
     }
   }, [shareText]);
 
+  const { width } = useWindowDimensions();
+  const isWide = Platform.OS === 'web' && width >= WIDE_BREAKPOINT;
+
   const topPad = (Platform.OS === 'web' ? WEB_NAV_CLEARANCE : insets.top) + 14;
 
   // The case file sits under the card while playing, and moves down next to the
@@ -124,6 +143,233 @@ export function DailyGame() {
     </View>
   ) : null;
 
+  // --- Shared render helpers (used by both the mobile column and the desktop
+  // two-panel layout) so the card, pips, result and line-up aren't duplicated.
+
+  const renderCard = (cardStyle?: object) =>
+    hero ? (
+      <Pressable
+        disabled={!finished}
+        onPress={() =>
+          finished &&
+          router.push({
+            pathname: '/character/[id]',
+            params: {
+              id: hero.id,
+              imageUri: hero.portraitUrl ?? hero.imageUrl ?? undefined,
+            },
+          })
+        }
+        style={[styles.card, cardStyle, finished && (won ? styles.cardWon : styles.cardDone)]}
+      >
+        <MysteryPortrait
+          id={hero.id}
+          name={hero.name}
+          imageUrl={hero.imageUrl}
+          portraitUrl={hero.portraitUrl}
+          blur={blur}
+        />
+        {/* holographic sheen — same trick as the arena cards */}
+        <LinearGradient
+          colors={['rgba(255,255,255,0.18)', 'transparent', 'rgba(206,155,51,0.20)']}
+          locations={[0, 0.5, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.fill}
+          pointerEvents="none"
+        />
+        {finished ? (
+          <LinearGradient
+            colors={['transparent', 'rgba(8,12,20,0.94)']}
+            locations={[0.45, 1]}
+            style={styles.fill}
+            pointerEvents="none"
+          >
+            <View style={styles.cardFooter}>
+              <Text style={styles.cardName} numberOfLines={1}>
+                {hero.name}
+              </Text>
+              <Text style={styles.cardLink}>View profile →</Text>
+            </View>
+          </LinearGradient>
+        ) : null}
+      </Pressable>
+    ) : null;
+
+  const pipsRow = (
+    <View style={styles.pips}>
+      {Array.from({ length: maxGuesses }).map((_, i) => {
+        const g = guesses[i];
+        const active = i === guesses.length;
+        return (
+          <View
+            key={i}
+            style={[styles.pip, g && !g.correct && styles.pipMiss, active && styles.pipActive]}
+          />
+        );
+      })}
+    </View>
+  );
+
+  const resultBlock = hero ? (
+    <View style={styles.result}>
+      <Text style={styles.resultTitle}>{won ? 'Solved it!' : 'Out of guesses'}</Text>
+      <Text style={styles.resultSub}>
+        {won
+          ? `${hero.name} — in ${guesses.length} ${guesses.length === 1 ? 'guess' : 'guesses'}.`
+          : `It was ${hero.name}.`}
+      </Text>
+      {percentile != null ? (
+        <Text style={styles.percentile}>
+          You beat <Text style={styles.percentileNum}>{percentile}%</Text> of players today.
+        </Text>
+      ) : null}
+      <View style={styles.resultBtns}>
+        <Pressable onPress={() => setStatsOpen(true)} style={styles.statsBtn}>
+          <Ionicons name="stats-chart" size={16} color={COLORS.beige} />
+          <Text style={styles.statsLabel}>Stats</Text>
+        </Pressable>
+        <Pressable onPress={onShare} style={styles.shareBtn}>
+          <Ionicons name="share-social-outline" size={16} color="#fff" />
+          <Text style={styles.shareLabel}>{copied ? 'Copied!' : 'Share'}</Text>
+        </Pressable>
+      </View>
+      <Text style={styles.tomorrow}>A new hero drops tomorrow.</Text>
+    </View>
+  ) : null;
+
+  const lineupGrid = (optionExtraStyle?: object) => (
+    <>
+      <View style={styles.lineupHead}>
+        <Text style={styles.lineupTitle}>Who is it?</Text>
+        <Text style={styles.remaining}>
+          {remaining} {remaining === 1 ? 'guess' : 'guesses'} left
+        </Text>
+      </View>
+      <View style={styles.grid}>
+        {options.map((o) => {
+          const guessed = guessedIds.has(o.id);
+          return (
+            <Pressable
+              key={o.id}
+              disabled={guessed}
+              onPress={() => submitGuess(o.id, o.name)}
+              style={({ pressed }) => [
+                styles.option,
+                optionExtraStyle,
+                pressed && styles.optionPressed,
+                guessed && styles.optionEliminated,
+              ]}
+            >
+              <Text
+                numberOfLines={1}
+                style={[styles.optionText, guessed && styles.optionTextEliminated]}
+              >
+                {o.name}
+              </Text>
+              {guessed ? (
+                <Ionicons name="close" size={15} color="rgba(245,235,220,0.5)" />
+              ) : null}
+            </Pressable>
+          );
+        })}
+      </View>
+    </>
+  );
+
+  const headerRow = (
+    <View style={styles.header}>
+      <Pressable
+        onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        hitSlop={10}
+        style={styles.iconBtn}
+        accessibilityLabel="Back"
+      >
+        <Ionicons name="chevron-back" size={22} color={COLORS.beige} />
+      </Pressable>
+      <View style={styles.headerMid}>
+        <Text style={styles.kicker}>Daily Challenge</Text>
+        {puzzleNumber ? <Text style={styles.puzzleNo}>No. {puzzleNumber}</Text> : null}
+      </View>
+      {streak.current > 0 ? (
+        <View style={styles.streakPill}>
+          <Text style={styles.streakText}>🔥 {streak.current}</Text>
+        </View>
+      ) : (
+        <View style={styles.iconBtn} />
+      )}
+    </View>
+  );
+
+  const loadingOrError =
+    status === 'loading' ? (
+      <View style={styles.center}>
+        <ActivityIndicator color={COLORS.orange} />
+      </View>
+    ) : (
+      <Text style={styles.error}>
+        Couldn&#39;t load today&#39;s puzzle. Please try again later.
+      </Text>
+    );
+
+  const showError = status === 'loading' || status === 'error' || !hero;
+
+  // Desktop: two panels — a scaled card theatre on the left, gameplay on the
+  // right — inside a centred shell. Mobile web + native fall through to the
+  // single-column stage below.
+  const wideBody = (
+    <View style={stylesWide.panels}>
+      <View style={stylesWide.left}>
+        <View style={stylesWide.cardWrapWide}>
+          <View style={[styles.glow, stylesWide.glowWide, GLOW]} pointerEvents="none" />
+          {renderCard(stylesWide.cardWide)}
+          {clues.map((c) => (
+            <View
+              key={c.label}
+              style={[styles.slot, STICKER_SLOTS_WIDE[c.label] ?? STICKER_SLOTS_WIDE.Publisher]}
+              pointerEvents="none"
+            >
+              <ClueSticker clue={c} tilt={STICKER_TILT[c.label] ?? 0} />
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View style={stylesWide.right}>
+        {dossierBlock}
+        {!finished ? pipsRow : resultBlock}
+        {!finished ? <View style={stylesWide.lineup}>{lineupGrid(stylesWide.optionWide)}</View> : null}
+      </View>
+    </View>
+  );
+
+  // Single-column stage — the spotlit card flanked by clue stickers, case file
+  // beneath, line-up in a thumb-reach footer.
+  const narrowBody = (
+    <>
+      <View style={styles.stage}>
+        <View style={styles.cardWrap}>
+          <View style={[styles.glow, GLOW]} pointerEvents="none" />
+          {renderCard()}
+          {clues.map((c) => (
+            <View
+              key={c.label}
+              style={[styles.slot, STICKER_SLOTS[c.label] ?? STICKER_SLOTS.Publisher]}
+              pointerEvents="none"
+            >
+              <ClueSticker clue={c} tilt={STICKER_TILT[c.label] ?? 0} />
+            </View>
+          ))}
+        </View>
+
+        {dossierBlock}
+        {!finished ? pipsRow : resultBlock}
+      </View>
+
+      {!finished ? <View style={styles.footer}>{lineupGrid()}</View> : null}
+    </>
+  );
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -135,201 +381,14 @@ export function DailyGame() {
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
+          isWide && stylesWide.scroll,
           { paddingTop: topPad, paddingBottom: insets.bottom + 20 },
         ]}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-            hitSlop={10}
-            style={styles.iconBtn}
-            accessibilityLabel="Back"
-          >
-            <Ionicons name="chevron-back" size={22} color={COLORS.beige} />
-          </Pressable>
-          <View style={styles.headerMid}>
-            <Text style={styles.kicker}>Daily Challenge</Text>
-            {puzzleNumber ? <Text style={styles.puzzleNo}>No. {puzzleNumber}</Text> : null}
-          </View>
-          {streak.current > 0 ? (
-            <View style={styles.streakPill}>
-              <Text style={styles.streakText}>🔥 {streak.current}</Text>
-            </View>
-          ) : (
-            <View style={styles.iconBtn} />
-          )}
+        <View style={isWide ? stylesWide.shell : undefined}>
+          {headerRow}
+          {showError ? loadingOrError : isWide ? wideBody : narrowBody}
         </View>
-
-        {status === 'loading' ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={COLORS.orange} />
-          </View>
-        ) : status === 'error' || !hero ? (
-          <Text style={styles.error}>
-            Couldn&#39;t load today&#39;s puzzle. Please try again later.
-          </Text>
-        ) : (
-          <>
-            {/* Stage — the spotlit card flanked by clue stickers */}
-            <View style={styles.stage}>
-              <View style={styles.cardWrap}>
-                <View style={[styles.glow, GLOW]} pointerEvents="none" />
-                <Pressable
-                  disabled={!finished}
-                  onPress={() =>
-                    finished &&
-                    router.push({
-                      pathname: '/character/[id]',
-                      params: {
-                        id: hero.id,
-                        imageUri: hero.portraitUrl ?? hero.imageUrl ?? undefined,
-                      },
-                    })
-                  }
-                  style={[styles.card, finished && (won ? styles.cardWon : styles.cardDone)]}
-                >
-                  <MysteryPortrait
-                    id={hero.id}
-                    name={hero.name}
-                    imageUrl={hero.imageUrl}
-                    portraitUrl={hero.portraitUrl}
-                    blur={blur}
-                  />
-                  {/* holographic sheen — same trick as the arena cards */}
-                  <LinearGradient
-                    colors={['rgba(255,255,255,0.18)', 'transparent', 'rgba(206,155,51,0.20)']}
-                    locations={[0, 0.5, 1]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.fill}
-                    pointerEvents="none"
-                  />
-                  {finished ? (
-                    <LinearGradient
-                      colors={['transparent', 'rgba(8,12,20,0.94)']}
-                      locations={[0.45, 1]}
-                      style={styles.fill}
-                      pointerEvents="none"
-                    >
-                      <View style={styles.cardFooter}>
-                        <Text style={styles.cardName} numberOfLines={1}>
-                          {hero.name}
-                        </Text>
-                        <Text style={styles.cardLink}>View profile →</Text>
-                      </View>
-                    </LinearGradient>
-                  ) : null}
-                </Pressable>
-
-                {/* Each clue sits at its own fixed slot around the card, so a
-                    newly peeled-in sticker never nudges the others — a little
-                    overlap is intentional. */}
-                {clues.map((c) => (
-                  <View
-                    key={c.label}
-                    style={[styles.slot, STICKER_SLOTS[c.label] ?? STICKER_SLOTS.Publisher]}
-                    pointerEvents="none"
-                  >
-                    <ClueSticker clue={c} tilt={STICKER_TILT[c.label] ?? 0} />
-                  </View>
-                ))}
-              </View>
-
-              {/* Case file always sits under the card; below it, the progress
-                  pips while playing or the result once finished — all inside the
-                  centred stage so nothing jumps when the game ends. */}
-              {dossierBlock}
-
-              {!finished ? (
-                <View style={styles.pips}>
-                  {Array.from({ length: maxGuesses }).map((_, i) => {
-                    const g = guesses[i];
-                    const active = i === guesses.length;
-                    return (
-                      <View
-                        key={i}
-                        style={[
-                          styles.pip,
-                          g && !g.correct && styles.pipMiss,
-                          active && styles.pipActive,
-                        ]}
-                      />
-                    );
-                  })}
-                </View>
-              ) : (
-                <View style={styles.result}>
-                  <Text style={styles.resultTitle}>{won ? 'Solved it!' : 'Out of guesses'}</Text>
-                  <Text style={styles.resultSub}>
-                    {won
-                      ? `${hero.name} — in ${guesses.length} ${
-                          guesses.length === 1 ? 'guess' : 'guesses'
-                        }.`
-                      : `It was ${hero.name}.`}
-                  </Text>
-                  {percentile != null ? (
-                    <Text style={styles.percentile}>
-                      You beat <Text style={styles.percentileNum}>{percentile}%</Text> of players
-                      today.
-                    </Text>
-                  ) : null}
-                  <View style={styles.resultBtns}>
-                    <Pressable onPress={() => setStatsOpen(true)} style={styles.statsBtn}>
-                      <Ionicons name="stats-chart" size={16} color={COLORS.beige} />
-                      <Text style={styles.statsLabel}>Stats</Text>
-                    </Pressable>
-                    <Pressable onPress={onShare} style={styles.shareBtn}>
-                      <Ionicons name="share-social-outline" size={16} color="#fff" />
-                      <Text style={styles.shareLabel}>{copied ? 'Copied!' : 'Share'}</Text>
-                    </Pressable>
-                  </View>
-                  <Text style={styles.tomorrow}>A new hero drops tomorrow.</Text>
-                </View>
-              )}
-            </View>
-
-            {/* The line-up lives in a bottom footer (thumb reach) while playing;
-                once finished, the result is shown up in the stage instead. */}
-            {!finished ? (
-              <View style={styles.footer}>
-                <View style={styles.lineupHead}>
-                  <Text style={styles.lineupTitle}>Who is it?</Text>
-                  <Text style={styles.remaining}>
-                    {remaining} {remaining === 1 ? 'guess' : 'guesses'} left
-                  </Text>
-                </View>
-                <View style={styles.grid}>
-                  {options.map((o) => {
-                    const guessed = guessedIds.has(o.id);
-                    return (
-                      <Pressable
-                        key={o.id}
-                        disabled={guessed}
-                        onPress={() => submitGuess(o.id, o.name)}
-                        style={({ pressed }) => [
-                          styles.option,
-                          pressed && styles.optionPressed,
-                          guessed && styles.optionEliminated,
-                        ]}
-                      >
-                        <Text
-                          numberOfLines={1}
-                          style={[styles.optionText, guessed && styles.optionTextEliminated]}
-                        >
-                          {o.name}
-                        </Text>
-                        {guessed ? (
-                          <Ionicons name="close" size={15} color="rgba(245,235,220,0.5)" />
-                        ) : null}
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-            ) : null}
-          </>
-        )}
       </ScrollView>
 
       <StatsSheet
@@ -565,4 +624,37 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 14,
   },
+});
+
+// Desktop two-panel layout. Only used when isWide; the constituent pieces reuse
+// the shared `styles` above for everything that doesn't change between layouts.
+const stylesWide = StyleSheet.create({
+  scroll: { paddingHorizontal: 0 },
+  shell: {
+    flexGrow: 1,
+    width: '100%',
+    maxWidth: 1100,
+    alignSelf: 'center',
+    paddingHorizontal: 32,
+  },
+  panels: {
+    flexGrow: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 48,
+    paddingVertical: 24,
+  },
+  left: { flexBasis: '46%', alignItems: 'center', justifyContent: 'center' },
+  right: { flexBasis: '54%', maxWidth: 480, justifyContent: 'center' },
+  cardWrapWide: {
+    width: CARD_W_WIDE,
+    height: CARD_H_WIDE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardWide: { width: CARD_W_WIDE, height: CARD_H_WIDE },
+  glowWide: { width: 480, height: 480, marginLeft: -240, marginTop: -240, borderRadius: 240 },
+  lineup: { marginTop: 22 },
+  optionWide: { flexBasis: '31%' },
 });
