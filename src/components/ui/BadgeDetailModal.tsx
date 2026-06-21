@@ -44,7 +44,9 @@ export function BadgeDetailModal({ badge, onClose }: Props) {
             isWeb ? (styles.dialog as object) : styles.sheet,
             !isWeb && {
               transform: [
-                { translateY: slideAnim.interpolate({ inputRange: [0, 1], outputRange: [500, 0] }) },
+                {
+                  translateY: slideAnim.interpolate({ inputRange: [0, 1], outputRange: [500, 0] }),
+                },
               ],
             },
           ]}
