@@ -89,6 +89,26 @@ export function useAuth(): AuthState {
     }
   };
 
+  const syncAppleProfile = async (
+    user: User,
+    fullName?: { givenName?: string | null; familyName?: string | null } | null,
+  ) => {
+    try {
+      const displayName = [fullName?.givenName, fullName?.familyName]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+      if (!displayName) return; // Apple didn't return a name (subsequent sign-in)
+
+      const existing = await getProfile(user.id);
+      if (existing?.display_name) return; // never overwrite an existing name
+
+      await upsertProfile(user.id, { display_name: displayName });
+    } catch {
+      // non-fatal — profile sync failure shouldn't block sign-in
+    }
+  };
+
   const signInWithGoogle = async (): Promise<{ error: Error | null }> => {
     if (Platform.OS === 'web') {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -137,11 +157,21 @@ export function useAuth(): AuthState {
         return { error: new Error('No identity token from Apple') };
       }
 
-      const { error } = await supabase.auth.signInWithIdToken({
+      const {
+        data: { user: signedInUser },
+        error,
+      } = await supabase.auth.signInWithIdToken({
         provider: 'apple',
         token: credential.identityToken,
       });
-      return { error };
+      if (error) return { error };
+
+      // Apple only returns the user's name on the FIRST sign-in (and never in the
+      // token), so capture it here. Don't overwrite an existing display name.
+      if (signedInUser) {
+        await syncAppleProfile(signedInUser, credential.fullName);
+      }
+      return { error: null };
     } catch (err: unknown) {
       if ((err as { code?: string }).code === 'ERR_REQUEST_CANCELED') {
         return { error: null };
