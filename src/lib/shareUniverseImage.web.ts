@@ -162,7 +162,9 @@ async function renderPoster(d: UniversePosterData): Promise<HTMLCanvasElement> {
 
   const [avatarImg, ...heroImgs] = await Promise.all([
     d.avatarUri ? loadImage(d.avatarUri).catch(() => null) : Promise.resolve(null),
-    ...d.topHeroes.slice(0, 3).map((h) => (h.uri ? loadImage(h.uri).catch(() => null) : Promise.resolve(null))),
+    ...d.topHeroes
+      .slice(0, 3)
+      .map((h) => (h.uri ? loadImage(h.uri).catch(() => null) : Promise.resolve(null))),
   ]);
 
   // Background

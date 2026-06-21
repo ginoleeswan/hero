@@ -30,7 +30,12 @@ function HeroTile({ hero }: { hero: UniverseHero }) {
   return (
     <View style={s.tile}>
       {hero.uri ? (
-        <Image source={{ uri: hero.uri }} contentFit="cover" contentPosition="top" style={s.tileImg} />
+        <Image
+          source={{ uri: hero.uri }}
+          contentFit="cover"
+          contentPosition="top"
+          style={s.tileImg}
+        />
       ) : (
         <View style={[s.tileImg, s.tileFallback]}>
           <Text style={s.tileInitial}>{hero.name.charAt(0)}</Text>
