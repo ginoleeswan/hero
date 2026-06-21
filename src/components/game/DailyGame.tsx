@@ -152,7 +152,7 @@ export function DailyGame() {
     }
   }, [shareText]);
 
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const isWide = Platform.OS === 'web' && width >= WIDE_BREAKPOINT;
 
   const topPad = (Platform.OS === 'web' ? WEB_NAV_CLEARANCE : insets.top) + 14;
@@ -427,18 +427,23 @@ export function DailyGame() {
         style={styles.bg}
         pointerEvents="none"
       />
-      <ScrollView
-        contentContainerStyle={[
-          styles.scroll,
-          isWide && stylesWide.scroll,
-          { paddingTop: topPad, paddingBottom: insets.bottom + 20 },
-        ]}
-      >
-        <View style={isWide ? stylesWide.shell : undefined}>
-          {headerRow}
-          {showError ? loadingOrError : isWide ? wideBody : narrowBody}
+      {isWide ? (
+        // Desktop: a fixed, full-height frame — the stage fits the viewport and
+        // never scrolls.
+        <View style={[styles.scroll, stylesWide.frame, { height, paddingTop: topPad }]}>
+          <View style={stylesWide.shell}>
+            {headerRow}
+            {showError ? loadingOrError : wideBody}
+          </View>
         </View>
-      </ScrollView>
+      ) : (
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingTop: topPad, paddingBottom: insets.bottom + 20 }]}
+        >
+          {headerRow}
+          {showError ? loadingOrError : narrowBody}
+        </ScrollView>
+      )}
 
       {/* Cinematic vignette over the wide stage — frames the scene, clicks pass
           through. */}
@@ -684,7 +689,7 @@ const styles = StyleSheet.create({
 // Desktop two-panel layout. Only used when isWide; the constituent pieces reuse
 // the shared `styles` above for everything that doesn't change between layouts.
 const stylesWide = StyleSheet.create({
-  scroll: { paddingHorizontal: 0 },
+  frame: { overflow: 'hidden', paddingHorizontal: 0 },
   shell: {
     flexGrow: 1,
     width: '100%',
