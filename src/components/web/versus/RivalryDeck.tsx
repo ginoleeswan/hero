@@ -27,7 +27,7 @@ function RivalryMini({ r, onPress }: { r: Rivalry; onPress: () => void }) {
           imageUrl={r.a.image_url}
           portraitUrl={r.a.portrait_url}
           contentFit="cover"
-          contentPosition={{ top: 0, left: '36%' }}
+          contentPosition={{ top: 0, left: '68%' }}
           style={StyleSheet.absoluteFill}
         />
       </View>
@@ -38,7 +38,7 @@ function RivalryMini({ r, onPress }: { r: Rivalry; onPress: () => void }) {
           imageUrl={r.b.image_url}
           portraitUrl={r.b.portrait_url}
           contentFit="cover"
-          contentPosition={{ top: 0, left: '36%' }}
+          contentPosition={{ top: 0, left: '32%' }}
           style={[StyleSheet.absoluteFill, c.mirror] as object}
         />
       </View>
