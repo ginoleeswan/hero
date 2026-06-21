@@ -84,13 +84,13 @@ const GLOW = Platform.select({
 // the GLOW escape hatch above.
 const STAGE_BEAM = {
   backgroundImage:
-    'linear-gradient(180deg, rgba(245,235,220,0.17), rgba(231,115,51,0.07) 50%, rgba(231,115,51,0) 82%)',
-  clipPath: 'polygon(43% 0%, 57% 0%, 100% 100%, 0% 100%)',
-  filter: 'blur(7px)',
+    'linear-gradient(180deg, rgba(245,235,220,0.26), rgba(231,115,51,0.11) 48%, rgba(231,115,51,0) 80%)',
+  clipPath: 'polygon(44% 0%, 56% 0%, 100% 100%, 0% 100%)',
+  filter: 'blur(8px)',
 } as object;
 const STAGE_POOL = {
-  backgroundImage: 'radial-gradient(closest-side, rgba(231,115,51,0.36), rgba(231,115,51,0) 72%)',
-  filter: 'blur(6px)',
+  backgroundImage: 'radial-gradient(closest-side, rgba(231,115,51,0.5), rgba(231,115,51,0) 72%)',
+  filter: 'blur(7px)',
 } as object;
 const STAGE_REFLECT = {
   opacity: 0.26,
@@ -343,22 +343,45 @@ export function DailyGame() {
   // single-column stage below.
   const wideBody = (
     <View style={stylesWide.panels}>
-      <View style={stylesWide.left}>
-        <View style={stylesWide.cardWrapWide}>
-          <View style={[styles.glow, stylesWide.glowWide, GLOW]} pointerEvents="none" />
-          {renderCard(stylesWide.cardWide)}
-          {clues.map((c) => (
-            <View
-              key={c.label}
-              style={[styles.slot, STICKER_SLOTS_WIDE[c.label] ?? STICKER_SLOTS_WIDE.Publisher]}
-              pointerEvents="none"
-            >
-              <ClueSticker clue={c} tilt={STICKER_TILT[c.label] ?? 0} />
+      {/* Left — the reveal stage: a spotlight beam, a colossal ghosted puzzle
+          number, the spotlit card with its clue fan, and a floor reflection. */}
+      <View style={stylesWide.stage}>
+        <View style={[stylesWide.beam, STAGE_BEAM]} pointerEvents="none" />
+
+        <View style={stylesWide.cardArea}>
+          <View style={[stylesWide.pool, STAGE_POOL]} pointerEvents="none" />
+          <View style={stylesWide.cardWrapWide}>
+            <View style={[styles.glow, stylesWide.glowWide, GLOW]} pointerEvents="none" />
+            {renderCard(stylesWide.cardWide)}
+            {clues.map((c) => (
+              <View
+                key={c.label}
+                style={[styles.slot, STICKER_SLOTS_WIDE[c.label] ?? STICKER_SLOTS_WIDE.Publisher]}
+                pointerEvents="none"
+              >
+                <ClueSticker clue={c} tilt={STICKER_TILT[c.label] ?? 0} />
+              </View>
+            ))}
+          </View>
+
+          {/* Floor reflection — a flipped, masked echo of the card. */}
+          {hero ? (
+            <View style={[stylesWide.reflection, STAGE_REFLECT]} pointerEvents="none">
+              <View style={[styles.card, stylesWide.cardWide, stylesWide.cardFlip]}>
+                <MysteryPortrait
+                  id={hero.id}
+                  name={hero.name}
+                  imageUrl={hero.imageUrl}
+                  portraitUrl={hero.portraitUrl}
+                  blur={blur}
+                />
+              </View>
             </View>
-          ))}
+          ) : null}
         </View>
       </View>
 
+      {/* Right — the dossier, kept quiet and disciplined. */}
       <View style={stylesWide.right}>
         {dossierBlock}
         {!finished ? pipsRow : resultBlock}
@@ -416,6 +439,12 @@ export function DailyGame() {
           {showError ? loadingOrError : isWide ? wideBody : narrowBody}
         </View>
       </ScrollView>
+
+      {/* Cinematic vignette over the wide stage — frames the scene, clicks pass
+          through. */}
+      {isWide ? (
+        <View style={[StyleSheet.absoluteFill, STAGE_VIGNETTE]} pointerEvents="none" />
+      ) : null}
 
       <StatsSheet
         visible={statsOpen}
@@ -659,7 +688,7 @@ const stylesWide = StyleSheet.create({
   shell: {
     flexGrow: 1,
     width: '100%',
-    maxWidth: 1100,
+    maxWidth: 1200,
     alignSelf: 'center',
     paddingHorizontal: 32,
   },
@@ -668,11 +697,38 @@ const stylesWide = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 48,
+    gap: 40,
     paddingVertical: 24,
   },
-  left: { flexBasis: '46%', alignItems: 'center', justifyContent: 'center' },
-  right: { flexBasis: '54%', maxWidth: 480, justifyContent: 'center' },
+
+  // Left — the lit stage. Full-height, relative so the beam, ghost number and
+  // reflection can be positioned around the centred card.
+  stage: {
+    flexBasis: '54%',
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+    position: 'relative',
+  },
+  beam: {
+    position: 'absolute',
+    top: -24,
+    left: '50%',
+    width: 560,
+    height: 620,
+    marginLeft: -280,
+    zIndex: 0,
+  },
+  // The card and its satellites share a fixed-size box, dead-centre of the stage.
+  cardArea: {
+    width: CARD_W_WIDE,
+    height: CARD_H_WIDE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    zIndex: 2,
+  },
   cardWrapWide: {
     width: CARD_W_WIDE,
     height: CARD_H_WIDE,
@@ -680,7 +736,30 @@ const stylesWide = StyleSheet.create({
     justifyContent: 'center',
   },
   cardWide: { width: CARD_W_WIDE, height: CARD_H_WIDE },
-  glowWide: { width: 480, height: 480, marginLeft: -240, marginTop: -240, borderRadius: 240 },
+  glowWide: { width: 560, height: 560, marginLeft: -280, marginTop: -280, borderRadius: 280 },
+  pool: {
+    position: 'absolute',
+    bottom: -54,
+    left: '50%',
+    width: 460,
+    height: 150,
+    marginLeft: -230,
+    zIndex: 0,
+  },
+  reflection: {
+    position: 'absolute',
+    top: '100%',
+    marginTop: 6,
+    width: CARD_W_WIDE,
+    height: CARD_H_WIDE,
+  },
+  cardFlip: {
+    borderWidth: 0,
+    transform: [{ scaleY: -1 }],
+  },
+
+  // Right — the dossier. Quiet by design; the stage carries the drama.
+  right: { flexBasis: '46%', maxWidth: 470, justifyContent: 'center' },
   lineup: { marginTop: 22 },
   optionWide: { flexBasis: '31%' },
 });
