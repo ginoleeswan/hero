@@ -38,8 +38,8 @@ const CARD_H = 208;
 // Desktop two-panel layout kicks in on wide web screens; the card grows and the
 // stickers fan out with more room. Mobile web + all native keep the column.
 const WIDE_BREAKPOINT = 960;
-const CARD_W_WIDE = 240;
-const CARD_H_WIDE = 320;
+const CARD_W_WIDE = 288;
+const CARD_H_WIDE = 384;
 
 // Fixed slot per clue category, anchored to the card's left/right edge (with a
 // little tuck-in via negative margins). Absolute, so each sticker peels into its
@@ -55,11 +55,11 @@ const STICKER_SLOTS: Record<string, object> = {
 // Desktop variant — same five keys, retuned so the fan sits clear of the bigger
 // card with more spread.
 const STICKER_SLOTS_WIDE: Record<string, object> = {
-  Publisher: { right: '100%', marginRight: -10, top: -10 },
-  Alignment: { right: '100%', marginRight: 6, top: 96 },
-  'Signature power': { right: '100%', marginRight: -10, top: 196 },
-  'First appeared': { left: '100%', marginLeft: -6, top: 14 },
-  Origin: { left: '100%', marginLeft: 2, top: 168 },
+  Publisher: { right: '100%', marginRight: -6, top: -14 },
+  Alignment: { right: '100%', marginRight: 10, top: 118 },
+  'Signature power': { right: '100%', marginRight: -6, top: 248 },
+  'First appeared': { left: '100%', marginLeft: -2, top: 18 },
+  Origin: { left: '100%', marginLeft: 6, top: 210 },
 };
 const STICKER_TILT: Record<string, number> = {
   Publisher: 0,
@@ -76,6 +76,32 @@ const GLOW = Platform.select({
   },
   default: { backgroundColor: 'rgba(231,115,51,0.12)' },
 }) as object;
+
+// Desktop stage atmosphere (web-only — the wide layout is gated on web). These
+// turn the empty left half into a lit theatre: a spotlight beam down onto the
+// card, a warm pool at its base, a reflection on the floor and a vignette that
+// frames the whole scene. Cast as object to satisfy RN's style types, matching
+// the GLOW escape hatch above.
+const STAGE_BEAM = {
+  backgroundImage:
+    'linear-gradient(180deg, rgba(245,235,220,0.17), rgba(231,115,51,0.07) 50%, rgba(231,115,51,0) 82%)',
+  clipPath: 'polygon(43% 0%, 57% 0%, 100% 100%, 0% 100%)',
+  filter: 'blur(7px)',
+} as object;
+const STAGE_POOL = {
+  backgroundImage: 'radial-gradient(closest-side, rgba(231,115,51,0.36), rgba(231,115,51,0) 72%)',
+  filter: 'blur(6px)',
+} as object;
+const STAGE_REFLECT = {
+  opacity: 0.26,
+  maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0) 60%)',
+  WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0) 60%)',
+  filter: 'blur(1px)',
+} as object;
+const STAGE_VIGNETTE = {
+  backgroundImage:
+    'radial-gradient(ellipse 80% 72% at 38% 46%, rgba(5,9,13,0) 0%, rgba(5,9,13,0) 48%, rgba(5,9,13,0.6) 100%)',
+} as object;
 
 export function DailyGame() {
   const insets = useSafeAreaInsets();
@@ -267,9 +293,7 @@ export function DailyGame() {
               >
                 {o.name}
               </Text>
-              {guessed ? (
-                <Ionicons name="close" size={15} color="rgba(245,235,220,0.5)" />
-              ) : null}
+              {guessed ? <Ionicons name="close" size={15} color="rgba(245,235,220,0.5)" /> : null}
             </Pressable>
           );
         })}
@@ -338,7 +362,9 @@ export function DailyGame() {
       <View style={stylesWide.right}>
         {dossierBlock}
         {!finished ? pipsRow : resultBlock}
-        {!finished ? <View style={stylesWide.lineup}>{lineupGrid(stylesWide.optionWide)}</View> : null}
+        {!finished ? (
+          <View style={stylesWide.lineup}>{lineupGrid(stylesWide.optionWide)}</View>
+        ) : null}
       </View>
     </View>
   );
