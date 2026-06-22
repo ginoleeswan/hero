@@ -2,7 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, useSharedValue, useAnimatedStyle, withTiming, Easing, type SharedValue } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { COLORS } from '../../constants/colors';
 import type { TeamSide, RosterHero } from '../../lib/teamBattle';
 import { HeroBattleCard } from './HeroBattleCard';
@@ -35,14 +42,30 @@ function statWins(x: RosterHero, y: RosterHero): number {
 }
 
 /** A small tappable squad member; the active one wears a gold ring. */
-function BenchChip({ hero, tint, active, size, onPress }: { hero: RosterHero; tint: string; active: boolean; size: number; onPress: () => void }) {
+function BenchChip({
+  hero,
+  tint,
+  active,
+  size,
+  onPress,
+}: {
+  hero: RosterHero;
+  tint: string;
+  active: boolean;
+  size: number;
+  onPress: () => void;
+}) {
   const uri = hero.portrait_url ?? hero.image_url ?? undefined;
   const initials = useMemo(() => initialsOf(hero.name), [hero.name]);
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      style={[styles.chip, { width: size, height: size, borderColor: active ? GOLD : 'rgba(255,255,255,0.18)' }, active ? styles.chipActive : styles.chipIdle]}
+      style={[
+        styles.chip,
+        { width: size, height: size, borderColor: active ? GOLD : 'rgba(255,255,255,0.18)' },
+        active ? styles.chipActive : styles.chipIdle,
+      ]}
     >
       {uri ? (
         <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
@@ -56,7 +79,17 @@ function BenchChip({ hero, tint, active, size, onPress }: { hero: RosterHero; ti
 }
 
 /** One mirrored stat: A's value grows left, B's grows right; loser side dims. */
-function CompareRow({ label, a, b, p }: { label: string; a: number; b: number; p: SharedValue<number> }) {
+function CompareRow({
+  label,
+  a,
+  b,
+  p,
+}: {
+  label: string;
+  a: number;
+  b: number;
+  p: SharedValue<number>;
+}) {
   const total = a + b || 1;
   const aWin = a > b;
   const bWin = b > a;
@@ -66,11 +99,25 @@ function CompareRow({ label, a, b, p }: { label: string; a: number; b: number; p
     <View style={styles.cRow}>
       <Text style={[styles.cVal, styles.right, aWin ? { color: TINT_A } : null]}>{a}</Text>
       <View style={styles.cTrack}>
-        <Animated.View style={[styles.cFill, styles.cFillA, { backgroundColor: TINT_A, opacity: bWin ? 0.4 : 1 }, aStyle]} />
+        <Animated.View
+          style={[
+            styles.cFill,
+            styles.cFillA,
+            { backgroundColor: TINT_A, opacity: bWin ? 0.4 : 1 },
+            aStyle,
+          ]}
+        />
       </View>
       <Text style={styles.cLabel}>{label}</Text>
       <View style={styles.cTrack}>
-        <Animated.View style={[styles.cFill, styles.cFillB, { backgroundColor: TINT_B, opacity: aWin ? 0.4 : 1 }, bStyle]} />
+        <Animated.View
+          style={[
+            styles.cFill,
+            styles.cFillB,
+            { backgroundColor: TINT_B, opacity: aWin ? 0.4 : 1 },
+            bStyle,
+          ]}
+        />
       </View>
       <Text style={[styles.cVal, bWin ? { color: TINT_B } : null]}>{b}</Text>
     </View>
@@ -78,7 +125,19 @@ function CompareRow({ label, a, b, p }: { label: string; a: number; b: number; p
 }
 
 /** Head-to-head stat sheet for the two spotlighted heroes; re-animates on swap. */
-function HeroVsHero({ a, b, aWins, bWins, animate }: { a: RosterHero; b: RosterHero; aWins: number; bWins: number; animate: boolean }) {
+function HeroVsHero({
+  a,
+  b,
+  aWins,
+  bWins,
+  animate,
+}: {
+  a: RosterHero;
+  b: RosterHero;
+  aWins: number;
+  bWins: number;
+  animate: boolean;
+}) {
   const p = useSharedValue(animate ? 0 : 1);
   useEffect(() => {
     if (animate) {
@@ -105,7 +164,13 @@ function HeroVsHero({ a, b, aWins, bWins, animate }: { a: RosterHero; b: RosterH
         </Text>
       </View>
       {STATS.map(([label, key]) => (
-        <CompareRow key={label} label={label} a={Number(a[key]) || 0} b={Number(b[key]) || 0} p={p} />
+        <CompareRow
+          key={label}
+          label={label}
+          a={Number(a[key]) || 0}
+          b={Number(b[key]) || 0}
+          p={p}
+        />
       ))}
     </View>
   );
@@ -113,7 +178,15 @@ function HeroVsHero({ a, b, aWins, bWins, animate }: { a: RosterHero; b: RosterH
 
 /** Mobile clash body: two spotlight cards facing off, a tappable bench under
  *  each, and a head-to-head comparison of whoever is spotlighted. */
-export function MobileDuel({ sideA, sideB, animate }: { sideA: TeamSide; sideB: TeamSide; animate: boolean }) {
+export function MobileDuel({
+  sideA,
+  sideB,
+  animate,
+}: {
+  sideA: TeamSide;
+  sideB: TeamSide;
+  animate: boolean;
+}) {
   const { width } = useWindowDimensions();
   const [selA, setSelA] = useState(0);
   const [selB, setSelB] = useState(0);
@@ -130,8 +203,26 @@ export function MobileDuel({ sideA, sideB, animate }: { sideA: TeamSide; sideB: 
   return (
     <View style={styles.duel}>
       <View style={[styles.row, { gap }]}>
-        <Spotlight side={sideA} tint={TINT_A} sel={selA} setSel={setSelA} cardW={cardW} chip={chip} leads={aWins > bWins} animate={animate} />
-        <Spotlight side={sideB} tint={TINT_B} sel={selB} setSel={setSelB} cardW={cardW} chip={chip} leads={bWins > aWins} animate={animate} />
+        <Spotlight
+          side={sideA}
+          tint={TINT_A}
+          sel={selA}
+          setSel={setSelA}
+          cardW={cardW}
+          chip={chip}
+          leads={aWins > bWins}
+          animate={animate}
+        />
+        <Spotlight
+          side={sideB}
+          tint={TINT_B}
+          sel={selB}
+          setSel={setSelB}
+          cardW={cardW}
+          chip={chip}
+          leads={bWins > aWins}
+          animate={animate}
+        />
       </View>
       {a && b ? <HeroVsHero a={a} b={b} aWins={aWins} bWins={bWins} animate={animate} /> : null}
     </View>
@@ -161,16 +252,25 @@ function Spotlight({
   return (
     <View style={{ width: cardW }}>
       <Animated.View key={hero?.id} entering={animate ? FadeIn.duration(220) : undefined}>
-        {hero ? <HeroBattleCard hero={hero} tint={tint} index={sel} size={cardW} animate={false} /> : null}
+        {hero ? (
+          <HeroBattleCard hero={hero} tint={tint} index={sel} size={cardW} animate={false} />
+        ) : null}
         {leads ? (
           <View style={styles.crown}>
-            <Ionicons name="trophy" size={11} color="#1a1426" />
+            <Ionicons name="trophy" size={11} color={COLORS.deepNavy} />
           </View>
         ) : null}
       </Animated.View>
       <View style={styles.bench}>
         {side.roster.map((h, i) => (
-          <BenchChip key={h.id} hero={h} tint={tint} active={i === sel} size={chip} onPress={() => setSel(i)} />
+          <BenchChip
+            key={h.id}
+            hero={h}
+            tint={tint}
+            active={i === sel}
+            size={chip}
+            onPress={() => setSel(i)}
+          />
         ))}
       </View>
     </View>
@@ -182,10 +282,18 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'center' },
 
   bench: { flexDirection: 'row', gap: 6, marginTop: 10, justifyContent: 'center' },
-  chip: { borderRadius: 9, overflow: 'hidden', borderWidth: 1.5, backgroundColor: '#241a36' },
+  chip: { borderRadius: 9, overflow: 'hidden', borderWidth: 1.5, backgroundColor: '#1b2a30' },
   chipIdle: { opacity: 0.7 },
   chipActive: { opacity: 1, borderWidth: 2 },
-  chipFallback: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  chipFallback: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   chipInitials: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.beige },
 
   crown: {
@@ -205,7 +313,13 @@ const styles = StyleSheet.create({
   },
 
   compare: { marginTop: 22, width: '100%', maxWidth: 460, alignSelf: 'center' },
-  compareHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 10 },
+  compareHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+    gap: 10,
+  },
   cName: { flex: 1, fontFamily: 'Flame-Regular', fontSize: 15 },
   tally: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   tallyN: { fontFamily: 'Flame-Regular', fontSize: 18, color: 'rgba(245,235,220,0.5)' },
@@ -213,9 +327,22 @@ const styles = StyleSheet.create({
   right: { textAlign: 'right' },
   cRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   cVal: { width: 24, fontFamily: 'Nunito_700Bold', fontSize: 11, color: 'rgba(245,235,220,0.55)' },
-  cTrack: { flex: 1, height: 9, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.06)', overflow: 'hidden' },
+  cTrack: {
+    flex: 1,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
+  },
   cFill: { position: 'absolute', top: 0, bottom: 0 },
   cFillA: { right: 0, borderTopRightRadius: 5, borderBottomRightRadius: 5 },
   cFillB: { left: 0, borderTopLeftRadius: 5, borderBottomLeftRadius: 5 },
-  cLabel: { width: 40, textAlign: 'center', fontFamily: 'Nunito_700Bold', fontSize: 10, color: 'rgba(245,235,220,0.78)', letterSpacing: 0.4 },
+  cLabel: {
+    width: 40,
+    textAlign: 'center',
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: 'rgba(245,235,220,0.78)',
+    letterSpacing: 0.4,
+  },
 });

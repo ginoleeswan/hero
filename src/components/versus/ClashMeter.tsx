@@ -59,10 +59,24 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.14)',
   },
   fill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
-  gloss: { position: 'absolute', left: 0, right: 0, top: 0, height: '46%', backgroundColor: 'rgba(255,255,255,0.18)' },
+  gloss: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: '46%',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
   // The seam is a full-height marker centred on the boundary; the knob is the
   // glowing gold cap that visually divides the two factions.
-  seam: { position: 'absolute', top: 0, bottom: 0, width: 0, alignItems: 'center', justifyContent: 'center' },
+  seam: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   knob: {
     width: 4,
     height: 46,

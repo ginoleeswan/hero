@@ -53,7 +53,7 @@ export default function TeamClashScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#181323' },
+  root: { flex: 1, backgroundColor: COLORS.deepNavy },
   content: { flexGrow: 1 },
   center: { alignItems: 'center', justifyContent: 'center' },
 });

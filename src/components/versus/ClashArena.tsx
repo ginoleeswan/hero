@@ -161,7 +161,7 @@ function Flash({ animate }: { animate: boolean }) {
 function FactionBar({ nameA, nameB, animate }: { nameA: string; nameB: string; animate: boolean }) {
   return (
     <Animated.View entering={animate ? FadeIn.duration(360) : undefined} style={styles.faceoff}>
-      <LinearGradient colors={[TINT_A, '#1a1426']} style={styles.coinSm}>
+      <LinearGradient colors={[TINT_A, COLORS.deepNavy]} style={styles.coinSm}>
         <Text style={styles.coinSmTxt}>{crestInitials(nameA)}</Text>
       </LinearGradient>
       <Text style={[styles.faceName, { color: TINT_A }]} numberOfLines={1}>
@@ -171,7 +171,7 @@ function FactionBar({ nameA, nameB, animate }: { nameA: string; nameB: string; a
       <Text style={[styles.faceName, styles.right, { color: TINT_B }]} numberOfLines={1}>
         {nameB}
       </Text>
-      <LinearGradient colors={[TINT_B, '#1a1426']} style={styles.coinSm}>
+      <LinearGradient colors={[TINT_B, COLORS.deepNavy]} style={styles.coinSm}>
         <Text style={styles.coinSmTxt}>{crestInitials(nameB)}</Text>
       </LinearGradient>
     </Animated.View>
@@ -199,7 +199,7 @@ function FactionCrest({
       entering={animate ? FadeIn.delay(120).duration(360) : undefined}
       style={[styles.crest, reverse ? styles.crestReverse : null]}
     >
-      <LinearGradient colors={[tint, '#1a1426']} style={styles.coin}>
+      <LinearGradient colors={[tint, COLORS.deepNavy]} style={styles.coin}>
         <Text style={styles.coinTxt}>{initials}</Text>
       </LinearGradient>
       <View style={reverse ? styles.crestTextR : styles.crestText}>
@@ -419,7 +419,7 @@ function StatBreakdown({ result, animate }: { result: TeamBattleResult; animate:
 const styles = StyleSheet.create({
   stage: {
     flex: 1,
-    backgroundColor: '#100b1a',
+    backgroundColor: COLORS.deepNavy,
     paddingHorizontal: 16,
     alignItems: 'center',
     overflow: 'hidden',
