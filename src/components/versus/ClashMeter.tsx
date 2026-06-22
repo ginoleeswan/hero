@@ -32,40 +32,40 @@ export function ClashMeter({ splitA, tintA, tintB, animate, delay = 0 }: Props) 
   }, [splitA, animate, delay, charge]);
 
   const fillStyle = useAnimatedStyle(() => ({ width: `${charge.value}%` }));
-  const knobStyle = useAnimatedStyle(() => ({ left: `${charge.value}%` }));
+  const seamStyle = useAnimatedStyle(() => ({ left: `${charge.value}%` }));
 
   return (
-    <View style={[styles.track, { backgroundColor: tintB }]}>
-      <Animated.View style={[styles.fill, { backgroundColor: tintA }, fillStyle]}>
-        <View style={styles.gloss} pointerEvents="none" />
-      </Animated.View>
-      <Animated.View style={[styles.knob, knobStyle]} pointerEvents="none" />
+    <View style={styles.wrap}>
+      <View style={[styles.track, { backgroundColor: tintB }]}>
+        <Animated.View style={[styles.fill, { backgroundColor: tintA }, fillStyle]}>
+          <View style={styles.gloss} pointerEvents="none" />
+        </Animated.View>
+        <Animated.View style={[styles.seam, seamStyle]} pointerEvents="none">
+          <View style={styles.knob} />
+        </Animated.View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrap: { width: '100%', maxWidth: 380, alignSelf: 'center' },
   track: {
-    height: 30,
-    borderRadius: 15,
+    width: '100%',
+    height: 34,
+    borderRadius: 17,
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.14)',
   },
   fill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
-  gloss: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: '46%',
-    backgroundColor: 'rgba(255,255,255,0.18)',
-  },
+  gloss: { position: 'absolute', left: 0, right: 0, top: 0, height: '46%', backgroundColor: 'rgba(255,255,255,0.18)' },
+  // The seam is a full-height marker centred on the boundary; the knob is the
+  // glowing gold cap that visually divides the two factions.
+  seam: { position: 'absolute', top: 0, bottom: 0, width: 0, alignItems: 'center', justifyContent: 'center' },
   knob: {
-    position: 'absolute',
-    top: -5,
     width: 4,
-    height: 40,
+    height: 46,
     marginLeft: -2,
     borderRadius: 2,
     backgroundColor: COLORS.goldAccent,
