@@ -267,6 +267,31 @@ export async function generateVerdict(input: VerdictInput): Promise<string> {
   }
 }
 
+// --- Team battle verdicts ---------------------------------------------------
+export interface TeamVerdictInput {
+  teamAId: string; teamBId: string; teamA: string; teamB: string; splitA: number; splitB: number;
+}
+
+function teamVerdictFallback(input: TeamVerdictInput): string {
+  const { teamA, teamB, splitA, splitB } = input;
+  if (splitA === splitB) return `${teamA} and ${teamB} are dead even.`;
+  const winner = splitA > splitB ? teamA : teamB;
+  return `${winner} take it — synergy and stats favour them.`;
+}
+
+export async function generateTeamVerdict(input: TeamVerdictInput): Promise<string> {
+  try {
+    const { data, error } = await Promise.race([
+      supabase.functions.invoke<{ verdict?: string }>('generate-team-verdict', { body: input }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 9000)),
+    ]);
+    if (error || !data) return teamVerdictFallback(input);
+    return data.verdict?.trim() || teamVerdictFallback(input);
+  } catch {
+    return teamVerdictFallback(input);
+  }
+}
+
 // --- Wikidata entity summaries (admin review) -------------------------------
 // Label + description for a batch of QIDs, so the admin "Needs you" review can
 // show what each candidate actually is inline instead of linking out. Wikidata's
