@@ -6,7 +6,7 @@
 
 ## Summary
 
-Extend Versus from 1v1 into **team battles**: two rosters of 3–5 heroes clash, and
+Extend Versus from 1v1 into **team battles**: two rosters of up to 5 heroes clash, and
 the winner is decided by a **synergy + stats hybrid** — averaged composite
 powerstats plus a transparent synergy bonus that rewards *real* teams over random
 picks. The signature experience is a deck that **deals out** into two formations,
@@ -19,9 +19,11 @@ The feature ships in two phases sharing one resolution engine:
   featured teams, resolved end-to-end on a dedicated clash page. Leans on the
   existing daily-pick + verdict-cache + voting machinery. Stands alone and looks
   finished before any builder exists.
-- **Phase 2 — Build-a-Team draft.** Pick 3–5 heroes for your side (vs a featured
-  team or another drafted side), resolving into the *same* clash page and the
-  *same* `get_team_synergy` math.
+- **Phase 2 — Unified Battle Builder.** One picker that scales from 1v1 up to
+  5-per-side, asymmetric allowed (team vs 1), all from a single intuitive page. It
+  *generalizes the existing 1v1 picker* rather than adding a parallel flow, and
+  routes on commit by size — `1 × 1` to the existing arena, anything larger to the
+  team clash page — resolving via the *same* `get_team_synergy` math.
 
 Each phase is its own implementation plan. This spec is the shared design.
 
@@ -29,11 +31,15 @@ Each phase is its own implementation plan. This spec is the shared design.
 
 1. **Core mechanic:** synergy + stats hybrid (not pure stats, not crowd-only).
 2. **Roster source:** both featured (curated daily) and drafted, phased.
-3. **Team size:** flexible 3–5 per side.
-4. **Synergy rules:** canon teammate links + shared affiliation + role balance.
+3. **Team size:** flexible **1–5 per side** — 1v1 is the degenerate case of the same
+   builder; a "team" is any side with ≥2; sides may be asymmetric (e.g. 3 vs 1).
+4. **Synergy rules:** canon teammate links + shared affiliation + role balance. Synergy
+   is 0 for a side of 1 (no pairs) — no special-casing.
 5. **Signature UX:** deck deals out → synergy ignites → CLASH → tug-of-war meter → verdict + vote.
-6. **Routing:** a dedicated team-battle route launched from the existing hub — *not* an
-   extension of the 1v1 `/compare` page (its two path segments can't carry a roster).
+6. **Routing:** a dedicated team-battle *clash* route launched from the hub — *not* an
+   extension of the 1v1 `/compare/[hero]/[opponent]` clash page (its two path segments
+   can't carry a roster). The *builder*, by contrast, is a single unified picker that
+   produces either a 1v1 or a team battle and routes to the right clash page on commit.
 7. **DB philosophy:** the team layer is a **derived, rebuildable mirror** of the hero
    layer, with `heroes.teams[]` as the single source of truth.
 
@@ -184,9 +190,9 @@ Pure, DB-free, unit-testable (matching the testing convention). Sibling of `comp
 
 ```ts
 interface TeamSide {
-  team: { id: string; name: string; publisher: string | null; logo_url: string | null };
-  roster: Hero[];               // 3–5, with stat columns
-  synergy: SynergyBreakdown;    // from get_team_synergy
+  team: { id: string; name: string; publisher: string | null; logo_url: string | null } | null;
+  roster: Hero[];               // 1–5, with stat columns (1 = the solo/1v1 case)
+  synergy: SynergyBreakdown;    // from get_team_synergy; 0 for a roster of 1
 }
 interface TeamBattleResult {
   stats: StatResult[];          // per-stat composite winner (reuses StatResult shape)
@@ -199,7 +205,13 @@ function resolveTeamBattle(a: TeamSide, b: TeamSide): TeamBattleResult;
 
 - **Base composite:** per stat key, **average** across the roster (size-neutral — a
   5-roster does not auto-beat a 3-roster on raw stats; the size advantage is earned
-  through more synergy opportunities, not inflated totals).
+  through more synergy opportunities, not inflated totals). This also makes **team-vs-1**
+  meaningful: a lone powerhouse (averaged = its own stats) can still beat a weak trio,
+  while a balanced trio's synergy is its edge — "it takes a real team to take down a titan."
+- **Asymmetric & solo sides:** any side may be 1–5. A side of 1 averages itself and
+  carries synergy 0. A `1 × 1` battle is delegated to the existing `compareStats` path
+  (the builder routes it to `/compare/a/b`), so the proven 1v1 resolution is untouched;
+  `resolveTeamBattle` handles every case with ≥2 on either side.
 - **Synergy boost:** apply each side's `total_pct` to its composite total → `powerA` /
   `powerB`, normalized to the meter split.
 - **Per-stat winners** reuse the `StatResult` shape so the desktop composite breakdown can
@@ -224,9 +236,10 @@ function resolveTeamBattle(a: TeamSide, b: TeamSide): TeamBattleResult;
 
 | Route / file | Role | Phase |
 | --- | --- | --- |
-| `/versus` hub | + featured team-battle card; + "Build a Team" entry | 1 / 2 |
+| `/versus` hub | + featured team-battle card; + "Build a battle" entry | 1 / 2 |
 | `/versus/team/[battleId]` (+`.web`) | The clash page — deck-deal sequence | 1 |
-| `/versus/team/build` (+`.web`) | Draft flow → resolves into the clash page | 2 |
+| `/compare/pick` (+`.web`) — generalized | The unified Battle Builder (1–5 per side) | 2 |
+| `/compare/[hero]/[opponent]` (+`.web`) | Existing 1v1 arena — unchanged, the `1 × 1` target | — |
 | `src/lib/teamBattle.ts` | Composite + synergy engine | 1 |
 | `src/hooks/useTeamBattle.ts` | Shared native/web data hook | 1 |
 | `src/lib/db/teams.ts` | Roster + synergy + vote reads | 1 |
@@ -236,7 +249,38 @@ Reuses: the hub launcher and `useVersusHub` spine; the Battle Deck holo-card tok
 
 The `battleId` for a curated daily battle encodes the ordered featured pair (e.g.
 `avengers-vs-justice-league`); `getTodaysTeamBattle()` resolves it deterministically so
-votes/verdicts key naturally on the pair.
+votes/verdicts key naturally on the pair. A *drafted* battle hands its two rosters to the
+clash page via a `stashFighters`-style handoff (no shareable id needed until we add saved
+teams in a later phase).
+
+## The Unified Battle Builder (Phase 2)
+
+One picker, one mental model: **assemble each side, 1 to 5 heroes.** It *generalizes the
+existing 1v1 picker* (`/compare/pick`) rather than forking it, so 1v1 stays a first-class
+case of the same screen — no parallel flow to keep in sync.
+
+- **Two roster trays** (Side A / Side B) pinned at the top; tapping a side makes it
+  **active**, tapping a hero in the grid adds them to the active side's next slot, tapping
+  a slotted hero removes them. Asymmetric is just unequal trays (3 vs 1).
+- **Reuses the picker's building blocks** — `OpponentCard`, `HeroPeek`, the
+  `useHeroSearchInfinite` grid, the navy-stage/beige-sheet chrome — with multi-select
+  selection state layered on instead of single-tap-commits-and-leaves.
+- **Rails adapt to the active side's drafted members:** a **"Teammates"** rail (from
+  `hero_relationships`, kind `teammate`) and a **"Same affiliation"** rail surface as you
+  build, so assembling a real synergistic squad is one-tap. (The 1v1 case keeps the
+  existing Rivalries / Same Universe / Similar Power rails relative to the single fighter.)
+- **Live synergy preview:** as a side reaches ≥2, call `get_team_synergy` on its current
+  ids and show the climbing "+%" with its breakdown — synergy becomes legible *while you
+  build*, and rewards adding canon teammates in real time.
+- **Commit routes by size:** when both sides have ≥1, a **Battle** CTA appears. `1 × 1`
+  routes to `/compare/a/b` (the untouched 1v1 arena); anything larger routes to the team
+  clash page. The builder owns the destination decision.
+- **Entry points:** the hub's "Build a battle" action, plus a "Make it a team battle"
+  affordance on the existing pick/arena screens to cross-link the flows.
+
+This unified builder is the reason `resolveTeamBattle` accepts asymmetric and solo sides
+(see the engine section): the screen can produce any shape from 1v1 to 5v5, and the engine
+resolves all of them with one code path.
 
 ## The signature UX (the clash page)
 
@@ -284,10 +328,9 @@ render tests):
 
 ## Out of scope (Phase 1)
 
-- The draft / Build-a-Team flow and `/versus/team/build` (Phase 2).
-- Saved/persisted user teams (decide in Phase 2 — ephemeral handoff vs a `saved_teams`
-  table).
+- The Unified Battle Builder and the generalized `/compare/pick` (Phase 2).
+- Saved/persisted user teams (decide in Phase 2 — ephemeral `stashFighters`-style handoff
+  vs a `saved_teams` table).
 - Team battle stats on the profile (a future `get_my_team_battle_record`, mirroring the
   existing battle record).
 - Tournaments / brackets.
-```
