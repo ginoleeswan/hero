@@ -153,15 +153,21 @@ function DesktopDuel({
   return (
     <>
       <View style={styles.ddHeader}>
-        <FactionCrest name={nameA} tint={TINT_A} count={sideA.roster.length} align="A" animate={animate} />
+        <View style={styles.ddHeadSideL}>
+          <FactionCrest name={nameA} tint={TINT_A} count={sideA.roster.length} align="A" animate={animate} />
+        </View>
         <View style={styles.ddHeadCenter}>
           <ClashHeadline sideA={sideA} sideB={sideB} result={result} animate={animate} />
         </View>
-        <FactionCrest name={nameB} tint={TINT_B} count={sideB.roster.length} align="B" animate={animate} />
+        <View style={styles.ddHeadSideR}>
+          <FactionCrest name={nameB} tint={TINT_B} count={sideB.roster.length} align="B" animate={animate} />
+        </View>
       </View>
 
       <View style={styles.ddRow}>
-        <RosterColumn side={sideA} tint={TINT_A} sel={selA} setSel={setSelA} size={98} animate={animate} />
+        <View style={styles.ddRowSideL}>
+          <RosterColumn side={sideA} tint={TINT_A} sel={selA} setSel={setSelA} size={98} animate={animate} />
+        </View>
 
         <View style={styles.ddCenter}>
           <View style={styles.ddSpots}>
@@ -176,7 +182,9 @@ function DesktopDuel({
           <VerdictVotes result={result} sideA={sideA} sideB={sideB} nameA={nameA} nameB={nameB} tally={tally} onVote={onVote} animate={animate} />
         </View>
 
-        <RosterColumn side={sideB} tint={TINT_B} sel={selB} setSel={setSelB} size={98} flip animate={animate} />
+        <View style={styles.ddRowSideR}>
+          <RosterColumn side={sideB} tint={TINT_B} sel={selB} setSel={setSelB} size={98} flip animate={animate} />
+        </View>
       </View>
     </>
   );
@@ -370,10 +378,15 @@ const styles = StyleSheet.create({
   flash: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: GOLD, zIndex: 5 },
   container: { width: '100%', maxWidth: CONTAINER_W, alignSelf: 'center', zIndex: 1 },
 
-  /* ── desktop grand duel ── */
-  ddHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' },
+  /* ── desktop grand duel ── symmetric flex-1 / fixed-centre / flex-1 so the
+   * centre column is page-centred regardless of crest or roster widths. */
+  ddHeader: { flexDirection: 'row', alignItems: 'flex-start', width: '100%' },
+  ddHeadSideL: { flex: 1, alignItems: 'flex-start' },
+  ddHeadSideR: { flex: 1, alignItems: 'flex-end' },
   ddHeadCenter: { width: CENTER_W },
-  ddRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start', gap: 56, marginTop: 18 },
+  ddRow: { flexDirection: 'row', alignItems: 'flex-start', width: '100%', marginTop: 18 },
+  ddRowSideL: { flex: 1, alignItems: 'flex-end', paddingRight: 40 },
+  ddRowSideR: { flex: 1, alignItems: 'flex-start', paddingLeft: 40 },
   ddCol: { gap: 10 },
   ddCenter: { width: 480, alignItems: 'center' },
   ddSpots: { flexDirection: 'row', gap: 16, marginBottom: 22, justifyContent: 'center' },
