@@ -124,3 +124,22 @@ export async function castTeamBattleVote(
   }
   return toTally(data);
 }
+
+const DRAFT_COLS = 'id, name, portrait_url, image_url, intelligence, strength, speed, durability, power, combat';
+
+/**
+ * Fetch up to five heroes by id for a drafted battle side, returned in the same
+ * order as `ids` (Postgres `in()` does not preserve order). Missing ids are
+ * dropped. Degrades to `[]` on error — the clash page hides an empty side.
+ */
+export async function getDraftRoster(ids: string[]): Promise<RosterHero[]> {
+  const wanted = ids.slice(0, 5);
+  if (wanted.length === 0) return [];
+  const { data, error } = await supabase.from('heroes').select(DRAFT_COLS).in('id', wanted);
+  if (error) {
+    console.warn('[getDraftRoster] error:', error.message);
+    return [];
+  }
+  const byId = new Map((data ?? []).map((h) => [(h as RosterHero).id, h as unknown as RosterHero]));
+  return wanted.map((id) => byId.get(id)).filter((h): h is RosterHero => !!h);
+}
