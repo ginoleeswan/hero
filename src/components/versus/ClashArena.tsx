@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -14,6 +14,7 @@ import Animated, {
 import { COLORS } from '../../constants/colors';
 import type { TeamSide, TeamBattleResult } from '../../lib/teamBattle';
 import { HeroBattleCard } from './HeroBattleCard';
+import { HeroStatPanel } from './HeroStatPanel';
 import { ClashMeter } from './ClashMeter';
 
 const TINT_A = COLORS.red;
@@ -259,7 +260,7 @@ function FactionZone({
   );
 }
 
-/* ── Mobile roster: a tinted label over a 3-up card grid ──────────────────── */
+/* ── Mobile roster: a 3-up card grid; tap a hero to reveal their stats ────── */
 function MobileRoster({
   side,
   tint,
@@ -271,6 +272,8 @@ function MobileRoster({
   cardSize: number;
   animate: boolean;
 }) {
+  const [sel, setSel] = useState(0);
+  const selected = side.roster[sel] ?? side.roster[0];
   return (
     <View style={styles.mRoster}>
       <View style={styles.mLabel}>
@@ -278,6 +281,7 @@ function MobileRoster({
         <Text style={[styles.mLabelTxt, { color: tint }]} numberOfLines={1}>
           {side.team?.name}
         </Text>
+        <Text style={styles.mHint}>TAP TO COMPARE</Text>
       </View>
       <View style={styles.mGrid}>
         {side.roster.map((h, i) => (
@@ -288,9 +292,12 @@ function MobileRoster({
             index={i}
             size={cardSize}
             animate={animate}
+            selected={i === sel}
+            onPress={() => setSel(i)}
           />
         ))}
       </View>
+      {selected ? <HeroStatPanel key={selected.id} hero={selected} tint={tint} animate={animate} /> : null}
     </View>
   );
 }
@@ -544,7 +551,8 @@ const styles = StyleSheet.create({
   mRoster: { gap: 11 },
   mLabel: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   mDot: { width: 9, height: 9, borderRadius: 5 },
-  mLabelTxt: { fontFamily: 'Flame-Regular', fontSize: 16, letterSpacing: 0.3 },
+  mLabelTxt: { flex: 1, fontFamily: 'Flame-Regular', fontSize: 16, letterSpacing: 0.3 },
+  mHint: { fontFamily: 'Nunito_700Bold', fontSize: 9, letterSpacing: 1, color: 'rgba(245,235,220,0.4)' },
   mGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
 
   /* clash headline */
