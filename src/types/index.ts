@@ -8,6 +8,8 @@ export type UserProfile = Tables<'user_profiles'>;
 export type HeroNarrativeFact = Tables<'hero_narrative_facts'>;
 export type HeroTag = Tables<'hero_tags'>;
 export type HeroTagVocab = Tables<'hero_tag_vocab'>;
+export type Team = Tables<'teams'>;
+export type TeamMember = Tables<'team_members'>;
 
 // Narrowed category type (DB stores as string, but we know the valid values)
 export type HeroCategory = 'popular' | 'villain' | 'xmen';

@@ -117,7 +117,15 @@ export type Database = {
           target_field?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contributions_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contributor_stats: {
         Row: {
@@ -173,6 +181,30 @@ export type Database = {
           status?: string
           target?: number
           total_ingested?: number
+        }
+        Relationships: []
+      }
+      daily_game_results: {
+        Row: {
+          created_at: string
+          guesses: number | null
+          id: number
+          puzzle_date: string
+          won: boolean
+        }
+        Insert: {
+          created_at?: string
+          guesses?: number | null
+          id?: never
+          puzzle_date: string
+          won: boolean
+        }
+        Update: {
+          created_at?: string
+          guesses?: number | null
+          id?: never
+          puzzle_date?: string
+          won?: boolean
         }
         Relationships: []
       }
@@ -876,6 +908,117 @@ export type Database = {
         }
         Relationships: []
       }
+      team_battle_votes: {
+        Row: {
+          created_at: string
+          picked_team_id: string
+          team_a_id: string
+          team_b_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          picked_team_id: string
+          team_a_id: string
+          team_b_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          picked_team_id?: string
+          team_a_id?: string
+          team_b_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      team_members: {
+        Row: {
+          hero_id: string
+          rank: number | null
+          team_id: string
+        }
+        Insert: {
+          hero_id: string
+          rank?: number | null
+          team_id: string
+        }
+        Update: {
+          hero_id?: string
+          rank?: number | null
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_verdicts: {
+        Row: {
+          created_at: string
+          team_a_id: string
+          team_b_id: string
+          verdict: string
+        }
+        Insert: {
+          created_at?: string
+          team_a_id: string
+          team_b_id: string
+          verdict: string
+        }
+        Update: {
+          created_at?: string
+          team_a_id?: string
+          team_b_id?: string
+          verdict?: string
+        }
+        Relationships: []
+      }
+      teams: {
+        Row: {
+          id: string
+          is_featured: boolean
+          logo_url: string | null
+          member_count: number
+          name: string
+          popularity: number
+          publisher: string | null
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          is_featured?: boolean
+          logo_url?: string | null
+          member_count?: number
+          name: string
+          popularity?: number
+          publisher?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          is_featured?: boolean
+          logo_url?: string | null
+          member_count?: number
+          name?: string
+          popularity?: number
+          publisher?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       titles: {
         Row: {
           backdrop_url: string | null
@@ -1078,15 +1221,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _apply_hero_field: {
+        Args: { p_field: string; p_hero_id: string; p_value: string }
+        Returns: undefined
+      }
+      _contrib_field_type: { Args: { p_field: string }; Returns: string }
+      _parse_str_list: { Args: { p_raw: string }; Returns: string[] }
       admin_add_comicvine_heroes: {
         Args: { p_heroes: Json }
-        Returns: { comicvine_id: string; id: string }[]
+        Returns: {
+          comicvine_id: string
+          id: string
+        }[]
       }
       admin_cron_status: { Args: never; Returns: Json }
       admin_delete_campaign: { Args: { p_id: string }; Returns: number }
       admin_delete_hero: { Args: { p_hero_id: string }; Returns: number }
       admin_edit_hero: {
-        Args: { p_hero_id: string; p_kind: string; p_new_value: string; p_target_field: string }
+        Args: {
+          p_hero_id: string
+          p_kind: string
+          p_new_value: string
+          p_target_field: string
+        }
         Returns: Json
       }
       admin_merge_heroes: {
@@ -1095,15 +1252,18 @@ export type Database = {
       }
       admin_reenrich_hero: { Args: { p_id: string }; Returns: string }
       admin_reschedule_cron: {
-        Args: { p_jobname: string; p_schedule: string; p_limit?: number }
+        Args: { p_jobname: string; p_limit?: number; p_schedule: string }
         Returns: string
       }
       admin_retry_failed: { Args: never; Returns: number }
       admin_review_contribution: {
-        Args: { p_id: number; p_decision: string; p_reason: string }
+        Args: { p_decision: string; p_id: number; p_reason: string }
         Returns: Json
       }
-      admin_review_queue: { Args: { p_limit?: number; p_offset?: number }; Returns: Json }
+      admin_review_queue: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: Json
+      }
       admin_run_drain: { Args: { p_limit?: number }; Returns: string }
       admin_run_wikidata_enrich: { Args: { p_limit?: number }; Returns: string }
       admin_run_wikidata_resolve: {
@@ -1141,23 +1301,12 @@ export type Database = {
         Args: { p_a: string; p_b: string; p_picked: string }
         Returns: Json
       }
+      cast_team_battle_vote: {
+        Args: { p_a: string; p_b: string; p_picked: string }
+        Returns: Json
+      }
       catalog_distributions: { Args: never; Returns: Json }
       catalog_health: { Args: never; Returns: Json }
-      get_source_coverage: { Args: Record<PropertyKey, never>; Returns: Json }
-      find_duplicate_heroes: {
-        Args: { p_limit?: number }
-        Returns: {
-          name: string
-          hero_id: string
-          publisher: string
-          comicvine_id: string
-          superhero_api_id: string
-          issue_count: number
-          image_url: string
-          comicvine_status: string
-          wikidata_qid: string
-        }[]
-      }
       category_facet_counts: {
         Args: {
           p_alignment?: string
@@ -1168,6 +1317,20 @@ export type Database = {
           p_slug: string
         }
         Returns: Json
+      }
+      find_duplicate_heroes: {
+        Args: { p_limit?: number }
+        Returns: {
+          comicvine_id: string
+          comicvine_status: string
+          hero_id: string
+          image_url: string
+          issue_count: number
+          name: string
+          publisher: string
+          superhero_api_id: string
+          wikidata_qid: string
+        }[]
       }
       get_active_campaigns: {
         Args: { p_chars?: number; p_limit?: number }
@@ -1183,12 +1346,8 @@ export type Database = {
           label: string
         }[]
       }
-      get_daily_hero: { Args: { p_date?: string }; Returns: Json }
       get_daily_distribution: { Args: { p_date: string }; Returns: Json }
-      record_daily_result: {
-        Args: { p_date: string; p_won: boolean; p_guesses: number }
-        Returns: undefined
-      }
+      get_daily_hero: { Args: { p_date?: string }; Returns: Json }
       get_era_timeline: {
         Args: { per_era?: number }
         Returns: {
@@ -1260,6 +1419,29 @@ export type Database = {
           is_teammate: boolean
         }[]
       }
+      get_source_coverage: { Args: never; Returns: Json }
+      get_team_battle_tally: {
+        Args: { p_a: string; p_b: string }
+        Returns: Json
+      }
+      get_team_roster: {
+        Args: { p_limit?: number; p_team_id: string }
+        Returns: {
+          combat: number
+          durability: number
+          id: string
+          image_url: string
+          intelligence: number
+          name: string
+          portrait_url: string
+          power: number
+          publisher: string
+          rank: number
+          speed: number
+          strength: number
+        }[]
+      }
+      get_team_synergy: { Args: { p_hero_ids: string[] }; Returns: Json }
       get_top_rivalries: {
         Args: { p_limit?: number }
         Returns: {
@@ -1322,6 +1504,11 @@ export type Database = {
       heroes_aliases_text: { Args: { arr: string[] }; Returns: string }
       mark_hero_unresolved: { Args: { p_hero_id: string }; Returns: undefined }
       rebuild_hero_relationships: { Args: never; Returns: undefined }
+      rebuild_teams: { Args: never; Returns: undefined }
+      record_daily_result: {
+        Args: { p_date: string; p_guesses: number; p_won: boolean }
+        Returns: undefined
+      }
       register_film_match: {
         Args: {
           p_cv_name: string
@@ -1367,6 +1554,7 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      slugify_team: { Args: { p_name: string }; Returns: string }
       snapshot_catalog_health: { Args: never; Returns: undefined }
       submit_contribution: {
         Args: {
