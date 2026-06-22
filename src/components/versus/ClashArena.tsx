@@ -21,6 +21,11 @@ import { FACTION_A as TINT_A, FACTION_B as TINT_B } from './factionColors';
 const GOLD = COLORS.goldAccent;
 const STOPWORDS = new Set(['of', 'the', 'and', 'a', '&']);
 
+// Desktop stage geometry — a wide container so the two five-hero lineups can
+// spread across the flanks instead of clustering by the centre column.
+const CONTAINER_W = 1360;
+const CENTER_W = 360;
+
 // Beat timeline (ms): cards deal → synergy ignites → CLASH lands → meter charges.
 const T_SYNERGY = 760;
 const T_CLASH = 960;
@@ -61,7 +66,10 @@ export function ClashArena({
 
   const nameA = sideA.team?.name ?? 'Team A';
   const nameB = sideB.team?.name ?? 'Team B';
-  const cardSize = 86; // desktop faction zones; mobile sizes its own spotlight cards
+  // Desktop: size cards so each team's five form one full-width lineup row that
+  // fills its flank. Mobile sizes its own spotlight cards inside MobileDuel.
+  const zoneW = (Math.min(width, CONTAINER_W) - 32 - CENTER_W - 36) / 2;
+  const cardSize = Math.max(74, Math.min(112, Math.floor((zoneW - 4 * 10) / 5)));
 
   const headline = <ClashHeadline sideA={sideA} sideB={sideB} result={result} animate={animate} />;
   const verdict = (
@@ -438,9 +446,9 @@ const styles = StyleSheet.create({
     zIndex: 5,
   },
 
-  container: { width: '100%', maxWidth: 1120, alignSelf: 'center', zIndex: 1 },
+  container: { width: '100%', maxWidth: CONTAINER_W, alignSelf: 'center', zIndex: 1 },
   wideRow: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  centerWide: { width: 320 },
+  centerWide: { width: CENTER_W },
 
   /* mobile faceoff bar */
   faceoff: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 18 },
@@ -489,15 +497,10 @@ const styles = StyleSheet.create({
   },
   right: { textAlign: 'right' },
 
-  /* desktop faction zone */
-  zone: { flex: 1, gap: 16 },
-  cardWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    maxWidth: 288,
-    justifyContent: 'flex-end',
-  },
+  /* desktop faction zone — five cards spread across the flank (one row when the
+   * viewport is wide enough; wraps gracefully on narrower desktops) */
+  zone: { flex: 1, gap: 18 },
+  cardWrap: { width: '100%', flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'flex-end' },
   cardWrapR: { justifyContent: 'flex-start' },
 
   /* clash headline */
@@ -576,15 +579,15 @@ const styles = StyleSheet.create({
   /* breakdown */
   breakdown: {
     width: '100%',
-    maxWidth: 580,
+    maxWidth: 720,
     alignSelf: 'center',
-    marginTop: 40,
+    marginTop: 44,
     backgroundColor: 'rgba(255,255,255,0.035)',
     borderRadius: 20,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.09)',
-    paddingVertical: 22,
-    paddingHorizontal: 22,
+    paddingVertical: 26,
+    paddingHorizontal: 32,
   },
   breakdownTitle: {
     fontFamily: 'Flame-Regular',
