@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getTodaysMatchup, type TodaysMatchup } from '../lib/matchup';
 import { getTopRivalries, getIconicHeroes, type Rivalry, type Hero } from '../lib/db/heroes';
+import { getTodaysTeamBattle, type TodaysTeamBattle } from '../lib/db/teams';
 
 /**
  * Backing data for the Versus hub: today's featured battle, the curated
@@ -26,10 +27,17 @@ export function useVersusHub() {
     staleTime: 1000 * 60 * 30,
   });
 
+  const teamBattleQ = useQuery<TodaysTeamBattle | null>({
+    queryKey: ['versus', 'todaysTeamBattle'],
+    queryFn: getTodaysTeamBattle,
+    staleTime: 1000 * 60 * 60,
+  });
+
   return {
     matchup: matchupQ.data ?? null,
     rivalries: rivalriesQ.data ?? [],
     iconicPool: iconicQ.data ?? [],
     loading: matchupQ.isPending || rivalriesQ.isPending || iconicQ.isPending,
+    teamBattle: teamBattleQ.data ?? null,
   };
 }

@@ -20,7 +20,7 @@ import { RivalriesRail } from '../../src/components/versus/RivalriesRail';
 export default function VersusScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { matchup, rivalries, iconicPool, loading } = useVersusHub();
+  const { matchup, rivalries, iconicPool, loading, teamBattle } = useVersusHub();
 
   const openArena = (a: FighterArt, b: FighterArt) => {
     stashFighters(a, b);
@@ -106,6 +106,23 @@ export default function VersusScreen() {
           </View>
         </LinearGradient>
 
+        {/* ── Featured team battle ── */}
+        {teamBattle && (
+          <Pressable
+            style={styles.teamCard}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push(`/versus/team/${teamBattle.teamA.id}-vs-${teamBattle.teamB.id}`);
+            }}
+          >
+            <Text style={styles.teamEyebrow}>★ Team Battle ★</Text>
+            <Text style={styles.teamTitle} numberOfLines={1}>
+              {teamBattle.teamA.name} vs {teamBattle.teamB.name}
+            </Text>
+            <Text style={styles.teamCta}>Tap to see the clash →</Text>
+          </Pressable>
+        )}
+
         {/* ── Deck section: greatest rivalries ── */}
         <View style={styles.deckSec}>
           <RivalriesRail rivalries={rivalries} onOpen={openArena} />
@@ -164,6 +181,31 @@ const styles = StyleSheet.create({
   actText: { flex: 1 },
   actTitle: { fontFamily: 'Flame-Regular', fontSize: 14, color: COLORS.beige },
   actSub: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: 'rgba(245,235,220,0.55)' },
+
+  teamCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 18,
+    borderRadius: 18,
+    backgroundColor: 'rgba(206,155,51,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(206,155,51,0.4)',
+  },
+  teamEyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 2,
+    color: COLORS.goldAccent,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  teamTitle: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.beige },
+  teamCta: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.8)',
+    marginTop: 6,
+  },
 
   deckSec: { backgroundColor: COLORS.deepNavy, paddingTop: 28 },
 });
