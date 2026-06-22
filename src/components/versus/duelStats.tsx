@@ -1,6 +1,12 @@
 import { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, type SharedValue } from 'react-native-reanimated';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+  type SharedValue,
+} from 'react-native-reanimated';
 import type { RosterHero } from '../../lib/teamBattle';
 import { FACTION_A as TINT_A, FACTION_B as TINT_B } from './factionColors';
 
@@ -19,7 +25,17 @@ export function statWins(x: RosterHero, y: RosterHero): number {
 }
 
 /** One mirrored stat: A's value grows left, B's grows right; loser side dims. */
-function CompareRow({ label, a, b, p }: { label: string; a: number; b: number; p: SharedValue<number> }) {
+function CompareRow({
+  label,
+  a,
+  b,
+  p,
+}: {
+  label: string;
+  a: number;
+  b: number;
+  p: SharedValue<number>;
+}) {
   const total = a + b || 1;
   const aWin = a > b;
   const bWin = b > a;
@@ -29,11 +45,25 @@ function CompareRow({ label, a, b, p }: { label: string; a: number; b: number; p
     <View style={styles.cRow}>
       <Text style={[styles.cVal, styles.right, aWin ? { color: TINT_A } : null]}>{a}</Text>
       <View style={styles.cTrack}>
-        <Animated.View style={[styles.cFill, styles.cFillA, { backgroundColor: TINT_A, opacity: bWin ? 0.4 : 1 }, aStyle]} />
+        <Animated.View
+          style={[
+            styles.cFill,
+            styles.cFillA,
+            { backgroundColor: TINT_A, opacity: bWin ? 0.4 : 1 },
+            aStyle,
+          ]}
+        />
       </View>
       <Text style={styles.cLabel}>{label}</Text>
       <View style={styles.cTrack}>
-        <Animated.View style={[styles.cFill, styles.cFillB, { backgroundColor: TINT_B, opacity: aWin ? 0.4 : 1 }, bStyle]} />
+        <Animated.View
+          style={[
+            styles.cFill,
+            styles.cFillB,
+            { backgroundColor: TINT_B, opacity: aWin ? 0.4 : 1 },
+            bStyle,
+          ]}
+        />
       </View>
       <Text style={[styles.cVal, bWin ? { color: TINT_B } : null]}>{b}</Text>
     </View>
@@ -80,7 +110,13 @@ export function HeroVsHero({
         </Text>
       </View>
       {STATS.map(([label, key]) => (
-        <CompareRow key={label} label={label} a={Number(a[key]) || 0} b={Number(b[key]) || 0} p={p} />
+        <CompareRow
+          key={label}
+          label={label}
+          a={Number(a[key]) || 0}
+          b={Number(b[key]) || 0}
+          p={p}
+        />
       ))}
     </View>
   );
@@ -88,7 +124,13 @@ export function HeroVsHero({
 
 const styles = StyleSheet.create({
   compare: { width: '100%', maxWidth: 460, alignSelf: 'center' },
-  compareHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, gap: 10 },
+  compareHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+    gap: 10,
+  },
   cName: { flex: 1, fontFamily: 'Flame-Regular', fontSize: 15 },
   tally: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   tallyN: { fontFamily: 'Flame-Regular', fontSize: 18, color: 'rgba(245,235,220,0.5)' },
@@ -96,9 +138,22 @@ const styles = StyleSheet.create({
   right: { textAlign: 'right' },
   cRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   cVal: { width: 24, fontFamily: 'Nunito_700Bold', fontSize: 11, color: 'rgba(245,235,220,0.55)' },
-  cTrack: { flex: 1, height: 9, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.06)', overflow: 'hidden' },
+  cTrack: {
+    flex: 1,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
+  },
   cFill: { position: 'absolute', top: 0, bottom: 0 },
   cFillA: { right: 0, borderTopRightRadius: 5, borderBottomRightRadius: 5 },
   cFillB: { left: 0, borderTopLeftRadius: 5, borderBottomLeftRadius: 5 },
-  cLabel: { width: 40, textAlign: 'center', fontFamily: 'Nunito_700Bold', fontSize: 10, color: 'rgba(245,235,220,0.78)', letterSpacing: 0.4 },
+  cLabel: {
+    width: 40,
+    textAlign: 'center',
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: 'rgba(245,235,220,0.78)',
+    letterSpacing: 0.4,
+  },
 });

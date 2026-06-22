@@ -47,7 +47,11 @@ export function ClashMeter({ splitA, tintA, tintB, animate, delay = 0 }: Props) 
           style={styles.sheen}
           pointerEvents="none"
         />
-        <LinearGradient colors={['transparent', 'rgba(0,0,0,0.22)']} style={styles.shade} pointerEvents="none" />
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.22)']}
+          style={styles.shade}
+          pointerEvents="none"
+        />
       </View>
       <Animated.View style={[styles.seam, seamStyle]} pointerEvents="none">
         <View style={styles.knobGlow} />
@@ -72,7 +76,14 @@ const styles = StyleSheet.create({
   sheen: { position: 'absolute', left: 0, right: 0, top: 0, height: '62%' },
   shade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '48%' },
   // The seam sits above the (clipped) track so the knob can overflow its ends.
-  seam: { position: 'absolute', top: 0, bottom: 0, width: 0, alignItems: 'center', justifyContent: 'center' },
+  seam: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   knob: {
     width: 2.5,
     height: 34,

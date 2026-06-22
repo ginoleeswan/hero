@@ -51,7 +51,15 @@ interface Props {
   bottomInset?: number;
 }
 
-export function ClashArena({ sideA, sideB, result, tally, onVote, topInset = 24, bottomInset = 24 }: Props) {
+export function ClashArena({
+  sideA,
+  sideB,
+  result,
+  tally,
+  onVote,
+  topInset = 24,
+  bottomInset = 24,
+}: Props) {
   const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
   const animate = !reduced;
@@ -104,8 +112,18 @@ export function ClashArena({ sideA, sideB, result, tally, onVote, topInset = 24,
 function Atmosphere() {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <LinearGradient colors={[COLORS.navy, COLORS.deepNavy]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 0.85 }} style={StyleSheet.absoluteFill} />
-      <LinearGradient colors={['rgba(206,155,51,0.10)', 'transparent']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.spot} />
+      <LinearGradient
+        colors={[COLORS.navy, COLORS.deepNavy]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 0.85 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <LinearGradient
+        colors={['rgba(206,155,51,0.10)', 'transparent']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.spot}
+      />
       <LinearGradient colors={['transparent', 'rgba(0,0,0,0.45)']} style={styles.vignette} />
     </View>
   );
@@ -115,7 +133,10 @@ function Flash({ animate }: { animate: boolean }) {
   const v = useSharedValue(0);
   useEffect(() => {
     if (animate) {
-      v.value = withDelay(T_CLASH - 40, withSequence(withTiming(0.5, { duration: 110 }), withTiming(0, { duration: 440 })));
+      v.value = withDelay(
+        T_CLASH - 40,
+        withSequence(withTiming(0.5, { duration: 110 }), withTiming(0, { duration: 440 })),
+      );
     }
   }, [animate, v]);
   const style = useAnimatedStyle(() => ({ opacity: v.value }));
@@ -154,36 +175,87 @@ function DesktopDuel({
     <>
       <View style={styles.ddHeader}>
         <View style={styles.ddHeadSideL}>
-          <FactionCrest name={nameA} tint={TINT_A} count={sideA.roster.length} align="A" animate={animate} />
+          <FactionCrest
+            name={nameA}
+            tint={TINT_A}
+            count={sideA.roster.length}
+            align="A"
+            animate={animate}
+          />
         </View>
         <View style={styles.ddHeadCenter}>
           <ClashHeadline sideA={sideA} sideB={sideB} result={result} animate={animate} />
         </View>
         <View style={styles.ddHeadSideR}>
-          <FactionCrest name={nameB} tint={TINT_B} count={sideB.roster.length} align="B" animate={animate} />
+          <FactionCrest
+            name={nameB}
+            tint={TINT_B}
+            count={sideB.roster.length}
+            align="B"
+            animate={animate}
+          />
         </View>
       </View>
 
       <View style={styles.ddRow}>
         <View style={styles.ddRowSideL}>
-          <RosterColumn side={sideA} tint={TINT_A} sel={selA} setSel={setSelA} size={150} animate={animate} />
+          <RosterColumn
+            side={sideA}
+            tint={TINT_A}
+            sel={selA}
+            setSel={setSelA}
+            size={150}
+            animate={animate}
+          />
         </View>
 
         <View style={styles.ddCenter}>
           <View style={styles.ddSpots}>
-            <DuelSpot hero={a} tint={TINT_A} slot={selA} size={190} leads={aWins > bWins} animate={animate} />
-            <DuelSpot hero={b} tint={TINT_B} slot={selB} size={190} leads={bWins > aWins} flip animate={animate} />
+            <DuelSpot
+              hero={a}
+              tint={TINT_A}
+              slot={selA}
+              size={190}
+              leads={aWins > bWins}
+              animate={animate}
+            />
+            <DuelSpot
+              hero={b}
+              tint={TINT_B}
+              slot={selB}
+              size={190}
+              leads={bWins > aWins}
+              flip
+              animate={animate}
+            />
           </View>
           {a && b ? (
             <View style={styles.ddCompare}>
               <HeroVsHero a={a} b={b} aWins={aWins} bWins={bWins} animate={animate} />
             </View>
           ) : null}
-          <VerdictVotes result={result} sideA={sideA} sideB={sideB} nameA={nameA} nameB={nameB} tally={tally} onVote={onVote} animate={animate} />
+          <VerdictVotes
+            result={result}
+            sideA={sideA}
+            sideB={sideB}
+            nameA={nameA}
+            nameB={nameB}
+            tally={tally}
+            onVote={onVote}
+            animate={animate}
+          />
         </View>
 
         <View style={styles.ddRowSideR}>
-          <RosterColumn side={sideB} tint={TINT_B} sel={selB} setSel={setSelB} size={150} flip animate={animate} />
+          <RosterColumn
+            side={sideB}
+            tint={TINT_B}
+            sel={selB}
+            setSel={setSelB}
+            size={150}
+            flip
+            animate={animate}
+          />
         </View>
       </View>
     </>
@@ -227,8 +299,20 @@ function RosterColumn({
           { scale: isSel ? 1.07 : 1 },
         ];
         return (
-          <View key={h.id} style={{ marginTop: i === 0 ? 0 : -overlap, zIndex: isSel ? 50 : i, transform }}>
-            <HeroBattleCard hero={h} tint={tint} index={i} size={size} animate={animate} flip={flip} selected={isSel} onPress={() => setSel(i)} />
+          <View
+            key={h.id}
+            style={{ marginTop: i === 0 ? 0 : -overlap, zIndex: isSel ? 50 : i, transform }}
+          >
+            <HeroBattleCard
+              hero={h}
+              tint={tint}
+              index={i}
+              size={size}
+              animate={animate}
+              flip={flip}
+              selected={isSel}
+              onPress={() => setSel(i)}
+            />
           </View>
         );
       })}
@@ -254,8 +338,21 @@ function DuelSpot({
   animate: boolean;
 }) {
   return (
-    <Animated.View key={hero?.id} entering={animate ? FadeIn.duration(220) : undefined} style={{ width: size }}>
-      {hero ? <HeroBattleCard hero={hero} tint={tint} index={slot} size={size} animate={false} flip={flip} /> : null}
+    <Animated.View
+      key={hero?.id}
+      entering={animate ? FadeIn.duration(220) : undefined}
+      style={{ width: size }}
+    >
+      {hero ? (
+        <HeroBattleCard
+          hero={hero}
+          tint={tint}
+          index={slot}
+          size={size}
+          animate={false}
+          flip={flip}
+        />
+      ) : null}
       {leads ? (
         <View style={styles.crown}>
           <Ionicons name="trophy" size={12} color={COLORS.deepNavy} />
@@ -287,16 +384,34 @@ function FactionBar({ nameA, nameB, animate }: { nameA: string; nameB: string; a
 }
 
 /* ── Desktop faction crest (coin + name + member count) ───────────────────── */
-function FactionCrest({ name, tint, count, align, animate }: { name: string; tint: string; count: number; align: 'A' | 'B'; animate: boolean }) {
+function FactionCrest({
+  name,
+  tint,
+  count,
+  align,
+  animate,
+}: {
+  name: string;
+  tint: string;
+  count: number;
+  align: 'A' | 'B';
+  animate: boolean;
+}) {
   const initials = useMemo(() => crestInitials(name), [name]);
   const reverse = align === 'B';
   return (
-    <Animated.View entering={animate ? FadeIn.delay(120).duration(360) : undefined} style={[styles.crest, reverse ? styles.crestReverse : null]}>
+    <Animated.View
+      entering={animate ? FadeIn.delay(120).duration(360) : undefined}
+      style={[styles.crest, reverse ? styles.crestReverse : null]}
+    >
       <LinearGradient colors={[tint, COLORS.deepNavy]} style={styles.coin}>
         <Text style={styles.coinTxt}>{initials}</Text>
       </LinearGradient>
       <View style={reverse ? styles.crestTextR : styles.crestText}>
-        <Text style={[styles.crestName, { color: tint }, reverse ? styles.right : null]} numberOfLines={2}>
+        <Text
+          style={[styles.crestName, { color: tint }, reverse ? styles.right : null]}
+          numberOfLines={2}
+        >
           {name}
         </Text>
         <Text style={[styles.crestMeta, reverse ? styles.right : null]}>
@@ -308,12 +423,25 @@ function FactionCrest({ name, tint, count, align, animate }: { name: string; tin
 }
 
 /* ── The result: CLASH wordmark, score numerals, front-line meter, synergy ── */
-function ClashHeadline({ sideA, sideB, result, animate }: { sideA: TeamSide; sideB: TeamSide; result: TeamBattleResult; animate: boolean }) {
+function ClashHeadline({
+  sideA,
+  sideB,
+  result,
+  animate,
+}: {
+  sideA: TeamSide;
+  sideB: TeamSide;
+  result: TeamBattleResult;
+  animate: boolean;
+}) {
   const synA = Math.round(sideA.synergy.total_pct * 100);
   const synB = Math.round(sideB.synergy.total_pct * 100);
   return (
     <View style={styles.headline}>
-      <Animated.Text entering={animate ? ZoomIn.delay(T_CLASH).duration(300) : undefined} style={styles.clash}>
+      <Animated.Text
+        entering={animate ? ZoomIn.delay(T_CLASH).duration(300) : undefined}
+        style={styles.clash}
+      >
         CLASH
       </Animated.Text>
       <View style={styles.scoreRow}>
@@ -321,7 +449,13 @@ function ClashHeadline({ sideA, sideB, result, animate }: { sideA: TeamSide; sid
         <Text style={styles.scoreVs}>vs</Text>
         <Text style={[styles.score, { color: TINT_B }]}>{result.splitB}</Text>
       </View>
-      <ClashMeter splitA={result.splitA} tintA={TINT_A} tintB={TINT_B} animate={animate} delay={T_METER} />
+      <ClashMeter
+        splitA={result.splitA}
+        tintA={TINT_A}
+        tintB={TINT_B}
+        animate={animate}
+        delay={T_METER}
+      />
       <Animated.View entering={animate ? FadeIn.delay(T_SYNERGY) : undefined} style={styles.synRow}>
         <Text style={[styles.synPip, { color: TINT_A }]}>SYNERGY +{synA}%</Text>
         <Text style={[styles.synPip, { color: TINT_B }]}>+{synB}% SYNERGY</Text>
@@ -351,13 +485,27 @@ function VerdictVotes({
 }) {
   return (
     <View style={styles.verdictWrap}>
-      <Animated.View entering={animate ? FadeIn.delay(T_VERDICT) : undefined} style={styles.verdictBlock}>
+      <Animated.View
+        entering={animate ? FadeIn.delay(T_VERDICT) : undefined}
+        style={styles.verdictBlock}
+      >
         <Text style={styles.verdictEyebrow}>THE VERDICT</Text>
         <Text style={styles.verdict}>{result.verdict}</Text>
       </Animated.View>
-      <Animated.View entering={animate ? FadeIn.delay(T_VERDICT + 90) : undefined} style={styles.votes}>
-        <VoteButton tint={TINT_A} name={nameA} onPress={() => sideA.team && onVote(sideA.team.id)} />
-        <VoteButton tint={TINT_B} name={nameB} onPress={() => sideB.team && onVote(sideB.team.id)} />
+      <Animated.View
+        entering={animate ? FadeIn.delay(T_VERDICT + 90) : undefined}
+        style={styles.votes}
+      >
+        <VoteButton
+          tint={TINT_A}
+          name={nameA}
+          onPress={() => sideA.team && onVote(sideA.team.id)}
+        />
+        <VoteButton
+          tint={TINT_B}
+          name={nameB}
+          onPress={() => sideB.team && onVote(sideB.team.id)}
+        />
       </Animated.View>
       {tally && tally.total > 0 ? (
         <Text style={styles.tally}>
@@ -370,7 +518,14 @@ function VerdictVotes({
 
 function VoteButton({ tint, name, onPress }: { tint: string; name: string; onPress: () => void }) {
   return (
-    <Pressable style={({ pressed }) => [styles.voteBtn, { backgroundColor: tint }, pressed ? styles.votePressed : null]} onPress={onPress}>
+    <Pressable
+      style={({ pressed }) => [
+        styles.voteBtn,
+        { backgroundColor: tint },
+        pressed ? styles.votePressed : null,
+      ]}
+      onPress={onPress}
+    >
       <Text style={styles.voteTop}>VOTE</Text>
       <Text style={styles.voteName} numberOfLines={1}>
         {name}
@@ -380,10 +535,24 @@ function VoteButton({ tint, name, onPress }: { tint: string; name: string; onPre
 }
 
 const styles = StyleSheet.create({
-  stage: { flex: 1, backgroundColor: COLORS.deepNavy, paddingHorizontal: 16, alignItems: 'center', overflow: 'hidden' },
+  stage: {
+    flex: 1,
+    backgroundColor: COLORS.deepNavy,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
   spot: { position: 'absolute', left: 0, right: 0, top: 0, height: '55%' },
   vignette: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%' },
-  flash: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: GOLD, zIndex: 5 },
+  flash: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: GOLD,
+    zIndex: 5,
+  },
   container: { width: '100%', maxWidth: CONTAINER_W, alignSelf: 'center', zIndex: 1 },
 
   /* ── desktop grand duel ── symmetric flex-1 / fixed-centre / flex-1 so the
@@ -419,20 +588,49 @@ const styles = StyleSheet.create({
 
   /* mobile faceoff bar */
   faceoff: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 18 },
-  coinSm: { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(206,155,51,0.85)' },
+  coinSm: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(206,155,51,0.85)',
+  },
   coinSmTxt: { fontFamily: 'Flame-Regular', fontSize: 12, color: COLORS.beige },
   faceName: { flex: 1, fontFamily: 'Flame-Regular', fontSize: 15 },
-  faceVs: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: 'rgba(245,235,220,0.45)', textTransform: 'uppercase', letterSpacing: 1 },
+  faceVs: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: 'rgba(245,235,220,0.45)',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
 
   /* desktop crest */
   crest: { flexDirection: 'row', alignItems: 'center', gap: 11, flexShrink: 1 },
   crestReverse: { flexDirection: 'row-reverse' },
-  coin: { width: 46, height: 46, borderRadius: 13, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(206,155,51,0.85)' },
+  coin: {
+    width: 46,
+    height: 46,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(206,155,51,0.85)',
+  },
   coinTxt: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.beige, letterSpacing: 0.5 },
   crestText: { flexShrink: 1 },
   crestTextR: { flexShrink: 1, alignItems: 'flex-end' },
   crestName: { fontFamily: 'Flame-Regular', fontSize: 18, letterSpacing: 0.3 },
-  crestMeta: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: 'rgba(245,235,220,0.5)', letterSpacing: 1, textTransform: 'uppercase', marginTop: 2 },
+  crestMeta: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: 'rgba(245,235,220,0.5)',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
   right: { textAlign: 'right' },
 
   /* clash headline */
@@ -446,21 +644,65 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 18,
   },
-  scoreRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 16, marginTop: 4, marginBottom: 14 },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    gap: 16,
+    marginTop: 4,
+    marginBottom: 14,
+  },
   score: { fontFamily: 'Flame-Regular', fontSize: 48, lineHeight: 52 },
-  scoreVs: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(245,235,220,0.45)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 },
-  synRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', maxWidth: 360, marginTop: 12 },
+  scoreVs: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.45)',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  synRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    maxWidth: 360,
+    marginTop: 12,
+  },
   synPip: { fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 0.4 },
 
   /* verdict + votes */
   verdictWrap: { width: '100%', maxWidth: 380, alignSelf: 'center', marginTop: 24 },
   verdictBlock: { alignItems: 'center' },
-  verdictEyebrow: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 2.4, color: 'rgba(206,155,51,0.7)', textTransform: 'uppercase', marginBottom: 6 },
-  verdict: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.beige, textAlign: 'center', lineHeight: 20 },
+  verdictEyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 2.4,
+    color: 'rgba(206,155,51,0.7)',
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  verdict: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 14,
+    color: COLORS.beige,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
   votes: { flexDirection: 'row', gap: 12, marginTop: 18 },
   voteBtn: { flex: 1, borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
   votePressed: { opacity: 0.82 },
   voteTop: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#fff', letterSpacing: 1.5 },
-  voteName: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: 'rgba(255,255,255,0.82)', marginTop: 1 },
-  tally: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: 'rgba(245,235,220,0.6)', marginTop: 14, textAlign: 'center' },
+  voteName: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.82)',
+    marginTop: 1,
+  },
+  tally: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.6)',
+    marginTop: 14,
+    textAlign: 'center',
+  },
 });

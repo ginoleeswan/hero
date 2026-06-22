@@ -42,10 +42,18 @@ function BenchChip({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      style={[styles.chip, { width: size, height: size, borderColor: active ? GOLD : 'transparent' }, active ? styles.chipActive : styles.chipIdle]}
+      style={[
+        styles.chip,
+        { width: size, height: size, borderColor: active ? GOLD : 'transparent' },
+        active ? styles.chipActive : styles.chipIdle,
+      ]}
     >
       {uri ? (
-        <Image source={{ uri }} style={[StyleSheet.absoluteFill, flip ? styles.flip : null]} contentFit="cover" />
+        <Image
+          source={{ uri }}
+          style={[StyleSheet.absoluteFill, flip ? styles.flip : null]}
+          contentFit="cover"
+        />
       ) : (
         <View style={[styles.chipFallback, { backgroundColor: tint }]}>
           <Text style={styles.chipInitials}>{initials}</Text>
@@ -57,7 +65,15 @@ function BenchChip({
 
 /** Mobile clash body: two spotlight cards facing off, a tappable bench under
  *  each, and a head-to-head comparison of whoever is spotlighted. */
-export function MobileDuel({ sideA, sideB, animate }: { sideA: TeamSide; sideB: TeamSide; animate: boolean }) {
+export function MobileDuel({
+  sideA,
+  sideB,
+  animate,
+}: {
+  sideA: TeamSide;
+  sideB: TeamSide;
+  animate: boolean;
+}) {
   const { width } = useWindowDimensions();
   const [selA, setSelA] = useState(0);
   const [selB, setSelB] = useState(0);
@@ -74,8 +90,27 @@ export function MobileDuel({ sideA, sideB, animate }: { sideA: TeamSide; sideB: 
   return (
     <View style={styles.duel}>
       <View style={[styles.row, { gap }]}>
-        <Spotlight side={sideA} tint={TINT_A} sel={selA} setSel={setSelA} cardW={cardW} chip={chip} leads={aWins > bWins} animate={animate} />
-        <Spotlight side={sideB} tint={TINT_B} sel={selB} setSel={setSelB} cardW={cardW} chip={chip} leads={bWins > aWins} flip animate={animate} />
+        <Spotlight
+          side={sideA}
+          tint={TINT_A}
+          sel={selA}
+          setSel={setSelA}
+          cardW={cardW}
+          chip={chip}
+          leads={aWins > bWins}
+          animate={animate}
+        />
+        <Spotlight
+          side={sideB}
+          tint={TINT_B}
+          sel={selB}
+          setSel={setSelB}
+          cardW={cardW}
+          chip={chip}
+          leads={bWins > aWins}
+          flip
+          animate={animate}
+        />
       </View>
       {a && b ? (
         <View style={styles.compareWrap}>
@@ -111,7 +146,16 @@ function Spotlight({
   return (
     <View style={{ width: cardW }}>
       <Animated.View key={hero?.id} entering={animate ? FadeIn.duration(220) : undefined}>
-        {hero ? <HeroBattleCard hero={hero} tint={tint} index={sel} size={cardW} animate={false} flip={flip} /> : null}
+        {hero ? (
+          <HeroBattleCard
+            hero={hero}
+            tint={tint}
+            index={sel}
+            size={cardW}
+            animate={false}
+            flip={flip}
+          />
+        ) : null}
         {leads ? (
           <View style={styles.crown}>
             <Ionicons name="trophy" size={11} color={COLORS.deepNavy} />
@@ -120,7 +164,15 @@ function Spotlight({
       </Animated.View>
       <View style={styles.bench}>
         {side.roster.map((h, i) => (
-          <BenchChip key={h.id} hero={h} tint={tint} active={i === sel} size={chip} flip={flip} onPress={() => setSel(i)} />
+          <BenchChip
+            key={h.id}
+            hero={h}
+            tint={tint}
+            active={i === sel}
+            size={chip}
+            flip={flip}
+            onPress={() => setSel(i)}
+          />
         ))}
       </View>
     </View>
@@ -136,8 +188,22 @@ const styles = StyleSheet.create({
   bench: { flexDirection: 'row', gap: 6, marginTop: 10, justifyContent: 'center' },
   chip: { borderRadius: 9, overflow: 'hidden', borderWidth: 2, backgroundColor: '#1b2a30' },
   chipIdle: { opacity: 0.5 },
-  chipActive: { opacity: 1, shadowColor: GOLD, shadowOpacity: 0.7, shadowRadius: 7, shadowOffset: { width: 0, height: 0 } },
-  chipFallback: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  chipActive: {
+    opacity: 1,
+    shadowColor: GOLD,
+    shadowOpacity: 0.7,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  chipFallback: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   chipInitials: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.beige },
 
   crown: {

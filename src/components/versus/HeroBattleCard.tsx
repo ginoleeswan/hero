@@ -27,7 +27,16 @@ interface Props {
 /** A collectible card for one hero: a clean hairline edge, a soft team-coloured
  *  glow, a lineup pip, and a portrait → image → monogram fallback so a member
  *  with no art never renders blank. Tappable on mobile to spotlight the hero. */
-export function HeroBattleCard({ hero, tint, index, size, animate, onPress, selected, flip }: Props) {
+export function HeroBattleCard({
+  hero,
+  tint,
+  index,
+  size,
+  animate,
+  onPress,
+  selected,
+  flip,
+}: Props) {
   const uri = hero.portrait_url ?? hero.image_url ?? undefined;
   const initials = useMemo(
     () =>
@@ -43,17 +52,35 @@ export function HeroBattleCard({ hero, tint, index, size, animate, onPress, sele
   const face = (
     <View style={[styles.card, selected ? styles.cardSelected : null]}>
       {uri ? (
-        <Image source={{ uri }} style={[StyleSheet.absoluteFill, flip ? styles.flip : null]} contentFit="cover" transition={220} />
+        <Image
+          source={{ uri }}
+          style={[StyleSheet.absoluteFill, flip ? styles.flip : null]}
+          contentFit="cover"
+          transition={220}
+        />
       ) : (
         <LinearGradient colors={[tint, COLORS.deepNavy]} style={[styles.fill, styles.fallback]}>
           <Text style={styles.initials}>{initials}</Text>
         </LinearGradient>
       )}
-      <LinearGradient colors={['rgba(0,0,0,0.35)', 'transparent']} style={styles.topShade} pointerEvents="none" />
-      <View style={[styles.pip, { backgroundColor: selected ? COLORS.goldAccent : 'rgba(11,24,32,0.7)' }]}>
+      <LinearGradient
+        colors={['rgba(0,0,0,0.35)', 'transparent']}
+        style={styles.topShade}
+        pointerEvents="none"
+      />
+      <View
+        style={[
+          styles.pip,
+          { backgroundColor: selected ? COLORS.goldAccent : 'rgba(11,24,32,0.7)' },
+        ]}
+      >
         <Text style={[styles.pipTxt, selected ? styles.pipTxtSel : null]}>{index + 1}</Text>
       </View>
-      <LinearGradient colors={['transparent', 'rgba(0,0,0,0.88)']} style={styles.plate} pointerEvents="none">
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.88)']}
+        style={styles.plate}
+        pointerEvents="none"
+      >
         <Text style={styles.name} numberOfLines={1}>
           {hero.name}
         </Text>
@@ -63,10 +90,22 @@ export function HeroBattleCard({ hero, tint, index, size, animate, onPress, sele
 
   return (
     <Animated.View
-      entering={animate ? FadeInDown.delay(index * 80).duration(440).springify().damping(15) : undefined}
+      entering={
+        animate
+          ? FadeInDown.delay(index * 80)
+              .duration(440)
+              .springify()
+              .damping(15)
+          : undefined
+      }
       style={[
         styles.glow,
-        { width: size, height: Math.round((size * 9) / 7), shadowColor: selected ? COLORS.goldAccent : tint, shadowOpacity: selected ? 0.55 : 0.4 },
+        {
+          width: size,
+          height: Math.round((size * 9) / 7),
+          shadowColor: selected ? COLORS.goldAccent : tint,
+          shadowOpacity: selected ? 0.55 : 0.4,
+        },
       ]}
     >
       {onPress ? (
@@ -110,6 +149,14 @@ const styles = StyleSheet.create({
   },
   pipTxt: { fontFamily: 'Nunito_700Bold', fontSize: 9, color: COLORS.beige },
   pipTxtSel: { color: COLORS.deepNavy },
-  plate: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 7, paddingTop: 16, paddingBottom: 6 },
+  plate: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 7,
+    paddingTop: 16,
+    paddingBottom: 6,
+  },
   name: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: COLORS.beige, letterSpacing: 0.2 },
 });
