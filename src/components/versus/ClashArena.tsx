@@ -207,21 +207,23 @@ function RosterColumn({
   flip?: boolean;
   animate: boolean;
 }) {
+  // Fan the squad like a dealt hand: a gentle arc that reaches toward the centre
+  // duel, with a subtle per-card tilt. `dir` mirrors it for the right squad.
+  const n = side.roster.length;
+  const mid = (n - 1) / 2;
+  const dir = flip ? -1 : 1;
   return (
     <View style={styles.ddCol}>
-      {side.roster.map((h, i) => (
-        <HeroBattleCard
-          key={h.id}
-          hero={h}
-          tint={tint}
-          index={i}
-          size={size}
-          animate={animate}
-          flip={flip}
-          selected={i === sel}
-          onPress={() => setSel(i)}
-        />
-      ))}
+      {side.roster.map((h, i) => {
+        const d = i - mid;
+        const reach = mid > 0 ? (1 - Math.abs(d) / mid) * 26 : 0; // middle leans toward centre
+        const lift = i === sel ? 8 : 0; // the spotlit card pops out a touch further
+        return (
+          <View key={h.id} style={{ transform: [{ translateX: dir * (reach + lift) }, { rotate: `${dir * d * 3}deg` }] }}>
+            <HeroBattleCard hero={h} tint={tint} index={i} size={size} animate={animate} flip={flip} selected={i === sel} onPress={() => setSel(i)} />
+          </View>
+        );
+      })}
     </View>
   );
 }
