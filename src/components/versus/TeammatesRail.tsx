@@ -1,5 +1,4 @@
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { COLORS } from '../../constants/colors';
 import { OpponentCard } from '../compare/OpponentCard';
 
 interface Item { id: string; name: string; image_url?: string | null; portrait_url?: string | null; }
