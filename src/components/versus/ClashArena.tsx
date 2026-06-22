@@ -286,17 +286,17 @@ function RosterColumn({
   const mid = (n - 1) / 2;
   const dir = flip ? -1 : 1;
   const cardH = Math.round((size * 9) / 7);
-  const overlap = Math.round(cardH * 0.3);
+  const overlap = Math.round(cardH * 0.16); // light overlap — a spread fan, each card visible
   return (
     <View style={styles.ddCol}>
       {side.roster.map((h, i) => {
         const d = i - mid;
-        const reach = mid > 0 ? (1 - Math.abs(d) / mid) * 12 : 0; // middle leans toward centre
+        const reach = mid > 0 ? (1 - Math.abs(d) / mid) * 20 : 0; // arc bows toward the centre
         const isSel = i === sel;
-        // The spotlit card steps out of the fan toward the duel.
+        // A spread fan: tilt grows toward the ends; the spotlit card lifts out.
         const transform = [
           { translateX: dir * (reach + (isSel ? 28 : 0)) },
-          { rotate: `${dir * d * 3}deg` },
+          { rotate: `${dir * d * 5}deg` },
           { scale: isSel ? 1.08 : 1 },
         ];
         return (
@@ -565,8 +565,9 @@ const styles = StyleSheet.create({
   ddRow: { flexDirection: 'row', alignItems: 'flex-start', width: '100%', marginTop: 18 },
   // Rosters sit at the outer edges, directly under their crests, so the two
   // squads bookend the stage and the duel commands the centre.
-  ddRowSideL: { flex: 1, alignItems: 'flex-end', paddingRight: 44 },
-  ddRowSideR: { flex: 1, alignItems: 'flex-start', paddingLeft: 44 },
+  // Lift the squads up so they flank the score/meter header, not just the duel.
+  ddRowSideL: { flex: 1, alignItems: 'flex-end', paddingRight: 44, marginTop: -150 },
+  ddRowSideR: { flex: 1, alignItems: 'flex-start', paddingLeft: 44, marginTop: -150 },
   ddCol: { alignItems: 'center' },
   ddCenter: { width: 520, alignItems: 'center' },
   ddSpots: { flexDirection: 'row', gap: 16, marginBottom: 22, justifyContent: 'center' },
