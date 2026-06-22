@@ -20,12 +20,14 @@ interface Props {
   onPress?: () => void;
   /** Highlights the card with a gold edge + glow (the spotlit hero). */
   selected?: boolean;
+  /** Mirror the portrait so a right-side hero faces in toward the left team. */
+  flip?: boolean;
 }
 
 /** A collectible card for one hero: a clean hairline edge, a soft team-coloured
  *  glow, a lineup pip, and a portrait → image → monogram fallback so a member
  *  with no art never renders blank. Tappable on mobile to spotlight the hero. */
-export function HeroBattleCard({ hero, tint, index, size, animate, onPress, selected }: Props) {
+export function HeroBattleCard({ hero, tint, index, size, animate, onPress, selected, flip }: Props) {
   const uri = hero.portrait_url ?? hero.image_url ?? undefined;
   const initials = useMemo(
     () =>
@@ -41,7 +43,7 @@ export function HeroBattleCard({ hero, tint, index, size, animate, onPress, sele
   const face = (
     <View style={[styles.card, selected ? styles.cardSelected : null]}>
       {uri ? (
-        <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
+        <Image source={{ uri }} style={[StyleSheet.absoluteFill, flip ? styles.flip : null]} contentFit="cover" transition={220} />
       ) : (
         <LinearGradient colors={[tint, COLORS.deepNavy]} style={[styles.fill, styles.fallback]}>
           <Text style={styles.initials}>{initials}</Text>
@@ -91,6 +93,7 @@ const styles = StyleSheet.create({
   },
   cardSelected: { borderWidth: 1.5, borderColor: COLORS.goldAccent },
   fill: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
+  flip: { transform: [{ scaleX: -1 }] },
   fallback: { alignItems: 'center', justifyContent: 'center' },
   initials: { fontFamily: 'Flame-Regular', fontSize: 22, color: 'rgba(255,255,255,0.92)' },
   topShade: { position: 'absolute', top: 0, left: 0, right: 0, height: '30%' },

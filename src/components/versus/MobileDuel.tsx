@@ -13,9 +13,8 @@ import Animated, {
 import { COLORS } from '../../constants/colors';
 import type { TeamSide, RosterHero } from '../../lib/teamBattle';
 import { HeroBattleCard } from './HeroBattleCard';
+import { FACTION_A as TINT_A, FACTION_B as TINT_B } from './factionColors';
 
-const TINT_A = COLORS.red;
-const TINT_B = COLORS.blue;
 const GOLD = COLORS.goldAccent;
 
 const STATS: [string, keyof RosterHero][] = [
@@ -47,12 +46,14 @@ function BenchChip({
   tint,
   active,
   size,
+  flip,
   onPress,
 }: {
   hero: RosterHero;
   tint: string;
   active: boolean;
   size: number;
+  flip: boolean;
   onPress: () => void;
 }) {
   const uri = hero.portrait_url ?? hero.image_url ?? undefined;
@@ -68,7 +69,7 @@ function BenchChip({
       ]}
     >
       {uri ? (
-        <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
+        <Image source={{ uri }} style={[StyleSheet.absoluteFill, flip ? styles.flip : null]} contentFit="cover" />
       ) : (
         <View style={[styles.chipFallback, { backgroundColor: tint }]}>
           <Text style={styles.chipInitials}>{initials}</Text>
@@ -221,6 +222,7 @@ export function MobileDuel({
           cardW={cardW}
           chip={chip}
           leads={bWins > aWins}
+          flip
           animate={animate}
         />
       </View>
@@ -237,6 +239,7 @@ function Spotlight({
   cardW,
   chip,
   leads,
+  flip = false,
   animate,
 }: {
   side: TeamSide;
@@ -246,6 +249,7 @@ function Spotlight({
   cardW: number;
   chip: number;
   leads: boolean;
+  flip?: boolean;
   animate: boolean;
 }) {
   const hero = side.roster[sel] ?? side.roster[0];
@@ -253,7 +257,7 @@ function Spotlight({
     <View style={{ width: cardW }}>
       <Animated.View key={hero?.id} entering={animate ? FadeIn.duration(220) : undefined}>
         {hero ? (
-          <HeroBattleCard hero={hero} tint={tint} index={sel} size={cardW} animate={false} />
+          <HeroBattleCard hero={hero} tint={tint} index={sel} size={cardW} animate={false} flip={flip} />
         ) : null}
         {leads ? (
           <View style={styles.crown}>
@@ -269,6 +273,7 @@ function Spotlight({
             tint={tint}
             active={i === sel}
             size={chip}
+            flip={flip}
             onPress={() => setSel(i)}
           />
         ))}
@@ -280,6 +285,7 @@ function Spotlight({
 const styles = StyleSheet.create({
   duel: { width: '100%', marginTop: 26 },
   row: { flexDirection: 'row', justifyContent: 'center' },
+  flip: { transform: [{ scaleX: -1 }] },
 
   bench: { flexDirection: 'row', gap: 6, marginTop: 10, justifyContent: 'center' },
   chip: { borderRadius: 9, overflow: 'hidden', borderWidth: 2, backgroundColor: '#1b2a30' },

@@ -16,9 +16,8 @@ import type { TeamSide, TeamBattleResult } from '../../lib/teamBattle';
 import { HeroBattleCard } from './HeroBattleCard';
 import { MobileDuel } from './MobileDuel';
 import { ClashMeter } from './ClashMeter';
+import { FACTION_A as TINT_A, FACTION_B as TINT_B } from './factionColors';
 
-const TINT_A = COLORS.red;
-const TINT_B = COLORS.blue;
 const GOLD = COLORS.goldAccent;
 const STOPWORDS = new Set(['of', 'the', 'and', 'a', '&']);
 
@@ -249,6 +248,7 @@ function FactionZone({
             index={i}
             size={cardSize}
             animate={animate}
+            flip={align === 'B'}
           />
         ))}
       </View>
