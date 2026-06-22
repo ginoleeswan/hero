@@ -53,7 +53,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.14)',
   },
   fill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
-  gloss: { position: 'absolute', left: 0, right: 0, top: 0, height: '46%', backgroundColor: 'rgba(255,255,255,0.18)' },
+  gloss: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: '46%',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
   knob: {
     position: 'absolute',
     top: -5,

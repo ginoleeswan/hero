@@ -7,7 +7,14 @@ const noSyn: SynergyBreakdown = {
   total_pct: 0,
 };
 const hero = (id: string, s: number) => ({
-  id, name: id, intelligence: s, strength: s, speed: s, durability: s, power: s, combat: s,
+  id,
+  name: id,
+  intelligence: s,
+  strength: s,
+  speed: s,
+  durability: s,
+  power: s,
+  combat: s,
 });
 const side = (ids: [string, number][], total_pct = 0): TeamSide => ({
   team: { id: 'x', name: 'X', publisher: null, logo_url: null },
@@ -22,7 +29,14 @@ describe('resolveTeamBattle', () => {
   });
 
   it('averages stats — a 3-roster of 60s does not beat a solo 80 on raw stats', () => {
-    const r = resolveTeamBattle(side([['s', 80]]), side([['a', 60], ['b', 60], ['c', 60]]));
+    const r = resolveTeamBattle(
+      side([['s', 80]]),
+      side([
+        ['a', 60],
+        ['b', 60],
+        ['c', 60],
+      ]),
+    );
     expect(r.stats[0].winner).toBe('A'); // 80 avg vs 60 avg
     expect(r.winsA).toBe(6);
   });
@@ -38,9 +52,22 @@ describe('resolveTeamBattle', () => {
   });
 
   it('treats null stats as 0', () => {
-    const a: TeamSide = { team: null, roster: [{ id: 'a', name: 'a',
-      intelligence: null, strength: null, speed: null, durability: null, power: null, combat: null }],
-      synergy: noSyn };
+    const a: TeamSide = {
+      team: null,
+      roster: [
+        {
+          id: 'a',
+          name: 'a',
+          intelligence: null,
+          strength: null,
+          speed: null,
+          durability: null,
+          power: null,
+          combat: null,
+        },
+      ],
+      synergy: noSyn,
+    };
     const r = resolveTeamBattle(a, side([['b', 10]]));
     expect(r.winsB).toBe(6);
   });

@@ -5,7 +5,10 @@ function normalizeKey(a: string, b: string): [string, string] {
 }
 
 /** Read the cached AI verdict for a team pair. Null on miss/error. */
-export async function getCachedTeamVerdict(teamAId: string, teamBId: string): Promise<string | null> {
+export async function getCachedTeamVerdict(
+  teamAId: string,
+  teamBId: string,
+): Promise<string | null> {
   const [a, b] = normalizeKey(teamAId, teamBId);
   const { data } = await supabase
     .from('team_verdicts')

@@ -269,7 +269,12 @@ export async function generateVerdict(input: VerdictInput): Promise<string> {
 
 // --- Team battle verdicts ---------------------------------------------------
 export interface TeamVerdictInput {
-  teamAId: string; teamBId: string; teamA: string; teamB: string; splitA: number; splitB: number;
+  teamAId: string;
+  teamBId: string;
+  teamA: string;
+  teamB: string;
+  splitA: number;
+  splitB: number;
 }
 
 function teamVerdictFallback(input: TeamVerdictInput): string {

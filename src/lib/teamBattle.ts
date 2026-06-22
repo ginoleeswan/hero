@@ -7,10 +7,16 @@ export interface SynergyBreakdown {
   total_pct: number;
 }
 export interface RosterHero {
-  id: string; name: string;
-  portrait_url?: string | null; image_url?: string | null;
-  intelligence: number | null; strength: number | null; speed: number | null;
-  durability: number | null; power: number | null; combat: number | null;
+  id: string;
+  name: string;
+  portrait_url?: string | null;
+  image_url?: string | null;
+  intelligence: number | null;
+  strength: number | null;
+  speed: number | null;
+  durability: number | null;
+  power: number | null;
+  combat: number | null;
 }
 export interface TeamSide {
   team: { id: string; name: string; publisher: string | null; logo_url: string | null } | null;
@@ -18,11 +24,22 @@ export interface TeamSide {
   synergy: SynergyBreakdown;
 }
 export interface TeamStatResult {
-  key: string; label: string; color: string; avgA: number; avgB: number; winner: 'A' | 'B' | 'tie';
+  key: string;
+  label: string;
+  color: string;
+  avgA: number;
+  avgB: number;
+  winner: 'A' | 'B' | 'tie';
 }
 export interface TeamBattleResult {
-  stats: TeamStatResult[]; powerA: number; powerB: number;
-  splitA: number; splitB: number; winsA: number; winsB: number; verdict: string;
+  stats: TeamStatResult[];
+  powerA: number;
+  powerB: number;
+  splitA: number;
+  splitB: number;
+  winsA: number;
+  winsB: number;
+  verdict: string;
 }
 
 const STAT_CONFIG = [

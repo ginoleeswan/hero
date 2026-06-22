@@ -36,7 +36,14 @@ export function HeroBattleCard({ hero, tint, index, size, animate }: Props) {
 
   return (
     <Animated.View
-      entering={animate ? FadeInDown.delay(index * 80).duration(440).springify().damping(15) : undefined}
+      entering={
+        animate
+          ? FadeInDown.delay(index * 80)
+              .duration(440)
+              .springify()
+              .damping(15)
+          : undefined
+      }
       style={[styles.glow, { width: size, height: Math.round((size * 9) / 7), shadowColor: tint }]}
     >
       <LinearGradient
@@ -47,23 +54,25 @@ export function HeroBattleCard({ hero, tint, index, size, animate }: Props) {
       >
         <View style={styles.inner}>
           {uri ? (
-            <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={220} />
+            <Image
+              source={{ uri }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              transition={220}
+            />
           ) : (
             <LinearGradient colors={[tint, '#1a1426']} style={[styles.fill, styles.fallback]}>
               <Text style={styles.initials}>{initials}</Text>
             </LinearGradient>
           )}
-          <LinearGradient
-            colors={['rgba(255,255,255,0.34)', 'transparent']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0.75, y: 0.7 }}
-            style={styles.sheen}
-            pointerEvents="none"
-          />
           <View style={[styles.pip, { borderColor: tint }]}>
             <Text style={styles.pipTxt}>{index + 1}</Text>
           </View>
-          <LinearGradient colors={['transparent', 'rgba(0,0,0,0.9)']} style={styles.plate} pointerEvents="none">
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.9)']}
+            style={styles.plate}
+            pointerEvents="none"
+          >
             <Text style={styles.name} numberOfLines={1}>
               {hero.name}
             </Text>
@@ -101,6 +110,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pipTxt: { fontFamily: 'Nunito_700Bold', fontSize: 9, color: COLORS.beige },
-  plate: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 6, paddingTop: 16, paddingBottom: 5 },
+  plate: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 6,
+    paddingTop: 16,
+    paddingBottom: 5,
+  },
   name: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: COLORS.beige, letterSpacing: 0.2 },
 });

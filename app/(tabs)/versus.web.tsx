@@ -121,13 +121,17 @@ export default function VersusHubWeb() {
           onPress={() =>
             withViewTransition(() =>
               router.push(
-                `/versus/team/${teamBattle.teamA.id}-vs-${teamBattle.teamB.id}` as Parameters<typeof router.push>[0],
+                `/versus/team/${teamBattle.teamA.id}-vs-${teamBattle.teamB.id}` as Parameters<
+                  typeof router.push
+                >[0],
               ),
             )
           }
         >
           <Text style={s.teamEyebrow}>★ Team Battle ★</Text>
-          <Text style={s.teamTitle}>{teamBattle.teamA.name} vs {teamBattle.teamB.name}</Text>
+          <Text style={s.teamTitle}>
+            {teamBattle.teamA.name} vs {teamBattle.teamB.name}
+          </Text>
           <Text style={s.teamCta}>See the clash →</Text>
         </Pressable>
       )}

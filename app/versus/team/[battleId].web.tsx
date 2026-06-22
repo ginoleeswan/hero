@@ -48,5 +48,11 @@ export default function TeamClashWeb() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#181323' },
   content: { flexGrow: 1 },
-  center: { flex: 1, minHeight: 400, alignItems: 'center', justifyContent: 'center', backgroundColor: '#181323' },
+  center: {
+    flex: 1,
+    minHeight: 400,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#181323',
+  },
 });

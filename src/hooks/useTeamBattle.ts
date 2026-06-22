@@ -1,9 +1,14 @@
 import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  getTodaysTeamBattle, getTeamRoster, getTeamSynergy,
-  getTeamBattleTally, castTeamBattleVote, getFeaturedTeams,
-  type FeaturedTeam, type TeamTally,
+  getTodaysTeamBattle,
+  getTeamRoster,
+  getTeamSynergy,
+  getTeamBattleTally,
+  castTeamBattleVote,
+  getFeaturedTeams,
+  type FeaturedTeam,
+  type TeamTally,
 } from '../lib/db/teams';
 import { getCachedTeamVerdict } from '../lib/db/teamVerdicts';
 import { generateTeamVerdict } from '../lib/api';
@@ -11,7 +16,8 @@ import { resolveTeamBattle, type TeamSide, type TeamBattleResult } from '../lib/
 
 export interface UseTeamBattle {
   loading: boolean;
-  sideA: TeamSide | null; sideB: TeamSide | null;
+  sideA: TeamSide | null;
+  sideB: TeamSide | null;
   result: TeamBattleResult | null;
   tally: TeamTally | null;
   vote: (teamId: string) => Promise<void>;
@@ -20,7 +26,11 @@ export interface UseTeamBattle {
 async function buildSide(team: FeaturedTeam): Promise<TeamSide> {
   const roster = await getTeamRoster(team.id, 5);
   const synergy = await getTeamSynergy(roster.map((h) => h.id));
-  return { team: { id: team.id, name: team.name, publisher: team.publisher, logo_url: team.logo_url }, roster, synergy };
+  return {
+    team: { id: team.id, name: team.name, publisher: team.publisher, logo_url: team.logo_url },
+    roster,
+    synergy,
+  };
 }
 
 // "avengers-vs-justice-league-of-america" → ["avengers","justice-league-of-america"].
@@ -50,14 +60,29 @@ export function useTeamBattle(battleId?: string): UseTeamBattle {
         if (!ta || !tb) return null;
         const [sa, sb] = [await buildSide(ta), await buildSide(tb)];
         const result = resolveTeamBattle(sa, sb);
-        return { sideA: sa, sideB: sb, result, aId: ta.id, bId: tb.id, aName: ta.name, bName: tb.name };
+        return {
+          sideA: sa,
+          sideB: sb,
+          result,
+          aId: ta.id,
+          bId: tb.id,
+          aName: ta.name,
+          bName: tb.name,
+        };
       }
       const today = await getTodaysTeamBattle();
       if (!today) return null;
       const [sa, sb] = [await buildSide(today.teamA), await buildSide(today.teamB)];
       const result = resolveTeamBattle(sa, sb);
-      return { sideA: sa, sideB: sb, result, aId: today.teamA.id, bId: today.teamB.id,
-               aName: today.teamA.name, bName: today.teamB.name };
+      return {
+        sideA: sa,
+        sideB: sb,
+        result,
+        aId: today.teamA.id,
+        bId: today.teamB.id,
+        aName: today.teamA.name,
+        bName: today.teamB.name,
+      };
     },
   });
 
@@ -73,8 +98,12 @@ export function useTeamBattle(battleId?: string): UseTeamBattle {
       const cached = await getCachedTeamVerdict(b.aId, b.bId);
       if (cached) return cached;
       return generateTeamVerdict({
-        teamAId: b.aId, teamBId: b.bId, teamA: b.aName, teamB: b.bName,
-        splitA: b.result.splitA, splitB: b.result.splitB,
+        teamAId: b.aId,
+        teamBId: b.bId,
+        teamA: b.aName,
+        teamB: b.bName,
+        splitA: b.result.splitA,
+        splitB: b.result.splitB,
       });
     },
   });
@@ -94,9 +123,7 @@ export function useTeamBattle(battleId?: string): UseTeamBattle {
     [b, qc],
   );
 
-  const result = b
-    ? { ...b.result, verdict: verdictQ.data ?? b.result.verdict }
-    : null;
+  const result = b ? { ...b.result, verdict: verdictQ.data ?? b.result.verdict } : null;
 
   return {
     loading: battleQ.isPending,
