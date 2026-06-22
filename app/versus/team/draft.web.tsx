@@ -1,15 +1,11 @@
-import { ScrollView, View, ActivityIndicator, StyleSheet } from 'react-native';
+import { ScrollView, View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { COLORS, SURFACE } from '../../../src/constants/colors';
 import { useDraftBattle } from '../../../src/hooks/useDraftBattle';
 import { useScreenChrome } from '../../../src/hooks/useScreenChrome';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
 import { ClashArena } from '../../../src/components/versus/ClashArena';
-
-function parseIds(v: string | string[] | undefined): string[] {
-  const s = Array.isArray(v) ? v[0] : v;
-  return (s ?? '').split(',').map((x) => x.trim()).filter(Boolean).slice(0, 5);
-}
+import { parseIds } from '../../../src/lib/parseIds';
 
 export default function DraftClashWeb() {
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
@@ -18,10 +14,18 @@ export default function DraftClashWeb() {
   const bIds = parseIds(params.b);
   const { loading, sideA, sideB, result } = useDraftBattle(aIds, bIds);
 
-  if (loading || !sideA || !sideB || !result) {
+  if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={COLORS.goldAccent} />
+      </View>
+    );
+  }
+
+  if (!sideA || !sideB || !result) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.empty}>We couldn&apos;t build that battle.</Text>
       </View>
     );
   }
@@ -46,4 +50,5 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.deepNavy },
   content: { flexGrow: 1 },
   center: { flex: 1, minHeight: 400, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.deepNavy },
+  empty: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: 'rgba(245,235,220,0.7)', textAlign: 'center', paddingHorizontal: 24 },
 });

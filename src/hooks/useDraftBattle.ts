@@ -25,10 +25,11 @@ async function buildDraftSide(ids: string[], id: 'draft-a' | 'draft-b'): Promise
  *  the engine verdict. Cached by the id lists so a reload re-resolves cleanly. */
 export function useDraftBattle(aIds: string[], bIds: string[]): UseDraftBattle {
   const key = `${aIds.join(',')}|${bIds.join(',')}`;
+  const enabled = aIds.length > 0 && bIds.length > 0;
   const q = useQuery({
     queryKey: ['draftBattle', key],
     staleTime: 1000 * 60 * 30,
-    enabled: aIds.length > 0 && bIds.length > 0,
+    enabled,
     queryFn: async () => {
       const [sideA, sideB] = await Promise.all([buildDraftSide(aIds, 'draft-a'), buildDraftSide(bIds, 'draft-b')]);
       if (!sideA || !sideB) return null;
@@ -38,7 +39,7 @@ export function useDraftBattle(aIds: string[], bIds: string[]): UseDraftBattle {
 
   const d = q.data ?? null;
   return {
-    loading: q.isPending,
+    loading: enabled && q.isPending,
     sideA: d?.sideA ?? null,
     sideB: d?.sideB ?? null,
     result: d?.result ?? null,
