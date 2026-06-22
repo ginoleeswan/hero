@@ -24,8 +24,8 @@ const GOLD = COLORS.goldAccent;
 const STOPWORDS = new Set(['of', 'the', 'and', 'a', '&']);
 
 // Desktop stage geometry.
-const CONTAINER_W = 1360;
-const CENTER_W = 360; // the headline / centre-duel column
+const CONTAINER_W = 1460;
+const CENTER_W = 360; // the headline column
 
 // Beat timeline (ms): cards deal → synergy ignites → CLASH lands → meter charges.
 const T_SYNERGY = 760;
@@ -166,13 +166,13 @@ function DesktopDuel({
 
       <View style={styles.ddRow}>
         <View style={styles.ddRowSideL}>
-          <RosterColumn side={sideA} tint={TINT_A} sel={selA} setSel={setSelA} size={98} animate={animate} />
+          <RosterColumn side={sideA} tint={TINT_A} sel={selA} setSel={setSelA} size={112} animate={animate} />
         </View>
 
         <View style={styles.ddCenter}>
           <View style={styles.ddSpots}>
-            <DuelSpot hero={a} tint={TINT_A} slot={selA} size={156} leads={aWins > bWins} animate={animate} />
-            <DuelSpot hero={b} tint={TINT_B} slot={selB} size={156} leads={bWins > aWins} flip animate={animate} />
+            <DuelSpot hero={a} tint={TINT_A} slot={selA} size={190} leads={aWins > bWins} animate={animate} />
+            <DuelSpot hero={b} tint={TINT_B} slot={selB} size={190} leads={bWins > aWins} flip animate={animate} />
           </View>
           {a && b ? (
             <View style={styles.ddCompare}>
@@ -183,7 +183,7 @@ function DesktopDuel({
         </View>
 
         <View style={styles.ddRowSideR}>
-          <RosterColumn side={sideB} tint={TINT_B} sel={selB} setSel={setSelB} size={98} flip animate={animate} />
+          <RosterColumn side={sideB} tint={TINT_B} sel={selB} setSel={setSelB} size={112} flip animate={animate} />
         </View>
       </View>
     </>
@@ -383,10 +383,12 @@ const styles = StyleSheet.create({
   ddHeadSideR: { flex: 1, alignItems: 'flex-end' },
   ddHeadCenter: { width: CENTER_W },
   ddRow: { flexDirection: 'row', alignItems: 'flex-start', width: '100%', marginTop: 18 },
-  ddRowSideL: { flex: 1, alignItems: 'flex-end', paddingRight: 40 },
-  ddRowSideR: { flex: 1, alignItems: 'flex-start', paddingLeft: 40 },
-  ddCol: { gap: 10 },
-  ddCenter: { width: 480, alignItems: 'center' },
+  // Rosters sit at the outer edges, directly under their crests, so the two
+  // squads bookend the stage and the duel commands the centre.
+  ddRowSideL: { flex: 1, alignItems: 'flex-start' },
+  ddRowSideR: { flex: 1, alignItems: 'flex-end' },
+  ddCol: { gap: 12 },
+  ddCenter: { width: 540, alignItems: 'center' },
   ddSpots: { flexDirection: 'row', gap: 16, marginBottom: 22, justifyContent: 'center' },
   ddCompare: { width: '100%', marginBottom: 4 },
   crown: {
