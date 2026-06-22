@@ -1,5 +1,7 @@
 const mockFrom = jest.fn();
-jest.mock('../../../src/lib/supabase', () => ({ supabase: { from: (...a: unknown[]) => mockFrom(...a) } }));
+jest.mock('../../../src/lib/supabase', () => ({
+  supabase: { from: (...a: unknown[]) => mockFrom(...a) },
+}));
 
 import { getDraftRoster } from '../../../src/lib/db/teams';
 
@@ -22,8 +24,26 @@ describe('getDraftRoster', () => {
   it('returns heroes in the order of the requested ids (not DB order)', async () => {
     mockSelect(
       [
-        { id: 'b', name: 'B', intelligence: 1, strength: 1, speed: 1, durability: 1, power: 1, combat: 1 },
-        { id: 'a', name: 'A', intelligence: 2, strength: 2, speed: 2, durability: 2, power: 2, combat: 2 },
+        {
+          id: 'b',
+          name: 'B',
+          intelligence: 1,
+          strength: 1,
+          speed: 1,
+          durability: 1,
+          power: 1,
+          combat: 1,
+        },
+        {
+          id: 'a',
+          name: 'A',
+          intelligence: 2,
+          strength: 2,
+          speed: 2,
+          durability: 2,
+          power: 2,
+          combat: 2,
+        },
       ],
       null,
     );
@@ -32,7 +52,21 @@ describe('getDraftRoster', () => {
   });
 
   it('skips ids with no matching hero', async () => {
-    mockSelect([{ id: 'a', name: 'A', intelligence: 1, strength: 1, speed: 1, durability: 1, power: 1, combat: 1 }], null);
+    mockSelect(
+      [
+        {
+          id: 'a',
+          name: 'A',
+          intelligence: 1,
+          strength: 1,
+          speed: 1,
+          durability: 1,
+          power: 1,
+          combat: 1,
+        },
+      ],
+      null,
+    );
     const r = await getDraftRoster(['a', 'missing']);
     expect(r.map((h) => h.id)).toEqual(['a']);
   });
@@ -40,7 +74,8 @@ describe('getDraftRoster', () => {
   it('caps at 5 ids', async () => {
     mockSelect([], null);
     await getDraftRoster(['1', '2', '3', '4', '5', '6', '7']);
-    const inArg = (mockFrom.mock.results[0].value.select.mock.results[0].value.in as jest.Mock).mock.calls[0][1];
+    const inArg = (mockFrom.mock.results[0].value.select.mock.results[0].value.in as jest.Mock).mock
+      .calls[0][1];
     expect(inArg).toHaveLength(5);
   });
 

@@ -125,7 +125,8 @@ export async function castTeamBattleVote(
   return toTally(data);
 }
 
-const DRAFT_COLS = 'id, name, portrait_url, image_url, intelligence, strength, speed, durability, power, combat';
+const DRAFT_COLS =
+  'id, name, portrait_url, image_url, intelligence, strength, speed, durability, power, combat';
 
 /**
  * Fetch up to five heroes by id for a drafted battle side, returned in the same

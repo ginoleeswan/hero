@@ -11,7 +11,9 @@ describe('resolveBattleRoute', () => {
   });
 
   it('routes any team size to the draft route with both rosters', () => {
-    expect(resolveBattleRoute(['a', 'b', 'c'], ['x', 'y'])).toBe('/versus/team/draft?a=a%2Cb%2Cc&b=x%2Cy');
+    expect(resolveBattleRoute(['a', 'b', 'c'], ['x', 'y'])).toBe(
+      '/versus/team/draft?a=a%2Cb%2Cc&b=x%2Cy',
+    );
   });
 
   it('treats N-vs-1 as a team battle (not the 1v1 arena)', () => {

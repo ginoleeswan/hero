@@ -1,6 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { getDraftRoster, getTeamSynergy } from '../lib/db/teams';
-import { resolveTeamBattle, type TeamSide, type TeamBattleResult, type RosterHero } from '../lib/teamBattle';
+import {
+  resolveTeamBattle,
+  type TeamSide,
+  type TeamBattleResult,
+  type RosterHero,
+} from '../lib/teamBattle';
 
 export interface UseDraftBattle {
   loading: boolean;
@@ -31,7 +36,10 @@ export function useDraftBattle(aIds: string[], bIds: string[]): UseDraftBattle {
     staleTime: 1000 * 60 * 30,
     enabled,
     queryFn: async () => {
-      const [sideA, sideB] = await Promise.all([buildDraftSide(aIds, 'draft-a'), buildDraftSide(bIds, 'draft-b')]);
+      const [sideA, sideB] = await Promise.all([
+        buildDraftSide(aIds, 'draft-a'),
+        buildDraftSide(bIds, 'draft-b'),
+      ]);
       if (!sideA || !sideB) return null;
       return { sideA, sideB, result: resolveTeamBattle(sideA, sideB) };
     },

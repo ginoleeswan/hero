@@ -49,6 +49,18 @@ export default function DraftClashWeb() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.deepNavy },
   content: { flexGrow: 1 },
-  center: { flex: 1, minHeight: 400, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.deepNavy },
-  empty: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: 'rgba(245,235,220,0.7)', textAlign: 'center', paddingHorizontal: 24 },
+  center: {
+    flex: 1,
+    minHeight: 400,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.deepNavy,
+  },
+  empty: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 15,
+    color: 'rgba(245,235,220,0.7)',
+    textAlign: 'center',
+    paddingHorizontal: 24,
+  },
 });
