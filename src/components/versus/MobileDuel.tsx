@@ -63,7 +63,7 @@ function BenchChip({
       accessibilityRole="button"
       style={[
         styles.chip,
-        { width: size, height: size, borderColor: active ? GOLD : 'rgba(255,255,255,0.18)' },
+        { width: size, height: size, borderColor: active ? GOLD : 'transparent' },
         active ? styles.chipActive : styles.chipIdle,
       ]}
     >
@@ -282,9 +282,15 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'center' },
 
   bench: { flexDirection: 'row', gap: 6, marginTop: 10, justifyContent: 'center' },
-  chip: { borderRadius: 9, overflow: 'hidden', borderWidth: 1.5, backgroundColor: '#1b2a30' },
-  chipIdle: { opacity: 0.7 },
-  chipActive: { opacity: 1, borderWidth: 2 },
+  chip: { borderRadius: 9, overflow: 'hidden', borderWidth: 2, backgroundColor: '#1b2a30' },
+  chipIdle: { opacity: 0.5 },
+  chipActive: {
+    opacity: 1,
+    shadowColor: GOLD,
+    shadowOpacity: 0.7,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 0 },
+  },
   chipFallback: {
     position: 'absolute',
     left: 0,
