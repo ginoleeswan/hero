@@ -204,7 +204,7 @@ function DesktopDuel({
             tint={TINT_A}
             sel={selA}
             setSel={setSelA}
-            size={134}
+            size={104}
             animate={animate}
           />
         </View>
@@ -252,7 +252,7 @@ function DesktopDuel({
             tint={TINT_B}
             sel={selB}
             setSel={setSelB}
-            size={134}
+            size={104}
             flip
             animate={animate}
           />
@@ -286,17 +286,18 @@ function RosterColumn({
   const mid = (n - 1) / 2;
   const dir = flip ? -1 : 1;
   const cardH = Math.round((size * 9) / 7);
-  const overlap = Math.round(cardH * 0.4);
+  const overlap = Math.round(cardH * 0.3);
   return (
     <View style={styles.ddCol}>
       {side.roster.map((h, i) => {
         const d = i - mid;
-        const reach = mid > 0 ? (1 - Math.abs(d) / mid) * 14 : 0; // middle leans toward centre
+        const reach = mid > 0 ? (1 - Math.abs(d) / mid) * 12 : 0; // middle leans toward centre
         const isSel = i === sel;
+        // The spotlit card steps out of the fan toward the duel.
         const transform = [
-          { translateX: dir * (reach + (isSel ? 16 : 0)) },
-          { rotate: `${dir * d * 2.4}deg` },
-          { scale: isSel ? 1.06 : 1 },
+          { translateX: dir * (reach + (isSel ? 28 : 0)) },
+          { rotate: `${dir * d * 3}deg` },
+          { scale: isSel ? 1.08 : 1 },
         ];
         return (
           <View
