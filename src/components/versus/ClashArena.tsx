@@ -99,14 +99,14 @@ export function ClashArena({ sideA, sideB, result, tally, onVote, topInset = 24,
   );
 }
 
-/* ── Layered arena light: team glow from each flank, gold spot, vignette ──── */
+/* ── Arena light: a navy stage that lifts toward the top (theatrical, neutral)
+ *    with a faint gold crown and a deepening floor. No team-coloured washes. ─ */
 function Atmosphere() {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <LinearGradient colors={['rgba(194,58,47,0.34)', 'transparent']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.flankA} />
-      <LinearGradient colors={['transparent', 'rgba(18,126,136,0.34)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.flankB} />
-      <LinearGradient colors={['rgba(206,155,51,0.12)', 'transparent']} style={styles.spot} />
-      <LinearGradient colors={['transparent', 'rgba(0,0,0,0.55)']} style={styles.vignette} />
+      <LinearGradient colors={[COLORS.navy, COLORS.deepNavy]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 0.85 }} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['rgba(206,155,51,0.10)', 'transparent']} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.spot} />
+      <LinearGradient colors={['transparent', 'rgba(0,0,0,0.45)']} style={styles.vignette} />
     </View>
   );
 }
@@ -371,8 +371,6 @@ function VoteButton({ tint, name, onPress }: { tint: string; name: string; onPre
 
 const styles = StyleSheet.create({
   stage: { flex: 1, backgroundColor: COLORS.deepNavy, paddingHorizontal: 16, alignItems: 'center', overflow: 'hidden' },
-  flankA: { position: 'absolute', left: 0, top: 0, bottom: 0, width: '58%' },
-  flankB: { position: 'absolute', right: 0, top: 0, bottom: 0, width: '58%' },
   spot: { position: 'absolute', left: 0, right: 0, top: 0, height: '55%' },
   vignette: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%' },
   flash: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: GOLD, zIndex: 5 },
