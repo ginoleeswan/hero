@@ -166,7 +166,7 @@ function DesktopDuel({
 
       <View style={styles.ddRow}>
         <View style={styles.ddRowSideL}>
-          <RosterColumn side={sideA} tint={TINT_A} sel={selA} setSel={setSelA} size={112} animate={animate} />
+          <RosterColumn side={sideA} tint={TINT_A} sel={selA} setSel={setSelA} size={150} animate={animate} />
         </View>
 
         <View style={styles.ddCenter}>
@@ -183,7 +183,7 @@ function DesktopDuel({
         </View>
 
         <View style={styles.ddRowSideR}>
-          <RosterColumn side={sideB} tint={TINT_B} sel={selB} setSel={setSelB} size={112} flip animate={animate} />
+          <RosterColumn side={sideB} tint={TINT_B} sel={selB} setSel={setSelB} size={150} flip animate={animate} />
         </View>
       </View>
     </>
@@ -207,20 +207,28 @@ function RosterColumn({
   flip?: boolean;
   animate: boolean;
 }) {
-  // Fan the squad like a dealt hand: a gentle arc that reaches toward the centre
-  // duel, with a subtle per-card tilt. `dir` mirrors it for the right squad.
+  // A fanned, overlapping deck: cards stack with vertical overlap and a per-card
+  // tilt that arcs toward the centre duel; the spotlit card pops out and forward.
+  // `dir` mirrors the whole fan for the right squad.
   const n = side.roster.length;
   const mid = (n - 1) / 2;
   const dir = flip ? -1 : 1;
+  const cardH = Math.round((size * 9) / 7);
+  const overlap = Math.round(cardH * 0.42);
   return (
     <View style={styles.ddCol}>
       {side.roster.map((h, i) => {
         const d = i - mid;
-        const reach = mid > 0 ? (1 - Math.abs(d) / mid) * 26 : 0; // middle leans toward centre
-        const lift = i === sel ? 8 : 0; // the spotlit card pops out a touch further
+        const reach = mid > 0 ? (1 - Math.abs(d) / mid) * 22 : 0; // middle leans toward centre
+        const isSel = i === sel;
+        const transform = [
+          { translateX: dir * (reach + (isSel ? 20 : 0)) },
+          { rotate: `${dir * d * 3.5}deg` },
+          { scale: isSel ? 1.07 : 1 },
+        ];
         return (
-          <View key={h.id} style={{ transform: [{ translateX: dir * (reach + lift) }, { rotate: `${dir * d * 3}deg` }] }}>
-            <HeroBattleCard hero={h} tint={tint} index={i} size={size} animate={animate} flip={flip} selected={i === sel} onPress={() => setSel(i)} />
+          <View key={h.id} style={{ marginTop: i === 0 ? 0 : -overlap, zIndex: isSel ? 50 : i, transform }}>
+            <HeroBattleCard hero={h} tint={tint} index={i} size={size} animate={animate} flip={flip} selected={isSel} onPress={() => setSel(i)} />
           </View>
         );
       })}
@@ -389,7 +397,7 @@ const styles = StyleSheet.create({
   // squads bookend the stage and the duel commands the centre.
   ddRowSideL: { flex: 1, alignItems: 'flex-start' },
   ddRowSideR: { flex: 1, alignItems: 'flex-end' },
-  ddCol: { gap: 12 },
+  ddCol: { alignItems: 'center' },
   ddCenter: { width: 540, alignItems: 'center' },
   ddSpots: { flexDirection: 'row', gap: 16, marginBottom: 22, justifyContent: 'center' },
   ddCompare: { width: '100%', marginBottom: 4 },
