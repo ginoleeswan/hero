@@ -24,7 +24,7 @@ const GOLD = COLORS.goldAccent;
 const STOPWORDS = new Set(['of', 'the', 'and', 'a', '&']);
 
 // Desktop stage geometry.
-const CONTAINER_W = 1460;
+const CONTAINER_W = 1280;
 const CENTER_W = 360; // the headline column
 
 // Beat timeline (ms): cards deal → synergy ignites → CLASH lands → meter charges.
@@ -204,7 +204,7 @@ function DesktopDuel({
             tint={TINT_A}
             sel={selA}
             setSel={setSelA}
-            size={150}
+            size={134}
             animate={animate}
           />
         </View>
@@ -215,7 +215,7 @@ function DesktopDuel({
               hero={a}
               tint={TINT_A}
               slot={selA}
-              size={190}
+              size={184}
               leads={aWins > bWins}
               animate={animate}
             />
@@ -223,7 +223,7 @@ function DesktopDuel({
               hero={b}
               tint={TINT_B}
               slot={selB}
-              size={190}
+              size={184}
               leads={bWins > aWins}
               flip
               animate={animate}
@@ -252,7 +252,7 @@ function DesktopDuel({
             tint={TINT_B}
             sel={selB}
             setSel={setSelB}
-            size={150}
+            size={134}
             flip
             animate={animate}
           />
@@ -286,17 +286,17 @@ function RosterColumn({
   const mid = (n - 1) / 2;
   const dir = flip ? -1 : 1;
   const cardH = Math.round((size * 9) / 7);
-  const overlap = Math.round(cardH * 0.42);
+  const overlap = Math.round(cardH * 0.4);
   return (
     <View style={styles.ddCol}>
       {side.roster.map((h, i) => {
         const d = i - mid;
-        const reach = mid > 0 ? (1 - Math.abs(d) / mid) * 22 : 0; // middle leans toward centre
+        const reach = mid > 0 ? (1 - Math.abs(d) / mid) * 14 : 0; // middle leans toward centre
         const isSel = i === sel;
         const transform = [
-          { translateX: dir * (reach + (isSel ? 20 : 0)) },
-          { rotate: `${dir * d * 3.5}deg` },
-          { scale: isSel ? 1.07 : 1 },
+          { translateX: dir * (reach + (isSel ? 16 : 0)) },
+          { rotate: `${dir * d * 2.4}deg` },
+          { scale: isSel ? 1.06 : 1 },
         ];
         return (
           <View
@@ -564,10 +564,10 @@ const styles = StyleSheet.create({
   ddRow: { flexDirection: 'row', alignItems: 'flex-start', width: '100%', marginTop: 18 },
   // Rosters sit at the outer edges, directly under their crests, so the two
   // squads bookend the stage and the duel commands the centre.
-  ddRowSideL: { flex: 1, alignItems: 'flex-start' },
-  ddRowSideR: { flex: 1, alignItems: 'flex-end' },
+  ddRowSideL: { flex: 1, alignItems: 'flex-end', paddingRight: 44 },
+  ddRowSideR: { flex: 1, alignItems: 'flex-start', paddingLeft: 44 },
   ddCol: { alignItems: 'center' },
-  ddCenter: { width: 540, alignItems: 'center' },
+  ddCenter: { width: 520, alignItems: 'center' },
   ddSpots: { flexDirection: 'row', gap: 16, marginBottom: 22, justifyContent: 'center' },
   ddCompare: { width: '100%', marginBottom: 4 },
   crown: {
