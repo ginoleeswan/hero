@@ -39,13 +39,13 @@ export default function TeamClashScreen() {
         <Text style={styles.title}>{sideA.team?.name} vs {sideB.team?.name}</Text>
 
         <View style={styles.arena}>
-          <TeamRosterColumn side={sideA} align="left" />
+          <TeamRosterColumn side={sideA} />
           <View style={styles.spine}>
             <Text style={styles.vs}>VS</Text>
             <Text style={styles.syn}>+{Math.round(sideA.synergy.total_pct * 100)}%</Text>
             <Text style={styles.syn}>+{Math.round(sideB.synergy.total_pct * 100)}%</Text>
           </View>
-          <TeamRosterColumn side={sideB} align="right" />
+          <TeamRosterColumn side={sideB} />
         </View>
 
         <View style={styles.foot}>

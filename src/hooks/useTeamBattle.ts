@@ -23,7 +23,11 @@ async function buildSide(team: FeaturedTeam): Promise<TeamSide> {
   return { team: { id: team.id, name: team.name, publisher: team.publisher, logo_url: team.logo_url }, roster, synergy };
 }
 
-// "avengers-vs-justice-league" → ["avengers","justice-league"]
+// "avengers-vs-justice-league-of-america" → ["avengers","justice-league-of-america"].
+// Splits on the FIRST `-vs-`. Team slugs (from slugify_team) contain hyphens but
+// never the literal `-vs-`, so the first occurrence is always the separator. If a
+// future slug ever did contain `-vs-`, the downstream teams.find() returns null and
+// the battle degrades to "not found" rather than mis-resolving.
 function parseBattleId(id: string): [string, string] | null {
   const i = id.indexOf('-vs-');
   if (i < 0) return null;

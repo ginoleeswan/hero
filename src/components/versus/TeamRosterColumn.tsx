@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { COLORS } from '../../constants/colors';
 import type { TeamSide } from '../../lib/teamBattle';
 
-interface Props { side: TeamSide; align: 'left' | 'right'; }
+interface Props { side: TeamSide; }
 
 /** A vertical stack of holo hero cards for one team. */
 export function TeamRosterColumn({ side }: Props) {

@@ -32,6 +32,7 @@ serve(async (req: Request) => {
     if (cached?.verdict) return json({ verdict: cached.verdict });
 
     let verdict = fallback(body);
+    let generated = false; // only persist a real AI verdict, never the fallback
     if (GEMINI_KEY) {
       const prompt = `Two superhero teams clash. ${body.teamA} vs ${body.teamB}. ` +
         `Combined power favours ${body.splitA >= body.splitB ? body.teamA : body.teamB} ` +
@@ -44,11 +45,15 @@ serve(async (req: Request) => {
         if (res.ok) {
           const data = await res.json();
           const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-          if (text) verdict = text;
+          if (text) { verdict = text; generated = true; }
         }
       } catch { /* keep fallback */ }
     }
-    await sb.from('team_verdicts').upsert({ team_a_id: keyA, team_b_id: keyB, verdict }, { onConflict: 'team_a_id,team_b_id' });
+    // Cache only genuine AI output — caching the fallback on an outage would
+    // poison the pair's verdict permanently (read-through returns it forever).
+    if (generated) {
+      await sb.from('team_verdicts').upsert({ team_a_id: keyA, team_b_id: keyB, verdict }, { onConflict: 'team_a_id,team_b_id' });
+    }
     return json({ verdict });
   } catch (err) {
     console.error('[generate-team-verdict]', err);
