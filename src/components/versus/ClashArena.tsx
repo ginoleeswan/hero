@@ -49,6 +49,7 @@ interface Props {
   onVote: (teamId: string) => void;
   topInset?: number;
   bottomInset?: number;
+  votable?: boolean;
 }
 
 export function ClashArena({
@@ -59,6 +60,7 @@ export function ClashArena({
   onVote,
   topInset = 24,
   bottomInset = 24,
+  votable = true,
 }: Props) {
   const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
@@ -84,6 +86,7 @@ export function ClashArena({
             nameA={nameA}
             nameB={nameB}
             animate={animate}
+            votable={votable}
           />
         ) : (
           <>
@@ -99,6 +102,7 @@ export function ClashArena({
               tally={tally}
               onVote={onVote}
               animate={animate}
+              votable={votable}
             />
           </>
         )}
@@ -154,6 +158,7 @@ function DesktopDuel({
   nameA,
   nameB,
   animate,
+  votable,
 }: {
   sideA: TeamSide;
   sideB: TeamSide;
@@ -163,6 +168,7 @@ function DesktopDuel({
   nameA: string;
   nameB: string;
   animate: boolean;
+  votable: boolean;
 }) {
   const [selA, setSelA] = useState(0);
   const [selB, setSelB] = useState(0);
@@ -243,6 +249,7 @@ function DesktopDuel({
             tally={tally}
             onVote={onVote}
             animate={animate}
+            votable={votable}
           />
         </View>
 
@@ -474,6 +481,7 @@ function VerdictVotes({
   tally,
   onVote,
   animate,
+  votable = true,
 }: {
   result: TeamBattleResult;
   sideA: TeamSide;
@@ -483,6 +491,7 @@ function VerdictVotes({
   tally: { votesA: number; votesB: number; total: number } | null;
   onVote: (teamId: string) => void;
   animate: boolean;
+  votable?: boolean;
 }) {
   return (
     <View style={styles.verdictWrap}>
@@ -493,25 +502,29 @@ function VerdictVotes({
         <Text style={styles.verdictEyebrow}>THE VERDICT</Text>
         <Text style={styles.verdict}>{result.verdict}</Text>
       </Animated.View>
-      <Animated.View
-        entering={animate ? FadeIn.delay(T_VERDICT + 90) : undefined}
-        style={styles.votes}
-      >
-        <VoteButton
-          tint={TINT_A}
-          name={nameA}
-          onPress={() => sideA.team && onVote(sideA.team.id)}
-        />
-        <VoteButton
-          tint={TINT_B}
-          name={nameB}
-          onPress={() => sideB.team && onVote(sideB.team.id)}
-        />
-      </Animated.View>
-      {tally && tally.total > 0 ? (
-        <Text style={styles.tally}>
-          {tally.votesA} – {tally.votesB} · {tally.total} {tally.total === 1 ? 'vote' : 'votes'}
-        </Text>
+      {votable ? (
+        <>
+          <Animated.View
+            entering={animate ? FadeIn.delay(T_VERDICT + 90) : undefined}
+            style={styles.votes}
+          >
+            <VoteButton
+              tint={TINT_A}
+              name={nameA}
+              onPress={() => sideA.team && onVote(sideA.team.id)}
+            />
+            <VoteButton
+              tint={TINT_B}
+              name={nameB}
+              onPress={() => sideB.team && onVote(sideB.team.id)}
+            />
+          </Animated.View>
+          {tally && tally.total > 0 ? (
+            <Text style={styles.tally}>
+              {tally.votesA} – {tally.votesB} · {tally.total} {tally.total === 1 ? 'vote' : 'votes'}
+            </Text>
+          ) : null}
+        </>
       ) : null}
     </View>
   );
