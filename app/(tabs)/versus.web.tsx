@@ -6,7 +6,7 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { COLORS, SURFACE } from '../../src/constants/colors';
+import { COLORS, SURFACE, SURFACE_GRADIENT } from '../../src/constants/colors';
 import { useVersusHub } from '../../src/hooks/useVersusHub';
 import { pickRandomPair } from '../../src/lib/versus';
 import { stashFighters, type FighterArt } from '../../src/lib/compareHandoff';
@@ -128,7 +128,8 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.deepNavy },
 
   stage: {
-    backgroundImage: 'radial-gradient(130% 100% at 50% -5%, #1c2f5a 0%, #13203a 48%, #0c1526 100%)',
+    backgroundColor: COLORS.deepNavy,
+    backgroundImage: SURFACE_GRADIENT.stageImmersive,
     paddingTop: TOPBAR_HEIGHT + 26,
     paddingBottom: 34,
   } as object,

@@ -33,14 +33,25 @@ export const SURFACE = {
 } as const;
 
 /**
- * Dark headers/stages: a vertical ink→navy gradient (`SURFACE_GRADIENT.stage`)
- * over a `navy` base — deepNavy under the status bar (fusing with the ink chrome)
- * easing into navy where the title/search sit. The gradient gives the band depth;
- * give the header generous top padding so the fade sits well clear of the title.
+ * Two dark-stage variants, both built from the `ink`/`band` darks so they never
+ * drift in hue:
+ *
+ * - `stage` — vertical ink→navy gradient for a dark band that *lands on paper*
+ *   (deepNavy under the status bar fusing with the ink chrome, easing into navy
+ *   where the title sits). Pair with `backgroundColor: navy` and the `SEAM_COLOR`
+ *   hairline at the dark→beige edge.
+ * - `stageImmersive` — an off-top radial spotlight (lifted navy at the crown
+ *   easing to deep ink at the edges) for *full-dark* screens that never reach
+ *   paper (Explore, Versus). Same hue family as `stage`, more theatrical
+ *   geometry; no seam, since there's no beige to meet.
+ *
+ * Give the header generous top padding so the fade sits well clear of the title.
  */
 export const SURFACE_GRADIENT = {
-  /** Ink→navy stage for a dark-topped header. Pair with `backgroundColor: navy`. */
+  /** Ink→navy stage for a dark band that lands on paper. Pair with `backgroundColor: navy`. */
   stage: `linear-gradient(180deg, ${COLORS.deepNavy} 0%, ${COLORS.navy} 100%)`,
+  /** Radial spotlight for full-dark immersive screens. Pair with `backgroundColor: deepNavy`. */
+  stageImmersive: `radial-gradient(130% 100% at 50% -5%, ${COLORS.navy} 0%, ${COLORS.deepNavy} 70%)`,
 } as const;
 
 /** The seam — a warm orange hairline where a dark band meets beige content. */

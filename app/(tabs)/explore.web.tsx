@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { COLORS, SURFACE } from '../../src/constants/colors';
+import { COLORS, SURFACE, SURFACE_GRADIENT } from '../../src/constants/colors';
 import { HeroImage } from '../../src/components/HeroImage';
 import { WebHomeSkeleton } from '../../src/components/web/HomeSkeleton';
 import { type Hero } from '../../src/lib/db/heroes';
@@ -1401,9 +1401,10 @@ const styles = StyleSheet.create({
   // bar's scrim so the seam is invisible.
   darkStage: {
     backgroundColor: COLORS.deepNavy,
+    backgroundImage: SURFACE_GRADIENT.stageImmersive,
     paddingTop: TOPBAR_HEIGHT + 10,
     paddingBottom: 28,
-  },
+  } as object,
   darkStageMobile: { paddingTop: TOPBAR_HEIGHT + 10, paddingBottom: 16 } as object,
 
   // Beige canvas owns the carousel section (sits on the dark scroll surface).
