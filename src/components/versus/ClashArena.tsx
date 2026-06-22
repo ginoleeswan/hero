@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -14,7 +14,7 @@ import Animated, {
 import { COLORS } from '../../constants/colors';
 import type { TeamSide, TeamBattleResult } from '../../lib/teamBattle';
 import { HeroBattleCard } from './HeroBattleCard';
-import { HeroStatPanel } from './HeroStatPanel';
+import { MobileDuel } from './MobileDuel';
 import { ClashMeter } from './ClashMeter';
 
 const TINT_A = COLORS.red;
@@ -62,7 +62,7 @@ export function ClashArena({
 
   const nameA = sideA.team?.name ?? 'Team A';
   const nameB = sideB.team?.name ?? 'Team B';
-  const cardSize = isWide ? 86 : Math.floor((Math.min(width, 480) - 32 - 24) / 3);
+  const cardSize = 86; // desktop faction zones; mobile sizes its own spotlight cards
 
   const headline = <ClashHeadline sideA={sideA} sideB={sideB} result={result} animate={animate} />;
   const verdict = (
@@ -112,12 +112,8 @@ export function ClashArena({
           <>
             <FactionBar nameA={nameA} nameB={nameB} animate={animate} />
             {headline}
-            <View style={styles.mobileRosters}>
-              <MobileRoster side={sideA} tint={TINT_A} cardSize={cardSize} animate={animate} />
-              <MobileRoster side={sideB} tint={TINT_B} cardSize={cardSize} animate={animate} />
-            </View>
+            <MobileDuel sideA={sideA} sideB={sideB} animate={animate} />
             {verdict}
-            <StatBreakdown result={result} animate={animate} />
           </>
         )}
       </View>
@@ -256,48 +252,6 @@ function FactionZone({
           />
         ))}
       </View>
-    </View>
-  );
-}
-
-/* ── Mobile roster: a 3-up card grid; tap a hero to reveal their stats ────── */
-function MobileRoster({
-  side,
-  tint,
-  cardSize,
-  animate,
-}: {
-  side: TeamSide;
-  tint: string;
-  cardSize: number;
-  animate: boolean;
-}) {
-  const [sel, setSel] = useState(0);
-  const selected = side.roster[sel] ?? side.roster[0];
-  return (
-    <View style={styles.mRoster}>
-      <View style={styles.mLabel}>
-        <View style={[styles.mDot, { backgroundColor: tint }]} />
-        <Text style={[styles.mLabelTxt, { color: tint }]} numberOfLines={1}>
-          {side.team?.name}
-        </Text>
-        <Text style={styles.mHint}>TAP TO COMPARE</Text>
-      </View>
-      <View style={styles.mGrid}>
-        {side.roster.map((h, i) => (
-          <HeroBattleCard
-            key={h.id}
-            hero={h}
-            tint={tint}
-            index={i}
-            size={cardSize}
-            animate={animate}
-            selected={i === sel}
-            onPress={() => setSel(i)}
-          />
-        ))}
-      </View>
-      {selected ? <HeroStatPanel key={selected.id} hero={selected} tint={tint} animate={animate} /> : null}
     </View>
   );
 }
@@ -545,15 +499,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   cardWrapR: { justifyContent: 'flex-start' },
-
-  /* mobile rosters */
-  mobileRosters: { marginTop: 26, gap: 18 },
-  mRoster: { gap: 11 },
-  mLabel: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  mDot: { width: 9, height: 9, borderRadius: 5 },
-  mLabelTxt: { flex: 1, fontFamily: 'Flame-Regular', fontSize: 16, letterSpacing: 0.3 },
-  mHint: { fontFamily: 'Nunito_700Bold', fontSize: 9, letterSpacing: 1, color: 'rgba(245,235,220,0.4)' },
-  mGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
 
   /* clash headline */
   headline: { alignItems: 'center', width: '100%' },
