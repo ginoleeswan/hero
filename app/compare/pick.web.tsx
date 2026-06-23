@@ -169,6 +169,9 @@ export default function BattleBuilderWeb() {
   // ── Mobile sticky dual-team tray ──
   const traySide = (side: 'A' | 'B', tint: string, roster: PickedHero[], synergy: number) => {
     const isActive = b.active === side;
+    // Fewer fighters ⇒ larger slots; they compress as the side fills toward 5.
+    const n = roster.length;
+    const slotMax = n <= 1 ? 72 : n === 2 ? 58 : n === 3 ? 48 : n === 4 ? 40 : 34;
     return (
       <View style={[ts.half, isActive ? ({ backgroundColor: `${tint}26` } as object) : null]}>
         <View style={ts.head}>
@@ -193,15 +196,13 @@ export default function BattleBuilderWeb() {
           </View>
         </View>
         <View style={[ts.slots, side === 'B' ? ts.slotsR : null]}>
-          {Array.from({ length: MAX_SIDE }).map((_, i) => {
-            const hero = roster[i];
-            if (!hero) return <View key={i} style={[ts.slot, ts.slotEmpty]} />;
+          {roster.map((hero) => {
             const uri = hero.portrait_url ?? hero.image_url ?? undefined;
             return (
               <Pressable
                 key={hero.id}
                 onPress={() => b.removeHero(hero.id)}
-                style={[ts.slot, { borderColor: tint }]}
+                style={[ts.slot, { maxWidth: slotMax, borderColor: tint }]}
                 hitSlop={3}
               >
                 {uri ? (
@@ -216,6 +217,11 @@ export default function BattleBuilderWeb() {
               </Pressable>
             );
           })}
+          {roster.length < MAX_SIDE ? (
+            <View style={[ts.slot, ts.slotEmpty, { maxWidth: slotMax }]}>
+              <Text style={ts.addPlus}>+</Text>
+            </View>
+          ) : null}
         </View>
       </View>
     );
@@ -334,8 +340,15 @@ function Flank({
   onRandom: () => void;
   onClear: () => void;
 }) {
-  const star = roster[roster.length - 1] ?? null;
-  const starUri = star?.portrait_url ?? star?.image_url ?? undefined;
+  // Dynamic: the featured (latest) pick is large and shrinks as the squad grows;
+  // earlier picks become chips. Fewer fighters ⇒ more presence.
+  const count = roster.length;
+  const featured = count ? roster[count - 1] : null;
+  const featuredUri = featured?.portrait_url ?? featured?.image_url ?? undefined;
+  const others = roster.slice(0, Math.max(0, count - 1));
+  const renderW = [248, 248, 222, 202, 188, 176][Math.min(count, MAX_SIDE)];
+  const renderH = Math.round(renderW * 1.32);
+  const chipSize = count <= 2 ? 48 : count === 3 ? 42 : count === 4 ? 37 : 33;
 
   return (
     <View style={[fs.flank, active ? null : fs.dim]}>
@@ -350,13 +363,13 @@ function Flank({
         onPress={onActivate}
         style={[
           fs.render,
-          { borderColor: tint },
+          { width: renderW, height: renderH, borderColor: tint },
           active ? ({ boxShadow: `0 0 36px 2px ${tint}80` } as object) : null,
         ]}
       >
-        {starUri ? (
+        {featuredUri ? (
           <Image
-            source={{ uri: starUri }}
+            source={{ uri: featuredUri }}
             style={[StyleSheet.absoluteFill, flip ? fs.mirror : null]}
             contentFit="cover"
           />
@@ -368,38 +381,43 @@ function Flank({
         )}
         <View style={[fs.nameTag, { backgroundColor: tint }]}>
           <Text style={fs.name} numberOfLines={1}>
-            {star?.name ?? label}
+            {featured?.name ?? label}
           </Text>
         </View>
       </Pressable>
 
-      <View style={fs.chips}>
-        {Array.from({ length: MAX_SIDE }).map((_, i) => {
-          const hero = roster[i];
-          if (!hero) return <View key={i} style={[fs.chip, fs.chipEmpty]} />;
-          const uri = hero.portrait_url ?? hero.image_url ?? undefined;
-          return (
-            <Pressable
-              key={hero.id}
-              onPress={() => onRemove(hero.id)}
-              style={[fs.chip, { borderColor: tint }]}
-            >
-              {uri ? (
-                <Image
-                  source={{ uri }}
-                  style={[StyleSheet.absoluteFill, flip ? fs.mirror : null]}
-                  contentFit="cover"
-                />
-              ) : (
-                <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />
-              )}
-              <View style={fs.rm}>
-                <Text style={fs.rmx}>×</Text>
-              </View>
-            </Pressable>
-          );
-        })}
-      </View>
+      {others.length > 0 || (count > 0 && count < MAX_SIDE) ? (
+        <View style={fs.chips}>
+          {others.map((hero) => {
+            const uri = hero.portrait_url ?? hero.image_url ?? undefined;
+            return (
+              <Pressable
+                key={hero.id}
+                onPress={() => onRemove(hero.id)}
+                style={[fs.chip, { width: chipSize, height: chipSize, borderColor: tint }]}
+              >
+                {uri ? (
+                  <Image
+                    source={{ uri }}
+                    style={[StyleSheet.absoluteFill, flip ? fs.mirror : null]}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />
+                )}
+                <View style={fs.rm}>
+                  <Text style={fs.rmx}>×</Text>
+                </View>
+              </Pressable>
+            );
+          })}
+          {count > 0 && count < MAX_SIDE ? (
+            <View style={[fs.chip, fs.chipEmpty, { width: chipSize, height: chipSize }]}>
+              <Text style={fs.addPlus}>+</Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
 
       <View style={fs.meta}>
         {publisher ? (
@@ -569,12 +587,11 @@ const ts = StyleSheet.create({
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
-  slots: { flexDirection: 'row', gap: 5, justifyContent: 'flex-start' },
+  slots: { flexDirection: 'row', gap: 5, justifyContent: 'flex-start', alignItems: 'flex-start' },
   slotsR: { justifyContent: 'flex-end' },
   slot: {
     flex: 1,
     aspectRatio: 1,
-    maxWidth: 34,
     borderRadius: 7,
     overflow: 'hidden',
     borderWidth: 1,
@@ -585,7 +602,10 @@ const ts = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.18)',
     borderStyle: 'dashed',
     backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  addPlus: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: 'rgba(255,255,255,0.4)' },
   mirror: { transform: [{ scaleX: -1 }] },
   acts: { flexDirection: 'row', gap: 6 },
   actBtn: {
@@ -660,7 +680,10 @@ const fs = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.18)',
     borderStyle: 'dashed',
     backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  addPlus: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: 'rgba(255,255,255,0.4)' },
   rm: {
     position: 'absolute',
     top: 1,
