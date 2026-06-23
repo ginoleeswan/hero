@@ -16,6 +16,8 @@ import { useHeroSearchInfinite } from '../../src/lib/query/heroQueries';
 import { OpponentCard } from '../../src/components/compare/OpponentCard';
 import { FilterChips } from '../../src/components/versus/FilterChips';
 import { PresetRail } from '../../src/components/versus/PresetRail';
+import { HeroDeck } from '../../src/components/versus/HeroDeck';
+import { VsBadge } from '../../src/components/compare/VsBadge';
 import { useBattleBuilder } from '../../src/hooks/useBattleBuilder';
 import { usePresetTeams } from '../../src/hooks/usePresetTeams';
 import { FACTION_A, FACTION_B } from '../../src/components/versus/factionColors';
@@ -188,85 +190,52 @@ export default function BattleBuilderWeb() {
       </View>
     );
 
-  // ── Mobile sticky dual-team tray ──
-  const traySide = (side: 'A' | 'B', tint: string, roster: PickedHero[], synergy: number) => {
-    const isActive = b.active === side;
-    // Fewer fighters ⇒ larger slots; they compress as the side fills toward 5.
-    const n = roster.length;
-    const slotMax = n <= 1 ? 54 : n === 2 ? 48 : n === 3 ? 42 : n === 4 ? 37 : 33;
-    return (
-      <View style={ts.half}>
-        <View style={ts.head}>
-          <Pressable onPress={() => b.setActive(side)} style={ts.labelBtn} hitSlop={4}>
-            <Text
-              style={[ts.sideLabel, { color: isActive ? tint : 'rgba(245,235,220,0.5)' }]}
-              numberOfLines={1}
-            >
-              {isActive ? '▶ ' : ''}Side {side}
-              {roster.length >= 2 ? `  +${synergy}%` : ''}
-            </Text>
-          </Pressable>
-          <View style={ts.acts}>
-            <Pressable onPress={() => randomFill(side)} style={ts.actBtn} hitSlop={8}>
-              <Text style={ts.actText}>🎲</Text>
-            </Pressable>
-            {roster.length > 0 ? (
-              <Pressable onPress={() => b.clearSide(side)} style={ts.actBtn} hitSlop={8}>
-                <Ionicons name="close" size={13} color="rgba(245,235,220,0.7)" />
-              </Pressable>
-            ) : null}
-          </View>
+  // ── Mobile deck-stage: matchup header with fanned hands ──
+  const mFeaturedW = Math.max(
+    98,
+    Math.min(118, Math.round((width - contentPad * 2 - 56) / 2 - 38)),
+  );
+  const mobileStage = (
+    <View style={s.mStage}>
+      <View style={s.matchup}>
+        <HeroDeck
+          label="Side A"
+          tint={FACTION_A}
+          roster={b.aHeroes}
+          synergy={b.synergyA}
+          publisher={b.publisherA}
+          active={b.active === 'A'}
+          featuredW={mFeaturedW}
+          step={14}
+          onActivate={() => b.setActive('A')}
+          onRemove={b.removeHero}
+          onRandom={() => randomFill('A')}
+          onClear={() => b.clearSide('A')}
+        />
+        <View style={[s.vsWrap, { height: Math.round(mFeaturedW * 1.34) }]}>
+          <VsBadge size={40} variant="glass" />
         </View>
-        <View style={[ts.slots, side === 'B' ? ts.slotsR : null]}>
-          {roster.map((hero) => {
-            const uri = hero.portrait_url ?? hero.image_url ?? undefined;
-            return (
-              <Pressable
-                key={hero.id}
-                onPress={() => b.removeHero(hero.id)}
-                style={[ts.slot, { maxWidth: slotMax, borderColor: tint }]}
-                hitSlop={3}
-              >
-                {uri ? (
-                  <Image
-                    source={{ uri }}
-                    style={[StyleSheet.absoluteFill, side === 'B' ? ts.mirror : null]}
-                    contentFit="cover"
-                  />
-                ) : (
-                  <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />
-                )}
-              </Pressable>
-            );
-          })}
-          {roster.length < MAX_SIDE ? (
-            <View
-              style={[
-                ts.slot,
-                ts.slotEmpty,
-                { maxWidth: slotMax },
-                isActive ? ({ borderColor: tint, borderStyle: 'solid' } as object) : null,
-              ]}
-            >
-              <Text style={[ts.addPlus, isActive ? { color: tint } : null]}>+</Text>
-            </View>
-          ) : null}
-        </View>
+        <HeroDeck
+          label="Side B"
+          tint={FACTION_B}
+          roster={b.bHeroes}
+          synergy={b.synergyB}
+          publisher={b.publisherB}
+          active={b.active === 'B'}
+          flip
+          featuredW={mFeaturedW}
+          step={14}
+          onActivate={() => b.setActive('B')}
+          onRemove={b.removeHero}
+          onRandom={() => randomFill('B')}
+          onClear={() => b.clearSide('B')}
+        />
       </View>
-    );
-  };
-
-  const teamStrip = (
-    <View style={ts.tray}>
-      {traySide('A', FACTION_A, b.aHeroes, b.synergyA)}
-      <View style={ts.vs}>
-        <Text style={ts.vsText}>VS</Text>
-      </View>
-      {traySide('B', FACTION_B, b.bHeroes, b.synergyB)}
+      <Text style={s.chooseEyebrow}>Choose Your Fighters</Text>
     </View>
   );
 
-  // Sticky mobile head: team strip + a single search row with a Filters toggle.
+  // Sticky mobile head: a single search row with a Filters toggle.
   const mobileHead = (
     <View
       style={[
@@ -282,7 +251,6 @@ export default function BattleBuilderWeb() {
       {/* Frosted layer (only when stuck) extends up behind the TopBar so the two
           frosts read as one; transparent at rest so it never blurs the title. */}
       <View style={[mh.frost, stuck ? mh.frostOn : null]} pointerEvents="none" />
-      {teamStrip}
       {toolBar}
     </View>
   );
@@ -366,6 +334,7 @@ export default function BattleBuilderWeb() {
           </>
         ) : (
           <>
+            {mobileStage}
             <View ref={sentinelRef} style={mh.sentinel} />
             {mobileHead}
             {filterPanel}
@@ -536,6 +505,18 @@ const s = StyleSheet.create({
   title: { fontFamily: 'Flame-Regular', fontSize: 28, color: COLORS.beige, textAlign: 'center' },
   titleSm: { fontSize: 21 },
 
+  // Mobile deck-stage
+  mStage: { alignItems: 'center', gap: 10, marginBottom: 18 },
+  matchup: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 4 },
+  vsWrap: { justifyContent: 'center', alignItems: 'center', marginTop: 22, paddingHorizontal: 2 },
+  chooseEyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: COLORS.goldAccent,
+  },
+
   poolTool: { marginBottom: 16 },
   searchWrap: {
     flexDirection: 'row',
@@ -632,54 +613,6 @@ const s = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.08)',
   } as object,
-});
-
-const ts = StyleSheet.create({
-  tray: { flexDirection: 'row', alignItems: 'stretch', gap: 8 },
-  half: { flex: 1, gap: 7, padding: 7, borderRadius: 11 },
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
-  labelBtn: { flex: 1, paddingVertical: 2 },
-  sideLabel: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  slots: { flexDirection: 'row', gap: 5, justifyContent: 'flex-start', alignItems: 'flex-start' },
-  slotsR: { justifyContent: 'flex-end' },
-  slot: {
-    flex: 1,
-    aspectRatio: 1,
-    borderRadius: 7,
-    overflow: 'hidden',
-    borderWidth: 1,
-    backgroundColor: '#1b2a30',
-  },
-  slotEmpty: {
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.18)',
-    borderStyle: 'dashed',
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addPlus: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: 'rgba(255,255,255,0.4)' },
-  mirror: { transform: [{ scaleX: -1 }] },
-  acts: { flexDirection: 'row', gap: 6 },
-  actBtn: {
-    minWidth: 30,
-    height: 26,
-    paddingHorizontal: 6,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-  },
-  actText: { fontSize: 12 },
-  vs: { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 2 },
-  vsText: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.goldAccent },
 });
 
 const fs = StyleSheet.create({
