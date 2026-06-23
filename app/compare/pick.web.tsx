@@ -117,23 +117,10 @@ export default function BattleBuilderWeb() {
     />
   );
 
-  const controls = (
-    <View style={s.controls}>
-      <FilterChips
-        publisher={publisher}
-        alignment={alignment}
-        onPublisher={setPublisher}
-        onAlignment={setAlignment}
-        tone="dark"
-      />
-      <PresetRail
-        teams={teams}
-        label={`→ ${b.active === 'A' ? 'Side A' : 'Side B'}`}
-        tint={activeTint}
-        onPick={pickPreset}
-        tone="dark"
-      />
-      <View style={s.searchWrap}>
+  // Shared search + Filters toggle (mobile sticky head and desktop top bar).
+  const toolBar = (
+    <View style={mh.tools}>
+      <View style={[s.searchWrap, mh.searchFlex]}>
         <Ionicons name="search" size={18} color="rgba(245,235,220,0.4)" />
         <TextInput
           style={s.input}
@@ -148,6 +135,23 @@ export default function BattleBuilderWeb() {
           </Pressable>
         ) : null}
       </View>
+      <Pressable
+        onPress={() => setFiltersOpen((o) => !o)}
+        style={[mh.filterBtn, filtersOpen ? mh.filterBtnOn : null]}
+        hitSlop={6}
+      >
+        <Ionicons
+          name="options-outline"
+          size={19}
+          color={filtersOpen ? '#1a130a' : 'rgba(245,235,220,0.8)'}
+        />
+        <Text style={[mh.filterLabel, filtersOpen ? mh.filterLabelOn : null]}>Filters</Text>
+        {activeFilters > 0 ? (
+          <View style={mh.badge}>
+            <Text style={mh.badgeText}>{activeFilters}</Text>
+          </View>
+        ) : null}
+      </Pressable>
     </View>
   );
 
@@ -248,39 +252,7 @@ export default function BattleBuilderWeb() {
       ]}
     >
       {teamStrip}
-      <View style={mh.tools}>
-        <View style={[s.searchWrap, mh.searchFlex]}>
-          <Ionicons name="search" size={18} color="rgba(245,235,220,0.4)" />
-          <TextInput
-            style={s.input}
-            placeholder="Search any hero or villain…"
-            placeholderTextColor="rgba(245,235,220,0.4)"
-            value={query}
-            onChangeText={setQuery}
-          />
-          {query.length > 0 ? (
-            <Pressable onPress={() => setQuery('')} hitSlop={8}>
-              <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.4)" />
-            </Pressable>
-          ) : null}
-        </View>
-        <Pressable
-          onPress={() => setFiltersOpen((o) => !o)}
-          style={[mh.filterBtn, filtersOpen ? mh.filterBtnOn : null]}
-          hitSlop={6}
-        >
-          <Ionicons
-            name="options-outline"
-            size={19}
-            color={filtersOpen ? '#1a130a' : 'rgba(245,235,220,0.8)'}
-          />
-          {activeFilters > 0 ? (
-            <View style={mh.badge}>
-              <Text style={mh.badgeText}>{activeFilters}</Text>
-            </View>
-          ) : null}
-        </Pressable>
-      </View>
+      {toolBar}
     </View>
   );
 
@@ -342,7 +314,8 @@ export default function BattleBuilderWeb() {
 
         {isWide ? (
           <>
-            {controls}
+            <View style={s.toolWrap}>{toolBar}</View>
+            {filterPanel}
             <View style={s.arena}>
               <View style={s.flankCol}>{flankA}</View>
               <View style={s.poolCol}>{grid}</View>
@@ -529,7 +502,7 @@ const s = StyleSheet.create({
   title: { fontFamily: 'Flame-Regular', fontSize: 28, color: COLORS.beige, textAlign: 'center' },
   titleSm: { fontSize: 21 },
 
-  controls: { gap: 12, maxWidth: 880, width: '100%', alignSelf: 'center', marginBottom: 20 },
+  toolWrap: { maxWidth: 880, width: '100%', alignSelf: 'center', marginBottom: 18 },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -793,16 +766,20 @@ const mh = StyleSheet.create({
   tools: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   searchFlex: { flex: 1 },
   filterBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 7,
+    height: 48,
+    paddingHorizontal: 16,
+    borderRadius: 12,
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
   },
   filterBtnOn: { backgroundColor: COLORS.goldAccent, borderColor: COLORS.goldAccent },
+  filterLabel: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(245,235,220,0.85)' },
+  filterLabelOn: { color: '#1a130a' },
   badge: {
     position: 'absolute',
     top: -5,
@@ -818,5 +795,12 @@ const mh = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: '#1a130a' },
-  panel: { gap: 12, marginTop: -2, marginBottom: 16 },
+  panel: {
+    gap: 12,
+    marginTop: -2,
+    marginBottom: 16,
+    maxWidth: 880,
+    width: '100%',
+    alignSelf: 'center',
+  },
 });
