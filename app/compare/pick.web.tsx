@@ -222,7 +222,12 @@ export default function BattleBuilderWeb() {
   };
 
   const mobileTray = (
-    <View style={[ts.tray, { top: TOPBAR_HEIGHT + 8 }]}>
+    <View
+      style={[
+        ts.tray,
+        { top: `calc(${TOPBAR_HEIGHT + 8}px + env(safe-area-inset-top))` as unknown as number },
+      ]}
+    >
       {traySide('A', FACTION_A, b.aHeroes, b.synergyA)}
       <View style={ts.vs}>
         <Text style={ts.vsText}>VS</Text>
@@ -254,7 +259,12 @@ export default function BattleBuilderWeb() {
         style={s.scroll}
         contentContainerStyle={[
           s.content,
-          { paddingHorizontal: contentPad, paddingBottom: isWide ? 40 : 96 },
+          {
+            paddingHorizontal: contentPad,
+            paddingBottom: isWide
+              ? 40
+              : ('calc(env(safe-area-inset-bottom) + 96px)' as unknown as number),
+          },
         ]}
       >
         <View style={s.header}>
@@ -469,7 +479,7 @@ const s = StyleSheet.create({
     width: 232,
     alignItems: 'center',
     position: 'sticky',
-    top: TOPBAR_HEIGHT + 16,
+    top: `calc(${TOPBAR_HEIGHT + 16}px + env(safe-area-inset-top))` as unknown as number,
     alignSelf: 'flex-start',
   } as object,
   poolCol: { flex: 1 },
@@ -521,12 +531,18 @@ const s = StyleSheet.create({
   hintFull: { textAlign: 'center', paddingVertical: 16 },
 
   mobileBar: {
+    // Pinned to the visual viewport; clears the iOS Safari toolbar + home indicator.
+    position: 'fixed',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 30,
     paddingTop: 10,
-    paddingBottom: 14,
+    paddingBottom: 'calc(env(safe-area-inset-bottom) + 14px)' as unknown as number,
     backgroundColor: 'rgba(11,24,32,0.96)',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.08)',
-  },
+  } as object,
 });
 
 const ts = StyleSheet.create({
