@@ -16,8 +16,12 @@ import { useHeroSearchInfinite } from '../../src/lib/query/heroQueries';
 import { OpponentCard } from '../../src/components/compare/OpponentCard';
 import { FilterChips } from '../../src/components/versus/FilterChips';
 import { PresetRail } from '../../src/components/versus/PresetRail';
-import { DraftDrawer } from '../../src/components/versus/DraftDrawer';
+import { DuelDock } from '../../src/components/versus/DuelDock';
+import { DuelStepper } from '../../src/components/versus/DuelStepper';
+import { ChallengerIntro } from '../../src/components/versus/ChallengerIntro';
+import { CuratedRow } from '../../src/components/versus/CuratedRow';
 import { useBattleBuilder } from '../../src/hooks/useBattleBuilder';
+import { useCuratedRows } from '../../src/hooks/useCuratedRows';
 import { usePresetTeams } from '../../src/hooks/usePresetTeams';
 import { FACTION_A, FACTION_B } from '../../src/components/versus/factionColors';
 import { COLORS, SURFACE, SURFACE_GRADIENT } from '../../src/constants/colors';
@@ -61,6 +65,7 @@ export default function BattleBuilderWeb() {
   const [alignment, setAlignment] = useState<AlignmentFilter>('All');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [act, setAct] = useState<'squad' | 'challenger'>('squad');
   const debounced = useDebounce(query, 200);
   const activeFilters = (publisher !== 'All' ? 1 : 0) + (alignment !== 'All' ? 1 : 0);
 
@@ -100,6 +105,25 @@ export default function BattleBuilderWeb() {
     b.setActive(side);
     b.fillActive(pickRandom(heroes, 3));
   };
+
+  // Guided-duel act navigation (mobile): Act 1 fills side A, Act 2 fills side B.
+  const goChallenger = () => {
+    b.setActive('B');
+    setAct('challenger');
+    setDrawerOpen(false);
+  };
+  const goSquad = () => {
+    b.setActive('A');
+    setAct('squad');
+    setDrawerOpen(false);
+  };
+  const goFight = () => {
+    if (b.battleHref) {
+      withViewTransition(() => router.push(b.battleHref as Parameters<typeof router.push>[0]));
+    }
+  };
+  const squadLead = b.aHeroes[0] ?? null;
+  const curated = useCuratedRows(squadLead?.id, b.isPlaced);
 
   const activeTint = b.active === 'A' ? FACTION_A : FACTION_B;
   const cardW = isWide ? 104 : (width - contentPad * 2 - 2 * 10) / 3;
@@ -206,6 +230,12 @@ export default function BattleBuilderWeb() {
       {/* Frosted layer (only when stuck) extends up behind the TopBar so the two
           frosts read as one; transparent at rest so it never blurs the title. */}
       <View style={[mh.frost, stuck ? mh.frostOn : null]} pointerEvents="none" />
+      <DuelStepper
+        act={act}
+        hasSquad={b.aHeroes.length >= 1}
+        ready={b.canBattle}
+        onStep={(a) => (a === 'squad' ? goSquad() : goChallenger())}
+      />
       {toolBar}
     </View>
   );
@@ -292,23 +322,33 @@ export default function BattleBuilderWeb() {
             <View ref={sentinelRef} style={mh.sentinel} />
             {mobileHead}
             {filterPanel}
+            {act === 'challenger' ? (
+              <ChallengerIntro
+                lead={squadLead}
+                rivals={curated.rivals}
+                onPick={(item) => add(item)}
+                onSurprise={() => randomFill('B')}
+              />
+            ) : curated.teammates.length > 0 && !query ? (
+              <CuratedRow
+                label={`⚡ Teammates of ${squadLead?.name ?? ''}`}
+                items={curated.teammates}
+                onPick={(item) => add(item)}
+              />
+            ) : null}
             {grid}
           </>
         )}
       </ScrollView>
 
       {!isWide ? (
-        <DraftDrawer
+        <DuelDock
           b={b}
+          act={act}
           expanded={drawerOpen}
           onToggle={() => setDrawerOpen((o) => !o)}
-          onFight={() => {
-            if (b.battleHref) {
-              withViewTransition(() =>
-                router.push(b.battleHref as Parameters<typeof router.push>[0]),
-              );
-            }
-          }}
+          onPrimary={act === 'squad' ? goChallenger : goFight}
+          onBack={goSquad}
           onRandom={(side) => randomFill(side)}
         />
       ) : null}

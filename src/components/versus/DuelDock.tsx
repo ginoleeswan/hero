@@ -6,20 +6,32 @@ import { FACTION_A, FACTION_B } from './factionColors';
 import { MAX_SIDE, type PickedHero, type Side } from '../../lib/battleBuilderState';
 import type { BattleBuilder } from '../../hooks/useBattleBuilder';
 
+type Act = 'squad' | 'challenger';
+
 interface Props {
   b: BattleBuilder;
+  act: Act;
   expanded: boolean;
   onToggle: () => void;
-  onFight: () => void;
+  /** Next (squad) or Fight (challenger). */
+  onPrimary: () => void;
+  /** Back to the squad act (challenger only). */
+  onBack: () => void;
   onRandom: (side: Side) => void;
 }
 
 const SAFE_BOTTOM = 'env(safe-area-inset-bottom)';
 
-/** Mobile "draft drawer": the pool owns the screen; the matchup lives in a bottom
- *  sheet — a slim peek bar (mini-matchup + FIGHT) that expands to a full squad
- *  manager. Progressive disclosure, thumb-reachable. */
-export function DraftDrawer({ b, expanded, onToggle, onFight, onRandom }: Props) {
+/** The guided duel's bottom dock. Act 1 ("Your Squad") shows just your side + a
+ *  "Next" CTA; Act 2 ("Challenger") shows the full A-vs-B matchup + FIGHT. Tap to
+ *  expand a manage sheet for the relevant side(s). */
+export function DuelDock({ b, act, expanded, onToggle, onPrimary, onBack, onRandom }: Props) {
+  const isSquad = act === 'squad';
+  const primaryReady = isSquad ? b.aHeroes.length >= 1 : b.canBattle && !!b.battleHref;
+  const primaryLabel = isSquad
+    ? 'Next: Challenger →'
+    : `⚔ FIGHT · ${b.aHeroes.length} v ${b.bHeroes.length}`;
+
   return (
     <>
       {expanded ? (
@@ -42,46 +54,89 @@ export function DraftDrawer({ b, expanded, onToggle, onFight, onRandom }: Props)
               onRandom={() => onRandom('A')}
               onClear={() => b.clearSide('A')}
             />
-            <View style={s.vsRow}>
-              <View style={s.vsLine} />
-              <Text style={s.vsText}>VS</Text>
-              <View style={s.vsLine} />
-            </View>
-            <ManageSide
-              side="B"
-              tint={FACTION_B}
-              roster={b.bHeroes}
-              synergy={b.synergyB}
-              publisher={b.publisherB}
-              active={b.active === 'B'}
-              flip
-              onActivate={() => b.setActive('B')}
-              onRemove={b.removeHero}
-              onRandom={() => onRandom('B')}
-              onClear={() => b.clearSide('B')}
-            />
+            {!isSquad ? (
+              <>
+                <View style={s.vsRow}>
+                  <View style={s.vsLine} />
+                  <Text style={s.vsText}>VS</Text>
+                  <View style={s.vsLine} />
+                </View>
+                <ManageSide
+                  side="B"
+                  tint={FACTION_B}
+                  roster={b.bHeroes}
+                  synergy={b.synergyB}
+                  publisher={b.publisherB}
+                  active={b.active === 'B'}
+                  flip
+                  onActivate={() => b.setActive('B')}
+                  onRemove={b.removeHero}
+                  onRandom={() => onRandom('B')}
+                  onClear={() => b.clearSide('B')}
+                />
+              </>
+            ) : null}
 
-            <FightButton b={b} onFight={onFight} />
+            <PrimaryCTA label={primaryLabel} ready={primaryReady} onPress={onPrimary} />
           </View>
         </View>
       ) : null}
 
-      {/* Collapsed peek bar */}
+      {/* Collapsed dock */}
       <View style={s.bar}>
         <Pressable onPress={onToggle} style={s.summary} hitSlop={6}>
-          <DeckStack roster={b.aHeroes} tint={FACTION_A} active={b.active === 'A'} />
-          <Text style={s.swords}>⚔</Text>
-          <DeckStack roster={b.bHeroes} tint={FACTION_B} active={b.active === 'B'} flip />
+          {isSquad ? (
+            <>
+              <DeckStack roster={b.aHeroes} tint={FACTION_A} active />
+              <Text style={s.tag}>Your squad · {b.aHeroes.length}</Text>
+            </>
+          ) : (
+            <>
+              <DeckStack roster={b.aHeroes} tint={FACTION_A} active={b.active === 'A'} />
+              <Text style={s.swords}>⚔</Text>
+              <DeckStack roster={b.bHeroes} tint={FACTION_B} active={b.active === 'B'} flip />
+            </>
+          )}
           <Ionicons name="chevron-up" size={18} color="rgba(245,235,220,0.6)" style={s.chev} />
         </Pressable>
-        <FightButton b={b} onFight={onFight} compact />
+        {!isSquad ? (
+          <Pressable onPress={onBack} style={s.back} hitSlop={6}>
+            <Ionicons name="arrow-back" size={16} color="rgba(245,235,220,0.8)" />
+          </Pressable>
+        ) : null}
+        <PrimaryCTA
+          label={isSquad ? 'Next →' : '⚔ FIGHT'}
+          ready={primaryReady}
+          onPress={onPrimary}
+          compact
+        />
       </View>
     </>
   );
 }
 
-/** A growing deck of overlapping mini-cards for the peek bar — the "deck grows"
- *  drama at a glance (latest on top, stacking toward the VS). */
+function PrimaryCTA({
+  label,
+  ready,
+  onPress,
+  compact,
+}: {
+  label: string;
+  ready: boolean;
+  onPress: () => void;
+  compact?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={ready ? onPress : undefined}
+      disabled={!ready}
+      style={[compact ? s.ctaCompact : s.ctaFull, ready ? null : s.ctaDim]}
+    >
+      <Text style={[s.ctaText, ready ? null : s.ctaTextDim]}>{label}</Text>
+    </Pressable>
+  );
+}
+
 function DeckStack({
   roster,
   tint,
@@ -133,29 +188,6 @@ function DeckStack({
   );
 }
 
-function FightButton({
-  b,
-  onFight,
-  compact,
-}: {
-  b: BattleBuilder;
-  onFight: () => void;
-  compact?: boolean;
-}) {
-  const ready = b.canBattle && !!b.battleHref;
-  return (
-    <Pressable
-      onPress={ready ? onFight : undefined}
-      disabled={!ready}
-      style={[compact ? s.fightCompact : s.fightFull, ready ? null : s.fightDim]}
-    >
-      <Text style={[s.fightText, ready ? null : s.fightTextDim]}>
-        ⚔ FIGHT{ready ? ` · ${b.aHeroes.length} v ${b.bHeroes.length}` : ''}
-      </Text>
-    </Pressable>
-  );
-}
-
 function ManageSide({
   side,
   tint,
@@ -186,7 +218,7 @@ function ManageSide({
       <View style={s.sideHead}>
         <Pressable onPress={onActivate} style={s.sideLabelBtn} hitSlop={4}>
           <Text style={[s.sideLabel, { color: active ? tint : 'rgba(245,235,220,0.55)' }]}>
-            {active ? '▶ ' : ''}Side {side}
+            {side === 'A' ? 'Your Squad' : 'Challenger'}
           </Text>
           {roster.length >= 2 ? (
             <Text style={[s.syn, { color: tint }]}>SYN +{synergy}%</Text>
@@ -233,8 +265,8 @@ function ManageSide({
           );
         })}
         {roster.length < MAX_SIDE ? (
-          <View style={[s.card, s.cardEmpty, active ? { borderColor: tint } : null]}>
-            <Text style={[s.plus, active ? { color: tint } : null]}>+</Text>
+          <View style={[s.card, s.cardEmpty]}>
+            <Text style={s.plus}>+</Text>
           </View>
         ) : null}
       </View>
@@ -325,7 +357,6 @@ const s = StyleSheet.create({
   },
   rmx: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#fff', lineHeight: 13 },
 
-  // Collapsed peek bar
   bar: {
     position: 'fixed',
     left: 0,
@@ -334,7 +365,7 @@ const s = StyleSheet.create({
     zIndex: 30,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: `calc(${SAFE_BOTTOM} + 12px)` as unknown as number,
@@ -343,8 +374,20 @@ const s = StyleSheet.create({
     borderTopColor: 'rgba(255,255,255,0.08)',
   } as object,
   summary: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  tag: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(245,235,220,0.7)' },
   swords: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.goldAccent },
   chev: { marginLeft: 'auto' },
+  back: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+  },
+
   stackWrap: { paddingBottom: 3, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   stackActive: { borderBottomColor: COLORS.goldAccent },
   stack: { position: 'relative' },
@@ -364,22 +407,22 @@ const s = StyleSheet.create({
   },
   deckQ: { fontFamily: 'Flame-Regular', fontSize: 16, color: 'rgba(255,255,255,0.3)' },
 
-  fightFull: {
+  ctaFull: {
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.goldAccent,
     borderRadius: 13,
     paddingVertical: 14,
   },
-  fightCompact: {
+  ctaCompact: {
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.goldAccent,
     borderRadius: 12,
     paddingVertical: 11,
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
   },
-  fightDim: { backgroundColor: 'rgba(255,255,255,0.12)' },
-  fightText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: '#1a130a', letterSpacing: 0.4 },
-  fightTextDim: { color: 'rgba(245,235,220,0.55)' },
+  ctaDim: { backgroundColor: 'rgba(255,255,255,0.12)' },
+  ctaText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: '#1a130a', letterSpacing: 0.4 },
+  ctaTextDim: { color: 'rgba(245,235,220,0.55)' },
 });
