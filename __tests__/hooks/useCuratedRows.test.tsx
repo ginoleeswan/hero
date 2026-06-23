@@ -16,14 +16,24 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 );
 
 const card = (id: string): RelatedHeroCard =>
-  ({ id, name: id, image_url: null, image_md_url: null, portrait_url: null, publisher: null, alignment: null }) as RelatedHeroCard;
+  ({
+    id,
+    name: id,
+    image_url: null,
+    image_md_url: null,
+    portrait_url: null,
+    publisher: null,
+    alignment: null,
+  }) as RelatedHeroCard;
 
 describe('useCuratedRows', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('returns teammates + rivals for a lead, excluding placed heroes', async () => {
     mockGetRelated.mockImplementation((_, kind) =>
-      Promise.resolve(kind === 'teammate' ? [card('robin'), card('placed')] : [card('joker'), card('bane')]),
+      Promise.resolve(
+        kind === 'teammate' ? [card('robin'), card('placed')] : [card('joker'), card('bane')],
+      ),
     );
     const isPlaced = (id: string) => id === 'placed';
     const { result } = renderHook(() => useCuratedRows('batman', isPlaced), { wrapper });

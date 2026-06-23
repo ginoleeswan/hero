@@ -276,7 +276,7 @@ const c = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 30px)`,
+    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 10px)`,
     backgroundImage:
       'linear-gradient(to bottom, rgba(11,24,32,1) 0%, rgba(11,24,32,0.85) 30%, rgba(11,24,32,0.45) 62%, rgba(11,24,32,0.14) 84%, transparent 100%)',
     opacity: 1,
@@ -291,7 +291,7 @@ const c = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 28px)`,
+    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 10px)`,
     opacity: 0,
     transition: 'opacity 300ms ease',
   } as object,
