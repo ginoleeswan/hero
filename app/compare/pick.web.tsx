@@ -764,13 +764,16 @@ const mh = StyleSheet.create({
   head: {
     position: 'sticky',
     zIndex: 20,
-    backgroundColor: COLORS.deepNavy,
+    // Frosted, not a solid panel — blends with the stage at the top, masks the
+    // grid as it scrolls under (matches the TopBar's frosted treatment).
+    backgroundColor: 'rgba(11,24,32,0.55)',
+    backdropFilter: 'blur(16px) saturate(140%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(140%)',
     paddingTop: 10,
     paddingBottom: 12,
     gap: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.07)',
-    boxShadow: '0 10px 20px -8px rgba(0,0,0,0.5)',
+    borderBottomColor: 'rgba(255,255,255,0.06)',
   } as object,
   tools: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   searchFlex: { flex: 1 },
