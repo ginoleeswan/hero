@@ -80,7 +80,9 @@ export default function BattleBuilderWeb() {
     if (!node || typeof node.getBoundingClientRect !== 'function') return undefined;
     const io = new IntersectionObserver(([e]) => setStuck(!e.isIntersecting), {
       threshold: 0,
-      rootMargin: `-${TOPBAR_HEIGHT + 2}px 0px 0px 0px`,
+      // 2px above the pinned header, so the glass fades in on the first scroll
+      // (the header itself never moves — rest position == stuck position).
+      rootMargin: `-${TOPBAR_HEIGHT - 2}px 0px 0px 0px`,
     });
     io.observe(node);
     return () => io.disconnect();
@@ -287,7 +289,11 @@ export default function BattleBuilderWeb() {
           s.content,
           {
             paddingHorizontal: contentPad,
-            paddingTop: TOPBAR_HEIGHT + (isWide ? 22 : 8),
+            // Mobile: rest position == the sticky `top`, so the header never
+            // shifts on scroll — it's pinned and only the frost animates in.
+            paddingTop: isWide
+              ? TOPBAR_HEIGHT + 22
+              : (`calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top))` as unknown as number),
             paddingBottom: isWide
               ? 40
               : ('calc(env(safe-area-inset-bottom) + 96px)' as unknown as number),
@@ -711,7 +717,9 @@ const mh = StyleSheet.create({
   head: {
     position: 'sticky',
     zIndex: 20,
-    paddingTop: 5,
+    // Clears the TopBar's frost, which bleeds ~13px below the bar, so the stepper
+    // never sits in the nav's blur.
+    paddingTop: 18,
     paddingBottom: 10,
     gap: 14,
   } as object,
