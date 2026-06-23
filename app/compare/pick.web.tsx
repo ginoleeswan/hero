@@ -259,10 +259,21 @@ function Flank({
   const renderH = Math.round(renderW * 1.32);
 
   return (
-    <View style={[fs.flank, active ? { borderColor: COLORS.goldAccent } : fs.idle]}>
+    <View style={[fs.flank, active ? null : fs.dim]}>
+      <View style={fs.tagSlot}>
+        {active ? (
+          <View style={[fs.pickingTag, { backgroundColor: tint }]}>
+            <Text style={fs.pickingText}>▶ Now Picking</Text>
+          </View>
+        ) : null}
+      </View>
       <Pressable
         onPress={onActivate}
-        style={[fs.render, { width: renderW, height: renderH, borderColor: tint }]}
+        style={[
+          fs.render,
+          { width: renderW, height: renderH, borderColor: tint },
+          active ? ({ boxShadow: `0 0 36px 2px ${tint}80` } as object) : null,
+        ]}
       >
         {starUri ? (
           <Image
@@ -443,11 +454,19 @@ const fs = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 10,
-    borderRadius: 20,
-    borderWidth: 1.5,
     width: '100%',
   },
-  idle: { borderColor: 'transparent' },
+  // The inactive side recedes so the active fighter reads as the one in play.
+  dim: { opacity: 0.46, transform: [{ scale: 0.96 }] },
+  tagSlot: { height: 22, justifyContent: 'center' },
+  pickingTag: { paddingHorizontal: 11, paddingVertical: 3, borderRadius: 11 },
+  pickingText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 1.2,
+    color: '#fff',
+    textTransform: 'uppercase',
+  },
   render: {
     borderRadius: 16,
     overflow: 'hidden',
