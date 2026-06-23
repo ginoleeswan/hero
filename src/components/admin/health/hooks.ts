@@ -35,6 +35,7 @@ import {
 import { getPendingStatsCount } from '../../../lib/db/stats';
 import { getPendingPortraitCount } from '../../../lib/db/portraits';
 import { fetchCommunityOverview } from '../../../lib/db/community';
+import { fetchTrafficOverview } from '../../../lib/db/traffic';
 import type { LogTone, LogEntry, DomainKey } from './format';
 
 type Flash = (msg: string, tone?: LogTone) => void;
@@ -72,6 +73,7 @@ export function useCatalogQueries({
   const onBuild = domain === 'pipelines';
   const onSpend = domain === 'spend';
   const onCommunity = domain === 'community';
+  const onTraffic = domain === 'traffic';
 
   const healthQ = useQuery({
     queryKey: ['catalogHealth'],
@@ -174,6 +176,12 @@ export function useCatalogQueries({
     enabled: enabled && onCommunity,
     staleTime: 60_000,
   });
+  const trafficQ = useQuery({
+    queryKey: ['trafficOverview'],
+    queryFn: () => fetchTrafficOverview(28),
+    enabled: enabled && onTraffic,
+    staleTime: 5 * 60_000,
+  });
 
   // While a run is in flight, poll backlog + usage so the live numbers tick down.
   const runsData = runsQ.data;
@@ -221,6 +229,7 @@ export function useCatalogQueries({
     portraitsPendingQ,
     recentEnrichedQ,
     communityQ,
+    trafficQ,
   };
 }
 

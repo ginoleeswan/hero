@@ -11,6 +11,7 @@ const fullOverview = {
   online: {
     onlineNow: 1,
     activeToday: 2,
+    activeVisitors: 3,
     recent: [{ userId: 'u1', displayName: 'Gino', lastSeenAt: '2026-06-23T00:00:00Z', live: true }],
   },
   topViewed: [{ id: 'h1', name: 'Spawn', image_url: null, publisher: 'Image', count: 9 }],

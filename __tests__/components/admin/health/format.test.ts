@@ -5,7 +5,7 @@ import {
 } from '../../../../src/components/admin/health/format';
 
 describe('DOMAINS', () => {
-  it('lists the primary domains in rail order, then placeholders', () => {
+  it('lists every domain in rail order', () => {
     expect(DOMAINS.map((d) => d.key)).toEqual([
       'command',
       'catalog',
@@ -18,9 +18,9 @@ describe('DOMAINS', () => {
     ]);
   });
 
-  it('flags exactly the remaining future domain as a placeholder', () => {
+  it('has no remaining placeholder domains (all are live)', () => {
     const placeholders = DOMAINS.filter((d) => d.placeholder).map((d) => d.key);
-    expect(placeholders).toEqual(['traffic']);
+    expect(placeholders).toEqual([]);
   });
 
   it('every domain has a label and an Ionicons name', () => {
@@ -40,6 +40,7 @@ describe('DOMAINS', () => {
       'campaigns',
       'spend',
       'community',
+      'traffic',
     ]);
   });
 });

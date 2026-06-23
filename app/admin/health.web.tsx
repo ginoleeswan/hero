@@ -32,7 +32,7 @@ import { fetchSourceCoverage } from '../../src/lib/db/catalogHealth';
 import { CampaignsDomain } from '../../src/components/admin/health/domains/CampaignsDomain';
 import { ReviewDomain } from '../../src/components/admin/health/domains/ReviewDomain';
 import { CommunityDomain } from '../../src/components/admin/health/domains/CommunityDomain';
-import { PlaceholderDomain } from '../../src/components/admin/health/domains/PlaceholderDomain';
+import { TrafficDomain } from '../../src/components/admin/health/domains/TrafficDomain';
 import {
   useActivityLog,
   useCatalogActions,
@@ -96,6 +96,7 @@ export default function AdminHealthScreen() {
     portraitsPendingQ,
     recentEnrichedQ,
     communityQ,
+    trafficQ,
   } = useCatalogQueries({
     enabled: gateResolved && isAdmin,
     domain,
@@ -452,10 +453,10 @@ export default function AdminHealthScreen() {
           />
         )}
         {domain === 'traffic' && (
-          <PlaceholderDomain
-            label="Traffic"
-            icon="trending-up-outline"
-            blurb="Page views, search, and traffic analytics will live here."
+          <TrafficDomain
+            data={trafficQ.data ?? null}
+            loading={trafficQ.isLoading}
+            narrow={narrow}
           />
         )}
       </CommandShell>

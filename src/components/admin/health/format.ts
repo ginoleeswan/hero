@@ -179,7 +179,7 @@ export const DOMAINS: DomainDef[] = [
   { key: 'campaigns', label: 'Campaigns', icon: 'megaphone-outline' },
   { key: 'spend', label: 'Spend', icon: 'cash-outline' },
   { key: 'community', label: 'Community', icon: 'people-outline' },
-  { key: 'traffic', label: 'Traffic', icon: 'trending-up-outline', placeholder: true },
+  { key: 'traffic', label: 'Traffic', icon: 'trending-up-outline' },
 ];
 
 /** Primary (non-placeholder) domain keys — the mobile bottom-bar set. */

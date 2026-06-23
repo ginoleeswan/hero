@@ -45,6 +45,8 @@ export interface PresenceSummary {
   onlineNow: number;
   /** Signed-in members seen in the last 24 hours. */
   activeToday: number;
+  /** Visitors (anon + signed-in) active in page_views in the last 5 min. */
+  activeVisitors: number;
   /** Most-recently-seen members (up to 8). */
   recent: OnlineMember[];
 }

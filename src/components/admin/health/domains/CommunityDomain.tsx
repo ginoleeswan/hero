@@ -122,6 +122,10 @@ function OnlineNow({ online }: { online: PresenceSummary }) {
           <Text style={s.onlineSub}>{online.activeToday.toLocaleString()}</Text>
           <Text style={s.onlineSubLabel}>active today</Text>
         </View>
+        <View>
+          <Text style={s.onlineSub}>{online.activeVisitors.toLocaleString()}</Text>
+          <Text style={s.onlineSubLabel}>visitors now</Text>
+        </View>
       </View>
       {online.recent.length === 0 ? (
         <EmptyState text="No members seen yet." />
@@ -136,7 +140,9 @@ function OnlineNow({ online }: { online: PresenceSummary }) {
           </View>
         ))
       )}
-      <Text style={s.anonNote}>Anonymous visitor counts arrive with Traffic (Phase 3).</Text>
+      <Text style={s.anonNote}>
+        “Visitors now” counts anonymous + signed-in sessions — see Traffic for detail.
+      </Text>
     </Panel>
   );
 }
