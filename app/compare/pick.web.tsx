@@ -62,7 +62,11 @@ export default function BattleBuilderWeb() {
 
   const searchQ = useHeroSearchInfinite(debounced, publisher, alignment);
   const heroes = useMemo(
-    () => (searchQ.data?.pages ?? []).flat().filter((h) => !b.isPlaced(h.id)).slice(0, 120),
+    () =>
+      (searchQ.data?.pages ?? [])
+        .flat()
+        .filter((h) => !b.isPlaced(h.id))
+        .slice(0, 120),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- granular inputs, not the unstable `b`
     [searchQ.data, b.aHeroes, b.bHeroes, b.isPlaced],
   );
@@ -158,7 +162,10 @@ export default function BattleBuilderWeb() {
   );
 
   return (
-    <ScrollView style={s.root} contentContainerStyle={[s.content, { paddingHorizontal: contentPad }]}>
+    <ScrollView
+      style={s.root}
+      contentContainerStyle={[s.content, { paddingHorizontal: contentPad }]}
+    >
       <View style={s.header}>
         <Text style={s.eyebrow}>★ Build a Battle ★</Text>
         <Text style={s.title}>Select Your Fighters</Text>
@@ -184,7 +191,9 @@ export default function BattleBuilderWeb() {
         {b.canBattle && b.battleHref ? (
           <Pressable
             onPress={() =>
-              withViewTransition(() => router.push(b.battleHref as Parameters<typeof router.push>[0]))
+              withViewTransition(() =>
+                router.push(b.battleHref as Parameters<typeof router.push>[0]),
+              )
             }
             style={s.fight}
           >
@@ -235,9 +244,16 @@ function Flank({
 
   return (
     <View style={[fs.flank, active ? { borderColor: COLORS.goldAccent } : fs.idle]}>
-      <Pressable onPress={onActivate} style={[fs.render, { width: renderW, height: renderH, borderColor: tint }]}>
+      <Pressable
+        onPress={onActivate}
+        style={[fs.render, { width: renderW, height: renderH, borderColor: tint }]}
+      >
         {starUri ? (
-          <Image source={{ uri: starUri }} style={[StyleSheet.absoluteFill, flip ? fs.mirror : null]} contentFit="cover" />
+          <Image
+            source={{ uri: starUri }}
+            style={[StyleSheet.absoluteFill, flip ? fs.mirror : null]}
+            contentFit="cover"
+          />
         ) : (
           <View style={fs.empty}>
             <Text style={fs.emptyQ}>?</Text>
@@ -257,9 +273,17 @@ function Flank({
           if (!hero) return <View key={i} style={[fs.chip, fs.chipEmpty]} />;
           const uri = hero.portrait_url ?? hero.image_url ?? undefined;
           return (
-            <Pressable key={hero.id} onPress={() => onRemove(hero.id)} style={[fs.chip, { borderColor: tint }]}>
+            <Pressable
+              key={hero.id}
+              onPress={() => onRemove(hero.id)}
+              style={[fs.chip, { borderColor: tint }]}
+            >
               {uri ? (
-                <Image source={{ uri }} style={[StyleSheet.absoluteFill, flip ? fs.mirror : null]} contentFit="cover" />
+                <Image
+                  source={{ uri }}
+                  style={[StyleSheet.absoluteFill, flip ? fs.mirror : null]}
+                  contentFit="cover"
+                />
               ) : (
                 <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />
               )}
@@ -272,8 +296,12 @@ function Flank({
       </View>
 
       <View style={fs.meta}>
-        {publisher ? <Text style={fs.pub}>{publisher === 'dc' ? 'all-DC' : 'all-Marvel'}</Text> : null}
-        {roster.length >= 2 ? <Text style={[fs.syn, { color: tint }]}>SYNERGY +{synergy}%</Text> : null}
+        {publisher ? (
+          <Text style={fs.pub}>{publisher === 'dc' ? 'all-DC' : 'all-Marvel'}</Text>
+        ) : null}
+        {roster.length >= 2 ? (
+          <Text style={[fs.syn, { color: tint }]}>SYNERGY +{synergy}%</Text>
+        ) : null}
       </View>
 
       <Pressable onPress={onRandom} style={fs.dice}>
@@ -287,54 +315,172 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.deepNavy },
   content: {
     flexGrow: 1,
-    ...Platform.select({ web: { backgroundImage: SURFACE_GRADIENT.stageImmersive } as object, default: {} }),
+    ...Platform.select({
+      web: { backgroundImage: SURFACE_GRADIENT.stageImmersive } as object,
+      default: {},
+    }),
     paddingTop: TOPBAR_HEIGHT + 22,
     paddingBottom: 40,
   } as object,
 
   header: { alignItems: 'center', marginBottom: 22 },
-  eyebrow: { fontFamily: 'Nunito_700Bold', fontSize: 11.5, letterSpacing: 4, textTransform: 'uppercase', color: COLORS.goldAccent, marginBottom: 6 },
+  eyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11.5,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+    color: COLORS.goldAccent,
+    marginBottom: 6,
+  },
   title: { fontFamily: 'Flame-Regular', fontSize: 28, color: COLORS.beige, textAlign: 'center' },
 
-  arena: { flexDirection: 'row', gap: 22, maxWidth: 1320, width: '100%', alignSelf: 'center', alignItems: 'flex-start' },
+  arena: {
+    flexDirection: 'row',
+    gap: 22,
+    maxWidth: 1320,
+    width: '100%',
+    alignSelf: 'center',
+    alignItems: 'flex-start',
+  },
   flankCol: { width: 232, alignItems: 'center' },
   poolCol: { flex: 1 },
   stack: { gap: 20, maxWidth: 760, width: '100%', alignSelf: 'center' },
   flanksRow: { flexDirection: 'row', justifyContent: 'center', gap: 24 },
 
   pool: { gap: 14 },
-  searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 14, height: 46, gap: 9 },
-  input: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.beige, outlineStyle: 'none' as unknown as undefined },
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: 14,
+    height: 46,
+    gap: 9,
+  },
+  input: {
+    flex: 1,
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 15,
+    color: COLORS.beige,
+    outlineStyle: 'none' as unknown as undefined,
+  },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'flex-start' },
-  empty: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: 'rgba(245,235,220,0.5)', paddingVertical: 30, textAlign: 'center' },
+  empty: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14,
+    color: 'rgba(245,235,220,0.5)',
+    paddingVertical: 30,
+    textAlign: 'center',
+  },
 
   ctaWrap: { alignItems: 'center', paddingTop: 30 },
-  fight: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.goldAccent, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 34 },
+  fight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: COLORS.goldAccent,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 34,
+  },
   fightText: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: '#1a130a', letterSpacing: 0.5 },
-  hint: { fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 2, color: 'rgba(245,235,220,0.5)', textTransform: 'uppercase' },
+  hint: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 2,
+    color: 'rgba(245,235,220,0.5)',
+    textTransform: 'uppercase',
+  },
 });
 
 const fs = StyleSheet.create({
-  flank: { alignItems: 'center', gap: 12, padding: 10, borderRadius: 20, borderWidth: 1.5, width: '100%' },
+  flank: {
+    alignItems: 'center',
+    gap: 12,
+    padding: 10,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    width: '100%',
+  },
   idle: { borderColor: 'transparent' },
-  render: { borderRadius: 16, overflow: 'hidden', borderWidth: 2, backgroundColor: '#16242b', alignItems: 'center', justifyContent: 'center' },
+  render: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 2,
+    backgroundColor: '#16242b',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   mirror: { transform: [{ scaleX: -1 }] },
   empty: { alignItems: 'center', justifyContent: 'center', gap: 4 },
   emptyQ: { fontFamily: 'Flame-Regular', fontSize: 48, color: 'rgba(255,255,255,0.22)' },
-  emptyHint: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 1, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' },
-  nameTag: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingVertical: 5, paddingHorizontal: 8 },
+  emptyHint: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 1,
+    color: 'rgba(255,255,255,0.3)',
+    textTransform: 'uppercase',
+  },
+  nameTag: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+  },
   name: { fontFamily: 'Flame-Regular', fontSize: 15, color: '#fff', textAlign: 'center' },
 
   chips: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 5 },
-  chip: { width: 34, height: 34, borderRadius: 8, overflow: 'hidden', borderWidth: 1, backgroundColor: '#1b2a30' },
-  chipEmpty: { borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.18)', borderStyle: 'dashed', backgroundColor: 'transparent' },
-  rm: { position: 'absolute', top: 1, right: 1, width: 12, height: 12, borderRadius: 6, backgroundColor: 'rgba(11,24,32,0.82)', alignItems: 'center', justifyContent: 'center' },
+  chip: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    backgroundColor: '#1b2a30',
+  },
+  chipEmpty: {
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.18)',
+    borderStyle: 'dashed',
+    backgroundColor: 'transparent',
+  },
+  rm: {
+    position: 'absolute',
+    top: 1,
+    right: 1,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'rgba(11,24,32,0.82)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   rmx: { fontFamily: 'Nunito_700Bold', fontSize: 9, color: '#fff', lineHeight: 11 },
 
   meta: { alignItems: 'center', gap: 3, minHeight: 14 },
-  pub: { fontFamily: 'Nunito_700Bold', fontSize: 9, color: COLORS.goldAccent, borderWidth: 1, borderColor: 'rgba(206,155,51,0.5)', borderRadius: 6, paddingHorizontal: 5, paddingVertical: 1 },
+  pub: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    color: COLORS.goldAccent,
+    borderWidth: 1,
+    borderColor: 'rgba(206,155,51,0.5)',
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
   syn: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 0.3 },
 
-  dice: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
+  dice: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+  },
   diceText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: 'rgba(245,235,220,0.85)' },
 });
