@@ -82,8 +82,9 @@ export default function BattleBuilderWeb() {
   };
 
   const activeTint = b.active === 'A' ? FACTION_A : FACTION_B;
-  const cardW = isWide ? 104 : 96;
+  const cardW = isWide ? 104 : (width - contentPad * 2 - 2 * 10) / 3;
 
+  // ── Desktop flanks ──
   const flankA = (
     <Flank
       label="Side A"
@@ -96,7 +97,6 @@ export default function BattleBuilderWeb() {
       onRemove={b.removeHero}
       onRandom={() => randomFill('A')}
       onClear={() => b.clearSide('A')}
-      wide={isWide}
     />
   );
   const flankB = (
@@ -112,7 +112,6 @@ export default function BattleBuilderWeb() {
       onRemove={b.removeHero}
       onRandom={() => randomFill('B')}
       onClear={() => b.clearSide('B')}
-      wide={isWide}
     />
   );
 
@@ -142,7 +141,7 @@ export default function BattleBuilderWeb() {
           onChangeText={setQuery}
         />
         {query.length > 0 ? (
-          <Pressable onPress={() => setQuery('')}>
+          <Pressable onPress={() => setQuery('')} hitSlop={8}>
             <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.4)" />
           </Pressable>
         ) : null}
@@ -167,65 +166,139 @@ export default function BattleBuilderWeb() {
       </View>
     );
 
-  return (
-    <ScrollView
-      style={s.root}
-      contentContainerStyle={[s.content, { paddingHorizontal: contentPad }]}
-    >
-      <View style={s.header}>
-        <Text style={s.eyebrow}>★ Build a Battle ★</Text>
-        <Text style={s.title}>Select Your Fighters</Text>
-      </View>
-
-      {isWide ? (
-        <>
-          {controls}
-          <View style={s.arena}>
-            <View style={s.flankCol}>{flankA}</View>
-            <View style={s.poolCol}>{grid}</View>
-            <View style={s.flankCol}>{flankB}</View>
-          </View>
-        </>
-      ) : (
-        <View style={s.stack}>
-          {flankA}
-          {flankB}
-          {controls}
-          {grid}
-        </View>
-      )}
-
-      <View style={s.ctaWrap}>
-        {b.canBattle && b.battleHref ? (
-          <Pressable
-            onPress={() =>
-              withViewTransition(() =>
-                router.push(b.battleHref as Parameters<typeof router.push>[0]),
-              )
-            }
-            style={s.fight}
-          >
-            <Text style={s.fightText}>
-              ⚔ FIGHT · {b.aHeroes.length} vs {b.bHeroes.length}
+  // ── Mobile sticky dual-team tray ──
+  const traySide = (side: 'A' | 'B', tint: string, roster: PickedHero[], synergy: number) => {
+    const isActive = b.active === side;
+    return (
+      <View style={[ts.half, isActive ? ({ backgroundColor: `${tint}26` } as object) : null]}>
+        <View style={ts.head}>
+          <Pressable onPress={() => b.setActive(side)} style={ts.labelBtn} hitSlop={4}>
+            <Text
+              style={[ts.sideLabel, { color: isActive ? tint : 'rgba(245,235,220,0.5)' }]}
+              numberOfLines={1}
+            >
+              {isActive ? '▶ ' : ''}Side {side}
+              {roster.length >= 2 ? `  +${synergy}%` : ''}
             </Text>
-            <Ionicons name="arrow-forward" size={16} color="#1a130a" />
           </Pressable>
-        ) : (
-          <Text style={s.hint}>Add at least one fighter to each side</Text>
-        )}
-        {b.aHeroes.length > 0 || b.bHeroes.length > 0 ? (
-          <Pressable onPress={b.clearAll} style={s.clearAll}>
-            <Ionicons name="trash-outline" size={14} color="rgba(245,235,220,0.6)" />
-            <Text style={s.clearAllText}>Clear all</Text>
-          </Pressable>
-        ) : null}
+          <View style={ts.acts}>
+            <Pressable onPress={() => randomFill(side)} style={ts.actBtn} hitSlop={8}>
+              <Text style={ts.actText}>🎲</Text>
+            </Pressable>
+            {roster.length > 0 ? (
+              <Pressable onPress={() => b.clearSide(side)} style={ts.actBtn} hitSlop={8}>
+                <Ionicons name="close" size={13} color="rgba(245,235,220,0.7)" />
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+        <View style={[ts.slots, side === 'B' ? ts.slotsR : null]}>
+          {Array.from({ length: MAX_SIDE }).map((_, i) => {
+            const hero = roster[i];
+            if (!hero) return <View key={i} style={[ts.slot, ts.slotEmpty]} />;
+            const uri = hero.portrait_url ?? hero.image_url ?? undefined;
+            return (
+              <Pressable
+                key={hero.id}
+                onPress={() => b.removeHero(hero.id)}
+                style={[ts.slot, { borderColor: tint }]}
+                hitSlop={3}
+              >
+                {uri ? (
+                  <Image
+                    source={{ uri }}
+                    style={[StyleSheet.absoluteFill, side === 'B' ? ts.mirror : null]}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
-    </ScrollView>
+    );
+  };
+
+  const mobileTray = (
+    <View style={[ts.tray, { top: TOPBAR_HEIGHT + 8 }]}>
+      {traySide('A', FACTION_A, b.aHeroes, b.synergyA)}
+      <View style={ts.vs}>
+        <Text style={ts.vsText}>VS</Text>
+      </View>
+      {traySide('B', FACTION_B, b.bHeroes, b.synergyB)}
+    </View>
+  );
+
+  const renderFight = (full: boolean) =>
+    b.canBattle && b.battleHref ? (
+      <Pressable
+        onPress={() =>
+          withViewTransition(() => router.push(b.battleHref as Parameters<typeof router.push>[0]))
+        }
+        style={[s.fight, full ? s.fightFull : null]}
+      >
+        <Text style={s.fightText}>
+          ⚔ FIGHT · {b.aHeroes.length} vs {b.bHeroes.length}
+        </Text>
+        <Ionicons name="arrow-forward" size={16} color="#1a130a" />
+      </Pressable>
+    ) : (
+      <Text style={[s.hint, full ? s.hintFull : null]}>Add a fighter to each side to battle</Text>
+    );
+
+  return (
+    <View style={s.root}>
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={[
+          s.content,
+          { paddingHorizontal: contentPad, paddingBottom: isWide ? 40 : 96 },
+        ]}
+      >
+        <View style={s.header}>
+          <Text style={s.eyebrow}>★ Build a Battle ★</Text>
+          <Text style={s.title}>Select Your Fighters</Text>
+        </View>
+
+        {isWide ? (
+          <>
+            {controls}
+            <View style={s.arena}>
+              <View style={s.flankCol}>{flankA}</View>
+              <View style={s.poolCol}>{grid}</View>
+              <View style={s.flankCol}>{flankB}</View>
+            </View>
+            <View style={s.ctaWrap}>
+              {renderFight(false)}
+              {b.aHeroes.length > 0 || b.bHeroes.length > 0 ? (
+                <Pressable onPress={b.clearAll} style={s.clearAll} hitSlop={6}>
+                  <Ionicons name="trash-outline" size={14} color="rgba(245,235,220,0.6)" />
+                  <Text style={s.clearAllText}>Clear all</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </>
+        ) : (
+          <>
+            {mobileTray}
+            {controls}
+            {grid}
+          </>
+        )}
+      </ScrollView>
+
+      {!isWide ? (
+        <View style={[s.mobileBar, { paddingHorizontal: contentPad }]}>{renderFight(true)}</View>
+      ) : null}
+    </View>
   );
 }
 
-/** One edge of the fighter-select: the side's latest pick as a big render facing
- *  centre, the rest of the squad as removable chips, synergy + dice. */
+/** Desktop edge: the side's latest pick as a big render facing centre, the squad
+ *  as removable chips, synergy + dice/clear. Active = faction glow + Now Picking;
+ *  inactive recedes. */
 function Flank({
   label,
   tint,
@@ -234,7 +307,6 @@ function Flank({
   publisher,
   active,
   flip = false,
-  wide,
   onActivate,
   onRemove,
   onRandom,
@@ -247,7 +319,6 @@ function Flank({
   publisher: 'marvel' | 'dc' | null;
   active: boolean;
   flip?: boolean;
-  wide: boolean;
   onActivate: () => void;
   onRemove: (id: string) => void;
   onRandom: () => void;
@@ -255,92 +326,6 @@ function Flank({
 }) {
   const star = roster[roster.length - 1] ?? null;
   const starUri = star?.portrait_url ?? star?.image_url ?? undefined;
-  const renderW = wide ? 200 : 150;
-  const renderH = Math.round(renderW * 1.32);
-
-  // Mobile: a full-width horizontal card so two sides stack without overflowing.
-  if (!wide) {
-    return (
-      <View
-        style={[
-          fs.cCard,
-          active
-            ? ({ boxShadow: `0 0 22px -2px ${tint}80`, backgroundColor: `${tint}1f` } as object)
-            : fs.cDim,
-        ]}
-      >
-        <Pressable onPress={onActivate} style={[fs.cThumb, { borderColor: tint }]}>
-          {starUri ? (
-            <Image
-              source={{ uri: starUri }}
-              style={[StyleSheet.absoluteFill, flip ? fs.mirror : null]}
-              contentFit="cover"
-            />
-          ) : (
-            <Text style={fs.cThumbQ}>?</Text>
-          )}
-        </Pressable>
-        <View style={fs.cBody}>
-          <View style={fs.cTop}>
-            <Text style={fs.cName} numberOfLines={1}>
-              {star?.name ?? label}
-            </Text>
-            {active ? (
-              <View style={[fs.pickingTag, { backgroundColor: tint }]}>
-                <Text style={fs.pickingText}>Picking</Text>
-              </View>
-            ) : (
-              <Text style={fs.cLabel}>{label}</Text>
-            )}
-          </View>
-          <View style={fs.cChips}>
-            {Array.from({ length: MAX_SIDE }).map((_, i) => {
-              const hero = roster[i];
-              if (!hero) return <View key={i} style={[fs.cChip, fs.chipEmpty]} />;
-              const uri = hero.portrait_url ?? hero.image_url ?? undefined;
-              return (
-                <Pressable
-                  key={hero.id}
-                  onPress={() => onRemove(hero.id)}
-                  style={[fs.cChip, { borderColor: tint }]}
-                >
-                  {uri ? (
-                    <Image
-                      source={{ uri }}
-                      style={[StyleSheet.absoluteFill, flip ? fs.mirror : null]}
-                      contentFit="cover"
-                    />
-                  ) : (
-                    <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />
-                  )}
-                  <View style={fs.rm}>
-                    <Text style={fs.rmx}>×</Text>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-          <View style={fs.cFoot}>
-            {roster.length >= 2 ? (
-              <Text style={[fs.syn, { color: tint }]}>SYN +{synergy}%</Text>
-            ) : (
-              <View />
-            )}
-            <View style={fs.actions}>
-              <Pressable onPress={onRandom} style={fs.diceSm}>
-                <Text style={fs.diceText}>🎲</Text>
-              </Pressable>
-              {roster.length > 0 ? (
-                <Pressable onPress={onClear} style={fs.diceSm}>
-                  <Text style={fs.diceText}>Clear</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          </View>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={[fs.flank, active ? null : fs.dim]}>
@@ -355,7 +340,7 @@ function Flank({
         onPress={onActivate}
         style={[
           fs.render,
-          { width: renderW, height: renderH, borderColor: tint },
+          { borderColor: tint },
           active ? ({ boxShadow: `0 0 36px 2px ${tint}80` } as object) : null,
         ]}
       >
@@ -416,11 +401,11 @@ function Flank({
       </View>
 
       <View style={fs.actions}>
-        <Pressable onPress={onRandom} style={fs.dice}>
+        <Pressable onPress={onRandom} style={fs.dice} hitSlop={6}>
           <Text style={fs.diceText}>🎲 Random</Text>
         </Pressable>
         {roster.length > 0 ? (
-          <Pressable onPress={onClear} style={fs.dice}>
+          <Pressable onPress={onClear} style={fs.dice} hitSlop={6}>
             <Text style={fs.diceText}>Clear</Text>
           </Pressable>
         ) : null}
@@ -431,6 +416,7 @@ function Flank({
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.deepNavy },
+  scroll: { flex: 1 },
   content: {
     flexGrow: 1,
     ...Platform.select({
@@ -438,7 +424,6 @@ const s = StyleSheet.create({
       default: {},
     }),
     paddingTop: TOPBAR_HEIGHT + 22,
-    paddingBottom: 40,
   } as object,
 
   header: { alignItems: 'center', marginBottom: 16 },
@@ -452,26 +437,6 @@ const s = StyleSheet.create({
   },
   title: { fontFamily: 'Flame-Regular', fontSize: 28, color: COLORS.beige, textAlign: 'center' },
 
-  arena: {
-    flexDirection: 'row',
-    gap: 22,
-    maxWidth: 1320,
-    width: '100%',
-    alignSelf: 'center',
-    alignItems: 'flex-start',
-  },
-  flankCol: {
-    width: 232,
-    alignItems: 'center',
-    // Pin the fighters to the edges while the roster grid scrolls (desktop).
-    position: 'sticky',
-    top: TOPBAR_HEIGHT + 16,
-    alignSelf: 'flex-start',
-  } as object,
-  poolCol: { flex: 1 },
-  stack: { gap: 20, maxWidth: 760, width: '100%', alignSelf: 'center' },
-  flanksRow: { flexDirection: 'row', justifyContent: 'center', gap: 24 },
-
   controls: { gap: 12, maxWidth: 880, width: '100%', alignSelf: 'center', marginBottom: 20 },
   searchWrap: {
     flexDirection: 'row',
@@ -481,7 +446,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
     paddingHorizontal: 14,
-    height: 46,
+    height: 48,
     gap: 9,
   },
   input: {
@@ -491,13 +456,32 @@ const s = StyleSheet.create({
     color: COLORS.beige,
     outlineStyle: 'none' as unknown as undefined,
   },
+
+  arena: {
+    flexDirection: 'row',
+    gap: 20,
+    maxWidth: 1340,
+    width: '100%',
+    alignSelf: 'center',
+    alignItems: 'flex-start',
+  },
+  flankCol: {
+    width: 232,
+    alignItems: 'center',
+    position: 'sticky',
+    top: TOPBAR_HEIGHT + 16,
+    alignSelf: 'flex-start',
+  } as object,
+  poolCol: { flex: 1 },
+
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'flex-start' },
   empty: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
     color: 'rgba(245,235,220,0.5)',
-    paddingVertical: 30,
+    paddingVertical: 36,
     textAlign: 'center',
+    width: '100%',
   },
 
   ctaWrap: { alignItems: 'center', paddingTop: 30, gap: 14 },
@@ -505,8 +489,8 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
   },
   clearAllText: {
     fontFamily: 'Nunito_700Bold',
@@ -514,15 +498,18 @@ const s = StyleSheet.create({
     color: 'rgba(245,235,220,0.6)',
     letterSpacing: 0.3,
   },
+
   fight: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
     backgroundColor: COLORS.goldAccent,
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 34,
   },
+  fightFull: { alignSelf: 'stretch' },
   fightText: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: '#1a130a', letterSpacing: 0.5 },
   hint: {
     fontFamily: 'Nunito_700Bold',
@@ -531,16 +518,78 @@ const s = StyleSheet.create({
     color: 'rgba(245,235,220,0.5)',
     textTransform: 'uppercase',
   },
+  hintFull: { textAlign: 'center', paddingVertical: 16 },
+
+  mobileBar: {
+    paddingTop: 10,
+    paddingBottom: 14,
+    backgroundColor: 'rgba(11,24,32,0.96)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+  },
+});
+
+const ts = StyleSheet.create({
+  tray: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 8,
+    padding: 10,
+    borderRadius: 16,
+    backgroundColor: '#0f1c23',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    marginBottom: 18,
+    position: 'sticky',
+    zIndex: 20,
+    boxShadow: '0 10px 24px rgba(0,0,0,0.4)',
+  } as object,
+  half: { flex: 1, gap: 7, padding: 7, borderRadius: 11 },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
+  labelBtn: { flex: 1, paddingVertical: 2 },
+  sideLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  slots: { flexDirection: 'row', gap: 5, justifyContent: 'flex-start' },
+  slotsR: { justifyContent: 'flex-end' },
+  slot: {
+    flex: 1,
+    aspectRatio: 1,
+    maxWidth: 34,
+    borderRadius: 7,
+    overflow: 'hidden',
+    borderWidth: 1,
+    backgroundColor: '#1b2a30',
+  },
+  slotEmpty: {
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.18)',
+    borderStyle: 'dashed',
+    backgroundColor: 'transparent',
+  },
+  mirror: { transform: [{ scaleX: -1 }] },
+  acts: { flexDirection: 'row', gap: 6 },
+  actBtn: {
+    minWidth: 30,
+    height: 26,
+    paddingHorizontal: 6,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+  },
+  actText: { fontSize: 12 },
+  vs: { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 2 },
+  vsText: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.goldAccent },
 });
 
 const fs = StyleSheet.create({
-  flank: {
-    alignItems: 'center',
-    gap: 12,
-    padding: 10,
-    width: '100%',
-  },
-  // The inactive side recedes so the active fighter reads as the one in play.
+  flank: { alignItems: 'center', gap: 12, padding: 10, width: '100%' },
   dim: { opacity: 0.46, transform: [{ scale: 0.96 }] },
   tagSlot: { height: 22, justifyContent: 'center' },
   pickingTag: { paddingHorizontal: 11, paddingVertical: 3, borderRadius: 11 },
@@ -552,6 +601,8 @@ const fs = StyleSheet.create({
     textTransform: 'uppercase',
   },
   render: {
+    width: 200,
+    height: 264,
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 2,
@@ -623,63 +674,11 @@ const fs = StyleSheet.create({
   actions: { flexDirection: 'row', gap: 8 },
   dice: {
     paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.16)',
   },
   diceText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: 'rgba(245,235,220,0.85)' },
-  diceSm: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
-  },
-
-  // Mobile compact horizontal card
-  cCard: {
-    flexDirection: 'row',
-    gap: 12,
-    padding: 10,
-    borderRadius: 16,
-    width: '100%',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  cDim: { opacity: 0.5 },
-  cThumb: {
-    width: 60,
-    height: 78,
-    borderRadius: 10,
-    overflow: 'hidden',
-    borderWidth: 2,
-    backgroundColor: '#16242b',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cThumbQ: { fontFamily: 'Flame-Regular', fontSize: 26, color: 'rgba(255,255,255,0.25)' },
-  cBody: { flex: 1, gap: 7 },
-  cTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  cName: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.beige, flex: 1 },
-  cLabel: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    letterSpacing: 1,
-    color: 'rgba(245,235,220,0.45)',
-    textTransform: 'uppercase',
-  },
-  cChips: { flexDirection: 'row', gap: 5 },
-  cChip: {
-    width: 30,
-    height: 30,
-    borderRadius: 7,
-    overflow: 'hidden',
-    borderWidth: 1,
-    backgroundColor: '#1b2a30',
-  },
-  cFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 });
