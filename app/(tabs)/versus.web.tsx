@@ -116,24 +116,26 @@ export default function VersusHubWeb() {
 
       {/* ── Featured team battle ── */}
       {teamBattle && (
-        <Pressable
-          style={[s.teamCard, { marginHorizontal: contentPad }] as object}
-          onPress={() =>
-            withViewTransition(() =>
-              router.push(
-                `/versus/team/${teamBattle.teamA.id}-vs-${teamBattle.teamB.id}` as Parameters<
-                  typeof router.push
-                >[0],
-              ),
-            )
-          }
-        >
-          <Text style={s.teamEyebrow}>★ Team Battle ★</Text>
-          <Text style={s.teamTitle}>
-            {teamBattle.teamA.name} vs {teamBattle.teamB.name}
-          </Text>
-          <Text style={s.teamCta}>See the clash →</Text>
-        </Pressable>
+        <View style={[s.teamSec, { paddingHorizontal: contentPad }] as object}>
+          <Pressable
+            style={s.teamCard}
+            onPress={() =>
+              withViewTransition(() =>
+                router.push(
+                  `/versus/team/${teamBattle.teamA.id}-vs-${teamBattle.teamB.id}` as Parameters<
+                    typeof router.push
+                  >[0],
+                ),
+              )
+            }
+          >
+            <Text style={s.teamEyebrow}>★ Team Battle ★</Text>
+            <Text style={s.teamTitle}>
+              {teamBattle.teamA.name} vs {teamBattle.teamB.name}
+            </Text>
+            <Text style={s.teamCta}>See the clash →</Text>
+          </Pressable>
+        </View>
       )}
 
       {/* ── Deck section: greatest rivalries ── */}
@@ -237,8 +239,8 @@ const s = StyleSheet.create({
   actTitle: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.beige },
   actSub: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: 'rgba(245,235,220,0.55)' },
 
+  teamSec: { marginTop: 16, width: '100%' },
   teamCard: {
-    marginTop: 16,
     padding: 18,
     borderRadius: 18,
     backgroundColor: 'rgba(206,155,51,0.12)',
