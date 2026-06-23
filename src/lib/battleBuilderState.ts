@@ -19,6 +19,14 @@ export function addToSide(side: PickedHero[], other: PickedHero[], hero: PickedH
   return [...side, hero];
 }
 
+/** Append many heroes to a side through addToSide's guards (cap, cross-side
+ *  dedupe). Returns the same reference when nothing is added. */
+export function fillSide(side: PickedHero[], other: PickedHero[], heroes: PickedHero[]): PickedHero[] {
+  let next = side;
+  for (const hero of heroes) next = addToSide(next, other, hero);
+  return next;
+}
+
 export function removeFromSide(side: PickedHero[], id: string): PickedHero[] {
   return side.filter((h) => h.id !== id);
 }

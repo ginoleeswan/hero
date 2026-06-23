@@ -2,6 +2,7 @@ import { useCallback, useMemo, useReducer } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   addToSide,
+  fillSide,
   removeFromSide,
   canBattle as canBattleFn,
   derivePublisher,
@@ -18,6 +19,7 @@ export interface BattleBuilder {
   active: Side;
   setActive: (side: Side) => void;
   addToActive: (hero: PickedHero) => void;
+  fillActive: (heroes: PickedHero[]) => void;
   removeHero: (id: string) => void;
   synergyA: number;
   synergyB: number;
@@ -41,6 +43,7 @@ interface State {
 }
 type Action =
   | { type: 'add'; hero: PickedHero }
+  | { type: 'fill'; heroes: PickedHero[] }
   | { type: 'remove'; id: string }
   | { type: 'active'; side: Side };
 
@@ -50,6 +53,10 @@ function reducer(s: State, a: Action): State {
       return s.active === 'A'
         ? { ...s, aHeroes: addToSide(s.aHeroes, s.bHeroes, a.hero) }
         : { ...s, bHeroes: addToSide(s.bHeroes, s.aHeroes, a.hero) };
+    case 'fill':
+      return s.active === 'A'
+        ? { ...s, aHeroes: fillSide(s.aHeroes, s.bHeroes, a.heroes) }
+        : { ...s, bHeroes: fillSide(s.bHeroes, s.aHeroes, a.heroes) };
     case 'remove':
       return {
         ...s,
@@ -104,6 +111,7 @@ export function useBattleBuilder(): BattleBuilder {
     active,
     setActive: useCallback((side: Side) => dispatch({ type: 'active', side }), []),
     addToActive: useCallback((hero: PickedHero) => dispatch({ type: 'add', hero }), []),
+    fillActive: useCallback((heroes: PickedHero[]) => dispatch({ type: 'fill', heroes }), []),
     removeHero: useCallback((id: string) => dispatch({ type: 'remove', id }), []),
     synergyA,
     synergyB,

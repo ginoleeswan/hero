@@ -1,5 +1,6 @@
 import {
   addToSide,
+  fillSide,
   removeFromSide,
   canBattle,
   derivePublisher,
@@ -28,6 +29,26 @@ describe('addToSide', () => {
   it('is a no-op when the hero is already on the other side', () => {
     const side = [h('a')];
     expect(addToSide(side, [h('x')], h('x'))).toBe(side);
+  });
+});
+
+describe('fillSide', () => {
+  it('appends all when there is room and no dupes', () => {
+    expect(fillSide([h('a')], [], [h('b'), h('c')]).map((x) => x.id)).toEqual(['a', 'b', 'c']);
+  });
+  it('skips heroes already on this or the other side', () => {
+    expect(fillSide([h('a')], [h('z')], [h('a'), h('z'), h('b')]).map((x) => x.id)).toEqual([
+      'a',
+      'b',
+    ]);
+  });
+  it('stops at the cap, preserving order', () => {
+    const incoming = Array.from({ length: 9 }, (_, i) => h(`n${i}`));
+    expect(fillSide([], [], incoming)).toHaveLength(MAX_SIDE);
+  });
+  it('returns the same reference when nothing is added', () => {
+    const side = [h('a')];
+    expect(fillSide(side, [], [h('a')])).toBe(side);
   });
 });
 
