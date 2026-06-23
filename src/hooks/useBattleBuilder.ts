@@ -21,6 +21,8 @@ export interface BattleBuilder {
   addToActive: (hero: PickedHero) => void;
   fillActive: (heroes: PickedHero[]) => void;
   removeHero: (id: string) => void;
+  clearSide: (side: Side) => void;
+  clearAll: () => void;
   synergyA: number;
   synergyB: number;
   publisherA: 'marvel' | 'dc' | null;
@@ -45,6 +47,8 @@ type Action =
   | { type: 'add'; hero: PickedHero }
   | { type: 'fill'; heroes: PickedHero[] }
   | { type: 'remove'; id: string }
+  | { type: 'clearSide'; side: Side }
+  | { type: 'clearAll' }
   | { type: 'active'; side: Side };
 
 function reducer(s: State, a: Action): State {
@@ -63,6 +67,10 @@ function reducer(s: State, a: Action): State {
         aHeroes: removeFromSide(s.aHeroes, a.id),
         bHeroes: removeFromSide(s.bHeroes, a.id),
       };
+    case 'clearSide':
+      return a.side === 'A' ? { ...s, aHeroes: [] } : { ...s, bHeroes: [] };
+    case 'clearAll':
+      return { ...s, aHeroes: [], bHeroes: [] };
     case 'active':
       return { ...s, active: a.side };
   }
@@ -113,6 +121,8 @@ export function useBattleBuilder(): BattleBuilder {
     addToActive: useCallback((hero: PickedHero) => dispatch({ type: 'add', hero }), []),
     fillActive: useCallback((heroes: PickedHero[]) => dispatch({ type: 'fill', heroes }), []),
     removeHero: useCallback((id: string) => dispatch({ type: 'remove', id }), []),
+    clearSide: useCallback((side: Side) => dispatch({ type: 'clearSide', side }), []),
+    clearAll: useCallback(() => dispatch({ type: 'clearAll' }), []),
     synergyA,
     synergyB,
     publisherA: derivePublisher(aHeroes),

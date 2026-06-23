@@ -95,6 +95,7 @@ export default function BattleBuilderWeb() {
       onActivate={() => b.setActive('A')}
       onRemove={b.removeHero}
       onRandom={() => randomFill('A')}
+      onClear={() => b.clearSide('A')}
       wide={isWide}
     />
   );
@@ -110,6 +111,7 @@ export default function BattleBuilderWeb() {
       onActivate={() => b.setActive('B')}
       onRemove={b.removeHero}
       onRandom={() => randomFill('B')}
+      onClear={() => b.clearSide('B')}
       wide={isWide}
     />
   );
@@ -211,6 +213,12 @@ export default function BattleBuilderWeb() {
         ) : (
           <Text style={s.hint}>Add at least one fighter to each side</Text>
         )}
+        {b.aHeroes.length > 0 || b.bHeroes.length > 0 ? (
+          <Pressable onPress={b.clearAll} style={s.clearAll}>
+            <Ionicons name="trash-outline" size={14} color="rgba(245,235,220,0.6)" />
+            <Text style={s.clearAllText}>Clear all</Text>
+          </Pressable>
+        ) : null}
       </View>
     </ScrollView>
   );
@@ -230,6 +238,7 @@ function Flank({
   onActivate,
   onRemove,
   onRandom,
+  onClear,
 }: {
   label: string;
   tint: string;
@@ -242,6 +251,7 @@ function Flank({
   onActivate: () => void;
   onRemove: (id: string) => void;
   onRandom: () => void;
+  onClear: () => void;
 }) {
   const star = roster[roster.length - 1] ?? null;
   const starUri = star?.portrait_url ?? star?.image_url ?? undefined;
@@ -310,9 +320,16 @@ function Flank({
         ) : null}
       </View>
 
-      <Pressable onPress={onRandom} style={fs.dice}>
-        <Text style={fs.diceText}>🎲 Random</Text>
-      </Pressable>
+      <View style={fs.actions}>
+        <Pressable onPress={onRandom} style={fs.dice}>
+          <Text style={fs.diceText}>🎲 Random</Text>
+        </Pressable>
+        {roster.length > 0 ? (
+          <Pressable onPress={onClear} style={fs.dice}>
+            <Text style={fs.diceText}>Clear</Text>
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -348,7 +365,14 @@ const s = StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'flex-start',
   },
-  flankCol: { width: 232, alignItems: 'center' },
+  flankCol: {
+    width: 232,
+    alignItems: 'center',
+    // Pin the fighters to the edges while the roster grid scrolls (desktop).
+    position: 'sticky',
+    top: TOPBAR_HEIGHT + 16,
+    alignSelf: 'flex-start',
+  } as object,
   poolCol: { flex: 1 },
   stack: { gap: 20, maxWidth: 760, width: '100%', alignSelf: 'center' },
   flanksRow: { flexDirection: 'row', justifyContent: 'center', gap: 24 },
@@ -381,7 +405,20 @@ const s = StyleSheet.create({
     textAlign: 'center',
   },
 
-  ctaWrap: { alignItems: 'center', paddingTop: 30 },
+  ctaWrap: { alignItems: 'center', paddingTop: 30, gap: 14 },
+  clearAll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  clearAllText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.6)',
+    letterSpacing: 0.3,
+  },
   fight: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -480,6 +517,7 @@ const fs = StyleSheet.create({
   },
   syn: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 0.3 },
 
+  actions: { flexDirection: 'row', gap: 8 },
   dice: {
     paddingHorizontal: 14,
     paddingVertical: 6,

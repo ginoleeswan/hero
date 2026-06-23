@@ -153,9 +153,16 @@ export default function BattleBuilderScreen() {
           onActivate={() => {}}
           onRemove={b.removeHero}
         />
-        <Pressable onPress={randomFill} style={styles.dice}>
-          <Text style={styles.diceText}>🎲 Random fill</Text>
-        </Pressable>
+        <View style={styles.actionRow}>
+          <Pressable onPress={randomFill} style={styles.dice}>
+            <Text style={styles.diceText}>🎲 Random fill</Text>
+          </Pressable>
+          {activeRoster.length > 0 ? (
+            <Pressable onPress={() => b.clearSide(b.active)} style={styles.dice}>
+              <Text style={styles.diceText}>Clear</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </LinearGradient>
 
       <View style={styles.sheetTop}>
@@ -332,6 +339,7 @@ const styles = StyleSheet.create({
   segLabel: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
   segSyn: { fontFamily: 'Nunito_700Bold', fontSize: 10 },
 
+  actionRow: { flexDirection: 'row', gap: 8 },
   dice: {
     paddingHorizontal: 16,
     paddingVertical: 7,
