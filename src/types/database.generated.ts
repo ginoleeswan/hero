@@ -908,6 +908,39 @@ export type Database = {
         }
         Relationships: []
       }
+      page_views: {
+        Row: {
+          created_at: string
+          device: string | null
+          id: number
+          path: string
+          referrer: string | null
+          route: string
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device?: string | null
+          id?: never
+          path: string
+          referrer?: string | null
+          route: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device?: string | null
+          id?: never
+          path?: string
+          referrer?: string | null
+          route?: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       team_battle_votes: {
         Row: {
           created_at: string
@@ -1155,6 +1188,7 @@ export type Database = {
           display_name: string | null
           id: string
           is_admin: boolean
+          last_seen_at: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -1163,6 +1197,7 @@ export type Database = {
           display_name?: string | null
           id: string
           is_admin?: boolean
+          last_seen_at?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -1171,6 +1206,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           is_admin?: boolean
+          last_seen_at?: string | null
         }
         Relationships: []
       }
@@ -1234,6 +1270,7 @@ export type Database = {
           id: string
         }[]
       }
+      admin_community_overview: { Args: never; Returns: Json }
       admin_cron_status: { Args: never; Returns: Json }
       admin_delete_campaign: { Args: { p_id: string }; Returns: number }
       admin_delete_hero: { Args: { p_hero_id: string }; Returns: number }
@@ -1277,6 +1314,7 @@ export type Database = {
         Args: { p_enabled: boolean; p_jobname: string }
         Returns: string
       }
+      admin_traffic_overview: { Args: { p_days?: number }; Returns: Json }
       admin_upsert_campaign: {
         Args: {
           p_accent?: string
@@ -1566,6 +1604,7 @@ export type Database = {
         }
         Returns: Json
       }
+      touch_last_seen: { Args: never; Returns: undefined }
     }
     Enums: {
       relation_kind:

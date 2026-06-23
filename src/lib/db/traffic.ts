@@ -41,15 +41,7 @@ type OverviewJson = ({ authorized: false } | ({ authorized: true } & TrafficOver
  * state rather than crashing.
  */
 export async function fetchTrafficOverview(days = 28): Promise<TrafficOverview | null> {
-  // NOTE: `admin_traffic_overview` is absent from database.generated.ts until
-  // the migration is applied and types are regenerated (Supabase MCP). The name
-  // cast keeps this compiling in the meantime; drop it after regeneration.
-  const { data, error } = await supabase.rpc(
-    'admin_traffic_overview' as never,
-    {
-      p_days: days,
-    } as never,
-  );
+  const { data, error } = await supabase.rpc('admin_traffic_overview', { p_days: days });
   if (error) {
     console.warn('[fetchTrafficOverview] error:', error.message);
     return null;

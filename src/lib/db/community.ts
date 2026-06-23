@@ -79,10 +79,7 @@ type OverviewJson = ({ authorized: false } | ({ authorized: true } & CommunityOv
  * instead of crashing.
  */
 export async function fetchCommunityOverview(): Promise<CommunityOverview | null> {
-  // NOTE: `admin_community_overview` is absent from database.generated.ts until
-  // the migration is applied and types are regenerated (Supabase MCP). The name
-  // cast keeps this compiling in the meantime; drop it after regeneration.
-  const { data, error } = await supabase.rpc('admin_community_overview' as never);
+  const { data, error } = await supabase.rpc('admin_community_overview');
   if (error) {
     console.warn('[fetchCommunityOverview] error:', error.message);
     return null;

@@ -46,13 +46,6 @@ function getReferrerHost(): string | null {
   }
 }
 
-// Minimal insert surface so we can target page_views before it lands in
-// database.generated.ts (regenerate types after applying the migration to drop
-// the cast). Keeps us off `any`.
-interface InsertOnly {
-  insert: (row: Record<string, unknown>) => Promise<{ error: unknown }>;
-}
-
 /** Record one page view. Web only; no-ops cleanly off-web or on failure. */
 export async function recordPageView(route: string, path: string): Promise<void> {
   if (typeof window === 'undefined') return;
@@ -60,8 +53,7 @@ export async function recordPageView(route: string, path: string): Promise<void>
     const {
       data: { session },
     } = await supabase.auth.getSession();
-    const table = supabase.from('page_views' as never) as unknown as InsertOnly;
-    await table.insert({
+    await supabase.from('page_views').insert({
       route,
       path,
       user_id: session?.user?.id ?? null,
