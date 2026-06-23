@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -61,6 +61,22 @@ export default function BattleBuilderWeb() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const debounced = useDebounce(query, 200);
   const activeFilters = (publisher !== 'All' ? 1 : 0) + (alignment !== 'All' ? 1 : 0);
+
+  // Frost the sticky head only once it's stuck under the TopBar — so at rest it
+  // stays transparent and never blurs the title behind it.
+  const [stuck, setStuck] = useState(false);
+  const sentinelRef = useRef<View>(null);
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return undefined;
+    const node = sentinelRef.current as unknown as Element | null;
+    if (!node || typeof node.getBoundingClientRect !== 'function') return undefined;
+    const io = new IntersectionObserver(([e]) => setStuck(!e.isIntersecting), {
+      threshold: 0,
+      rootMargin: `-${TOPBAR_HEIGHT + 2}px 0px 0px 0px`,
+    });
+    io.observe(node);
+    return () => io.disconnect();
+  }, []);
 
   const searchQ = useHeroSearchInfinite(debounced, publisher, alignment);
   const heroes = useMemo(
@@ -263,8 +279,9 @@ export default function BattleBuilderWeb() {
         },
       ]}
     >
-      {/* Frosted layer extends up behind the TopBar so the two frosts read as one. */}
-      <View style={mh.frost} pointerEvents="none" />
+      {/* Frosted layer (only when stuck) extends up behind the TopBar so the two
+          frosts read as one; transparent at rest so it never blurs the title. */}
+      <View style={[mh.frost, stuck ? mh.frostOn : null]} pointerEvents="none" />
       {teamStrip}
       {toolBar}
     </View>
@@ -349,6 +366,7 @@ export default function BattleBuilderWeb() {
           </>
         ) : (
           <>
+            <View ref={sentinelRef} style={mh.sentinel} />
             {mobileHead}
             {filterPanel}
             {grid}
@@ -770,6 +788,7 @@ const mh = StyleSheet.create({
     paddingBottom: 12,
     gap: 10,
   } as object,
+  sentinel: { height: 1, marginBottom: -1 },
   frost: {
     position: 'absolute',
     // Reach up under the TopBar (height 64, its scrim fades ~40px down) so the
@@ -778,6 +797,8 @@ const mh = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+  } as object,
+  frostOn: {
     backgroundColor: 'rgba(11,24,32,0.55)',
     backdropFilter: 'blur(16px) saturate(140%)',
     WebkitBackdropFilter: 'blur(16px) saturate(140%)',
