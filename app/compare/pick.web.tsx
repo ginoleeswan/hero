@@ -177,20 +177,20 @@ export default function BattleBuilderWeb() {
         <Text style={s.title}>Select Your Fighters</Text>
       </View>
 
-      {controls}
-
       {isWide ? (
-        <View style={s.arena}>
-          <View style={s.flankCol}>{flankA}</View>
-          <View style={s.poolCol}>{grid}</View>
-          <View style={s.flankCol}>{flankB}</View>
-        </View>
+        <>
+          {controls}
+          <View style={s.arena}>
+            <View style={s.flankCol}>{flankA}</View>
+            <View style={s.poolCol}>{grid}</View>
+            <View style={s.flankCol}>{flankB}</View>
+          </View>
+        </>
       ) : (
         <View style={s.stack}>
-          <View style={s.flanksRow}>
-            {flankA}
-            {flankB}
-          </View>
+          {flankA}
+          {flankB}
+          {controls}
           {grid}
         </View>
       )}
@@ -257,6 +257,90 @@ function Flank({
   const starUri = star?.portrait_url ?? star?.image_url ?? undefined;
   const renderW = wide ? 200 : 150;
   const renderH = Math.round(renderW * 1.32);
+
+  // Mobile: a full-width horizontal card so two sides stack without overflowing.
+  if (!wide) {
+    return (
+      <View
+        style={[
+          fs.cCard,
+          active
+            ? ({ boxShadow: `0 0 22px -2px ${tint}80`, backgroundColor: `${tint}1f` } as object)
+            : fs.cDim,
+        ]}
+      >
+        <Pressable onPress={onActivate} style={[fs.cThumb, { borderColor: tint }]}>
+          {starUri ? (
+            <Image
+              source={{ uri: starUri }}
+              style={[StyleSheet.absoluteFill, flip ? fs.mirror : null]}
+              contentFit="cover"
+            />
+          ) : (
+            <Text style={fs.cThumbQ}>?</Text>
+          )}
+        </Pressable>
+        <View style={fs.cBody}>
+          <View style={fs.cTop}>
+            <Text style={fs.cName} numberOfLines={1}>
+              {star?.name ?? label}
+            </Text>
+            {active ? (
+              <View style={[fs.pickingTag, { backgroundColor: tint }]}>
+                <Text style={fs.pickingText}>Picking</Text>
+              </View>
+            ) : (
+              <Text style={fs.cLabel}>{label}</Text>
+            )}
+          </View>
+          <View style={fs.cChips}>
+            {Array.from({ length: MAX_SIDE }).map((_, i) => {
+              const hero = roster[i];
+              if (!hero) return <View key={i} style={[fs.cChip, fs.chipEmpty]} />;
+              const uri = hero.portrait_url ?? hero.image_url ?? undefined;
+              return (
+                <Pressable
+                  key={hero.id}
+                  onPress={() => onRemove(hero.id)}
+                  style={[fs.cChip, { borderColor: tint }]}
+                >
+                  {uri ? (
+                    <Image
+                      source={{ uri }}
+                      style={[StyleSheet.absoluteFill, flip ? fs.mirror : null]}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />
+                  )}
+                  <View style={fs.rm}>
+                    <Text style={fs.rmx}>×</Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+          <View style={fs.cFoot}>
+            {roster.length >= 2 ? (
+              <Text style={[fs.syn, { color: tint }]}>SYN +{synergy}%</Text>
+            ) : (
+              <View />
+            )}
+            <View style={fs.actions}>
+              <Pressable onPress={onRandom} style={fs.diceSm}>
+                <Text style={fs.diceText}>🎲</Text>
+              </Pressable>
+              {roster.length > 0 ? (
+                <Pressable onPress={onClear} style={fs.diceSm}>
+                  <Text style={fs.diceText}>Clear</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[fs.flank, active ? null : fs.dim]}>
@@ -546,4 +630,56 @@ const fs = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.16)',
   },
   diceText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: 'rgba(245,235,220,0.85)' },
+  diceSm: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+  },
+
+  // Mobile compact horizontal card
+  cCard: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 10,
+    borderRadius: 16,
+    width: '100%',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  cDim: { opacity: 0.5 },
+  cThumb: {
+    width: 60,
+    height: 78,
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 2,
+    backgroundColor: '#16242b',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cThumbQ: { fontFamily: 'Flame-Regular', fontSize: 26, color: 'rgba(255,255,255,0.25)' },
+  cBody: { flex: 1, gap: 7 },
+  cTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  cName: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.beige, flex: 1 },
+  cLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    letterSpacing: 1,
+    color: 'rgba(245,235,220,0.45)',
+    textTransform: 'uppercase',
+  },
+  cChips: { flexDirection: 'row', gap: 5 },
+  cChip: {
+    width: 30,
+    height: 30,
+    borderRadius: 7,
+    overflow: 'hidden',
+    borderWidth: 1,
+    backgroundColor: '#1b2a30',
+  },
+  cFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 });
