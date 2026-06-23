@@ -23,7 +23,6 @@ interface Props {
 export function ChallengerIntro({ lead, rivals, onPick, onSurprise }: Props) {
   return (
     <View style={s.wrap}>
-      <Text style={s.eyebrow}>⚔ The Challenger</Text>
       <Text style={s.title} numberOfLines={2}>
         {lead ? `Who dares face ${lead.name}?` : 'Choose the challenger'}
       </Text>
@@ -43,14 +42,7 @@ export function ChallengerIntro({ lead, rivals, onPick, onSurprise }: Props) {
 }
 
 const s = StyleSheet.create({
-  wrap: { gap: 12, marginBottom: 6 },
-  eyebrow: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    color: COLORS.goldAccent,
-  },
+  wrap: { gap: 10, marginBottom: 4 },
   title: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.beige },
   paths: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   path: {

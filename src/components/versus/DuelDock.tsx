@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { FACTION_A, FACTION_B } from './factionColors';
 import { MAX_SIDE, type PickedHero, type Side } from '../../lib/battleBuilderState';
@@ -30,7 +30,7 @@ export function DuelDock({ b, act, expanded, onToggle, onPrimary, onBack, onRand
   const primaryReady = isSquad ? b.aHeroes.length >= 1 : b.canBattle && !!b.battleHref;
   const primaryLabel = isSquad
     ? 'Next: Challenger →'
-    : `⚔ FIGHT · ${b.aHeroes.length} v ${b.bHeroes.length}`;
+    : `FIGHT · ${b.aHeroes.length} v ${b.bHeroes.length}`;
 
   return (
     <>
@@ -77,7 +77,12 @@ export function DuelDock({ b, act, expanded, onToggle, onPrimary, onBack, onRand
               </>
             ) : null}
 
-            <PrimaryCTA label={primaryLabel} ready={primaryReady} onPress={onPrimary} />
+            <PrimaryCTA
+              label={primaryLabel}
+              ready={primaryReady}
+              onPress={onPrimary}
+              fight={!isSquad}
+            />
           </View>
         </View>
       ) : null}
@@ -93,7 +98,7 @@ export function DuelDock({ b, act, expanded, onToggle, onPrimary, onBack, onRand
           ) : (
             <>
               <DeckStack roster={b.aHeroes} tint={FACTION_A} active={b.active === 'A'} />
-              <Text style={s.swords}>⚔</Text>
+              <MaterialCommunityIcons name="sword-cross" size={16} color={COLORS.goldAccent} />
               <DeckStack roster={b.bHeroes} tint={FACTION_B} active={b.active === 'B'} flip />
             </>
           )}
@@ -105,9 +110,10 @@ export function DuelDock({ b, act, expanded, onToggle, onPrimary, onBack, onRand
           </Pressable>
         ) : null}
         <PrimaryCTA
-          label={isSquad ? 'Next →' : '⚔ FIGHT'}
+          label={isSquad ? 'Next →' : 'FIGHT'}
           ready={primaryReady}
           onPress={onPrimary}
+          fight={!isSquad}
           compact
         />
       </View>
@@ -120,11 +126,13 @@ function PrimaryCTA({
   ready,
   onPress,
   compact,
+  fight,
 }: {
   label: string;
   ready: boolean;
   onPress: () => void;
   compact?: boolean;
+  fight?: boolean;
 }) {
   return (
     <Pressable
@@ -132,6 +140,13 @@ function PrimaryCTA({
       disabled={!ready}
       style={[compact ? s.ctaCompact : s.ctaFull, ready ? null : s.ctaDim]}
     >
+      {fight ? (
+        <MaterialCommunityIcons
+          name="sword-cross"
+          size={16}
+          color={ready ? '#1a130a' : 'rgba(245,235,220,0.55)'}
+        />
+      ) : null}
       <Text style={[s.ctaText, ready ? null : s.ctaTextDim]}>{label}</Text>
     </Pressable>
   );
@@ -281,9 +296,9 @@ const s = StyleSheet.create({
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: `calc(${SAFE_BOTTOM} + 16px)` as unknown as number,
-    gap: 12,
+    paddingTop: 6,
+    paddingBottom: `calc(${SAFE_BOTTOM} + 14px)` as unknown as number,
+    gap: 10,
     borderTopWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
     boxShadow: '0 -16px 40px rgba(0,0,0,0.5)',
@@ -295,7 +310,7 @@ const s = StyleSheet.create({
   vsLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.1)' },
   vsText: { fontFamily: 'Flame-Regular', fontSize: 14, color: COLORS.goldAccent },
 
-  side: { gap: 9, padding: 10, borderRadius: 14 },
+  side: { gap: 8, padding: 9, borderRadius: 14 },
   sideHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   sideLabelBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
   sideLabel: {
@@ -408,15 +423,19 @@ const s = StyleSheet.create({
   deckQ: { fontFamily: 'Flame-Regular', fontSize: 16, color: 'rgba(255,255,255,0.3)' },
 
   ctaFull: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 7,
     backgroundColor: COLORS.goldAccent,
     borderRadius: 13,
     paddingVertical: 14,
   },
   ctaCompact: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
     backgroundColor: COLORS.goldAccent,
     borderRadius: 12,
     paddingVertical: 11,

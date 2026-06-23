@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useHeroSearchInfinite } from '../../src/lib/query/heroQueries';
 import { OpponentCard } from '../../src/components/compare/OpponentCard';
@@ -56,7 +56,8 @@ export default function BattleBuilderWeb() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isWide = width >= 980;
-  const contentPad = width < 640 ? 14 : 26;
+  const contentPad = width < 640 ? 16 : 26;
+  const gridGap = 12;
 
   const b = useBattleBuilder();
   const { teams } = usePresetTeams();
@@ -126,7 +127,7 @@ export default function BattleBuilderWeb() {
   const curated = useCuratedRows(squadLead?.id, b.isPlaced);
 
   const activeTint = b.active === 'A' ? FACTION_A : FACTION_B;
-  const cardW = isWide ? 104 : (width - contentPad * 2 - 2 * 10) / 3;
+  const cardW = isWide ? 104 : (width - contentPad * 2 - 2 * gridGap) / 3;
 
   // ── Desktop flanks ──
   const flankA = (
@@ -268,8 +269,9 @@ export default function BattleBuilderWeb() {
         }
         style={[s.fight, full ? s.fightFull : null]}
       >
+        <MaterialCommunityIcons name="sword-cross" size={17} color="#1a130a" />
         <Text style={s.fightText}>
-          ⚔ FIGHT · {b.aHeroes.length} vs {b.bHeroes.length}
+          FIGHT · {b.aHeroes.length} vs {b.bHeroes.length}
         </Text>
         <Ionicons name="arrow-forward" size={16} color="#1a130a" />
       </Pressable>
@@ -285,16 +287,19 @@ export default function BattleBuilderWeb() {
           s.content,
           {
             paddingHorizontal: contentPad,
+            paddingTop: TOPBAR_HEIGHT + (isWide ? 22 : 8),
             paddingBottom: isWide
               ? 40
               : ('calc(env(safe-area-inset-bottom) + 96px)' as unknown as number),
           },
         ]}
       >
-        <View style={[s.header, isWide ? null : s.headerSm]}>
-          <Text style={s.eyebrow}>★ Build a Battle ★</Text>
-          <Text style={[s.title, isWide ? null : s.titleSm]}>Select Your Fighters</Text>
-        </View>
+        {isWide ? (
+          <View style={s.header}>
+            <Text style={s.eyebrow}>★ Build a Battle ★</Text>
+            <Text style={s.title}>Select Your Fighters</Text>
+          </View>
+        ) : null}
 
         {isWide ? (
           <>
@@ -329,13 +334,20 @@ export default function BattleBuilderWeb() {
                 onPick={(item) => add(item)}
                 onSurprise={() => randomFill('B')}
               />
-            ) : curated.teammates.length > 0 && !query ? (
-              <CuratedRow
-                label={`⚡ Teammates of ${squadLead?.name ?? ''}`}
-                items={curated.teammates}
-                onPick={(item) => add(item)}
-              />
-            ) : null}
+            ) : (
+              <View style={s.actIntro}>
+                <Text style={s.actTitle}>
+                  {squadLead ? `${squadLead.name}'s team` : 'Pick your champions'}
+                </Text>
+                {curated.teammates.length > 0 && !query ? (
+                  <CuratedRow
+                    label={`⚡ Teammates of ${squadLead?.name ?? ''}`}
+                    items={curated.teammates}
+                    onPick={(item) => add(item)}
+                  />
+                ) : null}
+              </View>
+            )}
             {grid}
           </>
         )}
@@ -510,6 +522,8 @@ const s = StyleSheet.create({
   },
   title: { fontFamily: 'Flame-Regular', fontSize: 28, color: COLORS.beige, textAlign: 'center' },
   titleSm: { fontSize: 21 },
+  actIntro: { gap: 12, marginTop: 4, marginBottom: 14 },
+  actTitle: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.beige },
 
   poolTool: { marginBottom: 16 },
   searchWrap: {
@@ -548,7 +562,7 @@ const s = StyleSheet.create({
   } as object,
   poolCol: { flex: 1 },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' },
   empty: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
@@ -697,9 +711,9 @@ const mh = StyleSheet.create({
   head: {
     position: 'sticky',
     zIndex: 20,
-    paddingTop: 10,
-    paddingBottom: 12,
-    gap: 10,
+    paddingTop: 8,
+    paddingBottom: 10,
+    gap: 8,
   } as object,
   sentinel: { height: 1, marginBottom: -1 },
   frost: {

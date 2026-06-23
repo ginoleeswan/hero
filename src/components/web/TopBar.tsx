@@ -266,7 +266,7 @@ const c = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 30px)`,
+    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 10px)`,
   } as object,
   // Dark scrim: holds near-solid navy across the status-bar inset + icon row (so
   // it fuses with the navy status-bar cover and bright hero art never bleeds
