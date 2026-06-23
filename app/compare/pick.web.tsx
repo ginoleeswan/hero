@@ -724,6 +724,8 @@ const mh = StyleSheet.create({
     gap: 14,
   } as object,
   sentinel: { height: 1, marginBottom: -1 },
+  // Always mounted with its blur; we fade the whole glass in/out via opacity so
+  // the bg + blur + hairline ease in together on scroll (no instant pop).
   frost: {
     position: 'absolute',
     // Reach up under the TopBar (height 64, its scrim fades ~40px down) so the
@@ -732,14 +734,17 @@ const mh = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-  } as object,
-  frostOn: {
     backgroundColor: 'rgba(11,24,32,0.55)',
     backdropFilter: 'blur(16px) saturate(140%)',
     WebkitBackdropFilter: 'blur(16px) saturate(140%)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.06)',
+    boxShadow: '0 8px 20px -10px rgba(0,0,0,0.45)',
+    opacity: 0,
+    transition: 'opacity 280ms cubic-bezier(0.4, 0, 0.2, 1)',
+    willChange: 'opacity',
   } as object,
+  frostOn: { opacity: 1 },
   tools: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   searchFlex: { flex: 1 },
   filterBtn: {
