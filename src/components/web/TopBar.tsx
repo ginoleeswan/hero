@@ -150,13 +150,17 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   const bar = (
     <View style={c.bar as object} pointerEvents="box-none">
       {isMobile ? (
-        // One consistent frosted scrim at every scroll position — graduated blur
-        // (also the GPU-compositing layer that keeps the fixed bar from scrolling
-        // on iOS) under a tint that's opaque navy at the top, fused with the
-        // status bar, easing into the page below.
+        // Spread frosted scrim, consistent at every scroll position. The blur is
+        // the universal blender: frosted glass is background-agnostic, so it
+        // feathers the bottom edge cleanly over BOTH the dark navy versus pages
+        // and the beige catalogue pages — no color smudge. So the heavy navy tint
+        // holds up top (status-bar fusion + icon contrast) and fades out before
+        // the bottom, while a soft blur layer carries the tail all the way down.
+        // (Also the GPU-compositing layer that keeps the fixed bar from scrolling
+        // on iOS.)
         <View style={c.scrim as object} pointerEvents="none">
-          <View style={[StyleSheet.absoluteFill, c.frostA] as object} />
-          <View style={[StyleSheet.absoluteFill, c.frostC] as object} />
+          <View style={[StyleSheet.absoluteFill, c.frostMobHeavy] as object} />
+          <View style={[StyleSheet.absoluteFill, c.frostMobSoft] as object} />
           <View style={[StyleSheet.absoluteFill, c.frostTintDark] as object} />
         </View>
       ) : (
@@ -266,7 +270,7 @@ const c = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 10px)`,
+    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 40px)`,
   } as object,
   // Dark scrim: holds near-solid navy across the status-bar inset + icon row (so
   // it fuses with the navy status-bar cover and bright hero art never bleeds
@@ -307,13 +311,40 @@ const c = StyleSheet.create({
     maskImage: 'linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%)',
     WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%)',
   } as object,
-  // Mobile dark-topped pages: opaque deep-navy at the very top so it's identical
-  // to the navy status-bar cover above it (one continuous surface), then a
-  // many-stop ease-out that decelerates smoothly to transparent — an elegant,
-  // edgeless fade from the dark top section down into the content.
+  // Mobile-only progressive-blur pair (desktop keeps frostA/frostC). Both masks
+  // ease MONOTONICALLY (no hold-then-drop knee, so no boundary line) but are pulled
+  // UP relative to the navy tint: the frost tapers to zero around the bar's bottom
+  // edge (~75%) so it never blurs the content/card-tops below. The navy tint
+  // carries the gentle ramp the rest of the way down — that's just colour, it
+  // doesn't frost anything, so it keeps the balanced spread without smearing cards.
+  // Because the blur is already near-zero where it ends, dropping it higher leaves
+  // no seam. Heavy blur is weighted toward the icons, soft reaches slightly lower.
+  frostMobHeavy: {
+    backdropFilter: 'blur(13px) saturate(140%)',
+    WebkitBackdropFilter: 'blur(13px) saturate(140%)',
+    maskImage:
+      'linear-gradient(to bottom, #000 0%, #000 24%, rgba(0,0,0,0.72) 40%, rgba(0,0,0,0.4) 52%, rgba(0,0,0,0.14) 64%, transparent 74%)',
+    WebkitMaskImage:
+      'linear-gradient(to bottom, #000 0%, #000 24%, rgba(0,0,0,0.72) 40%, rgba(0,0,0,0.4) 52%, rgba(0,0,0,0.14) 64%, transparent 74%)',
+  } as object,
+  frostMobSoft: {
+    backdropFilter: 'blur(5px)',
+    WebkitBackdropFilter: 'blur(5px)',
+    maskImage:
+      'linear-gradient(to bottom, #000 0%, #000 32%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.28) 66%, rgba(0,0,0,0.08) 78%, transparent 86%)',
+    WebkitMaskImage:
+      'linear-gradient(to bottom, #000 0%, #000 32%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.28) 66%, rgba(0,0,0,0.08) 78%, transparent 86%)',
+  } as object,
+  // Mobile dark-topped pages: opaque deep-navy caps the very top (fused with the
+  // navy status-bar cover), then eases MONOTONICALLY to transparent at the bottom
+  // (100%). It runs LONGER than the blur (which bows out ~75%, around the bar's
+  // bottom edge): below that, this colour-only tail carries the gentle ramp into
+  // the content without frosting it. Continuous gentle slope (no flat-then-drop
+  // knee) and pure navy throughout — a warm hue would smear on the dark versus
+  // pages, whereas the faint low-opacity navy tail stays subtle on any canvas.
   frostTintDark: {
     backgroundImage:
-      'linear-gradient(to bottom, #0b1820 0%, #0b1820 20%, rgba(11,24,32,0.92) 36%, rgba(11,24,32,0.74) 52%, rgba(11,24,32,0.5) 66%, rgba(11,24,32,0.28) 80%, rgba(11,24,32,0.12) 91%, rgba(11,24,32,0.04) 97%, transparent 100%)',
+      'linear-gradient(to bottom, #0b1820 0%, #0b1820 28%, rgba(11,24,32,0.85) 40%, rgba(11,24,32,0.66) 50%, rgba(11,24,32,0.48) 59%, rgba(11,24,32,0.33) 68%, rgba(11,24,32,0.21) 76%, rgba(11,24,32,0.12) 83%, rgba(11,24,32,0.06) 89%, rgba(11,24,32,0.025) 95%, transparent 100%)',
   } as object,
   // Desktop: the original light frosted glass — no system status bar to match.
   frostTintDesktop: {
