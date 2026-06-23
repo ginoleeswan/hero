@@ -3,12 +3,14 @@ import { View, Text, TextInput, FlatList, Pressable, StyleSheet, Dimensions } fr
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useHeroSearchInfinite } from '../../src/lib/query/heroQueries';
 import { OpponentCard } from '../../src/components/compare/OpponentCard';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
-import { RosterTray } from '../../src/components/versus/RosterTray';
+import { VsBadge } from '../../src/components/compare/VsBadge';
+import { BuilderSide } from '../../src/components/versus/BuilderSide';
 import { TeammatesRail } from '../../src/components/versus/TeammatesRail';
 import { useBattleBuilder } from '../../src/hooks/useBattleBuilder';
 import { FACTION_A, FACTION_B } from '../../src/components/versus/factionColors';
@@ -20,6 +22,8 @@ const H_PAD = 16;
 const GAP = 10;
 const CARD_W = (SCREEN_W - H_PAD * 2 - GAP * 2) / 3;
 const CARD_H = Math.round(CARD_W * 1.4);
+const ANCHOR_W = Math.min(116, (SCREEN_W - H_PAD * 2 - 70) / 2);
+const ANCHOR_H = Math.round(ANCHOR_W * 1.25);
 
 function useDebounce<T>(value: T, delay: number): T {
   const [d, setD] = useState(value);
@@ -39,52 +43,67 @@ export default function BattleBuilderScreen() {
   const debounced = useDebounce(query, 200);
 
   const searchQ = useHeroSearchInfinite(debounced, 'All', 'All');
-  const heroes = useMemo(() => (searchQ.data?.pages ?? []).flat().slice(0, 120), [searchQ.data]);
+  const heroes = useMemo(
+    () =>
+      (searchQ.data?.pages ?? [])
+        .flat()
+        .filter((h) => !b.isPlaced(h.id))
+        .slice(0, 120),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- granular inputs, not the unstable `b`
+    [searchQ.data, b.aHeroes, b.bHeroes, b.isPlaced],
+  );
 
   const add = (hero: PickedHero) => {
     Haptics.selectionAsync();
     b.addToActive(hero);
   };
-  const activeLabel = b.active === 'A' ? 'Side A' : 'Side B';
   const activeCaptain = (b.active === 'A' ? b.aHeroes : b.bHeroes)[0];
 
   const header = (
     <>
-      <View style={[styles.stage, { paddingTop: insets.top + 12 }]}>
-        <Text style={styles.title}>Build a Battle</Text>
-        <RosterTray
-          label="Side A"
-          tint={FACTION_A}
-          roster={b.aHeroes}
-          synergy={b.synergyA}
-          publisher={b.publisherA}
-          active={b.active === 'A'}
-          onActivate={() => b.setActive('A')}
-          onRemove={b.removeHero}
-        />
-        <View style={{ height: 8 }} />
-        <RosterTray
-          label="Side B"
-          tint={FACTION_B}
-          roster={b.bHeroes}
-          synergy={b.synergyB}
-          publisher={b.publisherB}
-          active={b.active === 'B'}
-          onActivate={() => b.setActive('B')}
-          onRemove={b.removeHero}
-        />
-      </View>
+      <LinearGradient
+        colors={['#1c2f5a', '#13203a', '#0c1526']}
+        style={[styles.stage, { paddingTop: insets.top + 22 }]}
+      >
+        <Text style={styles.eyebrow}>★ Build a Battle ★</Text>
+        <Text style={styles.title}>Assemble Your Sides</Text>
+        <View style={styles.matchup}>
+          <View style={styles.anchorRow}>
+            <BuilderSide
+              label="Side A"
+              tint={FACTION_A}
+              roster={b.aHeroes}
+              synergy={b.synergyA}
+              publisher={b.publisherA}
+              active={b.active === 'A'}
+              anchorW={ANCHOR_W}
+              anchorH={ANCHOR_H}
+              slot={26}
+              onActivate={() => b.setActive('A')}
+              onRemove={b.removeHero}
+            />
+            <View style={[styles.vsWrap, { height: ANCHOR_H }]}>
+              <VsBadge size={42} variant="glass" />
+            </View>
+            <BuilderSide
+              label="Side B"
+              tint={FACTION_B}
+              roster={b.bHeroes}
+              synergy={b.synergyB}
+              publisher={b.publisherB}
+              active={b.active === 'B'}
+              flip
+              anchorW={ANCHOR_W}
+              anchorH={ANCHOR_H}
+              slot={26}
+              onActivate={() => b.setActive('B')}
+              onRemove={b.removeHero}
+            />
+          </View>
+        </View>
+      </LinearGradient>
 
       <View style={styles.sheetTop}>
-        {activeCaptain ? (
-          <TeammatesRail
-            captainName={activeCaptain.name}
-            sideLabel={activeLabel}
-            tint={b.active === 'A' ? FACTION_A : FACTION_B}
-            items={b.teammates}
-            onAdd={add}
-          />
-        ) : null}
         <View style={styles.searchRow}>
           <Ionicons name="search" size={17} color="rgba(41,60,67,0.4)" />
           <TextInput
@@ -96,6 +115,15 @@ export default function BattleBuilderScreen() {
             autoCapitalize="none"
           />
         </View>
+        {activeCaptain ? (
+          <TeammatesRail
+            captainName={activeCaptain.name}
+            sideLabel={b.active === 'A' ? 'Side A' : 'Side B'}
+            tint={b.active === 'A' ? FACTION_A : FACTION_B}
+            items={b.teammates}
+            onAdd={add}
+          />
+        ) : null}
       </View>
     </>
   );
@@ -141,7 +169,7 @@ export default function BattleBuilderScreen() {
           <Text style={[styles.ctaTxt, !b.canBattle ? styles.ctaTxtDim : null]}>
             {b.canBattle
               ? `BATTLE · ${b.aHeroes.length} vs ${b.bHeroes.length} →`
-              : 'Add a hero to each side'}
+              : 'Tap heroes to fill each side'}
           </Text>
         </Pressable>
       </View>
@@ -166,13 +194,30 @@ export default function BattleBuilderScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.navy },
-  stage: { backgroundColor: COLORS.navy, paddingHorizontal: H_PAD, paddingBottom: 16 },
-  title: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.beige, marginBottom: 14 },
+  stage: { paddingHorizontal: H_PAD, paddingBottom: 22, alignItems: 'center' },
+  eyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+    color: COLORS.goldAccent,
+    marginBottom: 5,
+  },
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 23,
+    color: COLORS.beige,
+    marginBottom: 18,
+    textAlign: 'center',
+  },
+  matchup: { alignItems: 'center', justifyContent: 'center' },
+  anchorRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 12 },
+  vsWrap: { justifyContent: 'center' },
   sheetTop: {
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    marginTop: -8,
+    marginTop: -16,
     paddingTop: 18,
     paddingHorizontal: H_PAD,
     gap: 12,
