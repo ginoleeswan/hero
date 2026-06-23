@@ -263,6 +263,8 @@ export default function BattleBuilderWeb() {
         },
       ]}
     >
+      {/* Frosted layer extends up behind the TopBar so the two frosts read as one. */}
+      <View style={mh.frost} pointerEvents="none" />
       {teamStrip}
       {toolBar}
     </View>
@@ -764,14 +766,21 @@ const mh = StyleSheet.create({
   head: {
     position: 'sticky',
     zIndex: 20,
-    // Frosted, not a solid panel — blends with the stage at the top, masks the
-    // grid as it scrolls under (matches the TopBar's frosted treatment).
-    backgroundColor: 'rgba(11,24,32,0.55)',
-    backdropFilter: 'blur(16px) saturate(140%)',
-    WebkitBackdropFilter: 'blur(16px) saturate(140%)',
     paddingTop: 10,
     paddingBottom: 12,
     gap: 10,
+  } as object,
+  frost: {
+    position: 'absolute',
+    // Reach up under the TopBar (height 64, its scrim fades ~40px down) so the
+    // two frosted surfaces meet with no un-frosted seam.
+    top: -28,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(11,24,32,0.55)',
+    backdropFilter: 'blur(16px) saturate(140%)',
+    WebkitBackdropFilter: 'blur(16px) saturate(140%)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.06)',
   } as object,
