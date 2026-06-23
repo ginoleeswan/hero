@@ -248,7 +248,12 @@ export default function BattleBuilderWeb() {
     <View
       style={[
         mh.head,
-        { top: `calc(${TOPBAR_HEIGHT + 8}px + env(safe-area-inset-top))` as unknown as number },
+        {
+          // Flush under the fixed TopBar, full-bleed so nothing peeks past it on scroll.
+          top: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top))` as unknown as number,
+          marginHorizontal: -contentPad,
+          paddingHorizontal: contentPad,
+        },
       ]}
     >
       {teamStrip}
@@ -601,16 +606,7 @@ const s = StyleSheet.create({
 });
 
 const ts = StyleSheet.create({
-  tray: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    gap: 8,
-    padding: 10,
-    borderRadius: 16,
-    backgroundColor: '#0f1c23',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
+  tray: { flexDirection: 'row', alignItems: 'stretch', gap: 8 },
   half: { flex: 1, gap: 7, padding: 7, borderRadius: 11 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
   labelBtn: { flex: 1, paddingVertical: 2 },
@@ -760,8 +756,12 @@ const mh = StyleSheet.create({
     position: 'sticky',
     zIndex: 20,
     backgroundColor: COLORS.deepNavy,
+    paddingTop: 10,
     paddingBottom: 12,
     gap: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.07)',
+    boxShadow: '0 10px 20px -8px rgba(0,0,0,0.5)',
   } as object,
   tools: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   searchFlex: { flex: 1 },
