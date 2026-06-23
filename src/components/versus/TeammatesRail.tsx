@@ -1,7 +1,12 @@
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { OpponentCard } from '../compare/OpponentCard';
 
-interface Item { id: string; name: string; image_url?: string | null; portrait_url?: string | null; }
+interface Item {
+  id: string;
+  name: string;
+  image_url?: string | null;
+  portrait_url?: string | null;
+}
 
 interface Props {
   captainName: string;
@@ -20,7 +25,11 @@ export function TeammatesRail({ captainName, sideLabel, tint, items, onAdd }: Pr
       <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
         ★ Teammates of {captainName} → {sideLabel}
       </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.row}
+      >
         {items.map((it) => (
           <OpponentCard key={it.id} item={it} onPress={() => onAdd(it)} width={56} height={72} />
         ))}
@@ -30,7 +39,20 @@ export function TeammatesRail({ captainName, sideLabel, tint, items, onAdd }: Pr
 }
 
 const styles = StyleSheet.create({
-  wrap: { backgroundColor: 'rgba(154,62,56,0.08)', borderWidth: 1, borderColor: 'rgba(154,62,56,0.25)', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, gap: 8 },
-  label: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 0.4, textTransform: 'uppercase' },
+  wrap: {
+    backgroundColor: 'rgba(154,62,56,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(154,62,56,0.25)',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  label: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
   row: { gap: 8 },
 });

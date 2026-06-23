@@ -1,6 +1,17 @@
-import { addToSide, removeFromSide, canBattle, derivePublisher, MAX_SIDE, type PickedHero } from '../../src/lib/battleBuilderState';
+import {
+  addToSide,
+  removeFromSide,
+  canBattle,
+  derivePublisher,
+  MAX_SIDE,
+  type PickedHero,
+} from '../../src/lib/battleBuilderState';
 
-const h = (id: string, publisher: string | null = 'Marvel Comics'): PickedHero => ({ id, name: id, publisher });
+const h = (id: string, publisher: string | null = 'Marvel Comics'): PickedHero => ({
+  id,
+  name: id,
+  publisher,
+});
 
 describe('addToSide', () => {
   it('appends a hero to the side', () => {

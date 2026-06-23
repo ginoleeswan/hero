@@ -23,13 +23,22 @@ export interface BattleBuilder {
   synergyB: number;
   publisherA: 'marvel' | 'dc' | null;
   publisherB: 'marvel' | 'dc' | null;
-  teammates: { id: string; name: string; image_url?: string | null; portrait_url?: string | null }[];
+  teammates: {
+    id: string;
+    name: string;
+    image_url?: string | null;
+    portrait_url?: string | null;
+  }[];
   isPlaced: (id: string) => boolean;
   canBattle: boolean;
   battleHref: string | null;
 }
 
-interface State { aHeroes: PickedHero[]; bHeroes: PickedHero[]; active: Side; }
+interface State {
+  aHeroes: PickedHero[];
+  bHeroes: PickedHero[];
+  active: Side;
+}
 type Action =
   | { type: 'add'; hero: PickedHero }
   | { type: 'remove'; id: string }
@@ -42,7 +51,11 @@ function reducer(s: State, a: Action): State {
         ? { ...s, aHeroes: addToSide(s.aHeroes, s.bHeroes, a.hero) }
         : { ...s, bHeroes: addToSide(s.bHeroes, s.aHeroes, a.hero) };
     case 'remove':
-      return { ...s, aHeroes: removeFromSide(s.aHeroes, a.id), bHeroes: removeFromSide(s.bHeroes, a.id) };
+      return {
+        ...s,
+        aHeroes: removeFromSide(s.aHeroes, a.id),
+        bHeroes: removeFromSide(s.bHeroes, a.id),
+      };
     case 'active':
       return { ...s, active: a.side };
   }

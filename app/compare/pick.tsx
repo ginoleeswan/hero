@@ -117,7 +117,13 @@ export default function BattleBuilderScreen() {
         }}
         onEndReachedThreshold={0.4}
         renderItem={({ item }) => (
-          <OpponentCard item={item} onPress={() => add(item)} onLongPress={() => setPeek(item)} width={CARD_W} height={CARD_H} />
+          <OpponentCard
+            item={item}
+            onPress={() => add(item)}
+            onLongPress={() => setPeek(item)}
+            width={CARD_W}
+            height={CARD_H}
+          />
         )}
       />
 
@@ -133,7 +139,9 @@ export default function BattleBuilderScreen() {
           style={[styles.cta, !b.canBattle ? styles.ctaDim : null]}
         >
           <Text style={[styles.ctaTxt, !b.canBattle ? styles.ctaTxtDim : null]}>
-            {b.canBattle ? `BATTLE · ${b.aHeroes.length} vs ${b.bHeroes.length} →` : 'Add a hero to each side'}
+            {b.canBattle
+              ? `BATTLE · ${b.aHeroes.length} vs ${b.bHeroes.length} →`
+              : 'Add a hero to each side'}
           </Text>
         </Pressable>
       </View>
@@ -160,13 +168,44 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.navy },
   stage: { backgroundColor: COLORS.navy, paddingHorizontal: H_PAD, paddingBottom: 16 },
   title: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.beige, marginBottom: 14 },
-  sheetTop: { backgroundColor: COLORS.beige, borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -8, paddingTop: 18, paddingHorizontal: H_PAD, gap: 12 },
-  searchRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(41,60,67,0.06)', borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(41,60,67,0.12)', paddingHorizontal: 14, height: 46, gap: 9 },
+  sheetTop: {
+    backgroundColor: COLORS.beige,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -8,
+    paddingTop: 18,
+    paddingHorizontal: H_PAD,
+    gap: 12,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(41,60,67,0.06)',
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(41,60,67,0.12)',
+    paddingHorizontal: 14,
+    height: 46,
+    gap: 9,
+  },
   input: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.navy },
   listContent: { backgroundColor: COLORS.beige, flexGrow: 1 },
   gridRow: { gap: GAP, marginBottom: GAP, paddingHorizontal: H_PAD },
-  ctaBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: H_PAD, paddingTop: 10, backgroundColor: 'rgba(11,24,32,0.92)' },
-  cta: { backgroundColor: COLORS.goldAccent, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  ctaBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: H_PAD,
+    paddingTop: 10,
+    backgroundColor: 'rgba(11,24,32,0.92)',
+  },
+  cta: {
+    backgroundColor: COLORS.goldAccent,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
   ctaDim: { backgroundColor: 'rgba(255,255,255,0.12)' },
   ctaTxt: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: '#1a130a', letterSpacing: 0.5 },
   ctaTxtDim: { color: 'rgba(245,235,220,0.6)' },
