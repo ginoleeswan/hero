@@ -20,10 +20,6 @@ const SAFE_BOTTOM = 'env(safe-area-inset-bottom)';
  *  sheet — a slim peek bar (mini-matchup + FIGHT) that expands to a full squad
  *  manager. Progressive disclosure, thumb-reachable. */
 export function DraftDrawer({ b, expanded, onToggle, onFight, onRandom }: Props) {
-  const aLead = b.aHeroes[0] ?? null;
-  const bLead = b.bHeroes[0] ?? null;
-  const uri = (h: PickedHero | null) => h?.portrait_url ?? h?.image_url ?? undefined;
-
   return (
     <>
       {expanded ? (
@@ -73,20 +69,9 @@ export function DraftDrawer({ b, expanded, onToggle, onFight, onRandom }: Props)
       {/* Collapsed peek bar */}
       <View style={s.bar}>
         <Pressable onPress={onToggle} style={s.summary} hitSlop={6}>
-          <Avatar
-            uri={uri(aLead)}
-            tint={FACTION_A}
-            active={b.active === 'A'}
-            count={b.aHeroes.length}
-          />
+          <DeckStack roster={b.aHeroes} tint={FACTION_A} active={b.active === 'A'} />
           <Text style={s.swords}>⚔</Text>
-          <Avatar
-            uri={uri(bLead)}
-            tint={FACTION_B}
-            active={b.active === 'B'}
-            count={b.bHeroes.length}
-            flip
-          />
+          <DeckStack roster={b.bHeroes} tint={FACTION_B} active={b.active === 'B'} flip />
           <Ionicons name="chevron-up" size={18} color="rgba(245,235,220,0.6)" style={s.chev} />
         </Pressable>
         <FightButton b={b} onFight={onFight} compact />
@@ -95,34 +80,54 @@ export function DraftDrawer({ b, expanded, onToggle, onFight, onRandom }: Props)
   );
 }
 
-function Avatar({
-  uri,
+/** A growing deck of overlapping mini-cards for the peek bar — the "deck grows"
+ *  drama at a glance (latest on top, stacking toward the VS). */
+function DeckStack({
+  roster,
   tint,
   active,
-  count,
-  flip,
+  flip = false,
 }: {
-  uri?: string;
+  roster: PickedHero[];
   tint: string;
   active: boolean;
-  count: number;
   flip?: boolean;
 }) {
+  const CARD = 26;
+  const H = 34;
+  const OFFSET = 12;
+  const cards = roster.slice(0, MAX_SIDE);
+  const n = Math.max(cards.length, 1);
+  const w = CARD + (n - 1) * OFFSET;
   return (
-    <View style={s.avatarWrap}>
-      <View style={[s.avatar, { borderColor: active ? COLORS.goldAccent : tint }]}>
-        {uri ? (
-          <Image
-            source={{ uri }}
-            style={[StyleSheet.absoluteFill, flip ? s.mirror : null]}
-            contentFit="cover"
-          />
+    <View style={[s.stackWrap, active ? s.stackActive : null]}>
+      <View style={[s.stack, { width: w, height: H }]}>
+        {cards.length === 0 ? (
+          <View style={[s.deckCard, s.deckEmpty, { width: CARD, height: H, left: 0 }]}>
+            <Text style={s.deckQ}>?</Text>
+          </View>
         ) : (
-          <Text style={s.avatarQ}>?</Text>
+          cards.map((hero, i) => {
+            const u = hero.portrait_url ?? hero.image_url ?? undefined;
+            const pos = flip ? { right: i * OFFSET } : { left: i * OFFSET };
+            return (
+              <View
+                key={hero.id}
+                style={[s.deckCard, { width: CARD, height: H, borderColor: tint, zIndex: i }, pos]}
+              >
+                {u ? (
+                  <Image
+                    source={{ uri: u }}
+                    style={[StyleSheet.absoluteFill, flip ? s.mirror : null]}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />
+                )}
+              </View>
+            );
+          })
         )}
-      </View>
-      <View style={[s.countPip, { backgroundColor: tint }]}>
-        <Text style={s.countText}>{count}</Text>
       </View>
     </View>
   );
@@ -340,32 +345,24 @@ const s = StyleSheet.create({
   summary: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   swords: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.goldAccent },
   chev: { marginLeft: 'auto' },
-  avatarWrap: { width: 38, height: 38 },
-  avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 11,
-    overflow: 'hidden',
-    borderWidth: 2,
-    backgroundColor: '#1b2a30',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarQ: { fontFamily: 'Flame-Regular', fontSize: 18, color: 'rgba(255,255,255,0.3)' },
-  countPip: {
+  stackWrap: { paddingBottom: 3, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  stackActive: { borderBottomColor: COLORS.goldAccent },
+  stack: { position: 'relative' },
+  deckCard: {
     position: 'absolute',
-    bottom: -4,
-    right: -4,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
+    top: 0,
+    borderRadius: 7,
+    overflow: 'hidden',
     borderWidth: 1.5,
-    borderColor: '#101d24',
+    backgroundColor: '#1b2a30',
+  },
+  deckEmpty: {
+    borderStyle: 'dashed',
+    borderColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 3,
   },
-  countText: { fontFamily: 'Nunito_700Bold', fontSize: 9, color: '#fff' },
+  deckQ: { fontFamily: 'Flame-Regular', fontSize: 16, color: 'rgba(255,255,255,0.3)' },
 
   fightFull: {
     alignItems: 'center',
