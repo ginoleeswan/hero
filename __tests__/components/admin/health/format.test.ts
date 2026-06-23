@@ -13,14 +13,14 @@ describe('DOMAINS', () => {
       'pipelines',
       'campaigns',
       'spend',
-      'users',
+      'community',
       'traffic',
     ]);
   });
 
-  it('flags exactly the two future domains as placeholders', () => {
+  it('flags exactly the remaining future domain as a placeholder', () => {
     const placeholders = DOMAINS.filter((d) => d.placeholder).map((d) => d.key);
-    expect(placeholders).toEqual(['users', 'traffic']);
+    expect(placeholders).toEqual(['traffic']);
   });
 
   it('every domain has a label and an Ionicons name', () => {
@@ -39,6 +39,7 @@ describe('DOMAINS', () => {
       'pipelines',
       'campaigns',
       'spend',
+      'community',
     ]);
   });
 });

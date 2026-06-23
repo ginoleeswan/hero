@@ -31,6 +31,7 @@ import { SourcesDomain } from '../../src/components/admin/health/domains/Sources
 import { fetchSourceCoverage } from '../../src/lib/db/catalogHealth';
 import { CampaignsDomain } from '../../src/components/admin/health/domains/CampaignsDomain';
 import { ReviewDomain } from '../../src/components/admin/health/domains/ReviewDomain';
+import { CommunityDomain } from '../../src/components/admin/health/domains/CommunityDomain';
 import { PlaceholderDomain } from '../../src/components/admin/health/domains/PlaceholderDomain';
 import {
   useActivityLog,
@@ -94,6 +95,7 @@ export default function AdminHealthScreen() {
     statsPendingQ,
     portraitsPendingQ,
     recentEnrichedQ,
+    communityQ,
   } = useCatalogQueries({
     enabled: gateResolved && isAdmin,
     domain,
@@ -438,11 +440,15 @@ export default function AdminHealthScreen() {
         )}
         {domain === 'campaigns' && <CampaignsDomain />}
         {domain === 'spend' && <SpendDomain spend={spendQ.data} loading={spendQ.isLoading} />}
-        {domain === 'users' && (
-          <PlaceholderDomain
-            label="Users"
-            icon="people-outline"
-            blurb="User accounts, sessions, and engagement signals will live here."
+        {domain === 'community' && (
+          <CommunityDomain
+            data={communityQ.data ?? null}
+            loading={communityQ.isLoading}
+            narrow={narrow}
+            onOpenReview={() => {
+              setCatSub('review');
+              setDomain('catalog');
+            }}
           />
         )}
         {domain === 'traffic' && (
