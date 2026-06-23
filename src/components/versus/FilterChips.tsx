@@ -24,27 +24,37 @@ export function FilterChips({
   tone = 'light',
 }: Props) {
   const dark = tone === 'dark';
+  const labelStyle = [styles.groupLabel, dark ? styles.groupLabelDark : null];
   return (
-    <View style={styles.row}>
-      {PUBLISHERS.map((p) => (
-        <Chip
-          key={p}
-          label={p}
-          dark={dark}
-          selected={publisher === p}
-          onPress={() => onPublisher(p)}
-        />
-      ))}
-      <View style={[styles.divider, dark ? styles.dividerDark : null]} />
-      {ALIGNMENTS.map((a) => (
-        <Chip
-          key={a}
-          label={a}
-          dark={dark}
-          selected={alignment === a}
-          onPress={() => onAlignment(a)}
-        />
-      ))}
+    <View style={styles.groups}>
+      <View style={styles.group}>
+        <Text style={labelStyle}>Publisher</Text>
+        <View style={styles.chips}>
+          {PUBLISHERS.map((p) => (
+            <Chip
+              key={p}
+              label={p}
+              dark={dark}
+              selected={publisher === p}
+              onPress={() => onPublisher(p)}
+            />
+          ))}
+        </View>
+      </View>
+      <View style={styles.group}>
+        <Text style={labelStyle}>Alignment</Text>
+        <View style={styles.chips}>
+          {ALIGNMENTS.map((a) => (
+            <Chip
+              key={a}
+              label={a}
+              dark={dark}
+              selected={alignment === a}
+              onPress={() => onAlignment(a)}
+            />
+          ))}
+        </View>
+      </View>
     </View>
   );
 }
@@ -70,7 +80,17 @@ function Chip({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, paddingVertical: 2 },
+  groups: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 30, rowGap: 14 },
+  group: { gap: 8 },
+  groupLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: 'rgba(41,60,67,0.5)',
+  },
+  groupLabelDark: { color: 'rgba(245,235,220,0.5)' },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     paddingHorizontal: 14,
     height: 32,
@@ -86,6 +106,4 @@ const styles = StyleSheet.create({
   chipTextOn: { color: '#1a130a' },
   chipTextOff: { color: 'rgba(41,60,67,0.7)' },
   chipTextOffDark: { color: 'rgba(245,235,220,0.78)' },
-  divider: { width: 1, height: 20, backgroundColor: 'rgba(41,60,67,0.16)', marginHorizontal: 2 },
-  dividerDark: { backgroundColor: 'rgba(245,235,220,0.2)' },
 });

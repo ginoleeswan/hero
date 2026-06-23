@@ -319,11 +319,13 @@ export default function BattleBuilderWeb() {
 
         {isWide ? (
           <>
-            <View style={s.toolWrap}>{toolBar}</View>
-            {filterPanel}
             <View style={s.arena}>
               <View style={s.flankCol}>{flankA}</View>
-              <View style={s.poolCol}>{grid}</View>
+              <View style={s.poolCol}>
+                <View style={s.poolTool}>{toolBar}</View>
+                {filterPanel}
+                {grid}
+              </View>
               <View style={s.flankCol}>{flankB}</View>
             </View>
             <View style={s.ctaWrap}>
@@ -507,7 +509,7 @@ const s = StyleSheet.create({
   title: { fontFamily: 'Flame-Regular', fontSize: 28, color: COLORS.beige, textAlign: 'center' },
   titleSm: { fontSize: 21 },
 
-  toolWrap: { maxWidth: 880, width: '100%', alignSelf: 'center', marginBottom: 18 },
+  poolTool: { marginBottom: 16 },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -795,12 +797,5 @@ const mh = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: '#1a130a' },
-  panel: {
-    gap: 12,
-    marginTop: -2,
-    marginBottom: 16,
-    maxWidth: 880,
-    width: '100%',
-    alignSelf: 'center',
-  },
+  panel: { gap: 14, marginBottom: 16 },
 });
