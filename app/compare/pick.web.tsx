@@ -114,19 +114,21 @@ export default function BattleBuilderWeb() {
     />
   );
 
-  const pool = (
-    <View style={s.pool}>
+  const controls = (
+    <View style={s.controls}>
       <FilterChips
         publisher={publisher}
         alignment={alignment}
         onPublisher={setPublisher}
         onAlignment={setAlignment}
+        tone="dark"
       />
       <PresetRail
         teams={teams}
         label={`→ ${b.active === 'A' ? 'Side A' : 'Side B'}`}
         tint={activeTint}
         onPick={pickPreset}
+        tone="dark"
       />
       <View style={s.searchWrap}>
         <Ionicons name="search" size={18} color="rgba(245,235,220,0.4)" />
@@ -143,23 +145,25 @@ export default function BattleBuilderWeb() {
           </Pressable>
         ) : null}
       </View>
-      {heroes.length === 0 && !searchQ.isPending ? (
-        <Text style={s.empty}>No fighters match these filters.</Text>
-      ) : (
-        <View style={s.grid}>
-          {heroes.map((item) => (
-            <OpponentCard
-              key={item.id}
-              item={item}
-              onPress={() => add(item)}
-              width={cardW}
-              height={Math.round(cardW * 1.32)}
-            />
-          ))}
-        </View>
-      )}
     </View>
   );
+
+  const grid =
+    heroes.length === 0 && !searchQ.isPending ? (
+      <Text style={s.empty}>No fighters match these filters.</Text>
+    ) : (
+      <View style={s.grid}>
+        {heroes.map((item) => (
+          <OpponentCard
+            key={item.id}
+            item={item}
+            onPress={() => add(item)}
+            width={cardW}
+            height={Math.round(cardW * 1.32)}
+          />
+        ))}
+      </View>
+    );
 
   return (
     <ScrollView
@@ -171,10 +175,12 @@ export default function BattleBuilderWeb() {
         <Text style={s.title}>Select Your Fighters</Text>
       </View>
 
+      {controls}
+
       {isWide ? (
         <View style={s.arena}>
           <View style={s.flankCol}>{flankA}</View>
-          <View style={s.poolCol}>{pool}</View>
+          <View style={s.poolCol}>{grid}</View>
           <View style={s.flankCol}>{flankB}</View>
         </View>
       ) : (
@@ -183,7 +189,7 @@ export default function BattleBuilderWeb() {
             {flankA}
             {flankB}
           </View>
-          {pool}
+          {grid}
         </View>
       )}
 
@@ -323,7 +329,7 @@ const s = StyleSheet.create({
     paddingBottom: 40,
   } as object,
 
-  header: { alignItems: 'center', marginBottom: 22 },
+  header: { alignItems: 'center', marginBottom: 16 },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11.5,
@@ -347,7 +353,7 @@ const s = StyleSheet.create({
   stack: { gap: 20, maxWidth: 760, width: '100%', alignSelf: 'center' },
   flanksRow: { flexDirection: 'row', justifyContent: 'center', gap: 24 },
 
-  pool: { gap: 14 },
+  controls: { gap: 12, maxWidth: 880, width: '100%', alignSelf: 'center', marginBottom: 20 },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',

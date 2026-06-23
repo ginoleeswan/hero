@@ -9,12 +9,15 @@ interface Props {
   label: string;
   tint: string;
   onPick: (teamId: string) => void;
+  /** 'light' for the beige sheet (native), 'dark' for the navy stage (web). */
+  tone?: 'light' | 'dark';
 }
 
 /** One-tap iconic-team fills (Avengers, Justice League…) for the active side.
  *  Renders nothing when there are no featured teams. */
-export function PresetRail({ teams, label, tint, onPick }: Props) {
+export function PresetRail({ teams, label, tint, onPick, tone = 'light' }: Props) {
   if (teams.length === 0) return null;
+  const dark = tone === 'dark';
   return (
     <View style={styles.wrap}>
       <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
@@ -29,7 +32,7 @@ export function PresetRail({ teams, label, tint, onPick }: Props) {
           <Pressable
             key={t.id}
             onPress={() => onPick(t.id)}
-            style={[styles.pill, { borderColor: tint }]}
+            style={[styles.pill, dark ? styles.pillDark : styles.pillLight, { borderColor: tint }]}
           >
             {t.logo_url ? (
               <Image source={{ uri: t.logo_url }} style={styles.logo} contentFit="contain" />
@@ -38,7 +41,7 @@ export function PresetRail({ teams, label, tint, onPick }: Props) {
                 <Text style={styles.monogramText}>{t.name.slice(0, 1)}</Text>
               </View>
             )}
-            <Text style={styles.name} numberOfLines={1}>
+            <Text style={[styles.name, dark ? styles.nameDark : null]} numberOfLines={1}>
               {t.name}
             </Text>
           </Pressable>
@@ -65,10 +68,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 18,
     borderWidth: 1,
-    backgroundColor: 'rgba(255,255,255,0.5)',
   },
+  pillLight: { backgroundColor: 'rgba(255,255,255,0.5)' },
+  pillDark: { backgroundColor: 'rgba(255,255,255,0.07)' },
   logo: { width: 22, height: 22, borderRadius: 11 },
   monogram: { alignItems: 'center', justifyContent: 'center' },
   monogramText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },
   name: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy, maxWidth: 130 },
+  nameDark: { color: COLORS.beige },
 });

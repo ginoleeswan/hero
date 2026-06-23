@@ -7,6 +7,8 @@ interface Props {
   alignment: AlignmentFilter;
   onPublisher: (p: PublisherFilter) => void;
   onAlignment: (a: AlignmentFilter) => void;
+  /** 'light' for the beige sheet (native), 'dark' for the navy stage (web). */
+  tone?: 'light' | 'dark';
 }
 
 const PUBLISHERS: PublisherFilter[] = ['All', 'Marvel', 'DC'];
@@ -14,7 +16,14 @@ const ALIGNMENTS: AlignmentFilter[] = ['All', 'Heroes', 'Villains'];
 
 /** Two server-side filter groups (publisher · alignment) above the roster grid —
  *  the draft screen's primary tool for taming a 3,000+ character pool. */
-export function FilterChips({ publisher, alignment, onPublisher, onAlignment }: Props) {
+export function FilterChips({
+  publisher,
+  alignment,
+  onPublisher,
+  onAlignment,
+  tone = 'light',
+}: Props) {
+  const dark = tone === 'dark';
   return (
     <ScrollView
       horizontal
@@ -22,11 +31,23 @@ export function FilterChips({ publisher, alignment, onPublisher, onAlignment }: 
       contentContainerStyle={styles.row}
     >
       {PUBLISHERS.map((p) => (
-        <Chip key={p} label={p} selected={publisher === p} onPress={() => onPublisher(p)} />
+        <Chip
+          key={p}
+          label={p}
+          dark={dark}
+          selected={publisher === p}
+          onPress={() => onPublisher(p)}
+        />
       ))}
-      <View style={styles.divider} />
+      <View style={[styles.divider, dark ? styles.dividerDark : null]} />
       {ALIGNMENTS.map((a) => (
-        <Chip key={a} label={a} selected={alignment === a} onPress={() => onAlignment(a)} />
+        <Chip
+          key={a}
+          label={a}
+          dark={dark}
+          selected={alignment === a}
+          onPress={() => onAlignment(a)}
+        />
       ))}
     </ScrollView>
   );
@@ -35,17 +56,19 @@ export function FilterChips({ publisher, alignment, onPublisher, onAlignment }: 
 function Chip({
   label,
   selected,
+  dark,
   onPress,
 }: {
   label: string;
   selected: boolean;
+  dark: boolean;
   onPress: () => void;
 }) {
+  const off = dark ? styles.chipOffDark : styles.chipOff;
+  const offText = dark ? styles.chipTextOffDark : styles.chipTextOff;
   return (
-    <Pressable onPress={onPress} style={[styles.chip, selected ? styles.chipOn : styles.chipOff]}>
-      <Text style={[styles.chipText, selected ? styles.chipTextOn : styles.chipTextOff]}>
-        {label}
-      </Text>
+    <Pressable onPress={onPress} style={[styles.chip, selected ? styles.chipOn : off]}>
+      <Text style={[styles.chipText, selected ? styles.chipTextOn : offText]}>{label}</Text>
     </Pressable>
   );
 }
@@ -62,8 +85,11 @@ const styles = StyleSheet.create({
   },
   chipOn: { backgroundColor: COLORS.goldAccent, borderColor: COLORS.goldAccent },
   chipOff: { backgroundColor: 'transparent', borderColor: 'rgba(41,60,67,0.22)' },
+  chipOffDark: { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(245,235,220,0.28)' },
   chipText: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, letterSpacing: 0.3 },
   chipTextOn: { color: '#1a130a' },
   chipTextOff: { color: 'rgba(41,60,67,0.7)' },
+  chipTextOffDark: { color: 'rgba(245,235,220,0.78)' },
   divider: { width: 1, height: 20, backgroundColor: 'rgba(41,60,67,0.16)', marginHorizontal: 2 },
+  dividerDark: { backgroundColor: 'rgba(245,235,220,0.2)' },
 });
