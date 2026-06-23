@@ -48,7 +48,12 @@ export function RailSide({
       <FighterAnchor
         fighter={
           captain
-            ? { id: captain.id, name: captain.name, image_url: captain.image_url, portrait_url: captain.portrait_url }
+            ? {
+                id: captain.id,
+                name: captain.name,
+                image_url: captain.image_url,
+                portrait_url: captain.portrait_url,
+              }
             : null
         }
         seatLabel={label}
@@ -73,9 +78,17 @@ export function RailSide({
           }
           const uri = hero.portrait_url ?? hero.image_url ?? undefined;
           return (
-            <Pressable key={hero.id} onPress={() => onRemove(hero.id)} style={[styles.slot, sz, { borderColor: tint }]}>
+            <Pressable
+              key={hero.id}
+              onPress={() => onRemove(hero.id)}
+              style={[styles.slot, sz, { borderColor: tint }]}
+            >
               {uri ? (
-                <Image source={{ uri }} style={[StyleSheet.absoluteFill, flip ? styles.mirror : null]} contentFit="cover" />
+                <Image
+                  source={{ uri }}
+                  style={[StyleSheet.absoluteFill, flip ? styles.mirror : null]}
+                  contentFit="cover"
+                />
               ) : (
                 <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />
               )}
@@ -88,8 +101,12 @@ export function RailSide({
       </View>
 
       <View style={styles.meta}>
-        {publisher ? <Text style={styles.pub}>{publisher === 'dc' ? 'all-DC' : 'all-Marvel'}</Text> : null}
-        {roster.length >= 2 ? <Text style={[styles.syn, { color: tint }]}>SYNERGY +{synergy}%</Text> : null}
+        {publisher ? (
+          <Text style={styles.pub}>{publisher === 'dc' ? 'all-DC' : 'all-Marvel'}</Text>
+        ) : null}
+        {roster.length >= 2 ? (
+          <Text style={[styles.syn, { color: tint }]}>SYNERGY +{synergy}%</Text>
+        ) : null}
       </View>
 
       {onRandom ? (
@@ -102,18 +119,58 @@ export function RailSide({
 }
 
 const styles = StyleSheet.create({
-  rail: { alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 18, borderWidth: 1.5 },
+  rail: {
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 18,
+    borderWidth: 1.5,
+  },
   railIdle: { borderColor: 'transparent' },
   slots: { gap: 6, alignItems: 'center' },
   slot: { borderRadius: 8, overflow: 'hidden', backgroundColor: '#1b2a30', borderWidth: 1 },
   mirror: { transform: [{ scaleX: -1 }] },
-  empty: { borderRadius: 8, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.22)', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
+  empty: {
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.22)',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   plus: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: 'rgba(255,255,255,0.4)' },
-  rm: { position: 'absolute', top: 1, right: 1, width: 13, height: 13, borderRadius: 7, backgroundColor: 'rgba(11,24,32,0.82)', alignItems: 'center', justifyContent: 'center' },
+  rm: {
+    position: 'absolute',
+    top: 1,
+    right: 1,
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    backgroundColor: 'rgba(11,24,32,0.82)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   rmx: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: '#fff', lineHeight: 12 },
   meta: { alignItems: 'center', gap: 3, minHeight: 14 },
-  pub: { fontFamily: 'Nunito_700Bold', fontSize: 9, color: COLORS.goldAccent, borderWidth: 1, borderColor: 'rgba(206,155,51,0.5)', borderRadius: 6, paddingHorizontal: 5, paddingVertical: 1 },
+  pub: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    color: COLORS.goldAccent,
+    borderWidth: 1,
+    borderColor: 'rgba(206,155,51,0.5)',
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
   syn: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 0.3 },
-  dice: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
+  dice: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+  },
   diceText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: 'rgba(245,235,220,0.85)' },
 });

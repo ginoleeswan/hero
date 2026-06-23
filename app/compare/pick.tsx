@@ -60,7 +60,11 @@ export default function BattleBuilderScreen() {
 
   const searchQ = useHeroSearchInfinite(debounced, publisher, alignment);
   const heroes = useMemo(
-    () => (searchQ.data?.pages ?? []).flat().filter((h) => !b.isPlaced(h.id)).slice(0, 120),
+    () =>
+      (searchQ.data?.pages ?? [])
+        .flat()
+        .filter((h) => !b.isPlaced(h.id))
+        .slice(0, 120),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- granular inputs, not the unstable `b`
     [searchQ.data, b.aHeroes, b.bHeroes, b.isPlaced],
   );
@@ -89,14 +93,21 @@ export default function BattleBuilderScreen() {
 
   const header = (
     <>
-      <LinearGradient colors={['#1c2f5a', '#13203a', '#0c1526']} style={[styles.stage, { paddingTop: insets.top + 20 }]}>
+      <LinearGradient
+        colors={['#1c2f5a', '#13203a', '#0c1526']}
+        style={[styles.stage, { paddingTop: insets.top + 20 }]}
+      >
         <Text style={styles.eyebrow}>★ Build a Battle ★</Text>
         <Text style={styles.title}>Assemble Your Sides</Text>
 
         <View style={styles.focalRow}>
           <View style={[styles.focalCard, { borderColor: activeTint }]}>
             {focalUri ? (
-              <Image source={{ uri: focalUri }} style={StyleSheet.absoluteFill} contentFit="cover" />
+              <Image
+                source={{ uri: focalUri }}
+                style={StyleSheet.absoluteFill}
+                contentFit="cover"
+              />
             ) : (
               <Text style={styles.focalQ}>?</Text>
             )}
@@ -109,8 +120,22 @@ export default function BattleBuilderScreen() {
 
         {/* Segmented Side A | Side B */}
         <View style={styles.seg}>
-          <Segment label="Side A" count={b.aHeroes.length} synergy={b.synergyA} tint={FACTION_A} active={b.active === 'A'} onPress={() => b.setActive('A')} />
-          <Segment label="Side B" count={b.bHeroes.length} synergy={b.synergyB} tint={FACTION_B} active={b.active === 'B'} onPress={() => b.setActive('B')} />
+          <Segment
+            label="Side A"
+            count={b.aHeroes.length}
+            synergy={b.synergyA}
+            tint={FACTION_A}
+            active={b.active === 'A'}
+            onPress={() => b.setActive('A')}
+          />
+          <Segment
+            label="Side B"
+            count={b.bHeroes.length}
+            synergy={b.synergyB}
+            tint={FACTION_B}
+            active={b.active === 'B'}
+            onPress={() => b.setActive('B')}
+          />
         </View>
 
         {/* The active side's roster, detailed */}
@@ -134,8 +159,18 @@ export default function BattleBuilderScreen() {
       </LinearGradient>
 
       <View style={styles.sheetTop}>
-        <FilterChips publisher={publisher} alignment={alignment} onPublisher={setPublisher} onAlignment={setAlignment} />
-        <PresetRail teams={teams} label={`→ ${b.active === 'A' ? 'Side A' : 'Side B'}`} tint={activeTint} onPick={pickPreset} />
+        <FilterChips
+          publisher={publisher}
+          alignment={alignment}
+          onPublisher={setPublisher}
+          onAlignment={setAlignment}
+        />
+        <PresetRail
+          teams={teams}
+          label={`→ ${b.active === 'A' ? 'Side A' : 'Side B'}`}
+          tint={activeTint}
+          onPick={pickPreset}
+        />
         <View style={styles.searchRow}>
           <Ionicons name="search" size={17} color="rgba(41,60,67,0.4)" />
           <TextInput
@@ -171,7 +206,13 @@ export default function BattleBuilderScreen() {
         }}
         onEndReachedThreshold={0.4}
         renderItem={({ item }) => (
-          <OpponentCard item={item} onPress={() => add(item)} onLongPress={() => setPeek(item)} width={CARD_W} height={CARD_H} />
+          <OpponentCard
+            item={item}
+            onPress={() => add(item)}
+            onLongPress={() => setPeek(item)}
+            width={CARD_W}
+            height={CARD_H}
+          />
         )}
       />
 
@@ -187,7 +228,9 @@ export default function BattleBuilderScreen() {
           style={[styles.cta, !b.canBattle ? styles.ctaDim : null]}
         >
           <Text style={[styles.ctaTxt, !b.canBattle ? styles.ctaTxtDim : null]}>
-            {b.canBattle ? `⚔ FIGHT · ${b.aHeroes.length} vs ${b.bHeroes.length} →` : 'Add at least one fighter to each side'}
+            {b.canBattle
+              ? `⚔ FIGHT · ${b.aHeroes.length} vs ${b.bHeroes.length} →`
+              : 'Add at least one fighter to each side'}
           </Text>
         </Pressable>
       </View>
@@ -230,7 +273,11 @@ function Segment({
       <Text style={[styles.segLabel, { color: active ? tint : 'rgba(245,235,220,0.6)' }]}>
         {label} · {count}
       </Text>
-      {count >= 2 ? <Text style={[styles.segSyn, { color: active ? tint : 'rgba(245,235,220,0.4)' }]}>+{synergy}%</Text> : null}
+      {count >= 2 ? (
+        <Text style={[styles.segSyn, { color: active ? tint : 'rgba(245,235,220,0.4)' }]}>
+          +{synergy}%
+        </Text>
+      ) : null}
     </Pressable>
   );
 }
@@ -238,31 +285,108 @@ function Segment({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.navy },
   stage: { paddingHorizontal: H_PAD, paddingBottom: 18, alignItems: 'center', gap: 12 },
-  eyebrow: { fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: COLORS.goldAccent, marginBottom: 2 },
+  eyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+    color: COLORS.goldAccent,
+    marginBottom: 2,
+  },
   title: { fontFamily: 'Flame-Regular', fontSize: 23, color: COLORS.beige, textAlign: 'center' },
   focalRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  focalCard: { width: 66, height: 84, borderRadius: 12, overflow: 'hidden', borderWidth: 2, backgroundColor: '#16242b', alignItems: 'center', justifyContent: 'center' },
+  focalCard: {
+    width: 66,
+    height: 84,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 2,
+    backgroundColor: '#16242b',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   focalQ: { fontFamily: 'Flame-Regular', fontSize: 30, color: 'rgba(255,255,255,0.3)' },
   focalName: { fontFamily: 'Flame-Regular', fontSize: 17, color: COLORS.beige, maxWidth: 150 },
 
-  seg: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12, padding: 3, gap: 3, alignSelf: 'stretch' },
-  segBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 8, borderRadius: 9, gap: 1 },
-  segOn: { backgroundColor: 'rgba(206,155,51,0.12)', borderWidth: 1.5, borderColor: COLORS.goldAccent },
+  seg: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 12,
+    padding: 3,
+    gap: 3,
+    alignSelf: 'stretch',
+  },
+  segBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 9,
+    gap: 1,
+  },
+  segOn: {
+    backgroundColor: 'rgba(206,155,51,0.12)',
+    borderWidth: 1.5,
+    borderColor: COLORS.goldAccent,
+  },
   segLabel: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
   segSyn: { fontFamily: 'Nunito_700Bold', fontSize: 10 },
 
-  dice: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
+  dice: {
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+  },
   diceText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(245,235,220,0.85)' },
 
-  sheetTop: { backgroundColor: COLORS.beige, borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -14, paddingTop: 16, paddingHorizontal: H_PAD, gap: 12 },
-  searchRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(41,60,67,0.06)', borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(41,60,67,0.12)', paddingHorizontal: 14, height: 46, gap: 9 },
+  sheetTop: {
+    backgroundColor: COLORS.beige,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -14,
+    paddingTop: 16,
+    paddingHorizontal: H_PAD,
+    gap: 12,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(41,60,67,0.06)',
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(41,60,67,0.12)',
+    paddingHorizontal: 14,
+    height: 46,
+    gap: 9,
+  },
   input: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.navy },
-  empty: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: 'rgba(41,60,67,0.55)', paddingTop: 8 },
+  empty: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14,
+    color: 'rgba(41,60,67,0.55)',
+    paddingTop: 8,
+  },
 
   listContent: { backgroundColor: COLORS.beige, flexGrow: 1 },
   gridRow: { gap: GAP, marginBottom: GAP, paddingHorizontal: H_PAD },
-  ctaBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: H_PAD, paddingTop: 10, backgroundColor: 'rgba(11,24,32,0.92)' },
-  cta: { backgroundColor: COLORS.goldAccent, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  ctaBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: H_PAD,
+    paddingTop: 10,
+    backgroundColor: 'rgba(11,24,32,0.92)',
+  },
+  cta: {
+    backgroundColor: COLORS.goldAccent,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
   ctaDim: { backgroundColor: 'rgba(255,255,255,0.12)' },
   ctaTxt: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: '#1a130a', letterSpacing: 0.5 },
   ctaTxtDim: { color: 'rgba(245,235,220,0.6)' },

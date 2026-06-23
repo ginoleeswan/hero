@@ -20,9 +20,17 @@ export function PresetRail({ teams, label, tint, onPick }: Props) {
       <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
         ⚡ Quick teams {label}
       </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.row}
+      >
         {teams.map((t) => (
-          <Pressable key={t.id} onPress={() => onPick(t.id)} style={[styles.pill, { borderColor: tint }]}>
+          <Pressable
+            key={t.id}
+            onPress={() => onPick(t.id)}
+            style={[styles.pill, { borderColor: tint }]}
+          >
             {t.logo_url ? (
               <Image source={{ uri: t.logo_url }} style={styles.logo} contentFit="contain" />
             ) : (
@@ -42,9 +50,23 @@ export function PresetRail({ teams, label, tint, onPick }: Props) {
 
 const styles = StyleSheet.create({
   wrap: { gap: 8 },
-  label: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 0.4, textTransform: 'uppercase' },
+  label: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
   row: { flexDirection: 'row', gap: 8, paddingVertical: 1 },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 7, height: 36, paddingHorizontal: 10, borderRadius: 18, borderWidth: 1, backgroundColor: 'rgba(255,255,255,0.5)' },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    height: 36,
+    paddingHorizontal: 10,
+    borderRadius: 18,
+    borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
   logo: { width: 22, height: 22, borderRadius: 11 },
   monogram: { alignItems: 'center', justifyContent: 'center' },
   monogramText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#fff' },

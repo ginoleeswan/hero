@@ -65,7 +65,11 @@ export default function BattleBuilderWeb() {
 
   const searchQ = useHeroSearchInfinite(debounced, publisher, alignment);
   const heroes = useMemo(
-    () => (searchQ.data?.pages ?? []).flat().filter((h) => !b.isPlaced(h.id)).slice(0, 120),
+    () =>
+      (searchQ.data?.pages ?? [])
+        .flat()
+        .filter((h) => !b.isPlaced(h.id))
+        .slice(0, 120),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- granular inputs, not the unstable `b`
     [searchQ.data, b.aHeroes, b.bHeroes, b.isPlaced],
   );
@@ -130,7 +134,12 @@ export default function BattleBuilderWeb() {
         onPublisher={setPublisher}
         onAlignment={setAlignment}
       />
-      <PresetRail teams={teams} label={`→ ${b.active === 'A' ? 'Side A' : 'Side B'}`} tint={activeTint} onPick={pickPreset} />
+      <PresetRail
+        teams={teams}
+        label={`→ ${b.active === 'A' ? 'Side A' : 'Side B'}`}
+        tint={activeTint}
+        onPick={pickPreset}
+      />
       <View style={s.searchWrap}>
         <Ionicons name="search" size={18} color="rgba(41,60,67,0.4)" />
         <TextInput
@@ -151,7 +160,13 @@ export default function BattleBuilderWeb() {
       ) : (
         <View style={s.grid}>
           {heroes.map((item) => (
-            <OpponentCard key={item.id} item={item} onPress={() => add(item)} width={96} height={134} />
+            <OpponentCard
+              key={item.id}
+              item={item}
+              onPress={() => add(item)}
+              width={96}
+              height={134}
+            />
           ))}
         </View>
       )}
@@ -168,7 +183,11 @@ export default function BattleBuilderWeb() {
           <View style={s.focalRow}>
             <View style={[s.focalCard, { borderColor: activeTint }]}>
               {focalUri ? (
-                <Image source={{ uri: focalUri }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                <Image
+                  source={{ uri: focalUri }}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                />
               ) : (
                 <Text style={s.focalQ}>?</Text>
               )}
@@ -202,7 +221,11 @@ export default function BattleBuilderWeb() {
         <View style={s.ctaWrap}>
           {b.canBattle && b.battleHref ? (
             <Pressable
-              onPress={() => withViewTransition(() => router.push(b.battleHref as Parameters<typeof router.push>[0]))}
+              onPress={() =>
+                withViewTransition(() =>
+                  router.push(b.battleHref as Parameters<typeof router.push>[0]),
+                )
+              }
               style={s.fight}
             >
               <Text style={s.fightText}>
@@ -225,33 +248,108 @@ const s = StyleSheet.create({
 
   stage: {
     backgroundColor: COLORS.deepNavy,
-    ...Platform.select({ web: { backgroundImage: SURFACE_GRADIENT.stageImmersive } as object, default: {} }),
+    ...Platform.select({
+      web: { backgroundImage: SURFACE_GRADIENT.stageImmersive } as object,
+      default: {},
+    }),
     paddingTop: TOPBAR_HEIGHT + 26,
     paddingBottom: 30,
   } as object,
   stageInner: { maxWidth: 880, width: '100%', alignSelf: 'center', alignItems: 'center' },
-  eyebrow: { fontFamily: 'Nunito_700Bold', fontSize: 11.5, letterSpacing: 4, textTransform: 'uppercase', color: COLORS.goldAccent, marginBottom: 6 },
-  title: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.beige, marginBottom: 18, textAlign: 'center' },
+  eyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11.5,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+    color: COLORS.goldAccent,
+    marginBottom: 6,
+  },
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 26,
+    color: COLORS.beige,
+    marginBottom: 18,
+    textAlign: 'center',
+  },
   focalRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  focalCard: { width: 96, height: 120, borderRadius: 14, overflow: 'hidden', borderWidth: 2, backgroundColor: '#16242b', alignItems: 'center', justifyContent: 'center' },
+  focalCard: {
+    width: 96,
+    height: 120,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 2,
+    backgroundColor: '#16242b',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   focalQ: { fontFamily: 'Flame-Regular', fontSize: 40, color: 'rgba(255,255,255,0.3)' },
   focalName: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.beige, maxWidth: 220 },
 
-  floor: { backgroundColor: COLORS.beige, borderTopLeftRadius: 28, borderTopRightRadius: 28, marginTop: -18, paddingTop: 24, flex: 1 },
-  draftRow: { flexDirection: 'row', gap: 20, maxWidth: 1180, width: '100%', alignSelf: 'center', alignItems: 'flex-start' },
+  floor: {
+    backgroundColor: COLORS.beige,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -18,
+    paddingTop: 24,
+    flex: 1,
+  },
+  draftRow: {
+    flexDirection: 'row',
+    gap: 20,
+    maxWidth: 1180,
+    width: '100%',
+    alignSelf: 'center',
+    alignItems: 'flex-start',
+  },
   railCol: { width: 168, alignItems: 'center' },
   poolCol: { flex: 1 },
   draftStack: { gap: 18, maxWidth: 760, width: '100%', alignSelf: 'center' },
   railsRow: { flexDirection: 'row', justifyContent: 'center', gap: 28 },
 
   pool: { gap: 14 },
-  searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(41,60,67,0.12)', paddingHorizontal: 14, height: 46, gap: 9 },
-  input: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 15, color: COLORS.navy, outlineStyle: 'none' as unknown as undefined },
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(41,60,67,0.12)',
+    paddingHorizontal: 14,
+    height: 46,
+    gap: 9,
+  },
+  input: {
+    flex: 1,
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 15,
+    color: COLORS.navy,
+    outlineStyle: 'none' as unknown as undefined,
+  },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  empty: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: 'rgba(41,60,67,0.55)', paddingVertical: 30, textAlign: 'center' },
+  empty: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14,
+    color: 'rgba(41,60,67,0.55)',
+    paddingVertical: 30,
+    textAlign: 'center',
+  },
 
   ctaWrap: { alignItems: 'center', paddingVertical: 26 },
-  fight: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.goldAccent, borderRadius: 14, paddingVertical: 13, paddingHorizontal: 30 },
+  fight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: COLORS.goldAccent,
+    borderRadius: 14,
+    paddingVertical: 13,
+    paddingHorizontal: 30,
+  },
   fightText: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: '#1a130a', letterSpacing: 0.5 },
-  hint: { fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 2, color: 'rgba(41,60,67,0.5)', textTransform: 'uppercase' },
+  hint: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 2,
+    color: 'rgba(41,60,67,0.5)',
+    textTransform: 'uppercase',
+  },
 });

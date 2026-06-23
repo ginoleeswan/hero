@@ -32,17 +32,34 @@ export function FilterChips({ publisher, alignment, onPublisher, onAlignment }: 
   );
 }
 
-function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+function Chip({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
   return (
     <Pressable onPress={onPress} style={[styles.chip, selected ? styles.chipOn : styles.chipOff]}>
-      <Text style={[styles.chipText, selected ? styles.chipTextOn : styles.chipTextOff]}>{label}</Text>
+      <Text style={[styles.chipText, selected ? styles.chipTextOn : styles.chipTextOff]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 2 },
-  chip: { paddingHorizontal: 14, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  chip: {
+    paddingHorizontal: 14,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
   chipOn: { backgroundColor: COLORS.goldAccent, borderColor: COLORS.goldAccent },
   chipOff: { backgroundColor: 'transparent', borderColor: 'rgba(41,60,67,0.22)' },
   chipText: { fontFamily: 'Nunito_700Bold', fontSize: 12.5, letterSpacing: 0.3 },
