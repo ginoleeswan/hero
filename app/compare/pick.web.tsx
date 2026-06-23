@@ -179,7 +179,7 @@ export default function BattleBuilderWeb() {
     const n = roster.length;
     const slotMax = n <= 1 ? 54 : n === 2 ? 48 : n === 3 ? 42 : n === 4 ? 37 : 33;
     return (
-      <View style={[ts.half, isActive ? ({ backgroundColor: `${tint}26` } as object) : null]}>
+      <View style={ts.half}>
         <View style={ts.head}>
           <Pressable onPress={() => b.setActive(side)} style={ts.labelBtn} hitSlop={4}>
             <Text
@@ -224,8 +224,15 @@ export default function BattleBuilderWeb() {
             );
           })}
           {roster.length < MAX_SIDE ? (
-            <View style={[ts.slot, ts.slotEmpty, { maxWidth: slotMax }]}>
-              <Text style={ts.addPlus}>+</Text>
+            <View
+              style={[
+                ts.slot,
+                ts.slotEmpty,
+                { maxWidth: slotMax },
+                isActive ? ({ borderColor: tint, borderStyle: 'solid' } as object) : null,
+              ]}
+            >
+              <Text style={[ts.addPlus, isActive ? { color: tint } : null]}>+</Text>
             </View>
           ) : null}
         </View>
