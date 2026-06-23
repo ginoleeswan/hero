@@ -16,6 +16,7 @@ import type {
   Contributor,
   ActivityItem,
   ActivityKind,
+  PresenceSummary,
 } from '../../../../lib/db/community';
 
 const KIND_META: Record<
@@ -106,6 +107,40 @@ function ActivityRow({ item, onPress }: { item: ActivityItem; onPress: () => voi
   );
 }
 
+// Named-user presence: who's signed in and active right now. The anonymous
+// "active visitors" line is a deliberate placeholder until Phase 3's page_views
+// table lands (anon traffic isn't tracked yet).
+function OnlineNow({ online }: { online: PresenceSummary }) {
+  return (
+    <Panel title="Online now" hint="Signed-in members · last 5 min" style={s.flex1}>
+      <View style={s.onlineHead}>
+        <View style={s.onlineBig}>
+          <View style={s.dot} />
+          <Text style={s.onlineCount}>{online.onlineNow.toLocaleString()}</Text>
+        </View>
+        <View>
+          <Text style={s.onlineSub}>{online.activeToday.toLocaleString()}</Text>
+          <Text style={s.onlineSubLabel}>active today</Text>
+        </View>
+      </View>
+      {online.recent.length === 0 ? (
+        <EmptyState text="No members seen yet." />
+      ) : (
+        online.recent.map((m) => (
+          <View key={m.userId} style={s.row}>
+            <View style={[s.statusDot, { backgroundColor: m.live ? COLORS.green : COLORS.grey }]} />
+            <Text style={[s.rowName, s.flex1]} numberOfLines={1}>
+              {m.displayName ?? 'Anonymous'}
+            </Text>
+            <Text style={s.actTime}>{relTime(m.lastSeenAt)}</Text>
+          </View>
+        ))
+      )}
+      <Text style={s.anonNote}>Anonymous visitor counts arrive with Traffic (Phase 3).</Text>
+    </Panel>
+  );
+}
+
 export function CommunityDomain({
   data,
   loading,
@@ -145,21 +180,26 @@ export function CommunityDomain({
 
   return (
     <Bento>
-      {/* Headline stats */}
-      <Panel title="Community" hint="Engagement across the catalogue">
-        <View style={s.tiles}>
-          <StatTile label="Members" value={t.members.toLocaleString()} tint={COLORS.navy} />
-          <StatTile label="Favourites" value={t.favourites.toLocaleString()} tint={COLORS.red} />
-          <StatTile label="Views" value={t.views.toLocaleString()} tint={COLORS.blue} />
-          <StatTile label="Compares" value={t.compares.toLocaleString()} tint={COLORS.orange} />
-          <StatTile label="Votes" value={t.votes.toLocaleString()} tint={COLORS.gold} />
-          <StatTile
-            label="Contributions"
-            value={t.contributions.toLocaleString()}
-            tint={COLORS.green}
-          />
-        </View>
-      </Panel>
+      <Bento.Row narrow={narrow}>
+        {/* Headline stats */}
+        <Panel title="Community" hint="Engagement across the catalogue" style={s.flex15}>
+          <View style={s.tiles}>
+            <StatTile label="Members" value={t.members.toLocaleString()} tint={COLORS.navy} />
+            <StatTile label="Favourites" value={t.favourites.toLocaleString()} tint={COLORS.red} />
+            <StatTile label="Views" value={t.views.toLocaleString()} tint={COLORS.blue} />
+            <StatTile label="Compares" value={t.compares.toLocaleString()} tint={COLORS.orange} />
+            <StatTile label="Votes" value={t.votes.toLocaleString()} tint={COLORS.gold} />
+            <StatTile
+              label="Contributions"
+              value={t.contributions.toLocaleString()}
+              tint={COLORS.green}
+            />
+          </View>
+        </Panel>
+
+        {/* Online now */}
+        <OnlineNow online={data.online} />
+      </Bento.Row>
 
       <Bento.Row narrow={narrow}>
         {/* Most viewed */}
@@ -243,7 +283,23 @@ export function CommunityDomain({
 
 const s = StyleSheet.create({
   flex1: { flex: 1 },
+  flex15: { flex: 1.5 },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  // Online-now panel
+  onlineHead: { flexDirection: 'row', alignItems: 'flex-end', gap: 28, marginBottom: 10 },
+  onlineBig: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dot: { width: 10, height: 10, borderRadius: 999, backgroundColor: COLORS.green },
+  onlineCount: { fontFamily: 'Flame-Regular', fontSize: 38, color: COLORS.green, lineHeight: 40 },
+  onlineSub: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.navy, lineHeight: 24 },
+  onlineSubLabel: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: COLORS.grey },
+  statusDot: { width: 8, height: 8, borderRadius: 999 },
+  anonNote: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11,
+    color: COLORS.grey,
+    fontStyle: 'italic',
+    marginTop: 10,
+  },
   row: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 5 },
   rowInfo: { flex: 1, gap: 1, minWidth: 0 },
   rowName: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },

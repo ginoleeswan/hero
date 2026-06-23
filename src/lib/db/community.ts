@@ -32,6 +32,23 @@ export interface ActivityItem {
   text?: string | null;
 }
 
+export interface OnlineMember {
+  userId: string;
+  displayName: string | null;
+  lastSeenAt: string;
+  /** Seen within the last 5 minutes (computed server-side). */
+  live: boolean;
+}
+
+export interface PresenceSummary {
+  /** Signed-in members seen in the last 5 minutes. */
+  onlineNow: number;
+  /** Signed-in members seen in the last 24 hours. */
+  activeToday: number;
+  /** Most-recently-seen members (up to 8). */
+  recent: OnlineMember[];
+}
+
 export interface CommunityOverview {
   totals: {
     members: number;
@@ -41,6 +58,7 @@ export interface CommunityOverview {
     votes: number;
     contributions: number;
   };
+  online: PresenceSummary;
   topViewed: HeroStat[];
   topFavourited: HeroStat[];
   topBacked: HeroStat[];
@@ -72,6 +90,7 @@ export async function fetchCommunityOverview(): Promise<CommunityOverview | null
   // Re-pick the fields explicitly so the `authorized` flag never leaks out.
   return {
     totals: json.totals,
+    online: json.online,
     topViewed: json.topViewed,
     topFavourited: json.topFavourited,
     topBacked: json.topBacked,

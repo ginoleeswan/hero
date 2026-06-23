@@ -8,6 +8,11 @@ import { fetchCommunityOverview } from '../../../src/lib/db/community';
 const fullOverview = {
   authorized: true,
   totals: { members: 2, favourites: 5, views: 30, compares: 82, votes: 12, contributions: 3 },
+  online: {
+    onlineNow: 1,
+    activeToday: 2,
+    recent: [{ userId: 'u1', displayName: 'Gino', lastSeenAt: '2026-06-23T00:00:00Z', live: true }],
+  },
   topViewed: [{ id: 'h1', name: 'Spawn', image_url: null, publisher: 'Image', count: 9 }],
   topFavourited: [],
   topBacked: [
@@ -29,6 +34,7 @@ describe('fetchCommunityOverview', () => {
     expect(mockRpc).toHaveBeenCalledWith('admin_community_overview');
     expect(r).not.toBeNull();
     expect(r!.totals.views).toBe(30);
+    expect(r!.online.onlineNow).toBe(1);
     expect(r!.topBacked[0].winRate).toBe(67);
     // The `authorized` flag must not leak into the returned object.
     expect((r as unknown as Record<string, unknown>).authorized).toBeUndefined();
