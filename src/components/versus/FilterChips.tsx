@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { COLORS } from '../../constants/colors';
 import type { PublisherFilter, AlignmentFilter } from '../../lib/db/heroes/types';
 
@@ -25,11 +25,7 @@ export function FilterChips({
 }: Props) {
   const dark = tone === 'dark';
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.row}
-    >
+    <View style={styles.row}>
       {PUBLISHERS.map((p) => (
         <Chip
           key={p}
@@ -49,7 +45,7 @@ export function FilterChips({
           onPress={() => onAlignment(a)}
         />
       ))}
-    </ScrollView>
+    </View>
   );
 }
 
@@ -74,7 +70,7 @@ function Chip({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, paddingVertical: 2 },
   chip: {
     paddingHorizontal: 14,
     height: 32,

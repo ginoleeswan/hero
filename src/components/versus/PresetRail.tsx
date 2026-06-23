@@ -1,4 +1,4 @@
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { COLORS } from '../../constants/colors';
 import type { FeaturedTeam } from '../../lib/db/teams';
@@ -11,11 +11,13 @@ interface Props {
   onPick: (teamId: string) => void;
   /** 'light' for the beige sheet (native), 'dark' for the navy stage (web). */
   tone?: 'light' | 'dark';
+  /** Cap how many pills show (they wrap; the rest are reachable via search). */
+  limit?: number;
 }
 
 /** One-tap iconic-team fills (Avengers, Justice League…) for the active side.
- *  Renders nothing when there are no featured teams. */
-export function PresetRail({ teams, label, tint, onPick, tone = 'light' }: Props) {
+ *  Pills wrap (no horizontal cutoff). Renders nothing when there are no teams. */
+export function PresetRail({ teams, label, tint, onPick, tone = 'light', limit = 8 }: Props) {
   if (teams.length === 0) return null;
   const dark = tone === 'dark';
   return (
@@ -23,12 +25,8 @@ export function PresetRail({ teams, label, tint, onPick, tone = 'light' }: Props
       <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
         ⚡ Quick teams {label}
       </Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
-      >
-        {teams.map((t) => (
+      <View style={styles.row}>
+        {teams.slice(0, limit).map((t) => (
           <Pressable
             key={t.id}
             onPress={() => onPick(t.id)}
@@ -46,7 +44,7 @@ export function PresetRail({ teams, label, tint, onPick, tone = 'light' }: Props
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -59,7 +57,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
-  row: { flexDirection: 'row', gap: 8, paddingVertical: 1 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 1 },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',

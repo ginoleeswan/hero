@@ -58,7 +58,9 @@ export default function BattleBuilderWeb() {
   const [query, setQuery] = useState('');
   const [publisher, setPublisher] = useState<PublisherFilter>('All');
   const [alignment, setAlignment] = useState<AlignmentFilter>('All');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const debounced = useDebounce(query, 200);
+  const activeFilters = (publisher !== 'All' ? 1 : 0) + (alignment !== 'All' ? 1 : 0);
 
   const searchQ = useHeroSearchInfinite(debounced, publisher, alignment);
   const heroes = useMemo(
@@ -171,7 +173,7 @@ export default function BattleBuilderWeb() {
     const isActive = b.active === side;
     // Fewer fighters ⇒ larger slots; they compress as the side fills toward 5.
     const n = roster.length;
-    const slotMax = n <= 1 ? 72 : n === 2 ? 58 : n === 3 ? 48 : n === 4 ? 40 : 34;
+    const slotMax = n <= 1 ? 54 : n === 2 ? 48 : n === 3 ? 42 : n === 4 ? 37 : 33;
     return (
       <View style={[ts.half, isActive ? ({ backgroundColor: `${tint}26` } as object) : null]}>
         <View style={ts.head}>
@@ -227,13 +229,8 @@ export default function BattleBuilderWeb() {
     );
   };
 
-  const mobileTray = (
-    <View
-      style={[
-        ts.tray,
-        { top: `calc(${TOPBAR_HEIGHT + 8}px + env(safe-area-inset-top))` as unknown as number },
-      ]}
-    >
+  const teamStrip = (
+    <View style={ts.tray}>
       {traySide('A', FACTION_A, b.aHeroes, b.synergyA)}
       <View style={ts.vs}>
         <Text style={ts.vsText}>VS</Text>
@@ -241,6 +238,71 @@ export default function BattleBuilderWeb() {
       {traySide('B', FACTION_B, b.bHeroes, b.synergyB)}
     </View>
   );
+
+  // Sticky mobile head: team strip + a single search row with a Filters toggle.
+  const mobileHead = (
+    <View
+      style={[
+        mh.head,
+        { top: `calc(${TOPBAR_HEIGHT + 8}px + env(safe-area-inset-top))` as unknown as number },
+      ]}
+    >
+      {teamStrip}
+      <View style={mh.tools}>
+        <View style={[s.searchWrap, mh.searchFlex]}>
+          <Ionicons name="search" size={18} color="rgba(245,235,220,0.4)" />
+          <TextInput
+            style={s.input}
+            placeholder="Search any hero or villain…"
+            placeholderTextColor="rgba(245,235,220,0.4)"
+            value={query}
+            onChangeText={setQuery}
+          />
+          {query.length > 0 ? (
+            <Pressable onPress={() => setQuery('')} hitSlop={8}>
+              <Ionicons name="close-circle" size={18} color="rgba(245,235,220,0.4)" />
+            </Pressable>
+          ) : null}
+        </View>
+        <Pressable
+          onPress={() => setFiltersOpen((o) => !o)}
+          style={[mh.filterBtn, filtersOpen ? mh.filterBtnOn : null]}
+          hitSlop={6}
+        >
+          <Ionicons
+            name="options-outline"
+            size={19}
+            color={filtersOpen ? '#1a130a' : 'rgba(245,235,220,0.8)'}
+          />
+          {activeFilters > 0 ? (
+            <View style={mh.badge}>
+              <Text style={mh.badgeText}>{activeFilters}</Text>
+            </View>
+          ) : null}
+        </Pressable>
+      </View>
+    </View>
+  );
+
+  // Progressive disclosure: filters + quick-teams revealed only on demand.
+  const filterPanel = filtersOpen ? (
+    <View style={mh.panel}>
+      <FilterChips
+        publisher={publisher}
+        alignment={alignment}
+        onPublisher={setPublisher}
+        onAlignment={setAlignment}
+        tone="dark"
+      />
+      <PresetRail
+        teams={teams}
+        label={`→ ${b.active === 'A' ? 'Side A' : 'Side B'}`}
+        tint={activeTint}
+        onPick={pickPreset}
+        tone="dark"
+      />
+    </View>
+  ) : null;
 
   const renderFight = (full: boolean) =>
     b.canBattle && b.battleHref ? (
@@ -273,9 +335,9 @@ export default function BattleBuilderWeb() {
           },
         ]}
       >
-        <View style={s.header}>
+        <View style={[s.header, isWide ? null : s.headerSm]}>
           <Text style={s.eyebrow}>★ Build a Battle ★</Text>
-          <Text style={s.title}>Select Your Fighters</Text>
+          <Text style={[s.title, isWide ? null : s.titleSm]}>Select Your Fighters</Text>
         </View>
 
         {isWide ? (
@@ -298,8 +360,8 @@ export default function BattleBuilderWeb() {
           </>
         ) : (
           <>
-            {mobileTray}
-            {controls}
+            {mobileHead}
+            {filterPanel}
             {grid}
           </>
         )}
@@ -346,7 +408,7 @@ function Flank({
   const featured = count ? roster[count - 1] : null;
   const featuredUri = featured?.portrait_url ?? featured?.image_url ?? undefined;
   const others = roster.slice(0, Math.max(0, count - 1));
-  const renderW = [248, 248, 222, 202, 188, 176][Math.min(count, MAX_SIDE)];
+  const renderW = [206, 242, 220, 202, 188, 176][Math.min(count, MAX_SIDE)];
   const renderH = Math.round(renderW * 1.32);
   const chipSize = count <= 2 ? 48 : count === 3 ? 42 : count === 4 ? 37 : 33;
 
@@ -455,6 +517,7 @@ const s = StyleSheet.create({
   } as object,
 
   header: { alignItems: 'center', marginBottom: 16 },
+  headerSm: { marginBottom: 12 },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11.5,
@@ -464,6 +527,7 @@ const s = StyleSheet.create({
     marginBottom: 6,
   },
   title: { fontFamily: 'Flame-Regular', fontSize: 28, color: COLORS.beige, textAlign: 'center' },
+  titleSm: { fontSize: 21 },
 
   controls: { gap: 12, maxWidth: 880, width: '100%', alignSelf: 'center', marginBottom: 20 },
   searchWrap: {
@@ -487,14 +551,14 @@ const s = StyleSheet.create({
 
   arena: {
     flexDirection: 'row',
-    gap: 20,
-    maxWidth: 1340,
+    gap: 24,
+    maxWidth: 1200,
     width: '100%',
     alignSelf: 'center',
     alignItems: 'flex-start',
   },
   flankCol: {
-    width: 232,
+    width: 224,
     alignItems: 'center',
     position: 'sticky',
     top: `calc(${TOPBAR_HEIGHT + 16}px + env(safe-area-inset-top))` as unknown as number,
@@ -502,7 +566,7 @@ const s = StyleSheet.create({
   } as object,
   poolCol: { flex: 1 },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'flex-start' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
   empty: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
@@ -573,11 +637,7 @@ const ts = StyleSheet.create({
     backgroundColor: '#0f1c23',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
-    marginBottom: 18,
-    position: 'sticky',
-    zIndex: 20,
-    boxShadow: '0 10px 24px rgba(0,0,0,0.4)',
-  } as object,
+  },
   half: { flex: 1, gap: 7, padding: 7, borderRadius: 11 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
   labelBtn: { flex: 1, paddingVertical: 2 },
@@ -720,4 +780,43 @@ const fs = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.16)',
   },
   diceText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: 'rgba(245,235,220,0.85)' },
+});
+
+const mh = StyleSheet.create({
+  head: {
+    position: 'sticky',
+    zIndex: 20,
+    backgroundColor: COLORS.deepNavy,
+    paddingBottom: 12,
+    gap: 10,
+  } as object,
+  tools: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  searchFlex: { flex: 1 },
+  filterBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  filterBtnOn: { backgroundColor: COLORS.goldAccent, borderColor: COLORS.goldAccent },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    minWidth: 17,
+    height: 17,
+    borderRadius: 9,
+    backgroundColor: COLORS.goldAccent,
+    borderWidth: 1.5,
+    borderColor: COLORS.deepNavy,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: '#1a130a' },
+  panel: { gap: 12, marginTop: -2, marginBottom: 16 },
 });
