@@ -16,8 +16,7 @@ import { useHeroSearchInfinite } from '../../src/lib/query/heroQueries';
 import { OpponentCard } from '../../src/components/compare/OpponentCard';
 import { FilterChips } from '../../src/components/versus/FilterChips';
 import { PresetRail } from '../../src/components/versus/PresetRail';
-import { HeroDeck } from '../../src/components/versus/HeroDeck';
-import { VsBadge } from '../../src/components/compare/VsBadge';
+import { DraftDrawer } from '../../src/components/versus/DraftDrawer';
 import { useBattleBuilder } from '../../src/hooks/useBattleBuilder';
 import { usePresetTeams } from '../../src/hooks/usePresetTeams';
 import { FACTION_A, FACTION_B } from '../../src/components/versus/factionColors';
@@ -61,6 +60,7 @@ export default function BattleBuilderWeb() {
   const [publisher, setPublisher] = useState<PublisherFilter>('All');
   const [alignment, setAlignment] = useState<AlignmentFilter>('All');
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const debounced = useDebounce(query, 200);
   const activeFilters = (publisher !== 'All' ? 1 : 0) + (alignment !== 'All' ? 1 : 0);
 
@@ -190,51 +190,6 @@ export default function BattleBuilderWeb() {
       </View>
     );
 
-  // ── Mobile deck-stage: matchup header with fanned hands ──
-  const mFeaturedW = Math.max(
-    98,
-    Math.min(118, Math.round((width - contentPad * 2 - 56) / 2 - 38)),
-  );
-  const mobileStage = (
-    <View style={s.mStage}>
-      <View style={s.matchup}>
-        <HeroDeck
-          label="Side A"
-          tint={FACTION_A}
-          roster={b.aHeroes}
-          synergy={b.synergyA}
-          publisher={b.publisherA}
-          active={b.active === 'A'}
-          featuredW={mFeaturedW}
-          step={14}
-          onActivate={() => b.setActive('A')}
-          onRemove={b.removeHero}
-          onRandom={() => randomFill('A')}
-          onClear={() => b.clearSide('A')}
-        />
-        <View style={[s.vsWrap, { height: Math.round(mFeaturedW * 1.34) }]}>
-          <VsBadge size={40} variant="glass" />
-        </View>
-        <HeroDeck
-          label="Side B"
-          tint={FACTION_B}
-          roster={b.bHeroes}
-          synergy={b.synergyB}
-          publisher={b.publisherB}
-          active={b.active === 'B'}
-          flip
-          featuredW={mFeaturedW}
-          step={14}
-          onActivate={() => b.setActive('B')}
-          onRemove={b.removeHero}
-          onRandom={() => randomFill('B')}
-          onClear={() => b.clearSide('B')}
-        />
-      </View>
-      <Text style={s.chooseEyebrow}>Choose Your Fighters</Text>
-    </View>
-  );
-
   // Sticky mobile head: a single search row with a Filters toggle.
   const mobileHead = (
     <View
@@ -334,7 +289,6 @@ export default function BattleBuilderWeb() {
           </>
         ) : (
           <>
-            {mobileStage}
             <View ref={sentinelRef} style={mh.sentinel} />
             {mobileHead}
             {filterPanel}
@@ -344,7 +298,19 @@ export default function BattleBuilderWeb() {
       </ScrollView>
 
       {!isWide ? (
-        <View style={[s.mobileBar, { paddingHorizontal: contentPad }]}>{renderFight(true)}</View>
+        <DraftDrawer
+          b={b}
+          expanded={drawerOpen}
+          onToggle={() => setDrawerOpen((o) => !o)}
+          onFight={() => {
+            if (b.battleHref) {
+              withViewTransition(() =>
+                router.push(b.battleHref as Parameters<typeof router.push>[0]),
+              );
+            }
+          }}
+          onRandom={(side) => randomFill(side)}
+        />
       ) : null}
     </View>
   );
@@ -505,18 +471,6 @@ const s = StyleSheet.create({
   title: { fontFamily: 'Flame-Regular', fontSize: 28, color: COLORS.beige, textAlign: 'center' },
   titleSm: { fontSize: 21 },
 
-  // Mobile deck-stage
-  mStage: { alignItems: 'center', gap: 10, marginBottom: 18 },
-  matchup: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', gap: 4 },
-  vsWrap: { justifyContent: 'center', alignItems: 'center', marginTop: 22, paddingHorizontal: 2 },
-  chooseEyebrow: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    color: COLORS.goldAccent,
-  },
-
   poolTool: { marginBottom: 16 },
   searchWrap: {
     flexDirection: 'row',
@@ -599,20 +553,6 @@ const s = StyleSheet.create({
     textTransform: 'uppercase',
   },
   hintFull: { textAlign: 'center', paddingVertical: 16 },
-
-  mobileBar: {
-    // Pinned to the visual viewport; clears the iOS Safari toolbar + home indicator.
-    position: 'fixed',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 30,
-    paddingTop: 10,
-    paddingBottom: 'calc(env(safe-area-inset-bottom) + 14px)' as unknown as number,
-    backgroundColor: 'rgba(11,24,32,0.96)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-  } as object,
 });
 
 const fs = StyleSheet.create({
