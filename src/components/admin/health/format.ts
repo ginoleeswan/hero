@@ -158,7 +158,7 @@ export type DomainKey =
   | 'pipelines'
   | 'campaigns'
   | 'spend'
-  | 'users'
+  | 'community'
   | 'traffic';
 
 export interface DomainDef {
@@ -178,8 +178,8 @@ export const DOMAINS: DomainDef[] = [
   { key: 'pipelines', label: 'Build', icon: 'construct-outline' },
   { key: 'campaigns', label: 'Campaigns', icon: 'megaphone-outline' },
   { key: 'spend', label: 'Spend', icon: 'cash-outline' },
-  { key: 'users', label: 'Users', icon: 'people-outline', placeholder: true },
-  { key: 'traffic', label: 'Traffic', icon: 'trending-up-outline', placeholder: true },
+  { key: 'community', label: 'Community', icon: 'people-outline' },
+  { key: 'traffic', label: 'Traffic', icon: 'trending-up-outline' },
 ];
 
 /** Primary (non-placeholder) domain keys — the mobile bottom-bar set. */

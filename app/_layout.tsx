@@ -14,6 +14,7 @@ import {
 } from '@expo-google-fonts/nunito';
 import { Righteous_400Regular } from '@expo-google-fonts/righteous';
 import { useAuth } from '../src/hooks/useAuth';
+import { usePresenceHeartbeat } from '../src/hooks/usePresenceHeartbeat';
 import { LogoLoader } from '../src/components/ui/LogoLoader';
 import AnalyticsProvider from '../src/components/Analytics';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -36,6 +37,13 @@ if (Platform.OS !== 'web') {
 }
 
 SplashScreen.preventAutoHideAsync();
+
+// Drives the presence heartbeat app-wide (no-op when logged out). Rendered as a
+// sibling of the router so it lives for the whole session without re-mounting.
+function PresenceHeartbeat() {
+  usePresenceHeartbeat();
+  return null;
+}
 
 function AuthGate() {
   const { user, loading } = useAuth();
@@ -90,6 +98,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <StatusBar style="dark" />
         <AnalyticsProvider />
+        <PresenceHeartbeat />
         <AuthGate />
       </QueryClientProvider>
     </GestureHandlerRootView>

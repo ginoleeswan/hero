@@ -31,7 +31,8 @@ import { SourcesDomain } from '../../src/components/admin/health/domains/Sources
 import { fetchSourceCoverage } from '../../src/lib/db/catalogHealth';
 import { CampaignsDomain } from '../../src/components/admin/health/domains/CampaignsDomain';
 import { ReviewDomain } from '../../src/components/admin/health/domains/ReviewDomain';
-import { PlaceholderDomain } from '../../src/components/admin/health/domains/PlaceholderDomain';
+import { CommunityDomain } from '../../src/components/admin/health/domains/CommunityDomain';
+import { TrafficDomain } from '../../src/components/admin/health/domains/TrafficDomain';
 import {
   useActivityLog,
   useCatalogActions,
@@ -94,6 +95,8 @@ export default function AdminHealthScreen() {
     statsPendingQ,
     portraitsPendingQ,
     recentEnrichedQ,
+    communityQ,
+    trafficQ,
   } = useCatalogQueries({
     enabled: gateResolved && isAdmin,
     domain,
@@ -438,18 +441,22 @@ export default function AdminHealthScreen() {
         )}
         {domain === 'campaigns' && <CampaignsDomain />}
         {domain === 'spend' && <SpendDomain spend={spendQ.data} loading={spendQ.isLoading} />}
-        {domain === 'users' && (
-          <PlaceholderDomain
-            label="Users"
-            icon="people-outline"
-            blurb="User accounts, sessions, and engagement signals will live here."
+        {domain === 'community' && (
+          <CommunityDomain
+            data={communityQ.data ?? null}
+            loading={communityQ.isLoading}
+            narrow={narrow}
+            onOpenReview={() => {
+              setCatSub('review');
+              setDomain('catalog');
+            }}
           />
         )}
         {domain === 'traffic' && (
-          <PlaceholderDomain
-            label="Traffic"
-            icon="trending-up-outline"
-            blurb="Page views, search, and traffic analytics will live here."
+          <TrafficDomain
+            data={trafficQ.data ?? null}
+            loading={trafficQ.isLoading}
+            narrow={narrow}
           />
         )}
       </CommandShell>
