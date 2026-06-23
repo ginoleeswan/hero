@@ -711,9 +711,9 @@ const mh = StyleSheet.create({
   head: {
     position: 'sticky',
     zIndex: 20,
-    paddingTop: 8,
+    paddingTop: 5,
     paddingBottom: 10,
-    gap: 8,
+    gap: 14,
   } as object,
   sentinel: { height: 1, marginBottom: -1 },
   frost: {
