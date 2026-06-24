@@ -30,7 +30,12 @@ import {
   type FacetCounts,
 } from '../../src/lib/db/categoryFilters';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCategoryHeroes, prefetchHeroRow } from '../../src/lib/query/heroQueries';
+import {
+  useCategoryHeroes,
+  useUniverseHeroes,
+  prefetchHeroRow,
+} from '../../src/lib/query/heroQueries';
+import { publisherBySlug } from '../../src/constants/publishers';
 import { flattenCategoryPages } from '../../src/lib/query/heroCache';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
@@ -143,7 +148,14 @@ export default function CategoryScreen() {
   const insets = useSafeAreaInsets();
 
   const categorySlug = VALID_SLUGS.has(slug as CategorySlug) ? (slug as CategorySlug) : null;
-  const title = categorySlug ? CATEGORY_LABELS[categorySlug] : (slug ?? 'Heroes');
+  // Any non-category slug is treated as a universe (publisher/studio/franchise):
+  // a registered brand routes by its ILIKE query, anything else by its raw name.
+  const brand = !categorySlug ? publisherBySlug(slug) : undefined;
+  const universeTerm =
+    !categorySlug && slug ? (brand?.query ?? decodeURIComponent(slug)) : null;
+  const title = categorySlug
+    ? CATEGORY_LABELS[categorySlug]
+    : (brand?.name ?? slug ?? 'Heroes');
 
   const [filters, setFilters] = useState<CategoryFilters>(() => ({
     ...DEFAULT_FILTERS,
@@ -180,10 +192,17 @@ export default function CategoryScreen() {
     [filters, debouncedSearch],
   );
 
+  // One of these is active; the other is disabled (null source) and idle.
   const categoryQuery = useCategoryHeroes(categorySlug, queryFilters);
+  const universeQuery = useUniverseHeroes(universeTerm, queryFilters);
+  const activeQuery = categorySlug ? categoryQuery : universeQuery;
 
   useEffect(() => {
-    if (!categorySlug) return;
+    // Facet counts come from a category-keyed RPC; universe pages have no counts.
+    if (!categorySlug) {
+      setCounts(null);
+      return;
+    }
     let cancelled = false;
     getCategoryFacetCounts(categorySlug, queryFilters)
       .then((c) => {
@@ -197,11 +216,11 @@ export default function CategoryScreen() {
     };
   }, [categorySlug, queryFilters]);
 
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = categoryQuery;
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = activeQuery;
 
-  const heroes = flattenCategoryPages(categoryQuery.data);
-  const total = categoryQuery.data?.pages[0]?.total ?? 0;
-  const loading = categoryQuery.isPending;
+  const heroes = flattenCategoryPages(activeQuery.data);
+  const total = activeQuery.data?.pages[0]?.total ?? 0;
+  const loading = activeQuery.isPending;
   const loadingMore = isFetchingNextPage;
   const tagline = categorySlug ? CATEGORY_TAGLINES[categorySlug] : null;
 

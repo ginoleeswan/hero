@@ -15,12 +15,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
   getCategoryPage,
+  getUniversePage,
   getCategoryFacetCounts,
   CATEGORY_LABELS,
   CATEGORY_DESCRIPTIONS,
   type CategorySlug,
   type Hero,
 } from '../../src/lib/db/heroes';
+import { publisherBySlug } from '../../src/constants/publishers';
 import { SeoHead } from '../../src/components/web/SeoHead';
 import {
   activeFilterList,
@@ -207,7 +209,11 @@ export default function WebCategoryScreen() {
   const skeletonOpacity = useSkeletonAnim();
 
   const categorySlug = VALID_SLUGS.has(slug as CategorySlug) ? (slug as CategorySlug) : null;
-  const title = categorySlug ? CATEGORY_LABELS[categorySlug] : (slug ?? 'Heroes');
+  // Non-category slugs are universes (publisher/studio/franchise): a registered
+  // brand routes by its ILIKE query, otherwise the raw name.
+  const brand = !categorySlug ? publisherBySlug(slug) : undefined;
+  const universeTerm = !categorySlug && slug ? (brand?.query ?? decodeURIComponent(slug)) : null;
+  const title = categorySlug ? CATEGORY_LABELS[categorySlug] : (brand?.name ?? slug ?? 'Heroes');
   const description = categorySlug ? CATEGORY_DESCRIPTIONS[categorySlug] : null;
 
   const { filters, setFilter, reset } = useCategoryFilters(categorySlug ?? 'popular');
@@ -215,11 +221,13 @@ export default function WebCategoryScreen() {
 
   const fetchPage = useCallback(
     async (page: number, f: CategoryFilters, append = false) => {
-      if (!categorySlug) return;
+      if (!categorySlug && !universeTerm) return;
       if (page === 0) setLoading(true);
       else setLoadingMore(true);
       try {
-        const result = await getCategoryPage(categorySlug, { page, pageSize: PAGE_SIZE, ...f });
+        const result = categorySlug
+          ? await getCategoryPage(categorySlug, { page, pageSize: PAGE_SIZE, ...f })
+          : await getUniversePage(universeTerm!, { page, pageSize: PAGE_SIZE, ...f });
         setHeroes((prev) => {
           if (!append) return result.heroes;
           const seen = new Set(prev.map((h) => h.id));
@@ -235,25 +243,29 @@ export default function WebCategoryScreen() {
         setLoadingMore(false);
       }
     },
-    [categorySlug],
+    [categorySlug, universeTerm],
   );
 
   // Refetch page 0 + facet counts whenever filters change. Search is debounced;
-  // facet selections apply immediately.
+  // facet selections apply immediately. Universe pages have no facet counts.
   useEffect(() => {
-    if (!categorySlug) return;
+    if (!categorySlug && !universeTerm) return;
     clearTimeout(searchTimer.current);
     searchTimer.current = setTimeout(
       () => {
         fetchPage(0, filters);
-        getCategoryFacetCounts(categorySlug, filters)
-          .then(setCounts)
-          .catch(() => setCounts(null));
+        if (categorySlug) {
+          getCategoryFacetCounts(categorySlug, filters)
+            .then(setCounts)
+            .catch(() => setCounts(null));
+        } else {
+          setCounts(null);
+        }
       },
       filters.search ? 300 : 0,
     );
     return () => clearTimeout(searchTimer.current);
-  }, [categorySlug, filters, fetchPage]);
+  }, [categorySlug, universeTerm, filters, fetchPage]);
 
   const handlePress = useCallback(
     (id: string) => {

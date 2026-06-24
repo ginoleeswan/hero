@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-query';
 import {
   getCategoryPage,
+  getUniversePage,
   getHeroById,
   getHeroesByNames,
   getRelatedHeroes,
@@ -66,6 +67,25 @@ export function useCategoryHeroes(slug: CategorySlug | null, filters: CategoryFi
     initialPageParam: 0,
     queryFn: ({ pageParam }) =>
       getCategoryPage(slug!, {
+        page: pageParam,
+        pageSize: CATEGORY_PAGE_SIZE,
+        withCount: pageParam === 0,
+        ...filters,
+      }),
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.heroes.length === CATEGORY_PAGE_SIZE ? allPages.length : undefined,
+  });
+}
+
+/** Infinite list for a UNIVERSE browse page — same shape as useCategoryHeroes
+ *  but keyed on a publisher ILIKE term (registry query or raw universe name). */
+export function useUniverseHeroes(term: string | null, filters: CategoryFilters) {
+  return useInfiniteQuery({
+    queryKey: term ? ['heroes', 'universe', term, filters] : ['heroes', 'universe', 'disabled'],
+    enabled: !!term,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      getUniversePage(term!, {
         page: pageParam,
         pageSize: CATEGORY_PAGE_SIZE,
         withCount: pageParam === 0,
