@@ -37,7 +37,9 @@ export function SubTabs<T extends string>({
             {t.icon && !narrow ? (
               <Ionicons name={t.icon} size={14} color={on ? '#fff' : 'rgba(255,255,255,0.65)'} />
             ) : null}
-            <Text style={[styles.pillText, narrow && styles.pillTextNarrow, on && styles.pillTextOn]}>
+            <Text
+              style={[styles.pillText, narrow && styles.pillTextNarrow, on && styles.pillTextOn]}
+            >
               {t.label}
             </Text>
             {t.badge != null && t.badge > 0 ? (
