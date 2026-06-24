@@ -1,6 +1,6 @@
 // Sub-tab pill strip for splitting a dense domain into focused, no-scroll bento
 // views. Sits on the dark content background, above the active sub-view.
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 
@@ -20,20 +20,26 @@ export function SubTabs<T extends string>({
   active: T;
   onChange: (k: T) => void;
 }) {
+  // Mobile: keep every sub-tab on one no-wrap line — tighter pills, icons dropped
+  // (they cost the most width).
+  const { width } = useWindowDimensions();
+  const narrow = width < 760;
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, narrow && styles.rowNarrow]}>
       {tabs.map((t) => {
         const on = t.key === active;
         return (
           <Pressable
             key={t.key}
             onPress={() => onChange(t.key)}
-            style={[styles.pill, on && styles.pillOn]}
+            style={[styles.pill, narrow && styles.pillNarrow, on && styles.pillOn]}
           >
-            {t.icon ? (
+            {t.icon && !narrow ? (
               <Ionicons name={t.icon} size={14} color={on ? '#fff' : 'rgba(255,255,255,0.65)'} />
             ) : null}
-            <Text style={[styles.pillText, on && styles.pillTextOn]}>{t.label}</Text>
+            <Text style={[styles.pillText, narrow && styles.pillTextNarrow, on && styles.pillTextOn]}>
+              {t.label}
+            </Text>
             {t.badge != null && t.badge > 0 ? (
               <View style={[styles.badge, on && styles.badgeOn]}>
                 <Text style={[styles.badgeText, on && styles.badgeTextOn]}>

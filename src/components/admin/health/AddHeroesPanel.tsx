@@ -47,10 +47,9 @@ export function AddHeroesPanel({
   onAdded: () => void;
   onBuild: (heroIds: string[]) => void;
 }) {
-  // Land on "Popular gaps" — ComicVine's most-published characters missing from the
-  // catalogue — so the panel opens with an actionable list instead of an empty
-  // search box (the recommended starting point; see the panel's InfoTip).
-  const [mode, setMode] = useState<Mode>('popular');
+  // Default to "By name" so the panel opens without firing any ComicVine request —
+  // discovery modes (Popular gaps) fetch on entry, which isn't always wanted.
+  const [mode, setMode] = useState<Mode>('name');
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
