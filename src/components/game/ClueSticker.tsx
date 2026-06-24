@@ -214,8 +214,16 @@ export function ClueSticker({ clue, tilt }: { clue: Clue; tilt: number }) {
   // colour); everything else keeps its big-text die-cut.
   const brand = clue.label === 'Publisher' ? brandForPublisher(clue.value) : undefined;
   const logoBrand = brand?.logo && brand.badgeSize ? brand : undefined;
-  const bgFill = logoBrand ? logoBrand.color : bg;
-  const lineAccent = logoBrand ? 'rgba(255,255,255,0.4)' : accent;
+  // The logo sits on a backing that contrasts it — white for marks that read
+  // best on light (e.g. Nintendo red), a neutral dark for everything else —
+  // never on the brand's own colour (which would hide a same-colour logo).
+  const onLight = !!logoBrand?.logoOnLight;
+  const bgFill = logoBrand ? (onLight ? '#FFFFFF' : '#17222C') : bg;
+  const lineAccent = logoBrand
+    ? onLight
+      ? 'rgba(0,0,0,0.18)'
+      : 'rgba(255,255,255,0.4)'
+    : accent;
   let logoW = 0;
   let logoH = 0;
   if (logoBrand?.badgeSize) {
@@ -260,7 +268,7 @@ export function ClueSticker({ clue, tilt }: { clue: Clue; tilt: number }) {
       </Svg>
       <View style={[styles.content, { paddingHorizontal: pad }]} pointerEvents="none">
         {logoBrand?.logo ? (
-          <BrandLogoView logo={logoBrand.logo} width={logoW} height={logoH} />
+          <BrandLogoView logo={logoBrand.logo} width={logoW} height={logoH} tint={logoBrand.logoTint} />
         ) : (
           <>
             {layout === 'iconText' ? (

@@ -63,8 +63,8 @@ export function WebHeroCard({
           {name}
         </Text>
         {featured && brand?.logo && brand.badgeSize ? (
-          <View style={styles.logoChip}>
-            <BrandLogoView logo={brand.logo} width={logoWidth} height={LOGO_H} />
+          <View style={[styles.logoChip, brand.logoOnLight && styles.logoChipLight]}>
+            <BrandLogoView logo={brand.logo} width={logoWidth} height={LOGO_H} tint={brand.logoTint} />
           </View>
         ) : featured && publisher ? (
           <Text style={styles.publisher} numberOfLines={1}>
@@ -156,4 +156,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: 'rgba(18,24,28,0.42)',
   } as object,
+  logoChipLight: {
+    backgroundColor: 'rgba(255,255,255,0.92)',
+  },
 });

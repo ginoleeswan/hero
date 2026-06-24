@@ -44,7 +44,7 @@ export function PublisherPods({ onNavigate }: { onNavigate: (path: string) => vo
             }
           >
             {p.logo && p.badgeSize ? (
-              <BrandLogoView logo={p.logo} width={logoWidth} height={LOGO_H} />
+              <BrandLogoView logo={p.logo} width={logoWidth} height={LOGO_H} tint={p.logoTint} />
             ) : (
               <Text style={[s.wordmark, { color: p.color }]} numberOfLines={1}>
                 {p.name}

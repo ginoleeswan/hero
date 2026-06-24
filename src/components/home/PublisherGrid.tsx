@@ -20,7 +20,7 @@ const LOGO_H = 44;
  * has no logo art.
  */
 function Tile({ publisher, onPress }: { publisher: PublisherBrand; onPress: () => void }) {
-  const { name, color, logo, badgeSize } = publisher;
+  const { name, color, logo, badgeSize, logoTint } = publisher;
   const logoWidth = logo && badgeSize ? LOGO_H * (badgeSize.width / badgeSize.height) : 0;
   return (
     <Pressable
@@ -30,7 +30,7 @@ function Tile({ publisher, onPress }: { publisher: PublisherBrand; onPress: () =
       style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
     >
       {logo && badgeSize ? (
-        <BrandLogoView logo={logo} width={logoWidth} height={LOGO_H} />
+        <BrandLogoView logo={logo} width={logoWidth} height={LOGO_H} tint={logoTint} />
       ) : (
         <Text style={[styles.wordmark, { color }]} numberOfLines={1}>
           {name}

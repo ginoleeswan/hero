@@ -27,16 +27,28 @@ export function BrandLogoView({
   width,
   height,
   shadow,
+  tint,
 }: {
   logo: BrandLogo;
   width: number;
   height: number;
   shadow?: boolean;
+  /** Paint a single-colour silhouette logo this ink (SVG only). Unset → the
+   *  logo keeps its own colours. */
+  tint?: string;
 }) {
   if (typeof logo === 'function') {
     const Logo = logo;
+    // `fill` covers fill-less silhouettes (Nintendo/Disney); `color` covers the
+    // currentColor ones (Image/Shueisha). Both no-op when tint is undefined.
     return (
-      <Logo width={width} height={height} style={(shadow ? styles.logoShadow : undefined) as StyleProp<ViewStyle>} />
+      <Logo
+        width={width}
+        height={height}
+        fill={tint}
+        color={tint}
+        style={(shadow ? styles.logoShadow : undefined) as StyleProp<ViewStyle>}
+      />
     );
   }
   return (
@@ -66,8 +78,14 @@ export function PublisherLogoChip({
   if (!brand?.logo || !brand.badgeSize) return null;
   const width = height * (brand.badgeSize.width / brand.badgeSize.height);
   return (
-    <View style={styles.inlineLogo}>
-      <BrandLogoView logo={brand.logo} width={width} height={height} shadow />
+    <View style={[styles.inlineLogo, brand.logoOnLight ? styles.chipLight : styles.chipDark]}>
+      <BrandLogoView
+        logo={brand.logo}
+        width={width}
+        height={height}
+        shadow={!brand.logoOnLight}
+        tint={brand.logoTint}
+      />
     </View>
   );
 }
@@ -122,11 +140,12 @@ export function PublisherBadge({ publisher }: { publisher: string | null | undef
 
   if (brand?.logo && brand.badgeSize) {
     return (
-      <View style={styles.badge}>
+      <View style={[styles.badge, brand.logoOnLight && styles.badgeLight]}>
         <BrandLogoView
           logo={brand.logo}
           width={brand.badgeSize.width}
           height={brand.badgeSize.height}
+          tint={brand.logoTint}
         />
       </View>
     );
@@ -156,11 +175,24 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: 'rgba(18,24,28,0.42)',
   },
-  // Inline, flat logo for use in text-flow (e.g. the detail eyebrow) — no
-  // backing chip, just the bare mark sitting where the label would.
+  // Light backing for logos that read best on white (e.g. Nintendo red).
+  badgeLight: {
+    backgroundColor: 'rgba(255,255,255,0.92)',
+  },
+  // Inline logo chip for the detail eyebrow — a small backing so the mark reads
+  // over the cover art. Dark by default; light for `logoOnLight` brands.
   inlineLogo: {
     alignSelf: 'flex-start',
     marginBottom: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 7,
+  },
+  chipDark: {
+    backgroundColor: 'rgba(18,24,28,0.55)',
+  },
+  chipLight: {
+    backgroundColor: 'rgba(255,255,255,0.92)',
   },
   // Subtle press feedback for the tappable universe eyebrow.
   eyebrowPressed: {

@@ -50,6 +50,17 @@ export interface PublisherBrand {
    * compact marks (DC) — a single height doesn't read well across both.
    */
   badgeSize?: { width: number; height: number };
+  /**
+   * When set, the logo is a single-colour silhouette painted this ink — so one
+   * file reads on any surface (e.g. Nintendo's bare wordmark painted red). Logos
+   * with their own colours (Sega, Capcom…) leave this unset and render as-is.
+   */
+  logoTint?: string;
+  /**
+   * The logo reads best on a LIGHT chip (e.g. a red/dark mark) rather than the
+   * default dark chip. Drives the backing colour wherever a chip sits behind it.
+   */
+  logoOnLight?: boolean;
   /** Shown as a browsable tile on the Explore screen. */
   featured?: boolean;
 }
@@ -112,6 +123,7 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     colorDark: '#0C5F4E',
     logo: ImageComicsLogo,
     badgeSize: { width: 50, height: 20 },
+    logoTint: '#FFFFFF',
     featured: true,
   },
 
@@ -151,11 +163,11 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
   // ── Legacy publishers from the original SuperheroAPI import ───────────────
   // Big rosters that were never registered (so they showed as plain text with
   // no route). Same treatment: slug + colour + match now, `logo` to follow.
-  { slug: 'nintendo', name: 'Nintendo', query: 'nintendo', match: ['nintendo'], color: '#E60012', colorDark: '#8E0009', logo: NintendoLogo, badgeSize: { width: 56, height: 14 } },
-  { slug: 'shueisha', name: 'Shueisha', query: 'shueisha', match: ['shueisha'], color: '#E12120', colorDark: '#861313', logo: ShueishaLogo, badgeSize: { width: 32, height: 18 } },
+  { slug: 'nintendo', name: 'Nintendo', query: 'nintendo', match: ['nintendo'], color: '#E60012', colorDark: '#8E0009', logo: NintendoLogo, badgeSize: { width: 56, height: 14 }, logoTint: '#E60012', logoOnLight: true },
+  { slug: 'shueisha', name: 'Shueisha', query: 'shueisha', match: ['shueisha'], color: '#E12120', colorDark: '#861313', logo: ShueishaLogo, badgeSize: { width: 32, height: 18 }, logoTint: '#FFFFFF' },
   { slug: 'warp-graphics', name: 'Warp Graphics', query: 'warp graphics', match: ['warp graphics'], color: '#3E8E5A', colorDark: '#205230', logo: WarpGraphicsLogo, badgeSize: { width: 22, height: 22 } },
   { slug: 'archie', name: 'Archie Comics', query: 'archie', match: ['archie'], color: '#ED1C24', colorDark: '#8E1115', logo: ArchieLogo, badgeSize: { width: 35, height: 20 } },
-  { slug: 'disney', name: 'Disney', query: 'disney', match: ['disney'], color: '#113CCF', colorDark: '#0A2480', logo: DisneyLogo, badgeSize: { width: 38, height: 16 } },
+  { slug: 'disney', name: 'Disney', query: 'disney', match: ['disney'], color: '#113CCF', colorDark: '#0A2480', logo: DisneyLogo, badgeSize: { width: 38, height: 16 }, logoTint: '#FFFFFF' },
   { slug: 'valiant', name: 'Valiant', query: 'valiant', match: ['valiant'], color: '#1B3A6B', colorDark: '#0E2444', logo: ValiantLogo, badgeSize: { width: 50, height: 13 } },
   { slug: 'top-cow', name: 'Top Cow', query: 'top cow', match: ['top cow'], color: '#B5202A', colorDark: '#6E1318' },
   { slug: 'malibu', name: 'Malibu Comics', query: 'malibu', match: ['malibu'], color: '#1E73BE', colorDark: '#114571' },
