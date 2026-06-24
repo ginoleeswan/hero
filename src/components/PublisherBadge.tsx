@@ -77,8 +77,13 @@ export function PublisherLogoChip({
 }) {
   const brand = brandForPublisher(publisher);
   if (!brand?.logo || !brand.badgeSize) return null;
-  const h = height * (brand.eyebrowScale ?? 1);
-  const width = h * (brand.badgeSize.width / brand.badgeSize.height);
+  const aspect = brand.badgeSize.width / brand.badgeSize.height;
+  // Balance visual weight across mixed logo shapes: square emblems (DC,
+  // NetherRealm) get a lift so they don't read tiny next to long wordmarks.
+  // An explicit `eyebrowScale` overrides the heuristic (e.g. Star Wars).
+  const scale = brand.eyebrowScale ?? (aspect < 1.6 ? 1.45 : aspect < 2.4 ? 1.2 : 1);
+  const h = height * scale;
+  const width = h * aspect;
   return (
     <View style={styles.inlineLogo}>
       <BrandLogoView logo={brand.logo} width={width} height={h} shadow tint={brand.logoTint} />
@@ -95,7 +100,7 @@ export function PublisherLogoChip({
  */
 export function UniverseEyebrow({
   publisher,
-  logoHeight = 16,
+  logoHeight = 18,
   textStyle,
 }: {
   publisher: string | null | undefined;

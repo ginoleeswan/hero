@@ -130,7 +130,7 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     // Black wordmark PNG painted white via tintColor so it reads on dark; shown
     // big on the (chipless) eyebrow.
     logoTint: '#FFFFFF',
-    eyebrowScale: 2.6,
+    eyebrowScale: 2.2,
     // Not featured: badged on result cards, but no Explore tile.
   },
   {
