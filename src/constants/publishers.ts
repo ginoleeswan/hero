@@ -27,6 +27,7 @@ import HannaBarberaLogo from '../../assets/brands/hanna-barbera.svg';
 import HasbroLogo from '../../assets/brands/hasbro.svg';
 import MattelLogo from '../../assets/brands/mattel.svg';
 import SantaMonicaLogo from '../../assets/brands/santa-monica-studio.svg';
+import WarnerBrosLogo from '../../assets/brands/warner-bros.svg';
 
 /** A brand logo, either a raster image (PNG via require) or an SVG component
  *  (via react-native-svg-transformer). Render helpers branch on which it is. */
@@ -184,6 +185,9 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
   { slug: 'mattel', name: 'Mattel', query: 'mattel', match: ['mattel'], color: '#E3000B', colorDark: '#8A000B', logo: MattelLogo, badgeSize: { width: 18, height: 18 } },
   { slug: 'hasbro', name: 'Hasbro', query: 'hasbro', match: ['hasbro'], color: '#0046AD', colorDark: '#002C6E', logo: HasbroLogo, badgeSize: { width: 16, height: 18 } },
   { slug: 'kodansha', name: 'Kodansha', query: 'kodansha', match: ['kodansha'], color: '#1C8A4C', colorDark: '#0E4D2A' },
+  // Inert until a hero carries a "Warner Bros" publisher (0 today); logo is a
+  // colorless shield silhouette → white tint.
+  { slug: 'warner-bros', name: 'Warner Bros', query: 'warner bros', match: ['warner bros', 'warner brothers'], color: '#004B8D', colorDark: '#012A50', logo: WarnerBrosLogo, badgeSize: { width: 20, height: 20 }, logoTint: '#FFFFFF' },
 ];
 
 /** Explore tiles, in display order. */
