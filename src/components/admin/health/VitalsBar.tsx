@@ -205,7 +205,13 @@ const s = StyleSheet.create({
     gap: 14,
   },
   // Mobile: one tight no-wrap row — 5 equal cells, no dividers, no sub-captions.
-  barNarrow: { flexWrap: 'nowrap', columnGap: 8, gap: 8, paddingVertical: 8, paddingHorizontal: 10 },
+  barNarrow: {
+    flexWrap: 'nowrap',
+    columnGap: 8,
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
   cell: { gap: 2, minWidth: 80, justifyContent: 'center' },
   cellWide: { flex: 1, minWidth: 150 },
   cellNarrow: { flex: 1, minWidth: 0, gap: 1 },
