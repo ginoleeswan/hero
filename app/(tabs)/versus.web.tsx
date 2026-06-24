@@ -26,7 +26,7 @@ export default function VersusHubWeb() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const contentPad = width < 640 ? 16 : 32;
-  const { matchup, rivalries, iconicPool, loading, teamBattle } = useVersusHub();
+  const { matchup, iconicPool, loading } = useVersusHub();
 
   const openArena = (a: FighterArt, b: FighterArt) => {
     stashFighters(a, b);
@@ -46,7 +46,11 @@ export default function VersusHubWeb() {
     withViewTransition(() =>
       router.push(`/versus/team/${aId}-vs-${bId}` as Parameters<typeof router.push>[0]),
     );
-  const heroSide = (h: { name: string; image_url?: string | null; portrait_url?: string | null }) => ({
+  const heroSide = (h: {
+    name: string;
+    image_url?: string | null;
+    portrait_url?: string | null;
+  }) => ({
     name: h.name,
     art: h.portrait_url ?? h.image_url,
   });
@@ -126,34 +130,61 @@ export default function VersusHubWeb() {
         </View>
       </View>
 
-      {/* ── Featured team battle ── */}
-      {teamBattle && (
-        <View style={[s.teamSec, { paddingHorizontal: contentPad }] as object}>
-          <Pressable
-            style={s.teamCard}
-            onPress={() =>
-              withViewTransition(() =>
-                router.push(
-                  `/versus/team/${teamBattle.teamA.id}-vs-${teamBattle.teamB.id}` as Parameters<
-                    typeof router.push
-                  >[0],
-                ),
-              )
-            }
-          >
-            <Text style={s.teamEyebrow}>★ Team Battle ★</Text>
-            <Text style={s.teamTitle}>
-              {teamBattle.teamA.name} vs {teamBattle.teamB.name}
-            </Text>
-            <Text style={s.teamCta}>See the clash →</Text>
-          </Pressable>
-        </View>
-      )}
+      {/* ── Battle Discovery feed ── */}
+      <View style={[s.feed, { paddingHorizontal: contentPad }] as object}>
+        <View style={s.feedInner}>
+          {rows.rivalries.length > 0 && (
+            <MatchupRow label="⚔ Greatest Rivalries" blurb="The grudge matches fans want to see">
+              {rows.rivalries.map((m) => (
+                <MatchupCard
+                  key={`${m.a.id}-${m.b.id}`}
+                  a={heroSide(m.a)}
+                  b={heroSide(m.b)}
+                  onOpen={() => openArena(m.a, m.b)}
+                />
+              ))}
+            </MatchupRow>
+          )}
 
-      {/* ── Deck section: greatest rivalries ── */}
-      <View style={[s.deckSec, { paddingHorizontal: contentPad }] as object}>
-        <View style={s.deckInner}>
-          <RivalryDeck rivalries={rivalries} isDesktop={isDesktop} onOpen={openArena} />
+          {rows.dream.length > 0 && (
+            <MatchupRow label="💥 Dream Matches" blurb="Cross-universe — who would win?">
+              {rows.dream.map((m) => (
+                <MatchupCard
+                  key={`${m.a.id}-${m.b.id}`}
+                  a={heroSide(m.a)}
+                  b={heroSide(m.b)}
+                  onOpen={() => openArena(m.a, m.b)}
+                />
+              ))}
+            </MatchupRow>
+          )}
+
+          {rows.goliath.length > 0 && (
+            <MatchupRow label="🏆 David vs Goliath" blurb="Underdogs against the heavyweights">
+              {rows.goliath.map((m) => (
+                <MatchupCard
+                  key={`${m.a.id}-${m.b.id}`}
+                  a={heroSide(m.a)}
+                  b={heroSide(m.b)}
+                  onOpen={() => openArena(m.a, m.b)}
+                />
+              ))}
+            </MatchupRow>
+          )}
+
+          {rows.teams.length > 0 && (
+            <MatchupRow label="🦸 Team Battles" blurb="Iconic squads clash">
+              {rows.teams.map((m) => (
+                <MatchupCard
+                  key={`${m.a.id}-${m.b.id}`}
+                  a={{ name: m.a.name, art: m.a.logo_url }}
+                  b={{ name: m.b.name, art: m.b.logo_url }}
+                  fit="contain"
+                  onOpen={() => openTeam(m.a.id, m.b.id)}
+                />
+              ))}
+            </MatchupRow>
+          )}
         </View>
       </View>
     </View>
@@ -251,34 +282,6 @@ const s = StyleSheet.create({
   actTitle: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.beige },
   actSub: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: 'rgba(245,235,220,0.55)' },
 
-  teamSec: { marginTop: 16, width: '100%' },
-  teamCard: {
-    padding: 18,
-    borderRadius: 18,
-    backgroundColor: 'rgba(206,155,51,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(206,155,51,0.4)',
-    maxWidth: 880,
-    alignSelf: 'center',
-    width: '100%',
-    cursor: 'pointer',
-  } as object,
-  teamEyebrow: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 2,
-    color: COLORS.goldAccent,
-    textTransform: 'uppercase',
-    marginBottom: 6,
-  },
-  teamTitle: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.beige },
-  teamCta: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    color: 'rgba(245,235,220,0.8)',
-    marginTop: 6,
-  },
-
-  deckSec: { flexGrow: 1, backgroundColor: COLORS.deepNavy, paddingTop: 28, paddingBottom: 80 },
-  deckInner: { width: '100%', maxWidth: 1180, alignSelf: 'center' },
+  feed: { flexGrow: 1, backgroundColor: COLORS.deepNavy, paddingTop: 26, paddingBottom: 80 },
+  feedInner: { width: '100%', maxWidth: 1180, alignSelf: 'center', gap: 28 },
 });

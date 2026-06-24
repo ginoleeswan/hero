@@ -270,7 +270,7 @@ const c = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 40px)`,
+    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 24px)`,
   } as object,
   // Dark scrim: holds near-solid navy across the status-bar inset + icon row (so
   // it fuses with the navy status-bar cover and bright hero art never bleeds
@@ -336,15 +336,16 @@ const c = StyleSheet.create({
       'linear-gradient(to bottom, #000 0%, #000 32%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.28) 66%, rgba(0,0,0,0.08) 78%, transparent 86%)',
   } as object,
   // Mobile dark-topped pages: opaque deep-navy caps the very top (fused with the
-  // navy status-bar cover), then eases MONOTONICALLY to transparent at the bottom
-  // (100%). It runs LONGER than the blur (which bows out ~75%, around the bar's
-  // bottom edge): below that, this colour-only tail carries the gentle ramp into
-  // the content without frosting it. Continuous gentle slope (no flat-then-drop
+  // navy status-bar cover), then eases MONOTONICALLY to transparent by ~90%. The
+  // solid cap is kept short (12%) and the opacity steps are evenly spaced for a
+  // balanced, gradual descent — no steep early drop. It still runs
+  // a touch longer than the blur (which bows out ~75%, around the bar's bottom
+  // edge): the colour-only tail carries the last of the ramp without frosting. Continuous gentle slope (no flat-then-drop
   // knee) and pure navy throughout — a warm hue would smear on the dark versus
   // pages, whereas the faint low-opacity navy tail stays subtle on any canvas.
   frostTintDark: {
     backgroundImage:
-      'linear-gradient(to bottom, #0b1820 0%, #0b1820 28%, rgba(11,24,32,0.85) 40%, rgba(11,24,32,0.66) 50%, rgba(11,24,32,0.48) 59%, rgba(11,24,32,0.33) 68%, rgba(11,24,32,0.21) 76%, rgba(11,24,32,0.12) 83%, rgba(11,24,32,0.06) 89%, rgba(11,24,32,0.025) 95%, transparent 100%)',
+      'linear-gradient(to bottom, #0b1820 0%, #0b1820 12%, rgba(11,24,32,0.85) 22%, rgba(11,24,32,0.70) 32%, rgba(11,24,32,0.56) 42%, rgba(11,24,32,0.43) 52%, rgba(11,24,32,0.31) 62%, rgba(11,24,32,0.20) 72%, rgba(11,24,32,0.11) 80%, rgba(11,24,32,0.05) 85%, transparent 90%)',
   } as object,
   // Desktop: the original light frosted glass — no system status bar to match.
   frostTintDesktop: {
