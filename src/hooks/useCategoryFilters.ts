@@ -11,7 +11,7 @@ import {
 type Single = string | string[] | undefined;
 const one = (v: Single): string | undefined => (Array.isArray(v) ? v[0] : v);
 
-export function useCategoryFilters(slug: CategorySlug) {
+export function useCategoryFilters(slug: CategorySlug | null) {
   const router = useRouter();
   const params = useLocalSearchParams();
 

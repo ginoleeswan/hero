@@ -7,7 +7,7 @@ import type { CategoryFilters, FacetCounts } from '../../../lib/db/categoryFilte
 import { FilterControls } from './FilterControls';
 
 interface Props {
-  slug: CategorySlug;
+  slug: CategorySlug | null;
   filters: CategoryFilters;
   counts: FacetCounts | null;
   setFilter: <K extends keyof CategoryFilters>(k: K, v: CategoryFilters[K]) => void;

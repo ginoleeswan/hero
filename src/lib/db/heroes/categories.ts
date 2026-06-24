@@ -367,8 +367,17 @@ export async function getUniversePage(
   term: string,
   options: { page: number; pageSize?: number; withCount?: boolean } & CategoryFilters,
 ): Promise<{ heroes: Hero[]; total: number }> {
-  const { page, pageSize = 48, withCount = true, alignment, gender, hasStats, tags, search, sort } =
-    options;
+  const {
+    page,
+    pageSize = 48,
+    withCount = true,
+    alignment,
+    gender,
+    hasStats,
+    tags,
+    search,
+    sort,
+  } = options;
   const tagList = tags ?? [];
   const from = page * pageSize;
   const to = from + pageSize - 1;

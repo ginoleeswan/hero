@@ -33,19 +33,25 @@ export const DEFAULT_FILTERS: CategoryFilters = {
   search: '',
 };
 
-export function defaultSort(slug: CategorySlug): SortOption {
+// `slug === null` means a UNIVERSE browse page (publisher/studio/franchise) —
+// same filter UI as a category, minus the publisher facet (it's already one
+// publisher) and with the default 'popular' sort.
+export function defaultSort(slug: CategorySlug | null): SortOption {
   return slug === 'strongest' || slug === 'most-intelligent' ? 'power' : 'popular';
 }
 
-export function visibleFacets(slug: CategorySlug): FacetKey[] {
+export function visibleFacets(slug: CategorySlug | null): FacetKey[] {
   const all: FacetKey[] = ['publisher', 'alignment', 'gender', 'hasStats'];
   return all.filter((f) => {
+    if (f === 'publisher')
+      return !(
+        slug === null ||
+        slug === 'marvel' ||
+        slug === 'dc' ||
+        slug === 'image' ||
+        slug === 'dark-horse'
+      );
     if (f === 'alignment' && (slug === 'villain' || slug === 'anti-heroes')) return false;
-    if (
-      f === 'publisher' &&
-      (slug === 'marvel' || slug === 'dc' || slug === 'image' || slug === 'dark-horse')
-    )
-      return false;
     if (f === 'hasStats' && (slug === 'strongest' || slug === 'most-intelligent')) return false;
     return true;
   });
@@ -61,7 +67,7 @@ export type FilterParams = Partial<{
   q: string;
 }>;
 
-export function filtersToParams(slug: CategorySlug, f: CategoryFilters): FilterParams {
+export function filtersToParams(slug: CategorySlug | null, f: CategoryFilters): FilterParams {
   const p: FilterParams = {};
   if (f.publisher !== 'all') p.publisher = f.publisher;
   if (f.alignment !== 'any') p.alignment = f.alignment;
@@ -82,7 +88,7 @@ function pick<T extends string>(allowed: T[], v: string | undefined, fallback: T
   return allowed.includes(v as T) ? (v as T) : fallback;
 }
 
-export function paramsToFilters(slug: CategorySlug, p: FilterParams): CategoryFilters {
+export function paramsToFilters(slug: CategorySlug | null, p: FilterParams): CategoryFilters {
   return {
     publisher: pick(PUBS, p.publisher, 'all'),
     alignment: pick(ALIGNS, p.alignment, 'any'),
@@ -149,7 +155,7 @@ export interface ActiveChip {
   value?: string;
 }
 
-export function activeFilterList(slug: CategorySlug, f: CategoryFilters): ActiveChip[] {
+export function activeFilterList(slug: CategorySlug | null, f: CategoryFilters): ActiveChip[] {
   const visible = visibleFacets(slug);
   const chips: ActiveChip[] = [];
   if (visible.includes('publisher') && f.publisher !== 'all')

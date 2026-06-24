@@ -214,8 +214,10 @@ export default function WebCategoryScreen() {
   const title = categorySlug ? CATEGORY_LABELS[categorySlug] : (brand?.name ?? slug ?? 'Heroes');
   const description = categorySlug ? CATEGORY_DESCRIPTIONS[categorySlug] : null;
 
-  const { filters, setFilter, reset } = useCategoryFilters(categorySlug ?? 'popular');
-  const activeChips = activeFilterList(categorySlug ?? 'popular', filters);
+  const { filters, setFilter, reset } = useCategoryFilters(categorySlug);
+  const activeChips = activeFilterList(categorySlug, filters);
+  // Both category and universe pages get the filter UI (universe omits publisher).
+  const browsable = !!categorySlug || !!universeTerm;
 
   const fetchPage = useCallback(
     async (page: number, f: CategoryFilters, append = false) => {
@@ -419,7 +421,7 @@ export default function WebCategoryScreen() {
           so chips here would only duplicate it. On mobile the filter UI is
           hidden in a sheet, so this scrollable strip is how active filters and
           one-tap removal stay visible. */}
-      {!isDesktop && categorySlug && activeChips.length > 0 && (
+      {!isDesktop && browsable && activeChips.length > 0 && (
         <View style={[styles.activeStrip, { paddingHorizontal: contentPad }] as object}>
           <ScrollView
             horizontal
@@ -441,7 +443,7 @@ export default function WebCategoryScreen() {
 
       {/* ── Content: desktop = rail + grid; mobile = grid only ── */}
       <View style={[styles.contentRow, { paddingHorizontal: contentPad }] as object}>
-        {isDesktop && categorySlug && (
+        {isDesktop && browsable && (
           <FilterRail
             slug={categorySlug}
             filters={filters}
@@ -456,7 +458,7 @@ export default function WebCategoryScreen() {
         <View style={styles.contentMain as object}>
           {/* Result count + active filters live with the grid on desktop, where
               they're actionable — not orphaned in the header corner. */}
-          {isDesktop && categorySlug && (
+          {isDesktop && browsable && (
             <View style={styles.resultsBar as object}>
               <Text style={styles.resultsCount as object}>
                 {loading
@@ -516,7 +518,7 @@ export default function WebCategoryScreen() {
       </View>
 
       {/* Mobile filter sheet */}
-      {categorySlug && (
+      {browsable && (
         <FilterSheet
           open={sheetOpen}
           slug={categorySlug}

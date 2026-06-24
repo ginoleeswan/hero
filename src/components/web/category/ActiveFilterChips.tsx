@@ -10,7 +10,7 @@ import {
 } from '../../../lib/db/categoryFilters';
 
 interface Props {
-  slug: CategorySlug;
+  slug: CategorySlug | null;
   filters: CategoryFilters;
   setFilter: <K extends keyof CategoryFilters>(k: K, v: CategoryFilters[K]) => void;
 }

@@ -16,7 +16,7 @@ type TagOption = { slug: string; label: string; category: string };
 type SetFilter = <K extends keyof CategoryFilters>(k: K, v: CategoryFilters[K]) => void;
 
 interface Props {
-  slug: CategorySlug;
+  slug: CategorySlug | null;
   filters: CategoryFilters;
   counts: FacetCounts | null;
   setFilter: SetFilter;

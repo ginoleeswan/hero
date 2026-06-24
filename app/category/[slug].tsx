@@ -150,15 +150,12 @@ export default function CategoryScreen() {
   // Any non-category slug is treated as a universe (publisher/studio/franchise):
   // a registered brand routes by its ILIKE query, anything else by its raw name.
   const brand = !categorySlug ? publisherBySlug(slug) : undefined;
-  const universeTerm =
-    !categorySlug && slug ? (brand?.query ?? decodeURIComponent(slug)) : null;
-  const title = categorySlug
-    ? CATEGORY_LABELS[categorySlug]
-    : (brand?.name ?? slug ?? 'Heroes');
+  const universeTerm = !categorySlug && slug ? (brand?.query ?? decodeURIComponent(slug)) : null;
+  const title = categorySlug ? CATEGORY_LABELS[categorySlug] : (brand?.name ?? slug ?? 'Heroes');
 
   const [filters, setFilters] = useState<CategoryFilters>(() => ({
     ...DEFAULT_FILTERS,
-    sort: categorySlug ? defaultSort(categorySlug) : 'popular',
+    sort: defaultSort(categorySlug),
   }));
   const [search, setSearch] = useState('');
   const [counts, setCounts] = useState<FacetCounts | null>(null);
@@ -277,10 +274,10 @@ export default function CategoryScreen() {
     [eyebrow, tagline, title, headerHeight],
   );
 
-  const visible = categorySlug ? visibleFacets(categorySlug) : [];
+  const visible = visibleFacets(categorySlug);
   const anyActive =
-    (categorySlug ? activeFilterList(categorySlug, filters).length : 0) > 0 ||
-    (!!categorySlug && filters.sort !== defaultSort(categorySlug));
+    activeFilterList(categorySlug, filters).length > 0 ||
+    filters.sort !== defaultSort(categorySlug);
 
   const lbl = (text: string, count?: number) =>
     typeof count === 'number' && count > 0 ? `${text} (${count.toLocaleString()})` : text;
@@ -288,7 +285,7 @@ export default function CategoryScreen() {
   const resetFilters = useCallback(() => {
     setFilters({
       ...DEFAULT_FILTERS,
-      sort: categorySlug ? defaultSort(categorySlug) : 'popular',
+      sort: defaultSort(categorySlug),
     });
   }, [categorySlug]);
 
