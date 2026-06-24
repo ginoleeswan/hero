@@ -17,6 +17,7 @@ import { LogoLoader } from '../src/components/ui/LogoLoader';
 import { TopBar, TOPBAR_HEIGHT } from '../src/components/web/TopBar';
 import { SearchProvider } from '../src/contexts/SearchContext';
 import { WebChromeProvider, AdaptiveStatusBarCover } from '../src/contexts/WebChromeContext';
+import { CommandAlertsProvider } from '../src/contexts/CommandAlertsContext';
 import { queryClient } from '../src/lib/query/queryClient';
 import { COLORS } from '../src/constants/colors';
 
@@ -191,7 +192,9 @@ export default function WebRootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <StatusBar style="dark" />
-        <WebAuthGate />
+        <CommandAlertsProvider>
+          <WebAuthGate />
+        </CommandAlertsProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>
   );

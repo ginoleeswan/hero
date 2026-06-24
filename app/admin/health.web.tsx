@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Animated, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import {
+  View,
+  Animated,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  useWindowDimensions,
+} from 'react-native';
 import { useRouter } from 'expo-router';
+import { useCommandAlerts } from '../../src/contexts/CommandAlertsContext';
+import { usePullToRefresh } from '../../src/hooks/usePullToRefresh';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../src/hooks/useAuth';
 import { getProfile } from '../../src/lib/db/profiles';
@@ -225,6 +234,17 @@ export default function AdminHealthScreen() {
     return a;
   }, [pingQ.data, usageQ.data, runsQ.data, h]);
 
+  // Publish alerts to the global TopBar's bell (mobile has no command band).
+  // Cleared on unmount so the bell never lingers off the command center.
+  const { setAlerts } = useCommandAlerts();
+  useEffect(() => {
+    setAlerts(alerts);
+    return () => setAlerts([]);
+  }, [alerts, setAlerts]);
+
+  // Mobile pull-to-refresh stands in for the (now desktop-only) refresh button.
+  const { distance: ptrDist, refreshing: ptrBusy } = usePullToRefresh(onRefresh, narrow);
+
   if (!gateResolved || !isAdmin) return <LogoLoader />;
 
   // ── Live ops derivations (feed the always-on vitals ribbon) ─────────────────
@@ -292,6 +312,22 @@ export default function AdminHealthScreen() {
 
   return (
     <View style={styles.root}>
+      {narrow && (ptrDist > 0 || ptrBusy) ? (
+        <View
+          style={[
+            styles.ptr,
+            {
+              opacity: ptrBusy ? 1 : Math.min(1, ptrDist / 64),
+              transform: [{ translateY: ptrDist * 0.35 }],
+            },
+          ]}
+          pointerEvents="none"
+        >
+          <View style={styles.ptrPill}>
+            <ActivityIndicator color={COLORS.orange} />
+          </View>
+        </View>
+      ) : null}
       <CommandShell
         domain={domain}
         onDomain={setDomain}
@@ -467,4 +503,23 @@ export default function AdminHealthScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  // Pull-to-refresh spinner — pinned just below the floating nav (64 = TOPBAR_HEIGHT).
+  ptr: {
+    position: 'fixed',
+    top: `calc(64px + env(safe-area-inset-top) + 6px)` as unknown as number,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 60,
+  } as object,
+  ptrPill: {
+    width: 38,
+    height: 38,
+    borderRadius: 999,
+    backgroundColor: '#10242e',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

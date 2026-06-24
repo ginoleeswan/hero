@@ -353,8 +353,13 @@ export function AddHeroesPanel({
         <InfoTip text="Not sure what's missing? Start with '★ Popular gaps' — ComicVine's most-published characters that aren't in your catalogue yet, most-appeared first. Or live-search by name, team, series, creator, film, publisher or power. Tap any result to preview its real name, powers, first appearance and more before adding. Tick the ones you want (or 'Select all new') and Add — or 'Add all & build' to do the whole new set in one go. Already-in-catalogue and same-name duplicates are flagged." />
       }
     >
-      {/* Mode + live search */}
-      <View style={styles.modeRow}>
+      {/* Mode + live search. One horizontally-scrollable row so the 8 chips never
+          wrap to a second line (esp. on mobile). */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.modeRow}
+      >
         {MODES.map((m) => (
           <Pressable
             key={m.key}
@@ -370,7 +375,7 @@ export function AddHeroesPanel({
             </Text>
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
       {mode === 'popular' ? (
         <Text style={styles.popularHint}>
           ComicVine's most-published characters that aren't in your catalogue yet — top appearances

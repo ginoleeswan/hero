@@ -1,7 +1,14 @@
 // Dense data panel — the command center's standard light card. Title + optional
 // hint + optional right-aligned action, then children. One source of truth for
 // panel chrome so every domain stays visually in lockstep.
-import { View, Text, ScrollView, StyleSheet, type ViewStyle } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  type ViewStyle,
+} from 'react-native';
 import { type ReactNode } from 'react';
 import { COLORS } from '../../../constants/colors';
 import { DENSITY } from './format';
@@ -30,13 +37,17 @@ export function Panel({
   scroll?: boolean;
 }) {
   const scrolls = scroll ?? fill;
+  // Mobile: drop the descriptive hint paragraph to reclaim 2–3 lines per panel —
+  // the ⓘ tooltip (where present) still carries it. Desktop keeps the hint.
+  const { width } = useWindowDimensions();
+  const narrow = width < 760;
   return (
     <View style={[styles.panel, fill && styles.fill, style as ViewStyle]}>
       {(title || action) && (
         <View style={styles.head}>
           <View style={styles.headText}>
             {title && <Text style={styles.title}>{title}</Text>}
-            {hint && <Text style={styles.hint}>{hint}</Text>}
+            {hint && !narrow && <Text style={styles.hint}>{hint}</Text>}
           </View>
           {action}
         </View>

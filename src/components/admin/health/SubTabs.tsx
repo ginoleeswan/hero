@@ -59,7 +59,7 @@ export function SubTabs<T extends string>({
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
   // Mobile: one no-wrap line, tighter gaps so every sub-tab fits without scroll.
-  rowNarrow: { flexWrap: 'nowrap', gap: 4 },
+  rowNarrow: { flexWrap: 'nowrap', gap: 5 },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -69,8 +69,9 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: 'rgba(255,255,255,0.07)',
   },
-  // Mobile: slimmer pills (less horizontal padding, icons dropped in the view).
-  pillNarrow: { paddingHorizontal: 10, paddingVertical: 6, gap: 4 },
+  // Mobile: slimmer pills (less padding, icons dropped in the view), allowed to
+  // shrink so all tabs fit one line.
+  pillNarrow: { paddingHorizontal: 9, paddingVertical: 6, gap: 4, flexShrink: 1 },
   pillOn: { backgroundColor: COLORS.orange },
   pillText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(255,255,255,0.65)' },
   pillTextNarrow: { fontSize: 12 },

@@ -17,48 +17,7 @@ import { TOPBAR_HEIGHT } from '../../web/TopBar';
 import { DOMAINS, type DomainKey } from './format';
 import { Gauge } from './charts';
 import { type Alert } from './AlertStack';
-
-// Header notification bell — alerts (rate-limit, failures) live here instead of
-// taking real estate as banners. Badge shows the count; tap to see them.
-function NotificationBell({ alerts }: { alerts: Alert[] }) {
-  const [open, setOpen] = useState(false);
-  const count = alerts.length;
-  return (
-    <View style={styles.bellWrap}>
-      <Pressable onPress={() => setOpen((v) => !v)} hitSlop={8} style={styles.bellBtn}>
-        <Ionicons
-          name={count > 0 ? 'notifications' : 'notifications-outline'}
-          size={18}
-          color="rgba(255,255,255,0.85)"
-        />
-        {count > 0 ? (
-          <View style={styles.bellBadge}>
-            <Text style={styles.bellBadgeText}>{count > 9 ? '9+' : count}</Text>
-          </View>
-        ) : null}
-      </Pressable>
-      {open ? (
-        <View style={styles.bellMenu}>
-          <Text style={styles.bellTitle}>Notifications</Text>
-          {count === 0 ? (
-            <Text style={styles.bellEmpty}>All clear — nothing to report.</Text>
-          ) : (
-            alerts.map((a, i) => (
-              <View key={i} style={styles.bellItem}>
-                <Ionicons
-                  name={a.tone === 'red' ? 'alert-circle' : 'warning'}
-                  size={16}
-                  color={a.tone === 'red' ? COLORS.red : COLORS.yellow}
-                />
-                <Text style={styles.bellItemText}>{a.text}</Text>
-              </View>
-            ))
-          )}
-        </View>
-      ) : null}
-    </View>
-  );
-}
+import { NotificationBell } from './NotificationBell';
 
 const CHROME_TOP = '#10242e'; // matches the retired Masthead gradient start
 
@@ -136,31 +95,36 @@ export function CommandShell({
 
   return (
     <View style={[styles.page, !narrow && { height: winH, overflow: 'hidden', minHeight: 0 }]}>
-      {/* Top bar — full-bleed dark band fusing with the floating nav */}
-      <LinearGradient
-        colors={[CHROME_TOP, COLORS.deepNavy]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.top}
-      >
-        <View style={styles.topInner}>
-          <View style={styles.brandCol}>
-            <Text style={styles.kicker}>MYTHIQUE · COMMAND CENTER</Text>
-            <Text style={styles.brand}>{DOMAINS.find((d) => d.key === domain)?.label}</Text>
+      {/* Top bar — full-bleed dark band fusing with the floating nav. DESKTOP ONLY:
+          on mobile the band is gone (its gauge lives on Overview, the alerts bell
+          moves to the global TopBar, and refresh is pull-to-refresh), so the screen
+          gets that vertical space back. The body picks up the nav clearance below. */}
+      {!narrow && (
+        <LinearGradient
+          colors={[CHROME_TOP, COLORS.deepNavy]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.top}
+        >
+          <View style={styles.topInner}>
+            <View style={styles.brandCol}>
+              <Text style={styles.kicker}>MYTHIQUE · COMMAND CENTER</Text>
+              <Text style={styles.brand}>{DOMAINS.find((d) => d.key === domain)?.label}</Text>
+            </View>
+            <View style={styles.topRight}>
+              <NotificationBell alerts={alerts} />
+              <Pressable onPress={onRefresh} hitSlop={8} style={styles.refresh}>
+                {refreshing ? (
+                  <ActivityIndicator size="small" color="rgba(255,255,255,0.85)" />
+                ) : (
+                  <Ionicons name="refresh" size={15} color="rgba(255,255,255,0.85)" />
+                )}
+              </Pressable>
+              <Gauge value={overall} size={46} />
+            </View>
           </View>
-          <View style={styles.topRight}>
-            <NotificationBell alerts={alerts} />
-            <Pressable onPress={onRefresh} hitSlop={8} style={styles.refresh}>
-              {refreshing ? (
-                <ActivityIndicator size="small" color="rgba(255,255,255,0.85)" />
-              ) : (
-                <Ionicons name="refresh" size={15} color="rgba(255,255,255,0.85)" />
-              )}
-            </Pressable>
-            <Gauge value={overall} size={narrow ? 40 : 46} />
-          </View>
-        </View>
-      </LinearGradient>
+        </LinearGradient>
+      )}
 
       {/* Body: rail (desktop) + content */}
       <LinearGradient
@@ -324,67 +288,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.08)',
   },
-  // Notification bell + dropdown
-  bellWrap: { position: 'relative' },
-  bellBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  bellBadge: {
-    position: 'absolute',
-    top: -3,
-    right: -3,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 999,
-    paddingHorizontal: 4,
-    backgroundColor: COLORS.red,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bellBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 9.5, color: '#fff' },
-  bellMenu: {
-    position: 'absolute',
-    top: 38,
-    right: 0,
-    width: 320,
-    maxWidth: '90vw' as unknown as number,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
-    gap: 8,
-    zIndex: 1000,
-    elevation: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-  },
-  bellTitle: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: COLORS.grey,
-  },
-  bellEmpty: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    color: COLORS.grey,
-    paddingVertical: 4,
-  },
-  bellItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, paddingVertical: 5 },
-  bellItemText: {
-    flex: 1,
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: COLORS.black,
-    lineHeight: 18,
-  },
   bodyBg: { flex: 1, width: '100%' },
   body: {
     width: '100%',
@@ -397,7 +300,13 @@ const styles = StyleSheet.create({
   // Desktop: body fills the locked viewport height and stretches the rail +
   // content so the content's fill bento can divide that height (no page scroll).
   bodyFill: { flex: 1, minHeight: 0, alignItems: 'stretch' },
-  bodyNarrow: { flexDirection: 'column', paddingHorizontal: 12, paddingTop: 12, gap: 12 },
+  // Mobile has no command band, so the body itself clears the floating TopBar.
+  bodyNarrow: {
+    flexDirection: 'column',
+    paddingHorizontal: 12,
+    paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 10px)` as unknown as number,
+    gap: 12,
+  },
   rail: {
     width: 84,
     backgroundColor: 'rgba(0,0,0,0.25)',

@@ -8,6 +8,8 @@ import { COLORS } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { useProfile } from '../../hooks/useProfile';
 import { useSearch } from '../../contexts/SearchContext';
+import { useCommandAlerts } from '../../contexts/CommandAlertsContext';
+import { NotificationBell } from '../admin/health/NotificationBell';
 import { HeroLogo } from './HeroLogo';
 import { SearchPalette } from './search/SearchPalette';
 
@@ -38,9 +40,13 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   const { user } = useAuth();
   const { profile } = useProfile(user?.id);
   const { searchFocused, setSearchFocused } = useSearch();
+  const { alerts } = useCommandAlerts();
   const initial = user?.email?.charAt(0).toUpperCase() ?? '';
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  // The command center's alerts bell lives here on mobile (its header band is
+  // desktop-only). Only shows on the /admin command center, where alerts publish.
+  const showCommandBell = isMobile && pathname.startsWith('/admin');
 
   // The status-bar inset is owned by AdaptiveStatusBarCover (in _layout.web); the
   // TopBar is just the nav + its scroll frost. Every page is dark-topped, so the
@@ -194,6 +200,7 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
         {!logoOnly && (
           <View style={c.right}>
             {isMobile && NAV.filter((it) => it.key !== 'home').map(renderItem)}
+            {showCommandBell ? <NotificationBell alerts={alerts} variant="nav" /> : null}
             {user ? (
               <Pressable
                 aria-label="Profile"

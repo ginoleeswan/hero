@@ -2,7 +2,8 @@ import { StyleSheet } from 'react-native';
 import { COLORS } from '../../../constants/colors';
 
 export const styles = StyleSheet.create({
-  modeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, rowGap: 6, marginBottom: 10 },
+  // contentContainerStyle for a horizontal ScrollView — single no-wrap row of chips.
+  modeRow: { flexDirection: 'row', gap: 6, marginBottom: 10, paddingRight: 4 },
   modePill: {
     paddingHorizontal: 12,
     paddingVertical: 6,
