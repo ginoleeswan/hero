@@ -134,12 +134,17 @@ export default function VersusHubWeb() {
       <View style={[s.feed, { paddingHorizontal: contentPad }] as object}>
         <View style={s.feedInner}>
           {rows.rivalries.length > 0 && (
-            <MatchupRow label="⚔ Greatest Rivalries" blurb="The grudge matches fans want to see">
+            <MatchupRow
+              label="⚔ Greatest Rivalries"
+              blurb="The grudge matches fans want to see"
+              wrap={isDesktop}
+            >
               {rows.rivalries.map((m) => (
                 <MatchupCard
                   key={`${m.a.id}-${m.b.id}`}
                   a={heroSide(m.a)}
                   b={heroSide(m.b)}
+                  large={isDesktop}
                   onOpen={() => openArena(m.a, m.b)}
                 />
               ))}
@@ -147,12 +152,17 @@ export default function VersusHubWeb() {
           )}
 
           {rows.dream.length > 0 && (
-            <MatchupRow label="💥 Dream Matches" blurb="Cross-universe — who would win?">
+            <MatchupRow
+              label="💥 Dream Matches"
+              blurb="Cross-universe — who would win?"
+              wrap={isDesktop}
+            >
               {rows.dream.map((m) => (
                 <MatchupCard
                   key={`${m.a.id}-${m.b.id}`}
                   a={heroSide(m.a)}
                   b={heroSide(m.b)}
+                  large={isDesktop}
                   onOpen={() => openArena(m.a, m.b)}
                 />
               ))}
@@ -160,12 +170,17 @@ export default function VersusHubWeb() {
           )}
 
           {rows.goliath.length > 0 && (
-            <MatchupRow label="🏆 David vs Goliath" blurb="Underdogs against the heavyweights">
+            <MatchupRow
+              label="🏆 David vs Goliath"
+              blurb="Underdogs against the heavyweights"
+              wrap={isDesktop}
+            >
               {rows.goliath.map((m) => (
                 <MatchupCard
                   key={`${m.a.id}-${m.b.id}`}
                   a={heroSide(m.a)}
                   b={heroSide(m.b)}
+                  large={isDesktop}
                   onOpen={() => openArena(m.a, m.b)}
                 />
               ))}
@@ -173,13 +188,14 @@ export default function VersusHubWeb() {
           )}
 
           {rows.teams.length > 0 && (
-            <MatchupRow label="🦸 Team Battles" blurb="Iconic squads clash">
+            <MatchupRow label="🦸 Team Battles" blurb="Iconic squads clash" wrap={isDesktop}>
               {rows.teams.map((m) => (
                 <MatchupCard
                   key={`${m.a.id}-${m.b.id}`}
                   a={{ name: m.a.name, art: m.a.logo_url }}
                   b={{ name: m.b.name, art: m.b.logo_url }}
                   fit="contain"
+                  large={isDesktop}
                   onOpen={() => openTeam(m.a.id, m.b.id)}
                 />
               ))}
@@ -282,6 +298,6 @@ const s = StyleSheet.create({
   actTitle: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.beige },
   actSub: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: 'rgba(245,235,220,0.55)' },
 
-  feed: { flexGrow: 1, backgroundColor: COLORS.deepNavy, paddingTop: 26, paddingBottom: 80 },
-  feedInner: { width: '100%', maxWidth: 1180, alignSelf: 'center', gap: 28 },
+  feed: { flexGrow: 1, backgroundColor: COLORS.deepNavy, paddingTop: 30, paddingBottom: 80 },
+  feedInner: { width: '100%', maxWidth: 1180, alignSelf: 'center', gap: 40 },
 });

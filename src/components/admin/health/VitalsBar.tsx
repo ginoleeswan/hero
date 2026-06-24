@@ -62,40 +62,66 @@ export function VitalsBar({
   const cvDot = cvPing === 'ok' ? COLORS.green : cvPing === 'limited' ? COLORS.red : COLORS.grey;
   const runProgress = activeRun ? activeRun.done + activeRun.failed + activeRun.retry : 0;
 
+  const lbl = [s.label, narrow && s.labelNarrow];
+  const val = [s.value, narrow && s.valueNarrow];
+
   return (
     <View style={[s.bar, narrow && s.barNarrow]}>
       {/* Backlog */}
       <View style={[s.cell, narrow && s.cellNarrow]}>
-        <Text style={s.label}>BACKLOG</Text>
-        <Text style={s.value}>{pending.toLocaleString()}</Text>
-        <Text style={s.sub}>{etaLabel ?? 'to enrich'}</Text>
+        <Text style={lbl} numberOfLines={1}>
+          BACKLOG
+        </Text>
+        <Text style={val} numberOfLines={1}>
+          {pending.toLocaleString()}
+        </Text>
+        {!narrow && <Text style={s.sub}>{etaLabel ?? 'to enrich'}</Text>}
       </View>
       {!narrow && <Divider />}
 
-      {/* ComicVine health + usage */}
-      <View style={[s.cell, s.cellWide, narrow && s.cellNarrow]}>
-        <View style={s.row}>
-          <View style={[s.dot, { backgroundColor: cvDot }]} />
-          <Text style={s.label}>COMICVINE</Text>
-          <Text style={[s.usage, { color: cvColor }]}>
-            {cvUsage}/{CV_HOURLY_CAP}
-          </Text>
-        </View>
-        <View style={s.track}>
-          <View style={[s.fill, { width: `${cvPctUsed}%`, backgroundColor: cvColor }]} />
-        </View>
-        <Text style={s.sub}>{cvLabel}</Text>
+      {/* ComicVine health + usage. On mobile: drop the track/caption, show the
+          dot + usage as the value so it fits the single-row layout. */}
+      <View style={[s.cell, !narrow && s.cellWide, narrow && s.cellNarrow]}>
+        {narrow ? (
+          <>
+            <Text style={lbl} numberOfLines={1}>
+              COMICVINE
+            </Text>
+            <View style={s.row}>
+              <View style={[s.dot, { backgroundColor: cvDot }]} />
+              <Text style={[...val, { color: cvColor }]} numberOfLines={1}>
+                {cvUsage}/{CV_HOURLY_CAP}
+              </Text>
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={s.row}>
+              <View style={[s.dot, { backgroundColor: cvDot }]} />
+              <Text style={s.label}>COMICVINE</Text>
+              <Text style={[s.usage, { color: cvColor }]}>
+                {cvUsage}/{CV_HOURLY_CAP}
+              </Text>
+            </View>
+            <View style={s.track}>
+              <View style={[s.fill, { width: `${cvPctUsed}%`, backgroundColor: cvColor }]} />
+            </View>
+            <Text style={s.sub}>{cvLabel}</Text>
+          </>
+        )}
       </View>
       {!narrow && <Divider />}
 
       {/* Active run */}
       <View style={[s.cell, narrow && s.cellNarrow]}>
-        <Text style={s.label}>RUN</Text>
+        <Text style={lbl} numberOfLines={1}>
+          RUN
+        </Text>
         {activeRun ? (
           <>
             <View style={s.row}>
               <View style={[s.dot, { backgroundColor: COLORS.orange }]} />
-              <Text style={[s.value, { color: COLORS.orange }]}>
+              <Text style={[...val, { color: COLORS.orange }]} numberOfLines={1}>
                 {runProgress}/{activeRun.processed}
               </Text>
             </View>
@@ -116,7 +142,9 @@ export function VitalsBar({
           <>
             <View style={s.row}>
               <View style={[s.dot, { backgroundColor: COLORS.orange }]} />
-              <Text style={[s.value, { color: COLORS.orange }]}>build</Text>
+              <Text style={[...val, { color: COLORS.orange }]} numberOfLines={1}>
+                build
+              </Text>
             </View>
             <Pressable onPress={onStopBuild} style={s.stopBtn}>
               <Ionicons name="stop" size={11} color="#fff" />
@@ -125,8 +153,10 @@ export function VitalsBar({
           </>
         ) : (
           <>
-            <Text style={[s.value, { color: COLORS.grey }]}>idle</Text>
-            <Text style={s.sub}>no run</Text>
+            <Text style={[...val, { color: COLORS.grey }]} numberOfLines={1}>
+              idle
+            </Text>
+            {!narrow && <Text style={s.sub}>no run</Text>}
           </>
         )}
       </View>
@@ -134,23 +164,29 @@ export function VitalsBar({
 
       {/* Auto-drain */}
       <View style={[s.cell, narrow && s.cellNarrow]}>
-        <Text style={s.label}>AUTO-DRAIN</Text>
-        <Text style={[s.value, { color: cronOn ? COLORS.green : COLORS.grey }]}>
+        <Text style={lbl} numberOfLines={1}>
+          {narrow ? 'DRAIN' : 'AUTO-DRAIN'}
+        </Text>
+        <Text style={[...val, { color: cronOn ? COLORS.green : COLORS.grey }]} numberOfLines={1}>
           {cronOn ? 'ON' : 'OFF'}
         </Text>
-        <Text style={s.sub}>
-          {drainJob?.last_run ? `ran ${relTime(drainJob.last_run)}` : 'manual'}
-        </Text>
+        {!narrow && (
+          <Text style={s.sub}>
+            {drainJob?.last_run ? `ran ${relTime(drainJob.last_run)}` : 'manual'}
+          </Text>
+        )}
       </View>
       {!narrow && <Divider />}
 
       {/* Spend */}
       <View style={[s.cell, narrow && s.cellNarrow]}>
-        <Text style={s.label}>SPEND · MTD</Text>
-        <Text style={[s.value, { color: '#fff' }]}>
+        <Text style={lbl} numberOfLines={1}>
+          {narrow ? 'SPEND' : 'SPEND · MTD'}
+        </Text>
+        <Text style={[...val, { color: '#fff' }]} numberOfLines={1}>
           {spend?.available ? `$${(spend.monthToDate ?? 0).toFixed(0)}` : '—'}
         </Text>
-        <Text style={s.sub}>{spend?.available ? 'this month' : 'no data'}</Text>
+        {!narrow && <Text style={s.sub}>{spend?.available ? 'this month' : 'no data'}</Text>}
       </View>
     </View>
   );
@@ -168,11 +204,13 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     gap: 14,
   },
-  barNarrow: { flexWrap: 'wrap', columnGap: 10, rowGap: 10, paddingVertical: 9, paddingHorizontal: 12 },
+  // Mobile: one tight no-wrap row — 5 equal cells, no dividers, no sub-captions.
+  barNarrow: { flexWrap: 'nowrap', columnGap: 8, gap: 8, paddingVertical: 8, paddingHorizontal: 10 },
   cell: { gap: 2, minWidth: 80, justifyContent: 'center' },
   cellWide: { flex: 1, minWidth: 150 },
-  // Mobile: a tidy 3-per-row grid (no dividers) instead of a tall ragged wrap.
-  cellNarrow: { flexBasis: '30%', flexGrow: 1, minWidth: 0 },
+  cellNarrow: { flex: 1, minWidth: 0, gap: 1 },
+  labelNarrow: { fontSize: 8.5, letterSpacing: 0.3 },
+  valueNarrow: { fontSize: 15, lineHeight: 17 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   label: {
     fontFamily: 'Nunito_700Bold',

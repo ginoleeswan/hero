@@ -15,18 +15,26 @@ interface Props {
   onOpen: () => void;
   /** 'cover' for hero portraits, 'contain' for team logos. */
   fit?: 'cover' | 'contain';
+  /** Desktop: larger portraits + a hover lift. */
+  large?: boolean;
 }
 
 /** A compact "who'd win" card — two fighters facing off across a gold VS, one tap
  *  into the clash. Used by every discovery row (heroes and teams). */
-export function MatchupCard({ a, b, onOpen, fit = 'cover' }: Props) {
+export function MatchupCard({ a, b, onOpen, fit = 'cover', large = false }: Props) {
+  const pw = large ? 104 : 88;
   return (
-    <Pressable onPress={onOpen} style={s.card}>
+    <Pressable
+      onPress={onOpen}
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+        [s.card, { width: pw * 2 + 2 }, hovered && (s.cardHover as object)] as object
+      }
+    >
       <View style={s.duo}>
-        <Portrait side={a} tint={FACTION_A} fit={fit} />
-        <Portrait side={b} tint={FACTION_B} fit={fit} flip />
+        <Portrait side={a} tint={FACTION_A} fit={fit} pw={pw} />
+        <Portrait side={b} tint={FACTION_B} fit={fit} pw={pw} flip />
         <View style={s.vs} pointerEvents="none">
-          <VsBadge size={32} variant="glass" />
+          <VsBadge size={large ? 38 : 32} variant="glass" />
         </View>
       </View>
       <Text style={s.names} numberOfLines={1}>
@@ -42,15 +50,17 @@ function Portrait({
   side,
   tint,
   fit,
+  pw,
   flip,
 }: {
   side: Side;
   tint: string;
   fit: 'cover' | 'contain';
+  pw: number;
   flip?: boolean;
 }) {
   return (
-    <View style={[s.portrait, { borderColor: tint }]}>
+    <View style={[s.portrait, { width: pw, height: Math.round(pw * 1.2), borderColor: tint }]}>
       {side.art ? (
         <Image
           source={{ uri: side.art }}
@@ -66,14 +76,15 @@ function Portrait({
   );
 }
 
-const PW = 88;
-
 const s = StyleSheet.create({
-  card: { width: PW * 2 + 2, gap: 8, cursor: 'pointer' } as object,
+  card: {
+    gap: 8,
+    cursor: 'pointer',
+    transition: 'transform 160ms ease',
+  } as object,
+  cardHover: { transform: [{ translateY: -4 }] } as object,
   duo: { flexDirection: 'row', gap: 2, position: 'relative' },
   portrait: {
-    width: PW,
-    height: Math.round(PW * 1.2),
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1.5,
