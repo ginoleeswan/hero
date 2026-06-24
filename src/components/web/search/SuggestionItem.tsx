@@ -53,7 +53,7 @@ export function SuggestionItem({ hero, query = '', onPress }: SuggestionItemProp
         grid
         style={styles.suggestionImage}
         contentFit="cover"
-        contentPosition="top"
+        contentPosition={{ top: '22%', left: '50%' }}
       />
       <View style={styles.metaRow}>
         <Text style={styles.suggestionName} numberOfLines={1}>
