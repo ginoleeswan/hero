@@ -1405,7 +1405,7 @@ const styles = StyleSheet.create({
     paddingTop: TOPBAR_HEIGHT + 10,
     paddingBottom: 28,
   } as object,
-  darkStageMobile: { paddingTop: TOPBAR_HEIGHT + 2, paddingBottom: 16 } as object,
+  darkStageMobile: { paddingTop: TOPBAR_HEIGHT - 4, paddingBottom: 16 } as object,
 
   // Beige canvas owns the carousel section (sits on the dark scroll surface).
   beigeCanvas: {

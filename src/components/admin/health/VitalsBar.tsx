@@ -65,15 +65,15 @@ export function VitalsBar({
   return (
     <View style={[s.bar, narrow && s.barNarrow]}>
       {/* Backlog */}
-      <View style={s.cell}>
+      <View style={[s.cell, narrow && s.cellNarrow]}>
         <Text style={s.label}>BACKLOG</Text>
         <Text style={s.value}>{pending.toLocaleString()}</Text>
         <Text style={s.sub}>{etaLabel ?? 'to enrich'}</Text>
       </View>
-      <Divider />
+      {!narrow && <Divider />}
 
       {/* ComicVine health + usage */}
-      <View style={[s.cell, s.cellWide]}>
+      <View style={[s.cell, s.cellWide, narrow && s.cellNarrow]}>
         <View style={s.row}>
           <View style={[s.dot, { backgroundColor: cvDot }]} />
           <Text style={s.label}>COMICVINE</Text>
@@ -86,10 +86,10 @@ export function VitalsBar({
         </View>
         <Text style={s.sub}>{cvLabel}</Text>
       </View>
-      <Divider />
+      {!narrow && <Divider />}
 
       {/* Active run */}
-      <View style={s.cell}>
+      <View style={[s.cell, narrow && s.cellNarrow]}>
         <Text style={s.label}>RUN</Text>
         {activeRun ? (
           <>
@@ -130,10 +130,10 @@ export function VitalsBar({
           </>
         )}
       </View>
-      <Divider />
+      {!narrow && <Divider />}
 
       {/* Auto-drain */}
-      <View style={s.cell}>
+      <View style={[s.cell, narrow && s.cellNarrow]}>
         <Text style={s.label}>AUTO-DRAIN</Text>
         <Text style={[s.value, { color: cronOn ? COLORS.green : COLORS.grey }]}>
           {cronOn ? 'ON' : 'OFF'}
@@ -142,10 +142,10 @@ export function VitalsBar({
           {drainJob?.last_run ? `ran ${relTime(drainJob.last_run)}` : 'manual'}
         </Text>
       </View>
-      <Divider />
+      {!narrow && <Divider />}
 
       {/* Spend */}
-      <View style={s.cell}>
+      <View style={[s.cell, narrow && s.cellNarrow]}>
         <Text style={s.label}>SPEND · MTD</Text>
         <Text style={[s.value, { color: '#fff' }]}>
           {spend?.available ? `$${(spend.monthToDate ?? 0).toFixed(0)}` : '—'}
@@ -168,9 +168,11 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     gap: 14,
   },
-  barNarrow: { flexWrap: 'wrap', gap: 12, rowGap: 12 },
+  barNarrow: { flexWrap: 'wrap', columnGap: 10, rowGap: 10, paddingVertical: 9, paddingHorizontal: 12 },
   cell: { gap: 2, minWidth: 80, justifyContent: 'center' },
   cellWide: { flex: 1, minWidth: 150 },
+  // Mobile: a tidy 3-per-row grid (no dividers) instead of a tall ragged wrap.
+  cellNarrow: { flexBasis: '30%', flexGrow: 1, minWidth: 0 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   label: {
     fontFamily: 'Nunito_700Bold',
