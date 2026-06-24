@@ -20,6 +20,13 @@ import SegaLogo from '../../assets/brands/sega.svg';
 import WarpGraphicsLogo from '../../assets/brands/warp-graphics.svg';
 import CdProjektRedLogo from '../../assets/brands/cd-projekt-red.svg';
 import InsomniacLogo from '../../assets/brands/insomniac.svg';
+import NamcoLogo from '../../assets/brands/namco.svg';
+import BungieLogo from '../../assets/brands/bungie.svg';
+import CrystalDynamicsLogo from '../../assets/brands/crystal-dynamics.svg';
+import HannaBarberaLogo from '../../assets/brands/hanna-barbera.svg';
+import HasbroLogo from '../../assets/brands/hasbro.svg';
+import MattelLogo from '../../assets/brands/mattel.svg';
+import SantaMonicaLogo from '../../assets/brands/santa-monica-studio.svg';
 
 /** A brand logo, either a raster image (PNG via require) or an SVG component
  *  (via react-native-svg-transformer). Render helpers branch on which it is. */
@@ -137,7 +144,7 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
   { slug: 'avatar-last-airbender', name: 'Avatar: The Last Airbender', query: 'last airbender', match: ['last airbender'], color: '#E8A33D', colorDark: '#9C6418' },
   { slug: 'snk', name: 'SNK', query: 'snk', match: ['snk'], color: '#D32F2F', colorDark: '#7F1B1B' },
   { slug: 'gatchaman', name: 'Gatchaman', query: 'gatchaman', match: ['gatchaman'], color: '#1E66A8', colorDark: '#103A60' },
-  { slug: 'hanna-barbera', name: 'Hanna-Barbera', query: 'hanna-barbera', match: ['hanna-barbera', 'hanna barbera'], color: '#1FA8A0', colorDark: '#0E5E59' },
+  { slug: 'hanna-barbera', name: 'Hanna-Barbera', query: 'hanna-barbera', match: ['hanna-barbera', 'hanna barbera'], color: '#1FA8A0', colorDark: '#0E5E59', logo: HannaBarberaLogo, badgeSize: { width: 59, height: 10 }, logoOnLight: true },
   { slug: 'looney-tunes', name: 'Looney Tunes', query: 'looney tunes', match: ['looney tunes'], color: '#E03A30', colorDark: '#8A201B' },
   { slug: 'cd-projekt-red', name: 'CD Projekt Red', query: 'cd projekt', match: ['cd projekt'], color: '#B11A1A', colorDark: '#6A0F0F', logo: CdProjektRedLogo, badgeSize: { width: 37, height: 16 } },
   { slug: 'rocky-bullwinkle', name: 'Rocky & Bullwinkle', query: 'bullwinkle', match: ['bullwinkle', 'rocky & bullwinkle'], color: '#2E6FB0', colorDark: '#1A4068' },
@@ -150,10 +157,10 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
   { slug: 'buffy', name: 'Buffy the Vampire Slayer', query: 'buffy', match: ['buffy'], color: '#9C2B3B', colorDark: '#5A1822' },
   { slug: 'harvey', name: 'Harvey Comics', query: 'harvey', match: ['harvey'], color: '#2E78C7', colorDark: '#18467A' },
   { slug: 'terminator', name: 'The Terminator', query: 'terminator', match: ['terminator'], color: '#C0392B', colorDark: '#6E2017' },
-  { slug: 'bungie', name: 'Bungie', query: 'bungie', match: ['bungie'], color: '#2E7D5B', colorDark: '#173E2D' },
-  { slug: 'crystal-dynamics', name: 'Crystal Dynamics', query: 'crystal dynamics', match: ['crystal dynamics'], color: '#1F8A8A', colorDark: '#0F5050' },
-  { slug: 'santa-monica-studio', name: 'Santa Monica Studio', query: 'santa monica', match: ['santa monica'], color: '#B23A2E', colorDark: '#5E1E18' },
-  { slug: 'namco', name: 'Namco', query: 'namco', match: ['namco'], color: '#F2C500', colorDark: '#8A7100' },
+  { slug: 'bungie', name: 'Bungie', query: 'bungie', match: ['bungie'], color: '#00A3E3', colorDark: '#0A5E86', logo: BungieLogo, badgeSize: { width: 41, height: 12 } },
+  { slug: 'crystal-dynamics', name: 'Crystal Dynamics', query: 'crystal dynamics', match: ['crystal dynamics'], color: '#1F8A8A', colorDark: '#0F5050', logo: CrystalDynamicsLogo, badgeSize: { width: 41, height: 13 }, logoTint: '#FFFFFF' },
+  { slug: 'santa-monica-studio', name: 'Santa Monica Studio', query: 'santa monica', match: ['santa monica'], color: '#B22029', colorDark: '#5E1216', logo: SantaMonicaLogo, badgeSize: { width: 18, height: 20 } },
+  { slug: 'namco', name: 'Namco', query: 'namco', match: ['namco'], color: '#E9001A', colorDark: '#8E0010', logo: NamcoLogo, badgeSize: { width: 27, height: 16 } },
   { slug: 'radical-entertainment', name: 'Radical Entertainment', query: 'radical entertainment', match: ['radical entertainment'], color: '#A11D1D', colorDark: '#5C1010' },
   { slug: 'alien', name: 'Alien', query: 'alien', match: ['alien'], color: '#3C6B2F', colorDark: '#1F3A19' },
   { slug: 'predator', name: 'Predator', query: 'predator', match: ['predator'], color: '#B5471E', colorDark: '#63270F' },
@@ -171,11 +178,11 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
   { slug: 'valiant', name: 'Valiant', query: 'valiant', match: ['valiant'], color: '#1B3A6B', colorDark: '#0E2444', logo: ValiantLogo, badgeSize: { width: 50, height: 13 } },
   { slug: 'top-cow', name: 'Top Cow', query: 'top cow', match: ['top cow'], color: '#B5202A', colorDark: '#6E1318' },
   { slug: 'malibu', name: 'Malibu Comics', query: 'malibu', match: ['malibu'], color: '#1E73BE', colorDark: '#114571' },
-  { slug: 'rebellion', name: '2000 AD', query: 'rebellion', match: ['rebellion'], color: '#F0152B', colorDark: '#8A0C19' },
+  { slug: 'rebellion', name: '2000 AD', query: 'rebellion', match: ['rebellion'], color: '#F0152B', colorDark: '#8A0C19', logo: require('../../assets/brands/rebellion.png'), badgeSize: { width: 20, height: 20 } },
   { slug: 'capcom', name: 'Capcom', query: 'capcom', match: ['capcom'], color: '#0A4DA0', colorDark: '#06305F', logo: CapcomLogo, badgeSize: { width: 60, height: 11 } },
   { slug: 'sega', name: 'Sega', query: 'sega', match: ['sega'], color: '#0089CF', colorDark: '#00558A', logo: SegaLogo, badgeSize: { width: 42, height: 14 } },
-  { slug: 'mattel', name: 'Mattel', query: 'mattel', match: ['mattel'], color: '#E2231A', colorDark: '#8A130E' },
-  { slug: 'hasbro', name: 'Hasbro', query: 'hasbro', match: ['hasbro'], color: '#0046AD', colorDark: '#002C6E' },
+  { slug: 'mattel', name: 'Mattel', query: 'mattel', match: ['mattel'], color: '#E3000B', colorDark: '#8A000B', logo: MattelLogo, badgeSize: { width: 18, height: 18 } },
+  { slug: 'hasbro', name: 'Hasbro', query: 'hasbro', match: ['hasbro'], color: '#0046AD', colorDark: '#002C6E', logo: HasbroLogo, badgeSize: { width: 16, height: 18 } },
   { slug: 'kodansha', name: 'Kodansha', query: 'kodansha', match: ['kodansha'], color: '#1C8A4C', colorDark: '#0E4D2A' },
 ];
 
