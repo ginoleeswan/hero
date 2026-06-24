@@ -264,6 +264,7 @@ export default function ProfileScreen() {
   const { user, signOut, changePassword, deleteAccount } = useAuth();
   const {
     profile,
+    loading: profileLoading,
     avatarUploading,
     coverUploading,
     error: uploadError,
@@ -412,7 +413,10 @@ export default function ProfileScreen() {
     else if (result === 'unsupported') showToast('Sharing not available');
   };
 
-  // Onboarding checklist — disappears once every step is complete.
+  // Onboarding checklist — disappears once every step is complete. Hold it back
+  // until both data sources have loaded; otherwise every step reads as not-done
+  // during the loading window and the card flashes in then vanishes.
+  const gettingStartedReady = !loading && !profileLoading;
   const gettingStartedSteps: GettingStartedStep[] = [
     {
       id: 'favourite',
@@ -642,7 +646,7 @@ export default function ProfileScreen() {
 
         <View style={styles.hairline} />
 
-        <GettingStartedCard steps={gettingStartedSteps} />
+        {gettingStartedReady && <GettingStartedCard steps={gettingStartedSteps} />}
 
         {/* Battle Record — surfaces the user's matchup votes (Today's Battle). */}
         {battle && battle.total > 0 && (

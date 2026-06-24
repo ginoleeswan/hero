@@ -56,7 +56,9 @@ export function buildDreamMatches(pool: Hero[], n: number): Matchup[] {
 /** Power-gap upsets: the underdog (low total) vs a heavyweight (high total).
  *  Pairs the i-th strongest with the i-th weakest, underdog listed first. */
 export function buildGoliathMatches(pool: Hero[], n: number): Matchup[] {
-  const ranked = pool.filter((h) => heroPowerTotal(h) > 0).sort((x, y) => heroPowerTotal(y) - heroPowerTotal(x));
+  const ranked = pool
+    .filter((h) => heroPowerTotal(h) > 0)
+    .sort((x, y) => heroPowerTotal(y) - heroPowerTotal(x));
   const out: Matchup[] = [];
   const max = Math.min(n, Math.floor(ranked.length / 2));
   for (let i = 0; i < max; i++) {

@@ -284,6 +284,7 @@ export default function WebProfileScreen() {
   const { user, signOut, changePassword, deleteAccount } = useAuth();
   const {
     profile,
+    loading: profileLoading,
     avatarUploading,
     coverUploading,
     error: uploadError,
@@ -420,7 +421,10 @@ export default function WebProfileScreen() {
     else if (result === 'downloaded') showToast('Saved your universe card');
   };
 
-  // Onboarding checklist — disappears once every step is complete.
+  // Onboarding checklist — disappears once every step is complete. Hold it back
+  // until both data sources have loaded; otherwise every step reads as not-done
+  // during the loading window and the card flashes in then vanishes.
+  const gettingStartedReady = !loading && !profileLoading;
   const gettingStartedSteps: GettingStartedStep[] = [
     {
       id: 'favourite',
@@ -607,7 +611,7 @@ export default function WebProfileScreen() {
 
           <View style={mob.hairline} />
 
-          <GettingStartedCard steps={gettingStartedSteps} />
+          {gettingStartedReady && <GettingStartedCard steps={gettingStartedSteps} />}
 
           {/* ── Battle Record ── */}
           {battle && battle.total > 0 && (
@@ -1209,7 +1213,7 @@ export default function WebProfileScreen() {
 
           {/* ── Main: Battle Record + My Favourites ── */}
           <View style={desk.main}>
-            <GettingStartedCard steps={gettingStartedSteps} />
+            {gettingStartedReady && <GettingStartedCard steps={gettingStartedSteps} />}
 
             {battle && battle.total > 0 && (
               <View style={desk.battleBlock}>

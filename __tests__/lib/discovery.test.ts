@@ -22,7 +22,13 @@ const hero = (id: string, publisher: string | null, total: number): Hero =>
     combat: 0,
   }) as unknown as Hero;
 
-const team = (id: string): FeaturedTeam => ({ id, name: id, publisher: 'Marvel', logo_url: null, popularity: 1 });
+const team = (id: string): FeaturedTeam => ({
+  id,
+  name: id,
+  publisher: 'Marvel',
+  logo_url: null,
+  popularity: 1,
+});
 
 describe('heroPowerTotal', () => {
   it('sums the six stats and treats null as 0', () => {
@@ -54,11 +60,7 @@ describe('buildDreamMatches', () => {
 
 describe('buildGoliathMatches', () => {
   it('pairs an underdog (low total) with a heavyweight (high total)', () => {
-    const pool = [
-      hero('weak', 'Marvel', 10),
-      hero('mid', 'Marvel', 50),
-      hero('strong', 'DC', 100),
-    ];
+    const pool = [hero('weak', 'Marvel', 10), hero('mid', 'Marvel', 50), hero('strong', 'DC', 100)];
     const [m] = buildGoliathMatches(pool, 1);
     expect(m.a.id).toBe('weak'); // underdog first
     expect(m.b.id).toBe('strong'); // heavyweight

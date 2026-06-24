@@ -14,7 +14,9 @@ import { withViewTransition } from '../../src/lib/viewTransition';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { ShowdownStage } from '../../src/components/web/versus/ShowdownStage';
-import { RivalryDeck } from '../../src/components/web/versus/RivalryDeck';
+import { MatchupRow } from '../../src/components/web/versus/MatchupRow';
+import { MatchupCard } from '../../src/components/web/versus/MatchupCard';
+import { useDiscoveryRows } from '../../src/hooks/useDiscoveryRows';
 
 export default function VersusHubWeb() {
   // The page ends on the dark deck section — keep the canvas deep-navy so it
@@ -38,6 +40,16 @@ export default function VersusHubWeb() {
     if (pair) openArena(pair[0], pair[1]);
   };
   const canSurprise = iconicPool.length >= 2;
+
+  const rows = useDiscoveryRows();
+  const openTeam = (aId: string, bId: string) =>
+    withViewTransition(() =>
+      router.push(`/versus/team/${aId}-vs-${bId}` as Parameters<typeof router.push>[0]),
+    );
+  const heroSide = (h: { name: string; image_url?: string | null; portrait_url?: string | null }) => ({
+    name: h.name,
+    art: h.portrait_url ?? h.image_url,
+  });
 
   return (
     <View style={s.root}>
