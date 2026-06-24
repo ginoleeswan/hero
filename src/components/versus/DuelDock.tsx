@@ -244,7 +244,7 @@ function ManageSide({
         </Pressable>
         <View style={s.sideActs}>
           <Pressable onPress={onRandom} style={s.act} hitSlop={8}>
-            <Text style={s.actText}>🎲</Text>
+            <Ionicons name="dice" size={16} color="rgba(245,235,220,0.85)" />
           </Pressable>
           {roster.length > 0 ? (
             <Pressable onPress={onClear} style={s.act} hitSlop={8}>

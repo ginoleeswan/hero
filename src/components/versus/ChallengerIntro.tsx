@@ -1,4 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { CuratedRow } from './CuratedRow';
 import { COLORS } from '../../constants/colors';
 import type { PickedHero } from '../../lib/battleBuilderState';
@@ -33,7 +34,8 @@ export function ChallengerIntro({ lead, rivals, onPick, onSurprise }: Props) {
 
       <View style={s.paths}>
         <Pressable onPress={onSurprise} style={s.path}>
-          <Text style={s.pathText}>🎲 Surprise me</Text>
+          <Ionicons name="dice" size={15} color={COLORS.beige} />
+          <Text style={s.pathText}>Surprise me</Text>
         </Pressable>
         <Text style={s.or}>or pick anyone below ↓</Text>
       </View>
@@ -46,6 +48,9 @@ const s = StyleSheet.create({
   title: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.beige },
   paths: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   path: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: 12,

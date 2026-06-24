@@ -153,16 +153,13 @@ export default function AdminHealthScreen() {
     return Math.round(ps.reduce((a, b) => a + b, 0) / ps.length);
   }, [h]);
 
-  // One driver animates the bar fills on first paint; enter fades the page in.
+  // One driver animates the bar fills on first paint. (No page-level fade — the
+  // shell appears immediately so it never flashes in from the white document body.)
   const anim = useRef(new Animated.Value(0)).current;
-  const enter = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (!h) return;
-    Animated.stagger(90, [
-      Animated.timing(enter, { toValue: 1, duration: 380, useNativeDriver: true }),
-      Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: false }),
-    ]).start();
-  }, [h, anim, enter]);
+    Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: false }).start();
+  }, [h, anim]);
 
   // Stream run state changes into the activity log. The first batch only primes
   // the seen-map (so existing history doesn't flood the log on mount); after that
@@ -294,7 +291,7 @@ export default function AdminHealthScreen() {
   const onlyOnBuild = domain === 'pipelines';
 
   return (
-    <Animated.View style={[styles.root, { opacity: enter }]}>
+    <View style={styles.root}>
       <CommandShell
         domain={domain}
         onDomain={setDomain}
@@ -464,7 +461,7 @@ export default function AdminHealthScreen() {
       {buildIds ? (
         <BuildBoard heroIds={buildIds} flash={flash} onClose={() => setBuildIds(null)} />
       ) : null}
-    </Animated.View>
+    </View>
   );
 }
 

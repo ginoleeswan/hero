@@ -155,7 +155,8 @@ export default function BattleBuilderScreen() {
         />
         <View style={styles.actionRow}>
           <Pressable onPress={randomFill} style={styles.dice}>
-            <Text style={styles.diceText}>🎲 Random fill</Text>
+            <Ionicons name="dice" size={15} color="rgba(245,235,220,0.85)" />
+            <Text style={styles.diceText}>Random fill</Text>
           </Pressable>
           {activeRoster.length > 0 ? (
             <Pressable onPress={() => b.clearSide(b.active)} style={styles.dice}>
@@ -341,6 +342,9 @@ const styles = StyleSheet.create({
 
   actionRow: { flexDirection: 'row', gap: 8 },
   dice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 7,
     borderRadius: 12,

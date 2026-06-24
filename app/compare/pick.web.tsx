@@ -492,7 +492,8 @@ function Flank({
 
       <View style={fs.actions}>
         <Pressable onPress={onRandom} style={fs.dice} hitSlop={6}>
-          <Text style={fs.diceText}>🎲 Random</Text>
+          <Ionicons name="dice" size={14} color="rgba(245,235,220,0.85)" />
+          <Text style={fs.diceText}>Random</Text>
         </Pressable>
         {roster.length > 0 ? (
           <Pressable onPress={onClear} style={fs.dice} hitSlop={6}>
@@ -703,6 +704,9 @@ const fs = StyleSheet.create({
 
   actions: { flexDirection: 'row', gap: 8 },
   dice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 12,
