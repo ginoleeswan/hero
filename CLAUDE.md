@@ -60,7 +60,7 @@ src/
     supabase.ts        createClient<Database>() — import this, never re-create
     api.ts             fetchHeroStats / fetchHeroDetails / fetchFirstIssue
     db/
-      heroes.ts        getHeroesByCategory()
+      heroes.ts        barrel → heroes/ (core, feed, categories, relationships, transforms)
       favourites.ts    isFavourited / addFavourite / removeFavourite / getFavouriteCount
   types/
     database.generated.ts   Auto-generated from Supabase — NEVER edit manually
