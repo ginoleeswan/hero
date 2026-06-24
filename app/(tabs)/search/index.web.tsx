@@ -1,7 +1,7 @@
 // app/search.web.tsx — Search experience (web).
 // Desktop: committed results driven by the nav field (?q= in the URL).
 // Idle (any width): full-screen browse surface — Recent searches + category pods.
-import { useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -42,21 +42,23 @@ const sk = StyleSheet.create({
 });
 
 // ── Card ────────────────────────────────────────────────────────────────────────
-function HeroCard({
+// Memoised: the screen re-renders on every keystroke (inputQuery), but the search
+// is debounced — so `heroes` (and each hero object) stays referentially stable
+// between keystrokes. Paired with stable `onSelect`/`onPeek` handlers, memo lets
+// all up-to-300 cards skip re-rendering until the result set actually changes.
+const HeroCard = memo(function HeroCard({
   hero,
-  onPress,
-  onLongPress,
-  onInfo,
+  onSelect,
+  onPeek,
 }: {
   hero: HeroSearchResult;
-  onPress: () => void;
-  onLongPress?: () => void;
-  onInfo?: () => void;
+  onSelect: (id: string) => void;
+  onPeek: (hero: HeroSearchResult) => void;
 }) {
   return (
     <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
+      onPress={() => onSelect(hero.id)}
+      onLongPress={() => onPeek(hero)}
       delayLongPress={300}
       style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [card.wrap, hovered && (card.wrapHover as object)] as object
@@ -83,27 +85,25 @@ function HeroCard({
               {hero.name}
             </Text>
           </View>
-          {onInfo && (
-            <Pressable
-              onPress={onInfo}
-              accessibilityLabel={`About ${hero.name}`}
-              pointerEvents={hovered ? 'auto' : 'none'}
-              style={({ hovered: chipHovered }: { pressed: boolean; hovered?: boolean }) =>
-                [
-                  card.infoChip,
-                  { opacity: hovered ? 1 : 0 },
-                  chipHovered && (card.infoChipHover as object),
-                ] as object
-              }
-            >
-              <Ionicons name="information" size={15} color={COLORS.beige} />
-            </Pressable>
-          )}
+          <Pressable
+            onPress={() => onPeek(hero)}
+            accessibilityLabel={`About ${hero.name}`}
+            pointerEvents={hovered ? 'auto' : 'none'}
+            style={({ hovered: chipHovered }: { pressed: boolean; hovered?: boolean }) =>
+              [
+                card.infoChip,
+                { opacity: hovered ? 1 : 0 },
+                chipHovered && (card.infoChipHover as object),
+              ] as object
+            }
+          >
+            <Ionicons name="information" size={15} color={COLORS.beige} />
+          </Pressable>
         </>
       )}
     </Pressable>
   );
-}
+});
 const card = StyleSheet.create({
   wrap: {
     width: '100%', // WebKit won't stretch an aspect-ratio grid item to the track
@@ -196,12 +196,21 @@ export default function WebSearchScreen() {
   const showIdle = !hasCriteria;
   const browseCovers = useBrowseCovers(showIdle);
 
-  const goToHero = (id: string) => {
-    if (trimmed) addSearch(trimmed);
-    router.push(`/character/${id}`);
-  };
-
   const [peek, setPeek] = useState<PeekHero | null>(null);
+
+  // Stable handlers so the memoised HeroCards don't re-render on every keystroke.
+  // `trimmed` changes per keystroke, so read it through a ref to keep goToHero
+  // referentially stable (addSearch, router and setPeek are already stable).
+  const trimmedRef = useRef(trimmed);
+  trimmedRef.current = trimmed;
+  const goToHero = useCallback(
+    (id: string) => {
+      if (trimmedRef.current) addSearch(trimmedRef.current);
+      router.push(`/character/${id}`);
+    },
+    [addSearch, router],
+  );
+  const openPeek = useCallback((hero: HeroSearchResult) => setPeek(hero), []);
 
   // The mobile header is position:fixed (see styles.mobileFixedHeader for why),
   // so it's out of flow — reserve its measured height with a spacer below so the
@@ -336,13 +345,7 @@ export default function WebSearchScreen() {
                   <SkeletonCard key={i} opacity={skeletonOpacity} />
                 ))
               : heroes.map((hero) => (
-                  <HeroCard
-                    key={hero.id}
-                    hero={hero}
-                    onPress={() => goToHero(hero.id)}
-                    onLongPress={() => setPeek(hero)}
-                    onInfo={() => setPeek(hero)}
-                  />
+                  <HeroCard key={hero.id} hero={hero} onSelect={goToHero} onPeek={openPeek} />
                 ))}
           </View>
           {!loading && heroes.length === 0 && (
