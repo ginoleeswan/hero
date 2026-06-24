@@ -82,6 +82,11 @@ export default function PublisherScreen() {
   const title = brand?.name ?? rawName ?? 'Universe';
   const query = brand?.query ?? rawName;
 
+  // Tint the stage with the universe's brand colour (registered brands only);
+  // unregistered universes fall back to the app navy.
+  const accentTop = brand?.color ?? COLORS.navy;
+  const accentBottom = brand?.colorDark ?? COLORS.navy;
+
   const [heroes, setHeroes] = useState<Hero[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -111,18 +116,21 @@ export default function PublisherScreen() {
 
   const listHeader = (
     <>
-      <View style={[styles.stage, { paddingTop: headerHeight + SEARCH_BAR_PAD }]}>
+      <LinearGradient
+        colors={[accentTop, accentBottom]}
+        style={[styles.stage, { paddingTop: headerHeight + SEARCH_BAR_PAD }]}
+      >
         <Text style={styles.eyebrow}>{`${heroes.length.toLocaleString()} CHARACTERS`}</Text>
         <Text style={styles.stageTitle} numberOfLines={2}>
           {title}
         </Text>
-      </View>
+      </LinearGradient>
       <View style={styles.sheetTop} />
     </>
   );
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: accentTop }]}>
       <Stack.Screen options={headerOptions} />
       <StatusBar style="light" />
       {loading ? (
