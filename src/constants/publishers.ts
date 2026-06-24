@@ -9,7 +9,17 @@
 import type { FC } from 'react';
 import type { ImageSourcePropType } from 'react-native';
 import type { SvgProps } from 'react-native-svg';
-import ImageComicsLogo from '../../assets/images/image-comics-logo.svg';
+import ImageComicsLogo from '../../assets/brands/image.svg';
+import NintendoLogo from '../../assets/brands/nintendo.svg';
+import ShueishaLogo from '../../assets/brands/shueisha.svg';
+import DisneyLogo from '../../assets/brands/disney.svg';
+import ArchieLogo from '../../assets/brands/archie.svg';
+import ValiantLogo from '../../assets/brands/valiant.svg';
+import CapcomLogo from '../../assets/brands/capcom.svg';
+import SegaLogo from '../../assets/brands/sega.svg';
+import WarpGraphicsLogo from '../../assets/brands/warp-graphics.svg';
+import CdProjektRedLogo from '../../assets/brands/cd-projekt-red.svg';
+import InsomniacLogo from '../../assets/brands/insomniac.svg';
 
 /** A brand logo, either a raster image (PNG via require) or an SVG component
  *  (via react-native-svg-transformer). Render helpers branch on which it is. */
@@ -56,7 +66,7 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['marvel'],
     color: '#C8102E',
     colorDark: '#7E0A1D',
-    logo: require('../../assets/images/Marvel_Logo.png'),
+    logo: require('../../assets/brands/marvel.png'),
     badgeSize: { width: 36, height: 14 },
     featured: true,
   },
@@ -67,7 +77,7 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['dc comics', 'dc'],
     color: '#0476F2',
     colorDark: '#03489A',
-    logo: require('../../assets/images/DC-Logo.png'),
+    logo: require('../../assets/brands/dc.png'),
     badgeSize: { width: 20, height: 20 },
     featured: true,
   },
@@ -78,7 +88,7 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['dark horse'],
     color: '#3A2E2A',
     colorDark: '#1E1715',
-    logo: require('../../assets/images/Dark_Horse_Comics_logo.png'),
+    logo: require('../../assets/brands/dark-horse.png'),
     badgeSize: { width: 16, height: 24 },
     featured: true,
   },
@@ -89,7 +99,7 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['george lucas', 'star wars'],
     color: '#1A1A1A',
     colorDark: '#000000',
-    logo: require('../../assets/images/star-wars-logo.png'),
+    logo: require('../../assets/brands/star-wars.png'),
     badgeSize: { width: 32, height: 32 },
     // Not featured: badged on result cards, but no Explore tile.
   },
@@ -117,9 +127,9 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
   { slug: 'gatchaman', name: 'Gatchaman', query: 'gatchaman', match: ['gatchaman'], color: '#1E66A8', colorDark: '#103A60' },
   { slug: 'hanna-barbera', name: 'Hanna-Barbera', query: 'hanna-barbera', match: ['hanna-barbera', 'hanna barbera'], color: '#1FA8A0', colorDark: '#0E5E59' },
   { slug: 'looney-tunes', name: 'Looney Tunes', query: 'looney tunes', match: ['looney tunes'], color: '#E03A30', colorDark: '#8A201B' },
-  { slug: 'cd-projekt-red', name: 'CD Projekt Red', query: 'cd projekt', match: ['cd projekt'], color: '#B11A1A', colorDark: '#6A0F0F' },
+  { slug: 'cd-projekt-red', name: 'CD Projekt Red', query: 'cd projekt', match: ['cd projekt'], color: '#B11A1A', colorDark: '#6A0F0F', logo: CdProjektRedLogo, badgeSize: { width: 37, height: 16 } },
   { slug: 'rocky-bullwinkle', name: 'Rocky & Bullwinkle', query: 'bullwinkle', match: ['bullwinkle', 'rocky & bullwinkle'], color: '#2E6FB0', colorDark: '#1A4068' },
-  { slug: 'insomniac', name: 'Insomniac Games', query: 'insomniac', match: ['insomniac'], color: '#E87722', colorDark: '#8C4512' },
+  { slug: 'insomniac', name: 'Insomniac Games', query: 'insomniac', match: ['insomniac'], color: '#E87722', colorDark: '#8C4512', logo: InsomniacLogo, badgeSize: { width: 56, height: 11 } },
   { slug: 'star-trek', name: 'Star Trek', query: 'star trek', match: ['star trek'], color: '#2A6FB5', colorDark: '#16406B' },
   { slug: 'green-hornet', name: 'The Green Hornet', query: 'green hornet', match: ['green hornet'], color: '#1E8449', colorDark: '#0F4D2A' },
   { slug: 'tmnt', name: 'Teenage Mutant Ninja Turtles', query: 'ninja turtles', match: ['teenage mutant', 'ninja turtles'], color: '#3FA535', colorDark: '#21601C' },
@@ -141,17 +151,17 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
   // ── Legacy publishers from the original SuperheroAPI import ───────────────
   // Big rosters that were never registered (so they showed as plain text with
   // no route). Same treatment: slug + colour + match now, `logo` to follow.
-  { slug: 'nintendo', name: 'Nintendo', query: 'nintendo', match: ['nintendo'], color: '#E60012', colorDark: '#8E0009' },
-  { slug: 'shueisha', name: 'Shueisha', query: 'shueisha', match: ['shueisha'], color: '#E12120', colorDark: '#861313' },
-  { slug: 'warp-graphics', name: 'Warp Graphics', query: 'warp graphics', match: ['warp graphics'], color: '#3E8E5A', colorDark: '#205230' },
-  { slug: 'archie', name: 'Archie Comics', query: 'archie', match: ['archie'], color: '#ED1C24', colorDark: '#8E1115' },
-  { slug: 'disney', name: 'Disney', query: 'disney', match: ['disney'], color: '#113CCF', colorDark: '#0A2480' },
-  { slug: 'valiant', name: 'Valiant', query: 'valiant', match: ['valiant'], color: '#1B3A6B', colorDark: '#0E2444' },
+  { slug: 'nintendo', name: 'Nintendo', query: 'nintendo', match: ['nintendo'], color: '#E60012', colorDark: '#8E0009', logo: NintendoLogo, badgeSize: { width: 56, height: 14 } },
+  { slug: 'shueisha', name: 'Shueisha', query: 'shueisha', match: ['shueisha'], color: '#E12120', colorDark: '#861313', logo: ShueishaLogo, badgeSize: { width: 32, height: 18 } },
+  { slug: 'warp-graphics', name: 'Warp Graphics', query: 'warp graphics', match: ['warp graphics'], color: '#3E8E5A', colorDark: '#205230', logo: WarpGraphicsLogo, badgeSize: { width: 22, height: 22 } },
+  { slug: 'archie', name: 'Archie Comics', query: 'archie', match: ['archie'], color: '#ED1C24', colorDark: '#8E1115', logo: ArchieLogo, badgeSize: { width: 35, height: 20 } },
+  { slug: 'disney', name: 'Disney', query: 'disney', match: ['disney'], color: '#113CCF', colorDark: '#0A2480', logo: DisneyLogo, badgeSize: { width: 38, height: 16 } },
+  { slug: 'valiant', name: 'Valiant', query: 'valiant', match: ['valiant'], color: '#1B3A6B', colorDark: '#0E2444', logo: ValiantLogo, badgeSize: { width: 50, height: 13 } },
   { slug: 'top-cow', name: 'Top Cow', query: 'top cow', match: ['top cow'], color: '#B5202A', colorDark: '#6E1318' },
   { slug: 'malibu', name: 'Malibu Comics', query: 'malibu', match: ['malibu'], color: '#1E73BE', colorDark: '#114571' },
   { slug: 'rebellion', name: '2000 AD', query: 'rebellion', match: ['rebellion'], color: '#F0152B', colorDark: '#8A0C19' },
-  { slug: 'capcom', name: 'Capcom', query: 'capcom', match: ['capcom'], color: '#0A4DA0', colorDark: '#06305F' },
-  { slug: 'sega', name: 'Sega', query: 'sega', match: ['sega'], color: '#0089CF', colorDark: '#00558A' },
+  { slug: 'capcom', name: 'Capcom', query: 'capcom', match: ['capcom'], color: '#0A4DA0', colorDark: '#06305F', logo: CapcomLogo, badgeSize: { width: 60, height: 11 } },
+  { slug: 'sega', name: 'Sega', query: 'sega', match: ['sega'], color: '#0089CF', colorDark: '#00558A', logo: SegaLogo, badgeSize: { width: 42, height: 14 } },
   { slug: 'mattel', name: 'Mattel', query: 'mattel', match: ['mattel'], color: '#E2231A', colorDark: '#8A130E' },
   { slug: 'hasbro', name: 'Hasbro', query: 'hasbro', match: ['hasbro'], color: '#0046AD', colorDark: '#002C6E' },
   { slug: 'kodansha', name: 'Kodansha', query: 'kodansha', match: ['kodansha'], color: '#1C8A4C', colorDark: '#0E4D2A' },
