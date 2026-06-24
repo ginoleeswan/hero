@@ -118,3 +118,27 @@ export function brandForPublisher(
   const p = publisher.toLowerCase();
   return PUBLISHER_BRANDS.find((brand) => brand.match.some((m) => p.includes(m)));
 }
+
+/**
+ * Raw `publisher` values that are SuperheroAPI category buckets, not universes —
+ * never linked as a browsable universe (see project: publisher→universe reframe).
+ */
+const NON_UNIVERSE_PUBLISHERS = new Set([
+  'Non-Fictional',
+  'Creator-Owned',
+  'Company-Licensed',
+  'In the Public Domain',
+]);
+
+/**
+ * The browse route for a publisher/universe, or null when it isn't browsable
+ * (absent, or a category bucket). Registered brands route by their stable slug;
+ * every other universe routes by its raw name, which `/publisher/[slug]`
+ * ilike-matches against the column. Used to make the character-page eyebrow a
+ * doorway into the universe.
+ */
+export function publisherHref(publisher: string | null | undefined): string | null {
+  if (!publisher || NON_UNIVERSE_PUBLISHERS.has(publisher)) return null;
+  const slug = brandForPublisher(publisher)?.slug ?? encodeURIComponent(publisher);
+  return `/publisher/${slug}`;
+}

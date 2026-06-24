@@ -60,8 +60,7 @@ import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import { GalleryStrip } from '../../src/components/GalleryStrip';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
 import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
-import { PublisherLogoChip } from '../../src/components/PublisherBadge';
-import { brandForPublisher } from '../../src/constants/publishers';
+import { UniverseEyebrow } from '../../src/components/PublisherBadge';
 import type { CharacterData } from '../../src/types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -950,9 +949,6 @@ export default function CharacterScreen() {
             <View style={styles.identity}>
               {data ? (
                 (() => {
-                  const publisher = data.stats.biography.publisher;
-                  const hasPublisher = valid(publisher);
-                  const publisherBrand = hasPublisher ? brandForPublisher(publisher) : undefined;
                   const alignment = data.stats.biography.alignment;
                   const origin = data.details.origin;
                   const taxoChips = resolveTaxoChips(alignment, origin);
@@ -962,13 +958,10 @@ export default function CharacterScreen() {
                   const hasCreators = !!data.details.creators?.length;
                   return (
                     <>
-                      {publisherBrand?.logo ? (
-                        <PublisherLogoChip publisher={publisher} height={16} />
-                      ) : hasPublisher ? (
-                        <Text style={styles.eyebrow} numberOfLines={1}>
-                          {publisher}
-                        </Text>
-                      ) : null}
+                      <UniverseEyebrow
+                        publisher={data.stats.biography.publisher}
+                        textStyle={styles.eyebrow}
+                      />
 
                       <Text style={styles.heroName}>{displayName}</Text>
 

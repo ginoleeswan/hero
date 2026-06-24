@@ -37,8 +37,7 @@ import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { GalleryStrip } from '../../src/components/GalleryStrip';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
-import { PublisherLogoChip } from '../../src/components/PublisherBadge';
-import { brandForPublisher } from '../../src/constants/publishers';
+import { UniverseEyebrow } from '../../src/components/PublisherBadge';
 import { SeoHead } from '../../src/components/web/SeoHead';
 import type { HeroStats } from '../../src/types';
 
@@ -648,8 +647,6 @@ export default function WebCharacterScreen() {
         .map((s) => s.trim())
         .filter((s) => s.length > 0 && !JUNK_VALUES.has(s.toLowerCase()));
 
-  const publisherBrand = brandForPublisher(stats.biography.publisher);
-
   const alias =
     stats.biography['full-name'] &&
     stats.biography['full-name'] !== stats.name &&
@@ -762,14 +759,11 @@ export default function WebCharacterScreen() {
               >
                 <View style={styles.identityRow}>
                   <View style={styles.titleBlock}>
-                    {publisherBrand?.logo ? (
-                      <PublisherLogoChip
-                        publisher={stats.biography.publisher}
-                        height={isDesktop ? 18 : 16}
-                      />
-                    ) : stats.biography.publisher ? (
-                      <Text style={styles.stageEyebrow}>{stats.biography.publisher}</Text>
-                    ) : null}
+                    <UniverseEyebrow
+                      publisher={stats.biography.publisher}
+                      logoHeight={isDesktop ? 18 : 16}
+                      textStyle={styles.stageEyebrow}
+                    />
                     <Text
                       style={[
                         styles.heroName,
@@ -1596,11 +1590,7 @@ export default function WebCharacterScreen() {
                 </View>
 
                 <View style={styles.mIdentity}>
-                  {publisherBrand?.logo ? (
-                    <PublisherLogoChip publisher={stats.biography.publisher} height={16} />
-                  ) : stats.biography.publisher ? (
-                    <Text style={styles.mEyebrow}>{stats.biography.publisher}</Text>
-                  ) : null}
+                  <UniverseEyebrow publisher={stats.biography.publisher} textStyle={styles.mEyebrow} />
                   <Text style={styles.mName}>{stats.name}</Text>
                   {alias ? <Text style={styles.mAlias}>{alias}</Text> : null}
 

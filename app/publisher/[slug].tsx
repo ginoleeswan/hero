@@ -67,23 +67,35 @@ export default function PublisherScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const publisher = publisherBySlug(slug);
-  const title = publisher?.name ?? 'Publisher';
+  // Registered brands route by their stable slug (and carry a short ilike
+  // `query`); every other universe routes by its raw name encoded into the slug,
+  // which we decode and match against the column directly.
+  const brand = publisherBySlug(slug);
+  const rawName = (() => {
+    if (!slug) return '';
+    try {
+      return decodeURIComponent(slug);
+    } catch {
+      return slug;
+    }
+  })();
+  const title = brand?.name ?? rawName ?? 'Universe';
+  const query = brand?.query ?? rawName;
 
   const [heroes, setHeroes] = useState<Hero[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!publisher) {
+    if (!query) {
       setLoading(false);
       return;
     }
     setLoading(true);
-    getHeroesByPublisher(publisher.query, 200)
+    getHeroesByPublisher(query, 200)
       .then((h) => setHeroes(h))
       .catch(() => setHeroes([]))
       .finally(() => setLoading(false));
-  }, [publisher]);
+  }, [query]);
 
   const handleHeroPress = useCallback(
     (hero: Hero) => {

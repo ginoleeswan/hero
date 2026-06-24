@@ -4,9 +4,10 @@
 // card overlay (native search, web featured) renders through this so a hero
 // brands identically everywhere. Branding is resolved via the publisher
 // registry — see constants/publishers.ts.
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable, type StyleProp, type TextStyle } from 'react-native';
 import { Image } from 'expo-image';
-import { brandForPublisher } from '../constants/publishers';
+import { useRouter, type Href } from 'expo-router';
+import { brandForPublisher, publisherHref } from '../constants/publishers';
 
 /**
  * The brand logo on a frosted chip, laid out inline (not absolutely
@@ -33,6 +34,51 @@ export function PublisherLogoChip({
         contentFit="contain"
       />
     </View>
+  );
+}
+
+/**
+ * The publisher eyebrow above a hero's name on the detail page, as a doorway
+ * into the universe: a logo chip (when we have one) or the plain name, wrapped
+ * in a link to that universe's browse route. Falls back to non-tappable text
+ * for category buckets (which aren't browsable universes). Shared by the native
+ * and web character views so the two can't drift.
+ */
+export function UniverseEyebrow({
+  publisher,
+  logoHeight = 16,
+  textStyle,
+}: {
+  publisher: string | null | undefined;
+  logoHeight?: number;
+  textStyle?: StyleProp<TextStyle>;
+}) {
+  const router = useRouter();
+  const brand = brandForPublisher(publisher);
+
+  const inner =
+    brand?.logo && brand.badgeSize ? (
+      <PublisherLogoChip publisher={publisher} height={logoHeight} />
+    ) : publisher ? (
+      <Text style={textStyle} numberOfLines={1}>
+        {publisher}
+      </Text>
+    ) : null;
+
+  if (!inner) return null;
+
+  const href = publisherHref(publisher);
+  if (!href) return inner;
+
+  return (
+    <Pressable
+      onPress={() => router.push(href as Href)}
+      accessibilityRole="link"
+      accessibilityLabel={`Browse the ${publisher} universe`}
+      style={({ pressed }) => (pressed ? styles.eyebrowPressed : undefined)}
+    >
+      {inner}
+    </Pressable>
   );
 }
 
@@ -80,6 +126,10 @@ const styles = StyleSheet.create({
   inlineLogo: {
     alignSelf: 'flex-start',
     marginBottom: 8,
+  },
+  // Subtle press feedback for the tappable universe eyebrow.
+  eyebrowPressed: {
+    opacity: 0.6,
   },
   // Soft drop-shadow keeps the flat logo legible over busy/dark artwork. The
   // `filter` form follows the logo silhouette (so transparent marks like the DC
