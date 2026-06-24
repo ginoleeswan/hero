@@ -21,7 +21,8 @@ function SpotlightSkeleton({ opacity, dark }: { opacity: Opacity; dark: boolean 
           flexDirection: 'row',
           gap: 10,
           height: contentHeight,
-          marginVertical: 20,
+          marginTop: 6,
+          marginBottom: 20,
           paddingHorizontal: pagePad,
         }}
       >
@@ -210,7 +211,7 @@ const skel = StyleSheet.create({
     paddingTop: TOPBAR_HEIGHT + 10,
     paddingBottom: 28,
   },
-  darkStageMobile: { paddingTop: TOPBAR_HEIGHT + 10, paddingBottom: 16 } as object,
+  darkStageMobile: { paddingTop: TOPBAR_HEIGHT + 2, paddingBottom: 16 } as object,
   ticker: { height: 38, backgroundColor: COLORS.orange },
   beigeCanvas: {
     backgroundColor: COLORS.beige,

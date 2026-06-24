@@ -689,7 +689,7 @@ const pss = StyleSheet.create({
   dotActive: { width: 20, backgroundColor: COLORS.orange } as object,
 
   // Mobile Web overrides
-  wrapMobile: { flexDirection: 'row', gap: 10, height: 240, marginVertical: 20 },
+  wrapMobile: { flexDirection: 'row', gap: 10, height: 240, marginTop: 6, marginBottom: 20 },
   singlePortrait: {
     width: 150,
     borderRadius: 10,
@@ -1405,7 +1405,7 @@ const styles = StyleSheet.create({
     paddingTop: TOPBAR_HEIGHT + 10,
     paddingBottom: 28,
   } as object,
-  darkStageMobile: { paddingTop: TOPBAR_HEIGHT + 10, paddingBottom: 16 } as object,
+  darkStageMobile: { paddingTop: TOPBAR_HEIGHT + 2, paddingBottom: 16 } as object,
 
   // Beige canvas owns the carousel section (sits on the dark scroll surface).
   beigeCanvas: {
