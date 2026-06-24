@@ -219,11 +219,7 @@ export function ClueSticker({ clue, tilt }: { clue: Clue; tilt: number }) {
   // never on the brand's own colour (which would hide a same-colour logo).
   const onLight = !!logoBrand?.logoOnLight;
   const bgFill = logoBrand ? (onLight ? '#FFFFFF' : '#17222C') : bg;
-  const lineAccent = logoBrand
-    ? onLight
-      ? 'rgba(0,0,0,0.18)'
-      : 'rgba(255,255,255,0.4)'
-    : accent;
+  const lineAccent = logoBrand ? (onLight ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.4)') : accent;
   let logoW = 0;
   let logoH = 0;
   if (logoBrand?.badgeSize) {
@@ -268,7 +264,12 @@ export function ClueSticker({ clue, tilt }: { clue: Clue; tilt: number }) {
       </Svg>
       <View style={[styles.content, { paddingHorizontal: pad }]} pointerEvents="none">
         {logoBrand?.logo ? (
-          <BrandLogoView logo={logoBrand.logo} width={logoW} height={logoH} tint={logoBrand.logoTint} />
+          <BrandLogoView
+            logo={logoBrand.logo}
+            width={logoW}
+            height={logoH}
+            tint={logoBrand.logoTint}
+          />
         ) : (
           <>
             {layout === 'iconText' ? (

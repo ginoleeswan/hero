@@ -56,16 +56,17 @@ export function BrandLogoView({
       source={logo}
       style={shadow ? [{ width, height }, styles.logoShadow] : { width, height }}
       contentFit="contain"
+      tintColor={tint}
     />
   );
 }
 
 /**
- * The brand logo on a frosted chip, laid out inline (not absolutely
- * positioned) so it can stand in for a text label — e.g. the publisher eyebrow
- * above a hero's name on the detail page. Renders nothing when the publisher
- * has no logo, so callers fall back to their own text treatment. `height` sets
- * the logo size; width follows the art's aspect ratio.
+ * The brand logo for the character-page eyebrow — laid out inline (not
+ * absolutely positioned) so it stands in for a text label above the hero's
+ * name. CHIPLESS by design: the bare (tinted) mark sits on the header gradient
+ * with a soft drop-shadow for legibility. `height` is the base size; a brand's
+ * `eyebrowScale` enlarges marks that read small (e.g. the Star Wars wordmark).
  */
 export function PublisherLogoChip({
   publisher,
@@ -76,16 +77,11 @@ export function PublisherLogoChip({
 }) {
   const brand = brandForPublisher(publisher);
   if (!brand?.logo || !brand.badgeSize) return null;
-  const width = height * (brand.badgeSize.width / brand.badgeSize.height);
+  const h = height * (brand.eyebrowScale ?? 1);
+  const width = h * (brand.badgeSize.width / brand.badgeSize.height);
   return (
-    <View style={[styles.inlineLogo, brand.logoOnLight ? styles.chipLight : styles.chipDark]}>
-      <BrandLogoView
-        logo={brand.logo}
-        width={width}
-        height={height}
-        shadow={!brand.logoOnLight}
-        tint={brand.logoTint}
-      />
+    <View style={styles.inlineLogo}>
+      <BrandLogoView logo={brand.logo} width={width} height={h} shadow tint={brand.logoTint} />
     </View>
   );
 }
@@ -179,20 +175,11 @@ const styles = StyleSheet.create({
   badgeLight: {
     backgroundColor: 'rgba(255,255,255,0.92)',
   },
-  // Inline logo chip for the detail eyebrow — a small backing so the mark reads
-  // over the cover art. Dark by default; light for `logoOnLight` brands.
+  // Chipless inline logo for the detail eyebrow — the bare mark over the header
+  // gradient (drop-shadow on the logo itself keeps it legible).
   inlineLogo: {
     alignSelf: 'flex-start',
     marginBottom: 8,
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    borderRadius: 7,
-  },
-  chipDark: {
-    backgroundColor: 'rgba(18,24,28,0.55)',
-  },
-  chipLight: {
-    backgroundColor: 'rgba(255,255,255,0.92)',
   },
   // Subtle press feedback for the tappable universe eyebrow.
   eyebrowPressed: {

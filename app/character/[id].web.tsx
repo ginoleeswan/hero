@@ -1590,7 +1590,10 @@ export default function WebCharacterScreen() {
                 </View>
 
                 <View style={styles.mIdentity}>
-                  <UniverseEyebrow publisher={stats.biography.publisher} textStyle={styles.mEyebrow} />
+                  <UniverseEyebrow
+                    publisher={stats.biography.publisher}
+                    textStyle={styles.mEyebrow}
+                  />
                   <Text style={styles.mName}>{stats.name}</Text>
                   {alias ? <Text style={styles.mAlias}>{alias}</Text> : null}
 

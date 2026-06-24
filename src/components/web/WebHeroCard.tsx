@@ -64,7 +64,12 @@ export function WebHeroCard({
         </Text>
         {featured && brand?.logo && brand.badgeSize ? (
           <View style={[styles.logoChip, brand.logoOnLight && styles.logoChipLight]}>
-            <BrandLogoView logo={brand.logo} width={logoWidth} height={LOGO_H} tint={brand.logoTint} />
+            <BrandLogoView
+              logo={brand.logo}
+              width={logoWidth}
+              height={LOGO_H}
+              tint={brand.logoTint}
+            />
           </View>
         ) : featured && publisher ? (
           <Text style={styles.publisher} numberOfLines={1}>
