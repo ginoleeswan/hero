@@ -1,8 +1,8 @@
 // src/components/home/PublisherGrid.tsx
 import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
-import { Image } from 'expo-image';
 import { COLORS } from '../../constants/colors';
 import { FEATURED_PUBLISHERS, type PublisherBrand } from '../../constants/publishers';
+import { BrandLogoView } from '../PublisherBadge';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const H_PAD = 16;
@@ -30,7 +30,7 @@ function Tile({ publisher, onPress }: { publisher: PublisherBrand; onPress: () =
       style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
     >
       {logo && badgeSize ? (
-        <Image source={logo} contentFit="contain" style={{ width: logoWidth, height: LOGO_H }} />
+        <BrandLogoView logo={logo} width={logoWidth} height={LOGO_H} />
       ) : (
         <Text style={[styles.wordmark, { color }]} numberOfLines={1}>
           {name}

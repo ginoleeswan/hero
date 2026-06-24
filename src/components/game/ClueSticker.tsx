@@ -5,7 +5,6 @@
 // retro sticker packet rather than uniform chips. Pure presentational.
 import { useEffect } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import { Image } from 'expo-image';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,6 +15,7 @@ import Svg, { Path, Circle, G } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import { brandForPublisher } from '../../constants/publishers';
+import { BrandLogoView } from '../PublisherBadge';
 import type { Clue } from '../../lib/game/reveal';
 
 // Web peel: the sticker flips down onto the card from its top edge, with a
@@ -259,12 +259,8 @@ export function ClueSticker({ clue, tilt }: { clue: Clue; tilt: number }) {
         </G>
       </Svg>
       <View style={[styles.content, { paddingHorizontal: pad }]} pointerEvents="none">
-        {logoBrand ? (
-          <Image
-            source={logoBrand.logo}
-            style={{ width: logoW, height: logoH }}
-            contentFit="contain"
-          />
+        {logoBrand?.logo ? (
+          <BrandLogoView logo={logoBrand.logo} width={logoW} height={logoH} />
         ) : (
           <>
             {layout === 'iconText' ? (

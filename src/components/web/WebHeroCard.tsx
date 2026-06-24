@@ -1,8 +1,8 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
 import { COLORS } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
 import { brandForPublisher } from '../../constants/publishers';
+import { BrandLogoView } from '../PublisherBadge';
 
 // Logo height used on the featured card; width follows the art's aspect ratio.
 const LOGO_H = 22;
@@ -64,11 +64,7 @@ export function WebHeroCard({
         </Text>
         {featured && brand?.logo && brand.badgeSize ? (
           <View style={styles.logoChip}>
-            <Image
-              source={brand.logo}
-              style={{ width: logoWidth, height: LOGO_H }}
-              contentFit="contain"
-            />
+            <BrandLogoView logo={brand.logo} width={logoWidth} height={LOGO_H} />
           </View>
         ) : featured && publisher ? (
           <Text style={styles.publisher} numberOfLines={1}>

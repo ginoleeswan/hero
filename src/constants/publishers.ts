@@ -6,7 +6,14 @@
 // a logo, brand colour, or browse route resolves it through this registry so
 // the same hero brands the same way everywhere (search cards, web cards,
 // Explore tiles, publisher route).
+import type { FC } from 'react';
 import type { ImageSourcePropType } from 'react-native';
+import type { SvgProps } from 'react-native-svg';
+import ImageComicsLogo from '../../assets/images/image-comics-logo.svg';
+
+/** A brand logo, either a raster image (PNG via require) or an SVG component
+ *  (via react-native-svg-transformer). Render helpers branch on which it is. */
+export type BrandLogo = ImageSourcePropType | FC<SvgProps>;
 
 export interface PublisherBrand {
   slug: string;
@@ -24,8 +31,9 @@ export interface PublisherBrand {
   color: string;
   /** Darker shade of the brand colour (tile gradient bottom). */
   colorDark: string;
-  /** Logo asset; surfaces fall back to the name wordmark/text when absent. */
-  logo?: ImageSourcePropType;
+  /** Logo (PNG image source or SVG component); surfaces fall back to the name
+   *  wordmark/text when absent. */
+  logo?: BrandLogo;
   /**
    * Rendered logo size (px) inside a compact overlay badge chip. Hand-tuned
    * per brand because some logos are wide wordmarks (Marvel) and others are
@@ -92,7 +100,7 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['image'],
     color: '#16A085',
     colorDark: '#0C5F4E',
-    logo: require('../../assets/images/image-comics-logo.svg'),
+    logo: ImageComicsLogo,
     badgeSize: { width: 50, height: 20 },
     featured: true,
   },

@@ -1,7 +1,7 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
-import { Image } from 'expo-image';
 import { COLORS } from '../../../constants/colors';
 import { FEATURED_PUBLISHERS } from '../../../constants/publishers';
+import { BrandLogoView } from '../../PublisherBadge';
 
 // Logo height inside a pod; width follows each mark's aspect ratio.
 const LOGO_H = 44;
@@ -44,11 +44,7 @@ export function PublisherPods({ onNavigate }: { onNavigate: (path: string) => vo
             }
           >
             {p.logo && p.badgeSize ? (
-              <Image
-                source={p.logo}
-                style={{ width: logoWidth, height: LOGO_H }}
-                contentFit="contain"
-              />
+              <BrandLogoView logo={p.logo} width={logoWidth} height={LOGO_H} />
             ) : (
               <Text style={[s.wordmark, { color: p.color }]} numberOfLines={1}>
                 {p.name}

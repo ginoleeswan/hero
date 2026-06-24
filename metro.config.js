@@ -3,6 +3,13 @@ const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
+// SVG support: transform .svg into react-native-svg components on every
+// platform, instead of treating them as image assets — RN's <Image> can't
+// decode SVG on native. Requires moving 'svg' from assetExts to sourceExts.
+config.transformer.babelTransformerPath = require.resolve('react-native-svg-transformer/expo');
+config.resolver.assetExts = config.resolver.assetExts.filter((ext) => ext !== 'svg');
+config.resolver.sourceExts.push('svg');
+
 // Metro's default asset extensions are lowercase only; add uppercase variants.
 config.resolver.assetExts.push('PNG', 'JPG', 'JPEG');
 

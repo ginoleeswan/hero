@@ -4,10 +4,49 @@
 // card overlay (native search, web featured) renders through this so a hero
 // brands identically everywhere. Branding is resolved via the publisher
 // registry — see constants/publishers.ts.
-import { View, Text, StyleSheet, Pressable, type StyleProp, type TextStyle } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
-import { brandForPublisher, publisherHref } from '../constants/publishers';
+import { brandForPublisher, publisherHref, type BrandLogo } from '../constants/publishers';
+
+/**
+ * Render a brand logo at a fixed box. A logo is either an SVG component (via
+ * react-native-svg-transformer — a function) or a raster image source (PNG via
+ * require). Branch on which it is so both work on native and web.
+ */
+export function BrandLogoView({
+  logo,
+  width,
+  height,
+  shadow,
+}: {
+  logo: BrandLogo;
+  width: number;
+  height: number;
+  shadow?: boolean;
+}) {
+  if (typeof logo === 'function') {
+    const Logo = logo;
+    return (
+      <Logo width={width} height={height} style={(shadow ? styles.logoShadow : undefined) as StyleProp<ViewStyle>} />
+    );
+  }
+  return (
+    <Image
+      source={logo}
+      style={shadow ? [{ width, height }, styles.logoShadow] : { width, height }}
+      contentFit="contain"
+    />
+  );
+}
 
 /**
  * The brand logo on a frosted chip, laid out inline (not absolutely
@@ -28,11 +67,7 @@ export function PublisherLogoChip({
   const width = height * (brand.badgeSize.width / brand.badgeSize.height);
   return (
     <View style={styles.inlineLogo}>
-      <Image
-        source={brand.logo}
-        style={[{ width, height }, styles.logoShadow]}
-        contentFit="contain"
-      />
+      <BrandLogoView logo={brand.logo} width={width} height={height} shadow />
     </View>
   );
 }
@@ -88,10 +123,10 @@ export function PublisherBadge({ publisher }: { publisher: string | null | undef
   if (brand?.logo && brand.badgeSize) {
     return (
       <View style={styles.badge}>
-        <Image
-          source={brand.logo}
-          style={{ width: brand.badgeSize.width, height: brand.badgeSize.height }}
-          contentFit="contain"
+        <BrandLogoView
+          logo={brand.logo}
+          width={brand.badgeSize.width}
+          height={brand.badgeSize.height}
         />
       </View>
     );
