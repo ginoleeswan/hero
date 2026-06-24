@@ -308,37 +308,81 @@ export async function getCategoryPage(
     // above) is the filter — no base publisher/alignment predicate.
   }
 
-  // Publisher facet
+  // Publisher facet (category pages only — meaningless inside a single universe)
   if (publisher === 'marvel') q = q.ilike('publisher', '%marvel%');
   else if (publisher === 'dc') q = q.ilike('publisher', '%dc%');
   else if (publisher === 'other')
     q = q.not('publisher', 'ilike', '%marvel%').not('publisher', 'ilike', '%dc%');
 
-  // Alignment facet
+  q = applyListFacets(q, { alignment, gender, hasStats, tagList, search, sort });
+
+  const { data, error, count } = await q.range(from, to);
+  if (error) throw new Error(error.message);
+  return { heroes: (data ?? []) as Hero[], total: count ?? 0 };
+}
+
+// Shared facet/search/sort application for both category and universe browse
+// lists, so the two paths can't drift. Publisher facet is intentionally NOT
+// here — it's category-only (a universe page is already one publisher).
+function applyListFacets(
+  q: any,
+  opts: {
+    alignment: CategoryFilters['alignment'];
+    gender: CategoryFilters['gender'];
+    hasStats: boolean;
+    tagList: string[];
+    search: string;
+    sort: CategoryFilters['sort'];
+  },
+): any {
+  const { alignment, gender, hasStats, tagList, search, sort } = opts;
   if (alignment === 'good') q = q.eq('alignment', 'good');
   else if (alignment === 'bad') q = q.eq('alignment', 'bad');
   else if (alignment === 'neutral') q = q.ilike('alignment', '%neutral%');
 
-  // Gender facet
   if (gender === 'male') q = q.ilike('gender', 'male');
   else if (gender === 'female') q = q.ilike('gender', 'female');
 
-  // Has-powerstats facet
   if (hasStats) q = q.gte('powerstats_total', 1);
 
-  // Tag facet — inner join on hero_tags; filter by each selected tag.
-  for (const tag of tagList) {
-    q = q.eq('hero_tags.tag', tag);
-  }
+  for (const tag of tagList) q = q.eq('hero_tags.tag', tag);
 
-  // Search
   if (search.trim()) q = q.or(`name.ilike.%${search.trim()}%,full_name.ilike.%${search.trim()}%`);
 
-  // Sort
   if (sort === 'az') q = q.order('name');
   else if (sort === 'power')
     q = q.order('powerstats_total', { ascending: false, nullsFirst: false });
   else q = q.order('issue_count', { ascending: false, nullsFirst: false });
+  return q;
+}
+
+/**
+ * Paged heroes for a single UNIVERSE (publisher/studio/franchise) browse page —
+ * the universe equivalent of getCategoryPage. `term` is the ILIKE match for the
+ * `publisher` column (a registry brand's query, or a raw universe name). Shares
+ * applyListFacets so universe pages get the same sort/search/filter behaviour as
+ * category pages, minus the publisher facet.
+ */
+export async function getUniversePage(
+  term: string,
+  options: { page: number; pageSize?: number; withCount?: boolean } & CategoryFilters,
+): Promise<{ heroes: Hero[]; total: number }> {
+  const { page, pageSize = 48, withCount = true, alignment, gender, hasStats, tags, search, sort } =
+    options;
+  const tagList = tags ?? [];
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  const selectCols = tagList.length
+    ? `${CATEGORY_LIST_COLUMNS}, hero_tags!inner(tag)`
+    : CATEGORY_LIST_COLUMNS;
+
+  let q: any = supabase
+    .from('heroes')
+    .select(selectCols, withCount ? { count: 'exact' } : undefined)
+    .ilike('publisher', `%${term}%`);
+
+  q = applyListFacets(q, { alignment, gender, hasStats, tagList, search, sort });
 
   const { data, error, count } = await q.range(from, to);
   if (error) throw new Error(error.message);
