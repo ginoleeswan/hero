@@ -96,6 +96,39 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     badgeSize: { width: 50, height: 20 },
     featured: true,
   },
+
+  // ── Universes from the Company-Licensed re-brand ──────────────────────────
+  // Registered so they badge, route, and carry a brand colour. No `logo` yet —
+  // surfaces fall back to the name wordmark until transparent PNGs are added
+  // (then set `logo` + `badgeSize`). Match substrings are distinct from the
+  // brands above; order doesn't collide.
+  { slug: 'netherrealm', name: 'NetherRealm Studios', query: 'netherrealm', match: ['netherrealm'], color: '#C9A227', colorDark: '#7A6115' },
+  { slug: 'babylon-5', name: 'Babylon 5', query: 'babylon 5', match: ['babylon 5'], color: '#3B4C7A', colorDark: '#222E4D' },
+  { slug: 'avatar-last-airbender', name: 'Avatar: The Last Airbender', query: 'last airbender', match: ['last airbender'], color: '#E8A33D', colorDark: '#9C6418' },
+  { slug: 'snk', name: 'SNK', query: 'snk', match: ['snk'], color: '#D32F2F', colorDark: '#7F1B1B' },
+  { slug: 'gatchaman', name: 'Gatchaman', query: 'gatchaman', match: ['gatchaman'], color: '#1E66A8', colorDark: '#103A60' },
+  { slug: 'hanna-barbera', name: 'Hanna-Barbera', query: 'hanna-barbera', match: ['hanna-barbera', 'hanna barbera'], color: '#1FA8A0', colorDark: '#0E5E59' },
+  { slug: 'looney-tunes', name: 'Looney Tunes', query: 'looney tunes', match: ['looney tunes'], color: '#E03A30', colorDark: '#8A201B' },
+  { slug: 'cd-projekt-red', name: 'CD Projekt Red', query: 'cd projekt', match: ['cd projekt'], color: '#B11A1A', colorDark: '#6A0F0F' },
+  { slug: 'rocky-bullwinkle', name: 'Rocky & Bullwinkle', query: 'bullwinkle', match: ['bullwinkle', 'rocky & bullwinkle'], color: '#2E6FB0', colorDark: '#1A4068' },
+  { slug: 'insomniac', name: 'Insomniac Games', query: 'insomniac', match: ['insomniac'], color: '#E87722', colorDark: '#8C4512' },
+  { slug: 'star-trek', name: 'Star Trek', query: 'star trek', match: ['star trek'], color: '#2A6FB5', colorDark: '#16406B' },
+  { slug: 'green-hornet', name: 'The Green Hornet', query: 'green hornet', match: ['green hornet'], color: '#1E8449', colorDark: '#0F4D2A' },
+  { slug: 'tmnt', name: 'Teenage Mutant Ninja Turtles', query: 'ninja turtles', match: ['teenage mutant', 'ninja turtles'], color: '#3FA535', colorDark: '#21601C' },
+  { slug: 'conan', name: 'Conan', query: 'conan', match: ['conan'], color: '#A6562B', colorDark: '#5E2F17' },
+  { slug: 'ben-10', name: 'Ben 10', query: 'ben 10', match: ['ben 10'], color: '#5DBB46', colorDark: '#2F6B23' },
+  { slug: 'buffy', name: 'Buffy the Vampire Slayer', query: 'buffy', match: ['buffy'], color: '#9C2B3B', colorDark: '#5A1822' },
+  { slug: 'harvey', name: 'Harvey Comics', query: 'harvey', match: ['harvey'], color: '#2E78C7', colorDark: '#18467A' },
+  { slug: 'terminator', name: 'The Terminator', query: 'terminator', match: ['terminator'], color: '#C0392B', colorDark: '#6E2017' },
+  { slug: 'bungie', name: 'Bungie', query: 'bungie', match: ['bungie'], color: '#2E7D5B', colorDark: '#173E2D' },
+  { slug: 'crystal-dynamics', name: 'Crystal Dynamics', query: 'crystal dynamics', match: ['crystal dynamics'], color: '#1F8A8A', colorDark: '#0F5050' },
+  { slug: 'santa-monica-studio', name: 'Santa Monica Studio', query: 'santa monica', match: ['santa monica'], color: '#B23A2E', colorDark: '#5E1E18' },
+  { slug: 'namco', name: 'Namco', query: 'namco', match: ['namco'], color: '#F2C500', colorDark: '#8A7100' },
+  { slug: 'radical-entertainment', name: 'Radical Entertainment', query: 'radical entertainment', match: ['radical entertainment'], color: '#A11D1D', colorDark: '#5C1010' },
+  { slug: 'alien', name: 'Alien', query: 'alien', match: ['alien'], color: '#3C6B2F', colorDark: '#1F3A19' },
+  { slug: 'predator', name: 'Predator', query: 'predator', match: ['predator'], color: '#B5471E', colorDark: '#63270F' },
+  { slug: 'indiana-jones', name: 'Indiana Jones', query: 'indiana jones', match: ['indiana jones'], color: '#9C6B2E', colorDark: '#5A3D18' },
+  { slug: 'jurassic-park', name: 'Jurassic Park', query: 'jurassic', match: ['jurassic'], color: '#B5402E', colorDark: '#62211A' },
 ];
 
 /** Explore tiles, in display order. */

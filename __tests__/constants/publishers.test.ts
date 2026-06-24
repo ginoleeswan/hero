@@ -7,11 +7,15 @@ describe('publisherHref', () => {
     expect(publisherHref('Marvel Comics')).toBe('/publisher/marvel');
   });
 
+  it('routes a registered universe by its slug', () => {
+    expect(publisherHref('NetherRealm Studios')).toBe('/publisher/netherrealm');
+    expect(publisherHref('Avatar: The Last Airbender')).toBe('/publisher/avatar-last-airbender');
+  });
+
   it('routes an unregistered universe by its url-encoded raw name', () => {
-    expect(publisherHref('NetherRealm Studios')).toBe('/publisher/NetherRealm%20Studios');
-    expect(publisherHref('Avatar: The Last Airbender')).toBe(
-      '/publisher/Avatar%3A%20The%20Last%20Airbender',
-    );
+    // Kool-Aid / Sesame Street are deliberately left unregistered (render as text).
+    expect(publisherHref('Kool-Aid')).toBe('/publisher/Kool-Aid');
+    expect(publisherHref('Sesame Street')).toBe('/publisher/Sesame%20Street');
   });
 
   it('returns null for category buckets and absent values', () => {
@@ -25,8 +29,14 @@ describe('publisherHref', () => {
 });
 
 describe('brandForPublisher', () => {
+  it('resolves the newly-registered universes', () => {
+    expect(brandForPublisher('NetherRealm Studios')?.slug).toBe('netherrealm');
+    expect(brandForPublisher('Teenage Mutant Ninja Turtles')?.slug).toBe('tmnt');
+    expect(brandForPublisher('SNK')?.slug).toBe('snk');
+  });
+
   it('does not resolve a brand for category buckets', () => {
     expect(brandForPublisher('Company-Licensed')).toBeUndefined();
-    expect(brandForPublisher('NetherRealm Studios')).toBeUndefined();
+    expect(brandForPublisher('Kool-Aid')).toBeUndefined();
   });
 });
