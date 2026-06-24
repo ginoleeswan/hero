@@ -129,6 +129,24 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
   { slug: 'predator', name: 'Predator', query: 'predator', match: ['predator'], color: '#B5471E', colorDark: '#63270F' },
   { slug: 'indiana-jones', name: 'Indiana Jones', query: 'indiana jones', match: ['indiana jones'], color: '#9C6B2E', colorDark: '#5A3D18' },
   { slug: 'jurassic-park', name: 'Jurassic Park', query: 'jurassic', match: ['jurassic'], color: '#B5402E', colorDark: '#62211A' },
+
+  // ── Legacy publishers from the original SuperheroAPI import ───────────────
+  // Big rosters that were never registered (so they showed as plain text with
+  // no route). Same treatment: slug + colour + match now, `logo` to follow.
+  { slug: 'nintendo', name: 'Nintendo', query: 'nintendo', match: ['nintendo'], color: '#E60012', colorDark: '#8E0009' },
+  { slug: 'shueisha', name: 'Shueisha', query: 'shueisha', match: ['shueisha'], color: '#E12120', colorDark: '#861313' },
+  { slug: 'warp-graphics', name: 'Warp Graphics', query: 'warp graphics', match: ['warp graphics'], color: '#3E8E5A', colorDark: '#205230' },
+  { slug: 'archie', name: 'Archie Comics', query: 'archie', match: ['archie'], color: '#ED1C24', colorDark: '#8E1115' },
+  { slug: 'disney', name: 'Disney', query: 'disney', match: ['disney'], color: '#113CCF', colorDark: '#0A2480' },
+  { slug: 'valiant', name: 'Valiant', query: 'valiant', match: ['valiant'], color: '#1B3A6B', colorDark: '#0E2444' },
+  { slug: 'top-cow', name: 'Top Cow', query: 'top cow', match: ['top cow'], color: '#B5202A', colorDark: '#6E1318' },
+  { slug: 'malibu', name: 'Malibu Comics', query: 'malibu', match: ['malibu'], color: '#1E73BE', colorDark: '#114571' },
+  { slug: 'rebellion', name: '2000 AD', query: 'rebellion', match: ['rebellion'], color: '#F0152B', colorDark: '#8A0C19' },
+  { slug: 'capcom', name: 'Capcom', query: 'capcom', match: ['capcom'], color: '#0A4DA0', colorDark: '#06305F' },
+  { slug: 'sega', name: 'Sega', query: 'sega', match: ['sega'], color: '#0089CF', colorDark: '#00558A' },
+  { slug: 'mattel', name: 'Mattel', query: 'mattel', match: ['mattel'], color: '#E2231A', colorDark: '#8A130E' },
+  { slug: 'hasbro', name: 'Hasbro', query: 'hasbro', match: ['hasbro'], color: '#0046AD', colorDark: '#002C6E' },
+  { slug: 'kodansha', name: 'Kodansha', query: 'kodansha', match: ['kodansha'], color: '#1C8A4C', colorDark: '#0E4D2A' },
 ];
 
 /** Explore tiles, in display order. */
