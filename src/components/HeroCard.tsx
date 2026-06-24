@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { HeroImage } from './HeroImage';
@@ -24,7 +25,17 @@ interface HeroCardProps {
  * the zoom. Dimensions are passed in explicitly so the card never depends on
  * the Link.AppleZoom wrapper stretching it.
  */
-export function HeroCard({ id, name, imageUrl, portraitUrl, width, height }: HeroCardProps) {
+// Memoised: all props are primitives, so the default shallow comparison lets each
+// card skip re-rendering when its carousel row re-renders (swipe/scroll/index
+// state) but the card's own data is unchanged.
+export const HeroCard = memo(function HeroCard({
+  id,
+  name,
+  imageUrl,
+  portraitUrl,
+  width,
+  height,
+}: HeroCardProps) {
   return (
     <View collapsable={false} style={[styles.card, { width, height }]}>
       <HeroImage
@@ -44,7 +55,7 @@ export function HeroCard({ id, name, imageUrl, portraitUrl, width, height }: Her
       </View>
     </View>
   );
-}
+});
 
 export const HERO_CARD_RADIUS = 64;
 

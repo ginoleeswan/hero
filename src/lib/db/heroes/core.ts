@@ -1,11 +1,5 @@
 import { supabase } from '../../supabase';
-import type {
-  Hero,
-  HeroSearchResult,
-  HeroesByCategory,
-  PublisherFilter,
-  AlignmentFilter,
-} from './types';
+import type { Hero, HeroSearchResult, PublisherFilter, AlignmentFilter } from './types';
 
 const norm = (s: string) => s.toLowerCase().replace(/[\s\-_.]/g, '');
 
@@ -34,18 +28,6 @@ export function rankResults(list: HeroSearchResult[], query: string): HeroSearch
     })
     .sort((a, b) => a.score - b.score)
     .map((s) => s.h);
-}
-
-export async function getHeroesByCategory(): Promise<HeroesByCategory> {
-  const { data, error } = await supabase.from('heroes').select('*').order('name');
-
-  if (error) throw error;
-
-  return {
-    popular: data.filter((h) => h.category === 'popular'),
-    villain: data.filter((h) => h.category === 'villain'),
-    xmen: data.filter((h) => h.category === 'xmen'),
-  };
 }
 
 export async function getHeroByComicvineId(cvId: string): Promise<Hero | null> {

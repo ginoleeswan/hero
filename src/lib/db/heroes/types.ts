@@ -18,12 +18,6 @@ export type HeroSearchResult = Pick<
   | 'aliases'
 >;
 
-export interface HeroesByCategory {
-  popular: Hero[];
-  villain: Hero[];
-  xmen: Hero[];
-}
-
 export interface FirstAppearanceCover {
   id: string;
   name: string;
