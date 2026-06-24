@@ -2,20 +2,20 @@ import { publisherHref, brandForPublisher } from '../../src/constants/publishers
 
 describe('publisherHref', () => {
   it('routes a registered brand by its stable slug', () => {
-    expect(publisherHref('Marvel')).toBe('/publisher/marvel');
+    expect(publisherHref('Marvel')).toBe('/universe/marvel');
     // Resolves through substring matching too ("Marvel Comics" → marvel brand).
-    expect(publisherHref('Marvel Comics')).toBe('/publisher/marvel');
+    expect(publisherHref('Marvel Comics')).toBe('/universe/marvel');
   });
 
   it('routes a registered universe by its slug', () => {
-    expect(publisherHref('NetherRealm Studios')).toBe('/publisher/netherrealm');
-    expect(publisherHref('Avatar: The Last Airbender')).toBe('/publisher/avatar-last-airbender');
+    expect(publisherHref('NetherRealm Studios')).toBe('/universe/netherrealm');
+    expect(publisherHref('Avatar: The Last Airbender')).toBe('/universe/avatar-last-airbender');
   });
 
   it('routes an unregistered universe by its url-encoded raw name', () => {
     // Kool-Aid / Sesame Street are deliberately left unregistered (render as text).
-    expect(publisherHref('Kool-Aid')).toBe('/publisher/Kool-Aid');
-    expect(publisherHref('Sesame Street')).toBe('/publisher/Sesame%20Street');
+    expect(publisherHref('Kool-Aid')).toBe('/universe/Kool-Aid');
+    expect(publisherHref('Sesame Street')).toBe('/universe/Sesame%20Street');
   });
 
   it('returns null for category buckets and absent values', () => {

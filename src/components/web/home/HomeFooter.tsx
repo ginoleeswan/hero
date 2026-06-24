@@ -13,8 +13,8 @@ interface FooterLink {
 }
 
 const BROWSE: FooterLink[] = [
-  { label: 'Marvel Universe', path: '/category/marvel' },
-  { label: 'DC Universe', path: '/category/dc' },
+  { label: 'Marvel Universe', path: '/universe/marvel' },
+  { label: 'DC Universe', path: '/universe/dc' },
   { label: 'Villains', path: '/category/villain' },
   { label: 'Anti-Heroes', path: '/category/anti-heroes' },
 ];

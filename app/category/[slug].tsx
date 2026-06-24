@@ -42,15 +42,14 @@ import { COLORS } from '../../src/constants/colors';
 import { CategorySkeleton } from '../../src/components/skeletons/CategorySkeleton';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 
+// Publishers (marvel/dc/image/dark-horse) are NOT here — they're universes now,
+// served by /universe/[slug] (this same screen, resolved via the registry). Only
+// thematic collections remain categories.
 const VALID_SLUGS = new Set<CategorySlug>([
   'popular',
   'villain',
   'xmen',
   'anti-heroes',
-  'marvel',
-  'dc',
-  'image',
-  'dark-horse',
   'strongest',
   'most-intelligent',
   'most-iconic',

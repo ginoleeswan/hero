@@ -577,12 +577,12 @@ const NON_UNIVERSE_PUBLISHERS = new Set([
 /**
  * The browse route for a publisher/universe, or null when it isn't browsable
  * (absent, or a category bucket). Registered brands route by their stable slug;
- * every other universe routes by its raw name, which `/publisher/[slug]`
+ * every other universe routes by its raw name, which `/universe/[slug]`
  * ilike-matches against the column. Used to make the character-page eyebrow a
  * doorway into the universe.
  */
 export function publisherHref(publisher: string | null | undefined): string | null {
   if (!publisher || NON_UNIVERSE_PUBLISHERS.has(publisher)) return null;
   const slug = brandForPublisher(publisher)?.slug ?? encodeURIComponent(publisher);
-  return `/publisher/${slug}`;
+  return `/universe/${slug}`;
 }

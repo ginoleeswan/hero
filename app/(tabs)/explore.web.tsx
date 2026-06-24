@@ -1252,14 +1252,14 @@ export default function WebHomeScreen() {
               title="Marvel Universe"
               heroes={homeData.marvel ?? []}
               onPress={handlePress}
-              onViewAll={() => router.push('/category/marvel')}
+              onViewAll={() => router.push('/universe/marvel')}
             />
             <HomeRow
               label="Publisher"
               title="DC Universe"
               heroes={homeData.dc ?? []}
               onPress={handlePress}
-              onViewAll={() => router.push('/category/dc')}
+              onViewAll={() => router.push('/universe/dc')}
             />
             <HomeRow
               label="Mutantkind"

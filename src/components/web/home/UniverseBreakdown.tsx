@@ -32,9 +32,9 @@ export function UniverseBreakdown({ counts, total, onNavigate }: UniverseBreakdo
       label: 'Marvel',
       value: counts.marvel,
       color: MARVEL,
-      path: '/category/marvel',
+      path: '/universe/marvel',
     },
-    { key: 'dc', label: 'DC', value: counts.dc, color: DC, path: '/category/dc' },
+    { key: 'dc', label: 'DC', value: counts.dc, color: DC, path: '/universe/dc' },
     { key: 'other', label: 'Other publishers', value: counts.other, color: OTHER },
   ];
 

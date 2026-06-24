@@ -39,15 +39,13 @@ import { COLORS, SURFACE, SURFACE_GRADIENT, SEAM_COLOR } from '../../src/constan
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 
+// Publishers (marvel/dc/image/dark-horse) are NOT here — they're universes now,
+// served by /universe/[slug] (this same screen, resolved via the registry).
 const VALID_SLUGS = new Set<CategorySlug>([
   'popular',
   'villain',
   'xmen',
   'anti-heroes',
-  'marvel',
-  'dc',
-  'image',
-  'dark-horse',
   'strongest',
   'most-intelligent',
   'most-iconic',
@@ -334,7 +332,7 @@ export default function WebCategoryScreen() {
       <SeoHead
         title={`${title} | Mythique`}
         description={description ?? `Browse ${title} on Mythique — the superhero encyclopedia.`}
-        path={`/category/${slug}`}
+        path={categorySlug ? `/category/${slug}` : `/universe/${slug}`}
       />
       {/* ── Sticky header — navy ─────────────────────────────────────────────── */}
       <View style={[styles.header, { paddingHorizontal: contentPad }] as object}>

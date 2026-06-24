@@ -176,10 +176,10 @@ export default function HomeScreen() {
     [router],
   );
 
-  const handleCategoryPress = useCallback(
+  const handlePublisherPress = useCallback(
     (slug: string) => {
       Haptics.selectionAsync();
-      router.push(`/category/${slug}`);
+      router.push(`/universe/${slug}`);
     },
     [router],
   );
@@ -264,9 +264,9 @@ export default function HomeScreen() {
         label: 'Publisher',
         title: 'Marvel Universe',
         heroes: marvel,
-        route: '/category/marvel',
+        route: '/universe/marvel',
       },
-      { key: 'dc', label: 'Publisher', title: 'DC Universe', heroes: dc, route: '/category/dc' },
+      { key: 'dc', label: 'Publisher', title: 'DC Universe', heroes: dc, route: '/universe/dc' },
       {
         key: 'strongest',
         label: 'Raw Power',
@@ -380,7 +380,7 @@ export default function HomeScreen() {
             />
           );
         case 'publishers':
-          return <PublisherGrid onPress={handleCategoryPress} />;
+          return <PublisherGrid onPress={handlePublisherPress} />;
         case 'daily':
           return <DailyChallengeBanner onPress={() => handleOpenPath('/play')} />;
         case 'matchup':
@@ -462,7 +462,7 @@ export default function HomeScreen() {
       handlePress,
       handleHeroId,
       handleOpenPath,
-      handleCategoryPress,
+      handlePublisherPress,
       handleTitlePress,
       navigating,
       router,

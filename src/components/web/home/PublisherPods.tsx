@@ -32,7 +32,7 @@ export function PublisherPods({ onNavigate }: { onNavigate: (path: string) => vo
         return (
           <Pressable
             key={p.slug}
-            onPress={() => onNavigate(`/category/${p.slug}`)}
+            onPress={() => onNavigate(`/universe/${p.slug}`)}
             accessibilityRole="link"
             accessibilityLabel={`Browse ${p.name} heroes`}
             style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
