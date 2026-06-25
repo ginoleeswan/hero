@@ -1715,56 +1715,20 @@ export default function WebCharacterScreen() {
 
                 {/* Power Stats */}
                 <View style={styles.mBlock}>
-                  <View style={styles.mStatSectionHead}>
-                    <View style={styles.mStatSectionControls}>
-                      {powerScore !== null || statsGenerating ? (
-                        <Pressable
-                          onPress={() =>
-                            !statsGenerating &&
-                            router.push(
-                              `/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`,
-                            )
-                          }
-                          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                            [
-                              styles.compareBtn,
-                              hovered && !statsGenerating && (styles.compareBtnHover as object),
-                              statsGenerating && { opacity: 0.5 },
-                            ] as object
-                          }
-                        >
-                          <Ionicons name="git-compare-outline" size={14} color={COLORS.orange} />
-                          <Text style={styles.compareBtnText}>Compare</Text>
-                        </Pressable>
-                      ) : null}
-                      {powerScore !== null ? (
-                        <View
-                          style={[
-                            styles.powerScorePill,
-                            { backgroundColor: alignmentColor + '22' },
-                          ]}
-                        >
-                          <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
-                            {powerScore}
-                          </Text>
-                        </View>
-                      ) : null}
-                    </View>
-                    <View style={styles.mStatTitleRow}>
-                      <Text style={styles.mSectionTitle}>Power Stats</Text>
-                      {data.statsSource === 'ai' ? (
-                        <View style={styles.aiBadge}>
-                          <Text style={styles.aiBadgeText}>AI</Text>
-                        </View>
-                      ) : null}
-                      {isAdmin ? (
-                        <WebSectionPencil
-                          active={statsEditing}
-                          onPress={() => setStatsEditing((s) => !s)}
-                          label="Edit power stats"
-                        />
-                      ) : null}
-                    </View>
+                  <View style={styles.mStatTitleRow}>
+                    <Text style={styles.mSectionTitle}>Power Stats</Text>
+                    {data.statsSource === 'ai' ? (
+                      <View style={styles.aiBadge}>
+                        <Text style={styles.aiBadgeText}>AI</Text>
+                      </View>
+                    ) : null}
+                    {isAdmin ? (
+                      <WebSectionPencil
+                        active={statsEditing}
+                        onPress={() => setStatsEditing((s) => !s)}
+                        label="Edit power stats"
+                      />
+                    ) : null}
                   </View>
                   <View style={styles.mSectionDivider} />
                   {isAdmin && statsEditing ? (
@@ -1830,8 +1794,48 @@ export default function WebCharacterScreen() {
                       ))}
                     </View>
                   )}
-                  {percentile != null && percentile > 0 ? (
-                    <Text style={styles.percentileText}>Stronger than {percentile}% of heroes</Text>
+                  {percentile != null || powerScore !== null || statsGenerating ? (
+                    <View style={styles.mStatFooter}>
+                      {percentile != null && percentile > 0 ? (
+                        <Text style={styles.percentileText}>
+                          Stronger than {percentile}% of heroes
+                        </Text>
+                      ) : null}
+                      <View style={styles.mStatFooterRight}>
+                        {powerScore !== null ? (
+                          <View
+                            style={[
+                              styles.powerScorePill,
+                              { backgroundColor: alignmentColor + '22' },
+                            ]}
+                          >
+                            <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
+                              {powerScore}
+                            </Text>
+                          </View>
+                        ) : null}
+                        {powerScore !== null || statsGenerating ? (
+                          <Pressable
+                            onPress={() =>
+                              !statsGenerating &&
+                              router.push(
+                                `/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`,
+                              )
+                            }
+                            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                              [
+                                styles.compareBtn,
+                                hovered && !statsGenerating && (styles.compareBtnHover as object),
+                                statsGenerating && { opacity: 0.5 },
+                              ] as object
+                            }
+                          >
+                            <Ionicons name="git-compare-outline" size={14} color={COLORS.orange} />
+                            <Text style={styles.compareBtnText}>Compare</Text>
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    </View>
                   ) : null}
                 </View>
 
@@ -3356,9 +3360,14 @@ const styles = StyleSheet.create({
   },
   mStatsCard: { backgroundColor: 'rgba(41,60,67,0.05)', borderRadius: 16, padding: 16 },
   mStatRows: { gap: 14 },
-  mStatSectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  mStatSectionControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   mStatTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  mStatFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 14,
+  },
+  mStatFooterRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   mSection: { paddingTop: 18 },
   mSubBlock: { marginTop: 22 },
   // Padding for edge-to-edge rails (MovieStrip) so the featured card + decade
