@@ -54,14 +54,17 @@ export function useCategoryFilters(slug: CategorySlug | null) {
 
   const setFilter = useCallback(
     <K extends keyof CategoryFilters>(key: K, value: CategoryFilters[K]) => {
-      setFilters((prev) => {
-        let next: CategoryFilters = { ...prev, [key]: value };
-        if (key === 'sort' && value === 'power') next = { ...next, hasStats: true };
-        pushUrl(next);
-        return next;
-      });
+      // Derive `next` from the current filters and apply both setters as plain
+      // statements. Calling pushUrl (→ router.setParams) inside a setFilters
+      // *updater* runs it during React's render phase, which triggers a
+      // navigation update mid-render ("Cannot update a component while
+      // rendering a different component").
+      let next: CategoryFilters = { ...filters, [key]: value };
+      if (key === 'sort' && value === 'power') next = { ...next, hasStats: true };
+      setFilters(next);
+      pushUrl(next);
     },
-    [pushUrl],
+    [filters, pushUrl],
   );
 
   const reset = useCallback(() => {
