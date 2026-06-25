@@ -329,7 +329,7 @@ export default function WebCategoryScreen() {
     display: 'grid',
     gridTemplateColumns: isDesktop
       ? 'repeat(auto-fill, minmax(160px, 1fr))'
-      : 'repeat(auto-fill, minmax(140px, 1fr))',
+      : 'repeat(auto-fill, minmax(108px, 1fr))',
     gap: 12,
   };
 

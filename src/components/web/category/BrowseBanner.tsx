@@ -146,10 +146,10 @@ export function BrowseBanner({
           [
             styles.banner,
             {
-              minHeight: compact ? 210 : 300,
-              paddingBottom: compact ? 26 : 40,
+              minHeight: compact ? 224 : 332,
+              paddingBottom: compact ? 22 : 36,
               paddingHorizontal: compact ? 16 : 32,
-              paddingTop: compact ? 58 : 84,
+              paddingTop: compact ? 70 : 80,
               backgroundImage: `radial-gradient(125% 140% at 92% 4%, ${color} 0%, ${colorDark} 42%, #0b0d12 100%)`,
             },
           ] as object
@@ -192,12 +192,7 @@ export function BrowseBanner({
           <View ref={slotRef} style={detach ? (styles.hiddenSlot as object) : undefined}>
             {renderHeadline(false)}
           </View>
-          {stat ? (
-            <>
-              <View style={styles.rule} />
-              <Text style={styles.caption}>{stat}</Text>
-            </>
-          ) : null}
+          {stat ? <Text style={styles.caption}>{stat}</Text> : null}
         </View>
       </View>
 
@@ -215,7 +210,7 @@ const styles = StyleSheet.create({
   banner: {
     position: 'relative',
     overflow: 'hidden',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
   montage: {
     position: 'absolute',
@@ -247,20 +242,13 @@ const styles = StyleSheet.create({
     // Smooths the darken-on-park (text colour / logo silhouette).
     transition: 'color 200ms ease, text-shadow 200ms ease, filter 200ms ease',
   } as object,
-  rule: {
-    width: 64,
-    height: 2,
-    borderRadius: 2,
-    backgroundColor: 'rgba(245,235,220,0.4)',
-    marginTop: 24,
-    marginBottom: 14,
-  },
   caption: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
     letterSpacing: 2.4,
     textTransform: 'uppercase',
     color: COLORS.goldAccent,
+    marginTop: 18,
     textShadow: '0 1px 8px rgba(0,0,0,0.5)',
   } as object,
   title: {
