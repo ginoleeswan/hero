@@ -39,7 +39,6 @@ import { COLORS, SURFACE, SURFACE_GRADIENT, SEAM_COLOR } from '../../src/constan
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 import { BrowseBanner } from '../../src/components/web/category/BrowseBanner';
-import { BrandLogoView } from '../../src/components/PublisherBadge';
 
 // Publishers (marvel/dc/image/dark-horse) are NOT here — they're universes now,
 // served by /universe/[slug] (this same screen, resolved via the registry).
@@ -202,6 +201,8 @@ export default function WebCategoryScreen() {
   const [counts, setCounts] = useState<FacetCounts | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Drives the banner collapsing to a compact sticky bar on scroll (desktop).
+  const [collapsed, setCollapsed] = useState(false);
   const currentPage = useRef(0);
   const hasMore = useRef(true);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -293,6 +294,7 @@ export default function WebCategoryScreen() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onScroll = () => {
+      setCollapsed(window.scrollY > 40);
       const distanceFromBottom =
         document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
       if (distanceFromBottom < 400 && hasMore.current && !loadingMoreRef.current) {
@@ -356,27 +358,21 @@ export default function WebCategoryScreen() {
             .map((h) => h.portrait_url ?? h.image_url)
             .filter((u): u is string => !!u)}
           compact={!isDesktop}
+          sticky={isDesktop}
+          collapsed={isDesktop && collapsed}
         />
       )}
       {/* ── Sticky header ────────────────────────────────────────────────────────
           The faction banner is the identity for universes, so on desktop it
           fully replaces this bar; on mobile we keep it for the search + filter
           controls but drop its (duplicate) title row. */}
-      <View style={[styles.header, { paddingHorizontal: contentPad }] as object}>
-        <View style={styles.headerInner}>
-          {/* Row 1 — identity. Universes show their (small) logo here so it
-              persists, sticky, once the banner scrolls away; categories show the
-              title. */}
-          <View style={styles.identityRow}>
-            {brand?.logo && brand.badgeSize ? (
-              <BrandLogoView
-                logo={brand.logo}
-                width={Math.min(28 * (brand.badgeSize.width / brand.badgeSize.height), 150)}
-                height={28}
-                tint={brand.logoTint}
-              />
-            ) : (
-              <>
+      {(!isDesktop || !brand) && (
+        <View style={[styles.header, { paddingHorizontal: contentPad }] as object}>
+          <View style={styles.headerInner}>
+            {/* Row 1 — identity (categories only; universes use the banner, which
+                collapses to a sticky bar on scroll). */}
+            {!brand && (
+              <View style={styles.identityRow}>
                 <View style={styles.accentBar} />
                 <Text
                   style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object}
@@ -389,9 +385,8 @@ export default function WebCategoryScreen() {
                     {description}
                   </Text>
                 ) : null}
-              </>
+              </View>
             )}
-          </View>
 
             {/* Row 2 — mobile only: full-width search + Filters button.
               On desktop the search lives inside the filter rail. */}
@@ -453,6 +448,7 @@ export default function WebCategoryScreen() {
             )}
           </View>
         </View>
+      )}
 
       {/* ── Mobile-only active-filters strip ──────────────────────────────────
           On desktop the rail is always visible and already shows active state,

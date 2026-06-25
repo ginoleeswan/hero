@@ -3,13 +3,14 @@ import { Image } from 'expo-image';
 import { COLORS } from '../../../constants/colors';
 import { BrandLogoView } from '../../PublisherBadge';
 import type { BrandLogo } from '../../../constants/publishers';
+import { TOPBAR_HEIGHT } from '../TopBar';
 
 /**
- * Editorial "set banner" for a universe browse page: a brand-coloured stage
- * (colour glow → near-black) with a faded roster montage on the right, and a
- * masthead block on the left — the universe LOGO big as the headline, a hairline
- * rule, then the stat line as a caption. Falls back to the name in the display
- * face when there's no logo. Web-only (RN-web style escape hatches).
+ * Editorial "set banner" for a universe browse page. A brand-coloured stage
+ * (colour glow → near-black) with a faded roster montage on the right and a
+ * masthead block — the universe LOGO big, a hairline rule, then the stat line.
+ * When `sticky`, it pins to the top and `collapsed` (driven by scroll) shrinks
+ * it to a compact bar that lives above the grid/filters. Web-only.
  */
 export function BrowseBanner({
   title,
@@ -22,6 +23,8 @@ export function BrowseBanner({
   logoTint,
   heroImageUrls,
   compact,
+  sticky,
+  collapsed,
 }: {
   title: string;
   color: string;
@@ -31,9 +34,10 @@ export function BrowseBanner({
   logo?: BrandLogo;
   badgeSize?: { width: number; height: number };
   logoTint?: string;
-  /** Top roster portraits, shown as a faded montage filling the right side. */
   heroImageUrls?: string[];
   compact?: boolean;
+  sticky?: boolean;
+  collapsed?: boolean;
 }) {
   const stat =
     total > 0
@@ -42,8 +46,6 @@ export function BrowseBanner({
         }`
       : '';
 
-  // Logo as the editorial centerpiece — sized big by height, capped on width so
-  // wide wordmarks (Nintendo) and square marks (DC) both read large.
   let logoNode: React.ReactNode = null;
   if (logo && badgeSize) {
     const aspect = badgeSize.width / badgeSize.height;
@@ -57,26 +59,38 @@ export function BrowseBanner({
     logoNode = <BrandLogoView logo={logo} width={w} height={h} tint={logoTint} />;
   }
 
+  const expandedMin = compact ? 210 : 300;
+
   return (
     <View
       style={
         [
           styles.banner,
-          compact && (styles.bannerCompact as object),
           {
+            minHeight: collapsed ? COLLAPSED_H : expandedMin,
+            paddingBottom: collapsed ? 14 : compact ? 26 : 40,
+            paddingHorizontal: compact ? 16 : 32,
+            paddingTop: compact ? 58 : 84,
             backgroundImage: `radial-gradient(125% 140% at 92% 4%, ${color} 0%, ${colorDark} 42%, #0b0d12 100%)`,
           },
+          sticky && (styles.sticky as object),
+          styles.transition as object,
         ] as object
       }
     >
-      {/* Faded roster montage filling the right — previews who's inside without
-          one hard crop. Sits under the gradient-tinted scrim + the content. */}
+      {/* Faded roster montage filling the right; fades out as the banner collapses. */}
       {heroImageUrls && heroImageUrls.length > 0 ? (
         <View
-          style={[
-            styles.montage,
-            { maskImage: 'linear-gradient(to left, #000 30%, transparent 100%)' } as object,
-          ]}
+          style={
+            [
+              styles.montage,
+              styles.transition as object,
+              {
+                opacity: collapsed ? 0 : 0.5,
+                maskImage: 'linear-gradient(to left, #000 30%, transparent 100%)',
+              },
+            ] as object
+          }
           pointerEvents="none"
         >
           {heroImageUrls.slice(0, 6).map((uri, i) => (
@@ -90,7 +104,6 @@ export function BrowseBanner({
           ))}
         </View>
       ) : null}
-      {/* Brand-tinted scrim over the montage so the colour and type stay strong. */}
       <View
         style={
           [
@@ -103,42 +116,60 @@ export function BrowseBanner({
         pointerEvents="none"
       />
       <View style={styles.content}>
-        {logoNode ?? (
-          <Text
-            style={[styles.title, compact && (styles.titleCompact as object)] as object}
-            numberOfLines={2}
-          >
-            {title}
-          </Text>
-        )}
+        {/* Headline (logo or name) scales down, anchored bottom-left, on collapse. */}
+        <View
+          style={
+            [
+              styles.transition as object,
+              {
+                transform: [{ scale: collapsed ? 0.42 : 1 }],
+                transformOrigin: 'left bottom',
+              },
+            ] as object
+          }
+        >
+          {logoNode ?? (
+            <Text
+              style={[styles.title, compact && (styles.titleCompact as object)] as object}
+              numberOfLines={2}
+            >
+              {title}
+            </Text>
+          )}
+        </View>
         {stat ? (
-          <>
+          <View
+            style={
+              [
+                styles.meta,
+                styles.transition as object,
+                { opacity: collapsed ? 0 : 1, maxHeight: collapsed ? 0 : 80 },
+              ] as object
+            }
+          >
             <View style={styles.rule} />
             <Text style={styles.caption}>{stat}</Text>
-          </>
+          </View>
         ) : null}
       </View>
     </View>
   );
 }
 
+// Compact height must keep the (scaled) logo below the floating top bar.
+const COLLAPSED_H = TOPBAR_HEIGHT + 64;
+
 const styles = StyleSheet.create({
   banner: {
     position: 'relative',
     overflow: 'hidden',
-    minHeight: 300,
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingTop: 84,
-    paddingBottom: 40,
+    justifyContent: 'flex-end',
   },
-  bannerCompact: {
-    minHeight: 210,
-    paddingHorizontal: 16,
-    paddingTop: 58,
-    paddingBottom: 26,
-  },
-  // Faded portrait montage occupying the right; fades into the gradient at left.
+  sticky: { position: 'sticky', top: 0, zIndex: 30 } as object,
+  transition: {
+    transition:
+      'min-height 320ms ease, padding-bottom 320ms ease, opacity 240ms ease, max-height 320ms ease, transform 320ms ease',
+  } as object,
   montage: {
     position: 'absolute',
     top: 0,
@@ -148,7 +179,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'stretch',
-    opacity: 0.5,
   },
   montageTile: {
     height: '100%' as unknown as number,
@@ -156,15 +186,9 @@ const styles = StyleSheet.create({
     marginLeft: -28,
     borderRadius: 4,
   },
-  montageScrim: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
+  montageScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   content: { position: 'relative', maxWidth: 820, alignItems: 'flex-start' },
-  // Hairline under the logo — an editorial divider into the caption.
+  meta: { alignItems: 'flex-start', overflow: 'hidden' },
   rule: {
     width: 64,
     height: 2,
