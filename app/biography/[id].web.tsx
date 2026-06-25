@@ -8,6 +8,7 @@ import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
+import { SeoHead } from '../../src/components/web/SeoHead';
 import type { Tables } from '../../src/types/database.generated';
 
 type HeroRow = Tables<'heroes'>;
@@ -382,6 +383,15 @@ export default function WebBiographyScreen() {
 
   return (
     <View style={styles.scroll}>
+      <SeoHead
+        title={hero ? `${hero.name} — Biography | Mythique` : 'Biography | Mythique'}
+        description={
+          hero
+            ? `Read the full biography of ${hero.name}: origin, powers, and story on Mythique.`
+            : 'Full hero biography on Mythique.'
+        }
+        path={`/biography/${id}`}
+      />
       {/* Cinematic identity header — echoes the character page stage */}
       <View style={styles.identityHeader}>
         {/* Ambient blurred portrait backdrop for depth */}

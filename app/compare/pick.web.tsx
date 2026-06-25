@@ -31,6 +31,7 @@ import { withViewTransition } from '../../src/lib/viewTransition';
 import { getTeamRoster } from '../../src/lib/db/teams';
 import { MAX_SIDE, type PickedHero } from '../../src/lib/battleBuilderState';
 import type { PublisherFilter, AlignmentFilter } from '../../src/lib/db/heroes/types';
+import { SeoHead } from '../../src/components/web/SeoHead';
 
 function useDebounce<T>(value: T, delay: number): T {
   const [d, setD] = useState(value);
@@ -283,6 +284,11 @@ export default function BattleBuilderWeb() {
 
   return (
     <View style={s.root}>
+      <SeoHead
+        title="Build Your Battle | Mythique Arena"
+        description="Pick any two heroes or villains and find out who would win. Build custom matchups in the Mythique Arena."
+        path="/compare/pick"
+      />
       <ScrollView
         style={s.scroll}
         contentContainerStyle={[

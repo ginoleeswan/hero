@@ -36,6 +36,7 @@ import { COLORS, SURFACE } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import Svg, { Path } from 'react-native-svg';
+import { SeoHead } from '../../src/components/web/SeoHead';
 
 const KO_FI_URL = 'https://ko-fi.com/glstudio';
 
@@ -491,6 +492,12 @@ export default function WebProfileScreen() {
   if (isMobile) {
     return (
       <View style={mob.root}>
+        <SeoHead
+          title="My Profile | Mythique"
+          description="Manage your Mythique profile, favourites, and battle history."
+          path="/profile"
+          noindex
+        />
         <View style={mob.scroll}>
           {/* ── Cover banner ── */}
           <Pressable
@@ -952,6 +959,12 @@ export default function WebProfileScreen() {
   // ── Desktop layout ────────────────────────────────────────────────────────────
   return (
     <View style={desk.root}>
+      <SeoHead
+        title="My Profile | Mythique"
+        description="Manage your Mythique profile, favourites, and battle history."
+        path="/profile"
+        noindex
+      />
       {/* Cover — full browser width */}
       <Pressable
         onPress={pickAndUploadCover}
