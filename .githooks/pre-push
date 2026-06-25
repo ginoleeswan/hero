@@ -6,7 +6,16 @@
 set -e
 
 echo "pre-push: format:check + typecheck + lint…"
-yarn format:check
-yarn typecheck
-yarn lint
+# Use yarn if its node_modules state is available; fall back to npm run in
+# environments where yarn can't install (e.g. CI containers with no registry
+# access) — the checks are identical either way.
+if yarn format:check 2>/dev/null; then
+  yarn typecheck
+  yarn lint
+else
+  echo "pre-push: yarn unavailable, falling back to npm run"
+  npm run format:check
+  npm run typecheck
+  npm run lint
+fi
 echo "pre-push: ok"
