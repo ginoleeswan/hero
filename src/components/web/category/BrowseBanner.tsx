@@ -5,10 +5,11 @@ import { BrandLogoView } from '../../PublisherBadge';
 import type { BrandLogo } from '../../../constants/publishers';
 
 /**
- * Faction "set banner" for a universe browse page: a brand-coloured stage
- * (colour glow → near-black, so any logo reads on the dark side) with the
- * universe LOGO as the headline and a stat line. Falls back to the name in the
- * display face when there's no logo. Web-only (RN-web style escape hatches).
+ * Editorial "set banner" for a universe browse page: a brand-coloured stage
+ * (colour glow → near-black) with a faded roster montage on the right, and a
+ * masthead block on the left — the universe LOGO big as the headline, a hairline
+ * rule, then the stat line as a caption. Falls back to the name in the display
+ * face when there's no logo. Web-only (RN-web style escape hatches).
  */
 export function BrowseBanner({
   title,
@@ -41,12 +42,13 @@ export function BrowseBanner({
         }`
       : '';
 
-  // Logo sized to a comfortable cap; the dark left side guarantees contrast.
+  // Logo as the editorial centerpiece — sized big by height, capped on width so
+  // wide wordmarks (Nintendo) and square marks (DC) both read large.
   let logoNode: React.ReactNode = null;
   if (logo && badgeSize) {
     const aspect = badgeSize.width / badgeSize.height;
-    const maxW = compact ? 230 : 380;
-    let h = compact ? 42 : 68;
+    const maxW = compact ? 250 : 440;
+    let h = compact ? 62 : 122;
     let w = h * aspect;
     if (w > maxW) {
       w = maxW;
@@ -62,7 +64,7 @@ export function BrowseBanner({
           styles.banner,
           compact && (styles.bannerCompact as object),
           {
-            backgroundImage: `radial-gradient(125% 135% at 90% 6%, ${color} 0%, ${colorDark} 40%, #0b0d12 100%)`,
+            backgroundImage: `radial-gradient(125% 140% at 92% 4%, ${color} 0%, ${colorDark} 42%, #0b0d12 100%)`,
           },
         ] as object
       }
@@ -73,7 +75,7 @@ export function BrowseBanner({
         <View
           style={[
             styles.montage,
-            { maskImage: 'linear-gradient(to left, #000 32%, transparent 100%)' } as object,
+            { maskImage: 'linear-gradient(to left, #000 30%, transparent 100%)' } as object,
           ]}
           pointerEvents="none"
         >
@@ -94,14 +96,13 @@ export function BrowseBanner({
           [
             styles.montageScrim,
             {
-              backgroundImage: `linear-gradient(90deg, ${colorDark} 8%, transparent 60%), radial-gradient(120% 120% at 90% 6%, ${color}66 0%, transparent 55%)`,
+              backgroundImage: `linear-gradient(90deg, ${colorDark} 6%, transparent 58%), radial-gradient(120% 120% at 90% 4%, ${color}55 0%, transparent 55%)`,
             },
           ] as object
         }
         pointerEvents="none"
       />
       <View style={styles.content}>
-        {stat ? <Text style={styles.eyebrow}>{stat}</Text> : null}
         {logoNode ?? (
           <Text
             style={[styles.title, compact && (styles.titleCompact as object)] as object}
@@ -110,6 +111,12 @@ export function BrowseBanner({
             {title}
           </Text>
         )}
+        {stat ? (
+          <>
+            <View style={styles.rule} />
+            <Text style={styles.caption}>{stat}</Text>
+          </>
+        ) : null}
       </View>
     </View>
   );
@@ -119,17 +126,17 @@ const styles = StyleSheet.create({
   banner: {
     position: 'relative',
     overflow: 'hidden',
-    minHeight: 230,
-    justifyContent: 'flex-end',
+    minHeight: 300,
+    justifyContent: 'center',
     paddingHorizontal: 32,
-    paddingTop: 64,
-    paddingBottom: 30,
+    paddingTop: 84,
+    paddingBottom: 40,
   },
   bannerCompact: {
-    minHeight: 170,
+    minHeight: 210,
     paddingHorizontal: 16,
-    paddingTop: 40,
-    paddingBottom: 22,
+    paddingTop: 58,
+    paddingBottom: 26,
   },
   // Faded portrait montage occupying the right; fades into the gradient at left.
   montage: {
@@ -137,7 +144,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     right: 0,
-    width: '64%' as unknown as number,
+    width: '62%' as unknown as number,
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'stretch',
@@ -156,22 +163,30 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  content: { position: 'relative', maxWidth: 760, alignItems: 'flex-start' },
-  eyebrow: {
+  content: { position: 'relative', maxWidth: 820, alignItems: 'flex-start' },
+  // Hairline under the logo — an editorial divider into the caption.
+  rule: {
+    width: 64,
+    height: 2,
+    borderRadius: 2,
+    backgroundColor: 'rgba(245,235,220,0.4)',
+    marginTop: 24,
+    marginBottom: 14,
+  },
+  caption: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
     letterSpacing: 2.4,
     textTransform: 'uppercase',
     color: COLORS.goldAccent,
-    marginBottom: 14,
     textShadow: '0 1px 8px rgba(0,0,0,0.5)',
   } as object,
   title: {
     fontFamily: 'Flame-Regular',
-    fontSize: 64,
-    lineHeight: 64,
+    fontSize: 72,
+    lineHeight: 72,
     color: COLORS.beige,
     textShadow: '0 2px 18px rgba(0,0,0,0.5)',
   } as object,
-  titleCompact: { fontSize: 40, lineHeight: 42 },
+  titleCompact: { fontSize: 42, lineHeight: 44 },
 });
