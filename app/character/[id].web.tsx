@@ -22,7 +22,6 @@ import { heroImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
-import { StatBar } from '../../src/components/web/StatBar';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { groupTitlesByMedia } from '../../src/lib/db/titles';
 import { PortrayedBySection } from '../../src/components/PortrayedBySection';
@@ -1774,25 +1773,63 @@ export default function WebCharacterScreen() {
                         stats={stats}
                         onPick={(field, current) => setEditTarget({ field, current })}
                       />
-                    ) : statsGenerating ? (
-                      STAT_CONFIG.map(({ key }) => (
-                        <SkeletonBlock
-                          key={key}
-                          opacity={skeletonOpacity}
-                          height={10}
-                          borderRadius={5}
-                          style={{ marginBottom: 14 }}
-                        />
-                      ))
                     ) : (
-                      STAT_CONFIG.map(({ key, label, color }) => (
-                        <StatBar
-                          key={key}
-                          label={label}
-                          value={(stats.powerstats as Record<string, string>)[key] ?? '0'}
-                          color={color}
-                        />
-                      ))
+                      <View style={styles.mStatRows}>
+                        {[STAT_CONFIG.slice(0, 3), STAT_CONFIG.slice(3)].map((row, ri) => (
+                          <View key={ri} style={styles.statBand}>
+                            {row.map(({ key, label, color }) => {
+                              if (statsGenerating) {
+                                return (
+                                  <View key={key} style={styles.bandCell}>
+                                    <SkeletonBlock
+                                      opacity={skeletonOpacity}
+                                      width={42}
+                                      height={28}
+                                      borderRadius={5}
+                                    />
+                                    <SkeletonBlock
+                                      opacity={skeletonOpacity}
+                                      width="70%"
+                                      height={5}
+                                      borderRadius={3}
+                                    />
+                                    <SkeletonBlock
+                                      opacity={skeletonOpacity}
+                                      width={28}
+                                      height={9}
+                                      borderRadius={3}
+                                    />
+                                  </View>
+                                );
+                              }
+                              const raw = parseInt(
+                                (stats.powerstats as Record<string, string>)[key] ?? '0',
+                                10,
+                              );
+                              const fill = isNaN(raw) ? 0 : Math.min(raw, 100);
+                              return (
+                                <View key={key} style={styles.bandCell}>
+                                  <Text style={[styles.bandVal, { color }]}>
+                                    {isNaN(raw) ? '—' : raw}
+                                  </Text>
+                                  <View style={styles.bandTrack}>
+                                    <View
+                                      style={[
+                                        styles.bandFill,
+                                        {
+                                          width: `${fill}%` as unknown as number,
+                                          backgroundColor: color,
+                                        },
+                                      ]}
+                                    />
+                                  </View>
+                                  <Text style={styles.bandLabel}>{label}</Text>
+                                </View>
+                              );
+                            })}
+                          </View>
+                        ))}
+                      </View>
                     )}
                     {percentile != null && percentile > 0 ? (
                       <Text style={styles.percentileText}>
@@ -3322,6 +3359,7 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   mStatsCard: { backgroundColor: 'rgba(41,60,67,0.05)', borderRadius: 16, padding: 16 },
+  mStatRows: { gap: 14 },
   mSection: { paddingTop: 18 },
   mSubBlock: { marginTop: 22 },
   // Padding for edge-to-edge rails (MovieStrip) so the featured card + decade
