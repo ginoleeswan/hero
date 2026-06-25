@@ -423,6 +423,7 @@ function Flank({
       </View>
       <Pressable
         onPress={onActivate}
+        aria-label={`Select hero for ${label} team`}
         style={[
           fs.render,
           { width: renderW, height: renderH, borderColor: tint },
@@ -456,6 +457,7 @@ function Flank({
               <Pressable
                 key={hero.id}
                 onPress={() => onRemove(hero.id)}
+                aria-label={`Remove ${hero.name} from team`}
                 style={[fs.chip, { width: chipSize, height: chipSize, borderColor: tint }]}
               >
                 {uri ? (

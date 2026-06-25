@@ -78,6 +78,7 @@ export function HeroImage({
       recyclingKey={recyclingKey ?? String(id)}
       transition={transition ?? 200}
       blurRadius={blurRadius}
+      accessibilityLabel={name}
       onLoad={onLoad}
       onError={() => setErrored(true)}
     />
