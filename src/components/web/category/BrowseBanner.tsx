@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { COLORS } from '../../../constants/colors';
@@ -6,15 +6,20 @@ import { BrandLogoView } from '../../PublisherBadge';
 import type { BrandLogo } from '../../../constants/publishers';
 import { TOPBAR_HEIGHT } from '../TopBar';
 
+const BEIGE = COLORS.beige;
+const NAVY = COLORS.navy;
+const TITLE_SHADOW = '0 2px 18px rgba(0,0,0,0.5)';
+
 /**
  * Editorial "set banner" for a universe browse page. A brand-coloured stage
- * (colour glow → near-black) with a faded roster montage on the right and a
- * masthead — the universe LOGO big, a hairline rule, then the stat line.
+ * with a faded roster montage on the right and a masthead headline (the logo,
+ * or the name in the display face).
  *
  * Choreography (`sticky`, desktop): the banner scrolls away normally, but the
- * LOGO detaches — it tracks its in-flow slot until it reaches the top, then
- * pins just below the nav and scales down, ending alone above the grid/filters.
- * Driven imperatively from scroll (no re-renders), so it's smooth.
+ * HEADLINE detaches — it tracks its in-flow slot, then pins below the nav and
+ * scales down, ending above the grid/filters. A text headline also fades from
+ * beige to navy as it parks so it reads on the beige canvas. Driven imperatively
+ * from scroll (no re-renders). Web-only.
  */
 export function BrowseBanner({
   title,
@@ -61,11 +66,14 @@ export function BrowseBanner({
     }
   }
   const hasLogo = logoW > 0;
-  // The detaching logo only applies on desktop (sticky) when there's a logo.
-  const detach = !!sticky && hasLogo;
+  // Light logos (white-tinted) vanish on the beige canvas once parked, so they
+  // get darkened to a silhouette on park — same idea as recolouring text to navy.
+  const lightLogo = hasLogo && (logoTint === '#FFFFFF' || logoTint === '#fff');
+  const detach = !!sticky; // desktop: detach the headline (logo or text) on scroll
 
   const slotRef = useRef<View>(null);
-  const logoRef = useRef<View>(null);
+  const overlayRef = useRef<View>(null);
+  const textRef = useRef<Text>(null);
 
   useLayoutEffect(() => {
     if (!detach || typeof window === 'undefined') return;
@@ -75,19 +83,28 @@ export function BrowseBanner({
     const place = () => {
       raf = 0;
       const slot = slotRef.current as unknown as HTMLElement | null;
-      const lg = logoRef.current as unknown as HTMLElement | null;
-      if (!slot || !lg) return;
+      const ov = overlayRef.current as unknown as HTMLElement | null;
+      if (!slot || !ov) return;
       const r = slot.getBoundingClientRect();
       if (docTop == null) docTop = r.top + window.scrollY;
       const slotTop = docTop - window.scrollY;
       const top = Math.max(slotTop, PARK);
       const range = Math.max(docTop - PARK, 1);
       const p = Math.min(Math.max(window.scrollY / range, 0), 1);
-      const scale = 1 - p * (1 - 0.42);
-      lg.style.top = `${top}px`;
-      lg.style.left = `${r.left}px`;
-      lg.style.transform = `scale(${scale})`;
-      lg.style.opacity = '1';
+      ov.style.top = `${top}px`;
+      ov.style.left = `${r.left}px`;
+      ov.style.width = `${r.width}px`;
+      ov.style.transform = `scale(${1 - p * (1 - 0.42)})`;
+      ov.style.opacity = '1';
+      // Headline darkens as it settles onto the beige canvas: text → navy, a
+      // light logo → silhouette (so white marks like Image don't disappear).
+      const onPaper = p > 0.7;
+      const txt = textRef.current as unknown as HTMLElement | null;
+      if (txt) {
+        txt.style.color = onPaper ? NAVY : BEIGE;
+        txt.style.textShadow = onPaper ? 'none' : TITLE_SHADOW;
+      }
+      if (lightLogo) ov.style.filter = onPaper ? 'brightness(0)' : 'none';
     };
     const onScroll = () => {
       if (!raf) raf = window.requestAnimationFrame(place);
@@ -104,11 +121,23 @@ export function BrowseBanner({
       window.removeEventListener('resize', onResize);
       if (raf) window.cancelAnimationFrame(raf);
     };
-  }, [detach, logoW, logoH]);
+  }, [detach, logoW, logoH, title, lightLogo]);
 
-  const logoEl = hasLogo ? (
-    <BrandLogoView logo={logo!} width={logoW} height={logoH} tint={logoTint} />
-  ) : null;
+  // The headline, built twice: once invisibly in the slot (reserves layout),
+  // once in the fixed overlay (the visible, animated copy). For text the overlay
+  // copy gets the ref so it can recolour.
+  const renderHeadline = (overlay: boolean) =>
+    hasLogo ? (
+      <BrandLogoView logo={logo!} width={logoW} height={logoH} tint={logoTint} />
+    ) : (
+      <Text
+        ref={overlay ? textRef : undefined}
+        style={[styles.title, compact && (styles.titleCompact as object)] as object}
+        numberOfLines={2}
+      >
+        {title}
+      </Text>
+    );
 
   return (
     <>
@@ -159,21 +188,10 @@ export function BrowseBanner({
           pointerEvents="none"
         />
         <View style={styles.content}>
-          {/* Logo slot — reserves the logo's space so the caption sits right.
-              When detaching, the real logo is the fixed overlay below and this
-              slot is invisible; otherwise the logo renders inline here. */}
-          {hasLogo ? (
-            <View ref={slotRef} style={{ width: logoW, height: logoH }}>
-              {detach ? null : logoEl}
-            </View>
-          ) : (
-            <Text
-              style={[styles.title, compact && (styles.titleCompact as object)] as object}
-              numberOfLines={2}
-            >
-              {title}
-            </Text>
-          )}
+          {/* Slot reserves the headline's space; invisible when it detaches. */}
+          <View ref={slotRef} style={detach ? (styles.hiddenSlot as object) : undefined}>
+            {renderHeadline(false)}
+          </View>
           {stat ? (
             <>
               <View style={styles.rule} />
@@ -183,10 +201,10 @@ export function BrowseBanner({
         </View>
       </View>
 
-      {/* Detaching logo: fixed overlay that tracks the slot, then parks + scales. */}
+      {/* Detaching headline: fixed overlay that tracks the slot, parks + scales. */}
       {detach ? (
-        <View ref={logoRef} style={styles.detachLogo as object} pointerEvents="none">
-          {logoEl}
+        <View ref={overlayRef} style={styles.detach as object} pointerEvents="none">
+          {renderHeadline(true)}
         </View>
       ) : null}
     </>
@@ -218,13 +236,16 @@ const styles = StyleSheet.create({
   },
   montageScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   content: { position: 'relative', maxWidth: 820, alignItems: 'flex-start' },
-  detachLogo: {
+  hiddenSlot: { opacity: 0 },
+  detach: {
     position: 'fixed',
     top: 0,
     left: 0,
     transformOrigin: 'top left',
     opacity: 0,
     zIndex: 20,
+    // Smooths the darken-on-park (text colour / logo silhouette).
+    transition: 'color 200ms ease, text-shadow 200ms ease, filter 200ms ease',
   } as object,
   rule: {
     width: 64,
@@ -245,9 +266,10 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Flame-Regular',
     fontSize: 72,
-    lineHeight: 72,
-    color: COLORS.beige,
-    textShadow: '0 2px 18px rgba(0,0,0,0.5)',
+    lineHeight: 84,
+    color: BEIGE,
+    textShadow: TITLE_SHADOW,
+    transition: 'color 200ms ease, text-shadow 200ms ease',
   } as object,
-  titleCompact: { fontSize: 42, lineHeight: 44 },
+  titleCompact: { fontSize: 42, lineHeight: 52 },
 });
