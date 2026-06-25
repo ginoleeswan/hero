@@ -345,91 +345,101 @@ export default function WebCategoryScreen() {
           title={title}
           color={brand.color}
           colorDark={brand.colorDark}
-          heroImageUrl={heroes[0]?.portrait_url ?? heroes[0]?.image_url ?? null}
           total={total}
           leadName={heroes[0]?.name}
+          logo={brand.logo}
+          badgeSize={brand.badgeSize}
+          logoTint={brand.logoTint}
           compact={!isDesktop}
         />
       )}
-      {/* ── Sticky header — navy ─────────────────────────────────────────────── */}
-      <View style={[styles.header, { paddingHorizontal: contentPad }] as object}>
-        <View style={styles.headerInner}>
-          {/* Row 1 — identity: accent · title · description · count */}
-          <View style={styles.identityRow}>
-            <View style={styles.accentBar} />
-            <Text
-              style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object}
-              numberOfLines={1}
-            >
-              {title}
-            </Text>
-            {isDesktop && isWide && description ? (
-              <Text style={styles.descriptionInline as object} numberOfLines={1}>
-                {description}
-              </Text>
-            ) : null}
-          </View>
-
-          {/* Row 2 — mobile only: full-width search + Filters button.
-              On desktop the search lives inside the filter rail. */}
-          {!isDesktop && (
-            <View style={[styles.controlsRow, styles.controlsRowMobile as object] as object}>
-              <View
-                style={
-                  [
-                    styles.searchBar,
-                    styles.searchBarMobile as object,
-                    searchFocused && (styles.searchBarFocused as object),
-                  ] as object
-                }
-              >
-                <Ionicons name="search" size={16} color={COLORS.orange} />
-                <TextInput
-                  style={styles.searchInput as object}
-                  placeholder={`Search ${title.toLowerCase()}…`}
-                  placeholderTextColor="rgba(245,235,220,0.3)"
-                  value={filters.search}
-                  onChangeText={(t) => setFilter('search', t)}
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setSearchFocused(false)}
-                  autoCorrect={false}
-                />
-              </View>
-
-              <Pressable
-                onPress={() => setSheetOpen(true)}
-                style={
-                  [
-                    styles.filterBtn,
-                    activeChips.length > 0 && (styles.filterBtnActive as object),
-                  ] as object
-                }
-              >
-                <Ionicons
-                  name="options-outline"
-                  size={16}
-                  color={activeChips.length > 0 ? COLORS.orange : COLORS.beige}
-                />
+      {/* ── Sticky header ────────────────────────────────────────────────────────
+          The faction banner is the identity for universes, so on desktop it
+          fully replaces this bar; on mobile we keep it for the search + filter
+          controls but drop its (duplicate) title row. */}
+      {(!isDesktop || !brand) && (
+        <View style={[styles.header, { paddingHorizontal: contentPad }] as object}>
+          <View style={styles.headerInner}>
+            {/* Row 1 — identity: accent · title · description. Hidden when the
+                banner already shows the title. */}
+            {!brand && (
+              <View style={styles.identityRow}>
+                <View style={styles.accentBar} />
                 <Text
+                  style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object}
+                  numberOfLines={1}
+                >
+                  {title}
+                </Text>
+                {isDesktop && isWide && description ? (
+                  <Text style={styles.descriptionInline as object} numberOfLines={1}>
+                    {description}
+                  </Text>
+                ) : null}
+              </View>
+            )}
+
+            {/* Row 2 — mobile only: full-width search + Filters button.
+              On desktop the search lives inside the filter rail. */}
+            {!isDesktop && (
+              <View style={[styles.controlsRow, styles.controlsRowMobile as object] as object}>
+                <View
                   style={
                     [
-                      styles.filterBtnText,
-                      activeChips.length > 0 && (styles.filterBtnTextActive as object),
+                      styles.searchBar,
+                      styles.searchBarMobile as object,
+                      searchFocused && (styles.searchBarFocused as object),
                     ] as object
                   }
                 >
-                  Filters
-                </Text>
-                {activeChips.length > 0 && (
-                  <View style={styles.filterBadge as object}>
-                    <Text style={styles.filterBadgeText as object}>{activeChips.length}</Text>
-                  </View>
-                )}
-              </Pressable>
-            </View>
-          )}
+                  <Ionicons name="search" size={16} color={COLORS.orange} />
+                  <TextInput
+                    style={styles.searchInput as object}
+                    placeholder={`Search ${title.toLowerCase()}…`}
+                    placeholderTextColor="rgba(245,235,220,0.3)"
+                    value={filters.search}
+                    onChangeText={(t) => setFilter('search', t)}
+                    onFocus={() => setSearchFocused(true)}
+                    onBlur={() => setSearchFocused(false)}
+                    autoCorrect={false}
+                  />
+                </View>
+
+                <Pressable
+                  onPress={() => setSheetOpen(true)}
+                  style={
+                    [
+                      styles.filterBtn,
+                      activeChips.length > 0 && (styles.filterBtnActive as object),
+                    ] as object
+                  }
+                >
+                  <Ionicons
+                    name="options-outline"
+                    size={16}
+                    color={activeChips.length > 0 ? COLORS.orange : COLORS.beige}
+                  />
+                  <Text
+                    style={
+                      [
+                        styles.filterBtnText,
+                        activeChips.length > 0 && (styles.filterBtnTextActive as object),
+                      ] as object
+                    }
+                  >
+                    Filters
+                  </Text>
+                  {activeChips.length > 0 && (
+                    <View style={styles.filterBadge as object}>
+                      <Text style={styles.filterBadgeText as object}>{activeChips.length}</Text>
+                    </View>
+                  )}
+                </Pressable>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
+      )}
 
       {/* ── Mobile-only active-filters strip ──────────────────────────────────
           On desktop the rail is always visible and already shows active state,
