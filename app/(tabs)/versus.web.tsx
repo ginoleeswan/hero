@@ -17,6 +17,7 @@ import { ShowdownStage } from '../../src/components/web/versus/ShowdownStage';
 import { MatchupRow } from '../../src/components/web/versus/MatchupRow';
 import { MatchupCard } from '../../src/components/web/versus/MatchupCard';
 import { useDiscoveryRows } from '../../src/hooks/useDiscoveryRows';
+import { SeoHead } from '../../src/components/web/SeoHead';
 
 export default function VersusHubWeb() {
   // The page ends on the dark deck section — keep the canvas deep-navy so it
@@ -57,6 +58,11 @@ export default function VersusHubWeb() {
 
   return (
     <View style={s.root}>
+      <SeoHead
+        title="The Arena — Superhero Battles & Matchups | Mythique"
+        description="Vote on today's superhero showdown, build your own who-would-win battles, and explore the greatest rivalries in comics. Mythique's Arena."
+        path="/versus"
+      />
       {/* ── Navy game-lobby stage ── */}
       <View style={[s.stage, { paddingHorizontal: contentPad }] as object}>
         <View style={s.stageInner}>

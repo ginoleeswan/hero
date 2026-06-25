@@ -15,6 +15,7 @@ import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import { HeroLogo } from '../../src/components/web/HeroLogo';
 import { Image } from 'expo-image';
+import { SeoHead } from '../../src/components/web/SeoHead';
 
 const LOGIN_HERO = require('../../assets/images/login-hero.webp');
 const HERO_ASPECT = LOGIN_HERO.width / LOGIN_HERO.height;
@@ -172,6 +173,12 @@ export default function WebForgotPasswordScreen() {
   if (!isDesktop) {
     return (
       <View style={styles.mobileRoot}>
+        <SeoHead
+          title="Reset Password | Mythique"
+          description="Reset your Mythique account password."
+          path="/(auth)/forgot-password"
+          noindex
+        />
         <View style={styles.mobileIllustrationWrap}>
           <Image
             source={LOGIN_HERO}
@@ -193,6 +200,12 @@ export default function WebForgotPasswordScreen() {
   // ── Desktop split panel ────────────────────────────────────────────────
   return (
     <View style={styles.desktopRoot}>
+      <SeoHead
+        title="Reset Password | Mythique"
+        description="Reset your Mythique account password."
+        path="/(auth)/forgot-password"
+        noindex
+      />
       <View style={styles.brand}>
         <View style={styles.brandDots as object} pointerEvents="none" />
         <View style={styles.brandGlow as object} pointerEvents="none" />

@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SocialDivider } from '../../src/components/ui/SocialDivider';
 import { GoogleSignInButton } from '../../src/components/ui/GoogleSignInButton';
 import { AppleSignInButton } from '../../src/components/ui/AppleSignInButton';
+import { SeoHead } from '../../src/components/web/SeoHead';
 
 const LOGIN_HERO = require('../../assets/images/login-hero.webp');
 const HERO_ASPECT = LOGIN_HERO.width / LOGIN_HERO.height;
@@ -208,6 +209,12 @@ export default function WebSignupScreen() {
   if (!isDesktop) {
     return (
       <View style={styles.mobileRoot}>
+        <SeoHead
+          title="Create Account | Mythique"
+          description="Join Mythique to track your favourite heroes and vote on battles."
+          path="/(auth)/signup"
+          noindex
+        />
         {/* Hero illustration — navy top region with headroom above the head. */}
         <View style={styles.mobileIllustrationWrap}>
           <Image
@@ -234,6 +241,12 @@ export default function WebSignupScreen() {
   // ── Desktop layout: split panel ────────────────────────────────────────
   return (
     <View style={styles.desktopRoot}>
+      <SeoHead
+        title="Create Account | Mythique"
+        description="Join Mythique to track your favourite heroes and vote on battles."
+        path="/(auth)/signup"
+        noindex
+      />
       {/* Left brand panel */}
       <View style={styles.brand}>
         <View style={styles.brandDots as object} pointerEvents="none" />
