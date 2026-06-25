@@ -383,7 +383,18 @@ export default function WebCategoryScreen() {
           fully replaces this bar; on mobile we keep it for the search + filter
           controls but drop its (duplicate) title row. */}
       {(!isDesktop || !brand) && (
-        <View style={[styles.header, { paddingHorizontal: contentPad }] as object}>
+        <View
+          style={
+            [
+              styles.header,
+              { paddingHorizontal: contentPad },
+              // Universe (mobile): the banner is the masthead, so this bar is just
+              // controls — drop the big nav-clearance top padding and stick it
+              // right below the nav instead, so it isn't an awkward tall slab.
+              brand ? (styles.headerControlsOnly as object) : undefined,
+            ] as object
+          }
+        >
           <View style={styles.headerInner}>
             {/* Row 1 — identity (categories only; universes use the banner, which
                 collapses to a sticky bar on scroll). */}
@@ -628,6 +639,9 @@ const styles = StyleSheet.create({
     zIndex: 40,
     boxShadow: '0 14px 28px -20px rgba(0,0,0,0.7)',
   } as object,
+  // Universe mobile: controls-only bar — no nav-clearance padding (the banner
+  // sits above it), and it sticks just below the floating nav.
+  headerControlsOnly: { paddingTop: 14, paddingBottom: 14, top: TOPBAR_HEIGHT } as object,
   headerInner: {
     maxWidth: 1680,
     width: '100%',
