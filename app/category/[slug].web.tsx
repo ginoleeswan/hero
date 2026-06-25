@@ -38,6 +38,7 @@ import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS, SURFACE, SURFACE_GRADIENT, SEAM_COLOR } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
+import { BrowseBanner } from '../../src/components/web/category/BrowseBanner';
 
 // Publishers (marvel/dc/image/dark-horse) are NOT here — they're universes now,
 // served by /universe/[slug] (this same screen, resolved via the registry).
@@ -336,6 +337,20 @@ export default function WebCategoryScreen() {
         description={description ?? `Browse ${title} on Mythique — the superhero encyclopedia.`}
         path={categorySlug ? `/category/${slug}` : `/universe/${slug}`}
       />
+      {/* Faction banner — registered universes get a brand-coloured stage with
+          their marquee hero. Categories + unregistered universes keep the slim
+          header below. Scrolls away; the sticky header carries the title after. */}
+      {brand && (
+        <BrowseBanner
+          title={title}
+          color={brand.color}
+          colorDark={brand.colorDark}
+          heroImageUrl={heroes[0]?.portrait_url ?? heroes[0]?.image_url ?? null}
+          total={total}
+          leadName={heroes[0]?.name}
+          compact={!isDesktop}
+        />
+      )}
       {/* ── Sticky header — navy ─────────────────────────────────────────────── */}
       <View style={[styles.header, { paddingHorizontal: contentPad }] as object}>
         <View style={styles.headerInner}>
