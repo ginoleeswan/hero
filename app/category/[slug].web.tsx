@@ -39,6 +39,7 @@ import { COLORS, SURFACE, SURFACE_GRADIENT, SEAM_COLOR } from '../../src/constan
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 import { BrowseBanner } from '../../src/components/web/category/BrowseBanner';
+import { BrandLogoView } from '../../src/components/PublisherBadge';
 
 // Publishers (marvel/dc/image/dark-horse) are NOT here — they're universes now,
 // served by /universe/[slug] (this same screen, resolved via the registry).
@@ -305,7 +306,7 @@ export default function WebCategoryScreen() {
   const gridStyle = {
     display: 'grid',
     gridTemplateColumns: isDesktop
-      ? 'repeat(auto-fill, minmax(180px, 1fr))'
+      ? 'repeat(auto-fill, minmax(160px, 1fr))'
       : 'repeat(auto-fill, minmax(140px, 1fr))',
     gap: 12,
   };
@@ -361,13 +362,21 @@ export default function WebCategoryScreen() {
           The faction banner is the identity for universes, so on desktop it
           fully replaces this bar; on mobile we keep it for the search + filter
           controls but drop its (duplicate) title row. */}
-      {(!isDesktop || !brand) && (
-        <View style={[styles.header, { paddingHorizontal: contentPad }] as object}>
-          <View style={styles.headerInner}>
-            {/* Row 1 — identity: accent · title · description. Hidden when the
-                banner already shows the title. */}
-            {!brand && (
-              <View style={styles.identityRow}>
+      <View style={[styles.header, { paddingHorizontal: contentPad }] as object}>
+        <View style={styles.headerInner}>
+          {/* Row 1 — identity. Universes show their (small) logo here so it
+              persists, sticky, once the banner scrolls away; categories show the
+              title. */}
+          <View style={styles.identityRow}>
+            {brand?.logo && brand.badgeSize ? (
+              <BrandLogoView
+                logo={brand.logo}
+                width={Math.min(28 * (brand.badgeSize.width / brand.badgeSize.height), 150)}
+                height={28}
+                tint={brand.logoTint}
+              />
+            ) : (
+              <>
                 <View style={styles.accentBar} />
                 <Text
                   style={[styles.title, isDesktop && (styles.titleDesktop as object)] as object}
@@ -380,8 +389,9 @@ export default function WebCategoryScreen() {
                     {description}
                   </Text>
                 ) : null}
-              </View>
+              </>
             )}
+          </View>
 
             {/* Row 2 — mobile only: full-width search + Filters button.
               On desktop the search lives inside the filter rail. */}
@@ -443,7 +453,6 @@ export default function WebCategoryScreen() {
             )}
           </View>
         </View>
-      )}
 
       {/* ── Mobile-only active-filters strip ──────────────────────────────────
           On desktop the rail is always visible and already shows active state,
@@ -598,7 +607,7 @@ const styles = StyleSheet.create({
     boxShadow: '0 14px 28px -20px rgba(0,0,0,0.7)',
   } as object,
   headerInner: {
-    maxWidth: 1200,
+    maxWidth: 1680,
     width: '100%',
     alignSelf: 'center',
     gap: 14,
@@ -740,7 +749,7 @@ const styles = StyleSheet.create({
   contentRow: {
     flexDirection: 'row',
     gap: 24,
-    maxWidth: 1200,
+    maxWidth: 1680,
     width: '100%',
     alignSelf: 'center',
     flexGrow: 1,
