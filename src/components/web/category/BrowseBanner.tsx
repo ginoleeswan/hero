@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { COLORS } from '../../../constants/colors';
 import { BrandLogoView } from '../../PublisherBadge';
 import type { BrandLogo } from '../../../constants/publishers';
@@ -18,6 +19,7 @@ export function BrowseBanner({
   logo,
   badgeSize,
   logoTint,
+  heroImageUrls,
   compact,
 }: {
   title: string;
@@ -28,6 +30,8 @@ export function BrowseBanner({
   logo?: BrandLogo;
   badgeSize?: { width: number; height: number };
   logoTint?: string;
+  /** Top roster portraits, shown as a faded montage filling the right side. */
+  heroImageUrls?: string[];
   compact?: boolean;
 }) {
   const stat =
@@ -63,6 +67,33 @@ export function BrowseBanner({
         ] as object
       }
     >
+      {/* Faded roster montage filling the right — previews who's inside without
+          one hard crop. Sits under the gradient-tinted scrim + the content. */}
+      {heroImageUrls && heroImageUrls.length > 0 ? (
+        <View style={styles.montage as object} pointerEvents="none">
+          {heroImageUrls.slice(0, 6).map((uri, i) => (
+            <Image
+              key={`${uri}-${i}`}
+              source={{ uri }}
+              contentFit="cover"
+              contentPosition="top"
+              style={styles.montageTile as object}
+            />
+          ))}
+        </View>
+      ) : null}
+      {/* Brand-tinted scrim over the montage so the colour and type stay strong. */}
+      <View
+        style={
+          [
+            styles.montageScrim,
+            {
+              backgroundImage: `linear-gradient(90deg, ${colorDark} 8%, transparent 60%), radial-gradient(120% 120% at 90% 6%, ${color}66 0%, transparent 55%)`,
+            },
+          ] as object
+        }
+        pointerEvents="none"
+      />
       <View style={styles.content}>
         {stat ? <Text style={styles.eyebrow}>{stat}</Text> : null}
         {logoNode ?? (
@@ -94,6 +125,32 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingBottom: 22,
   },
+  // Faded portrait montage occupying the right; fades into the gradient at left.
+  montage: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    width: '64%',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'stretch',
+    opacity: 0.5,
+    maskImage: 'linear-gradient(to left, #000 32%, transparent 100%)',
+  } as object,
+  montageTile: {
+    height: '100%',
+    aspectRatio: '3 / 4',
+    marginLeft: -28,
+    borderRadius: 4,
+  } as object,
+  montageScrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  } as object,
   content: { position: 'relative', maxWidth: 760, alignItems: 'flex-start' },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',

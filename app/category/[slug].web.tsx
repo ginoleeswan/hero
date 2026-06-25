@@ -350,6 +350,10 @@ export default function WebCategoryScreen() {
           logo={brand.logo}
           badgeSize={brand.badgeSize}
           logoTint={brand.logoTint}
+          heroImageUrls={heroes
+            .slice(0, 6)
+            .map((h) => h.portrait_url ?? h.image_url)
+            .filter((u): u is string => !!u)}
           compact={!isDesktop}
         />
       )}
