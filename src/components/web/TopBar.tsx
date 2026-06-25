@@ -369,7 +369,7 @@ const c = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  logo: { flex: 1 } as object,
+  logo: { flex: 1, cursor: 'pointer' } as object,
   center: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   right: {
     flex: 1,

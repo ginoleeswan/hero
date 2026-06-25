@@ -68,7 +68,7 @@ export function FilterSheet({
         <View style={s.header}>
           <Text style={s.title as object}>Filters</Text>
           {hasActive && (
-            <Pressable onPress={onReset}>
+            <Pressable onPress={onReset} style={s.clearBtn as object}>
               <Text style={s.clearText as object}>Clear all</Text>
             </Pressable>
           )}
@@ -143,6 +143,7 @@ const s = StyleSheet.create({
   } as object,
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.beige } as object,
+  clearBtn: { cursor: 'pointer' } as object,
   clearText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,

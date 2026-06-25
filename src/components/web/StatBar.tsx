@@ -56,5 +56,6 @@ const styles = StyleSheet.create({
   fill: {
     height: '100%' as unknown as number,
     borderRadius: 4,
-  },
+    transition: 'width 600ms cubic-bezier(0.4,0,0.2,1)',
+  } as object,
 });
