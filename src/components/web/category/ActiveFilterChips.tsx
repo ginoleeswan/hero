@@ -54,7 +54,7 @@ export function ActiveFilterChips({ slug, filters, setFilter }: Props) {
 
 const s = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, alignItems: 'center' } as object,
-  // Tuned for the light beige canvas: solid surface, navy text, orange accent.
+  // Tuned for the dark gallery canvas: translucent orange surface, beige text.
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -76,7 +76,7 @@ const s = StyleSheet.create({
   text: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12.5,
-    color: COLORS.navy,
+    color: COLORS.beige,
     letterSpacing: 0.2,
   } as object,
 });

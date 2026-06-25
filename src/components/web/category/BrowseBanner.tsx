@@ -57,7 +57,7 @@ export function BrowseBanner({
   let logoH = 0;
   if (logo && badgeSize) {
     const aspect = badgeSize.width / badgeSize.height;
-    const maxW = compact ? 250 : 440;
+    const maxW = compact ? 268 : 440;
     logoH = compact ? 62 : 122;
     logoW = logoH * aspect;
     if (logoW > maxW) {
@@ -146,47 +146,56 @@ export function BrowseBanner({
           [
             styles.banner,
             {
-              minHeight: compact ? 224 : 332,
-              paddingBottom: compact ? 22 : 36,
+              minHeight: compact ? 170 : 332,
+              paddingBottom: compact ? 40 : 36,
               paddingHorizontal: compact ? 16 : 32,
-              paddingTop: compact ? 70 : 80,
-              backgroundImage: `radial-gradient(125% 140% at 92% 4%, ${color} 0%, ${colorDark} 42%, #0b0d12 100%)`,
+              paddingTop: compact ? 66 : 80,
+              // Brand radial wash, then a linear fade over the lower half to the
+              // exact canvas ink — the banner's bottom dissolves seamlessly into
+              // the gallery floor with no visible edge (top layer drawn first).
+              backgroundImage: `linear-gradient(180deg, transparent 48%, ${COLORS.deepNavy} 100%), radial-gradient(125% 140% at 92% 4%, ${color} 0%, ${colorDark} 45%, ${COLORS.deepNavy} 100%)`,
             },
           ] as object
         }
       >
-        {heroImageUrls && heroImageUrls.length > 0 ? (
-          <View
-            style={
-              [
-                styles.montage,
-                { maskImage: 'linear-gradient(to left, #000 30%, transparent 100%)' },
-              ] as object
-            }
-            pointerEvents="none"
-          >
-            {heroImageUrls.slice(0, 6).map((uri, i) => (
-              <Image
-                key={`${uri}-${i}`}
-                source={{ uri }}
-                contentFit="cover"
-                contentPosition="top"
-                style={styles.montageTile}
-              />
-            ))}
-          </View>
+        {/* Roster montage — DESKTOP ONLY: a faded row of portraits on the right.
+            On mobile the brand gradient + glowing edge carry the masthead; a
+            blurred portrait wash there just muddied the brand colour (the lead
+            hero's hue fights the brand's), so it's dropped. */}
+        {!compact && heroImageUrls && heroImageUrls.length > 0 ? (
+          <>
+            <View
+              style={
+                [
+                  styles.montage,
+                  { maskImage: 'linear-gradient(to left, #000 30%, transparent 100%)' },
+                ] as object
+              }
+              pointerEvents="none"
+            >
+              {heroImageUrls.slice(0, 6).map((uri, i) => (
+                <Image
+                  key={`${uri}-${i}`}
+                  source={{ uri }}
+                  contentFit="cover"
+                  contentPosition="top"
+                  style={styles.montageTile}
+                />
+              ))}
+            </View>
+            <View
+              style={
+                [
+                  styles.montageScrim,
+                  {
+                    backgroundImage: `linear-gradient(90deg, ${colorDark} 6%, transparent 58%), radial-gradient(120% 120% at 90% 4%, ${color}55 0%, transparent 55%)`,
+                  },
+                ] as object
+              }
+              pointerEvents="none"
+            />
+          </>
         ) : null}
-        <View
-          style={
-            [
-              styles.montageScrim,
-              {
-                backgroundImage: `linear-gradient(90deg, ${colorDark} 6%, transparent 58%), radial-gradient(120% 120% at 90% 4%, ${color}55 0%, transparent 55%)`,
-              },
-            ] as object
-          }
-          pointerEvents="none"
-        />
         <View style={styles.content}>
           {/* Slot reserves the headline's space; invisible when it detaches. */}
           <View ref={slotRef} style={detach ? (styles.hiddenSlot as object) : undefined}>
@@ -211,7 +220,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     justifyContent: 'center',
-  },
+  } as object,
   montage: {
     position: 'absolute',
     top: 0,
@@ -248,7 +257,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2.4,
     textTransform: 'uppercase',
     color: COLORS.goldAccent,
-    marginTop: 18,
+    marginTop: 12,
     textShadow: '0 1px 8px rgba(0,0,0,0.5)',
   } as object,
   title: {

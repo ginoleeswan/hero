@@ -155,8 +155,11 @@ const card = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    // Scrim in canvas ink (not navy): every card's lower third melts toward the
+    // gallery floor, giving the grid a shared footer that quiets the per-card art
+    // colours (the "patchwork") and keeps the white name legible over any art.
     backgroundImage:
-      'linear-gradient(to top, rgba(29,45,51,0.97) 0%, rgba(29,45,51,0.08) 55%, transparent 100%)',
+      'linear-gradient(to top, rgba(11,24,32,0.98) 0%, rgba(11,24,32,0.6) 26%, rgba(11,24,32,0.12) 48%, transparent 70%)',
   } as object,
   bottom: { position: 'absolute', bottom: 12, left: 12, right: 12 },
   name: {
@@ -308,7 +311,9 @@ export default function WebCategoryScreen() {
   // Ink-topped over a beige canvas, declared together. The grid bleeds
   // edge-to-edge under the iOS Safari toolbar and reads continuous to the bottom
   // past the 100dvh fold.
-  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
+  // Browse pages are a dark "gallery": deepNavy canvas so the colourful cards
+  // (navy `band`) lift off it — universe + category alike. Other pages stay beige.
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
   // Infinite load now rides the document scroll (the nested ScrollView is gone),
   // so measure against the window rather than a ScrollView's nativeEvent.
@@ -330,7 +335,7 @@ export default function WebCategoryScreen() {
     gridTemplateColumns: isDesktop
       ? 'repeat(auto-fill, minmax(160px, 1fr))'
       : 'repeat(auto-fill, minmax(108px, 1fr))',
-    gap: 12,
+    gap: 15,
   };
 
   const contentPad = isDesktop ? 32 : 16;
@@ -431,8 +436,8 @@ export default function WebCategoryScreen() {
                   <Ionicons name="search" size={16} color={COLORS.orange} />
                   <TextInput
                     style={styles.searchInput as object}
-                    placeholder={`Search ${title.toLowerCase()}…`}
-                    placeholderTextColor="rgba(245,235,220,0.3)"
+                    placeholder={`Search ${title}…`}
+                    placeholderTextColor="rgba(245,235,220,0.4)"
                     value={filters.search}
                     onChangeText={(t) => setFilter('search', t)}
                     onFocus={() => setSearchFocused(true)}
@@ -508,6 +513,9 @@ export default function WebCategoryScreen() {
           [
             styles.contentRow,
             { paddingHorizontal: contentPad },
+            // Mobile: pull the grid up close under the floating deck (the deck's
+            // own paddingBottom already gives a little air).
+            !isDesktop ? ({ paddingTop: 6 } as object) : undefined,
             // Guarantee enough scroll room for the logo to fully detach + park,
             // even when the grid and filter rail are both short.
             brand && isDesktop ? ({ minHeight: 'calc(100vh - 60px)' } as object) : undefined,
@@ -523,7 +531,7 @@ export default function WebCategoryScreen() {
             onReset={reset}
             hasActive={activeChips.length > 0}
             activeCount={activeChips.length}
-            searchPlaceholder={`Search ${title.toLowerCase()}…`}
+            searchPlaceholder={`Search ${title}…`}
           />
         )}
         <View style={styles.contentMain as object}>
@@ -619,7 +627,10 @@ export default function WebCategoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.beige },
+  // Grows with content (not `flex: 1`, which clamps to one viewport and breaks
+  // the sticky controls bar past the first screen of scroll — the document, not
+  // this View, is the scroller).
+  root: { minHeight: '100vh' as unknown as number, backgroundColor: SURFACE.ink },
 
   // ── Sticky header (ink→navy gradient) ───────────────────────────────────────
   header: {
@@ -639,9 +650,23 @@ const styles = StyleSheet.create({
     zIndex: 40,
     boxShadow: '0 14px 28px -20px rgba(0,0,0,0.7)',
   } as object,
-  // Universe mobile: controls-only bar — no nav-clearance padding (the banner
-  // sits above it), and it sticks just below the floating nav.
-  headerControlsOnly: { paddingTop: 14, paddingBottom: 14, top: TOPBAR_HEIGHT } as object,
+  // Universe mobile: controls-only bar — fully transparent (the chips carry the
+  // navy glass). Sticks just below the floating nav so it reads as one surface.
+  headerControlsOnly: {
+    paddingTop: 6,
+    paddingBottom: 4,
+    // Pinned position: tuck right under the nav (a touch higher than its own
+    // height) so the deck sits close to the topbar on scroll, not floating below.
+    top: TOPBAR_HEIGHT - 8,
+    // Pull the controls up so they straddle the banner's bottom edge (floating
+    // control deck) and the grid shifts up with them. Negative margin only sets
+    // the resting position — sticky still pins the bar at the nav on scroll.
+    marginTop: -34,
+    backgroundColor: 'transparent',
+    backgroundImage: 'none',
+    borderBottomWidth: 0,
+    boxShadow: 'none',
+  } as object,
   headerInner: {
     maxWidth: 1680,
     width: '100%',
@@ -690,25 +715,27 @@ const styles = StyleSheet.create({
     gap: 8,
   } as object,
 
-  // Mobile search bar — frosted beige tint, matching the Search page's field.
+  // Mobile search bar — navy glass chip (frosted dark) with light text, so it
+  // belongs with the dark topbar while floating over the cards on scroll.
   searchBar: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    backgroundColor: 'rgba(245,235,220,0.10)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(41,60,67,0.6)',
+    backdropFilter: 'blur(18px) saturate(140%)',
+    WebkitBackdropFilter: 'blur(18px) saturate(140%)',
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.20)',
-    boxShadow: 'inset 0 1px 0 rgba(245,235,220,0.10)',
+    borderColor: 'rgba(245,235,220,0.18)',
     paddingHorizontal: 13,
     height: 46,
     transition: 'border-color 160ms ease, box-shadow 160ms ease',
   } as object,
   searchBarMobile: { flex: 1, minHeight: 46 } as object,
   searchBarFocused: {
-    borderColor: 'rgba(231,115,51,0.7)',
-    boxShadow: '0 0 0 3px rgba(231,115,51,0.12)',
+    borderColor: 'rgba(231,115,51,0.8)',
+    boxShadow: '0 0 0 3px rgba(231,115,51,0.16)',
   } as object,
   searchInput: {
     flex: 1,
@@ -719,23 +746,25 @@ const styles = StyleSheet.create({
     outlineWidth: 0,
   } as object,
 
-  // Mobile "Filters" button (opens the bottom sheet)
+  // Mobile "Filters" button (opens the bottom sheet) — matching navy glass.
   filterBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
     height: 44,
     paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: 'rgba(245,235,220,0.06)',
+    borderRadius: 24,
+    backgroundColor: 'rgba(41,60,67,0.6)',
+    backdropFilter: 'blur(18px) saturate(140%)',
+    WebkitBackdropFilter: 'blur(18px) saturate(140%)',
     borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.16)',
+    borderColor: 'rgba(245,235,220,0.18)',
     cursor: 'pointer',
     flexShrink: 0,
   } as object,
   filterBtnActive: {
-    backgroundColor: 'rgba(231,115,51,0.14)',
-    borderColor: 'rgba(231,115,51,0.5)',
+    backgroundColor: 'rgba(231,115,51,0.2)',
+    borderColor: 'rgba(231,115,51,0.6)',
   } as object,
   filterBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: COLORS.beige } as object,
   filterBtnTextActive: { color: COLORS.orange } as object,
@@ -799,7 +828,7 @@ const styles = StyleSheet.create({
   // grid spills below the fold. gridWrap is a plain View (flexShrink:0), so it
   // grows to the full grid height — its beige fill backs every card, including
   // the ones that scroll under the toolbar, instead of the navy body showing.
-  gridWrap: { paddingTop: 16, backgroundColor: COLORS.beige } as object,
+  gridWrap: { paddingTop: 4, backgroundColor: SURFACE.ink } as object,
 
   // ── Desktop results bar (count + active filters, above the grid) ─────────────
   resultsBar: {
@@ -812,7 +841,7 @@ const styles = StyleSheet.create({
   resultsCount: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
-    color: 'rgba(29,45,51,0.55)',
+    color: 'rgba(245,235,220,0.55)',
     letterSpacing: 0.2,
   } as object,
   resultsBarFilters: {

@@ -277,7 +277,7 @@ const c = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 24px)`,
+    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 10px)`,
   } as object,
   // Dark scrim: holds near-solid navy across the status-bar inset + icon row (so
   // it fuses with the navy status-bar cover and bright hero art never bleeds
@@ -330,29 +330,30 @@ const c = StyleSheet.create({
     backdropFilter: 'blur(13px) saturate(140%)',
     WebkitBackdropFilter: 'blur(13px) saturate(140%)',
     maskImage:
-      'linear-gradient(to bottom, #000 0%, #000 24%, rgba(0,0,0,0.72) 40%, rgba(0,0,0,0.4) 52%, rgba(0,0,0,0.14) 64%, transparent 74%)',
+      'linear-gradient(to bottom, #000 0%, #000 20%, rgba(0,0,0,0.7) 34%, rgba(0,0,0,0.36) 46%, rgba(0,0,0,0.12) 56%, transparent 64%)',
     WebkitMaskImage:
-      'linear-gradient(to bottom, #000 0%, #000 24%, rgba(0,0,0,0.72) 40%, rgba(0,0,0,0.4) 52%, rgba(0,0,0,0.14) 64%, transparent 74%)',
+      'linear-gradient(to bottom, #000 0%, #000 20%, rgba(0,0,0,0.7) 34%, rgba(0,0,0,0.36) 46%, rgba(0,0,0,0.12) 56%, transparent 64%)',
   } as object,
   frostMobSoft: {
     backdropFilter: 'blur(5px)',
     WebkitBackdropFilter: 'blur(5px)',
     maskImage:
-      'linear-gradient(to bottom, #000 0%, #000 32%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.28) 66%, rgba(0,0,0,0.08) 78%, transparent 86%)',
+      'linear-gradient(to bottom, #000 0%, #000 28%, rgba(0,0,0,0.58) 44%, rgba(0,0,0,0.26) 58%, rgba(0,0,0,0.07) 68%, transparent 76%)',
     WebkitMaskImage:
-      'linear-gradient(to bottom, #000 0%, #000 32%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.28) 66%, rgba(0,0,0,0.08) 78%, transparent 86%)',
+      'linear-gradient(to bottom, #000 0%, #000 28%, rgba(0,0,0,0.58) 44%, rgba(0,0,0,0.26) 58%, rgba(0,0,0,0.07) 68%, transparent 76%)',
   } as object,
-  // Mobile dark-topped pages: opaque deep-navy caps the very top (fused with the
-  // navy status-bar cover), then eases MONOTONICALLY to transparent by ~90%. The
-  // solid cap is kept short (12%) and the opacity steps are evenly spaced for a
-  // balanced, gradual descent — no steep early drop. It still runs
-  // a touch longer than the blur (which bows out ~75%, around the bar's bottom
-  // edge): the colour-only tail carries the last of the ramp without frosting. Continuous gentle slope (no flat-then-drop
-  // knee) and pure navy throughout — a warm hue would smear on the dark versus
-  // pages, whereas the faint low-opacity navy tail stays subtle on any canvas.
+  // Mobile dark-topped pages: deep-navy spread across the WHOLE bar, weighted high
+  // and feathered out by the bar's bottom edge so it never bleeds onto the content
+  // below. Stops are anchored to the bar's geometry (env() + px) so the treatment
+  // tracks the real bar on any inset: near-solid navy holds through the status-bar
+  // inset and upper icon row, then a continuous multi-stop ramp (no knee) eases it
+  // to transparent ~4px past the bar's bottom edge (inset + 68px). Every stop is
+  // px-anchored off the inset, so the whole effect stays tight to the bar. Pure
+  // navy throughout — a warm hue would smear on the dark versus pages, whereas the
+  // faint low-opacity navy tail stays subtle on any canvas.
   frostTintDark: {
     backgroundImage:
-      'linear-gradient(to bottom, #0b1820 0%, #0b1820 12%, rgba(11,24,32,0.85) 22%, rgba(11,24,32,0.70) 32%, rgba(11,24,32,0.56) 42%, rgba(11,24,32,0.43) 52%, rgba(11,24,32,0.31) 62%, rgba(11,24,32,0.20) 72%, rgba(11,24,32,0.11) 80%, rgba(11,24,32,0.05) 85%, transparent 90%)',
+      'linear-gradient(to bottom, #0b1820 0, #0b1820 calc(env(safe-area-inset-top) + 22px), rgba(11,24,32,0.78) calc(env(safe-area-inset-top) + 38px), rgba(11,24,32,0.46) calc(env(safe-area-inset-top) + 52px), rgba(11,24,32,0.16) calc(env(safe-area-inset-top) + 62px), transparent calc(env(safe-area-inset-top) + 68px))',
   } as object,
   // Desktop: the original light frosted glass — no system status bar to match.
   frostTintDesktop: {
