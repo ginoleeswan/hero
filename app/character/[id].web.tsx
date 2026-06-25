@@ -1715,128 +1715,124 @@ export default function WebCharacterScreen() {
 
                 {/* Power Stats */}
                 <View style={styles.mBlock}>
-                  <View style={styles.mStatsCard}>
-                    <View style={styles.statCardHeader}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
-                        {data.statsSource === 'ai' ? (
-                          <View style={styles.aiBadge}>
-                            <Text style={styles.aiBadgeText}>AI</Text>
-                          </View>
-                        ) : null}
-                        {isAdmin ? (
-                          <WebSectionPencil
-                            active={statsEditing}
-                            onPress={() => setStatsEditing((s) => !s)}
-                            label="Edit power stats"
-                          />
-                        ) : null}
-                      </View>
-                      <View style={styles.statHeaderRight}>
-                        {powerScore !== null || statsGenerating ? (
-                          <Pressable
-                            onPress={() =>
-                              !statsGenerating &&
-                              router.push(
-                                `/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`,
-                              )
-                            }
-                            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                              [
-                                styles.compareBtn,
-                                hovered && !statsGenerating && (styles.compareBtnHover as object),
-                                statsGenerating && { opacity: 0.5 },
-                              ] as object
-                            }
-                          >
-                            <Ionicons name="git-compare-outline" size={14} color={COLORS.orange} />
-                            <Text style={styles.compareBtnText}>Compare</Text>
-                          </Pressable>
-                        ) : null}
-                        {powerScore !== null ? (
-                          <View
-                            style={[
-                              styles.powerScorePill,
-                              { backgroundColor: alignmentColor + '22' },
-                            ]}
-                          >
-                            <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
-                              {powerScore}
-                            </Text>
-                          </View>
-                        ) : null}
-                      </View>
+                  <View style={styles.mStatSectionHead}>
+                    <View style={styles.mStatSectionControls}>
+                      {powerScore !== null || statsGenerating ? (
+                        <Pressable
+                          onPress={() =>
+                            !statsGenerating &&
+                            router.push(
+                              `/compare/${id}/pick?name=${encodeURIComponent(stats.name)}`,
+                            )
+                          }
+                          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                            [
+                              styles.compareBtn,
+                              hovered && !statsGenerating && (styles.compareBtnHover as object),
+                              statsGenerating && { opacity: 0.5 },
+                            ] as object
+                          }
+                        >
+                          <Ionicons name="git-compare-outline" size={14} color={COLORS.orange} />
+                          <Text style={styles.compareBtnText}>Compare</Text>
+                        </Pressable>
+                      ) : null}
+                      {powerScore !== null ? (
+                        <View
+                          style={[
+                            styles.powerScorePill,
+                            { backgroundColor: alignmentColor + '22' },
+                          ]}
+                        >
+                          <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
+                            {powerScore}
+                          </Text>
+                        </View>
+                      ) : null}
                     </View>
-                    <View style={styles.cardDivider} />
-                    {isAdmin && statsEditing ? (
-                      <StatEditList
-                        stats={stats}
-                        onPick={(field, current) => setEditTarget({ field, current })}
-                      />
-                    ) : (
-                      <View style={styles.mStatRows}>
-                        {[STAT_CONFIG.slice(0, 3), STAT_CONFIG.slice(3)].map((row, ri) => (
-                          <View key={ri} style={styles.statBand}>
-                            {row.map(({ key, label, color }) => {
-                              if (statsGenerating) {
-                                return (
-                                  <View key={key} style={styles.bandCell}>
-                                    <SkeletonBlock
-                                      opacity={skeletonOpacity}
-                                      width={42}
-                                      height={28}
-                                      borderRadius={5}
-                                    />
-                                    <SkeletonBlock
-                                      opacity={skeletonOpacity}
-                                      width="70%"
-                                      height={5}
-                                      borderRadius={3}
-                                    />
-                                    <SkeletonBlock
-                                      opacity={skeletonOpacity}
-                                      width={28}
-                                      height={9}
-                                      borderRadius={3}
-                                    />
-                                  </View>
-                                );
-                              }
-                              const raw = parseInt(
-                                (stats.powerstats as Record<string, string>)[key] ?? '0',
-                                10,
-                              );
-                              const fill = isNaN(raw) ? 0 : Math.min(raw, 100);
+                    <View style={styles.mStatTitleRow}>
+                      <Text style={styles.mSectionTitle}>Power Stats</Text>
+                      {data.statsSource === 'ai' ? (
+                        <View style={styles.aiBadge}>
+                          <Text style={styles.aiBadgeText}>AI</Text>
+                        </View>
+                      ) : null}
+                      {isAdmin ? (
+                        <WebSectionPencil
+                          active={statsEditing}
+                          onPress={() => setStatsEditing((s) => !s)}
+                          label="Edit power stats"
+                        />
+                      ) : null}
+                    </View>
+                  </View>
+                  <View style={styles.mSectionDivider} />
+                  {isAdmin && statsEditing ? (
+                    <StatEditList
+                      stats={stats}
+                      onPick={(field, current) => setEditTarget({ field, current })}
+                    />
+                  ) : (
+                    <View style={styles.mStatRows}>
+                      {[STAT_CONFIG.slice(0, 3), STAT_CONFIG.slice(3)].map((row, ri) => (
+                        <View key={ri} style={styles.statBand}>
+                          {row.map(({ key, label, color }) => {
+                            if (statsGenerating) {
                               return (
                                 <View key={key} style={styles.bandCell}>
-                                  <Text style={[styles.bandVal, { color }]}>
-                                    {isNaN(raw) ? '—' : raw}
-                                  </Text>
-                                  <View style={styles.bandTrack}>
-                                    <View
-                                      style={[
-                                        styles.bandFill,
-                                        {
-                                          width: `${fill}%` as unknown as number,
-                                          backgroundColor: color,
-                                        },
-                                      ]}
-                                    />
-                                  </View>
-                                  <Text style={styles.bandLabel}>{label}</Text>
+                                  <SkeletonBlock
+                                    opacity={skeletonOpacity}
+                                    width={42}
+                                    height={28}
+                                    borderRadius={5}
+                                  />
+                                  <SkeletonBlock
+                                    opacity={skeletonOpacity}
+                                    width="70%"
+                                    height={5}
+                                    borderRadius={3}
+                                  />
+                                  <SkeletonBlock
+                                    opacity={skeletonOpacity}
+                                    width={28}
+                                    height={9}
+                                    borderRadius={3}
+                                  />
                                 </View>
                               );
-                            })}
-                          </View>
-                        ))}
-                      </View>
-                    )}
-                    {percentile != null && percentile > 0 ? (
-                      <Text style={styles.percentileText}>
-                        Stronger than {percentile}% of heroes
-                      </Text>
-                    ) : null}
-                  </View>
+                            }
+                            const raw = parseInt(
+                              (stats.powerstats as Record<string, string>)[key] ?? '0',
+                              10,
+                            );
+                            const fill = isNaN(raw) ? 0 : Math.min(raw, 100);
+                            return (
+                              <View key={key} style={styles.bandCell}>
+                                <Text style={[styles.bandVal, { color }]}>
+                                  {isNaN(raw) ? '—' : raw}
+                                </Text>
+                                <View style={styles.bandTrack}>
+                                  <View
+                                    style={[
+                                      styles.bandFill,
+                                      {
+                                        width: `${fill}%` as unknown as number,
+                                        backgroundColor: color,
+                                      },
+                                    ]}
+                                  />
+                                </View>
+                                <Text style={styles.bandLabel}>{label}</Text>
+                              </View>
+                            );
+                          })}
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  {percentile != null && percentile > 0 ? (
+                    <Text style={styles.percentileText}>Stronger than {percentile}% of heroes</Text>
+                  ) : null}
                 </View>
 
                 {/* Abilities — power explainers fold in as the "Decoded" strip */}
@@ -3360,6 +3356,9 @@ const styles = StyleSheet.create({
   },
   mStatsCard: { backgroundColor: 'rgba(41,60,67,0.05)', borderRadius: 16, padding: 16 },
   mStatRows: { gap: 14 },
+  mStatSectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  mStatSectionControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  mStatTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   mSection: { paddingTop: 18 },
   mSubBlock: { marginTop: 22 },
   // Padding for edge-to-edge rails (MovieStrip) so the featured card + decade
