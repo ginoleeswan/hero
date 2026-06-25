@@ -70,14 +70,20 @@ export function BrowseBanner({
       {/* Faded roster montage filling the right — previews who's inside without
           one hard crop. Sits under the gradient-tinted scrim + the content. */}
       {heroImageUrls && heroImageUrls.length > 0 ? (
-        <View style={styles.montage as object} pointerEvents="none">
+        <View
+          style={[
+            styles.montage,
+            { maskImage: 'linear-gradient(to left, #000 32%, transparent 100%)' } as object,
+          ]}
+          pointerEvents="none"
+        >
           {heroImageUrls.slice(0, 6).map((uri, i) => (
             <Image
               key={`${uri}-${i}`}
               source={{ uri }}
               contentFit="cover"
               contentPosition="top"
-              style={styles.montageTile as object}
+              style={styles.montageTile}
             />
           ))}
         </View>
@@ -131,26 +137,25 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     right: 0,
-    width: '64%',
+    width: '64%' as unknown as number,
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'stretch',
     opacity: 0.5,
-    maskImage: 'linear-gradient(to left, #000 32%, transparent 100%)',
-  } as object,
+  },
   montageTile: {
-    height: '100%',
-    aspectRatio: '3 / 4',
+    height: '100%' as unknown as number,
+    aspectRatio: 0.75,
     marginLeft: -28,
     borderRadius: 4,
-  } as object,
+  },
   montageScrim: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-  } as object,
+  },
   content: { position: 'relative', maxWidth: 760, alignItems: 'flex-start' },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
