@@ -3360,7 +3360,7 @@ const styles = StyleSheet.create({
   },
   mStatsCard: { backgroundColor: 'rgba(41,60,67,0.05)', borderRadius: 16, padding: 16 },
   mStatRows: { gap: 14 },
-  mStatTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  mStatTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
   mStatFooter: {
     flexDirection: 'row',
     alignItems: 'center',
