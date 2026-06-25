@@ -492,7 +492,17 @@ export default function WebCategoryScreen() {
       )}
 
       {/* ── Content: desktop = rail + grid; mobile = grid only ── */}
-      <View style={[styles.contentRow, { paddingHorizontal: contentPad }] as object}>
+      <View
+        style={
+          [
+            styles.contentRow,
+            { paddingHorizontal: contentPad },
+            // Guarantee enough scroll room for the logo to fully detach + park,
+            // even when the grid and filter rail are both short.
+            brand && isDesktop ? ({ minHeight: 'calc(100vh - 60px)' } as object) : undefined,
+          ] as object
+        }
+      >
         {isDesktop && browsable && (
           <FilterRail
             slug={categorySlug}
