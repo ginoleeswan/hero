@@ -206,7 +206,7 @@ export function ShowdownStage({
       </View>
 
       {!revealed ? (
-        <Text style={c.prompt}>Who would win? Tap a card.</Text>
+        <Text style={c.prompt}>Who would win? Click a card.</Text>
       ) : (
         <View style={c.reveal}>
           <View style={c.barTrack}>

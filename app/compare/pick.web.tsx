@@ -438,7 +438,7 @@ function Flank({
         ) : (
           <View style={fs.empty}>
             <Text style={fs.emptyQ}>?</Text>
-            <Text style={fs.emptyHint}>Tap heroes →</Text>
+            <Text style={fs.emptyHint}>Click to pick →</Text>
           </View>
         )}
         <View style={[fs.nameTag, { backgroundColor: tint }]}>

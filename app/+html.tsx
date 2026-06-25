@@ -81,4 +81,13 @@ html, body, #root {
    Content pages override this to beige at runtime via useWebCanvas, so the
    frosted toolbar still reads transparent over beige content there. */
 html, body { background-color: #0b1820; overscroll-behavior-y: none; }
+/* Keyboard accessibility: suppress the default focus ring for mouse/touch
+   users (pointer events) while keeping a visible ring for keyboard navigation.
+   :focus-visible is supported in all modern browsers. */
+*:focus { outline: none; }
+*:focus-visible { outline: 2px solid rgba(255,200,100,0.8); outline-offset: 2px; border-radius: 4px; }
+/* Suppress tap highlight on mobile — the app provides its own pressed states. */
+* { -webkit-tap-highlight-color: transparent; }
+/* Improve font rendering on all platforms. */
+body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 `;

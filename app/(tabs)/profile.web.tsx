@@ -759,7 +759,7 @@ export default function WebProfileScreen() {
                 </View>
                 <Text style={mob.emptyTitle}>Nothing saved yet</Text>
                 <Text style={mob.emptyBody}>
-                  Open any hero and tap the heart to build your collection
+                  Open any hero and click the heart to build your collection
                 </Text>
                 <Pressable
                   onPress={() => router.push('/explore')}
@@ -1343,7 +1343,7 @@ export default function WebProfileScreen() {
                 </View>
                 <Text style={desk.emptyTitle}>Nothing saved yet</Text>
                 <Text style={desk.emptyBody}>
-                  Open any hero and tap the heart to build your collection
+                  Open any hero and click the heart to build your collection
                 </Text>
                 <Pressable
                   onPress={() => router.push('/explore')}
