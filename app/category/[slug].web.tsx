@@ -201,8 +201,6 @@ export default function WebCategoryScreen() {
   const [counts, setCounts] = useState<FacetCounts | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  // Drives the banner collapsing to a compact sticky bar on scroll (desktop).
-  const [collapsed, setCollapsed] = useState(false);
   const currentPage = useRef(0);
   const hasMore = useRef(true);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -277,6 +275,29 @@ export default function WebCategoryScreen() {
     [router],
   );
 
+  // Banner montage: always lead with the universe's most-popular hero, then a
+  // random handful from the rest of the top tier — recognizable but varied, and
+  // re-rolled each visit. Stable across pagination (keyed on the top hero only).
+  const [montageUrls, setMontageUrls] = useState<string[]>([]);
+  const topHeroId = heroes[0]?.id;
+  useEffect(() => {
+    if (heroes.length === 0) {
+      setMontageUrls([]);
+      return;
+    }
+    const pool = heroes.slice(1, 24);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    setMontageUrls(
+      [heroes[0], ...pool.slice(0, 5)]
+        .map((h) => h.portrait_url ?? h.image_url)
+        .filter((u): u is string => !!u),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topHeroId]);
+
   const [peek, setPeek] = useState<PeekHero | null>(null);
 
   // Keep ref in sync — scroll handler reads this to avoid firing multiple fetches
@@ -294,7 +315,6 @@ export default function WebCategoryScreen() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onScroll = () => {
-      setCollapsed(window.scrollY > 40);
       const distanceFromBottom =
         document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
       if (distanceFromBottom < 400 && hasMore.current && !loadingMoreRef.current) {
@@ -353,13 +373,9 @@ export default function WebCategoryScreen() {
           logo={brand.logo}
           badgeSize={brand.badgeSize}
           logoTint={brand.logoTint}
-          heroImageUrls={heroes
-            .slice(0, 6)
-            .map((h) => h.portrait_url ?? h.image_url)
-            .filter((u): u is string => !!u)}
+          heroImageUrls={montageUrls}
           compact={!isDesktop}
           sticky={isDesktop}
-          collapsed={isDesktop && collapsed}
         />
       )}
       {/* ── Sticky header ────────────────────────────────────────────────────────
