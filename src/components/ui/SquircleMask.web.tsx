@@ -8,8 +8,6 @@ interface SquircleMaskProps {
 
 export function SquircleMask({ style, cornerRadius = 26, children }: SquircleMaskProps) {
   return (
-    <View style={[style, { borderRadius: cornerRadius, overflow: 'hidden' }]}>
-      {children}
-    </View>
+    <View style={[style, { borderRadius: cornerRadius, overflow: 'hidden' }]}>{children}</View>
   );
 }
