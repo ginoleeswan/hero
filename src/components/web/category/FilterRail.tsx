@@ -150,7 +150,8 @@ const s = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: 'rgba(245,235,220,0.08)',
-    marginHorizontal: -20,
+    // Full rail width (flush to the inner border). The rail has no horizontal
+    // padding, so a negative margin here would overflow past the rounded edge.
     marginVertical: 16,
   } as object,
 

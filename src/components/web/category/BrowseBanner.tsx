@@ -7,7 +7,6 @@ import type { BrandLogo } from '../../../constants/publishers';
 import { TOPBAR_HEIGHT } from '../TopBar';
 
 const BEIGE = COLORS.beige;
-const NAVY = COLORS.navy;
 const TITLE_SHADOW = '0 2px 18px rgba(0,0,0,0.5)';
 
 /**
@@ -89,22 +88,27 @@ export function BrowseBanner({
       if (docTop == null) docTop = r.top + window.scrollY;
       const slotTop = docTop - window.scrollY;
       const top = Math.max(slotTop, PARK);
-      const range = Math.max(docTop - PARK, 1);
-      const p = Math.min(Math.max(window.scrollY / range, 0), 1);
+      // Park progress drives when the headline pins + darkens (tied to the slot
+      // reaching PARK). Scale progress is separate, run over a longer FLOORED
+      // range so the shrink stays gradual even on a short banner that parks after
+      // little scroll — otherwise the logo collapses almost immediately.
+      const parkRange = Math.max(docTop - PARK, 1);
+      const scaleRange = Math.max(parkRange, 340);
+      const scaleP = Math.min(Math.max(window.scrollY / scaleRange, 0), 1);
       ov.style.top = `${top}px`;
       ov.style.left = `${r.left}px`;
       ov.style.width = `${r.width}px`;
-      ov.style.transform = `scale(${1 - p * (1 - 0.42)})`;
+      ov.style.transform = `scale(${1 - scaleP * (1 - 0.42)})`;
       ov.style.opacity = '1';
-      // Headline darkens as it settles onto the beige canvas: text → navy, a
-      // light logo → silhouette (so white marks like Image don't disappear).
-      const onPaper = p > 0.7;
+      // Browse pages park the headline over the DARK gallery canvas, so it stays
+      // light the whole way — no darken-to-silhouette (that was for the old beige
+      // canvas, where light marks like the Image logo would have vanished).
       const txt = textRef.current as unknown as HTMLElement | null;
       if (txt) {
-        txt.style.color = onPaper ? NAVY : BEIGE;
-        txt.style.textShadow = onPaper ? 'none' : TITLE_SHADOW;
+        txt.style.color = BEIGE;
+        txt.style.textShadow = TITLE_SHADOW;
       }
-      if (lightLogo) ov.style.filter = onPaper ? 'brightness(0)' : 'none';
+      if (lightLogo) ov.style.filter = 'none';
     };
     const onScroll = () => {
       if (!raf) raf = window.requestAnimationFrame(place);
@@ -146,14 +150,15 @@ export function BrowseBanner({
           [
             styles.banner,
             {
-              minHeight: compact ? 170 : 332,
-              paddingBottom: compact ? 40 : 36,
+              minHeight: compact ? 170 : 292,
+              paddingBottom: compact ? 40 : 32,
               paddingHorizontal: compact ? 16 : 32,
-              paddingTop: compact ? 66 : 80,
-              // Brand radial wash, then a linear fade over the lower half to the
-              // exact canvas ink — the banner's bottom dissolves seamlessly into
-              // the gallery floor with no visible edge (top layer drawn first).
-              backgroundImage: `linear-gradient(180deg, transparent 48%, ${COLORS.deepNavy} 100%), radial-gradient(125% 140% at 92% 4%, ${color} 0%, ${colorDark} 45%, ${COLORS.deepNavy} 100%)`,
+              paddingTop: compact ? 66 : 70,
+              // Brand radial wash only. The bottom-fade to canvas ink is a
+              // separate overlay (styles.bottomFade) rendered ABOVE the desktop
+              // portrait montage, so it dissolves the portraits into the floor
+              // too — not just the background behind them.
+              backgroundImage: `radial-gradient(125% 140% at 92% 4%, ${color} 0%, ${colorDark} 45%, ${COLORS.deepNavy} 100%)`,
             },
           ] as object
         }
@@ -173,15 +178,26 @@ export function BrowseBanner({
               }
               pointerEvents="none"
             >
-              {heroImageUrls.slice(0, 6).map((uri, i) => (
+              {heroImageUrls.slice(0, 6).map((uri, i, arr) => (
                 <Image
                   key={`${uri}-${i}`}
                   source={{ uri }}
                   contentFit="cover"
                   contentPosition="top"
-                  style={styles.montageTile}
+                  // Descending z-index (leftmost on top) so each tile overlaps the
+                  // LEFT edge of the next — every visible tile shows the same
+                  // width; only the masked leftmost is uncovered.
+                  style={[styles.montageTile, { zIndex: arr.length - i }] as object}
                 />
               ))}
+              {/* Duotone: a brand-colour wash blended onto the grayscale tiles
+                  (mix-blend `color` keeps their luminance, swaps the hue) so the
+                  roster reads as one brand-tinted "ghost gallery" on every
+                  universe — never muddy or dull regardless of the source art. */}
+              <View
+                style={[styles.montageTint, { backgroundColor: color }] as object}
+                pointerEvents="none"
+              />
             </View>
             <View
               style={
@@ -196,12 +212,20 @@ export function BrowseBanner({
             />
           </>
         ) : null}
+        {/* Bottom-fade to the canvas ink — above the montage, below the logo +
+            caption — so the masthead (portraits and brand wash alike) dissolves
+            seamlessly into the gallery floor with no edge. */}
+        <View style={styles.bottomFade as object} pointerEvents="none" />
         <View style={styles.content}>
           {/* Slot reserves the headline's space; invisible when it detaches. */}
           <View ref={slotRef} style={detach ? (styles.hiddenSlot as object) : undefined}>
             {renderHeadline(false)}
           </View>
-          {stat ? <Text style={styles.caption}>{stat}</Text> : null}
+          {stat ? (
+            <Text style={[styles.caption, !compact && (styles.captionDesktop as object)] as object}>
+              {stat}
+            </Text>
+          ) : null}
         </View>
       </View>
 
@@ -225,8 +249,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
-    right: 0,
-    width: '62%' as unknown as number,
+    // Bleed the strip slightly off the right edge so the last portrait runs out
+    // of frame — balances the soft left fade (banner overflow:hidden clips it).
+    right: -16,
+    width: '78%' as unknown as number,
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'stretch',
@@ -235,10 +261,42 @@ const styles = StyleSheet.create({
   montageTile: {
     height: '100%' as unknown as number,
     aspectRatio: 0.75,
-    marginLeft: -28,
-    borderRadius: 4,
-  },
+    // Crossfade ribbon: deep overlap + a feathered leading (right) edge. With the
+    // per-tile descending z-index (render), each tile sits on top of the next and
+    // dissolves into it across the feather, so the portraits melt into one
+    // another instead of reading as hard panels. The feather % and the overlap
+    // are paired — the overlap should be ≈ the faded zone so the tile beneath
+    // backs the whole fade.
+    marginLeft: -44,
+    filter: 'grayscale(1)', // monochrome base for the brand-tint duotone overlay
+    // Feather BOTH edges: the lower tile fades IN on its left exactly as the
+    // upper tile fades OUT on its right, so there's no hard seam — a true
+    // crossfade. The overlap is sized to the fade zones so they coincide.
+    maskImage: 'linear-gradient(to right, transparent 0%, #000 32%, #000 68%, transparent 100%)',
+    WebkitMaskImage: 'linear-gradient(to right, transparent 0%, #000 32%, #000 68%, transparent 100%)',
+  } as object,
+  // Brand-tint overlay for the duotone (see render). Isolated by the montage
+  // container's opacity group, so it recolours only the tiles beneath it.
+  montageTint: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    mixBlendMode: 'color',
+    zIndex: 20, // above every tile's z-index so it tints all of them
+  } as object,
   montageScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  // Seamless bottom edge: transparent over the top ~half, ramping to the exact
+  // canvas ink at the base. Overlays the montage so portraits fade out too.
+  bottomFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundImage: `linear-gradient(180deg, transparent 42%, ${COLORS.deepNavy} 100%)`,
+  } as object,
   content: { position: 'relative', maxWidth: 820, alignItems: 'flex-start' },
   hiddenSlot: { opacity: 0 },
   detach: {
@@ -260,6 +318,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
     textShadow: '0 1px 8px rgba(0,0,0,0.5)',
   } as object,
+  // More air under the (larger) desktop logo before the caption.
+  captionDesktop: { marginTop: 34 } as object,
   title: {
     fontFamily: 'Flame-Regular',
     fontSize: 72,
