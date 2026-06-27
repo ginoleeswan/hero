@@ -144,7 +144,11 @@ export function SearchDropdownContent({
 }
 
 const styles = StyleSheet.create({
-  wrap: { flexDirection: 'column', flex: 1, minHeight: 0 } as object,
+  // Single scroll container for the whole dropdown: universes, heroes and titles
+  // sections stack at natural height and scroll together. (Previously the hero
+  // list owned an inner flex:1 scroll region, which collapsed and overlapped its
+  // "View all" button once other sections shared the panel.)
+  wrap: { flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto' } as object,
   section: {
     paddingTop: 8,
     paddingBottom: 4,

@@ -82,7 +82,6 @@ export function SuggestionsList({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'column',
-    flex: 1,
   } as object,
 
   loadingContainer: {
@@ -120,8 +119,6 @@ const styles = StyleSheet.create({
 
   suggestionsList: {
     flexDirection: 'column',
-    flex: 1,
-    overflowY: 'auto',
     paddingBottom: 6,
   } as object,
 
