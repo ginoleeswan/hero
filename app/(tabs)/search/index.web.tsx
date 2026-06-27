@@ -1,7 +1,7 @@
 // app/search.web.tsx — Search experience (web).
 // Desktop: committed results driven by the nav field (?q= in the URL).
 // Idle (any width): full-screen browse surface — Recent searches + category pods.
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,8 @@ import { useUnifiedSearch } from '../../../src/hooks/useUnifiedSearch';
 import { UniverseChip } from '../../../src/components/web/search/UniverseChip';
 import { TeamResultRow } from '../../../src/components/web/search/TeamResultRow';
 import { TitleResultRow } from '../../../src/components/web/search/TitleResultRow';
+import { TopResultRow } from '../../../src/components/web/search/TopResultRow';
+import { pickTopResult, topResultKey, type TopResult } from '../../../src/lib/search/topResult';
 import { FEATURED_PUBLISHERS } from '../../../src/constants/publishers';
 import { useBrowseCovers } from '../../../src/hooks/useBrowseCovers';
 import { SearchBrowse } from '../../../src/components/web/search/SearchBrowse';
@@ -181,6 +183,32 @@ export default function WebSearchScreen() {
 
   const { universes, teams, heroes, titles, loading } = useUnifiedSearch(inputQuery, RESULT_LIMIT);
 
+  // The single confident "Top result" across every type — same picker the desktop
+  // palette and native search use, so all three surfaces agree on the answer.
+  const topResult: TopResult | null = useMemo(
+    () => pickTopResult(inputQuery, { universes, teams, heroes, titles }),
+    [inputQuery, universes, teams, heroes, titles],
+  );
+  const topKey = topResult ? topResultKey(topResult) : null;
+
+  // Drop whatever is featured up top from its own section / the grid (no dupes).
+  const sectionUniverses = useMemo(
+    () => universes.filter((u) => `universe:${u.slug}` !== topKey),
+    [universes, topKey],
+  );
+  const sectionTeams = useMemo(
+    () => teams.filter((t) => `team:${t.id}` !== topKey),
+    [teams, topKey],
+  );
+  const sectionTitles = useMemo(
+    () => titles.filter((t) => `title:${t.id}` !== topKey),
+    [titles, topKey],
+  );
+  const gridHeroes = useMemo(
+    () => (topResult?.kind === 'hero' ? heroes.filter((h) => h.id !== topResult.hero.id) : heroes),
+    [heroes, topResult],
+  );
+
   // Sync the input FROM the URL (deep links, back/forward, nav palette).
   useEffect(() => {
     setNavQuery(urlQ);
@@ -216,6 +244,24 @@ export default function WebSearchScreen() {
   );
   const openPeek = useCallback((hero: HeroSearchResult) => setPeek(hero), []);
 
+  const openTop = useCallback(
+    (top: TopResult) => {
+      if (trimmedRef.current) addSearch(trimmedRef.current);
+      const push = (href: string) => router.push(href as Parameters<typeof router.push>[0]);
+      switch (top.kind) {
+        case 'universe':
+          return push(`/universe/${top.universe.slug}`);
+        case 'team':
+          return push(`/team/${top.team.id}`);
+        case 'title':
+          return push(`/title/${top.title.id}`);
+        case 'hero':
+          return push(`/character/${top.hero.id}`);
+      }
+    },
+    [addSearch, router],
+  );
+
   // The mobile header is position:fixed (see styles.mobileFixedHeader for why),
   // so it's out of flow — reserve its measured height with a spacer below so the
   // grid starts under it instead of behind it. Seeded with a sensible estimate to
@@ -226,11 +272,11 @@ export default function WebSearchScreen() {
   const capped = heroes.length >= RESULT_LIMIT;
   const countLabel = loading
     ? 'Searching…'
-    : heroes.length === 0
+    : gridHeroes.length === 0
       ? 'No heroes found'
       : capped
         ? `${RESULT_LIMIT}+ results`
-        : `${heroes.length} result${heroes.length !== 1 ? 's' : ''}`;
+        : `${gridHeroes.length} result${gridHeroes.length !== 1 ? 's' : ''}`;
 
   const contentPad = isDesktop ? 32 : 16;
   const gridStyle = {
@@ -369,11 +415,22 @@ export default function WebSearchScreen() {
         </View>
       ) : (
         <View style={[styles.gridWrap, { paddingHorizontal: contentPad }]}>
-          {universes.length > 0 && (
+          {topResult && (
+            <View style={styles.topSection}>
+              <Text style={styles.idleLabel as object}>Top result</Text>
+              <TopResultRow
+                top={topResult}
+                active={false}
+                variant="light"
+                onPress={() => openTop(topResult)}
+              />
+            </View>
+          )}
+          {sectionUniverses.length > 0 && (
             <View style={styles.titlesSection}>
               <Text style={styles.idleLabel as object}>Universes</Text>
               <View style={styles.universeRow as object}>
-                {universes.map((u) => (
+                {sectionUniverses.map((u) => (
                   <View key={u.slug} style={styles.universeChipWrap as object}>
                     <UniverseChip
                       universe={u}
@@ -387,10 +444,10 @@ export default function WebSearchScreen() {
               </View>
             </View>
           )}
-          {teams.length > 0 && (
+          {sectionTeams.length > 0 && (
             <View style={styles.titlesSection}>
               <Text style={styles.idleLabel as object}>Teams</Text>
-              {teams.map((t) => (
+              {sectionTeams.map((t) => (
                 <View key={t.id} style={styles.universeChipWrap as object}>
                   <TeamResultRow
                     team={t}
@@ -403,30 +460,12 @@ export default function WebSearchScreen() {
               ))}
             </View>
           )}
-          {hasCriteria && (
-            <View style={styles.charHeaderRow as object}>
-              <Text style={styles.charLabel as object}>Characters</Text>
-              <Text style={styles.charCount as object}>{countLabel}</Text>
-            </View>
-          )}
-          <View style={gridStyle as object}>
-            {loading
-              ? Array.from({ length: 18 }).map((_, i) => (
-                  <SkeletonCard key={i} opacity={skeletonOpacity} />
-                ))
-              : heroes.map((hero) => (
-                  <HeroCard key={hero.id} hero={hero} onSelect={goToHero} onPeek={openPeek} />
-                ))}
-          </View>
-          {!loading && heroes.length === 0 && (
-            <View style={styles.center}>
-              <Text style={styles.empty}>No heroes match {title}.</Text>
-            </View>
-          )}
-          {titles.length > 0 && (
+          {/* Films & Shows sit ABOVE the character grid — the grid can be up to 300
+              cards, so a matching title must not be buried below it on a phone. */}
+          {sectionTitles.length > 0 && (
             <View style={styles.titlesSection}>
               <Text style={styles.idleLabel as object}>Films & Shows</Text>
-              {titles.map((t) => (
+              {sectionTitles.map((t) => (
                 <View key={t.id} style={styles.universeChipWrap as object}>
                   <TitleResultRow
                     title={t}
@@ -437,6 +476,28 @@ export default function WebSearchScreen() {
                   />
                 </View>
               ))}
+            </View>
+          )}
+          {hasCriteria && (loading || gridHeroes.length > 0) && (
+            <View style={styles.charHeaderRow as object}>
+              <Text style={styles.charLabel as object}>Characters</Text>
+              <Text style={styles.charCount as object}>{countLabel}</Text>
+            </View>
+          )}
+          {(loading || gridHeroes.length > 0) && (
+            <View style={gridStyle as object}>
+              {loading
+                ? Array.from({ length: 18 }).map((_, i) => (
+                    <SkeletonCard key={i} opacity={skeletonOpacity} />
+                  ))
+                : gridHeroes.map((hero) => (
+                    <HeroCard key={hero.id} hero={hero} onSelect={goToHero} onPeek={openPeek} />
+                  ))}
+            </View>
+          )}
+          {!loading && gridHeroes.length === 0 && !topResult && (
+            <View style={styles.center}>
+              <Text style={styles.empty}>No heroes match {title}.</Text>
             </View>
           )}
           {capped && (
@@ -613,6 +674,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(29,45,51,0.05)',
     borderRadius: 12,
   } as object,
+  topSection: { paddingTop: 20, gap: 8 } as object,
   titlesSection: { paddingTop: 20, gap: 6 } as object,
 
   // ── Grid / content ─────────────────────────────────────────────────────────

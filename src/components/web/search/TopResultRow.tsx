@@ -1,5 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import { BrandLogoView } from '../../PublisherBadge';
@@ -9,22 +10,32 @@ import type { TopResult } from '../../../lib/search/topResult';
 // The featured "Top result" — one prominent, type-agnostic row at the very top of
 // the palette. Larger thumbnail + name, a type tag, a subtitle, and an ↵ hint. It
 // is the default Enter target (pre-selected look when `active`).
+// Dark variant = palette dropdown (keyboard-driven, ↵ target); light variant =
+// the beige /search results page (touch/mouse, rendered as a featured card with
+// a forward arrow instead of the keyboard hint).
 export function TopResultRow({
   top,
   active,
   onPress,
+  variant = 'dark',
 }: {
   top: TopResult;
   active: boolean;
   onPress: () => void;
+  variant?: 'dark' | 'light';
 }) {
+  const light = variant === 'light';
   const { name, typeLabel, subtitle, thumb } = describe(top);
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="link"
       style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [styles.row, (active || hovered) && (styles.rowActive as object)] as object
+        [
+          styles.row,
+          light && (styles.rowLight as object),
+          (active || hovered) && ((light ? styles.rowActiveLight : styles.rowActive) as object),
+        ] as object
       }
     >
       <View style={[styles.thumb, top.kind === 'hero' && (styles.thumbRound as object)] as object}>
@@ -32,27 +43,39 @@ export function TopResultRow({
       </View>
       <View style={styles.text}>
         <View style={styles.titleRow}>
-          <Text style={styles.name as object} numberOfLines={1}>
+          <Text
+            style={[styles.name, light && (styles.nameLight as object)] as object}
+            numberOfLines={1}
+          >
             {name}
           </Text>
           {/* Only tag the surprising types — a character with a face needs no
               "CHARACTER" chip, and tagging it would clash with the alignment
               (Hero/Villain) badge the character rows use. */}
           {typeLabel ? (
-            <View style={styles.tag as object}>
-              <Text style={styles.tagText as object}>{typeLabel}</Text>
+            <View style={[styles.tag, light && (styles.tagLight as object)] as object}>
+              <Text style={[styles.tagText, light && (styles.tagTextLight as object)] as object}>
+                {typeLabel}
+              </Text>
             </View>
           ) : null}
         </View>
         {subtitle ? (
-          <Text style={styles.subtitle as object} numberOfLines={1}>
+          <Text
+            style={[styles.subtitle, light && (styles.subtitleLight as object)] as object}
+            numberOfLines={1}
+          >
             {subtitle}
           </Text>
         ) : null}
       </View>
-      <View style={styles.enter as object}>
-        <Text style={styles.enterKey as object}>↵</Text>
-      </View>
+      {light ? (
+        <Ionicons name="arrow-forward" size={18} color={COLORS.orange} />
+      ) : (
+        <View style={styles.enter as object}>
+          <Text style={styles.enterKey as object}>↵</Text>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -173,6 +196,14 @@ const styles = StyleSheet.create({
     transition: 'background-color 150ms ease',
   } as object,
   rowActive: { backgroundColor: 'rgba(231,115,51,0.14)' } as object,
+  // Light variant: a featured card on the beige results page.
+  rowLight: {
+    marginHorizontal: 0,
+    backgroundColor: 'rgba(231,115,51,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(231,115,51,0.28)',
+  } as object,
+  rowActiveLight: { backgroundColor: 'rgba(231,115,51,0.14)' } as object,
   thumb: {
     width: 48,
     height: 48,
@@ -195,6 +226,7 @@ const styles = StyleSheet.create({
   text: { flex: 1, minWidth: 0, flexDirection: 'column', gap: 2 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   name: { fontFamily: 'Flame-Regular', fontSize: 18, color: COLORS.beige, flexShrink: 1 } as object,
+  nameLight: { color: COLORS.navy } as object,
   tag: {
     paddingHorizontal: 7,
     paddingVertical: 2,
@@ -202,6 +234,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(245,235,220,0.10)',
     flexShrink: 0,
   } as object,
+  tagLight: { backgroundColor: 'rgba(29,45,51,0.08)' } as object,
   tagText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
@@ -209,11 +242,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   } as object,
+  tagTextLight: { color: 'rgba(29,45,51,0.55)' } as object,
   subtitle: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12.5,
     color: 'rgba(245,235,220,0.5)',
   } as object,
+  subtitleLight: { color: 'rgba(29,45,51,0.55)' } as object,
   enter: {
     width: 26,
     height: 26,
