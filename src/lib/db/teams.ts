@@ -67,6 +67,57 @@ export async function getTeamRoster(teamId: string, limit = 5): Promise<RosterHe
   return (data ?? []) as RosterHero[];
 }
 
+export interface TeamSummary {
+  id: string;
+  name: string;
+  publisher: string | null;
+  logo_url: string | null;
+  member_count: number;
+}
+
+export type TeamSearchResult = TeamSummary;
+
+const TEAM_SUMMARY_COLS = 'id, name, publisher, logo_url, member_count';
+
+/**
+ * Team search for the unified search surface. ILIKE on name, ranked by
+ * popularity (Avengers/X-Men/JLA float up). Empty query short-circuits; degrades
+ * to [] so a DB hiccup never blanks the other result sections.
+ */
+export async function searchTeams(query: string, limit = 6): Promise<TeamSearchResult[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const { data, error } = await supabase
+    .from('teams')
+    .select(TEAM_SUMMARY_COLS)
+    .ilike('name', `%${q}%`)
+    .order('popularity', { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error) {
+    console.warn('[searchTeams] error:', error.message);
+    return [];
+  }
+  return (data ?? []) as TeamSearchResult[];
+}
+
+/** One team's summary for the /team/[id] page header. null when not found. */
+export async function getTeamById(id: string): Promise<TeamSummary | null> {
+  const { data, error } = await supabase
+    .from('teams')
+    .select(TEAM_SUMMARY_COLS)
+    .eq('id', id)
+    .single();
+  if (error && error.code !== 'PGRST116') {
+    console.warn('[getTeamById] error:', error.message);
+  }
+  return (data as TeamSummary | null) ?? null;
+}
+
+/** A team's full member roster for the browse page (one fetch — teams are small). */
+export async function getTeamMembers(id: string, limit = 300): Promise<RosterHero[]> {
+  return getTeamRoster(id, limit);
+}
+
 const EMPTY_SYNERGY: SynergyBreakdown = {
   teammate_links: { count: 0, max: 0, pct: 0 },
   shared_affiliation: { team: null, coverage: 0, pct: 0 },
