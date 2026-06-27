@@ -27,6 +27,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { COLORS } from '../../../src/constants/colors';
 import { PortraitCard } from '../../../src/components/search/PortraitCard';
 import { UniverseResultRow } from '../../../src/components/search/UniverseResultRow';
+import { TeamResultRow } from '../../../src/components/search/TeamResultRow';
 import { TitleResultRow } from '../../../src/components/search/TitleResultRow';
 import { FilterChips, type FilterOption } from '../../../src/components/search/FilterChips';
 import { AccentRail } from '../../../src/components/search/AccentRail';
@@ -37,6 +38,7 @@ import { Skeleton } from '../../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../../src/components/ui/SkeletonProvider';
 import type { PublisherFilter, AlignmentFilter } from '../../../src/lib/db/heroes';
 import { searchUniverses } from '../../../src/lib/db/universes';
+import { searchTeams, type TeamSearchResult } from '../../../src/lib/db/teams';
 import { searchTitles, type TitleSearchResult } from '../../../src/lib/db/titles';
 import { useHeroSearchInfinite, prefetchHeroSearch } from '../../../src/lib/query/heroQueries';
 import { getRecentlyViewed } from '../../../src/lib/db/viewHistory';
@@ -161,6 +163,26 @@ export default function SearchScreen() {
   // the web search's Universes section; routes to /universe/[slug].
   const universes = useMemo(() => searchUniverses(debouncedQuery.trim(), 6), [debouncedQuery]);
 
+  // Matching teams from the teams table (popularity-ordered). Mirrors the web
+  // search's Teams section; routes to /team/[id].
+  const [teams, setTeams] = useState<TeamSearchResult[]>([]);
+  useEffect(() => {
+    const q = debouncedQuery.trim();
+    if (!q) {
+      setTeams([]);
+      return;
+    }
+    let cancelled = false;
+    searchTeams(q, 3)
+      .then((res) => {
+        if (!cancelled) setTeams(res);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery]);
+
   // Matching films & shows from the titles table (debouncedQuery is already
   // debounced upstream). Mirrors the web search's "Films & Shows" section;
   // routes to /title/[id]. Degrades silently to none on error.
@@ -283,6 +305,24 @@ export default function SearchScreen() {
               onPress={() => {
                 Haptics.selectionAsync();
                 router.push(`/universe/${u.slug}` as Parameters<typeof router.push>[0]);
+              }}
+            />
+          ))}
+        </View>
+      )}
+
+      {!isIdle && teams.length > 0 && (
+        <View style={styles.universeSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionLabel}>Teams</Text>
+          </View>
+          {teams.map((t) => (
+            <TeamResultRow
+              key={t.id}
+              team={t}
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push(`/team/${t.id}` as Parameters<typeof router.push>[0]);
               }}
             />
           ))}
