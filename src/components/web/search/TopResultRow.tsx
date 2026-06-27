@@ -33,9 +33,14 @@ export function TopResultRow({
           <Text style={styles.name as object} numberOfLines={1}>
             {name}
           </Text>
-          <View style={styles.tag as object}>
-            <Text style={styles.tagText as object}>{typeLabel}</Text>
-          </View>
+          {/* Only tag the surprising types — a character with a face needs no
+              "CHARACTER" chip, and tagging it would clash with the alignment
+              (Hero/Villain) badge the character rows use. */}
+          {typeLabel ? (
+            <View style={styles.tag as object}>
+              <Text style={styles.tagText as object}>{typeLabel}</Text>
+            </View>
+          ) : null}
         </View>
         {subtitle ? (
           <Text style={styles.subtitle as object} numberOfLines={1}>
@@ -52,7 +57,7 @@ export function TopResultRow({
 
 function describe(top: TopResult): {
   name: string;
-  typeLabel: string;
+  typeLabel: string | null;
   subtitle: string | null;
   thumb: React.ReactNode;
 } {
@@ -116,7 +121,7 @@ function describe(top: TopResult): {
       const h = top.hero;
       return {
         name: h.name,
-        typeLabel: 'Character',
+        typeLabel: null, // a character with a face needs no chip (and it'd clash with the Hero/Villain badge)
         subtitle: h.full_name && h.full_name !== h.name ? h.full_name : h.publisher,
         thumb: (
           <HeroImage

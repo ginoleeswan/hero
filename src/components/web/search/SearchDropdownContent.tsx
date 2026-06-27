@@ -23,7 +23,7 @@ export type NavItem =
   | { kind: 'hero'; id: string }
   | { kind: 'title'; id: string };
 
-const MAX_TEAM_SUGGESTIONS = 3;
+const MAX_TEAM_SUGGESTIONS = 2;
 
 const MAX_TITLE_SUGGESTIONS = 3;
 
@@ -92,9 +92,9 @@ export function SearchDropdownContent({
     ? []
     : [
         ...(topResult ? [topResultNavItem(topResult)] : []),
-        ...shownUniverses.map((u) => ({ kind: 'universe', slug: u.slug }) as NavItem),
-        ...shownTeams.map((t) => ({ kind: 'team', id: t.id }) as NavItem),
         ...shownHeroes.map((h) => ({ kind: 'hero', id: h.id }) as NavItem),
+        ...shownTeams.map((t) => ({ kind: 'team', id: t.id }) as NavItem),
+        ...shownUniverses.map((u) => ({ kind: 'universe', slug: u.slug }) as NavItem),
         ...shownTitles.map((t) => ({ kind: 'title', id: t.id }) as NavItem),
       ];
   const itemsKey = JSON.stringify(navItems);
@@ -181,17 +181,19 @@ export function SearchDropdownContent({
             <TopResultRow top={topResult} active={highlightIndex <= 0} onPress={handleTopPress} />
           </View>
         )}
-        {shownUniverses.length > 0 && (
+        {(loading || shownHeroes.length > 0) && (
           <View style={styles.section}>
-            <SectionLabel label="Universes" />
-            {shownUniverses.map((u) => (
-              <UniverseChip
-                key={u.slug}
-                universe={u}
-                active={u.slug === activeUniverseSlug}
-                onPress={() => handleUniversePress(u.slug)}
-              />
-            ))}
+            <SectionLabel
+              label="Characters"
+              count={resultCount - (topResult?.kind === 'hero' ? 1 : 0)}
+            />
+            <SuggestionsList
+              query={query}
+              suggestions={shownHeroes}
+              isLoading={loading}
+              activeId={activeHeroId}
+              onSuggestionPress={handleHeroPress}
+            />
           </View>
         )}
         {shownTeams.length > 0 && (
@@ -207,19 +209,17 @@ export function SearchDropdownContent({
             ))}
           </View>
         )}
-        {(loading || shownHeroes.length > 0) && (
+        {shownUniverses.length > 0 && (
           <View style={styles.section}>
-            <SectionLabel
-              label="Characters"
-              count={resultCount - (topResult?.kind === 'hero' ? 1 : 0)}
-            />
-            <SuggestionsList
-              query={query}
-              suggestions={shownHeroes}
-              isLoading={loading}
-              activeId={activeHeroId}
-              onSuggestionPress={handleHeroPress}
-            />
+            <SectionLabel label="Universes" />
+            {shownUniverses.map((u) => (
+              <UniverseChip
+                key={u.slug}
+                universe={u}
+                active={u.slug === activeUniverseSlug}
+                onPress={() => handleUniversePress(u.slug)}
+              />
+            ))}
           </View>
         )}
         {!loading &&
