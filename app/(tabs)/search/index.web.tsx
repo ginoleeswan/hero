@@ -21,6 +21,7 @@ import { useSearch } from '../../../src/contexts/SearchContext';
 import { useSearchHistory } from '../../../src/hooks/useSearchHistory';
 import { useUnifiedSearch } from '../../../src/hooks/useUnifiedSearch';
 import { UniverseChip } from '../../../src/components/web/search/UniverseChip';
+import { TitleResultRow } from '../../../src/components/web/search/TitleResultRow';
 import { FEATURED_PUBLISHERS } from '../../../src/constants/publishers';
 import { useBrowseCovers } from '../../../src/hooks/useBrowseCovers';
 import { SearchBrowse } from '../../../src/components/web/search/SearchBrowse';
@@ -177,7 +178,7 @@ export default function WebSearchScreen() {
   const trimmed = inputQuery.trim();
   const hasCriteria = trimmed.length > 0;
 
-  const { universes, heroes, loading } = useUnifiedSearch(inputQuery, RESULT_LIMIT);
+  const { universes, heroes, titles, loading } = useUnifiedSearch(inputQuery, RESULT_LIMIT);
 
   // Sync the input FROM the URL (deep links, back/forward, nav palette).
   useEffect(() => {
@@ -397,6 +398,22 @@ export default function WebSearchScreen() {
               <Text style={styles.empty}>No heroes match {title}.</Text>
             </View>
           )}
+          {titles.length > 0 && (
+            <View style={styles.titlesSection}>
+              <Text style={styles.idleLabel as object}>Films & Shows</Text>
+              {titles.map((t) => (
+                <View key={t.id} style={styles.universeChipWrap as object}>
+                  <TitleResultRow
+                    title={t}
+                    variant="light"
+                    onPress={() =>
+                      router.push(`/title/${t.id}` as Parameters<typeof router.push>[0])
+                    }
+                  />
+                </View>
+              ))}
+            </View>
+          )}
           {capped && (
             <Text style={styles.moreHint as object}>
               Showing the first {RESULT_LIMIT} results — refine your search to narrow it down.
@@ -557,6 +574,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(29,45,51,0.05)',
     borderRadius: 12,
   } as object,
+  titlesSection: { paddingTop: 20, gap: 6 } as object,
 
   // ── Grid / content ─────────────────────────────────────────────────────────
   gridWrap: { paddingTop: 24, maxWidth: 1200, width: '100%', alignSelf: 'center' },
