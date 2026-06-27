@@ -104,7 +104,7 @@ export const CATEGORY_DESCRIPTIONS: Record<CategorySlug, string> = {
   'dark-horse': 'Heroes and villains from Dark Horse Comics',
   strongest: 'Ranked by raw physical power',
   'most-intelligent': 'The greatest minds in all of comics',
-  'most-iconic': 'Ranked by total comic book appearances',
+  'most-iconic': 'The most recognizable characters across comics and screen',
   'franchise-icons': 'Icons from famous shows, movies, games, and anime',
   anime: 'Heroes and villains from the biggest anime and manga',
   'video-games': 'Legends straight out of video-game history',
@@ -138,7 +138,11 @@ export async function getAllHeroesBySlug(slug: CategorySlug): Promise<Hero[]> {
   switch (slug) {
     case 'popular':
       return fetchAllPages(() =>
-        supabase.from('heroes').select('*').eq('category', 'popular').order('name'),
+        supabase
+          .from('heroes')
+          .select('*')
+          .eq('category', 'popular')
+          .order('fame_score', { ascending: false, nullsFirst: false }),
       );
     case 'villain':
       return fetchAllPages(() =>
@@ -199,7 +203,7 @@ export async function getAllHeroesBySlug(slug: CategorySlug): Promise<Hero[]> {
           .from('heroes')
           .select('*')
           .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
-          .order('issue_count', { ascending: false, nullsFirst: false }),
+          .order('fame_score', { ascending: false, nullsFirst: false }),
       );
     case 'franchise-icons':
       return fetchAllPages(() =>
@@ -352,7 +356,7 @@ function applyListFacets(
   if (sort === 'az') q = q.order('name');
   else if (sort === 'power')
     q = q.order('powerstats_total', { ascending: false, nullsFirst: false });
-  else q = q.order('issue_count', { ascending: false, nullsFirst: false });
+  else q = q.order('fame_score', { ascending: false, nullsFirst: false });
   return q;
 }
 
