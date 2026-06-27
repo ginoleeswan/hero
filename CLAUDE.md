@@ -68,7 +68,7 @@ src/
 
 supabase/
   migrations/          Version-controlled SQL migrations
-  seed.sql             initial seed (DB has grown to 3,000+ heroes)
+  seed.sql             initial seed (DB has grown to ~34,000 heroes)
 
 __tests__/             Jest tests mirroring src/ structure
 ```
@@ -84,7 +84,13 @@ __tests__/             Jest tests mirroring src/ structure
 
 - Screens **never** import `supabase` directly. All DB access goes through `src/lib/db/`.
 - `src/lib/api.ts` handles external REST APIs (SuperheroAPI, ComicVine).
-- Supabase/PostgREST has a default 1000-row cap — always add `.limit()` or use `.range()` for pagination on large tables. The `heroes` table has 3,000+ rows.
+- Supabase/PostgREST has a default 1000-row cap — always add `.limit()` or use `.range()` for pagination on large tables. The `heroes` table has ~34,000 rows.
+
+### Popularity / fame ranking
+
+- Popularity ordering uses `heroes.fame_score` (0–100), **not** `issue_count`. It's a mainstream-recognizability score computed by the `recompute_fame_scores()` SQL function from `fame_tier` (a 0–4 recognizability tier hand-rated by Claude for the ~2k-hero candidate pool; everyone else defaults to 0) plus winsorized `wikidata_sitelinks` + `movie_count` + `issue_count`. Design/plan: `docs/superpowers/specs/2026-06-27-hero-popularity-fame-score-design.md`.
+- `compute_fame_score(tier, n_site, n_movie, n_issue)` is the pure blend; tier sets the band, hard signals position within it. Re-tune by editing constants, bumping `fame_score_version`, and re-running `recompute_fame_scores()` — no re-rating needed.
+- After large catalog growth, re-rate new candidate-pool heroes (those with `fame_rated_at IS NULL`) and re-run the recompute. `wikidata_sitelinks` is backfilled by `enrich-wikidata-batch`.
 
 ### Migrations
 
