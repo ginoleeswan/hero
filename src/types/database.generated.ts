@@ -14,6 +14,219 @@ export type Database = {
   }
   public: {
     Tables: {
+      _dedup_tier1_backup: {
+        Row: {
+          added_at: string | null
+          ai_stats_status: string | null
+          aliases: string[] | null
+          alignment: string | null
+          alter_egos: string | null
+          base: string | null
+          category: string | null
+          combat: number | null
+          comicvine_enriched_at: string | null
+          comicvine_id: string | null
+          comicvine_status: string | null
+          creators: string[] | null
+          description: string | null
+          durability: number | null
+          enemies: string[] | null
+          enriched_at: string | null
+          eye_color: string | null
+          fame_rated_at: string | null
+          fame_rated_by: string | null
+          fame_score: number | null
+          fame_score_version: number | null
+          fame_tier: number | null
+          first_appearance: string | null
+          first_issue_data: Json | null
+          first_issue_id: string | null
+          first_issue_image_url: string | null
+          franchise: string | null
+          friends: string[] | null
+          full_name: string | null
+          gallery_enriched_at: string | null
+          gender: string | null
+          group_affiliation: string | null
+          hair_color: string | null
+          height_imperial: string | null
+          height_metric: string | null
+          id: string | null
+          image_md_url: string | null
+          image_url: string | null
+          intelligence: number | null
+          issue_count: number | null
+          issue_covers: Json | null
+          movie_count: number | null
+          movies: Json[] | null
+          name: string | null
+          narrative_status: string | null
+          occupation: string | null
+          origin: string | null
+          place_of_birth: string | null
+          portrait_url: string | null
+          power: number | null
+          powers: string[] | null
+          powerstats_total: number | null
+          publisher: string | null
+          race: string | null
+          relatives: string | null
+          speed: number | null
+          stats_source: string | null
+          strength: number | null
+          summary: string | null
+          superhero_api_id: string | null
+          teams: string[] | null
+          weight_imperial: string | null
+          weight_metric: string | null
+          wikidata_candidates: Json | null
+          wikidata_enriched_at: string | null
+          wikidata_qid: string | null
+          wikidata_sitelinks: number | null
+          wikidata_status: string | null
+        }
+        Insert: {
+          added_at?: string | null
+          ai_stats_status?: string | null
+          aliases?: string[] | null
+          alignment?: string | null
+          alter_egos?: string | null
+          base?: string | null
+          category?: string | null
+          combat?: number | null
+          comicvine_enriched_at?: string | null
+          comicvine_id?: string | null
+          comicvine_status?: string | null
+          creators?: string[] | null
+          description?: string | null
+          durability?: number | null
+          enemies?: string[] | null
+          enriched_at?: string | null
+          eye_color?: string | null
+          fame_rated_at?: string | null
+          fame_rated_by?: string | null
+          fame_score?: number | null
+          fame_score_version?: number | null
+          fame_tier?: number | null
+          first_appearance?: string | null
+          first_issue_data?: Json | null
+          first_issue_id?: string | null
+          first_issue_image_url?: string | null
+          franchise?: string | null
+          friends?: string[] | null
+          full_name?: string | null
+          gallery_enriched_at?: string | null
+          gender?: string | null
+          group_affiliation?: string | null
+          hair_color?: string | null
+          height_imperial?: string | null
+          height_metric?: string | null
+          id?: string | null
+          image_md_url?: string | null
+          image_url?: string | null
+          intelligence?: number | null
+          issue_count?: number | null
+          issue_covers?: Json | null
+          movie_count?: number | null
+          movies?: Json[] | null
+          name?: string | null
+          narrative_status?: string | null
+          occupation?: string | null
+          origin?: string | null
+          place_of_birth?: string | null
+          portrait_url?: string | null
+          power?: number | null
+          powers?: string[] | null
+          powerstats_total?: number | null
+          publisher?: string | null
+          race?: string | null
+          relatives?: string | null
+          speed?: number | null
+          stats_source?: string | null
+          strength?: number | null
+          summary?: string | null
+          superhero_api_id?: string | null
+          teams?: string[] | null
+          weight_imperial?: string | null
+          weight_metric?: string | null
+          wikidata_candidates?: Json | null
+          wikidata_enriched_at?: string | null
+          wikidata_qid?: string | null
+          wikidata_sitelinks?: number | null
+          wikidata_status?: string | null
+        }
+        Update: {
+          added_at?: string | null
+          ai_stats_status?: string | null
+          aliases?: string[] | null
+          alignment?: string | null
+          alter_egos?: string | null
+          base?: string | null
+          category?: string | null
+          combat?: number | null
+          comicvine_enriched_at?: string | null
+          comicvine_id?: string | null
+          comicvine_status?: string | null
+          creators?: string[] | null
+          description?: string | null
+          durability?: number | null
+          enemies?: string[] | null
+          enriched_at?: string | null
+          eye_color?: string | null
+          fame_rated_at?: string | null
+          fame_rated_by?: string | null
+          fame_score?: number | null
+          fame_score_version?: number | null
+          fame_tier?: number | null
+          first_appearance?: string | null
+          first_issue_data?: Json | null
+          first_issue_id?: string | null
+          first_issue_image_url?: string | null
+          franchise?: string | null
+          friends?: string[] | null
+          full_name?: string | null
+          gallery_enriched_at?: string | null
+          gender?: string | null
+          group_affiliation?: string | null
+          hair_color?: string | null
+          height_imperial?: string | null
+          height_metric?: string | null
+          id?: string | null
+          image_md_url?: string | null
+          image_url?: string | null
+          intelligence?: number | null
+          issue_count?: number | null
+          issue_covers?: Json | null
+          movie_count?: number | null
+          movies?: Json[] | null
+          name?: string | null
+          narrative_status?: string | null
+          occupation?: string | null
+          origin?: string | null
+          place_of_birth?: string | null
+          portrait_url?: string | null
+          power?: number | null
+          powers?: string[] | null
+          powerstats_total?: number | null
+          publisher?: string | null
+          race?: string | null
+          relatives?: string | null
+          speed?: number | null
+          stats_source?: string | null
+          strength?: number | null
+          summary?: string | null
+          superhero_api_id?: string | null
+          teams?: string[] | null
+          weight_imperial?: string | null
+          weight_metric?: string | null
+          wikidata_candidates?: Json | null
+          wikidata_enriched_at?: string | null
+          wikidata_qid?: string | null
+          wikidata_sitelinks?: number | null
+          wikidata_status?: string | null
+        }
+        Relationships: []
+      }
       _lexluthor_merge_backup: {
         Row: {
           added_at: string | null
@@ -1544,6 +1757,7 @@ export type Database = {
         }
         Returns: string
       }
+      auto_tier_unrated_pool: { Args: never; Returns: number }
       cache_hero_comicvine_data: {
         Args: { p_id: string; p_powers: string[]; p_summary: string }
         Returns: undefined
@@ -1596,6 +1810,7 @@ export type Database = {
         Args: { p_chars?: number; p_limit?: number }
         Returns: {
           accent: string
+          backdrop_url: string
           blurb: string
           campaign_id: string
           headline: string
@@ -1604,6 +1819,7 @@ export type Database = {
           hero_name: string
           hero_portrait_url: string
           label: string
+          poster_url: string
         }[]
       }
       get_daily_distribution: { Args: { p_date: string }; Returns: Json }
@@ -1754,6 +1970,7 @@ export type Database = {
           hero_name: string
           hero_portrait_url: string
           media_type: string
+          overview: string
           poster_url: string
           provider: string
           release_date: string
@@ -1770,6 +1987,7 @@ export type Database = {
         Args: { p_date: string; p_guesses: number; p_won: boolean }
         Returns: undefined
       }
+      refresh_fame: { Args: never; Returns: number }
       register_film_match: {
         Args: {
           p_cv_name: string
@@ -1804,6 +2022,7 @@ export type Database = {
         Returns: {
           aliases: string[]
           alignment: string
+          fame_score: number
           full_name: string
           id: string
           image_md_url: string

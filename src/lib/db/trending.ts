@@ -55,6 +55,8 @@ export interface TrendingTitle {
   backdrop_url: string | null;
   poster_url: string | null;
   provider: string | null;
+  /** TMDB synopsis — used as the auto-hero blurb. */
+  overview: string | null;
   characters: TrendingTitleCharacter[];
 }
 
@@ -83,6 +85,7 @@ export async function getTrendingTitles(
     backdrop_url: string | null;
     poster_url: string | null;
     provider: string | null;
+    overview: string | null;
     hero_id: string;
     hero_name: string;
     hero_image_url: string | null;
@@ -98,6 +101,7 @@ export async function getTrendingTitles(
         backdrop_url: r.backdrop_url,
         poster_url: r.poster_url,
         provider: r.provider,
+        overview: r.overview,
         characters: [],
       };
       byTitle.set(r.title_id, t);
@@ -120,6 +124,10 @@ export interface Campaign {
   headline: string;
   blurb: string | null;
   accent: string | null;
+  /** Linked title's TMDB landscape still — purpose-composed for the wide hero
+   *  band. Null for franchise-/hero-only campaigns; UI falls back to character art. */
+  backdrop_url: string | null;
+  poster_url: string | null;
   characters: TrendingTitleCharacter[];
 }
 
@@ -141,6 +149,8 @@ export async function getActiveCampaigns(limit = 3, chars = 16): Promise<Campaig
     headline: string;
     blurb: string | null;
     accent: string | null;
+    backdrop_url: string | null;
+    poster_url: string | null;
     hero_id: string;
     hero_name: string;
     hero_image_url: string | null;
@@ -154,6 +164,8 @@ export async function getActiveCampaigns(limit = 3, chars = 16): Promise<Campaig
         headline: r.headline,
         blurb: r.blurb,
         accent: r.accent,
+        backdrop_url: r.backdrop_url,
+        poster_url: r.poster_url,
         characters: [],
       };
       byId.set(r.campaign_id, c);
@@ -165,7 +177,48 @@ export async function getActiveCampaigns(limit = 3, chars = 16): Promise<Campaig
       portrait_url: r.hero_portrait_url,
     });
   }
-  return [...byId.values()];
+  const manual = [...byId.values()];
+  if (manual.length > 0) return manual;
+
+  // No editorial campaign live → auto-generate the hero from the trending slate so
+  // the band is never stale or empty without anyone curating it. Random pick from
+  // the popularity+character-gated pool (the RPC only surfaces titles that have
+  // catalogue characters) keeps it fresh on refresh / return visits but relevant.
+  // On-screen leads; fall back to streaming when nothing is in cinemas.
+  const auto = await synthesizeCampaignFromTrending();
+  return auto ? [auto] : [];
+}
+
+/** Build a one-off Campaign from a random popular trending title — the automatic
+ *  fallback for the "Right Now" hero when no editorial campaign is scheduled. */
+async function synthesizeCampaignFromTrending(): Promise<Campaign | null> {
+  const usable = (ts: TrendingTitle[]) =>
+    ts.filter((t) => t.backdrop_url && t.characters.length > 0);
+  let pool = usable(await getTrendingTitles('on_screen', 8));
+  if (pool.length === 0) pool = usable(await getTrendingTitles('streaming', 8));
+  if (pool.length === 0) return null;
+  const t = pool[Math.floor(Math.random() * pool.length)];
+  const badge = trendingBadge(t);
+  return {
+    id: `auto:${t.id}`,
+    label: badge?.label ?? 'Trending Now',
+    headline: t.title,
+    blurb: firstSentence(t.overview),
+    accent: null, // UI defaults to the brand orange
+    backdrop_url: t.backdrop_url,
+    poster_url: t.poster_url,
+    characters: t.characters,
+  };
+}
+
+/** First sentence of a TMDB synopsis, capped — keeps the auto-blurb to one tidy
+ *  line instead of dumping a full paragraph. */
+function firstSentence(text: string | null): string | null {
+  const trimmed = text?.trim();
+  if (!trimmed) return null;
+  const match = trimmed.match(/^.*?[.!?](?=\s|$)/);
+  const sentence = (match ? match[0] : trimmed).trim();
+  return sentence.length > 160 ? `${sentence.slice(0, 157).trimEnd()}…` : sentence;
 }
 
 // ── Personalized trending (Phase 3) ──────────────────────────────────────────

@@ -66,7 +66,9 @@ function CampaignHero({
 }) {
   const accent = campaign.accent ?? COLORS.orange;
   const top = campaign.characters[0];
-  const bgUri = top?.image_url ?? top?.portrait_url ?? undefined;
+  // Prefer the linked title's TMDB backdrop (composed for wide framing); fall
+  // back to character art for franchise-/hero-only campaigns with no title.
+  const bgUri = campaign.backdrop_url ?? top?.image_url ?? top?.portrait_url ?? undefined;
   return (
     <Pressable
       style={hero.wrap}
@@ -77,7 +79,9 @@ function CampaignHero({
         <Image
           source={{ uri: bgUri }}
           contentFit="cover"
-          contentPosition="top"
+          // Wide cinematic backdrop, not a portrait — center the crop so subjects
+          // stay in frame instead of being pushed off the bottom edge.
+          contentPosition="center"
           style={StyleSheet.absoluteFill}
         />
       ) : (
