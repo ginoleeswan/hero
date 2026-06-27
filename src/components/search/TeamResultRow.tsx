@@ -4,19 +4,31 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PressScale } from '../ui/PressScale';
+import { BrandLogoView } from '../PublisherBadge';
 import { COLORS } from '../../constants/colors';
+import { teamLogo } from '../../constants/teamBrands';
 import type { TeamSearchResult } from '../../lib/db/teams';
 
 export function TeamResultRow({ team, onPress }: { team: TeamSearchResult; onPress: () => void }) {
+  const tlogo = teamLogo(team);
   const meta = [`${team.member_count} member${team.member_count === 1 ? '' : 's'}`, team.publisher]
     .filter(Boolean)
     .join(' · ');
   return (
     <PressScale onPress={onPress} style={styles.row}>
       <View style={styles.tile}>
-        <Text style={styles.monogram} numberOfLines={1}>
-          {team.name.slice(0, 2).toUpperCase()}
-        </Text>
+        {tlogo ? (
+          <BrandLogoView
+            logo={tlogo.logo}
+            width={Math.min(34, 26 * (tlogo.badgeSize.width / tlogo.badgeSize.height))}
+            height={26}
+            tint={tlogo.logoTint}
+          />
+        ) : (
+          <Text style={styles.monogram} numberOfLines={1}>
+            {team.name.slice(0, 2).toUpperCase()}
+          </Text>
+        )}
       </View>
       <View style={styles.text}>
         <Text style={styles.name} numberOfLines={1}>

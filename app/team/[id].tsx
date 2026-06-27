@@ -24,8 +24,10 @@ import { flattenCategoryPages } from '../../src/lib/query/heroCache';
 import { DEFAULT_FILTERS, type CategoryFilters } from '../../src/lib/db/categoryFilters';
 import { HeroImage } from '../../src/components/HeroImage';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
+import { BrandLogoView } from '../../src/components/PublisherBadge';
 import { COLORS } from '../../src/constants/colors';
 import { brandForPublisher } from '../../src/constants/publishers';
+import { teamLogo } from '../../src/constants/teamBrands';
 import type { Hero } from '../../src/lib/db/heroes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -105,6 +107,8 @@ export default function TeamScreen() {
   const notFound = teamLoaded && team === null;
 
   const brand = brandForPublisher(team?.publisher);
+  const tlogo = team ? teamLogo(team) : undefined;
+  const LOGO_H = 44;
   const headerHeight = insets.top + 44;
   const eyebrow = team
     ? `${(total || team.member_count).toLocaleString()} ${(total || team.member_count) === 1 ? 'MEMBER' : 'MEMBERS'}${team.publisher ? ` · ${team.publisher.toUpperCase()}` : ''}`
@@ -135,9 +139,21 @@ export default function TeamScreen() {
           />
         )}
         <Text style={styles.eyebrow}>{eyebrow}</Text>
-        <Text style={styles.stageTitle} numberOfLines={2}>
-          {team?.name ?? (notFound ? 'Team not found' : '')}
-        </Text>
+        {tlogo ? (
+          <View style={styles.stageLogo}>
+            <BrandLogoView
+              logo={tlogo.logo}
+              width={LOGO_H * (tlogo.badgeSize.width / tlogo.badgeSize.height)}
+              height={LOGO_H}
+              tint={tlogo.logoTint}
+              shadow
+            />
+          </View>
+        ) : (
+          <Text style={styles.stageTitle} numberOfLines={2}>
+            {team?.name ?? (notFound ? 'Team not found' : '')}
+          </Text>
+        )}
       </View>
       <View style={styles.sheetTop} />
     </>
@@ -342,6 +358,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   stageTitle: { fontFamily: 'Flame-Regular', fontSize: 32, color: COLORS.beige, lineHeight: 36 },
+  stageLogo: { alignSelf: 'flex-start' },
   sheetTop: {
     backgroundColor: COLORS.beige,
     borderTopLeftRadius: 24,

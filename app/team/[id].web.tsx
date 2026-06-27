@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getTeamPage, type Hero } from '../../src/lib/db/heroes';
 import { getTeamById, type TeamSummary } from '../../src/lib/db/teams';
 import { brandForPublisher } from '../../src/constants/publishers';
+import { teamLogo } from '../../src/constants/teamBrands';
 import { activeFilterList, type CategoryFilters } from '../../src/lib/db/categoryFilters';
 import { useCategoryFilters } from '../../src/hooks/useCategoryFilters';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
@@ -329,6 +330,9 @@ export default function WebTeamScreen() {
           colorDark={colorDark}
           total={total || team.member_count}
           leadName={heroes[0]?.name}
+          logo={teamLogo(team)?.logo}
+          badgeSize={teamLogo(team)?.badgeSize}
+          logoTint={teamLogo(team)?.logoTint}
           heroImageUrls={montageUrls}
           unitLabel="MEMBER"
           compact={!isDesktop}

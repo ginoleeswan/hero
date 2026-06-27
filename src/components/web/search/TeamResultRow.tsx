@@ -1,5 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { COLORS } from '../../../constants/colors';
+import { BrandLogoView } from '../../PublisherBadge';
+import { teamLogo } from '../../../constants/teamBrands';
 import type { TeamSearchResult } from '../../../lib/db/teams';
 
 // A team search-hit row: monogram tile + name + "N members · publisher", a
@@ -17,6 +19,7 @@ export function TeamResultRow({
   active?: boolean;
 }) {
   const light = variant === 'light';
+  const tlogo = teamLogo(team);
   const meta = [`${team.member_count} member${team.member_count === 1 ? '' : 's'}`, team.publisher]
     .filter(Boolean)
     .join(' · ');
@@ -33,9 +36,18 @@ export function TeamResultRow({
       }
     >
       <View style={styles.tile as object}>
-        <Text style={styles.monogram as object} numberOfLines={1}>
-          {team.name.slice(0, 2).toUpperCase()}
-        </Text>
+        {tlogo ? (
+          <BrandLogoView
+            logo={tlogo.logo}
+            width={Math.min(30, 22 * (tlogo.badgeSize.width / tlogo.badgeSize.height))}
+            height={22}
+            tint={tlogo.logoTint}
+          />
+        ) : (
+          <Text style={styles.monogram as object} numberOfLines={1}>
+            {team.name.slice(0, 2).toUpperCase()}
+          </Text>
+        )}
       </View>
       <View style={styles.text}>
         <Text
