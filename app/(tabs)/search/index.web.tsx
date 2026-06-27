@@ -39,7 +39,9 @@ const RESULT_LIMIT = 300;
 // surfaces near the fold instead of below a wall of teams/films. Films live in a
 // horizontal rail, so they self-cap by scroll.
 const MAX_UNIVERSES = 4;
-const MAX_TEAMS = 3;
+// Teams are the lowest-confidence section here (an exact team match is promoted to
+// the Top Result instead), so keep it to a tight couple and place it last.
+const MAX_TEAMS = 2;
 // ── Skeleton card ──────────────────────────────────────────────────────────────
 function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
   return <Animated.View style={[sk.wrap as object, { opacity }]} />;
@@ -456,6 +458,21 @@ export default function WebSearchScreen() {
               </View>
             </View>
           )}
+          {/* Films & Shows sit ABOVE the character grid as a horizontal poster
+              rail — posters are visual and there can be many, so one swipeable
+              row conserves the vertical space the character grid needs. */}
+          {sectionTitles.length > 0 && (
+            <View style={styles.railSection}>
+              <Text style={styles.idleLabel as object}>Films & Shows</Text>
+              <TitleRail
+                titles={sectionTitles}
+                onPress={(id) => router.push(`/title/${id}` as Parameters<typeof router.push>[0])}
+              />
+            </View>
+          )}
+          {/* Teams last among the secondary sections (lowest confidence — an exact
+              team is promoted to Top Result) and capped tight, so they don't
+              outweigh the films or the characters people came for. */}
           {sectionTeams.length > 0 && (
             <View style={styles.titlesSection}>
               <Text style={styles.idleLabel as object}>Teams</Text>
@@ -470,18 +487,6 @@ export default function WebSearchScreen() {
                   />
                 </View>
               ))}
-            </View>
-          )}
-          {/* Films & Shows sit ABOVE the character grid as a horizontal poster
-              rail — posters are visual and there can be many, so one swipeable
-              row conserves the vertical space the character grid needs. */}
-          {sectionTitles.length > 0 && (
-            <View style={styles.railSection}>
-              <Text style={styles.idleLabel as object}>Films & Shows</Text>
-              <TitleRail
-                titles={sectionTitles}
-                onPress={(id) => router.push(`/title/${id}` as Parameters<typeof router.push>[0])}
-              />
             </View>
           )}
           {hasCriteria && (loading || gridHeroes.length > 0) && (
