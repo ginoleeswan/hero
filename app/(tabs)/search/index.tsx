@@ -31,6 +31,7 @@ import { TitleResultRow } from '../../../src/components/search/TitleResultRow';
 import { FilterChips, type FilterOption } from '../../../src/components/search/FilterChips';
 import { AccentRail } from '../../../src/components/search/AccentRail';
 import { CategoryPodGrid } from '../../../src/components/home/CategoryPodGrid';
+import { PublisherGrid } from '../../../src/components/home/PublisherGrid';
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { Skeleton } from '../../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../../src/components/ui/SkeletonProvider';
@@ -245,6 +246,20 @@ export default function SearchScreen() {
 
       {showIdleExtras && (
         <>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionLabel}>Universes</Text>
+          </View>
+          {/* PublisherGrid owns its 16px gutter, so cancel the list's content
+              padding to align the brand tiles edge-to-edge. */}
+          <View style={styles.browseGrid}>
+            <PublisherGrid
+              onPress={(slug) => {
+                Haptics.selectionAsync();
+                router.push(`/universe/${slug}` as Parameters<typeof router.push>[0]);
+              }}
+            />
+          </View>
+
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>Browse</Text>
           </View>
