@@ -93,10 +93,7 @@ function describe(top: TopResult): {
     case 'team': {
       const t = top.team;
       const tl = teamLogo(t);
-      const meta = [
-        `${t.member_count} member${t.member_count === 1 ? '' : 's'}`,
-        t.publisher,
-      ]
+      const meta = [`${t.member_count} member${t.member_count === 1 ? '' : 's'}`, t.publisher]
         .filter(Boolean)
         .join(' · ');
       return {
@@ -150,7 +147,11 @@ function describe(top: TopResult): {
         thumb: (
           <View style={[styles.tile, styles.tileDark as object] as object}>
             {t.poster_url ? (
-              <Image source={{ uri: t.poster_url }} style={StyleSheet.absoluteFill} contentFit="cover" />
+              <Image
+                source={{ uri: t.poster_url }}
+                style={StyleSheet.absoluteFill}
+                contentFit="cover"
+              />
             ) : null}
           </View>
         ),
@@ -224,5 +225,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(245,235,220,0.14)',
     flexShrink: 0,
   } as object,
-  enterKey: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(245,235,220,0.6)' } as object,
+  enterKey: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: 'rgba(245,235,220,0.6)',
+  } as object,
 });

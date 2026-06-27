@@ -58,10 +58,7 @@ export const TEAM_LOGOS: Record<string, TeamLogo> = {
  * Logo for a team: a curated bundled mark if we have one, else a hosted
  * `teams.logo_url` if set, else undefined (caller shows the wordmark/monogram).
  */
-export function teamLogo(team: {
-  name: string;
-  logo_url?: string | null;
-}): TeamLogo | undefined {
+export function teamLogo(team: { name: string; logo_url?: string | null }): TeamLogo | undefined {
   const curated = TEAM_LOGOS[norm(team.name)];
   if (curated) return curated;
   if (team.logo_url) return { logo: { uri: team.logo_url }, badgeSize: URL_LOGO_BOX };

@@ -10,7 +10,9 @@ const norm = (s: string) => s.trim().toLowerCase();
  * names that match a real team are tappable, the rest stay plain text. Shared by
  * the native and web character views so they can't drift.
  */
-export function useHeroTeams(names: string[] | null | undefined): (name: string) => string | undefined {
+export function useHeroTeams(
+  names: string[] | null | undefined,
+): (name: string) => string | undefined {
   const unique = useMemo(
     () => Array.from(new Set((names ?? []).map((n) => n.trim()).filter(Boolean))),
     [names],

@@ -130,10 +130,7 @@ export async function searchTeams(query: string, limit = 6): Promise<TeamSearchR
  */
 export async function getTeamsByNames(names: string[]): Promise<TeamSummary[]> {
   if (names.length === 0) return [];
-  const { data, error } = await supabase
-    .from('teams')
-    .select(TEAM_SUMMARY_COLS)
-    .in('name', names);
+  const { data, error } = await supabase.from('teams').select(TEAM_SUMMARY_COLS).in('name', names);
   if (error) {
     console.warn('[getTeamsByNames] error:', error.message);
     return [];
@@ -153,7 +150,6 @@ export async function getTeamById(id: string): Promise<TeamSummary | null> {
   }
   return (data as TeamSummary | null) ?? null;
 }
-
 
 const EMPTY_SYNERGY: SynergyBreakdown = {
   teammate_links: { count: 0, max: 0, pct: 0 },
