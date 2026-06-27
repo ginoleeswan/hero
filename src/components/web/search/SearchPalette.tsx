@@ -51,8 +51,9 @@ export function SearchPalette() {
         e.preventDefault();
         setHighlight((i) => (items.length ? (i - 1 + items.length) % items.length : -1));
       } else if (e.key === 'Enter') {
-        const item = items[highlight];
-        if (!item) return; // fall through to onSubmitEditing (commit query)
+        // No explicit arrow selection → open the pre-selected top result (item 0).
+        const item = items[highlight === -1 ? 0 : highlight];
+        if (!item) return; // no results → fall through to onSubmitEditing (commit query)
         e.preventDefault();
         addSearch(query);
         close();

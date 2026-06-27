@@ -11,9 +11,12 @@ import { SuggestionsList } from './SuggestionsList';
 import { UniverseChip } from './UniverseChip';
 import { TeamResultRow } from './TeamResultRow';
 import { TitleResultRow } from './TitleResultRow';
+import { TopResultRow } from './TopResultRow';
+import { pickTopResult, topResultKey, type TopResult } from '../../../lib/search/topResult';
 
-// Flat, ordered list of the dropdown's selectable rows — universes, teams,
-// heroes, titles. The palette owns the keyboard cursor and drives Enter-to-open.
+// Flat, ordered list of the dropdown's selectable rows — top result first, then
+// universes, teams, heroes, titles. The palette owns the keyboard cursor and
+// drives Enter-to-open (defaulting to the top result).
 export type NavItem =
   | { kind: 'universe'; slug: string }
   | { kind: 'team'; id: string }
@@ -25,6 +28,19 @@ const MAX_TEAM_SUGGESTIONS = 3;
 const MAX_TITLE_SUGGESTIONS = 3;
 
 const MAX_HERO_SUGGESTIONS = 8;
+
+function topResultNavItem(top: TopResult): NavItem {
+  switch (top.kind) {
+    case 'universe':
+      return { kind: 'universe', slug: top.universe.slug };
+    case 'team':
+      return { kind: 'team', id: top.team.id };
+    case 'hero':
+      return { kind: 'hero', id: top.hero.id };
+    case 'title':
+      return { kind: 'title', id: top.title.id };
+  }
+}
 
 // Consistent type-labelled section header (Universes / Teams / Characters /
 // Films & Shows), with an optional count chip — so no section reads as a bare
@@ -55,16 +71,28 @@ export function SearchDropdownContent({
   const isEmptyQuery = query.trim().length === 0;
   const { heroes: trending, isLoading: trendingLoading } = useIdleHeroes(isEmptyQuery, 4);
 
-  const shownTeams = teams.slice(0, MAX_TEAM_SUGGESTIONS);
-  const shownHeroes = heroes.slice(0, MAX_HERO_SUGGESTIONS);
-  const shownTitles = titles.slice(0, MAX_TITLE_SUGGESTIONS);
+  // The featured "Top result" — the single best match across all types. It's
+  // de-duped from its own section below so the same item never shows twice.
+  const topResult = isEmptyQuery ? null : pickTopResult(query, { universes, teams, heroes, titles });
+  const topKey = topResult ? topResultKey(topResult) : null;
+
+  const shownTeams = teams
+    .filter((t) => `team:${t.id}` !== topKey)
+    .slice(0, MAX_TEAM_SUGGESTIONS);
+  const shownUniverses = universes.filter((u) => `universe:${u.slug}` !== topKey);
+  const shownHeroes = heroes.filter((h) => `hero:${h.id}` !== topKey).slice(0, MAX_HERO_SUGGESTIONS);
+  const shownTitles = titles
+    .filter((t) => `title:${t.id}` !== topKey)
+    .slice(0, MAX_TITLE_SUGGESTIONS);
 
   // Report the current flat item list up to the palette for keyboard nav. Effect
   // (not a render-time call) so we never setState in the parent during render.
+  // Top result is index 0 → the default Enter target.
   const navItems: NavItem[] = isEmptyQuery
     ? []
     : [
-        ...universes.map((u) => ({ kind: 'universe', slug: u.slug }) as NavItem),
+        ...(topResult ? [topResultNavItem(topResult)] : []),
+        ...shownUniverses.map((u) => ({ kind: 'universe', slug: u.slug }) as NavItem),
         ...shownTeams.map((t) => ({ kind: 'team', id: t.id }) as NavItem),
         ...shownHeroes.map((h) => ({ kind: 'hero', id: h.id }) as NavItem),
         ...shownTitles.map((t) => ({ kind: 'title', id: t.id }) as NavItem),
@@ -107,6 +135,20 @@ export function SearchDropdownContent({
     router.push(`/title/${id}` as Parameters<typeof router.push>[0]);
   };
 
+  const handleTopPress = () => {
+    if (!topResult) return;
+    switch (topResult.kind) {
+      case 'universe':
+        return handleUniversePress(topResult.universe.slug);
+      case 'team':
+        return handleTeamPress(topResult.team.id);
+      case 'hero':
+        return handleHeroPress(topResult.hero.id);
+      case 'title':
+        return handleTitlePress(topResult.title.id);
+    }
+  };
+
   const handleSelectRecentSearch = (recentQuery: string) => setQuery(recentQuery);
 
   const handleViewAll = () => {
@@ -133,10 +175,16 @@ export function SearchDropdownContent({
   return (
     <View style={styles.wrap as object}>
       <View style={styles.scroll as object}>
-        {universes.length > 0 && (
+        {topResult && (
+          <View style={styles.section}>
+            <SectionLabel label="Top result" />
+            <TopResultRow top={topResult} active={highlightIndex <= 0} onPress={handleTopPress} />
+          </View>
+        )}
+        {shownUniverses.length > 0 && (
           <View style={styles.section}>
             <SectionLabel label="Universes" />
-            {universes.map((u) => (
+            {shownUniverses.map((u) => (
               <UniverseChip
                 key={u.slug}
                 universe={u}
@@ -159,16 +207,31 @@ export function SearchDropdownContent({
             ))}
           </View>
         )}
-        <View style={styles.section}>
-          <SectionLabel label="Characters" count={resultCount} />
-          <SuggestionsList
-            query={query}
-            suggestions={shownHeroes}
-            isLoading={loading}
-            activeId={activeHeroId}
-            onSuggestionPress={handleHeroPress}
-          />
-        </View>
+        {(loading || shownHeroes.length > 0) && (
+          <View style={styles.section}>
+            <SectionLabel
+              label="Characters"
+              count={resultCount - (topResult?.kind === 'hero' ? 1 : 0)}
+            />
+            <SuggestionsList
+              query={query}
+              suggestions={shownHeroes}
+              isLoading={loading}
+              activeId={activeHeroId}
+              onSuggestionPress={handleHeroPress}
+            />
+          </View>
+        )}
+        {!loading &&
+          !topResult &&
+          shownUniverses.length === 0 &&
+          shownTeams.length === 0 &&
+          shownHeroes.length === 0 &&
+          shownTitles.length === 0 && (
+            <View style={styles.empty as object}>
+              <Text style={styles.emptyText as object}>No results for &quot;{query.trim()}&quot;</Text>
+            </View>
+          )}
         {shownTitles.length > 0 && (
           <View style={styles.section}>
             <SectionLabel label="Films & Shows" />
@@ -250,5 +313,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: 'rgba(245,235,220,0.35)',
     letterSpacing: 0.2,
+  } as object,
+  empty: { paddingVertical: 28, paddingHorizontal: 16, alignItems: 'center' } as object,
+  emptyText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14,
+    color: 'rgba(245,235,220,0.55)',
+    textAlign: 'center',
   } as object,
 });
