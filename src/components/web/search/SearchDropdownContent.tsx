@@ -23,11 +23,14 @@ export type NavItem =
   | { kind: 'hero'; id: string }
   | { kind: 'title'; id: string };
 
+// Tight per-section caps so the palette shows a "best of every type" taste —
+// Top result + a few characters + teams + films above the fold — rather than a
+// wall of one type.
 const MAX_TEAM_SUGGESTIONS = 2;
 
-const MAX_TITLE_SUGGESTIONS = 3;
+const MAX_TITLE_SUGGESTIONS = 2;
 
-const MAX_HERO_SUGGESTIONS = 8;
+const MAX_HERO_SUGGESTIONS = 5;
 
 function topResultNavItem(top: TopResult): NavItem {
   switch (top.kind) {
@@ -183,10 +186,7 @@ export function SearchDropdownContent({
         )}
         {(loading || shownHeroes.length > 0) && (
           <View style={styles.section}>
-            <SectionLabel
-              label="Characters"
-              count={resultCount - (topResult?.kind === 'hero' ? 1 : 0)}
-            />
+            <SectionLabel label="Characters" count={resultCount} />
             <SuggestionsList
               query={query}
               suggestions={shownHeroes}

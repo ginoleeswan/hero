@@ -36,8 +36,19 @@ function splitOnMatch(text: string, query: string): { value: string; match: bool
   return parts;
 }
 
+/** When the query isn't in the visible name, find the real-name/alias that DID
+ *  match, so the row explains itself ("Captain Marvel · Billy Batson") instead of
+ *  looking random. */
+function matchReason(hero: HeroSearchResult, query: string): string | null {
+  const q = query.trim().toLowerCase();
+  if (!q || hero.name.toLowerCase().includes(q)) return null;
+  if (hero.full_name && hero.full_name.toLowerCase().includes(q)) return hero.full_name;
+  return (hero.aliases ?? []).find((a) => a.toLowerCase().includes(q)) ?? null;
+}
+
 export function SuggestionItem({ hero, query = '', onPress, active = false }: SuggestionItemProps) {
   const segments = splitOnMatch(hero.name, query);
+  const reason = matchReason(hero, query);
 
   return (
     <Pressable
@@ -69,7 +80,16 @@ export function SuggestionItem({ hero, query = '', onPress, active = false }: Su
           ))}
         </Text>
         <RoleBadge alignment={hero.alignment} />
-        {hero.publisher ? (
+        {reason ? (
+          <Text style={styles.publisherText} numberOfLines={1}>
+            {'·  '}
+            {splitOnMatch(reason, query).map((seg, i) => (
+              <Text key={i} style={seg.match ? (styles.nameMatch as object) : undefined}>
+                {seg.value}
+              </Text>
+            ))}
+          </Text>
+        ) : hero.publisher ? (
           <Text style={styles.publisherText} numberOfLines={1}>
             {`·  ${hero.publisher}`}
           </Text>
