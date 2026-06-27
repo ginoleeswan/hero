@@ -7,6 +7,7 @@ import { COLORS } from '../../../constants/colors';
 import { useSearch } from '../../../contexts/SearchContext';
 import { useSearchHistory } from '../../../hooks/useSearchHistory';
 import { SearchDropdownContent, type NavItem } from './SearchDropdownContent';
+import { SEARCH_SCOPES, type SearchScope } from './ScopeBar';
 
 // Desktop command palette. Open state is the shared `searchFocused` flag, so the
 // suggestion list's existing setSearchFocused(false)-on-select doubles as "close
@@ -18,8 +19,17 @@ export function SearchPalette() {
   const inputRef = useRef<TextInput>(null);
   const [items, setItems] = useState<NavItem[]>([]);
   const [highlight, setHighlight] = useState(-1);
+  const [scope, setScope] = useState<SearchScope>('all');
 
   const close = () => setSearchFocused(false);
+
+  const cycleScope = (dir: 1 | -1) => {
+    setScope((cur) => {
+      const i = SEARCH_SCOPES.findIndex((s) => s.key === cur);
+      return SEARCH_SCOPES[(i + dir + SEARCH_SCOPES.length) % SEARCH_SCOPES.length].key;
+    });
+    setHighlight(-1);
+  };
 
   // Reset the keyboard cursor whenever the query changes — the item list shifts.
   useEffect(() => {
@@ -32,6 +42,7 @@ export function SearchPalette() {
   useEffect(() => {
     if (!searchFocused) return;
     setQuery('');
+    setScope('all');
     const t = setTimeout(() => inputRef.current?.focus(), 20);
     return () => clearTimeout(t);
   }, [searchFocused]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -44,6 +55,10 @@ export function SearchPalette() {
     if (!searchFocused) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') return close();
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        return cycleScope(e.shiftKey ? -1 : 1);
+      }
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setHighlight((i) => (items.length ? (i + 1) % items.length : -1));
@@ -112,11 +127,22 @@ export function SearchPalette() {
           </View>
         </View>
         <View style={styles.body as object}>
-          <SearchDropdownContent highlightIndex={highlight} onItemsChange={setItems} />
+          <SearchDropdownContent
+            highlightIndex={highlight}
+            onItemsChange={setItems}
+            scope={scope}
+            onScopeChange={(s) => {
+              setScope(s);
+              setHighlight(-1);
+            }}
+          />
         </View>
         <View style={styles.hints as object}>
           <Text style={styles.hint as object}>
             <Text style={styles.hintKey as object}>↑↓</Text> navigate
+          </Text>
+          <Text style={styles.hint as object}>
+            <Text style={styles.hintKey as object}>⇥</Text> scope
           </Text>
           <Text style={styles.hint as object}>
             <Text style={styles.hintKey as object}>↵</Text> open

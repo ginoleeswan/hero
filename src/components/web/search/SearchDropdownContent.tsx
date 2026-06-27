@@ -12,6 +12,7 @@ import { UniverseChip } from './UniverseChip';
 import { TeamResultRow } from './TeamResultRow';
 import { TitleResultRow } from './TitleResultRow';
 import { TopResultRow } from './TopResultRow';
+import { ScopeBar, type SearchScope } from './ScopeBar';
 import { pickTopResult, topResultKey, type TopResult } from '../../../lib/search/topResult';
 
 // Flat, ordered list of the dropdown's selectable rows — top result first, then
@@ -62,9 +63,13 @@ function SectionLabel({ label, count }: { label: string; count?: number }) {
 export function SearchDropdownContent({
   highlightIndex = -1,
   onItemsChange,
+  scope = 'all',
+  onScopeChange,
 }: {
   highlightIndex?: number;
   onItemsChange?: (items: NavItem[]) => void;
+  scope?: SearchScope;
+  onScopeChange?: (s: SearchScope) => void;
 } = {}) {
   const router = useRouter();
   const { query, setQuery, setSearchFocused } = useSearch();
@@ -74,31 +79,45 @@ export function SearchDropdownContent({
   const isEmptyQuery = query.trim().length === 0;
   const { heroes: trending, isLoading: trendingLoading } = useIdleHeroes(isEmptyQuery, 4);
 
-  // The featured "Top result" — the single best match across all types. It's
-  // de-duped from its own section below so the same item never shows twice.
-  const topResult = isEmptyQuery ? null : pickTopResult(query, { universes, teams, heroes, titles });
+  // Which sections show, and how many — narrowed by the active scope. A scoped
+  // view shows just that type (no top result), with a bigger cap.
+  const showTop = scope === 'all';
+  const showChars = scope === 'all' || scope === 'characters';
+  const showTeamsScope = scope === 'all' || scope === 'teams';
+  const showFilmsScope = scope === 'all' || scope === 'films';
+  const showUniversesScope = scope === 'all' || scope === 'universes';
+  const heroCap = scope === 'characters' ? 16 : MAX_HERO_SUGGESTIONS;
+  const teamCap = scope === 'teams' ? 12 : MAX_TEAM_SUGGESTIONS;
+  const titleCap = scope === 'films' ? 12 : MAX_TITLE_SUGGESTIONS;
+
+  // The featured "Top result" — the single best match across all types ('all'
+  // scope only). De-duped from its own section so the same item never shows twice.
+  const topResult =
+    isEmptyQuery || !showTop ? null : pickTopResult(query, { universes, teams, heroes, titles });
   const topKey = topResult ? topResultKey(topResult) : null;
 
-  const shownTeams = teams
-    .filter((t) => `team:${t.id}` !== topKey)
-    .slice(0, MAX_TEAM_SUGGESTIONS);
+  const shownTeams = teams.filter((t) => `team:${t.id}` !== topKey).slice(0, teamCap);
   const shownUniverses = universes.filter((u) => `universe:${u.slug}` !== topKey);
-  const shownHeroes = heroes.filter((h) => `hero:${h.id}` !== topKey).slice(0, MAX_HERO_SUGGESTIONS);
-  const shownTitles = titles
-    .filter((t) => `title:${t.id}` !== topKey)
-    .slice(0, MAX_TITLE_SUGGESTIONS);
+  const shownHeroes = heroes.filter((h) => `hero:${h.id}` !== topKey).slice(0, heroCap);
+  const shownTitles = titles.filter((t) => `title:${t.id}` !== topKey).slice(0, titleCap);
 
-  // Report the current flat item list up to the palette for keyboard nav. Effect
-  // (not a render-time call) so we never setState in the parent during render.
-  // Top result is index 0 → the default Enter target.
+  const charsVisible = showChars && (loading || shownHeroes.length > 0);
+  const teamsVisible = showTeamsScope && shownTeams.length > 0;
+  const universesVisible = showUniversesScope && shownUniverses.length > 0;
+  const filmsVisible = showFilmsScope && shownTitles.length > 0;
+
+  // Report the current flat item list up to the palette for keyboard nav, in
+  // render order. Top result is index 0 → the default Enter target.
   const navItems: NavItem[] = isEmptyQuery
     ? []
     : [
         ...(topResult ? [topResultNavItem(topResult)] : []),
-        ...shownHeroes.map((h) => ({ kind: 'hero', id: h.id }) as NavItem),
-        ...shownTeams.map((t) => ({ kind: 'team', id: t.id }) as NavItem),
-        ...shownUniverses.map((u) => ({ kind: 'universe', slug: u.slug }) as NavItem),
-        ...shownTitles.map((t) => ({ kind: 'title', id: t.id }) as NavItem),
+        ...(charsVisible ? shownHeroes.map((h) => ({ kind: 'hero', id: h.id }) as NavItem) : []),
+        ...(teamsVisible ? shownTeams.map((t) => ({ kind: 'team', id: t.id }) as NavItem) : []),
+        ...(universesVisible
+          ? shownUniverses.map((u) => ({ kind: 'universe', slug: u.slug }) as NavItem)
+          : []),
+        ...(filmsVisible ? shownTitles.map((t) => ({ kind: 'title', id: t.id }) as NavItem) : []),
       ];
   const itemsKey = JSON.stringify(navItems);
   useEffect(() => {
@@ -177,6 +196,7 @@ export function SearchDropdownContent({
 
   return (
     <View style={styles.wrap as object}>
+      <ScopeBar scope={scope} onScope={onScopeChange ?? (() => {})} />
       <View style={styles.scroll as object}>
         {topResult && (
           <View style={styles.section}>
@@ -184,7 +204,7 @@ export function SearchDropdownContent({
             <TopResultRow top={topResult} active={highlightIndex <= 0} onPress={handleTopPress} />
           </View>
         )}
-        {(loading || shownHeroes.length > 0) && (
+        {charsVisible && (
           <View style={styles.section}>
             <SectionLabel label="Characters" count={resultCount} />
             <SuggestionsList
@@ -196,7 +216,7 @@ export function SearchDropdownContent({
             />
           </View>
         )}
-        {shownTeams.length > 0 && (
+        {teamsVisible && (
           <View style={styles.section}>
             <SectionLabel label="Teams" />
             {shownTeams.map((t) => (
@@ -209,7 +229,7 @@ export function SearchDropdownContent({
             ))}
           </View>
         )}
-        {shownUniverses.length > 0 && (
+        {universesVisible && (
           <View style={styles.section}>
             <SectionLabel label="Universes" />
             {shownUniverses.map((u) => (
@@ -222,17 +242,7 @@ export function SearchDropdownContent({
             ))}
           </View>
         )}
-        {!loading &&
-          !topResult &&
-          shownUniverses.length === 0 &&
-          shownTeams.length === 0 &&
-          shownHeroes.length === 0 &&
-          shownTitles.length === 0 && (
-            <View style={styles.empty as object}>
-              <Text style={styles.emptyText as object}>No results for &quot;{query.trim()}&quot;</Text>
-            </View>
-          )}
-        {shownTitles.length > 0 && (
+        {filmsVisible && (
           <View style={styles.section}>
             <SectionLabel label="Films & Shows" />
             {shownTitles.map((t) => (
@@ -245,6 +255,20 @@ export function SearchDropdownContent({
             ))}
           </View>
         )}
+        {!loading &&
+          !topResult &&
+          !charsVisible &&
+          !teamsVisible &&
+          !universesVisible &&
+          !filmsVisible && (
+            <View style={styles.empty as object}>
+              <Text style={styles.emptyText as object}>
+                {scope === 'all'
+                  ? `No results for "${query.trim()}"`
+                  : `No ${scope} for "${query.trim()}"`}
+              </Text>
+            </View>
+          )}
       </View>
 
       {/* Pinned footer: jump to the full results page. Sits below the scroll area
