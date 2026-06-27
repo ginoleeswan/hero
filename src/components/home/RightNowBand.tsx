@@ -58,22 +58,31 @@ function PulseDot() {
 function CampaignHero({
   campaign,
   onHeroPress,
+  onTitlePress,
   disabled,
 }: {
   campaign: Campaign;
   onHeroPress: HeroPress;
+  onTitlePress: (titleId: string) => void;
   disabled?: boolean;
 }) {
   const accent = campaign.accent ?? COLORS.orange;
   const top = campaign.characters[0];
+  const avatarChars = campaign.characters.slice(0, 5);
   // Prefer the linked title's TMDB backdrop (composed for wide framing); fall
   // back to character art for franchise-/hero-only campaigns with no title.
   const bgUri = campaign.backdrop_url ?? top?.image_url ?? top?.portrait_url ?? undefined;
+  // The cover is the title (media); tap it to open the title page, only falling
+  // back to the lead character when the campaign has no linked title.
+  const openCover = () => {
+    if (campaign.title_id) onTitlePress(campaign.title_id);
+    else if (top) onHeroPress(top);
+  };
   return (
     <Pressable
       style={hero.wrap}
-      onPress={() => top && onHeroPress(top)}
-      disabled={disabled || !top}
+      onPress={openCover}
+      disabled={disabled || (!campaign.title_id && !top)}
     >
       {bgUri ? (
         <Image
@@ -104,8 +113,16 @@ function CampaignHero({
         )}
         <View style={hero.bottom}>
           <View style={hero.avatars}>
-            {campaign.characters.slice(0, 5).map((c, i) => (
-              <View key={c.id} style={[hero.avatar, { marginLeft: i === 0 ? 0 : -10 }]}>
+            {avatarChars.map((c, i) => (
+              <View
+                key={c.id}
+                // Descending zIndex so each chip overlaps the one to its right —
+                // the left chip's edge sits on top instead of being clipped.
+                style={[
+                  hero.avatar,
+                  { marginLeft: i === 0 ? 0 : -10, zIndex: avatarChars.length - i },
+                ]}
+              >
                 <HeroImage
                   id={c.id}
                   name={c.name}
@@ -113,7 +130,7 @@ function CampaignHero({
                   portraitUrl={c.portrait_url}
                   grid
                   contentFit="cover"
-                  contentPosition="top"
+                  contentPosition={{ top: '20%', left: '50%' }}
                   style={StyleSheet.absoluteFill as object}
                   recyclingKey={c.id}
                 />
@@ -211,7 +228,12 @@ export function RightNowBand({
       </View>
 
       {campaign && campaign.characters.length > 0 && (
-        <CampaignHero campaign={campaign} onHeroPress={onHeroPress} disabled={disabled} />
+        <CampaignHero
+          campaign={campaign}
+          onHeroPress={onHeroPress}
+          onTitlePress={onTitlePress}
+          disabled={disabled}
+        />
       )}
 
       {/* One calm rail — theatrical, upcoming and streaming merged; the badge

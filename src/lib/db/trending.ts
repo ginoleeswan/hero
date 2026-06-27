@@ -128,6 +128,8 @@ export interface Campaign {
    *  band. Null for franchise-/hero-only campaigns; UI falls back to character art. */
   backdrop_url: string | null;
   poster_url: string | null;
+  /** Linked title id — tapping the hero cover routes here (the media page). */
+  title_id: string | null;
   characters: TrendingTitleCharacter[];
 }
 
@@ -151,6 +153,7 @@ export async function getActiveCampaigns(limit = 3, chars = 16): Promise<Campaig
     accent: string | null;
     backdrop_url: string | null;
     poster_url: string | null;
+    title_id: string | null;
     hero_id: string;
     hero_name: string;
     hero_image_url: string | null;
@@ -166,6 +169,7 @@ export async function getActiveCampaigns(limit = 3, chars = 16): Promise<Campaig
         accent: r.accent,
         backdrop_url: r.backdrop_url,
         poster_url: r.poster_url,
+        title_id: r.title_id,
         characters: [],
       };
       byId.set(r.campaign_id, c);
@@ -207,6 +211,7 @@ async function synthesizeCampaignFromTrending(): Promise<Campaign | null> {
     accent: null, // UI defaults to the brand orange
     backdrop_url: t.backdrop_url,
     poster_url: t.poster_url,
+    title_id: t.id,
     characters: t.characters,
   };
 }

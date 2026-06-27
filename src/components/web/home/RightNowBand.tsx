@@ -2,6 +2,7 @@
 // zone for web. Desktop: a campaign hero beside a ranked "What's Hot" sidebar,
 // then the badged trending shelves. Mobile-web: a clean vertical stack.
 import React from 'react';
+import ReactDOM from 'react-dom';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { HeroImage } from '../../HeroImage';
@@ -31,13 +32,118 @@ interface RightNowBandProps {
   onTitlePress: (id: string) => void;
 }
 
+// One avatar chip in the campaign hero. Tracks its own hover so it can lift,
+// ring in the accent colour, jump above its neighbours, and show an instant
+// name tooltip (the native `title` tooltip is too slow and fights the scale).
+function CampaignAvatar({
+  character,
+  index,
+  count,
+  accent,
+  onPress,
+}: {
+  character: TrendingTitleCharacter;
+  index: number;
+  count: number;
+  accent: string;
+  onPress: () => void;
+}) {
+  const [hovered, setHovered] = React.useState(false);
+  const nodeRef = React.useRef<HTMLElement | null>(null);
+  // Tooltip is portalled to <body> so the hero card's overflow:hidden (rounded
+  // corners) can't clip it when it sits below the bottom-row chips.
+  const [tipPos, setTipPos] = React.useState<{ x: number; y: number } | null>(null);
+  const enter = () => {
+    setHovered(true);
+    const r = nodeRef.current?.getBoundingClientRect();
+    if (r) setTipPos({ x: r.left + r.width / 2, y: r.bottom + 8 });
+  };
+  const leave = () => {
+    setHovered(false);
+    setTipPos(null);
+  };
+  return (
+    <Pressable
+      ref={(node) => {
+        nodeRef.current = node as unknown as HTMLElement | null;
+      }}
+      onHoverIn={enter}
+      onHoverOut={leave}
+      onPress={(e) => {
+        // Don't also trigger the whole-hero cover press.
+        (e as unknown as { stopPropagation?: () => void }).stopPropagation?.();
+        onPress();
+      }}
+      aria-label={character.name}
+      // Outer slot owns stacking + overlap. Hovered chip tops all of them.
+      style={
+        [
+          ch.avatarSlot,
+          { marginLeft: index === 0 ? 0 : -12, zIndex: hovered ? 30 : count - index },
+        ] as object
+      }
+    >
+      <View
+        style={
+          [
+            ch.avatar,
+            hovered &&
+              ({
+                transform: [{ translateY: -4 }, { scale: 1.18 }],
+                borderColor: accent,
+                boxShadow: '0 8px 18px rgba(0,0,0,0.4)',
+              } as object),
+          ] as object
+        }
+      >
+        <HeroImage
+          id={character.id}
+          name={character.name}
+          imageUrl={character.image_url}
+          portraitUrl={character.portrait_url}
+          grid
+          contentFit="cover"
+          contentPosition={{ top: '20%', left: '50%' }}
+          style={{ position: 'absolute', inset: 0 } as object}
+          recyclingKey={character.id}
+        />
+      </View>
+      {tipPos &&
+        typeof document !== 'undefined' &&
+        ReactDOM.createPortal(
+          <div style={{ ...TIP_STYLE, left: tipPos.x, top: tipPos.y }}>{character.name}</div>,
+          document.body,
+        )}
+    </Pressable>
+  );
+}
+
+// Fixed-position name tooltip rendered into <body>; merged with per-hover left/top.
+const TIP_STYLE: React.CSSProperties = {
+  position: 'fixed',
+  transform: 'translateX(-50%)',
+  padding: '5px 9px',
+  borderRadius: 8,
+  background: 'rgba(11,24,32,0.97)',
+  border: '1px solid rgba(255,255,255,0.14)',
+  boxShadow: '0 6px 16px rgba(0,0,0,0.45)',
+  color: COLORS.beige,
+  fontFamily: 'Nunito_700Bold',
+  fontSize: 11,
+  whiteSpace: 'nowrap',
+  pointerEvents: 'none',
+  zIndex: 9999,
+};
+
 function CampaignHero({
   campaign,
   onHeroPress,
+  onTitlePress,
   tall,
 }: {
   campaign: Campaign;
   onHeroPress: (id: string) => void;
+  onTitlePress: (id: string) => void;
   tall: boolean;
 }) {
   const accent = campaign.accent ?? COLORS.orange;
@@ -45,9 +151,16 @@ function CampaignHero({
   // Prefer the linked title's TMDB backdrop (composed for wide framing); fall
   // back to character art for franchise-/hero-only campaigns with no title.
   const bgUri = campaign.backdrop_url ?? top?.image_url ?? top?.portrait_url ?? undefined;
+  const avatarChars = campaign.characters.slice(0, 6);
+  // The cover is the title (media); tapping it opens the title page. Only fall
+  // back to the lead character when the campaign has no linked title.
+  const openCover = () => {
+    if (campaign.title_id) onTitlePress(campaign.title_id);
+    else if (top) onHeroPress(top.id);
+  };
   return (
     <Pressable
-      onPress={() => top && onHeroPress(top.id)}
+      onPress={openCover}
       style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [ch.wrap, { minHeight: tall ? 320 : 220 }, hovered && (ch.wrapHover as object)] as object
       }
@@ -79,20 +192,15 @@ function CampaignHero({
         )}
         <View style={ch.bottom}>
           <View style={ch.avatars}>
-            {campaign.characters.slice(0, 6).map((c, i) => (
-              <View key={c.id} style={[ch.avatar, { marginLeft: i === 0 ? 0 : -12 }] as object}>
-                <HeroImage
-                  id={c.id}
-                  name={c.name}
-                  imageUrl={c.image_url}
-                  portraitUrl={c.portrait_url}
-                  grid
-                  contentFit="cover"
-                  contentPosition="top"
-                  style={{ position: 'absolute', inset: 0 } as object}
-                  recyclingKey={c.id}
-                />
-              </View>
+            {avatarChars.map((c, i) => (
+              <CampaignAvatar
+                key={c.id}
+                character={c}
+                index={i}
+                count={avatarChars.length}
+                accent={accent}
+                onPress={() => onHeroPress(c.id)}
+              />
             ))}
           </View>
           <View style={[ch.cta, { backgroundColor: accent }] as object}>
@@ -295,7 +403,12 @@ export function RightNowBand({
       {isDesktop && campaign && campaign.characters.length > 0 ? (
         <View style={[band.topRow, { paddingHorizontal: pagePad }]}>
           <View style={{ flex: 1 }}>
-            <CampaignHero campaign={campaign} onHeroPress={onHeroPress} tall />
+            <CampaignHero
+              campaign={campaign}
+              onHeroPress={onHeroPress}
+              onTitlePress={onTitlePress}
+              tall
+            />
           </View>
           <WhatsHot titles={hotTitles} onTitlePress={onTitlePress} />
         </View>
@@ -303,7 +416,12 @@ export function RightNowBand({
         campaign &&
         campaign.characters.length > 0 && (
           <View style={{ paddingHorizontal: pagePad }}>
-            <CampaignHero campaign={campaign} onHeroPress={onHeroPress} tall={false} />
+            <CampaignHero
+              campaign={campaign}
+              onHeroPress={onHeroPress}
+              onTitlePress={onTitlePress}
+              tall={false}
+            />
           </View>
         )
       )}
@@ -401,6 +519,8 @@ const ch = StyleSheet.create({
     marginTop: 18,
   },
   avatars: { flexDirection: 'row' },
+  // Non-clipping interaction/stacking slot so the tooltip can sit above the chip.
+  avatarSlot: { width: 42, height: 42, cursor: 'pointer' } as object,
   avatar: {
     width: 42,
     height: 42,
@@ -409,6 +529,7 @@ const ch = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.deepNavy,
     backgroundColor: COLORS.navy,
+    transition: 'transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease',
   } as object,
   cta: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 24 } as object,
   ctaText: {

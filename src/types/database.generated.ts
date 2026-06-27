@@ -1820,6 +1820,7 @@ export type Database = {
           hero_portrait_url: string
           label: string
           poster_url: string
+          title_id: string
         }[]
       }
       get_daily_distribution: { Args: { p_date: string }; Returns: Json }
