@@ -48,6 +48,16 @@ export function stageOf(h: {
   return 'done';
 }
 
+/**
+ * Recompute fame/popularity scores now (admin-gated) so freshly-built heroes get
+ * proper popularity attached immediately, instead of waiting for the weekly cron.
+ * Runs auto-tiering + a full recompute server-side; fire-and-forget from the UI.
+ */
+export async function refreshFameScores(): Promise<void> {
+  const { error } = await supabase.rpc('admin_refresh_fame');
+  if (error) console.warn('[refreshFameScores] error:', error.message);
+}
+
 /** Current build state of the working set, derived from the hero status columns. */
 export async function getBuildHeroes(ids: string[]): Promise<BuildHero[]> {
   if (ids.length === 0) return [];

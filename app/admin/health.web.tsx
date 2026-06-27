@@ -33,6 +33,7 @@ import { Bento } from '../../src/components/admin/health/Bento';
 import { SubTabs } from '../../src/components/admin/health/SubTabs';
 import { PipelinesDomain } from '../../src/components/admin/health/domains/PipelinesDomain';
 import { BuildBoard } from '../../src/components/admin/health/BuildBoard';
+import { refreshFameScores } from '../../src/lib/db/build';
 import { HeroConsole } from '../../src/components/admin/health/HeroConsole';
 import { DuplicatesPanel } from '../../src/components/admin/health/DuplicatesPanel';
 import { SpendDomain } from '../../src/components/admin/health/domains/SpendDomain';
@@ -460,6 +461,8 @@ export default function AdminHealthScreen() {
               clearLog,
               flash,
               onHeroesAdded: () => {
+                // Attach popularity to the new/changed heroes now, not next week.
+                void refreshFameScores();
                 queryClient.invalidateQueries({ queryKey: ['enrichmentProgress'] });
                 queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
                 queryClient.invalidateQueries({ queryKey: ['statsPending'] });
@@ -495,7 +498,16 @@ export default function AdminHealthScreen() {
       </CommandShell>
       {/* Foreground Build board lives at page level so the top-strip Stop can halt it. */}
       {buildIds ? (
-        <BuildBoard heroIds={buildIds} flash={flash} onClose={() => setBuildIds(null)} />
+        <BuildBoard
+          heroIds={buildIds}
+          flash={flash}
+          onClose={() => {
+            // A build run fills issue_count / movie data — rescore so the just-built
+            // heroes get proper popularity immediately.
+            void refreshFameScores();
+            setBuildIds(null);
+          }}
+        />
       ) : null}
     </View>
   );
