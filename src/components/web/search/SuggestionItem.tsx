@@ -8,6 +8,8 @@ interface SuggestionItemProps {
   hero: HeroSearchResult;
   query?: string;
   onPress: () => void;
+  /** Highlighted by the palette's keyboard cursor — renders like a hover. */
+  active?: boolean;
 }
 
 /** Split a name into matched / unmatched segments for highlighting. */
@@ -34,14 +36,17 @@ function splitOnMatch(text: string, query: string): { value: string; match: bool
   return parts;
 }
 
-export function SuggestionItem({ hero, query = '', onPress }: SuggestionItemProps) {
+export function SuggestionItem({ hero, query = '', onPress, active = false }: SuggestionItemProps) {
   const segments = splitOnMatch(hero.name, query);
 
   return (
     <Pressable
       onPress={onPress}
       style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [styles.suggestionItem, hovered && (styles.suggestionItemHover as object)] as object
+        [
+          styles.suggestionItem,
+          (hovered || active) && (styles.suggestionItemHover as object),
+        ] as object
       }
     >
       <HeroImage

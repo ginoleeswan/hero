@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
 import { View, TextInput, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { COLORS } from '../../../constants/colors';
 import { useSearch } from '../../../contexts/SearchContext';
 import { useSearchHistory } from '../../../hooks/useSearchHistory';
-import { SearchDropdownContent } from './SearchDropdownContent';
+import { SearchDropdownContent, type NavItem } from './SearchDropdownContent';
 
 // Desktop command palette. Open state is the shared `searchFocused` flag, so the
 // suggestion list's existing setSearchFocused(false)-on-select doubles as "close
@@ -16,8 +16,15 @@ export function SearchPalette() {
   const { query, setQuery, searchFocused, setSearchFocused } = useSearch();
   const { addSearch } = useSearchHistory();
   const inputRef = useRef<TextInput>(null);
+  const [items, setItems] = useState<NavItem[]>([]);
+  const [highlight, setHighlight] = useState(-1);
 
   const close = () => setSearchFocused(false);
+
+  // Reset the keyboard cursor whenever the query changes — the item list shifts.
+  useEffect(() => {
+    setHighlight(-1);
+  }, [query]);
 
   // Open fresh: clear any term left in the shared query (the results page mirrors
   // ?q= into context) and focus the field. An empty query surfaces the idle view
@@ -29,15 +36,36 @@ export function SearchPalette() {
     return () => clearTimeout(t);
   }, [searchFocused]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Escape closes from anywhere while open.
+  // Escape closes; arrows move the cursor through the result rows; Enter opens the
+  // highlighted row (universe → /universe, hero → /character), falling through to
+  // the input's submit (commit the query to the results page) when nothing's
+  // highlighted.
   useEffect(() => {
     if (!searchFocused) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close();
+      if (e.key === 'Escape') return close();
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setHighlight((i) => (items.length ? (i + 1) % items.length : -1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setHighlight((i) => (items.length ? (i - 1 + items.length) % items.length : -1));
+      } else if (e.key === 'Enter') {
+        const item = items[highlight];
+        if (!item) return; // fall through to onSubmitEditing (commit query)
+        e.preventDefault();
+        addSearch(query);
+        close();
+        if (item.kind === 'universe') {
+          router.push(`/universe/${item.slug}` as Parameters<typeof router.push>[0]);
+        } else {
+          router.push(`/character/${item.id}`);
+        }
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [searchFocused]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchFocused, items, highlight, query]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!searchFocused) return null;
 
@@ -72,7 +100,7 @@ export function SearchPalette() {
           </View>
         </View>
         <View style={styles.body as object}>
-          <SearchDropdownContent />
+          <SearchDropdownContent highlightIndex={highlight} onItemsChange={setItems} />
         </View>
       </View>
     </View>

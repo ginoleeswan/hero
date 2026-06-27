@@ -12,11 +12,14 @@ export function UniverseChip({
   universe,
   onPress,
   variant = 'dark',
+  active = false,
 }: {
   universe: UniverseResult;
   onPress: () => void;
   /** 'dark' for the palette panel (beige text); 'light' for the beige results page (navy text). */
   variant?: 'dark' | 'light';
+  /** Highlighted by the palette's keyboard cursor — renders like a hover. */
+  active?: boolean;
 }) {
   const { name, color, logo, badgeSize, logoOnLight, logoTint } = universe;
   const light = variant === 'light';
@@ -28,7 +31,7 @@ export function UniverseChip({
       style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [
           styles.row,
-          hovered && ((light ? styles.rowHoverLight : styles.rowHover) as object),
+          (hovered || active) && ((light ? styles.rowHoverLight : styles.rowHover) as object),
         ] as object
       }
     >

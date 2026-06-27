@@ -12,6 +12,8 @@ interface SuggestionsListProps {
   resultCount: number;
   onSuggestionPress: (id: string) => void;
   onViewAll: () => void;
+  /** Hero id highlighted by the palette's keyboard cursor. */
+  activeId?: string;
 }
 
 export function SuggestionsList({
@@ -21,6 +23,7 @@ export function SuggestionsList({
   resultCount,
   onSuggestionPress,
   onViewAll,
+  activeId,
 }: SuggestionsListProps) {
   if (isLoading) {
     return (
@@ -56,6 +59,7 @@ export function SuggestionsList({
             key={hero.id}
             hero={hero}
             query={query}
+            active={hero.id === activeId}
             onPress={() => onSuggestionPress(hero.id)}
           />
         ))}

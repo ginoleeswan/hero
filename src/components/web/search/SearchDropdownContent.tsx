@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSearch } from '../../../contexts/SearchContext';
@@ -8,7 +9,19 @@ import { IdleSuggestions } from './IdleSuggestions';
 import { SuggestionsList } from './SuggestionsList';
 import { UniverseChip } from './UniverseChip';
 
-export function SearchDropdownContent() {
+// Flat, ordered list of the dropdown's selectable rows — universes then heroes.
+// The palette owns the keyboard cursor and drives Enter-to-open from this list.
+export type NavItem = { kind: 'universe'; slug: string } | { kind: 'hero'; id: string };
+
+const MAX_HERO_SUGGESTIONS = 8;
+
+export function SearchDropdownContent({
+  highlightIndex = -1,
+  onItemsChange,
+}: {
+  highlightIndex?: number;
+  onItemsChange?: (items: NavItem[]) => void;
+} = {}) {
   const router = useRouter();
   const { query, setQuery, setSearchFocused } = useSearch();
   const { history, addSearch, clearHistory } = useSearchHistory();
@@ -16,6 +29,26 @@ export function SearchDropdownContent() {
 
   const isEmptyQuery = query.trim().length === 0;
   const { heroes: trending, isLoading: trendingLoading } = useIdleHeroes(isEmptyQuery, 4);
+
+  const shownHeroes = heroes.slice(0, MAX_HERO_SUGGESTIONS);
+
+  // Report the current flat item list up to the palette for keyboard nav. Effect
+  // (not a render-time call) so we never setState in the parent during render.
+  const navItems: NavItem[] = isEmptyQuery
+    ? []
+    : [
+        ...universes.map((u) => ({ kind: 'universe', slug: u.slug }) as NavItem),
+        ...shownHeroes.map((h) => ({ kind: 'hero', id: h.id }) as NavItem),
+      ];
+  const itemsKey = JSON.stringify(navItems);
+  useEffect(() => {
+    onItemsChange?.(navItems);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsKey]);
+
+  const activeItem = highlightIndex >= 0 ? navItems[highlightIndex] : undefined;
+  const activeUniverseSlug = activeItem?.kind === 'universe' ? activeItem.slug : undefined;
+  const activeHeroId = activeItem?.kind === 'hero' ? activeItem.id : undefined;
 
   const close = () => setSearchFocused(false);
 
@@ -60,15 +93,21 @@ export function SearchDropdownContent() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel as object}>Universes</Text>
           {universes.map((u) => (
-            <UniverseChip key={u.slug} universe={u} onPress={() => handleUniversePress(u.slug)} />
+            <UniverseChip
+              key={u.slug}
+              universe={u}
+              active={u.slug === activeUniverseSlug}
+              onPress={() => handleUniversePress(u.slug)}
+            />
           ))}
         </View>
       )}
       <SuggestionsList
         query={query}
-        suggestions={heroes.slice(0, 8)}
+        suggestions={shownHeroes}
         isLoading={loading}
         resultCount={resultCount}
+        activeId={activeHeroId}
         onSuggestionPress={handleHeroPress}
         onViewAll={handleViewAll}
       />
