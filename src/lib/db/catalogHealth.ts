@@ -505,3 +505,48 @@ export async function fetchSourceCoverage(): Promise<SourceCoverage | null> {
   if (error || !data) return null;
   return data as unknown as SourceCoverage;
 }
+
+// ── Unbranded universe gaps ──────────────────────────────────────────────────
+// "Company-Licensed" is the catch-all placeholder for licensed IP with no single
+// comic publisher; franchise assignment is hand-curated by comicvine_id, so every
+// new ingest re-grows this bucket. Surface it so it isn't silently forgotten.
+export interface UnbrandedHero {
+  id: string;
+  name: string;
+  comicvineId: string | null;
+  teams: string[] | null;
+  hint: string | null;
+  image: string | null;
+}
+
+const stripHtml = (s: string | null): string | null => {
+  if (!s) return null;
+  const t = s
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&[a-z]+;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return t ? t.slice(0, 90) : null;
+};
+
+/** Heroes still parked in the 'Company-Licensed' bucket, newest ingest first. */
+export async function listUnbrandedHeroes(limit = 100): Promise<UnbrandedHero[]> {
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('id, name, comicvine_id, teams, image_md_url, image_url, portrait_url, description, summary, added_at')
+    .eq('publisher', 'Company-Licensed')
+    .order('added_at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.warn('[listUnbrandedHeroes] error:', error.message);
+    return [];
+  }
+  return (data ?? []).map((h) => ({
+    id: h.id,
+    name: h.name,
+    comicvineId: h.comicvine_id,
+    teams: h.teams,
+    image: h.portrait_url ?? h.image_md_url ?? h.image_url ?? null,
+    hint: stripHtml(h.description) ?? stripHtml(h.summary),
+  }));
+}

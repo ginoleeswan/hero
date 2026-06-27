@@ -36,6 +36,8 @@ import { BuildBoard } from '../../src/components/admin/health/BuildBoard';
 import { refreshFameScores } from '../../src/lib/db/build';
 import { HeroConsole } from '../../src/components/admin/health/HeroConsole';
 import { DuplicatesPanel } from '../../src/components/admin/health/DuplicatesPanel';
+import { UniverseGapsPanel } from '../../src/components/admin/health/UniverseGapsPanel';
+import { listUnbrandedHeroes } from '../../src/lib/db/catalogHealth';
 import { SpendDomain } from '../../src/components/admin/health/domains/SpendDomain';
 import { SourcesDomain } from '../../src/components/admin/health/domains/SourcesDomain';
 import { fetchSourceCoverage } from '../../src/lib/db/catalogHealth';
@@ -82,6 +84,11 @@ export default function AdminHealthScreen() {
     queryKey: ['sourceCoverage'],
     queryFn: fetchSourceCoverage,
     enabled: !!user && domain === 'sources',
+  });
+  const unbrandedQ = useQuery({
+    queryKey: ['unbrandedHeroes'],
+    queryFn: () => listUnbrandedHeroes(100),
+    enabled: !!user,
   });
   const gateResolved = !authLoading && (!user || profileQ.isSuccess || profileQ.isError);
   const isAdmin = !!profileQ.data?.is_admin;
@@ -232,8 +239,14 @@ export default function AdminHealthScreen() {
       });
     if (recent[0]?.status === 'error')
       a.push({ tone: 'red', text: 'The last run errored — see the Build tab.' });
+    const unbranded = unbrandedQ.data?.length ?? 0;
+    if (unbranded > 0)
+      a.push({
+        tone: 'gold',
+        text: `${unbranded} character${unbranded === 1 ? '' : 's'} need a universe — see Catalog › Hygiene.`,
+      });
     return a;
-  }, [pingQ.data, usageQ.data, runsQ.data, h]);
+  }, [pingQ.data, usageQ.data, runsQ.data, h, unbrandedQ.data]);
 
   // Publish alerts to the global TopBar's bell (mobile has no command band).
   // Cleared on unmount so the bell never lingers off the command center.
@@ -414,6 +427,13 @@ export default function AdminHealthScreen() {
                       queryClient.invalidateQueries({ queryKey: ['catalogDistributions'] });
                       queryClient.invalidateQueries({ queryKey: ['backfillGaps'] });
                     }}
+                  />
+                </View>
+                <View style={{ marginTop: 14 }}>
+                  <UniverseGapsPanel
+                    heroes={unbrandedQ.data ?? []}
+                    loading={unbrandedQ.isLoading}
+                    flash={flash}
                   />
                 </View>
               </ScrollView>
