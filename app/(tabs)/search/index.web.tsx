@@ -256,7 +256,7 @@ export default function WebSearchScreen() {
                 <Ionicons name="search" size={20} color={COLORS.orange} />
                 <TextInput
                   style={styles.desktopInput as object}
-                  placeholder="Search heroes…"
+                  placeholder="Search heroes & universes…"
                   placeholderTextColor="rgba(245,235,220,0.4)"
                   value={inputQuery}
                   onChangeText={setInputQuery}
@@ -286,7 +286,7 @@ export default function WebSearchScreen() {
                 <Ionicons name="search" size={17} color={COLORS.orange} />
                 <TextInput
                   style={styles.mobileInput as object}
-                  placeholder="Search heroes…"
+                  placeholder="Search heroes & universes…"
                   placeholderTextColor="rgba(245,235,220,0.4)"
                   value={inputQuery}
                   onChangeText={setInputQuery}
