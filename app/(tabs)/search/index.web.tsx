@@ -244,8 +244,8 @@ export default function WebSearchScreen() {
   return (
     <View style={styles.root}>
       <SeoHead
-        title="Search heroes & villains | Mythique"
-        description="Search 3,000+ heroes and villains across Marvel, DC and more on Mythique."
+        title="Search every universe | Mythique"
+        description="Search characters, teams, films and universes from across all fiction — Marvel, DC, Disney, anime, games and beyond — on Mythique."
         path="/search"
         noindex
       />
@@ -258,7 +258,7 @@ export default function WebSearchScreen() {
                 <Ionicons name="search" size={20} color={COLORS.orange} />
                 <TextInput
                   style={styles.desktopInput as object}
-                  placeholder="Search heroes & universes…"
+                  placeholder="Search characters, teams & universes…"
                   placeholderTextColor="rgba(245,235,220,0.4)"
                   value={inputQuery}
                   onChangeText={setInputQuery}
@@ -288,7 +288,7 @@ export default function WebSearchScreen() {
                 <Ionicons name="search" size={17} color={COLORS.orange} />
                 <TextInput
                   style={styles.mobileInput as object}
-                  placeholder="Search heroes & universes…"
+                  placeholder="Search characters, teams & universes…"
                   placeholderTextColor="rgba(245,235,220,0.4)"
                   value={inputQuery}
                   onChangeText={setInputQuery}

@@ -1,7 +1,7 @@
 {
   "name": "Mythique",
   "short_name": "Mythique",
-  "description": "The superhero encyclopedia — explore 3,000+ heroes and villains, settle who-would-win debates, and play the daily Guess the Hero.",
+  "description": "Every universe, every icon — explore characters, teams and films from across all fiction, settle who-would-win debates, and play the daily Guess the Hero.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

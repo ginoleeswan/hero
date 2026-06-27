@@ -362,7 +362,7 @@ export default function WebCategoryScreen() {
     <View style={styles.root}>
       <SeoHead
         title={`${title} | Mythique`}
-        description={description ?? `Browse ${title} on Mythique — the superhero encyclopedia.`}
+        description={description ?? `Browse ${title} on Mythique — every universe, every icon.`}
         path={categorySlug ? `/category/${slug}` : `/universe/${slug}`}
       />
       {/* Faction banner — registered universes get a brand-coloured stage with

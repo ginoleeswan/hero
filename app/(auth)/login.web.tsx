@@ -217,9 +217,9 @@ export default function WebLoginScreen() {
         <Image source={LOGIN_HERO} style={styles.illustration as object} contentFit="cover" />
 
         <View style={styles.brandBottom}>
-          <Text style={styles.brandTagline}>The Superhero{'\n'}Encyclopedia</Text>
+          <Text style={styles.brandTagline}>Every universe.{'\n'}Every icon.</Text>
           <Text style={styles.brandSub}>
-            Discover the stories, powers, and origins{'\n'}of hundreds of heroes and villains.
+            Explore the characters, teams, and films{'\n'}from every universe — and who&apos;d win.
           </Text>
           <View style={styles.brandAccent} />
         </View>

@@ -393,7 +393,7 @@ export default function SearchScreen() {
       <Stack.Header transparent style={{ color: COLORS.beige, shadowColor: 'transparent' }} />
       <Stack.SearchBar
         ref={searchRef}
-        placeholder="Hero, villain, or real name…"
+        placeholder="Character, team, or real name…"
         placement="automatic"
         autoCapitalize="none"
         hideWhenScrolling={false}

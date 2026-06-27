@@ -22,26 +22,26 @@ export default function Root({ children }: PropsWithChildren) {
 
         {/* SEO + social sharing. The OG image is an absolute URL on the
             production domain — update it if you launch on a different host. */}
-        <title>Mythique — The Superhero Encyclopedia</title>
+        <title>Mythique — Every universe. Every icon.</title>
         <meta
           name="description"
-          content="Explore 3,000+ heroes and villains, settle who-would-win debates, and play the daily Guess the Hero. Mythique is the superhero encyclopedia."
+          content="Explore characters, teams, films and universes from across all fiction — Marvel, DC, Disney, anime, games and beyond — and pit any two against each other on Mythique."
         />
         <link rel="canonical" href="https://mythique.app/" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Mythique" />
-        <meta property="og:title" content="Mythique — The Superhero Encyclopedia" />
+        <meta property="og:title" content="Mythique — Every universe. Every icon." />
         <meta
           property="og:description"
-          content="Explore 3,000+ heroes and villains, settle who-would-win debates, and play the daily Guess the Hero."
+          content="Explore every fictional universe — characters, teams and films from Marvel to anime — and settle who'd win."
         />
         <meta property="og:url" content="https://mythique.app/" />
         <meta property="og:image" content="https://mythique.app/og.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Mythique — The Superhero Encyclopedia" />
+        <meta name="twitter:title" content="Mythique — Every universe. Every icon." />
         <meta
           name="twitter:description"
-          content="Explore 3,000+ heroes and villains, settle who-would-win debates, and play the daily Guess the Hero."
+          content="Explore every fictional universe — characters, teams and films from Marvel to anime — and settle who'd win."
         />
         <meta name="twitter:image" content="https://mythique.app/og.png" />
         <link rel="manifest" href="/manifest.json" />

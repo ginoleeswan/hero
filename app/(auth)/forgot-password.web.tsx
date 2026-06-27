@@ -201,7 +201,7 @@ export default function WebForgotPasswordScreen() {
         </View>
         <Image source={LOGIN_HERO} style={styles.illustration as object} contentFit="cover" />
         <View style={styles.brandBottom}>
-          <Text style={styles.brandTagline}>The Superhero{'\n'}Encyclopedia</Text>
+          <Text style={styles.brandTagline}>Every universe.{'\n'}Every icon.</Text>
           <Text style={styles.brandSub}>Forgot your password?{'\n'}We've got you covered.</Text>
           <View style={styles.brandAccent} />
         </View>

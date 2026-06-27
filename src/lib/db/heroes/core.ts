@@ -159,14 +159,11 @@ export async function getSearchIdleHeroes(limit = 30): Promise<HeroSearchResult[
     .select(
       'id, name, publisher, alignment, image_md_url, image_url, portrait_url, full_name, aliases',
     )
-    // Also drop cartoon-mascot publishers: their characters are fame-100 (Mickey,
-    // Bugs, Donald) but off-brand as "Trending" on a superhero app, so they'd
-    // otherwise lead. Fame, not issue_count, surfaces the icons (Batman, Spider-Man…).
-    .not(
-      'publisher',
-      'in',
-      '("Non-Fictional","In the Public Domain","Company-Licensed","Disney","Looney Tunes","Hanna-Barbera","Cartoon Network","Nickelodeon")',
-    )
+    // Only the SuperheroAPI category buckets are dropped (not real universes).
+    // Trending is fame-ranked across EVERY universe — Mickey and Bugs are icons
+    // too, which fits "Every universe. Every icon." (the earlier mascot blocklist
+    // was a symptom of the old superhero-only framing).
+    .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
     .order('fame_score', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);

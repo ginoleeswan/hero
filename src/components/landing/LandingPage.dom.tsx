@@ -499,10 +499,10 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             >
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
             </svg>
-            The living superhero universe
+            Every universe. Every icon.
           </div>
           <span className="hero-wordmark-large">mythique</span>
-          <p className="hero-tagline">Know every hero. Settle every debate.</p>
+          <p className="hero-tagline">Know every icon. Settle every debate.</p>
           <p className="hero-sub">
             Explore 3,000+ characters in rich detail, trace how they&apos;re connected, and pit any
             two head-to-head to settle who&apos;d really win. The whole universe — alive, connected,
@@ -622,14 +622,15 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             <br />A universe you can play with.
           </h2>
           <p className="section-sub">
-            Explore every hero in depth, see how they all connect, and settle the debates a static
-            list never could. One living, opinionated superhero universe.
+            Explore every character in depth, see how they all connect, and settle the debates a
+            static list never could. One living, opinionated multiverse — every franchise, every
+            icon.
           </p>
           <div className="features-grid">
             {[
               {
                 title: 'Explore the Universe',
-                desc: 'Browse 3,000+ heroes and villains across Marvel, DC, anime, games and beyond — curated collections that surface someone new every scroll.',
+                desc: 'Browse 3,000+ characters across Marvel, DC, Disney, anime, games and beyond — curated collections that surface someone new every scroll.',
                 icon: (
                   <>
                     <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
@@ -786,8 +787,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           <p className="section-eyebrow">Dive in</p>
           <h2 className="cta-glow">Explore. Compare. Argue.</h2>
           <p className="cta-sub">
-            3,000+ heroes, deep profiles, living rivalries, and the only place to settle who&apos;d
-            really win — free, no ads, on the web or in the app.
+            3,000+ characters across every universe, deep profiles, living rivalries, and the only
+            place to settle who&apos;d really win — free, no ads, on the web or in the app.
           </p>
           <button
             className="btn-primary"

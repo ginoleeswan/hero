@@ -114,7 +114,7 @@ export function SearchPalette() {
           <TextInput
             ref={inputRef}
             style={styles.input as object}
-            placeholder="Search heroes & universes…"
+            placeholder="Search characters, teams & universes…"
             placeholderTextColor="rgba(245,235,220,0.4)"
             value={query}
             onChangeText={setQuery}

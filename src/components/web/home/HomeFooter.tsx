@@ -65,7 +65,7 @@ export function HomeFooter({ heroCount, onNavigate }: HomeFooterProps) {
           <View style={s.brand}>
             <HeroLogo iconSize={26} fontSize={22} color={COLORS.beige} gap={9} />
             <Text style={s.tagline as object}>
-              The living encyclopedia of heroes, villains, and everyone in between.
+              Every universe, every icon — characters, teams and films from across all fiction.
             </Text>
           </View>
           <View style={[s.columns, !isDesktop && (s.columnsStack as object)] as object}>

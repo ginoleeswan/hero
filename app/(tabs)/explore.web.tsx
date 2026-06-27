@@ -1142,8 +1142,8 @@ export default function WebHomeScreen() {
   return (
     <View style={styles.root}>
       <SeoHead
-        title="Mythique — The Superhero Encyclopedia"
-        description="Explore 3,000+ heroes and villains, settle who-would-win debates, and play the daily Guess the Hero. Mythique is the superhero encyclopedia."
+        title="Mythique — Every universe. Every icon."
+        description="Explore characters, teams, films and universes from across all fiction — Marvel, DC, Disney, anime, games and beyond — and pit any two against each other on Mythique."
         path="/"
       />
       {/* ── Content ──────────────────────────────────────────────────────────── */}

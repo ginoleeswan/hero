@@ -21,7 +21,7 @@ export const PRIVACY: LegalDoc = {
   title: 'Privacy Policy',
   updated: LAST_UPDATED,
   intro:
-    'Mythique is a superhero encyclopedia and game. This policy explains what we collect, why, and the choices you have. We keep data collection to the minimum needed to run the app.',
+    'Mythique is an encyclopedia and game spanning fictional characters from every universe. This policy explains what we collect, why, and the choices you have. We keep data collection to the minimum needed to run the app.',
   sections: [
     {
       heading: 'Information we collect',
@@ -75,7 +75,7 @@ export const TERMS: LegalDoc = {
   title: 'Terms of Service',
   updated: LAST_UPDATED,
   intro:
-    'By using Mythique you agree to these terms. Mythique is a free, fan-made superhero encyclopedia and game provided “as is”.',
+    'By using Mythique you agree to these terms. Mythique is a free, fan-made encyclopedia and game spanning fictional characters from every universe, provided “as is”.',
   sections: [
     {
       heading: 'Your account',
