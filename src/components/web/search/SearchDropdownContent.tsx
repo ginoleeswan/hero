@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { COLORS } from '../../../constants/colors';
 import { useSearch } from '../../../contexts/SearchContext';
 import { useSearchHistory } from '../../../hooks/useSearchHistory';
 import { useUnifiedSearch } from '../../../hooks/useUnifiedSearch';
@@ -104,51 +105,84 @@ export function SearchDropdownContent({
 
   return (
     <View style={styles.wrap as object}>
-      {universes.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel as object}>Universes</Text>
-          {universes.map((u) => (
-            <UniverseChip
-              key={u.slug}
-              universe={u}
-              active={u.slug === activeUniverseSlug}
-              onPress={() => handleUniversePress(u.slug)}
-            />
-          ))}
-        </View>
-      )}
-      <SuggestionsList
-        query={query}
-        suggestions={shownHeroes}
-        isLoading={loading}
-        resultCount={resultCount}
-        activeId={activeHeroId}
-        onSuggestionPress={handleHeroPress}
-        onViewAll={handleViewAll}
-      />
-      {shownTitles.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel as object}>Films & Shows</Text>
-          {shownTitles.map((t) => (
-            <TitleResultRow
-              key={t.id}
-              title={t}
-              active={t.id === activeTitleId}
-              onPress={() => handleTitlePress(t.id)}
-            />
-          ))}
-        </View>
+      <View style={styles.scroll as object}>
+        {universes.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel as object}>Universes</Text>
+            {universes.map((u) => (
+              <UniverseChip
+                key={u.slug}
+                universe={u}
+                active={u.slug === activeUniverseSlug}
+                onPress={() => handleUniversePress(u.slug)}
+              />
+            ))}
+          </View>
+        )}
+        <SuggestionsList
+          query={query}
+          suggestions={shownHeroes}
+          isLoading={loading}
+          resultCount={resultCount}
+          activeId={activeHeroId}
+          onSuggestionPress={handleHeroPress}
+        />
+        {shownTitles.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel as object}>Films & Shows</Text>
+            {shownTitles.map((t) => (
+              <TitleResultRow
+                key={t.id}
+                title={t}
+                active={t.id === activeTitleId}
+                onPress={() => handleTitlePress(t.id)}
+              />
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* Pinned footer: jump to the full results page. Sits below the scroll area
+          so it's always reachable regardless of how many sections are showing. */}
+      {resultCount > MAX_HERO_SUGGESTIONS && (
+        <Pressable
+          onPress={handleViewAll}
+          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+            [styles.viewAll, hovered && (styles.viewAllHover as object)] as object
+          }
+        >
+          <Text style={styles.viewAllText as object}>View all {resultCount} results →</Text>
+        </Pressable>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Single scroll container for the whole dropdown: universes, heroes and titles
-  // sections stack at natural height and scroll together. (Previously the hero
-  // list owned an inner flex:1 scroll region, which collapsed and overlapped its
-  // "View all" button once other sections shared the panel.)
-  wrap: { flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto' } as object,
+  // Column of [scrollable sections] + [pinned View-all footer]. The sections
+  // (universes, heroes, titles) scroll together inside `scroll`; the footer stays
+  // pinned at the bottom so it's always reachable. (The hero list used to own an
+  // inner flex:1 scroll which collapsed and overlapped its button once other
+  // sections shared the panel — hence one shared scroll area here.)
+  wrap: { flexDirection: 'column', flex: 1, minHeight: 0 } as object,
+  scroll: { flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto' } as object,
+  viewAll: {
+    flexShrink: 0,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    cursor: 'pointer',
+    transition: 'background-color 150ms ease',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(245,235,220,0.10)',
+  } as object,
+  viewAllHover: { backgroundColor: 'rgba(245,235,220,0.05)' } as object,
+  viewAllText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: COLORS.orange,
+    letterSpacing: 0.3,
+  } as object,
   section: {
     paddingTop: 8,
     paddingBottom: 4,

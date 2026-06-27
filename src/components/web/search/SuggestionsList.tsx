@@ -1,9 +1,7 @@
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { COLORS } from '../../../constants/colors';
 import type { HeroSearchResult } from '../../../lib/db/heroes';
 import { SuggestionItem } from './SuggestionItem';
-
-const MAX_SUGGESTIONS = 8;
 
 interface SuggestionsListProps {
   query: string;
@@ -11,7 +9,6 @@ interface SuggestionsListProps {
   isLoading: boolean;
   resultCount: number;
   onSuggestionPress: (id: string) => void;
-  onViewAll: () => void;
   /** Hero id highlighted by the palette's keyboard cursor. */
   activeId?: string;
 }
@@ -22,7 +19,6 @@ export function SuggestionsList({
   isLoading,
   resultCount,
   onSuggestionPress,
-  onViewAll,
   activeId,
 }: SuggestionsListProps) {
   if (isLoading) {
@@ -40,8 +36,6 @@ export function SuggestionsList({
       </View>
     );
   }
-
-  const hasViewAllButton = resultCount > MAX_SUGGESTIONS;
 
   return (
     <View style={styles.container as object}>
@@ -64,17 +58,6 @@ export function SuggestionsList({
           />
         ))}
       </View>
-
-      {hasViewAllButton && (
-        <Pressable
-          onPress={onViewAll}
-          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [styles.viewAllButton, hovered && (styles.viewAllButtonHover as object)] as object
-          }
-        >
-          <Text style={styles.viewAllText}>View all {resultCount} results →</Text>
-        </Pressable>
-      )}
     </View>
   );
 }
@@ -121,26 +104,4 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     paddingBottom: 6,
   } as object,
-
-  viewAllButton: {
-    paddingVertical: 11,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    cursor: 'pointer',
-    transition: 'background-color 150ms ease',
-    flexShrink: 0,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(245,235,220,0.08)',
-  } as object,
-
-  viewAllButtonHover: {
-    backgroundColor: 'rgba(245,235,220,0.05)',
-  } as object,
-
-  viewAllText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    color: COLORS.orange,
-    letterSpacing: 0.3,
-  },
 });
