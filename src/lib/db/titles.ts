@@ -189,24 +189,78 @@ export interface TitleSearchResult {
   poster_url: string | null;
 }
 
+/** A pooled title row with the signals used to rank prominence. */
+export interface TitlePoolRow extends TitleSearchResult {
+  revenue: number | string | null;
+  popularity: number | string | null;
+  vote_average: number | string | null;
+}
+
+const titleNorm = (s: string) => s.trim().toLowerCase();
+const num = (v: number | string | null | undefined) => {
+  const n = typeof v === 'string' ? parseFloat(v) : (v ?? 0);
+  return Number.isFinite(n) ? (n as number) : 0;
+};
+
 /**
- * Title search for the unified search surface. Straight ILIKE on the title,
- * ranked by popularity (most-known first). Empty query short-circuits — titles
- * have no browse-all in search. Degrades to [] so a DB hiccup never blanks the
- * other result sections.
+ * Prominence on a single scale across films AND tv: blockbuster revenue dominates
+ * (so the icons win — revenue in $millions), but titles with no revenue (tv,
+ * obscure) still rank via TMDB popularity or rating. TMDB `popularity` alone is a
+ * volatile "trending now" signal that floats unreleased/obscure films above
+ * classics — never order by it directly.
+ */
+function titleProminence(r: TitlePoolRow): number {
+  return num(r.revenue) / 1_000_000 + num(r.popularity) * 0.3 + num(r.vote_average);
+}
+
+// A name-match nudge that lets a better match win between similarly-prominent
+// titles, while a far-more-prominent title can still override one tier (a
+// blockbuster "The Batman" beats an obscure prefix "Batman Ninja").
+function titleTierBonus(title: string, q: string): number {
+  const n = titleNorm(title);
+  if (n === q) return 300;
+  if (n.startsWith(q)) return 100;
+  return 0;
+}
+
+/**
+ * Re-rank an ILIKE title pool by a blend of name relevance + prominence, so the
+ * canonical/blockbuster title wins. Pure + tested.
+ */
+export function rankTitles(rows: TitlePoolRow[], query: string): TitlePoolRow[] {
+  const q = titleNorm(query);
+  return rows
+    .map((r, i) => ({ r, i, score: titleProminence(r) + titleTierBonus(r.title, q) }))
+    .sort((a, b) => b.score - a.score || a.i - b.i)
+    .map((x) => x.r);
+}
+
+/**
+ * Title search for the unified search surface. Fetches a revenue-ordered ILIKE
+ * pool (so the blockbusters are always in it), then re-ranks by relevance +
+ * prominence and returns the lean rows. Empty query short-circuits; degrades to []
+ * so a DB hiccup never blanks the other result sections.
  */
 export async function searchTitles(query: string, limit = 6): Promise<TitleSearchResult[]> {
   const q = query.trim();
   if (!q) return [];
   const { data, error } = await supabase
     .from('titles')
-    .select('id, title, media_type, year, poster_url')
+    .select('id, title, media_type, year, poster_url, revenue, popularity, vote_average')
     .ilike('title', `%${q}%`)
-    .order('popularity', { ascending: false, nullsFirst: false })
-    .limit(limit);
+    .order('revenue', { ascending: false, nullsFirst: false })
+    .limit(60);
   if (error) {
     console.warn('[searchTitles] error:', error.message);
     return [];
   }
-  return (data ?? []) as TitleSearchResult[];
+  return rankTitles((data ?? []) as TitlePoolRow[], q)
+    .slice(0, limit)
+    .map(({ id, title, media_type, year, poster_url }) => ({
+      id,
+      title,
+      media_type,
+      year,
+      poster_url,
+    }));
 }
