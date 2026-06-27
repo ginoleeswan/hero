@@ -7,6 +7,8 @@ export interface UniverseResult {
   logo?: BrandLogo;
   badgeSize?: { width: number; height: number };
   logoOnLight?: boolean;
+  /** Single-colour silhouette logos paint this ink (SVG only); see BrandLogoView. */
+  logoTint?: string;
   /** Exact name/alias hit — ranks first and can drive a "jump straight there" affordance. */
   exact: boolean;
 }
@@ -46,6 +48,7 @@ export function searchUniverses(query: string, limit = 6): UniverseResult[] {
     logo: brand.logo,
     badgeSize: brand.badgeSize,
     logoOnLight: brand.logoOnLight,
+    logoTint: brand.logoTint,
     exact: rank === 0,
   }));
 }

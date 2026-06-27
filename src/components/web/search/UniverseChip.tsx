@@ -1,0 +1,81 @@
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { COLORS } from '../../../constants/colors';
+import { BrandLogoView } from '../../PublisherBadge';
+import type { UniverseResult } from '../../../lib/db/universes';
+
+// A brand chip for a universe search hit. Logo on a brand-tinted tile, name
+// beside it; the whole row is a doorway into /universe/[slug]. Logos that read
+// better on light get a light backing tile, mirroring the card-badge logic.
+// Renders via the shared BrandLogoView so SVG-component and PNG logos (and
+// single-colour tinted marks) all paint correctly.
+export function UniverseChip({
+  universe,
+  onPress,
+}: {
+  universe: UniverseResult;
+  onPress: () => void;
+}) {
+  const { name, color, logo, badgeSize, logoOnLight, logoTint } = universe;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="link"
+      accessibilityLabel={`Browse the ${name} universe`}
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+        [styles.row, hovered && (styles.rowHover as object)] as object
+      }
+    >
+      <View style={[styles.tile, { backgroundColor: logoOnLight ? COLORS.beige : color }] as object}>
+        {logo && badgeSize ? (
+          <BrandLogoView
+            logo={logo}
+            width={badgeSize.width}
+            height={badgeSize.height}
+            tint={logoTint}
+          />
+        ) : (
+          <Text style={styles.fallback as object} numberOfLines={1}>
+            {name.slice(0, 2).toUpperCase()}
+          </Text>
+        )}
+      </View>
+      <View style={styles.text}>
+        <Text style={styles.name as object} numberOfLines={1}>
+          {name}
+        </Text>
+        <Text style={styles.kicker as object}>Universe</Text>
+      </View>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    cursor: 'pointer',
+    transition: 'background-color 150ms ease',
+  } as object,
+  rowHover: { backgroundColor: 'rgba(245,235,220,0.06)' } as object,
+  tile: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  } as object,
+  text: { flexDirection: 'column' },
+  name: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.beige } as object,
+  kicker: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: 'rgba(245,235,220,0.45)',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  } as object,
+  fallback: { fontFamily: 'Flame-Regular', fontSize: 13, color: COLORS.navy } as object,
+});
