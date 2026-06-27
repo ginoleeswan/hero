@@ -180,3 +180,33 @@ export async function getTitleHeroes(id: string): Promise<RelatedHeroCard[]> {
     .filter((r) => r.heroes !== null)
     .map((r) => r.heroes!);
 }
+
+export interface TitleSearchResult {
+  id: string;
+  title: string;
+  media_type: string;
+  year: number | null;
+  poster_url: string | null;
+}
+
+/**
+ * Title search for the unified search surface. Straight ILIKE on the title,
+ * ranked by popularity (most-known first). Empty query short-circuits — titles
+ * have no browse-all in search. Degrades to [] so a DB hiccup never blanks the
+ * other result sections.
+ */
+export async function searchTitles(query: string, limit = 6): Promise<TitleSearchResult[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const { data, error } = await supabase
+    .from('titles')
+    .select('id, title, media_type, year, poster_url')
+    .ilike('title', `%${q}%`)
+    .order('popularity', { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error) {
+    console.warn('[searchTitles] error:', error.message);
+    return [];
+  }
+  return (data ?? []) as TitleSearchResult[];
+}
