@@ -1,49 +1,143 @@
-# Smarter Search — Phase 3: Teams (DEFERRED)
+# Smarter Search — Phase 3: Teams
 
 **Date:** 2026-06-27
-**Status:** Deferred — design notes only, NOT scheduled for implementation
-**Depends on:** Phase 1 + Phase 2
+**Status:** Approved design (supersedes the earlier "deferred" draft)
+**Depends on:** Phase 1 (universes) + Phase 2 (titles), both shipped
 
-## Why this is deferred
+## Reframing — teams are already a first-class entity
 
-Teams have **no first-class searchable entity** in the current data model. They
-exist only as:
+The earlier draft assumed teams had no searchable representation. That was wrong.
+A normalized **`teams` table already exists** (2,442 rows), built from the
+`heroes.teams[]` tags for the Versus/Arena battle feature:
 
-1. `hero_relationships.is_teammate` edges between two heroes, and
-2. some `heroes` rows that are *themselves* groups (e.g. "Avengers", "X-Men")
-   but are not flagged as such — they're indistinguishable from individual
-   characters in the `heroes` table.
+| column | type | notes |
+| --- | --- | --- |
+| `id` | text | stable team id |
+| `name` | text | "Avengers", "X-Men", "Justice League of America"… |
+| `publisher` | text | "Marvel" / "DC Comics" / … |
+| `logo_url` | text | mostly null today |
+| `member_count` | int | roster size |
+| `popularity` | bigint | clean ordering — Avengers, X-Men, JLA, Defenders… on top |
+| `is_featured` | bool | canonical teams (used by the Versus daily battle) |
 
-So "search for teams" has no clean source to query. Before this can be built, a
-**data-model decision** is required. That decision is its own brainstorm.
+Membership resolves through the existing **`get_team_roster(p_team_id, p_limit)`**
+RPC (wrapped by `getTeamRoster` in `src/lib/db/teams.ts`), returning `RosterHero`
+rows with `id, name, portrait_url, image_url` (+ stat fields).
 
-## Decision needed (the brainstorm input)
+So searching teams is now as simple as searching titles. The only real gap: teams
+have **no standalone browse page** — they live only inside the Versus flow today.
 
-Pick one:
+## Goals
 
-**Option A — Flag team-heroes.** Add `heroes.is_team boolean` (or an `entity_kind`
-enum: `character | team | location`). Backfill via a heuristic (name in a known
-team list, ComicVine "team" object type, or member-count from relationships).
-Then search filters/sections on the flag. *Pro:* teams reuse the whole hero
-pipeline (cards, routes, ranking). *Con:* needs a migration + a backfill job and
-a reliable classifier.
+- Typing a team name ("avengers", "x-men") surfaces a **Teams** section in search,
+  on web (palette + results page) and native.
+- Tapping a team opens a new **`/team/[id]`** roster page: the team's members as a
+  hero-card grid.
+- Curation: popularity order, **no filtering** (v1) — minor noise like
+  "X-Gene Mutant" is acceptable; the big real teams dominate by popularity.
 
-**Option B — Derive teams from relationships.** Build a `teams` view/materialized
-view that groups `is_teammate` edges into clusters. *Pro:* no new column. *Con:*
-clustering is fuzzy, has no stable identity/route, and many real teams aren't
-fully edge-connected.
+## Non-goals
 
-**Recommendation:** Option A — it gives teams a stable identity and a route, and
-folds into `useUnifiedSearch` as a fourth section exactly like titles did.
+- No team logos work (column is mostly null; rows fall back to a wordmark tile).
+- No filters/sort/infinite-scroll on the team page — teams are small (≤~300
+  members, usually <100); one fetch is enough.
+- No changes to the Versus/Arena team-battle feature.
 
-## Scope when un-deferred
+## Architecture
 
-1. Migration + backfill for the team flag (Option A).
-2. Regenerate `database.generated.ts`.
-3. `searchTeams(q)` in `src/lib/db/heroes/` (filtered hero query on the flag).
-4. A fourth "Teams" section in `useUnifiedSearch` and both surfaces.
+Two parts. **Part 1 (the destination) ships first** because search links to it.
 
-## Status
+### Part 1 — Team browse page `/team/[id]`
 
-Do not implement until the data-model decision above is made and its own spec +
-plan exist. Phase 1 and Phase 2 are independent of this and ship without it.
+A thin, standalone screen (NOT folded into the source-aware category screen —
+teams use the RPC roster path, not the heroes-table filter path the category
+hooks use, and need none of its filters).
+
+| Unit | Path | Responsibility |
+| --- | --- | --- |
+| `getTeamById(id)` | `src/lib/db/teams.ts` (add) | One row → `TeamSummary { id, name, publisher, logo_url, member_count }`. Degrades to `null`. |
+| `getTeamMembers(id, limit)` | `src/lib/db/teams.ts` (add, thin) | `getTeamRoster(id, limit)` at `limit=300` → member hero cards (`RosterHero[]`). |
+| `useTeamPage(id)` | `src/hooks/useTeamPage.ts` (new) | Platform-neutral. Fetches summary + members in parallel; returns `{ team, members, loading, notFound }`. |
+| `TeamScreen` | `app/team/[id].tsx` + `app/team/[id].web.tsx` (new) | Thin views over `useTeamPage`. Navy stage (team name, `member_count` + publisher eyebrow) + member grid → `/character/[id]`. Both files required by expo-router. |
+
+`TeamSummary`:
+```ts
+export interface TeamSummary {
+  id: string;
+  name: string;
+  publisher: string | null;
+  logo_url: string | null;
+  member_count: number;
+}
+```
+
+The two view files reuse the existing visual language (navy stage + beige sheet +
+compact hero grid card from `app/category/[slug].tsx`). The hero-grid card markup
+is small; replicate it locally rather than extracting a shared component (YAGNI —
+one new consumer).
+
+### Part 2 — Team search
+
+Extends Phase 1/2's client-side aggregation.
+
+| Unit | Path | Responsibility |
+| --- | --- | --- |
+| `searchTeams(q, limit)` | `src/lib/db/teams.ts` (add) | `select('id, name, publisher, logo_url, member_count').ilike('name', %q%).order('popularity', desc).limit(limit)`. Empty query → `[]`. Degrades to `[]`. Returns `TeamSearchResult[]`. |
+| `TeamSearchResult` | `src/lib/db/teams.ts` | `{ id, name, publisher, logo_url, member_count }` (same shape as `TeamSummary`). |
+| `useUnifiedSearch` | `src/hooks/useUnifiedSearch.ts` (extend) | Add a debounced `teams` query. Return adds `teams: TeamSearchResult[]`. |
+| `TeamResultRow` (web) | `src/components/web/search/TeamResultRow.tsx` (new) | Wordmark/logo tile + name + `member_count members · publisher`; `variant: 'dark'\|'light'`, `active`. → `/team/[id]`. |
+| `TeamResultRow` (native) | `src/components/search/TeamResultRow.tsx` (new) | Native sibling (PressScale, chevron). |
+| Teams section | palette, web results page, native search | render a **Teams** section between Universes and Heroes. |
+
+**Section order:** Universes → **Teams** → Heroes → Films & Shows. Teams sit next
+to universes as the other "grouping" result type.
+
+**Caps:** 3 teams in the palette, 6 on the web results page, 3 on native (matching
+the titles caps).
+
+**Keyboard nav:** extend the palette `NavItem` union with `{ kind: 'team'; id }`;
+teams come right after universes in the flat list; Enter → `/team/[id]`.
+
+## Data flow
+
+```
+useUnifiedSearch(q)
+  ├─ searchUniverses(q)  → UniverseResult[]   (sync)
+  ├─ searchTeams(q)      → TeamSearchResult[]  (debounced, NEW)
+  ├─ useHeroSearch(q)    → HeroSearchResult[]
+  └─ searchTitles(q)     → TitleSearchResult[]
+→ sections: Universes → Teams → Heroes → Films & Shows
+
+/team/[id]  ──useTeamPage──┬─ getTeamById(id)        → TeamSummary
+                           └─ getTeamMembers(id,300) → RosterHero[]  (→ /character/[id])
+```
+
+## Error handling
+
+- `searchTeams`, `getTeamById`, `getTeamMembers` all degrade to `[]` / `null`
+  (log a warning) — a DB hiccup never blanks the other search sections, and the
+  team page shows a "Team not found" state when `getTeamById` returns null.
+
+## Testing
+
+Per repo convention (pure logic / hooks only, mocked Supabase; no screen renders):
+- `__tests__/lib/db/teams.test.ts` — `searchTeams`: empty query short-circuits
+  (no DB call); ILIKE + popularity order; row→`TeamSearchResult` mapping; error →
+  `[]`. `getTeamById`: maps a row; missing → `null`.
+- `__tests__/hooks/useUnifiedSearch.test.tsx` (extend) — teams section populates;
+  a teams failure leaves the other sections intact.
+- `__tests__/hooks/useTeamPage.test.tsx` (new) — resolves `{team, members}`;
+  `notFound` when `getTeamById` → null; mocks `src/lib/db/teams`.
+- No tests for the route view files (per CLAUDE.md).
+
+## Build order
+
+1. **Part 1** — `getTeamById` / `getTeamMembers` → `useTeamPage` → `/team/[id]`
+   views. (Destination exists and is reachable by direct URL.)
+2. **Part 2** — `searchTeams` → `useUnifiedSearch` → web `TeamResultRow` + palette
+   + web results page → native `TeamResultRow` + native section.
+
+## Open questions
+
+None. Logos are intentionally out (wordmark fallback); curation is popularity-only
+by decision.
