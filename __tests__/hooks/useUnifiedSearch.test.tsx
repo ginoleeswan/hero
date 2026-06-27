@@ -1,11 +1,14 @@
-import { renderHook } from '@testing-library/react-native';
+import { renderHook, waitFor } from '@testing-library/react-native';
 import { useUnifiedSearch } from '../../src/hooks/useUnifiedSearch';
 import { useHeroSearch } from '../../src/hooks/useHeroSearch';
+import { searchTitles } from '../../src/lib/db/titles';
 import type { HeroSearchResult } from '../../src/lib/db/heroes';
 
 jest.mock('../../src/hooks/useHeroSearch', () => ({ useHeroSearch: jest.fn() }));
+jest.mock('../../src/lib/db/titles', () => ({ searchTitles: jest.fn() }));
 
 const mockUseHeroSearch = useHeroSearch as jest.MockedFunction<typeof useHeroSearch>;
+const mockSearchTitles = searchTitles as jest.MockedFunction<typeof searchTitles>;
 
 const hero = (id: string): HeroSearchResult =>
   ({
@@ -21,7 +24,10 @@ const hero = (id: string): HeroSearchResult =>
   }) as HeroSearchResult;
 
 describe('useUnifiedSearch', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockSearchTitles.mockResolvedValue([]);
+  });
 
   it('merges universe hits with hero results', () => {
     mockUseHeroSearch.mockReturnValue({
@@ -46,5 +52,15 @@ describe('useUnifiedSearch', () => {
     mockUseHeroSearch.mockReturnValue({ results: [], loading: false, hasCriteria: false });
     const { result } = renderHook(() => useUnifiedSearch(''));
     expect(result.current.universes).toEqual([]);
+  });
+
+  it('populates the titles section', async () => {
+    mockUseHeroSearch.mockReturnValue({ results: [], loading: false, hasCriteria: true });
+    mockSearchTitles.mockResolvedValue([
+      { id: 'tmdb:1', title: 'The Boys', media_type: 'tv', year: 2019, poster_url: null },
+    ]);
+    const { result } = renderHook(() => useUnifiedSearch('the boys'));
+    await waitFor(() => expect(result.current.titles).toHaveLength(1));
+    expect(result.current.titles[0].title).toBe('The Boys');
   });
 });
