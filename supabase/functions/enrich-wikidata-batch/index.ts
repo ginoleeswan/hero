@@ -131,12 +131,14 @@ async function fetchFacts(qid: string): Promise<{
   inceptionYear: number | null;
   imdb: string | null;
   site: string | null;
+  sitelinks: number | null;
 }> {
   const q = `
-SELECT ?aliases ?creators ?inc ?imdb ?site WHERE {
+SELECT ?aliases ?creators ?inc ?imdb ?site ?sl WHERE {
   OPTIONAL { wd:${qid} wdt:P571 ?inc. }
   OPTIONAL { wd:${qid} wdt:P345 ?imdb. }
   OPTIONAL { wd:${qid} wdt:P856 ?site. }
+  OPTIONAL { wd:${qid} wikibase:sitelinks ?sl. }
   OPTIONAL { SELECT (GROUP_CONCAT(DISTINCT ?a; SEPARATOR="|") AS ?aliases) WHERE { wd:${qid} skos:altLabel ?a. FILTER(LANG(?a)="en") } }
   OPTIONAL { SELECT (GROUP_CONCAT(DISTINCT ?cl; SEPARATOR="|") AS ?creators) WHERE { wd:${qid} wdt:P170 ?c. ?c rdfs:label ?cl. FILTER(LANG(?cl)="en") } }
 } LIMIT 1`;
@@ -149,12 +151,14 @@ SELECT ?aliases ?creators ?inc ?imdb ?site WHERE {
           .map((s) => s.trim())
           .filter(Boolean)
       : [];
+  const sl = r.sl?.value != null ? Number.parseInt(r.sl.value, 10) : null;
   return {
     aliases: split(r.aliases?.value),
     creators: split(r.creators?.value),
     inceptionYear: yearOf(r.inc?.value ?? null),
     imdb: r.imdb?.value ?? null,
     site: r.site?.value ?? null,
+    sitelinks: sl != null && Number.isFinite(sl) ? sl : null,
   };
 }
 
@@ -260,6 +264,7 @@ async function runEnrich(
         .update({
           creators: mergeUniq(h.creators ?? [], facts.creators),
           aliases: mergeUniq(h.aliases ?? [], facts.aliases),
+          wikidata_sitelinks: facts.sitelinks,
           wikidata_enriched_at: new Date().toISOString(),
         })
         .eq('id', h.id);
