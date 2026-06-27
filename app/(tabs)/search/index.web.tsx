@@ -19,7 +19,9 @@ import { COLORS, SURFACE, SURFACE_GRADIENT, SEAM_COLOR } from '../../../src/cons
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { useSearch } from '../../../src/contexts/SearchContext';
 import { useSearchHistory } from '../../../src/hooks/useSearchHistory';
-import { useHeroSearch } from '../../../src/hooks/useHeroSearch';
+import { useUnifiedSearch } from '../../../src/hooks/useUnifiedSearch';
+import { UniverseChip } from '../../../src/components/web/search/UniverseChip';
+import { FEATURED_PUBLISHERS } from '../../../src/constants/publishers';
 import { useBrowseCovers } from '../../../src/hooks/useBrowseCovers';
 import { SearchBrowse } from '../../../src/components/web/search/SearchBrowse';
 import { useSkeletonAnim } from '../../../src/components/web/Skeleton';
@@ -175,7 +177,7 @@ export default function WebSearchScreen() {
   const trimmed = inputQuery.trim();
   const hasCriteria = trimmed.length > 0;
 
-  const { results: heroes, loading } = useHeroSearch(inputQuery, 'All', RESULT_LIMIT);
+  const { universes, heroes, loading } = useUnifiedSearch(inputQuery, RESULT_LIMIT);
 
   // Sync the input FROM the URL (deep links, back/forward, nav palette).
   useEffect(() => {
@@ -328,6 +330,33 @@ export default function WebSearchScreen() {
             </>
           )}
           <View style={{ marginTop: history.length > 0 ? 20 : 4 }}>
+            <View style={styles.idleHeaderRow}>
+              <Text style={styles.idleLabel as object}>Browse universes</Text>
+            </View>
+            <View style={styles.universeRow as object}>
+              {FEATURED_PUBLISHERS.map((b) => (
+                <View key={b.slug} style={styles.universeChipWrap as object}>
+                  <UniverseChip
+                    universe={{
+                      slug: b.slug,
+                      name: b.name,
+                      color: b.color,
+                      logo: b.logo,
+                      badgeSize: b.badgeSize,
+                      logoOnLight: b.logoOnLight,
+                      logoTint: b.logoTint,
+                      exact: false,
+                    }}
+                    variant="light"
+                    onPress={() =>
+                      router.push(`/universe/${b.slug}` as Parameters<typeof router.push>[0])
+                    }
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+          <View style={{ marginTop: 20 }}>
             <SearchBrowse
               covers={browseCovers}
               onPress={(slug) =>
@@ -339,6 +368,21 @@ export default function WebSearchScreen() {
       ) : (
         <View style={[styles.gridWrap, { paddingHorizontal: contentPad }]}>
           {hasCriteria && <Text style={styles.resultCount as object}>{countLabel}</Text>}
+          {universes.length > 0 && (
+            <View style={styles.universeRow as object}>
+              {universes.map((u) => (
+                <View key={u.slug} style={styles.universeChipWrap as object}>
+                  <UniverseChip
+                    universe={u}
+                    variant="light"
+                    onPress={() =>
+                      router.push(`/universe/${u.slug}` as Parameters<typeof router.push>[0])
+                    }
+                  />
+                </View>
+              ))}
+            </View>
+          )}
           <View style={gridStyle as object}>
             {loading
               ? Array.from({ length: 18 }).map((_, i) => (
@@ -500,6 +544,19 @@ const styles = StyleSheet.create({
     maxWidth: 220,
   } as object,
   chipText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy } as object,
+
+  // Universe chips: search-hit row above the grid, and the idle "Browse universes" row.
+  universeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingTop: 8,
+    paddingBottom: 4,
+  } as object,
+  universeChipWrap: {
+    backgroundColor: 'rgba(29,45,51,0.05)',
+    borderRadius: 12,
+  } as object,
 
   // ── Grid / content ─────────────────────────────────────────────────────────
   gridWrap: { paddingTop: 24, maxWidth: 1200, width: '100%', alignSelf: 'center' },

@@ -11,18 +11,25 @@ import type { UniverseResult } from '../../../lib/db/universes';
 export function UniverseChip({
   universe,
   onPress,
+  variant = 'dark',
 }: {
   universe: UniverseResult;
   onPress: () => void;
+  /** 'dark' for the palette panel (beige text); 'light' for the beige results page (navy text). */
+  variant?: 'dark' | 'light';
 }) {
   const { name, color, logo, badgeSize, logoOnLight, logoTint } = universe;
+  const light = variant === 'light';
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="link"
       accessibilityLabel={`Browse the ${name} universe`}
       style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-        [styles.row, hovered && (styles.rowHover as object)] as object
+        [
+          styles.row,
+          hovered && ((light ? styles.rowHoverLight : styles.rowHover) as object),
+        ] as object
       }
     >
       <View style={[styles.tile, { backgroundColor: logoOnLight ? COLORS.beige : color }] as object}>
@@ -40,10 +47,12 @@ export function UniverseChip({
         )}
       </View>
       <View style={styles.text}>
-        <Text style={styles.name as object} numberOfLines={1}>
+        <Text style={[styles.name, light && (styles.nameLight as object)] as object} numberOfLines={1}>
           {name}
         </Text>
-        <Text style={styles.kicker as object}>Universe</Text>
+        <Text style={[styles.kicker, light && (styles.kickerLight as object)] as object}>
+          Universe
+        </Text>
       </View>
     </Pressable>
   );
@@ -60,6 +69,7 @@ const styles = StyleSheet.create({
     transition: 'background-color 150ms ease',
   } as object,
   rowHover: { backgroundColor: 'rgba(245,235,220,0.06)' } as object,
+  rowHoverLight: { backgroundColor: 'rgba(29,45,51,0.06)' } as object,
   tile: {
     width: 38,
     height: 38,
@@ -70,6 +80,7 @@ const styles = StyleSheet.create({
   } as object,
   text: { flexDirection: 'column' },
   name: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.beige } as object,
+  nameLight: { color: COLORS.navy } as object,
   kicker: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
@@ -77,5 +88,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   } as object,
+  kickerLight: { color: 'rgba(29,45,51,0.5)' } as object,
   fallback: { fontFamily: 'Flame-Regular', fontSize: 13, color: COLORS.navy } as object,
 });
