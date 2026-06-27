@@ -27,6 +27,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { COLORS } from '../../../src/constants/colors';
 import { PortraitCard } from '../../../src/components/search/PortraitCard';
 import { UniverseResultRow } from '../../../src/components/search/UniverseResultRow';
+import { TitleResultRow } from '../../../src/components/search/TitleResultRow';
 import { FilterChips, type FilterOption } from '../../../src/components/search/FilterChips';
 import { AccentRail } from '../../../src/components/search/AccentRail';
 import { CategoryPodGrid } from '../../../src/components/home/CategoryPodGrid';
@@ -35,6 +36,7 @@ import { Skeleton } from '../../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../../src/components/ui/SkeletonProvider';
 import type { PublisherFilter, AlignmentFilter } from '../../../src/lib/db/heroes';
 import { searchUniverses } from '../../../src/lib/db/universes';
+import { searchTitles, type TitleSearchResult } from '../../../src/lib/db/titles';
 import { useHeroSearchInfinite, prefetchHeroSearch } from '../../../src/lib/query/heroQueries';
 import { getRecentlyViewed } from '../../../src/lib/db/viewHistory';
 import { useAuth } from '../../../src/hooks/useAuth';
@@ -158,6 +160,27 @@ export default function SearchScreen() {
   // the web search's Universes section; routes to /universe/[slug].
   const universes = useMemo(() => searchUniverses(debouncedQuery.trim(), 6), [debouncedQuery]);
 
+  // Matching films & shows from the titles table (debouncedQuery is already
+  // debounced upstream). Mirrors the web search's "Films & Shows" section;
+  // routes to /title/[id]. Degrades silently to none on error.
+  const [titles, setTitles] = useState<TitleSearchResult[]>([]);
+  useEffect(() => {
+    const q = debouncedQuery.trim();
+    if (!q) {
+      setTitles([]);
+      return;
+    }
+    let cancelled = false;
+    searchTitles(q, 3)
+      .then((res) => {
+        if (!cancelled) setTitles(res);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery]);
+
   const isIdle = !debouncedQuery.trim();
   const showIdleExtras = !query.trim();
   // When idle, the screen is a browse surface (recent · recently viewed · the
@@ -245,6 +268,24 @@ export default function SearchScreen() {
               onPress={() => {
                 Haptics.selectionAsync();
                 router.push(`/universe/${u.slug}` as Parameters<typeof router.push>[0]);
+              }}
+            />
+          ))}
+        </View>
+      )}
+
+      {!isIdle && titles.length > 0 && (
+        <View style={styles.universeSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionLabel}>Films & Shows</Text>
+          </View>
+          {titles.map((t) => (
+            <TitleResultRow
+              key={t.id}
+              title={t}
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push(`/title/${t.id}` as Parameters<typeof router.push>[0]);
               }}
             />
           ))}
