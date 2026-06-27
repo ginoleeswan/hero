@@ -227,6 +227,12 @@ describe('heroRowToCharacterData', () => {
     narrative_status: 'pending',
     added_at: '2026-04-04T00:00:00Z',
     franchise: null,
+    wikidata_sitelinks: null,
+    fame_tier: 0,
+    fame_rated_at: null,
+    fame_rated_by: null,
+    fame_score: null,
+    fame_score_version: null,
   } satisfies Hero;
 
   it('maps powerstats to string values', () => {
@@ -411,6 +417,12 @@ const baseHero: HeroRow = {
   narrative_status: 'pending',
   added_at: '2026-04-04T00:00:00Z',
   franchise: null,
+  wikidata_sitelinks: null,
+  fame_tier: 0,
+  fame_rated_at: null,
+  fame_rated_by: null,
+  fame_score: null,
+  fame_score_version: null,
 };
 
 describe('heroRowToCharacterData — powers mapping', () => {

@@ -134,7 +134,7 @@ export async function getHeroesByNames(names: string[]): Promise<RelatedHeroCard
     .from('heroes')
     .select('id, name, image_url, image_md_url, portrait_url, publisher, alignment')
     .in('name', unique)
-    .order('issue_count', { ascending: false, nullsFirst: false })
+    .order('fame_score', { ascending: false, nullsFirst: false })
     .limit(200);
   if (error) {
     console.warn('[getHeroesByNames] error:', error.message);

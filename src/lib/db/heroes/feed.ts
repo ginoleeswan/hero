@@ -12,7 +12,7 @@ export async function getPopularHeroes(limit = 25): Promise<Hero[]> {
     .from('heroes')
     .select(HOME_SPOT)
     .eq('category', 'popular')
-    .order('name')
+    .order('fame_score', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as Hero[];
@@ -23,7 +23,7 @@ export async function getXMen(limit = 25): Promise<Hero[]> {
     .from('heroes')
     .select(HOME_ROW)
     .or('group_affiliation.ilike.%x-men%,group_affiliation.ilike.%xmen%')
-    .order('issue_count', { ascending: false, nullsFirst: false })
+    .order('fame_score', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as Hero[];
@@ -34,7 +34,7 @@ export async function getAntiHeroes(limit = 20): Promise<Hero[]> {
     .from('heroes')
     .select(HOME_ROW)
     .ilike('alignment', '%neutral%')
-    .order('issue_count', { ascending: false, nullsFirst: false })
+    .order('fame_score', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as Hero[];
@@ -46,7 +46,7 @@ export async function getVillains(limit = 25): Promise<Hero[]> {
     .select(HOME_ROW)
     .eq('alignment', 'bad')
     .not('publisher', 'in', '("Non-Fictional","In the Public Domain")')
-    .order('issue_count', { ascending: false, nullsFirst: false })
+    .order('fame_score', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as Hero[];
@@ -57,7 +57,7 @@ export async function getIconicHeroes(limit = 25): Promise<Hero[]> {
     .from('heroes')
     .select(HOME_SPOT)
     .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
-    .order('issue_count', { ascending: false, nullsFirst: false })
+    .order('fame_score', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as Hero[];
@@ -99,7 +99,7 @@ export async function getSpotlightHeroes(limit = 5): Promise<Hero[]> {
     .gte('powerstats_total', SPOT_MIN_POWERSTATS)
     .not('publisher', 'in', SPOT_PUBLISHER_EXCLUDE)
     .order('movie_count', { ascending: false, nullsFirst: false })
-    .order('issue_count', { ascending: false, nullsFirst: false })
+    .order('fame_score', { ascending: false, nullsFirst: false })
     .limit(SPOT_FAMOUS_POOL);
 
   // Lesser-known but not obscure: no/few films, yet a real publication history.
@@ -197,7 +197,7 @@ export async function getHeroesByMediaTag(tag: string, limit = 20): Promise<Hero
     .from('heroes')
     .select(`${HOME_ROW}, hero_tags!inner(tag)`)
     .eq('hero_tags.tag', tag)
-    .order('issue_count', { ascending: false, nullsFirst: false })
+    .order('fame_score', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as Hero[];
@@ -208,7 +208,7 @@ export async function getHeroesByPublisher(publisher: string, limit = 25): Promi
     .from('heroes')
     .select(HOME_ROW)
     .ilike('publisher', `%${publisher}%`)
-    .order('issue_count', { ascending: false, nullsFirst: false })
+    .order('fame_score', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as Hero[];

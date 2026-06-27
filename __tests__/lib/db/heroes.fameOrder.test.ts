@@ -1,4 +1,5 @@
 import { getAllHeroesBySlug } from '../../../src/lib/db/heroes';
+import { getPopularHeroes, getIconicHeroes } from '../../../src/lib/db/heroes';
 
 let mockRangeWith: { data: unknown; error: unknown } = { data: [], error: null };
 
@@ -8,6 +9,8 @@ jest.mock('../../../src/lib/supabase', () => {
   methods.forEach((m) => (chain[m] = jest.fn().mockReturnValue(chain)));
   // fetchAllPages terminates the loop on a short page, so range resolves directly.
   chain.range = jest.fn(() => Promise.resolve(mockRangeWith));
+  // Direct-await feed queries (e.g. getPopularHeroes) await the builder itself.
+  chain.then = (resolve: (v: unknown) => unknown) => Promise.resolve(mockRangeWith).then(resolve);
   return { supabase: { from: jest.fn().mockReturnValue(chain) }, __chain: chain };
 });
 
@@ -37,5 +40,17 @@ describe('fame_score ordering', () => {
     await getAllHeroesBySlug('popular');
     expect(chain.order).toHaveBeenCalledWith('fame_score', FAME);
     expect(chain.order).not.toHaveBeenCalledWith('name');
+  });
+
+  it('orders the popular home row by fame_score desc', async () => {
+    await getPopularHeroes();
+    expect(chain.order).toHaveBeenCalledWith('fame_score', FAME);
+    expect(chain.order).not.toHaveBeenCalledWith('name');
+  });
+
+  it('orders the iconic home row by fame_score desc', async () => {
+    await getIconicHeroes();
+    expect(chain.order).toHaveBeenCalledWith('fame_score', FAME);
+    expect(chain.order).not.toHaveBeenCalledWith('issue_count', FAME);
   });
 });

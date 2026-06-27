@@ -160,7 +160,7 @@ export async function getSearchIdleHeroes(limit = 30): Promise<HeroSearchResult[
       'id, name, publisher, alignment, image_md_url, image_url, portrait_url, full_name, aliases',
     )
     .not('publisher', 'in', '("Non-Fictional","In the Public Domain","Company-Licensed")')
-    .order('issue_count', { ascending: false, nullsFirst: false })
+    .order('fame_score', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) throw new Error(error.message);
   return (data ?? []) as HeroSearchResult[];
