@@ -529,6 +529,15 @@ const stripHtml = (s: string | null): string | null => {
   return t ? t.slice(0, 90) : null;
 };
 
+/** Place one hero into a real universe (publisher); admin-gated. */
+export async function setHeroUniverse(heroId: string, publisher: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_set_universe', {
+    p_hero_id: heroId,
+    p_publisher: publisher,
+  });
+  if (error) throw new Error(error.message);
+}
+
 /** Heroes still parked in the 'Company-Licensed' bucket, newest ingest first. */
 export async function listUnbrandedHeroes(limit = 100): Promise<UnbrandedHero[]> {
   const { data, error } = await supabase

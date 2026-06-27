@@ -1818,6 +1818,10 @@ export type Database = {
         Returns: string
       }
       admin_set_drain_cron: { Args: { p_enabled: boolean }; Returns: string }
+      admin_set_universe: {
+        Args: { p_hero_id: string; p_publisher: string }
+        Returns: Json
+      }
       admin_snapshot_now: { Args: never; Returns: undefined }
       admin_stop_run: { Args: { p_run_id: number }; Returns: boolean }
       admin_toggle_cron: {

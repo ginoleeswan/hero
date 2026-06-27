@@ -434,6 +434,10 @@ export default function AdminHealthScreen() {
                     heroes={unbrandedQ.data ?? []}
                     loading={unbrandedQ.isLoading}
                     flash={flash}
+                    onChanged={() => {
+                      queryClient.invalidateQueries({ queryKey: ['unbrandedHeroes'] });
+                      queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
+                    }}
                   />
                 </View>
               </ScrollView>
