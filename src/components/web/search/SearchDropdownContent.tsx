@@ -9,14 +9,18 @@ import { useIdleHeroes } from '../../../hooks/useIdleHeroes';
 import { IdleSuggestions } from './IdleSuggestions';
 import { SuggestionsList } from './SuggestionsList';
 import { UniverseChip } from './UniverseChip';
+import { TeamResultRow } from './TeamResultRow';
 import { TitleResultRow } from './TitleResultRow';
 
-// Flat, ordered list of the dropdown's selectable rows — universes, heroes,
-// titles. The palette owns the keyboard cursor and drives Enter-to-open from it.
+// Flat, ordered list of the dropdown's selectable rows — universes, teams,
+// heroes, titles. The palette owns the keyboard cursor and drives Enter-to-open.
 export type NavItem =
   | { kind: 'universe'; slug: string }
+  | { kind: 'team'; id: string }
   | { kind: 'hero'; id: string }
   | { kind: 'title'; id: string };
+
+const MAX_TEAM_SUGGESTIONS = 3;
 
 const MAX_TITLE_SUGGESTIONS = 3;
 
@@ -32,11 +36,12 @@ export function SearchDropdownContent({
   const router = useRouter();
   const { query, setQuery, setSearchFocused } = useSearch();
   const { history, addSearch, clearHistory } = useSearchHistory();
-  const { universes, heroes, titles, loading, resultCount } = useUnifiedSearch(query);
+  const { universes, teams, heroes, titles, loading, resultCount } = useUnifiedSearch(query);
 
   const isEmptyQuery = query.trim().length === 0;
   const { heroes: trending, isLoading: trendingLoading } = useIdleHeroes(isEmptyQuery, 4);
 
+  const shownTeams = teams.slice(0, MAX_TEAM_SUGGESTIONS);
   const shownHeroes = heroes.slice(0, MAX_HERO_SUGGESTIONS);
   const shownTitles = titles.slice(0, MAX_TITLE_SUGGESTIONS);
 
@@ -46,6 +51,7 @@ export function SearchDropdownContent({
     ? []
     : [
         ...universes.map((u) => ({ kind: 'universe', slug: u.slug }) as NavItem),
+        ...shownTeams.map((t) => ({ kind: 'team', id: t.id }) as NavItem),
         ...shownHeroes.map((h) => ({ kind: 'hero', id: h.id }) as NavItem),
         ...shownTitles.map((t) => ({ kind: 'title', id: t.id }) as NavItem),
       ];
@@ -57,6 +63,7 @@ export function SearchDropdownContent({
 
   const activeItem = highlightIndex >= 0 ? navItems[highlightIndex] : undefined;
   const activeUniverseSlug = activeItem?.kind === 'universe' ? activeItem.slug : undefined;
+  const activeTeamId = activeItem?.kind === 'team' ? activeItem.id : undefined;
   const activeHeroId = activeItem?.kind === 'hero' ? activeItem.id : undefined;
   const activeTitleId = activeItem?.kind === 'title' ? activeItem.id : undefined;
 
@@ -72,6 +79,12 @@ export function SearchDropdownContent({
     addSearch(query);
     close();
     router.push(`/universe/${slug}` as Parameters<typeof router.push>[0]);
+  };
+
+  const handleTeamPress = (tid: string) => {
+    addSearch(query);
+    close();
+    router.push(`/team/${tid}` as Parameters<typeof router.push>[0]);
   };
 
   const handleTitlePress = (id: string) => {
@@ -115,6 +128,19 @@ export function SearchDropdownContent({
                 universe={u}
                 active={u.slug === activeUniverseSlug}
                 onPress={() => handleUniversePress(u.slug)}
+              />
+            ))}
+          </View>
+        )}
+        {shownTeams.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel as object}>Teams</Text>
+            {shownTeams.map((t) => (
+              <TeamResultRow
+                key={t.id}
+                team={t}
+                active={t.id === activeTeamId}
+                onPress={() => handleTeamPress(t.id)}
               />
             ))}
           </View>
