@@ -29,6 +29,7 @@ import { PortraitCard } from '../../../src/components/search/PortraitCard';
 import { UniverseResultRow } from '../../../src/components/search/UniverseResultRow';
 import { TeamResultRow } from '../../../src/components/search/TeamResultRow';
 import { TitleResultRow } from '../../../src/components/search/TitleResultRow';
+import { TopResultRow } from '../../../src/components/search/TopResultRow';
 import { FilterChips, type FilterOption } from '../../../src/components/search/FilterChips';
 import { AccentRail } from '../../../src/components/search/AccentRail';
 import { CategoryPodGrid } from '../../../src/components/home/CategoryPodGrid';
@@ -40,6 +41,7 @@ import type { PublisherFilter, AlignmentFilter } from '../../../src/lib/db/heroe
 import { searchUniverses } from '../../../src/lib/db/universes';
 import { searchTeams, type TeamSearchResult } from '../../../src/lib/db/teams';
 import { searchTitles, type TitleSearchResult } from '../../../src/lib/db/titles';
+import { pickTopResult, topResultKey, type TopResult } from '../../../src/lib/search/topResult';
 import { useHeroSearchInfinite, prefetchHeroSearch } from '../../../src/lib/query/heroQueries';
 import { getRecentlyViewed } from '../../../src/lib/db/viewHistory';
 import { useAuth } from '../../../src/hooks/useAuth';
@@ -204,12 +206,67 @@ export default function SearchScreen() {
     };
   }, [debouncedQuery]);
 
+  // The single confident "Top result" across every type (Raycast/Spotlight
+  // pattern), via the shared pickTopResult. Null when nothing is a confident
+  // winner — then the screen just shows the grouped sections. Mirrors web.
+  const topResult: TopResult | null = useMemo(
+    () =>
+      pickTopResult(debouncedQuery, {
+        universes,
+        teams,
+        heroes: displayedHeroes,
+        titles,
+      }),
+    [debouncedQuery, universes, teams, displayedHeroes, titles],
+  );
+  const topKey = topResult ? topResultKey(topResult) : null;
+
+  // Drop whatever is featured up top from its own section so it isn't shown twice.
+  const sectionUniverses = useMemo(
+    () => universes.filter((u) => `universe:${u.slug}` !== topKey),
+    [universes, topKey],
+  );
+  const sectionTeams = useMemo(
+    () => teams.filter((t) => `team:${t.id}` !== topKey),
+    [teams, topKey],
+  );
+  const sectionTitles = useMemo(
+    () => titles.filter((t) => `title:${t.id}` !== topKey),
+    [titles, topKey],
+  );
+
+  const openTop = useCallback(
+    (top: TopResult) => {
+      Haptics.selectionAsync();
+      const push = (href: string) => router.push(href as Parameters<typeof router.push>[0]);
+      switch (top.kind) {
+        case 'universe':
+          return push(`/universe/${top.universe.slug}`);
+        case 'team':
+          return push(`/team/${top.team.id}`);
+        case 'title':
+          return push(`/title/${top.title.id}`);
+        case 'hero': {
+          const img = top.hero.portrait_url ?? top.hero.image_url;
+          return push(
+            `/character/${top.hero.id}${img ? `?imageUri=${encodeURIComponent(img)}` : ''}`,
+          );
+        }
+      }
+    },
+    [router],
+  );
+
   const isIdle = !debouncedQuery.trim();
   const showIdleExtras = !query.trim();
   // When idle, the screen is a browse surface (recent · recently viewed · the
   // category pods) — not a results grid. Suppress the hero list so the pods read
   // as the primary doorway instead of competing with a "Popular" wall.
-  const listData = isIdle ? [] : displayedHeroes;
+  const listData = isIdle
+    ? []
+    : topResult?.kind === 'hero'
+      ? displayedHeroes.filter((h) => h.id !== topResult.hero.id)
+      : displayedHeroes;
 
   const listHeader = (
     <>
@@ -293,12 +350,21 @@ export default function SearchScreen() {
         </>
       )}
 
-      {!isIdle && universes.length > 0 && (
+      {!isIdle && topResult && (
+        <View style={styles.universeSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionLabel}>Top result</Text>
+          </View>
+          <TopResultRow top={topResult} onPress={() => openTop(topResult)} />
+        </View>
+      )}
+
+      {!isIdle && sectionUniverses.length > 0 && (
         <View style={styles.universeSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>Universes</Text>
           </View>
-          {universes.map((u) => (
+          {sectionUniverses.map((u) => (
             <UniverseResultRow
               key={u.slug}
               universe={u}
@@ -311,12 +377,12 @@ export default function SearchScreen() {
         </View>
       )}
 
-      {!isIdle && teams.length > 0 && (
+      {!isIdle && sectionTeams.length > 0 && (
         <View style={styles.universeSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>Teams</Text>
           </View>
-          {teams.map((t) => (
+          {sectionTeams.map((t) => (
             <TeamResultRow
               key={t.id}
               team={t}
@@ -329,12 +395,12 @@ export default function SearchScreen() {
         </View>
       )}
 
-      {!isIdle && titles.length > 0 && (
+      {!isIdle && sectionTitles.length > 0 && (
         <View style={styles.universeSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>Films & Shows</Text>
           </View>
-          {titles.map((t) => (
+          {sectionTitles.map((t) => (
             <TitleResultRow
               key={t.id}
               title={t}
@@ -347,11 +413,9 @@ export default function SearchScreen() {
         </View>
       )}
 
-      {!isIdle && !isPending && (
+      {!isIdle && !isPending && listData.length > 0 && (
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>
-            {`Characters${displayedHeroes.length ? `  ·  ${displayedHeroes.length}` : ''}`}
-          </Text>
+          <Text style={styles.sectionLabel}>{`Characters  ·  ${listData.length}`}</Text>
         </View>
       )}
     </>
@@ -370,7 +434,7 @@ export default function SearchScreen() {
         ))}
       </View>
     </SkeletonProvider>
-  ) : isFetching ? null : (
+  ) : isFetching ? null : topResult ? null : (
     <View style={styles.center}>
       <View style={styles.emptyIconWrap}>
         <Ionicons name="search-outline" size={30} color={COLORS.orange} />
