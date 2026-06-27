@@ -44,7 +44,10 @@ export function TitleResultRow({
         ) : null}
       </View>
       <View style={styles.text}>
-        <Text style={[styles.title, light && (styles.titleLight as object)] as object} numberOfLines={1}>
+        <Text
+          style={[styles.title, light && (styles.titleLight as object)] as object}
+          numberOfLines={1}
+        >
           {title.title}
         </Text>
         <Text style={[styles.meta, light && (styles.metaLight as object)] as object}>{meta}</Text>

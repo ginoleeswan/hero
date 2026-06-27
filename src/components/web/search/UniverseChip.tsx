@@ -35,7 +35,9 @@ export function UniverseChip({
         ] as object
       }
     >
-      <View style={[styles.tile, { backgroundColor: logoOnLight ? COLORS.beige : color }] as object}>
+      <View
+        style={[styles.tile, { backgroundColor: logoOnLight ? COLORS.beige : color }] as object}
+      >
         {logo && badgeSize ? (
           <BrandLogoView
             logo={logo}
@@ -50,7 +52,10 @@ export function UniverseChip({
         )}
       </View>
       <View style={styles.text}>
-        <Text style={[styles.name, light && (styles.nameLight as object)] as object} numberOfLines={1}>
+        <Text
+          style={[styles.name, light && (styles.nameLight as object)] as object}
+          numberOfLines={1}
+        >
           {name}
         </Text>
         <Text style={[styles.kicker, light && (styles.kickerLight as object)] as object}>

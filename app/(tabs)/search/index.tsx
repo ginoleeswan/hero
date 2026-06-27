@@ -26,6 +26,7 @@ import type { SearchBarCommands } from 'react-native-screens';
 import { useQueryClient } from '@tanstack/react-query';
 import { COLORS } from '../../../src/constants/colors';
 import { PortraitCard } from '../../../src/components/search/PortraitCard';
+import { UniverseResultRow } from '../../../src/components/search/UniverseResultRow';
 import { FilterChips, type FilterOption } from '../../../src/components/search/FilterChips';
 import { AccentRail } from '../../../src/components/search/AccentRail';
 import { CategoryPodGrid } from '../../../src/components/home/CategoryPodGrid';
@@ -33,6 +34,7 @@ import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPee
 import { Skeleton } from '../../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../../src/components/ui/SkeletonProvider';
 import type { PublisherFilter, AlignmentFilter } from '../../../src/lib/db/heroes';
+import { searchUniverses } from '../../../src/lib/db/universes';
 import { useHeroSearchInfinite, prefetchHeroSearch } from '../../../src/lib/query/heroQueries';
 import { getRecentlyViewed } from '../../../src/lib/db/viewHistory';
 import { useAuth } from '../../../src/hooks/useAuth';
@@ -151,6 +153,11 @@ export default function SearchScreen() {
     [router],
   );
 
+  // Universe hits come from the in-memory brand registry (pure, instant) — so
+  // typing "disney"/"mattel" surfaces the universe above the hero grid. Mirrors
+  // the web search's Universes section; routes to /universe/[slug].
+  const universes = useMemo(() => searchUniverses(debouncedQuery.trim(), 6), [debouncedQuery]);
+
   const isIdle = !debouncedQuery.trim();
   const showIdleExtras = !query.trim();
   // When idle, the screen is a browse surface (recent · recently viewed · the
@@ -224,6 +231,24 @@ export default function SearchScreen() {
             <CategoryPodGrid covers={browseCovers} onPress={handleCategoryPress} />
           </View>
         </>
+      )}
+
+      {!isIdle && universes.length > 0 && (
+        <View style={styles.universeSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionLabel}>Universes</Text>
+          </View>
+          {universes.map((u) => (
+            <UniverseResultRow
+              key={u.slug}
+              universe={u}
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push(`/universe/${u.slug}` as Parameters<typeof router.push>[0]);
+              }}
+            />
+          ))}
+        </View>
       )}
 
       {!isIdle && !isPending && (
@@ -430,6 +455,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(245,235,220,0.12)',
   },
   recentChipText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.beige },
+  universeSection: { paddingBottom: 6 },
   sectionHeader: { paddingBottom: 8, paddingTop: 6 },
   sectionLabel: {
     fontFamily: 'Nunito_700Bold',
