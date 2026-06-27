@@ -369,20 +369,22 @@ export default function WebSearchScreen() {
         </View>
       ) : (
         <View style={[styles.gridWrap, { paddingHorizontal: contentPad }]}>
-          {hasCriteria && <Text style={styles.resultCount as object}>{countLabel}</Text>}
           {universes.length > 0 && (
-            <View style={styles.universeRow as object}>
-              {universes.map((u) => (
-                <View key={u.slug} style={styles.universeChipWrap as object}>
-                  <UniverseChip
-                    universe={u}
-                    variant="light"
-                    onPress={() =>
-                      router.push(`/universe/${u.slug}` as Parameters<typeof router.push>[0])
-                    }
-                  />
-                </View>
-              ))}
+            <View style={styles.titlesSection}>
+              <Text style={styles.idleLabel as object}>Universes</Text>
+              <View style={styles.universeRow as object}>
+                {universes.map((u) => (
+                  <View key={u.slug} style={styles.universeChipWrap as object}>
+                    <UniverseChip
+                      universe={u}
+                      variant="light"
+                      onPress={() =>
+                        router.push(`/universe/${u.slug}` as Parameters<typeof router.push>[0])
+                      }
+                    />
+                  </View>
+                ))}
+              </View>
             </View>
           )}
           {teams.length > 0 && (
@@ -399,6 +401,12 @@ export default function WebSearchScreen() {
                   />
                 </View>
               ))}
+            </View>
+          )}
+          {hasCriteria && (
+            <View style={styles.charHeaderRow as object}>
+              <Text style={styles.charLabel as object}>Characters</Text>
+              <Text style={styles.charCount as object}>{countLabel}</Text>
             </View>
           )}
           <View style={gridStyle as object}>
@@ -539,14 +547,28 @@ const styles = StyleSheet.create({
   } as object,
   clearBtn: { padding: 2, cursor: 'pointer' } as object,
 
-  // Result count, shown above the hero grid once a query is committed.
-  resultCount: {
+  // "Characters" section header on the results page — label + count on one row,
+  // matching the Universes / Teams / Films & Shows section labels.
+  charHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 10,
+    paddingTop: 18,
+    paddingBottom: 10,
+  } as object,
+  charLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: COLORS.grey,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  } as object,
+  charCount: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
     color: COLORS.grey,
     letterSpacing: 0.2,
-    paddingTop: 14,
-    paddingBottom: 4,
+    opacity: 0.8,
   } as object,
 
   // ── Idle state (mobile, no query) ─────────────────────────────────────────

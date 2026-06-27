@@ -350,7 +350,7 @@ export default function SearchScreen() {
       {!isIdle && !isPending && (
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>
-            {`${displayedHeroes.length} result${displayedHeroes.length !== 1 ? 's' : ''}`}
+            {`Characters${displayedHeroes.length ? `  ·  ${displayedHeroes.length}` : ''}`}
           </Text>
         </View>
       )}

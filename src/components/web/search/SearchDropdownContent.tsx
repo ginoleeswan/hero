@@ -26,6 +26,20 @@ const MAX_TITLE_SUGGESTIONS = 3;
 
 const MAX_HERO_SUGGESTIONS = 8;
 
+// Consistent type-labelled section header (Universes / Teams / Characters /
+// Films & Shows), with an optional count chip — so no section reads as a bare
+// "75 results" while its siblings are type-labelled.
+function SectionLabel({ label, count }: { label: string; count?: number }) {
+  return (
+    <View style={styles.sectionLabelRow as object}>
+      <Text style={styles.sectionLabel as object}>{label}</Text>
+      {count != null && count > 0 && (
+        <Text style={styles.sectionCount as object}>{count >= 100 ? '99+' : count}</Text>
+      )}
+    </View>
+  );
+}
+
 export function SearchDropdownContent({
   highlightIndex = -1,
   onItemsChange,
@@ -121,7 +135,7 @@ export function SearchDropdownContent({
       <View style={styles.scroll as object}>
         {universes.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel as object}>Universes</Text>
+            <SectionLabel label="Universes" />
             {universes.map((u) => (
               <UniverseChip
                 key={u.slug}
@@ -134,7 +148,7 @@ export function SearchDropdownContent({
         )}
         {shownTeams.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel as object}>Teams</Text>
+            <SectionLabel label="Teams" />
             {shownTeams.map((t) => (
               <TeamResultRow
                 key={t.id}
@@ -145,17 +159,19 @@ export function SearchDropdownContent({
             ))}
           </View>
         )}
-        <SuggestionsList
-          query={query}
-          suggestions={shownHeroes}
-          isLoading={loading}
-          resultCount={resultCount}
-          activeId={activeHeroId}
-          onSuggestionPress={handleHeroPress}
-        />
+        <View style={styles.section}>
+          <SectionLabel label="Characters" count={resultCount} />
+          <SuggestionsList
+            query={query}
+            suggestions={shownHeroes}
+            isLoading={loading}
+            activeId={activeHeroId}
+            onSuggestionPress={handleHeroPress}
+          />
+        </View>
         {shownTitles.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel as object}>Films & Shows</Text>
+            <SectionLabel label="Films & Shows" />
             {shownTitles.map((t) => (
               <TitleResultRow
                 key={t.id}
@@ -215,13 +231,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(245,235,220,0.08)',
   },
+  sectionLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingBottom: 4,
+  } as object,
   sectionLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
     color: 'rgba(245,235,220,0.45)',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
-    paddingHorizontal: 14,
-    paddingBottom: 4,
+  } as object,
+  sectionCount: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: 'rgba(245,235,220,0.35)',
+    letterSpacing: 0.2,
   } as object,
 });

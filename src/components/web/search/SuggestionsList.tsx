@@ -7,17 +7,17 @@ interface SuggestionsListProps {
   query: string;
   suggestions: HeroSearchResult[];
   isLoading: boolean;
-  resultCount: number;
   onSuggestionPress: (id: string) => void;
   /** Hero id highlighted by the palette's keyboard cursor. */
   activeId?: string;
 }
 
+// Headerless list of character rows. The "Characters" section label (and count)
+// is owned by the parent SearchDropdownContent so every section reads the same.
 export function SuggestionsList({
   query,
   suggestions,
   isLoading,
-  resultCount,
   onSuggestionPress,
   activeId,
 }: SuggestionsListProps) {
@@ -32,41 +32,27 @@ export function SuggestionsList({
   if (suggestions.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No heroes found for "{query}"</Text>
+        <Text style={styles.emptyText}>No characters found for "{query}"</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container as object}>
-      {resultCount > 0 && (
-        <View style={styles.resultHeader}>
-          <Text style={styles.resultCountLabel}>
-            {resultCount === 1 ? '1 result' : `${resultCount} results`}
-          </Text>
-        </View>
-      )}
-
-      <View style={styles.suggestionsList as object}>
-        {suggestions.map((hero) => (
-          <SuggestionItem
-            key={hero.id}
-            hero={hero}
-            query={query}
-            active={hero.id === activeId}
-            onPress={() => onSuggestionPress(hero.id)}
-          />
-        ))}
-      </View>
+    <View style={styles.suggestionsList as object}>
+      {suggestions.map((hero) => (
+        <SuggestionItem
+          key={hero.id}
+          hero={hero}
+          query={query}
+          active={hero.id === activeId}
+          onPress={() => onSuggestionPress(hero.id)}
+        />
+      ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'column',
-  } as object,
-
   loadingContainer: {
     paddingVertical: 28,
     alignItems: 'center',
@@ -84,20 +70,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'rgba(245,235,220,0.55)',
     textAlign: 'center',
-  },
-
-  resultHeader: {
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 4,
-    flexShrink: 0,
-  } as object,
-
-  resultCountLabel: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: 'rgba(245,235,220,0.45)',
-    letterSpacing: 0.2,
   },
 
   suggestionsList: {
