@@ -100,6 +100,24 @@ export async function searchTeams(query: string, limit = 6): Promise<TeamSearchR
   return (data ?? []) as TeamSearchResult[];
 }
 
+/**
+ * Resolve team names (e.g. a hero's `teams[]` affiliations) to their team rows,
+ * so the affiliation chips on a character page can link to /team/[id]. Names with
+ * no matching team simply aren't returned (those chips stay non-tappable text).
+ */
+export async function getTeamsByNames(names: string[]): Promise<TeamSummary[]> {
+  if (names.length === 0) return [];
+  const { data, error } = await supabase
+    .from('teams')
+    .select(TEAM_SUMMARY_COLS)
+    .in('name', names);
+  if (error) {
+    console.warn('[getTeamsByNames] error:', error.message);
+    return [];
+  }
+  return (data ?? []) as TeamSummary[];
+}
+
 /** One team's summary for the /team/[id] page header. null when not found. */
 export async function getTeamById(id: string): Promise<TeamSummary | null> {
   const { data, error } = await supabase

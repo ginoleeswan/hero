@@ -37,8 +37,18 @@ const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME!;
 const CLOUD_KEY = process.env.CLOUDINARY_API_KEY!;
 const CLOUD_SECRET = process.env.CLOUDINARY_API_SECRET!;
 
+const geminiUrl = (model: string) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+
 const GEMINI_MODEL = 'gemini-3.1-flash-image';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_URL = geminiUrl(GEMINI_MODEL);
+
+// Fallback image-to-image models for heroes 3.1 refuses. Older Gemini image models
+// are more permissive on trademarked IP, and being image-to-image (source + style
+// refs) they keep the proper side-profile headshot framing — unlike the Imagen
+// text-to-image last resort, which zooms out to a torso shot.
+const GEMINI_25_IMAGE_URL = geminiUrl('gemini-2.5-flash-image');
+const GEMINI_20_IMAGE_URL = geminiUrl('gemini-2.0-flash-preview-image-generation');
 
 const IMAGEN_URL = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${GEMINI_API_KEY}`;
 const GEMINI_TEXT_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
@@ -294,7 +304,10 @@ Clean natural painted edge, no hard white outline. Portrait orientation, taller 
   return Buffer.from(b64, 'base64');
 }
 
-async function callImageModel(parts: object[]): Promise<Uint8Array | 'PROHIBITED'> {
+async function callImageModel(
+  parts: object[],
+  modelUrl: string = GEMINI_URL,
+): Promise<Uint8Array | 'PROHIBITED'> {
   const body = {
     contents: [{ parts }],
     generationConfig: { responseModalities: ['IMAGE', 'TEXT'] },
@@ -308,7 +321,7 @@ async function callImageModel(parts: object[]): Promise<Uint8Array | 'PROHIBITED
       await new Promise((r) => setTimeout(r, delay));
     }
 
-    const res = await fetch(GEMINI_URL, {
+    const res = await fetch(modelUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -354,34 +367,51 @@ async function generatePortrait(
   const styleRefs = STYLE_REF_PATHS.map((p) => ({
     inline_data: { mime_type: 'image/jpeg', data: readFileSync(p).toString('base64') },
   }));
+  const sourceImg = { inline_data: { mime_type: sourceMime, data: sourceBase64 } };
+  const namedText = { text: `Character name: ${heroName}. ${buildPrompt()}` };
 
-  // Attempt 1: name + source image + style refs
-  const result1 = await callImageModel([
-    { text: `Character name: ${heroName}. ${buildPrompt()}` },
-    { inline_data: { mime_type: sourceMime, data: sourceBase64 } },
-    ...styleRefs,
-  ]);
+  // Primary: Gemini 3.1, named.
+  const primary = await callImageModel([namedText, sourceImg, ...styleRefs], GEMINI_URL);
+  if (primary !== 'PROHIBITED') return primary;
 
-  if (result1 !== 'PROHIBITED') return result1;
-
-  // Attempt 2: SAME gold-standard Gemini model, trademarked name stripped. The
-  // PROHIBITED block is almost always triggered by the name in the prompt, not the
-  // image — image-to-image restyle of a provided picture is far more permissive
-  // than generating a named IP. We feed only the neutral visual description (which
-  // is instructed never to name the character) + the source image + style refs.
-  console.log(`  ⚠ ${heroName} blocked by Gemini — retrying nameless (image + description)`);
+  // Blocked. Compute a neutral, nameless description once — reused by every retry.
+  // The PROHIBITED block is usually triggered by the trademarked name in the prompt,
+  // not the image, so a nameless retry on the same model often succeeds.
+  console.log(`  ⚠ ${heroName} blocked by Gemini 3.1 — descending the image model ladder`);
   const description = await describeCharacterVisually(sourceBase64, sourceMime);
-  const result2 = await callImageModel([
-    { text: `${description ? `The character to redraw: ${description}. ` : ''}${buildPrompt()}` },
-    { inline_data: { mime_type: sourceMime, data: sourceBase64 } },
-    ...styleRefs,
-  ]);
+  const namelessText = {
+    text: `${description ? `The character to redraw: ${description}. ` : ''}${buildPrompt()}`,
+  };
 
-  if (result2 !== 'PROHIBITED') return result2;
+  // Image-to-image ladder, most-capable → oldest. Every rung uses the SAME source +
+  // style refs as the primary, so blocked heroes still get a properly-framed
+  // side-profile headshot (older Gemini models are more permissive on trademarked
+  // IP). Each rung tries named first (best identity), then nameless.
+  const ladder: { label: string; url: string; tryNamed: boolean }[] = [
+    { label: 'Gemini 3.1 (nameless)', url: GEMINI_URL, tryNamed: false },
+    { label: 'Gemini 2.5 Flash Image', url: GEMINI_25_IMAGE_URL, tryNamed: true },
+    { label: 'Gemini 2.0 Flash (preview)', url: GEMINI_20_IMAGE_URL, tryNamed: true },
+  ];
 
-  // Still blocked even without the name. Fall back to Imagen 4 (text-to-image from
-  // the visual description / costume hint).
-  console.log(`  ⚠ ${heroName} blocked by Gemini content filter — falling back to Imagen 4`);
+  for (const rung of ladder) {
+    if (rung.tryNamed) {
+      const named = await callImageModel([namedText, sourceImg, ...styleRefs], rung.url);
+      if (named !== 'PROHIBITED') {
+        console.log(`  ✓ ${heroName} rendered by ${rung.label} (named)`);
+        return named;
+      }
+    }
+    const nameless = await callImageModel([namelessText, sourceImg, ...styleRefs], rung.url);
+    if (nameless !== 'PROHIBITED') {
+      console.log(`  ✓ ${heroName} rendered by ${rung.label}`);
+      return nameless;
+    }
+    console.log(`  ⚠ ${heroName} blocked by ${rung.label}`);
+  }
+
+  // Every image-to-image model refused. Last resort: Imagen 4 text-to-image (loses
+  // the tight headshot framing, but renders most blocked characters).
+  console.log(`  ⚠ ${heroName} blocked by all image models — falling back to Imagen 4`);
   return generatePortraitImagen(heroName, sourceBase64, sourceMime, heroId);
 }
 

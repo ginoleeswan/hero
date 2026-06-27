@@ -9,6 +9,7 @@ import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
 import { FamilyCanvas } from '../../src/components/family/FamilyCanvas.web';
 import { getPowerIcon, groupPowers } from '../../src/constants/powerIcons';
 import { useHeroDetail } from '../../src/hooks/useHeroDetail';
+import { useHeroTeams } from '../../src/hooks/useHeroTeams';
 import { ContributeSheet } from '../../src/components/contribute/ContributeSheet';
 import { isBlankValue } from '../../src/lib/contribute/missingFields';
 import {
@@ -556,6 +557,17 @@ export default function WebCharacterScreen() {
     return () => window.removeEventListener('scroll', onScroll);
   }, [stageHeight]);
 
+  // Affiliations + their team-id resolution are derived BEFORE any early return
+  // so these hooks run on every render (data may be null / errored on first paint).
+  const affiliations: string[] = data?.details.teams?.length
+    ? data.details.teams
+    : (data?.stats.connections['group-affiliation'] ?? '')
+        .split(/[,;]/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0 && !JUNK_VALUES.has(s.toLowerCase()));
+  // Affiliations that match a real team become doorways into /team/[id].
+  const resolveTeamId = useHeroTeams(affiliations);
+
   if (notFound) {
     return (
       <NotFoundView
@@ -636,15 +648,6 @@ export default function WebCharacterScreen() {
       .then((hero) => hero && setData(heroRowToCharacterData(hero)))
       .catch(() => {});
   };
-
-  // Affiliations live in the main "Enemies, Allies & Teams" card (not Quick Facts)
-  // so the sticky side rail stays short enough to fit the viewport.
-  const affiliations: string[] = details.teams?.length
-    ? details.teams
-    : (stats.connections['group-affiliation'] ?? '')
-        .split(/[,;]/)
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0 && !JUNK_VALUES.has(s.toLowerCase()));
 
   const alias =
     stats.biography['full-name'] &&
@@ -1128,11 +1131,37 @@ export default function WebCharacterScreen() {
                         <View style={styles.affGroup}>
                           <Text style={styles.chipGroupLabel}>Affiliations</Text>
                           <View style={styles.chipRow}>
-                            {affiliations.map((t) => (
-                              <View key={t} style={styles.affChip}>
-                                <Text style={styles.affChipText}>{t}</Text>
-                              </View>
-                            ))}
+                            {affiliations.map((t) => {
+                              const teamId = resolveTeamId(t);
+                              if (!teamId) {
+                                return (
+                                  <View key={t} style={styles.affChip}>
+                                    <Text style={styles.affChipText}>{t}</Text>
+                                  </View>
+                                );
+                              }
+                              return (
+                                <Pressable
+                                  key={t}
+                                  onPress={() =>
+                                    router.push(
+                                      `/team/${teamId}` as Parameters<typeof router.push>[0],
+                                    )
+                                  }
+                                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                                    [
+                                      styles.affChip,
+                                      styles.affChipLink,
+                                      hovered && (styles.affChipLinkHover as object),
+                                    ] as object
+                                  }
+                                >
+                                  <Text style={[styles.affChipText, styles.affChipLinkText] as object}>
+                                    {t}
+                                  </Text>
+                                </Pressable>
+                              );
+                            })}
                           </View>
                         </View>
                       ) : null}
@@ -3558,6 +3587,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.navy,
   },
+  // Team-linked affiliation chip — a warm tint + pointer to signal it's a doorway
+  // into the team roster (/team/[id]); plain affiliations stay flat text chips.
+  affChipLink: {
+    backgroundColor: 'rgba(231,115,51,0.10)',
+    borderColor: 'rgba(231,115,51,0.30)',
+    cursor: 'pointer',
+    transition: 'background-color 150ms ease, border-color 150ms ease',
+  } as object,
+  affChipLinkHover: {
+    backgroundColor: 'rgba(231,115,51,0.18)',
+    borderColor: 'rgba(231,115,51,0.5)',
+  } as object,
+  affChipLinkText: { color: '#9a4a1f' } as object,
   chipEnemy: {
     backgroundColor: 'rgba(181,48,43,0.08)',
     borderWidth: 1,

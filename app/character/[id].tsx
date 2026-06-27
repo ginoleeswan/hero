@@ -38,6 +38,7 @@ import { groupTitlesByMedia } from '../../src/lib/db/titles';
 import { PortrayedBySection } from '../../src/components/PortrayedBySection';
 import { HeroLinksRow, heroLinksHasContent } from '../../src/components/HeroLinksRow';
 import { useHeroDetail } from '../../src/hooks/useHeroDetail';
+import { useHeroTeams } from '../../src/hooks/useHeroTeams';
 import { ContributeSheet } from '../../src/components/contribute/ContributeSheet';
 import { isBlankValue } from '../../src/lib/contribute/missingFields';
 import {
@@ -286,11 +287,14 @@ function resolveTaxoChips(
 
 function AffiliationChips({ value }: { value: string | null | undefined }) {
   const [expanded, setExpanded] = useState(false);
-  if (!value || value === '-' || value === 'null' || value === '') return null;
-  const chips = value
+  const router = useRouter();
+  // Hooks must run unconditionally, so derive chips first (empty when blank) and
+  // resolve team ids before any early return.
+  const chips = (value && value !== '-' && value !== 'null' ? value : '')
     .split(/[,;]/)
     .map((s) => s.trim())
     .filter((s) => s && s !== '-' && s !== 'null' && s !== 'none');
+  const resolveTeamId = useHeroTeams(chips);
   if (chips.length === 0) return null;
   const visible = expanded ? chips : chips.slice(0, 8);
   const remainder = chips.length - 8;
@@ -298,11 +302,27 @@ function AffiliationChips({ value }: { value: string | null | undefined }) {
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>Affiliations:</Text>
       <View style={styles.chipsWrap}>
-        {visible.map((chip, i) => (
-          <View key={i} style={styles.chip}>
-            <Text style={styles.chipText}>{chip}</Text>
-          </View>
-        ))}
+        {visible.map((chip, i) => {
+          const teamId = resolveTeamId(chip);
+          if (!teamId) {
+            return (
+              <View key={i} style={styles.chip}>
+                <Text style={styles.chipText}>{chip}</Text>
+              </View>
+            );
+          }
+          return (
+            <TouchableOpacity
+              key={i}
+              onPress={() =>
+                router.push(`/team/${teamId}` as Parameters<typeof router.push>[0])
+              }
+              style={[styles.chip, styles.chipLink]}
+            >
+              <Text style={[styles.chipText, styles.chipLinkText]}>{chip}</Text>
+            </TouchableOpacity>
+          );
+        })}
         {!expanded && remainder > 0 && (
           <TouchableOpacity onPress={() => setExpanded(true)} style={styles.chip}>
             <Text style={styles.chipText}>+{remainder} more</Text>
@@ -2037,6 +2057,13 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
     letterSpacing: 0.2,
   },
+  // Team-linked affiliation chip — warm tint signals it's a doorway into the
+  // team roster (/team/[id]); unmatched affiliations stay flat text chips.
+  chipLink: {
+    backgroundColor: 'rgba(231,115,51,0.12)',
+    borderColor: 'rgba(231,115,51,0.32)',
+  },
+  chipLinkText: { color: '#9a4a1f' },
 
   // First issue
   // First Appearance — horizontal editorial card (cover + issue meta).

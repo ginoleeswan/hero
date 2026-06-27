@@ -2,6 +2,7 @@ import {
   pickDailyTeamPair,
   searchTeams,
   getTeamById,
+  getTeamsByNames,
   type FeaturedTeam,
 } from '../../../src/lib/db/teams';
 import { supabase } from '../../../src/lib/supabase';
@@ -23,6 +24,13 @@ function mockSingle(row: unknown, error: unknown = null) {
   const select = jest.fn(() => ({ eq }));
   (supabase.from as jest.Mock).mockReturnValue({ select });
   return { select, eq, single };
+}
+
+function mockIn(rows: unknown, error: unknown = null) {
+  const inFn = jest.fn().mockResolvedValue({ data: rows, error });
+  const select = jest.fn(() => ({ in: inFn }));
+  (supabase.from as jest.Mock).mockReturnValue({ select });
+  return { select, in: inFn };
 }
 
 const teams: FeaturedTeam[] = ['avengers', 'x-men', 'justice-league', 'teen-titans'].map(
@@ -99,5 +107,30 @@ describe('getTeamById', () => {
   it('returns null when missing', async () => {
     mockSingle(null, { code: 'PGRST116' });
     expect(await getTeamById('nope')).toBeNull();
+  });
+});
+
+describe('getTeamsByNames', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('returns [] for an empty list without hitting the DB', async () => {
+    mockIn([]);
+    expect(await getTeamsByNames([])).toEqual([]);
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it('looks up teams by exact name', async () => {
+    const m = mockIn([
+      { id: 't1', name: 'Avengers', publisher: 'Marvel', logo_url: null, member_count: 145 },
+    ]);
+    const out = await getTeamsByNames(['Avengers', 'Unknown Club']);
+    expect(supabase.from).toHaveBeenCalledWith('teams');
+    expect(m.in).toHaveBeenCalledWith('name', ['Avengers', 'Unknown Club']);
+    expect(out[0].id).toBe('t1');
+  });
+
+  it('degrades to [] on error', async () => {
+    mockIn(null, { message: 'boom' });
+    expect(await getTeamsByNames(['Avengers'])).toEqual([]);
   });
 });
