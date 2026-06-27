@@ -1,10 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  searchHeroes,
-  rankResults,
-  type HeroSearchResult,
-  type PublisherFilter,
-} from '../lib/db/heroes';
+import { searchHeroes, type HeroSearchResult, type PublisherFilter } from '../lib/db/heroes';
 
 // Single debounced hero-search primitive. Both the dedicated results page and
 // the nav palette's suggestions ride on this — they differ only in publisher /
@@ -29,8 +24,9 @@ export function useHeroSearch(
     setLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const res = await searchHeroes(trimmed, publisher, limit);
-        setResults(trimmed ? rankResults(res, trimmed) : res);
+        // The search_heroes RPC already ranks by blended match-tier + fame_score,
+        // so we trust its order (re-ranking client-side would undo the fame blend).
+        setResults(await searchHeroes(trimmed, publisher, limit));
       } catch {
         setResults([]);
       } finally {

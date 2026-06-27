@@ -1,9 +1,11 @@
 import {
   pickDailyTeamPair,
   searchTeams,
+  rankTeams,
   getTeamById,
   getTeamsByNames,
   type FeaturedTeam,
+  type TeamSearchResult,
 } from '../../../src/lib/db/teams';
 import { supabase } from '../../../src/lib/supabase';
 
@@ -12,11 +14,20 @@ jest.mock('../../../src/lib/supabase', () => ({ supabase: { from: jest.fn(), rpc
 function mockSearch(rows: unknown, error: unknown = null) {
   const limit = jest.fn().mockResolvedValue({ data: rows, error });
   const order = jest.fn(() => ({ limit }));
-  const ilike = jest.fn(() => ({ order }));
+  const gte = jest.fn(() => ({ order }));
+  const ilike = jest.fn(() => ({ gte }));
   const select = jest.fn(() => ({ ilike }));
   (supabase.from as jest.Mock).mockReturnValue({ select });
-  return { select, ilike, order, limit };
+  return { select, ilike, gte, order, limit };
 }
+
+const team = (name: string, popularity = 1, member_count = 5): TeamSearchResult => ({
+  id: name,
+  name,
+  publisher: null,
+  logo_url: null,
+  member_count,
+});
 
 function mockSingle(row: unknown, error: unknown = null) {
   const single = jest.fn().mockResolvedValue({ data: row, error });
@@ -71,26 +82,49 @@ describe('searchTeams', () => {
     expect(supabase.from).not.toHaveBeenCalled();
   });
 
-  it('queries teams by ILIKE on name, ordered by popularity', async () => {
+  it('queries by ILIKE, drops <2-member teams, then re-ranks + slices', async () => {
+    // Pool comes back popularity-ordered; a contains-match leads but a prefix
+    // match should win after re-ranking.
     const m = mockSearch([
-      { id: 't1', name: 'Avengers', publisher: 'Marvel', logo_url: null, member_count: 145 },
+      { id: 'c', name: 'Secret Avengers Society', publisher: null, logo_url: null, member_count: 90 },
+      { id: 'p', name: 'Avengers', publisher: 'Marvel', logo_url: null, member_count: 145 },
     ]);
-    const out = await searchTeams('aveng', 6);
+    const out = await searchTeams('aveng', 1);
     expect(supabase.from).toHaveBeenCalledWith('teams');
     expect(m.ilike).toHaveBeenCalledWith('name', '%aveng%');
-    expect(m.limit).toHaveBeenCalledWith(6);
-    expect(out[0]).toEqual({
-      id: 't1',
-      name: 'Avengers',
-      publisher: 'Marvel',
-      logo_url: null,
-      member_count: 145,
-    });
+    expect(m.gte).toHaveBeenCalledWith('member_count', 2);
+    expect(m.limit).toHaveBeenCalledWith(40);
+    // prefix match "Avengers" re-ranked above the popular contains-match, sliced to 1.
+    expect(out.map((t) => t.id)).toEqual(['p']);
   });
 
   it('degrades to [] on error', async () => {
     mockSearch(null, { message: 'boom' });
     expect(await searchTeams('x')).toEqual([]);
+  });
+});
+
+describe('rankTeams', () => {
+  it('orders exact > prefix > contains', () => {
+    const out = rankTeams(
+      [team('Justice League of America'), team('League'), team('Injustice League')],
+      'league',
+    );
+    expect(out.map((t) => t.name)).toEqual([
+      'League', // exact
+      'Justice League of America', // contains
+      'Injustice League', // contains
+    ]);
+  });
+
+  it('preserves input (popularity) order within a tier', () => {
+    const out = rankTeams([team('Avengers A'), team('Avengers B')], 'aveng');
+    expect(out.map((t) => t.name)).toEqual(['Avengers A', 'Avengers B']);
+  });
+
+  it('returns input unchanged for an empty query', () => {
+    const input = [team('X'), team('Y')];
+    expect(rankTeams(input, '  ')).toEqual(input);
   });
 });
 

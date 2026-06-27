@@ -79,9 +79,31 @@ export type TeamSearchResult = TeamSummary;
 
 const TEAM_SUMMARY_COLS = 'id, name, publisher, logo_url, member_count';
 
+const teamNorm = (s: string) => s.trim().toLowerCase();
+
 /**
- * Team search for the unified search surface. ILIKE on name, ranked by
- * popularity (Avengers/X-Men/JLA float up). Empty query short-circuits; degrades
+ * Re-rank a popularity-ordered team pool by name relevance: exact > prefix >
+ * contains, popularity preserved within a tier (stable sort). Pure + tested.
+ */
+export function rankTeams(teams: TeamSearchResult[], query: string): TeamSearchResult[] {
+  const q = teamNorm(query);
+  if (!q) return teams;
+  const tier = (name: string) => {
+    const n = teamNorm(name);
+    if (n === q) return 0;
+    if (n.startsWith(q)) return 1;
+    return 2;
+  };
+  return teams
+    .map((t, i) => ({ t, i, r: tier(t.name) }))
+    .sort((a, b) => a.r - b.r || a.i - b.i)
+    .map((x) => x.t);
+}
+
+/**
+ * Team search for the unified search surface. Fetches a popularity-ordered pool of
+ * ILIKE matches (dropping ≤1-member junk like one-off "teams"), then re-ranks by
+ * name relevance so exact/prefix matches lead. Empty query short-circuits; degrades
  * to [] so a DB hiccup never blanks the other result sections.
  */
 export async function searchTeams(query: string, limit = 6): Promise<TeamSearchResult[]> {
@@ -91,13 +113,14 @@ export async function searchTeams(query: string, limit = 6): Promise<TeamSearchR
     .from('teams')
     .select(TEAM_SUMMARY_COLS)
     .ilike('name', `%${q}%`)
+    .gte('member_count', 2)
     .order('popularity', { ascending: false, nullsFirst: false })
-    .limit(limit);
+    .limit(40);
   if (error) {
     console.warn('[searchTeams] error:', error.message);
     return [];
   }
-  return (data ?? []) as TeamSearchResult[];
+  return rankTeams((data ?? []) as TeamSearchResult[], q).slice(0, limit);
 }
 
 /**
