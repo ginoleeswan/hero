@@ -23,7 +23,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS } from '../../constants/colors';
+import { COLORS, SURFACE } from '../../constants/colors';
+import { useScreenChrome } from '../../hooks/useScreenChrome';
 import { MysteryPortrait } from './MysteryPortrait';
 import { ClueSticker } from './ClueSticker';
 import { StatsSheet } from './StatsSheet';
@@ -153,9 +154,14 @@ export function DailyGame() {
   }, [shareText]);
 
   const { width, height } = useWindowDimensions();
-  const isWide = Platform.OS === 'web' && width >= WIDE_BREAKPOINT;
+  const isWeb = Platform.OS === 'web';
+  const isWide = isWeb && width >= WIDE_BREAKPOINT;
 
-  const topPad = (Platform.OS === 'web' ? WEB_NAV_CLEARANCE : insets.top) + 14;
+  const topPad = (isWeb ? WEB_NAV_CLEARANCE : insets.top) + 14;
+
+  // Web: document scroll so the dark stage bleeds under the iOS Safari toolbar
+  // (the body already matches #0b1820). No-op on native.
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
   // The case file sits under the card while playing, and moves down next to the
   // result once finished (where the space opens up).
@@ -435,6 +441,13 @@ export function DailyGame() {
             {headerRow}
             {showError ? loadingOrError : wideBody}
           </View>
+        </View>
+      ) : isWeb ? (
+        // Mobile web: document scroll (no inner ScrollView) so the stage bleeds
+        // under the iOS Safari toolbar — matches the rest of the web app.
+        <View style={[styles.scroll, { paddingTop: topPad, paddingBottom: 20 }]}>
+          {headerRow}
+          {showError ? loadingOrError : narrowBody}
         </View>
       ) : (
         <ScrollView

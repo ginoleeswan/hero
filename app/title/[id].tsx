@@ -16,7 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { getTitleById, getTitleHeroes, extractProviders } from '../../src/lib/db/titles';
 import type { HeroTitle } from '../../src/lib/db/titles';
 import type { RelatedHeroCard } from '../../src/lib/db/heroes';
-import { COLORS } from '../../src/constants/colors';
+import { COLORS, SURFACE } from '../../src/constants/colors';
+import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { NotFoundView } from '../../src/components/NotFoundView';
 import { FilmBackdropHeader } from '../../src/components/film/FilmBackdropHeader';
 import { FilmTrailer } from '../../src/components/film/FilmTrailer';
@@ -42,6 +43,11 @@ export default function TitleScreen() {
 
   const [film, setFilm] = useState<HeroTitle | null | undefined>(undefined); // undefined = loading, null = not found
   const [heroes, setHeroes] = useState<RelatedHeroCard[]>([]);
+
+  // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar
+  // (dark backdrop header under the status bar, beige body to the very bottom).
+  // No-ops on native. Called before the early returns so it applies in every state.
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
 
   useEffect(() => {
     if (!id) {
@@ -193,6 +199,45 @@ export default function TitleScreen() {
     </TouchableOpacity>
   );
 
+  // Web bleeds under the iOS Safari toolbar via the document scroll set up in
+  // `app/_layout.web.tsx`; an inner ScrollView would bound the page to 100dvh and
+  // break that. Native keeps the component ScrollView.
+  if (isWeb) {
+    return (
+      <View style={styles.webPage}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <FilmBackdropHeader film={film} onBack={() => router.back()} />
+        <View style={styles.bodyWrap}>
+          {wide ? (
+            <View style={styles.bodyRow}>
+              <View style={styles.mainCol}>
+                {overviewCard}
+                {castCard}
+                {stillsCard}
+                {heroesCard}
+              </View>
+              <View style={styles.sideCol}>
+                {detailsCard}
+                {watchCard}
+                {tmdbLink}
+              </View>
+            </View>
+          ) : (
+            <View style={styles.bodyCol}>
+              {overviewCard}
+              {detailsCard}
+              {watchCard}
+              {castCard}
+              {stillsCard}
+              {heroesCard}
+              {tmdbLink}
+            </View>
+          )}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -203,78 +248,46 @@ export default function TitleScreen() {
       >
         <FilmBackdropHeader film={film} onBack={() => router.back()} />
 
-        {isWeb ? (
-          <View style={styles.bodyWrap}>
-            {wide ? (
-              <View style={styles.bodyRow}>
-                <View style={styles.mainCol}>
-                  {overviewCard}
-                  {castCard}
-                  {stillsCard}
-                  {heroesCard}
-                </View>
-                <View style={styles.sideCol}>
-                  {detailsCard}
-                  {watchCard}
-                  {tmdbLink}
-                </View>
-              </View>
-            ) : (
-              <View style={styles.bodyCol}>
-                {overviewCard}
-                {detailsCard}
-                {watchCard}
-                {castCard}
-                {stillsCard}
-                {heroesCard}
-                {tmdbLink}
-              </View>
-            )}
+        {film.overview ? (
+          <View style={styles.section}>
+            <Text style={styles.overview}>{film.overview}</Text>
           </View>
-        ) : (
-          <>
-            {film.overview ? (
-              <View style={styles.section}>
-                <Text style={styles.overview}>{film.overview}</Text>
-              </View>
-            ) : null}
-            {film.trailerKey ? (
-              <View style={styles.section}>
-                <FilmTrailer trailerKey={film.trailerKey} />
-              </View>
-            ) : null}
-            {providers.length > 0 ? (
-              <View style={styles.railSection}>
-                <WhereToWatch providers={providers} />
-              </View>
-            ) : null}
-            {film.cast && film.cast.length > 0 ? (
-              <View style={styles.railSection}>
-                <CastRail cast={film.cast} />
-              </View>
-            ) : null}
-            {film.stills && film.stills.length > 0 ? (
-              <View style={styles.railSection}>
-                <StillsGallery stills={film.stills} />
-              </View>
-            ) : null}
-            {heroes.length > 0 ? (
-              <View style={styles.railSection}>
-                <HeroesInFilmRail heroes={heroes} />
-              </View>
-            ) : null}
-            <View style={styles.section}>
-              <TouchableOpacity
-                style={styles.linkBtn}
-                onPress={() => Linking.openURL(tmdbUrl)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="open-outline" size={14} color="#fff" />
-                <Text style={styles.linkBtnText}>View on TMDB</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
+        ) : null}
+        {film.trailerKey ? (
+          <View style={styles.section}>
+            <FilmTrailer trailerKey={film.trailerKey} />
+          </View>
+        ) : null}
+        {providers.length > 0 ? (
+          <View style={styles.railSection}>
+            <WhereToWatch providers={providers} />
+          </View>
+        ) : null}
+        {film.cast && film.cast.length > 0 ? (
+          <View style={styles.railSection}>
+            <CastRail cast={film.cast} />
+          </View>
+        ) : null}
+        {film.stills && film.stills.length > 0 ? (
+          <View style={styles.railSection}>
+            <StillsGallery stills={film.stills} />
+          </View>
+        ) : null}
+        {heroes.length > 0 ? (
+          <View style={styles.railSection}>
+            <HeroesInFilmRail heroes={heroes} />
+          </View>
+        ) : null}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.linkBtn}
+            onPress={() => Linking.openURL(tmdbUrl)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="open-outline" size={14} color="#fff" />
+            <Text style={styles.linkBtnText}>View on TMDB</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -282,6 +295,9 @@ export default function TitleScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.beige },
+  // Web: document-scrolled page (no inner ScrollView) so the body bleeds under
+  // the iOS Safari toolbar. paddingBottom keeps the last card off the toolbar.
+  webPage: { width: '100%', backgroundColor: COLORS.beige, paddingBottom: 40 },
   loading: {
     flex: 1,
     backgroundColor: COLORS.beige,

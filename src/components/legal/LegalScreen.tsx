@@ -5,7 +5,8 @@ import { View, Text, Pressable, ScrollView, Platform, StyleSheet } from 'react-n
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS } from '../../constants/colors';
+import { COLORS, SURFACE } from '../../constants/colors';
+import { useScreenChrome } from '../../hooks/useScreenChrome';
 import type { LegalDoc } from '../../lib/legal';
 
 // The floating web nav is 64px tall; this beige page clears it itself.
@@ -14,7 +15,50 @@ const WEB_NAV_CLEARANCE = 64;
 export function LegalScreen({ doc }: { doc: LegalDoc }) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const topPad = (Platform.OS === 'web' ? WEB_NAV_CLEARANCE : insets.top) + 12;
+  const isWeb = Platform.OS === 'web';
+  const topPad = (isWeb ? WEB_NAV_CLEARANCE : insets.top) + 12;
+
+  // Web: document scroll so the beige page bleeds under the iOS Safari toolbar.
+  // No-op on native.
+  useScreenChrome({ top: SURFACE.paper, canvas: SURFACE.paper });
+
+  const content = (
+    <>
+      <Pressable
+        onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        hitSlop={10}
+        style={styles.backBtn}
+        accessibilityLabel="Back"
+      >
+        <Ionicons name="chevron-back" size={22} color={COLORS.navy} />
+      </Pressable>
+
+      <Text style={styles.title}>{doc.title}</Text>
+      <Text style={styles.updated}>Last updated {doc.updated}</Text>
+      <Text style={styles.intro}>{doc.intro}</Text>
+
+      {doc.sections.map((section) => (
+        <View key={section.heading} style={styles.section}>
+          <Text style={styles.heading}>{section.heading}</Text>
+          {section.body.map((para, i) => (
+            <Text key={i} style={styles.para}>
+              {para}
+            </Text>
+          ))}
+        </View>
+      ))}
+    </>
+  );
+
+  // Web uses the document scroll set up in `app/_layout.web.tsx`; an inner
+  // ScrollView would bound the page to 100dvh and break the bleed-under.
+  if (isWeb) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.scroll, { paddingTop: topPad, paddingBottom: 48 }]}>{content}</View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -24,29 +68,7 @@ export function LegalScreen({ doc }: { doc: LegalDoc }) {
           { paddingTop: topPad, paddingBottom: insets.bottom + 48 },
         ]}
       >
-        <Pressable
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-          hitSlop={10}
-          style={styles.backBtn}
-          accessibilityLabel="Back"
-        >
-          <Ionicons name="chevron-back" size={22} color={COLORS.navy} />
-        </Pressable>
-
-        <Text style={styles.title}>{doc.title}</Text>
-        <Text style={styles.updated}>Last updated {doc.updated}</Text>
-        <Text style={styles.intro}>{doc.intro}</Text>
-
-        {doc.sections.map((section) => (
-          <View key={section.heading} style={styles.section}>
-            <Text style={styles.heading}>{section.heading}</Text>
-            {section.body.map((para, i) => (
-              <Text key={i} style={styles.para}>
-                {para}
-              </Text>
-            ))}
-          </View>
-        ))}
+        {content}
       </ScrollView>
     </View>
   );
