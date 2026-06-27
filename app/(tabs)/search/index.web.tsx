@@ -7,6 +7,7 @@ import {
   Text,
   TextInput,
   Pressable,
+  ScrollView,
   StyleSheet,
   Animated,
   useWindowDimensions,
@@ -22,7 +23,7 @@ import { useSearchHistory } from '../../../src/hooks/useSearchHistory';
 import { useUnifiedSearch } from '../../../src/hooks/useUnifiedSearch';
 import { UniverseChip } from '../../../src/components/web/search/UniverseChip';
 import { TeamResultRow } from '../../../src/components/web/search/TeamResultRow';
-import { TitleResultRow } from '../../../src/components/web/search/TitleResultRow';
+import { TitleRail } from '../../../src/components/web/search/TitleRail';
 import { TopResultRow } from '../../../src/components/web/search/TopResultRow';
 import { pickTopResult, topResultKey, type TopResult } from '../../../src/lib/search/topResult';
 import { FEATURED_PUBLISHERS } from '../../../src/constants/publishers';
@@ -34,6 +35,11 @@ import { useScreenChrome } from '../../../src/hooks/useScreenChrome';
 import { SeoHead } from '../../../src/components/web/SeoHead';
 
 const RESULT_LIMIT = 300;
+// Secondary sections are kept compact so the character grid (the primary payload)
+// surfaces near the fold instead of below a wall of teams/films. Films live in a
+// horizontal rail, so they self-cap by scroll.
+const MAX_UNIVERSES = 4;
+const MAX_TEAMS = 3;
 // ── Skeleton card ──────────────────────────────────────────────────────────────
 function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
   return <Animated.View style={[sk.wrap as object, { opacity }]} />;
@@ -381,7 +387,13 @@ export default function WebSearchScreen() {
             <View style={styles.idleHeaderRow}>
               <Text style={styles.idleLabel as object}>Browse universes</Text>
             </View>
-            <View style={styles.universeRow as object}>
+            {/* One swipeable logo rail instead of a wrapping 2-col block — keeps
+                the idle screen calm and leaves room for the category pods below. */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.universeTrack as object}
+            >
               {FEATURED_PUBLISHERS.map((b) => (
                 <View key={b.slug} style={styles.universeChipWrap as object}>
                   <UniverseChip
@@ -402,7 +414,7 @@ export default function WebSearchScreen() {
                   />
                 </View>
               ))}
-            </View>
+            </ScrollView>
           </View>
           <View style={{ marginTop: 20 }}>
             <SearchBrowse
@@ -430,7 +442,7 @@ export default function WebSearchScreen() {
             <View style={styles.titlesSection}>
               <Text style={styles.idleLabel as object}>Universes</Text>
               <View style={styles.universeRow as object}>
-                {sectionUniverses.map((u) => (
+                {sectionUniverses.slice(0, MAX_UNIVERSES).map((u) => (
                   <View key={u.slug} style={styles.universeChipWrap as object}>
                     <UniverseChip
                       universe={u}
@@ -447,7 +459,7 @@ export default function WebSearchScreen() {
           {sectionTeams.length > 0 && (
             <View style={styles.titlesSection}>
               <Text style={styles.idleLabel as object}>Teams</Text>
-              {sectionTeams.map((t) => (
+              {sectionTeams.slice(0, MAX_TEAMS).map((t) => (
                 <View key={t.id} style={styles.universeChipWrap as object}>
                   <TeamResultRow
                     team={t}
@@ -460,22 +472,16 @@ export default function WebSearchScreen() {
               ))}
             </View>
           )}
-          {/* Films & Shows sit ABOVE the character grid — the grid can be up to 300
-              cards, so a matching title must not be buried below it on a phone. */}
+          {/* Films & Shows sit ABOVE the character grid as a horizontal poster
+              rail — posters are visual and there can be many, so one swipeable
+              row conserves the vertical space the character grid needs. */}
           {sectionTitles.length > 0 && (
-            <View style={styles.titlesSection}>
+            <View style={styles.railSection}>
               <Text style={styles.idleLabel as object}>Films & Shows</Text>
-              {sectionTitles.map((t) => (
-                <View key={t.id} style={styles.universeChipWrap as object}>
-                  <TitleResultRow
-                    title={t}
-                    variant="light"
-                    onPress={() =>
-                      router.push(`/title/${t.id}` as Parameters<typeof router.push>[0])
-                    }
-                  />
-                </View>
-              ))}
+              <TitleRail
+                titles={sectionTitles}
+                onPress={(id) => router.push(`/title/${id}` as Parameters<typeof router.push>[0])}
+              />
             </View>
           )}
           {hasCriteria && (loading || gridHeroes.length > 0) && (
@@ -676,6 +682,8 @@ const styles = StyleSheet.create({
   } as object,
   topSection: { paddingTop: 20, gap: 8 } as object,
   titlesSection: { paddingTop: 20, gap: 6 } as object,
+  railSection: { paddingTop: 20, gap: 10 } as object,
+  universeTrack: { flexDirection: 'row', gap: 8, paddingTop: 8, paddingBottom: 4 } as object,
 
   // ── Grid / content ─────────────────────────────────────────────────────────
   gridWrap: { paddingTop: 24, maxWidth: 1200, width: '100%', alignSelf: 'center' },

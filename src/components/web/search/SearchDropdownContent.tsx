@@ -34,24 +34,6 @@ const MAX_TITLE_SUGGESTIONS = 2;
 
 const MAX_HERO_SUGGESTIONS = 4;
 
-// Tidy recent searches: drop blanks/fragments and any term that's just a prefix
-// of a more specific one (e.g. "mick" when "mickey" is also there).
-function tidyHistory(history: string[]): string[] {
-  const seen = new Set<string>();
-  const uniq: string[] = [];
-  for (const raw of history) {
-    const q = raw.trim();
-    if (q.length < 3) continue;
-    const l = q.toLowerCase();
-    if (seen.has(l)) continue;
-    seen.add(l);
-    uniq.push(q);
-  }
-  return uniq
-    .filter((q) => !uniq.some((o) => o !== q && o.toLowerCase().startsWith(q.toLowerCase())))
-    .slice(0, 6);
-}
-
 function topResultNavItem(top: TopResult): NavItem {
   switch (top.kind) {
     case 'universe':
@@ -208,7 +190,7 @@ export function SearchDropdownContent({
         trendingLoading={trendingLoading}
         teams={showcase.teams}
         films={showcase.films}
-        history={tidyHistory(history)}
+        history={history}
         onHeroPress={handleHeroPress}
         onUniversePress={handleUniversePress}
         onTeamPress={handleTeamPress}
