@@ -25,7 +25,11 @@ export function TitleResultRow({
     <PressScale onPress={onPress} style={styles.row}>
       <View style={styles.poster}>
         {title.poster_url ? (
-          <Image source={{ uri: title.poster_url }} style={StyleSheet.absoluteFill} contentFit="cover" />
+          <Image
+            source={{ uri: title.poster_url }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+          />
         ) : (
           <Ionicons name="film-outline" size={18} color="rgba(245,235,220,0.3)" />
         )}

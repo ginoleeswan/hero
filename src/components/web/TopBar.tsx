@@ -9,6 +9,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useProfile } from '../../hooks/useProfile';
 import { useSearch } from '../../contexts/SearchContext';
 import { useCommandAlerts } from '../../contexts/CommandAlertsContext';
+import { useWebChrome } from '../../contexts/WebChromeContext';
 import { NotificationBell } from '../admin/health/NotificationBell';
 import { HeroLogo } from './HeroLogo';
 import { SearchPalette } from './search/SearchPalette';
@@ -41,6 +42,7 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   const { profile } = useProfile(user?.id);
   const { searchFocused, setSearchFocused } = useSearch();
   const { alerts } = useCommandAlerts();
+  const { isLight } = useWebChrome();
   const initial = user?.email?.charAt(0).toUpperCase() ?? '';
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
@@ -58,9 +60,15 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   // Transparent over the page's hero at the top; a frosted bar once content
   // scrolls up behind it (keeps light icons readable over the beige body).
   const [scrolled, setScrolled] = useState(false);
+  // Mobile: a hide-on-scroll-down / reveal-on-scroll-up bar. `mobAtTop` keeps it
+  // transparent over the page's hero; once scrolled, it slides away going down and
+  // slides back with a frosted material going up — so it's never transparent over
+  // arbitrary mid-page content.
+  const [mobHidden, setMobHidden] = useState(false);
+  const [mobAtTop, setMobAtTop] = useState(true);
   useEffect(() => {
-    // Only desktop uses `scrolled` (transparent→frosted crossfade); the mobile
-    // scrim is constant, so don't run a scroll listener there.
+    // Only desktop uses `scrolled` (transparent→frosted crossfade); mobile runs its
+    // own hide/reveal listener below.
     if (isMobile) return undefined;
     // Capture phase catches scroll from the inner RN ScrollView divs (scroll
     // events don't bubble). Vertical-scroller guard ignores horizontal carousels.
@@ -78,8 +86,45 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
     window.addEventListener('scroll', onScroll, true);
     return () => window.removeEventListener('scroll', onScroll, true);
   }, [isMobile]);
+  // Mobile hide/reveal: track scroll direction off the document scroller. A small
+  // threshold ignores jitter; at the very top the bar is always shown + transparent.
+  useEffect(() => {
+    if (!isMobile || typeof window === 'undefined') return undefined;
+    let lastY = window.scrollY;
+    let ticking = false;
+    const apply = () => {
+      const y = window.scrollY;
+      const atTop = y <= 8;
+      setMobAtTop(atTop);
+      if (atTop) {
+        setMobHidden(false);
+      } else {
+        const delta = y - lastY;
+        if (delta > 6)
+          setMobHidden(true); // scrolling down → hide
+        else if (delta < -6) setMobHidden(false); // scrolling up → reveal
+      }
+      lastY = y;
+      ticking = false;
+    };
+    const onScroll = (e: Event) => {
+      const t = e.target;
+      // Only the document scroller drives the bar; ignore horizontal carousels etc.
+      if (!(t === document || t === document.documentElement || t === document.body)) return;
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(apply);
+    };
+    window.addEventListener('scroll', onScroll, true);
+    return () => window.removeEventListener('scroll', onScroll, true);
+  }, [isMobile]);
+
   // New routes start at the top — reset until the next scroll event.
-  useEffect(() => setScrolled(false), [pathname]);
+  useEffect(() => {
+    setScrolled(false);
+    setMobHidden(false);
+    setMobAtTop(true);
+  }, [pathname]);
 
   // ⌘K / Ctrl-K (and "/" when not already typing) open the palette on desktop.
   useEffect(() => {
@@ -111,9 +156,19 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
         : pathname === path;
   const go = (path: string) => router.push(path as Parameters<typeof router.push>[0]);
 
-  // Light glyphs on the dark scrim; active stays orange.
-  const inactiveTint = 'rgba(245,235,220,0.7)';
-  const foreground = COLORS.beige;
+  // Glyph colour adapts to the page's top on mobile flow-under: dark ink over a
+  // light-topped page, light beige over a dark one (desktop keeps its dark frost,
+  // so always light there). Active stays orange — legible on both. A soft halo of
+  // the opposite tone rides under each glyph so it survives busy art scrolling
+  // beneath without needing a page-bruising scrim.
+  const adaptDark = isMobile && isLight;
+  const inactiveTint = adaptDark ? 'rgba(11,24,32,0.62)' : 'rgba(245,235,220,0.7)';
+  const foreground = adaptDark ? COLORS.deepNavy : COLORS.beige;
+  const glyphShadow = !isMobile
+    ? null
+    : adaptDark
+      ? ({ filter: 'drop-shadow(0 1px 2px rgba(245,235,220,0.55))' } as object)
+      : ({ filter: 'drop-shadow(0 1px 3px rgba(11,24,32,0.5))' } as object);
   const hoverStyle = c.itemHover as object;
 
   const renderItem = (it: (typeof NAV)[number]) => {
@@ -129,13 +184,18 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
         }
       >
         {it.key === 'versus' ? (
-          <MaterialCommunityIcons name="sword-cross" size={22} color={tint} style={c.iconTint} />
+          <MaterialCommunityIcons
+            name="sword-cross"
+            size={22}
+            color={tint}
+            style={[c.iconTint, glyphShadow] as object}
+          />
         ) : (
           <Ionicons
             name={active ? it.icon : it.iconOutline}
             size={22}
             color={tint}
-            style={c.iconTint}
+            style={[c.iconTint, glyphShadow] as object}
           />
         )}
       </Pressable>
@@ -153,22 +213,32 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   // Mobile keeps ONE consistent dark scrim at every scroll position — opaque navy
   // at the top easing into the page below, so the bar never restyles on scroll.
   // Desktop keeps the transparent scrim-over-hero → frosted-bar-on-scroll.
+  // Mobile slides the whole bar up when hidden; desktop never moves. translateZ(0)
+  // is preserved to keep the fixed bar on its own GPU layer (the iOS pinning fix).
+  const barHideStyle = isMobile
+    ? ({
+        transform: mobHidden ? 'translateY(-115%) translateZ(0)' : 'translateY(0) translateZ(0)',
+        transition: 'transform 300ms ease',
+      } as object)
+    : null;
+
   const bar = (
-    <View style={c.bar as object} pointerEvents="box-none">
+    <View style={[c.bar, barHideStyle] as object} pointerEvents="box-none">
       {isMobile ? (
-        // Spread frosted scrim, consistent at every scroll position. The blur is
-        // the universal blender: frosted glass is background-agnostic, so it
-        // feathers the bottom edge cleanly over BOTH the dark navy versus pages
-        // and the beige catalogue pages — no color smudge. So the heavy navy tint
-        // holds up top (status-bar fusion + icon contrast) and fades out before
-        // the bottom, while a soft blur layer carries the tail all the way down.
-        // (Also the GPU-compositing layer that keeps the fixed bar from scrolling
-        // on iOS.)
-        <View style={c.scrim as object} pointerEvents="none">
-          <View style={[StyleSheet.absoluteFill, c.frostMobHeavy] as object} />
-          <View style={[StyleSheet.absoluteFill, c.frostMobSoft] as object} />
-          <View style={[StyleSheet.absoluteFill, c.frostTintDark] as object} />
-        </View>
+        // Mobile: transparent over the hero at the top; once you scroll up after
+        // scrolling down, the menu condenses onto a floating frosted glass PILL so
+        // it's legible over any content. Blur is background-agnostic; tint + glyphs
+        // follow the page's light/dark. Hidden (opacity 0) while at the very top.
+        <View
+          style={
+            [
+              c.mPill,
+              mobAtTop ? (c.layerHidden as object) : (c.layerShown as object),
+              adaptDark ? (c.mPillTintLight as object) : (c.mPillTintDark as object),
+            ] as object
+          }
+          pointerEvents="none"
+        />
       ) : (
         <>
           {/* Desktop: soft dark gradient over the hero at the top… */}
@@ -191,7 +261,7 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
         style={[c.inner, { paddingHorizontal: isMobile ? 16 : 28 }] as object}
         pointerEvents="box-none"
       >
-        <Pressable onPress={() => router.push('/explore')} style={c.logo}>
+        <Pressable onPress={() => router.push('/explore')} style={[c.logo, glyphShadow] as object}>
           <HeroLogo iconSize={24} fontSize={19} color={foreground} gap={8} />
         </Pressable>
 
@@ -206,7 +276,7 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
                 aria-label="Profile"
                 onPress={() => router.push('/profile')}
                 style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [c.item, hovered && hoverStyle] as object
+                  [c.item, glyphShadow, hovered && hoverStyle] as object
                 }
               >
                 <View style={c.avatar}>
@@ -233,7 +303,12 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
                   [c.item, hovered && hoverStyle] as object
                 }
               >
-                <Ionicons name="person-outline" size={20} color={foreground} style={c.iconTint} />
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color={foreground}
+                  style={[c.iconTint, glyphShadow] as object}
+                />
               </Pressable>
             )}
           </View>
@@ -269,16 +344,6 @@ const c = StyleSheet.create({
     transform: 'translateZ(0)',
     willChange: 'transform',
   } as object,
-  // Consistent mobile scrim container — the gradient (frostTintDark/Light) is
-  // applied on top. Spans the bar + a short tail so the tint reaches transparent
-  // by the bar's bottom edge, easing into the page.
-  scrim: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 10px)`,
-  } as object,
   // Dark scrim: holds near-solid navy across the status-bar inset + icon row (so
   // it fuses with the navy status-bar cover and bright hero art never bleeds
   // behind the logo/avatar) before a long fade to transparent.
@@ -293,10 +358,10 @@ const c = StyleSheet.create({
     opacity: 1,
     transition: 'opacity 300ms ease',
   } as object,
-  // Scrolled frost: two blur layers (frostA heavy + frostC light), each masked to
-  // a band, so the blur is heaviest at the top behind the icons and tapers to zero
-  // by the bottom — a graduated blur with no hard edge. The tint that rides on top
-  // is platform-specific (frostTintDark on mobile, frostTintDesktop on desktop).
+  // Desktop scrolled frost: two blur layers (frostA heavy + frostC light), each
+  // masked to a band, so the blur is heaviest at the top behind the icons and
+  // tapers to zero by the bottom — a graduated blur with no hard edge, with
+  // frostTintDesktop riding on top. (Mobile uses the mPill glass pill instead.)
   frost: {
     position: 'absolute',
     top: 0,
@@ -318,42 +383,31 @@ const c = StyleSheet.create({
     maskImage: 'linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%)',
     WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%)',
   } as object,
-  // Mobile-only progressive-blur pair (desktop keeps frostA/frostC). Both masks
-  // ease MONOTONICALLY (no hold-then-drop knee, so no boundary line) but are pulled
-  // UP relative to the navy tint: the frost tapers to zero around the bar's bottom
-  // edge (~75%) so it never blurs the content/card-tops below. The navy tint
-  // carries the gentle ramp the rest of the way down — that's just colour, it
-  // doesn't frost anything, so it keeps the balanced spread without smearing cards.
-  // Because the blur is already near-zero where it ends, dropping it higher leaves
-  // no seam. Heavy blur is weighted toward the icons, soft reaches slightly lower.
-  frostMobHeavy: {
-    backdropFilter: 'blur(13px) saturate(140%)',
-    WebkitBackdropFilter: 'blur(13px) saturate(140%)',
-    maskImage:
-      'linear-gradient(to bottom, #000 0%, #000 20%, rgba(0,0,0,0.7) 34%, rgba(0,0,0,0.36) 46%, rgba(0,0,0,0.12) 56%, transparent 64%)',
-    WebkitMaskImage:
-      'linear-gradient(to bottom, #000 0%, #000 20%, rgba(0,0,0,0.7) 34%, rgba(0,0,0,0.36) 46%, rgba(0,0,0,0.12) 56%, transparent 64%)',
+  // Mobile reveal: a floating frosted glass pill behind the icon row (below the
+  // status-bar inset, inset from the screen edges, fully rounded). Faded in once
+  // scrolled (opacity via layerShown/Hidden). Blur is background-agnostic; the tint
+  // + border + drop shadow give it a lifted, lozenge feel. Tint follows the page's
+  // light/dark (mPillTint*) so it matches its glyphs.
+  mPill: {
+    position: 'absolute',
+    top: 'calc(env(safe-area-inset-top) + 6px)',
+    left: 10,
+    right: 10,
+    bottom: 8,
+    borderRadius: 26,
+    borderWidth: 0.5,
+    backdropFilter: 'blur(20px) saturate(160%)',
+    WebkitBackdropFilter: 'blur(20px) saturate(160%)',
+    boxShadow: '0 6px 22px rgba(0,0,0,0.20)',
+    transition: 'opacity 220ms ease',
   } as object,
-  frostMobSoft: {
-    backdropFilter: 'blur(5px)',
-    WebkitBackdropFilter: 'blur(5px)',
-    maskImage:
-      'linear-gradient(to bottom, #000 0%, #000 28%, rgba(0,0,0,0.58) 44%, rgba(0,0,0,0.26) 58%, rgba(0,0,0,0.07) 68%, transparent 76%)',
-    WebkitMaskImage:
-      'linear-gradient(to bottom, #000 0%, #000 28%, rgba(0,0,0,0.58) 44%, rgba(0,0,0,0.26) 58%, rgba(0,0,0,0.07) 68%, transparent 76%)',
+  mPillTintDark: {
+    backgroundColor: 'rgba(11,24,32,0.55)',
+    borderColor: 'rgba(245,235,220,0.16)',
   } as object,
-  // Mobile dark-topped pages: deep-navy spread across the WHOLE bar, weighted high
-  // and feathered out by the bar's bottom edge so it never bleeds onto the content
-  // below. Stops are anchored to the bar's geometry (env() + px) so the treatment
-  // tracks the real bar on any inset: near-solid navy holds through the status-bar
-  // inset and upper icon row, then a continuous multi-stop ramp (no knee) eases it
-  // to transparent ~4px past the bar's bottom edge (inset + 68px). Every stop is
-  // px-anchored off the inset, so the whole effect stays tight to the bar. Pure
-  // navy throughout — a warm hue would smear on the dark versus pages, whereas the
-  // faint low-opacity navy tail stays subtle on any canvas.
-  frostTintDark: {
-    backgroundImage:
-      'linear-gradient(to bottom, #0b1820 0, #0b1820 calc(env(safe-area-inset-top) + 22px), rgba(11,24,32,0.78) calc(env(safe-area-inset-top) + 38px), rgba(11,24,32,0.46) calc(env(safe-area-inset-top) + 52px), rgba(11,24,32,0.16) calc(env(safe-area-inset-top) + 62px), transparent calc(env(safe-area-inset-top) + 68px))',
+  mPillTintLight: {
+    backgroundColor: 'rgba(245,235,220,0.72)',
+    borderColor: 'rgba(11,24,32,0.10)',
   } as object,
   // Desktop: the original light frosted glass — no system status bar to match.
   frostTintDesktop: {

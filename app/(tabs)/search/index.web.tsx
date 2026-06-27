@@ -393,7 +393,9 @@ export default function WebSearchScreen() {
                   <TeamResultRow
                     team={t}
                     variant="light"
-                    onPress={() => router.push(`/team/${t.id}` as Parameters<typeof router.push>[0])}
+                    onPress={() =>
+                      router.push(`/team/${t.id}` as Parameters<typeof router.push>[0])
+                    }
                   />
                 </View>
               ))}

@@ -43,15 +43,21 @@ export const SURFACE = {
  * - `stageImmersive` — an off-top radial spotlight (lifted navy at the crown
  *   easing to deep ink at the edges) for *full-dark* screens that never reach
  *   paper (Explore, Versus). Same hue family as `stage`, more theatrical
- *   geometry; no seam, since there's no beige to meet.
+ *   geometry. A deepNavy top-cap layer holds the bleed-under band (status bar +
+ *   nav clearance) flat deep-ink — matching the body and the declared `top` —
+ *   so the spotlight blooms *below* the floating nav and the top fuses with the
+ *   chrome without relying on the (now removed) bar scrim to hide a seam.
  *
  * Give the header generous top padding so the fade sits well clear of the title.
  */
 export const SURFACE_GRADIENT = {
   /** Ink→navy stage for a dark band that lands on paper. Pair with `backgroundColor: navy`. */
   stage: `linear-gradient(180deg, ${COLORS.deepNavy} 0%, ${COLORS.navy} 100%)`,
-  /** Radial spotlight for full-dark immersive screens. Pair with `backgroundColor: deepNavy`. */
-  stageImmersive: `radial-gradient(130% 100% at 50% -5%, ${COLORS.navy} 0%, ${COLORS.deepNavy} 70%)`,
+  /** Radial spotlight for full-dark immersive screens. Pair with `backgroundColor: deepNavy`.
+   *  Top-cap (first layer) keeps the bleed-under band flat deep-ink; spotlight blooms below. */
+  stageImmersive:
+    `linear-gradient(to bottom, ${COLORS.deepNavy} 0, ${COLORS.deepNavy} calc(env(safe-area-inset-top) + 44px), transparent calc(env(safe-area-inset-top) + 96px)), ` +
+    `radial-gradient(130% 100% at 50% -5%, ${COLORS.navy} 0%, ${COLORS.deepNavy} 70%)`,
 } as const;
 
 /** The seam — a warm orange hairline where a dark band meets beige content. */

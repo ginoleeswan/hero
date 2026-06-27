@@ -273,7 +273,8 @@ const styles = StyleSheet.create({
     // upper tile fades OUT on its right, so there's no hard seam — a true
     // crossfade. The overlap is sized to the fade zones so they coincide.
     maskImage: 'linear-gradient(to right, transparent 0%, #000 32%, #000 68%, transparent 100%)',
-    WebkitMaskImage: 'linear-gradient(to right, transparent 0%, #000 32%, #000 68%, transparent 100%)',
+    WebkitMaskImage:
+      'linear-gradient(to right, transparent 0%, #000 32%, #000 68%, transparent 100%)',
   } as object,
   // Brand-tint overlay for the duotone (see render). Isolated by the montage
   // container's opacity group, so it recolours only the tiles beneath it.

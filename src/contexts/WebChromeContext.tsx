@@ -131,16 +131,16 @@ export function useWebChrome() {
 }
 
 /**
- * Opaque strip over exactly the iOS status-bar inset, painted the current chrome
- * colour so it's identical to the system status bar above it (same value the
- * theme-color meta uses) — the two fuse into one seamless cap. env() → 0 on
- * Android/desktop, so it collapses to nothing there.
+ * The iOS status-bar strip flows under: it shows whatever content is beneath it, so
+ * the clock adapts (dark over the hero, dark→light as beige content scrolls up). We
+ * deliberately DON'T paint it — a painted cap would read as a flat navy slab the
+ * moment light content scrolled behind it. The page's `canvas` still backs it where
+ * content doesn't reach, and the provider drives the iOS theme-color. The mobile
+ * menu's readability is handled by the floating glass pill below, which never
+ * touches this strip. env() → 0 on Android/desktop, so it collapses to nothing.
  */
 export function AdaptiveStatusBarCover() {
-  const { color } = useWebChrome();
-  const cover = (
-    <View pointerEvents="none" style={[coverStyles.cover, { backgroundColor: color }]} />
-  );
+  const cover = <View pointerEvents="none" style={coverStyles.cover} />;
   // Render into document.body via a portal so position:fixed is always
   // viewport-relative and can't detach on navigation/scroll (the same fix the
   // TopBar uses — an in-tree fixed element drifts under body{overflow:visible}

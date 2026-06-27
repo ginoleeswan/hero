@@ -1,4 +1,9 @@
-import { pickDailyTeamPair, searchTeams, getTeamById, type FeaturedTeam } from '../../../src/lib/db/teams';
+import {
+  pickDailyTeamPair,
+  searchTeams,
+  getTeamById,
+  type FeaturedTeam,
+} from '../../../src/lib/db/teams';
 import { supabase } from '../../../src/lib/supabase';
 
 jest.mock('../../../src/lib/supabase', () => ({ supabase: { from: jest.fn(), rpc: jest.fn() } }));

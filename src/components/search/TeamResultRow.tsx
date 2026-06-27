@@ -7,13 +7,7 @@ import { PressScale } from '../ui/PressScale';
 import { COLORS } from '../../constants/colors';
 import type { TeamSearchResult } from '../../lib/db/teams';
 
-export function TeamResultRow({
-  team,
-  onPress,
-}: {
-  team: TeamSearchResult;
-  onPress: () => void;
-}) {
+export function TeamResultRow({ team, onPress }: { team: TeamSearchResult; onPress: () => void }) {
   const meta = [`${team.member_count} member${team.member_count === 1 ? '' : 's'}`, team.publisher]
     .filter(Boolean)
     .join(' · ');

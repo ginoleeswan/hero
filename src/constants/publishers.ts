@@ -29,6 +29,7 @@ import MattelLogo from '../../assets/brands/mattel.svg';
 import SantaMonicaLogo from '../../assets/brands/santa-monica-studio.svg';
 import WarnerBrosLogo from '../../assets/brands/warner-bros.svg';
 import NetherRealmLogo from '../../assets/brands/netherrealm.svg';
+import LooneyTunesLogo from '../../assets/brands/looney-tunes.svg';
 
 /** A brand logo, either a raster image (PNG via require) or an SVG component
  *  (via react-native-svg-transformer). Render helpers branch on which it is. */
@@ -211,6 +212,8 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['looney tunes'],
     color: '#E03A30',
     colorDark: '#8A201B',
+    logo: LooneyTunesLogo,
+    badgeSize: { width: 100, height: 48 }, // viewBox 90390×43330 ≈ 2.09:1
   },
   {
     slug: 'cd-projekt-red',

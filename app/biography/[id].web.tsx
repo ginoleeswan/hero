@@ -314,7 +314,11 @@ export default function WebBiographyScreen() {
   const isDesktop = width >= 900;
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
-  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
+  // Mobile canvas: ink — the iOS status-bar strip samples the BODY bg, so a dark
+  // body makes that strip fuse with the dark hero header (no beige band); the
+  // content owns its own full-length beige (mobileBody). Desktop has no system
+  // status bar, so it keeps a beige body (full-bleed, no navy gutters).
+  useScreenChrome({ top: SURFACE.ink, canvas: isDesktop ? SURFACE.paper : SURFACE.ink });
 
   const [hero, setHero] = useState<HeroRow | null>(null);
   const [processedHtml, setProcessedHtml] = useState('');
@@ -381,7 +385,7 @@ export default function WebBiographyScreen() {
   );
 
   return (
-    <View style={styles.scroll}>
+    <View style={[styles.scroll, !isDesktop && (styles.scrollDarkMobile as object)] as object}>
       {/* Cinematic identity header — echoes the character page stage */}
       <View style={styles.identityHeader}>
         {/* Ambient blurred portrait backdrop for depth */}
@@ -397,8 +401,14 @@ export default function WebBiographyScreen() {
         ) : null}
         {/* Gradient scrim keeps the title legible over the backdrop */}
         <View style={[styles.headerScrim, { pointerEvents: 'none' }] as object} />
-        {/* Atmospheric orange orb — purely decorative */}
-        <View style={[styles.headerOrb, { pointerEvents: 'none' }] as object} />
+        {/* Mobile: deep-navy → transparent cap over the top so the header fuses with
+            the dark status strip and the portrait/atmosphere fades in below it. */}
+        {!isDesktop && (
+          <View style={[styles.mHeaderTopScrim, { pointerEvents: 'none' }] as object} />
+        )}
+        {/* Atmospheric orange orb — desktop only; on mobile its top gets clipped by
+            the header's overflow:hidden, leaving a hard line under the status bar. */}
+        {isDesktop && <View style={[styles.headerOrb, { pointerEvents: 'none' }] as object} />}
 
         <View style={styles.headerInner}>
           {hero ? (
@@ -509,20 +519,41 @@ export default function WebBiographyScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
+  // Mobile: the scroll surface goes dark so the header fuses uninterrupted into the
+  // dark status strip (no beige peeking between). The beige comes from mobileBody.
+  scrollDarkMobile: { backgroundColor: COLORS.deepNavy } as object,
 
   // Cinematic identity header — mirrors the character page stage
   identityHeader: {
     backgroundColor: COLORS.deepNavy,
-    paddingTop: TOPBAR_HEIGHT + 36,
+    paddingTop: TOPBAR_HEIGHT,
     paddingBottom: 30,
     position: 'relative',
     overflow: 'hidden',
   },
+  // Mobile: deep-navy cap that fuses the header's top into the dark status strip,
+  // easing to transparent so the portrait/atmosphere blooms in below the chrome.
+  mHeaderTopScrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 'calc(env(safe-area-inset-top) + 180px)' as unknown as number,
+    // Fade the portrait into EXACTLY the status-bar colour (COLORS.deepNavy is the
+    // declared chrome `top`, so this is the same pixel value iOS paints the status
+    // bar) — solid through the status/nav zone, then easing to reveal the portrait.
+    backgroundImage: `linear-gradient(to bottom, ${COLORS.deepNavy} 0%, ${COLORS.deepNavy} 48%, rgba(11,24,32,0.72) 66%, transparent 100%)`,
+  } as object,
   // Blurred portrait fills the header for atmosphere; scaled up to hide blur edges.
   headerBackdrop: {
     filter: 'blur(55px)',
     transform: [{ scale: 1.3 }],
     opacity: 0.38,
+    // Fade the portrait to transparent at the top so its warm tint never reaches
+    // the cool deep-navy strip — the top stays pure navy and the image blooms in
+    // lower, blending seamlessly into the status bar.
+    maskImage: 'linear-gradient(to bottom, transparent 0%, transparent 30%, #000 68%)',
+    WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, transparent 30%, #000 68%)',
   } as object,
   headerScrim: {
     position: 'absolute',
@@ -653,11 +684,14 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
 
-  // Mobile layout
+  // Mobile layout. Owns the beige so the content surface runs the FULL page length
+  // (the body is now dark for the status-bar strip, so the beige can't come from
+  // the body — it has to be painted by the content itself, edge-to-edge).
   mobileBody: {
     maxWidth: 720,
     width: '100%',
     alignSelf: 'center' as const,
+    backgroundColor: COLORS.beige,
     paddingHorizontal: 24,
     paddingTop: 28,
     paddingBottom: 0,
