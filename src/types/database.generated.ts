@@ -479,6 +479,89 @@ export type Database = {
         }
         Relationships: []
       }
+      comic_issue_appearances: {
+        Row: {
+          hero_id: string
+          issue_id: string
+        }
+        Insert: {
+          hero_id: string
+          issue_id: string
+        }
+        Update: {
+          hero_id?: string
+          issue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comic_issue_appearances_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comic_issue_appearances_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "comic_issues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comic_issues: {
+        Row: {
+          comicvine_id: string
+          cover_date: string | null
+          cover_url: string | null
+          id: string
+          issue_number: string | null
+          lead_hero_id: string | null
+          max_fame: number | null
+          publisher: string | null
+          store_date: string | null
+          synced_at: string | null
+          volume_id: number | null
+          volume_name: string | null
+        }
+        Insert: {
+          comicvine_id: string
+          cover_date?: string | null
+          cover_url?: string | null
+          id: string
+          issue_number?: string | null
+          lead_hero_id?: string | null
+          max_fame?: number | null
+          publisher?: string | null
+          store_date?: string | null
+          synced_at?: string | null
+          volume_id?: number | null
+          volume_name?: string | null
+        }
+        Update: {
+          comicvine_id?: string
+          cover_date?: string | null
+          cover_url?: string | null
+          id?: string
+          issue_number?: string | null
+          lead_hero_id?: string | null
+          max_fame?: number | null
+          publisher?: string | null
+          store_date?: string | null
+          synced_at?: string | null
+          volume_id?: number | null
+          volume_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comic_issues_lead_hero_id_fkey"
+            columns: ["lead_hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contributions: {
         Row: {
           created_at: string
@@ -1714,6 +1797,7 @@ export type Database = {
         Returns: undefined
       }
       admin_reenrich_hero: { Args: { p_id: string }; Returns: string }
+      admin_refresh_fame: { Args: never; Returns: number }
       admin_reschedule_cron: {
         Args: { p_jobname: string; p_limit?: number; p_schedule: string }
         Returns: string
