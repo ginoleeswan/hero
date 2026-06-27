@@ -314,9 +314,7 @@ function AffiliationChips({ value }: { value: string | null | undefined }) {
           return (
             <TouchableOpacity
               key={i}
-              onPress={() =>
-                router.push(`/team/${teamId}` as Parameters<typeof router.push>[0])
-              }
+              onPress={() => router.push(`/team/${teamId}` as Parameters<typeof router.push>[0])}
               style={[styles.chip, styles.chipLink]}
             >
               <Text style={[styles.chipText, styles.chipLinkText]}>{chip}</Text>

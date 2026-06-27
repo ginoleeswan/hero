@@ -12,10 +12,7 @@ function mockTitleQuery(rows: unknown, error: unknown = null) {
   return { select, ilike, order, limit };
 }
 
-const row = (
-  title: string,
-  extra: Partial<TitlePoolRow> = {},
-): TitlePoolRow => ({
+const row = (title: string, extra: Partial<TitlePoolRow> = {}): TitlePoolRow => ({
   id: title,
   title,
   media_type: 'film',
@@ -48,7 +45,13 @@ describe('searchTitles', () => {
     expect(m.limit).toHaveBeenCalledWith(60);
     // blockbuster wins; result is the lean shape (no ranking fields), sliced to 1.
     expect(out).toEqual([
-      { id: 'Batman v Superman', title: 'Batman v Superman', media_type: 'film', year: 2016, poster_url: 'p.jpg' },
+      {
+        id: 'Batman v Superman',
+        title: 'Batman v Superman',
+        media_type: 'film',
+        year: 2016,
+        poster_url: 'p.jpg',
+      },
     ]);
   });
 

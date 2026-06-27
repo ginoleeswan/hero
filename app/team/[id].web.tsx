@@ -46,7 +46,12 @@ function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
   return <Animated.View style={[sk.wrap as object, { opacity }]} />;
 }
 const sk = StyleSheet.create({
-  wrap: { width: '100%', borderRadius: 10, aspectRatio: '3 / 4', backgroundColor: '#1b3038' } as object,
+  wrap: {
+    width: '100%',
+    borderRadius: 10,
+    aspectRatio: '3 / 4',
+    backgroundColor: '#1b3038',
+  } as object,
 });
 
 function HeroCard({
@@ -371,7 +376,10 @@ export default function WebTeamScreen() {
             <Pressable
               onPress={() => setSheetOpen(true)}
               style={
-                [styles.filterBtn, activeChips.length > 0 && (styles.filterBtnActive as object)] as object
+                [
+                  styles.filterBtn,
+                  activeChips.length > 0 && (styles.filterBtnActive as object),
+                ] as object
               }
             >
               <Ionicons

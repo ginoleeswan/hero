@@ -48,7 +48,10 @@ function FunnelStage({
               ? '  ·  auto · runs on a schedule'
               : `  ·  ${s.pending > 0 ? `${s.pending.toLocaleString()} pending` : 'clear'}`}
             {(s.notes ?? []).map((note, i) => (
-              <Text key={i} style={[styles.stuck, { color: note.tone }]}>{`  ·  ${note.label}`}</Text>
+              <Text
+                key={i}
+                style={[styles.stuck, { color: note.tone }]}
+              >{`  ·  ${note.label}`}</Text>
             ))}
           </Text>
           {s.run ? (

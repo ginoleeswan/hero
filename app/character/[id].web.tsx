@@ -1156,7 +1156,9 @@ export default function WebCharacterScreen() {
                                     ] as object
                                   }
                                 >
-                                  <Text style={[styles.affChipText, styles.affChipLinkText] as object}>
+                                  <Text
+                                    style={[styles.affChipText, styles.affChipLinkText] as object}
+                                  >
                                     {t}
                                   </Text>
                                 </Pressable>

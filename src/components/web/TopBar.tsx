@@ -231,7 +231,9 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
         // transparent blur by the bottom, melting into the content. Hidden (opacity 0)
         // at the very top. Scrim follows the page's light/dark to match the glyphs.
         <View
-          style={[c.mHeader, mobAtTop ? (c.layerHidden as object) : (c.layerShown as object)] as object}
+          style={
+            [c.mHeader, mobAtTop ? (c.layerHidden as object) : (c.layerShown as object)] as object
+          }
           pointerEvents="none"
         >
           <View style={[StyleSheet.absoluteFill, c.mHeaderBlur] as object} />

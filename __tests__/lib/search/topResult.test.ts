@@ -6,8 +6,13 @@ import type { TitleSearchResult } from '../../../src/lib/db/titles';
 
 const uni = (slug: string, exact = false): UniverseResult =>
   ({ slug, name: slug, color: '#000', exact }) as UniverseResult;
-const team = (id: string, name: string): TeamSearchResult =>
-  ({ id, name, publisher: null, logo_url: null, member_count: 5 });
+const team = (id: string, name: string): TeamSearchResult => ({
+  id,
+  name,
+  publisher: null,
+  logo_url: null,
+  member_count: 5,
+});
 const hero = (id: string, name: string, fame_score = 100): HeroSearchResult =>
   ({
     id,
@@ -21,8 +26,13 @@ const hero = (id: string, name: string, fame_score = 100): HeroSearchResult =>
     aliases: null,
     fame_score,
   }) as HeroSearchResult;
-const title = (id: string, t: string): TitleSearchResult =>
-  ({ id, title: t, media_type: 'tv', year: 2020, poster_url: null });
+const title = (id: string, t: string): TitleSearchResult => ({
+  id,
+  title: t,
+  media_type: 'tv',
+  year: 2020,
+  poster_url: null,
+});
 
 const empty = { universes: [], teams: [], heroes: [], titles: [] };
 

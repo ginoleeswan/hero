@@ -268,7 +268,17 @@ function compressIfLarge(heroId: string, bytes: Uint8Array): Uint8Array {
   try {
     execFileSync(
       'sips',
-      ['--setProperty', 'format', 'jpeg', '--setProperty', 'formatOptions', '88', inPath, '--out', outPath],
+      [
+        '--setProperty',
+        'format',
+        'jpeg',
+        '--setProperty',
+        'formatOptions',
+        '88',
+        inPath,
+        '--out',
+        outPath,
+      ],
       { stdio: 'ignore' },
     );
     const out = readFileSync(outPath);
@@ -374,17 +384,19 @@ Clean natural painted edge, no hard white outline. Portrait orientation, taller 
 // enable_safety_checker) that reject trademarked NAMES in the prompt text. So this
 // edit prompt is strictly name-free — identity comes from the source image (it's
 // image-to-image), and the style from the words. No character names anywhere.
-const EDIT_PROMPT = `Repaint the character in this image as a SIDE-PROFILE portrait, the head turned firmly to face the RIGHT — a strong side-on view: ideally a clean near-90-degree profile, or at most a deep 3/4 turn that still clearly shows the side of the face and the line of the nose in profile. The head must be turned well to the side, looking right. NOT front-facing, NOT a shallow 3/4 — push toward a clean side profile.
+const EDIT_PROMPT = `Repaint the character in this image as a SIDE-ON profile portrait, the head turned to face the RIGHT (looking right). Use a clean near-90-degree side profile where it suits the character; use a deep 3/4 turn — still clearly showing the side of the face — only for front-facing or symmetrical characters that a full profile would make unrecognizable. NOT a flat, front-facing view.
 
-RENDERING — match this exact style: a painterly, semi-realistic digital painting in the style of Mike Mitchell's "Just Like Us" portraits. Soft VISIBLE brushwork, rich dimensional painted shading with warm highlights and cool shadows, sculpted form and depth, realistic skin and material texture, characterful slightly-stylised proportions. A hand-painted illustration — NOT flat cel-shaded cartoon, NOT glossy vector art, NOT a clean airbrushed look, NOT a 3D/CGI render, NOT a photograph.
+RENDERING — match this exact style: a RICHLY DETAILED, dimensional, SEMI-REALISTIC painterly digital portrait in the style of Mike Mitchell's Mondo Marvel/superhero profile portraits — his painterly, semi-realistic, side-profile character paintings (the detailed Wolverine/Thor/Deadpool-style portraits, NOT his cute chibi "Just Like Us" caricatures). Fully repaint the character with soft cinematic lighting, warm highlights and cool shadows, dimensional volumetric form, soft painterly brushwork and soft painted edges, plus fine rendered detail appropriate to the character — individual hair/fur strands, skin texture, fabric weave, metal sheen, surface grain. Do NOT keep a flat look: absolutely NOT bold flat colour blocking, NOT thick uniform black outlines, NOT cel-shading, NOT a simple poster, NOT a 3D/CGI render, NOT a photograph.
 
-OUTLINE: a clean, bright outline — usually a lighter or more vivid shade of the background colour — traces the whole character silhouette (sticker-style edge), cleanly separating it from the background.
+OUTLINE: a clean, bright outline — a lighter or more vivid shade of the background colour — traces the whole character silhouette (sticker-style edge), cleanly separating it from the background.
 
-FRAMING — EXTREME close-up headshot: the head and face FILL the entire frame edge to edge, cropped tight at the top of the head and down at the collar/neck. Show ONLY the head and the very top of the collar. NO torso, NO chest, NO arms, NO hands, NO shorts, NO body below the neck.
+FRAMING: a head-and-shoulders headshot — the head and face are large and dominant, top of the head near the top edge, cropped at the base of the neck and the tops of the shoulders. Leave clear background space around the silhouette so the outline and the background motif stay visible. NO torso, NO arms, NO hands, NO body below the shoulders.
 
-BACKGROUND: a single vivid, saturated, bold colour with visible vertical painterly brushstroke texture — never a smooth flat gradient. Optionally a bold graphic motif behind the head (a radiating sunburst, concentric rings, or a geometric pattern). Strongly contrasts the character's colours; never pale or washed out.
+BACKGROUND: a SINGLE bold, vivid, saturated colour that is the COMPLEMENTARY OPPOSITE of the character's dominant colour, for maximum contrast — a warm / orange / brown / gold / red character → a deep BLUE or teal; a blue character → warm orange or red; a green character → red or magenta; a purple character → gold or yellow. NEVER a background colour close to the character's own. DEFAULT to a flat bold colour with only a subtle soft painterly canvas texture. ONLY IF it genuinely fits the character, add a graphic motif behind the head: concentric rings for characters with circular iconography, a radiating sunburst for cosmic / radiant / powerful characters, or a geometric pattern echoing the character's own visual motif — otherwise keep the background a clean flat colour. NO harsh vertical stripes or lines.
 
-Preserve the character's exact colours, costume and identity from the image. ABSOLUTELY no added accessories — no crown, no tiara, no hat, no headwear of any kind, nothing placed on top of the head or ears that is not in the source image. Portrait orientation, taller than wide. No text, no signature, no logos.`;
+TOP PRIORITY — the character must stay INSTANTLY recognizable: preserve its exact face shape, proportions, silhouette and signature features. For REAL-WORLD creatures, animals and humans, fully commit to rich SEMI-REALISTIC painterly rendering — realistic fur / skin / hair detail, dimensional volumetric form, soft painted edges, and NO bold black outlines. Only for FICTIONAL CARTOON characters whose identity genuinely depends on their stylised look should you keep that stylised design instead of forcing realism. When realism and recognizability truly conflict, recognizability wins.
+
+KEEP everything the character already has — masks, helmets, hoods, horns, existing costume and markings stay exactly as they are. But do NOT ADD anything new: no crown, tiara, hat or headwear, and no shirt, collar or garment the character is not already wearing. Naked, furred or bare-skinned characters stay bare — do not dress them. Portrait orientation, taller than wide. No text, no signature, no watermark, no logos.`;
 
 // Multi-reference variant (--refs): the FIRST image is the subject, the rest are style
 // references. Name-free (can't reuse buildPrompt — it's full of trademarked names).
@@ -418,7 +430,9 @@ async function falEdit(
   const imageUrls = useRefs
     ? [
         sourceUri,
-        ...STYLE_REF_PATHS.map((p) => `data:image/jpeg;base64,${readFileSync(p).toString('base64')}`),
+        ...STYLE_REF_PATHS.map(
+          (p) => `data:image/jpeg;base64,${readFileSync(p).toString('base64')}`,
+        ),
       ]
     : [sourceUri];
   const res = await fetch(endpoint, {

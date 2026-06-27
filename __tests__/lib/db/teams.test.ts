@@ -86,7 +86,13 @@ describe('searchTeams', () => {
     // Pool comes back popularity-ordered; a contains-match leads but a prefix
     // match should win after re-ranking.
     const m = mockSearch([
-      { id: 'c', name: 'Secret Avengers Society', publisher: null, logo_url: null, member_count: 90 },
+      {
+        id: 'c',
+        name: 'Secret Avengers Society',
+        publisher: null,
+        logo_url: null,
+        member_count: 90,
+      },
       { id: 'p', name: 'Avengers', publisher: 'Marvel', logo_url: null, member_count: 145 },
     ]);
     const out = await searchTeams('aveng', 1);

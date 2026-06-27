@@ -5,7 +5,15 @@
 // guess), open ComicVine to identify the obscure ones, or copy the lot to hand
 // over. Placing a hero also makes it fame-eligible. Renders nothing when clean.
 import { useState } from 'react';
-import { View, Text, Pressable, TextInput, ActivityIndicator, Linking, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  TextInput,
+  ActivityIndicator,
+  Linking,
+  StyleSheet,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { Panel } from './Panel';
@@ -20,7 +28,10 @@ type Flash = (msg: string, tone?: 'info' | 'success' | 'error' | 'pending') => v
 // admin accepts or overrides, never an auto-write (the Muppets/Sesame overlap and
 // generic teams make it unreliable on its own).
 const SUGGESTERS: [RegExp, string][] = [
-  [/jedi|sith|rebel alliance|galactic republic|mandalor|ithorian|wookie|t'?surr|abednedo/i, 'Star Wars'],
+  [
+    /jedi|sith|rebel alliance|galactic republic|mandalor|ithorian|wookie|t'?surr|abednedo/i,
+    'Star Wars',
+  ],
   [/minbari|psi corps|grey council|narn|centauri/i, 'Babylon 5'],
   [/muppet/i, 'Sesame Street'],
   [/nests|k' team|kof/i, 'SNK'],
@@ -73,7 +84,11 @@ function GapRow({
           </Text>
           <Text style={styles.cv}>cv-{hero.comicvineId ?? '?'}</Text>
           {url ? (
-            <Pressable onPress={() => Linking.openURL(url)} hitSlop={6} accessibilityLabel="Open in ComicVine">
+            <Pressable
+              onPress={() => Linking.openURL(url)}
+              hitSlop={6}
+              accessibilityLabel="Open in ComicVine"
+            >
               <Ionicons name="open-outline" size={13} color={COLORS.grey} />
             </Pressable>
           ) : null}
@@ -190,9 +205,20 @@ const styles = StyleSheet.create({
   info: { flex: 1, minWidth: 0, gap: 1 },
   nameLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   name: { fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: COLORS.black, flexShrink: 1 },
-  cv: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey, fontVariant: ['tabular-nums'] },
+  cv: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11,
+    color: COLORS.grey,
+    fontVariant: ['tabular-nums'],
+  },
   sub: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: COLORS.grey },
-  subEmpty: { fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: COLORS.grey, fontStyle: 'italic', opacity: 0.7 },
+  subEmpty: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11.5,
+    color: COLORS.grey,
+    fontStyle: 'italic',
+    opacity: 0.7,
+  },
   input: {
     width: 150,
     paddingHorizontal: 9,
