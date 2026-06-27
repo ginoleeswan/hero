@@ -21,6 +21,7 @@ import { useSearch } from '../../../src/contexts/SearchContext';
 import { useSearchHistory } from '../../../src/hooks/useSearchHistory';
 import { useUnifiedSearch } from '../../../src/hooks/useUnifiedSearch';
 import { UniverseChip } from '../../../src/components/web/search/UniverseChip';
+import { TeamResultRow } from '../../../src/components/web/search/TeamResultRow';
 import { TitleResultRow } from '../../../src/components/web/search/TitleResultRow';
 import { FEATURED_PUBLISHERS } from '../../../src/constants/publishers';
 import { useBrowseCovers } from '../../../src/hooks/useBrowseCovers';
@@ -178,7 +179,7 @@ export default function WebSearchScreen() {
   const trimmed = inputQuery.trim();
   const hasCriteria = trimmed.length > 0;
 
-  const { universes, heroes, titles, loading } = useUnifiedSearch(inputQuery, RESULT_LIMIT);
+  const { universes, teams, heroes, titles, loading } = useUnifiedSearch(inputQuery, RESULT_LIMIT);
 
   // Sync the input FROM the URL (deep links, back/forward, nav palette).
   useEffect(() => {
@@ -379,6 +380,20 @@ export default function WebSearchScreen() {
                     onPress={() =>
                       router.push(`/universe/${u.slug}` as Parameters<typeof router.push>[0])
                     }
+                  />
+                </View>
+              ))}
+            </View>
+          )}
+          {teams.length > 0 && (
+            <View style={styles.titlesSection}>
+              <Text style={styles.idleLabel as object}>Teams</Text>
+              {teams.map((t) => (
+                <View key={t.id} style={styles.universeChipWrap as object}>
+                  <TeamResultRow
+                    team={t}
+                    variant="light"
+                    onPress={() => router.push(`/team/${t.id}` as Parameters<typeof router.push>[0])}
                   />
                 </View>
               ))}
