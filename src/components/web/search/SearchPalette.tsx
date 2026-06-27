@@ -137,22 +137,24 @@ export function SearchPalette() {
             }}
           />
         </View>
-        <View style={styles.hints as object}>
-          <Text style={styles.hint as object}>
-            <Text style={styles.hintKey as object}>↑↓</Text> navigate
-          </Text>
-          <Text style={styles.hint as object}>
-            <Text style={styles.hintKey as object}>⇥</Text> scope
-          </Text>
-          <Text style={styles.hint as object}>
-            <Text style={styles.hintKey as object}>↵</Text> open
-          </Text>
-          {showCompareHint && (
+        {query.trim().length > 0 && (
+          <View style={styles.hints as object}>
             <Text style={styles.hint as object}>
-              <Text style={styles.hintKey as object}>⌘↵</Text> compare
+              <Text style={styles.hintKey as object}>↑↓</Text> navigate
             </Text>
-          )}
-        </View>
+            <Text style={styles.hint as object}>
+              <Text style={styles.hintKey as object}>⇥</Text> scope
+            </Text>
+            <Text style={styles.hint as object}>
+              <Text style={styles.hintKey as object}>↵</Text> open
+            </Text>
+            {showCompareHint && (
+              <Text style={styles.hint as object}>
+                <Text style={styles.hintKey as object}>⌘↵</Text> compare
+              </Text>
+            )}
+          </View>
+        )}
       </View>
     </View>
   );

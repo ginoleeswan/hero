@@ -235,6 +235,21 @@ export function rankTitles(rows: TitlePoolRow[], query: string): TitlePoolRow[] 
     .map((x) => x.r);
 }
 
+/** Most-prominent films/shows (by revenue) for the empty-search showcase. */
+export async function getTrendingTitles(limit = 2): Promise<TitleSearchResult[]> {
+  const { data, error } = await supabase
+    .from('titles')
+    .select('id, title, media_type, year, poster_url')
+    .not('poster_url', 'is', null)
+    .order('revenue', { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error) {
+    console.warn('[getTrendingTitles] error:', error.message);
+    return [];
+  }
+  return (data ?? []) as TitleSearchResult[];
+}
+
 /**
  * Title search for the unified search surface. Fetches a revenue-ordered ILIKE
  * pool (so the blockbusters are always in it), then re-ranks by relevance +

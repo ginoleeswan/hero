@@ -6,6 +6,7 @@ import { useSearch } from '../../../contexts/SearchContext';
 import { useSearchHistory } from '../../../hooks/useSearchHistory';
 import { useUnifiedSearch } from '../../../hooks/useUnifiedSearch';
 import { useIdleHeroes } from '../../../hooks/useIdleHeroes';
+import { useIdleShowcase } from '../../../hooks/useIdleShowcase';
 import { IdleSuggestions } from './IdleSuggestions';
 import { SuggestionsList } from './SuggestionsList';
 import { UniverseChip } from './UniverseChip';
@@ -32,6 +33,24 @@ const MAX_TEAM_SUGGESTIONS = 2;
 const MAX_TITLE_SUGGESTIONS = 2;
 
 const MAX_HERO_SUGGESTIONS = 4;
+
+// Tidy recent searches: drop blanks/fragments and any term that's just a prefix
+// of a more specific one (e.g. "mick" when "mickey" is also there).
+function tidyHistory(history: string[]): string[] {
+  const seen = new Set<string>();
+  const uniq: string[] = [];
+  for (const raw of history) {
+    const q = raw.trim();
+    if (q.length < 3) continue;
+    const l = q.toLowerCase();
+    if (seen.has(l)) continue;
+    seen.add(l);
+    uniq.push(q);
+  }
+  return uniq
+    .filter((q) => !uniq.some((o) => o !== q && o.toLowerCase().startsWith(q.toLowerCase())))
+    .slice(0, 6);
+}
 
 function topResultNavItem(top: TopResult): NavItem {
   switch (top.kind) {
@@ -78,6 +97,7 @@ export function SearchDropdownContent({
 
   const isEmptyQuery = query.trim().length === 0;
   const { heroes: trending, isLoading: trendingLoading } = useIdleHeroes(isEmptyQuery, 4);
+  const showcase = useIdleShowcase(isEmptyQuery);
 
   // Which sections show, and how many — narrowed by the active scope. A scoped
   // view shows just that type (no top result), with a bigger cap.
@@ -186,8 +206,13 @@ export function SearchDropdownContent({
       <IdleSuggestions
         trending={trending}
         trendingLoading={trendingLoading}
-        history={history}
+        teams={showcase.teams}
+        films={showcase.films}
+        history={tidyHistory(history)}
         onHeroPress={handleHeroPress}
+        onUniversePress={handleUniversePress}
+        onTeamPress={handleTeamPress}
+        onTitlePress={handleTitlePress}
         onSelectRecent={handleSelectRecentSearch}
         onClearHistory={clearHistory}
       />

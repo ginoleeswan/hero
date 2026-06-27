@@ -123,6 +123,21 @@ export async function searchTeams(query: string, limit = 6): Promise<TeamSearchR
   return rankTeams((data ?? []) as TeamSearchResult[], q).slice(0, limit);
 }
 
+/** Most-popular featured teams for the empty-search showcase. */
+export async function getTrendingTeams(limit = 2): Promise<TeamSearchResult[]> {
+  const { data, error } = await supabase
+    .from('teams')
+    .select(TEAM_SUMMARY_COLS)
+    .eq('is_featured', true)
+    .order('popularity', { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error) {
+    console.warn('[getTrendingTeams] error:', error.message);
+    return [];
+  }
+  return (data ?? []) as TeamSearchResult[];
+}
+
 /**
  * Resolve team names (e.g. a hero's `teams[]` affiliations) to their team rows,
  * so the affiliation chips on a character page can link to /team/[id]. Names with
