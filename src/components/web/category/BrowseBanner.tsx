@@ -32,6 +32,7 @@ export function BrowseBanner({
   heroImageUrls,
   compact,
   sticky,
+  unitLabel = 'CHARACTER',
 }: {
   title: string;
   color: string;
@@ -44,10 +45,12 @@ export function BrowseBanner({
   heroImageUrls?: string[];
   compact?: boolean;
   sticky?: boolean;
+  /** Noun for the count, uppercased — "CHARACTER" for universes, "MEMBER" for teams. */
+  unitLabel?: string;
 }) {
   const stat =
     total > 0
-      ? `${total.toLocaleString()} ${total === 1 ? 'CHARACTER' : 'CHARACTERS'}${
+      ? `${total.toLocaleString()} ${total === 1 ? unitLabel : `${unitLabel}S`}${
           leadName ? `  ·  LED BY ${leadName.toUpperCase()}` : ''
         }`
       : '';

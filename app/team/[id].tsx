@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTeamPage } from '../../src/hooks/useTeamPage';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
+import { brandForPublisher } from '../../src/constants/publishers';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const NUM_COLUMNS = SCREEN_WIDTH >= 768 ? 4 : 3;
@@ -40,6 +41,7 @@ export default function TeamScreen() {
   const { team, members, loading, notFound } = useTeamPage(id);
 
   const headerHeight = insets.top + 44;
+  const brand = brandForPublisher(team?.publisher);
   const eyebrow = team
     ? `${team.member_count.toLocaleString()} ${team.member_count === 1 ? 'MEMBER' : 'MEMBERS'}${team.publisher ? ` · ${team.publisher.toUpperCase()}` : ''}`
     : '';
@@ -47,6 +49,17 @@ export default function TeamScreen() {
   const listHeader = (
     <>
       <View style={[styles.stage, { paddingTop: headerHeight + 16 }]}>
+        {/* Brand wash: tint the stage with the team's publisher colour so it reads
+            as a branded masthead (Marvel red / DC blue), mirroring the web banner. */}
+        {brand && (
+          <LinearGradient
+            colors={[brand.color, brand.colorDark, COLORS.navy]}
+            locations={[0, 0.55, 1]}
+            start={{ x: 0.9, y: 0 }}
+            end={{ x: 0.1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
         <Text style={styles.eyebrow}>{eyebrow}</Text>
         <Text style={styles.stageTitle} numberOfLines={2}>
           {team?.name ?? (notFound ? 'Team not found' : '')}
