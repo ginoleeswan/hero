@@ -58,6 +58,8 @@ export function SearchPalette() {
         close();
         if (item.kind === 'universe') {
           router.push(`/universe/${item.slug}` as Parameters<typeof router.push>[0]);
+        } else if (item.kind === 'title') {
+          router.push(`/title/${item.id}` as Parameters<typeof router.push>[0]);
         } else {
           router.push(`/character/${item.id}`);
         }

@@ -8,10 +8,16 @@ import { useIdleHeroes } from '../../../hooks/useIdleHeroes';
 import { IdleSuggestions } from './IdleSuggestions';
 import { SuggestionsList } from './SuggestionsList';
 import { UniverseChip } from './UniverseChip';
+import { TitleResultRow } from './TitleResultRow';
 
-// Flat, ordered list of the dropdown's selectable rows — universes then heroes.
-// The palette owns the keyboard cursor and drives Enter-to-open from this list.
-export type NavItem = { kind: 'universe'; slug: string } | { kind: 'hero'; id: string };
+// Flat, ordered list of the dropdown's selectable rows — universes, heroes,
+// titles. The palette owns the keyboard cursor and drives Enter-to-open from it.
+export type NavItem =
+  | { kind: 'universe'; slug: string }
+  | { kind: 'hero'; id: string }
+  | { kind: 'title'; id: string };
+
+const MAX_TITLE_SUGGESTIONS = 3;
 
 const MAX_HERO_SUGGESTIONS = 8;
 
@@ -25,12 +31,13 @@ export function SearchDropdownContent({
   const router = useRouter();
   const { query, setQuery, setSearchFocused } = useSearch();
   const { history, addSearch, clearHistory } = useSearchHistory();
-  const { universes, heroes, loading, resultCount } = useUnifiedSearch(query);
+  const { universes, heroes, titles, loading, resultCount } = useUnifiedSearch(query);
 
   const isEmptyQuery = query.trim().length === 0;
   const { heroes: trending, isLoading: trendingLoading } = useIdleHeroes(isEmptyQuery, 4);
 
   const shownHeroes = heroes.slice(0, MAX_HERO_SUGGESTIONS);
+  const shownTitles = titles.slice(0, MAX_TITLE_SUGGESTIONS);
 
   // Report the current flat item list up to the palette for keyboard nav. Effect
   // (not a render-time call) so we never setState in the parent during render.
@@ -39,6 +46,7 @@ export function SearchDropdownContent({
     : [
         ...universes.map((u) => ({ kind: 'universe', slug: u.slug }) as NavItem),
         ...shownHeroes.map((h) => ({ kind: 'hero', id: h.id }) as NavItem),
+        ...shownTitles.map((t) => ({ kind: 'title', id: t.id }) as NavItem),
       ];
   const itemsKey = JSON.stringify(navItems);
   useEffect(() => {
@@ -49,6 +57,7 @@ export function SearchDropdownContent({
   const activeItem = highlightIndex >= 0 ? navItems[highlightIndex] : undefined;
   const activeUniverseSlug = activeItem?.kind === 'universe' ? activeItem.slug : undefined;
   const activeHeroId = activeItem?.kind === 'hero' ? activeItem.id : undefined;
+  const activeTitleId = activeItem?.kind === 'title' ? activeItem.id : undefined;
 
   const close = () => setSearchFocused(false);
 
@@ -62,6 +71,12 @@ export function SearchDropdownContent({
     addSearch(query);
     close();
     router.push(`/universe/${slug}` as Parameters<typeof router.push>[0]);
+  };
+
+  const handleTitlePress = (id: string) => {
+    addSearch(query);
+    close();
+    router.push(`/title/${id}` as Parameters<typeof router.push>[0]);
   };
 
   const handleSelectRecentSearch = (recentQuery: string) => setQuery(recentQuery);
@@ -111,6 +126,19 @@ export function SearchDropdownContent({
         onSuggestionPress={handleHeroPress}
         onViewAll={handleViewAll}
       />
+      {shownTitles.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel as object}>Films & Shows</Text>
+          {shownTitles.map((t) => (
+            <TitleResultRow
+              key={t.id}
+              title={t}
+              active={t.id === activeTitleId}
+              onPress={() => handleTitlePress(t.id)}
+            />
+          ))}
+        </View>
+      )}
     </View>
   );
 }
