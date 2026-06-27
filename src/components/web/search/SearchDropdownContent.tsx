@@ -30,7 +30,7 @@ const MAX_TEAM_SUGGESTIONS = 2;
 
 const MAX_TITLE_SUGGESTIONS = 2;
 
-const MAX_HERO_SUGGESTIONS = 5;
+const MAX_HERO_SUGGESTIONS = 4;
 
 function topResultNavItem(top: TopResult): NavItem {
   switch (top.kind) {

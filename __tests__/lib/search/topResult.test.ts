@@ -8,7 +8,7 @@ const uni = (slug: string, exact = false): UniverseResult =>
   ({ slug, name: slug, color: '#000', exact }) as UniverseResult;
 const team = (id: string, name: string): TeamSearchResult =>
   ({ id, name, publisher: null, logo_url: null, member_count: 5 });
-const hero = (id: string, name: string): HeroSearchResult =>
+const hero = (id: string, name: string, fame_score = 100): HeroSearchResult =>
   ({
     id,
     name,
@@ -19,6 +19,7 @@ const hero = (id: string, name: string): HeroSearchResult =>
     portrait_url: null,
     full_name: null,
     aliases: null,
+    fame_score,
   }) as HeroSearchResult;
 const title = (id: string, t: string): TitleSearchResult =>
   ({ id, title: t, media_type: 'tv', year: 2020, poster_url: null });
@@ -49,13 +50,28 @@ describe('pickTopResult', () => {
     expect(top?.kind).toBe('team');
   });
 
-  it('falls to the top (fame-ranked) hero for a character query', () => {
-    const top = pickTopResult('spider', {
+  it('features a famous prefix-match hero (bat → Batman)', () => {
+    const top = pickTopResult('bat', {
       ...empty,
-      heroes: [hero('h1', 'Spider-Man'), hero('h2', 'Spider')],
-      teams: [team('t1', 'Spider Society')], // not exact
+      heroes: [hero('h1', 'Batman', 100), hero('h2', 'Batwoman', 40)],
     });
-    expect(top).toEqual({ kind: 'hero', hero: hero('h1', 'Spider-Man') });
+    expect(top).toEqual({ kind: 'hero', hero: hero('h1', 'Batman', 100) });
+  });
+
+  it('does NOT feature an obscure prefix-match hero (end → no top result)', () => {
+    const top = pickTopResult('end', {
+      ...empty,
+      heroes: [hero('h1', 'Endless Winter', 4), hero('h2', 'Endgame', 2)],
+    });
+    expect(top).toBeNull();
+  });
+
+  it('features an exact-name hero regardless of fame', () => {
+    const top = pickTopResult('endgame', {
+      ...empty,
+      heroes: [hero('h1', 'Endgame', 2)],
+    });
+    expect(top?.kind).toBe('hero');
   });
 
   it('prefers an exact title when the top hero is only a weak match', () => {

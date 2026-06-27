@@ -16,6 +16,7 @@ export type HeroSearchResult = Pick<
   | 'portrait_url'
   | 'full_name'
   | 'aliases'
+  | 'fame_score'
 >;
 
 export interface FirstAppearanceCover {

@@ -20,13 +20,19 @@ export interface TopResultSources {
 
 const norm = (s: string) => s.toLowerCase().replace(/[\s\-_.]/g, '');
 
+// A hero is only featured as THE answer when it's a confident winner: an exact
+// name match, or a prefix match on a FAMOUS hero. This stops obscure prefix
+// matches (e.g. "end" → "Endless Winter") from being presented as the top result.
+const HERO_TOP_FAME_MIN = 50;
+
 /**
- * Pick the one result to feature at the top. Characters are the primary content,
- * so the fame-ranked top hero wins by default — EXCEPT where the query clearly
- * names a grouping or a title:
- *   exact universe  >  exact team  >  exact title (only if the top hero is weak)
- *   >  top hero  >  first of the rest.
- * "disney"→Disney, "avengers"→Avengers(team), "spider"→Spider-Man, "the boys"→show.
+ * Pick the one result to feature at the top — ONLY when we're confident it's the
+ * answer, so vague fragments don't get a presumptuous guess. Priority:
+ *   exact universe  >  exact team  >  exact title (no confident hero)  >
+ *   confident hero (exact name, or famous prefix).
+ * Returns null when nothing is a confident winner — the palette then just shows
+ * the grouped sections. "disney"→Disney, "avengers"→Avengers(team), "bat"→Batman,
+ * "the dark knight"→film, "end"→(no top result).
  */
 export function pickTopResult(query: string, sources: TopResultSources): TopResult | null {
   const q = norm(query);
@@ -40,15 +46,16 @@ export function pickTopResult(query: string, sources: TopResultSources): TopResu
   if (exactTeam) return { kind: 'team', team: exactTeam };
 
   const topHero = heroes[0];
-  const heroStrong = topHero ? norm(topHero.name) === q || norm(topHero.name).startsWith(q) : false;
+  const heroName = topHero ? norm(topHero.name) : '';
+  const heroExact = !!topHero && heroName === q;
+  const heroFamousPrefix =
+    !!topHero && heroName.startsWith(q) && (topHero.fame_score ?? 0) >= HERO_TOP_FAME_MIN;
+  const heroConfident = heroExact || heroFamousPrefix;
 
   const exactTitle = titles.find((t) => norm(t.title) === q);
-  if (exactTitle && !heroStrong) return { kind: 'title', title: exactTitle };
+  if (exactTitle && !heroConfident) return { kind: 'title', title: exactTitle };
 
-  if (topHero) return { kind: 'hero', hero: topHero };
-  if (universes[0]) return { kind: 'universe', universe: universes[0] };
-  if (teams[0]) return { kind: 'team', team: teams[0] };
-  if (titles[0]) return { kind: 'title', title: titles[0] };
+  if (heroConfident && topHero) return { kind: 'hero', hero: topHero };
   return null;
 }
 
