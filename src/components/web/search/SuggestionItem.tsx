@@ -117,10 +117,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(245,235,220,0.08)',
   } as object,
 
+  // Circular = "this is a person/character" — distinct at a glance from the
+  // squared team tiles and tall film posters (per-type shape language).
   suggestionImage: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: 20,
     backgroundColor: 'rgba(245,235,220,0.08)',
     flexShrink: 0,
   } as object,

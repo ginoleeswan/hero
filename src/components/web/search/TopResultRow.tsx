@@ -27,7 +27,9 @@ export function TopResultRow({
         [styles.row, (active || hovered) && (styles.rowActive as object)] as object
       }
     >
-      <View style={styles.thumb as object}>{thumb}</View>
+      <View style={[styles.thumb, top.kind === 'hero' && (styles.thumbRound as object)] as object}>
+        {thumb}
+      </View>
       <View style={styles.text}>
         <View style={styles.titleRow}>
           <Text style={styles.name as object} numberOfLines={1}>
@@ -177,6 +179,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     flexShrink: 0,
   } as object,
+  thumbRound: { borderRadius: 24 } as object, // characters read as circular avatars
   tile: {
     width: '100%',
     height: '100%',

@@ -57,7 +57,10 @@ export function SearchPalette() {
         e.preventDefault();
         addSearch(query);
         close();
-        if (item.kind === 'universe') {
+        // ⌘↵ / Ctrl↵ on a character jumps straight into Compare (battle picker).
+        if ((e.metaKey || e.ctrlKey) && item.kind === 'hero') {
+          router.push(`/compare/${item.id}/pick` as Parameters<typeof router.push>[0]);
+        } else if (item.kind === 'universe') {
           router.push(`/universe/${item.slug}` as Parameters<typeof router.push>[0]);
         } else if (item.kind === 'team') {
           router.push(`/team/${item.id}` as Parameters<typeof router.push>[0]);
@@ -73,6 +76,10 @@ export function SearchPalette() {
   }, [searchFocused, items, highlight, query]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!searchFocused) return null;
+
+  // The Compare hint only applies to a character (the default-or-highlighted row).
+  const activeItem = items[highlight === -1 ? 0 : highlight];
+  const showCompareHint = activeItem?.kind === 'hero';
 
   // Enter commits to the dedicated results page (?q= is the source of truth).
   const submit = () => {
@@ -106,6 +113,19 @@ export function SearchPalette() {
         </View>
         <View style={styles.body as object}>
           <SearchDropdownContent highlightIndex={highlight} onItemsChange={setItems} />
+        </View>
+        <View style={styles.hints as object}>
+          <Text style={styles.hint as object}>
+            <Text style={styles.hintKey as object}>↑↓</Text> navigate
+          </Text>
+          <Text style={styles.hint as object}>
+            <Text style={styles.hintKey as object}>↵</Text> open
+          </Text>
+          {showCompareHint && (
+            <Text style={styles.hint as object}>
+              <Text style={styles.hintKey as object}>⌘↵</Text> compare
+            </Text>
+          )}
         </View>
       </View>
     </View>
@@ -189,4 +209,24 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   } as object,
   body: { flex: 1, minHeight: 0 } as object,
+  hints: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingHorizontal: 16,
+    height: 34,
+    flexShrink: 0,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(245,235,220,0.10)',
+    backgroundColor: 'rgba(245,235,220,0.02)',
+  } as object,
+  hint: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11,
+    color: 'rgba(245,235,220,0.4)',
+  } as object,
+  hintKey: {
+    fontFamily: 'Nunito_700Bold',
+    color: 'rgba(245,235,220,0.65)',
+  } as object,
 });
