@@ -1949,6 +1949,27 @@ export type Database = {
       get_my_battle_record: { Args: never; Returns: Json }
       get_my_contributions: { Args: never; Returns: Json }
       get_my_taste_profile: { Args: never; Returns: Json }
+      get_new_comics: {
+        Args: {
+          p_chars_per_issue?: number
+          p_days?: number
+          p_limit?: number
+          p_min_fame?: number
+        }
+        Returns: {
+          cover_url: string
+          hero_id: string
+          hero_image_url: string
+          hero_name: string
+          hero_portrait_url: string
+          issue_id: string
+          issue_number: string
+          max_fame: number
+          publisher: string
+          store_date: string
+          volume_name: string
+        }[]
+      }
       get_pending_build_ids: { Args: { p_limit?: number }; Returns: string[] }
       get_related_heroes: {
         Args: {
