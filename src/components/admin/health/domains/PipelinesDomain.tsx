@@ -159,34 +159,49 @@ export function PipelinesDomain({
   // The whole enrichment backlog — what "Build" works through, one hero at a time.
   const totalActionable = cvPending + resolvePending + appearPending;
 
-  // A true funnel: every actionable stage shares one denominator (all heroes), so
-  // the drop-off between stages is visible. TMDB is a separate unit (titles), apart.
+  // ComicVine-matched heroes that simply have no Wikidata entry — terminal, not a
+  // backlog. Derived as the remainder of the eligible set so it always reconciles.
+  const titles = Math.max(1, p.filmTitles + p.tvTitles);
+  const resolveNoMatch = Math.max(0, p.comicvineDone - p.resolved - reviewN - resolvePending);
+
+  // Each stage is measured against the heroes *eligible* for it (the prior stage's
+  // output), not the whole catalogue — so a stage reads "done" once it has cleared
+  // everything actionable, and the data ceiling (no Wikidata for most heroes) shows
+  // as a neutral terminal count rather than a perpetually-empty bar. The descending
+  // `reached` numbers still reveal the funnel's drop-off. TMDB is a titles unit.
   const stages: Stage[] = [
     {
       key: 'comicvine',
       name: 'ComicVine',
       tip: "Pulls each hero's core data — powers, bio, alter egos, movie list — from ComicVine. This is the gate: every later stage needs it done first.",
       reached: p.comicvineDone,
-      total: p.heroesTotal,
+      eligible: p.heroesTotal,
+      eligibleLabel: 'of the catalogue',
       pending: cvPending,
-      // Real errors (red) take priority; otherwise show "no ComicVine match"
-      // neutrally — these are terminal and need another source, not a retry.
-      stuck:
-        failed > 0
-          ? { label: `${failed} failed`, tone: COLORS.red }
-          : cvUnmatched > 0
-            ? { label: `${cvUnmatched.toLocaleString()} no ComicVine match`, tone: COLORS.grey }
-            : null,
+      // Real errors (red) and "no ComicVine match" (neutral grey, terminal — needs
+      // another source, not a retry) both leave the actionable backlog.
+      notes: [
+        ...(failed > 0 ? [{ label: `${failed} failed`, tone: COLORS.red }] : []),
+        ...(cvUnmatched > 0
+          ? [{ label: `${cvUnmatched.toLocaleString()} no ComicVine match`, tone: COLORS.grey }]
+          : []),
+      ],
       run: { busyKey: 'drain', onPress: onRunDrain },
     },
     {
       key: 'resolve',
       name: 'Resolve identity',
-      tip: 'Matches each hero to its single Wikidata identity (QID) using publisher, first-appearance year, creators and aliases. Uncertain matches go to "Needs you".',
+      tip: 'Matches each hero to its single Wikidata identity (QID) using publisher, first-appearance year, creators and aliases. Most characters simply are not in Wikidata — that is a normal terminal outcome, not pending work. Uncertain matches go to "Needs you".',
       reached: p.resolved,
-      total: p.heroesTotal,
+      eligible: p.comicvineDone,
+      eligibleLabel: 'of ComicVine-matched',
       pending: resolvePending,
-      stuck: reviewN > 0 ? { label: `${reviewN} need you`, tone: COLORS.yellow } : null,
+      notes: [
+        ...(reviewN > 0 ? [{ label: `${reviewN} need you`, tone: COLORS.yellow }] : []),
+        ...(resolveNoMatch > 0
+          ? [{ label: `${resolveNoMatch.toLocaleString()} no Wikidata entry`, tone: COLORS.grey }]
+          : []),
+      ],
       run: { busyKey: 'resolve', onPress: onRunResolve },
     },
     {
@@ -194,7 +209,8 @@ export function PipelinesDomain({
       name: 'Appearances & cast',
       tip: 'For resolved heroes, pulls cross-media appearances (film / TV / game) and who played or voiced them. Feeds the On-Screen shelves and Portrayed-By.',
       reached: p.enriched,
-      total: p.heroesTotal,
+      eligible: Math.max(1, p.resolved),
+      eligibleLabel: 'of resolved heroes',
       pending: appearPending,
       run: { busyKey: 'enrich', onPress: onRunEnrich },
     },
@@ -203,7 +219,8 @@ export function PipelinesDomain({
       name: 'TMDB media',
       tip: 'Adds posters, backdrops, trailers, cast and where-to-watch to matched film & TV titles. Runs itself on a schedule as Wikidata discovers new titles.',
       reached: p.mediaDone,
-      total: Math.max(1, p.filmTitles + p.tvTitles),
+      eligible: titles,
+      eligibleLabel: 'of matched titles',
       pending: 0,
       auto: true,
     },
@@ -250,9 +267,13 @@ export function PipelinesDomain({
           <Panel
             fill={fill}
             title="Build & status"
-            hint={`${p.enriched.toLocaleString()} of ${p.heroesTotal.toLocaleString()} fully enriched · ${totalActionable.toLocaleString()} to go`}
+            hint={
+              totalActionable > 0
+                ? `${totalActionable.toLocaleString()} heroes still to build · the rest are complete or have no source data`
+                : 'All heroes built to the limit of available data'
+            }
             action={
-              <InfoTip text="The enrichment funnel. Each bar is how many heroes have reached that stage, all on the same scale, so you can see where they pile up. 'Build next' works the backlog one hero at a time; 'Run all' on a stage drains just that stage." />
+              <InfoTip text="The enrichment funnel. Each bar shows how far a stage has processed the heroes eligible for it (the prior stage's output) — so a stage reads 'done' once nothing actionable is left, even though most heroes never reach it (no Wikidata/TMDB data, shown as a neutral terminal count). 'Build next' works the backlog one hero at a time; 'Run all' on a stage drains just that stage." />
             }
             style={styles.flex15}
           >

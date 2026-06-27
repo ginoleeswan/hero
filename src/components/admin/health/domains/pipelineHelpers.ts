@@ -53,10 +53,16 @@ export interface Stage {
   name: string;
   tip: string;
   reached: number; // heroes that have passed this stage
-  total: number; // shared denominator (all heroes) so the funnel reads true
-  pending: number; // still actionable at this stage
-  // Heroes stuck here that need a human or can't proceed (failed / review / unresolvable).
-  stuck?: { label: string; tone: string } | null;
+  // Denominator = how many could *reach* this stage (the prior stage's output),
+  // NOT the whole catalogue. A stage is "done" when it has processed everything
+  // eligible — measuring against all heroes makes data-capped stages (most heroes
+  // have no Wikidata entry) read as "behind" when they're actually finished.
+  eligible: number;
+  eligibleLabel: string; // what the denominator is, e.g. "of ComicVine-matched"
+  pending: number; // still actionable (real work we can drain)
+  // Terminal / review breakdown shown after the pending count: heroes that can't
+  // proceed (no source data — neutral grey) or need a human (review — yellow).
+  notes?: { label: string; tone: string }[];
   run?: { busyKey: string; onPress: () => void } | null; // per-stage drain (power user)
   auto?: boolean; // runs itself (TMDB)
 }

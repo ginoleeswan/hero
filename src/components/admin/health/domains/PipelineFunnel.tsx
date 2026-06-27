@@ -1,5 +1,7 @@
-// The enrichment funnel — one row per stage, all bars on a shared denominator so
-// the drop-off between stages is visible, each with an optional "Run all" drain.
+// The enrichment funnel — one row per stage. Each bar shows how far a stage has
+// processed the heroes *eligible* for it (the prior stage's output), so a stage
+// reads as "done" once nothing actionable remains — even though most heroes never
+// reach it (no Wikidata/TMDB data). Each has an optional "Run all" drain.
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS } from '../../../../constants/colors';
 import { InfoTip } from '../InfoTip';
@@ -17,7 +19,7 @@ function FunnelStage({
   busy: string | null;
   bottleneck: boolean;
 }) {
-  const pct = pctOf(s.reached, s.total);
+  const pct = pctOf(s.reached, s.eligible);
   const running = !!s.run && busy === s.run.busyKey;
   return (
     <View style={styles.row}>
@@ -33,25 +35,22 @@ function FunnelStage({
           {bottleneck ? <Text style={styles.bottleneck}>bottleneck</Text> : null}
           <Text style={styles.count}>
             {s.reached.toLocaleString()}
-            <Text style={styles.countDim}> / {s.total.toLocaleString()}</Text>
+            <Text style={styles.countDim}> / {s.eligible.toLocaleString()}</Text>
           </Text>
         </View>
         <View style={styles.track}>
           <View style={[styles.fill, { width: `${pct}%` }, bottleneck && styles.fillWarn]} />
         </View>
         <View style={styles.foot}>
-          {s.auto ? (
-            <Text style={styles.meta}>auto · runs on a schedule</Text>
-          ) : (
-            <Text style={styles.meta}>
-              {s.pending > 0 ? `${s.pending.toLocaleString()} pending` : 'clear'}
-              {s.stuck ? (
-                <Text
-                  style={[styles.stuck, { color: s.stuck.tone }]}
-                >{`  ·  ${s.stuck.label}`}</Text>
-              ) : null}
-            </Text>
-          )}
+          <Text style={styles.meta}>
+            <Text style={styles.metaStrong}>{`${pct}% ${s.eligibleLabel}`}</Text>
+            {s.auto
+              ? '  ·  auto · runs on a schedule'
+              : `  ·  ${s.pending > 0 ? `${s.pending.toLocaleString()} pending` : 'clear'}`}
+            {(s.notes ?? []).map((note, i) => (
+              <Text key={i} style={[styles.stuck, { color: note.tone }]}>{`  ·  ${note.label}`}</Text>
+            ))}
+          </Text>
           {s.run ? (
             <Button
               label="Run all"
@@ -129,5 +128,11 @@ const styles = StyleSheet.create({
   fillWarn: { backgroundColor: COLORS.red },
   foot: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 22 },
   meta: { flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 11.5, color: COLORS.grey },
+  metaStrong: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11.5,
+    color: COLORS.navy,
+    fontVariant: ['tabular-nums'],
+  },
   stuck: { fontFamily: 'Nunito_700Bold', fontSize: 11.5 },
 });
