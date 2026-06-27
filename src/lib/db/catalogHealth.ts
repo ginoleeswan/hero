@@ -542,7 +542,9 @@ export async function setHeroUniverse(heroId: string, publisher: string): Promis
 export async function listUnbrandedHeroes(limit = 100): Promise<UnbrandedHero[]> {
   const { data, error } = await supabase
     .from('heroes')
-    .select('id, name, comicvine_id, teams, image_md_url, image_url, portrait_url, description, summary, added_at')
+    .select(
+      'id, name, comicvine_id, teams, image_md_url, image_url, portrait_url, description, summary, added_at',
+    )
     .eq('publisher', 'Company-Licensed')
     .order('added_at', { ascending: false })
     .limit(limit);
