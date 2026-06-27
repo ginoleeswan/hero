@@ -226,19 +226,24 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
     <View style={[c.bar, barHideStyle] as object} pointerEvents="box-none">
       {isMobile ? (
         // Mobile: transparent over the hero at the top; once you scroll up after
-        // scrolling down, the menu condenses onto a floating frosted glass PILL so
-        // it's legible over any content. Blur is background-agnostic; tint + glyphs
-        // follow the page's light/dark. Hidden (opacity 0) while at the very top.
+        // scrolling down, a header reveals — a gradient scrim + graduated blur that's
+        // solid at the very top (so it fuses with the dark body strip) and fades to
+        // transparent blur by the bottom, melting into the content. Hidden (opacity 0)
+        // at the very top. Scrim follows the page's light/dark to match the glyphs.
         <View
-          style={
-            [
-              c.mPill,
-              mobAtTop ? (c.layerHidden as object) : (c.layerShown as object),
-              adaptDark ? (c.mPillTintLight as object) : (c.mPillTintDark as object),
-            ] as object
-          }
+          style={[c.mHeader, mobAtTop ? (c.layerHidden as object) : (c.layerShown as object)] as object}
           pointerEvents="none"
-        />
+        >
+          <View style={[StyleSheet.absoluteFill, c.mHeaderBlur] as object} />
+          <View
+            style={
+              [
+                StyleSheet.absoluteFill,
+                adaptDark ? (c.mHeaderScrimLight as object) : (c.mHeaderScrimDark as object),
+              ] as object
+            }
+          />
+        </View>
       ) : (
         <>
           {/* Desktop: soft dark gradient over the hero at the top… */}
@@ -361,7 +366,7 @@ const c = StyleSheet.create({
   // Desktop scrolled frost: two blur layers (frostA heavy + frostC light), each
   // masked to a band, so the blur is heaviest at the top behind the icons and
   // tapers to zero by the bottom — a graduated blur with no hard edge, with
-  // frostTintDesktop riding on top. (Mobile uses the mPill glass pill instead.)
+  // frostTintDesktop riding on top. (Mobile uses the mHeader scrim+blur instead.)
   frost: {
     position: 'absolute',
     top: 0,
@@ -383,31 +388,32 @@ const c = StyleSheet.create({
     maskImage: 'linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%)',
     WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 52%, transparent 94%)',
   } as object,
-  // Mobile reveal: a floating frosted glass pill behind the icon row (below the
-  // status-bar inset, inset from the screen edges, fully rounded). Faded in once
-  // scrolled (opacity via layerShown/Hidden). Blur is background-agnostic; the tint
-  // + border + drop shadow give it a lifted, lozenge feel. Tint follows the page's
-  // light/dark (mPillTint*) so it matches its glyphs.
-  mPill: {
+  // Mobile reveal: a full-width header covering the whole bar, faded in once scrolled
+  // up (opacity via layerShown/Hidden). Two layers — a graduated blur (strong at the
+  // top, masked to nothing by the bottom) and a colour scrim (solid at the very top
+  // so it fuses with the body strip, easing to transparent at the bottom so it melts
+  // into the content). Scrim colour follows the page light/dark to match the glyphs.
+  mHeader: {
     position: 'absolute',
-    top: 'calc(env(safe-area-inset-top) + 6px)',
-    left: 10,
-    right: 10,
-    bottom: 8,
-    borderRadius: 26,
-    borderWidth: 0.5,
-    backdropFilter: 'blur(20px) saturate(160%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(160%)',
-    boxShadow: '0 6px 22px rgba(0,0,0,0.20)',
-    transition: 'opacity 220ms ease',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    transition: 'opacity 240ms ease',
   } as object,
-  mPillTintDark: {
-    backgroundColor: 'rgba(11,24,32,0.55)',
-    borderColor: 'rgba(245,235,220,0.16)',
+  mHeaderBlur: {
+    backdropFilter: 'blur(18px) saturate(150%)',
+    WebkitBackdropFilter: 'blur(18px) saturate(150%)',
+    maskImage: 'linear-gradient(to bottom, #000 0%, #000 45%, transparent 96%)',
+    WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 45%, transparent 96%)',
   } as object,
-  mPillTintLight: {
-    backgroundColor: 'rgba(245,235,220,0.72)',
-    borderColor: 'rgba(11,24,32,0.10)',
+  mHeaderScrimDark: {
+    backgroundImage:
+      'linear-gradient(to bottom, #0b1820 0%, #0b1820 48%, rgba(11,24,32,0.62) 74%, transparent 100%)',
+  } as object,
+  mHeaderScrimLight: {
+    backgroundImage:
+      'linear-gradient(to bottom, #f5ebdc 0%, #f5ebdc 48%, rgba(245,235,220,0.62) 74%, transparent 100%)',
   } as object,
   // Desktop: the original light frosted glass — no system status bar to match.
   frostTintDesktop: {

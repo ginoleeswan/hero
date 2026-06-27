@@ -1,40 +1,51 @@
 // app/team/[id].web.tsx — web team roster browse page.
 // Mirrors the universe/category browse page: a dark "gallery" canvas, a
 // publisher-branded BrowseBanner masthead (the team name in the display face on
-// its publisher's brand colour, with a member-portrait montage), and gallery
-// hero cards. Data is the small one-shot roster from useTeamPage (no filters /
-// pagination — teams are small).
-import { useEffect, useMemo, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Animated, useWindowDimensions } from 'react-native';
+// its publisher's brand colour, with a member-portrait montage), the shared
+// filter rail / sheet, and gallery hero cards. A team is "heroes whose teams[]
+// contains the team name", so it reuses the same paginated, faceted query path
+// as universes (getTeamPage) — and therefore the same filter UI.
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+  Animated,
+  TextInput,
+  useWindowDimensions,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useTeamPage } from '../../src/hooks/useTeamPage';
-import { HeroImage } from '../../src/components/HeroImage';
-import { COLORS, SURFACE } from '../../src/constants/colors';
+import { getTeamPage, type Hero } from '../../src/lib/db/heroes';
+import { getTeamById, type TeamSummary } from '../../src/lib/db/teams';
 import { brandForPublisher } from '../../src/constants/publishers';
-import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
+import { activeFilterList, type CategoryFilters } from '../../src/lib/db/categoryFilters';
+import { useCategoryFilters } from '../../src/hooks/useCategoryFilters';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { useSkeletonAnim } from '../../src/components/web/Skeleton';
-import { SeoHead } from '../../src/components/web/SeoHead';
+import { FilterRail } from '../../src/components/web/category/FilterRail';
+import { FilterSheet } from '../../src/components/web/category/FilterSheet';
+import { ActiveFilterChips } from '../../src/components/web/category/ActiveFilterChips';
 import { BrowseBanner } from '../../src/components/web/category/BrowseBanner';
+import { HeroImage } from '../../src/components/HeroImage';
+import { COLORS, SURFACE } from '../../src/constants/colors';
+import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
+import { SeoHead } from '../../src/components/web/SeoHead';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
-import type { RosterHero } from '../../src/lib/teamBattle';
 
 // Teams with no recognised publisher fall back to a warm orange stage.
 const FALLBACK_COLOR = COLORS.orange;
 const FALLBACK_COLOR_DARK = '#7a3411';
+const PAGE_SIZE = 48;
 
 // ── Gallery card (matches the category/universe HeroCard) ─────────────────────
 function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
   return <Animated.View style={[sk.wrap as object, { opacity }]} />;
 }
 const sk = StyleSheet.create({
-  wrap: {
-    width: '100%',
-    borderRadius: 10,
-    aspectRatio: '3 / 4',
-    backgroundColor: '#1b3038',
-  } as object,
+  wrap: { width: '100%', borderRadius: 10, aspectRatio: '3 / 4', backgroundColor: '#1b3038' } as object,
 });
 
 function HeroCard({
@@ -42,7 +53,7 @@ function HeroCard({
   onPress,
   onInfo,
 }: {
-  hero: RosterHero;
+  hero: Hero;
   onPress: () => void;
   onInfo: () => void;
 }) {
@@ -62,6 +73,7 @@ function HeroCard({
             name={hero.name}
             imageUrl={hero.image_url}
             portraitUrl={hero.portrait_url}
+            imageMdUrl={hero.image_md_url}
             grid
             contentFit="cover"
             contentPosition={{ top: 0, left: '50%' }}
@@ -150,8 +162,26 @@ export default function WebTeamScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
-  const { team, members, loading, notFound } = useTeamPage(id);
+
+  const [team, setTeam] = useState<TeamSummary | null>(null);
+  const [teamLoaded, setTeamLoaded] = useState(false);
+  const [heroes, setHeroes] = useState<Hero[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [peek, setPeek] = useState<PeekHero | null>(null);
+  const currentPage = useRef(0);
+  const hasMore = useRef(true);
+  const loadingMoreRef = useRef(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const skeletonOpacity = useSkeletonAnim();
+
+  // Teams have no publisher facet (a team is already one publisher) — slug=null,
+  // exactly like a universe page.
+  const { filters, setFilter, reset } = useCategoryFilters(null);
+  const activeChips = activeFilterList(null, filters);
 
   // Dark "gallery" canvas so the colourful cards lift off it — same as universe.
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
@@ -159,41 +189,124 @@ export default function WebTeamScreen() {
   const brand = brandForPublisher(team?.publisher);
   const color = brand?.color ?? FALLBACK_COLOR;
   const colorDark = brand?.colorDark ?? FALLBACK_COLOR_DARK;
+  const teamName = team?.name ?? null;
 
-  // Montage: lead with the top member, then a varied handful of the rest —
-  // re-rolled per visit, stable across renders (keyed on the lead member only).
-  const [montageUrls, setMontageUrls] = useState<string[]>([]);
-  const topMemberId = members[0]?.id;
+  // Resolve the team summary (header identity + the membership term).
   useEffect(() => {
-    if (members.length === 0) {
+    if (!id) return;
+    let cancelled = false;
+    getTeamById(id)
+      .then((t) => {
+        if (cancelled) return;
+        setTeam(t);
+        setTeamLoaded(true);
+      })
+      .catch(() => {
+        if (!cancelled) setTeamLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  const fetchPage = useCallback(
+    async (page: number, f: CategoryFilters, append = false) => {
+      if (!teamName) return;
+      if (page === 0) setLoading(true);
+      else setLoadingMore(true);
+      try {
+        const result = await getTeamPage(teamName, { page, pageSize: PAGE_SIZE, ...f });
+        setHeroes((prev) => {
+          if (!append) return result.heroes;
+          const seen = new Set(prev.map((h) => h.id));
+          return [...prev, ...result.heroes.filter((h) => !seen.has(h.id))];
+        });
+        setTotal(result.total);
+        currentPage.current = page;
+        hasMore.current = (page + 1) * PAGE_SIZE < result.total;
+      } catch {
+        //
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [teamName],
+  );
+
+  // Refetch page 0 whenever the team or filters change. Search is debounced.
+  useEffect(() => {
+    if (!teamName) return;
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => fetchPage(0, filters), filters.search ? 300 : 0);
+    return () => clearTimeout(searchTimer.current);
+  }, [teamName, filters, fetchPage]);
+
+  useEffect(() => {
+    loadingMoreRef.current = loadingMore;
+  }, [loadingMore]);
+
+  // Infinite load rides the document scroll (like the category page).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onScroll = () => {
+      const distanceFromBottom =
+        document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+      if (distanceFromBottom < 400 && hasMore.current && !loadingMoreRef.current) {
+        fetchPage(currentPage.current + 1, filters, true);
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [fetchPage, filters]);
+
+  // Montage: lead with the top member, then a varied handful — re-rolled per
+  // visit, stable across renders (keyed on the lead member only).
+  const [montageUrls, setMontageUrls] = useState<string[]>([]);
+  const topMemberId = heroes[0]?.id;
+  useEffect(() => {
+    if (heroes.length === 0) {
       setMontageUrls([]);
       return;
     }
-    const pool = members.slice(1, 24);
+    const pool = heroes.slice(1, 24);
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
     setMontageUrls(
-      [members[0], ...pool.slice(0, 5)]
+      [heroes[0], ...pool.slice(0, 5)]
         .map((h) => h.portrait_url ?? h.image_url)
         .filter((u): u is string => !!u),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topMemberId]);
 
-  const [peek, setPeek] = useState<PeekHero | null>(null);
-
+  const notFound = teamLoaded && team === null;
   const contentPad = isDesktop ? 32 : 16;
-  const gridStyle = useMemo(
-    () => ({
-      display: 'grid',
-      gridTemplateColumns: isDesktop
-        ? 'repeat(auto-fill, minmax(160px, 1fr))'
-        : 'repeat(auto-fill, minmax(108px, 1fr))',
-      gap: 15,
-    }),
-    [isDesktop],
+  const gridStyle = {
+    display: 'grid',
+    gridTemplateColumns: isDesktop
+      ? 'repeat(auto-fill, minmax(160px, 1fr))'
+      : 'repeat(auto-fill, minmax(108px, 1fr))',
+    gap: 15,
+  };
+
+  const grid = (
+    <View style={gridStyle as object}>
+      {heroes.map((hero) => (
+        <HeroCard
+          key={hero.id}
+          hero={hero}
+          onPress={() => router.push(`/character/${hero.id}`)}
+          onInfo={() => setPeek(hero)}
+        />
+      ))}
+      {loadingMore &&
+        Array.from({ length: 12 }).map((_, i) => (
+          <SkeletonCard key={`sk-${i}`} opacity={skeletonOpacity} />
+        ))}
+    </View>
   );
 
   return (
@@ -214,8 +327,8 @@ export default function WebTeamScreen() {
           title={team.name}
           color={color}
           colorDark={colorDark}
-          total={team.member_count}
-          leadName={members[0]?.name}
+          total={total || team.member_count}
+          leadName={heroes[0]?.name}
           heroImageUrls={montageUrls}
           unitLabel="MEMBER"
           compact={!isDesktop}
@@ -230,28 +343,148 @@ export default function WebTeamScreen() {
         </View>
       )}
 
-      <View style={[styles.gridWrap, { paddingHorizontal: contentPad }] as object}>
-        {loading ? (
-          <View style={gridStyle as object}>
-            {Array.from({ length: 18 }).map((_, i) => (
-              <SkeletonCard key={i} opacity={skeletonOpacity} />
-            ))}
-          </View>
-        ) : members.length === 0 ? (
-          !notFound && <Text style={styles.empty as object}>No members found.</Text>
-        ) : (
-          <View style={gridStyle as object}>
-            {members.map((h) => (
-              <HeroCard
-                key={h.id}
-                hero={h}
-                onPress={() => router.push(`/character/${h.id}`)}
-                onInfo={() => setPeek(h)}
+      {/* Mobile: controls-only bar (search + Filters) under the banner. */}
+      {team && !isDesktop && (
+        <View style={[styles.header, { paddingHorizontal: contentPad }] as object}>
+          <View style={[styles.controlsRow] as object}>
+            <View
+              style={
+                [styles.searchBar, searchFocused && (styles.searchBarFocused as object)] as object
+              }
+            >
+              <Ionicons name="search" size={16} color={COLORS.orange} />
+              <TextInput
+                style={styles.searchInput as object}
+                placeholder={`Search ${team.name}…`}
+                placeholderTextColor="rgba(245,235,220,0.4)"
+                value={filters.search}
+                onChangeText={(t) => setFilter('search', t)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                autoCorrect={false}
               />
-            ))}
+            </View>
+            <Pressable
+              onPress={() => setSheetOpen(true)}
+              style={
+                [styles.filterBtn, activeChips.length > 0 && (styles.filterBtnActive as object)] as object
+              }
+            >
+              <Ionicons
+                name="options-outline"
+                size={16}
+                color={activeChips.length > 0 ? COLORS.orange : COLORS.beige}
+              />
+              <Text
+                style={
+                  [
+                    styles.filterBtnText,
+                    activeChips.length > 0 && (styles.filterBtnTextActive as object),
+                  ] as object
+                }
+              >
+                Filters
+              </Text>
+              {activeChips.length > 0 && (
+                <View style={styles.filterBadge as object}>
+                  <Text style={styles.filterBadgeText as object}>{activeChips.length}</Text>
+                </View>
+              )}
+            </Pressable>
           </View>
+        </View>
+      )}
+
+      {/* Mobile active-filters strip */}
+      {team && !isDesktop && activeChips.length > 0 && (
+        <View style={[styles.activeStrip, { paddingHorizontal: contentPad }] as object}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.activeStripContent as object}
+          >
+            <ActiveFilterChips slug={null} filters={filters} setFilter={setFilter} />
+            <Pressable onPress={reset} style={styles.stripClear as object}>
+              <Text style={styles.stripClearText as object}>Clear all</Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Content: desktop = rail + grid; mobile = grid only */}
+      <View style={[styles.contentRow, { paddingHorizontal: contentPad }] as object}>
+        {team && isDesktop && (
+          <FilterRail
+            slug={null}
+            filters={filters}
+            counts={null}
+            setFilter={setFilter}
+            onReset={reset}
+            hasActive={activeChips.length > 0}
+            activeCount={activeChips.length}
+            searchPlaceholder={`Search ${team.name}…`}
+          />
         )}
+        <View style={styles.contentMain as object}>
+          {team && isDesktop && (
+            <View style={styles.resultsBar as object}>
+              <Text style={styles.resultsCount as object}>
+                {loading
+                  ? 'Searching…'
+                  : `${total.toLocaleString()} ${total === 1 ? 'member' : 'members'}`}
+              </Text>
+              {activeChips.length > 0 && (
+                <View style={styles.resultsBarFilters as object}>
+                  <ActiveFilterChips slug={null} filters={filters} setFilter={setFilter} />
+                  <Pressable onPress={reset} style={styles.resultsClear as object}>
+                    <Text style={styles.resultsClearText as object}>Clear all</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          )}
+          {loading ? (
+            <View style={styles.gridWrap}>
+              <View style={gridStyle as object}>
+                {Array.from({ length: 18 }).map((_, i) => (
+                  <SkeletonCard key={i} opacity={skeletonOpacity} />
+                ))}
+              </View>
+            </View>
+          ) : heroes.length === 0 ? (
+            !notFound && (
+              <View style={styles.center}>
+                <Ionicons name="search-outline" size={34} color="rgba(245,235,220,0.25)" />
+                <Text style={styles.empty}>
+                  {activeChips.length > 0 ? 'No members match these filters' : 'No members found'}
+                </Text>
+                {activeChips.length > 0 && (
+                  <Pressable onPress={reset} style={styles.emptyClear as object}>
+                    <Ionicons name="close" size={15} color={COLORS.beige} />
+                    <Text style={styles.emptyClearText as object}>Clear filters</Text>
+                  </Pressable>
+                )}
+              </View>
+            )
+          ) : (
+            <View style={[styles.gridWrap, { paddingBottom: 0 }] as object}>{grid}</View>
+          )}
+        </View>
       </View>
+
+      {team && (
+        <FilterSheet
+          open={sheetOpen}
+          slug={null}
+          filters={filters}
+          counts={null}
+          setFilter={setFilter}
+          onReset={reset}
+          onClose={() => setSheetOpen(false)}
+          total={total}
+          hasActive={activeChips.length > 0}
+        />
+      )}
 
       {peek && (
         <HeroPeek
@@ -269,22 +502,155 @@ export default function WebTeamScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Grows with content (document scroll), dark gallery floor.
   root: { minHeight: '100vh' as unknown as number, backgroundColor: SURFACE.ink },
-  gridWrap: {
+
+  // Mobile controls-only bar (transparent — sits just under the banner).
+  header: { paddingTop: 6, paddingBottom: 4 } as object,
+  controlsRow: { flexDirection: 'row', alignItems: 'center', gap: 8 } as object,
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    backgroundColor: 'rgba(41,60,67,0.6)',
+    backdropFilter: 'blur(18px) saturate(140%)',
+    WebkitBackdropFilter: 'blur(18px) saturate(140%)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.18)',
+    paddingHorizontal: 13,
+    height: 46,
+    transition: 'border-color 160ms ease, box-shadow 160ms ease',
+  } as object,
+  searchBarFocused: {
+    borderColor: 'rgba(231,115,51,0.8)',
+    boxShadow: '0 0 0 3px rgba(231,115,51,0.16)',
+  } as object,
+  searchInput: {
+    flex: 1,
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14.5,
+    color: COLORS.beige,
+    outlineStyle: 'none',
+    outlineWidth: 0,
+  } as object,
+  filterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    height: 44,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    backgroundColor: 'rgba(41,60,67,0.6)',
+    backdropFilter: 'blur(18px) saturate(140%)',
+    WebkitBackdropFilter: 'blur(18px) saturate(140%)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.18)',
+    cursor: 'pointer',
+    flexShrink: 0,
+  } as object,
+  filterBtnActive: {
+    backgroundColor: 'rgba(231,115,51,0.2)',
+    borderColor: 'rgba(231,115,51,0.6)',
+  } as object,
+  filterBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: COLORS.beige } as object,
+  filterBtnTextActive: { color: COLORS.orange } as object,
+  filterBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    backgroundColor: COLORS.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as object,
+  filterBadgeText: { fontFamily: 'Nunito_900Black', fontSize: 11, color: '#fff' } as object,
+
+  activeStrip: { paddingTop: 12 } as object,
+  activeStripContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingRight: 16,
+  } as object,
+  stripClear: {
+    height: 30,
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    cursor: 'pointer',
+    flexShrink: 0,
+  } as object,
+  stripClearText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12.5,
+    color: COLORS.orange,
+    letterSpacing: 0.2,
+  } as object,
+
+  contentRow: {
+    flexDirection: 'row',
+    gap: 24,
     maxWidth: 1680,
     width: '100%',
     alignSelf: 'center',
-    paddingTop: 20,
-    paddingBottom: 40,
-    backgroundColor: SURFACE.ink,
+    flexGrow: 1,
+    flexShrink: 0,
+    paddingTop: 16,
   } as object,
-  empty: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 16,
+  contentMain: { flex: 1, minWidth: 0 } as object,
+  gridWrap: { paddingTop: 4, backgroundColor: SURFACE.ink } as object,
+
+  resultsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 12,
+    minHeight: 30,
+  } as object,
+  resultsCount: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
     color: 'rgba(245,235,220,0.55)',
-    paddingTop: 40,
+    letterSpacing: 0.2,
   } as object,
+  resultsBarFilters: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  } as object,
+  resultsClear: {
+    height: 30,
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    cursor: 'pointer',
+  } as object,
+  resultsClearText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12.5,
+    color: COLORS.orange,
+    letterSpacing: 0.2,
+  } as object,
+
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, paddingVertical: 80 },
+  empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: 'rgba(245,235,220,0.55)' },
+  emptyClear: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    height: 40,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    backgroundColor: COLORS.orange,
+    cursor: 'pointer',
+  } as object,
+  emptyClearText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13.5,
+    color: COLORS.beige,
+    letterSpacing: 0.2,
+  } as object,
+
   notFoundStage: {
     maxWidth: 1680,
     width: '100%',

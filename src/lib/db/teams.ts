@@ -113,10 +113,6 @@ export async function getTeamById(id: string): Promise<TeamSummary | null> {
   return (data as TeamSummary | null) ?? null;
 }
 
-/** A team's full member roster for the browse page (one fetch — teams are small). */
-export async function getTeamMembers(id: string, limit = 300): Promise<RosterHero[]> {
-  return getTeamRoster(id, limit);
-}
 
 const EMPTY_SYNERGY: SynergyBreakdown = {
   teammate_links: { count: 0, max: 0, pct: 0 },

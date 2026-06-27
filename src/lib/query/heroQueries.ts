@@ -8,6 +8,7 @@ import {
 import {
   getCategoryPage,
   getUniversePage,
+  getTeamPage,
   getHeroById,
   getHeroesByNames,
   getRelatedHeroes,
@@ -86,6 +87,25 @@ export function useUniverseHeroes(term: string | null, filters: CategoryFilters)
     initialPageParam: 0,
     queryFn: ({ pageParam }) =>
       getUniversePage(term!, {
+        page: pageParam,
+        pageSize: CATEGORY_PAGE_SIZE,
+        withCount: pageParam === 0,
+        ...filters,
+      }),
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.heroes.length === CATEGORY_PAGE_SIZE ? allPages.length : undefined,
+  });
+}
+
+/** Infinite, faceted member list for a TEAM browse page — team sibling of
+ *  useUniverseHeroes. `teamName` is the value matched against `heroes.teams[]`. */
+export function useTeamHeroes(teamName: string | null, filters: CategoryFilters) {
+  return useInfiniteQuery({
+    queryKey: teamName ? ['heroes', 'team', teamName, filters] : ['heroes', 'team', 'disabled'],
+    enabled: !!teamName,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      getTeamPage(teamName!, {
         page: pageParam,
         pageSize: CATEGORY_PAGE_SIZE,
         withCount: pageParam === 0,

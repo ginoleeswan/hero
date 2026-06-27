@@ -1,4 +1,9 @@
 // app/team/[id].tsx — native team roster browse page.
+// Mirrors the native category/universe screen: a brand-washed navy stage, a
+// native search bar + toolbar filter menus, and an infinite, faceted member
+// grid. A team is "heroes whose teams[] contains the team name", so it reuses
+// the same paginated/faceted query path (useTeamHeroes → getTeamPage).
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -13,10 +18,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTeamPage } from '../../src/hooks/useTeamPage';
+import { getTeamById, type TeamSummary } from '../../src/lib/db/teams';
+import { useTeamHeroes } from '../../src/lib/query/heroQueries';
+import { flattenCategoryPages } from '../../src/lib/query/heroCache';
+import { DEFAULT_FILTERS, type CategoryFilters } from '../../src/lib/db/categoryFilters';
 import { HeroImage } from '../../src/components/HeroImage';
+import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 import { COLORS } from '../../src/constants/colors';
 import { brandForPublisher } from '../../src/constants/publishers';
+import type { Hero } from '../../src/lib/db/heroes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const NUM_COLUMNS = SCREEN_WIDTH >= 768 ? 4 : 3;
@@ -38,19 +48,83 @@ export default function TeamScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { team, members, loading, notFound } = useTeamPage(id);
 
-  const headerHeight = insets.top + 44;
+  const [team, setTeam] = useState<TeamSummary | null>(null);
+  const [teamLoaded, setTeamLoaded] = useState(false);
+  const [filters, setFilters] = useState<CategoryFilters>(() => ({ ...DEFAULT_FILTERS }));
+  const [peek, setPeek] = useState<PeekHero | null>(null);
+
+  const setFilter = useCallback(
+    <K extends keyof CategoryFilters>(key: K, value: CategoryFilters[K]) => {
+      setFilters((prev) => {
+        let next: CategoryFilters = { ...prev, [key]: value };
+        if (key === 'sort' && value === 'power') next = { ...next, hasStats: true };
+        return next;
+      });
+    },
+    [],
+  );
+
+  // Resolve the team summary (header identity + the membership term for the query).
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    getTeamById(id)
+      .then((t) => {
+        if (cancelled) return;
+        setTeam(t);
+        setTeamLoaded(true);
+      })
+      .catch(() => {
+        if (!cancelled) setTeamLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // Debounce search into the query key so we don't refetch per keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(filters.search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [filters.search]);
+
+  const queryFilters: CategoryFilters = useMemo(
+    () => ({ ...filters, search: debouncedSearch }),
+    [filters, debouncedSearch],
+  );
+
+  const { data, isPending, isFetchingNextPage, fetchNextPage, hasNextPage } = useTeamHeroes(
+    team?.name ?? null,
+    queryFilters,
+  );
+
+  const heroes = flattenCategoryPages(data);
+  const total = data?.pages[0]?.total ?? 0;
+  const notFound = teamLoaded && team === null;
+
   const brand = brandForPublisher(team?.publisher);
+  const headerHeight = insets.top + 44;
   const eyebrow = team
-    ? `${team.member_count.toLocaleString()} ${team.member_count === 1 ? 'MEMBER' : 'MEMBERS'}${team.publisher ? ` · ${team.publisher.toUpperCase()}` : ''}`
+    ? `${(total || team.member_count).toLocaleString()} ${(total || team.member_count) === 1 ? 'MEMBER' : 'MEMBERS'}${team.publisher ? ` · ${team.publisher.toUpperCase()}` : ''}`
     : '';
+
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const handlePress = useCallback(
+    (h: Hero) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      router.push(`/character/${h.id}`);
+    },
+    [router],
+  );
 
   const listHeader = (
     <>
       <View style={[styles.stage, { paddingTop: headerHeight + 16 }]}>
-        {/* Brand wash: tint the stage with the team's publisher colour so it reads
-            as a branded masthead (Marvel red / DC blue), mirroring the web banner. */}
         {brand && (
           <LinearGradient
             colors={[brand.color, brand.colorDark, COLORS.navy]}
@@ -73,57 +147,175 @@ export default function TeamScreen() {
     <View style={styles.root}>
       <Stack.Screen options={headerOptions} />
       <StatusBar style="light" />
-      {loading ? (
-        <View style={[styles.center, { paddingTop: headerHeight + 80 }]}>
-          <ActivityIndicator color={COLORS.orange} />
-        </View>
-      ) : (
-        <FlatList
-          style={styles.list}
-          data={members}
-          keyExtractor={(h) => String(h.id)}
-          numColumns={NUM_COLUMNS}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={listHeader}
-          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
-          columnWrapperStyle={styles.row}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.card}
-              activeOpacity={0.82}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push(`/character/${item.id}`);
-              }}
-            >
-              <HeroImage
-                id={item.id}
-                name={item.name}
-                imageUrl={item.image_url}
-                portraitUrl={item.portrait_url}
-                contentFit="cover"
-                contentPosition="top"
-                style={StyleSheet.absoluteFill}
-                recyclingKey={String(item.id)}
-                transition={150}
-              />
-              <LinearGradient
-                colors={['transparent', 'rgba(29,45,51,0.88)']}
-                locations={[0.4, 1]}
-                style={StyleSheet.absoluteFill}
-              />
-              <Text style={styles.cardName} numberOfLines={2}>
-                {item.name}
-              </Text>
-            </TouchableOpacity>
-          )}
-          ListEmptyComponent={
+
+      {team && (
+        <>
+          <Stack.SearchBar
+            placeholder={`Search ${team.name}…`}
+            onChangeText={(e) => setFilter('search', e.nativeEvent.text)}
+            onCancelButtonPress={() => setFilter('search', '')}
+            hideWhenScrolling
+            autoCapitalize="none"
+          />
+          <Stack.Toolbar placement="right">
+            <Stack.Toolbar.Menu icon="line.3.horizontal.decrease">
+              <Stack.Toolbar.Menu inline title="Sort">
+                <Stack.Toolbar.MenuAction
+                  isOn={filters.sort === 'popular'}
+                  onPress={() => setFilter('sort', 'popular')}
+                >
+                  Popular
+                </Stack.Toolbar.MenuAction>
+                <Stack.Toolbar.MenuAction
+                  isOn={filters.sort === 'az'}
+                  onPress={() => setFilter('sort', 'az')}
+                >
+                  A–Z
+                </Stack.Toolbar.MenuAction>
+                <Stack.Toolbar.MenuAction
+                  isOn={filters.sort === 'power'}
+                  onPress={() => setFilter('sort', 'power')}
+                >
+                  Power
+                </Stack.Toolbar.MenuAction>
+              </Stack.Toolbar.Menu>
+              <Stack.Toolbar.Menu inline title="Alignment">
+                <Stack.Toolbar.MenuAction
+                  isOn={filters.alignment === 'any'}
+                  onPress={() => setFilter('alignment', 'any')}
+                >
+                  Any
+                </Stack.Toolbar.MenuAction>
+                <Stack.Toolbar.MenuAction
+                  isOn={filters.alignment === 'good'}
+                  onPress={() => setFilter('alignment', 'good')}
+                >
+                  Good
+                </Stack.Toolbar.MenuAction>
+                <Stack.Toolbar.MenuAction
+                  isOn={filters.alignment === 'bad'}
+                  onPress={() => setFilter('alignment', 'bad')}
+                >
+                  Bad
+                </Stack.Toolbar.MenuAction>
+                <Stack.Toolbar.MenuAction
+                  isOn={filters.alignment === 'neutral'}
+                  onPress={() => setFilter('alignment', 'neutral')}
+                >
+                  Neutral
+                </Stack.Toolbar.MenuAction>
+              </Stack.Toolbar.Menu>
+              <Stack.Toolbar.Menu inline title="Gender">
+                <Stack.Toolbar.MenuAction
+                  isOn={filters.gender === 'any'}
+                  onPress={() => setFilter('gender', 'any')}
+                >
+                  Any
+                </Stack.Toolbar.MenuAction>
+                <Stack.Toolbar.MenuAction
+                  isOn={filters.gender === 'male'}
+                  onPress={() => setFilter('gender', 'male')}
+                >
+                  Male
+                </Stack.Toolbar.MenuAction>
+                <Stack.Toolbar.MenuAction
+                  isOn={filters.gender === 'female'}
+                  onPress={() => setFilter('gender', 'female')}
+                >
+                  Female
+                </Stack.Toolbar.MenuAction>
+              </Stack.Toolbar.Menu>
+              <Stack.Toolbar.Menu inline title="Power stats">
+                <Stack.Toolbar.MenuAction
+                  isOn={!filters.hasStats}
+                  onPress={() => setFilter('hasStats', false)}
+                >
+                  Any
+                </Stack.Toolbar.MenuAction>
+                <Stack.Toolbar.MenuAction
+                  isOn={filters.hasStats}
+                  onPress={() => setFilter('hasStats', true)}
+                >
+                  Rated only
+                </Stack.Toolbar.MenuAction>
+              </Stack.Toolbar.Menu>
+            </Stack.Toolbar.Menu>
+          </Stack.Toolbar>
+        </>
+      )}
+
+      <FlatList
+        style={styles.list}
+        data={heroes}
+        keyExtractor={(h) => String(h.id)}
+        numColumns={NUM_COLUMNS}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        ListHeaderComponent={listHeader}
+        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
+        columnWrapperStyle={styles.row}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.4}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.card}
+            activeOpacity={0.82}
+            onPress={() => handlePress(item)}
+            onLongPress={() => setPeek(item)}
+            delayLongPress={300}
+          >
+            <HeroImage
+              id={String(item.id)}
+              name={item.name}
+              imageUrl={item.image_url}
+              portraitUrl={item.portrait_url}
+              contentFit="cover"
+              contentPosition="top"
+              style={StyleSheet.absoluteFill}
+              recyclingKey={String(item.id)}
+              transition={150}
+            />
+            <LinearGradient
+              colors={['transparent', 'rgba(29,45,51,0.88)']}
+              locations={[0.4, 1]}
+              style={StyleSheet.absoluteFill}
+            />
+            <Text style={styles.cardName} numberOfLines={2}>
+              {item.name}
+            </Text>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={
+          isPending && team ? (
+            <View style={[styles.center, { paddingTop: 60 }]}>
+              <ActivityIndicator color={COLORS.orange} />
+            </View>
+          ) : (
             <View style={styles.center}>
               <Text style={styles.empty}>
                 {notFound ? 'This team doesn’t exist.' : 'No members found'}
               </Text>
             </View>
-          }
+          )
+        }
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View style={styles.footer}>
+              <ActivityIndicator color={COLORS.orange} />
+            </View>
+          ) : null
+        }
+      />
+
+      {peek && (
+        <HeroPeek
+          hero={peek}
+          onClose={() => setPeek(null)}
+          onFight={() => router.push(`/compare/${peek.id}/pick`)}
+          onViewProfile={() => {
+            setPeek(null);
+            router.push(`/character/${peek.id}`);
+          }}
         />
       )}
     </View>
@@ -134,13 +326,19 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.navy },
   list: { flex: 1, backgroundColor: COLORS.navy },
   listContent: { backgroundColor: COLORS.beige, flexGrow: 1 },
-  stage: { backgroundColor: COLORS.navy, paddingHorizontal: H_PAD, paddingBottom: 28 },
+  stage: {
+    backgroundColor: COLORS.navy,
+    paddingHorizontal: H_PAD,
+    paddingBottom: 28,
+    overflow: 'hidden',
+  },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
     letterSpacing: 2.4,
     textTransform: 'uppercase',
-    color: COLORS.goldAccent,
+    color: COLORS.beige,
+    opacity: 0.85,
     marginBottom: 6,
   },
   stageTitle: { fontFamily: 'Flame-Regular', fontSize: 32, color: COLORS.beige, lineHeight: 36 },
@@ -165,4 +363,5 @@ const styles = StyleSheet.create({
   cardName: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.beige, lineHeight: 14 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
+  footer: { paddingVertical: 24, alignItems: 'center' },
 });

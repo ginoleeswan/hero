@@ -399,6 +399,48 @@ export async function getUniversePage(
 }
 
 /**
+ * Paged heroes for a single TEAM browse page — the team equivalent of
+ * getUniversePage. A team is "heroes whose `teams[]` array contains the team
+ * name", so this filters `.contains('teams', [name])` then shares applyListFacets
+ * so team pages get the same sort/search/filter behaviour as universe pages
+ * (minus the publisher facet — a team is already one publisher).
+ */
+export async function getTeamPage(
+  teamName: string,
+  options: { page: number; pageSize?: number; withCount?: boolean } & CategoryFilters,
+): Promise<{ heroes: Hero[]; total: number }> {
+  const {
+    page,
+    pageSize = 48,
+    withCount = true,
+    alignment,
+    gender,
+    hasStats,
+    tags,
+    search,
+    sort,
+  } = options;
+  const tagList = tags ?? [];
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  const selectCols = tagList.length
+    ? `${CATEGORY_LIST_COLUMNS}, hero_tags!inner(tag)`
+    : CATEGORY_LIST_COLUMNS;
+
+  let q: any = supabase
+    .from('heroes')
+    .select(selectCols, withCount ? { count: 'exact' } : undefined)
+    .contains('teams', [teamName]);
+
+  q = applyListFacets(q, { alignment, gender, hasStats, tagList, search, sort });
+
+  const { data, error, count } = await q.range(from, to);
+  if (error) throw new Error(error.message);
+  return { heroes: (data ?? []) as Hero[], total: count ?? 0 };
+}
+
+/**
  * One representative (most-popular) hero per browse category, for the image-backed
  * category tiles on the home screen. Fires a light single-row query per slug in
  * parallel; missing/empty categories simply don't get a cover (the tile falls
