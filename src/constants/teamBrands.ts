@@ -1,21 +1,25 @@
-import type { ImageSourcePropType } from 'react-native';
+import type { BrandLogo } from './publishers';
+import AvengersLogo from '../../assets/teams/avengers.svg';
+import XMenLogo from '../../assets/teams/x-men.svg';
+import JusticeLeagueLogo from '../../assets/teams/justice-league-of-america.svg';
 
-// Curated transparent-PNG logos for iconic teams — the team equivalent of
-// PUBLISHER_BRANDS. Only the recognizable few get a real mark; every other team
-// falls back to its name wordmark (masthead) / monogram (search rows).
+// Curated logos for iconic teams — the team equivalent of PUBLISHER_BRANDS. Only
+// the recognizable few get a real mark; every other team falls back to its name
+// wordmark (masthead) / monogram (search rows).
 //
 // To light a team up:
-//   1. Drop a TRANSPARENT PNG at  assets/teams/<slug>.png  (white/light mark so it
-//      reads on the dark masthead + brand-coloured chip; use logoOnLight for dark
-//      marks, or logoTint to recolour a single-colour silhouette).
-//   2. Uncomment its line below and tune badgeSize to the art's real aspect ratio.
+//   1. Drop a TRANSPARENT logo (SVG — the repo bundles SVGs via
+//      react-native-svg-transformer — or a transparent PNG) in assets/teams/.
+//   2. Import it and add an entry below, keyed by the LOWERCASED team name
+//      (matches teams.name), with badgeSize set to the art's real w/h aspect.
+//   3. For a single-colour mark that needs to read on the dark masthead, set
+//      logoTint: '#FFFFFF'. Leave multi-colour marks untinted. Use logoOnLight
+//      for dark marks meant for a light chip.
 //
-// Keyed by the LOWERCASED team name (matches teams.name). See PublisherBadge's
-// BrandLogoView for how these render (PNG source or, if you ever swap to one, an
-// SVG component).
+// See PublisherBadge's BrandLogoView for how these render (SVG component or PNG).
 
 export interface TeamLogo {
-  logo: ImageSourcePropType;
+  logo: BrandLogo;
   /** Intrinsic art box — drives aspect ratio for the masthead + chip sizing. */
   badgeSize: { width: number; height: number };
   /** Logo reads best on a light chip (dark/coloured mark). */
@@ -31,25 +35,23 @@ const norm = (s: string) => s.trim().toLowerCase();
 const URL_LOGO_BOX = { width: 132, height: 40 };
 
 export const TEAM_LOGOS: Record<string, TeamLogo> = {
-  // ── Featured teams (assets/teams/<slug>.png) — uncomment once the PNG exists ──
-  // 'avengers':                 { logo: require('../../assets/teams/avengers.png'),                 badgeSize: { width: 132, height: 26 } },
-  // 'x-men':                    { logo: require('../../assets/teams/x-men.png'),                    badgeSize: { width: 92,  height: 40 } },
-  // 'justice league of america':{ logo: require('../../assets/teams/justice-league-of-america.png'),badgeSize: { width: 120, height: 40 } },
-  // 'fantastic four':           { logo: require('../../assets/teams/fantastic-four.png'),           badgeSize: { width: 64,  height: 40 } },
-  // 'x-force':                  { logo: require('../../assets/teams/x-force.png'),                  badgeSize: { width: 120, height: 30 } },
-  // 'guardians of the galaxy':  { logo: require('../../assets/teams/guardians-of-the-galaxy.png'),  badgeSize: { width: 132, height: 36 } },
-  // 'new mutants':              { logo: require('../../assets/teams/new-mutants.png'),              badgeSize: { width: 120, height: 30 } },
-  // 'suicide squad':            { logo: require('../../assets/teams/suicide-squad.png'),            badgeSize: { width: 120, height: 36 } },
-  // 'injustice league':         { logo: require('../../assets/teams/injustice-league.png'),         badgeSize: { width: 120, height: 36 } },
-  // 'thunderbolts':             { logo: require('../../assets/teams/thunderbolts.png'),             badgeSize: { width: 132, height: 28 } },
-  // 'teen titans':              { logo: require('../../assets/teams/teen-titans.png'),              badgeSize: { width: 120, height: 36 } },
-  // 'legion of super-heroes':   { logo: require('../../assets/teams/legion-of-super-heroes.png'),   badgeSize: { width: 120, height: 36 } },
-  // 'sinister six':             { logo: require('../../assets/teams/sinister-six.png'),             badgeSize: { width: 120, height: 36 } },
-  // 'birds of prey':            { logo: require('../../assets/teams/birds-of-prey.png'),            badgeSize: { width: 120, height: 36 } },
-  // 'inhumans':                 { logo: require('../../assets/teams/inhumans.png'),                 badgeSize: { width: 110, height: 36 } },
-  // 'young avengers':           { logo: require('../../assets/teams/young-avengers.png'),           badgeSize: { width: 132, height: 30 } },
-  // 'eternals':                 { logo: require('../../assets/teams/eternals.png'),                 badgeSize: { width: 120, height: 30 } },
-  // 'watchmen':                 { logo: require('../../assets/teams/watchmen.png'),                 badgeSize: { width: 120, height: 36 } },
+  // Single black wordmarks → tinted white so they read on the dark masthead.
+  avengers: { logo: AvengersLogo, badgeSize: { width: 1621, height: 576 }, logoTint: '#FFFFFF' },
+  'justice league of america': {
+    logo: JusticeLeagueLogo,
+    badgeSize: { width: 500, height: 402 },
+    logoTint: '#FFFFFF',
+  },
+  // Multi-colour (red/yellow/black) — shown as-is.
+  'x-men': { logo: XMenLogo, badgeSize: { width: 479, height: 256 } },
+
+  // ── Remaining featured teams — add a file + entry to light them up ──
+  // 'fantastic four':          { logo: FantasticFourLogo, badgeSize: { width: 64,  height: 40 } },
+  // 'x-force':                 { logo: XForceLogo,        badgeSize: { width: 120, height: 30 } },
+  // 'guardians of the galaxy': { logo: GuardiansLogo,     badgeSize: { width: 132, height: 36 } },
+  // 'new mutants', 'suicide squad', 'injustice league', 'thunderbolts',
+  // 'teen titans', 'legion of super-heroes', 'sinister six', 'birds of prey',
+  // 'inhumans', 'young avengers', 'eternals', 'watchmen'
 };
 
 /**

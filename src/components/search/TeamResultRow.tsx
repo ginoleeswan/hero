@@ -16,7 +16,7 @@ export function TeamResultRow({ team, onPress }: { team: TeamSearchResult; onPre
     .join(' · ');
   return (
     <PressScale onPress={onPress} style={styles.row}>
-      <View style={styles.tile}>
+      <View style={[styles.tile, tlogo && styles.tileLogo]}>
         {tlogo ? (
           <BrandLogoView
             logo={tlogo.logo}
@@ -56,6 +56,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(231,115,51,0.35)',
   },
+  tileLogo: { backgroundColor: COLORS.navy, borderColor: 'rgba(245,235,220,0.16)' },
   monogram: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.orange },
   text: { flex: 1, flexDirection: 'column' },
   name: { fontFamily: 'Flame-Regular', fontSize: 17, color: COLORS.beige },

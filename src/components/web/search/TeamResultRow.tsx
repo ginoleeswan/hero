@@ -35,7 +35,7 @@ export function TeamResultRow({
         ] as object
       }
     >
-      <View style={styles.tile as object}>
+      <View style={[styles.tile, tlogo && (styles.tileLogo as object)] as object}>
         {tlogo ? (
           <BrandLogoView
             logo={tlogo.logo}
@@ -88,6 +88,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(231,115,51,0.18)',
     borderWidth: 1,
     borderColor: 'rgba(231,115,51,0.35)',
+  } as object,
+  // Logo tiles get a dark backing so white/coloured marks read (the orange
+  // monogram tint is too light for a logo).
+  tileLogo: {
+    backgroundColor: COLORS.navy,
+    borderColor: 'rgba(245,235,220,0.16)',
   } as object,
   monogram: { fontFamily: 'Flame-Regular', fontSize: 14, color: COLORS.orange } as object,
   text: { flexDirection: 'column', flexShrink: 1 },
