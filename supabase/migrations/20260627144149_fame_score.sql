@@ -15,13 +15,13 @@ alter table public.heroes
 create index if not exists heroes_fame_score_idx
   on public.heroes (fame_score desc nulls last);
 
--- Pure blend: tier sets the band (a FLOOR — the human rating is never demoted
--- for missing hard data, which is common), and the mainstream-weighted,
--- already-normalized ([0,1]) signal mix positions the hero within the band. An
--- extreme-high signal mix (w > 0.9) bleeds up to +8 pts above the band so hard
--- data can rescue an under-rated hero; there is deliberately no downward
--- correction. All constants are tunable; bump fame_score_version and re-run
--- recompute_fame_scores() after changing them.
+-- Pure blend: tier sets the band; the mainstream-weighted, already-normalized
+-- ([0,1]) signal mix positions the hero within the band, with a bounded
+-- cross-band correction (+/- up to 8 pts) so extreme hard signals can rescue a
+-- mis-rated hero.
+-- NOTE: the downward half of this correction is removed by the immediately
+-- following migration (20260627144247_fame_score_no_downward_correction); this
+-- file preserves the originally-applied body so a db reset replays true history.
 create or replace function public.compute_fame_score(
   p_tier smallint, p_n_site real, p_n_movie real, p_n_issue real
 ) returns smallint
@@ -39,6 +39,7 @@ language sql immutable as $$
   select greatest(0, least(100, round(
       (select lo from b) + (select w from s) * ((select hi from b) - (select lo from b))
     + (case when (select w from s) > 0.9 then ((select w from s) - 0.9) * 80 else 0 end)
+    - (case when (select w from s) < 0.1 then (0.1 - (select w from s)) * 80 else 0 end)
   )))::smallint
 $$;
 
