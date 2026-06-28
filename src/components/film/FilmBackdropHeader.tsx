@@ -121,7 +121,7 @@ export function FilmBackdropHeader({ film, onBack }: { film: HeroTitle; onBack: 
 
         <View style={styles.meta}>
           <Text style={styles.kicker}>{kicker}</Text>
-          <Text style={styles.title} numberOfLines={3}>
+          <Text style={[styles.title, wide && styles.titleWide]} numberOfLines={3}>
             {film.title}
           </Text>
 
@@ -165,7 +165,7 @@ export function FilmBackdropHeader({ film, onBack }: { film: HeroTitle; onBack: 
 const styles = StyleSheet.create({
   root: {
     width: '100%',
-    minHeight: Platform.OS === 'web' ? 500 : 340,
+    minHeight: Platform.OS === 'web' ? 420 : 340,
     justifyContent: 'flex-end',
     paddingBottom: 26,
     // Seam: warm orange hairline + soft drop where the dark stage meets the
@@ -254,13 +254,18 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Flame-Regular',
-    fontSize: Platform.OS === 'web' ? 46 : 28,
+    fontSize: 28,
     color: '#fff',
     // Generous leading — the Flame display face has tall glyphs/descenders that
     // clip at a tight line-height.
-    lineHeight: Platform.OS === 'web' ? 58 : 36,
-    letterSpacing: Platform.OS === 'web' ? -0.5 : 0,
+    lineHeight: 36,
     paddingBottom: 2,
+  },
+  // Desktop only — mobile web keeps the smaller size.
+  titleWide: {
+    fontSize: 46,
+    lineHeight: 58,
+    letterSpacing: -0.5,
   },
   statRail: {
     flexDirection: 'row',

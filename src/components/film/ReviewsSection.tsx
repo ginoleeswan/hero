@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   card: {
-    width: Platform.OS === 'web' ? 400 : 300,
+    width: Platform.OS === 'web' ? 360 : 300,
     backgroundColor: '#fff',
     borderRadius: 14,
     borderWidth: 1,

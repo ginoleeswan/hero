@@ -363,7 +363,7 @@ export default function TitleScreen() {
         ) : null}
         {collection.length > 0 ? (
           <View style={styles.railSection}>
-            <RecommendationsRail recommendations={collection} />
+            <RecommendationsRail recommendations={collection} label="More in this Universe" />
           </View>
         ) : null}
         {recs.length > 0 ? (
