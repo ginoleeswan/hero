@@ -38,6 +38,7 @@ import {
   type TrendingTitleCharacter,
 } from '../lib/db/trending';
 import { getNewComics, type NewComic } from '../lib/db/comics';
+import { getDebutsThisMonth, type DebutHero } from '../lib/db/anniversaries';
 import { getTodaysMatchup, type TodaysMatchup } from '../lib/matchup';
 import { getRecentlyViewed } from '../lib/db/viewHistory';
 import { BROWSE_PODS } from '../components/home/CategoryPodGrid';
@@ -77,6 +78,7 @@ export interface ExploreData {
   // Right-now / trending.
   trendingOnScreen: TrendingTitle[];
   wikiTrending: WikiTrendingHero[];
+  debutsThisMonth: DebutHero[];
   onScreen: TrendingTitle[];
   comingSoon: TrendingTitle[];
   streaming: TrendingTitle[];
@@ -115,6 +117,7 @@ const INITIAL: ExploreData = {
   browseCovers: {},
   trendingOnScreen: [],
   wikiTrending: [],
+  debutsThisMonth: [],
   onScreen: [],
   comingSoon: [],
   streaming: [],
@@ -189,6 +192,9 @@ export function useExploreData(): ExploreData {
       .catch(() => {});
     getTrendingHeroesWiki(14)
       .then(set('wikiTrending'))
+      .catch(() => {});
+    getDebutsThisMonth(14)
+      .then(set('debutsThisMonth'))
       .catch(() => {});
     getTrendingTitles('on_screen', 6)
       .then(set('onScreen'))

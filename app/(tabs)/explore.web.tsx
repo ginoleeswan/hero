@@ -1215,6 +1215,7 @@ export default function WebHomeScreen() {
             personalized={homeData.trendingForUser ?? []}
             newComics={homeData.newComics}
             wikiTrending={homeData.wikiTrending ?? []}
+            debuts={homeData.debutsThisMonth ?? []}
             onHeroPress={handlePress}
             onTitlePress={handleTitlePress}
             onIssuePress={handleIssuePress}

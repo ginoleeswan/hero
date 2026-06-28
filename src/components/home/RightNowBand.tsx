@@ -18,6 +18,7 @@ import { COLORS } from '../../constants/colors';
 import { TitlePosterRail } from './TitlePosterRail';
 import { ComicCoverRail } from './ComicCoverRail';
 import { WikiTrendingRail } from './WikiTrendingRail';
+import { MonthInHistoryRail } from './MonthInHistoryRail';
 import {
   mergeTrendingTitles,
   type Campaign,
@@ -26,6 +27,7 @@ import {
   type WikiTrendingHero,
 } from '../../lib/db/trending';
 import type { NewComic } from '../../lib/db/comics';
+import type { DebutHero } from '../../lib/db/anniversaries';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -43,6 +45,7 @@ export interface RightNowBandProps {
   personalized: TrendingTitleCharacter[];
   newComics: NewComic[];
   wikiTrending: WikiTrendingHero[];
+  debuts: DebutHero[];
   onHeroPress: HeroPress;
   onTitlePress: (titleId: string) => void;
   onIssuePress: (issueId: string) => void;
@@ -215,6 +218,7 @@ export function RightNowBand({
   personalized,
   newComics,
   wikiTrending,
+  debuts,
   onHeroPress,
   onTitlePress,
   onIssuePress,
@@ -227,7 +231,8 @@ export function RightNowBand({
     streaming.length > 0 ||
     personalized.length > 0 ||
     newComics.length > 0 ||
-    wikiTrending.length > 0;
+    wikiTrending.length > 0 ||
+    debuts.length > 0;
   if (!hasAny) return null;
 
   return (
@@ -260,6 +265,8 @@ export function RightNowBand({
       <ComicCoverRail comics={newComics} onIssuePress={onIssuePress} />
 
       <WikiTrendingRail heroes={wikiTrending} onHeroPress={(id) => onHeroPress({ id })} />
+
+      <MonthInHistoryRail debuts={debuts} onHeroPress={(id) => onHeroPress({ id })} />
 
       {personalized.length > 0 && (
         <PersonalStrip characters={personalized} onHeroPress={onHeroPress} disabled={disabled} />
