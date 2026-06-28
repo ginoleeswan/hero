@@ -506,7 +506,8 @@ export default function WebCharacterScreen() {
     loadError,
     favourited,
     favLoading,
-    issueCovers,
+    galleryImages,
+    galleryLoading,
     newIssues,
     family,
     narrative,
@@ -1288,7 +1289,7 @@ export default function WebCharacterScreen() {
                     </View>
                   ) : newIssues.length > 0 ||
                     data.firstIssue?.imageUrl ||
-                    (issueCovers && issueCovers.length > 0) ? (
+                    (galleryImages && galleryImages.length > 0) ? (
                     <View style={styles.card}>
                       <View style={styles.inPrintHeader}>
                         <Text style={styles.cardTitle}>In Print</Text>
@@ -1316,7 +1317,9 @@ export default function WebCharacterScreen() {
                           <Pressable
                             onPress={() =>
                               router.push(
-                                `/issue/cvi:${data.firstIssue!.id}` as Parameters<typeof router.push>[0],
+                                `/issue/cvi:${data.firstIssue!.id}` as Parameters<
+                                  typeof router.push
+                                >[0],
                               )
                             }
                             style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
@@ -1359,17 +1362,17 @@ export default function WebCharacterScreen() {
                           </Pressable>
                         ) : null}
 
-                        {/* Cover gallery — the publication run that followed */}
-                        {issueCovers && issueCovers.length > 0 ? (
+                        {/* Gallery — character art + covers (multi-source) */}
+                        {galleryImages && galleryImages.length > 0 ? (
                           <View style={styles.inPrintGallery}>
                             <Text style={styles.inPrintGalleryLabel}>
-                              Through the years · {issueCovers.length}
+                              Gallery · {galleryImages.length}
                             </Text>
                             <View style={{ marginRight: -20 }}>
                               <GalleryStrip
-                                images={issueCovers.map((c) => ({ url: c.url, caption: c.name }))}
+                                images={galleryImages.map((g) => ({ url: g.url, caption: g.caption }))}
                                 onPress={(i) => {
-                                  const issueId = issueCovers[i]?.id;
+                                  const issueId = galleryImages[i]?.issueId;
                                   if (issueId) {
                                     router.push(
                                       `/issue/cvi:${issueId}` as Parameters<typeof router.push>[0],
@@ -1377,7 +1380,7 @@ export default function WebCharacterScreen() {
                                     return;
                                   }
                                   setLightboxImages(
-                                    issueCovers.map((c) => ({ url: c.url, caption: c.name })),
+                                    galleryImages.map((g) => ({ url: g.url, caption: g.caption })),
                                   );
                                   setLightboxIndex(i);
                                 }}
@@ -2059,23 +2062,23 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : null}
 
-                {/* In Print */}
-                {issueCovers && issueCovers.length > 0 ? (
+                {/* Gallery — character art + covers (multi-source) */}
+                {galleryImages && galleryImages.length > 0 ? (
                   <View style={styles.mSection}>
                     <View style={styles.mSectionHead}>
-                      <Text style={styles.mSectionTitle}>In Print</Text>
+                      <Text style={styles.mSectionTitle}>Gallery · {galleryImages.length}</Text>
                       <View style={styles.mSectionDivider} />
                     </View>
                     <GalleryStrip
-                      images={issueCovers.map((c) => ({ url: c.url, caption: c.name }))}
+                      images={galleryImages.map((g) => ({ url: g.url, caption: g.caption }))}
                       onPress={(i) => {
-                        const issueId = issueCovers[i]?.id;
+                        const issueId = galleryImages[i]?.issueId;
                         if (issueId) {
                           router.push(`/issue/cvi:${issueId}` as Parameters<typeof router.push>[0]);
                           return;
                         }
                         setLightboxImages(
-                          issueCovers.map((c) => ({ url: c.url, caption: c.name })),
+                          galleryImages.map((g) => ({ url: g.url, caption: g.caption })),
                         );
                         setLightboxIndex(i);
                       }}
@@ -2088,11 +2091,14 @@ export default function WebCharacterScreen() {
                   <View style={styles.mBlock}>
                     <Text style={styles.mSectionTitle}>First Appearance</Text>
                     <View style={styles.mSectionDivider} />
-                    <Pressable onPress={() =>
-                              router.push(
-                                `/issue/cvi:${data.firstIssue!.id}` as Parameters<typeof router.push>[0],
-                              )
-                            } style={styles.mDebutCard}>
+                    <Pressable
+                      onPress={() =>
+                        router.push(
+                          `/issue/cvi:${data.firstIssue!.id}` as Parameters<typeof router.push>[0],
+                        )
+                      }
+                      style={styles.mDebutCard}
+                    >
                       <Image
                         source={{ uri: data.firstIssue.imageUrl }}
                         style={styles.mDebutCover as object}

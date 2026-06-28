@@ -602,7 +602,7 @@ export default function CharacterScreen() {
     titles,
     portrayals,
     links,
-    issueCovers,
+    galleryImages,
     galleryLoading,
     newIssues,
     heroRow,
@@ -762,8 +762,8 @@ export default function CharacterScreen() {
     if (
       newIssues.length > 0 ||
       hasFirstVisual ||
-      (issueCovers === null && galleryLoading) ||
-      (issueCovers && issueCovers.length > 0)
+      (galleryImages === null && galleryLoading) ||
+      (galleryImages && galleryImages.length > 0)
     )
       s.push({ key: 'print', label: 'In Print' });
     if (family.length > 0) s.push({ key: 'family', label: 'Family' });
@@ -772,7 +772,7 @@ export default function CharacterScreen() {
     data,
     comicVineLoading,
     titles,
-    issueCovers,
+    galleryImages,
     galleryLoading,
     newIssues,
     hasFirstVisual,
@@ -1370,8 +1370,8 @@ export default function CharacterScreen() {
                   followed (mirrors the web character page). */}
               {newIssues.length > 0 ||
               hasFirstVisual ||
-              (issueCovers && issueCovers.length > 0) ||
-              (issueCovers === null && galleryLoading) ? (
+              (galleryImages && galleryImages.length > 0) ||
+              (galleryImages === null && galleryLoading) ? (
                 <View onLayout={registerAnchor('print')} style={styles.bleedSection}>
                   <View style={styles.sectionHeaderPad}>
                     <View style={styles.inPrintHeader}>
@@ -1404,7 +1404,9 @@ export default function CharacterScreen() {
                       <TouchableOpacity
                         onPress={() =>
                           router.push(
-                            `/issue/cvi:${data.firstIssue!.id}` as Parameters<typeof router.push>[0],
+                            `/issue/cvi:${data.firstIssue!.id}` as Parameters<
+                              typeof router.push
+                            >[0],
                           )
                         }
                         activeOpacity={0.85}
@@ -1451,11 +1453,11 @@ export default function CharacterScreen() {
                     </View>
                   ) : null}
 
-                  {/* Through the years — the publication run that followed */}
-                  {issueCovers === null && galleryLoading ? (
+                  {/* Gallery — character art + covers (multi-source) */}
+                  {galleryImages === null && galleryLoading ? (
                     <SkeletonProvider>
                       {hasFirstVisual ? (
-                        <Text style={styles.inPrintGalleryLabel}>Through the years</Text>
+                        <Text style={styles.inPrintGalleryLabel}>Gallery</Text>
                       ) : null}
                       <ScrollView
                         horizontal
@@ -1468,17 +1470,17 @@ export default function CharacterScreen() {
                         ))}
                       </ScrollView>
                     </SkeletonProvider>
-                  ) : issueCovers && issueCovers.length > 0 ? (
+                  ) : galleryImages && galleryImages.length > 0 ? (
                     <>
                       {hasFirstVisual ? (
                         <Text style={styles.inPrintGalleryLabel}>
-                          Through the years · {issueCovers.length}
+                          Gallery · {galleryImages.length}
                         </Text>
                       ) : null}
                       <GalleryStrip
-                        images={issueCovers.map((c) => ({ url: c.url, caption: c.name }))}
+                        images={galleryImages.map((g) => ({ url: g.url, caption: g.caption }))}
                         onPress={(i) => {
-                          const issueId = issueCovers[i]?.id;
+                          const issueId = galleryImages[i]?.issueId;
                           if (issueId) {
                             router.push(
                               `/issue/cvi:${issueId}` as Parameters<typeof router.push>[0],
@@ -1486,7 +1488,7 @@ export default function CharacterScreen() {
                             return;
                           }
                           setLightboxImages(
-                            issueCovers.map((c) => ({ url: c.url, caption: c.name })),
+                            galleryImages.map((g) => ({ url: g.url, caption: g.caption })),
                           );
                           setLightboxIndex(i);
                         }}
