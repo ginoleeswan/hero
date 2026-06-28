@@ -104,7 +104,7 @@ export default function TitleScreen() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Cast</Text>
         <View style={styles.cardDivider} />
-        <CastRail cast={film.cast} inCard />
+        <CastRail cast={film.cast} heroes={heroes} inCard />
       </View>
     ) : null;
 
@@ -246,7 +246,7 @@ export default function TitleScreen() {
         ) : null}
         {film.cast && film.cast.length > 0 ? (
           <View style={styles.railSection}>
-            <CastRail cast={film.cast} />
+            <CastRail cast={film.cast} heroes={heroes} />
           </View>
         ) : null}
         {film.stills && film.stills.length > 0 ? (

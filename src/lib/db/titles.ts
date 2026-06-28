@@ -181,6 +181,41 @@ export async function getTitleById(id: string): Promise<HeroTitle | null> {
   return titleRowToHeroTitle(data as unknown as TitleRow);
 }
 
+const charNorm = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+/**
+ * Best catalog hero for a cast member's character string, or null. Matches the
+ * hero name as a whole token inside the character ("Peter Parker / Spider-Man"
+ * → "Spider-Man"); the longest match wins so "Spider-Man" beats "Man". Names
+ * under 3 chars are ignored to avoid spurious hits.
+ */
+export function matchCharacterToHero(
+  character: string | null,
+  heroes: RelatedHeroCard[],
+): RelatedHeroCard | null {
+  if (!character) return null;
+  const c = charNorm(character);
+  if (!c) return null;
+  const padded = ` ${c} `;
+  let best: RelatedHeroCard | null = null;
+  let bestLen = 0;
+  for (const h of heroes) {
+    const hn = charNorm(h.name);
+    if (hn.length < 3) continue;
+    if (c === hn) return h; // exact wins outright
+    if (padded.includes(` ${hn} `) && hn.length > bestLen) {
+      best = h;
+      bestLen = hn.length;
+    }
+  }
+  return best;
+}
+
 /** Heroes appearing in a title, ranked desc. */
 export async function getTitleHeroes(id: string): Promise<RelatedHeroCard[]> {
   const { data, error } = await supabase

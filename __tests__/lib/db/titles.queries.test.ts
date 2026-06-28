@@ -3,6 +3,7 @@ import {
   getTitleById,
   getTitleHeroes,
   extractProviders,
+  matchCharacterToHero,
 } from '../../../src/lib/db/titles';
 import { supabase } from '../../../src/lib/supabase';
 
@@ -165,5 +166,35 @@ describe('extractProviders', () => {
     const { providers } = extractProviders(blob);
     expect(providers).toHaveLength(1);
     expect(providers[0].name).toBe('BritBox');
+  });
+});
+
+describe('matchCharacterToHero', () => {
+  const heroes = [
+    { id: 'h1', name: 'Spider-Man' },
+    { id: 'h2', name: 'Mysterio' },
+    { id: 'h3', name: 'Man' },
+  ] as unknown as Parameters<typeof matchCharacterToHero>[1];
+
+  it('returns null for empty character', () => {
+    expect(matchCharacterToHero(null, heroes)).toBeNull();
+    expect(matchCharacterToHero('', heroes)).toBeNull();
+  });
+
+  it('matches a hero name embedded in the character string', () => {
+    expect(matchCharacterToHero('Peter Parker / Spider-Man', heroes)?.id).toBe('h1');
+  });
+
+  it('prefers the longest match (Spider-Man over Man)', () => {
+    expect(matchCharacterToHero('The Spider-Man', heroes)?.id).toBe('h1');
+  });
+
+  it('matches whole tokens only, not substrings', () => {
+    // "Manfred" should not match the hero "Man"
+    expect(matchCharacterToHero('Manfred', heroes)).toBeNull();
+  });
+
+  it('returns null when no hero matches', () => {
+    expect(matchCharacterToHero('Happy Hogan', heroes)).toBeNull();
   });
 });
