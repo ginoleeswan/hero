@@ -34,7 +34,7 @@ const MAXW = 1100;
 const PAD = 24;
 const COVER_W = 300;
 const COVER_H = 450;
-const COVER_TOP = 92; // clears the floating web TopBar
+const COVER_TOP = 110; // clears the floating web TopBar
 const HEADER_H = COVER_TOP + Math.round(COVER_H / 2); // seam at the cover's midline
 const COVER_COL = PAD + COVER_W + 44; // left reserve for content beside the cover
 
@@ -419,10 +419,11 @@ export default function IssueScreen() {
             ) : (
               <View style={[StyleSheet.absoluteFill, w.backdropFallback]} />
             )}
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: accent, opacity: 0.22 }]} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: accent, opacity: 0.18 }]} />
+            <View style={[StyleSheet.absoluteFill, w.headerDarken]} />
             <LinearGradient
-              colors={['rgba(11,24,32,0.5)', 'rgba(11,24,32,0.82)', 'rgba(11,24,32,0.97)']}
-              locations={[0, 0.55, 1]}
+              colors={['rgba(11,24,32,0.55)', 'rgba(11,24,32,0.9)', 'rgba(11,24,32,0.99)']}
+              locations={[0, 0.4, 1]}
               style={StyleSheet.absoluteFill}
             />
             <View style={w.headerInner}>
@@ -439,7 +440,10 @@ export default function IssueScreen() {
                 <View style={w.coverGutter} />
                 {hasSidebar ? (
                   <>
-                    <View style={w.mainCol}>{storyBlock}</View>
+                    <View style={w.mainCol}>
+                      {storyBlock}
+                      {castBlock}
+                    </View>
                     <View style={w.sidebar}>
                       <Details issue={issue} accent={accent} />
                       {issue.creators ? (
@@ -451,10 +455,10 @@ export default function IssueScreen() {
                   <View style={w.rightCol}>
                     {storyBlock}
                     {creditsBlock}
+                    {castBlock}
                   </View>
                 )}
               </View>
-              {castBlock}
             </View>
           </View>
 
@@ -577,6 +581,8 @@ const w = StyleSheet.create({
     transform: [{ scale: 1.25 }],
   } as object,
   backdropFallback: { backgroundColor: COLORS.navy },
+  // Flat wash to tame bright covers so the white title always reads.
+  headerDarken: { backgroundColor: 'rgba(11,24,32,0.4)' },
   headerInner: {
     maxWidth: MAXW,
     alignSelf: 'center',
@@ -592,7 +598,7 @@ const w = StyleSheet.create({
   rightCol: { flex: 1, minWidth: 0, paddingRight: PAD, paddingTop: 22 } as object,
   // ≥1000px: story + featuring in the main column, details + creators in a slim
   // right sidebar (a comic dossier).
-  mainCol: { flex: 1, minWidth: 0, paddingTop: 22 } as object,
+  mainCol: { flex: 1, minWidth: 0, paddingTop: 22, paddingRight: 28 } as object,
   sidebar: {
     width: 232,
     flexShrink: 0,
@@ -610,8 +616,9 @@ const w = StyleSheet.create({
     letterSpacing: 0.3,
   },
   // Featuring, flowing under the synopsis (beside the cover) — not stranded below.
-  // Full-width cast section below the dossier — uses the whole width.
-  castBlock: { marginTop: 10, paddingHorizontal: PAD },
+  // Featuring under the story, in the main column — its height balances the
+  // creators sidebar so the page doesn't strand a gap.
+  castBlock: { marginTop: 30 },
   castLabel: {
     fontFamily: 'Flame-Regular',
     fontSize: 13,
