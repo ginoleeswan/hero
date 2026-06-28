@@ -2182,6 +2182,17 @@ export type Database = {
           release_date: string
         }[]
       }
+      get_trending_heroes_wiki: {
+        Args: { p_limit?: number; p_min_week?: number }
+        Returns: {
+          id: string
+          image_url: string
+          name: string
+          pageviews_spike: number
+          pageviews_week: number
+          portrait_url: string
+        }[]
+      }
       get_trending_on_screen: {
         Args: { p_chars_per_title?: number; p_limit?: number }
         Returns: {

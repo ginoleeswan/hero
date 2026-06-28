@@ -137,7 +137,10 @@ interface TrendingOnScreenRow {
 /** TMDB's daily-trending titles that have catalogue characters, ordered by
  *  trending rank. Degrades to [] so a DB hiccup never errors the Explore band. */
 export async function getTrendingOnScreen(limit = 12): Promise<TrendingTitle[]> {
-  const { data, error } = await supabase.rpc('get_trending_on_screen' as never, { p_limit: limit } as never);
+  const { data, error } = await supabase.rpc(
+    'get_trending_on_screen' as never,
+    { p_limit: limit } as never,
+  );
   if (error) {
     console.warn('[getTrendingOnScreen] error:', error.message);
     return [];
@@ -367,4 +370,45 @@ export function trendingBadge(
   }
   if (t.release_date) return { tone: 'theaters', label: 'In Theaters' };
   return null;
+}
+
+export interface WikiTrendingHero {
+  id: string;
+  name: string;
+  image_url: string | null;
+  portrait_url: string | null;
+  /** Pageviews in the most recent 7 days. */
+  week: number;
+  /** Week-over-week growth as a percentage (spike ratio 2.8 → 180). */
+  spikePct: number;
+}
+
+interface WikiTrendingRow {
+  id: string;
+  name: string;
+  image_url: string | null;
+  portrait_url: string | null;
+  pageviews_week: number | null;
+  pageviews_spike: number | string | null;
+}
+
+/** Characters whose Wikipedia pageviews spiked this week. Degrades to [] so a DB
+ *  hiccup never errors the Explore band. */
+export async function getTrendingHeroesWiki(limit = 12): Promise<WikiTrendingHero[]> {
+  const { data, error } = await supabase.rpc('get_trending_heroes_wiki', { p_limit: limit } as never);
+  if (error) {
+    console.warn('[getTrendingHeroesWiki] error:', error.message);
+    return [];
+  }
+  return ((data ?? []) as unknown as WikiTrendingRow[]).map((r) => {
+    const spike = typeof r.pageviews_spike === 'string' ? parseFloat(r.pageviews_spike) : (r.pageviews_spike ?? 1);
+    return {
+      id: r.id,
+      name: r.name,
+      image_url: r.image_url,
+      portrait_url: r.portrait_url,
+      week: r.pageviews_week ?? 0,
+      spikePct: Math.max(0, Math.round((spike - 1) * 100)),
+    };
+  });
 }

@@ -234,6 +234,11 @@ describe('heroRowToCharacterData', () => {
     fame_score: null,
     fame_score_version: null,
     search_text: 'spider-man peter parker spidey web-slinger',
+    enwiki_title: null,
+    pageviews_week: null,
+    pageviews_prev: null,
+    pageviews_spike: null,
+    pageviews_at: null,
   } satisfies Hero;
 
   it('maps powerstats to string values', () => {
@@ -425,6 +430,11 @@ const baseHero: HeroRow = {
   fame_score: null,
   fame_score_version: null,
   search_text: 'test hero',
+  enwiki_title: null,
+  pageviews_week: null,
+  pageviews_prev: null,
+  pageviews_spike: null,
+  pageviews_at: null,
 };
 
 describe('heroRowToCharacterData — powers mapping', () => {
