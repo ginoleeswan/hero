@@ -247,7 +247,10 @@ export default function WebCategoryScreen() {
         });
         setTotal(result.total);
         currentPage.current = page;
-        hasMore.current = (page + 1) * PAGE_SIZE < result.total;
+        // `total` is now an estimate (exact count was a full table scan that
+        // gated the whole grid). Derive "has more" from page fullness instead —
+        // a full page implies another may exist; a short page is the end.
+        hasMore.current = result.heroes.length === PAGE_SIZE;
       } catch {
         //
       } finally {

@@ -267,7 +267,7 @@ export async function getCategoryPage(
 
   let q: any = supabase
     .from('heroes')
-    .select(selectCols, withCount ? { count: 'exact' } : undefined);
+    .select(selectCols, withCount ? { count: 'estimated' } : undefined);
 
   switch (slug) {
     case 'popular':
@@ -392,7 +392,7 @@ export async function getUniversePage(
 
   let q: any = supabase
     .from('heroes')
-    .select(selectCols, withCount ? { count: 'exact' } : undefined)
+    .select(selectCols, withCount ? { count: 'estimated' } : undefined)
     .ilike('publisher', `%${term}%`);
 
   q = applyListFacets(q, { alignment, gender, hasStats, tagList, search, sort });
@@ -470,7 +470,7 @@ export async function getTeamPage(
 
   let q: any = supabase
     .from('heroes')
-    .select(selectCols, withCount ? { count: 'exact' } : undefined)
+    .select(selectCols, withCount ? { count: 'estimated' } : undefined)
     .contains('teams', [teamName]);
 
   q = applyListFacets(q, { alignment, gender, hasStats, tagList, search, sort });

@@ -33,16 +33,22 @@ function ensureShimmerKeyframes() {
   if (document.getElementById(SHIMMER_ID)) return;
   const style = document.createElement('style');
   style.id = SHIMMER_ID;
-  // Sweep the 200%-wide gradient from right to left across the block.
-  style.textContent = `@keyframes ${SHIMMER_ANIM}{0%{background-position:200% 0}100%{background-position:-200% 0}}`;
+  // Travel the over-sized gradient across the block. Eased (see animation) so the
+  // highlight glides and softly settles at each end rather than hard-looping.
+  style.textContent = `@keyframes ${SHIMMER_ANIM}{0%{background-position:150% 0}100%{background-position:-150% 0}}`;
   document.head.appendChild(style);
 }
 
 // Base + highlight per canvas. Dark = the deepNavy gallery (browse grids); light
-// = the beige home canvas.
+// = the beige home canvas. Beige-tinted highlight (not pure white) keeps it on
+// brand; low contrast reads premium where a harsh white sweep reads cheap.
 const SHIMMER_COLORS = {
-  light: { base: '#e3d9c8', hi: '#f2ece1' },
-  dark: { base: 'rgba(245,235,220,0.06)', hi: 'rgba(245,235,220,0.16)' },
+  light: { base: '#e6ddce', hi: '#f4efe6', edge: 'rgba(41,60,67,0.05)' },
+  dark: {
+    base: 'rgba(245,235,220,0.05)',
+    hi: 'rgba(245,235,220,0.13)',
+    edge: 'rgba(245,235,220,0.06)',
+  },
 };
 
 /**
@@ -56,11 +62,17 @@ export function useShimmer(dark = false) {
     ensureShimmerKeyframes();
     const el = ref.current as unknown as HTMLElement | null;
     if (!el) return;
-    const { base, hi } = dark ? SHIMMER_COLORS.dark : SHIMMER_COLORS.light;
-    el.style.backgroundImage = `linear-gradient(90deg, ${base} 0%, ${hi} 50%, ${base} 100%)`;
-    el.style.backgroundSize = '200% 100%';
+    const { base, hi, edge } = dark ? SHIMMER_COLORS.dark : SHIMMER_COLORS.light;
+    // Narrow, soft highlight band (concentrated ~mid, feathered edges) on a flat
+    // base — a diagonal glide rather than a hard full-width wipe.
     el.style.backgroundColor = base;
-    el.style.animation = `${SHIMMER_ANIM} 1.6s linear infinite`;
+    el.style.backgroundImage = `linear-gradient(100deg, ${base} 40%, ${hi} 50%, ${base} 60%)`;
+    el.style.backgroundSize = '250% 100%';
+    el.style.backgroundRepeat = 'no-repeat';
+    // Hairline inset edge gives the block a touch of depth (reads as a "card").
+    el.style.boxShadow = `inset 0 0 0 1px ${edge}`;
+    el.style.willChange = 'background-position';
+    el.style.animation = `${SHIMMER_ANIM} 2s cubic-bezier(0.4, 0, 0.2, 1) infinite`;
   }, [dark]);
   return ref;
 }
