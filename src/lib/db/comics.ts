@@ -93,14 +93,14 @@ interface IssueNestedRow {
 
 /** A single issue by id ('cvi:<n>') for the issue page. Lead character first,
  *  the rest in graph order. Null on error/not found. */
-export async function getIssueById(id: string): Promise<NewComic | null> {
+async function fetchIssueRow(id: string): Promise<NewComic | null> {
   const { data, error } = await supabase
     .from('comic_issues')
     .select(
       'id, volume_name, issue_number, cover_url, store_date, publisher, description, lead_hero_id, comic_issue_appearances ( heroes ( id, name, image_url, portrait_url ) )',
     )
     .eq('id', id)
-    .single();
+    .maybeSingle();
   if (error || !data) return null;
   const r = data as unknown as IssueNestedRow;
   const chars = (r.comic_issue_appearances ?? [])
@@ -118,4 +118,59 @@ export async function getIssueById(id: string): Promise<NewComic | null> {
     description: r.description && r.description.length > 0 ? r.description : null,
     characters: chars,
   };
+}
+
+/** A single issue by id ('cvi:<n>'). Curated weekly issues are already stored;
+ *  any other ComicVine issue (a debut, a gallery cover) is fetched + cached
+ *  on first view via the get-comicvine-issue read-through, then re-read. */
+export async function getIssueById(id: string): Promise<NewComic | null> {
+  const cached = await fetchIssueRow(id);
+  if (cached) return cached;
+  if (!id.startsWith('cvi:')) return null;
+  const { error } = await supabase.functions.invoke('get-comicvine-issue', { body: { id } });
+  if (error) {
+    console.warn('[getIssueById] read-through failed:', error.message);
+    return null;
+  }
+  return fetchIssueRow(id);
+}
+
+interface HeroIssueRow {
+  id: string;
+  volume_name: string | null;
+  issue_number: string | null;
+  cover_url: string | null;
+  store_date: string | null;
+  publisher: string | null;
+}
+
+/** Recent issues that feature a given character (newest first) — the "New This
+ *  Week" rail on the character page. Only the curated in-print window; empty for
+ *  characters not in any recent issue. Covers link to `/issue/[id]`. */
+export async function getIssuesForHero(heroId: string, days = 21, limit = 12): Promise<NewComic[]> {
+  const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from('comic_issues')
+    .select(
+      'id, volume_name, issue_number, cover_url, store_date, publisher, comic_issue_appearances!inner(hero_id)',
+    )
+    .eq('comic_issue_appearances.hero_id', heroId)
+    .gte('store_date', since)
+    .not('cover_url', 'is', null)
+    .order('store_date', { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.warn('[getIssuesForHero] error:', error.message);
+    return [];
+  }
+  return ((data ?? []) as unknown as HeroIssueRow[]).map((r) => ({
+    id: r.id,
+    volumeName: r.volume_name,
+    issueNumber: r.issue_number,
+    coverUrl: r.cover_url,
+    storeDate: r.store_date,
+    publisher: r.publisher,
+    description: null,
+    characters: [],
+  }));
 }

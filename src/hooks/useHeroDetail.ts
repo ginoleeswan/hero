@@ -13,6 +13,7 @@ import {
   getHeroFavouriteCount,
 } from '../lib/db/favourites';
 import { getHeroTitles, type HeroTitle } from '../lib/db/titles';
+import { getIssuesForHero, type NewComic } from '../lib/db/comics';
 import {
   getHeroPortrayals,
   getHeroLinks,
@@ -68,6 +69,7 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
   const [links, setLinks] = useState<HeroLinks | null>(null);
   const [issueCovers, setIssueCovers] = useState<IssueCover[] | null>(null);
   const [galleryLoading, setGalleryLoading] = useState(false);
+  const [newIssues, setNewIssues] = useState<NewComic[]>([]);
 
   const heroRowQuery = useHeroRow(id);
   const heroRow = heroRowQuery.data;
@@ -158,6 +160,9 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
     });
     getHeroLinks(data.stats.id).then((l) => {
       if (active) setLinks(l);
+    });
+    getIssuesForHero(data.stats.id).then((iss) => {
+      if (active) setNewIssues(iss);
     });
     return () => {
       active = false;
@@ -433,6 +438,7 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
     links,
     issueCovers,
     galleryLoading,
+    newIssues,
     heroRow,
     heroRowQuery,
     powerTotal,

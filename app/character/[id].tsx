@@ -59,6 +59,7 @@ import { DidYouKnowDeck } from '../../src/components/character/DidYouKnowDeck';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import { GalleryStrip } from '../../src/components/GalleryStrip';
+import { ComicCoverRail } from '../../src/components/home/ComicCoverRail';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
 import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
 import { UniverseEyebrow } from '../../src/components/PublisherBadge';
@@ -603,6 +604,7 @@ export default function CharacterScreen() {
     links,
     issueCovers,
     galleryLoading,
+    newIssues,
     heroRow,
     heroRowQuery,
     powerTotal,
@@ -758,6 +760,7 @@ export default function CharacterScreen() {
       s.push({ key: 'screen', label: 'On Screen' });
     // In Print consolidates the debut feature + cover gallery into one section.
     if (
+      newIssues.length > 0 ||
       hasFirstVisual ||
       (issueCovers === null && galleryLoading) ||
       (issueCovers && issueCovers.length > 0)
@@ -771,6 +774,7 @@ export default function CharacterScreen() {
     titles,
     issueCovers,
     galleryLoading,
+    newIssues,
     hasFirstVisual,
     family,
     enemyNames,
@@ -1362,9 +1366,10 @@ export default function CharacterScreen() {
                 </View>
               ) : null}
 
-              {/* In Print — debut feature + cover gallery, consolidated into one
-                  section (mirrors the web character page). */}
-              {hasFirstVisual ||
+              {/* In Print — what's on shelves now, then the debut + the run that
+                  followed (mirrors the web character page). */}
+              {newIssues.length > 0 ||
+              hasFirstVisual ||
               (issueCovers && issueCovers.length > 0) ||
               (issueCovers === null && galleryLoading) ? (
                 <View onLayout={registerAnchor('print')} style={styles.bleedSection}>
@@ -1382,11 +1387,26 @@ export default function CharacterScreen() {
                     <View style={styles.divider} />
                   </View>
 
+                  {/* On shelves now — recent issues featuring this character */}
+                  {newIssues.length > 0 ? (
+                    <ComicCoverRail
+                      comics={newIssues}
+                      onLight
+                      onIssuePress={(issueId) =>
+                        router.push(`/issue/${issueId}` as Parameters<typeof router.push>[0])
+                      }
+                    />
+                  ) : null}
+
                   {/* Debut — the first issue, given hero treatment */}
                   {hasFirstVisual ? (
                     <View style={styles.bleedPad}>
                       <TouchableOpacity
-                        onPress={() => setShowIssueModal(true)}
+                        onPress={() =>
+                          router.push(
+                            `/issue/cvi:${data.firstIssue!.id}` as Parameters<typeof router.push>[0],
+                          )
+                        }
                         activeOpacity={0.85}
                         accessibilityRole="button"
                         accessibilityLabel="View first appearance issue"

@@ -23,16 +23,20 @@ function onSaleDay(storeDate: string | null): string | null {
 export function ComicCoverRail({
   comics,
   onIssuePress,
+  onLight,
 }: {
   comics: NewComic[];
   onIssuePress: (issueId: string) => void;
+  /** Set on a light/paper background (e.g. the character In Print section) so the
+   *  title reads dark instead of the band's beige. */
+  onLight?: boolean;
 }) {
   if (comics.length === 0) return null;
   return (
     <View style={s.section}>
       <View style={s.header}>
         <Text style={s.label}>This Week</Text>
-        <Text style={s.title}>New Comics</Text>
+        <Text style={[s.title, onLight && s.titleOnLight]}>New Comics</Text>
       </View>
       <FlatList
         horizontal
@@ -83,6 +87,7 @@ const s = StyleSheet.create({
     color: COLORS.orange,
   },
   title: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.beige, lineHeight: 28 },
+  titleOnLight: { color: COLORS.navy },
   strip: { gap: 10, paddingHorizontal: 15, paddingBottom: 4 },
   card: {
     width: CARD_W,

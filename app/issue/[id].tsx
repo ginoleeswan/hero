@@ -39,6 +39,15 @@ function onSaleLabel(storeDate: string | null): string | null {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+// True only for issues that shipped in the recent window — so the "New this week"
+// kicker isn't shown on a read-through historical issue (a debut, a back issue).
+function isNewThisWeek(storeDate: string | null): boolean {
+  if (!storeDate) return false;
+  const d = new Date(storeDate);
+  if (Number.isNaN(d.getTime())) return false;
+  return Date.now() - d.getTime() <= 21 * 86_400_000;
+}
+
 // Publisher mark · "new this week" · big title · divided spec rail.
 function Masthead({
   issue,
@@ -60,7 +69,9 @@ function Masthead({
   return (
     <View style={[ms.col, centered && ms.colCentered]}>
       <UniverseEyebrow publisher={issue.publisher} logoHeight={20} textStyle={ms.pub} />
-      <Text style={[ms.kicker, { color: accent }]}>New this week</Text>
+      {isNewThisWeek(issue.storeDate) ? (
+        <Text style={[ms.kicker, { color: accent }]}>New this week</Text>
+      ) : null}
       <Text style={[ms.title, centered ? ms.titleNarrow : ms.titleWide]} numberOfLines={3}>
         {issue.volumeName ?? 'Untitled'}
         {issue.issueNumber ? (

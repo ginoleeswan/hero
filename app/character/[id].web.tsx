@@ -36,6 +36,7 @@ import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { GalleryStrip } from '../../src/components/GalleryStrip';
+import { ComicCoverRail } from '../../src/components/home/ComicCoverRail';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
 import { UniverseEyebrow } from '../../src/components/PublisherBadge';
 import { SeoHead } from '../../src/components/web/SeoHead';
@@ -506,6 +507,7 @@ export default function WebCharacterScreen() {
     favourited,
     favLoading,
     issueCovers,
+    newIssues,
     family,
     narrative,
     titles,
@@ -1284,7 +1286,9 @@ export default function WebCharacterScreen() {
                         </View>
                       </View>
                     </View>
-                  ) : data.firstIssue?.imageUrl || (issueCovers && issueCovers.length > 0) ? (
+                  ) : newIssues.length > 0 ||
+                    data.firstIssue?.imageUrl ||
+                    (issueCovers && issueCovers.length > 0) ? (
                     <View style={styles.card}>
                       <View style={styles.inPrintHeader}>
                         <Text style={styles.cardTitle}>In Print</Text>
@@ -1295,11 +1299,26 @@ export default function WebCharacterScreen() {
                         ) : null}
                       </View>
                       <View style={styles.cardDivider} />
+                      {newIssues.length > 0 ? (
+                        <View style={{ marginHorizontal: -20, marginBottom: 6 }}>
+                          <ComicCoverRail
+                            comics={newIssues}
+                            onLight
+                            onIssuePress={(issueId) =>
+                              router.push(`/issue/${issueId}` as Parameters<typeof router.push>[0])
+                            }
+                          />
+                        </View>
+                      ) : null}
                       <View style={styles.inPrintBody}>
                         {/* Debut — the first issue, given hero treatment */}
                         {data.firstIssue?.imageUrl ? (
                           <Pressable
-                            onPress={() => setShowIssueModal(true)}
+                            onPress={() =>
+                              router.push(
+                                `/issue/cvi:${data.firstIssue!.id}` as Parameters<typeof router.push>[0],
+                              )
+                            }
                             style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                               [
                                 styles.debutBlock,
@@ -2020,6 +2039,19 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : null}
 
+                {/* On shelves now — recent issues featuring this character */}
+                {newIssues.length > 0 ? (
+                  <View style={styles.mSection}>
+                    <ComicCoverRail
+                      comics={newIssues}
+                      onLight
+                      onIssuePress={(issueId) =>
+                        router.push(`/issue/${issueId}` as Parameters<typeof router.push>[0])
+                      }
+                    />
+                  </View>
+                ) : null}
+
                 {/* In Print */}
                 {issueCovers && issueCovers.length > 0 ? (
                   <View style={styles.mSection}>
@@ -2044,7 +2076,11 @@ export default function WebCharacterScreen() {
                   <View style={styles.mBlock}>
                     <Text style={styles.mSectionTitle}>First Appearance</Text>
                     <View style={styles.mSectionDivider} />
-                    <Pressable onPress={() => setShowIssueModal(true)} style={styles.mDebutCard}>
+                    <Pressable onPress={() =>
+                              router.push(
+                                `/issue/cvi:${data.firstIssue!.id}` as Parameters<typeof router.push>[0],
+                              )
+                            } style={styles.mDebutCard}>
                       <Image
                         source={{ uri: data.firstIssue.imageUrl }}
                         style={styles.mDebutCover as object}
