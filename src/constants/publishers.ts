@@ -550,6 +550,30 @@ export const FEATURED_PUBLISHERS: PublisherBrand[] = ['marvel', 'dc', 'image', '
   .map((slug) => PUBLISHER_BRANDS.find((b) => b.slug === slug))
   .filter((b): b is PublisherBrand => b != null);
 
+/**
+ * A broader, recognizable set of universes for the search landing's horizontal
+ * "Universes" rail — comics, games, toys and cartoons, all logo-backed so they
+ * render as brand marks (not initials). Order = display order.
+ */
+export const SEARCH_UNIVERSES: PublisherBrand[] = [
+  'marvel',
+  'dc',
+  'star-wars',
+  'disney',
+  'image',
+  'dark-horse',
+  'nintendo',
+  'sega',
+  'capcom',
+  'looney-tunes',
+  'valiant',
+  'archie',
+  'mattel',
+  'hasbro',
+]
+  .map((slug) => PUBLISHER_BRANDS.find((b) => b.slug === slug))
+  .filter((b): b is PublisherBrand => b != null);
+
 export function publisherBySlug(slug: string | undefined): PublisherBrand | undefined {
   return PUBLISHER_BRANDS.find((b) => b.slug === slug);
 }

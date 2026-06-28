@@ -29,7 +29,7 @@ import { TopResultRow } from '../../../src/components/web/search/TopResultRow';
 import { HeroRail, type RailHero } from '../../../src/components/web/search/HeroRail';
 import { pickTopResult, topResultKey, type TopResult } from '../../../src/lib/search/topResult';
 import { getRecentlyViewed } from '../../../src/lib/db/viewHistory';
-import { FEATURED_PUBLISHERS } from '../../../src/constants/publishers';
+import { SEARCH_UNIVERSES } from '../../../src/constants/publishers';
 import { useBrowseCovers } from '../../../src/hooks/useBrowseCovers';
 import { SearchBrowse } from '../../../src/components/web/search/SearchBrowse';
 import { useSkeletonAnim } from '../../../src/components/web/Skeleton';
@@ -503,7 +503,7 @@ export default function WebSearchScreen() {
                 ] as object
               }
             >
-              {FEATURED_PUBLISHERS.map((b) => (
+              {SEARCH_UNIVERSES.map((b) => (
                 <UniverseChip
                   key={b.slug}
                   universe={{
