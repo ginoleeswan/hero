@@ -33,6 +33,9 @@ describe('groupComicRows', () => {
       coverUrl: 'http://x/c.jpg',
       storeDate: '2026-06-25',
       publisher: 'DC',
+      description: null,
+      storyTitle: null,
+      creators: null,
       characters: [
         { id: 'Batman', name: 'Batman', image_url: null, portrait_url: null },
         { id: 'Robin', name: 'Robin', image_url: null, portrait_url: null },
