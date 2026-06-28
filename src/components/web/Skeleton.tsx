@@ -28,34 +28,40 @@ export function useSkeletonAnim() {
 const SHIMMER_ID = 'mythique-shimmer-keyframes';
 const SHIMMER_ANIM = 'mythique-shimmer';
 
+const SHIMMER_DURATION_MS = 2600;
+
 function ensureShimmerKeyframes() {
   if (typeof document === 'undefined') return;
   if (document.getElementById(SHIMMER_ID)) return;
   const style = document.createElement('style');
   style.id = SHIMMER_ID;
-  // Travel the over-sized gradient across the block. Eased (see animation) so the
-  // highlight glides and softly settles at each end rather than hard-looping.
-  style.textContent = `@keyframes ${SHIMMER_ANIM}{0%{background-position:150% 0}100%{background-position:-150% 0}}`;
+  // Sweep, then REST: the highlight glides across in the first ~55% and the rest
+  // of the cycle holds off-screen. That "breathe" rhythm reads calm/premium where
+  // a constant non-stop wipe reads cheap. Eased on the way in.
+  style.textContent = `@keyframes ${SHIMMER_ANIM}{0%{background-position:130% 0}55%,100%{background-position:-130% 0}}`;
   document.head.appendChild(style);
 }
 
 // Base + highlight per canvas. Dark = the deepNavy gallery (browse grids); light
 // = the beige home canvas. Beige-tinted highlight (not pure white) keeps it on
-// brand; low contrast reads premium where a harsh white sweep reads cheap.
+// brand; a wide, low-contrast band reads as a soft glow rather than a cheap bar.
 const SHIMMER_COLORS = {
-  light: { base: '#e6ddce', hi: '#f4efe6', edge: 'rgba(41,60,67,0.05)' },
+  light: { base: '#e7dfd1', hi: '#f6f1e8', edge: 'rgba(41,60,67,0.05)' },
   dark: {
-    base: 'rgba(245,235,220,0.05)',
-    hi: 'rgba(245,235,220,0.13)',
+    base: 'rgba(245,235,220,0.045)',
+    hi: 'rgba(245,235,220,0.11)',
     edge: 'rgba(245,235,220,0.06)',
   },
 };
 
 /**
- * Ref to attach to any web `View` to give it a sweeping shimmer fill. The
- * element's background + animation are applied imperatively on mount.
+ * Ref to attach to any web `View` to give it a soft shimmer fill. The element's
+ * background + animation are applied imperatively on mount.
+ *
+ * `phase` (0..1) offsets the animation start so a grid of blocks shimmers as a
+ * desynchronised field — never every card flashing in unison (the cheap tell).
  */
-export function useShimmer(dark = false) {
+export function useShimmer(dark = false, phase = 0) {
   const ref = useRef<View>(null);
   // Layout effect so the fill + sweep are present on first paint (no flash).
   useLayoutEffect(() => {
@@ -63,17 +69,20 @@ export function useShimmer(dark = false) {
     const el = ref.current as unknown as HTMLElement | null;
     if (!el) return;
     const { base, hi, edge } = dark ? SHIMMER_COLORS.dark : SHIMMER_COLORS.light;
-    // Narrow, soft highlight band (concentrated ~mid, feathered edges) on a flat
-    // base — a diagonal glide rather than a hard full-width wipe.
+    // Wide, gentle highlight band on a flat base — a soft glow that drifts across,
+    // not a hard edge wiping over.
     el.style.backgroundColor = base;
-    el.style.backgroundImage = `linear-gradient(100deg, ${base} 40%, ${hi} 50%, ${base} 60%)`;
-    el.style.backgroundSize = '250% 100%';
+    el.style.backgroundImage = `linear-gradient(100deg, ${base} 18%, ${hi} 50%, ${base} 82%)`;
+    el.style.backgroundSize = '220% 100%';
     el.style.backgroundRepeat = 'no-repeat';
     // Hairline inset edge gives the block a touch of depth (reads as a "card").
     el.style.boxShadow = `inset 0 0 0 1px ${edge}`;
     el.style.willChange = 'background-position';
-    el.style.animation = `${SHIMMER_ANIM} 2s cubic-bezier(0.4, 0, 0.2, 1) infinite`;
-  }, [dark]);
+    el.style.animation = `${SHIMMER_ANIM} ${SHIMMER_DURATION_MS}ms ease-in-out infinite`;
+    // Negative delay starts each block partway through the cycle, so a grid never
+    // pulses together — at any instant different cards are mid-glow.
+    el.style.animationDelay = `${-Math.round((phase % 1) * SHIMMER_DURATION_MS)}ms`;
+  }, [dark, phase]);
   return ref;
 }
 

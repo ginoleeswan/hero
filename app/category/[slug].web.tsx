@@ -58,10 +58,10 @@ const VALID_SLUGS = new Set<CategorySlug>([
 ]);
 
 // ── Skeleton card (matches HeroCard layout) ───────────────────────────────────
-// Sweeping shimmer on the dark gallery canvas — reads premium where the old flat
-// opacity pulse read cheap.
-function SkeletonCard() {
-  const ref = useShimmer(true);
+// Soft shimmer on the dark gallery canvas. `index` offsets each card's phase so
+// the grid shimmers as a drifting wave, never all-in-unison (the cheap tell).
+function SkeletonCard({ index = 0 }: { index?: number }) {
+  const ref = useShimmer(true, index * 0.15);
   return <View ref={ref} style={sk.wrap as object} />;
 }
 
@@ -390,7 +390,8 @@ export default function WebCategoryScreen() {
           onInfo={() => setPeek(hero)}
         />
       ))}
-      {loadingMore && Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={`sk-${i}`} />)}
+      {loadingMore &&
+        Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={`sk-${i}`} index={i} />)}
     </View>
   );
 
@@ -631,7 +632,7 @@ export default function WebCategoryScreen() {
                 >
                   <View style={gridStyle as object}>
                     {Array.from({ length: 24 }).map((_, i) => (
-                      <SkeletonCard key={i} />
+                      <SkeletonCard key={i} index={i} />
                     ))}
                   </View>
                 </View>
