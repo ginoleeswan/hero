@@ -179,7 +179,7 @@ const m = StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
-  title: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.navy, lineHeight: 28 },
+  title: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.beige, lineHeight: 28 },
 
   card: {
     marginHorizontal: 15,

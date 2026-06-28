@@ -28,6 +28,7 @@ import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
 import { HomeSkeleton } from '../../src/components/skeletons/HomeSkeleton';
 import { SpotlightCarousel } from '../../src/components/home/SpotlightCarousel';
+import { PaperSurface } from '../../src/components/home/PaperSurface';
 import { rowStyle } from '../../src/lib/home/rowStyle';
 import { HomeHeroRow, type RowHero } from '../../src/components/home/HomeHeroRow';
 import { type Hero, type Rivalry } from '../../src/lib/db/heroes';
@@ -89,6 +90,21 @@ type FeedRow =
 const FeedList = Animated.FlatList as unknown as ComponentType<
   AnimatedProps<FlatListProps<FeedRow>>
 >;
+
+// The dark "stage" rows (deepNavy, glass containers). Everything else is the
+// beige Library zone — wrapped in PaperSurface (halftone + the seam lip).
+const DARK_ROWS = new Set<FeedRow['type']>([
+  'spotlight',
+  'publishers',
+  'matchup',
+  'daily',
+  'ticker',
+  'rightnow',
+]);
+
+// The dark stage rides up into the spotlight's bottom fade so the glass chips
+// emerge from the portrait (no hard seam).
+const SPOTLIGHT_OVERLAP = 60;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -279,9 +295,13 @@ export default function HomeScreen() {
     [],
   );
 
+  // The first beige row carries the seam (rounded lip + top-light).
+  const firstBeigeIndex = useMemo(() => rows.findIndex((r) => !DARK_ROWS.has(r.type)), [rows]);
+
   const renderRow = useCallback<ListRenderItem<FeedRow>>(
-    ({ item }) => {
-      switch (item.type) {
+    ({ item, index }) => {
+      const content = (() => {
+        switch (item.type) {
         case 'spotlight':
           return (
             <SpotlightCarousel
@@ -289,6 +309,7 @@ export default function HomeScreen() {
               insetTop={insets.top}
               scrollY={scrollY}
               onHeroPress={handlePress}
+              showLip={false}
             />
           );
         case 'publishers':
@@ -377,7 +398,13 @@ export default function HomeScreen() {
             />
           );
         }
-      }
+        }
+      })();
+      if (content == null) return null;
+      // Dark stage rows render straight on the deep-navy scroll surface; beige
+      // Library rows sit on the printed-paper surface (the first one seams it).
+      if (DARK_ROWS.has(item.type)) return content;
+      return <PaperSurface lip={index === firstBeigeIndex}>{content}</PaperSurface>;
     },
     [
       insets.top,
@@ -392,6 +419,7 @@ export default function HomeScreen() {
       browseCovers,
       navigating,
       router,
+      firstBeigeIndex,
     ],
   );
 
@@ -423,7 +451,8 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
           contentInsetAdjustmentBehavior="never"
           automaticallyAdjustContentInsets={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { marginTop: -insets.top }] as object}
+          ListFooterComponent={<PaperSurface style={styles.footer} />}
           scrollEventThrottle={16}
           onScroll={scrollHandler}
           initialNumToRender={3}
@@ -441,9 +470,12 @@ const styles = StyleSheet.create({
   // Transparent so the dark navy root shows under the status bar and on
   // overscroll (matching the spotlight) instead of a beige band.
   scroll: { flex: 1, backgroundColor: 'transparent' },
-  // Beige content sheet. The spotlight (first row) is opaque navy and covers the
-  // beige behind it; the rows below sit on this beige, as the old sheet did.
-  content: { flexGrow: 1, backgroundColor: COLORS.beige, paddingBottom: 120 },
+  // Deep-navy scroll surface: the dark stage rows sit straight on it; beige
+  // Library rows bring their own PaperSurface. Overscroll reveals dark, matching
+  // the spotlight.
+  content: { flexGrow: 1, backgroundColor: COLORS.deepNavy, paddingBottom: 0 },
+  // Beige paper tail so the bottom padding isn't a dark strip.
+  footer: { height: 120 },
   // Chapter break ("Browse the Universe", "Beyond the Page").
   browseHead: { paddingHorizontal: 16, paddingTop: 22, paddingBottom: 4 },
   browseKicker: {

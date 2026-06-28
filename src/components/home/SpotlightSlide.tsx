@@ -11,7 +11,6 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
@@ -67,18 +66,14 @@ export function SpotlightSlide({
       </Animated.View>
 
       <LinearGradient
-        colors={[
-          'transparent',
-          'rgba(13,20,24,0.12)',
-          'rgba(13,20,24,0.82)',
-          'rgba(13,20,24,0.97)',
-        ]}
+        // Land the base on exactly COLORS.deepNavy (#0b1820) so the billboard
+        // fuses seamlessly into the dark stage below it.
+        colors={['transparent', 'rgba(11,24,32,0.12)', 'rgba(11,24,32,0.85)', COLORS.deepNavy]}
         locations={[0.26, 0.46, 0.76, 1]}
         style={StyleSheet.absoluteFill}
       />
 
       <View style={styles.meta}>
-        <Text style={styles.eyebrow}>Featured Hero</Text>
         <Text style={styles.name} numberOfLines={1}>
           {hero.name}
         </Text>
@@ -87,27 +82,15 @@ export function SpotlightSlide({
             {sub}
           </Text>
         )}
-        <View style={styles.cta}>
-          <Text style={styles.ctaText}>View Hero</Text>
-          <Ionicons name="chevron-forward" size={15} color={COLORS.navy} />
-        </View>
       </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { overflow: 'hidden', backgroundColor: COLORS.navy },
-  meta: { position: 'absolute', bottom: 76, left: 20, right: 20, alignItems: 'center' },
-  eyebrow: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 10.5,
-    color: COLORS.orange,
-    letterSpacing: 2.6,
-    textTransform: 'uppercase',
-    marginBottom: 7,
-    textAlign: 'center',
-  },
+  container: { overflow: 'hidden', backgroundColor: COLORS.deepNavy },
+  // Lifted so the dark stage can overlap the fade below without covering the name.
+  meta: { position: 'absolute', bottom: 116, left: 20, right: 20, alignItems: 'center' },
   name: {
     fontFamily: 'Flame-Regular',
     fontSize: 38,
@@ -126,16 +109,4 @@ const styles = StyleSheet.create({
     marginTop: 7,
     textAlign: 'center',
   },
-  cta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    marginTop: 16,
-    paddingVertical: 11,
-    paddingLeft: 22,
-    paddingRight: 16,
-    borderRadius: 999,
-    backgroundColor: COLORS.beige,
-  },
-  ctaText: { fontFamily: 'Nunito_900Black', fontSize: 14, color: COLORS.navy },
 });

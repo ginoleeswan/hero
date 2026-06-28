@@ -67,7 +67,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 18,
-    backgroundColor: COLORS.deepNavy,
+    // Glass on the dark stage (matches the web pods / engage cards).
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
   },

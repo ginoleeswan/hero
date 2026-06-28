@@ -72,11 +72,7 @@ export function MonthInHistoryRail({
           const visible = item.characters.slice(0, MAX_CHIPS);
           const extra = item.characters.length - visible.length;
           return (
-            <Pressable
-              style={s.card}
-              onPress={() => lead && onHeroPress(lead.id)}
-              disabled={!lead}
-            >
+            <Pressable style={s.card} onPress={() => lead && onHeroPress(lead.id)} disabled={!lead}>
               {item.cover_url ? (
                 <Image
                   source={{ uri: item.cover_url }}
