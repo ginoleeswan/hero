@@ -1,9 +1,10 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, CARD_SHADOW } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import { BrandLogoView } from '../../PublisherBadge';
+import { brandForPublisher } from '../../../constants/publishers';
 import { teamLogo } from '../../../constants/teamBrands';
 import type { TopResult } from '../../../lib/search/topResult';
 
@@ -25,7 +26,12 @@ export function TopResultRow({
   variant?: 'dark' | 'light';
 }) {
   const light = variant === 'light';
-  const { name, typeLabel, subtitle, thumb } = describe(top);
+  const { name, typeLabel, subtitle, thumb, glowColor } = describe(top);
+  // The signature: on the results page the featured thumbnail casts a soft glow in
+  // its own universe's brand colour (Spider-Man → a faint Marvel-red halo), so the
+  // answer feels identified with where it comes from. Box-shadow isn't clipped by
+  // the thumb's overflow:hidden, so it blooms outside the rounded art.
+  const glowStyle = light ? ({ boxShadow: `0 8px 24px -6px ${glowColor}59` } as object) : null;
   return (
     <Pressable
       onPress={onPress}
@@ -38,7 +44,16 @@ export function TopResultRow({
         ] as object
       }
     >
-      <View style={[styles.thumb, top.kind === 'hero' && (styles.thumbRound as object)] as object}>
+      <View
+        style={
+          [
+            styles.thumb,
+            light && (styles.thumbLight as object),
+            top.kind === 'hero' && ((light ? styles.thumbRoundLight : styles.thumbRound) as object),
+            glowStyle,
+          ] as object
+        }
+      >
         {thumb}
       </View>
       <View style={styles.text}>
@@ -84,6 +99,7 @@ function describe(top: TopResult): {
   name: string;
   typeLabel: string | null;
   subtitle: string | null;
+  glowColor: string;
   thumb: React.ReactNode;
 } {
   switch (top.kind) {
@@ -93,6 +109,7 @@ function describe(top: TopResult): {
         name: u.name,
         typeLabel: 'Universe',
         subtitle: null,
+        glowColor: u.color,
         thumb: (
           <View
             style={
@@ -123,6 +140,7 @@ function describe(top: TopResult): {
         name: t.name,
         typeLabel: 'Team',
         subtitle: meta,
+        glowColor: brandForPublisher(t.publisher)?.color ?? COLORS.orange,
         thumb: (
           <View style={[styles.tile, tl && (styles.tileDark as object)] as object}>
             {tl ? (
@@ -145,6 +163,7 @@ function describe(top: TopResult): {
         name: h.name,
         typeLabel: null, // a character with a face needs no chip (and it'd clash with the Hero/Villain badge)
         subtitle: h.full_name && h.full_name !== h.name ? h.full_name : h.publisher,
+        glowColor: brandForPublisher(h.publisher)?.color ?? COLORS.orange,
         thumb: (
           <HeroImage
             id={h.id}
@@ -167,6 +186,7 @@ function describe(top: TopResult): {
         name: t.title,
         typeLabel: MEDIA[t.media_type] ?? 'Title',
         subtitle: t.year ? String(t.year) : null,
+        glowColor: COLORS.orange,
         thumb: (
           <View style={[styles.tile, styles.tileDark as object] as object}>
             {t.poster_url ? (
@@ -196,14 +216,21 @@ const styles = StyleSheet.create({
     transition: 'background-color 150ms ease',
   } as object,
   rowActive: { backgroundColor: 'rgba(231,115,51,0.14)' } as object,
-  // Light variant: a featured card on the beige results page.
+  // Light variant: a raised paper card on the beige canvas — warm off-white +
+  // soft warm-dark shadow so the answer rises from the surface (not a flat orange
+  // wash). The thumbnail's brand glow supplies the colour.
   rowLight: {
     marginHorizontal: 0,
-    backgroundColor: 'rgba(231,115,51,0.08)',
+    gap: 15,
+    paddingVertical: 13,
+    paddingHorizontal: 15,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,251,244,0.92)',
     borderWidth: 1,
-    borderColor: 'rgba(231,115,51,0.28)',
+    borderColor: 'rgba(41,60,67,0.08)',
+    boxShadow: CARD_SHADOW,
   } as object,
-  rowActiveLight: { backgroundColor: 'rgba(231,115,51,0.14)' } as object,
+  rowActiveLight: { backgroundColor: COLORS.beige, transform: [{ translateY: -1 }] } as object,
   thumb: {
     width: 48,
     height: 48,
@@ -211,7 +238,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     flexShrink: 0,
   } as object,
+  thumbLight: { width: 56, height: 56, borderRadius: 13 } as object,
   thumbRound: { borderRadius: 24 } as object, // characters read as circular avatars
+  thumbRoundLight: { borderRadius: 28 } as object,
   tile: {
     width: '100%',
     height: '100%',
@@ -220,13 +249,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(231,115,51,0.18)',
   } as object,
   tileDark: { backgroundColor: COLORS.navy } as object,
-  heroImg: { width: 48, height: 48 } as object,
+  heroImg: { width: '100%', height: '100%' } as object,
   mono: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.navy } as object,
   monoOrange: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.orange } as object,
   text: { flex: 1, minWidth: 0, flexDirection: 'column', gap: 2 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   name: { fontFamily: 'Flame-Regular', fontSize: 18, color: COLORS.beige, flexShrink: 1 } as object,
-  nameLight: { color: COLORS.navy } as object,
+  nameLight: { color: COLORS.navy, fontSize: 20 } as object,
   tag: {
     paddingHorizontal: 7,
     paddingVertical: 2,

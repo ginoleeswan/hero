@@ -357,6 +357,10 @@ export default function WebSearchScreen() {
                 )}
               </View>
             </View>
+            {/* The seam dissolved: instead of a hard hairline + shadow, the dark
+                band melts into the beige canvas over this runway, so the search
+                zone and the content read as one continuous surface. */}
+            <View style={styles.mobileHeaderFade as object} pointerEvents="none" />
           </View>
           <View style={{ height: headerH }} />
         </>
@@ -589,14 +593,25 @@ const styles = StyleSheet.create({
     zIndex: 50,
     paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 14px)`,
     transform: 'translateZ(0)',
-    // The seam (see desktopHeroZone): warm hairline + shadow at the dark→beige edge.
-    borderBottomWidth: 1,
-    borderBottomColor: SEAM_COLOR,
-    boxShadow: '0 12px 28px -12px rgba(11,24,32,0.55)',
+    // No hard seam: the dark band dissolves into the canvas via mobileHeaderFade
+    // (the search zone + content read as one continuous surface). The extra bottom
+    // padding is the runway the fade needs, clear of the search field.
+    paddingBottom: 40,
+  } as object,
+  // The dissolve: a transparent→beige wash over the navy bottom edge so the dark
+  // band melts into the paper canvas instead of ending on a line. Sits in the
+  // header's bottom padding, clear of the search field.
+  mobileHeaderFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 46,
+    backgroundImage: `linear-gradient(180deg, rgba(245,235,220,0) 0%, rgba(245,235,220,0.55) 58%, ${COLORS.beige} 100%)`,
   } as object,
   mobileSearchRow: {
     paddingHorizontal: 12,
-    paddingBottom: 14,
+    paddingBottom: 4,
   },
   mobileSearchBar: {
     flexDirection: 'row',
@@ -647,9 +662,11 @@ const styles = StyleSheet.create({
   idleHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   idleLabel: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    color: COLORS.grey,
-    letterSpacing: 0.5,
+    fontSize: 11.5,
+    // Warm ink at low opacity instead of a cool grey — quiet but deliberate, and
+    // tonally part of the navy/beige system rather than a neutral slate.
+    color: 'rgba(41,60,67,0.6)',
+    letterSpacing: 0.9,
     textTransform: 'uppercase',
     marginBottom: 10,
   } as object,
@@ -660,14 +677,19 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   } as object,
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } as object,
+  // Recent terms read as small raised paper pills — a warm off-white fill + a
+  // hairline so they sit on the canvas rather than dissolving into it.
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(29,45,51,0.07)',
-    borderRadius: 18,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    backgroundColor: 'rgba(255,251,244,0.8)',
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.12)',
+    boxShadow: '0 1px 2px rgba(11,24,32,0.05)',
+    paddingHorizontal: 13,
+    paddingVertical: 8,
     cursor: 'pointer',
     maxWidth: 220,
   } as object,

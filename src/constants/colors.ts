@@ -62,3 +62,10 @@ export const SURFACE_GRADIENT = {
 
 /** The seam — a warm orange hairline where a dark band meets beige content. */
 export const SEAM_COLOR = 'rgba(231,115,51,0.20)';
+
+/**
+ * Soft, warm-dark drop shadow for cards resting on the beige paper canvas — a
+ * deep-navy tint (never pure black) so components feel like they *rise from* the
+ * warm surface rather than float on a cold grey one. Web (RNW box-shadow string).
+ */
+export const CARD_SHADOW = '0 6px 22px -12px rgba(11,24,32,0.32)';

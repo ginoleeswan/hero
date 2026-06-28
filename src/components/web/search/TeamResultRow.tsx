@@ -1,6 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { COLORS } from '../../../constants/colors';
 import { BrandLogoView } from '../../PublisherBadge';
+import { brandForPublisher } from '../../../constants/publishers';
 import { teamLogo } from '../../../constants/teamBrands';
 import type { TeamSearchResult } from '../../../lib/db/teams';
 
@@ -20,6 +21,9 @@ export function TeamResultRow({
 }) {
   const light = variant === 'light';
   const tlogo = teamLogo(team);
+  // No logo art? Tint the monogram tile with the team's universe brand colour
+  // (Marvel red, DC blue…) instead of a uniform orange — instant identity + variety.
+  const tint = brandForPublisher(team.publisher)?.color ?? COLORS.orange;
   const meta = [`${team.member_count} member${team.member_count === 1 ? '' : 's'}`, team.publisher]
     .filter(Boolean)
     .join(' · ');
@@ -35,7 +39,16 @@ export function TeamResultRow({
         ] as object
       }
     >
-      <View style={[styles.tile, tlogo && (styles.tileLogo as object)] as object}>
+      <View
+        style={
+          [
+            styles.tile,
+            tlogo
+              ? (styles.tileLogo as object)
+              : { backgroundColor: `${tint}22`, borderColor: `${tint}55` },
+          ] as object
+        }
+      >
         {tlogo ? (
           <BrandLogoView
             logo={tlogo.logo}
@@ -44,7 +57,7 @@ export function TeamResultRow({
             tint={tlogo.logoTint}
           />
         ) : (
-          <Text style={styles.monogram as object} numberOfLines={1}>
+          <Text style={[styles.monogram, { color: tint }] as object} numberOfLines={1}>
             {team.name.slice(0, 2).toUpperCase()}
           </Text>
         )}
