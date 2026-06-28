@@ -4,115 +4,87 @@ import { Image } from 'expo-image';
 import { COLORS } from '../../constants/colors';
 import { ImageLightbox } from '../ImageLightbox';
 
+/**
+ * Horizontal, edge-to-edge stills rail with a tap-to-open lightbox. `inCard`
+ * drops the rail's own header (the card supplies it) and bleeds to the edges.
+ */
 export function StillsGallery({ stills, inCard }: { stills: string[]; inCard?: boolean }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   if (stills.length === 0) return null;
 
   const images = stills.map((url) => ({ url }));
+  const stillStyle = Platform.OS === 'web' ? styles.stillWide : styles.still;
 
-  if (Platform.OS === 'web') {
-    const lightbox =
-      lightboxIndex !== null ? (
-        <ImageLightbox
-          images={images}
-          initialIndex={lightboxIndex}
-          onClose={() => setLightboxIndex(null)}
-        />
-      ) : null;
-    const grid = (
-      <View style={[webStyles.grid, inCard && webStyles.bare] as object}>
-        {stills.map((url, i) => (
-          <TouchableOpacity key={i} activeOpacity={0.85} onPress={() => setLightboxIndex(i)}>
-            <Image
-              source={{ uri: url }}
-              style={webStyles.still}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-            />
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
-    if (inCard) {
-      return (
-        <>
-          {grid}
-          {lightbox}
-        </>
-      );
-    }
+  const scroller = (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={inCard ? styles.bleed : undefined}
+      contentContainerStyle={styles.row}
+    >
+      {stills.map((url, i) => (
+        <TouchableOpacity key={i} activeOpacity={0.85} onPress={() => setLightboxIndex(i)}>
+          <Image
+            source={{ uri: url }}
+            style={stillStyle}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+
+  const lightbox =
+    lightboxIndex !== null ? (
+      <ImageLightbox
+        images={images}
+        initialIndex={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+      />
+    ) : null;
+
+  if (inCard) {
     return (
-      <View style={styles.block}>
-        <Text style={styles.label}>Stills</Text>
-        {grid}
+      <>
+        {scroller}
         {lightbox}
-      </View>
+      </>
     );
   }
 
   return (
     <View style={styles.block}>
       <Text style={styles.label}>Stills</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
-      >
-        {stills.map((url, i) => (
-          <TouchableOpacity key={i} activeOpacity={0.85} onPress={() => setLightboxIndex(i)}>
-            <Image
-              source={{ uri: url }}
-              style={styles.still}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-            />
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {lightboxIndex !== null ? (
-        <ImageLightbox
-          images={images}
-          initialIndex={lightboxIndex}
-          onClose={() => setLightboxIndex(null)}
-        />
-      ) : null}
+      {scroller}
+      {lightbox}
     </View>
   );
 }
 
-const webStyles = StyleSheet.create({
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingHorizontal: 20,
-  },
-  bare: { paddingHorizontal: 0 },
-  still: {
-    width: 256,
-    height: 144,
-    borderRadius: 8,
-  },
-});
-
 const styles = StyleSheet.create({
-  block: { gap: 8 },
+  block: { gap: 12 },
   label: {
-    fontFamily: 'FlameSans-Regular',
+    fontFamily: 'Flame-Regular',
     fontSize: 11,
-    color: COLORS.grey,
+    color: COLORS.orange,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 1.5,
     paddingHorizontal: 20,
   },
   row: {
-    gap: 8,
+    gap: 10,
     paddingHorizontal: 20,
   },
+  bleed: { marginHorizontal: -20 },
   still: {
     width: 192,
     height: 108,
-    borderRadius: 8,
+    borderRadius: 10,
+  },
+  stillWide: {
+    width: 280,
+    height: 158,
+    borderRadius: 10,
   },
 });

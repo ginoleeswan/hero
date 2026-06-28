@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { HeroImage } from '../HeroImage';
@@ -42,6 +42,10 @@ function HeroCard({ hero, onPress }: { hero: RelatedHeroCard; onPress: () => voi
   );
 }
 
+/**
+ * Horizontal, edge-to-edge rail of heroes featured in the title. `inCard` drops
+ * the rail's own header (the card supplies it) and bleeds to the card edges.
+ */
 export function HeroesInFilmRail({
   heroes,
   inCard,
@@ -55,58 +59,37 @@ export function HeroesInFilmRail({
   const handlePress = (hero: RelatedHeroCard) =>
     router.push(`/character/${hero.id}?name=${encodeURIComponent(hero.name)}`);
 
-  if (Platform.OS === 'web') {
-    const grid = (
-      <View style={[webStyles.grid, inCard && webStyles.bare] as object}>
-        {heroes.map((hero) => (
-          <HeroCard key={hero.id} hero={hero} onPress={() => handlePress(hero)} />
-        ))}
-      </View>
-    );
-    if (inCard) return grid;
-    return (
-      <View style={styles.block}>
-        <Text style={styles.label}>Heroes in this Film</Text>
-        {grid}
-      </View>
-    );
-  }
+  const scroller = (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={inCard ? styles.bleed : undefined}
+      contentContainerStyle={styles.row}
+    >
+      {heroes.map((hero) => (
+        <HeroCard key={hero.id} hero={hero} onPress={() => handlePress(hero)} />
+      ))}
+    </ScrollView>
+  );
+
+  if (inCard) return scroller;
 
   return (
     <View style={styles.block}>
       <Text style={styles.label}>Heroes in this Film</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
-      >
-        {heroes.map((hero) => (
-          <HeroCard key={hero.id} hero={hero} onPress={() => handlePress(hero)} />
-        ))}
-      </ScrollView>
+      {scroller}
     </View>
   );
 }
 
-const webStyles = StyleSheet.create({
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingBottom: 2,
-  },
-  bare: { paddingHorizontal: 0, paddingBottom: 0 },
-});
-
 const styles = StyleSheet.create({
-  block: { gap: 8 },
+  block: { gap: 12 },
   label: {
-    fontFamily: 'FlameSans-Regular',
+    fontFamily: 'Flame-Regular',
     fontSize: 11,
-    color: COLORS.grey,
+    color: COLORS.orange,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 1.5,
     paddingHorizontal: 20,
   },
   row: {
@@ -114,6 +97,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 2,
   },
+  bleed: { marginHorizontal: -20 },
   card: {
     width: CARD_W,
     height: CARD_H,

@@ -113,23 +113,31 @@ describe('getTitleHeroes', () => {
 });
 
 describe('extractProviders', () => {
-  it('returns [] for null input', () => {
-    expect(extractProviders(null)).toEqual([]);
+  it('returns empty info for null input', () => {
+    expect(extractProviders(null)).toEqual({ link: null, providers: [] });
   });
 
-  it('maps logo_path to w92 URL', () => {
+  it('maps logo_path to w92 URL and tags the kind', () => {
     const blob = { US: { flatrate: [{ provider_name: 'Netflix', logo_path: '/nfx.png' }] } };
-    const result = extractProviders(blob);
-    expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
+    const { providers } = extractProviders(blob);
+    expect(providers).toHaveLength(1);
+    expect(providers[0]).toEqual({
       name: 'Netflix',
       logoUrl: 'https://image.tmdb.org/t/p/w92/nfx.png',
+      kind: 'flatrate',
     });
+  });
+
+  it('surfaces the region link', () => {
+    const blob = {
+      US: { link: 'https://watch.example/us', flatrate: [{ provider_name: 'Netflix' }] },
+    };
+    expect(extractProviders(blob).link).toBe('https://watch.example/us');
   });
 
   it('sets logoUrl to null when logo_path is absent', () => {
     const blob = { US: { buy: [{ provider_name: 'Amazon', logo_path: null }] } };
-    expect(extractProviders(blob)[0].logoUrl).toBeNull();
+    expect(extractProviders(blob).providers[0].logoUrl).toBeNull();
   });
 
   it('dedupes providers that appear in multiple categories', () => {
@@ -139,7 +147,7 @@ describe('extractProviders', () => {
         rent: [{ provider_name: 'Disney+', logo_path: '/d.png' }],
       },
     };
-    expect(extractProviders(blob)).toHaveLength(1);
+    expect(extractProviders(blob).providers).toHaveLength(1);
   });
 
   it('prefers US over other regions', () => {
@@ -147,15 +155,15 @@ describe('extractProviders', () => {
       GB: { flatrate: [{ provider_name: 'BritBox', logo_path: '/b.png' }] },
       US: { flatrate: [{ provider_name: 'Netflix', logo_path: '/n.png' }] },
     };
-    const result = extractProviders(blob);
-    expect(result.map((p) => p.name)).toContain('Netflix');
-    expect(result.map((p) => p.name)).not.toContain('BritBox');
+    const names = extractProviders(blob).providers.map((p) => p.name);
+    expect(names).toContain('Netflix');
+    expect(names).not.toContain('BritBox');
   });
 
   it('falls back to first available region when US is absent', () => {
     const blob = { GB: { flatrate: [{ provider_name: 'BritBox', logo_path: '/b.png' }] } };
-    const result = extractProviders(blob);
-    expect(result).toHaveLength(1);
-    expect(result[0].name).toBe('BritBox');
+    const { providers } = extractProviders(blob);
+    expect(providers).toHaveLength(1);
+    expect(providers[0].name).toBe('BritBox');
   });
 });

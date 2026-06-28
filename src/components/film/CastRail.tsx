@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
@@ -16,7 +16,7 @@ function CastMember({ member }: { member: HeroTitleCastMember }) {
         />
       ) : (
         <View style={[styles.avatar, styles.avatarPlaceholder]}>
-          <Ionicons name="person" size={20} color={COLORS.grey} />
+          <Ionicons name="person" size={24} color={COLORS.grey} />
         </View>
       )}
       <Text style={styles.name} numberOfLines={2}>
@@ -31,75 +31,66 @@ function CastMember({ member }: { member: HeroTitleCastMember }) {
   );
 }
 
-export function CastRail({ cast, inCard }: { cast: HeroTitleCastMember[]; inCard?: boolean }) {
+/**
+ * Horizontal, edge-to-edge cast rail. `inCard` drops the rail's own header (the
+ * card supplies it) and bleeds the scroller to the card edges.
+ */
+export function CastRail({
+  cast,
+  inCard,
+}: {
+  cast: HeroTitleCastMember[];
+  inCard?: boolean;
+}) {
   if (cast.length === 0) return null;
 
-  if (Platform.OS === 'web') {
-    const grid = (
-      <View style={[webStyles.grid, inCard && webStyles.bare] as object}>
-        {cast.map((member, i) => (
-          <CastMember key={`${member.name}-${i}`} member={member} />
-        ))}
-      </View>
-    );
-    if (inCard) return grid;
-    return (
-      <View style={styles.block}>
-        <Text style={styles.label}>Cast</Text>
-        {grid}
-      </View>
-    );
-  }
+  const scroller = (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={inCard ? styles.bleed : undefined}
+      contentContainerStyle={styles.row}
+    >
+      {cast.map((member, i) => (
+        <CastMember key={`${member.name}-${i}`} member={member} />
+      ))}
+    </ScrollView>
+  );
+
+  if (inCard) return scroller;
 
   return (
     <View style={styles.block}>
       <Text style={styles.label}>Cast</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
-      >
-        {cast.map((member, i) => (
-          <CastMember key={`${member.name}-${i}`} member={member} />
-        ))}
-      </ScrollView>
+      {scroller}
     </View>
   );
 }
 
-const webStyles = StyleSheet.create({
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 14,
-    paddingHorizontal: 20,
-  },
-  bare: { paddingHorizontal: 0 },
-});
-
 const styles = StyleSheet.create({
-  block: { gap: 8 },
+  block: { gap: 12 },
   label: {
-    fontFamily: 'FlameSans-Regular',
+    fontFamily: 'Flame-Regular',
     fontSize: 11,
-    color: COLORS.grey,
+    color: COLORS.orange,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 1.5,
     paddingHorizontal: 20,
   },
   row: {
-    gap: 12,
+    gap: 14,
     paddingHorizontal: 20,
   },
+  bleed: { marginHorizontal: -20 },
   member: {
-    width: 72,
+    width: 84,
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
   },
   avatarPlaceholder: {
     backgroundColor: COLORS.navy + '14',
@@ -108,16 +99,16 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: 'FlameSans-Regular',
-    fontSize: 10,
+    fontSize: 11,
     color: COLORS.navy,
     textAlign: 'center',
-    lineHeight: 13,
+    lineHeight: 14,
   },
   character: {
     fontFamily: 'FlameSans-Regular',
-    fontSize: 9,
+    fontSize: 10,
     color: COLORS.grey,
     textAlign: 'center',
-    lineHeight: 12,
+    lineHeight: 13,
   },
 });

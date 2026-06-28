@@ -30,9 +30,18 @@ export interface HeroTitle {
   details: Record<string, unknown> | null;
 }
 
+export type WatchKind = 'flatrate' | 'rent' | 'buy';
+
 export interface WatchProvider {
   name: string;
   logoUrl: string | null;
+  kind: WatchKind;
+}
+
+export interface WatchInfo {
+  /** TMDB/JustWatch region page where the user picks a provider. */
+  link: string | null;
+  providers: WatchProvider[];
 }
 
 export interface TitlesByMedia {
@@ -72,18 +81,23 @@ export function groupTitlesByMedia(titles: HeroTitle[]): TitlesByMedia {
 
 const TMDB_LOGO_BASE = 'https://image.tmdb.org/t/p/w92';
 
-/** Watch providers from the raw TMDB blob: prefer US, dedupe by provider_name. */
-export function extractProviders(blob: Record<string, unknown> | null): WatchProvider[] {
-  if (!blob) return [];
+/**
+ * Watch providers from the raw TMDB blob: prefer US, dedupe by provider_name
+ * (first hit wins, so flatrate beats rent beats buy), and surface the region
+ * link. TMDB gives one link per region — not per provider.
+ */
+export function extractProviders(blob: Record<string, unknown> | null): WatchInfo {
+  if (!blob) return { link: null, providers: [] };
   const regionData =
     (blob['US'] as Record<string, unknown> | undefined) ??
     Object.values(blob).find(
       (v): v is Record<string, unknown> => typeof v === 'object' && v !== null,
     );
-  if (!regionData) return [];
+  if (!regionData) return { link: null, providers: [] };
+  const link = typeof regionData['link'] === 'string' ? regionData['link'] : null;
   const seen = new Map<string, WatchProvider>();
-  for (const key of ['flatrate', 'rent', 'buy'] as const) {
-    const arr = regionData[key];
+  for (const kind of ['flatrate', 'rent', 'buy'] as const) {
+    const arr = regionData[kind];
     if (!Array.isArray(arr)) continue;
     for (const p of arr) {
       if (typeof p !== 'object' || p === null) continue;
@@ -91,10 +105,10 @@ export function extractProviders(blob: Record<string, unknown> | null): WatchPro
       const name = typeof row['provider_name'] === 'string' ? row['provider_name'] : null;
       if (!name || seen.has(name)) continue;
       const logoPath = typeof row['logo_path'] === 'string' ? row['logo_path'] : null;
-      seen.set(name, { name, logoUrl: logoPath ? TMDB_LOGO_BASE + logoPath : null });
+      seen.set(name, { name, logoUrl: logoPath ? TMDB_LOGO_BASE + logoPath : null, kind });
     }
   }
-  return Array.from(seen.values());
+  return { link, providers: Array.from(seen.values()) };
 }
 
 interface TitleRow {

@@ -20,18 +20,10 @@ import { COLORS, SURFACE } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { NotFoundView } from '../../src/components/NotFoundView';
 import { FilmBackdropHeader } from '../../src/components/film/FilmBackdropHeader';
-import { FilmTrailer } from '../../src/components/film/FilmTrailer';
 import { WhereToWatch } from '../../src/components/film/WhereToWatch';
 import { CastRail } from '../../src/components/film/CastRail';
 import { StillsGallery } from '../../src/components/film/StillsGallery';
 import { HeroesInFilmRail } from '../../src/components/film/HeroesInFilmRail';
-
-function formatRevenue(n: number | null): string | null {
-  if (!n || n <= 0) return null;
-  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1)}B`;
-  if (n >= 1_000_000) return `$${Math.round(n / 1_000_000)}M`;
-  return `$${n.toLocaleString()}`;
-}
 
 export default function TitleScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -91,24 +83,22 @@ export default function TitleScreen() {
     );
   }
 
-  const providers = extractProviders(film.watchProviders);
+  const watch = extractProviders(film.watchProviders);
   const tmdbUrl = `https://www.themoviedb.org/${film.mediaType === 'tv' ? 'tv' : 'movie'}/${film.externalId}`;
 
   // ── Dossier cards (web) — match the character page's white-card design system ──
-  const overviewCard =
-    film.overview || film.trailerKey ? (
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Overview</Text>
-        <View style={styles.cardDivider} />
-        {film.overview ? <Text style={styles.cardOverview}>{film.overview}</Text> : null}
-        {film.trailerKey ? (
-          <View style={film.overview ? styles.trailerSpacer : undefined}>
-            <FilmTrailer trailerKey={film.trailerKey} />
-          </View>
-        ) : null}
-      </View>
-    ) : null;
+  // Trailer now lives in the backdrop hero as the primary CTA; the overview card
+  // is text-only.
+  const overviewCard = film.overview ? (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Overview</Text>
+      <View style={styles.cardDivider} />
+      <Text style={styles.cardOverview}>{film.overview}</Text>
+    </View>
+  ) : null;
 
+  // Rails live in cards (single card header — `inCard` drops the rail's own
+  // label) and scroll horizontally, bleeding to the card edges.
   const castCard =
     film.cast && film.cast.length > 0 ? (
       <View style={styles.card}>
@@ -144,9 +134,10 @@ export default function TitleScreen() {
     networks?: string[] | null;
   };
 
+  // Details holds only what the hero stat rail does NOT already show (year,
+  // runtime, rating, box office). For films that's nothing, so the card drops
+  // out; for TV it's the season/episode/network breakdown.
   const detailRows: { label: string; value: string }[] = [];
-  if (film.year != null)
-    detailRows.push({ label: isTv ? 'First aired' : 'Released', value: String(film.year) });
   if (isTv) {
     if (tv.seasons) detailRows.push({ label: 'Seasons', value: String(tv.seasons) });
     if (tv.episodes) detailRows.push({ label: 'Episodes', value: String(tv.episodes) });
@@ -154,13 +145,7 @@ export default function TitleScreen() {
       detailRows.push({ label: 'Episode', value: `${tv.episode_runtime} min` });
     if (tv.networks && tv.networks.length > 0)
       detailRows.push({ label: 'Network', value: tv.networks.join(', ') });
-  } else if (film.runtime) {
-    detailRows.push({ label: 'Runtime', value: `${film.runtime} min` });
   }
-  if (film.voteAverage != null)
-    detailRows.push({ label: 'Rating', value: `★ ${film.voteAverage.toFixed(1)} / 10` });
-  const revenue = formatRevenue(film.revenue);
-  if (!isTv && revenue) detailRows.push({ label: 'Box office', value: revenue });
 
   const detailsCard =
     detailRows.length > 0 ? (
@@ -180,11 +165,11 @@ export default function TitleScreen() {
     ) : null;
 
   const watchCard =
-    providers.length > 0 ? (
+    watch.providers.length > 0 ? (
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Where to Watch</Text>
         <View style={styles.cardDivider} />
-        <WhereToWatch providers={providers} inCard />
+        <WhereToWatch providers={watch.providers} link={watch.link} inCard />
       </View>
     ) : null;
 
@@ -225,11 +210,11 @@ export default function TitleScreen() {
           ) : (
             <View style={styles.bodyCol}>
               {overviewCard}
-              {detailsCard}
-              {watchCard}
               {castCard}
               {stillsCard}
               {heroesCard}
+              {detailsCard}
+              {watchCard}
               {tmdbLink}
             </View>
           )}
@@ -250,17 +235,13 @@ export default function TitleScreen() {
 
         {film.overview ? (
           <View style={styles.section}>
+            <Text style={styles.eyebrow}>Overview</Text>
             <Text style={styles.overview}>{film.overview}</Text>
           </View>
         ) : null}
-        {film.trailerKey ? (
-          <View style={styles.section}>
-            <FilmTrailer trailerKey={film.trailerKey} />
-          </View>
-        ) : null}
-        {providers.length > 0 ? (
+        {watch.providers.length > 0 ? (
           <View style={styles.railSection}>
-            <WhereToWatch providers={providers} />
+            <WhereToWatch providers={watch.providers} link={watch.link} />
           </View>
         ) : null}
         {film.cast && film.cast.length > 0 ? (
@@ -308,13 +289,21 @@ const styles = StyleSheet.create({
   scrollContent: { gap: 0 },
 
   // ── Native stacked layout ──
-  section: { paddingHorizontal: 20, paddingTop: 20 },
-  railSection: { paddingTop: 20 },
+  section: { paddingHorizontal: 20, paddingTop: 24 },
+  railSection: { paddingTop: 24 },
+  eyebrow: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 11,
+    color: COLORS.orange,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginBottom: 8,
+  },
   overview: {
     fontFamily: 'FlameSans-Regular',
-    fontSize: 14,
-    color: COLORS.navy + 'bb',
-    lineHeight: 22,
+    fontSize: 14.5,
+    color: COLORS.navy + 'cc',
+    lineHeight: 23,
   },
   linkBtn: {
     flexDirection: 'row',
@@ -368,7 +357,6 @@ const styles = StyleSheet.create({
     color: COLORS.navy + 'cc',
     lineHeight: 23,
   },
-  trailerSpacer: { marginTop: 16 },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
