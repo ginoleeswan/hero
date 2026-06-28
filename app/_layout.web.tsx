@@ -75,7 +75,7 @@ const eb = StyleSheet.create({
   btnText: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: '#fff' },
 });
 
-function WebAuthGate() {
+function WebAuthGate({ fontsReady }: { fontsReady: boolean }) {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
@@ -114,7 +114,10 @@ function WebAuthGate() {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [pathname]);
 
-  if (loading || !settled) return <LogoLoader />;
+  // Single boot gate: one LogoLoader instance spans the whole cold start (fonts
+  // + auth), so the logo's draw-in animation runs continuously instead of
+  // restarting at a fonts→auth handoff between two separate loaders.
+  if (!fontsReady || loading || !settled) return <LogoLoader />;
 
   const isRoot = segs.length === 0;
   const showNav = !inAuthGroup && !isRoot;
@@ -186,14 +189,17 @@ export default function WebRootLayout() {
     Righteous_400Regular,
   });
 
-  if (!fontsLoaded && !fontError) return <LogoLoader />;
+  const fontsReady = fontsLoaded || !!fontError;
 
+  // No early return for fonts — mount the provider tree immediately and let the
+  // single boot gate inside WebAuthGate own the loading screen for both fonts and
+  // auth. One persistent LogoLoader, no remount/animation restart.
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <StatusBar style="dark" />
         <CommandAlertsProvider>
-          <WebAuthGate />
+          <WebAuthGate fontsReady={fontsReady} />
         </CommandAlertsProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>
