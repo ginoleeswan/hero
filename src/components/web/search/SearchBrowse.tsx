@@ -12,8 +12,6 @@ import { COLORS } from '../../../constants/colors';
 import { BROWSE_PODS } from '../../home/CategoryPodGrid';
 import type { BrowseCover } from '../../../lib/db/heroes';
 
-const FEATURED_SLUGS = ['marvel', 'dc'];
-
 type Pod = (typeof BROWSE_PODS)[number];
 
 function PodTile({
@@ -77,45 +75,24 @@ export function SearchBrowse({
   const isMobile = width < 640;
   const minCol = isMobile ? 150 : 220;
 
-  const featured = BROWSE_PODS.filter((p) => FEATURED_SLUGS.includes(p.slug));
-  const rest = BROWSE_PODS.filter((p) => !FEATURED_SLUGS.includes(p.slug));
+  // Publishers (Marvel/DC/Image) are the "Universes" chip row, so Browse is one
+  // uniform grid of theme pods — no featured row, no header, no wasted space.
+  const pods = BROWSE_PODS.filter((p) => p.kind !== 'Publisher');
 
   return (
-    <View>
-      <View style={t.featuredRow as object}>
-        {featured.map((p) => (
-          <PodTile key={p.slug} pod={p} cover={covers?.[p.slug]} onPress={onPress} featured />
-        ))}
-      </View>
-      <Text style={t.sectionLabel as object}>Browse</Text>
-      <View
-        style={
-          [t.grid, { gridTemplateColumns: `repeat(auto-fill, minmax(${minCol}px, 1fr))` }] as object
-        }
-      >
-        {rest.map((p) => (
-          <PodTile key={p.slug} pod={p} cover={covers?.[p.slug]} onPress={onPress} />
-        ))}
-      </View>
+    <View
+      style={
+        [t.grid, { gridTemplateColumns: `repeat(auto-fill, minmax(${minCol}px, 1fr))` }] as object
+      }
+    >
+      {pods.map((p) => (
+        <PodTile key={p.slug} pod={p} cover={covers?.[p.slug]} onPress={onPress} />
+      ))}
     </View>
   );
 }
 
 const t = StyleSheet.create({
-  featuredRow: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 14,
-    marginBottom: 28,
-  } as object,
-  sectionLabel: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11.5,
-    letterSpacing: 0.9,
-    textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.5)',
-    marginBottom: 14,
-  } as object,
   grid: {
     display: 'grid',
     gap: 14,

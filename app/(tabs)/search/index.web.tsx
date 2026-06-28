@@ -7,6 +7,7 @@ import {
   Text,
   TextInput,
   Pressable,
+  ScrollView,
   StyleSheet,
   Animated,
   useWindowDimensions,
@@ -28,6 +29,7 @@ import { TopResultRow } from '../../../src/components/web/search/TopResultRow';
 import { HeroRail, type RailHero } from '../../../src/components/web/search/HeroRail';
 import { pickTopResult, topResultKey, type TopResult } from '../../../src/lib/search/topResult';
 import { getRecentlyViewed } from '../../../src/lib/db/viewHistory';
+import { FEATURED_PUBLISHERS } from '../../../src/constants/publishers';
 import { useBrowseCovers } from '../../../src/hooks/useBrowseCovers';
 import { SearchBrowse } from '../../../src/components/web/search/SearchBrowse';
 import { useSkeletonAnim } from '../../../src/components/web/Skeleton';
@@ -486,11 +488,45 @@ export default function WebSearchScreen() {
             </View>
           )}
 
-          {/* The single browse surface — universes (Marvel/DC/Image) and themes
-              together (SearchBrowse owns its "Browse" heading). The old redundant
-              "Browse universes" logo-chip row is gone: those brands are the lead
-              pods here. */}
-          <View style={{ marginTop: 24 }}>
+          {/* Universes as the dedicated publisher entry (→ /universe). Browse below
+              is theme-only, so there's no Marvel/DC/Image redundancy between them. */}
+          <View style={styles.railSection}>
+            <Text style={styles.idleLabel as object}>Universes</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginHorizontal: -contentPad } as object}
+              contentContainerStyle={
+                [
+                  styles.universeTrack,
+                  { paddingLeft: contentPad, paddingRight: contentPad },
+                ] as object
+              }
+            >
+              {FEATURED_PUBLISHERS.map((b) => (
+                <UniverseChip
+                  key={b.slug}
+                  universe={{
+                    slug: b.slug,
+                    name: b.name,
+                    color: b.color,
+                    logo: b.logo,
+                    badgeSize: b.badgeSize,
+                    logoOnLight: b.logoOnLight,
+                    logoTint: b.logoTint,
+                    exact: false,
+                  }}
+                  variant="dark"
+                  onPress={() =>
+                    router.push(`/universe/${b.slug}` as Parameters<typeof router.push>[0])
+                  }
+                />
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Theme pods only (publishers removed — they're the Universes row). */}
+          <View style={styles.browseSection}>
             <SearchBrowse
               covers={browseCovers}
               onPress={(slug) =>
@@ -662,7 +698,7 @@ const styles = StyleSheet.create({
     paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 10px)`,
     // translateZ(0) is applied inline alongside the hide/reveal translateY.
     transition: 'transform 260ms ease',
-    paddingBottom: 6,
+    paddingBottom: 4,
   } as object,
   mobileSearchRow: {
     paddingHorizontal: 12,
@@ -722,13 +758,14 @@ const styles = StyleSheet.create({
     color: 'rgba(245,235,220,0.5)',
     letterSpacing: 0.9,
     textTransform: 'uppercase',
-    marginBottom: 10,
+    // No marginBottom: every section that uses this label owns the label→content
+    // gap, so the spacing isn't doubled.
+    marginBottom: 0,
   } as object,
   clearLink: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
     color: COLORS.orange,
-    marginBottom: 10,
   } as object,
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } as object,
   // Recent terms read as small raised paper pills — a warm off-white fill + a
@@ -759,12 +796,14 @@ const styles = StyleSheet.create({
   universeChipWrap: {
     borderRadius: 12,
   } as object,
-  topSection: { paddingTop: 20, gap: 8 } as object,
-  titlesSection: { paddingTop: 20, gap: 6 } as object,
-  railSection: { paddingTop: 20, gap: 10 } as object,
+  topSection: { paddingTop: 16, gap: 8 } as object,
+  titlesSection: { paddingTop: 16, gap: 6 } as object,
+  railSection: { paddingTop: 16, gap: 9 } as object,
+  browseSection: { paddingTop: 16 } as object,
+  universeTrack: { flexDirection: 'row', gap: 8 } as object,
 
   // ── Grid / content ─────────────────────────────────────────────────────────
-  gridWrap: { paddingTop: 8, maxWidth: 1200, width: '100%', alignSelf: 'center' },
+  gridWrap: { paddingTop: 2, maxWidth: 1200, width: '100%', alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: 'rgba(245,235,220,0.55)' },
   moreHint: {
