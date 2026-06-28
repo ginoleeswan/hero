@@ -492,7 +492,12 @@ export default function WebCharacterScreen() {
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
   // Before the skeleton early-return so it applies in both states.
-  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
+  // On mobile the screen opens on the dark immersive portrait header, so the
+  // canvas (which backs the iOS status-bar strip and bottom overscroll) is ink —
+  // the top edge then reads continuous into the hero instead of flashing a beige
+  // band above it. The body content stays beige via the opaque scroll + mSheet
+  // surfaces. Desktop has no status-bar strip and ends on beige, so it keeps paper.
+  useScreenChrome({ top: SURFACE.ink, canvas: isDesktop ? SURFACE.paper : SURFACE.ink });
 
   const skeletonOpacity = useSkeletonAnim();
   const {
