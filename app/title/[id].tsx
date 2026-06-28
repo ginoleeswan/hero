@@ -294,10 +294,10 @@ export default function TitleScreen() {
                   {castCard}
                   {stillsCard}
                   {heroesCard}
+                  {reviewsSection}
                 </View>
               </View>
               <View style={styles.fullStack}>
-                {reviewsSection}
                 {universeCard}
                 {recsCard}
               </View>
