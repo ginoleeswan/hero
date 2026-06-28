@@ -17,11 +17,13 @@ import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 import { TitlePosterRail } from './TitlePosterRail';
 import { ComicCoverRail } from './ComicCoverRail';
+import { WikiTrendingRail } from './WikiTrendingRail';
 import {
   mergeTrendingTitles,
   type Campaign,
   type TrendingTitle,
   type TrendingTitleCharacter,
+  type WikiTrendingHero,
 } from '../../lib/db/trending';
 import type { NewComic } from '../../lib/db/comics';
 
@@ -40,6 +42,7 @@ export interface RightNowBandProps {
   streaming: TrendingTitle[];
   personalized: TrendingTitleCharacter[];
   newComics: NewComic[];
+  wikiTrending: WikiTrendingHero[];
   onHeroPress: HeroPress;
   onTitlePress: (titleId: string) => void;
   onIssuePress: (issueId: string) => void;
@@ -211,6 +214,7 @@ export function RightNowBand({
   streaming,
   personalized,
   newComics,
+  wikiTrending,
   onHeroPress,
   onTitlePress,
   onIssuePress,
@@ -222,7 +226,8 @@ export function RightNowBand({
     comingSoon.length > 0 ||
     streaming.length > 0 ||
     personalized.length > 0 ||
-    newComics.length > 0;
+    newComics.length > 0 ||
+    wikiTrending.length > 0;
   if (!hasAny) return null;
 
   return (
@@ -253,6 +258,8 @@ export function RightNowBand({
       />
 
       <ComicCoverRail comics={newComics} onIssuePress={onIssuePress} />
+
+      <WikiTrendingRail heroes={wikiTrending} onHeroPress={(id) => onHeroPress({ id })} />
 
       {personalized.length > 0 && (
         <PersonalStrip characters={personalized} onHeroPress={onHeroPress} disabled={disabled} />

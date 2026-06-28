@@ -41,6 +41,7 @@ import {
   type TrendingTitle,
   type Campaign,
   type TrendingTitleCharacter,
+  type WikiTrendingHero,
 } from '../../src/lib/db/trending';
 import type { NewComic } from '../../src/lib/db/comics';
 import { type TodaysMatchup as Matchup } from '../../src/lib/matchup';
@@ -90,6 +91,7 @@ type FeedRow =
       streaming: TrendingTitle[];
       personalized: TrendingTitleCharacter[];
       newComics: NewComic[];
+      wikiTrending: WikiTrendingHero[];
     }
   | { type: 'chapter'; kicker: string; title: string }
   | { type: 'rivalries'; rivalries: Rivalry[] }
@@ -117,6 +119,7 @@ export default function HomeScreen() {
     onScreen,
     comingSoon,
     streaming,
+    wikiTrending,
     campaigns,
     trendingForUser,
     matchup,
@@ -220,7 +223,8 @@ export default function HomeScreen() {
       comingSoon.length > 0 ||
       streaming.length > 0 ||
       trendingForUser.length > 0 ||
-      newComics.length > 0
+      newComics.length > 0 ||
+      wikiTrending.length > 0
     ) {
       out.push({
         type: 'rightnow',
@@ -230,6 +234,7 @@ export default function HomeScreen() {
         streaming,
         personalized: trendingForUser,
         newComics,
+        wikiTrending,
       });
     }
     if (recentlyViewed.length > 0)
@@ -350,6 +355,7 @@ export default function HomeScreen() {
     onScreen,
     comingSoon,
     streaming,
+    wikiTrending,
     campaigns,
     trendingForUser,
     newComics,
@@ -421,6 +427,7 @@ export default function HomeScreen() {
               streaming={item.streaming}
               personalized={item.personalized}
               newComics={item.newComics}
+              wikiTrending={item.wikiTrending}
               onHeroPress={handlePress}
               onTitlePress={handleTitlePress}
               onIssuePress={handleIssuePress}

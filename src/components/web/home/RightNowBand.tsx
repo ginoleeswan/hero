@@ -14,8 +14,10 @@ import {
   type Campaign,
   type TrendingTitle,
   type TrendingTitleCharacter,
+  type WikiTrendingHero,
 } from '../../../lib/db/trending';
 import type { NewComic } from '../../../lib/db/comics';
+import { WikiTrendingRail } from '../../home/WikiTrendingRail';
 
 const BADGE_COLOR: Record<BadgeTone, string> = {
   theaters: COLORS.orange,
@@ -31,6 +33,7 @@ interface RightNowBandProps {
   trendingOnScreen: TrendingTitle[];
   personalized: TrendingTitleCharacter[];
   newComics: NewComic[];
+  wikiTrending: WikiTrendingHero[];
   onHeroPress: (id: string) => void;
   onTitlePress: (id: string) => void;
   onIssuePress: (issueId: string) => void;
@@ -446,6 +449,7 @@ export function RightNowBand({
   trendingOnScreen,
   personalized,
   newComics,
+  wikiTrending,
   onHeroPress,
   onTitlePress,
   onIssuePress,
@@ -460,7 +464,8 @@ export function RightNowBand({
     streaming.length > 0 ||
     trendingOnScreen.length > 0 ||
     personalized.length > 0 ||
-    newComics.length > 0;
+    newComics.length > 0 ||
+    wikiTrending.length > 0;
   if (!hasAny) return null;
 
   // "What's Hot" is the real TMDB daily-trending feed (trendingOnScreen). On the
@@ -515,6 +520,8 @@ export function RightNowBand({
       )}
 
       <ComicCoverRail comics={newComics} onIssuePress={onIssuePress} pagePad={pagePad} />
+
+      <WikiTrendingRail heroes={wikiTrending} onHeroPress={onHeroPress} />
 
       {personalized.length > 0 && (
         <PersonalRow characters={personalized} onHeroPress={onHeroPress} />
