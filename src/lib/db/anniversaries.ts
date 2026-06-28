@@ -1,49 +1,59 @@
 // Calendar-driven "This Month in History" reader. No external API — the data is
 // already in heroes.first_issue_data; the month rollover is the only refresh.
+// Issue-centric: one entry per debut ISSUE (deduped), carrying the fame-ranked
+// cast of characters who first appeared in it.
 import { supabase } from '../supabase';
 
-export interface DebutHero {
+export interface DebutCharacter {
   id: string;
   name: string;
   image_url: string | null;
   portrait_url: string | null;
-  /** The debut issue's cover art. */
-  debut_cover_url: string | null;
-  /** Year the character first appeared (e.g. 1938). */
+}
+
+export interface DebutIssue {
+  issueId: string;
+  seriesName: string;
+  issueNumber: string | null;
+  /** The issue's cover art. */
+  cover_url: string | null;
+  /** Year the issue was published (e.g. 1938). */
   year: number;
-  /** Years since the debut, against the current calendar year (e.g. 88). */
+  /** Years since publication, against the current calendar year (e.g. 88). */
   yearsAgo: number;
+  /** Characters who first appeared in this issue, fame-ranked. */
+  characters: DebutCharacter[];
 }
 
-interface DebutRow {
-  id: string;
-  name: string;
-  image_url: string | null;
-  portrait_url: string | null;
-  debut_cover_url: string | null;
+interface DebutIssueRow {
+  issue_id: string;
+  series_name: string | null;
+  issue_number: string | null;
+  cover_url: string | null;
   debut_year: number | null;
-  fame_score: number | null;
+  characters: DebutCharacter[] | null;
 }
 
-/** Recognizable characters who debuted in the current calendar month, fame-ranked.
- *  Degrades to [] so a DB hiccup never errors the Explore band. */
-export async function getDebutsThisMonth(limit = 14): Promise<DebutHero[]> {
+/** Recognizable debut issues from the current calendar month, ranked by their top
+ *  character's fame, each with its debutant cast. Degrades to [] so a DB hiccup
+ *  never errors the Explore band. */
+export async function getDebutsThisMonth(limit = 12): Promise<DebutIssue[]> {
   const { data, error } = await supabase.rpc('get_debuts_this_month', { p_limit: limit } as never);
   if (error) {
     console.warn('[getDebutsThisMonth] error:', error.message);
     return [];
   }
   const currentYear = new Date().getFullYear();
-  return ((data ?? []) as unknown as DebutRow[]).map((r) => {
+  return ((data ?? []) as unknown as DebutIssueRow[]).map((r) => {
     const year = r.debut_year ?? currentYear;
     return {
-      id: r.id,
-      name: r.name,
-      image_url: r.image_url,
-      portrait_url: r.portrait_url,
-      debut_cover_url: r.debut_cover_url,
+      issueId: r.issue_id,
+      seriesName: r.series_name ?? '',
+      issueNumber: r.issue_number,
+      cover_url: r.cover_url,
       year,
       yearsAgo: Math.max(0, currentYear - year),
+      characters: r.characters ?? [],
     };
   });
 }

@@ -27,7 +27,7 @@ import {
   type WikiTrendingHero,
 } from '../../lib/db/trending';
 import type { NewComic } from '../../lib/db/comics';
-import type { DebutHero } from '../../lib/db/anniversaries';
+import type { DebutIssue } from '../../lib/db/anniversaries';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -45,7 +45,7 @@ export interface RightNowBandProps {
   personalized: TrendingTitleCharacter[];
   newComics: NewComic[];
   wikiTrending: WikiTrendingHero[];
-  debuts: DebutHero[];
+  debuts: DebutIssue[];
   onHeroPress: HeroPress;
   onTitlePress: (titleId: string) => void;
   onIssuePress: (issueId: string) => void;

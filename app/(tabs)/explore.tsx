@@ -44,7 +44,7 @@ import {
   type WikiTrendingHero,
 } from '../../src/lib/db/trending';
 import type { NewComic } from '../../src/lib/db/comics';
-import type { DebutHero } from '../../src/lib/db/anniversaries';
+import type { DebutIssue } from '../../src/lib/db/anniversaries';
 import { type TodaysMatchup as Matchup } from '../../src/lib/matchup';
 import { RightNowBand } from '../../src/components/home/RightNowBand';
 import { TodaysMatchup } from '../../src/components/home/TodaysMatchup';
@@ -93,7 +93,7 @@ type FeedRow =
       personalized: TrendingTitleCharacter[];
       newComics: NewComic[];
       wikiTrending: WikiTrendingHero[];
-      debuts: DebutHero[];
+      debuts: DebutIssue[];
     }
   | { type: 'chapter'; kicker: string; title: string }
   | { type: 'rivalries'; rivalries: Rivalry[] }

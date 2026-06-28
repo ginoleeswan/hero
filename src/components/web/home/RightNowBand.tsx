@@ -19,7 +19,7 @@ import {
 import type { NewComic } from '../../../lib/db/comics';
 import { WikiTrendingRail } from '../../home/WikiTrendingRail';
 import { MonthInHistoryRail } from '../../home/MonthInHistoryRail';
-import type { DebutHero } from '../../../lib/db/anniversaries';
+import type { DebutIssue } from '../../../lib/db/anniversaries';
 
 const BADGE_COLOR: Record<BadgeTone, string> = {
   theaters: COLORS.orange,
@@ -36,7 +36,7 @@ interface RightNowBandProps {
   personalized: TrendingTitleCharacter[];
   newComics: NewComic[];
   wikiTrending: WikiTrendingHero[];
-  debuts: DebutHero[];
+  debuts: DebutIssue[];
   onHeroPress: (id: string) => void;
   onTitlePress: (id: string) => void;
   onIssuePress: (issueId: string) => void;

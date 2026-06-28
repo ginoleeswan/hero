@@ -38,7 +38,7 @@ import {
   type TrendingTitleCharacter,
 } from '../lib/db/trending';
 import { getNewComics, type NewComic } from '../lib/db/comics';
-import { getDebutsThisMonth, type DebutHero } from '../lib/db/anniversaries';
+import { getDebutsThisMonth, type DebutIssue } from '../lib/db/anniversaries';
 import { getTodaysMatchup, type TodaysMatchup } from '../lib/matchup';
 import { getRecentlyViewed } from '../lib/db/viewHistory';
 import { BROWSE_PODS } from '../components/home/CategoryPodGrid';
@@ -78,7 +78,7 @@ export interface ExploreData {
   // Right-now / trending.
   trendingOnScreen: TrendingTitle[];
   wikiTrending: WikiTrendingHero[];
-  debutsThisMonth: DebutHero[];
+  debutsThisMonth: DebutIssue[];
   onScreen: TrendingTitle[];
   comingSoon: TrendingTitle[];
   streaming: TrendingTitle[];

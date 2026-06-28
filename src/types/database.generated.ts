@@ -1305,6 +1305,7 @@ export type Database = {
           pageviews_spike: number | null
           pageviews_week: number | null
           place_of_birth: string | null
+          portrait_blurhash: string | null
           portrait_url: string | null
           power: number | null
           powers: string[] | null
@@ -1381,6 +1382,7 @@ export type Database = {
           pageviews_spike?: number | null
           pageviews_week?: number | null
           place_of_birth?: string | null
+          portrait_blurhash?: string | null
           portrait_url?: string | null
           power?: number | null
           powers?: string[] | null
@@ -1457,6 +1459,7 @@ export type Database = {
           pageviews_spike?: number | null
           pageviews_week?: number | null
           place_of_birth?: string | null
+          portrait_blurhash?: string | null
           portrait_url?: string | null
           power?: number | null
           powers?: string[] | null
@@ -2029,15 +2032,14 @@ export type Database = {
       get_daily_distribution: { Args: { p_date: string }; Returns: Json }
       get_daily_hero: { Args: { p_date?: string }; Returns: Json }
       get_debuts_this_month: {
-        Args: { p_limit?: number; p_min_fame?: number }
+        Args: { p_limit?: number; p_max_chars?: number; p_min_fame?: number }
         Returns: {
-          debut_cover_url: string
+          characters: Json
+          cover_url: string
           debut_year: number
-          fame_score: number
-          id: string
-          image_url: string
-          name: string
-          portrait_url: string
+          issue_id: string
+          issue_number: string
+          series_name: string
         }[]
       }
       get_era_timeline: {

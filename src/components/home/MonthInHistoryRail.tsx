@@ -1,23 +1,40 @@
 // src/components/home/MonthInHistoryRail.tsx — "This Month in History": the vintage
-// debut covers of characters who first appeared in the current calendar month,
-// each with its anniversary. Sibling of ComicCoverRail; taps open the character.
+// debut ISSUES of the current calendar month (deduped — one card per issue), each
+// showing its anniversary and the cast of characters who first appeared in it as
+// tappable face-chips. The cover taps to the lead (most famous) character; each
+// chip taps to its own character. Sibling of ComicCoverRail.
 import { View, Text, FlatList, StyleSheet, Pressable, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
-import type { DebutHero } from '../../lib/db/anniversaries';
+import type { DebutIssue, DebutCharacter } from '../../lib/db/anniversaries';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_W = Math.min(132, Math.round(SCREEN_WIDTH * 0.34));
-const CARD_H = Math.round(CARD_W * 1.5);
+const CARD_W = Math.min(150, Math.round(SCREEN_WIDTH * 0.42));
+const CARD_H = Math.round(CARD_W * 1.46);
+const MAX_CHIPS = 3;
 
 const MONTH = new Date().toLocaleString('en-US', { month: 'long' });
+
+// "Superman" · "Superman & Lois Lane" · "Simba +2"
+function castLine(chars: DebutCharacter[]): string {
+  if (chars.length === 0) return '';
+  if (chars.length === 1) return chars[0].name;
+  if (chars.length === 2) return `${chars[0].name} & ${chars[1].name}`;
+  return `${chars[0].name} +${chars.length - 1}`;
+}
+
+function issueLine(issue: DebutIssue): string {
+  const num = issue.issueNumber ? ` #${issue.issueNumber}` : '';
+  return `${issue.seriesName}${num} · ${issue.year}`;
+}
 
 export function MonthInHistoryRail({
   debuts,
   onHeroPress,
 }: {
-  debuts: DebutHero[];
+  debuts: DebutIssue[];
   onHeroPress: (id: string) => void;
 }) {
   if (debuts.length === 0) return null;
@@ -30,40 +47,80 @@ export function MonthInHistoryRail({
       <FlatList
         horizontal
         data={debuts}
-        keyExtractor={(d) => d.id}
+        keyExtractor={(d) => d.issueId}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={s.strip}
         initialNumToRender={4}
-        renderItem={({ item }) => (
-          <Pressable style={s.card} onPress={() => onHeroPress(item.id)}>
-            {item.debut_cover_url ? (
-              <Image
-                source={{ uri: item.debut_cover_url }}
-                contentFit="cover"
+        renderItem={({ item }) => {
+          const lead = item.characters[0];
+          const visible = item.characters.slice(0, MAX_CHIPS);
+          const extra = item.characters.length - visible.length;
+          return (
+            <Pressable
+              style={s.card}
+              onPress={() => lead && onHeroPress(lead.id)}
+              disabled={!lead}
+            >
+              {item.cover_url ? (
+                <Image
+                  source={{ uri: item.cover_url }}
+                  contentFit="cover"
+                  style={StyleSheet.absoluteFill}
+                />
+              ) : (
+                <View style={[StyleSheet.absoluteFill, s.fallback]} />
+              )}
+              <LinearGradient
+                colors={['transparent', 'rgba(11,24,32,0.55)', 'rgba(11,24,32,0.95)']}
+                locations={[0.3, 0.6, 1]}
                 style={StyleSheet.absoluteFill}
               />
-            ) : (
-              <View style={[StyleSheet.absoluteFill, s.fallback]} />
-            )}
-            <LinearGradient
-              colors={['transparent', 'rgba(11,24,32,0.92)']}
-              locations={[0.4, 1]}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={s.badge}>
-              <Text style={s.badgeText}>{item.yearsAgo} yrs</Text>
-            </View>
-            <Text style={s.name} numberOfLines={2}>
-              {item.name}
-            </Text>
-            <Text style={s.year}>{item.year}</Text>
-          </Pressable>
-        )}
+              <View style={s.badge}>
+                <Text style={s.badgeText}>{item.yearsAgo} yrs</Text>
+              </View>
+              <View style={s.foot}>
+                <View style={s.chips}>
+                  {visible.map((c, i) => (
+                    <Pressable
+                      key={c.id}
+                      style={[s.chip, { marginLeft: i === 0 ? 0 : -9, zIndex: visible.length - i }]}
+                      onPress={() => onHeroPress(c.id)}
+                    >
+                      <HeroImage
+                        id={c.id}
+                        name={c.name}
+                        imageUrl={c.image_url}
+                        portraitUrl={c.portrait_url}
+                        grid
+                        contentFit="cover"
+                        contentPosition="top"
+                        style={StyleSheet.absoluteFill as object}
+                        recyclingKey={c.id}
+                      />
+                    </Pressable>
+                  ))}
+                  {extra > 0 ? (
+                    <View style={[s.chip, s.moreChip, { marginLeft: -9 }]}>
+                      <Text style={s.moreText}>+{extra}</Text>
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={s.cast} numberOfLines={1}>
+                  {castLine(item.characters)}
+                </Text>
+                <Text style={s.issue} numberOfLines={1}>
+                  {issueLine(item)}
+                </Text>
+              </View>
+            </Pressable>
+          );
+        }}
       />
     </View>
   );
 }
 
+const CHIP = 28;
 const s = StyleSheet.create({
   section: { marginTop: 4, marginBottom: 6 },
   header: { paddingHorizontal: 16, marginBottom: 12 },
@@ -79,7 +136,7 @@ const s = StyleSheet.create({
   card: {
     width: CARD_W,
     height: CARD_H,
-    borderRadius: 10,
+    borderRadius: 12,
     borderCurve: 'continuous',
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
@@ -102,19 +159,24 @@ const s = StyleSheet.create({
     textTransform: 'uppercase',
     color: '#fff',
   },
-  name: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: COLORS.beige,
-    lineHeight: 13,
-    paddingHorizontal: 8,
+  foot: { paddingHorizontal: 9, paddingBottom: 9, gap: 5 },
+  chips: { flexDirection: 'row', alignItems: 'center' },
+  chip: {
+    width: CHIP,
+    height: CHIP,
+    borderRadius: CHIP / 2,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: 'rgba(245,235,220,0.85)',
+    backgroundColor: COLORS.navy,
   },
-  year: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: 'rgba(245,235,220,0.6)',
-    paddingHorizontal: 8,
-    paddingBottom: 8,
-    paddingTop: 1,
+  moreChip: { alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.navy },
+  moreText: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: COLORS.beige },
+  cast: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.beige, lineHeight: 14 },
+  issue: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 9.5,
+    color: 'rgba(245,235,220,0.62)',
+    lineHeight: 12,
   },
 });
