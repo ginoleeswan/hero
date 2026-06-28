@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -14,13 +14,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  getIssueById,
-  getNewComics,
-  type IssueCreator,
-  type NewComic,
-  type NewComicCharacter,
-} from '../../src/lib/db/comics';
+import { type IssueCreator, type NewComic, type NewComicCharacter } from '../../src/lib/db/comics';
+import { useIssue, useNewComics } from '../../src/lib/query/comicQueries';
 import { HeroImage } from '../../src/components/HeroImage';
 import { UniverseEyebrow } from '../../src/components/PublisherBadge';
 import { ComicCoverRail } from '../../src/components/home/ComicCoverRail';
@@ -339,27 +334,17 @@ export default function IssueScreen() {
   const wide = isWeb && width >= 760;
   const hasSidebar = isWeb && width >= 1000;
 
-  const [issue, setIssue] = useState<NewComic | null | undefined>(undefined); // undefined = loading
-  const [more, setMore] = useState<NewComic[]>([]);
+  // Cached/deduped via React Query (was bespoke useEffect/useState).
+  // issue: undefined = loading, null = not found.
+  const issueQuery = useIssue(id);
+  const issue = id ? issueQuery.data : null;
+  const newComics = useNewComics(12).data;
+  const more = useMemo(
+    () => (newComics ?? []).filter((c) => c.id !== id).slice(0, 10),
+    [newComics, id],
+  );
 
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
-
-  useEffect(() => {
-    if (!id) {
-      setIssue(null);
-      return;
-    }
-    let active = true;
-    getIssueById(id).then((i) => {
-      if (active) setIssue(i);
-    });
-    getNewComics(12).then((list) => {
-      if (active) setMore(list.filter((c) => c.id !== id).slice(0, 10));
-    });
-    return () => {
-      active = false;
-    };
-  }, [id]);
 
   if (issue === undefined) {
     return (
