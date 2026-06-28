@@ -170,30 +170,38 @@ function Credits({
   accent,
   centered,
   stacked,
+  wide,
 }: {
   creators: IssueCreator[];
   accent: string;
   centered: boolean;
   stacked?: boolean;
+  wide?: boolean;
 }) {
   const groups = groupCreators(creators);
   if (groups.length === 0) return null;
+  const cap = wide ? 8 : 5;
+  const items = groups.map((g) => {
+    const names =
+      g.names.slice(0, cap).join(', ') + (g.names.length > cap ? ` +${g.names.length - cap} more` : '');
+    if (wide || stacked) {
+      return (
+        <View key={g.label} style={wide ? cr.wideItem : undefined}>
+          <DossierItem label={g.label} value={names} />
+        </View>
+      );
+    }
+    return (
+      <View key={g.label} style={[cr.row, centered && cr.rowCentered]}>
+        <Text style={cr.role}>{g.label}</Text>
+        <Text style={cr.names}>{names}</Text>
+      </View>
+    );
+  });
   return (
-    <View style={cr.wrap}>
+    <View style={wide ? cr.wrapWide : cr.wrap}>
       <Text style={[cr.heading, { color: accent }, centered && cr.center]}>Creators</Text>
-      {groups.map((g) => {
-        const names =
-          g.names.slice(0, 5).join(', ') +
-          (g.names.length > 5 ? ` +${g.names.length - 5} more` : '');
-        return stacked ? (
-          <DossierItem key={g.label} label={g.label} value={names} />
-        ) : (
-          <View key={g.label} style={[cr.row, centered && cr.rowCentered]}>
-            <Text style={cr.role}>{g.label}</Text>
-            <Text style={cr.names}>{names}</Text>
-          </View>
-        );
-      })}
+      {wide ? <View style={cr.wideRow}>{items}</View> : items}
     </View>
   );
 }
@@ -402,9 +410,6 @@ export default function IssueScreen() {
           .join('  ·  ')}
       </Text>
     );
-    const creditsBlock = issue.creators ? (
-      <Credits creators={issue.creators} accent={accent} centered={false} />
-    ) : null;
     const castBlock =
       cast.length > 0 ? (
         <View style={w.castBlock}>
@@ -438,11 +443,10 @@ export default function IssueScreen() {
             ) : (
               <View style={[StyleSheet.absoluteFill, w.backdropFallback]} />
             )}
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: accent, opacity: 0.18 }]} />
-            <View style={[StyleSheet.absoluteFill, w.headerDarken]} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: accent, opacity: 0.16 }]} />
             <LinearGradient
-              colors={['rgba(11,24,32,0.55)', 'rgba(11,24,32,0.9)', 'rgba(11,24,32,0.99)']}
-              locations={[0, 0.4, 1]}
+              colors={['rgba(11,24,32,0.32)', 'rgba(11,24,32,0.72)', 'rgba(11,24,32,0.97)']}
+              locations={[0, 0.55, 1]}
               style={StyleSheet.absoluteFill}
             />
             <View style={w.headerInner}>
@@ -459,30 +463,21 @@ export default function IssueScreen() {
                 <View style={w.coverGutter} />
                 {hasSidebar ? (
                   <>
-                    <View style={w.mainCol}>
-                      {storyBlock}
-                      {castBlock}
-                    </View>
+                    <View style={w.mainCol}>{storyBlock}</View>
                     <View style={w.sidebar}>
                       <Details issue={issue} accent={accent} />
-                      {issue.creators ? (
-                        <Credits
-                          creators={issue.creators}
-                          accent={accent}
-                          centered={false}
-                          stacked
-                        />
-                      ) : null}
                     </View>
                   </>
                 ) : (
-                  <View style={w.rightCol}>
-                    {storyBlock}
-                    {creditsBlock}
-                    {castBlock}
-                  </View>
+                  <View style={w.rightCol}>{storyBlock}</View>
                 )}
               </View>
+              {castBlock}
+              {issue.creators ? (
+                <View style={w.creditsWide}>
+                  <Credits creators={issue.creators} accent={accent} centered={false} wide />
+                </View>
+              ) : null}
             </View>
           </View>
 
@@ -656,9 +651,9 @@ const w = StyleSheet.create({
     letterSpacing: 0.3,
   },
   // Featuring, flowing under the synopsis (beside the cover) — not stranded below.
-  // Featuring under the story, in the main column — its height balances the
-  // creators sidebar so the page doesn't strand a gap.
-  castBlock: { marginTop: 30 },
+  // Featuring spans the full width below the (always-short) dossier, so the cast
+  // breathes and no creators list can strand a gap above it.
+  castBlock: { marginTop: 16, paddingHorizontal: PAD },
   castLabel: {
     fontFamily: 'Flame-Regular',
     fontSize: 13,
@@ -668,6 +663,9 @@ const w = StyleSheet.create({
   },
   // Wrapping grid — all characters visible, contained (no horizontal bleed).
   castGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  // Creators as a full-width multi-column strip below Featuring — the "end
+  // credits", so the dossier sidebar stays short.
+  creditsWide: { paddingHorizontal: PAD, marginTop: 30 },
   // The cover, straddling the dark→paper seam.
   coverAbs: {
     position: 'absolute',
@@ -726,7 +724,15 @@ const ms = StyleSheet.create({
     letterSpacing: 2.5,
     textTransform: 'uppercase',
   },
-  title: { fontFamily: 'Flame-Regular', color: '#fff' },
+  // Soft shadow so the white title reads over a light/bright blurred cover —
+  // lets the header stay colourful instead of a flat dark void.
+  title: {
+    fontFamily: 'Flame-Regular',
+    color: '#fff',
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 14,
+  },
   titleWide: { fontSize: 62, lineHeight: 64, textAlign: 'left', letterSpacing: -0.8 },
   titleNarrow: { fontSize: 32, lineHeight: 36, textAlign: 'center' },
   issueNo: { fontFamily: 'Flame-Regular' },
@@ -734,8 +740,11 @@ const ms = StyleSheet.create({
     fontFamily: 'FlameSans-Regular',
     fontSize: 15,
     fontStyle: 'italic',
-    color: 'rgba(245,235,220,0.72)',
+    color: 'rgba(245,235,220,0.82)',
     marginTop: 1,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 8,
   },
   storyCentered: { textAlign: 'center' },
   statRail: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginTop: 4 },
@@ -811,6 +820,10 @@ const cr = StyleSheet.create({
     color: COLORS.navy,
     lineHeight: 19,
   },
+  // Full-width "end credits" — roles laid out as a wrapping multi-column grid.
+  wrapWide: { width: '100%' },
+  wideRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 40, rowGap: 16, marginTop: 6 },
+  wideItem: { width: 220 },
 });
 
 const cast = StyleSheet.create({
