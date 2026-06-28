@@ -463,9 +463,11 @@ export function RightNowBand({
     newComics.length > 0;
   if (!hasAny) return null;
 
-  // "What's Hot" ranks the live slate by popularity — on_screen leads, then
-  // streaming. Dedupe by id: a title can be both in theaters and streaming.
-  const hotTitles = mergeTrendingTitles(onScreen, [], streaming);
+  // "What's Hot" is the real TMDB daily-trending feed (trendingOnScreen). On the
+  // rare day nothing trending is in the catalogue, fall back to the live release
+  // slate so the sidebar is never empty.
+  const slate = mergeTrendingTitles(onScreen, [], streaming);
+  const hotTitles = trendingOnScreen.length > 0 ? trendingOnScreen : slate;
 
   return (
     <View style={band.band}>
@@ -501,16 +503,6 @@ export function RightNowBand({
           </View>
         )
       )}
-
-      {trendingOnScreen.length > 0 ? (
-        <PosterRail
-          label="Trending Today"
-          title="Trending on Screen"
-          titles={trendingOnScreen}
-          onTitlePress={onTitlePress}
-          pagePad={pagePad}
-        />
-      ) : null}
 
       {/* On desktop the campaign hero + ranked "What's Hot" sidebar already
           carry the live slate; elsewhere, one calm merged poster rail does. */}

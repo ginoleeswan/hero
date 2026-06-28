@@ -1,9 +1,9 @@
+import { fetchTrafficOverview } from '../../../src/lib/db/traffic';
+
 const mockRpc = jest.fn();
 jest.mock('../../../src/lib/supabase', () => ({
   supabase: { rpc: (...a: unknown[]) => mockRpc(...a) },
 }));
-
-import { fetchTrafficOverview } from '../../../src/lib/db/traffic';
 
 const overview = {
   authorized: true,

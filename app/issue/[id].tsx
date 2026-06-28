@@ -183,7 +183,8 @@ function Credits({
   const cap = wide ? 8 : 5;
   const items = groups.map((g) => {
     const names =
-      g.names.slice(0, cap).join(', ') + (g.names.length > cap ? ` +${g.names.length - cap} more` : '');
+      g.names.slice(0, cap).join(', ') +
+      (g.names.length > cap ? ` +${g.names.length - cap} more` : '');
     if (wide || stacked) {
       return (
         <View key={g.label} style={wide ? cr.wideItem : undefined}>

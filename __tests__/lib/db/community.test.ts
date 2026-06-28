@@ -1,9 +1,9 @@
+import { fetchCommunityOverview } from '../../../src/lib/db/community';
+
 const mockRpc = jest.fn();
 jest.mock('../../../src/lib/supabase', () => ({
   supabase: { rpc: (...a: unknown[]) => mockRpc(...a) },
 }));
-
-import { fetchCommunityOverview } from '../../../src/lib/db/community';
 
 const fullOverview = {
   authorized: true,

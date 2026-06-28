@@ -1,9 +1,9 @@
+import { generateTeamVerdict } from '../../src/lib/api';
+
 const mockInvoke = jest.fn();
 jest.mock('../../src/lib/supabase', () => ({
   supabase: { functions: { invoke: (...a: unknown[]) => mockInvoke(...a) } },
 }));
-
-import { generateTeamVerdict } from '../../src/lib/api';
 
 describe('generateTeamVerdict', () => {
   beforeEach(() => mockInvoke.mockReset());
