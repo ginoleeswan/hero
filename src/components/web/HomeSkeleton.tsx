@@ -132,7 +132,7 @@ function EngageSkeleton({
     <View
       style={{
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'stretch',
         gap: 20,
         paddingHorizontal: pagePad,
         marginTop: 16,
@@ -141,8 +141,49 @@ function EngageSkeleton({
       <View style={{ flex: 1.7 }}>
         <SkeletonBlock opacity={opacity} dark height={192} borderRadius={16} />
       </View>
+      {/* Matches the daily card's tall variant beside the matchup (was a short bar). */}
       <View style={{ flex: 1, maxWidth: 440 }}>
-        <SkeletonBlock opacity={opacity} dark height={102} borderRadius={20} />
+        <SkeletonBlock opacity={opacity} dark height={192} borderRadius={20} />
+      </View>
+    </View>
+  );
+}
+
+// Right Now — mirrors the dark editorial zone under the ticker: a big campaign
+// hero beside a ranked "What's Hot" sidebar (stacked on mobile).
+function RightNowSkeleton({ pagePad, isMobile }: { pagePad: number; isMobile: boolean }) {
+  return (
+    <View style={skel.rightNow}>
+      <View style={{ paddingHorizontal: pagePad }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 18 }}>
+          <SkeletonBlock dark width={4} height={20} borderRadius={2} />
+          <SkeletonBlock dark width={120} height={12} borderRadius={3} />
+        </View>
+        {isMobile ? (
+          <>
+            <SkeletonBlock dark height={300} borderRadius={16} style={{ marginBottom: 12 }} />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <SkeletonBlock
+                key={i}
+                dark
+                height={54}
+                borderRadius={12}
+                style={{ marginBottom: 8 }}
+              />
+            ))}
+          </>
+        ) : (
+          <View style={{ flexDirection: 'row', gap: 20, alignItems: 'stretch' }}>
+            <View style={{ flex: 1.6 }}>
+              <SkeletonBlock dark height={312} borderRadius={18} />
+            </View>
+            <View style={{ flex: 1, gap: 8 }}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <SkeletonBlock key={i} dark height={54} borderRadius={12} />
+              ))}
+            </View>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -239,8 +280,11 @@ export function WebHomeSkeleton() {
       </View>
       <View style={skel.ticker} />
 
-      {/* Beige carousel canvas — mirrors the new chapter flow: a few browse
-          rows, the one consolidated Dark Side zone, then more rows. */}
+      {/* Right Now — the dark editorial zone under the ticker (campaign hero +
+          What's Hot), so the first paint reserves it instead of jumping. */}
+      <RightNowSkeleton pagePad={pagePad} isMobile={isMobile} />
+
+      {/* Beige carousel canvas — generic browse rows below the fold. */}
       <View style={skel.beigeCanvas}>
         <RowSkeleton opacity={opacity} pagePad={pagePad} />
         <RowSkeleton opacity={opacity} pagePad={pagePad} />
@@ -264,6 +308,7 @@ const skel = StyleSheet.create({
   },
   darkStageMobile: { paddingTop: TOPBAR_HEIGHT - 4, paddingBottom: 16 } as object,
   ticker: { height: 38, backgroundColor: COLORS.orange },
+  rightNow: { backgroundColor: COLORS.deepNavy, paddingTop: 28, paddingBottom: 28 },
   beigeCanvas: {
     backgroundColor: COLORS.beige,
     paddingTop: 40,
