@@ -158,11 +158,9 @@ async function resolveVolumes(
     const r = body.results ?? {};
     const roster = (r.characters ?? []) as Array<{ id: number; count?: number }>;
     const catalogue = await catalogueFor(sb, roster.map((c) => String(c.id)));
-    // The volume roster lists every character that ever appeared in the series, so
-    // a famous guest (Batman in a Superman book) would outrank the title character
-    // on fame alone. Rank by appearance COUNT (centrality to the series) so the
-    // lead is the series' own character; fame breaks ties. max_fame stays the
-    // highest fame in the roster — it only feeds the (permissive) display gate.
+    // The roster lists every character that ever appeared in the series, with an
+    // appearance `count` and our fame_score per catalogue hero. max_fame (highest
+    // fame in the roster) feeds the permissive display gate only.
     const countById = new Map<string, number>();
     for (const c of roster) countById.set(String(c.id), typeof c.count === 'number' ? c.count : 0);
     const all = [...catalogue.entries()].map(([cvId, h]) => ({
