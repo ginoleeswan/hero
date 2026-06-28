@@ -2,9 +2,17 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { fetchHeroStats, fetchHeroDetails, fetchHeroGallery, HeroNotFoundError } from '../lib/api';
-import { heroRowToCharacterData, getHeroFamily, type RelatedHeroCard } from '../lib/db/heroes';
-import type { FamilyMember } from '../lib/family/types';
+import { heroRowToCharacterData, type RelatedHeroCard } from '../lib/db/heroes';
 import { useHeroRow, useHeroPercentile, useRelatedHeroes } from '../lib/query/heroQueries';
+import {
+  useHeroFamily,
+  useHeroNarrative,
+  useHeroTitles,
+  useHeroPortrayals,
+  useHeroLinks,
+  useHeroIssues,
+  useIsAdmin,
+} from '../lib/query/heroDetailQueries';
 import { planHeroLoad } from '../lib/query/heroLoadPlan';
 import {
   isFavourited,
@@ -12,16 +20,6 @@ import {
   removeFavourite,
   getHeroFavouriteCount,
 } from '../lib/db/favourites';
-import { getHeroTitles, type HeroTitle } from '../lib/db/titles';
-import { getIssuesForHero, type NewComic } from '../lib/db/comics';
-import {
-  getHeroPortrayals,
-  getHeroLinks,
-  type HeroPortrayals,
-  type HeroLinks,
-} from '../lib/db/people';
-import { getProfile } from '../lib/db/profiles';
-import { getHeroNarrative, type HeroNarrative } from '../lib/db/heroFacts';
 import { useAuth } from './useAuth';
 import { useRecordView } from './useViewHistory';
 import { supabase } from '../lib/supabase';
@@ -51,9 +49,6 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
   useRecordView(user?.id, id);
 
   const [data, setData] = useState<CharacterData | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [narrative, setNarrative] = useState<HeroNarrative | null>(null);
-  const [family, setFamily] = useState<FamilyMember[]>([]);
   const [comicVineLoading, setComicVineLoading] = useState(true);
   const [statsGenerating, setStatsGenerating] = useState(false);
   // Two distinct failure modes: the hero genuinely doesn't exist (404 → poster),
@@ -65,29 +60,22 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
   const [favourited, setFavourited] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
   const [favCount, setFavCount] = useState<number>(0);
-  const [titles, setTitles] = useState<HeroTitle[] | null>(null);
-  const [portrayals, setPortrayals] = useState<HeroPortrayals | null>(null);
-  const [links, setLinks] = useState<HeroLinks | null>(null);
   const [galleryImages, setGalleryImages] = useState<HeroImage[] | null>(null);
   const [galleryLoading, setGalleryLoading] = useState(false);
-  const [newIssues, setNewIssues] = useState<NewComic[]>([]);
 
   const heroRowQuery = useHeroRow(id);
   const heroRow = heroRowQuery.data;
 
-  useEffect(() => {
-    if (!user) {
-      setIsAdmin(false);
-      return;
-    }
-    let active = true;
-    getProfile(user.id)
-      .then((p) => active && setIsAdmin(!!p?.is_admin))
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [user]);
+  // Secondary read-only data via React Query (keyed by hero id) — cached across
+  // revisits, deduped, no longer manual useEffect/useState. The ComicVine
+  // read-through enrichment (below) and the favourite toggle stay imperative.
+  const isAdmin = useIsAdmin(user?.id).data ?? false;
+  const family = useHeroFamily(id).data ?? [];
+  const narrative = useHeroNarrative(id).data ?? null;
+  const titles = useHeroTitles(id).data ?? null;
+  const portrayals = useHeroPortrayals(id).data ?? null;
+  const links = useHeroLinks(id).data ?? null;
+  const newIssues = useHeroIssues(id).data ?? [];
 
   // Total powerstats — drives both the vitals strip and the percentile hook.
   const powerTotal = useMemo(() => {
@@ -125,50 +113,6 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
   const enemyNames = useMemo(() => (related?.enemies ?? []).map((h) => h.name), [related]);
   const allyNames = useMemo(() => (related?.allies ?? []).map((h) => h.name), [related]);
   const teammateNames = useMemo(() => (related?.teammates ?? []).map((h) => h.name), [related]);
-
-  useEffect(() => {
-    setFamily([]);
-    if (!id) return;
-    getHeroFamily(id)
-      .then(setFamily)
-      .catch(() => setFamily([]));
-  }, [id]);
-
-  useEffect(() => {
-    setNarrative(null);
-    if (!id) return;
-    let active = true;
-    getHeroNarrative(id)
-      .then((n) => {
-        if (active) setNarrative(n);
-      })
-      .catch(() => {
-        if (active) setNarrative(null);
-      });
-    return () => {
-      active = false;
-    };
-  }, [id]);
-
-  useEffect(() => {
-    if (!data?.stats.id) return;
-    let active = true;
-    getHeroTitles(data.stats.id).then((f) => {
-      if (active) setTitles(f);
-    });
-    getHeroPortrayals(data.stats.id).then((pp) => {
-      if (active) setPortrayals(pp);
-    });
-    getHeroLinks(data.stats.id).then((l) => {
-      if (active) setLinks(l);
-    });
-    getIssuesForHero(data.stats.id).then((iss) => {
-      if (active) setNewIssues(iss);
-    });
-    return () => {
-      active = false;
-    };
-  }, [data?.stats.id]);
 
   useEffect(() => {
     if (!id) return;

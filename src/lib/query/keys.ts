@@ -17,6 +17,14 @@ export const queryKeys = {
     ['heroes', 'search', query, publisher, alignment] as const,
   verdict: (heroId: string, opponentId: string) =>
     ['heroes', 'verdict', heroId, opponentId] as const,
+  // Character detail-screen secondary reads (see heroDetailQueries).
+  heroFamily: (id: string) => ['heroes', 'family', id] as const,
+  heroNarrative: (id: string) => ['heroes', 'narrative', id] as const,
+  heroTitles: (id: string) => ['heroes', 'titles', id] as const,
+  heroPortrayals: (id: string) => ['heroes', 'portrayals', id] as const,
+  heroLinks: (id: string) => ['heroes', 'links', id] as const,
+  heroIssues: (id: string) => ['heroes', 'issues', id] as const,
+  profile: (userId: string) => ['profile', userId] as const,
 };
 
 // Title (film/TV/game) detail-screen keys, under a 'titles' root so the whole
