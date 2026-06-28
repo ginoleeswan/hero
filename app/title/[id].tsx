@@ -13,10 +13,13 @@ import {
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import {
   getTitleById,
   getTitleHeroes,
   getRecommendedTitles,
+  getCollectionTitles,
+  titleExtras,
   extractProviders,
 } from '../../src/lib/db/titles';
 import type { HeroTitle, TitleRecommendation } from '../../src/lib/db/titles';
@@ -30,6 +33,15 @@ import { CastRail } from '../../src/components/film/CastRail';
 import { StillsGallery } from '../../src/components/film/StillsGallery';
 import { HeroesInFilmRail } from '../../src/components/film/HeroesInFilmRail';
 import { RecommendationsRail } from '../../src/components/film/RecommendationsRail';
+import { SocialLinks } from '../../src/components/film/SocialLinks';
+import { ReviewsSection } from '../../src/components/film/ReviewsSection';
+
+function fmtMoney(n: number | null | undefined): string | null {
+  if (!n || n <= 0) return null;
+  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1)}B`;
+  if (n >= 1_000_000) return `$${Math.round(n / 1_000_000)}M`;
+  return `$${n.toLocaleString()}`;
+}
 
 export default function TitleScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -42,6 +54,7 @@ export default function TitleScreen() {
   const [film, setFilm] = useState<HeroTitle | null | undefined>(undefined); // undefined = loading, null = not found
   const [heroes, setHeroes] = useState<RelatedHeroCard[]>([]);
   const [recs, setRecs] = useState<TitleRecommendation[]>([]);
+  const [collection, setCollection] = useState<TitleRecommendation[]>([]);
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar
   // (dark backdrop header under the status bar, beige body to the very bottom).
@@ -55,10 +68,14 @@ export default function TitleScreen() {
     }
     let active = true;
     setRecs([]);
+    setCollection([]);
     getTitleById(id).then((f) => {
       if (!active) return;
       setFilm(f);
-      if (f) getRecommendedTitles(f).then((r) => active && setRecs(r));
+      if (f) {
+        getRecommendedTitles(f).then((r) => active && setRecs(r));
+        getCollectionTitles(f).then((c) => active && setCollection(c));
+      }
     });
     getTitleHeroes(id).then((h) => {
       if (active) setHeroes(h);
@@ -145,6 +162,20 @@ export default function TitleScreen() {
       </View>
     ) : null;
 
+  const universeCard =
+    collection.length > 0 ? (
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>More in this Universe</Text>
+        <View style={styles.cardDivider} />
+        <RecommendationsRail recommendations={collection} inCard />
+      </View>
+    ) : null;
+
+  const extras = titleExtras(film);
+  const reviewsSection = extras.reviews && extras.reviews.length > 0 ? (
+    <ReviewsSection reviews={extras.reviews} />
+  ) : null;
+
   const isTv = film.mediaType === 'tv';
   const tv = (film.details ?? {}) as {
     seasons?: number | null;
@@ -153,10 +184,12 @@ export default function TitleScreen() {
     networks?: string[] | null;
   };
 
-  // Details holds only what the hero stat rail does NOT already show (year,
-  // runtime, rating, box office). For films that's nothing, so the card drops
-  // out; for TV it's the season/episode/network breakdown.
+  // Details now carries non-redundant credits/metadata (the hero stat rail still
+  // owns year/runtime/rating/box office).
   const detailRows: { label: string; value: string }[] = [];
+  if (extras.director) detailRows.push({ label: 'Director', value: extras.director });
+  if (extras.writers && extras.writers.length > 0)
+    detailRows.push({ label: 'Writers', value: extras.writers.slice(0, 3).join(', ') });
   if (isTv) {
     if (tv.seasons) detailRows.push({ label: 'Seasons', value: String(tv.seasons) });
     if (tv.episodes) detailRows.push({ label: 'Episodes', value: String(tv.episodes) });
@@ -165,6 +198,14 @@ export default function TitleScreen() {
     if (tv.networks && tv.networks.length > 0)
       detailRows.push({ label: 'Network', value: tv.networks.join(', ') });
   }
+  if (extras.productionCompanies && extras.productionCompanies.length > 0)
+    detailRows.push({ label: 'Studio', value: extras.productionCompanies.slice(0, 2).join(', ') });
+  const budget = fmtMoney(extras.budget);
+  if (budget) detailRows.push({ label: 'Budget', value: budget });
+  if (extras.originalLanguage)
+    detailRows.push({ label: 'Language', value: extras.originalLanguage.toUpperCase() });
+  if (extras.status && extras.status !== 'Released')
+    detailRows.push({ label: 'Status', value: extras.status });
 
   const detailsCard =
     detailRows.length > 0 ? (
@@ -192,6 +233,32 @@ export default function TitleScreen() {
       </View>
     ) : null;
 
+  const socialCard = extras.externalIds ? (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Links</Text>
+      <View style={styles.cardDivider} />
+      <SocialLinks externalIds={extras.externalIds} />
+    </View>
+  ) : null;
+
+  // The big poster that floats from the body up across the seam (wide only).
+  const floatingPoster = (
+    <View style={styles.posterFloat}>
+      {film.posterUrl ? (
+        <Image
+          source={{ uri: film.posterUrl }}
+          style={styles.posterFloatImg}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+        />
+      ) : (
+        <View style={[styles.posterFloatImg, styles.posterFloatPlaceholder]}>
+          <Ionicons name="film-outline" size={40} color={COLORS.grey} />
+        </View>
+      )}
+    </View>
+  );
+
   const tmdbLink = (
     <TouchableOpacity
       style={styles.tmdbLink}
@@ -213,29 +280,40 @@ export default function TitleScreen() {
         <FilmBackdropHeader film={film} onBack={() => router.back()} />
         <View style={styles.bodyWrap}>
           {wide ? (
-            <View style={styles.bodyRow}>
-              <View style={styles.mainCol}>
-                {overviewCard}
-                {castCard}
-                {stillsCard}
-                {heroesCard}
+            <>
+              <View style={styles.bodyRowWide}>
+                <View style={styles.sideColWide}>
+                  {floatingPoster}
+                  {detailsCard}
+                  {watchCard}
+                  {socialCard}
+                  {tmdbLink}
+                </View>
+                <View style={styles.mainCol}>
+                  {overviewCard}
+                  {castCard}
+                  {stillsCard}
+                  {heroesCard}
+                </View>
+              </View>
+              <View style={styles.fullStack}>
+                {reviewsSection}
+                {universeCard}
                 {recsCard}
               </View>
-              <View style={styles.sideCol}>
-                {detailsCard}
-                {watchCard}
-                {tmdbLink}
-              </View>
-            </View>
+            </>
           ) : (
             <View style={styles.bodyCol}>
               {overviewCard}
               {castCard}
               {stillsCard}
               {heroesCard}
+              {universeCard}
               {recsCard}
+              {reviewsSection}
               {detailsCard}
               {watchCard}
+              {socialCard}
               {tmdbLink}
             </View>
           )}
@@ -280,9 +358,37 @@ export default function TitleScreen() {
             <HeroesInFilmRail heroes={heroes} />
           </View>
         ) : null}
+        {collection.length > 0 ? (
+          <View style={styles.railSection}>
+            <RecommendationsRail recommendations={collection} />
+          </View>
+        ) : null}
         {recs.length > 0 ? (
           <View style={styles.railSection}>
             <RecommendationsRail recommendations={recs} />
+          </View>
+        ) : null}
+        {reviewsSection ? <View style={styles.railSection}>{reviewsSection}</View> : null}
+        {detailRows.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.eyebrow}>Details</Text>
+            {detailRows.map((r, i) => (
+              <View
+                key={r.label}
+                style={
+                  [styles.infoRow, i === detailRows.length - 1 && styles.infoRowLast] as object
+                }
+              >
+                <Text style={styles.infoLabel}>{r.label}</Text>
+                <Text style={styles.infoValue}>{r.value}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+        {extras.externalIds ? (
+          <View style={styles.section}>
+            <Text style={styles.eyebrow}>Links</Text>
+            <SocialLinks externalIds={extras.externalIds} />
           </View>
         ) : null}
         <View style={styles.section}>
@@ -349,24 +455,42 @@ const styles = StyleSheet.create({
 
   // ── Web dossier (matches character page tokens) ──
   bodyWrap: { maxWidth: 1180, alignSelf: 'center', width: '100%' },
-  bodyRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, padding: 24 },
   bodyCol: { padding: 20, gap: 16 },
-  mainCol: { flex: 1, minWidth: 0, gap: 16 } as object,
-  sideCol: {
-    width: 300,
-    flexShrink: 0,
-    gap: 16,
-    position: 'sticky',
-    top: 88,
-    alignSelf: 'flex-start',
+  mainCol: { flex: 1, minWidth: 0, gap: 18 } as object,
+  // Wide: the two columns pull UP so cards float over the seam and the big
+  // poster (in the left column) rises into the hero.
+  bodyRowWide: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 24,
+    paddingHorizontal: 24,
+    marginTop: -128,
   } as object,
+  sideColWide: { width: 300, flexShrink: 0, gap: 18 } as object,
+  // Full-width stack below the two columns (reviews, universe, recommendations).
+  fullStack: { paddingHorizontal: 24, paddingTop: 18, gap: 18 },
+  posterFloat: {
+    marginTop: -160,
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    boxShadow: '0 30px 60px -22px rgba(0,0,0,0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+  } as object,
+  posterFloatImg: { width: 300, height: 450 },
+  posterFloatPlaceholder: {
+    backgroundColor: COLORS.navy + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   card: {
     backgroundColor: 'white',
     borderRadius: 14,
     padding: 20,
     borderWidth: 1,
     borderColor: '#e8ddd0',
-    boxShadow: '0 6px 22px rgba(41,60,67,0.06)',
+    boxShadow: '0 14px 36px -12px rgba(41,60,67,0.16)',
   } as object,
   cardTitle: {
     fontFamily: 'Flame-Regular',

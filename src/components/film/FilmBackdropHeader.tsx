@@ -47,7 +47,7 @@ export function FilmBackdropHeader({ film, onBack }: { film: HeroTitle; onBack: 
   const hasTags = !!certification || genres.length > 0;
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, wide && styles.rootWide]}>
       {/* Backdrop */}
       {film.backdropUrl ? (
         <Image
@@ -91,7 +91,8 @@ export function FilmBackdropHeader({ film, onBack }: { film: HeroTitle; onBack: 
         </TouchableOpacity>
       ) : null}
 
-      {/* Poster + meta row */}
+      {/* Poster + meta row. On wide the poster is omitted here — it floats from
+          the body, crossing the seam — so the meta clears its column. */}
       <View
         style={[
           styles.contentRow,
@@ -99,22 +100,24 @@ export function FilmBackdropHeader({ film, onBack }: { film: HeroTitle; onBack: 
           { paddingTop: wide ? TOPBAR_HEIGHT + 44 : insets.top + 60 },
         ]}
       >
-        {film.posterUrl ? (
-          <View style={styles.posterShadow}>
-            <View style={styles.posterClip}>
-              <Image
-                source={{ uri: film.posterUrl }}
-                style={styles.poster}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-              />
+        {!wide ? (
+          film.posterUrl ? (
+            <View style={styles.posterShadow}>
+              <View style={styles.posterClip}>
+                <Image
+                  source={{ uri: film.posterUrl }}
+                  style={styles.poster}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                />
+              </View>
             </View>
-          </View>
-        ) : (
-          <View style={[styles.poster, styles.posterPlaceholder]}>
-            <Ionicons name="film-outline" size={30} color="rgba(255,255,255,0.5)" />
-          </View>
-        )}
+          ) : (
+            <View style={[styles.poster, styles.posterPlaceholder]}>
+              <Ionicons name="film-outline" size={30} color="rgba(255,255,255,0.5)" />
+            </View>
+          )
+        ) : null}
 
         <View style={styles.meta}>
           <Text style={styles.kicker}>{kicker}</Text>
@@ -174,6 +177,12 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
+  // Wide: taller stage with bottom clearance so the body's cards can pull up and
+  // straddle the seam without colliding with the title block.
+  rootWide: {
+    minHeight: 500,
+    paddingBottom: 150,
+  },
   backdropPlaceholder: {
     backgroundColor: COLORS.navy,
   },
@@ -198,7 +207,10 @@ const styles = StyleSheet.create({
     maxWidth: 1180,
     alignSelf: 'center',
     width: '100%',
-    paddingHorizontal: 24,
+    // Clear the floating poster's column (≈300 poster + gap) so the title sits
+    // beside it; the poster itself floats up from the body.
+    paddingLeft: 24 + 320,
+    paddingRight: 24,
     gap: 28,
   },
   posterShadow: {
@@ -244,8 +256,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: Platform.OS === 'web' ? 46 : 28,
     color: '#fff',
-    lineHeight: Platform.OS === 'web' ? 52 : 33,
+    // Generous leading — the Flame display face has tall glyphs/descenders that
+    // clip at a tight line-height.
+    lineHeight: Platform.OS === 'web' ? 58 : 36,
     letterSpacing: Platform.OS === 'web' ? -0.5 : 0,
+    paddingBottom: 2,
   },
   statRail: {
     flexDirection: 'row',

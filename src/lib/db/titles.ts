@@ -247,6 +247,26 @@ export async function getRecommendedTitles(t: HeroTitle): Promise<TitleRecommend
   return recs.filter((r) => inCatalog.has(r.id));
 }
 
+/**
+ * Other in-catalogue titles in the same TMDB collection ("More in this
+ * universe"), newest first, excluding the current title. Empty until siblings
+ * are re-enriched with their collection tag.
+ */
+export async function getCollectionTitles(t: HeroTitle): Promise<TitleRecommendation[]> {
+  const collectionId = titleExtras(t).collection?.id;
+  if (!collectionId) return [];
+  const { data, error } = await supabase
+    .from('titles')
+    .select('id, title, poster_url, year')
+    .eq('details->collection->>id', collectionId)
+    .neq('id', t.id)
+    .order('year', { ascending: true, nullsFirst: false })
+    .limit(20);
+  if (error || !data) return [];
+  return (data as { id: string; title: string; poster_url: string | null; year: number | null }[])
+    .map((r) => ({ id: r.id, title: r.title, posterUrl: r.poster_url, year: r.year }));
+}
+
 /** Heroes appearing in a title, ranked desc. */
 export async function getTitleHeroes(id: string): Promise<RelatedHeroCard[]> {
   const { data, error } = await supabase
