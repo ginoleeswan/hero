@@ -52,6 +52,11 @@ serve(async (req: Request) => {
       field_list: 'image,issue_credits',
     });
     const charRes = await fetch(`${COMICVINE_BASE}/character/4005-${numericId}/?${charParams}`);
+    // ComicVine returns 420 ("entity throttled") when the API key is rate-limited.
+    // If even the character call is throttled we got nothing — bail WITHOUT setting
+    // the sentinel so the hero is retried on a later view, rather than being pinned
+    // as "enriched" with an empty gallery forever.
+    if (charRes.status === 420) return json({ ok: false, throttled: true });
     const charJson = charRes.ok ? await charRes.json() : {};
     const results = charJson.results ?? {};
 
@@ -78,6 +83,7 @@ serve(async (req: Request) => {
       ? results.issue_credits
       : [];
     const first40 = credits.slice(0, 40);
+    let coverThrottled = false;
     const covers = await Promise.all(
       first40.map(async (credit, i) => {
         const apiDetailUrl =
@@ -90,6 +96,7 @@ serve(async (req: Request) => {
             field_list: 'image,name,issue_number,cover_date',
           });
           const res = await fetch(`${apiDetailUrl}?${params}`);
+          if (res.status === 420) coverThrottled = true;
           if (!res.ok) return null;
           const data = (await res.json()).results ?? {};
           const img = data.image as Record<string, unknown> | undefined;
@@ -111,18 +118,25 @@ serve(async (req: Request) => {
     );
     for (const c of covers) if (c) rows.push(c);
 
+    // Persist whatever we got (idempotent — never erases existing rows).
     if (rows.length > 0) {
-      await supabase.from('hero_images').upsert(rows, {
+      const { error: upsertError } = await supabase.from('hero_images').upsert(rows, {
         onConflict: 'hero_id,url',
         ignoreDuplicates: true,
       });
+      // Surface a DB write failure instead of silently marking the hero enriched.
+      if (upsertError) return json({ ...FAIL, error: upsertError.message }, 500);
     }
 
-    // Sentinel so this runs once per hero, even when there were no images.
-    await supabase
-      .from('heroes')
-      .update({ gallery_enriched_at: new Date().toISOString() })
-      .eq('id', heroId);
+    // Sentinel so this runs once per hero — but NOT when covers were throttled
+    // (we'd otherwise pin an incomplete gallery). A genuinely image-less hero
+    // (credits present, no 420) still gets the sentinel and won't refetch.
+    if (!coverThrottled) {
+      await supabase
+        .from('heroes')
+        .update({ gallery_enriched_at: new Date().toISOString() })
+        .eq('id', heroId);
+    }
 
     return json(OK);
   } catch (err) {
