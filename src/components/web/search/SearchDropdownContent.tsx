@@ -7,7 +7,6 @@ import { useAuth } from '../../../hooks/useAuth';
 import { useSearchHistory } from '../../../hooks/useSearchHistory';
 import { useUnifiedSearch } from '../../../hooks/useUnifiedSearch';
 import { useIdleHeroes } from '../../../hooks/useIdleHeroes';
-import { useIdleShowcase } from '../../../hooks/useIdleShowcase';
 import { getRecentlyViewed } from '../../../lib/db/viewHistory';
 import type { RailHero } from './HeroRail';
 import { IdleSuggestions } from './IdleSuggestions';
@@ -84,7 +83,6 @@ export function SearchDropdownContent({
   const isEmptyQuery = query.trim().length === 0;
   // 14 fame-ranked icons for the Popular portrait rail (was 4 for a vertical list).
   const { heroes: trending, isLoading: trendingLoading } = useIdleHeroes(isEmptyQuery, 14);
-  const showcase = useIdleShowcase(isEmptyQuery);
 
   // The signed-in user's recently-viewed characters ("jump back in"), shown as a
   // portrait rail at the top of the idle palette. Only fetched while idle.
@@ -213,13 +211,9 @@ export function SearchDropdownContent({
         recentlyViewed={recentlyViewed}
         trending={trending}
         trendingLoading={trendingLoading}
-        teams={showcase.teams}
-        films={showcase.films}
         history={history}
         onHeroPress={handleHeroPress}
         onUniversePress={handleUniversePress}
-        onTeamPress={handleTeamPress}
-        onTitlePress={handleTitlePress}
         onSelectRecent={handleSelectRecentSearch}
         onClearHistory={clearHistory}
       />

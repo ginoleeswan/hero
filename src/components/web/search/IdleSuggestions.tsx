@@ -3,24 +3,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { SEARCH_UNIVERSES } from '../../../constants/publishers';
 import type { HeroSearchResult } from '../../../lib/db/heroes';
-import type { TeamSearchResult } from '../../../lib/db/teams';
-import type { TitleSearchResult } from '../../../lib/db/titles';
 import { HeroRail, type RailHero } from './HeroRail';
 import { UniverseChip } from './UniverseChip';
-import { TeamResultRow } from './TeamResultRow';
-import { TitleResultRow } from './TitleResultRow';
 
 interface IdleSuggestionsProps {
   recentlyViewed: RailHero[];
   trending: HeroSearchResult[];
   trendingLoading: boolean;
-  teams: TeamSearchResult[];
-  films: TitleSearchResult[];
   history: string[];
   onHeroPress: (id: string) => void;
   onUniversePress: (slug: string) => void;
-  onTeamPress: (id: string) => void;
-  onTitlePress: (id: string) => void;
   onSelectRecent: (query: string) => void;
   onClearHistory: () => void;
 }
@@ -33,13 +25,9 @@ export function IdleSuggestions({
   recentlyViewed,
   trending,
   trendingLoading,
-  teams,
-  films,
   history,
   onHeroPress,
   onUniversePress,
-  onTeamPress,
-  onTitlePress,
   onSelectRecent,
   onClearHistory,
 }: IdleSuggestionsProps) {
@@ -103,26 +91,6 @@ export function IdleSuggestions({
             />
           ))}
         </ScrollView>
-
-        {/* Popular teams — vertical rows keep their member/publisher metadata. */}
-        {teams.length > 0 && (
-          <>
-            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Popular teams</Text>
-            {teams.map((t) => (
-              <TeamResultRow key={t.id} team={t} onPress={() => onTeamPress(t.id)} />
-            ))}
-          </>
-        )}
-
-        {/* Popular films & shows */}
-        {films.length > 0 && (
-          <>
-            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Films & Shows</Text>
-            {films.map((t) => (
-              <TitleResultRow key={t.id} title={t} onPress={() => onTitlePress(t.id)} />
-            ))}
-          </>
-        )}
 
         {/* Recent searches */}
         {hasHistory && (
