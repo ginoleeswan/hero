@@ -25,6 +25,7 @@ import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { DailyChallengeBanner } from '../../src/components/game/DailyChallengeBanner';
 import { SeoHead } from '../../src/components/web/SeoHead';
 import { PublisherPods } from '../../src/components/web/home/PublisherPods';
+import { CategoryBrowseGrid } from '../../src/components/web/home/CategoryBrowseGrid';
 import { GreatestRivalries } from '../../src/components/web/home/GreatestRivalries';
 import { HallOfInfamy } from '../../src/components/web/home/HallOfInfamy';
 
@@ -1184,7 +1185,9 @@ export default function WebHomeScreen() {
                 Guess-the-Hero game. On desktop they sit side by side so the
                 matchup isn't a full-width bar and the game rides up beside it;
                 on mobile they stack. */}
-            <View style={[styles.engageRow, isMobile && (styles.engageRowStack as object)] as object}>
+            <View
+              style={[styles.engageRow, isMobile && (styles.engageRowStack as object)] as object}
+            >
               <View style={isMobile ? undefined : (styles.engageMatchup as object)}>
                 {homeData.matchup === undefined ? (
                   <TodaysMatchupSkeleton />
@@ -1195,13 +1198,10 @@ export default function WebHomeScreen() {
                   />
                 ) : null}
               </View>
-              <View
-                style={
-                  (isMobile ? styles.engageDailyStack : styles.engageDaily) as object
-                }
-              >
+              <View style={(isMobile ? styles.engageDailyStack : styles.engageDaily) as object}>
                 <DailyChallengeBanner
                   onPress={() => router.push('/play')}
+                  tall={!isMobile}
                   style={(isMobile ? styles.dailyBannerMobile : styles.dailyBannerGlass) as object}
                 />
               </View>
@@ -1268,103 +1268,23 @@ export default function WebHomeScreen() {
               </Text>
             </View>
 
-            {/* ── More of the Library — publishers, teams, media & power ────── */}
-            <HomeRow
-              label="Publisher"
-              title="Marvel Universe"
-              heroes={homeData.marvel ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/universe/marvel')}
-            />
-            <HomeRow
-              label="Publisher"
-              title="DC Universe"
-              heroes={homeData.dc ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/universe/dc')}
-            />
-            <HomeRow
-              label="Mutantkind"
-              title="X-Men"
-              heroes={homeData.xmen ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/xmen')}
-            />
-            <HomeRow
-              label="Raw Power"
-              title="Strongest"
-              heroes={homeData.strongest ?? []}
-              statKey="strength"
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/strongest')}
-            />
-            <HomeRow
-              label="Great Minds"
-              title="Most Intelligent"
-              heroes={homeData.mostIntelligent ?? []}
-              statKey="intelligence"
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/most-intelligent')}
-            />
-            <HomeRow
-              label="Beyond the Comics"
-              title="Anime Legends"
-              heroes={homeData.anime ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/anime')}
-            />
-            <HomeRow
-              label="Press Start"
-              title="Video Game Heroes"
-              heroes={homeData.videoGames ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/video-games')}
-            />
-            <HomeRow
-              label="Franchise Icons"
-              title="Beyond the Comics"
-              heroes={homeData.franchiseIcons ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/franchise-icons')}
-            />
-            <HomeRow
-              label="Fresh to the Vault"
-              title="Newly Added"
-              heroes={homeData.newlyAdded ?? []}
-              onPress={handlePress}
+            {/* ── Browse the Universe — one calm grid of doorway tiles. Replaces
+                 the wall of category rails (and the old Dark Side rails:
+                 villains / horror / anti-heroes are tiles here too). ────────── */}
+            <CategoryBrowseGrid
+              covers={homeData.browseCovers}
+              onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
             />
 
-            {/* ── The Dark Side — one deliberate dark zone ──────────────────── */}
-            {((homeData.villains?.length ?? 0) > 0 ||
-              (homeData.antiHeroes?.length ?? 0) > 0 ||
-              (homeData.horror?.length ?? 0) > 0) && (
-              <View style={styles.darkZone}>
-                <DarkHomeRow
-                  grouped
-                  label="The Dark Side"
-                  title="Villains"
-                  heroes={homeData.villains ?? []}
-                  onPress={handlePress}
-                  onViewAll={() => router.push('/category/villain')}
-                />
-                <DarkHomeRow
-                  grouped
-                  label="Movie Nightmares"
-                  title="Horror Icons"
-                  heroes={homeData.horror ?? []}
-                  onPress={handlePress}
-                  onViewAll={() => router.push('/category/horror')}
-                />
-                <DarkHomeRow
-                  grouped
-                  label="Neither Good Nor Evil"
-                  title="Anti-Heroes"
-                  heroes={homeData.antiHeroes ?? []}
-                  onPress={handlePress}
-                  onViewAll={() => router.push('/category/anti-heroes')}
-                />
-              </View>
-            )}
+            {/* ── Fresh to the Vault — the one temporal rail (not a category) ── */}
+            <View style={styles.afterGrid}>
+              <HomeRow
+                label="Fresh to the Vault"
+                title="Newly Added"
+                heroes={homeData.newlyAdded ?? []}
+                onPress={handlePress}
+              />
+            </View>
 
             {/* ── Go Deeper — the editorial features ────────────────────────── */}
             <View style={styles.browseHead}>
@@ -1495,14 +1415,8 @@ const styles = StyleSheet.create({
     maxWidth: 560,
   } as object,
 
-  // The one deliberate dark moment in the canvas — the "Dark Side" zone holds
-  // the villain/grey-morality rows in a single continuous navy band.
-  darkZone: {
-    backgroundColor: COLORS.navy,
-    paddingTop: 28,
-    paddingBottom: 8,
-    marginBottom: 52,
-  },
+  // Breathing room between the browse grid and the "Newly Added" rail.
+  afterGrid: { marginTop: 44 },
 
   // ── Home layout ──────────────────────────────────────────────────────────────
   discoverContent: {
