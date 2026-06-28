@@ -26,6 +26,7 @@ import { DailyChallengeBanner } from '../../src/components/game/DailyChallengeBa
 import { SeoHead } from '../../src/components/web/SeoHead';
 import { PublisherPods } from '../../src/components/web/home/PublisherPods';
 import { CategoryBrowseGrid } from '../../src/components/web/home/CategoryBrowseGrid';
+import { HallOfFame } from '../../src/components/web/home/HallOfFame';
 import { GreatestRivalries } from '../../src/components/web/home/GreatestRivalries';
 import { HallOfInfamy } from '../../src/components/web/home/HallOfInfamy';
 
@@ -971,141 +972,6 @@ const row = StyleSheet.create({
   titleRowHover: { opacity: 0.7 } as object,
 });
 
-// ── Dark editorial row section ────────────────────────────────────────────────
-function DarkHomeRow({
-  label,
-  title,
-  heroes,
-  onPress,
-  onViewAll,
-  grouped = false,
-}: {
-  label?: string;
-  title: string;
-  heroes: (Hero | FavouriteHero)[];
-  onPress: (id: string) => void;
-  onViewAll?: () => void;
-  /** When true, drops the per-row navy band + margin so several rows can share
-   *  one continuous dark zone wrapper (the "Dark Side"). */
-  grouped?: boolean;
-}) {
-  const {
-    sectionRef,
-    scrollRef,
-    isHovered,
-    canScrollLeft,
-    canScrollRight,
-    doScrollLeft,
-    doScrollRight,
-  } = useCarouselScroll(heroes.length);
-  const { width: winWidth } = useWindowDimensions();
-  const pagePad = winWidth < 640 ? 16 : 32;
-
-  if (heroes.length === 0) return null;
-  return (
-    <View ref={sectionRef} style={grouped ? (drow.sectionGrouped as object) : drow.section}>
-      <View style={[drow.header, { paddingLeft: pagePad }]}>
-        <View style={drow.headerLeft}>
-          <View style={drow.accentBar} />
-          <View style={drow.headerText}>
-            {!!label && <Text style={drow.label}>{label}</Text>}
-            {onViewAll ? (
-              <Pressable
-                onPress={onViewAll}
-                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [drow.titleRow, hovered && (drow.titleRowHover as object)] as object
-                }
-              >
-                <Text style={drow.title}>{title}</Text>
-                <Text
-                  style={
-                    {
-                      fontFamily: 'Flame-Regular',
-                      fontSize: 44,
-                      color: COLORS.beige,
-                      marginTop: 4,
-                      marginLeft: 4,
-                    } as object
-                  }
-                >
-                  ›
-                </Text>
-              </Pressable>
-            ) : (
-              <Text style={drow.title}>{title}</Text>
-            )}
-          </View>
-        </View>
-      </View>
-      {/* Scroll track starts at viewport left edge — cards bleed off sides when scrolling. */}
-      <View style={{ position: 'relative', minHeight: ROW_CARD_HEIGHT } as object}>
-        <View
-          ref={scrollRef}
-          style={[rowScrollStyle, { paddingLeft: pagePad, marginLeft: 0 }] as object}
-        >
-          {heroes.map((h) => (
-            <RowCard key={h.id} hero={h} onPress={() => onPress(String(h.id))} />
-          ))}
-        </View>
-        {isHovered && canScrollLeft && (
-          <CarouselArrow direction="left" onPress={doScrollLeft} contained />
-        )}
-        {isHovered && canScrollRight && (
-          <CarouselArrow direction="right" onPress={doScrollRight} contained />
-        )}
-      </View>
-    </View>
-  );
-}
-
-const drow = StyleSheet.create({
-  section: {
-    backgroundColor: COLORS.navy,
-    paddingTop: 28,
-    paddingBottom: 8,
-    marginBottom: 52,
-  } as object,
-  // Inside a shared dark zone: no own band/margin, just inter-row spacing.
-  sectionGrouped: {
-    paddingTop: 4,
-    paddingBottom: 8,
-    marginBottom: 28,
-  } as object,
-  header: {
-    marginBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    position: 'relative',
-    zIndex: 2,
-  } as object,
-  headerLeft: { flexDirection: 'row', alignItems: 'stretch', gap: 14 },
-  accentBar: {
-    width: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.orange,
-    minHeight: 38,
-  },
-  headerText: { gap: 2, justifyContent: 'center' },
-  label: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: COLORS.orange,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  title: { fontFamily: 'Flame-Regular', fontSize: 36, color: COLORS.beige, lineHeight: 38 },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    cursor: 'pointer',
-    transition: 'opacity 150ms ease',
-    alignSelf: 'flex-start',
-  } as object,
-  titleRowHover: { opacity: 0.7 } as object,
-});
-
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function WebHomeScreen() {
   const router = useRouter();
@@ -1242,14 +1108,9 @@ export default function WebHomeScreen() {
               onPress={handlePress}
             />
 
-            {/* ── The marquee browse row ────────────────────────────────────── */}
-            <HomeRow
-              label="By Appearances"
-              title="Most Iconic"
-              heroes={homeData.iconic ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/most-iconic')}
-            />
+            {/* ── Hall of Fame — Most Iconic, authored: a chosen #1 + ranked list
+                 instead of a flat rail of equals. ──────────────────────────── */}
+            <HallOfFame heroes={homeData.iconic ?? []} onPress={handlePress} />
 
             {/* ── Browse the Universe — the category doorways, with their own
                  header so the grid reads as a deliberate browse block, not an

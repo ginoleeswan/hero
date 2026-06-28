@@ -17,8 +17,8 @@ import {
   type WikiTrendingHero,
 } from '../../../lib/db/trending';
 import type { NewComic } from '../../../lib/db/comics';
-import { WikiTrendingRail } from '../../home/WikiTrendingRail';
-import { MonthInHistoryRail } from '../../home/MonthInHistoryRail';
+import { TrendingMovers } from './TrendingMovers';
+import { ThisMonthInHistory } from './ThisMonthInHistory';
 import type { DebutIssue } from '../../../lib/db/anniversaries';
 
 const BADGE_COLOR: Record<BadgeTone, string> = {
@@ -526,9 +526,9 @@ export function RightNowBand({
 
       <ComicCoverRail comics={newComics} onIssuePress={onIssuePress} pagePad={pagePad} />
 
-      <WikiTrendingRail heroes={wikiTrending} onHeroPress={onHeroPress} />
+      <TrendingMovers heroes={wikiTrending} onHeroPress={onHeroPress} />
 
-      <MonthInHistoryRail debuts={debuts} onHeroPress={onHeroPress} />
+      <ThisMonthInHistory debuts={debuts} onHeroPress={onHeroPress} />
 
       {personalized.length > 0 && (
         <PersonalRow characters={personalized} onHeroPress={onHeroPress} />
