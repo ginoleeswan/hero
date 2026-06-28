@@ -118,7 +118,22 @@ serve(async (req: Request) => {
     );
     for (const c of covers) if (c) rows.push(c);
 
-    // Persist whatever we got (idempotent — never erases existing rows).
+    // When we fetched a fresh, non-throttled cover set, replace THIS hero's old
+    // comicvine_cover rows first (scoped delete) so a resolution change (e.g. the
+    // medium_url backfill → original_url) refreshes in place instead of leaving
+    // both URLs behind the (hero_id, url) unique constraint. Skip when throttled
+    // or empty so we never wipe a good gallery for nothing.
+    const freshCovers = !coverThrottled && rows.some((r) => r.source === 'comicvine_cover');
+    if (freshCovers) {
+      await supabase
+        .from('hero_images')
+        .delete()
+        .eq('hero_id', heroId)
+        .eq('source', 'comicvine_cover');
+    }
+
+    // Persist whatever we got. Idempotent on (hero_id, url) so the primary image
+    // and any re-run never duplicate.
     if (rows.length > 0) {
       const { error: upsertError } = await supabase.from('hero_images').upsert(rows, {
         onConflict: 'hero_id,url',

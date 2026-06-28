@@ -507,7 +507,6 @@ export default function WebCharacterScreen() {
     favourited,
     favLoading,
     galleryImages,
-    galleryLoading,
     newIssues,
     family,
     narrative,
@@ -1370,7 +1369,10 @@ export default function WebCharacterScreen() {
                             </Text>
                             <View style={{ marginRight: -20 }}>
                               <GalleryStrip
-                                images={galleryImages.map((g) => ({ url: g.url, caption: g.caption }))}
+                                images={galleryImages.map((g) => ({
+                                  url: g.url,
+                                  caption: g.caption,
+                                }))}
                                 onPress={(i) => {
                                   const issueId = galleryImages[i]?.issueId;
                                   if (issueId) {
