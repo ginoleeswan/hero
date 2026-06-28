@@ -562,6 +562,47 @@ export type Database = {
           },
         ]
       }
+      comic_volumes: {
+        Row: {
+          character_ids: string[]
+          lead_hero_id: string | null
+          max_fame: number | null
+          name: string | null
+          publisher: string | null
+          resolved_at: string | null
+          status: string
+          volume_id: number
+        }
+        Insert: {
+          character_ids?: string[]
+          lead_hero_id?: string | null
+          max_fame?: number | null
+          name?: string | null
+          publisher?: string | null
+          resolved_at?: string | null
+          status?: string
+          volume_id: number
+        }
+        Update: {
+          character_ids?: string[]
+          lead_hero_id?: string | null
+          max_fame?: number | null
+          name?: string | null
+          publisher?: string | null
+          resolved_at?: string | null
+          status?: string
+          volume_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comic_volumes_lead_hero_id_fkey"
+            columns: ["lead_hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contributions: {
         Row: {
           created_at: string
@@ -1216,6 +1257,7 @@ export type Database = {
           publisher: string | null
           race: string | null
           relatives: string | null
+          search_text: string | null
           speed: number | null
           stats_source: string | null
           strength: number | null
@@ -1286,6 +1328,7 @@ export type Database = {
           publisher?: string | null
           race?: string | null
           relatives?: string | null
+          search_text?: string | null
           speed?: number | null
           stats_source?: string | null
           strength?: number | null
@@ -1356,6 +1399,7 @@ export type Database = {
           publisher?: string | null
           race?: string | null
           relatives?: string | null
+          search_text?: string | null
           speed?: number | null
           stats_source?: string | null
           strength?: number | null
