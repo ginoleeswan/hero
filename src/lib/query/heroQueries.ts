@@ -20,6 +20,7 @@ import {
   type PublisherFilter,
   type AlignmentFilter,
 } from '../db/heroes';
+import { getTeamById } from '../db/teams';
 import { DEFAULT_FILTERS, type CategoryFilters } from '../db/categoryFilters';
 import { generateVerdict, type VerdictInput } from '../api';
 import { getCachedVerdict } from '../db/verdicts';
@@ -113,6 +114,17 @@ export function useTeamHeroes(teamName: string | null, filters: CategoryFilters)
       }),
     getNextPageParam: (lastPage, allPages) =>
       lastPage.heroes.length === CATEGORY_PAGE_SIZE ? allPages.length : undefined,
+  });
+}
+
+/** Team summary (header identity + the membership term that drives useTeamHeroes).
+ *  Separate from the member grid so both can cache independently. */
+export function useTeam(id: string | undefined) {
+  return useQuery({
+    queryKey: id ? queryKeys.team(id) : ['teams', 'detail', 'disabled'],
+    enabled: !!id,
+    queryFn: () => getTeamById(id!),
+    staleTime: 1000 * 60 * 30,
   });
 }
 

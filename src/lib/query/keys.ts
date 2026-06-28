@@ -25,6 +25,7 @@ export const queryKeys = {
   heroLinks: (id: string) => ['heroes', 'links', id] as const,
   heroIssues: (id: string) => ['heroes', 'issues', id] as const,
   profile: (userId: string) => ['profile', userId] as const,
+  team: (id: string) => ['teams', 'detail', id] as const,
 };
 
 // Title (film/TV/game) detail-screen keys, under a 'titles' root so the whole

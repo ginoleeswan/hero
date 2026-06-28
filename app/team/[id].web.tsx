@@ -19,7 +19,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getTeamPage, type Hero } from '../../src/lib/db/heroes';
-import { getTeamById, type TeamSummary } from '../../src/lib/db/teams';
+import { useTeam } from '../../src/lib/query/heroQueries';
 import { brandForPublisher } from '../../src/constants/publishers';
 import { teamLogo } from '../../src/constants/teamBrands';
 import { activeFilterList, type CategoryFilters } from '../../src/lib/db/categoryFilters';
@@ -170,8 +170,11 @@ export default function WebTeamScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
 
-  const [team, setTeam] = useState<TeamSummary | null>(null);
-  const [teamLoaded, setTeamLoaded] = useState(false);
+  // Team summary via React Query (cached, deduped) — header identity + the
+  // membership term that drives the roster query.
+  const teamQuery = useTeam(id);
+  const team = teamQuery.data ?? null;
+  const teamLoaded = teamQuery.isFetched;
   const [heroes, setHeroes] = useState<Hero[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -197,24 +200,6 @@ export default function WebTeamScreen() {
   const color = brand?.color ?? FALLBACK_COLOR;
   const colorDark = brand?.colorDark ?? FALLBACK_COLOR_DARK;
   const teamName = team?.name ?? null;
-
-  // Resolve the team summary (header identity + the membership term).
-  useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
-    getTeamById(id)
-      .then((t) => {
-        if (cancelled) return;
-        setTeam(t);
-        setTeamLoaded(true);
-      })
-      .catch(() => {
-        if (!cancelled) setTeamLoaded(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
 
   const fetchPage = useCallback(
     async (page: number, f: CategoryFilters, append = false) => {
