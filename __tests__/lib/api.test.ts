@@ -227,30 +227,21 @@ describe('generateVerdict', () => {
 });
 
 describe('fetchHeroGallery', () => {
-  it('returns issueCovers on success', async () => {
-    const payload = {
-      issueCovers: [
-        {
-          url: 'https://cv.example.com/cover1.jpg',
-          name: 'ASM #1',
-          issueNumber: '1',
-          year: '1963',
-        },
-      ],
-    };
-    mockInvoke.mockResolvedValueOnce({ data: payload, error: null });
+  // fetchHeroGallery is now a fire-and-refetch trigger: it invokes the edge
+  // function and resolves to void. Gallery images are read separately from the
+  // hero_images table via getHeroImages.
+  it('invokes the gallery edge function with the hero + comicvine ids', async () => {
+    mockInvoke.mockResolvedValueOnce({ data: { ok: true }, error: null });
 
     const result = await fetchHeroGallery('620', '4005-1977');
-    expect(result.issueCovers).toHaveLength(1);
-    expect(result.issueCovers![0].name).toBe('ASM #1');
+    expect(result).toBeUndefined();
     expect(mockInvoke).toHaveBeenCalledWith('get-hero-gallery', {
       body: { heroId: '620', comicvineId: '4005-1977' },
     });
   });
 
-  it('returns null when edge function errors', async () => {
+  it('resolves without throwing when the edge function errors', async () => {
     mockInvoke.mockResolvedValueOnce({ data: null, error: { message: 'edge error' } });
-    const result = await fetchHeroGallery('620', '4005-1977');
-    expect(result.issueCovers).toBeNull();
+    await expect(fetchHeroGallery('620', '4005-1977')).resolves.toBeUndefined();
   });
 });
