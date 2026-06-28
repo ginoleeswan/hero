@@ -212,6 +212,13 @@ export default function WebCategoryScreen() {
   const loadingMoreRef = useRef(false);
   const skeletonOpacity = useSkeletonAnim();
 
+  // Crossfade the skeleton→grid handoff so cards dissolve in instead of hard
+  // cutting (the "grey then pop"). The real grid fades up while the skeleton
+  // overlay fades out, then unmounts.
+  const gridFade = useRef(new Animated.Value(0)).current;
+  const skelFade = useRef(new Animated.Value(1)).current;
+  const [skelMounted, setSkelMounted] = useState(true);
+
   const categorySlug = VALID_SLUGS.has(slug as CategorySlug) ? (slug as CategorySlug) : null;
   // Non-category slugs are universes (publisher/studio/franchise): a registered
   // brand routes by its ILIKE query, otherwise the raw name.
@@ -314,6 +321,26 @@ export default function WebCategoryScreen() {
       cancelled = true;
     };
   }, [universeTerm]);
+
+  // Drive the skeleton→grid crossfade. When page-0 data lands, fade the grid up
+  // and the skeleton overlay out (then unmount it); on a fresh load reset both.
+  const gridReady = !loading && heroes.length > 0;
+  useEffect(() => {
+    if (gridReady) {
+      setSkelMounted(true);
+      gridFade.setValue(0);
+      skelFade.setValue(1);
+      Animated.timing(gridFade, { toValue: 1, duration: 320, useNativeDriver: true }).start();
+      Animated.timing(skelFade, { toValue: 0, duration: 260, useNativeDriver: true }).start(
+        ({ finished }) => finished && setSkelMounted(false),
+      );
+    } else {
+      gridFade.setValue(0);
+      skelFade.setValue(1);
+      setSkelMounted(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gridReady]);
 
   const [peek, setPeek] = useState<PeekHero | null>(null);
 
@@ -576,15 +603,7 @@ export default function WebCategoryScreen() {
               )}
             </View>
           )}
-          {loading ? (
-            <View style={styles.gridWrap}>
-              <View style={gridStyle as object}>
-                {Array.from({ length: 24 }).map((_, i) => (
-                  <SkeletonCard key={i} opacity={skeletonOpacity} />
-                ))}
-              </View>
-            </View>
-          ) : heroes.length === 0 ? (
+          {!loading && heroes.length === 0 ? (
             <View style={styles.center}>
               <Ionicons name="search-outline" size={34} color="rgba(29,45,51,0.25)" />
               <Text style={styles.empty}>
@@ -603,9 +622,33 @@ export default function WebCategoryScreen() {
               )}
             </View>
           ) : (
-            // Plain View (no nested ScrollView) so the grid flows in the
-            // document scroll and bleeds under the iOS toolbar, like the skeleton.
-            <View style={[styles.gridWrap, { paddingBottom: 0 }] as object}>{grid}</View>
+            // Plain View (no nested ScrollView) so the grid flows in the document
+            // scroll and bleeds under the iOS toolbar, like the skeleton. The
+            // skeleton overlay crossfades out over the grid as data lands.
+            <View style={[styles.gridWrap, styles.gridStack, { paddingBottom: 0 }] as object}>
+              {heroes.length > 0 && (
+                <Animated.View style={{ opacity: gridFade }}>{grid}</Animated.View>
+              )}
+              {skelMounted && (
+                <Animated.View
+                  pointerEvents="none"
+                  style={
+                    [
+                      // In-flow while it's the only content (defines height); an
+                      // absolute overlay once the real grid is mounting beneath it.
+                      heroes.length > 0 && StyleSheet.absoluteFill,
+                      { opacity: skelFade },
+                    ] as object
+                  }
+                >
+                  <View style={gridStyle as object}>
+                    {Array.from({ length: 24 }).map((_, i) => (
+                      <SkeletonCard key={i} opacity={skeletonOpacity} />
+                    ))}
+                  </View>
+                </Animated.View>
+              )}
+            </View>
           )}
         </View>
       </View>
@@ -843,6 +886,8 @@ const styles = StyleSheet.create({
   // grows to the full grid height — its beige fill backs every card, including
   // the ones that scroll under the toolbar, instead of the navy body showing.
   gridWrap: { paddingTop: 4, backgroundColor: SURFACE.ink } as object,
+  // Anchor for the absolutely-positioned skeleton overlay during the crossfade.
+  gridStack: { position: 'relative' } as object,
 
   // ── Desktop results bar (count + active filters, above the grid) ─────────────
   resultsBar: {
