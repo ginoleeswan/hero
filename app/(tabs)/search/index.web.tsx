@@ -276,6 +276,37 @@ export default function WebSearchScreen() {
   // avoid a first-frame jump before onLayout reports the real height.
   const [headerH, setHeaderH] = useState(TOPBAR_HEIGHT + 64);
 
+  // Slide the search header up in sync with the global TopBar: hide on scroll-down,
+  // reveal on scroll-up, always shown at the very top. Without this the tall dark
+  // band stays pinned and wastes space (and leaves a dark gap once the TopBar that
+  // it pads under has itself slid away). Mirrors TopBar's mobile hide/reveal logic.
+  const [headerHidden, setHeaderHidden] = useState(false);
+  useEffect(() => {
+    if (isDesktop || typeof window === 'undefined') return undefined;
+    let lastY = window.scrollY;
+    let ticking = false;
+    const apply = () => {
+      const y = window.scrollY;
+      if (y <= 8) setHeaderHidden(false);
+      else {
+        const delta = y - lastY;
+        if (delta > 6) setHeaderHidden(true);
+        else if (delta < -6) setHeaderHidden(false);
+      }
+      lastY = y;
+      ticking = false;
+    };
+    const onScroll = (e: Event) => {
+      const t = e.target;
+      if (!(t === document || t === document.documentElement || t === document.body)) return;
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(apply);
+    };
+    window.addEventListener('scroll', onScroll, true);
+    return () => window.removeEventListener('scroll', onScroll, true);
+  }, [isDesktop]);
+
   const title = trimmed ? `"${trimmed}"` : 'Search';
   const capped = heroes.length >= RESULT_LIMIT;
   const countLabel = loading
@@ -334,7 +365,14 @@ export default function WebSearchScreen() {
              spacer that reserves its height. ── */
         <>
           <View
-            style={styles.mobileFixedHeader as object}
+            style={
+              [
+                styles.mobileFixedHeader,
+                {
+                  transform: headerHidden ? 'translateZ(0) translateY(-101%)' : 'translateZ(0)',
+                },
+              ] as object
+            }
             onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
           >
             <View style={styles.mobileSearchRow as object}>
@@ -591,12 +629,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 50,
-    paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 14px)`,
-    transform: 'translateZ(0)',
+    paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 10px)`,
+    // translateZ(0) is applied inline alongside the hide/reveal translateY.
+    transition: 'transform 260ms ease',
     // No hard seam: the dark band dissolves into the canvas via mobileHeaderFade
-    // (the search zone + content read as one continuous surface). The extra bottom
-    // padding is the runway the fade needs, clear of the search field.
-    paddingBottom: 40,
+    // (the search zone + content read as one continuous surface). The bottom
+    // padding is just the runway the fade needs, clear of the search field — kept
+    // tight so the dark zone hugs the search bar instead of looming.
+    paddingBottom: 22,
   } as object,
   // The dissolve: a transparent→beige wash over the navy bottom edge so the dark
   // band melts into the paper canvas instead of ending on a line. Sits in the
@@ -606,12 +646,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 46,
-    backgroundImage: `linear-gradient(180deg, rgba(245,235,220,0) 0%, rgba(245,235,220,0.55) 58%, ${COLORS.beige} 100%)`,
+    height: 30,
+    backgroundImage: `linear-gradient(180deg, rgba(245,235,220,0) 0%, rgba(245,235,220,0.5) 55%, ${COLORS.beige} 100%)`,
   } as object,
   mobileSearchRow: {
     paddingHorizontal: 12,
-    paddingBottom: 4,
+    paddingBottom: 2,
   },
   mobileSearchBar: {
     flexDirection: 'row',
