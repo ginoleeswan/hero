@@ -32,11 +32,11 @@ import { NotFoundView } from '../../src/components/NotFoundView';
 // Wide editorial layout constants — the cover straddles the dark→paper seam.
 const MAXW = 1100;
 const PAD = 24;
-const COVER_W = 300;
-const COVER_H = 450;
-const COVER_TOP = 110; // clears the floating web TopBar
+const COVER_W = 256;
+const COVER_H = 384;
+const COVER_TOP = 150; // sits clear of the floating web TopBar
 const HEADER_H = COVER_TOP + Math.round(COVER_H / 2); // seam at the cover's midline
-const COVER_COL = PAD + COVER_W + 44; // left reserve for content beside the cover
+const COVER_COL = PAD + COVER_W + 48; // left reserve for content beside the cover
 
 function onSaleLabel(storeDate: string | null): string | null {
   if (!storeDate) return null;
@@ -183,7 +183,8 @@ function Credits({
       <Text style={[cr.heading, { color: accent }, centered && cr.center]}>Creators</Text>
       {groups.map((g) => {
         const names =
-          g.names.slice(0, 5).join(', ') + (g.names.length > 5 ? ` +${g.names.length - 5} more` : '');
+          g.names.slice(0, 5).join(', ') +
+          (g.names.length > 5 ? ` +${g.names.length - 5} more` : '');
         return stacked ? (
           <DossierItem key={g.label} label={g.label} value={names} />
         ) : (
@@ -301,9 +302,19 @@ function CastRail({
   return (
     <View style={styles.section}>
       <Text style={[styles.sectionLabel, { color: accent }]}>Featuring</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.castStrip}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.castStrip}
+      >
         {characters.map((c, i) => (
-          <CastCard key={c.id} character={c} accent={accent} lead={i === 0} onPress={() => onPress(c.id)} />
+          <CastCard
+            key={c.id}
+            character={c}
+            accent={accent}
+            lead={i === 0}
+            onPress={() => onPress(c.id)}
+          />
         ))}
       </ScrollView>
     </View>
@@ -371,7 +382,10 @@ export default function IssueScreen() {
   const moreBand =
     more.length > 0 ? (
       <View style={styles.moreBand}>
-        <ComicCoverRail comics={more} onIssuePress={(issueId) => router.push(`/issue/${issueId}`)} />
+        <ComicCoverRail
+          comics={more}
+          onIssuePress={(issueId) => router.push(`/issue/${issueId}`)}
+        />
       </View>
     ) : null;
 
@@ -415,7 +429,12 @@ export default function IssueScreen() {
           {/* Dark cover-stage header (top half of cover) */}
           <View style={[w.header, { height: HEADER_H }]}>
             {issue.coverUrl ? (
-              <Image source={{ uri: issue.coverUrl }} contentFit="cover" blurRadius={48} style={w.backdrop} />
+              <Image
+                source={{ uri: issue.coverUrl }}
+                contentFit="cover"
+                blurRadius={48}
+                style={w.backdrop}
+              />
             ) : (
               <View style={[StyleSheet.absoluteFill, w.backdropFallback]} />
             )}
@@ -447,7 +466,12 @@ export default function IssueScreen() {
                     <View style={w.sidebar}>
                       <Details issue={issue} accent={accent} />
                       {issue.creators ? (
-                        <Credits creators={issue.creators} accent={accent} centered={false} stacked />
+                        <Credits
+                          creators={issue.creators}
+                          accent={accent}
+                          centered={false}
+                          stacked
+                        />
                       ) : null}
                     </View>
                   </>
@@ -478,7 +502,12 @@ export default function IssueScreen() {
     <>
       <View style={[n.header, { minHeight: 430 }]}>
         {issue.coverUrl ? (
-          <Image source={{ uri: issue.coverUrl }} contentFit="cover" blurRadius={22} style={w.backdrop} />
+          <Image
+            source={{ uri: issue.coverUrl }}
+            contentFit="cover"
+            blurRadius={22}
+            style={w.backdrop}
+          />
         ) : (
           <View style={[StyleSheet.absoluteFill, w.backdropFallback]} />
         )}
@@ -519,7 +548,11 @@ export default function IssueScreen() {
           </View>
         ) : null}
         {cast.length > 0 ? (
-          <CastRail characters={cast} accent={accent} onPress={(cid) => router.push(`/character/${cid}`)} />
+          <CastRail
+            characters={cast}
+            accent={accent}
+            onPress={(cid) => router.push(`/character/${cid}`)}
+          />
         ) : null}
       </View>
       {moreBand}
@@ -538,7 +571,10 @@ export default function IssueScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 8 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 8 }}
+      >
         {narrowBody}
       </ScrollView>
     </View>
@@ -593,7 +629,11 @@ const w = StyleSheet.create({
   },
   paper: { width: '100%', backgroundColor: COLORS.beige, paddingBottom: 30 },
   paperInner: { maxWidth: MAXW, alignSelf: 'center', width: '100%' },
-  overlapRow: { flexDirection: 'row', alignItems: 'flex-start', minHeight: Math.round(COVER_H / 2) + 24 },
+  overlapRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    minHeight: Math.round(COVER_H / 2) + 24,
+  },
   coverGutter: { width: COVER_COL },
   rightCol: { flex: 1, minWidth: 0, paddingRight: PAD, paddingTop: 22 } as object,
   // ≥1000px: story + featuring in the main column, details + creators in a slim
@@ -680,7 +720,12 @@ const ms = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1.5,
   },
-  kicker: { fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 2.5, textTransform: 'uppercase' },
+  kicker: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+  },
   title: { fontFamily: 'Flame-Regular', color: '#fff' },
   titleWide: { fontSize: 62, lineHeight: 64, textAlign: 'left', letterSpacing: -0.8 },
   titleNarrow: { fontSize: 32, lineHeight: 36, textAlign: 'center' },
@@ -696,7 +741,12 @@ const ms = StyleSheet.create({
   statRail: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginTop: 4 },
   statCentered: { justifyContent: 'center' },
   statDivider: { width: 1, height: 13, backgroundColor: 'rgba(255,255,255,0.28)' },
-  statText: { fontFamily: 'FlameSans-Regular', fontSize: 13.5, color: 'rgba(245,235,220,0.82)', letterSpacing: 0.3 },
+  statText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 13.5,
+    color: 'rgba(245,235,220,0.82)',
+    letterSpacing: 0.3,
+  },
 });
 
 const syn = StyleSheet.create({
@@ -739,7 +789,13 @@ const cr = StyleSheet.create({
     letterSpacing: 0.8,
     paddingTop: 2,
   },
-  names: { fontFamily: 'FlameSans-Regular', fontSize: 14.5, color: COLORS.navy, flex: 1, lineHeight: 20 },
+  names: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 14.5,
+    color: COLORS.navy,
+    flex: 1,
+    lineHeight: 20,
+  },
   // Stacked label/value — the sidebar dossier idiom.
   item: { gap: 1, marginBottom: 9 },
   itemLabel: {
@@ -749,7 +805,12 @@ const cr = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  itemValue: { fontFamily: 'FlameSans-Regular', fontSize: 14.5, color: COLORS.navy, lineHeight: 19 },
+  itemValue: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 14.5,
+    color: COLORS.navy,
+    lineHeight: 19,
+  },
 });
 
 const cast = StyleSheet.create({
@@ -765,7 +826,14 @@ const cast = StyleSheet.create({
     borderColor: '#e2d6c6',
     justifyContent: 'flex-end',
   },
-  leadTag: { position: 'absolute', top: 7, left: 7, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5 },
+  leadTag: {
+    position: 'absolute',
+    top: 7,
+    left: 7,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
   leadTagText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 8,
@@ -786,7 +854,12 @@ const cast = StyleSheet.create({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.beige },
   webPage: { width: '100%', backgroundColor: COLORS.beige },
-  loading: { flex: 1, backgroundColor: COLORS.beige, alignItems: 'center', justifyContent: 'center' },
+  loading: {
+    flex: 1,
+    backgroundColor: COLORS.beige,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   paper: { backgroundColor: COLORS.beige },
   section: { paddingTop: 22, paddingBottom: 10 },
   sectionLabel: {
