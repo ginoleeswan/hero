@@ -114,6 +114,15 @@ export interface IssueCover {
   id: string | null;
 }
 
+export interface HeroImage {
+  url: string;
+  caption: string | null;
+  /** 'comicvine_primary' | 'comicvine_cover' | 'ai' | 'curated' */
+  source: string;
+  /** ComicVine issue id (covers only) → opens /issue/cvi:<id> read-through. */
+  issueId: string | null;
+}
+
 // ─── Combined character screen data ──────────────────────────────────────────
 
 export type StatsSource = 'superheroapi' | 'ai' | null;
