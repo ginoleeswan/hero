@@ -80,6 +80,7 @@ function HeroCard({
             imageUrl={hero.image_url}
             portraitUrl={hero.portrait_url}
             imageMdUrl={hero.image_md_url}
+            blurhash={hero.portrait_blurhash}
             grid
             contentFit="cover"
             contentPosition={{ top: 0, left: '50%' }}
@@ -267,12 +268,13 @@ export default function WebTeamScreen() {
   }, [fetchPage, filters]);
 
   // Montage: lead with the top member, then a varied handful — re-rolled per
-  // visit, stable across renders (keyed on the lead member only).
-  const [montageUrls, setMontageUrls] = useState<string[]>([]);
+  // visit, stable across renders (keyed on the lead member only). Each carries a
+  // BlurHash for an instant placeholder.
+  const [montage, setMontage] = useState<{ uri: string; blurhash?: string | null }[]>([]);
   const topMemberId = heroes[0]?.id;
   useEffect(() => {
     if (heroes.length === 0) {
-      setMontageUrls([]);
+      setMontage([]);
       return;
     }
     const pool = heroes.slice(1, 24);
@@ -280,10 +282,10 @@ export default function WebTeamScreen() {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
-    setMontageUrls(
+    setMontage(
       [heroes[0], ...pool.slice(0, 5)]
-        .map((h) => h.portrait_url ?? h.image_url)
-        .filter((u): u is string => !!u),
+        .map((h) => ({ uri: h.portrait_url ?? h.image_url, blurhash: h.portrait_blurhash }))
+        .filter((m): m is { uri: string; blurhash: string | null } => !!m.uri),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topMemberId]);
@@ -338,7 +340,7 @@ export default function WebTeamScreen() {
           logo={teamLogo(team)?.logo}
           badgeSize={teamLogo(team)?.badgeSize}
           logoTint={teamLogo(team)?.logoTint}
-          heroImageUrls={montageUrls}
+          montage={montage}
           unitLabel="MEMBER"
           compact={!isDesktop}
           sticky={isDesktop}

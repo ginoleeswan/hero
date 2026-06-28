@@ -3,6 +3,7 @@ import {
   heroImageSource,
   heroGridImageSource,
   withCloudinaryTransform,
+  withComicVineScale,
   hasHeroImage,
   heroInitials,
   monogramColor,
@@ -73,6 +74,47 @@ describe('withCloudinaryTransform', () => {
 
   it('leaves an empty string unchanged', () => {
     expect(withCloudinaryTransform('', 900)).toBe('');
+  });
+});
+
+describe('withComicVineScale', () => {
+  const CV = 'https://comicvine.gamespot.com/a/uploads/scale_large/1/15776/9446859-sid.jpg';
+
+  it('swaps the size segment for the requested variant', () => {
+    expect(withComicVineScale(CV, 'scale_medium')).toBe(
+      'https://comicvine.gamespot.com/a/uploads/scale_medium/1/15776/9446859-sid.jpg',
+    );
+    expect(withComicVineScale(CV, 'scale_small')).toBe(
+      'https://comicvine.gamespot.com/a/uploads/scale_small/1/15776/9446859-sid.jpg',
+    );
+  });
+
+  it('rewrites from any starting variant (e.g. original)', () => {
+    const original = 'https://comicvine.gamespot.com/a/uploads/original/1/15776/9446859-sid.jpg';
+    expect(withComicVineScale(original, 'scale_medium')).toBe(
+      'https://comicvine.gamespot.com/a/uploads/scale_medium/1/15776/9446859-sid.jpg',
+    );
+  });
+
+  it('leaves non-ComicVine URLs unchanged', () => {
+    const supabase =
+      'https://rpvgqfaeiowisdubgxkg.supabase.co/storage/v1/object/public/hero-portraits/269.jpg';
+    expect(withComicVineScale(supabase, 'scale_medium')).toBe(supabase);
+    expect(withComicVineScale('', 'scale_medium')).toBe('');
+  });
+});
+
+describe('ComicVine wiring', () => {
+  const CV_LARGE = 'https://comicvine.gamespot.com/a/uploads/scale_large/1/15776/9446859-sid.jpg';
+
+  it('heroImageSource keeps scale_large for the detail chain', () => {
+    expect(heroImageSource('cv-1', null, CV_LARGE)).toEqual({ uri: CV_LARGE });
+  });
+
+  it('heroGridImageSource downshifts to scale_medium', () => {
+    expect(heroGridImageSource('cv-1', null, CV_LARGE, null)).toEqual({
+      uri: 'https://comicvine.gamespot.com/a/uploads/scale_medium/1/15776/9446859-sid.jpg',
+    });
   });
 });
 

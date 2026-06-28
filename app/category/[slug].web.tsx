@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   getCategoryPage,
   getUniversePage,
+  getUniverseMontage,
   getCategoryFacetCounts,
   CATEGORY_LABELS,
   CATEGORY_DESCRIPTIONS,
@@ -99,6 +100,7 @@ function HeroCard({
             imageUrl={hero.image_url}
             portraitUrl={hero.portrait_url}
             imageMdUrl={hero.image_md_url}
+            blurhash={hero.portrait_blurhash}
             grid
             contentFit="cover"
             contentPosition={{ top: 0, left: '50%' }}
@@ -280,26 +282,38 @@ export default function WebCategoryScreen() {
 
   // Banner montage: always lead with the universe's most-popular hero, then a
   // random handful from the rest of the top tier — recognizable but varied, and
-  // re-rolled each visit. Stable across pagination (keyed on the top hero only).
-  const [montageUrls, setMontageUrls] = useState<string[]>([]);
-  const topHeroId = heroes[0]?.id;
+  // re-rolled each visit. Fetched on its OWN tiny query keyed on the slug, so the
+  // portraits start loading immediately — not gated on the full, filterable grid
+  // page (and unaffected by filter changes). Each carries a BlurHash for an
+  // instant placeholder.
+  const [montage, setMontage] = useState<{ uri: string; blurhash?: string | null }[]>([]);
   useEffect(() => {
-    if (heroes.length === 0) {
-      setMontageUrls([]);
+    if (!universeTerm) {
+      setMontage([]);
       return;
     }
-    const pool = heroes.slice(1, 24);
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
-    setMontageUrls(
-      [heroes[0], ...pool.slice(0, 5)]
-        .map((h) => h.portrait_url ?? h.image_url)
-        .filter((u): u is string => !!u),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topHeroId]);
+    let cancelled = false;
+    getUniverseMontage(universeTerm)
+      .then((rows) => {
+        if (cancelled || rows.length === 0) return;
+        const pool = rows.slice(1, 24);
+        for (let i = pool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        setMontage(
+          [rows[0], ...pool.slice(0, 5)]
+            .map((h) => ({ uri: h.portrait_url ?? h.image_url, blurhash: h.portrait_blurhash }))
+            .filter((m): m is { uri: string; blurhash: string | null } => !!m.uri),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setMontage([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [universeTerm]);
 
   const [peek, setPeek] = useState<PeekHero | null>(null);
 
@@ -378,7 +392,7 @@ export default function WebCategoryScreen() {
           logo={brand.logo}
           badgeSize={brand.badgeSize}
           logoTint={brand.logoTint}
-          heroImageUrls={montageUrls}
+          montage={montage}
           compact={!isDesktop}
           sticky={isDesktop}
         />

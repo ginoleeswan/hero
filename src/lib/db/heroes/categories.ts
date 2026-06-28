@@ -235,7 +235,7 @@ export async function getAllHeroesBySlug(slug: CategorySlug): Promise<Hero[]> {
 // Excludes heavy text/JSON columns (summary, description, movies, enemies,
 // friends, creators, first_issue_data, powers...) which the list never shows.
 const CATEGORY_LIST_COLUMNS =
-  'id, name, image_url, image_md_url, portrait_url, publisher, issue_count';
+  'id, name, image_url, image_md_url, portrait_url, portrait_blurhash, publisher, issue_count';
 
 export async function getCategoryPage(
   slug: CategorySlug,
@@ -400,6 +400,42 @@ export async function getUniversePage(
   const { data, error, count } = await q.range(from, to);
   if (error) throw new Error(error.message);
   return { heroes: (data ?? []) as Hero[], total: count ?? 0 };
+}
+
+/** One portrait in the universe-banner montage: the bits the header actually needs. */
+export interface MontageHero {
+  id: string;
+  name: string;
+  image_url: string | null;
+  image_md_url: string | null;
+  portrait_url: string | null;
+  portrait_blurhash: string | null;
+}
+
+// Session cache so re-visiting a universe paints the montage instantly (no second
+// round-trip). Keyed on the ILIKE term.
+const montageCache = new Map<string, MontageHero[]>();
+
+/**
+ * Top heroes of a universe for the header montage — a tiny, filter-independent
+ * query (a handful of columns, ordered by fame) that runs the moment the slug is
+ * known, so the banner portraits start loading without waiting on the full,
+ * filterable 48-row grid page. Includes `portrait_blurhash` so each tile can show
+ * an instant blurred placeholder. Cached per term for the session.
+ */
+export async function getUniverseMontage(term: string, limit = 24): Promise<MontageHero[]> {
+  const cached = montageCache.get(term);
+  if (cached) return cached;
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('id, name, image_url, image_md_url, portrait_url, portrait_blurhash')
+    .ilike('publisher', `%${term}%`)
+    .order('fame_score', { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as MontageHero[];
+  montageCache.set(term, rows);
+  return rows;
 }
 
 /**
