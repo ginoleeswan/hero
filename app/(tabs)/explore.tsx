@@ -30,13 +30,7 @@ import { HomeSkeleton } from '../../src/components/skeletons/HomeSkeleton';
 import { SpotlightCarousel } from '../../src/components/home/SpotlightCarousel';
 import { rowStyle } from '../../src/lib/home/rowStyle';
 import { HomeHeroRow, type RowHero } from '../../src/components/home/HomeHeroRow';
-import {
-  type Hero,
-  type Rivalry,
-  type FearedVillain,
-  type EraBucket,
-  type FirstAppearanceCover,
-} from '../../src/lib/db/heroes';
+import { type Hero, type Rivalry } from '../../src/lib/db/heroes';
 import {
   type TrendingTitle,
   type Campaign,
@@ -48,10 +42,9 @@ import type { DebutIssue } from '../../src/lib/db/anniversaries';
 import { type TodaysMatchup as Matchup } from '../../src/lib/matchup';
 import { RightNowBand } from '../../src/components/home/RightNowBand';
 import { TodaysMatchup } from '../../src/components/home/TodaysMatchup';
-import { GreatestRivalries } from '../../src/components/home/GreatestRivalries';
-import { HallOfInfamy } from '../../src/components/home/HallOfInfamy';
-import { EraTimeline } from '../../src/components/home/EraTimeline';
-import { CoverGallery } from '../../src/components/home/CoverGallery';
+import { HallOfFame } from '../../src/components/home/HallOfFame';
+import { FeaturedRivalry } from '../../src/components/home/FeaturedRivalry';
+import { CategoryPodGrid, BROWSE_PODS } from '../../src/components/home/CategoryPodGrid';
 import { PublisherGrid } from '../../src/components/home/PublisherGrid';
 import { PulseTicker } from '../../src/components/home/PulseTicker';
 import { DailyChallengeBanner } from '../../src/components/game/DailyChallengeBanner';
@@ -62,16 +55,6 @@ const SPOTLIGHT_POOL = 5;
 
 function toRowHero(h: Hero | FavouriteHero): RowHero {
   return { id: h.id, name: h.name, image_url: h.image_url, portrait_url: h.portrait_url };
-}
-
-// A curated carousel row, declared as data so the catalogue order lives in one
-// place. `key` selects its editorial style (tone/accent/ranked) via rowStyle.
-interface CuratedRow {
-  key: string;
-  label: string;
-  title: string;
-  heroes: Hero[];
-  route?: Href;
 }
 
 // Each visible section of the feed is one FlatList row, so only the rows near
@@ -96,10 +79,10 @@ type FeedRow =
       debuts: DebutIssue[];
     }
   | { type: 'chapter'; kicker: string; title: string }
-  | { type: 'rivalries'; rivalries: Rivalry[] }
-  | { type: 'infamy'; villains: FearedVillain[] }
-  | { type: 'era'; eras: EraBucket[] }
-  | { type: 'covers'; covers: FirstAppearanceCover[] }
+  | { type: 'halloffame'; heroes: Hero[] }
+  | { type: 'browsegrid' }
+  | { type: 'featuredrivalry'; rivalry: Rivalry }
+  | { type: 'seeall'; label: string; route: Href }
   | { type: 'curated'; key: string; label: string; title: string; heroes: Hero[]; route?: Href };
 
 // Typed Animated.FlatList so renderItem/keyExtractor/CellRenderer infer FeedRow.
@@ -127,25 +110,12 @@ export default function HomeScreen() {
     trendingForUser,
     matchup,
     heroCount: heroCountRaw,
-    villains,
-    horror,
-    antiHeroes,
-    marvel,
-    dc,
-    strongest,
-    mostIntelligent,
-    xmen,
-    anime,
-    videoGames,
-    franchiseIcons: franchise,
     newlyAdded,
     newComics,
     rivalries,
-    mostFeared,
-    eras,
-    covers,
     recentlyViewed,
     favourites,
+    browseCovers,
   } = useExploreData();
   const spotlight = spotlightAll.slice(0, SPOTLIGHT_POOL);
   const heroCount = heroCountRaw ?? 0;
@@ -193,6 +163,18 @@ export default function HomeScreen() {
     [router],
   );
 
+  // Browse-grid tiles route by axis: publishers → /universe, everything else
+  // → /category.
+  const handleBrowsePress = useCallback(
+    (slug: string) => {
+      Haptics.selectionAsync();
+      const pod = BROWSE_PODS.find((p) => p.slug === slug);
+      const path = pod?.kind === 'Publisher' ? `/universe/${slug}` : `/category/${slug}`;
+      router.push(path as Href);
+    },
+    [router],
+  );
+
   const handleTitlePress = useCallback(
     (titleId: string) => {
       Haptics.selectionAsync();
@@ -216,9 +198,9 @@ export default function HomeScreen() {
   const rows = useMemo<FeedRow[]>(() => {
     const out: FeedRow[] = [];
     if (spotlightPool.length > 0) out.push({ type: 'spotlight', heroes: spotlightPool });
-    out.push({ type: 'daily' });
     out.push({ type: 'publishers' });
     if (matchup) out.push({ type: 'matchup', matchup });
+    out.push({ type: 'daily' });
     if (heroCount > 0) out.push({ type: 'ticker', heroCount, newlyAddedCount: newlyAdded.length });
     if (
       campaigns[0] ||
@@ -244,111 +226,29 @@ export default function HomeScreen() {
     }
     if (recentlyViewed.length > 0)
       out.push({ type: 'recent', heroes: recentlyViewed.map(toRowHero) });
-    if (favourites.length > 0) out.push({ type: 'favourites', heroes: favourites.map(toRowHero) });
 
+    // The Library — an authored canon feature, then the browse grid (the map that
+    // replaces the old wall of category rails), then the one fresh rail.
     out.push({ type: 'chapter', kicker: 'The Library', title: 'Browse the Universe' });
-    if (iconic.length > 0)
+    if (iconic.length > 0) out.push({ type: 'halloffame', heroes: iconic });
+    out.push({ type: 'browsegrid' });
+    if (newlyAdded.length > 0)
       out.push({
         type: 'curated',
-        key: 'iconic',
-        label: 'By Appearances',
-        title: 'Most Iconic',
-        heroes: iconic,
-        route: '/category/most-iconic',
+        key: 'new',
+        label: 'Fresh to the Vault',
+        title: 'Newly Added',
+        heroes: newlyAdded,
       });
 
-    // Curated catalogue rows, declared in catalogue order. Style comes from the
-    // row's `key` (see rowStyle): the dark-toned villain/horror/anti rows render
-    // on navy bands; strongest/minds get leaderboard numerals.
-    const curated: CuratedRow[] = [
-      {
-        key: 'villains',
-        label: 'The Dark Side',
-        title: 'Villains',
-        heroes: villains,
-        route: '/category/villain',
-      },
-      {
-        key: 'horror',
-        label: 'Movie Nightmares',
-        title: 'Horror Icons',
-        heroes: horror,
-        route: '/category/horror',
-      },
-      {
-        key: 'anti',
-        label: 'Grey Morality',
-        title: 'Anti-Heroes',
-        heroes: antiHeroes,
-        route: '/category/anti-heroes',
-      },
-      {
-        key: 'marvel',
-        label: 'Publisher',
-        title: 'Marvel Universe',
-        heroes: marvel,
-        route: '/universe/marvel',
-      },
-      { key: 'dc', label: 'Publisher', title: 'DC Universe', heroes: dc, route: '/universe/dc' },
-      {
-        key: 'strongest',
-        label: 'Raw Power',
-        title: 'Strongest',
-        heroes: strongest,
-        route: '/category/strongest',
-      },
-      {
-        key: 'minds',
-        label: 'Great Minds',
-        title: 'Most Intelligent',
-        heroes: mostIntelligent,
-        route: '/category/most-intelligent',
-      },
-      { key: 'xmen', label: 'Mutantkind', title: 'X-Men', heroes: xmen, route: '/category/xmen' },
-      {
-        key: 'anime',
-        label: 'Beyond the Comics',
-        title: 'Anime Legends',
-        heroes: anime,
-        route: '/category/anime',
-      },
-      {
-        key: 'games',
-        label: 'Press Start',
-        title: 'Video Game Heroes',
-        heroes: videoGames,
-        route: '/category/video-games',
-      },
-      {
-        key: 'franchise',
-        label: 'Franchise Icons',
-        title: 'Beyond the Comics',
-        heroes: franchise,
-        route: '/category/franchise-icons',
-      },
-      { key: 'new', label: 'Fresh to the Vault', title: 'Newly Added', heroes: newlyAdded },
-    ];
-    for (const r of curated) {
-      if (r.heroes.length > 0)
-        out.push({
-          type: 'curated',
-          key: r.key,
-          label: r.label,
-          title: r.title,
-          heroes: r.heroes,
-          route: r.route,
-        });
+    // The Arena — a featured rivalry leads; the rest live in /versus.
+    if (rivalries.length > 0) {
+      out.push({ type: 'chapter', kicker: 'The Arena', title: 'Greatest Rivalries' });
+      out.push({ type: 'featuredrivalry', rivalry: rivalries[0] });
+      out.push({ type: 'seeall', label: 'See all rivalries →', route: '/versus' });
     }
 
-    // "Beyond the Page" — the editorial chapter.
-    const hasEditorial =
-      rivalries.length > 0 || mostFeared.length > 0 || eras.length > 0 || covers.length > 0;
-    if (hasEditorial) out.push({ type: 'chapter', kicker: 'Go Deeper', title: 'Beyond the Page' });
-    if (rivalries.length > 0) out.push({ type: 'rivalries', rivalries });
-    if (mostFeared.length > 0) out.push({ type: 'infamy', villains: mostFeared });
-    if (eras.length > 0) out.push({ type: 'era', eras });
-    if (covers.length > 0) out.push({ type: 'covers', covers });
-
+    if (favourites.length > 0) out.push({ type: 'favourites', heroes: favourites.map(toRowHero) });
     return out;
   }, [
     spotlightPool,
@@ -365,22 +265,8 @@ export default function HomeScreen() {
     campaigns,
     trendingForUser,
     newComics,
-    villains,
-    horror,
-    antiHeroes,
-    marvel,
-    dc,
-    strongest,
-    mostIntelligent,
-    xmen,
-    anime,
-    videoGames,
-    franchise,
     newlyAdded,
     rivalries,
-    mostFeared,
-    eras,
-    covers,
   ]);
 
   const keyExtractor = useCallback(
@@ -459,14 +345,21 @@ export default function HomeScreen() {
               disabled={navigating}
             />
           );
-        case 'rivalries':
-          return <GreatestRivalries rivalries={item.rivalries} onOpen={handleOpenPath} />;
-        case 'infamy':
-          return <HallOfInfamy villains={item.villains} onPress={handleHeroId} />;
-        case 'era':
-          return <EraTimeline eras={item.eras} onPress={handleHeroId} />;
-        case 'covers':
-          return <CoverGallery covers={item.covers} onPress={handleHeroId} />;
+        case 'halloffame':
+          return <HallOfFame heroes={item.heroes} onPress={handleHeroId} />;
+        case 'browsegrid':
+          return <CategoryPodGrid covers={browseCovers} onPress={handleBrowsePress} />;
+        case 'featuredrivalry':
+          return <FeaturedRivalry rivalry={item.rivalry} onOpen={handleOpenPath} />;
+        case 'seeall':
+          return (
+            <Pressable
+              style={styles.seeAllRow}
+              onPress={() => handleOpenPath(item.route as string)}
+            >
+              <Text style={styles.seeAllText}>{item.label}</Text>
+            </Pressable>
+          );
         case 'curated': {
           const rs = rowStyle(item.key);
           return (
@@ -493,8 +386,10 @@ export default function HomeScreen() {
       handleHeroId,
       handleOpenPath,
       handlePublisherPress,
+      handleBrowsePress,
       handleTitlePress,
       handleIssuePress,
+      browseCovers,
       navigating,
       router,
     ],
@@ -560,4 +455,12 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   browseTitle: { fontFamily: 'Flame-Regular', fontSize: 30, color: COLORS.navy, lineHeight: 32 },
+  // "See all rivalries →" link under the featured rivalry.
+  seeAllRow: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
+  seeAllText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.orange,
+    letterSpacing: 0.5,
+  },
 });

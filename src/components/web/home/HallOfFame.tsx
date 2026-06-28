@@ -112,7 +112,12 @@ const s = StyleSheet.create({
     color: COLORS.orange,
     marginBottom: 4,
   } as object,
-  title: { fontFamily: 'Flame-Regular', fontSize: 40, color: COLORS.navy, lineHeight: 42 } as object,
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 40,
+    color: COLORS.navy,
+    lineHeight: 42,
+  } as object,
   sub: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
@@ -137,7 +142,10 @@ const s = StyleSheet.create({
     cursor: 'pointer',
     transition: 'transform 200ms ease, box-shadow 200ms ease',
   } as object,
-  leadHover: { transform: [{ translateY: -4 }], boxShadow: '0 24px 60px rgba(0,0,0,0.4)' } as object,
+  leadHover: {
+    transform: [{ translateY: -4 }],
+    boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
+  } as object,
   leadScrim: {
     position: 'absolute',
     top: 0,

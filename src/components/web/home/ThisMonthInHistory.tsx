@@ -152,7 +152,12 @@ const s = StyleSheet.create({
     color: COLORS.orange,
     marginBottom: 2,
   } as object,
-  title: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.beige, lineHeight: 28 } as object,
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 26,
+    color: COLORS.beige,
+    lineHeight: 28,
+  } as object,
 
   layout: { flexDirection: 'row', alignItems: 'center', gap: 40 },
   layoutStack: { flexDirection: 'column', alignItems: 'stretch', gap: 22 } as object,

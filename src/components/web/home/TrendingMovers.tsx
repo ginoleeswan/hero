@@ -99,7 +99,12 @@ const s = StyleSheet.create({
     color: COLORS.orange,
     marginBottom: 2,
   } as object,
-  title: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.beige, lineHeight: 28 } as object,
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 26,
+    color: COLORS.beige,
+    lineHeight: 28,
+  } as object,
 
   row: {
     flexDirection: 'row',
@@ -149,6 +154,12 @@ const s = StyleSheet.create({
     backgroundImage: 'linear-gradient(to right, rgba(231,115,51,0.45), rgba(231,115,51,1))',
   } as object,
   fillLead: { boxShadow: '0 0 16px rgba(231,115,51,0.6)' } as object,
-  spike: { flexDirection: 'row', alignItems: 'center', gap: 2, width: 62, justifyContent: 'flex-end' },
+  spike: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    width: 62,
+    justifyContent: 'flex-end',
+  },
   spikeText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.orange } as object,
 });

@@ -13,8 +13,6 @@ import { useExploreData } from '../../src/hooks/useExploreData';
 import type { FavouriteHero } from '../../src/types';
 import { RankingCard } from '../../src/components/web/home/RankingCard';
 import { HomeFooter } from '../../src/components/web/home/HomeFooter';
-import { CoverGallery } from '../../src/components/web/home/CoverGallery';
-import { EraTimeline } from '../../src/components/web/home/EraTimeline';
 import {
   TodaysMatchup as TodaysMatchupCard,
   TodaysMatchupSkeleton,
@@ -27,8 +25,7 @@ import { SeoHead } from '../../src/components/web/SeoHead';
 import { PublisherPods } from '../../src/components/web/home/PublisherPods';
 import { CategoryBrowseGrid } from '../../src/components/web/home/CategoryBrowseGrid';
 import { HallOfFame } from '../../src/components/web/home/HallOfFame';
-import { GreatestRivalries } from '../../src/components/web/home/GreatestRivalries';
-import { HallOfInfamy } from '../../src/components/web/home/HallOfInfamy';
+import { FeaturedRivalry } from '../../src/components/web/home/FeaturedRivalry';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ROW_CARD_HEIGHT = 310;
@@ -1147,21 +1144,29 @@ export default function WebHomeScreen() {
               />
             </View>
 
-            {/* ── Go Deeper — the editorial features ────────────────────────── */}
+            {/* ── The Arena — one featured rivalry leads; the rest live in /versus. */}
             <View style={styles.browseHead}>
-              <Text style={styles.browseKicker as object}>Go Deeper</Text>
+              <Text style={styles.browseKicker as object}>The Arena</Text>
               <Text
                 style={
                   [styles.browseTitle, isMobile && (styles.browseTitleMobile as object)] as object
                 }
               >
-                Beyond the Page
+                Greatest Rivalries
+              </Text>
+              <Text style={styles.browseSubtitle as object}>
+                The debates that never settle — pick a side and see who the fans crown.
               </Text>
             </View>
-            <GreatestRivalries rivalries={homeData.rivalries ?? []} />
-            <HallOfInfamy villains={homeData.mostFeared ?? []} />
-            <EraTimeline eras={homeData.eras ?? []} onPress={handlePress} />
-            <CoverGallery covers={homeData.covers ?? []} onPress={handlePress} />
+            {(homeData.rivalries?.length ?? 0) > 0 && (
+              <FeaturedRivalry rivalry={homeData.rivalries![0]} />
+            )}
+            <Pressable
+              onPress={() => router.push('/versus' as Parameters<typeof router.push>[0])}
+              style={[styles.seeAllRow, { paddingHorizontal: isMobile ? 16 : 32 }] as object}
+            >
+              <Text style={styles.seeAllText as object}>See all rivalries →</Text>
+            </Pressable>
 
             {/* ── For You — warm close ──────────────────────────────────────── */}
             <HomeRow
@@ -1241,11 +1246,16 @@ const styles = StyleSheet.create({
   darkStageMobile: { paddingTop: TOPBAR_HEIGHT - 4, paddingBottom: 16 } as object,
 
   // Beige canvas owns the carousel section (sits on the dark scroll surface).
+  // Comic-paper tactility — a faint halftone ink-dot grid + a whisper of vertical
+  // light so the canvas reads as printed stock, not a flat fill.
   beigeCanvas: {
     backgroundColor: COLORS.beige,
+    backgroundImage:
+      'radial-gradient(rgba(41,60,67,0.09) 1.1px, transparent 1.8px), linear-gradient(to bottom, rgba(255,255,255,0.85), rgba(255,255,255,0) 620px)',
+    backgroundSize: '18px 18px, 100% 100%',
     paddingTop: 40,
     paddingBottom: 24,
-  },
+  } as object,
 
   // "Browse the Universe" chapter break between the dynamic zone and the library.
   browseHead: { paddingHorizontal: 24, paddingBottom: 30, marginTop: -36 } as object,
@@ -1278,6 +1288,14 @@ const styles = StyleSheet.create({
 
   // Breathing room between the browse grid and the "Newly Added" rail.
   afterGrid: { marginTop: 44 },
+  // "See all rivalries →" link under the featured rivalry (the rail it replaced).
+  seeAllRow: { marginTop: -24, marginBottom: 52, alignSelf: 'flex-start' } as object,
+  seeAllText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.orange,
+    letterSpacing: 0.5,
+  } as object,
 
   // ── Home layout ──────────────────────────────────────────────────────────────
   discoverContent: {

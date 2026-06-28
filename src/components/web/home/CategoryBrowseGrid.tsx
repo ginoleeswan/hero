@@ -39,7 +39,11 @@ export function CategoryBrowseGrid({
             accessibilityRole="link"
             accessibilityLabel={`Browse ${p.label}`}
             style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-              [s.tile, { width: tileW, height: tileH }, hovered && (s.tileHover as object)] as object
+              [
+                s.tile,
+                { width: tileW, height: tileH },
+                hovered && (s.tileHover as object),
+              ] as object
             }
           >
             <HeroImage
