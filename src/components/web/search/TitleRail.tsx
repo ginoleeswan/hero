@@ -14,15 +14,19 @@ const MEDIA_LABEL: Record<string, string> = { film: 'Film', tv: 'TV', game: 'Gam
 export function TitleRail({
   titles,
   onPress,
+  edge = 0,
 }: {
   titles: TitleSearchResult[];
   onPress: (id: string) => void;
+  /** Horizontal page padding to bleed past so the rail scrolls edge-to-edge. */
+  edge?: number;
 }) {
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.track as object}
+      style={{ marginHorizontal: -edge } as object}
+      contentContainerStyle={[styles.track, { paddingLeft: edge, paddingRight: edge }] as object}
     >
       {titles.map((t) => {
         const meta = [t.year ?? null, MEDIA_LABEL[t.media_type] ?? t.media_type]
@@ -64,7 +68,7 @@ export function TitleRail({
 const POSTER_W = 108;
 
 const styles = StyleSheet.create({
-  track: { gap: 12, paddingVertical: 2, paddingRight: 8 } as object,
+  track: { gap: 12, paddingVertical: 2 } as object,
   card: {
     width: POSTER_W,
     cursor: 'pointer',

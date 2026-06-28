@@ -7,26 +7,27 @@ import {
   Text,
   TextInput,
   Pressable,
-  ScrollView,
   StyleSheet,
   Animated,
   useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { type HeroSearchResult } from '../../../src/lib/db/heroes';
+import { getSearchIdleHeroes, type HeroSearchResult } from '../../../src/lib/db/heroes';
 import { HeroImage } from '../../../src/components/HeroImage';
 import { COLORS, SURFACE, SURFACE_GRADIENT } from '../../../src/constants/colors';
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { useSearch } from '../../../src/contexts/SearchContext';
+import { useAuth } from '../../../src/hooks/useAuth';
 import { useSearchHistory } from '../../../src/hooks/useSearchHistory';
 import { useUnifiedSearch } from '../../../src/hooks/useUnifiedSearch';
 import { UniverseChip } from '../../../src/components/web/search/UniverseChip';
 import { TeamResultRow } from '../../../src/components/web/search/TeamResultRow';
 import { TitleRail } from '../../../src/components/web/search/TitleRail';
 import { TopResultRow } from '../../../src/components/web/search/TopResultRow';
+import { HeroRail, type RailHero } from '../../../src/components/web/search/HeroRail';
 import { pickTopResult, topResultKey, type TopResult } from '../../../src/lib/search/topResult';
-import { FEATURED_PUBLISHERS } from '../../../src/constants/publishers';
+import { getRecentlyViewed } from '../../../src/lib/db/viewHistory';
 import { useBrowseCovers } from '../../../src/hooks/useBrowseCovers';
 import { SearchBrowse } from '../../../src/components/web/search/SearchBrowse';
 import { useSkeletonAnim } from '../../../src/components/web/Skeleton';
@@ -175,8 +176,41 @@ export default function WebSearchScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const { setQuery: setNavQuery } = useSearch();
+  const { user } = useAuth();
   const skeletonOpacity = useSkeletonAnim();
   const { history, addSearch, clearHistory } = useSearchHistory();
+
+  // Landing rails: fame-ranked "Popular" icons (everyone) + the signed-in user's
+  // recently-viewed characters ("jump back in"). Both are character portraits —
+  // the icons ARE the discovery surface. Fetched lazily, cleared-safe.
+  const [popular, setPopular] = useState<RailHero[]>([]);
+  const [recentlyViewed, setRecentlyViewed] = useState<RailHero[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    getSearchIdleHeroes(20)
+      .then((rows) => {
+        if (!cancelled) setPopular(rows);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  useEffect(() => {
+    if (!user?.id) {
+      setRecentlyViewed([]);
+      return;
+    }
+    let cancelled = false;
+    getRecentlyViewed(user.id, 16)
+      .then((rows) => {
+        if (!cancelled) setRecentlyViewed(rows);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   // Search is a dark discovery surface (like Explore / Versus): the whole page —
   // status-bar zone, header and body — is one continuous deep-ink ground so the
@@ -403,8 +437,21 @@ export default function WebSearchScreen() {
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       {showIdle ? (
         <View style={[styles.gridWrap, { paddingHorizontal: contentPad, paddingBottom: 0 }]}>
-          {history.length > 0 && (
-            <>
+          {/* Returning context first: the characters you opened ("jump back in").
+              Signed-out / no history falls back to cleaned recent-search chips. */}
+          {recentlyViewed.length > 0 ? (
+            <View style={styles.railSection}>
+              <Text style={styles.idleLabel as object}>Recently viewed</Text>
+              <HeroRail
+                heroes={recentlyViewed}
+                edge={contentPad}
+                onPress={(h) =>
+                  router.push(`/character/${h.id}` as Parameters<typeof router.push>[0])
+                }
+              />
+            </View>
+          ) : history.length > 0 ? (
+            <View style={styles.topSection}>
               <View style={styles.idleHeaderRow}>
                 <Text style={styles.idleLabel as object}>Recent</Text>
                 <Pressable onPress={clearHistory}>
@@ -421,42 +468,29 @@ export default function WebSearchScreen() {
                   </Pressable>
                 ))}
               </View>
-            </>
-          )}
-          <View style={{ marginTop: history.length > 0 ? 20 : 4 }}>
-            <View style={styles.idleHeaderRow}>
-              <Text style={styles.idleLabel as object}>Browse universes</Text>
             </View>
-            {/* One swipeable logo rail instead of a wrapping 2-col block — keeps
-                the idle screen calm and leaves room for the category pods below. */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.universeTrack as object}
-            >
-              {FEATURED_PUBLISHERS.map((b) => (
-                <View key={b.slug} style={styles.universeChipWrap as object}>
-                  <UniverseChip
-                    universe={{
-                      slug: b.slug,
-                      name: b.name,
-                      color: b.color,
-                      logo: b.logo,
-                      badgeSize: b.badgeSize,
-                      logoOnLight: b.logoOnLight,
-                      logoTint: b.logoTint,
-                      exact: false,
-                    }}
-                    variant="dark"
-                    onPress={() =>
-                      router.push(`/universe/${b.slug}` as Parameters<typeof router.push>[0])
-                    }
-                  />
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-          <View style={{ marginTop: 20 }}>
+          ) : null}
+
+          {/* The discovery hook — fame-ranked icons, the app's whole pitch, tap
+              straight into a character. Works for signed-out visitors too. */}
+          {popular.length > 0 && (
+            <View style={styles.railSection}>
+              <Text style={styles.idleLabel as object}>Popular</Text>
+              <HeroRail
+                heroes={popular}
+                edge={contentPad}
+                onPress={(h) =>
+                  router.push(`/character/${h.id}` as Parameters<typeof router.push>[0])
+                }
+              />
+            </View>
+          )}
+
+          {/* The single browse surface — universes (Marvel/DC/Image) and themes
+              together (SearchBrowse owns its "Browse" heading). The old redundant
+              "Browse universes" logo-chip row is gone: those brands are the lead
+              pods here. */}
+          <View style={{ marginTop: 24 }}>
             <SearchBrowse
               covers={browseCovers}
               onPress={(slug) =>
@@ -504,6 +538,7 @@ export default function WebSearchScreen() {
               <Text style={styles.idleLabel as object}>Films & Shows</Text>
               <TitleRail
                 titles={sectionTitles}
+                edge={contentPad}
                 onPress={(id) => router.push(`/title/${id}` as Parameters<typeof router.push>[0])}
               />
             </View>
@@ -627,7 +662,7 @@ const styles = StyleSheet.create({
     paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 10px)`,
     // translateZ(0) is applied inline alongside the hide/reveal translateY.
     transition: 'transform 260ms ease',
-    paddingBottom: 12,
+    paddingBottom: 6,
   } as object,
   mobileSearchRow: {
     paddingHorizontal: 12,
@@ -727,10 +762,9 @@ const styles = StyleSheet.create({
   topSection: { paddingTop: 20, gap: 8 } as object,
   titlesSection: { paddingTop: 20, gap: 6 } as object,
   railSection: { paddingTop: 20, gap: 10 } as object,
-  universeTrack: { flexDirection: 'row', gap: 8, paddingTop: 8, paddingBottom: 4 } as object,
 
   // ── Grid / content ─────────────────────────────────────────────────────────
-  gridWrap: { paddingTop: 24, maxWidth: 1200, width: '100%', alignSelf: 'center' },
+  gridWrap: { paddingTop: 8, maxWidth: 1200, width: '100%', alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: 'rgba(245,235,220,0.55)' },
   moreHint: {

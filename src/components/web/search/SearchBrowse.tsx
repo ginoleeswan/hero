@@ -109,11 +109,11 @@ const t = StyleSheet.create({
     marginBottom: 28,
   } as object,
   sectionLabel: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 15,
-    letterSpacing: 1.4,
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11.5,
+    letterSpacing: 0.9,
     textTransform: 'uppercase',
-    color: 'rgba(41,60,67,0.55)',
+    color: 'rgba(245,235,220,0.5)',
     marginBottom: 14,
   } as object,
   grid: {
