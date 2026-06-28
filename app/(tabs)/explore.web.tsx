@@ -1139,6 +1139,13 @@ export default function WebHomeScreen() {
     [router],
   );
 
+  const handleIssuePress = useCallback(
+    (issueId: string) => {
+      router.push(`/issue/${issueId}` as Parameters<typeof router.push>[0]);
+    },
+    [router],
+  );
+
   return (
     <View style={styles.root}>
       <SeoHead
@@ -1205,8 +1212,10 @@ export default function WebHomeScreen() {
             comingSoon={homeData.comingSoon ?? []}
             streaming={homeData.streaming ?? []}
             personalized={homeData.trendingForUser ?? []}
+            newComics={homeData.newComics}
             onHeroPress={handlePress}
             onTitlePress={handleTitlePress}
+            onIssuePress={handleIssuePress}
           />
 
           {/* Beige canvas — owns the carousel surface so the dark scroll

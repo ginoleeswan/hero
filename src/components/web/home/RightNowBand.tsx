@@ -15,6 +15,7 @@ import {
   type TrendingTitle,
   type TrendingTitleCharacter,
 } from '../../../lib/db/trending';
+import type { NewComic } from '../../../lib/db/comics';
 
 const BADGE_COLOR: Record<BadgeTone, string> = {
   theaters: COLORS.orange,
@@ -28,8 +29,10 @@ interface RightNowBandProps {
   comingSoon: TrendingTitle[];
   streaming: TrendingTitle[];
   personalized: TrendingTitleCharacter[];
+  newComics: NewComic[];
   onHeroPress: (id: string) => void;
   onTitlePress: (id: string) => void;
+  onIssuePress: (issueId: string) => void;
 }
 
 // One avatar chip in the campaign hero. Tracks its own hover so it can lift,
@@ -313,6 +316,69 @@ function PersonalRow({
   );
 }
 
+function ComicCoverRail({
+  comics,
+  onIssuePress,
+  pagePad,
+}: {
+  comics: NewComic[];
+  onIssuePress: (issueId: string) => void;
+  pagePad: number;
+}) {
+  if (comics.length === 0) return null;
+  return (
+    <View>
+      <View style={[ccr.header, { paddingLeft: pagePad }]}>
+        <Text style={ccr.label as object}>This Week</Text>
+        <Text style={ccr.title as object}>New Comics</Text>
+      </View>
+      <View style={[ccr.strip, { paddingLeft: pagePad, paddingRight: pagePad }] as object}>
+        {comics.map((comic) => {
+          // Format on-sale day as short month + day (e.g. "Jun 25")
+          const saleDay = comic.storeDate
+            ? new Date(comic.storeDate).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })
+            : null;
+          const issueLabel =
+            comic.volumeName && comic.issueNumber
+              ? `${comic.volumeName} #${comic.issueNumber}`
+              : comic.volumeName ?? comic.issueNumber ?? '';
+          return (
+            <Pressable
+              key={comic.id}
+              onPress={() => onIssuePress(comic.id)}
+              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                [ccr.card, hovered && (ccr.cardHover as object)] as object
+              }
+            >
+              {comic.coverUrl ? (
+                <Image
+                  source={{ uri: comic.coverUrl }}
+                  contentFit="cover"
+                  style={{ position: 'absolute', inset: 0 } as object}
+                />
+              ) : null}
+              <View style={ccr.overlay as object} />
+              {saleDay && (
+                <View style={ccr.badge as object}>
+                  <Text style={ccr.badgeText as object} numberOfLines={1}>
+                    {saleDay}
+                  </Text>
+                </View>
+              )}
+              <Text style={ccr.name as object} numberOfLines={2}>
+                {issueLabel}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 function PosterRail({
   titles,
   onTitlePress,
@@ -373,8 +439,10 @@ export function RightNowBand({
   comingSoon,
   streaming,
   personalized,
+  newComics,
   onHeroPress,
   onTitlePress,
+  onIssuePress,
 }: RightNowBandProps) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
@@ -384,7 +452,8 @@ export function RightNowBand({
     onScreen.length > 0 ||
     comingSoon.length > 0 ||
     streaming.length > 0 ||
-    personalized.length > 0;
+    personalized.length > 0 ||
+    newComics.length > 0;
   if (!hasAny) return null;
 
   // "What's Hot" ranks the live slate by popularity — on_screen leads, then
@@ -435,6 +504,8 @@ export function RightNowBand({
           pagePad={pagePad}
         />
       )}
+
+      <ComicCoverRail comics={newComics} onIssuePress={onIssuePress} pagePad={pagePad} />
 
       {personalized.length > 0 && (
         <PersonalRow characters={personalized} onHeroPress={onHeroPress} />
@@ -690,6 +761,77 @@ const prw = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
+    maxWidth: 130,
+  } as object,
+  badgeText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: '#fff',
+  } as object,
+  name: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.beige,
+    lineHeight: 15,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+  } as object,
+});
+
+// Comic Cover Rail — 2:3 cover cards (150×225), gold accent, on-sale-day badge.
+const ccr = StyleSheet.create({
+  header: { marginBottom: 14 },
+  label: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: COLORS.gold,
+    marginBottom: 2,
+  } as object,
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 26,
+    color: COLORS.beige,
+    lineHeight: 30,
+  } as object,
+  strip: {
+    flexDirection: 'row',
+    gap: 14,
+    overflowX: 'auto',
+    paddingBottom: 8,
+    scrollbarWidth: 'none',
+  } as object,
+  card: {
+    width: 150,
+    height: 225,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+    flexShrink: 0,
+    cursor: 'pointer',
+    justifyContent: 'flex-end',
+    transition: 'transform 200ms ease, box-shadow 200ms ease',
+  } as object,
+  cardHover: {
+    transform: [{ translateY: -5 }],
+    boxShadow: '0 18px 44px rgba(0,0,0,0.4)',
+  } as object,
+  overlay: {
+    position: 'absolute',
+    inset: 0,
+    backgroundImage: 'linear-gradient(to top, rgba(11,24,32,0.9) 0%, transparent 55%)',
+  } as object,
+  badge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: COLORS.gold,
     maxWidth: 130,
   } as object,
   badgeText: {
