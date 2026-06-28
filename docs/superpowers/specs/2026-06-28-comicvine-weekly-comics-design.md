@@ -1,8 +1,32 @@
 # ComicVine Weekly Comics — "New This Week" freshness engine
 
 **Date:** 2026-06-28
-**Status:** Design — approved decisions captured, pending spec review
+**Status:** Built & shipped — see _Revision: volume-roster ingest_ below for the
+one design change forced by ComicVine's live API.
 **Engine:** #1 of 4 in the "freshness engines" roadmap (see _Context_)
+
+> ## Revision: volume-roster ingest (implementation finding)
+>
+> The original ingest (below) assumed ComicVine's `/issues` **list** endpoint
+> returns each issue's `character_credits`. It does **not** — credits live only on
+> the per-issue **detail** endpoint, which is harshly rate-limited (`status 107,
+> "slow down cowboy"` after a small burst). So "read credits off the weekly list"
+> is impossible.
+>
+> **Pivot (built):** attribute an issue's characters from its **series (volume)
+> roster** instead of per-issue credits. A new service-role-only cache table
+> `comic_volumes` stores each volume's resolved catalogue characters; the edge
+> function resolves a volume's roster **once** (capped per run, backs off on 107)
+> and thereafter attributes new issues of that series with **zero** detail calls.
+> Lead character = the catalogue hero whose name the **series name** contains
+> (e.g. "Absolute Superman" → Superman), falling back to centrality/fame for team
+> books — because the roster's `count` field is too sparse to pick a lead.
+>
+> Everything else in this spec held: `comic_issues` / `comic_issue_appearances`,
+> `get_new_comics`, `db/comics.ts`, the rail, and `/issue/[id]` are unchanged — the
+> pivot was contained to the ingest. Cron runs hourly (clears the one-time
+> volume-resolution backlog in ~a day, then no-ops). Plan:
+> `docs/superpowers/plans/2026-06-28-comicvine-weekly-comics.md`.
 
 ## Context
 

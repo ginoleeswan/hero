@@ -8,6 +8,13 @@
 
 **Tech Stack:** Expo SDK 56 / React Native / expo-router 4, Supabase Postgres + Deno edge functions, ComicVine REST API, TypeScript, jest-expo.
 
+> **Built-state note (2026-06-28):** Task 4's ingest was redesigned during
+> implementation — ComicVine's `/issues` list has no character credits and its
+> detail endpoint is rate-limited, so issues are attributed via a cached **volume
+> roster** (`comic_volumes` table) rather than per-issue credits. Tasks 1–3 and
+> 5–8 shipped as written. See the spec's _Revision: volume-roster ingest_ for the
+> full rationale.
+
 ## Global Constraints
 
 - Package manager: **yarn** only (never npm/bun).
