@@ -15,15 +15,16 @@ const json = (data: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
   });
 
-const NULL_RESPONSE = { issueCovers: null };
+const OK = { ok: true };
+const FAIL = { ok: false };
 
-interface Cover {
+interface ImageRow {
+  hero_id: string;
   url: string;
-  name: string | null;
-  issueNumber: string | null;
-  year: string | null;
-  /** ComicVine issue id — lets the cover open the /issue/[id] read-through page. */
-  id: string | null;
+  source: string;
+  caption: string | null;
+  issue_id: string | null;
+  sort_order: number;
 }
 
 serve(async (req: Request) => {
@@ -38,101 +39,94 @@ serve(async (req: Request) => {
       return json({ error: 'heroId and comicvineId required' }, 400);
     }
 
-    // Strip any "4005-" prefix — the character endpoint just needs the numeric id
     const numericId = comicvineId.replace(/^4005-/, '');
-
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // The character's issue credits — one cheap call carrying {id, name} per issue.
-    const creditsParams = new URLSearchParams({
+    // One character call: primary image + every issue credit ({id, name, api_detail_url}).
+    const charParams = new URLSearchParams({
       api_key: COMICVINE_API_KEY,
       format: 'json',
-      field_list: 'issue_credits',
+      field_list: 'image,issue_credits',
     });
-    const creditsRes = await fetch(`${COMICVINE_BASE}/character/4005-${numericId}/?${creditsParams}`);
-    let credits: Array<Record<string, unknown>> = [];
-    if (creditsRes.ok) {
-      const creditsJson = await creditsRes.json();
-      credits = Array.isArray(creditsJson.results?.issue_credits)
-        ? creditsJson.results.issue_credits
-        : [];
-    }
-    const idByName = new Map<string, string>();
-    for (const c of credits) {
-      const nm = typeof c.name === 'string' ? c.name : null;
-      if (nm && c.id != null && !idByName.has(nm)) idByName.set(nm, String(c.id));
+    const charRes = await fetch(`${COMICVINE_BASE}/character/4005-${numericId}/?${charParams}`);
+    const charJson = charRes.ok ? await charRes.json() : {};
+    const results = charJson.results ?? {};
+
+    const rows: ImageRow[] = [];
+
+    // Primary character image → the lead "artwork of the character".
+    const primaryUrl: string | null =
+      ((results.image as Record<string, unknown>)?.super_url as string) ??
+      ((results.image as Record<string, unknown>)?.original_url as string) ??
+      null;
+    if (primaryUrl) {
+      rows.push({
+        hero_id: heroId,
+        url: primaryUrl,
+        source: 'comicvine_primary',
+        caption: null,
+        issue_id: null,
+        sort_order: 0,
+      });
     }
 
-    // Existing cached covers — if present, we only need to backfill their ids
-    // (cheap, no per-issue refetch). If absent, do the full first-time fetch.
-    const { data: heroRow } = await supabase
+    // Cover art from the first 40 appearances.
+    const credits: Array<Record<string, unknown>> = Array.isArray(results.issue_credits)
+      ? results.issue_credits
+      : [];
+    const first40 = credits.slice(0, 40);
+    const covers = await Promise.all(
+      first40.map(async (credit, i) => {
+        const apiDetailUrl =
+          typeof credit.api_detail_url === 'string' ? credit.api_detail_url : null;
+        if (!apiDetailUrl) return null;
+        try {
+          const params = new URLSearchParams({
+            api_key: COMICVINE_API_KEY,
+            format: 'json',
+            field_list: 'image,name,issue_number,cover_date',
+          });
+          const res = await fetch(`${apiDetailUrl}?${params}`);
+          if (!res.ok) return null;
+          const data = (await res.json()).results ?? {};
+          const img = data.image as Record<string, unknown> | undefined;
+          const url: string | null =
+            ((img?.original_url as string) ?? (img?.medium_url as string)) ?? null;
+          if (!url) return null;
+          return {
+            hero_id: heroId,
+            url,
+            source: 'comicvine_cover',
+            caption: typeof data.name === 'string' ? data.name : null,
+            issue_id: credit.id != null ? String(credit.id) : null,
+            sort_order: i + 1,
+          } as ImageRow;
+        } catch {
+          return null;
+        }
+      }),
+    );
+    for (const c of covers) if (c) rows.push(c);
+
+    if (rows.length > 0) {
+      await supabase.from('hero_images').upsert(rows, {
+        onConflict: 'hero_id,url',
+        ignoreDuplicates: true,
+      });
+    }
+
+    // Sentinel so this runs once per hero, even when there were no images.
+    await supabase
       .from('heroes')
-      .select('issue_covers')
-      .eq('id', heroId)
-      .maybeSingle();
-    const existing = (heroRow?.issue_covers as Cover[] | null) ?? null;
+      .update({ gallery_enriched_at: new Date().toISOString() })
+      .eq('id', heroId);
 
-    let issueCovers: Cover[] | null = null;
-
-    if (existing && existing.length > 0) {
-      // ── Backfill path: keep the covers, add ids by name match. ───────────────
-      issueCovers = existing.map((c) => ({
-        url: c.url,
-        name: c.name ?? null,
-        issueNumber: c.issueNumber ?? null,
-        year: c.year ?? null,
-        id: c.id ?? (c.name ? idByName.get(c.name) ?? null : null),
-      }));
-    } else {
-      // ── First-time path: fetch the first 20 appearances' cover images. ───────
-      const first20 = credits.slice(0, 20);
-      const covers = await Promise.all(
-        first20.map(async (credit) => {
-          const apiDetailUrl =
-            typeof credit.api_detail_url === 'string' ? credit.api_detail_url : null;
-          if (!apiDetailUrl) return null;
-          try {
-            const params = new URLSearchParams({
-              api_key: COMICVINE_API_KEY,
-              format: 'json',
-              field_list: 'image,name,issue_number,cover_date',
-            });
-            const res = await fetch(`${apiDetailUrl}?${params}`);
-            if (!res.ok) return null;
-            const data = (await res.json()).results ?? {};
-            const url: string | null =
-              ((data.image as Record<string, unknown>)?.medium_url as string) ?? null;
-            if (!url) return null;
-            const coverDate: string | null =
-              typeof data.cover_date === 'string' ? data.cover_date : null;
-            return {
-              url,
-              name: typeof data.name === 'string' ? data.name : null,
-              issueNumber: data.issue_number != null ? String(data.issue_number) : null,
-              year: coverDate ? coverDate.slice(0, 4) : null,
-              id: credit.id != null ? String(credit.id) : null,
-            } as Cover;
-          } catch {
-            return null;
-          }
-        }),
-      );
-      const valid = covers.filter((c): c is Cover => c !== null);
-      issueCovers = valid.length > 0 ? valid : null;
-    }
-
-    // Persist. gallery_enriched_at is the sentinel so heroes with no covers don't
-    // re-trigger this on every visit. Never null out covers we already have.
-    const patch: Record<string, unknown> = { gallery_enriched_at: new Date().toISOString() };
-    if (issueCovers && issueCovers.length > 0) patch.issue_covers = issueCovers;
-    await supabase.from('heroes').update(patch).eq('id', heroId);
-
-    return json({ issueCovers });
+    return json(OK);
   } catch (err) {
     console.error('[get-hero-gallery]', err);
-    return json(NULL_RESPONSE, 500);
+    return json(FAIL, 500);
   }
 });
