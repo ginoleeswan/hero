@@ -19,6 +19,9 @@ export interface NewComic {
   coverUrl: string | null;
   storeDate: string | null;
   publisher: string | null;
+  /** ComicVine synopsis (plaintext). Only populated on the single-issue fetch
+   *  (getIssueById); null on rail rows from get_new_comics. */
+  description: string | null;
   characters: NewComicCharacter[];
 }
 
@@ -50,6 +53,7 @@ export function groupComicRows(rows: NewComicRow[]): NewComic[] {
         coverUrl: r.cover_url,
         storeDate: r.store_date,
         publisher: r.publisher,
+        description: null,
         characters: [],
       };
       byId.set(r.issue_id, c);
@@ -82,6 +86,7 @@ interface IssueNestedRow {
   cover_url: string | null;
   store_date: string | null;
   publisher: string | null;
+  description: string | null;
   lead_hero_id: string | null;
   comic_issue_appearances: { heroes: NewComicCharacter | null }[] | null;
 }
@@ -92,7 +97,7 @@ export async function getIssueById(id: string): Promise<NewComic | null> {
   const { data, error } = await supabase
     .from('comic_issues')
     .select(
-      'id, volume_name, issue_number, cover_url, store_date, publisher, lead_hero_id, comic_issue_appearances ( heroes ( id, name, image_url, portrait_url ) )',
+      'id, volume_name, issue_number, cover_url, store_date, publisher, description, lead_hero_id, comic_issue_appearances ( heroes ( id, name, image_url, portrait_url ) )',
     )
     .eq('id', id)
     .single();
@@ -110,6 +115,7 @@ export async function getIssueById(id: string): Promise<NewComic | null> {
     coverUrl: r.cover_url,
     storeDate: r.store_date,
     publisher: r.publisher,
+    description: r.description && r.description.length > 0 ? r.description : null,
     characters: chars,
   };
 }

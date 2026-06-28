@@ -8,7 +8,9 @@ import { COLORS } from '../../constants/colors';
 import type { NewComic } from '../../lib/db/comics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_W = Math.round(SCREEN_WIDTH * 0.34);
+// ~34% of a phone width, but capped so the rail stays sane on wide web/tablet
+// (this component is reused on the web issue page, not just the mobile band).
+const CARD_W = Math.min(132, Math.round(SCREEN_WIDTH * 0.34));
 const CARD_H = Math.round(CARD_W * 1.5);
 
 function onSaleDay(storeDate: string | null): string | null {

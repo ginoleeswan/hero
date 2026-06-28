@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,30 +7,183 @@ import {
   ActivityIndicator,
   Platform,
   Pressable,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getIssueById, type NewComic } from '../../src/lib/db/comics';
+import { Ionicons } from '@expo/vector-icons';
+import { getIssueById, getNewComics, type NewComic, type NewComicCharacter } from '../../src/lib/db/comics';
 import { HeroImage } from '../../src/components/HeroImage';
-import { COLORS, SURFACE } from '../../src/constants/colors';
+import { UniverseEyebrow } from '../../src/components/PublisherBadge';
+import { ComicCoverRail } from '../../src/components/home/ComicCoverRail';
+import { brandForPublisher } from '../../src/constants/publishers';
+import { COLORS, SURFACE, SEAM_COLOR } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { NotFoundView } from '../../src/components/NotFoundView';
+
+// Wide editorial layout constants — the cover straddles the dark→paper seam.
+const MAXW = 1100;
+const PAD = 24;
+const COVER_W = 300;
+const COVER_H = 450;
+const COVER_TOP = 92; // clears the floating web TopBar
+const HEADER_H = COVER_TOP + Math.round(COVER_H / 2); // seam at the cover's midline
+const COVER_COL = PAD + COVER_W + 44; // left reserve for content beside the cover
 
 function onSaleLabel(storeDate: string | null): string | null {
   if (!storeDate) return null;
   const d = new Date(storeDate);
   if (Number.isNaN(d.getTime())) return null;
-  return `On sale ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// Publisher mark · "new this week" · big title · divided spec rail.
+function Masthead({
+  issue,
+  accent,
+  centered,
+}: {
+  issue: NewComic;
+  accent: string;
+  centered: boolean;
+}) {
+  const onSale = onSaleLabel(issue.storeDate);
+  const count = issue.characters.length;
+  const stats = [
+    onSale ? `On sale ${onSale}` : null,
+    issue.publisher,
+    count > 0 ? `${count} ${count === 1 ? 'character' : 'characters'}` : null,
+  ].filter((s): s is string => !!s);
+
+  return (
+    <View style={[ms.col, centered && ms.colCentered]}>
+      <UniverseEyebrow publisher={issue.publisher} logoHeight={20} textStyle={ms.pub} />
+      <Text style={[ms.kicker, { color: accent }]}>New this week</Text>
+      <Text style={[ms.title, centered ? ms.titleNarrow : ms.titleWide]} numberOfLines={3}>
+        {issue.volumeName ?? 'Untitled'}
+        {issue.issueNumber ? (
+          <Text style={[ms.issueNo, { color: accent }]}>{`  #${issue.issueNumber}`}</Text>
+        ) : null}
+      </Text>
+      {stats.length > 0 ? (
+        <View style={[ms.statRail, centered && ms.statCentered]}>
+          {stats.map((s, i) => (
+            <Fragment key={s}>
+              {i > 0 ? <View style={ms.statDivider} /> : null}
+              <Text style={ms.statText}>{s}</Text>
+            </Fragment>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function Synopsis({ text, accent, centered }: { text: string; accent: string; centered: boolean }) {
+  return (
+    <View style={syn.wrap}>
+      <Text style={[syn.heading, { color: accent }, centered && syn.center]}>The Story</Text>
+      <Text style={[syn.body, centered && syn.center]}>{text}</Text>
+    </View>
+  );
+}
+
+function CoverArt({ url, accent }: { url: string | null; accent: string }) {
+  return (
+    <View style={[art.shadow, { borderColor: accent }]}>
+      {url ? (
+        <Image source={{ uri: url }} contentFit="cover" style={art.img} />
+      ) : (
+        <View style={[art.img, art.fallback]}>
+          <Ionicons name="book-outline" size={34} color="rgba(255,255,255,0.5)" />
+        </View>
+      )}
+    </View>
+  );
+}
+
+function CastCard({
+  character,
+  accent,
+  lead,
+  onPress,
+}: {
+  character: NewComicCharacter;
+  accent: string;
+  lead: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={cast.card}
+      accessibilityRole="button"
+      accessibilityLabel={`View ${character.name}`}
+    >
+      <View style={[cast.frame, lead && { borderColor: accent, borderWidth: 2.5 }]}>
+        <HeroImage
+          id={character.id}
+          name={character.name}
+          imageUrl={character.image_url}
+          portraitUrl={character.portrait_url}
+          grid
+          contentFit="cover"
+          contentPosition="top"
+          style={StyleSheet.absoluteFill as object}
+          recyclingKey={character.id}
+          transition={150}
+        />
+        <LinearGradient
+          colors={['transparent', 'rgba(11,24,32,0.92)']}
+          locations={[0.45, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        {lead ? (
+          <View style={[cast.leadTag, { backgroundColor: accent }]}>
+            <Text style={cast.leadTagText}>Lead</Text>
+          </View>
+        ) : null}
+        <Text style={cast.name} numberOfLines={2}>
+          {character.name}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+function CastRail({
+  characters,
+  accent,
+  onPress,
+}: {
+  characters: NewComicCharacter[];
+  accent: string;
+  onPress: (id: string) => void;
+}) {
+  return (
+    <View style={styles.section}>
+      <Text style={[styles.sectionLabel, { color: accent }]}>Featuring</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.castStrip}>
+        {characters.map((c, i) => (
+          <CastCard key={c.id} character={c} accent={accent} lead={i === 0} onPress={() => onPress(c.id)} />
+        ))}
+      </ScrollView>
+    </View>
+  );
 }
 
 export default function IssueScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const isWeb = Platform.OS === 'web';
+  const wide = isWeb && width >= 760;
 
   const [issue, setIssue] = useState<NewComic | null | undefined>(undefined); // undefined = loading
+  const [more, setMore] = useState<NewComic[]>([]);
 
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
 
@@ -42,6 +195,9 @@ export default function IssueScreen() {
     let active = true;
     getIssueById(id).then((i) => {
       if (active) setIssue(i);
+    });
+    getNewComics(12).then((list) => {
+      if (active) setMore(list.filter((c) => c.id !== id).slice(0, 10));
     });
     return () => {
       active = false;
@@ -73,59 +229,140 @@ export default function IssueScreen() {
     );
   }
 
-  const title = `${issue.volumeName ?? 'Untitled'}${issue.issueNumber ? ` #${issue.issueNumber}` : ''}`;
-  const meta = [onSaleLabel(issue.storeDate), issue.publisher].filter(Boolean).join('  ·  ');
+  const accent = brandForPublisher(issue.publisher)?.color ?? COLORS.orange;
+  const moreBand =
+    more.length > 0 ? (
+      <View style={styles.moreBand}>
+        <ComicCoverRail comics={more} onIssuePress={(issueId) => router.push(`/issue/${issueId}`)} />
+      </View>
+    ) : null;
 
-  const body = (
-    <View style={styles.body}>
-      {issue.coverUrl ? (
-        <Image source={{ uri: issue.coverUrl }} contentFit="cover" style={styles.cover} />
-      ) : (
-        <View style={[styles.cover, styles.coverFallback]} />
-      )}
-      <Text style={styles.kicker}>New This Week</Text>
-      <Text style={styles.title}>{title}</Text>
-      {!!meta && <Text style={styles.meta}>{meta}</Text>}
+  // ── Wide web: the cover straddles the seam, content reflows around it. ──────
+  if (wide) {
+    const contentLeft = Math.max(0, (width - MAXW) / 2);
+    const coverLeft = contentLeft + PAD;
+    return (
+      <View style={styles.webPage}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={w.wrap}>
+          {/* Dark cover-stage header (top half of cover) */}
+          <View style={[w.header, { height: HEADER_H }]}>
+            {issue.coverUrl ? (
+              <Image source={{ uri: issue.coverUrl }} contentFit="cover" blurRadius={48} style={w.backdrop} />
+            ) : (
+              <View style={[StyleSheet.absoluteFill, w.backdropFallback]} />
+            )}
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: accent, opacity: 0.22 }]} />
+            <LinearGradient
+              colors={['rgba(11,24,32,0.5)', 'rgba(11,24,32,0.82)', 'rgba(11,24,32,0.97)']}
+              locations={[0, 0.55, 1]}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={w.headerInner}>
+              <Masthead issue={issue} accent={accent} centered={false} />
+            </View>
+          </View>
 
-      {issue.characters.length > 0 && (
-        <View style={styles.chars}>
-          <Text style={styles.charsLabel}>Featuring</Text>
-          <View style={styles.chips}>
-            {issue.characters.map((c) => (
-              <Pressable
-                key={c.id}
-                style={styles.chip}
-                onPress={() => router.push(`/character/${c.id}`)}
-              >
-                <View style={styles.avatar}>
-                  <HeroImage
-                    id={c.id}
-                    name={c.name}
-                    imageUrl={c.image_url}
-                    portraitUrl={c.portrait_url}
-                    grid
-                    contentFit="cover"
-                    contentPosition={{ top: '20%', left: '50%' }}
-                    style={StyleSheet.absoluteFill as object}
-                    recyclingKey={c.id}
-                  />
+          {/* Paper — synopsis beside the cover's lower half, cast below */}
+          <View style={w.paper}>
+            <View style={w.paperInner}>
+              <View style={w.overlapRow}>
+                <View style={w.coverGutter} />
+                <View style={w.rightCol}>
+                  {issue.description ? (
+                    <Synopsis text={issue.description} accent={accent} centered={false} />
+                  ) : (
+                    <Text style={w.fallback}>
+                      {[issue.publisher, `${issue.characters.length} featured characters`]
+                        .filter(Boolean)
+                        .join('  ·  ')}
+                    </Text>
+                  )}
+                  {issue.characters.length > 0 ? (
+                    <View style={w.castBlock}>
+                      <Text style={[w.castLabel, { color: accent }]}>Featuring</Text>
+                      <View style={w.castGrid}>
+                        {issue.characters.map((c, i) => (
+                          <CastCard
+                            key={c.id}
+                            character={c}
+                            accent={accent}
+                            lead={i === 0}
+                            onPress={() => router.push(`/character/${c.id}`)}
+                          />
+                        ))}
+                      </View>
+                    </View>
+                  ) : null}
                 </View>
-                <Text style={styles.chipName} numberOfLines={1}>
-                  {c.name}
-                </Text>
-              </Pressable>
-            ))}
+              </View>
+            </View>
+          </View>
+
+          {/* The cover itself — absolute, spanning the seam */}
+          <View style={[w.coverAbs, { left: coverLeft }]}>
+            <CoverArt url={issue.coverUrl} accent={accent} />
           </View>
         </View>
-      )}
-    </View>
+        {moreBand}
+      </View>
+    );
+  }
+
+  // ── Narrow: a clean centered stack. ────────────────────────────────────────
+  const narrowCoverW = Math.min(190, width * 0.48);
+  const narrowBody = (
+    <>
+      <View style={[n.header, { minHeight: 430 }]}>
+        {issue.coverUrl ? (
+          <Image source={{ uri: issue.coverUrl }} contentFit="cover" blurRadius={22} style={w.backdrop} />
+        ) : (
+          <View style={[StyleSheet.absoluteFill, w.backdropFallback]} />
+        )}
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: accent, opacity: 0.22 }]} />
+        <LinearGradient
+          colors={['rgba(11,24,32,0.55)', 'rgba(11,24,32,0.82)', 'rgba(11,24,32,0.98)']}
+          locations={[0, 0.5, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        {!isWeb ? (
+          <Pressable
+            onPress={() => router.back()}
+            style={[n.backBtn, { top: insets.top + 12 }]}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="chevron-back" size={20} color="#fff" />
+          </Pressable>
+        ) : null}
+        <View style={[n.content, { paddingTop: isWeb ? 80 : insets.top + 60 }]}>
+          <View style={{ width: narrowCoverW, height: Math.round(narrowCoverW * 1.5) }}>
+            <CoverArt url={issue.coverUrl} accent={accent} />
+          </View>
+          <Masthead issue={issue} accent={accent} centered />
+        </View>
+      </View>
+
+      <View style={styles.paper}>
+        {issue.description ? (
+          <View style={n.synSection}>
+            <Synopsis text={issue.description} accent={accent} centered={false} />
+          </View>
+        ) : null}
+        {issue.characters.length > 0 ? (
+          <CastRail characters={issue.characters} accent={accent} onPress={(cid) => router.push(`/character/${cid}`)} />
+        ) : null}
+      </View>
+      {moreBand}
+    </>
   );
 
   if (isWeb) {
     return (
       <View style={styles.webPage}>
         <Stack.Screen options={{ headerShown: false }} />
-        {body}
+        {narrowBody}
       </View>
     );
   }
@@ -133,61 +370,212 @@ export default function IssueScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 40 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        {body}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 8 }}>
+        {narrowBody}
       </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.beige },
-  webPage: { width: '100%', backgroundColor: COLORS.beige, paddingBottom: 40 },
-  loading: { flex: 1, backgroundColor: COLORS.beige, alignItems: 'center', justifyContent: 'center' },
-  scrollContent: { alignItems: 'center' },
-  body: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 20, gap: 8 },
-  cover: {
-    width: 200,
-    height: 304, // ~2:3 comic cover
+// CoverArt (shared)
+const art = StyleSheet.create({
+  shadow: {
+    width: '100%',
+    height: '100%',
     borderRadius: 12,
     borderCurve: 'continuous',
-    alignSelf: 'center',
-    marginBottom: 14,
-    backgroundColor: COLORS.navy,
-  },
-  coverFallback: { backgroundColor: COLORS.navy },
-  kicker: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    color: COLORS.orange,
-    textAlign: 'center',
-  },
-  title: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.navy, textAlign: 'center', lineHeight: 30 },
-  meta: { fontFamily: 'FlameSans-Regular', fontSize: 13, color: COLORS.grey, textAlign: 'center', marginTop: 2 },
-  chars: { marginTop: 22 },
-  charsLabel: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 11,
-    color: COLORS.orange,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    marginBottom: 12,
-  },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
-  chip: { width: 64, alignItems: 'center', gap: 5 },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: '#e8ddd0',
     backgroundColor: COLORS.navy,
   },
-  chipName: { fontFamily: 'FlameSans-Regular', fontSize: 11, color: COLORS.navy, textAlign: 'center' },
+  img: { width: '100%', height: '100%' },
+  fallback: { alignItems: 'center', justifyContent: 'center' },
+});
+
+// Wide editorial layout
+const w = StyleSheet.create({
+  wrap: { position: 'relative', width: '100%' },
+  // Masthead grounded near the seam (flex-end) so the title anchors to the
+  // cover's centre instead of floating in the upper stage.
+  header: {
+    width: '100%',
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+    paddingTop: 64,
+    backgroundColor: COLORS.deepNavy,
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    transform: [{ scale: 1.25 }],
+  } as object,
+  backdropFallback: { backgroundColor: COLORS.navy },
+  headerInner: {
+    maxWidth: MAXW,
+    alignSelf: 'center',
+    width: '100%',
+    paddingLeft: COVER_COL,
+    paddingRight: PAD,
+    paddingBottom: 30,
+  },
+  paper: { width: '100%', backgroundColor: COLORS.beige, paddingBottom: 30 },
+  paperInner: { maxWidth: MAXW, alignSelf: 'center', width: '100%' },
+  overlapRow: { flexDirection: 'row', alignItems: 'flex-start', minHeight: Math.round(COVER_H / 2) + 24 },
+  coverGutter: { width: COVER_COL },
+  rightCol: { flex: 1, minWidth: 0, paddingRight: PAD, paddingTop: 22 } as object,
+  fallback: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 14,
+    color: COLORS.grey,
+    letterSpacing: 0.3,
+  },
+  // Featuring, flowing under the synopsis (beside the cover) — not stranded below.
+  castBlock: { marginTop: 30 },
+  castLabel: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginBottom: 14,
+  },
+  // Wrapping grid — all characters visible, contained (no horizontal bleed).
+  castGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingRight: PAD },
+  // The cover, straddling the dark→paper seam.
+  coverAbs: {
+    position: 'absolute',
+    top: COVER_TOP,
+    width: COVER_W,
+    height: COVER_H,
+    zIndex: 5,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.55,
+    shadowRadius: 26,
+    elevation: 16,
+  } as object,
+});
+
+// Narrow stacked layout
+const n = StyleSheet.create({
+  header: {
+    width: '100%',
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+    paddingBottom: 28,
+    backgroundColor: COLORS.deepNavy,
+    borderBottomWidth: 1,
+    borderBottomColor: SEAM_COLOR,
+  },
+  backBtn: {
+    position: 'absolute',
+    left: 16,
+    zIndex: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  content: { alignItems: 'center', gap: 18, paddingHorizontal: 20, paddingBottom: 4 },
+  synSection: { paddingHorizontal: 20, paddingTop: 22 },
+});
+
+const ms = StyleSheet.create({
+  col: { gap: 11 },
+  colCentered: { alignItems: 'center', paddingHorizontal: 6 },
+  pub: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: 'rgba(245,235,220,0.9)',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  kicker: { fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 2.5, textTransform: 'uppercase' },
+  title: { fontFamily: 'Flame-Regular', color: '#fff' },
+  titleWide: { fontSize: 62, lineHeight: 64, textAlign: 'left', letterSpacing: -0.8 },
+  titleNarrow: { fontSize: 32, lineHeight: 36, textAlign: 'center' },
+  issueNo: { fontFamily: 'Flame-Regular' },
+  statRail: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginTop: 4 },
+  statCentered: { justifyContent: 'center' },
+  statDivider: { width: 1, height: 13, backgroundColor: 'rgba(255,255,255,0.28)' },
+  statText: { fontFamily: 'FlameSans-Regular', fontSize: 13.5, color: 'rgba(245,235,220,0.82)', letterSpacing: 0.3 },
+});
+
+const syn = StyleSheet.create({
+  wrap: { gap: 9 },
+  heading: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+  body: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 16,
+    lineHeight: 26,
+    color: COLORS.navy + 'cc',
+    maxWidth: 700,
+  },
+  center: { textAlign: 'center', alignSelf: 'center' },
+});
+
+const cast = StyleSheet.create({
+  card: { width: 104 },
+  frame: {
+    width: 104,
+    height: 142,
+    borderRadius: 12,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+    borderWidth: 1,
+    borderColor: '#e2d6c6',
+    justifyContent: 'flex-end',
+  },
+  leadTag: { position: 'absolute', top: 7, left: 7, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5 },
+  leadTagText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 8,
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  name: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11.5,
+    color: COLORS.beige,
+    lineHeight: 14,
+    paddingHorizontal: 8,
+    paddingBottom: 8,
+  },
+});
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.beige },
+  webPage: { width: '100%', backgroundColor: COLORS.beige },
+  loading: { flex: 1, backgroundColor: COLORS.beige, alignItems: 'center', justifyContent: 'center' },
+  paper: { backgroundColor: COLORS.beige },
+  section: { paddingTop: 22, paddingBottom: 10 },
+  sectionLabel: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    paddingHorizontal: 20,
+    marginBottom: 14,
+  },
+  castStrip: { gap: 12, paddingHorizontal: 20, paddingBottom: 4 },
+  moreBand: {
+    backgroundColor: SURFACE.ink,
+    borderTopWidth: 1,
+    borderTopColor: SEAM_COLOR,
+    paddingTop: 22,
+    paddingBottom: 24,
+    marginTop: 6,
+  },
 });

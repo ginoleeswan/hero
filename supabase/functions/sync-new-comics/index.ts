@@ -263,31 +263,104 @@ async function storeIssues(sb: SB, issues: WindowIssue[]): Promise<number> {
   return stored;
 }
 
+// ComicVine descriptions are HTML — strip tags + decode the few entities that
+// show up, collapse whitespace, cap length.
+function cleanHtml(html: unknown): string | null {
+  if (typeof html !== 'string' || !html) return null;
+  let t = html.replace(/<[^>]+>/g, ' ');
+  t = t
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+  t = t.replace(/\s+/g, ' ').trim();
+  if (t.length > 1200) t = `${t.slice(0, 1197).trimEnd()}…`;
+  return t || null;
+}
+
+// Phase 4 — backfill issue synopses. The per-issue DETAIL endpoint is the only
+// source of `description` and is rate-limited, so do a few per run (famous issues
+// first) and stop on the first 107. Issues with no synopsis are marked '' so they
+// aren't retried forever.
+async function enrichDescriptions(sb: SB, cap: number): Promise<{ enriched: number; rateLimited: boolean }> {
+  const { data } = await sb
+    .from('comic_issues')
+    .select('id, comicvine_id')
+    .is('description', null)
+    .order('max_fame', { ascending: false, nullsFirst: false })
+    .limit(cap);
+  const rows = (data ?? []) as Array<{ id: string; comicvine_id: string }>;
+  let enriched = 0;
+  let rateLimited = false;
+  for (const r of rows) {
+    let body: any;
+    try {
+      body = await cvGet(`${CV}/issue/4000-${r.comicvine_id}/?api_key=${KEY}&format=json&field_list=id,description`);
+    } catch (e) {
+      if (e instanceof RateLimited) {
+        rateLimited = true;
+        break;
+      }
+      continue;
+    }
+    const desc = cleanHtml((body.results ?? {}).description);
+    await sb.from('comic_issues').update({ description: desc ?? '' }).eq('id', r.id);
+    if (desc) enriched++;
+    await sleep(1500);
+  }
+  return { enriched, rateLimited };
+}
+
 async function runSync(
   sb: SB,
   days: number,
   maxVolumes: number,
-): Promise<{ fetched: number; resolved: number; pending: number; stored: number; rateLimited: boolean }> {
+  maxEnrich: number,
+): Promise<{
+  fetched: number;
+  resolved: number;
+  pending: number;
+  stored: number;
+  enriched: number;
+  rateLimited: boolean;
+}> {
   const end = new Date();
   const start = new Date(end.getTime() - days * 86_400_000);
   const issues = await listWindowIssues(isoDate(start), isoDate(end));
-  if (issues.length === 0) return { fetched: 0, resolved: 0, pending: 0, stored: 0, rateLimited: false };
+  if (issues.length === 0) {
+    return { fetched: 0, resolved: 0, pending: 0, stored: 0, enriched: 0, rateLimited: false };
+  }
 
   const volumeIds = [...new Set(issues.map((i) => i.volume_id))];
-  const { resolved, pending, rateLimited } = await resolveVolumes(sb, volumeIds, maxVolumes);
+  const vol = await resolveVolumes(sb, volumeIds, maxVolumes);
   const stored = await storeIssues(sb, issues);
-  return { fetched: issues.length, resolved, pending, stored, rateLimited };
+  // Only spend the rate-limited detail calls on synopses if volume resolution
+  // didn't already hit the throttle this run.
+  const enr = vol.rateLimited ? { enriched: 0, rateLimited: true } : await enrichDescriptions(sb, maxEnrich);
+  return {
+    fetched: issues.length,
+    resolved: vol.resolved,
+    pending: vol.pending,
+    stored,
+    enriched: enr.enriched,
+    rateLimited: vol.rateLimited || enr.rateLimited,
+  };
 }
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   let days = 14;
   let maxVolumes = 6;
+  let maxEnrich = 8;
   let triggeredBy = 'cron';
   try {
     const b = await req.json().catch(() => ({}));
     if (typeof b?.days === 'number') days = Math.min(Math.max(1, b.days), 31);
     if (typeof b?.maxVolumes === 'number') maxVolumes = Math.min(Math.max(1, b.maxVolumes), 20);
+    if (typeof b?.maxEnrich === 'number') maxEnrich = Math.min(Math.max(0, b.maxEnrich), 25);
     if (typeof b?.triggeredBy === 'string') triggeredBy = b.triggeredBy;
   } catch {
     /* empty body ok */
@@ -299,8 +372,9 @@ serve(async (req: Request) => {
   );
 
   try {
-    const out = await runSync(sb, days, maxVolumes);
-    if (out.resolved > 0) await sb.from('api_usage').insert({ api: 'comicvine', endpoint: 'sync-new-comics', units: out.resolved });
+    const out = await runSync(sb, days, maxVolumes, maxEnrich);
+    const units = out.resolved + out.enriched;
+    if (units > 0) await sb.from('api_usage').insert({ api: 'comicvine', endpoint: 'sync-new-comics', units });
     return json({ ...out, triggeredBy, message: out.stored === 0 ? 'nothing stored yet' : 'ok' });
   } catch (err) {
     return json({ error: String(err) }, 500);
