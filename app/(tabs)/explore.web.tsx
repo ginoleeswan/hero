@@ -1211,6 +1211,7 @@ export default function WebHomeScreen() {
             onScreen={homeData.onScreen ?? []}
             comingSoon={homeData.comingSoon ?? []}
             streaming={homeData.streaming ?? []}
+            trendingOnScreen={homeData.trendingOnScreen ?? []}
             personalized={homeData.trendingForUser ?? []}
             newComics={homeData.newComics}
             onHeroPress={handlePress}

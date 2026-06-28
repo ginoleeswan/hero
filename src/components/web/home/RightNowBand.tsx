@@ -28,6 +28,7 @@ interface RightNowBandProps {
   onScreen: TrendingTitle[];
   comingSoon: TrendingTitle[];
   streaming: TrendingTitle[];
+  trendingOnScreen: TrendingTitle[];
   personalized: TrendingTitleCharacter[];
   newComics: NewComic[];
   onHeroPress: (id: string) => void;
@@ -383,17 +384,21 @@ function PosterRail({
   titles,
   onTitlePress,
   pagePad,
+  label = 'In Cinemas & Streaming',
+  title = 'On Screen Now',
 }: {
   titles: TrendingTitle[];
   onTitlePress: (id: string) => void;
   pagePad: number;
+  label?: string;
+  title?: string;
 }) {
   if (titles.length === 0) return null;
   return (
     <View>
       <View style={[prw.header, { paddingLeft: pagePad }]}>
-        <Text style={prw.label as object}>In Cinemas &amp; Streaming</Text>
-        <Text style={prw.title as object}>On Screen Now</Text>
+        <Text style={prw.label as object}>{label}</Text>
+        <Text style={prw.title as object}>{title}</Text>
       </View>
       <View style={[prw.strip, { paddingLeft: pagePad, paddingRight: pagePad }] as object}>
         {titles.map((t) => {
@@ -438,6 +443,7 @@ export function RightNowBand({
   onScreen,
   comingSoon,
   streaming,
+  trendingOnScreen,
   personalized,
   newComics,
   onHeroPress,
@@ -452,6 +458,7 @@ export function RightNowBand({
     onScreen.length > 0 ||
     comingSoon.length > 0 ||
     streaming.length > 0 ||
+    trendingOnScreen.length > 0 ||
     personalized.length > 0 ||
     newComics.length > 0;
   if (!hasAny) return null;
@@ -494,6 +501,16 @@ export function RightNowBand({
           </View>
         )
       )}
+
+      {trendingOnScreen.length > 0 ? (
+        <PosterRail
+          label="Trending Today"
+          title="Trending on Screen"
+          titles={trendingOnScreen}
+          onTitlePress={onTitlePress}
+          pagePad={pagePad}
+        />
+      ) : null}
 
       {/* On desktop the campaign hero + ranked "What's Hot" sidebar already
           carry the live slate; elsewhere, one calm merged poster rail does. */}
