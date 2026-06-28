@@ -45,6 +45,15 @@ function onSaleLabel(storeDate: string | null): string | null {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+// A historical issue can credit dozens of one-off characters with no art. Show
+// the recognizable cast — those with a portrait — and cap it; only fall back to
+// the raw list when almost nobody has art (so the section is never empty for an
+// obscure book).
+function curateCast(chars: NewComicCharacter[], cap = 12): NewComicCharacter[] {
+  const withArt = chars.filter((c) => !!(c.portrait_url || c.image_url));
+  return (withArt.length >= 3 ? withArt : chars).slice(0, cap);
+}
+
 // True only for issues that shipped in the recent window — so the "New this week"
 // kicker isn't shown on a read-through historical issue (a debut, a back issue).
 function isNewThisWeek(storeDate: string | null): boolean {
@@ -114,7 +123,7 @@ function Synopsis({ text, accent, centered }: { text: string; accent: string; ce
 
 // ComicVine lists each creator with a free-text role; bucket them into the
 // canonical credits so "penciler, inker" lands under Art, etc.
-const CREATOR_ROLES: Array<[string, string[]]> = [
+const CREATOR_ROLES: [string, string[]][] = [
   ['Writer', ['writer', 'script', 'plot']],
   ['Art', ['pencil', 'artist', 'inker', 'breakdowns', 'finishes', 'illustrat']],
   ['Colors', ['color', 'colour']],
@@ -123,7 +132,7 @@ const CREATOR_ROLES: Array<[string, string[]]> = [
   ['Editor', ['editor']],
 ];
 
-function groupCreators(creators: IssueCreator[]): Array<{ label: string; names: string[] }> {
+function groupCreators(creators: IssueCreator[]): { label: string; names: string[] }[] {
   const buckets = new Map<string, string[]>();
   for (const c of creators) {
     const role = (c.role ?? '').toLowerCase();
@@ -157,7 +166,10 @@ function Credits({
       {groups.map((g) => (
         <View key={g.label} style={[cr.row, centered && cr.rowCentered]}>
           <Text style={cr.role}>{g.label}</Text>
-          <Text style={cr.names}>{g.names.join(', ')}</Text>
+          <Text style={cr.names}>
+            {g.names.slice(0, 5).join(', ')}
+            {g.names.length > 5 ? ` +${g.names.length - 5} more` : ''}
+          </Text>
         </View>
       ))}
     </View>
@@ -304,6 +316,7 @@ export default function IssueScreen() {
   }
 
   const accent = brandForPublisher(issue.publisher)?.color ?? COLORS.orange;
+  const cast = curateCast(issue.characters);
   const moreBand =
     more.length > 0 ? (
       <View style={styles.moreBand}>
@@ -355,11 +368,11 @@ export default function IssueScreen() {
                   {issue.creators ? (
                     <Credits creators={issue.creators} accent={accent} centered={false} />
                   ) : null}
-                  {issue.characters.length > 0 ? (
+                  {cast.length > 0 ? (
                     <View style={w.castBlock}>
                       <Text style={[w.castLabel, { color: accent }]}>Featuring</Text>
                       <View style={w.castGrid}>
-                        {issue.characters.map((c, i) => (
+                        {cast.map((c, i) => (
                           <CastCard
                             key={c.id}
                             character={c}
@@ -432,8 +445,8 @@ export default function IssueScreen() {
             <Credits creators={issue.creators} accent={accent} centered={false} />
           </View>
         ) : null}
-        {issue.characters.length > 0 ? (
-          <CastRail characters={issue.characters} accent={accent} onPress={(cid) => router.push(`/character/${cid}`)} />
+        {cast.length > 0 ? (
+          <CastRail characters={cast} accent={accent} onPress={(cid) => router.push(`/character/${cid}`)} />
         ) : null}
       </View>
       {moreBand}

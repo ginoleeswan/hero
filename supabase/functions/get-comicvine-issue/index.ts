@@ -91,20 +91,32 @@ serve(async (req: Request) => {
     if (!r || typeof r !== 'object') return json({ error: 'not_found' }, 404);
 
     const creditIds = ((r.character_credits ?? []) as Array<{ id: number }>).map((c) => String(c.id));
-    const heroByCv = new Map<string, { id: string; fame: number; publisher: string | null }>();
+    type Match = { id: string; fame: number; publisher: string | null; art: boolean };
+    const heroByCv = new Map<string, Match>();
     for (const ids of chunk(creditIds, 300)) {
       const { data } = await sb
         .from('heroes')
-        .select('id, comicvine_id, fame_score, publisher')
+        .select('id, comicvine_id, fame_score, publisher, image_url, portrait_url')
         .in('comicvine_id', ids);
-      for (const h of (data ?? []) as Array<{ id: string; comicvine_id: string; fame_score: number | null; publisher: string | null }>) {
-        if (h.comicvine_id) heroByCv.set(h.comicvine_id, { id: h.id, fame: h.fame_score ?? 0, publisher: h.publisher });
+      for (const h of (data ?? []) as Array<{ id: string; comicvine_id: string; fame_score: number | null; publisher: string | null; image_url: string | null; portrait_url: string | null }>) {
+        if (h.comicvine_id)
+          heroByCv.set(h.comicvine_id, {
+            id: h.id,
+            fame: h.fame_score ?? 0,
+            publisher: h.publisher,
+            art: !!(h.image_url || h.portrait_url),
+          });
       }
     }
-    const matches = creditIds
-      .map((cid) => heroByCv.get(cid))
-      .filter((h): h is { id: string; fame: number; publisher: string | null } => !!h);
-    const lead = matches.length ? matches.reduce((a, b) => (b.fame > a.fame ? b : a), matches[0]) : null;
+    const allMatches = creditIds.map((cid) => heroByCv.get(cid)).filter((h): h is Match => !!h);
+    // A historical issue can credit dozens of one-off characters. Keep the
+    // recognizable cast — those with art — ranked by fame, capped; only fall back
+    // to the raw set if almost none have art.
+    const withArt = allMatches.filter((m) => m.art);
+    const matches = (withArt.length >= 3 ? withArt : allMatches)
+      .sort((a, b) => b.fame - a.fame)
+      .slice(0, 12);
+    const lead = matches[0] ?? null;
 
     const { error: upErr } = await sb.from('comic_issues').upsert(
       {
@@ -127,13 +139,12 @@ serve(async (req: Request) => {
       { onConflict: 'id' },
     );
     if (upErr) return json({ error: upErr.message }, 500);
+    // Authoritative: replace the cast so a re-fetch trims a previously bloated issue.
+    await sb.from('comic_issue_appearances').delete().eq('issue_id', issueId);
     if (matches.length) {
       await sb
         .from('comic_issue_appearances')
-        .upsert(matches.map((m) => ({ issue_id: issueId, hero_id: m.id })), {
-          onConflict: 'issue_id,hero_id',
-          ignoreDuplicates: true,
-        });
+        .insert(matches.map((m) => ({ issue_id: issueId, hero_id: m.id })));
     }
     await sb.from('api_usage').insert({ api: 'comicvine', endpoint: 'get-comicvine-issue', units: 1 });
     return json({ ok: true, id: issueId });
