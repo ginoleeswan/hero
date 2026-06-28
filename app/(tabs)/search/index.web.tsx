@@ -37,7 +37,10 @@ import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
 import { useScreenChrome } from '../../../src/hooks/useScreenChrome';
 import { SeoHead } from '../../../src/components/web/SeoHead';
 
-const RESULT_LIMIT = 300;
+// 80 is plenty for a typed query (fame-ranked, so the best matches are first) and
+// keeps the payload + card-render count small — fetching/rendering 300 per
+// keystroke was the main thing that made search feel slow.
+const RESULT_LIMIT = 80;
 // Secondary sections are kept compact so the character grid (the primary payload)
 // surfaces near the fold instead of below a wall of teams/films. Films live in a
 // horizontal rail, so they self-cap by scroll.
@@ -604,17 +607,23 @@ export default function WebSearchScreen() {
               <Text style={styles.charCount as object}>{countLabel}</Text>
             </View>
           )}
-          {(loading || gridHeroes.length > 0) && (
-            <View style={gridStyle as object}>
-              {loading
-                ? Array.from({ length: 18 }).map((_, i) => (
-                    <SkeletonCard key={i} opacity={skeletonOpacity} />
-                  ))
-                : gridHeroes.map((hero) => (
-                    <HeroCard key={hero.id} hero={hero} onSelect={goToHero} onPeek={openPeek} />
-                  ))}
-            </View>
-          )}
+          {(loading || gridHeroes.length > 0) &&
+            // Skeletons only on the FIRST search (nothing to show yet). Once we
+            // have results, keep them visible — slightly dimmed — while the next
+            // query resolves, so typing never flashes back to skeletons.
+            (gridHeroes.length === 0 && loading ? (
+              <View style={gridStyle as object}>
+                {Array.from({ length: 18 }).map((_, i) => (
+                  <SkeletonCard key={i} opacity={skeletonOpacity} />
+                ))}
+              </View>
+            ) : (
+              <View style={[gridStyle, loading && (styles.gridLoading as object)] as object}>
+                {gridHeroes.map((hero) => (
+                  <HeroCard key={hero.id} hero={hero} onSelect={goToHero} onPeek={openPeek} />
+                ))}
+              </View>
+            ))}
           {!loading && gridHeroes.length === 0 && !topResult && (
             <View style={styles.center}>
               <Text style={styles.empty}>No heroes match {title}.</Text>
@@ -804,6 +813,8 @@ const styles = StyleSheet.create({
 
   // ── Grid / content ─────────────────────────────────────────────────────────
   gridWrap: { paddingTop: 2, maxWidth: 1200, width: '100%', alignSelf: 'center' },
+  // Stale results stay up (just dimmed) while the next query resolves — no flash.
+  gridLoading: { opacity: 0.55, transition: 'opacity 140ms ease' } as object,
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
   empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: 'rgba(245,235,220,0.55)' },
   moreHint: {

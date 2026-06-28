@@ -32,7 +32,7 @@ function useDebouncedQuery<T>(
     const timer = setTimeout(async () => {
       const res = await fetcher(trimmed, limit);
       if (!cancelled) setItems(res);
-    }, 250);
+    }, 180);
     return () => {
       cancelled = true;
       clearTimeout(timer);
