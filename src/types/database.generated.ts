@@ -909,6 +909,47 @@ export type Database = {
           },
         ]
       }
+      hero_images: {
+        Row: {
+          caption: string | null
+          created_at: string
+          hero_id: string
+          id: string
+          issue_id: string | null
+          sort_order: number
+          source: string
+          url: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          hero_id: string
+          id?: string
+          issue_id?: string | null
+          sort_order?: number
+          source: string
+          url: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          hero_id?: string
+          id?: string
+          issue_id?: string | null
+          sort_order?: number
+          source?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hero_images_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hero_media_appearances: {
         Row: {
           cv_name: string | null
