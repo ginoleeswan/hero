@@ -551,11 +551,12 @@ export const FEATURED_PUBLISHERS: PublisherBrand[] = ['marvel', 'dc', 'image', '
   .filter((b): b is PublisherBrand => b != null);
 
 /**
- * A broader, recognizable set of universes for the search landing's horizontal
- * "Universes" rail — comics, games, toys and cartoons, all logo-backed so they
- * render as brand marks (not initials). Order = display order.
+ * Every universe, for the search landing's horizontal "Universes" rail. It's all
+ * of PUBLISHER_BRANDS — the most recognizable ones are pulled to the front so the
+ * rail opens strong (registry order otherwise buries Disney/Nintendo), then the
+ * rest follow. Chips show the universe name, so logo-less ones still read fine.
  */
-export const SEARCH_UNIVERSES: PublisherBrand[] = [
+const UNIVERSE_RAIL_FRONT = [
   'marvel',
   'dc',
   'star-wars',
@@ -566,13 +567,15 @@ export const SEARCH_UNIVERSES: PublisherBrand[] = [
   'sega',
   'capcom',
   'looney-tunes',
+  'shueisha',
   'valiant',
-  'archie',
-  'mattel',
-  'hasbro',
-]
-  .map((slug) => PUBLISHER_BRANDS.find((b) => b.slug === slug))
-  .filter((b): b is PublisherBrand => b != null);
+];
+export const SEARCH_UNIVERSES: PublisherBrand[] = [
+  ...UNIVERSE_RAIL_FRONT.map((slug) => PUBLISHER_BRANDS.find((b) => b.slug === slug)).filter(
+    (b): b is PublisherBrand => b != null,
+  ),
+  ...PUBLISHER_BRANDS.filter((b) => !UNIVERSE_RAIL_FRONT.includes(b.slug)),
+];
 
 export function publisherBySlug(slug: string | undefined): PublisherBrand | undefined {
   return PUBLISHER_BRANDS.find((b) => b.slug === slug);
