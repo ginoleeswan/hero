@@ -34,6 +34,7 @@ import {
   type Campaign,
   type TrendingTitleCharacter,
 } from '../lib/db/trending';
+import { getNewComics, type NewComic } from '../lib/db/comics';
 import { getTodaysMatchup, type TodaysMatchup } from '../lib/matchup';
 import { getRecentlyViewed } from '../lib/db/viewHistory';
 import { BROWSE_PODS } from '../components/home/CategoryPodGrid';
@@ -75,6 +76,7 @@ export interface ExploreData {
   comingSoon: TrendingTitle[];
   streaming: TrendingTitle[];
   campaigns: Campaign[];
+  newComics: NewComic[];
   /** `undefined` while loading, `null` when there's no matchup today. */
   matchup: TodaysMatchup | null | undefined;
   /** `null` while loading; a count once resolved. */
@@ -110,6 +112,7 @@ const INITIAL: ExploreData = {
   comingSoon: [],
   streaming: [],
   campaigns: [],
+  newComics: [],
   matchup: undefined,
   heroCount: null,
   trendingForUser: [],
@@ -182,6 +185,9 @@ export function useExploreData(): ExploreData {
       .catch(() => {});
     getTrendingTitles('streaming', 6)
       .then(set('streaming'))
+      .catch(() => {});
+    getNewComics(12)
+      .then(set('newComics'))
       .catch(() => {});
 
     // Curated catalogue rows.

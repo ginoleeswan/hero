@@ -16,12 +16,14 @@ import Animated, {
 import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 import { TitlePosterRail } from './TitlePosterRail';
+import { ComicCoverRail } from './ComicCoverRail';
 import {
   mergeTrendingTitles,
   type Campaign,
   type TrendingTitle,
   type TrendingTitleCharacter,
 } from '../../lib/db/trending';
+import type { NewComic } from '../../lib/db/comics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -37,8 +39,10 @@ export interface RightNowBandProps {
   comingSoon: TrendingTitle[];
   streaming: TrendingTitle[];
   personalized: TrendingTitleCharacter[];
+  newComics: NewComic[];
   onHeroPress: HeroPress;
   onTitlePress: (titleId: string) => void;
+  onIssuePress: (issueId: string) => void;
   disabled?: boolean;
 }
 
@@ -206,8 +210,10 @@ export function RightNowBand({
   comingSoon,
   streaming,
   personalized,
+  newComics,
   onHeroPress,
   onTitlePress,
+  onIssuePress,
   disabled = false,
 }: RightNowBandProps) {
   const hasAny =
@@ -215,7 +221,8 @@ export function RightNowBand({
     onScreen.length > 0 ||
     comingSoon.length > 0 ||
     streaming.length > 0 ||
-    personalized.length > 0;
+    personalized.length > 0 ||
+    newComics.length > 0;
   if (!hasAny) return null;
 
   return (
@@ -244,6 +251,8 @@ export function RightNowBand({
         titles={mergeTrendingTitles(onScreen, comingSoon, streaming)}
         onTitlePress={onTitlePress}
       />
+
+      <ComicCoverRail comics={newComics} onIssuePress={onIssuePress} />
 
       {personalized.length > 0 && (
         <PersonalStrip characters={personalized} onHeroPress={onHeroPress} disabled={disabled} />

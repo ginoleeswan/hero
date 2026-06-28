@@ -42,6 +42,7 @@ import {
   type Campaign,
   type TrendingTitleCharacter,
 } from '../../src/lib/db/trending';
+import type { NewComic } from '../../src/lib/db/comics';
 import { type TodaysMatchup as Matchup } from '../../src/lib/matchup';
 import { RightNowBand } from '../../src/components/home/RightNowBand';
 import { TodaysMatchup } from '../../src/components/home/TodaysMatchup';
@@ -88,6 +89,7 @@ type FeedRow =
       comingSoon: TrendingTitle[];
       streaming: TrendingTitle[];
       personalized: TrendingTitleCharacter[];
+      newComics: NewComic[];
     }
   | { type: 'chapter'; kicker: string; title: string }
   | { type: 'rivalries'; rivalries: Rivalry[] }
@@ -131,6 +133,7 @@ export default function HomeScreen() {
     videoGames,
     franchiseIcons: franchise,
     newlyAdded,
+    newComics,
     rivalries,
     mostFeared,
     eras,
@@ -192,6 +195,14 @@ export default function HomeScreen() {
     [router],
   );
 
+  const handleIssuePress = useCallback(
+    (issueId: string) => {
+      Haptics.selectionAsync();
+      router.push(`/issue/${issueId}`);
+    },
+    [router],
+  );
+
   // The feed as a flat list of rows. A deliberate, chaptered sequence: billboard →
   // today's battle → the dynamic "Right Now" zone → your personal rows → the
   // Library (browse) → curated catalogue rows → "Beyond the Page" editorial
@@ -208,7 +219,8 @@ export default function HomeScreen() {
       onScreen.length > 0 ||
       comingSoon.length > 0 ||
       streaming.length > 0 ||
-      trendingForUser.length > 0
+      trendingForUser.length > 0 ||
+      newComics.length > 0
     ) {
       out.push({
         type: 'rightnow',
@@ -217,6 +229,7 @@ export default function HomeScreen() {
         comingSoon,
         streaming,
         personalized: trendingForUser,
+        newComics,
       });
     }
     if (recentlyViewed.length > 0)
@@ -339,6 +352,7 @@ export default function HomeScreen() {
     streaming,
     campaigns,
     trendingForUser,
+    newComics,
     villains,
     horror,
     antiHeroes,
@@ -406,8 +420,10 @@ export default function HomeScreen() {
               comingSoon={item.comingSoon}
               streaming={item.streaming}
               personalized={item.personalized}
+              newComics={item.newComics}
               onHeroPress={handlePress}
               onTitlePress={handleTitlePress}
+              onIssuePress={handleIssuePress}
               disabled={navigating}
             />
           );
@@ -464,6 +480,7 @@ export default function HomeScreen() {
       handleOpenPath,
       handlePublisherPress,
       handleTitlePress,
+      handleIssuePress,
       navigating,
       router,
     ],
