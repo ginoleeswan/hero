@@ -395,13 +395,18 @@ interface WikiTrendingRow {
 /** Characters whose Wikipedia pageviews spiked this week. Degrades to [] so a DB
  *  hiccup never errors the Explore band. */
 export async function getTrendingHeroesWiki(limit = 12): Promise<WikiTrendingHero[]> {
-  const { data, error } = await supabase.rpc('get_trending_heroes_wiki', { p_limit: limit } as never);
+  const { data, error } = await supabase.rpc('get_trending_heroes_wiki', {
+    p_limit: limit,
+  } as never);
   if (error) {
     console.warn('[getTrendingHeroesWiki] error:', error.message);
     return [];
   }
   return ((data ?? []) as unknown as WikiTrendingRow[]).map((r) => {
-    const spike = typeof r.pageviews_spike === 'string' ? parseFloat(r.pageviews_spike) : (r.pageviews_spike ?? 1);
+    const spike =
+      typeof r.pageviews_spike === 'string'
+        ? parseFloat(r.pageviews_spike)
+        : (r.pageviews_spike ?? 1);
     return {
       id: r.id,
       name: r.name,
