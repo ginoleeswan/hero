@@ -33,9 +33,10 @@ export function HeroRail({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      // Explicit height — a horizontal ScrollView collapses to 0 inside a flex
-      // column (e.g. the command-palette panel) without it.
-      style={{ marginHorizontal: -bleed, height: RAIL_HEIGHT } as object}
+      // Fixed height + flexShrink:0 — inside a fixed-height flex column that
+      // overflows (the command-palette panel), flexbox would otherwise shrink this
+      // horizontal scroller to 0 instead of letting the panel scroll.
+      style={{ marginHorizontal: -bleed, height: RAIL_HEIGHT, flexShrink: 0 } as object}
       contentContainerStyle={[styles.track, { paddingLeft: edge, paddingRight: edge }] as object}
     >
       {heroes.map((h) => (

@@ -174,9 +174,9 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   sectionLabelSpaced: { paddingTop: 16 },
-  // Explicit height — a horizontal ScrollView collapses to 0 inside the flex
-  // column palette panel without it (~56 chip + a little breathing room).
-  universeRail: { height: 60 } as object,
+  // Fixed height + flexShrink:0 — the fixed-height flex-column panel would
+  // otherwise shrink this horizontal scroller to 0 (~56 chip + breathing room).
+  universeRail: { height: 60, flexShrink: 0 } as object,
   universeTrack: {
     flexDirection: 'row',
     gap: 8,
