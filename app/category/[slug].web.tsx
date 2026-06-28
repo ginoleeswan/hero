@@ -10,7 +10,7 @@ import {
   TextInput,
   useWindowDimensions,
 } from 'react-native';
-import { useShimmer } from '../../src/components/web/Skeleton';
+import { useSkeletonGlow } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -57,12 +57,17 @@ const VALID_SLUGS = new Set<CategorySlug>([
   'horror',
 ]);
 
-// ── Skeleton card (matches HeroCard layout) ───────────────────────────────────
-// Soft shimmer on the dark gallery canvas. `index` offsets each card's phase so
-// the grid shimmers as a drifting wave, never all-in-unison (the cheap tell).
-function SkeletonCard({ index = 0 }: { index?: number }) {
-  const ref = useShimmer(true, index * 0.15);
-  return <View ref={ref} style={sk.wrap as object} />;
+// ── Skeleton card (mirrors HeroCard: same shape + a faint name-bar hint) ───────
+// Surface-navy fill with a calm unison breath (see useSkeletonGlow); the card
+// silhouette + name line make it read as a deliberate placeholder for the real
+// card, so the swap to content is seamless.
+function SkeletonCard() {
+  const ref = useSkeletonGlow(true);
+  return (
+    <View ref={ref} style={sk.wrap as object}>
+      <View style={sk.nameBar as object} />
+    </View>
+  );
 }
 
 const sk = StyleSheet.create({
@@ -70,6 +75,16 @@ const sk = StyleSheet.create({
     width: '100%', // WebKit won't stretch an aspect-ratio grid item to the track — force the inline size
     borderRadius: 10,
     aspectRatio: '3 / 4',
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+    padding: 12,
+  } as object,
+  // Hints the hero name that sits bottom-left on the real card.
+  nameBar: {
+    width: '64%',
+    height: 11,
+    borderRadius: 4,
+    backgroundColor: 'rgba(245,235,220,0.12)',
   } as object,
 });
 
@@ -390,8 +405,7 @@ export default function WebCategoryScreen() {
           onInfo={() => setPeek(hero)}
         />
       ))}
-      {loadingMore &&
-        Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={`sk-${i}`} index={i} />)}
+      {loadingMore && Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={`sk-${i}`} />)}
     </View>
   );
 
@@ -632,7 +646,7 @@ export default function WebCategoryScreen() {
                 >
                   <View style={gridStyle as object}>
                     {Array.from({ length: 24 }).map((_, i) => (
-                      <SkeletonCard key={i} index={i} />
+                      <SkeletonCard key={i} />
                     ))}
                   </View>
                 </View>
