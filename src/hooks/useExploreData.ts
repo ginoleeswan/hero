@@ -28,6 +28,7 @@ import {
 import { getUserFavouriteHeroes } from '../lib/db/favourites';
 import {
   getTrendingTitles,
+  getTrendingOnScreen,
   getActiveCampaigns,
   getTrendingForUser,
   type TrendingTitle,
@@ -72,6 +73,7 @@ export interface ExploreData {
   covers: FirstAppearanceCover[];
   browseCovers: Record<string, BrowseCover>;
   // Right-now / trending.
+  trendingOnScreen: TrendingTitle[];
   onScreen: TrendingTitle[];
   comingSoon: TrendingTitle[];
   streaming: TrendingTitle[];
@@ -108,6 +110,7 @@ const INITIAL: ExploreData = {
   eras: [],
   covers: [],
   browseCovers: {},
+  trendingOnScreen: [],
   onScreen: [],
   comingSoon: [],
   streaming: [],
@@ -176,6 +179,9 @@ export function useExploreData(): ExploreData {
       .catch(() => {});
     getBrowseCovers(BROWSE_PODS.map((p) => p.slug as CategorySlug))
       .then(set('browseCovers'))
+      .catch(() => {});
+    getTrendingOnScreen(12)
+      .then(set('trendingOnScreen'))
       .catch(() => {});
     getTrendingTitles('on_screen', 6)
       .then(set('onScreen'))

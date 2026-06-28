@@ -85,6 +85,7 @@ type FeedRow =
   | {
       type: 'rightnow';
       campaign: Campaign | null;
+      trendingOnScreen: TrendingTitle[];
       onScreen: TrendingTitle[];
       comingSoon: TrendingTitle[];
       streaming: TrendingTitle[];
@@ -114,6 +115,7 @@ export default function HomeScreen() {
     started: initialLoaded,
     spotlight: spotlightAll,
     iconic,
+    trendingOnScreen,
     onScreen,
     comingSoon,
     streaming,
@@ -216,6 +218,7 @@ export default function HomeScreen() {
     if (heroCount > 0) out.push({ type: 'ticker', heroCount, newlyAddedCount: newlyAdded.length });
     if (
       campaigns[0] ||
+      trendingOnScreen.length > 0 ||
       onScreen.length > 0 ||
       comingSoon.length > 0 ||
       streaming.length > 0 ||
@@ -225,6 +228,7 @@ export default function HomeScreen() {
       out.push({
         type: 'rightnow',
         campaign: campaigns[0] ?? null,
+        trendingOnScreen,
         onScreen,
         comingSoon,
         streaming,
@@ -347,6 +351,7 @@ export default function HomeScreen() {
     recentlyViewed,
     favourites,
     iconic,
+    trendingOnScreen,
     onScreen,
     comingSoon,
     streaming,
@@ -416,6 +421,7 @@ export default function HomeScreen() {
           return (
             <RightNowBand
               campaign={item.campaign}
+              trendingOnScreen={item.trendingOnScreen}
               onScreen={item.onScreen}
               comingSoon={item.comingSoon}
               streaming={item.streaming}

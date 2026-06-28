@@ -35,6 +35,7 @@ type HeroPress = (item: {
 
 export interface RightNowBandProps {
   campaign?: Campaign | null;
+  trendingOnScreen: TrendingTitle[];
   onScreen: TrendingTitle[];
   comingSoon: TrendingTitle[];
   streaming: TrendingTitle[];
@@ -206,6 +207,7 @@ function PersonalStrip({
 
 export function RightNowBand({
   campaign,
+  trendingOnScreen,
   onScreen,
   comingSoon,
   streaming,
@@ -218,6 +220,7 @@ export function RightNowBand({
 }: RightNowBandProps) {
   const hasAny =
     !!campaign ||
+    trendingOnScreen.length > 0 ||
     onScreen.length > 0 ||
     comingSoon.length > 0 ||
     streaming.length > 0 ||
@@ -242,6 +245,15 @@ export function RightNowBand({
           disabled={disabled}
         />
       )}
+
+      {trendingOnScreen.length > 0 ? (
+        <TitlePosterRail
+          label="Trending Today"
+          title="Trending on Screen"
+          titles={trendingOnScreen}
+          onTitlePress={onTitlePress}
+        />
+      ) : null}
 
       {/* One calm rail — theatrical, upcoming and streaming merged; the badge
           on each poster carries the distinction. */}
