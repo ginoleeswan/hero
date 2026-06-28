@@ -41,6 +41,8 @@ import { SeoHead } from '../../../src/components/web/SeoHead';
 // keeps the payload + card-render count small — fetching/rendering 300 per
 // keystroke was the main thing that made search feel slow.
 const RESULT_LIMIT = 80;
+// Cards mounted per progressive-render page (the rest reveal on scroll).
+const GRID_PAGE = 30;
 // Secondary sections are kept compact so the character grid (the primary payload)
 // surfaces near the fold instead of below a wall of teams/films. Films live in a
 // horizontal rail, so they self-cap by scroll.
@@ -254,6 +256,27 @@ export default function WebSearchScreen() {
   const gridHeroes = useMemo(
     () => (topResult?.kind === 'hero' ? heroes.filter((h) => h.id !== topResult.hero.id) : heroes),
     [heroes, topResult],
+  );
+
+  // Progressive render: only mount the first page of cards (and their images),
+  // revealing more as the user scrolls near the bottom. Caps the eager image
+  // loads + initial paint without virtualisation machinery. Resets per result set.
+  const [visibleCount, setVisibleCount] = useState(GRID_PAGE);
+  useEffect(() => {
+    setVisibleCount(GRID_PAGE);
+  }, [gridHeroes]);
+  useEffect(() => {
+    if (typeof window === 'undefined' || visibleCount >= gridHeroes.length) return undefined;
+    const onScroll = () => {
+      const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 700;
+      if (nearBottom) setVisibleCount((c) => Math.min(c + GRID_PAGE, gridHeroes.length));
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [visibleCount, gridHeroes.length]);
+  const visibleHeroes = useMemo(
+    () => gridHeroes.slice(0, visibleCount),
+    [gridHeroes, visibleCount],
   );
 
   // Sync the input FROM the URL (deep links, back/forward, nav palette).
@@ -619,7 +642,7 @@ export default function WebSearchScreen() {
               </View>
             ) : (
               <View style={[gridStyle, loading && (styles.gridLoading as object)] as object}>
-                {gridHeroes.map((hero) => (
+                {visibleHeroes.map((hero) => (
                   <HeroCard key={hero.id} hero={hero} onSelect={goToHero} onPeek={openPeek} />
                 ))}
               </View>
