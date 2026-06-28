@@ -1,16 +1,14 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { getHeroById, getHeroByComicvineId } from '../../src/lib/db/heroes';
+import { getHeroByComicvineId } from '../../src/lib/db/heroes';
+import { useHeroRow } from '../../src/lib/query/heroQueries';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 import { heroImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
-import type { Tables } from '../../src/types/database.generated';
-
-type HeroRow = Tables<'heroes'>;
 
 const HTML_STYLES = `
   body {
@@ -320,25 +318,17 @@ export default function WebBiographyScreen() {
   // status bar, so it keeps a beige body (full-bleed, no navy gutters).
   useScreenChrome({ top: SURFACE.ink, canvas: isDesktop ? SURFACE.paper : SURFACE.ink });
 
-  const [hero, setHero] = useState<HeroRow | null>(null);
-  const [processedHtml, setProcessedHtml] = useState('');
-  const [toc, setToc] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!id) return;
-    getHeroById(id)
-      .then((h) => {
-        setHero(h);
-        if (h?.description) {
-          const { processedHtml: html, toc: headings } = extractHeadings(
-            preprocessHtml(h.description),
-          );
-          setProcessedHtml(html);
-          setToc(headings);
-        }
-      })
-      .catch(() => {});
-  }, [id]);
+  // Shares the hero-row cache with the character screen (useHeroRow), so opening
+  // a hero's full biography after viewing the character is instant.
+  const hero = useHeroRow(id).data ?? null;
+  // Derive the rendered HTML + table of contents from the description (no effect).
+  const { processedHtml, toc } = useMemo(() => {
+    if (!hero?.description) return { processedHtml: '', toc: [] as string[] };
+    const { processedHtml: html, toc: headings } = extractHeadings(
+      preprocessHtml(hero.description),
+    );
+    return { processedHtml: html, toc: headings };
+  }, [hero?.description]);
 
   const heroImage = id ? heroImageSource(String(id), hero?.image_url, hero?.portrait_url) : null;
 
