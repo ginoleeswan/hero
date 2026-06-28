@@ -130,6 +130,17 @@ const INITIAL: ExploreData = {
   favourites: [],
 };
 
+// ── Cross-navigation cache ────────────────────────────────────────────────────
+// The home screen owns ~30 independent fetches. Without a cache, every remount
+// (e.g. back-navigation from a character) cold-refetches the lot and re-shows the
+// skeleton — slow and redundant. This mirrors React Query's staleTime behaviour
+// (used everywhere else in the app): seed instantly from the last snapshot, skip
+// the network if it's still fresh, otherwise revalidate IN PLACE (no skeleton,
+// since `started` is already true from the seed).
+const EXPLORE_TTL = 1000 * 60 * 5; // 5 min, matching the app's query staleTime
+let cachedExplore: ExploreData | null = null;
+let cachedExploreAt = 0;
+
 /**
  * Platform-neutral data layer for the Explore/Home screen. Owns every catalogue,
  * editorial, trending, and personalised fetch and returns one flat snapshot.
@@ -142,7 +153,8 @@ const INITIAL: ExploreData = {
  */
 export function useExploreData(): ExploreData {
   const { user } = useAuth();
-  const [data, setData] = useState<ExploreData>(INITIAL);
+  // Seed from the last snapshot so a remount paints instantly (no skeleton).
+  const [data, setData] = useState<ExploreData>(() => cachedExplore ?? INITIAL);
 
   const set = useCallback(
     <K extends keyof ExploreData>(key: K) =>
@@ -151,10 +163,18 @@ export function useExploreData(): ExploreData {
     [],
   );
 
+  // Keep the module snapshot current so the next mount can seed from it.
+  useEffect(() => {
+    cachedExplore = data;
+  }, [data]);
+
   // Mount: billboard + catalogue + editorial + trending. Each query is
   // independent and fills its row as it resolves; only the spotlight (which gates
   // the skeleton) is awaited as a group.
   useEffect(() => {
+    // Fresh cache → already seeded above; skip the cold fan-out entirely.
+    if (cachedExplore?.started && Date.now() - cachedExploreAt < EXPLORE_TTL) return;
+    cachedExploreAt = Date.now();
     // Lead the billboard with up to 2 characters on screen right now, then fill
     // with the curated spotlight pool (deduped). Views slice to their own size.
     Promise.all([getSpotlightHeroes(SPOTLIGHT_POOL), getTrendingSpotlightHeroes(2)])

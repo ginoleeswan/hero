@@ -10,7 +10,7 @@ import {
   TextInput,
   useWindowDimensions,
 } from 'react-native';
-import { useSkeletonAnim } from '../../src/components/web/Skeleton';
+import { useShimmer } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -58,8 +58,11 @@ const VALID_SLUGS = new Set<CategorySlug>([
 ]);
 
 // ── Skeleton card (matches HeroCard layout) ───────────────────────────────────
-function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
-  return <Animated.View style={[sk.wrap as object, { opacity }]} />;
+// Sweeping shimmer on the dark gallery canvas — reads premium where the old flat
+// opacity pulse read cheap.
+function SkeletonCard() {
+  const ref = useShimmer(true);
+  return <View ref={ref} style={sk.wrap as object} />;
 }
 
 const sk = StyleSheet.create({
@@ -67,7 +70,6 @@ const sk = StyleSheet.create({
     width: '100%', // WebKit won't stretch an aspect-ratio grid item to the track — force the inline size
     borderRadius: 10,
     aspectRatio: '3 / 4',
-    backgroundColor: '#ddd5c8',
   } as object,
 });
 
@@ -210,13 +212,10 @@ export default function WebCategoryScreen() {
   const hasMore = useRef(true);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const loadingMoreRef = useRef(false);
-  const skeletonOpacity = useSkeletonAnim();
 
-  // Crossfade the skeleton→grid handoff so cards dissolve in instead of hard
-  // cutting (the "grey then pop"). The real grid fades up while the skeleton
-  // overlay fades out, then unmounts.
+  // Reveal the grid by fading it up OVER an opaque skeleton (which then unmounts)
+  // — no double-transparency dip, no hard "pop".
   const gridFade = useRef(new Animated.Value(0)).current;
-  const skelFade = useRef(new Animated.Value(1)).current;
   const [skelMounted, setSkelMounted] = useState(true);
 
   const categorySlug = VALID_SLUGS.has(slug as CategorySlug) ? (slug as CategorySlug) : null;
@@ -322,21 +321,17 @@ export default function WebCategoryScreen() {
     };
   }, [universeTerm]);
 
-  // Drive the skeleton→grid crossfade. When page-0 data lands, fade the grid up
-  // and the skeleton overlay out (then unmount it); on a fresh load reset both.
+  // Drive the reveal. When page-0 data lands, fade the grid up over the opaque
+  // skeleton, then unmount the skeleton; on a fresh load (re)arm it.
   const gridReady = !loading && heroes.length > 0;
   useEffect(() => {
     if (gridReady) {
-      setSkelMounted(true);
       gridFade.setValue(0);
-      skelFade.setValue(1);
-      Animated.timing(gridFade, { toValue: 1, duration: 320, useNativeDriver: true }).start();
-      Animated.timing(skelFade, { toValue: 0, duration: 260, useNativeDriver: true }).start(
+      Animated.timing(gridFade, { toValue: 1, duration: 320, useNativeDriver: true }).start(
         ({ finished }) => finished && setSkelMounted(false),
       );
     } else {
       gridFade.setValue(0);
-      skelFade.setValue(1);
       setSkelMounted(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -392,10 +387,7 @@ export default function WebCategoryScreen() {
           onInfo={() => setPeek(hero)}
         />
       ))}
-      {loadingMore &&
-        Array.from({ length: 12 }).map((_, i) => (
-          <SkeletonCard key={`sk-${i}`} opacity={skeletonOpacity} />
-        ))}
+      {loadingMore && Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={`sk-${i}`} />)}
     </View>
   );
 
@@ -626,27 +618,23 @@ export default function WebCategoryScreen() {
             // scroll and bleeds under the iOS toolbar, like the skeleton. The
             // skeleton overlay crossfades out over the grid as data lands.
             <View style={[styles.gridWrap, styles.gridStack, { paddingBottom: 0 }] as object}>
-              {heroes.length > 0 && (
-                <Animated.View style={{ opacity: gridFade }}>{grid}</Animated.View>
-              )}
+              {/* Skeleton sits BEHIND, fully opaque: in-flow while it's the only
+                  content (defines height), an absolute backdrop once the grid is
+                  mounting on top of it. */}
               {skelMounted && (
-                <Animated.View
+                <View
                   pointerEvents="none"
-                  style={
-                    [
-                      // In-flow while it's the only content (defines height); an
-                      // absolute overlay once the real grid is mounting beneath it.
-                      heroes.length > 0 && StyleSheet.absoluteFill,
-                      { opacity: skelFade },
-                    ] as object
-                  }
+                  style={(heroes.length > 0 ? StyleSheet.absoluteFill : undefined) as object}
                 >
                   <View style={gridStyle as object}>
                     {Array.from({ length: 24 }).map((_, i) => (
-                      <SkeletonCard key={i} opacity={skeletonOpacity} />
+                      <SkeletonCard key={i} />
                     ))}
                   </View>
-                </Animated.View>
+                </View>
+              )}
+              {heroes.length > 0 && (
+                <Animated.View style={{ opacity: gridFade }}>{grid}</Animated.View>
               )}
             </View>
           )}
