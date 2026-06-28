@@ -32,6 +32,93 @@ const json = (data: unknown, status = 200) =>
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const img = (p: string | null | undefined, size: string) => (p ? `${IMG}/${size}${p}` : null);
 
+// ── extras builder (mirror of src/lib/tmdb/extras.ts) ───────────────────────
+const yr = (s: string | null | undefined) => {
+  const y = s ? parseInt(s.slice(0, 4), 10) : NaN;
+  return Number.isFinite(y) ? y : null;
+};
+function buildExtras(d: Record<string, any>, kind: 'movie' | 'tv') {
+  const genres = (d.genres ?? []).map((g: any) => g.name).filter(Boolean);
+  const crew: any[] = d.credits?.crew ?? [];
+  const director = kind === 'movie' ? (crew.find((c) => c.job === 'Director')?.name ?? null) : null;
+  const WRITER = new Set(['Writer', 'Screenplay', 'Story']);
+  const writers =
+    kind === 'tv'
+      ? (d.created_by ?? []).map((c: any) => c.name).filter(Boolean)
+      : [...new Set(crew.filter((c) => WRITER.has(c.job)).map((c) => c.name).filter(Boolean))].slice(
+          0,
+          3,
+        );
+  const kwSrc = kind === 'movie' ? d.keywords?.keywords : d.keywords?.results;
+  const keywords = (kwSrc ?? []).map((k: any) => k.name).filter(Boolean).slice(0, 15);
+  let certification: string | null = null;
+  if (kind === 'movie') {
+    const us = d.release_dates?.results?.find((r: any) => r.iso_3166_1 === 'US');
+    certification =
+      us?.release_dates?.map((x: any) => x.certification).find((c: string) => c && c.trim()) ?? null;
+  } else {
+    const us = d.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US');
+    certification = us?.rating?.trim() ? us.rating : null;
+  }
+  const ext = d.external_ids ?? {};
+  const externalIds = {
+    imdb: ext.imdb_id ?? null,
+    instagram: ext.instagram_id ?? null,
+    twitter: ext.twitter_id ?? null,
+    facebook: ext.facebook_id ?? null,
+    homepage: d.homepage?.trim() ? d.homepage : null,
+  };
+  const hasExt = Object.values(externalIds).some((v) => v !== null);
+  const recommendations = (d.recommendations?.results ?? [])
+    .slice(0, 12)
+    .map((r: any) => ({
+      id: `tmdb:${r.id}`,
+      title: (r.title ?? r.name ?? '').trim(),
+      posterUrl: img(r.poster_path, 'w342'),
+      year: yr(r.release_date ?? r.first_air_date),
+    }))
+    .filter((r: any) => r.title);
+  const reviews = (d.reviews?.results ?? [])
+    .slice(0, 5)
+    .map((r: any) => ({
+      author: (r.author ?? 'Anonymous').trim(),
+      rating: typeof r.author_details?.rating === 'number' ? r.author_details.rating : null,
+      content: (r.content ?? '').trim(),
+      url: r.url ?? null,
+    }))
+    .filter((r: any) => r.content);
+  const spokenLanguages = (d.spoken_languages ?? [])
+    .map((l: any) => l.english_name ?? l.name)
+    .filter(Boolean);
+  const productionCompanies = (d.production_companies ?? []).map((c: any) => c.name).filter(Boolean);
+  const productionCountries = (d.production_countries ?? []).map((c: any) => c.name).filter(Boolean);
+  const col = d.belongs_to_collection;
+  const collection =
+    col && col.id && col.name
+      ? { id: `tmdb-collection:${col.id}`, name: col.name, posterUrl: img(col.poster_path, 'w342') }
+      : null;
+  const nn = <T>(a: T[]): T[] | null => (a.length ? a : null);
+  return {
+    genres: nn(genres),
+    tagline: d.tagline?.trim() ? d.tagline : null,
+    certification,
+    director,
+    writers: nn(writers),
+    keywords: nn(keywords),
+    externalIds: hasExt ? externalIds : null,
+    recommendations: nn(recommendations),
+    reviews: nn(reviews),
+    status: d.status?.trim() ? d.status : null,
+    budget: typeof d.budget === 'number' && d.budget > 0 ? d.budget : null,
+    originalLanguage: d.original_language?.trim() ? d.original_language : null,
+    spokenLanguages: nn(spokenLanguages),
+    productionCompanies: nn(productionCompanies),
+    productionCountries: nn(productionCountries),
+    voteCount: typeof d.vote_count === 'number' ? d.vote_count : null,
+    collection,
+  };
+}
+
 // ── matcher (mirror of src/lib/tmdb/match.ts) ───────────────────────────────
 const ARTICLES = /^(the|a|an)\s+/;
 const normalizeTitle = (t: string) =>
@@ -104,6 +191,7 @@ function mapDetails(d: Record<string, any>) {
     watch_providers: providers && Object.keys(providers).length > 0 ? providers : null,
     cast_members: cast.length > 0 ? cast : null,
     stills: stills.length > 0 ? stills : null,
+    details: buildExtras(d, 'movie'),
   };
 }
 
@@ -179,6 +267,7 @@ function mapTvDetails(d: Record<string, any>) {
     cast_members: cast.length > 0 ? cast : null,
     stills: stills.length > 0 ? stills : null,
     details: {
+      ...buildExtras(d, 'tv'),
       seasons: typeof d.number_of_seasons === 'number' ? d.number_of_seasons : null,
       episodes: typeof d.number_of_episodes === 'number' ? d.number_of_episodes : null,
       episode_runtime: runtimes.length > 0 ? runtimes[0] : null,
@@ -201,7 +290,9 @@ async function runEnrich(sb: SB, limit: number): Promise<number> {
     calls++;
     try {
       const path = t.media_type === 'tv' ? 'tv' : 'movie';
-      const url = `${TMDB_BASE}/${path}/${t.external_id}?api_key=${TMDB_API_KEY}&append_to_response=videos,watch/providers,credits,images`;
+      const certParam = path === 'tv' ? 'content_ratings' : 'release_dates';
+      const append = `videos,watch/providers,credits,images,recommendations,reviews,external_ids,keywords,${certParam}`;
+      const url = `${TMDB_BASE}/${path}/${t.external_id}?api_key=${TMDB_API_KEY}&append_to_response=${append}`;
       const res = await fetch(url);
       if (!res.ok) {
         if (res.status === 404)

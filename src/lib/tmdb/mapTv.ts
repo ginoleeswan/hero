@@ -1,6 +1,9 @@
 // Pure mapper: TMDB /tv/{id}?append_to_response=videos,watch/providers,credits,
-// images  →  a titles table row (media_type='tv'). jest-testable; mirrored
-// (kept in sync) inside the enrich-tmdb-batch edge function.
+// images,recommendations,reviews,external_ids,keywords,content_ratings  →  a
+// titles table row (media_type='tv'). jest-testable; mirrored (kept in sync)
+// inside the enrich-tmdb-batch edge function.
+
+import { buildTitleExtras, type ExtrasInput, type TitleExtras } from './extras';
 
 const IMG = 'https://image.tmdb.org/t/p';
 const img = (path: string | null | undefined, size: string): string | null =>
@@ -36,7 +39,7 @@ export interface TmdbTvDetails {
   images?: { backdrops?: { file_path: string }[] };
 }
 
-export interface TvDetails {
+export interface TvDetails extends TitleExtras {
   seasons: number | null;
   episodes: number | null;
   episode_runtime: number | null;
@@ -93,6 +96,7 @@ export function mapTmdbDetailsToTv(d: TmdbTvDetails): TvRow {
     cast_members: cast && cast.length > 0 ? cast : null,
     stills: stills && stills.length > 0 ? stills : null,
     details: {
+      ...buildTitleExtras(d as unknown as ExtrasInput, 'tv'),
       seasons: typeof d.number_of_seasons === 'number' ? d.number_of_seasons : null,
       episodes: typeof d.number_of_episodes === 'number' ? d.number_of_episodes : null,
       episode_runtime:

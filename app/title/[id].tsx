@@ -13,8 +13,13 @@ import {
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { getTitleById, getTitleHeroes, extractProviders } from '../../src/lib/db/titles';
-import type { HeroTitle } from '../../src/lib/db/titles';
+import {
+  getTitleById,
+  getTitleHeroes,
+  getRecommendedTitles,
+  extractProviders,
+} from '../../src/lib/db/titles';
+import type { HeroTitle, TitleRecommendation } from '../../src/lib/db/titles';
 import type { RelatedHeroCard } from '../../src/lib/db/heroes';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
@@ -24,6 +29,7 @@ import { WhereToWatch } from '../../src/components/film/WhereToWatch';
 import { CastRail } from '../../src/components/film/CastRail';
 import { StillsGallery } from '../../src/components/film/StillsGallery';
 import { HeroesInFilmRail } from '../../src/components/film/HeroesInFilmRail';
+import { RecommendationsRail } from '../../src/components/film/RecommendationsRail';
 
 export default function TitleScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -35,6 +41,7 @@ export default function TitleScreen() {
 
   const [film, setFilm] = useState<HeroTitle | null | undefined>(undefined); // undefined = loading, null = not found
   const [heroes, setHeroes] = useState<RelatedHeroCard[]>([]);
+  const [recs, setRecs] = useState<TitleRecommendation[]>([]);
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar
   // (dark backdrop header under the status bar, beige body to the very bottom).
@@ -47,8 +54,11 @@ export default function TitleScreen() {
       return;
     }
     let active = true;
+    setRecs([]);
     getTitleById(id).then((f) => {
-      if (active) setFilm(f);
+      if (!active) return;
+      setFilm(f);
+      if (f) getRecommendedTitles(f).then((r) => active && setRecs(r));
     });
     getTitleHeroes(id).then((h) => {
       if (active) setHeroes(h);
@@ -126,6 +136,15 @@ export default function TitleScreen() {
       </View>
     ) : null;
 
+  const recsCard =
+    recs.length > 0 ? (
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>You might also like</Text>
+        <View style={styles.cardDivider} />
+        <RecommendationsRail recommendations={recs} inCard />
+      </View>
+    ) : null;
+
   const isTv = film.mediaType === 'tv';
   const tv = (film.details ?? {}) as {
     seasons?: number | null;
@@ -200,6 +219,7 @@ export default function TitleScreen() {
                 {castCard}
                 {stillsCard}
                 {heroesCard}
+                {recsCard}
               </View>
               <View style={styles.sideCol}>
                 {detailsCard}
@@ -213,6 +233,7 @@ export default function TitleScreen() {
               {castCard}
               {stillsCard}
               {heroesCard}
+              {recsCard}
               {detailsCard}
               {watchCard}
               {tmdbLink}
@@ -257,6 +278,11 @@ export default function TitleScreen() {
         {heroes.length > 0 ? (
           <View style={styles.railSection}>
             <HeroesInFilmRail heroes={heroes} />
+          </View>
+        ) : null}
+        {recs.length > 0 ? (
+          <View style={styles.railSection}>
+            <RecommendationsRail recommendations={recs} />
           </View>
         ) : null}
         <View style={styles.section}>

@@ -23,7 +23,7 @@ describe('mapTmdbDetailsToTv', () => {
     const r = mapTmdbDetailsToTv(base);
     expect(r.title).toBe('Batman: The Brave and the Bold');
     expect(r.release_date).toBe('2008-11-14');
-    expect(r.details).toEqual({
+    expect(r.details).toMatchObject({
       seasons: 3,
       episodes: 65,
       episode_runtime: 23,

@@ -12,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { HeroTitle } from '../../lib/db/titles';
+import { titleExtras } from '../../lib/db/titles';
 import { COLORS, SEAM_COLOR } from '../../constants/colors';
 import { FilmTrailer } from './FilmTrailer';
 
@@ -39,6 +40,11 @@ export function FilmBackdropHeader({ film, onBack }: { film: HeroTitle; onBack: 
     film.voteAverage != null ? `★ ${film.voteAverage.toFixed(1)}` : null,
     formatRevenue(film.revenue),
   ].filter((v): v is string => v !== null);
+
+  const extras = titleExtras(film);
+  const certification = extras.certification ?? null;
+  const genres = (extras.genres ?? []).slice(0, 3);
+  const hasTags = !!certification || genres.length > 0;
 
   return (
     <View style={styles.root}>
@@ -123,6 +129,21 @@ export function FilmBackdropHeader({ film, onBack }: { film: HeroTitle; onBack: 
                   {i > 0 ? <View style={styles.statDivider} /> : null}
                   <Text style={styles.statText}>{s}</Text>
                 </Fragment>
+              ))}
+            </View>
+          ) : null}
+
+          {hasTags ? (
+            <View style={styles.tagRow}>
+              {certification ? (
+                <View style={styles.certBadge}>
+                  <Text style={styles.certText}>{certification}</Text>
+                </View>
+              ) : null}
+              {genres.map((g) => (
+                <View key={g} style={styles.genrePill}>
+                  <Text style={styles.genreText}>{g}</Text>
+                </View>
               ))}
             </View>
           ) : null}
@@ -243,6 +264,37 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     color: 'rgba(255,255,255,0.92)',
     letterSpacing: 0.4,
+  },
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 7,
+    marginTop: 2,
+  },
+  certBadge: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.45)',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  certText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.9)',
+    letterSpacing: 0.3,
+  },
+  genrePill: {
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderRadius: 20,
+    paddingHorizontal: 11,
+    paddingVertical: 4,
+  },
+  genreText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.9)',
   },
   ctaWrap: {
     marginTop: 8,

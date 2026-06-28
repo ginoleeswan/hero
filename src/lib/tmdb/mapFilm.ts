@@ -1,6 +1,9 @@
 // Pure mapper: TMDB /movie/{id}?append_to_response=videos,watch/providers,
-// credits,images  →  a films table row. jest-testable; mirrored (kept in sync)
-// inside the enrich-tmdb-batch edge function.
+// credits,images,recommendations,reviews,external_ids,keywords,release_dates
+// →  a films table row. jest-testable; mirrored (kept in sync) inside the
+// enrich-tmdb-batch edge function.
+
+import { buildTitleExtras, type ExtrasInput, type TitleExtras } from './extras';
 
 const IMG = 'https://image.tmdb.org/t/p';
 const img = (path: string | null | undefined, size: string): string | null =>
@@ -49,6 +52,7 @@ export interface FilmRow {
   watch_providers: Record<string, unknown> | null;
   cast_members: { name: string; character: string | null; profile_url: string | null }[] | null;
   stills: string[] | null;
+  details: TitleExtras;
 }
 
 const CAST_CAP = 10;
@@ -87,5 +91,6 @@ export function mapTmdbDetailsToFilm(d: TmdbDetails): FilmRow {
     watch_providers: providers && Object.keys(providers).length > 0 ? providers : null,
     cast_members: cast && cast.length > 0 ? cast : null,
     stills: stills && stills.length > 0 ? stills : null,
+    details: buildTitleExtras(d as unknown as ExtrasInput, 'movie'),
   };
 }

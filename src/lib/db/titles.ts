@@ -1,5 +1,8 @@
 import { supabase } from '../supabase';
 import type { RelatedHeroCard } from './heroes';
+import type { TitleExtras, TitleRecommendation } from '../tmdb/extras';
+
+export type { TitleExtras, TitleRecommendation, TitleReview } from '../tmdb/extras';
 
 export type MediaType = 'film' | 'tv' | 'game';
 export type TitleSource = 'tmdb' | 'igdb';
@@ -214,6 +217,34 @@ export function matchCharacterToHero(
     }
   }
   return best;
+}
+
+/**
+ * The extras bag stored in titles.details (genres, recommendations, reviews,
+ * crew, certification, …). Works for both film and TV (TV also carries its
+ * season/episode fields in the same object).
+ */
+export function titleExtras(t: HeroTitle): Partial<TitleExtras> {
+  return (t.details ?? {}) as Partial<TitleExtras>;
+}
+
+/** Which of the given composite title ids actually exist in our catalogue. */
+export async function getInCatalogTitleIds(ids: string[]): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  const { data, error } = await supabase.from('titles').select('id').in('id', ids);
+  if (error || !data) return new Set();
+  return new Set((data as { id: string }[]).map((r) => r.id));
+}
+
+/**
+ * TMDB recommendations for a title, narrowed to titles we actually hold (so
+ * every card is tappable and on-brand). Empty until the title is re-enriched.
+ */
+export async function getRecommendedTitles(t: HeroTitle): Promise<TitleRecommendation[]> {
+  const recs = titleExtras(t).recommendations ?? [];
+  if (recs.length === 0) return [];
+  const inCatalog = await getInCatalogTitleIds(recs.map((r) => r.id));
+  return recs.filter((r) => inCatalog.has(r.id));
 }
 
 /** Heroes appearing in a title, ranked desc. */
