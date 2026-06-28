@@ -12,6 +12,11 @@ export interface NewComicCharacter {
   portrait_url: string | null;
 }
 
+export interface IssueCreator {
+  name: string;
+  role: string | null;
+}
+
 export interface NewComic {
   id: string; // 'cvi:<comicvine_issue_id>'
   volumeName: string | null;
@@ -22,6 +27,10 @@ export interface NewComic {
   /** ComicVine synopsis (plaintext). Only populated on the single-issue fetch
    *  (getIssueById); null on rail rows from get_new_comics. */
   description: string | null;
+  /** The issue's story name + its creators — best-effort (ComicVine tags
+   *  established issues; brand-new ones come back empty). getIssueById only. */
+  storyTitle: string | null;
+  creators: IssueCreator[] | null;
   characters: NewComicCharacter[];
 }
 
@@ -54,6 +63,8 @@ export function groupComicRows(rows: NewComicRow[]): NewComic[] {
         storeDate: r.store_date,
         publisher: r.publisher,
         description: null,
+        storyTitle: null,
+        creators: null,
         characters: [],
       };
       byId.set(r.issue_id, c);
@@ -87,6 +98,8 @@ interface IssueNestedRow {
   store_date: string | null;
   publisher: string | null;
   description: string | null;
+  story_title: string | null;
+  creators: IssueCreator[] | null;
   lead_hero_id: string | null;
   comic_issue_appearances: { heroes: NewComicCharacter | null }[] | null;
 }
@@ -97,7 +110,7 @@ async function fetchIssueRow(id: string): Promise<NewComic | null> {
   const { data, error } = await supabase
     .from('comic_issues')
     .select(
-      'id, volume_name, issue_number, cover_url, store_date, publisher, description, lead_hero_id, comic_issue_appearances ( heroes ( id, name, image_url, portrait_url ) )',
+      'id, volume_name, issue_number, cover_url, store_date, publisher, description, story_title, creators, lead_hero_id, comic_issue_appearances ( heroes ( id, name, image_url, portrait_url ) )',
     )
     .eq('id', id)
     .maybeSingle();
@@ -116,6 +129,8 @@ async function fetchIssueRow(id: string): Promise<NewComic | null> {
     storeDate: r.store_date,
     publisher: r.publisher,
     description: r.description && r.description.length > 0 ? r.description : null,
+    storyTitle: r.story_title && r.story_title.length > 0 ? r.story_title : null,
+    creators: r.creators && r.creators.length > 0 ? r.creators : null,
     characters: chars,
   };
 }
@@ -171,6 +186,8 @@ export async function getIssuesForHero(heroId: string, days = 21, limit = 12): P
     storeDate: r.store_date,
     publisher: r.publisher,
     description: null,
+    storyTitle: null,
+    creators: null,
     characters: [],
   }));
 }

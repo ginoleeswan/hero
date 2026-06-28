@@ -14,7 +14,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { getIssueById, getNewComics, type NewComic, type NewComicCharacter } from '../../src/lib/db/comics';
+import {
+  getIssueById,
+  getNewComics,
+  type IssueCreator,
+  type NewComic,
+  type NewComicCharacter,
+} from '../../src/lib/db/comics';
 import { HeroImage } from '../../src/components/HeroImage';
 import { UniverseEyebrow } from '../../src/components/PublisherBadge';
 import { ComicCoverRail } from '../../src/components/home/ComicCoverRail';
@@ -78,6 +84,11 @@ function Masthead({
           <Text style={[ms.issueNo, { color: accent }]}>{`  #${issue.issueNumber}`}</Text>
         ) : null}
       </Text>
+      {issue.storyTitle ? (
+        <Text style={[ms.story, centered && ms.storyCentered]} numberOfLines={2}>
+          “{issue.storyTitle}”
+        </Text>
+      ) : null}
       {stats.length > 0 ? (
         <View style={[ms.statRail, centered && ms.statCentered]}>
           {stats.map((s, i) => (
@@ -97,6 +108,58 @@ function Synopsis({ text, accent, centered }: { text: string; accent: string; ce
     <View style={syn.wrap}>
       <Text style={[syn.heading, { color: accent }, centered && syn.center]}>The Story</Text>
       <Text style={[syn.body, centered && syn.center]}>{text}</Text>
+    </View>
+  );
+}
+
+// ComicVine lists each creator with a free-text role; bucket them into the
+// canonical credits so "penciler, inker" lands under Art, etc.
+const CREATOR_ROLES: Array<[string, string[]]> = [
+  ['Writer', ['writer', 'script', 'plot']],
+  ['Art', ['pencil', 'artist', 'inker', 'breakdowns', 'finishes', 'illustrat']],
+  ['Colors', ['color', 'colour']],
+  ['Letters', ['letter']],
+  ['Cover', ['cover']],
+  ['Editor', ['editor']],
+];
+
+function groupCreators(creators: IssueCreator[]): Array<{ label: string; names: string[] }> {
+  const buckets = new Map<string, string[]>();
+  for (const c of creators) {
+    const role = (c.role ?? '').toLowerCase();
+    for (const [label, matchers] of CREATOR_ROLES) {
+      if (matchers.some((m) => role.includes(m))) {
+        const list = buckets.get(label) ?? [];
+        if (!list.includes(c.name)) list.push(c.name);
+        buckets.set(label, list);
+      }
+    }
+  }
+  return CREATOR_ROLES.map(([label]) => ({ label, names: buckets.get(label) ?? [] })).filter(
+    (g) => g.names.length > 0,
+  );
+}
+
+function Credits({
+  creators,
+  accent,
+  centered,
+}: {
+  creators: IssueCreator[];
+  accent: string;
+  centered: boolean;
+}) {
+  const groups = groupCreators(creators);
+  if (groups.length === 0) return null;
+  return (
+    <View style={cr.wrap}>
+      <Text style={[cr.heading, { color: accent }, centered && cr.center]}>Creators</Text>
+      {groups.map((g) => (
+        <View key={g.label} style={[cr.row, centered && cr.rowCentered]}>
+          <Text style={cr.role}>{g.label}</Text>
+          <Text style={cr.names}>{g.names.join(', ')}</Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -289,6 +352,9 @@ export default function IssueScreen() {
                         .join('  ·  ')}
                     </Text>
                   )}
+                  {issue.creators ? (
+                    <Credits creators={issue.creators} accent={accent} centered={false} />
+                  ) : null}
                   {issue.characters.length > 0 ? (
                     <View style={w.castBlock}>
                       <Text style={[w.castLabel, { color: accent }]}>Featuring</Text>
@@ -359,6 +425,11 @@ export default function IssueScreen() {
         {issue.description ? (
           <View style={n.synSection}>
             <Synopsis text={issue.description} accent={accent} centered={false} />
+          </View>
+        ) : null}
+        {issue.creators ? (
+          <View style={n.synSection}>
+            <Credits creators={issue.creators} accent={accent} centered={false} />
           </View>
         ) : null}
         {issue.characters.length > 0 ? (
@@ -511,6 +582,14 @@ const ms = StyleSheet.create({
   titleWide: { fontSize: 62, lineHeight: 64, textAlign: 'left', letterSpacing: -0.8 },
   titleNarrow: { fontSize: 32, lineHeight: 36, textAlign: 'center' },
   issueNo: { fontFamily: 'Flame-Regular' },
+  story: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 15,
+    fontStyle: 'italic',
+    color: 'rgba(245,235,220,0.72)',
+    marginTop: 1,
+  },
+  storyCentered: { textAlign: 'center' },
   statRail: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginTop: 4 },
   statCentered: { justifyContent: 'center' },
   statDivider: { width: 1, height: 13, backgroundColor: 'rgba(255,255,255,0.28)' },
@@ -533,6 +612,30 @@ const syn = StyleSheet.create({
     maxWidth: 700,
   },
   center: { textAlign: 'center', alignSelf: 'center' },
+});
+
+const cr = StyleSheet.create({
+  wrap: { marginTop: 26, gap: 7, maxWidth: 520 },
+  heading: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginBottom: 4,
+  },
+  center: { textAlign: 'center' },
+  row: { flexDirection: 'row', gap: 14 },
+  rowCentered: { justifyContent: 'center' },
+  role: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: COLORS.grey,
+    width: 58,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    paddingTop: 2,
+  },
+  names: { fontFamily: 'FlameSans-Regular', fontSize: 14.5, color: COLORS.navy, flex: 1, lineHeight: 20 },
 });
 
 const cast = StyleSheet.create({

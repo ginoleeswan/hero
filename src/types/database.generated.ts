@@ -514,6 +514,7 @@ export type Database = {
           comicvine_id: string
           cover_date: string | null
           cover_url: string | null
+          creators: Json | null
           description: string | null
           id: string
           issue_number: string | null
@@ -521,6 +522,7 @@ export type Database = {
           max_fame: number | null
           publisher: string | null
           store_date: string | null
+          story_title: string | null
           synced_at: string | null
           volume_id: number | null
           volume_name: string | null
@@ -529,6 +531,7 @@ export type Database = {
           comicvine_id: string
           cover_date?: string | null
           cover_url?: string | null
+          creators?: Json | null
           description?: string | null
           id: string
           issue_number?: string | null
@@ -536,6 +539,7 @@ export type Database = {
           max_fame?: number | null
           publisher?: string | null
           store_date?: string | null
+          story_title?: string | null
           synced_at?: string | null
           volume_id?: number | null
           volume_name?: string | null
@@ -544,6 +548,7 @@ export type Database = {
           comicvine_id?: string
           cover_date?: string | null
           cover_url?: string | null
+          creators?: Json | null
           description?: string | null
           id?: string
           issue_number?: string | null
@@ -551,6 +556,7 @@ export type Database = {
           max_fame?: number | null
           publisher?: string | null
           store_date?: string | null
+          story_title?: string | null
           synced_at?: string | null
           volume_id?: number | null
           volume_name?: string | null

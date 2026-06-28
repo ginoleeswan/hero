@@ -13,7 +13,23 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const CV = 'https://comicvine.gamespot.com/api';
 const KEY = Deno.env.get('COMICVINE_API_KEY') ?? '';
 const UA = { 'User-Agent': 'mythique/1.0 (issue read-through)' };
-const FIELDS = 'id,name,issue_number,store_date,cover_date,image,volume,description,character_credits';
+const FIELDS =
+  'id,name,issue_number,store_date,cover_date,image,volume,description,character_credits,person_credits';
+
+// person_credits → [{ name, role }], deduped, capped.
+function mapCreators(pc: unknown): Array<{ name: string; role: string | null }> | null {
+  if (!Array.isArray(pc)) return null;
+  const seen = new Set<string>();
+  const out: Array<{ name: string; role: string | null }> = [];
+  for (const p of pc as Array<Record<string, unknown>>) {
+    const name = typeof p?.name === 'string' ? p.name : null;
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    out.push({ name, role: typeof p?.role === 'string' ? p.role : null });
+    if (out.length >= 20) break;
+  }
+  return out.length ? out : null;
+}
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -104,6 +120,8 @@ serve(async (req: Request) => {
         lead_hero_id: lead?.id ?? null,
         max_fame: lead?.fame ?? null,
         description: cleanHtml(r.description) ?? '',
+        creators: mapCreators(r.person_credits),
+        story_title: typeof r.name === 'string' && r.name.trim() ? r.name.trim() : null,
         synced_at: new Date().toISOString(),
       },
       { onConflict: 'id' },

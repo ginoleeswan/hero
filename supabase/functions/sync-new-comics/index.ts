@@ -285,6 +285,20 @@ function cleanHtml(html: unknown): string | null {
 // source of `description` and is rate-limited, so do a few per run (famous issues
 // first) and stop on the first 107. Issues with no synopsis are marked '' so they
 // aren't retried forever.
+function mapCreators(pc: unknown): Array<{ name: string; role: string | null }> | null {
+  if (!Array.isArray(pc)) return null;
+  const seen = new Set<string>();
+  const out: Array<{ name: string; role: string | null }> = [];
+  for (const p of pc as Array<Record<string, unknown>>) {
+    const name = typeof p?.name === 'string' ? p.name : null;
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    out.push({ name, role: typeof p?.role === 'string' ? p.role : null });
+    if (out.length >= 20) break;
+  }
+  return out.length ? out : null;
+}
+
 async function enrichDescriptions(sb: SB, cap: number): Promise<{ enriched: number; rateLimited: boolean }> {
   const { data } = await sb
     .from('comic_issues')
@@ -298,7 +312,9 @@ async function enrichDescriptions(sb: SB, cap: number): Promise<{ enriched: numb
   for (const r of rows) {
     let body: any;
     try {
-      body = await cvGet(`${CV}/issue/4000-${r.comicvine_id}/?api_key=${KEY}&format=json&field_list=id,description`);
+      body = await cvGet(
+        `${CV}/issue/4000-${r.comicvine_id}/?api_key=${KEY}&format=json&field_list=id,name,description,person_credits`,
+      );
     } catch (e) {
       if (e instanceof RateLimited) {
         rateLimited = true;
@@ -306,8 +322,16 @@ async function enrichDescriptions(sb: SB, cap: number): Promise<{ enriched: numb
       }
       continue;
     }
-    const desc = cleanHtml((body.results ?? {}).description);
-    await sb.from('comic_issues').update({ description: desc ?? '' }).eq('id', r.id);
+    const res = body.results ?? {};
+    const desc = cleanHtml(res.description);
+    await sb
+      .from('comic_issues')
+      .update({
+        description: desc ?? '',
+        creators: mapCreators(res.person_credits),
+        story_title: typeof res.name === 'string' && res.name.trim() ? res.name.trim() : null,
+      })
+      .eq('id', r.id);
     if (desc) enriched++;
     await sleep(1500);
   }
