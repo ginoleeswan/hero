@@ -283,12 +283,14 @@ export default function TitleScreen() {
           {wide ? (
             <>
               <View style={styles.bodyRowWide}>
-                <View style={styles.sideColWide}>
+                <View style={styles.posterColWide}>
                   {floatingPoster}
-                  {detailsCard}
-                  {watchCard}
-                  {socialCard}
-                  {tmdbLink}
+                  <View style={styles.stickyInfo}>
+                    {detailsCard}
+                    {watchCard}
+                    {socialCard}
+                    {tmdbLink}
+                  </View>
                 </View>
                 <View style={styles.mainCol}>
                   {overviewCard}
@@ -458,28 +460,22 @@ const styles = StyleSheet.create({
   bodyWrap: { maxWidth: 1180, alignSelf: 'center', width: '100%' },
   bodyCol: { padding: 20, gap: 16 },
   mainCol: { flex: 1, minWidth: 0, gap: 18 } as object,
-  // Wide: the two columns pull UP so cards float over the seam and the big
-  // poster (in the left column) rises into the hero.
+  // Wide: row stretches so the left column matches the main column's height —
+  // that lets the info block stay sticky through the whole scroll without a gap.
   bodyRowWide: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
     gap: 24,
     paddingHorizontal: 24,
     marginTop: -128,
   } as object,
-  // Sticky so a short sidebar pins beside the scrolling main column instead of
-  // leaving a dead gap. top clears the floating nav.
-  sideColWide: {
-    width: 300,
-    flexShrink: 0,
-    gap: 18,
-    position: 'sticky',
-    top: 80,
-    alignSelf: 'flex-start',
-  } as object,
+  posterColWide: { width: 300, flexShrink: 0, gap: 18 } as object,
+  // The poster floats high and scrolls away; the info pins beneath it.
+  stickyInfo: { gap: 18, position: 'sticky', top: 80 } as object,
   // Full-width stack below the two columns (universe, recommendations).
   fullStack: { paddingHorizontal: 24, paddingTop: 18, gap: 18 },
   posterFloat: {
+    marginTop: -180,
     borderRadius: 16,
     borderCurve: 'continuous',
     overflow: 'hidden',

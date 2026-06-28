@@ -5,15 +5,33 @@ import type { TitleExternalIds } from '../../lib/tmdb/extras';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-function build(ext: TitleExternalIds): { key: string; label: string; url: string; icon: IconName }[] {
+function build(
+  ext: TitleExternalIds,
+): { key: string; label: string; url: string; icon: IconName }[] {
   const out: { key: string; label: string; url: string; icon: IconName }[] = [];
-  if (ext.imdb) out.push({ key: 'imdb', label: 'IMDb', url: `https://www.imdb.com/title/${ext.imdb}/`, icon: 'film-outline' });
+  if (ext.imdb)
+    out.push({
+      key: 'imdb',
+      label: 'IMDb',
+      url: `https://www.imdb.com/title/${ext.imdb}/`,
+      icon: 'film-outline',
+    });
   if (ext.instagram)
-    out.push({ key: 'ig', label: 'Instagram', url: `https://instagram.com/${ext.instagram}`, icon: 'logo-instagram' });
+    out.push({
+      key: 'ig',
+      label: 'Instagram',
+      url: `https://instagram.com/${ext.instagram}`,
+      icon: 'logo-instagram',
+    });
   if (ext.twitter)
     out.push({ key: 'x', label: 'X', url: `https://x.com/${ext.twitter}`, icon: 'logo-twitter' });
   if (ext.facebook)
-    out.push({ key: 'fb', label: 'Facebook', url: `https://facebook.com/${ext.facebook}`, icon: 'logo-facebook' });
+    out.push({
+      key: 'fb',
+      label: 'Facebook',
+      url: `https://facebook.com/${ext.facebook}`,
+      icon: 'logo-facebook',
+    });
   if (ext.homepage)
     out.push({ key: 'web', label: 'Website', url: ext.homepage, icon: 'globe-outline' });
   return out;

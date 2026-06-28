@@ -263,8 +263,9 @@ export async function getCollectionTitles(t: HeroTitle): Promise<TitleRecommenda
     .order('year', { ascending: true, nullsFirst: false })
     .limit(20);
   if (error || !data) return [];
-  return (data as { id: string; title: string; poster_url: string | null; year: number | null }[])
-    .map((r) => ({ id: r.id, title: r.title, posterUrl: r.poster_url, year: r.year }));
+  return (
+    data as { id: string; title: string; poster_url: string | null; year: number | null }[]
+  ).map((r) => ({ id: r.id, title: r.title, posterUrl: r.poster_url, year: r.year }));
 }
 
 /** Heroes appearing in a title, ranked desc. */

@@ -31,7 +31,9 @@ describe('buildTitleExtras (movie)', () => {
       ],
     },
     reviews: {
-      results: [{ author: 'Roger', content: 'Great fun.', url: 'u', author_details: { rating: 8 } }],
+      results: [
+        { author: 'Roger', content: 'Great fun.', url: 'u', author_details: { rating: 8 } },
+      ],
     },
     belongs_to_collection: { id: 531241, name: 'Spider-Man (MCU)', poster_path: '/c.jpg' },
   };

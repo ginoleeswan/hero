@@ -41,7 +41,10 @@ function CastMember({
         {member.name}
       </Text>
       {member.character ? (
-        <Text style={[styles.character, hero && styles.characterLinked] as object} numberOfLines={2}>
+        <Text
+          style={[styles.character, hero && styles.characterLinked] as object}
+          numberOfLines={2}
+        >
           {member.character}
         </Text>
       ) : null}
