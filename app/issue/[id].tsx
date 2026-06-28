@@ -68,10 +68,12 @@ function Masthead({
   issue,
   accent,
   centered,
+  showStats = true,
 }: {
   issue: NewComic;
   accent: string;
   centered: boolean;
+  showStats?: boolean;
 }) {
   const onSale = onSaleLabel(issue.storeDate);
   const count = issue.characters.length;
@@ -98,7 +100,7 @@ function Masthead({
           “{issue.storyTitle}”
         </Text>
       ) : null}
-      {stats.length > 0 ? (
+      {showStats && stats.length > 0 ? (
         <View style={[ms.statRail, centered && ms.statCentered]}>
           {stats.map((s, i) => (
             <Fragment key={s}>
@@ -113,10 +115,24 @@ function Masthead({
 }
 
 function Synopsis({ text, accent, centered }: { text: string; accent: string; centered: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  const long = text.length > 340;
   return (
     <View style={syn.wrap}>
       <Text style={[syn.heading, { color: accent }, centered && syn.center]}>The Story</Text>
-      <Text style={[syn.body, centered && syn.center]}>{text}</Text>
+      <Text
+        style={[syn.body, centered && syn.center]}
+        numberOfLines={expanded || !long ? undefined : 6}
+      >
+        {text}
+      </Text>
+      {long ? (
+        <Pressable onPress={() => setExpanded((e) => !e)} hitSlop={6}>
+          <Text style={[syn.more, { color: accent }, centered && syn.center]}>
+            {expanded ? 'Show less' : 'Read more'}
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -170,6 +186,27 @@ function Credits({
             {g.names.slice(0, 5).join(', ')}
             {g.names.length > 5 ? ` +${g.names.length - 5} more` : ''}
           </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function Details({ issue, accent }: { issue: NewComic; accent: string }) {
+  const onSale = onSaleLabel(issue.storeDate);
+  const count = issue.characters.length;
+  const rows: [string, string][] = [];
+  if (onSale) rows.push(['On sale', onSale]);
+  if (issue.publisher) rows.push(['Publisher', issue.publisher]);
+  if (count > 0) rows.push(['Cast', `${count} ${count === 1 ? 'character' : 'characters'}`]);
+  if (rows.length === 0) return null;
+  return (
+    <View style={cr.wrap}>
+      <Text style={[cr.heading, { color: accent }]}>Details</Text>
+      {rows.map(([label, val]) => (
+        <View key={label} style={cr.row}>
+          <Text style={cr.role}>{label}</Text>
+          <Text style={cr.names}>{val}</Text>
         </View>
       ))}
     </View>
@@ -267,6 +304,7 @@ export default function IssueScreen() {
   const { width } = useWindowDimensions();
   const isWeb = Platform.OS === 'web';
   const wide = isWeb && width >= 760;
+  const hasSidebar = isWeb && width >= 1000;
 
   const [issue, setIssue] = useState<NewComic | null | undefined>(undefined); // undefined = loading
   const [more, setMore] = useState<NewComic[]>([]);
@@ -328,6 +366,35 @@ export default function IssueScreen() {
   if (wide) {
     const contentLeft = Math.max(0, (width - MAXW) / 2);
     const coverLeft = contentLeft + PAD;
+    const storyBlock = issue.description ? (
+      <Synopsis text={issue.description} accent={accent} centered={false} />
+    ) : (
+      <Text style={w.fallback}>
+        {[issue.publisher, `${issue.characters.length} featured characters`]
+          .filter(Boolean)
+          .join('  ·  ')}
+      </Text>
+    );
+    const creditsBlock = issue.creators ? (
+      <Credits creators={issue.creators} accent={accent} centered={false} />
+    ) : null;
+    const castBlock =
+      cast.length > 0 ? (
+        <View style={w.castBlock}>
+          <Text style={[w.castLabel, { color: accent }]}>Featuring</Text>
+          <View style={w.castGrid}>
+            {cast.map((c, i) => (
+              <CastCard
+                key={c.id}
+                character={c}
+                accent={accent}
+                lead={i === 0}
+                onPress={() => router.push(`/character/${c.id}`)}
+              />
+            ))}
+          </View>
+        </View>
+      ) : null;
     return (
       <View style={styles.webPage}>
         <Stack.Screen options={{ headerShown: false }} />
@@ -346,45 +413,35 @@ export default function IssueScreen() {
               style={StyleSheet.absoluteFill}
             />
             <View style={w.headerInner}>
-              <Masthead issue={issue} accent={accent} centered={false} />
+              <Masthead issue={issue} accent={accent} centered={false} showStats={!hasSidebar} />
             </View>
           </View>
 
-          {/* Paper — synopsis beside the cover's lower half, cast below */}
+          {/* Paper — three zones: cover (left) · story + featuring (main) ·
+              details + creators (sidebar). The sidebar collapses into the main
+              column below 1000px. */}
           <View style={w.paper}>
             <View style={w.paperInner}>
               <View style={w.overlapRow}>
                 <View style={w.coverGutter} />
-                <View style={w.rightCol}>
-                  {issue.description ? (
-                    <Synopsis text={issue.description} accent={accent} centered={false} />
-                  ) : (
-                    <Text style={w.fallback}>
-                      {[issue.publisher, `${issue.characters.length} featured characters`]
-                        .filter(Boolean)
-                        .join('  ·  ')}
-                    </Text>
-                  )}
-                  {issue.creators ? (
-                    <Credits creators={issue.creators} accent={accent} centered={false} />
-                  ) : null}
-                  {cast.length > 0 ? (
-                    <View style={w.castBlock}>
-                      <Text style={[w.castLabel, { color: accent }]}>Featuring</Text>
-                      <View style={w.castGrid}>
-                        {cast.map((c, i) => (
-                          <CastCard
-                            key={c.id}
-                            character={c}
-                            accent={accent}
-                            lead={i === 0}
-                            onPress={() => router.push(`/character/${c.id}`)}
-                          />
-                        ))}
-                      </View>
+                {hasSidebar ? (
+                  <>
+                    <View style={w.mainCol}>
+                      {storyBlock}
+                      {castBlock}
                     </View>
-                  ) : null}
-                </View>
+                    <View style={w.sidebar}>
+                      <Details issue={issue} accent={accent} />
+                      {creditsBlock}
+                    </View>
+                  </>
+                ) : (
+                  <View style={w.rightCol}>
+                    {storyBlock}
+                    {creditsBlock}
+                    {castBlock}
+                  </View>
+                )}
               </View>
             </View>
           </View>
@@ -521,6 +578,19 @@ const w = StyleSheet.create({
   overlapRow: { flexDirection: 'row', alignItems: 'flex-start', minHeight: Math.round(COVER_H / 2) + 24 },
   coverGutter: { width: COVER_COL },
   rightCol: { flex: 1, minWidth: 0, paddingRight: PAD, paddingTop: 22 } as object,
+  // ≥1000px: story + featuring in the main column, details + creators in a slim
+  // right sidebar (a comic dossier).
+  mainCol: { flex: 1, minWidth: 0, paddingTop: 22 } as object,
+  sidebar: {
+    width: 232,
+    flexShrink: 0,
+    paddingLeft: 26,
+    paddingRight: PAD,
+    paddingTop: 24,
+    gap: 24,
+    borderLeftWidth: 1,
+    borderLeftColor: '#e6dccd',
+  } as object,
   fallback: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14,
@@ -625,6 +695,7 @@ const syn = StyleSheet.create({
     maxWidth: 700,
   },
   center: { textAlign: 'center', alignSelf: 'center' },
+  more: { fontFamily: 'Nunito_700Bold', fontSize: 13, letterSpacing: 0.3, marginTop: 4 },
 });
 
 const cr = StyleSheet.create({
