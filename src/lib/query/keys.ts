@@ -18,3 +18,13 @@ export const queryKeys = {
   verdict: (heroId: string, opponentId: string) =>
     ['heroes', 'verdict', heroId, opponentId] as const,
 };
+
+// Title (film/TV/game) detail-screen keys, under a 'titles' root so the whole
+// domain can be invalidated together and findCachedTitle can scan the rec lists.
+export const titleKeys = {
+  root: ['titles'] as const,
+  detail: (id: string) => ['titles', 'detail', id] as const,
+  heroes: (id: string) => ['titles', 'heroes', id] as const,
+  recs: (id: string) => ['titles', 'recs', id] as const,
+  collection: (id: string) => ['titles', 'collection', id] as const,
+};

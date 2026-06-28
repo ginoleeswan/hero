@@ -1,10 +1,8 @@
-import { useEffect, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
-  ActivityIndicator,
   Platform,
   useWindowDimensions,
   Linking,
@@ -14,19 +12,19 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { titleExtras, extractProviders } from '../../src/lib/db/titles';
 import {
-  getTitleById,
-  getTitleHeroes,
-  getRecommendedTitles,
-  getCollectionTitles,
-  titleExtras,
-  extractProviders,
-} from '../../src/lib/db/titles';
-import type { HeroTitle, TitleRecommendation } from '../../src/lib/db/titles';
-import type { RelatedHeroCard } from '../../src/lib/db/heroes';
+  useTitle,
+  useTitleHeroes,
+  useRecommendedTitles,
+  useCollectionTitles,
+} from '../../src/lib/query/titleQueries';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { NotFoundView } from '../../src/components/NotFoundView';
+import { TitleSkeleton, TitleBodySkeleton } from '../../src/components/skeletons/TitleSkeleton';
+import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
+import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 import { FilmBackdropHeader } from '../../src/components/film/FilmBackdropHeader';
 import { WhereToWatch } from '../../src/components/film/WhereToWatch';
 import { CastRail } from '../../src/components/film/CastRail';
@@ -51,45 +49,42 @@ export default function TitleScreen() {
   const isWeb = Platform.OS === 'web';
   const wide = isWeb && width >= 900;
 
-  const [film, setFilm] = useState<HeroTitle | null | undefined>(undefined); // undefined = loading, null = not found
-  const [heroes, setHeroes] = useState<RelatedHeroCard[]>([]);
-  const [recs, setRecs] = useState<TitleRecommendation[]>([]);
-  const [collection, setCollection] = useState<TitleRecommendation[]>([]);
+  // Server state via React Query — revisits come from cache (the anti-flash gate
+  // skips the skeleton), requests dedup, and data refreshes in the background.
+  // placeholderData makes `film` a stub (poster + title + year) the instant you
+  // arrive from a rail, so the header paints immediately; isPlaceholderData flags
+  // it so recs/collection (which need the *real* row) wait for the live fetch.
+  const titleQuery = useTitle(id);
+  const film = id ? titleQuery.data : null; // stub | real | null | undefined
+  const realFilm = film && !titleQuery.isPlaceholderData ? film : undefined;
+  const heroes = useTitleHeroes(id).data;
+  const recs = useRecommendedTitles(realFilm).data;
+  const collection = useCollectionTitles(realFilm).data;
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar
   // (dark backdrop header under the status bar, beige body to the very bottom).
   // No-ops on native. Called before the early returns so it applies in every state.
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
 
-  useEffect(() => {
-    if (!id) {
-      setFilm(null);
-      return;
-    }
-    let active = true;
-    setRecs([]);
-    setCollection([]);
-    getTitleById(id).then((f) => {
-      if (!active) return;
-      setFilm(f);
-      if (f) {
-        getRecommendedTitles(f).then((r) => active && setRecs(r));
-        getCollectionTitles(f).then((c) => active && setCollection(c));
-      }
-    });
-    getTitleHeroes(id).then((h) => {
-      if (active) setHeroes(h);
-    });
-    return () => {
-      active = false;
-    };
-  }, [id]);
+  // Two-stage reveal. The HEADER paints as soon as we have any title — a seeded
+  // stub OR the real row — while the BODY stays gated on ALL its data and
+  // crossfades in, so the body never shifts after landing.
+  //   cold      = nothing yet (no seed): show the full-page skeleton (anti-flash
+  //               gated, deepNavy shell so it fuses with the boot loader / stage).
+  //   bodyReady = the real row plus heroes/recs/collection have all arrived.
+  const cold = film === undefined;
+  const coldPhase = useSkeletonTransition(cold);
+  const bodyReady =
+    realFilm != null && heroes !== undefined && recs !== undefined && collection !== undefined;
+  // delay:0 — once the header is up, the body skeleton shows immediately under it
+  // (no bare-shell window); it dissolves out (crossfade) the moment bodyReady.
+  const bodyPhase = useSkeletonTransition(film != null && !bodyReady, { delay: 0 });
 
-  if (film === undefined) {
+  if (cold) {
     return (
-      <View style={styles.loading}>
+      <View style={styles.loadingShell}>
         <Stack.Screen options={{ headerShown: false }} />
-        <ActivityIndicator size="large" color={COLORS.navy} />
+        {coldPhase === 'skeleton' ? <TitleSkeleton insets={insets} /> : null}
       </View>
     );
   }
@@ -131,7 +126,7 @@ export default function TitleScreen() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Cast</Text>
         <View style={styles.cardDivider} />
-        <CastRail cast={film.cast} heroes={heroes} inCard />
+        <CastRail cast={film.cast} heroes={heroes ?? []} inCard />
       </View>
     ) : null;
 
@@ -144,8 +139,10 @@ export default function TitleScreen() {
       </View>
     ) : null;
 
+  // By the time content renders, these have all loaded (see the `loading` gate),
+  // so they're a simple present-or-absent — no rail skeletons needed inline.
   const heroesCard =
-    heroes.length > 0 ? (
+    heroes && heroes.length > 0 ? (
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Heroes in this Film</Text>
         <View style={styles.cardDivider} />
@@ -154,7 +151,7 @@ export default function TitleScreen() {
     ) : null;
 
   const recsCard =
-    recs.length > 0 ? (
+    recs && recs.length > 0 ? (
       <View style={styles.card}>
         <Text style={styles.cardTitle}>You might also like</Text>
         <View style={styles.cardDivider} />
@@ -163,7 +160,7 @@ export default function TitleScreen() {
     ) : null;
 
   const universeCard =
-    collection.length > 0 ? (
+    collection && collection.length > 0 ? (
       <View style={styles.card}>
         <Text style={styles.cardTitle}>More in this Universe</Text>
         <View style={styles.cardDivider} />
@@ -251,6 +248,7 @@ export default function TitleScreen() {
           style={styles.posterFloatImg}
           contentFit="cover"
           cachePolicy="memory-disk"
+          transition={300}
         />
       ) : (
         <View style={[styles.posterFloatImg, styles.posterFloatPlaceholder]}>
@@ -279,47 +277,62 @@ export default function TitleScreen() {
       <View style={styles.webPage}>
         <Stack.Screen options={{ headerShown: false }} />
         <FilmBackdropHeader film={film} onBack={() => router.back()} />
-        <View style={styles.bodyWrap}>
-          {wide ? (
-            <>
-              <View style={styles.bodyRowWide}>
-                <View style={styles.posterColWide}>
-                  {floatingPoster}
-                  <View style={styles.stickyInfo}>
-                    {detailsCard}
-                    {watchCard}
-                    {socialCard}
-                    {tmdbLink}
+        {/* Header is real (seeded stub or live row); the body waits on all its
+            data and dissolves in over a body skeleton — so it never shifts. */}
+        <View style={styles.bodyRegion}>
+          {bodyReady ? (
+            <View style={styles.bodyWrap}>
+              {wide ? (
+                <>
+                  <View style={styles.bodyRowWide}>
+                    <View style={styles.posterColWide}>
+                      {floatingPoster}
+                      <View style={styles.stickyInfo}>
+                        {detailsCard}
+                        {watchCard}
+                        {socialCard}
+                        {tmdbLink}
+                      </View>
+                    </View>
+                    <View style={styles.mainCol}>
+                      {overviewCard}
+                      {castCard}
+                      {stillsCard}
+                      {heroesCard}
+                      {reviewsSection}
+                    </View>
                   </View>
-                </View>
-                <View style={styles.mainCol}>
+                  <View style={styles.fullStack}>
+                    {universeCard}
+                    {recsCard}
+                  </View>
+                </>
+              ) : (
+                <View style={styles.bodyCol}>
                   {overviewCard}
                   {castCard}
                   {stillsCard}
                   {heroesCard}
+                  {universeCard}
+                  {recsCard}
                   {reviewsSection}
+                  {detailsCard}
+                  {watchCard}
+                  {socialCard}
+                  {tmdbLink}
                 </View>
-              </View>
-              <View style={styles.fullStack}>
-                {universeCard}
-                {recsCard}
-              </View>
-            </>
-          ) : (
-            <View style={styles.bodyCol}>
-              {overviewCard}
-              {castCard}
-              {stillsCard}
-              {heroesCard}
-              {universeCard}
-              {recsCard}
-              {reviewsSection}
-              {detailsCard}
-              {watchCard}
-              {socialCard}
-              {tmdbLink}
+              )}
             </View>
+          ) : (
+            <TitleBodySkeleton />
           )}
+          {/* Body crossfade: real body sits settled; the body skeleton dissolves
+              off the top of it (header stays put), so placeholders resolve in place. */}
+          {bodyPhase === 'crossfade' ? (
+            <FadeOutSkeleton>
+              <TitleBodySkeleton />
+            </FadeOutSkeleton>
+          ) : null}
         </View>
       </View>
     );
@@ -335,75 +348,83 @@ export default function TitleScreen() {
       >
         <FilmBackdropHeader film={film} onBack={() => router.back()} />
 
-        {film.overview ? (
-          <View style={styles.section}>
-            <Text style={styles.eyebrow}>Overview</Text>
-            <Text style={styles.overview}>{film.overview}</Text>
-          </View>
-        ) : null}
-        {watch.providers.length > 0 ? (
-          <View style={styles.railSection}>
-            <WhereToWatch providers={watch.providers} link={watch.link} />
-          </View>
-        ) : null}
-        {film.cast && film.cast.length > 0 ? (
-          <View style={styles.railSection}>
-            <CastRail cast={film.cast} heroes={heroes} />
-          </View>
-        ) : null}
-        {film.stills && film.stills.length > 0 ? (
-          <View style={styles.railSection}>
-            <StillsGallery stills={film.stills} />
-          </View>
-        ) : null}
-        {heroes.length > 0 ? (
-          <View style={styles.railSection}>
-            <HeroesInFilmRail heroes={heroes} />
-          </View>
-        ) : null}
-        {collection.length > 0 ? (
-          <View style={styles.railSection}>
-            <RecommendationsRail recommendations={collection} label="More in this Universe" />
-          </View>
-        ) : null}
-        {recs.length > 0 ? (
-          <View style={styles.railSection}>
-            <RecommendationsRail recommendations={recs} />
-          </View>
-        ) : null}
-        {reviewsSection ? <View style={styles.railSection}>{reviewsSection}</View> : null}
-        {detailRows.length > 0 ? (
-          <View style={styles.section}>
-            <Text style={styles.eyebrow}>Details</Text>
-            {detailRows.map((r, i) => (
-              <View
-                key={r.label}
-                style={
-                  [styles.infoRow, i === detailRows.length - 1 && styles.infoRowLast] as object
-                }
-              >
-                <Text style={styles.infoLabel}>{r.label}</Text>
-                <Text style={styles.infoValue}>{r.value}</Text>
+        {/* Header is real (seeded stub or live row); the body waits on all its
+            data, then swaps in (gated → in place, no shift). */}
+        {bodyReady ? (
+          <>
+            {film.overview ? (
+              <View style={styles.section}>
+                <Text style={styles.eyebrow}>Overview</Text>
+                <Text style={styles.overview}>{film.overview}</Text>
               </View>
-            ))}
-          </View>
-        ) : null}
-        {extras.externalIds ? (
-          <View style={styles.section}>
-            <Text style={styles.eyebrow}>Links</Text>
-            <SocialLinks externalIds={extras.externalIds} />
-          </View>
-        ) : null}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.linkBtn}
-            onPress={() => Linking.openURL(tmdbUrl)}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="open-outline" size={14} color="#fff" />
-            <Text style={styles.linkBtnText}>View on TMDB</Text>
-          </TouchableOpacity>
-        </View>
+            ) : null}
+            {watch.providers.length > 0 ? (
+              <View style={styles.railSection}>
+                <WhereToWatch providers={watch.providers} link={watch.link} />
+              </View>
+            ) : null}
+            {film.cast && film.cast.length > 0 ? (
+              <View style={styles.railSection}>
+                <CastRail cast={film.cast} heroes={heroes ?? []} />
+              </View>
+            ) : null}
+            {film.stills && film.stills.length > 0 ? (
+              <View style={styles.railSection}>
+                <StillsGallery stills={film.stills} />
+              </View>
+            ) : null}
+            {heroes && heroes.length > 0 ? (
+              <View style={styles.railSection}>
+                <HeroesInFilmRail heroes={heroes} />
+              </View>
+            ) : null}
+            {collection && collection.length > 0 ? (
+              <View style={styles.railSection}>
+                <RecommendationsRail recommendations={collection} label="More in this Universe" />
+              </View>
+            ) : null}
+            {recs && recs.length > 0 ? (
+              <View style={styles.railSection}>
+                <RecommendationsRail recommendations={recs} />
+              </View>
+            ) : null}
+            {reviewsSection ? <View style={styles.railSection}>{reviewsSection}</View> : null}
+            {detailRows.length > 0 ? (
+              <View style={styles.section}>
+                <Text style={styles.eyebrow}>Details</Text>
+                {detailRows.map((r, i) => (
+                  <View
+                    key={r.label}
+                    style={
+                      [styles.infoRow, i === detailRows.length - 1 && styles.infoRowLast] as object
+                    }
+                  >
+                    <Text style={styles.infoLabel}>{r.label}</Text>
+                    <Text style={styles.infoValue}>{r.value}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+            {extras.externalIds ? (
+              <View style={styles.section}>
+                <Text style={styles.eyebrow}>Links</Text>
+                <SocialLinks externalIds={extras.externalIds} />
+              </View>
+            ) : null}
+            <View style={styles.section}>
+              <TouchableOpacity
+                style={styles.linkBtn}
+                onPress={() => Linking.openURL(tmdbUrl)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="open-outline" size={14} color="#fff" />
+                <Text style={styles.linkBtnText}>View on TMDB</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          <TitleBodySkeleton />
+        )}
       </ScrollView>
     </View>
   );
@@ -411,15 +432,16 @@ export default function TitleScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.beige },
+  // Loading shell: deepNavy so it fuses with the boot LogoLoader and the
+  // skeleton's dark stage (no beige flash between them on web refresh).
+  loadingShell: { flex: 1, backgroundColor: COLORS.deepNavy },
   // Web: document-scrolled page (no inner ScrollView) so the body bleeds under
   // the iOS Safari toolbar. paddingBottom keeps the last card off the toolbar.
   webPage: { width: '100%', backgroundColor: COLORS.beige, paddingBottom: 40 },
-  loading: {
-    flex: 1,
-    backgroundColor: COLORS.beige,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  // Positioned wrapper for the body so the FadeOutSkeleton overlay (absoluteFill)
+  // scopes to the body region and aligns with it (the body floats up across the
+  // seam via marginTop, which the overlay inherits identically).
+  bodyRegion: { position: 'relative' },
   scroll: { flex: 1 },
   scrollContent: { gap: 0 },
 
