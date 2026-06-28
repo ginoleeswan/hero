@@ -169,25 +169,41 @@ function Credits({
   creators,
   accent,
   centered,
+  stacked,
 }: {
   creators: IssueCreator[];
   accent: string;
   centered: boolean;
+  stacked?: boolean;
 }) {
   const groups = groupCreators(creators);
   if (groups.length === 0) return null;
   return (
     <View style={cr.wrap}>
       <Text style={[cr.heading, { color: accent }, centered && cr.center]}>Creators</Text>
-      {groups.map((g) => (
-        <View key={g.label} style={[cr.row, centered && cr.rowCentered]}>
-          <Text style={cr.role}>{g.label}</Text>
-          <Text style={cr.names}>
-            {g.names.slice(0, 5).join(', ')}
-            {g.names.length > 5 ? ` +${g.names.length - 5} more` : ''}
-          </Text>
-        </View>
-      ))}
+      {groups.map((g) => {
+        const names =
+          g.names.slice(0, 5).join(', ') + (g.names.length > 5 ? ` +${g.names.length - 5} more` : '');
+        return stacked ? (
+          <DossierItem key={g.label} label={g.label} value={names} />
+        ) : (
+          <View key={g.label} style={[cr.row, centered && cr.rowCentered]}>
+            <Text style={cr.role}>{g.label}</Text>
+            <Text style={cr.names}>{names}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+// A stacked label/value row — the sidebar dossier idiom (no awkward wrapping in a
+// narrow column).
+function DossierItem({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={cr.item}>
+      <Text style={cr.itemLabel}>{label}</Text>
+      <Text style={cr.itemValue}>{value}</Text>
     </View>
   );
 }
@@ -204,10 +220,7 @@ function Details({ issue, accent }: { issue: NewComic; accent: string }) {
     <View style={cr.wrap}>
       <Text style={[cr.heading, { color: accent }]}>Details</Text>
       {rows.map(([label, val]) => (
-        <View key={label} style={cr.row}>
-          <Text style={cr.role}>{label}</Text>
-          <Text style={cr.names}>{val}</Text>
-        </View>
+        <DossierItem key={label} label={label} value={val} />
       ))}
     </View>
   );
@@ -426,23 +439,22 @@ export default function IssueScreen() {
                 <View style={w.coverGutter} />
                 {hasSidebar ? (
                   <>
-                    <View style={w.mainCol}>
-                      {storyBlock}
-                      {castBlock}
-                    </View>
+                    <View style={w.mainCol}>{storyBlock}</View>
                     <View style={w.sidebar}>
                       <Details issue={issue} accent={accent} />
-                      {creditsBlock}
+                      {issue.creators ? (
+                        <Credits creators={issue.creators} accent={accent} centered={false} stacked />
+                      ) : null}
                     </View>
                   </>
                 ) : (
                   <View style={w.rightCol}>
                     {storyBlock}
                     {creditsBlock}
-                    {castBlock}
                   </View>
                 )}
               </View>
+              {castBlock}
             </View>
           </View>
 
@@ -598,7 +610,8 @@ const w = StyleSheet.create({
     letterSpacing: 0.3,
   },
   // Featuring, flowing under the synopsis (beside the cover) — not stranded below.
-  castBlock: { marginTop: 30 },
+  // Full-width cast section below the dossier — uses the whole width.
+  castBlock: { marginTop: 10, paddingHorizontal: PAD },
   castLabel: {
     fontFamily: 'Flame-Regular',
     fontSize: 13,
@@ -607,7 +620,7 @@ const w = StyleSheet.create({
     marginBottom: 14,
   },
   // Wrapping grid — all characters visible, contained (no horizontal bleed).
-  castGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingRight: PAD },
+  castGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   // The cover, straddling the dark→paper seam.
   coverAbs: {
     position: 'absolute',
@@ -720,6 +733,16 @@ const cr = StyleSheet.create({
     paddingTop: 2,
   },
   names: { fontFamily: 'FlameSans-Regular', fontSize: 14.5, color: COLORS.navy, flex: 1, lineHeight: 20 },
+  // Stacked label/value — the sidebar dossier idiom.
+  item: { gap: 1, marginBottom: 9 },
+  itemLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9.5,
+    color: COLORS.grey,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  itemValue: { fontFamily: 'FlameSans-Regular', fontSize: 14.5, color: COLORS.navy, lineHeight: 19 },
 });
 
 const cast = StyleSheet.create({
