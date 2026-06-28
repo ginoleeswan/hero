@@ -1,6 +1,6 @@
 // A horizontal rail of characters trending on Wikipedia this week — circular
 // portrait + name + a ▲ +N% spike chip. Renders on both platforms (RN-Web safe).
-import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
@@ -13,19 +13,26 @@ export function WikiTrendingRail({
   heroes: WikiTrendingHero[];
   onHeroPress: (id: string) => void;
 }) {
+  // Self-align to the surrounding rails: native (always < 640) keeps the 16px
+  // gutter and 24px title; on wider web the gutter and title grow to match the
+  // sibling rails (New Comics / In Your Universe) so the columns line up.
+  const { width } = useWindowDimensions();
+  const pagePad = width < 640 ? 16 : 32;
+  const titleSize = width < 640 ? 24 : 26;
+
   if (heroes.length === 0) return null;
   return (
     <View style={s.section}>
-      <View style={s.header}>
+      <View style={[s.header, { paddingHorizontal: pagePad, marginBottom: width < 640 ? 12 : 14 }]}>
         <Text style={s.label}>This Week</Text>
-        <Text style={s.title}>Trending Now</Text>
+        <Text style={[s.title, { fontSize: titleSize }]}>Trending Now</Text>
       </View>
       <FlatList
         horizontal
         data={heroes}
         keyExtractor={(h) => h.id}
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.strip}
+        contentContainerStyle={[s.strip, { paddingHorizontal: pagePad }]}
         initialNumToRender={6}
         renderItem={({ item }) => (
           <Pressable style={s.card} onPress={() => onHeroPress(item.id)}>
@@ -60,7 +67,7 @@ export function WikiTrendingRail({
 
 const s = StyleSheet.create({
   section: { marginTop: 4, marginBottom: 8 },
-  header: { paddingHorizontal: 16, marginBottom: 12 },
+  header: {},
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
@@ -69,7 +76,7 @@ const s = StyleSheet.create({
     color: COLORS.orange,
   },
   title: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.beige, lineHeight: 28 },
-  strip: { gap: 14, paddingHorizontal: 16, paddingBottom: 4 },
+  strip: { gap: 14, paddingBottom: 4 },
   card: { width: 76, alignItems: 'center', gap: 6 },
   avatar: {
     width: 68,

@@ -16,22 +16,34 @@ const TILE_H = 88; // matches PublisherGrid card minHeight
 
 function SpotlightSkeleton({ insetTop }: { insetTop: number }) {
   const height = insetTop + Math.round(SCREEN_HEIGHT * 0.5);
-  return <Skeleton width="100%" height={height} borderRadius={0} />;
+  return (
+    <View>
+      <Skeleton width="100%" height={height} borderRadius={0} />
+      {/* Rounded beige lip — mirrors SpotlightCarousel's edge into the sheet. */}
+      <View style={styles.lip} pointerEvents="none" />
+    </View>
+  );
 }
 
-function ThumbRowSkeleton() {
+function DailyBannerSkeleton() {
+  return (
+    <View style={styles.dailyBanner}>
+      <Skeleton width="100%" height={102} borderRadius={20} />
+    </View>
+  );
+}
+
+function MatchupSkeleton() {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <View style={styles.headerLeft}>
-          <Skeleton width="20%" height={10} borderRadius={4} />
-          <Skeleton width="40%" height={22} borderRadius={6} style={styles.titleSkeleton} />
+          <Skeleton width="22%" height={10} borderRadius={4} />
+          <Skeleton width="46%" height={22} borderRadius={6} style={styles.titleSkeleton} />
         </View>
       </View>
-      <View style={styles.thumbRow}>
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} width={90} height={58} borderRadius={8} />
-        ))}
+      <View style={styles.matchupCard}>
+        <Skeleton width="100%" height={210} borderRadius={20} />
       </View>
     </View>
   );
@@ -84,9 +96,10 @@ export function HomeSkeleton({ insets }: HomeSkeletonProps) {
       <ScrollView scrollEnabled={false} showsVerticalScrollIndicator={false} style={styles.scroll}>
         <SpotlightSkeleton insetTop={insets.top} />
         <View style={styles.sheet}>
-          <ThumbRowSkeleton />
+          <DailyBannerSkeleton />
           <PublisherGridSkeleton />
-          {Array.from({ length: 6 }).map((_, i) => (
+          <MatchupSkeleton />
+          {Array.from({ length: 5 }).map((_, i) => (
             <PortraitRowSkeleton key={i} />
           ))}
         </View>
@@ -98,6 +111,17 @@ export function HomeSkeleton({ insets }: HomeSkeletonProps) {
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.navy },
   sheet: { backgroundColor: COLORS.beige },
+  lip: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 24,
+    backgroundColor: COLORS.beige,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderCurve: 'continuous',
+  },
   section: { paddingTop: 14, paddingBottom: 4 },
   sectionHeader: {
     paddingHorizontal: 15,
@@ -109,9 +133,12 @@ const styles = StyleSheet.create({
   headerLeft: { gap: 2 },
   titleSkeleton: { marginTop: 2 },
   seeAllSkeleton: { marginBottom: 4 },
-  thumbRow: {
-    flexDirection: 'row',
-    gap: 8,
+  dailyBanner: {
+    paddingHorizontal: 15,
+    paddingTop: 16,
+    paddingBottom: 4,
+  },
+  matchupCard: {
     paddingHorizontal: 15,
   },
   publisherGrid: {

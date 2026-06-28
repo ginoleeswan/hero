@@ -98,6 +98,56 @@ function StatPodsSkeleton({ opacity, pagePad }: { opacity: Opacity; pagePad: num
   );
 }
 
+// Engage row — mirrors the real matchup + daily-game pair under the pods.
+function EngageSkeleton({
+  opacity,
+  pagePad,
+  isMobile,
+}: {
+  opacity: Opacity;
+  pagePad: number;
+  isMobile: boolean;
+}) {
+  if (isMobile) {
+    return (
+      <View style={{ marginTop: 12 }}>
+        <SkeletonBlock
+          opacity={opacity}
+          dark
+          height={210}
+          borderRadius={16}
+          style={{ marginHorizontal: 16, marginBottom: 12 }}
+        />
+        <SkeletonBlock
+          opacity={opacity}
+          dark
+          height={96}
+          borderRadius={20}
+          style={{ marginHorizontal: 16 }}
+        />
+      </View>
+    );
+  }
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 20,
+        paddingHorizontal: pagePad,
+        marginTop: 16,
+      }}
+    >
+      <View style={{ flex: 1.7 }}>
+        <SkeletonBlock opacity={opacity} dark height={192} borderRadius={16} />
+      </View>
+      <View style={{ flex: 1, maxWidth: 440 }}>
+        <SkeletonBlock opacity={opacity} dark height={102} borderRadius={20} />
+      </View>
+    </View>
+  );
+}
+
 function RowHeader({
   opacity,
   pagePad,
@@ -185,6 +235,7 @@ export function WebHomeSkeleton() {
       <View style={[skel.darkStage, isMobile && (skel.darkStageMobile as object)] as object}>
         <SpotlightSkeleton opacity={opacity} dark />
         <StatPodsSkeleton opacity={opacity} pagePad={pagePad} />
+        <EngageSkeleton opacity={opacity} pagePad={pagePad} isMobile={isMobile} />
       </View>
       <View style={skel.ticker} />
 

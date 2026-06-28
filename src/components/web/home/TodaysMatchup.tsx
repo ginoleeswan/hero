@@ -340,7 +340,9 @@ const m = StyleSheet.create({
     marginTop: 12,
   } as object,
   cardDesktop: {
-    marginHorizontal: 32,
+    // No outer margin — the explore "engage row" owns the horizontal padding and
+    // pairs this card with the daily game beside it.
+    marginTop: 0,
     justifyContent: 'center',
     gap: 40,
     paddingVertical: 26,

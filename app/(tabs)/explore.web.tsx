@@ -1180,22 +1180,32 @@ export default function WebHomeScreen() {
             <PublisherPods
               onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
             />
-            {homeData.matchup === undefined ? (
-              <TodaysMatchupSkeleton />
-            ) : homeData.matchup ? (
-              <TodaysMatchupCard
-                matchup={homeData.matchup}
-                onOpen={(path) => router.push(path as Parameters<typeof router.push>[0])}
-              />
-            ) : null}
-          </View>
-
-          {/* ── Daily Guess-the-Hero entry — prime spot under the spotlight ── */}
-          <View style={styles.dailyWrap}>
-            <DailyChallengeBanner
-              onPress={() => router.push('/play')}
-              style={styles.dailyBanner as object}
-            />
+            {/* Engage row — "Today's Battle" (vote) paired with the daily
+                Guess-the-Hero game. On desktop they sit side by side so the
+                matchup isn't a full-width bar and the game rides up beside it;
+                on mobile they stack. */}
+            <View style={[styles.engageRow, isMobile && (styles.engageRowStack as object)] as object}>
+              <View style={isMobile ? undefined : (styles.engageMatchup as object)}>
+                {homeData.matchup === undefined ? (
+                  <TodaysMatchupSkeleton />
+                ) : homeData.matchup ? (
+                  <TodaysMatchupCard
+                    matchup={homeData.matchup}
+                    onOpen={(path) => router.push(path as Parameters<typeof router.push>[0])}
+                  />
+                ) : null}
+              </View>
+              <View
+                style={
+                  (isMobile ? styles.engageDailyStack : styles.engageDaily) as object
+                }
+              >
+                <DailyChallengeBanner
+                  onPress={() => router.push('/play')}
+                  style={(isMobile ? styles.dailyBannerMobile : styles.dailyBannerGlass) as object}
+                />
+              </View>
+            </View>
           </View>
 
           {/* ── Orange ticker strip ────────────────────────────────────────── */}
@@ -1393,15 +1403,45 @@ export default function WebHomeScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  dailyWrap: { alignItems: 'center', paddingHorizontal: 16, marginTop: 18, marginBottom: 26 },
-  // Override the shared banner's phone margins: centre + constrain to the column.
-  dailyBanner: {
-    width: '100%',
-    maxWidth: 720,
+  // Engage row — matchup + daily game. Desktop: matchup takes the larger share,
+  // the game a narrower column on the right. Mobile: stack, cards keep own gutters.
+  engageRow: {
+    flexDirection: 'row',
+    // Stretch so the daily card grows to the matchup's height instead of
+    // floating short beside it.
+    alignItems: 'stretch',
+    gap: 20,
+    paddingHorizontal: 32,
+    marginTop: 16,
+  } as object,
+  engageRowStack: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 0,
+    paddingHorizontal: 0,
+    marginTop: 0,
+  } as object,
+  engageMatchup: { flex: 1.7, minWidth: 0 } as object,
+  engageDaily: { flex: 1, minWidth: 240, maxWidth: 440 } as object,
+  engageDailyStack: {} as object,
+  // Daily banner restyled to sit on the dark stage: drop the beige-sheet gutter,
+  // add a glass hairline so it reads as a sibling of the matchup card.
+  dailyBannerGlass: {
     marginHorizontal: 0,
     marginTop: 0,
+    marginBottom: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.09)',
     cursor: 'pointer',
-  },
+  } as object,
+  dailyBannerMobile: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.09)',
+    cursor: 'pointer',
+  } as object,
   root: { flex: 1, backgroundColor: COLORS.beige },
   scroll: { flex: 1 },
   // Desktop: the scroll surface is the dark stage colour, so overscroll at the

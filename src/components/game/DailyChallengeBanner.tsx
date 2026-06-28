@@ -76,6 +76,9 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.92 },
   bg: {
+    // flex:1 lets the gradient fill a stretched card (web engage row) while
+    // staying content-height when the card is auto-sized (native beige sheet).
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
