@@ -3,7 +3,15 @@
 // showing its anniversary and the cast of characters who first appeared in it as
 // tappable face-chips. The cover taps to the lead (most famous) character; each
 // chip taps to its own character. Sibling of ComicCoverRail.
-import { View, Text, FlatList, StyleSheet, Pressable, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  Pressable,
+  Dimensions,
+  useWindowDimensions,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeroImage } from '../HeroImage';
@@ -11,8 +19,9 @@ import { COLORS } from '../../constants/colors';
 import type { DebutIssue, DebutCharacter } from '../../lib/db/anniversaries';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_W = Math.min(150, Math.round(SCREEN_WIDTH * 0.42));
-const CARD_H = Math.round(CARD_W * 1.46);
+// Match the sibling cover rail (ComicCoverRail) so the cards align in width.
+const CARD_W = Math.min(132, Math.round(SCREEN_WIDTH * 0.34));
+const CARD_H = Math.round(CARD_W * 1.5);
 const MAX_CHIPS = 3;
 
 const MONTH = new Date().toLocaleString('en-US', { month: 'long' });
@@ -37,19 +46,26 @@ export function MonthInHistoryRail({
   debuts: DebutIssue[];
   onHeroPress: (id: string) => void;
 }) {
+  // Self-align to the surrounding rails: native (always < 640) keeps the 16px
+  // gutter and 24px title; on wider web both grow to 32 / 26 so the section lines
+  // up with the sibling rails (New Comics / Trending Now / In Your Universe).
+  const { width } = useWindowDimensions();
+  const pagePad = width < 640 ? 16 : 32;
+  const titleSize = width < 640 ? 24 : 26;
+
   if (debuts.length === 0) return null;
   return (
     <View style={s.section}>
-      <View style={s.header}>
+      <View style={[s.header, { paddingHorizontal: pagePad, marginBottom: width < 640 ? 12 : 14 }]}>
         <Text style={s.label}>This Month</Text>
-        <Text style={s.title}>Debuts in {MONTH}</Text>
+        <Text style={[s.title, { fontSize: titleSize }]}>Debuts in {MONTH}</Text>
       </View>
       <FlatList
         horizontal
         data={debuts}
         keyExtractor={(d) => d.issueId}
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.strip}
+        contentContainerStyle={[s.strip, { paddingHorizontal: pagePad }]}
         initialNumToRender={4}
         renderItem={({ item }) => {
           const lead = item.characters[0];
@@ -123,7 +139,7 @@ export function MonthInHistoryRail({
 const CHIP = 28;
 const s = StyleSheet.create({
   section: { marginTop: 4, marginBottom: 6 },
-  header: { paddingHorizontal: 16, marginBottom: 12 },
+  header: {},
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
@@ -132,7 +148,7 @@ const s = StyleSheet.create({
     color: COLORS.orange,
   },
   title: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.beige, lineHeight: 28 },
-  strip: { gap: 10, paddingHorizontal: 15, paddingBottom: 4 },
+  strip: { gap: 10, paddingBottom: 4 },
   card: {
     width: CARD_W,
     height: CARD_H,
