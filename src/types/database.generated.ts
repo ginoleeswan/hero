@@ -1676,6 +1676,8 @@ export type Database = {
           title: string
           tmdb_id: string | null
           trailer_key: string | null
+          trending_at: string | null
+          trending_rank: number | null
           vote_average: number | null
           watch_providers: Json | null
           year: number | null
@@ -1700,6 +1702,8 @@ export type Database = {
           title: string
           tmdb_id?: string | null
           trailer_key?: string | null
+          trending_at?: string | null
+          trending_rank?: number | null
           vote_average?: number | null
           watch_providers?: Json | null
           year?: number | null
@@ -1724,6 +1728,8 @@ export type Database = {
           title?: string
           tmdb_id?: string | null
           trailer_key?: string | null
+          trending_at?: string | null
+          trending_rank?: number | null
           vote_average?: number | null
           watch_providers?: Json | null
           year?: number | null
