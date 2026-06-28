@@ -10,6 +10,7 @@ import {
   getUniversePage,
   getTeamPage,
   getHeroById,
+  heroRowToCharacterData,
   getHeroesByNames,
   getRelatedHeroes,
   getRelationship,
@@ -22,7 +23,7 @@ import {
 } from '../db/heroes';
 import { getTeamById } from '../db/teams';
 import { DEFAULT_FILTERS, type CategoryFilters } from '../db/categoryFilters';
-import { generateVerdict, type VerdictInput } from '../api';
+import { fetchHeroStats, generateVerdict, type VerdictInput } from '../api';
 import { getCachedVerdict } from '../db/verdicts';
 import { queryKeys } from './keys';
 import { findCachedHero } from './heroCache';
@@ -156,6 +157,24 @@ export function useHeroRow(id: string | undefined) {
     enabled: !!id,
     queryFn: () => getHeroById(id!),
     placeholderData: () => (id ? findCachedHero(client, id) : undefined),
+  });
+}
+
+/** Displayable powerstats for a hero by id — a real enriched DB row's stats, or
+ *  the external SuperheroAPI stats for un-enriched numeric heroes. Used by the
+ *  compare matchup (keyed per hero, so each combatant caches independently). */
+async function loadHeroStats(id: string) {
+  const row = await getHeroById(id);
+  if (row?.enriched_at) return heroRowToCharacterData(row).stats;
+  return fetchHeroStats(id);
+}
+
+export function useHeroStats(id: string | undefined) {
+  return useQuery({
+    queryKey: id ? queryKeys.heroStats(id) : ['heroes', 'stats', 'disabled'],
+    enabled: !!id,
+    queryFn: () => loadHeroStats(id!),
+    staleTime: 1000 * 60 * 30,
   });
 }
 

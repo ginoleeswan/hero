@@ -24,6 +24,7 @@ export const queryKeys = {
   heroPortrayals: (id: string) => ['heroes', 'portrayals', id] as const,
   heroLinks: (id: string) => ['heroes', 'links', id] as const,
   heroIssues: (id: string) => ['heroes', 'issues', id] as const,
+  heroStats: (id: string) => ['heroes', 'stats', id] as const,
   profile: (userId: string) => ['profile', userId] as const,
   team: (id: string) => ['teams', 'detail', id] as const,
   issue: (id: string) => ['comics', 'issue', id] as const,
