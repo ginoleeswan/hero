@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import type { TitleReview } from '../../lib/tmdb/extras';
@@ -36,46 +36,48 @@ function ReviewCard({ review }: { review: TitleReview }) {
   );
 }
 
-/** Audience/critic reviews from TMDB. Renders nothing when empty. */
+/** Audience/critic reviews from TMDB, as a horizontal carousel. Empty-safe. */
 export function ReviewsSection({ reviews }: { reviews: TitleReview[] }) {
   if (reviews.length === 0) return null;
   return (
     <View style={styles.block}>
       <Text style={styles.label}>Reviews</Text>
-      <View style={styles.grid}>
-        {reviews.slice(0, 4).map((r, i) => (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.row}
+      >
+        {reviews.map((r, i) => (
           <ReviewCard key={`${r.author}-${i}`} review={r} />
         ))}
-      </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  block: { gap: 14, paddingHorizontal: 20 },
+  block: { gap: 14 },
   label: {
     fontFamily: 'Flame-Regular',
     fontSize: 11,
     color: COLORS.orange,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
+    paddingHorizontal: 20,
   },
-  grid: {
+  row: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 16,
+    paddingHorizontal: 20,
   },
   card: {
+    width: Platform.OS === 'web' ? 400 : 300,
     backgroundColor: '#fff',
     borderRadius: 14,
     borderWidth: 1,
     borderColor: '#e8ddd0',
     padding: 18,
     gap: 10,
-    ...Platform.select({
-      web: { flexBasis: 'calc(50% - 8px)', flexGrow: 1, minWidth: 280 } as object,
-      default: { width: '100%' },
-    }),
   },
   head: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar: {
