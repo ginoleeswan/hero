@@ -297,7 +297,7 @@ const s2 = StyleSheet.create({
   pencil: { paddingVertical: 2, paddingLeft: 7, cursor: 'pointer' } as object,
   // Card header row: title + pencil sit together, perfectly centered vertically.
   cardHeadRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 } as object,
-  contributeFooter: { alignItems: 'center', paddingTop: 24, paddingBottom: 8 } as object,
+  contributeFooter: { alignItems: 'center', paddingTop: 28, paddingBottom: 40 } as object,
   contributeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2641,7 +2641,13 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
 const sk = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
   scrollContent: { width: '100%' },
-  bodyWrap: { maxWidth: 1180, alignSelf: 'center', width: '100%', paddingBottom: 0 },
+  bodyWrap: {
+    maxWidth: 1180,
+    alignSelf: 'center',
+    width: '100%',
+    paddingBottom: 0,
+    backgroundColor: COLORS.beige,
+  },
 
   // ── Desktop identity stage ──
   stage: { backgroundColor: COLORS.deepNavy, position: 'relative', overflow: 'hidden' },
@@ -2759,7 +2765,17 @@ const styles = StyleSheet.create({
   // Scroll content is full-width so the dark stage can bleed edge-to-edge;
   // the body re-constrains itself to a centred reading column.
   scrollContent: { width: '100%' },
-  bodyWrap: { maxWidth: 1180, alignSelf: 'center', width: '100%', paddingBottom: 0 },
+  // Beige backs the whole body so content below the first viewport (notably the
+  // shared contribute footer, which sits outside the beige mSheet) reads beige
+  // against the now-ink document canvas. The canvas (ink) only shows in the iOS
+  // status-bar strip and true overscroll — the seamless dark top edge we want.
+  bodyWrap: {
+    maxWidth: 1180,
+    alignSelf: 'center',
+    width: '100%',
+    paddingBottom: 0,
+    backgroundColor: COLORS.beige,
+  },
   familyBand: { paddingHorizontal: 24, paddingBottom: 24, marginTop: -8 },
   center: {
     flex: 1,
