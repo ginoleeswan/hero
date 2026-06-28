@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
   // Full-width stack below the two columns (universe, recommendations).
   fullStack: { paddingHorizontal: 24, paddingTop: 18, gap: 18 },
   posterFloat: {
-    marginTop: -180,
+    marginTop: -260,
     borderRadius: 16,
     borderCurve: 'continuous',
     overflow: 'hidden',
