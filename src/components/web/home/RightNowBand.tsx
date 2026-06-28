@@ -344,7 +344,7 @@ function ComicCoverRail({
           const issueLabel =
             comic.volumeName && comic.issueNumber
               ? `${comic.volumeName} #${comic.issueNumber}`
-              : comic.volumeName ?? comic.issueNumber ?? '';
+              : (comic.volumeName ?? comic.issueNumber ?? '');
           return (
             <Pressable
               key={comic.id}

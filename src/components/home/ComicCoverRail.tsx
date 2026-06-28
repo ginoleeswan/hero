@@ -50,7 +50,11 @@ export function ComicCoverRail({
           return (
             <Pressable style={s.card} onPress={() => onIssuePress(item.id)}>
               {item.coverUrl ? (
-                <Image source={{ uri: item.coverUrl }} contentFit="cover" style={StyleSheet.absoluteFill} />
+                <Image
+                  source={{ uri: item.coverUrl }}
+                  contentFit="cover"
+                  style={StyleSheet.absoluteFill}
+                />
               ) : (
                 <View style={[StyleSheet.absoluteFill, s.fallback]} />
               )}
