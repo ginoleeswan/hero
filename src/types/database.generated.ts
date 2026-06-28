@@ -2028,6 +2028,18 @@ export type Database = {
       }
       get_daily_distribution: { Args: { p_date: string }; Returns: Json }
       get_daily_hero: { Args: { p_date?: string }; Returns: Json }
+      get_debuts_this_month: {
+        Args: { p_limit?: number; p_min_fame?: number }
+        Returns: {
+          debut_cover_url: string
+          debut_year: number
+          fame_score: number
+          id: string
+          image_url: string
+          name: string
+          portrait_url: string
+        }[]
+      }
       get_era_timeline: {
         Args: { per_era?: number }
         Returns: {
