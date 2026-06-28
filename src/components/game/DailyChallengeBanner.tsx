@@ -35,31 +35,30 @@ export function DailyChallengeBanner({
           end={{ x: 1, y: 1 }}
           style={styles.bgTall}
         >
-          <View style={styles.kickerRow}>
-            <Ionicons name="sparkles" size={12} color={COLORS.orange} />
-            <Text style={styles.kicker}>Daily Challenge</Text>
-          </View>
-
-          {/* Mystery tile — portrait-shaped, hinting at the blurred hero you'll
-              uncover; the card's visual anchor (mirrors the matchup portraits). */}
-          <View style={styles.tileTall}>
-            <Ionicons name="person" size={66} color="rgba(245,235,220,0.14)" />
-            <Text style={styles.tileMarkTall}>?</Text>
-          </View>
-
-          <View style={styles.bodyTall}>
-            <Text style={styles.titleTall}>Guess the Hero</Text>
-            {streak > 0 ? (
-              <View style={styles.streakRow}>
-                <Text style={styles.streakText}>🔥 {streak} day streak</Text>
-                <Text style={styles.dot}>·</Text>
-                <Text style={styles.sub}>Keep it alive</Text>
+          {/* Tile + text on top, full-width CTA pinned to the bottom; space-between
+              fills whatever height the matchup card sets beside it (compact enough
+              that the matchup stays the height-setter — this never overshoots it). */}
+          <View style={styles.tallTop}>
+            <View style={styles.tileTall}>
+              <Ionicons name="person" size={44} color="rgba(245,235,220,0.14)" />
+              <Text style={styles.tileMarkTall}>?</Text>
+            </View>
+            <View style={styles.body}>
+              <View style={styles.kickerRow}>
+                <Ionicons name="sparkles" size={11} color={COLORS.orange} />
+                <Text style={styles.kicker}>Daily Challenge</Text>
               </View>
-            ) : (
-              <Text style={[styles.sub, styles.subTall]}>
-                A new mystery hero every day — can you name them?
-              </Text>
-            )}
+              <Text style={styles.title}>Guess the Hero</Text>
+              {streak > 0 ? (
+                <View style={styles.streakRow}>
+                  <Text style={styles.streakText}>🔥 {streak} day streak</Text>
+                  <Text style={styles.dot}>·</Text>
+                  <Text style={styles.sub}>Keep it alive</Text>
+                </View>
+              ) : (
+                <Text style={styles.sub}>A new mystery hero every day — can you name them?</Text>
+              )}
+            </View>
           </View>
 
           <View style={styles.playBtn}>
@@ -190,46 +189,37 @@ const styles = StyleSheet.create({
   },
   ctaIcon: { marginLeft: 2 }, // optically centre the play triangle
 
-  // ── Tall "poster" variant (web engage row) ──────────────────────────────────
-  // A vertical layout that distributes content over the full card height so it
-  // reads as a full-height sibling of the matchup card, not a short bar.
+  // ── Tall variant (web engage row) ───────────────────────────────────────────
+  // Tile + text up top, full-width CTA pinned to the bottom. Intentionally
+  // compact so the matchup card beside it stays the row's height-setter; the
+  // space-between + flex fill then stretch this to match — never taller.
   bgTall: {
     flex: 1,
     flexDirection: 'column',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 26,
-    paddingHorizontal: 22,
-    gap: 18,
+    padding: 18,
+    gap: 14,
   },
   kickerRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  tallTop: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   tileTall: {
-    width: 116,
-    height: 146,
-    borderRadius: 18,
+    width: 78,
+    height: 94,
+    borderRadius: 16,
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(11,24,32,0.7)',
     borderWidth: 1,
     borderColor: 'rgba(231,115,51,0.35)',
-    boxShadow: '0 12px 30px rgba(0,0,0,0.42)',
+    boxShadow: '0 10px 26px rgba(0,0,0,0.4)',
   } as object,
   tileMarkTall: {
     position: 'absolute',
     fontFamily: 'Flame-Regular',
-    fontSize: 58,
+    fontSize: 42,
     color: COLORS.orange,
   },
-  bodyTall: { alignItems: 'center', gap: 5 },
-  titleTall: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 26,
-    lineHeight: 30,
-    color: COLORS.beige,
-    textAlign: 'center',
-  },
-  subTall: { textAlign: 'center', maxWidth: 260, marginTop: 0 },
   playBtn: {
     flexDirection: 'row',
     alignSelf: 'stretch',
