@@ -297,7 +297,7 @@ const s2 = StyleSheet.create({
   pencil: { paddingVertical: 2, paddingLeft: 7, cursor: 'pointer' } as object,
   // Card header row: title + pencil sit together, perfectly centered vertically.
   cardHeadRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 } as object,
-  contributeFooter: { alignItems: 'center', paddingTop: 28, paddingBottom: 40 } as object,
+  contributeFooter: { alignItems: 'center', paddingTop: 28, paddingBottom: 16 } as object,
   contributeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2645,9 +2645,9 @@ const sk = StyleSheet.create({
     maxWidth: 1180,
     alignSelf: 'center',
     width: '100%',
-    paddingBottom: 0,
+    paddingBottom: 'calc(env(safe-area-inset-bottom) + 24px)',
     backgroundColor: COLORS.beige,
-  },
+  } as object,
 
   // ── Desktop identity stage ──
   stage: { backgroundColor: COLORS.deepNavy, position: 'relative', overflow: 'hidden' },
@@ -2767,15 +2767,17 @@ const styles = StyleSheet.create({
   scrollContent: { width: '100%' },
   // Beige backs the whole body so content below the first viewport (notably the
   // shared contribute footer, which sits outside the beige mSheet) reads beige
-  // against the now-ink document canvas. The canvas (ink) only shows in the iOS
-  // status-bar strip and true overscroll — the seamless dark top edge we want.
+  // against the now-ink document canvas. The safe-area bottom padding extends
+  // that beige down through the iOS home-indicator inset and the Safari
+  // bottom-toolbar zone, so the page ends on beige; the ink canvas then only
+  // shows in the status-bar strip and true overscroll — the seamless dark top.
   bodyWrap: {
     maxWidth: 1180,
     alignSelf: 'center',
     width: '100%',
-    paddingBottom: 0,
+    paddingBottom: 'calc(env(safe-area-inset-bottom) + 24px)',
     backgroundColor: COLORS.beige,
-  },
+  } as object,
   familyBand: { paddingHorizontal: 24, paddingBottom: 24, marginTop: -8 },
   center: {
     flex: 1,
