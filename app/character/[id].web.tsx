@@ -297,7 +297,7 @@ const s2 = StyleSheet.create({
   pencil: { paddingVertical: 2, paddingLeft: 7, cursor: 'pointer' } as object,
   // Card header row: title + pencil sit together, perfectly centered vertically.
   cardHeadRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 } as object,
-  contributeFooter: { alignItems: 'center', paddingTop: 28, paddingBottom: 16 } as object,
+  contributeFooter: { alignItems: 'center', paddingTop: 24, paddingBottom: 8 } as object,
   contributeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -491,13 +491,11 @@ export default function WebCharacterScreen() {
   const isDesktop = width >= 700;
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
-  // Before the skeleton early-return so it applies in both states.
-  // On mobile the screen opens on the dark immersive portrait header, so the
-  // canvas (which backs the iOS status-bar strip and bottom overscroll) is ink —
-  // the top edge then reads continuous into the hero instead of flashing a beige
-  // band above it. The body content stays beige via the opaque scroll + mSheet
-  // surfaces. Desktop has no status-bar strip and ends on beige, so it keeps paper.
-  useScreenChrome({ top: SURFACE.ink, canvas: isDesktop ? SURFACE.paper : SURFACE.ink });
+  // Before the skeleton early-return so it applies in both states. Canvas stays
+  // paper so the body and both Safari toolbar zones read beige; the dark top edge
+  // is handled by the status-bar cover, which paints the ink `top` colour — so
+  // the canvas can be light without the status bar drifting beige.
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
 
   const skeletonOpacity = useSkeletonAnim();
   const {
@@ -2641,13 +2639,7 @@ function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showH
 const sk = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: COLORS.beige },
   scrollContent: { width: '100%' },
-  bodyWrap: {
-    maxWidth: 1180,
-    alignSelf: 'center',
-    width: '100%',
-    paddingBottom: 'calc(env(safe-area-inset-bottom) + 24px)',
-    backgroundColor: COLORS.beige,
-  } as object,
+  bodyWrap: { maxWidth: 1180, alignSelf: 'center', width: '100%', paddingBottom: 0 },
 
   // ── Desktop identity stage ──
   stage: { backgroundColor: COLORS.deepNavy, position: 'relative', overflow: 'hidden' },
@@ -2765,19 +2757,7 @@ const styles = StyleSheet.create({
   // Scroll content is full-width so the dark stage can bleed edge-to-edge;
   // the body re-constrains itself to a centred reading column.
   scrollContent: { width: '100%' },
-  // Beige backs the whole body so content below the first viewport (notably the
-  // shared contribute footer, which sits outside the beige mSheet) reads beige
-  // against the now-ink document canvas. The safe-area bottom padding extends
-  // that beige down through the iOS home-indicator inset and the Safari
-  // bottom-toolbar zone, so the page ends on beige; the ink canvas then only
-  // shows in the status-bar strip and true overscroll — the seamless dark top.
-  bodyWrap: {
-    maxWidth: 1180,
-    alignSelf: 'center',
-    width: '100%',
-    paddingBottom: 'calc(env(safe-area-inset-bottom) + 24px)',
-    backgroundColor: COLORS.beige,
-  } as object,
+  bodyWrap: { maxWidth: 1180, alignSelf: 'center', width: '100%', paddingBottom: 0 },
   familyBand: { paddingHorizontal: 24, paddingBottom: 24, marginTop: -8 },
   center: {
     flex: 1,
