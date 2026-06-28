@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import type { HeroStats, HeroDetails, FirstIssue, MovieAppearance, IssueCover } from '../types';
+import type { HeroStats, HeroDetails, FirstIssue, MovieAppearance } from '../types';
 import { supabase } from './supabase';
 
 const SUPERHERO_API_KEY = Constants.expoConfig?.extra?.superheroApiKey as string;
@@ -207,21 +207,13 @@ export async function fetchFirstIssue(issueId: string): Promise<FirstIssue> {
   };
 }
 
-export async function fetchHeroGallery(
-  heroId: string,
-  comicvineId: string,
-): Promise<{ issueCovers: IssueCover[] | null }> {
-  const { data, error } = await supabase.functions.invoke<{
-    issueCovers: IssueCover[] | null;
-  }>('get-hero-gallery', { body: { heroId, comicvineId } });
-
+/** Triggers the gallery enrich edge fn. Images are read separately via
+ *  getHeroImages once this resolves. */
+export async function fetchHeroGallery(heroId: string, comicvineId: string): Promise<void> {
+  const { error } = await supabase.functions.invoke('get-hero-gallery', {
+    body: { heroId, comicvineId },
+  });
   if (error) console.warn('[fetchHeroGallery] error:', error.message, error);
-  if (error || !data) {
-    return { issueCovers: null };
-  }
-  return {
-    issueCovers: data.issueCovers ?? null,
-  };
 }
 
 export interface VerdictInput {

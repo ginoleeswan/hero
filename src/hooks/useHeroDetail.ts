@@ -25,7 +25,8 @@ import { getHeroNarrative, type HeroNarrative } from '../lib/db/heroFacts';
 import { useAuth } from './useAuth';
 import { useRecordView } from './useViewHistory';
 import { supabase } from '../lib/supabase';
-import type { CharacterData, IssueCover } from '../types';
+import { getHeroImages } from '../lib/db/heroImages';
+import type { CharacterData, HeroImage } from '../types';
 
 // Power-stat keys in dial order. The view keeps its own STAT_CONFIG (keys + tints
 // + labels) for rendering; the hook only needs the keys to total the stats.
@@ -67,7 +68,7 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
   const [titles, setTitles] = useState<HeroTitle[] | null>(null);
   const [portrayals, setPortrayals] = useState<HeroPortrayals | null>(null);
   const [links, setLinks] = useState<HeroLinks | null>(null);
-  const [issueCovers, setIssueCovers] = useState<IssueCover[] | null>(null);
+  const [galleryImages, setGalleryImages] = useState<HeroImage[] | null>(null);
   const [galleryLoading, setGalleryLoading] = useState(false);
   const [newIssues, setNewIssues] = useState<NewComic[]>([]);
 
@@ -235,20 +236,21 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
     if (heroRow) {
       setData(heroRowToCharacterData(heroRow));
 
-      // Seed issue covers from DB if already populated
-      if (heroRow.issue_covers) {
-        setIssueCovers(heroRow.issue_covers as unknown as IssueCover[]);
-      }
+      // Gallery images (primary art + covers, multi-source) from hero_images.
+      getHeroImages(heroRow.id)
+        .then((imgs) => {
+          if (imgs.length > 0) setGalleryImages(imgs);
+        })
+        .catch(() => {});
 
-      // Lazy-fetch covers only if never enriched (sentinel null). Heroes with no
-      // covers keep a null column but a set timestamp, so they don't re-trigger
-      // the fetch on every visit.
+      // First-ever fetch: enrich from ComicVine, then re-read the rows.
       const needsGallery = heroRow.comicvine_id != null && heroRow.gallery_enriched_at === null;
       if (needsGallery) {
         setGalleryLoading(true);
         fetchHeroGallery(heroRow.id, heroRow.comicvine_id!)
-          .then(({ issueCovers: covers }) => {
-            if (covers) setIssueCovers(covers);
+          .then(() => getHeroImages(heroRow.id))
+          .then((imgs) => {
+            if (imgs.length > 0) setGalleryImages(imgs);
           })
           .catch(() => {})
           .finally(() => setGalleryLoading(false));
@@ -436,7 +438,7 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
     titles,
     portrayals,
     links,
-    issueCovers,
+    galleryImages,
     galleryLoading,
     newIssues,
     heroRow,
