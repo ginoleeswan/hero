@@ -16,7 +16,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { type HeroSearchResult } from '../../../src/lib/db/heroes';
 import { HeroImage } from '../../../src/components/HeroImage';
-import { COLORS, SURFACE, SURFACE_GRADIENT, SEAM_COLOR } from '../../../src/constants/colors';
+import { COLORS, SURFACE, SURFACE_GRADIENT } from '../../../src/constants/colors';
 import { HeroPeek, type PeekHero } from '../../../src/components/compare/HeroPeek';
 import { useSearch } from '../../../src/contexts/SearchContext';
 import { useSearchHistory } from '../../../src/hooks/useSearchHistory';
@@ -51,7 +51,7 @@ const sk = StyleSheet.create({
     width: '100%', // WebKit won't stretch an aspect-ratio grid item to the track
     borderRadius: 10,
     aspectRatio: '3 / 4',
-    backgroundColor: '#ddd5c8',
+    backgroundColor: 'rgba(245,235,220,0.06)',
   } as object,
 });
 
@@ -178,10 +178,10 @@ export default function WebSearchScreen() {
   const skeletonOpacity = useSkeletonAnim();
   const { history, addSearch, clearHistory } = useSearchHistory();
 
-  // Ink-topped over a beige canvas: the status-bar zone is deepNavy so iOS can't
-  // wash it out to a light scrim, and the header fuses from that ink down into
-  // the navy band. Both ends declared together so they can't drift.
-  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
+  // Search is a dark discovery surface (like Explore / Versus): the whole page —
+  // status-bar zone, header and body — is one continuous deep-ink ground so the
+  // character art is the only thing that glows. No seam, no light/dark split.
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
   const urlQ = (Array.isArray(params.q) ? params.q[0] : (params.q ?? '')).toString();
 
@@ -395,10 +395,6 @@ export default function WebSearchScreen() {
                 )}
               </View>
             </View>
-            {/* The seam dissolved: instead of a hard hairline + shadow, the dark
-                band melts into the beige canvas over this runway, so the search
-                zone and the content read as one continuous surface. */}
-            <View style={styles.mobileHeaderFade as object} pointerEvents="none" />
           </View>
           <View style={{ height: headerH }} />
         </>
@@ -418,7 +414,7 @@ export default function WebSearchScreen() {
               <View style={styles.chips as object}>
                 {history.map((h) => (
                   <Pressable key={h} onPress={() => setInputQuery(h)} style={styles.chip as object}>
-                    <Ionicons name="time-outline" size={13} color={COLORS.grey} />
+                    <Ionicons name="time-outline" size={13} color="rgba(245,235,220,0.5)" />
                     <Text style={styles.chipText as object} numberOfLines={1}>
                       {h}
                     </Text>
@@ -451,7 +447,7 @@ export default function WebSearchScreen() {
                       logoTint: b.logoTint,
                       exact: false,
                     }}
-                    variant="light"
+                    variant="dark"
                     onPress={() =>
                       router.push(`/universe/${b.slug}` as Parameters<typeof router.push>[0])
                     }
@@ -477,7 +473,7 @@ export default function WebSearchScreen() {
               <TopResultRow
                 top={topResult}
                 active={false}
-                variant="light"
+                surface="page"
                 onPress={() => openTop(topResult)}
               />
             </View>
@@ -490,7 +486,7 @@ export default function WebSearchScreen() {
                   <View key={u.slug} style={styles.universeChipWrap as object}>
                     <UniverseChip
                       universe={u}
-                      variant="light"
+                      variant="dark"
                       onPress={() =>
                         router.push(`/universe/${u.slug}` as Parameters<typeof router.push>[0])
                       }
@@ -522,7 +518,7 @@ export default function WebSearchScreen() {
                 <View key={t.id} style={styles.universeChipWrap as object}>
                   <TeamResultRow
                     team={t}
-                    variant="light"
+                    variant="dark"
                     onPress={() =>
                       router.push(`/team/${t.id}` as Parameters<typeof router.push>[0])
                     }
@@ -577,20 +573,18 @@ export default function WebSearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.beige },
+  // One continuous deep-ink ground — the dark discovery surface (matches Explore /
+  // Versus). The art is the only thing that glows.
+  root: { flex: 1, backgroundColor: COLORS.deepNavy },
 
   // ── Desktop ────────────────────────────────────────────────────────────────
   desktopHeroZone: {
-    // Ink→navy gradient over a navy base — depth without a flat slab.
-    backgroundColor: COLORS.navy,
+    // Ink→navy gradient over the deep-ink ground — depth at the search zone that
+    // eases into the dark body below (no seam: the whole page is dark now).
+    backgroundColor: COLORS.deepNavy,
     backgroundImage: SURFACE_GRADIENT.stage,
     paddingTop: TOPBAR_HEIGHT + 22,
     paddingBottom: 24,
-    // The seam: warm orange hairline + drop shadow where the dark band meets the
-    // beige canvas — an engineered page edge, not a flat colour jump.
-    borderBottomWidth: 1,
-    borderBottomColor: SEAM_COLOR,
-    boxShadow: '0 14px 30px -14px rgba(11,24,32,0.55)',
   } as object,
   desktopHeroZoneInner: { maxWidth: 1200, width: '100%', alignSelf: 'center' },
   desktopSearchBar: {
@@ -621,9 +615,10 @@ const styles = StyleSheet.create({
   // under body{overflow:visible} (same fix the TopBar uses). paddingTop clears the
   // TopBar (its height + the status-bar inset) so the search row sits just below.
   mobileFixedHeader: {
-    // Ink→navy gradient over a navy base — deepNavy at the status bar easing in.
-    backgroundColor: COLORS.navy,
-    backgroundImage: SURFACE_GRADIENT.stage,
+    // Flat deep-ink, identical to the body — so the header is invisible as a band
+    // and the search field just floats on the one continuous dark surface. When
+    // content scrolls under it, it's hidden behind the same colour: seamless.
+    backgroundColor: COLORS.deepNavy,
     position: 'fixed',
     top: 0,
     left: 0,
@@ -632,22 +627,7 @@ const styles = StyleSheet.create({
     paddingTop: `calc(${TOPBAR_HEIGHT}px + env(safe-area-inset-top) + 10px)`,
     // translateZ(0) is applied inline alongside the hide/reveal translateY.
     transition: 'transform 260ms ease',
-    // No hard seam: the dark band dissolves into the canvas via mobileHeaderFade
-    // (the search zone + content read as one continuous surface). The bottom
-    // padding is just the runway the fade needs, clear of the search field — kept
-    // tight so the dark zone hugs the search bar instead of looming.
-    paddingBottom: 22,
-  } as object,
-  // The dissolve: a transparent→beige wash over the navy bottom edge so the dark
-  // band melts into the paper canvas instead of ending on a line. Sits in the
-  // header's bottom padding, clear of the search field.
-  mobileHeaderFade: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 30,
-    backgroundImage: `linear-gradient(180deg, rgba(245,235,220,0) 0%, rgba(245,235,220,0.5) 55%, ${COLORS.beige} 100%)`,
+    paddingBottom: 12,
   } as object,
   mobileSearchRow: {
     paddingHorizontal: 12,
@@ -686,16 +666,15 @@ const styles = StyleSheet.create({
   charLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
-    color: COLORS.grey,
+    color: 'rgba(245,235,220,0.55)',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   } as object,
   charCount: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
-    color: COLORS.grey,
+    color: 'rgba(245,235,220,0.4)',
     letterSpacing: 0.2,
-    opacity: 0.8,
   } as object,
 
   // ── Idle state (mobile, no query) ─────────────────────────────────────────
@@ -703,9 +682,9 @@ const styles = StyleSheet.create({
   idleLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11.5,
-    // Warm ink at low opacity instead of a cool grey — quiet but deliberate, and
-    // tonally part of the navy/beige system rather than a neutral slate.
-    color: 'rgba(41,60,67,0.6)',
+    // Quiet warm-beige caps on the dark ground — present but never competing with
+    // the art.
+    color: 'rgba(245,235,220,0.5)',
     letterSpacing: 0.9,
     textTransform: 'uppercase',
     marginBottom: 10,
@@ -723,17 +702,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255,251,244,0.8)',
+    backgroundColor: 'rgba(245,235,220,0.08)',
     borderRadius: 19,
     borderWidth: 1,
-    borderColor: 'rgba(41,60,67,0.12)',
-    boxShadow: '0 1px 2px rgba(11,24,32,0.05)',
+    borderColor: 'rgba(245,235,220,0.14)',
     paddingHorizontal: 13,
     paddingVertical: 8,
     cursor: 'pointer',
     maxWidth: 220,
   } as object,
-  chipText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy } as object,
+  chipText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.beige } as object,
 
   // Universe chips: search-hit row above the grid, and the idle "Browse universes" row.
   universeRow: {
@@ -744,7 +722,6 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   } as object,
   universeChipWrap: {
-    backgroundColor: 'rgba(29,45,51,0.05)',
     borderRadius: 12,
   } as object,
   topSection: { paddingTop: 20, gap: 8 } as object,
@@ -755,11 +732,11 @@ const styles = StyleSheet.create({
   // ── Grid / content ─────────────────────────────────────────────────────────
   gridWrap: { paddingTop: 24, maxWidth: 1200, width: '100%', alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
-  empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: COLORS.grey },
+  empty: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: 'rgba(245,235,220,0.55)' },
   moreHint: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: COLORS.grey,
+    color: 'rgba(245,235,220,0.45)',
     textAlign: 'center',
     paddingTop: 24,
   } as object,

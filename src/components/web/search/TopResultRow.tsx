@@ -1,37 +1,37 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, CARD_SHADOW } from '../../../constants/colors';
+import { COLORS } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import { BrandLogoView } from '../../PublisherBadge';
 import { brandForPublisher } from '../../../constants/publishers';
 import { teamLogo } from '../../../constants/teamBrands';
 import type { TopResult } from '../../../lib/search/topResult';
 
-// The featured "Top result" — one prominent, type-agnostic row at the very top of
-// the palette. Larger thumbnail + name, a type tag, a subtitle, and an ↵ hint. It
-// is the default Enter target (pre-selected look when `active`).
-// Dark variant = palette dropdown (keyboard-driven, ↵ target); light variant =
-// the beige /search results page (touch/mouse, rendered as a featured card with
-// a forward arrow instead of the keyboard hint).
+// The featured "Top result" — one prominent, type-agnostic row for the single
+// confident answer. Both surfaces are dark:
+//   • 'palette' — a row inside the command-palette dropdown; keyboard-driven, so
+//     it shows the ↵ Enter hint and the pre-selected look when `active`.
+//   • 'page' — the /search results page (touch); a raised featured card with the
+//     thumbnail glowing in its universe's brand colour and a forward arrow.
 export function TopResultRow({
   top,
   active,
   onPress,
-  variant = 'dark',
+  surface = 'palette',
 }: {
   top: TopResult;
   active: boolean;
   onPress: () => void;
-  variant?: 'dark' | 'light';
+  surface?: 'palette' | 'page';
 }) {
-  const light = variant === 'light';
+  const page = surface === 'page';
   const { name, typeLabel, subtitle, thumb, glowColor } = describe(top);
   // The signature: on the results page the featured thumbnail casts a soft glow in
-  // its own universe's brand colour (Spider-Man → a faint Marvel-red halo), so the
-  // answer feels identified with where it comes from. Box-shadow isn't clipped by
-  // the thumb's overflow:hidden, so it blooms outside the rounded art.
-  const glowStyle = light ? ({ boxShadow: `0 8px 24px -6px ${glowColor}59` } as object) : null;
+  // its own universe's brand colour (Spider-Man → a Marvel-red halo) — which reads
+  // even stronger on the dark ground. Box-shadow isn't clipped by the thumb's
+  // overflow:hidden, so it blooms outside the rounded art.
+  const glowStyle = page ? ({ boxShadow: `0 8px 26px -6px ${glowColor}80` } as object) : null;
   return (
     <Pressable
       onPress={onPress}
@@ -39,8 +39,8 @@ export function TopResultRow({
       style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [
           styles.row,
-          light && (styles.rowLight as object),
-          (active || hovered) && ((light ? styles.rowActiveLight : styles.rowActive) as object),
+          page && (styles.rowPage as object),
+          (active || hovered) && ((page ? styles.rowActivePage : styles.rowActive) as object),
         ] as object
       }
     >
@@ -48,8 +48,8 @@ export function TopResultRow({
         style={
           [
             styles.thumb,
-            light && (styles.thumbLight as object),
-            top.kind === 'hero' && ((light ? styles.thumbRoundLight : styles.thumbRound) as object),
+            page && (styles.thumbPage as object),
+            top.kind === 'hero' && ((page ? styles.thumbRoundPage : styles.thumbRound) as object),
             glowStyle,
           ] as object
         }
@@ -59,7 +59,7 @@ export function TopResultRow({
       <View style={styles.text}>
         <View style={styles.titleRow}>
           <Text
-            style={[styles.name, light && (styles.nameLight as object)] as object}
+            style={[styles.name, page && (styles.namePage as object)] as object}
             numberOfLines={1}
           >
             {name}
@@ -68,23 +68,18 @@ export function TopResultRow({
               "CHARACTER" chip, and tagging it would clash with the alignment
               (Hero/Villain) badge the character rows use. */}
           {typeLabel ? (
-            <View style={[styles.tag, light && (styles.tagLight as object)] as object}>
-              <Text style={[styles.tagText, light && (styles.tagTextLight as object)] as object}>
-                {typeLabel}
-              </Text>
+            <View style={styles.tag as object}>
+              <Text style={styles.tagText as object}>{typeLabel}</Text>
             </View>
           ) : null}
         </View>
         {subtitle ? (
-          <Text
-            style={[styles.subtitle, light && (styles.subtitleLight as object)] as object}
-            numberOfLines={1}
-          >
+          <Text style={styles.subtitle as object} numberOfLines={1}>
             {subtitle}
           </Text>
         ) : null}
       </View>
-      {light ? (
+      {page ? (
         <Ionicons name="arrow-forward" size={18} color={COLORS.orange} />
       ) : (
         <View style={styles.enter as object}>
@@ -216,21 +211,20 @@ const styles = StyleSheet.create({
     transition: 'background-color 150ms ease',
   } as object,
   rowActive: { backgroundColor: 'rgba(231,115,51,0.14)' } as object,
-  // Light variant: a raised paper card on the beige canvas — warm off-white +
-  // soft warm-dark shadow so the answer rises from the surface (not a flat orange
-  // wash). The thumbnail's brand glow supplies the colour.
-  rowLight: {
+  // Page variant: a raised dark card on the deep-ink canvas — a faintly lifted
+  // panel so the answer reads as featured; the thumbnail's brand glow gives colour.
+  rowPage: {
     marginHorizontal: 0,
     gap: 15,
     paddingVertical: 13,
     paddingHorizontal: 15,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,251,244,0.92)',
+    backgroundColor: 'rgba(245,235,220,0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(41,60,67,0.08)',
-    boxShadow: CARD_SHADOW,
+    borderColor: 'rgba(245,235,220,0.1)',
+    boxShadow: '0 10px 30px -14px rgba(0,0,0,0.6)',
   } as object,
-  rowActiveLight: { backgroundColor: COLORS.beige, transform: [{ translateY: -1 }] } as object,
+  rowActivePage: { backgroundColor: 'rgba(245,235,220,0.08)' } as object,
   thumb: {
     width: 48,
     height: 48,
@@ -238,9 +232,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     flexShrink: 0,
   } as object,
-  thumbLight: { width: 56, height: 56, borderRadius: 13 } as object,
+  thumbPage: { width: 56, height: 56, borderRadius: 13 } as object,
   thumbRound: { borderRadius: 24 } as object, // characters read as circular avatars
-  thumbRoundLight: { borderRadius: 28 } as object,
+  thumbRoundPage: { borderRadius: 28 } as object,
   tile: {
     width: '100%',
     height: '100%',
@@ -255,7 +249,7 @@ const styles = StyleSheet.create({
   text: { flex: 1, minWidth: 0, flexDirection: 'column', gap: 2 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   name: { fontFamily: 'Flame-Regular', fontSize: 18, color: COLORS.beige, flexShrink: 1 } as object,
-  nameLight: { color: COLORS.navy, fontSize: 20 } as object,
+  namePage: { fontSize: 20 } as object,
   tag: {
     paddingHorizontal: 7,
     paddingVertical: 2,
@@ -263,7 +257,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(245,235,220,0.10)',
     flexShrink: 0,
   } as object,
-  tagLight: { backgroundColor: 'rgba(29,45,51,0.08)' } as object,
   tagText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
@@ -271,13 +264,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   } as object,
-  tagTextLight: { color: 'rgba(29,45,51,0.55)' } as object,
   subtitle: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 12.5,
     color: 'rgba(245,235,220,0.5)',
   } as object,
-  subtitleLight: { color: 'rgba(29,45,51,0.55)' } as object,
   enter: {
     width: 26,
     height: 26,
