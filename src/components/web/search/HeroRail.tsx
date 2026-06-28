@@ -33,7 +33,9 @@ export function HeroRail({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={{ marginHorizontal: -bleed } as object}
+      // Explicit height — a horizontal ScrollView collapses to 0 inside a flex
+      // column (e.g. the command-palette panel) without it.
+      style={{ marginHorizontal: -bleed, height: RAIL_HEIGHT } as object}
       contentContainerStyle={[styles.track, { paddingLeft: edge, paddingRight: edge }] as object}
     >
       {heroes.map((h) => (
@@ -69,6 +71,8 @@ export function HeroRail({
 }
 
 const SIZE = 74;
+// Portrait + name + track padding; also the fixed ScrollView height (see above).
+const RAIL_HEIGHT = SIZE + 30;
 
 const styles = StyleSheet.create({
   track: { gap: 14, paddingVertical: 2 } as object,

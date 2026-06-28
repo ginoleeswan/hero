@@ -83,6 +83,7 @@ export function IdleSuggestions({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.universeRail as object}
           contentContainerStyle={styles.universeTrack as object}
         >
           {SEARCH_UNIVERSES.map((b) => (
@@ -173,12 +174,16 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   sectionLabelSpaced: { paddingTop: 16 },
+  // Explicit height — a horizontal ScrollView collapses to 0 inside the flex
+  // column palette panel without it (~56 chip + a little breathing room).
+  universeRail: { height: 60 } as object,
   universeTrack: {
     flexDirection: 'row',
     gap: 8,
     paddingLeft: RAIL_INSET,
     paddingRight: RAIL_INSET,
     paddingBottom: 4,
+    alignItems: 'center',
   } as object,
   loadingContainer: {
     paddingVertical: 24,
