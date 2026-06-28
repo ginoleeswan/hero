@@ -44,9 +44,11 @@ function RecCard({ rec, onPress }: { rec: TitleRecommendation; onPress: () => vo
  */
 export function RecommendationsRail({
   recommendations,
+  label = 'You might also like',
   inCard,
 }: {
   recommendations: TitleRecommendation[];
+  label?: string;
   inCard?: boolean;
 }) {
   const router = useRouter();
@@ -69,7 +71,7 @@ export function RecommendationsRail({
 
   return (
     <View style={styles.block}>
-      <Text style={styles.label}>You might also like</Text>
+      <Text style={styles.label}>{label}</Text>
       {scroller}
     </View>
   );

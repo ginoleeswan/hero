@@ -172,9 +172,10 @@ export default function TitleScreen() {
     ) : null;
 
   const extras = titleExtras(film);
-  const reviewsSection = extras.reviews && extras.reviews.length > 0 ? (
-    <ReviewsSection reviews={extras.reviews} />
-  ) : null;
+  const reviewsSection =
+    extras.reviews && extras.reviews.length > 0 ? (
+      <ReviewsSection reviews={extras.reviews} />
+    ) : null;
 
   const isTv = film.mediaType === 'tv';
   const tv = (film.details ?? {}) as {
@@ -466,11 +467,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     marginTop: -128,
   } as object,
-  sideColWide: { width: 300, flexShrink: 0, gap: 18 } as object,
-  // Full-width stack below the two columns (reviews, universe, recommendations).
+  // Sticky so a short sidebar pins beside the scrolling main column instead of
+  // leaving a dead gap. top clears the floating nav.
+  sideColWide: {
+    width: 300,
+    flexShrink: 0,
+    gap: 18,
+    position: 'sticky',
+    top: 80,
+    alignSelf: 'flex-start',
+  } as object,
+  // Full-width stack below the two columns (universe, recommendations).
   fullStack: { paddingHorizontal: 24, paddingTop: 18, gap: 18 },
   posterFloat: {
-    marginTop: -220,
     borderRadius: 16,
     borderCurve: 'continuous',
     overflow: 'hidden',
