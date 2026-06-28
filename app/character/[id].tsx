@@ -1478,6 +1478,13 @@ export default function CharacterScreen() {
                       <GalleryStrip
                         images={issueCovers.map((c) => ({ url: c.url, caption: c.name }))}
                         onPress={(i) => {
+                          const issueId = issueCovers[i]?.id;
+                          if (issueId) {
+                            router.push(
+                              `/issue/cvi:${issueId}` as Parameters<typeof router.push>[0],
+                            );
+                            return;
+                          }
                           setLightboxImages(
                             issueCovers.map((c) => ({ url: c.url, caption: c.name })),
                           );

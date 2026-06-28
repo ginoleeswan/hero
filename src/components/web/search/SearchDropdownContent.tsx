@@ -1,12 +1,15 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../../constants/colors';
 import { useSearch } from '../../../contexts/SearchContext';
+import { useAuth } from '../../../hooks/useAuth';
 import { useSearchHistory } from '../../../hooks/useSearchHistory';
 import { useUnifiedSearch } from '../../../hooks/useUnifiedSearch';
 import { useIdleHeroes } from '../../../hooks/useIdleHeroes';
 import { useIdleShowcase } from '../../../hooks/useIdleShowcase';
+import { getRecentlyViewed } from '../../../lib/db/viewHistory';
+import type { RailHero } from './HeroRail';
 import { IdleSuggestions } from './IdleSuggestions';
 import { SuggestionsList } from './SuggestionsList';
 import { UniverseChip } from './UniverseChip';
@@ -74,12 +77,33 @@ export function SearchDropdownContent({
 } = {}) {
   const router = useRouter();
   const { query, setQuery, setSearchFocused } = useSearch();
+  const { user } = useAuth();
   const { history, addSearch, clearHistory } = useSearchHistory();
   const { universes, teams, heroes, titles, loading, resultCount } = useUnifiedSearch(query);
 
   const isEmptyQuery = query.trim().length === 0;
-  const { heroes: trending, isLoading: trendingLoading } = useIdleHeroes(isEmptyQuery, 4);
+  // 14 fame-ranked icons for the Popular portrait rail (was 4 for a vertical list).
+  const { heroes: trending, isLoading: trendingLoading } = useIdleHeroes(isEmptyQuery, 14);
   const showcase = useIdleShowcase(isEmptyQuery);
+
+  // The signed-in user's recently-viewed characters ("jump back in"), shown as a
+  // portrait rail at the top of the idle palette. Only fetched while idle.
+  const [recentlyViewed, setRecentlyViewed] = useState<RailHero[]>([]);
+  useEffect(() => {
+    if (!isEmptyQuery || !user?.id) {
+      setRecentlyViewed([]);
+      return;
+    }
+    let cancelled = false;
+    getRecentlyViewed(user.id, 16)
+      .then((rows) => {
+        if (!cancelled) setRecentlyViewed(rows);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isEmptyQuery, user?.id]);
 
   // Which sections show, and how many — narrowed by the active scope. A scoped
   // view shows just that type (no top result), with a bigger cap.
@@ -186,6 +210,7 @@ export function SearchDropdownContent({
   if (isEmptyQuery) {
     return (
       <IdleSuggestions
+        recentlyViewed={recentlyViewed}
         trending={trending}
         trendingLoading={trendingLoading}
         teams={showcase.teams}

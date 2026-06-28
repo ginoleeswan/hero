@@ -18,18 +18,22 @@ export function HeroRail({
   heroes,
   onPress,
   edge = 0,
+  bleed = edge,
 }: {
   heroes: RailHero[];
   onPress: (hero: RailHero) => void;
-  /** Horizontal page padding to bleed past — the rail scrolls edge-to-edge while
-   *  its first card still lines up with the inset section label. */
+  /** Left/right inset for the first/last card (aligns the first card with the
+   *  section label). */
   edge?: number;
+  /** Negative margin to break out of a padded parent (defaults to `edge`). Pass 0
+   *  when the parent is already full-width (e.g. the command palette panel). */
+  bleed?: number;
 }) {
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={{ marginHorizontal: -edge } as object}
+      style={{ marginHorizontal: -bleed } as object}
       contentContainerStyle={[styles.track, { paddingLeft: edge, paddingRight: edge }] as object}
     >
       {heroes.map((h) => (

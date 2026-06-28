@@ -1,17 +1,17 @@
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
-import { FEATURED_PUBLISHERS } from '../../../constants/publishers';
+import { SEARCH_UNIVERSES } from '../../../constants/publishers';
 import type { HeroSearchResult } from '../../../lib/db/heroes';
 import type { TeamSearchResult } from '../../../lib/db/teams';
 import type { TitleSearchResult } from '../../../lib/db/titles';
-import type { UniverseResult } from '../../../lib/db/universes';
-import { SuggestionItem } from './SuggestionItem';
+import { HeroRail, type RailHero } from './HeroRail';
 import { UniverseChip } from './UniverseChip';
 import { TeamResultRow } from './TeamResultRow';
 import { TitleResultRow } from './TitleResultRow';
 
 interface IdleSuggestionsProps {
+  recentlyViewed: RailHero[];
   trending: HeroSearchResult[];
   trendingLoading: boolean;
   teams: TeamSearchResult[];
@@ -25,18 +25,12 @@ interface IdleSuggestionsProps {
   onClearHistory: () => void;
 }
 
-const browseUniverses: UniverseResult[] = FEATURED_PUBLISHERS.map((b) => ({
-  slug: b.slug,
-  name: b.name,
-  color: b.color,
-  logo: b.logo,
-  badgeSize: b.badgeSize,
-  logoOnLight: b.logoOnLight,
-  logoTint: b.logoTint,
-  exact: false,
-}));
+// Aligns rail cards / chips with the inset section labels; rails don't break out
+// of the panel (it's already the full overlay width), so bleed=0.
+const RAIL_INSET = 14;
 
 export function IdleSuggestions({
+  recentlyViewed,
   trending,
   trendingLoading,
   teams,
@@ -54,29 +48,62 @@ export function IdleSuggestions({
   return (
     <View style={styles.container as object}>
       <View style={styles.scroll as object}>
-        {/* Browse universes — a launchpad into the catalogue's big franchises. */}
-        <Text style={styles.sectionLabel}>Browse universes</Text>
-        <View style={styles.universeWrap as object}>
-          {browseUniverses.map((u) => (
-            <View key={u.slug} style={styles.universeChipWrap as object}>
-              <UniverseChip universe={u} onPress={() => onUniversePress(u.slug)} />
-            </View>
-          ))}
-        </View>
+        {/* Returning context first — characters you opened. */}
+        {recentlyViewed.length > 0 && (
+          <>
+            <Text style={styles.sectionLabel}>Recently viewed</Text>
+            <HeroRail
+              heroes={recentlyViewed}
+              edge={RAIL_INSET}
+              bleed={0}
+              onPress={(h) => onHeroPress(h.id)}
+            />
+          </>
+        )}
 
-        {/* Trending characters — fame-ranked icons. */}
-        <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Trending</Text>
+        {/* Popular — fame-ranked icons as a portrait rail (the discovery hook). */}
+        <Text style={[styles.sectionLabel, recentlyViewed.length > 0 && styles.sectionLabelSpaced]}>
+          Popular
+        </Text>
         {trendingLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="small" color={COLORS.orange} />
           </View>
         ) : (
-          trending.map((hero) => (
-            <SuggestionItem key={hero.id} hero={hero} onPress={() => onHeroPress(hero.id)} />
-          ))
+          <HeroRail
+            heroes={trending}
+            edge={RAIL_INSET}
+            bleed={0}
+            onPress={(h) => onHeroPress(h.id)}
+          />
         )}
 
-        {/* Popular teams */}
+        {/* Universes — the full set, a horizontal rail (not a 4-chip wrap). */}
+        <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Universes</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.universeTrack as object}
+        >
+          {SEARCH_UNIVERSES.map((b) => (
+            <UniverseChip
+              key={b.slug}
+              universe={{
+                slug: b.slug,
+                name: b.name,
+                color: b.color,
+                logo: b.logo,
+                badgeSize: b.badgeSize,
+                logoOnLight: b.logoOnLight,
+                logoTint: b.logoTint,
+                exact: false,
+              }}
+              onPress={() => onUniversePress(b.slug)}
+            />
+          ))}
+        </ScrollView>
+
+        {/* Popular teams — vertical rows keep their member/publisher metadata. */}
         {teams.length > 0 && (
           <>
             <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>Popular teams</Text>
@@ -141,18 +168,18 @@ const styles = StyleSheet.create({
     color: 'rgba(245,235,220,0.45)',
     letterSpacing: 0.2,
     textTransform: 'uppercase',
-    paddingHorizontal: 14,
+    paddingHorizontal: RAIL_INSET,
     paddingTop: 10,
-    paddingBottom: 4,
+    paddingBottom: 8,
   },
-  sectionLabelSpaced: { paddingTop: 14 },
-  universeWrap: {
+  sectionLabelSpaced: { paddingTop: 16 },
+  universeTrack: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    paddingHorizontal: 8,
+    gap: 8,
+    paddingLeft: RAIL_INSET,
+    paddingRight: RAIL_INSET,
+    paddingBottom: 4,
   } as object,
-  universeChipWrap: { backgroundColor: 'rgba(245,235,220,0.04)', borderRadius: 12 } as object,
   loadingContainer: {
     paddingVertical: 24,
     alignItems: 'center',

@@ -109,6 +109,9 @@ export interface IssueCover {
   name: string | null;
   issueNumber: string | null;
   year: string | null;
+  /** ComicVine issue id (null until the gallery is id-backfilled). Present →
+   *  the cover opens the /issue/[id] read-through page instead of the lightbox. */
+  id: string | null;
 }
 
 // ─── Combined character screen data ──────────────────────────────────────────
