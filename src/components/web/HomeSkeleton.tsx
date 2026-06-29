@@ -109,22 +109,18 @@ function EngageSkeleton({
   isMobile: boolean;
 }) {
   if (isMobile) {
+    // paddingHorizontal on the wrapper, not marginHorizontal on each block: the
+    // blocks are width:100%, which ignores their own margin and overflows.
     return (
-      <View style={{ marginTop: 12 }}>
+      <View style={{ marginTop: 12, paddingHorizontal: pagePad }}>
         <SkeletonBlock
           opacity={opacity}
           dark
           height={210}
           borderRadius={16}
-          style={{ marginHorizontal: 16, marginBottom: 12 }}
+          style={{ marginBottom: 12 }}
         />
-        <SkeletonBlock
-          opacity={opacity}
-          dark
-          height={96}
-          borderRadius={20}
-          style={{ marginHorizontal: 16 }}
-        />
+        <SkeletonBlock opacity={opacity} dark height={96} borderRadius={20} />
       </View>
     );
   }
@@ -221,7 +217,7 @@ function RowSkeleton({ opacity, pagePad }: { opacity: Opacity; pagePad: number }
   return (
     <View style={skel.section}>
       <RowHeader opacity={opacity} pagePad={pagePad} />
-      <View style={{ flexDirection: 'row', gap: 16, paddingLeft: pagePad }}>
+      <View style={{ flexDirection: 'row', gap: 16, paddingLeft: pagePad, overflow: 'hidden' }}>
         {Array.from({ length: 5 }).map((_, i) => (
           <SkeletonBlock
             key={i}
@@ -243,7 +239,7 @@ function DarkZoneSkeleton({ opacity, pagePad }: { opacity: Opacity; pagePad: num
       {[0, 1].map((g) => (
         <View key={g} style={{ marginBottom: g === 0 ? 28 : 0 }}>
           <RowHeader opacity={opacity} pagePad={pagePad} dark />
-          <View style={{ flexDirection: 'row', gap: 16, paddingLeft: pagePad }}>
+          <View style={{ flexDirection: 'row', gap: 16, paddingLeft: pagePad, overflow: 'hidden' }}>
             {Array.from({ length: 5 }).map((_, i) => (
               <SkeletonBlock
                 key={i}
