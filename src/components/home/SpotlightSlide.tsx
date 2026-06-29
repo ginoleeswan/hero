@@ -89,8 +89,9 @@ export function SpotlightSlide({
 
 const styles = StyleSheet.create({
   container: { overflow: 'hidden', backgroundColor: COLORS.deepNavy },
-  // Anchor the zoom (Ken Burns + overscroll) at the top so it grows downward and
-  // the top of the portrait stays pinned to the screen — never cropped/zoomed up.
+  // Full-bleed: the portrait's own top edge sits at the screen top, so the art's
+  // built-in headroom seats the head just below the status bar. Top-anchored zoom
+  // (Ken Burns + overscroll) grows downward and never eats that headroom.
   imageWrap: { transformOrigin: 'top' },
   // Sits low on the portrait; the dark stage overlaps the fade just below it.
   meta: { position: 'absolute', bottom: 40, left: 20, right: 20, alignItems: 'center' },

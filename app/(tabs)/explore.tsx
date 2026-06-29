@@ -473,7 +473,7 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
           contentInsetAdjustmentBehavior="never"
           automaticallyAdjustContentInsets={false}
-          contentContainerStyle={[styles.content, { marginTop: -insets.top }] as object}
+          contentContainerStyle={styles.content}
           ListFooterComponent={<PaperSurface style={styles.footer} />}
           scrollEventThrottle={16}
           onScroll={scrollHandler}
