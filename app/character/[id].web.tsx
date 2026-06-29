@@ -10,6 +10,8 @@ import { FamilyCanvas } from '../../src/components/family/FamilyCanvas.web';
 import { getPowerIcon, groupPowers } from '../../src/constants/powerIcons';
 import { useHeroDetail } from '../../src/hooks/useHeroDetail';
 import { useHeroTeams } from '../../src/hooks/useHeroTeams';
+import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
+import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
 import { ContributeSheet } from '../../src/components/contribute/ContributeSheet';
 import { isBlankValue } from '../../src/lib/contribute/missingFields';
 import {
@@ -52,6 +54,12 @@ const STAT_CONFIG = [
 ];
 
 const JUNK_VALUES = new Set(['-', 'null', 'none', 'no alter egos found.', 'n/a', 'unknown']);
+
+// Mobile immersive portrait header height as a fraction of the viewport. Shared by
+// the live page AND the loading skeleton so the two stay pixel-aligned — the
+// skeleton crossfades out OVER the settled content, so any drift here shows up as a
+// vertical jump of the body as the skeleton dissolves.
+const M_HERO_RATIO = 0.9;
 
 // Map the raw alignment value to a display label (mirrors the Explore stage).
 function alignmentLabel(alignment?: string | null): string | null {
@@ -487,7 +495,7 @@ export default function WebCharacterScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { width, height: winHeight } = useWindowDimensions();
-  const mHeroHeight = Math.round(winHeight * 0.9);
+  const mHeroHeight = Math.round(winHeight * M_HERO_RATIO);
   const isDesktop = width >= 700;
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
@@ -525,6 +533,16 @@ export default function WebCharacterScreen() {
     allyNames,
     teammateNames,
   } = useHeroDetail({ id });
+
+  // Cold-load choreography (mirrors the title page): a single `loading` flag drives
+  // a four-phase skeleton→content transition so the swap reads as a cross-dissolve.
+  //   pre       — within the anti-flash window: show only the deepNavy shell, so an
+  //               instant/cached load never flashes a half-frame of skeleton.
+  //   skeleton  — load outlasted the window: show the full-page skeleton.
+  //   crossfade — data arrived after the skeleton showed: render the real page and
+  //               dissolve the skeleton out on top of it (placeholders resolve in
+  //               place), so the body never hard-cuts.
+  const coldPhase = useSkeletonTransition(!data);
 
   // View-only UI state (edit affordances, first-issue modal, tabs, lightbox, stage).
   const [statsEditing, setStatsEditing] = useState(false);
@@ -601,7 +619,15 @@ export default function WebCharacterScreen() {
   }
 
   if (!data) {
-    return <CharacterSkeleton isDesktop={isDesktop} showHeart={!!user} />;
+    // deepNavy shell so the `pre` window (and a web refresh) fuses with the boot
+    // LogoLoader and the skeleton's dark stage — no beige flash in between.
+    return (
+      <View style={styles.loadingShell}>
+        {coldPhase === 'skeleton' ? (
+          <CharacterSkeleton isDesktop={isDesktop} showHeart={!!user} />
+        ) : null}
+      </View>
+    );
   }
 
   const { stats, details } = data;
@@ -2216,6 +2242,15 @@ export default function WebCharacterScreen() {
           onClose={() => setLightboxImages([])}
         />
       ) : null}
+      {/* Crossfade reveal: the real page sits settled underneath while the same
+          skeleton dissolves off the top of it — so placeholders resolve in place
+          instead of the body hard-cutting in. Only mounts the one transition tick
+          after data lands (and only if the skeleton was actually shown). */}
+      {coldPhase === 'crossfade' ? (
+        <FadeOutSkeleton>
+          <CharacterSkeleton isDesktop={isDesktop} showHeart={!!user} />
+        </FadeOutSkeleton>
+      ) : null}
     </>
   );
 }
@@ -2316,7 +2351,7 @@ function WebAbilitiesCard({
 function CharacterSkeleton({ isDesktop, showHeart }: { isDesktop: boolean; showHeart: boolean }) {
   const opacity = useSkeletonAnim();
   const { height: winH } = useWindowDimensions();
-  const heroH = Math.round(winH * 0.62);
+  const heroH = Math.round(winH * M_HERO_RATIO);
   const divider = <View style={{ height: 1, backgroundColor: '#ede5da', marginBottom: 14 }} />;
 
   // Measure the stage so the overlapping side portrait anchors to the same
@@ -2756,6 +2791,9 @@ const styles = StyleSheet.create({
   },
 
   scroll: { flex: 1, backgroundColor: COLORS.beige },
+  // Cold-load shell: deepNavy so the anti-flash `pre` window (and web refresh)
+  // fuses with the boot LogoLoader and the skeleton's dark stage — no beige flash.
+  loadingShell: { flex: 1, backgroundColor: COLORS.deepNavy },
   // Scroll content is full-width so the dark stage can bleed edge-to-edge;
   // the body re-constrains itself to a centred reading column.
   scrollContent: { width: '100%' },
