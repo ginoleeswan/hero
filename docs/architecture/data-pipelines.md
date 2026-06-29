@@ -19,7 +19,7 @@ Everything is one of three kinds of work:
 3. **Derive** — pure-SQL aggregates computed from already-fetched data
    (no API), run as nightly/weekly maintenance.
 
-```
+```text
 SOURCES                    →  TABLES        →  DERIVED / SIGNALS
 ─────────────────────────────────────────────────────────────────
 SuperheroAPI (legacy) ─┐
@@ -59,7 +59,7 @@ are complete, two legacy data paths disappear.
 
 ## The drain pattern (every per-row enrichment is this)
 
-```
+```text
 ┌─ pg_cron (every N min) ── net.http_post ──▶ edge function ─┐
 │                                                            │
 │   1. select next batch where <status> = 'pending'         │
@@ -96,9 +96,8 @@ Fold **new SQL housekeeping here. Do not add new crons for it.**
 
 | Cron job | When | Runs |
 | --- | --- | --- |
-| `nightly-maintenance` | daily 03:40 | `nightly_maintenance()` = `rebuild_hero_relationships()` + `link_tmdb_cast()` |
+| `nightly-maintenance` | daily 03:40 | `nightly_maintenance()` = `rebuild_hero_relationships()` + `link_tmdb_cast()` + `snapshot_catalog_health()` |
 | `refresh-fame-weekly` | Sun 04:00 | `refresh_fame()` = auto-tier unrated pool + recompute fame scores |
-| `catalog-health-snapshot` | daily 00:05 | `snapshot_catalog_health()` |
 
 - **`rebuild_hero_relationships()`** resolves the `enemies`/`friends`/`teams`
   name arrays into ally/enemy/teammate **cards**. ~50 s, full TRUNCATE+rebuild
@@ -125,18 +124,23 @@ the freshness syncs.
   heroes lack one, and nothing regenerates when source `image_url` changes.
   Needs a fame-ranked drain — **costs money, needs sign-off.**
 - **AI stats** (`generate-hero-stats`) — 💸 AI, on-demand, ~20k null.
-- **`narrative_status`** — column exists (~33k "pending") but **no writer**.
-  Decide: build a generator or drop the column.
+- **Narrative / TraitBand** — a _live_ feature: `hero_narrative_facts` +
+  `hero_tags` render the TraitBand via `useHeroNarrative`. But **stalled** —
+  ~1,063 heroes populated, gated by `narrative_status`, and there's **no
+  generator cron** (it's AI). Build the generator (💸) or leave as-is. Do **not**
+  drop `narrative_status` — it gates a live feature.
 - **Wikidata resolution** — no cron (low value, see above).
 
 **Cleanup debt:**
 
 - `get-comicvine-hero` (on-view) duplicates `enrich-comicvine-batch` (drain) —
   same parsing, drifts. Reconcile.
-- `backfill-enemies`, `backfill-family` — one-off, superseded by the drain.
-- `backfill-cv-meta`, `resolve-cv-id` — one-off dedup tooling; both
-  `verify_jwt:false` **public DB-writers** (so are `seed-comicvine-characters`,
-  `enrich-tmdb-batch`). Lock or `supabase functions delete`.
+- `backfill-enemies` — superseded by the ComicVine drain (harmless; leave or
+  delete). **`backfill-family` is NOT dead** — it is the only writer of
+  `hero_relatives` (the family tree); keep it.
+- Public `verify_jwt:false` functions still deployed: `seed-comicvine-characters`,
+  `enrich-tmdb-batch`, `get-hero-gallery` are cron/render-used, so locking them
+  needs their callers updated — don't flip blindly.
 
 ### Why not consolidate the drains behind one dispatcher?
 
