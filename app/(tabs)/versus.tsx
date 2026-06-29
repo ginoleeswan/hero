@@ -16,11 +16,12 @@ import { pickRandomPair } from '../../src/lib/versus';
 import { stashFighters, type FighterArt } from '../../src/lib/compareHandoff';
 import { ShowdownCards } from '../../src/components/versus/ShowdownCards';
 import { RivalriesRail } from '../../src/components/versus/RivalriesRail';
+import { HallOfInfamy } from '../../src/components/home/HallOfInfamy';
 
 export default function VersusScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { matchup, rivalries, iconicPool, loading, teamBattle } = useVersusHub();
+  const { matchup, rivalries, iconicPool, loading, teamBattle, mostFeared } = useVersusHub();
 
   const openArena = (a: FighterArt, b: FighterArt) => {
     stashFighters(a, b);
@@ -127,6 +128,9 @@ export default function VersusScreen() {
         <View style={styles.deckSec}>
           <RivalriesRail rivalries={rivalries} onOpen={openArena} />
         </View>
+
+        {/* ── Public Enemies: villains the most heroes line up against ── */}
+        <HallOfInfamy villains={mostFeared} onPress={(id) => router.push(`/character/${id}`)} />
       </ScrollView>
     </View>
   );

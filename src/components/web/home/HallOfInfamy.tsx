@@ -45,11 +45,21 @@ function FearedCard({
   );
 }
 
-/** Explore carousel — the villains the most heroes line up against (enemy in-degree). */
-export function HallOfInfamy({ villains }: { villains: FearedVillain[] }) {
+/**
+ * Carousel — the villains the most heroes line up against (enemy in-degree).
+ * `flush` drops the self-managed page gutter when the host already pads the
+ * column (e.g. the Versus feed, whose rows sit flush in a maxWidth container).
+ */
+export function HallOfInfamy({
+  villains,
+  flush = false,
+}: {
+  villains: FearedVillain[];
+  flush?: boolean;
+}) {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const pagePad = width < 640 ? 16 : 32;
+  const pagePad = flush ? 0 : width < 640 ? 16 : 32;
   if (villains.length === 0) return null;
 
   return (
