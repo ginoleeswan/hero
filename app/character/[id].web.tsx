@@ -491,7 +491,10 @@ export default function WebCharacterScreen() {
   const isDesktop = width >= 700;
 
   // Document scroll so the page bleeds edge-to-edge under the iOS Safari toolbar.
-  // Before the skeleton early-return so it applies in both states.
+  // Before the skeleton early-return so it applies in both states. Canvas stays
+  // paper so the body and both Safari toolbar zones read beige; the dark top edge
+  // is handled by the status-bar cover, which paints the ink `top` colour — so
+  // the canvas can be light without the status bar drifting beige.
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
 
   const skeletonOpacity = useSkeletonAnim();

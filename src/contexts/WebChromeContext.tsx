@@ -131,16 +131,25 @@ export function useWebChrome() {
 }
 
 /**
- * The iOS status-bar strip flows under: it shows whatever content is beneath it, so
- * the clock adapts (dark over the hero, dark→light as beige content scrolls up). We
- * deliberately DON'T paint it — a painted cap would read as a flat navy slab the
- * moment light content scrolled behind it. The page's `canvas` still backs it where
- * content doesn't reach, and the provider drives the iOS theme-color. The mobile
- * menu's readability is handled by the floating glass pill below, which never
- * touches this strip. env() → 0 on Android/desktop, so it collapses to nothing.
+ * The iOS status-bar strip. iOS Safari tints both this strip and the bottom
+ * toolbar zone from the document background (`canvas`), so a page whose top is a
+ * dark hero but whose body is light can't get a seamless top from the canvas
+ * alone — making the canvas dark to fix the status bar also darkens the bottom
+ * toolbar. To decouple them we paint THIS strip with the page's declared top
+ * colour whenever that colour is dark, letting the canvas stay light so the body
+ * and bottom toolbar read light. Light-topped pages keep the strip transparent
+ * and let the (light) canvas back it, so the clock still reads dark-on-light.
+ * The colour cross-fades with the rest of the chrome. env() → 0 on
+ * Android/desktop, so the strip collapses to nothing there.
  */
 export function AdaptiveStatusBarCover() {
-  const cover = <View pointerEvents="none" style={coverStyles.cover} />;
+  const { color, isLight } = useWebChrome();
+  const cover = (
+    <View
+      pointerEvents="none"
+      style={[coverStyles.cover, !isLight && { backgroundColor: color }] as object}
+    />
+  );
   // Render into document.body via a portal so position:fixed is always
   // viewport-relative and can't detach on navigation/scroll (the same fix the
   // TopBar uses — an in-tree fixed element drifts under body{overflow:visible}
