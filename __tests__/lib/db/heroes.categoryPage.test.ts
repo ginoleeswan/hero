@@ -116,9 +116,11 @@ describe('getCategoryPage filter mapping', () => {
     expect(cols).toContain('image_md_url'); // web card needs this
     expect(cols).not.toContain('summary'); // heavy blob must be excluded
   });
-  it('requests an exact count on the first page by default', async () => {
+  it('requests an estimated count on the first page by default', async () => {
+    // Exact count was a full-table scan that gated the whole grid; estimated is
+    // fast and good enough for the result tally. See getCategoryPage.
     await getCategoryPage('popular', opts());
-    expect(chain.select).toHaveBeenCalledWith(expect.any(String), { count: 'exact' });
+    expect(chain.select).toHaveBeenCalledWith(expect.any(String), { count: 'estimated' });
   });
   it('omits the count when withCount is false (append pages)', async () => {
     await getCategoryPage('popular', opts({ withCount: false }));

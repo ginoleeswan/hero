@@ -38,6 +38,7 @@ import {
 import { publisherBySlug } from '../../src/constants/publishers';
 import { flattenCategoryPages } from '../../src/lib/query/heroCache';
 import { HeroImage } from '../../src/components/HeroImage';
+import { BrandLogoView } from '../../src/components/PublisherBadge';
 import { COLORS } from '../../src/constants/colors';
 import { CategorySkeleton } from '../../src/components/skeletons/CategorySkeleton';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
@@ -253,16 +254,53 @@ export default function CategoryScreen() {
     return base;
   })();
 
+  // Registered universes get a brand masthead: the logo at a fixed height, sized
+  // by its badge aspect (mirrors the team screen + the web banner's compact mode,
+  // which also drops the desktop portrait montage on phone widths).
+  const STAGE_LOGO_H = 56;
+  const brandLogo = useMemo(() => {
+    if (!brand?.logo || !brand?.badgeSize) return null;
+    return {
+      logo: brand.logo,
+      width: STAGE_LOGO_H * (brand.badgeSize.width / brand.badgeSize.height),
+      height: STAGE_LOGO_H,
+      tint: brand.logoTint,
+    };
+  }, [brand]);
+
   const listHeader = useMemo(
     () => (
       <>
         {/* Navy stage — a confident, compact header the floating bar + native
-            search field sit over. Grid-first: portraits lead. */}
+            search field sit over. Registered universes get a brand-coloured wash
+            + logo masthead; categories + unregistered universes keep the navy
+            stage with a title + tagline. Grid-first: portraits lead. */}
         <View style={[styles.stage, { paddingTop: headerHeight + SEARCH_BAR_PAD }]}>
+          {brand && (
+            <LinearGradient
+              colors={[brand.color, brand.colorDark, COLORS.navy]}
+              locations={[0, 0.55, 1]}
+              start={{ x: 0.9, y: 0 }}
+              end={{ x: 0.1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+          )}
           <Text style={styles.eyebrow}>{eyebrow}</Text>
-          <Text style={styles.stageTitle} numberOfLines={2}>
-            {title}
-          </Text>
+          {brandLogo ? (
+            <View style={styles.stageLogo}>
+              <BrandLogoView
+                logo={brandLogo.logo}
+                width={brandLogo.width}
+                height={brandLogo.height}
+                tint={brandLogo.tint}
+                shadow
+              />
+            </View>
+          ) : (
+            <Text style={styles.stageTitle} numberOfLines={2}>
+              {title}
+            </Text>
+          )}
           {tagline && <Text style={styles.tagline}>{tagline}</Text>}
         </View>
 
@@ -271,7 +309,7 @@ export default function CategoryScreen() {
       </>
     ),
 
-    [eyebrow, tagline, title, headerHeight],
+    [eyebrow, tagline, title, headerHeight, brand, brandLogo],
   );
 
   const visible = visibleFacets(categorySlug);
@@ -498,7 +536,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.navy,
     paddingHorizontal: H_PAD,
     paddingBottom: 28,
+    overflow: 'hidden', // clip the brand gradient wash to the stage
   },
+  stageLogo: { alignSelf: 'flex-start' },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,

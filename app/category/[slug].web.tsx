@@ -1,5 +1,5 @@
 // app/category/[slug].web.tsx — Full grid view for a hero category (web)
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,6 @@ import { useSkeletonGlow } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  getCategoryPage,
-  getUniversePage,
   getUniverseMontage,
   getCategoryFacetCounts,
   CATEGORY_LABELS,
@@ -23,6 +21,8 @@ import {
   type CategorySlug,
   type Hero,
 } from '../../src/lib/db/heroes';
+import { useCategoryHeroes, useUniverseHeroes } from '../../src/lib/query/heroQueries';
+import { flattenCategoryPages } from '../../src/lib/query/heroCache';
 import { publisherBySlug } from '../../src/constants/publishers';
 import { SeoHead } from '../../src/components/web/SeoHead';
 import {
@@ -207,8 +207,6 @@ const card = StyleSheet.create({
 });
 
 // ── Screen ────────────────────────────────────────────────────────────────────
-const PAGE_SIZE = 48;
-
 export default function WebCategoryScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
@@ -216,17 +214,9 @@ export default function WebCategoryScreen() {
   const isDesktop = width >= 768;
   const isWide = width >= 1100; // show description inline
 
-  const [heroes, setHeroes] = useState<Hero[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [counts, setCounts] = useState<FacetCounts | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const currentPage = useRef(0);
-  const hasMore = useRef(true);
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const loadingMoreRef = useRef(false);
 
   // Reveal the grid by fading it up OVER an opaque skeleton (which then unmounts)
   // — no double-transparency dip, no hard "pop".
@@ -246,56 +236,49 @@ export default function WebCategoryScreen() {
   // Both category and universe pages get the filter UI (universe omits publisher).
   const browsable = !!categorySlug || !!universeTerm;
 
-  const fetchPage = useCallback(
-    async (page: number, f: CategoryFilters, append = false) => {
-      if (!categorySlug && !universeTerm) return;
-      if (page === 0) setLoading(true);
-      else setLoadingMore(true);
-      try {
-        const result = categorySlug
-          ? await getCategoryPage(categorySlug, { page, pageSize: PAGE_SIZE, ...f })
-          : await getUniversePage(universeTerm!, { page, pageSize: PAGE_SIZE, ...f });
-        setHeroes((prev) => {
-          if (!append) return result.heroes;
-          const seen = new Set(prev.map((h) => h.id));
-          return [...prev, ...result.heroes.filter((h) => !seen.has(h.id))];
-        });
-        setTotal(result.total);
-        currentPage.current = page;
-        // `total` is now an estimate (exact count was a full table scan that
-        // gated the whole grid). Derive "has more" from page fullness instead —
-        // a full page implies another may exist; a short page is the end.
-        hasMore.current = result.heroes.length === PAGE_SIZE;
-      } catch {
-        //
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-      }
-    },
-    [categorySlug, universeTerm],
+  // Debounce the search box into the query key so we don't refetch per keystroke;
+  // facet selections (no search text) apply immediately. Mirrors the native screen.
+  const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(filters.search.trim()), filters.search ? 300 : 0);
+    return () => clearTimeout(t);
+  }, [filters.search]);
+  const queryFilters: CategoryFilters = useMemo(
+    () => ({ ...filters, search: debouncedSearch }),
+    [filters, debouncedSearch],
   );
 
-  // Refetch page 0 + facet counts whenever filters change. Search is debounced;
-  // facet selections apply immediately. Universe pages have no facet counts.
+  // One infinite list is active; the other is disabled (null source) and idle.
+  // React Query owns pagination + caching, so revisiting (e.g. back from a
+  // character) restores the loaded grid + scroll instead of refetching page 0.
+  const categoryQuery = useCategoryHeroes(categorySlug, queryFilters);
+  const universeQuery = useUniverseHeroes(universeTerm, queryFilters);
+  const activeQuery = categorySlug ? categoryQuery : universeQuery;
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = activeQuery;
+
+  const heroes = flattenCategoryPages(activeQuery.data);
+  const total = activeQuery.data?.pages[0]?.total ?? 0;
+  const loading = activeQuery.isPending;
+  const loadingMore = isFetchingNextPage;
+
+  // Facet counts come from a category-keyed RPC; universe pages have none.
   useEffect(() => {
-    if (!categorySlug && !universeTerm) return;
-    clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(
-      () => {
-        fetchPage(0, filters);
-        if (categorySlug) {
-          getCategoryFacetCounts(categorySlug, filters)
-            .then(setCounts)
-            .catch(() => setCounts(null));
-        } else {
-          setCounts(null);
-        }
-      },
-      filters.search ? 300 : 0,
-    );
-    return () => clearTimeout(searchTimer.current);
-  }, [categorySlug, universeTerm, filters, fetchPage]);
+    if (!categorySlug) {
+      setCounts(null);
+      return;
+    }
+    let cancelled = false;
+    getCategoryFacetCounts(categorySlug, queryFilters)
+      .then((c) => {
+        if (!cancelled) setCounts(c);
+      })
+      .catch(() => {
+        if (!cancelled) setCounts(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [categorySlug, queryFilters]);
 
   const handlePress = useCallback(
     (id: string) => {
@@ -357,11 +340,6 @@ export default function WebCategoryScreen() {
 
   const [peek, setPeek] = useState<PeekHero | null>(null);
 
-  // Keep ref in sync — scroll handler reads this to avoid firing multiple fetches
-  useEffect(() => {
-    loadingMoreRef.current = loadingMore;
-  }, [loadingMore]);
-
   // Ink-topped over a beige canvas, declared together. The grid bleeds
   // edge-to-edge under the iOS Safari toolbar and reads continuous to the bottom
   // past the 100dvh fold.
@@ -369,20 +347,21 @@ export default function WebCategoryScreen() {
   // (navy `band`) lift off it — universe + category alike. Other pages stay beige.
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
-  // Infinite load now rides the document scroll (the nested ScrollView is gone),
-  // so measure against the window rather than a ScrollView's nativeEvent.
+  // Infinite load rides the document scroll (the nested ScrollView is gone), so
+  // measure against the window rather than a ScrollView's nativeEvent. React
+  // Query gates concurrent fetches via hasNextPage/isFetchingNextPage.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onScroll = () => {
       const distanceFromBottom =
         document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
-      if (distanceFromBottom < 400 && hasMore.current && !loadingMoreRef.current) {
-        fetchPage(currentPage.current + 1, filters, true);
+      if (distanceFromBottom < 400 && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
       }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [fetchPage, filters]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const gridStyle = {
     display: 'grid',
