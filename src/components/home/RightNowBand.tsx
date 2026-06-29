@@ -17,8 +17,8 @@ import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 import { TitlePosterRail } from './TitlePosterRail';
 import { ComicCoverRail } from './ComicCoverRail';
-import { WikiTrendingRail } from './WikiTrendingRail';
-import { MonthInHistoryRail } from './MonthInHistoryRail';
+import { TrendingMovers } from './TrendingMovers';
+import { ThisMonthInHistory } from './ThisMonthInHistory';
 import {
   mergeTrendingTitles,
   type Campaign,
@@ -264,9 +264,9 @@ export function RightNowBand({
 
       <ComicCoverRail comics={newComics} onIssuePress={onIssuePress} />
 
-      <WikiTrendingRail heroes={wikiTrending} onHeroPress={(id) => onHeroPress({ id })} />
+      <TrendingMovers heroes={wikiTrending} onHeroPress={(id) => onHeroPress({ id })} />
 
-      <MonthInHistoryRail debuts={debuts} onHeroPress={(id) => onHeroPress({ id })} />
+      <ThisMonthInHistory debuts={debuts} onHeroPress={(id) => onHeroPress({ id })} />
 
       {personalized.length > 0 && (
         <PersonalStrip characters={personalized} onHeroPress={onHeroPress} disabled={disabled} />
