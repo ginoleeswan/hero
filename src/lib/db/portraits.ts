@@ -21,14 +21,14 @@ export async function getPendingPortraitCount(): Promise<number> {
   return error ? 0 : (count ?? 0);
 }
 
-/** The next heroes that still need a portrait, most-viewed first (capped). */
+/** The next heroes that still need a portrait, most-recognizable first (capped). */
 export async function getPendingPortraitIds(limit = 10): Promise<string[]> {
   const { data, error } = await supabase
     .from('heroes')
-    .select('id, issue_count')
+    .select('id')
     .is('portrait_url', null)
     .not('image_url', 'is', null)
-    .order('issue_count', { ascending: false, nullsFirst: false })
+    .order('fame_score', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error || !data) return [];
   return (data as { id: string }[]).map((h) => h.id);

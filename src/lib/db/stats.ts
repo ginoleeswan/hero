@@ -43,14 +43,14 @@ export async function getPendingStatsCount(): Promise<number> {
   return error ? 0 : (count ?? 0);
 }
 
-/** The next heroes that still need powerstats, most-viewed first (capped). */
+/** The next heroes that still need powerstats, most-recognizable first (capped). */
 export async function getPendingStatsIds(limit = 25): Promise<string[]> {
   const { data, error } = await supabase
     .from('heroes')
-    .select('id, issue_count')
+    .select('id')
     .eq('comicvine_status', 'done')
     .or(PENDING)
-    .order('issue_count', { ascending: false, nullsFirst: false })
+    .order('fame_score', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error || !data) return [];
   return (data as { id: string }[]).map((h) => h.id);
