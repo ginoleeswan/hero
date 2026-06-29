@@ -34,6 +34,11 @@ import { findCachedHero } from './heroCache';
 export const CATEGORY_PAGE_SIZE = 30;
 export const HERO_SEARCH_PAGE_SIZE = 30;
 
+// For grouped relationship fetches: one flaky kind (a 500 on enemies, say) must
+// not drop the whole section — take the rows that resolved, empty for the rest.
+const settledRows = <T>(r: PromiseSettledResult<T[]>): T[] =>
+  r.status === 'fulfilled' ? r.value : [];
+
 /** Infinite search/browse for the Search tab. Empty query → top heroes for the
  *  publisher; a real query → alias/typo-tolerant ranked search. Publisher and
  *  alignment are server-side so pages stay correctly filled. keepPreviousData
@@ -200,13 +205,18 @@ export function usePickRelations(hero: string | undefined) {
     queryKey: hero ? queryKeys.pickRelations(hero) : ['heroes', 'pickRelations', 'disabled'],
     enabled: !!hero,
     queryFn: async () => {
-      const [rivals, teammates, allies, family] = await Promise.all([
+      const [rivals, teammates, allies, family] = await Promise.allSettled([
         getRelatedHeroes(hero!, 'enemy', { sameUniverse: true, limit: 40 }),
         getRelatedHeroes(hero!, 'teammate', { sameUniverse: true, limit: 24 }),
         getRelatedHeroes(hero!, 'ally', { sameUniverse: true, limit: 24 }),
         getFamilyOpponents(hero!, 24),
       ]);
-      return { rivals, teammates, allies, family };
+      return {
+        rivals: settledRows(rivals),
+        teammates: settledRows(teammates),
+        allies: settledRows(allies),
+        family: settledRows(family),
+      };
     },
     staleTime: 1000 * 60 * 30,
   });
@@ -257,12 +267,16 @@ export function useRelatedHeroes(heroId: string | undefined) {
     queryKey: ['relatedHeroes', heroId ?? ''],
     enabled: !!heroId,
     queryFn: async () => {
-      const [enemies, allies, teammates] = await Promise.all([
+      const [enemies, allies, teammates] = await Promise.allSettled([
         getRelatedHeroes(heroId!, 'enemy', { sameUniverse: true, limit: 24 }),
         getRelatedHeroes(heroId!, 'ally', { sameUniverse: true, limit: 24 }),
         getRelatedHeroes(heroId!, 'teammate', { sameUniverse: true, limit: 24 }),
       ]);
-      return { enemies, allies, teammates };
+      return {
+        enemies: settledRows(enemies),
+        allies: settledRows(allies),
+        teammates: settledRows(teammates),
+      };
     },
     staleTime: 1000 * 60 * 30,
   });
