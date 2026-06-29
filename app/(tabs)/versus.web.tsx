@@ -17,6 +17,7 @@ import { ShowdownStage } from '../../src/components/web/versus/ShowdownStage';
 import { MatchupRow } from '../../src/components/web/versus/MatchupRow';
 import { MatchupCard } from '../../src/components/web/versus/MatchupCard';
 import { useDiscoveryRows } from '../../src/hooks/useDiscoveryRows';
+import { HallOfInfamy } from '../../src/components/web/home/HallOfInfamy';
 
 export default function VersusHubWeb() {
   // The page ends on the dark deck section — keep the canvas deep-navy so it
@@ -26,7 +27,7 @@ export default function VersusHubWeb() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const contentPad = width < 640 ? 16 : 32;
-  const { matchup, iconicPool, loading } = useVersusHub();
+  const { matchup, iconicPool, loading, mostFeared } = useVersusHub();
 
   const openArena = (a: FighterArt, b: FighterArt) => {
     stashFighters(a, b);
@@ -201,6 +202,9 @@ export default function VersusHubWeb() {
               ))}
             </MatchupRow>
           )}
+
+          {/* Public Enemies — flush so it aligns with the matchup rows above. */}
+          <HallOfInfamy villains={mostFeared} flush />
         </View>
       </View>
     </View>

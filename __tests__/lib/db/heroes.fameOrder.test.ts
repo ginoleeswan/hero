@@ -1,5 +1,4 @@
-import { getAllHeroesBySlug } from '../../../src/lib/db/heroes';
-import { getPopularHeroes, getIconicHeroes } from '../../../src/lib/db/heroes';
+import { getAllHeroesBySlug, getPopularHeroes, getIconicHeroes } from '../../../src/lib/db/heroes';
 
 let mockRangeWith: { data: unknown; error: unknown } = { data: [], error: null };
 

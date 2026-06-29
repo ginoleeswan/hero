@@ -1268,6 +1268,7 @@ export type Database = {
           durability: number | null
           enemies: string[] | null
           enriched_at: string | null
+          enwiki_title: string | null
           eye_color: string | null
           fame_rated_at: string | null
           fame_rated_by: string | null
@@ -1299,7 +1300,12 @@ export type Database = {
           narrative_status: string
           occupation: string | null
           origin: string | null
+          pageviews_at: string | null
+          pageviews_prev: number | null
+          pageviews_spike: number | null
+          pageviews_week: number | null
           place_of_birth: string | null
+          portrait_blurhash: string | null
           portrait_url: string | null
           power: number | null
           powers: string[] | null
@@ -1339,6 +1345,7 @@ export type Database = {
           durability?: number | null
           enemies?: string[] | null
           enriched_at?: string | null
+          enwiki_title?: string | null
           eye_color?: string | null
           fame_rated_at?: string | null
           fame_rated_by?: string | null
@@ -1370,7 +1377,12 @@ export type Database = {
           narrative_status?: string
           occupation?: string | null
           origin?: string | null
+          pageviews_at?: string | null
+          pageviews_prev?: number | null
+          pageviews_spike?: number | null
+          pageviews_week?: number | null
           place_of_birth?: string | null
+          portrait_blurhash?: string | null
           portrait_url?: string | null
           power?: number | null
           powers?: string[] | null
@@ -1410,6 +1422,7 @@ export type Database = {
           durability?: number | null
           enemies?: string[] | null
           enriched_at?: string | null
+          enwiki_title?: string | null
           eye_color?: string | null
           fame_rated_at?: string | null
           fame_rated_by?: string | null
@@ -1441,7 +1454,12 @@ export type Database = {
           narrative_status?: string
           occupation?: string | null
           origin?: string | null
+          pageviews_at?: string | null
+          pageviews_prev?: number | null
+          pageviews_spike?: number | null
+          pageviews_week?: number | null
           place_of_birth?: string | null
+          portrait_blurhash?: string | null
           portrait_url?: string | null
           power?: number | null
           powers?: string[] | null
@@ -1676,6 +1694,8 @@ export type Database = {
           title: string
           tmdb_id: string | null
           trailer_key: string | null
+          trending_at: string | null
+          trending_rank: number | null
           vote_average: number | null
           watch_providers: Json | null
           year: number | null
@@ -1700,6 +1720,8 @@ export type Database = {
           title: string
           tmdb_id?: string | null
           trailer_key?: string | null
+          trending_at?: string | null
+          trending_rank?: number | null
           vote_average?: number | null
           watch_providers?: Json | null
           year?: number | null
@@ -1724,6 +1746,8 @@ export type Database = {
           title?: string
           tmdb_id?: string | null
           trailer_key?: string | null
+          trending_at?: string | null
+          trending_rank?: number | null
           vote_average?: number | null
           watch_providers?: Json | null
           year?: number | null
@@ -2007,6 +2031,17 @@ export type Database = {
       }
       get_daily_distribution: { Args: { p_date: string }; Returns: Json }
       get_daily_hero: { Args: { p_date?: string }; Returns: Json }
+      get_debuts_this_month: {
+        Args: { p_limit?: number; p_max_chars?: number; p_min_fame?: number }
+        Returns: {
+          characters: Json
+          cover_url: string
+          debut_year: number
+          issue_id: string
+          issue_number: string
+          series_name: string
+        }[]
+      }
       get_era_timeline: {
         Args: { per_era?: number }
         Returns: {
@@ -2159,6 +2194,34 @@ export type Database = {
           portrait_url: string
           provider: string
           release_date: string
+        }[]
+      }
+      get_trending_heroes_wiki: {
+        Args: { p_limit?: number; p_min_week?: number }
+        Returns: {
+          id: string
+          image_url: string
+          name: string
+          pageviews_spike: number
+          pageviews_week: number
+          portrait_url: string
+        }[]
+      }
+      get_trending_on_screen: {
+        Args: { p_chars_per_title?: number; p_limit?: number }
+        Returns: {
+          backdrop_url: string
+          hero_id: string
+          hero_image_url: string
+          hero_name: string
+          hero_portrait_url: string
+          media_type: string
+          poster_url: string
+          provider: string
+          release_date: string
+          title: string
+          title_id: string
+          trailer_key: string
         }[]
       }
       get_trending_titles: {

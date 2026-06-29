@@ -25,6 +25,8 @@ interface HeroImageProps {
   cachePolicy?: 'none' | 'disk' | 'memory' | 'memory-disk';
   recyclingKey?: string | null;
   transition?: number | null;
+  /** BlurHash placeholder shown instantly while the portrait loads (LQIP). */
+  blurhash?: string | null;
   /** Gaussian blur radius for the portrait (used by the daily reveal game). */
   blurRadius?: number;
   /** Fires when the portrait loads, or immediately when the monogram is shown. */
@@ -53,6 +55,7 @@ export function HeroImage({
   cachePolicy = 'memory-disk',
   recyclingKey,
   transition,
+  blurhash,
   blurRadius,
   onLoad,
 }: HeroImageProps) {
@@ -77,9 +80,15 @@ export function HeroImage({
       cachePolicy={cachePolicy}
       recyclingKey={recyclingKey ?? String(id)}
       transition={transition ?? 200}
+      placeholder={blurhash ? { blurhash } : undefined}
+      placeholderContentFit={contentFit}
       blurRadius={blurRadius}
       onLoad={onLoad}
-      onError={() => setErrored(true)}
+      onError={(e) => {
+        // TEMP DIAGNOSTIC: why does expo-image fail on native? Remove once root-caused.
+        console.warn('[HeroImage onError]', source.uri, '::', e?.error ?? e);
+        setErrored(true);
+      }}
     />
   );
 }

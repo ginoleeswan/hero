@@ -150,6 +150,24 @@ read-through; otherwise it opens the lightbox. Both files change identically
 - Edge function is not unit-tested (no Deno test harness in this repo, per norm).
 - No screen/navigation/render tests (keep tests fast and focused).
 
+## Addendum — re-enrich of the existing catalogue (post-implementation)
+
+The first backfill (`20260628120000_hero_images.sql`) seeded only `comicvine_cover`
+rows and left `gallery_enriched_at` set, so already-enriched heroes would never
+re-run the edge fn and would miss the new `comicvine_primary` lead image. Two
+changes close that gap:
+
+- **Edge fn — scoped, idempotent cover replacement.** When a fresh (non-throttled)
+  cover set is fetched, the fn first deletes *that hero's* `comicvine_cover` rows,
+  then re-inserts. This lets a resolution change (`medium_url` backfill →
+  `original_url`) refresh in place without the `(hero_id, url)` unique constraint
+  leaving both copies. Skipped on throttle/empty so a good gallery is never wiped.
+- **Sentinel reset migration** (`20260628190000_..._reenrich_sentinel_reset.sql`):
+  nulls `gallery_enriched_at` for every `comicvine_id` hero (deletes nothing) so
+  the lazy enrich re-runs on next view and the whole catalogue picks up the primary
+  image + hi-res covers. Popular heroes were additionally warmed by a one-off
+  proactive backfill that stops on the first ComicVine 420 throttle.
+
 ## Out of scope (YAGNI)
 
 - AI-generated and curated/admin-upload sources — the table supports them, but no

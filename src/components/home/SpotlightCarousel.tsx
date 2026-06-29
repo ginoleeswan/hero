@@ -20,11 +20,15 @@ export function SpotlightCarousel({
   insetTop,
   scrollY,
   onHeroPress,
+  showLip = true,
 }: {
   heroes: Hero[];
   insetTop: number;
   scrollY: SharedValue<number>;
   onHeroPress: (hero: Hero) => void;
+  /** The rounded beige lip into the sheet. Off when a dark zone follows the
+   *  billboard (the seam moves to the first beige section instead). */
+  showLip?: boolean;
 }) {
   const height = spotlightHeight(insetTop);
   const [active, setActive] = useState(0);
@@ -66,8 +70,9 @@ export function SpotlightCarousel({
       )}
 
       {/* Rounded beige lip — a clean, deliberate edge from the dark billboard
-          into the beige content page (echoes the character screen). */}
-      <View style={styles.lip} pointerEvents="none" />
+          into the beige content page (echoes the character screen). Off when a
+          dark stage follows; then the seam lives on the first beige section. */}
+      {showLip && <View style={styles.lip} pointerEvents="none" />}
     </View>
   );
 }
@@ -75,10 +80,10 @@ export function SpotlightCarousel({
 const LIP_HEIGHT = 24;
 
 const styles = StyleSheet.create({
-  wrap: { backgroundColor: COLORS.navy },
+  wrap: { backgroundColor: COLORS.deepNavy },
   dots: {
     position: 'absolute',
-    bottom: LIP_HEIGHT + 16,
+    bottom: 22,
     left: 0,
     right: 0,
     flexDirection: 'row',

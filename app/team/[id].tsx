@@ -18,8 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getTeamById, type TeamSummary } from '../../src/lib/db/teams';
-import { useTeamHeroes } from '../../src/lib/query/heroQueries';
+import { useTeam, useTeamHeroes } from '../../src/lib/query/heroQueries';
 import { flattenCategoryPages } from '../../src/lib/query/heroCache';
 import { DEFAULT_FILTERS, type CategoryFilters } from '../../src/lib/db/categoryFilters';
 import { HeroImage } from '../../src/components/HeroImage';
@@ -51,8 +50,11 @@ export default function TeamScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const [team, setTeam] = useState<TeamSummary | null>(null);
-  const [teamLoaded, setTeamLoaded] = useState(false);
+  // Team summary via React Query (cached, deduped) — resolves the header identity
+  // and the membership term that drives useTeamHeroes below.
+  const teamQuery = useTeam(id);
+  const team = teamQuery.data ?? null;
+  const teamLoaded = teamQuery.isFetched;
   const [filters, setFilters] = useState<CategoryFilters>(() => ({ ...DEFAULT_FILTERS }));
   const [peek, setPeek] = useState<PeekHero | null>(null);
 
@@ -66,24 +68,6 @@ export default function TeamScreen() {
     },
     [],
   );
-
-  // Resolve the team summary (header identity + the membership term for the query).
-  useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
-    getTeamById(id)
-      .then((t) => {
-        if (cancelled) return;
-        setTeam(t);
-        setTeamLoaded(true);
-      })
-      .catch(() => {
-        if (!cancelled) setTeamLoaded(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
 
   // Debounce search into the query key so we don't refetch per keystroke.
   const [debouncedSearch, setDebouncedSearch] = useState('');

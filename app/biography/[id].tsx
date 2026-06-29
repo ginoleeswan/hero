@@ -1,16 +1,14 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, Linking, useWindowDimensions } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RenderHTML, { type MixedStyleDeclaration } from 'react-native-render-html';
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
-import { getHeroById, getHeroByComicvineId } from '../../src/lib/db/heroes';
+import { getHeroByComicvineId } from '../../src/lib/db/heroes';
+import { useHeroRow } from '../../src/lib/query/heroQueries';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
-import type { Tables } from '../../src/types/database.generated';
-
-type HeroRow = Tables<'heroes'>;
 
 // ComicVine biography HTML ships with lazy-load placeholders and <noscript>
 // fallbacks that render as broken/blank images. Swap the real source in and
@@ -116,14 +114,9 @@ export default function BiographyScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const [hero, setHero] = useState<HeroRow | null>(null);
-
-  useEffect(() => {
-    if (!id) return;
-    getHeroById(id)
-      .then(setHero)
-      .catch(() => {});
-  }, [id]);
+  // Shares the hero-row cache with the character screen (useHeroRow), so opening
+  // a hero's full biography after viewing the character is instant.
+  const hero = useHeroRow(id).data ?? null;
 
   const html = useMemo(
     () => (hero?.description ? preprocessHtml(hero.description) : null),

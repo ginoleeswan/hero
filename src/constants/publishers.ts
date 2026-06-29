@@ -106,6 +106,7 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     colorDark: '#03489A',
     logo: require('../../assets/brands/dc.png'),
     badgeSize: { width: 20, height: 20 },
+    logoOnLight: true,
     featured: true,
   },
   {

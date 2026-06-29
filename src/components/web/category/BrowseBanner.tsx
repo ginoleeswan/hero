@@ -2,12 +2,20 @@ import { useLayoutEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { COLORS } from '../../../constants/colors';
+import { withCloudinaryTransform, withComicVineScale } from '../../../constants/heroImages';
 import { BrandLogoView } from '../../PublisherBadge';
 import type { BrandLogo } from '../../../constants/publishers';
 import { TOPBAR_HEIGHT } from '../TopBar';
 
 const BEIGE = COLORS.beige;
 const TITLE_SHADOW = '0 2px 18px rgba(0,0,0,0.5)';
+
+// Montage tiles are small, faded (0.5), grayscale + brand-tinted, so they need
+// almost no resolution — shrink the source bytes so the above-the-fold banner
+// fills in fast. Off their host each transform is a no-op.
+const MONTAGE_WIDTH = 420;
+const montageUri = (uri: string) =>
+  withComicVineScale(withCloudinaryTransform(uri, MONTAGE_WIDTH), 'scale_medium');
 
 /**
  * Editorial "set banner" for a universe browse page. A brand-coloured stage
@@ -29,7 +37,7 @@ export function BrowseBanner({
   logo,
   badgeSize,
   logoTint,
-  heroImageUrls,
+  montage,
   compact,
   sticky,
   unitLabel = 'CHARACTER',
@@ -42,7 +50,8 @@ export function BrowseBanner({
   logo?: BrandLogo;
   badgeSize?: { width: number; height: number };
   logoTint?: string;
-  heroImageUrls?: string[];
+  /** Roster portraits for the desktop montage, each with an optional BlurHash LQIP. */
+  montage?: { uri: string; blurhash?: string | null }[];
   compact?: boolean;
   sticky?: boolean;
   /** Noun for the count, uppercased — "CHARACTER" for universes, "MEMBER" for teams. */
@@ -170,7 +179,7 @@ export function BrowseBanner({
             On mobile the brand gradient + glowing edge carry the masthead; a
             blurred portrait wash there just muddied the brand colour (the lead
             hero's hue fights the brand's), so it's dropped. */}
-        {!compact && heroImageUrls && heroImageUrls.length > 0 ? (
+        {!compact && montage && montage.length > 0 ? (
           <>
             <View
               style={
@@ -181,12 +190,21 @@ export function BrowseBanner({
               }
               pointerEvents="none"
             >
-              {heroImageUrls.slice(0, 6).map((uri, i, arr) => (
+              {montage.slice(0, 6).map(({ uri, blurhash }, i, arr) => (
                 <Image
                   key={`${uri}-${i}`}
-                  source={{ uri }}
+                  source={{ uri: montageUri(uri) }}
                   contentFit="cover"
                   contentPosition="top"
+                  // Instant blurred preview while the portrait downloads (LQIP).
+                  placeholder={blurhash ? { blurhash } : undefined}
+                  placeholderContentFit="cover"
+                  // Above the fold → load these before the grid thumbnails below.
+                  priority="high"
+                  cachePolicy="memory-disk"
+                  recyclingKey={uri}
+                  // Fade in over the brand gradient instead of popping in late.
+                  transition={400}
                   // Descending z-index (leftmost on top) so each tile overlaps the
                   // LEFT edge of the next — every visible tile shows the same
                   // width; only the masked leftmost is uncovered.

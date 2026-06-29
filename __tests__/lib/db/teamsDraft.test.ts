@@ -1,9 +1,9 @@
+import { getDraftRoster } from '../../../src/lib/db/teams';
+
 const mockFrom = jest.fn();
 jest.mock('../../../src/lib/supabase', () => ({
   supabase: { from: (...a: unknown[]) => mockFrom(...a) },
 }));
-
-import { getDraftRoster } from '../../../src/lib/db/teams';
 
 function mockSelect(rows: unknown[] | null, error: { message: string } | null) {
   // .from('heroes').select(cols).in('id', ids) resolves to { data, error }

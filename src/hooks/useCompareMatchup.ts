@@ -1,15 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
-import { getHeroById, heroRowToCharacterData } from '../lib/db/heroes';
-import { fetchHeroStats, type VerdictInput } from '../lib/api';
-import { useVerdict } from '../lib/query/heroQueries';
+import { useMemo } from 'react';
+import { type VerdictInput } from '../lib/api';
+import { useHeroStats, useVerdict } from '../lib/query/heroQueries';
 import { compareStats, type CompareResult } from '../lib/compare';
 import type { HeroStats } from '../types';
-
-async function loadHeroStats(id: string): Promise<HeroStats> {
-  const row = await getHeroById(id);
-  if (row?.enriched_at) return heroRowToCharacterData(row).stats;
-  return fetchHeroStats(id);
-}
 
 export interface CompareMatchup {
   statsA: HeroStats | null;
@@ -30,32 +23,18 @@ export interface CompareMatchup {
  * the screens cannot drift apart.
  */
 export function useCompareMatchup(hero: string, opponent: string): CompareMatchup {
-  const [statsA, setStatsA] = useState<HeroStats | null>(null);
-  const [statsB, setStatsB] = useState<HeroStats | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!hero || !opponent) {
-      setError('Invalid hero IDs.');
-      return;
-    }
-    let cancelled = false;
-    setError(null);
-    setStatsA(null);
-    setStatsB(null);
-    Promise.all([loadHeroStats(hero), loadHeroStats(opponent)])
-      .then(([a, b]) => {
-        if (cancelled) return;
-        setStatsA(a);
-        setStatsB(b);
-      })
-      .catch(() => {
-        if (!cancelled) setError('Could not load hero data.');
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [hero, opponent]);
+  // Each combatant's stats via React Query — keyed per hero, so they cache and
+  // dedup across matchups (and revisiting a pair is instant).
+  const a = useHeroStats(hero || undefined);
+  const b = useHeroStats(opponent || undefined);
+  const statsA = a.data ?? null;
+  const statsB = b.data ?? null;
+  const error =
+    !hero || !opponent
+      ? 'Invalid hero IDs.'
+      : a.isError || b.isError
+        ? 'Could not load hero data.'
+        : null;
 
   // Verdict is cached per matchup (staleTime: Infinity), so the AI edge function
   // is invoked once — revisiting the same pair reuses the generated text.

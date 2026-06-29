@@ -55,6 +55,7 @@ export function FilmBackdropHeader({ film, onBack }: { film: HeroTitle; onBack: 
           style={StyleSheet.absoluteFill}
           contentFit="cover"
           cachePolicy="memory-disk"
+          transition={400}
         />
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.backdropPlaceholder]} />
@@ -109,6 +110,7 @@ export function FilmBackdropHeader({ film, onBack }: { film: HeroTitle; onBack: 
                   style={styles.poster}
                   contentFit="cover"
                   cachePolicy="memory-disk"
+                  transition={300}
                 />
               </View>
             </View>

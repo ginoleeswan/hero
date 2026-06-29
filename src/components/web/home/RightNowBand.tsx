@@ -14,8 +14,12 @@ import {
   type Campaign,
   type TrendingTitle,
   type TrendingTitleCharacter,
+  type WikiTrendingHero,
 } from '../../../lib/db/trending';
 import type { NewComic } from '../../../lib/db/comics';
+import { TrendingMovers } from './TrendingMovers';
+import { ThisMonthInHistory } from './ThisMonthInHistory';
+import type { DebutIssue } from '../../../lib/db/anniversaries';
 
 const BADGE_COLOR: Record<BadgeTone, string> = {
   theaters: COLORS.orange,
@@ -28,8 +32,11 @@ interface RightNowBandProps {
   onScreen: TrendingTitle[];
   comingSoon: TrendingTitle[];
   streaming: TrendingTitle[];
+  trendingOnScreen: TrendingTitle[];
   personalized: TrendingTitleCharacter[];
   newComics: NewComic[];
+  wikiTrending: WikiTrendingHero[];
+  debuts: DebutIssue[];
   onHeroPress: (id: string) => void;
   onTitlePress: (id: string) => void;
   onIssuePress: (issueId: string) => void;
@@ -383,17 +390,21 @@ function PosterRail({
   titles,
   onTitlePress,
   pagePad,
+  label = 'In Cinemas & Streaming',
+  title = 'On Screen Now',
 }: {
   titles: TrendingTitle[];
   onTitlePress: (id: string) => void;
   pagePad: number;
+  label?: string;
+  title?: string;
 }) {
   if (titles.length === 0) return null;
   return (
     <View>
       <View style={[prw.header, { paddingLeft: pagePad }]}>
-        <Text style={prw.label as object}>In Cinemas &amp; Streaming</Text>
-        <Text style={prw.title as object}>On Screen Now</Text>
+        <Text style={prw.label as object}>{label}</Text>
+        <Text style={prw.title as object}>{title}</Text>
       </View>
       <View style={[prw.strip, { paddingLeft: pagePad, paddingRight: pagePad }] as object}>
         {titles.map((t) => {
@@ -438,8 +449,11 @@ export function RightNowBand({
   onScreen,
   comingSoon,
   streaming,
+  trendingOnScreen,
   personalized,
   newComics,
+  wikiTrending,
+  debuts,
   onHeroPress,
   onTitlePress,
   onIssuePress,
@@ -452,13 +466,18 @@ export function RightNowBand({
     onScreen.length > 0 ||
     comingSoon.length > 0 ||
     streaming.length > 0 ||
+    trendingOnScreen.length > 0 ||
     personalized.length > 0 ||
-    newComics.length > 0;
+    newComics.length > 0 ||
+    wikiTrending.length > 0 ||
+    debuts.length > 0;
   if (!hasAny) return null;
 
-  // "What's Hot" ranks the live slate by popularity — on_screen leads, then
-  // streaming. Dedupe by id: a title can be both in theaters and streaming.
-  const hotTitles = mergeTrendingTitles(onScreen, [], streaming);
+  // "What's Hot" is the real TMDB daily-trending feed (trendingOnScreen). On the
+  // rare day nothing trending is in the catalogue, fall back to the live release
+  // slate so the sidebar is never empty.
+  const slate = mergeTrendingTitles(onScreen, [], streaming);
+  const hotTitles = trendingOnScreen.length > 0 ? trendingOnScreen : slate;
 
   return (
     <View style={band.band}>
@@ -506,6 +525,10 @@ export function RightNowBand({
       )}
 
       <ComicCoverRail comics={newComics} onIssuePress={onIssuePress} pagePad={pagePad} />
+
+      <TrendingMovers heroes={wikiTrending} onHeroPress={onHeroPress} />
+
+      <ThisMonthInHistory debuts={debuts} onHeroPress={onHeroPress} />
 
       {personalized.length > 0 && (
         <PersonalRow characters={personalized} onHeroPress={onHeroPress} />

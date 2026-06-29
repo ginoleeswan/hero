@@ -11,7 +11,6 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
@@ -53,7 +52,7 @@ export function SpotlightSlide({
   // dark base guarantees the light text reads over any art.
   return (
     <Pressable onPress={onPress} style={[styles.container, { height }]}>
-      <Animated.View style={[StyleSheet.absoluteFill, imageStyle]}>
+      <Animated.View style={[StyleSheet.absoluteFill, styles.imageWrap, imageStyle]}>
         <HeroImage
           id={hero.id}
           name={hero.name}
@@ -67,18 +66,14 @@ export function SpotlightSlide({
       </Animated.View>
 
       <LinearGradient
-        colors={[
-          'transparent',
-          'rgba(13,20,24,0.12)',
-          'rgba(13,20,24,0.82)',
-          'rgba(13,20,24,0.97)',
-        ]}
+        // Land the base on exactly COLORS.deepNavy (#0b1820) so the billboard
+        // fuses seamlessly into the dark stage below it.
+        colors={['transparent', 'rgba(11,24,32,0.12)', 'rgba(11,24,32,0.85)', COLORS.deepNavy]}
         locations={[0.26, 0.46, 0.76, 1]}
         style={StyleSheet.absoluteFill}
       />
 
       <View style={styles.meta}>
-        <Text style={styles.eyebrow}>Featured Hero</Text>
         <Text style={styles.name} numberOfLines={1}>
           {hero.name}
         </Text>
@@ -87,32 +82,26 @@ export function SpotlightSlide({
             {sub}
           </Text>
         )}
-        <View style={styles.cta}>
-          <Text style={styles.ctaText}>View Hero</Text>
-          <Ionicons name="chevron-forward" size={15} color={COLORS.navy} />
-        </View>
       </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { overflow: 'hidden', backgroundColor: COLORS.navy },
-  meta: { position: 'absolute', bottom: 76, left: 20, right: 20, alignItems: 'center' },
-  eyebrow: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 10.5,
-    color: COLORS.orange,
-    letterSpacing: 2.6,
-    textTransform: 'uppercase',
-    marginBottom: 7,
-    textAlign: 'center',
-  },
+  container: { overflow: 'hidden', backgroundColor: COLORS.deepNavy },
+  // Full-bleed: the portrait's own top edge sits at the screen top, so the art's
+  // built-in headroom seats the head just below the status bar. Top-anchored zoom
+  // (Ken Burns + overscroll) grows downward and never eats that headroom.
+  imageWrap: { transformOrigin: 'top' },
+  // Sits low on the portrait; the dark stage overlaps the fade just below it.
+  meta: { position: 'absolute', bottom: 40, left: 20, right: 20, alignItems: 'center' },
   name: {
     fontFamily: 'Flame-Regular',
     fontSize: 38,
     color: COLORS.beige,
-    lineHeight: 42,
+    // Flame's glyphs need ~1.3× or the bottoms clip; keep numberOfLines at 1.
+    lineHeight: 50,
+    paddingBottom: 2,
     textAlign: 'center',
     textShadowColor: 'rgba(0,0,0,0.4)',
     textShadowOffset: { width: 0, height: 2 },
@@ -126,16 +115,4 @@ const styles = StyleSheet.create({
     marginTop: 7,
     textAlign: 'center',
   },
-  cta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    marginTop: 16,
-    paddingVertical: 11,
-    paddingLeft: 22,
-    paddingRight: 16,
-    borderRadius: 999,
-    backgroundColor: COLORS.beige,
-  },
-  ctaText: { fontFamily: 'Nunito_900Black', fontSize: 14, color: COLORS.navy },
 });

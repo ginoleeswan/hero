@@ -1,5 +1,5 @@
 // app/category/[slug].web.tsx — Full grid view for a hero category (web)
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,18 +10,19 @@ import {
   TextInput,
   useWindowDimensions,
 } from 'react-native';
-import { useSkeletonAnim } from '../../src/components/web/Skeleton';
+import { useSkeletonGlow } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  getCategoryPage,
-  getUniversePage,
+  getUniverseMontage,
   getCategoryFacetCounts,
   CATEGORY_LABELS,
   CATEGORY_DESCRIPTIONS,
   type CategorySlug,
   type Hero,
 } from '../../src/lib/db/heroes';
+import { useCategoryHeroes, useUniverseHeroes } from '../../src/lib/query/heroQueries';
+import { flattenCategoryPages } from '../../src/lib/query/heroCache';
 import { publisherBySlug } from '../../src/constants/publishers';
 import { SeoHead } from '../../src/components/web/SeoHead';
 import {
@@ -56,9 +57,17 @@ const VALID_SLUGS = new Set<CategorySlug>([
   'horror',
 ]);
 
-// ── Skeleton card (matches HeroCard layout) ───────────────────────────────────
-function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
-  return <Animated.View style={[sk.wrap as object, { opacity }]} />;
+// ── Skeleton card (mirrors HeroCard: same shape + a faint name-bar hint) ───────
+// Surface-navy fill with a calm unison breath (see useSkeletonGlow); the card
+// silhouette + name line make it read as a deliberate placeholder for the real
+// card, so the swap to content is seamless.
+function SkeletonCard() {
+  const ref = useSkeletonGlow(true);
+  return (
+    <View ref={ref} style={sk.wrap as object}>
+      <View style={sk.nameBar as object} />
+    </View>
+  );
 }
 
 const sk = StyleSheet.create({
@@ -66,7 +75,16 @@ const sk = StyleSheet.create({
     width: '100%', // WebKit won't stretch an aspect-ratio grid item to the track — force the inline size
     borderRadius: 10,
     aspectRatio: '3 / 4',
-    backgroundColor: '#ddd5c8',
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+    padding: 12,
+  } as object,
+  // Hints the hero name that sits bottom-left on the real card.
+  nameBar: {
+    width: '64%',
+    height: 11,
+    borderRadius: 4,
+    backgroundColor: 'rgba(245,235,220,0.12)',
   } as object,
 });
 
@@ -99,6 +117,7 @@ function HeroCard({
             imageUrl={hero.image_url}
             portraitUrl={hero.portrait_url}
             imageMdUrl={hero.image_md_url}
+            blurhash={hero.portrait_blurhash}
             grid
             contentFit="cover"
             contentPosition={{ top: 0, left: '50%' }}
@@ -188,8 +207,6 @@ const card = StyleSheet.create({
 });
 
 // ── Screen ────────────────────────────────────────────────────────────────────
-const PAGE_SIZE = 48;
-
 export default function WebCategoryScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
@@ -197,18 +214,14 @@ export default function WebCategoryScreen() {
   const isDesktop = width >= 768;
   const isWide = width >= 1100; // show description inline
 
-  const [heroes, setHeroes] = useState<Hero[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [counts, setCounts] = useState<FacetCounts | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const currentPage = useRef(0);
-  const hasMore = useRef(true);
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const loadingMoreRef = useRef(false);
-  const skeletonOpacity = useSkeletonAnim();
+
+  // Reveal the grid by fading it up OVER an opaque skeleton (which then unmounts)
+  // — no double-transparency dip, no hard "pop".
+  const gridFade = useRef(new Animated.Value(0)).current;
+  const [skelMounted, setSkelMounted] = useState(true);
 
   const categorySlug = VALID_SLUGS.has(slug as CategorySlug) ? (slug as CategorySlug) : null;
   // Non-category slugs are universes (publisher/studio/franchise): a registered
@@ -223,53 +236,49 @@ export default function WebCategoryScreen() {
   // Both category and universe pages get the filter UI (universe omits publisher).
   const browsable = !!categorySlug || !!universeTerm;
 
-  const fetchPage = useCallback(
-    async (page: number, f: CategoryFilters, append = false) => {
-      if (!categorySlug && !universeTerm) return;
-      if (page === 0) setLoading(true);
-      else setLoadingMore(true);
-      try {
-        const result = categorySlug
-          ? await getCategoryPage(categorySlug, { page, pageSize: PAGE_SIZE, ...f })
-          : await getUniversePage(universeTerm!, { page, pageSize: PAGE_SIZE, ...f });
-        setHeroes((prev) => {
-          if (!append) return result.heroes;
-          const seen = new Set(prev.map((h) => h.id));
-          return [...prev, ...result.heroes.filter((h) => !seen.has(h.id))];
-        });
-        setTotal(result.total);
-        currentPage.current = page;
-        hasMore.current = (page + 1) * PAGE_SIZE < result.total;
-      } catch {
-        //
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-      }
-    },
-    [categorySlug, universeTerm],
+  // Debounce the search box into the query key so we don't refetch per keystroke;
+  // facet selections (no search text) apply immediately. Mirrors the native screen.
+  const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(filters.search.trim()), filters.search ? 300 : 0);
+    return () => clearTimeout(t);
+  }, [filters.search]);
+  const queryFilters: CategoryFilters = useMemo(
+    () => ({ ...filters, search: debouncedSearch }),
+    [filters, debouncedSearch],
   );
 
-  // Refetch page 0 + facet counts whenever filters change. Search is debounced;
-  // facet selections apply immediately. Universe pages have no facet counts.
+  // One infinite list is active; the other is disabled (null source) and idle.
+  // React Query owns pagination + caching, so revisiting (e.g. back from a
+  // character) restores the loaded grid + scroll instead of refetching page 0.
+  const categoryQuery = useCategoryHeroes(categorySlug, queryFilters);
+  const universeQuery = useUniverseHeroes(universeTerm, queryFilters);
+  const activeQuery = categorySlug ? categoryQuery : universeQuery;
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = activeQuery;
+
+  const heroes = flattenCategoryPages(activeQuery.data);
+  const total = activeQuery.data?.pages[0]?.total ?? 0;
+  const loading = activeQuery.isPending;
+  const loadingMore = isFetchingNextPage;
+
+  // Facet counts come from a category-keyed RPC; universe pages have none.
   useEffect(() => {
-    if (!categorySlug && !universeTerm) return;
-    clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(
-      () => {
-        fetchPage(0, filters);
-        if (categorySlug) {
-          getCategoryFacetCounts(categorySlug, filters)
-            .then(setCounts)
-            .catch(() => setCounts(null));
-        } else {
-          setCounts(null);
-        }
-      },
-      filters.search ? 300 : 0,
-    );
-    return () => clearTimeout(searchTimer.current);
-  }, [categorySlug, universeTerm, filters, fetchPage]);
+    if (!categorySlug) {
+      setCounts(null);
+      return;
+    }
+    let cancelled = false;
+    getCategoryFacetCounts(categorySlug, queryFilters)
+      .then((c) => {
+        if (!cancelled) setCounts(c);
+      })
+      .catch(() => {
+        if (!cancelled) setCounts(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [categorySlug, queryFilters]);
 
   const handlePress = useCallback(
     (id: string) => {
@@ -280,33 +289,56 @@ export default function WebCategoryScreen() {
 
   // Banner montage: always lead with the universe's most-popular hero, then a
   // random handful from the rest of the top tier — recognizable but varied, and
-  // re-rolled each visit. Stable across pagination (keyed on the top hero only).
-  const [montageUrls, setMontageUrls] = useState<string[]>([]);
-  const topHeroId = heroes[0]?.id;
+  // re-rolled each visit. Fetched on its OWN tiny query keyed on the slug, so the
+  // portraits start loading immediately — not gated on the full, filterable grid
+  // page (and unaffected by filter changes). Each carries a BlurHash for an
+  // instant placeholder.
+  const [montage, setMontage] = useState<{ uri: string; blurhash?: string | null }[]>([]);
   useEffect(() => {
-    if (heroes.length === 0) {
-      setMontageUrls([]);
+    if (!universeTerm) {
+      setMontage([]);
       return;
     }
-    const pool = heroes.slice(1, 24);
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
+    let cancelled = false;
+    getUniverseMontage(universeTerm)
+      .then((rows) => {
+        if (cancelled || rows.length === 0) return;
+        const pool = rows.slice(1, 24);
+        for (let i = pool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        setMontage(
+          [rows[0], ...pool.slice(0, 5)]
+            .map((h) => ({ uri: h.portrait_url ?? h.image_url, blurhash: h.portrait_blurhash }))
+            .filter((m): m is { uri: string; blurhash: string | null } => !!m.uri),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setMontage([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [universeTerm]);
+
+  // Drive the reveal. When page-0 data lands, fade the grid up over the opaque
+  // skeleton, then unmount the skeleton; on a fresh load (re)arm it.
+  const gridReady = !loading && heroes.length > 0;
+  useEffect(() => {
+    if (gridReady) {
+      gridFade.setValue(0);
+      Animated.timing(gridFade, { toValue: 1, duration: 320, useNativeDriver: true }).start(
+        ({ finished }) => finished && setSkelMounted(false),
+      );
+    } else {
+      gridFade.setValue(0);
+      setSkelMounted(true);
     }
-    setMontageUrls(
-      [heroes[0], ...pool.slice(0, 5)]
-        .map((h) => h.portrait_url ?? h.image_url)
-        .filter((u): u is string => !!u),
-    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topHeroId]);
+  }, [gridReady]);
 
   const [peek, setPeek] = useState<PeekHero | null>(null);
-
-  // Keep ref in sync — scroll handler reads this to avoid firing multiple fetches
-  useEffect(() => {
-    loadingMoreRef.current = loadingMore;
-  }, [loadingMore]);
 
   // Ink-topped over a beige canvas, declared together. The grid bleeds
   // edge-to-edge under the iOS Safari toolbar and reads continuous to the bottom
@@ -315,20 +347,21 @@ export default function WebCategoryScreen() {
   // (navy `band`) lift off it — universe + category alike. Other pages stay beige.
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
-  // Infinite load now rides the document scroll (the nested ScrollView is gone),
-  // so measure against the window rather than a ScrollView's nativeEvent.
+  // Infinite load rides the document scroll (the nested ScrollView is gone), so
+  // measure against the window rather than a ScrollView's nativeEvent. React
+  // Query gates concurrent fetches via hasNextPage/isFetchingNextPage.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onScroll = () => {
       const distanceFromBottom =
         document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
-      if (distanceFromBottom < 400 && hasMore.current && !loadingMoreRef.current) {
-        fetchPage(currentPage.current + 1, filters, true);
+      if (distanceFromBottom < 400 && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
       }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [fetchPage, filters]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const gridStyle = {
     display: 'grid',
@@ -351,10 +384,7 @@ export default function WebCategoryScreen() {
           onInfo={() => setPeek(hero)}
         />
       ))}
-      {loadingMore &&
-        Array.from({ length: 12 }).map((_, i) => (
-          <SkeletonCard key={`sk-${i}`} opacity={skeletonOpacity} />
-        ))}
+      {loadingMore && Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={`sk-${i}`} />)}
     </View>
   );
 
@@ -378,7 +408,7 @@ export default function WebCategoryScreen() {
           logo={brand.logo}
           badgeSize={brand.badgeSize}
           logoTint={brand.logoTint}
-          heroImageUrls={montageUrls}
+          montage={montage}
           compact={!isDesktop}
           sticky={isDesktop}
         />
@@ -562,15 +592,7 @@ export default function WebCategoryScreen() {
               )}
             </View>
           )}
-          {loading ? (
-            <View style={styles.gridWrap}>
-              <View style={gridStyle as object}>
-                {Array.from({ length: 24 }).map((_, i) => (
-                  <SkeletonCard key={i} opacity={skeletonOpacity} />
-                ))}
-              </View>
-            </View>
-          ) : heroes.length === 0 ? (
+          {!loading && heroes.length === 0 ? (
             <View style={styles.center}>
               <Ionicons name="search-outline" size={34} color="rgba(29,45,51,0.25)" />
               <Text style={styles.empty}>
@@ -589,9 +611,29 @@ export default function WebCategoryScreen() {
               )}
             </View>
           ) : (
-            // Plain View (no nested ScrollView) so the grid flows in the
-            // document scroll and bleeds under the iOS toolbar, like the skeleton.
-            <View style={[styles.gridWrap, { paddingBottom: 0 }] as object}>{grid}</View>
+            // Plain View (no nested ScrollView) so the grid flows in the document
+            // scroll and bleeds under the iOS toolbar, like the skeleton. The
+            // skeleton overlay crossfades out over the grid as data lands.
+            <View style={[styles.gridWrap, styles.gridStack, { paddingBottom: 0 }] as object}>
+              {/* Skeleton sits BEHIND, fully opaque: in-flow while it's the only
+                  content (defines height), an absolute backdrop once the grid is
+                  mounting on top of it. */}
+              {skelMounted && (
+                <View
+                  pointerEvents="none"
+                  style={(heroes.length > 0 ? StyleSheet.absoluteFill : undefined) as object}
+                >
+                  <View style={gridStyle as object}>
+                    {Array.from({ length: 24 }).map((_, i) => (
+                      <SkeletonCard key={i} />
+                    ))}
+                  </View>
+                </View>
+              )}
+              {heroes.length > 0 && (
+                <Animated.View style={{ opacity: gridFade }}>{grid}</Animated.View>
+              )}
+            </View>
           )}
         </View>
       </View>
@@ -829,6 +871,8 @@ const styles = StyleSheet.create({
   // grows to the full grid height — its beige fill backs every card, including
   // the ones that scroll under the toolbar, instead of the navy body showing.
   gridWrap: { paddingTop: 4, backgroundColor: SURFACE.ink } as object,
+  // Anchor for the absolutely-positioned skeleton overlay during the crossfade.
+  gridStack: { position: 'relative' } as object,
 
   // ── Desktop results bar (count + active filters, above the grid) ─────────────
   resultsBar: {

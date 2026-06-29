@@ -17,13 +17,17 @@ import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 import { TitlePosterRail } from './TitlePosterRail';
 import { ComicCoverRail } from './ComicCoverRail';
+import { TrendingMovers } from './TrendingMovers';
+import { ThisMonthInHistory } from './ThisMonthInHistory';
 import {
   mergeTrendingTitles,
   type Campaign,
   type TrendingTitle,
   type TrendingTitleCharacter,
+  type WikiTrendingHero,
 } from '../../lib/db/trending';
 import type { NewComic } from '../../lib/db/comics';
+import type { DebutIssue } from '../../lib/db/anniversaries';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -40,6 +44,8 @@ export interface RightNowBandProps {
   streaming: TrendingTitle[];
   personalized: TrendingTitleCharacter[];
   newComics: NewComic[];
+  wikiTrending: WikiTrendingHero[];
+  debuts: DebutIssue[];
   onHeroPress: HeroPress;
   onTitlePress: (titleId: string) => void;
   onIssuePress: (issueId: string) => void;
@@ -211,6 +217,8 @@ export function RightNowBand({
   streaming,
   personalized,
   newComics,
+  wikiTrending,
+  debuts,
   onHeroPress,
   onTitlePress,
   onIssuePress,
@@ -222,7 +230,9 @@ export function RightNowBand({
     comingSoon.length > 0 ||
     streaming.length > 0 ||
     personalized.length > 0 ||
-    newComics.length > 0;
+    newComics.length > 0 ||
+    wikiTrending.length > 0 ||
+    debuts.length > 0;
   if (!hasAny) return null;
 
   return (
@@ -253,6 +263,10 @@ export function RightNowBand({
       />
 
       <ComicCoverRail comics={newComics} onIssuePress={onIssuePress} />
+
+      <TrendingMovers heroes={wikiTrending} onHeroPress={(id) => onHeroPress({ id })} />
+
+      <ThisMonthInHistory debuts={debuts} onHeroPress={(id) => onHeroPress({ id })} />
 
       {personalized.length > 0 && (
         <PersonalStrip characters={personalized} onHeroPress={onHeroPress} disabled={disabled} />

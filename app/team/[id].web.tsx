@@ -5,7 +5,7 @@
 // filter rail / sheet, and gallery hero cards. A team is "heroes whose teams[]
 // contains the team name", so it reuses the same paginated, faceted query path
 // as universes (getTeamPage) — and therefore the same filter UI.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -18,8 +18,9 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getTeamPage, type Hero } from '../../src/lib/db/heroes';
-import { getTeamById, type TeamSummary } from '../../src/lib/db/teams';
+import { type Hero } from '../../src/lib/db/heroes';
+import { useTeam, useTeamHeroes } from '../../src/lib/query/heroQueries';
+import { flattenCategoryPages } from '../../src/lib/query/heroCache';
 import { brandForPublisher } from '../../src/constants/publishers';
 import { teamLogo } from '../../src/constants/teamBrands';
 import { activeFilterList, type CategoryFilters } from '../../src/lib/db/categoryFilters';
@@ -39,7 +40,6 @@ import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 // Teams with no recognised publisher fall back to a warm orange stage.
 const FALLBACK_COLOR = COLORS.orange;
 const FALLBACK_COLOR_DARK = '#7a3411';
-const PAGE_SIZE = 48;
 
 // ── Gallery card (matches the category/universe HeroCard) ─────────────────────
 function SkeletonCard({ opacity }: { opacity: Animated.Value }) {
@@ -80,6 +80,7 @@ function HeroCard({
             imageUrl={hero.image_url}
             portraitUrl={hero.portrait_url}
             imageMdUrl={hero.image_md_url}
+            blurhash={hero.portrait_blurhash}
             grid
             contentFit="cover"
             contentPosition={{ top: 0, left: '50%' }}
@@ -169,19 +170,14 @@ export default function WebTeamScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
 
-  const [team, setTeam] = useState<TeamSummary | null>(null);
-  const [teamLoaded, setTeamLoaded] = useState(false);
-  const [heroes, setHeroes] = useState<Hero[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  // Team summary via React Query (cached, deduped) — header identity + the
+  // membership term that drives the roster query.
+  const teamQuery = useTeam(id);
+  const team = teamQuery.data ?? null;
+  const teamLoaded = teamQuery.isFetched;
   const [searchFocused, setSearchFocused] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [peek, setPeek] = useState<PeekHero | null>(null);
-  const currentPage = useRef(0);
-  const hasMore = useRef(true);
-  const loadingMoreRef = useRef(false);
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const skeletonOpacity = useSkeletonAnim();
 
   // Teams have no publisher facet (a team is already one publisher) — slug=null,
@@ -197,60 +193,29 @@ export default function WebTeamScreen() {
   const colorDark = brand?.colorDark ?? FALLBACK_COLOR_DARK;
   const teamName = team?.name ?? null;
 
-  // Resolve the team summary (header identity + the membership term).
+  // Roster grid via React Query (infinite, cached, deduped) — the same path the
+  // native team screen and the universe/category pages use. Search is debounced
+  // into the query key so we don't refetch per keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
-    getTeamById(id)
-      .then((t) => {
-        if (cancelled) return;
-        setTeam(t);
-        setTeamLoaded(true);
-      })
-      .catch(() => {
-        if (!cancelled) setTeamLoaded(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
-
-  const fetchPage = useCallback(
-    async (page: number, f: CategoryFilters, append = false) => {
-      if (!teamName) return;
-      if (page === 0) setLoading(true);
-      else setLoadingMore(true);
-      try {
-        const result = await getTeamPage(teamName, { page, pageSize: PAGE_SIZE, ...f });
-        setHeroes((prev) => {
-          if (!append) return result.heroes;
-          const seen = new Set(prev.map((h) => h.id));
-          return [...prev, ...result.heroes.filter((h) => !seen.has(h.id))];
-        });
-        setTotal(result.total);
-        currentPage.current = page;
-        hasMore.current = (page + 1) * PAGE_SIZE < result.total;
-      } catch {
-        //
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-      }
-    },
-    [teamName],
+    const t = setTimeout(() => setDebouncedSearch(filters.search.trim()), filters.search ? 300 : 0);
+    return () => clearTimeout(t);
+  }, [filters.search]);
+  const queryFilters: CategoryFilters = useMemo(
+    () => ({ ...filters, search: debouncedSearch }),
+    [filters, debouncedSearch],
   );
-
-  // Refetch page 0 whenever the team or filters change. Search is debounced.
-  useEffect(() => {
-    if (!teamName) return;
-    clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => fetchPage(0, filters), filters.search ? 300 : 0);
-    return () => clearTimeout(searchTimer.current);
-  }, [teamName, filters, fetchPage]);
-
-  useEffect(() => {
-    loadingMoreRef.current = loadingMore;
-  }, [loadingMore]);
+  const { data, isPending, isFetchingNextPage, fetchNextPage, hasNextPage } = useTeamHeroes(
+    teamName,
+    queryFilters,
+  );
+  const heroes = useMemo(() => flattenCategoryPages(data), [data]);
+  const total = data?.pages[0]?.total ?? 0;
+  const loading = isPending;
+  const loadingMore = isFetchingNextPage;
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Infinite load rides the document scroll (like the category page).
   useEffect(() => {
@@ -258,21 +223,20 @@ export default function WebTeamScreen() {
     const onScroll = () => {
       const distanceFromBottom =
         document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
-      if (distanceFromBottom < 400 && hasMore.current && !loadingMoreRef.current) {
-        fetchPage(currentPage.current + 1, filters, true);
-      }
+      if (distanceFromBottom < 400) loadMore();
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [fetchPage, filters]);
+  }, [loadMore]);
 
   // Montage: lead with the top member, then a varied handful — re-rolled per
-  // visit, stable across renders (keyed on the lead member only).
-  const [montageUrls, setMontageUrls] = useState<string[]>([]);
+  // visit, stable across renders (keyed on the lead member only). Each carries a
+  // BlurHash for an instant placeholder.
+  const [montage, setMontage] = useState<{ uri: string; blurhash?: string | null }[]>([]);
   const topMemberId = heroes[0]?.id;
   useEffect(() => {
     if (heroes.length === 0) {
-      setMontageUrls([]);
+      setMontage([]);
       return;
     }
     const pool = heroes.slice(1, 24);
@@ -280,10 +244,10 @@ export default function WebTeamScreen() {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
-    setMontageUrls(
+    setMontage(
       [heroes[0], ...pool.slice(0, 5)]
-        .map((h) => h.portrait_url ?? h.image_url)
-        .filter((u): u is string => !!u),
+        .map((h) => ({ uri: h.portrait_url ?? h.image_url, blurhash: h.portrait_blurhash }))
+        .filter((m): m is { uri: string; blurhash: string | null } => !!m.uri),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topMemberId]);
@@ -338,7 +302,7 @@ export default function WebTeamScreen() {
           logo={teamLogo(team)?.logo}
           badgeSize={teamLogo(team)?.badgeSize}
           logoTint={teamLogo(team)?.logoTint}
-          heroImageUrls={montageUrls}
+          montage={montage}
           unitLabel="MEMBER"
           compact={!isDesktop}
           sticky={isDesktop}

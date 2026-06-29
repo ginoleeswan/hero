@@ -49,7 +49,12 @@ export function TitlePosterRail({
           return (
             <Pressable style={s.card} onPress={() => onTitlePress(item.id)}>
               {uri ? (
-                <Image source={{ uri }} contentFit="cover" style={StyleSheet.absoluteFill} />
+                <Image
+                  source={{ uri }}
+                  contentFit="cover"
+                  style={StyleSheet.absoluteFill}
+                  onError={(e) => console.warn('[TitlePoster onError]', uri, '::', e?.error ?? e)}
+                />
               ) : (
                 <View style={[StyleSheet.absoluteFill, { backgroundColor: COLORS.navy }]} />
               )}

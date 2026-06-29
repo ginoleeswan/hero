@@ -98,6 +98,97 @@ function StatPodsSkeleton({ opacity, pagePad }: { opacity: Opacity; pagePad: num
   );
 }
 
+// Engage row — mirrors the real matchup + daily-game pair under the pods.
+function EngageSkeleton({
+  opacity,
+  pagePad,
+  isMobile,
+}: {
+  opacity: Opacity;
+  pagePad: number;
+  isMobile: boolean;
+}) {
+  if (isMobile) {
+    return (
+      <View style={{ marginTop: 12 }}>
+        <SkeletonBlock
+          opacity={opacity}
+          dark
+          height={210}
+          borderRadius={16}
+          style={{ marginHorizontal: 16, marginBottom: 12 }}
+        />
+        <SkeletonBlock
+          opacity={opacity}
+          dark
+          height={96}
+          borderRadius={20}
+          style={{ marginHorizontal: 16 }}
+        />
+      </View>
+    );
+  }
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'stretch',
+        gap: 20,
+        paddingHorizontal: pagePad,
+        marginTop: 16,
+      }}
+    >
+      <View style={{ flex: 1.7 }}>
+        <SkeletonBlock opacity={opacity} dark height={192} borderRadius={16} />
+      </View>
+      {/* Matches the daily card's tall variant beside the matchup (was a short bar). */}
+      <View style={{ flex: 1, maxWidth: 440 }}>
+        <SkeletonBlock opacity={opacity} dark height={192} borderRadius={20} />
+      </View>
+    </View>
+  );
+}
+
+// Right Now — mirrors the dark editorial zone under the ticker: a big campaign
+// hero beside a ranked "What's Hot" sidebar (stacked on mobile).
+function RightNowSkeleton({ pagePad, isMobile }: { pagePad: number; isMobile: boolean }) {
+  return (
+    <View style={skel.rightNow}>
+      <View style={{ paddingHorizontal: pagePad }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 18 }}>
+          <SkeletonBlock dark width={4} height={20} borderRadius={2} />
+          <SkeletonBlock dark width={120} height={12} borderRadius={3} />
+        </View>
+        {isMobile ? (
+          <>
+            <SkeletonBlock dark height={300} borderRadius={16} style={{ marginBottom: 12 }} />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <SkeletonBlock
+                key={i}
+                dark
+                height={54}
+                borderRadius={12}
+                style={{ marginBottom: 8 }}
+              />
+            ))}
+          </>
+        ) : (
+          <View style={{ flexDirection: 'row', gap: 20, alignItems: 'stretch' }}>
+            <View style={{ flex: 1.6 }}>
+              <SkeletonBlock dark height={312} borderRadius={18} />
+            </View>
+            <View style={{ flex: 1, gap: 8 }}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <SkeletonBlock key={i} dark height={54} borderRadius={12} />
+              ))}
+            </View>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
 function RowHeader({
   opacity,
   pagePad,
@@ -185,11 +276,15 @@ export function WebHomeSkeleton() {
       <View style={[skel.darkStage, isMobile && (skel.darkStageMobile as object)] as object}>
         <SpotlightSkeleton opacity={opacity} dark />
         <StatPodsSkeleton opacity={opacity} pagePad={pagePad} />
+        <EngageSkeleton opacity={opacity} pagePad={pagePad} isMobile={isMobile} />
       </View>
       <View style={skel.ticker} />
 
-      {/* Beige carousel canvas — mirrors the new chapter flow: a few browse
-          rows, the one consolidated Dark Side zone, then more rows. */}
+      {/* Right Now — the dark editorial zone under the ticker (campaign hero +
+          What's Hot), so the first paint reserves it instead of jumping. */}
+      <RightNowSkeleton pagePad={pagePad} isMobile={isMobile} />
+
+      {/* Beige carousel canvas — generic browse rows below the fold. */}
       <View style={skel.beigeCanvas}>
         <RowSkeleton opacity={opacity} pagePad={pagePad} />
         <RowSkeleton opacity={opacity} pagePad={pagePad} />
@@ -213,6 +308,7 @@ const skel = StyleSheet.create({
   },
   darkStageMobile: { paddingTop: TOPBAR_HEIGHT - 4, paddingBottom: 16 } as object,
   ticker: { height: 38, backgroundColor: COLORS.orange },
+  rightNow: { backgroundColor: COLORS.deepNavy, paddingTop: 28, paddingBottom: 28 },
   beigeCanvas: {
     backgroundColor: COLORS.beige,
     paddingTop: 40,

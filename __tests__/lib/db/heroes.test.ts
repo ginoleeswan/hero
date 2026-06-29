@@ -201,6 +201,7 @@ describe('heroRowToCharacterData', () => {
     comicvine_status: 'done',
     enriched_at: '2026-04-04T00:00:00Z',
     portrait_url: 'https://storage.example.com/portraits/620.jpg',
+    portrait_blurhash: null,
     powers: null,
     description: null,
     origin: null,
@@ -234,6 +235,11 @@ describe('heroRowToCharacterData', () => {
     fame_score: null,
     fame_score_version: null,
     search_text: 'spider-man peter parker spidey web-slinger',
+    enwiki_title: null,
+    pageviews_week: null,
+    pageviews_prev: null,
+    pageviews_spike: null,
+    pageviews_at: null,
   } satisfies Hero;
 
   it('maps powerstats to string values', () => {
@@ -389,6 +395,7 @@ const baseHero: HeroRow = {
   image_url: null,
   image_md_url: null,
   portrait_url: null,
+  portrait_blurhash: null,
   first_issue_image_url: null,
   category: null,
   enriched_at: null,
@@ -425,6 +432,11 @@ const baseHero: HeroRow = {
   fame_score: null,
   fame_score_version: null,
   search_text: 'test hero',
+  enwiki_title: null,
+  pageviews_week: null,
+  pageviews_prev: null,
+  pageviews_spike: null,
+  pageviews_at: null,
 };
 
 describe('heroRowToCharacterData — powers mapping', () => {

@@ -4,9 +4,16 @@ const CDN_BASE = 'https://cdn.jsdelivr.net/gh/akabab/superhero-api@0.3.0/api/ima
 const CLOUDINARY_CLOUD = 'dgrsb5o4p';
 const CLOUDINARY_MARKER = `res.cloudinary.com/${CLOUDINARY_CLOUD}/image/upload/`;
 
+// ComicVine serves pre-scaled variants by swapping the path segment right after
+// /uploads/ (scale_small ~280px, scale_medium ~480px, scale_large ~1000px,
+// original = full res). Ingested URLs are all scale_large; grid cards don't need
+// that many pixels, so we downshift them to scale_medium.
+const COMICVINE_MARKER = 'comicvine.gamespot.com/a/uploads/';
+
 // Delivered widths per context. q_auto handles compression; f_auto handles format.
 const DETAIL_WIDTH = 900; // detail screens, banners, carousels
 const GRID_WIDTH = 600; // grid / thumbnail cards (sharp on retina)
+type ComicVineVariant = 'scale_small' | 'scale_medium' | 'scale_large';
 
 // CDN only has images for numeric SuperheroAPI IDs — ComicVine (cv-*) IDs will 404.
 const isNumericId = (id: string | number) => /^\d+$/.test(String(id));
@@ -34,6 +41,26 @@ export function withCloudinaryTransform(url: string, width: number): string {
 }
 
 /**
+ * Swap a ComicVine delivery URL's size segment for a smaller pre-scaled variant.
+ * Non-ComicVine URLs (Cloudinary, Supabase, akabab CDN, external) are returned
+ * unchanged.
+ */
+export function withComicVineScale(url: string, variant: ComicVineVariant): string {
+  const i = url.indexOf(COMICVINE_MARKER);
+  if (i === -1) return url;
+  const segStart = i + COMICVINE_MARKER.length;
+  const rest = url.slice(segStart);
+  const slash = rest.indexOf('/');
+  if (slash === -1) return url;
+  return `${url.slice(0, segStart)}${variant}${rest.slice(slash)}`;
+}
+
+/** Apply both host-specific resize transforms; each is a no-op off its host. */
+function withResize(uri: string, cloudWidth: number, cvVariant: ComicVineVariant): string {
+  return withComicVineScale(withCloudinaryTransform(uri, cloudWidth), cvVariant);
+}
+
+/**
  * Full-resolution source for detail screens, featured panels, and carousels.
  * Priority: Supabase portrait → external URL → CDN (numeric IDs only)
  */
@@ -44,7 +71,7 @@ export function heroImageSource(
 ): { uri: string } {
   const uri =
     realUrl(portraitUrl) ?? realUrl(imageUrl) ?? (isNumericId(id) ? `${CDN_BASE}/${id}.jpg` : '');
-  return { uri: withCloudinaryTransform(uri, DETAIL_WIDTH) };
+  return { uri: withResize(uri, DETAIL_WIDTH, 'scale_large') };
 }
 
 /**
@@ -62,7 +89,7 @@ export function heroGridImageSource(
     realUrl(imageMdUrl) ??
     realUrl(imageUrl) ??
     (isNumericId(id) ? `${CDN_BASE}/${id}.jpg` : '');
-  return { uri: withCloudinaryTransform(uri, GRID_WIDTH) };
+  return { uri: withResize(uri, GRID_WIDTH, 'scale_medium') };
 }
 
 /**

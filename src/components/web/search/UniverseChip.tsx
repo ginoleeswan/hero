@@ -8,6 +8,16 @@ import type { UniverseResult } from '../../../lib/db/universes';
 // better on light get a light backing tile, mirroring the card-badge logic.
 // Renders via the shared BrandLogoView so SVG-component and PNG logos (and
 // single-colour tinted marks) all paint correctly.
+// The tile is 38px; leave a little breathing room so marks never kiss the edge.
+const TILE_CONTENT = 30;
+
+/** Scale a box down to fit within a square `max`, preserving aspect ratio.
+ *  Never scales up — small marks keep their tuned size. */
+function fitWithin(box: { width: number; height: number }, max: number) {
+  const scale = Math.min(max / box.width, max / box.height, 1);
+  return { width: box.width * scale, height: box.height * scale };
+}
+
 export function UniverseChip({
   universe,
   onPress,
@@ -23,6 +33,10 @@ export function UniverseChip({
 }) {
   const { name, color, logo, badgeSize, logoOnLight, logoTint } = universe;
   const light = variant === 'light';
+  // badgeSize is tuned for the small card-overlay badge and can be wider/taller
+  // than this chip's 38px tile (e.g. Looney Tunes 100×48). Scale it down to fit
+  // a fixed content box, preserving aspect ratio, so every mark sits inside.
+  const fitted = badgeSize ? fitWithin(badgeSize, TILE_CONTENT) : undefined;
   return (
     <Pressable
       onPress={onPress}
@@ -38,13 +52,8 @@ export function UniverseChip({
       <View
         style={[styles.tile, { backgroundColor: logoOnLight ? COLORS.beige : color }] as object}
       >
-        {logo && badgeSize ? (
-          <BrandLogoView
-            logo={logo}
-            width={badgeSize.width}
-            height={badgeSize.height}
-            tint={logoTint}
-          />
+        {logo && fitted ? (
+          <BrandLogoView logo={logo} width={fitted.width} height={fitted.height} tint={logoTint} />
         ) : (
           <Text style={styles.fallback as object} numberOfLines={1}>
             {name.slice(0, 2).toUpperCase()}
@@ -71,13 +80,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 12,
     cursor: 'pointer',
     transition: 'background-color 150ms ease',
   } as object,
-  rowHover: { backgroundColor: 'rgba(245,235,220,0.06)' } as object,
-  rowHoverLight: { backgroundColor: 'rgba(29,45,51,0.06)' } as object,
+  rowHover: { backgroundColor: 'rgba(245,235,220,0.08)' } as object,
+  rowHoverLight: { backgroundColor: 'rgba(29,45,51,0.08)' } as object,
   tile: {
     width: 38,
     height: 38,

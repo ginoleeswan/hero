@@ -10,10 +10,21 @@ export interface InfiniteCategoryData {
   pageParams: unknown[];
 }
 
-/** Flattens infinite-query pages into one ordered hero list. */
+/** Flattens infinite-query pages into one ordered hero list, de-duped by id.
+ *  Offset pagination can repeat a row across pages when the sort has ties, which
+ *  would otherwise produce duplicate React keys in the grid — drop the repeats. */
 export function flattenCategoryPages(data: InfiniteCategoryData | undefined): Hero[] {
   if (!data) return [];
-  return data.pages.flatMap((p) => p.heroes);
+  const seen = new Set<string>();
+  const out: Hero[] = [];
+  for (const page of data.pages) {
+    for (const hero of page.heroes) {
+      if (seen.has(hero.id)) continue;
+      seen.add(hero.id);
+      out.push(hero);
+    }
+  }
+  return out;
 }
 
 /**

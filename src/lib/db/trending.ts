@@ -57,6 +57,8 @@ export interface TrendingTitle {
   provider: string | null;
   /** TMDB synopsis — used as the auto-hero blurb. */
   overview: string | null;
+  /** YouTube trailer key — present on trending-on-screen rows for a ▶ affordance. */
+  trailer_key: string | null;
   characters: TrendingTitleCharacter[];
 }
 
@@ -102,6 +104,7 @@ export async function getTrendingTitles(
         poster_url: r.poster_url,
         provider: r.provider,
         overview: r.overview,
+        trailer_key: null,
         characters: [],
       };
       byTitle.set(r.title_id, t);
@@ -114,6 +117,60 @@ export async function getTrendingTitles(
     });
   }
   return [...byTitle.values()];
+}
+
+interface TrendingOnScreenRow {
+  title_id: string;
+  title: string;
+  media_type: string | null;
+  release_date: string | null;
+  backdrop_url: string | null;
+  poster_url: string | null;
+  trailer_key: string | null;
+  provider: string | null;
+  hero_id: string;
+  hero_name: string;
+  hero_image_url: string | null;
+  hero_portrait_url: string | null;
+}
+
+/** TMDB's daily-trending titles that have catalogue characters, ordered by
+ *  trending rank. Degrades to [] so a DB hiccup never errors the Explore band. */
+export async function getTrendingOnScreen(limit = 12): Promise<TrendingTitle[]> {
+  const { data, error } = await supabase.rpc(
+    'get_trending_on_screen' as never,
+    { p_limit: limit } as never,
+  );
+  if (error) {
+    console.warn('[getTrendingOnScreen] error:', error.message);
+    return [];
+  }
+  const byId = new Map<string, TrendingTitle>();
+  for (const r of (data ?? []) as unknown as TrendingOnScreenRow[]) {
+    let t = byId.get(r.title_id);
+    if (!t) {
+      t = {
+        id: r.title_id,
+        title: r.title,
+        media_type: r.media_type,
+        release_date: r.release_date,
+        backdrop_url: r.backdrop_url,
+        poster_url: r.poster_url,
+        provider: r.provider,
+        overview: null,
+        trailer_key: r.trailer_key,
+        characters: [],
+      };
+      byId.set(r.title_id, t);
+    }
+    t.characters.push({
+      id: r.hero_id,
+      name: r.hero_name,
+      image_url: r.hero_image_url,
+      portrait_url: r.hero_portrait_url,
+    });
+  }
+  return [...byId.values()];
 }
 
 // ── Editorial campaigns (Phase 3) ────────────────────────────────────────────
@@ -313,4 +370,50 @@ export function trendingBadge(
   }
   if (t.release_date) return { tone: 'theaters', label: 'In Theaters' };
   return null;
+}
+
+export interface WikiTrendingHero {
+  id: string;
+  name: string;
+  image_url: string | null;
+  portrait_url: string | null;
+  /** Pageviews in the most recent 7 days. */
+  week: number;
+  /** Week-over-week growth as a percentage (spike ratio 2.8 → 180). */
+  spikePct: number;
+}
+
+interface WikiTrendingRow {
+  id: string;
+  name: string;
+  image_url: string | null;
+  portrait_url: string | null;
+  pageviews_week: number | null;
+  pageviews_spike: number | string | null;
+}
+
+/** Characters whose Wikipedia pageviews spiked this week. Degrades to [] so a DB
+ *  hiccup never errors the Explore band. */
+export async function getTrendingHeroesWiki(limit = 12): Promise<WikiTrendingHero[]> {
+  const { data, error } = await supabase.rpc('get_trending_heroes_wiki', {
+    p_limit: limit,
+  } as never);
+  if (error) {
+    console.warn('[getTrendingHeroesWiki] error:', error.message);
+    return [];
+  }
+  return ((data ?? []) as unknown as WikiTrendingRow[]).map((r) => {
+    const spike =
+      typeof r.pageviews_spike === 'string'
+        ? parseFloat(r.pageviews_spike)
+        : (r.pageviews_spike ?? 1);
+    return {
+      id: r.id,
+      name: r.name,
+      image_url: r.image_url,
+      portrait_url: r.portrait_url,
+      week: r.pageviews_week ?? 0,
+      spikePct: Math.max(0, Math.round((spike - 1) * 100)),
+    };
+  });
 }

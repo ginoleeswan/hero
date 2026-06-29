@@ -10,18 +10,23 @@ import {
   getUniversePage,
   getTeamPage,
   getHeroById,
+  heroRowToCharacterData,
   getHeroesByNames,
   getRelatedHeroes,
   getRelationship,
   getPowerPercentile,
+  searchHeroes,
   searchHeroesPage,
+  getFamilyOpponents,
+  getHeroesByPowerRange,
   type CategorySlug,
   type CategoryPublisher,
   type PublisherFilter,
   type AlignmentFilter,
 } from '../db/heroes';
+import { getTeamById } from '../db/teams';
 import { DEFAULT_FILTERS, type CategoryFilters } from '../db/categoryFilters';
-import { generateVerdict, type VerdictInput } from '../api';
+import { fetchHeroStats, generateVerdict, type VerdictInput } from '../api';
 import { getCachedVerdict } from '../db/verdicts';
 import { queryKeys } from './keys';
 import { findCachedHero } from './heroCache';
@@ -116,6 +121,17 @@ export function useTeamHeroes(teamName: string | null, filters: CategoryFilters)
   });
 }
 
+/** Team summary (header identity + the membership term that drives useTeamHeroes).
+ *  Separate from the member grid so both can cache independently. */
+export function useTeam(id: string | undefined) {
+  return useQuery({
+    queryKey: id ? queryKeys.team(id) : ['teams', 'detail', 'disabled'],
+    enabled: !!id,
+    queryFn: () => getTeamById(id!),
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
 /** Single most-popular hero for the featured banner (respects publisher facet). */
 export function useFeaturedHero(slug: CategorySlug | null, publisher: CategoryPublisher) {
   return useQuery({
@@ -144,6 +160,65 @@ export function useHeroRow(id: string | undefined) {
     enabled: !!id,
     queryFn: () => getHeroById(id!),
     placeholderData: () => (id ? findCachedHero(client, id) : undefined),
+  });
+}
+
+/** Displayable powerstats for a hero by id — a real enriched DB row's stats, or
+ *  the external SuperheroAPI stats for un-enriched numeric heroes. Used by the
+ *  compare matchup (keyed per hero, so each combatant caches independently). */
+async function loadHeroStats(id: string) {
+  const row = await getHeroById(id);
+  if (row?.enriched_at) return heroRowToCharacterData(row).stats;
+  return fetchHeroStats(id);
+}
+
+export function useHeroStats(id: string | undefined) {
+  return useQuery({
+    queryKey: id ? queryKeys.heroStats(id) : ['heroes', 'stats', 'disabled'],
+    enabled: !!id,
+    queryFn: () => loadHeroStats(id!),
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
+// ── Opponent picker (compare) ───────────────────────────────────────────────
+
+/** The full roster for the opponent picker — one large fetch, cached so
+ *  reopening the picker is instant instead of re-pulling ~600 rows. */
+export function useHeroRoster(limit = 600) {
+  return useQuery({
+    queryKey: queryKeys.heroRoster(limit),
+    queryFn: () => searchHeroes('', 'All', limit),
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
+/** Relationship rows for the picker — rivals (enemies), teammates, allies, and
+ *  bloodline — resolved in one round-trip, cached per hero. */
+export function usePickRelations(hero: string | undefined) {
+  return useQuery({
+    queryKey: hero ? queryKeys.pickRelations(hero) : ['heroes', 'pickRelations', 'disabled'],
+    enabled: !!hero,
+    queryFn: async () => {
+      const [rivals, teammates, allies, family] = await Promise.all([
+        getRelatedHeroes(hero!, 'enemy', { sameUniverse: true, limit: 40 }),
+        getRelatedHeroes(hero!, 'teammate', { sameUniverse: true, limit: 24 }),
+        getRelatedHeroes(hero!, 'ally', { sameUniverse: true, limit: 24 }),
+        getFamilyOpponents(hero!, 24),
+      ]);
+      return { rivals, teammates, allies, family };
+    },
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
+/** Heroes within a powerstats-total band — "comparable power" suggestions. */
+export function useHeroesByPowerRange(lo: number, hi: number, excludeId: string) {
+  return useQuery({
+    queryKey: queryKeys.powerRange(lo, hi, excludeId),
+    enabled: hi > 0,
+    queryFn: () => getHeroesByPowerRange(lo, hi, excludeId),
+    staleTime: 1000 * 60 * 30,
   });
 }
 

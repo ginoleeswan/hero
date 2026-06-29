@@ -45,7 +45,7 @@ function PresenceHeartbeat() {
   return null;
 }
 
-function AuthGate() {
+function AuthGate({ fontsReady }: { fontsReady: boolean }) {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
@@ -66,7 +66,10 @@ function AuthGate() {
     }
   }, [user, loading, segments]);
 
-  if (loading || !settled) return <LogoLoader />;
+  // Single boot gate: one LogoLoader spans the whole cold start (fonts + auth)
+  // so the logo animation runs continuously instead of restarting at the
+  // fonts→auth handoff. (During fonts the native splash is still up over it.)
+  if (!fontsReady || loading || !settled) return <LogoLoader />;
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
@@ -83,23 +86,24 @@ export default function RootLayout() {
     Righteous_400Regular,
   });
 
+  const fontsReady = fontsLoaded || !!fontError;
+
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if (fontsReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsReady]);
 
-  if (!fontsLoaded && !fontError) {
-    return <LogoLoader />;
-  }
-
+  // No early return for fonts — mount the provider tree immediately and let the
+  // single boot gate inside AuthGate own the loading screen for both fonts and
+  // auth. One persistent LogoLoader, no remount/animation restart.
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <StatusBar style="dark" />
         <AnalyticsProvider />
         <PresenceHeartbeat />
-        <AuthGate />
+        <AuthGate fontsReady={fontsReady} />
       </QueryClientProvider>
     </GestureHandlerRootView>
   );

@@ -4,37 +4,28 @@ import {
   getIconicHeroes,
   getTrendingSpotlightHeroes,
   getBrowseCovers,
-  getVillains,
-  getAntiHeroes,
-  getXMen,
   getNewlyAddedCV,
-  getFranchiseIcons,
-  getHeroesByPublisher,
-  getHeroesByMediaTag,
-  getHeroesByStatRanking,
   getTopRivalries,
-  getMostFeared,
-  getEraTimeline,
-  getFirstAppearanceCovers,
   getHeroCount,
   type Hero,
   type BrowseCover,
   type CategorySlug,
   type Rivalry,
-  type FearedVillain,
-  type EraBucket,
-  type FirstAppearanceCover,
 } from '../lib/db/heroes';
 import { getUserFavouriteHeroes } from '../lib/db/favourites';
 import {
   getTrendingTitles,
+  getTrendingOnScreen,
+  getTrendingHeroesWiki,
   getActiveCampaigns,
   getTrendingForUser,
   type TrendingTitle,
+  type WikiTrendingHero,
   type Campaign,
   type TrendingTitleCharacter,
 } from '../lib/db/trending';
 import { getNewComics, type NewComic } from '../lib/db/comics';
+import { getDebutsThisMonth, type DebutIssue } from '../lib/db/anniversaries';
 import { getTodaysMatchup, type TodaysMatchup } from '../lib/matchup';
 import { getRecentlyViewed } from '../lib/db/viewHistory';
 import { BROWSE_PODS } from '../components/home/CategoryPodGrid';
@@ -50,28 +41,18 @@ export interface ExploreData {
   /** True once the spotlight billboard has resolved — both views gate their
    *  skeleton on this. */
   started: boolean;
-  // Billboard + curated catalogue rows.
+  // Billboard, the canon (Hall of Fame), fresh arrivals, the featured rivalry, and
+  // the browse-grid covers. The full category/editorial lists are gone — those
+  // modules are now grid tiles or live on their own destination pages.
   spotlight: Hero[];
   iconic: Hero[];
-  villains: Hero[];
-  horror: Hero[];
-  antiHeroes: Hero[];
-  marvel: Hero[];
-  dc: Hero[];
-  strongest: Hero[];
-  mostIntelligent: Hero[];
-  xmen: Hero[];
-  anime: Hero[];
-  videoGames: Hero[];
-  franchiseIcons: Hero[];
   newlyAdded: Hero[];
-  // Editorial features.
   rivalries: Rivalry[];
-  mostFeared: FearedVillain[];
-  eras: EraBucket[];
-  covers: FirstAppearanceCover[];
   browseCovers: Record<string, BrowseCover>;
   // Right-now / trending.
+  trendingOnScreen: TrendingTitle[];
+  wikiTrending: WikiTrendingHero[];
+  debutsThisMonth: DebutIssue[];
   onScreen: TrendingTitle[];
   comingSoon: TrendingTitle[];
   streaming: TrendingTitle[];
@@ -91,23 +72,12 @@ const INITIAL: ExploreData = {
   started: false,
   spotlight: [],
   iconic: [],
-  villains: [],
-  horror: [],
-  antiHeroes: [],
-  marvel: [],
-  dc: [],
-  strongest: [],
-  mostIntelligent: [],
-  xmen: [],
-  anime: [],
-  videoGames: [],
-  franchiseIcons: [],
   newlyAdded: [],
   rivalries: [],
-  mostFeared: [],
-  eras: [],
-  covers: [],
   browseCovers: {},
+  trendingOnScreen: [],
+  wikiTrending: [],
+  debutsThisMonth: [],
   onScreen: [],
   comingSoon: [],
   streaming: [],
@@ -119,6 +89,17 @@ const INITIAL: ExploreData = {
   recentlyViewed: [],
   favourites: [],
 };
+
+// ── Cross-navigation cache ────────────────────────────────────────────────────
+// The home screen owns ~30 independent fetches. Without a cache, every remount
+// (e.g. back-navigation from a character) cold-refetches the lot and re-shows the
+// skeleton — slow and redundant. This mirrors React Query's staleTime behaviour
+// (used everywhere else in the app): seed instantly from the last snapshot, skip
+// the network if it's still fresh, otherwise revalidate IN PLACE (no skeleton,
+// since `started` is already true from the seed).
+const EXPLORE_TTL = 1000 * 60 * 5; // 5 min, matching the app's query staleTime
+let cachedExplore: ExploreData | null = null;
+let cachedExploreAt = 0;
 
 /**
  * Platform-neutral data layer for the Explore/Home screen. Owns every catalogue,
@@ -132,7 +113,8 @@ const INITIAL: ExploreData = {
  */
 export function useExploreData(): ExploreData {
   const { user } = useAuth();
-  const [data, setData] = useState<ExploreData>(INITIAL);
+  // Seed from the last snapshot so a remount paints instantly (no skeleton).
+  const [data, setData] = useState<ExploreData>(() => cachedExplore ?? INITIAL);
 
   const set = useCallback(
     <K extends keyof ExploreData>(key: K) =>
@@ -141,10 +123,18 @@ export function useExploreData(): ExploreData {
     [],
   );
 
+  // Keep the module snapshot current so the next mount can seed from it.
+  useEffect(() => {
+    cachedExplore = data;
+  }, [data]);
+
   // Mount: billboard + catalogue + editorial + trending. Each query is
   // independent and fills its row as it resolves; only the spotlight (which gates
   // the skeleton) is awaited as a group.
   useEffect(() => {
+    // Fresh cache → already seeded above; skip the cold fan-out entirely.
+    if (cachedExplore?.started && Date.now() - cachedExploreAt < EXPLORE_TTL) return;
+    cachedExploreAt = Date.now();
     // Lead the billboard with up to 2 characters on screen right now, then fill
     // with the curated spotlight pool (deduped). Views slice to their own size.
     Promise.all([getSpotlightHeroes(SPOTLIGHT_POOL), getTrendingSpotlightHeroes(2)])
@@ -177,6 +167,15 @@ export function useExploreData(): ExploreData {
     getBrowseCovers(BROWSE_PODS.map((p) => p.slug as CategorySlug))
       .then(set('browseCovers'))
       .catch(() => {});
+    getTrendingOnScreen(12)
+      .then(set('trendingOnScreen'))
+      .catch(() => {});
+    getTrendingHeroesWiki(14)
+      .then(set('wikiTrending'))
+      .catch(() => {});
+    getDebutsThisMonth(14)
+      .then(set('debutsThisMonth'))
+      .catch(() => {});
     getTrendingTitles('on_screen', 6)
       .then(set('onScreen'))
       .catch(() => {});
@@ -190,56 +189,14 @@ export function useExploreData(): ExploreData {
       .then(set('newComics'))
       .catch(() => {});
 
-    // Curated catalogue rows.
-    getVillains(25)
-      .then(set('villains'))
-      .catch(() => {});
-    getHeroesByMediaTag('horror-icon', 25)
-      .then(set('horror'))
-      .catch(() => {});
-    getAntiHeroes(20)
-      .then(set('antiHeroes'))
-      .catch(() => {});
-    getHeroesByPublisher('marvel', 25)
-      .then(set('marvel'))
-      .catch(() => {});
-    getHeroesByPublisher('dc', 25)
-      .then(set('dc'))
-      .catch(() => {});
-    getHeroesByStatRanking('strength', 20)
-      .then(set('strongest'))
-      .catch(() => {});
-    getHeroesByStatRanking('intelligence', 20)
-      .then(set('mostIntelligent'))
-      .catch(() => {});
-    getXMen(25)
-      .then(set('xmen'))
-      .catch(() => {});
-    getHeroesByMediaTag('anime', 25)
-      .then(set('anime'))
-      .catch(() => {});
-    getHeroesByMediaTag('video-game', 25)
-      .then(set('videoGames'))
-      .catch(() => {});
-    getFranchiseIcons(25)
-      .then(set('franchiseIcons'))
-      .catch(() => {});
+    // Fresh catalogue arrivals (the one browse rail that isn't a grid tile).
     getNewlyAddedCV(25)
       .then(set('newlyAdded'))
       .catch(() => {});
 
-    // Editorial features.
+    // The featured rivalry that opens the Arena chapter.
     getTopRivalries(12)
       .then(set('rivalries'))
-      .catch(() => {});
-    getMostFeared(12)
-      .then(set('mostFeared'))
-      .catch(() => {});
-    getEraTimeline(8)
-      .then(set('eras'))
-      .catch(() => {});
-    getFirstAppearanceCovers(14)
-      .then(set('covers'))
       .catch(() => {});
   }, [set]);
 

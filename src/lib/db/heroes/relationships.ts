@@ -170,21 +170,33 @@ export async function getHeroesByPowerRange(
  * Returns e.g. 87 → "Stronger than 87% of heroes". Heroes with no stats
  * (powerstats_total null/0) are excluded from both numerator and denominator,
  * so the figure reflects only characters that actually have a power profile.
+ *
+ * Uses `count: 'planned'` (PostgreSQL's planner estimate), not 'exact'. An exact
+ * count over the ~14k ranked heroes is an index-only scan that degrades to
+ * thousands of heap fetches whenever the heavily-churned heroes table's
+ * visibility map goes stale — ~3s per count, two per view, which blew the
+ * PostgREST timeout and 500'd. The planner estimate is instant and, for this
+ * evenly-distributed integer column, within ~0.3% of exact — plenty for a
+ * flavour stat. (Keep heroes ANALYZEd, which autovacuum does, so the estimate
+ * stays sharp.)
  */
 export async function getPowerPercentile(total: number): Promise<number | null> {
   if (!total || total <= 0) return null;
   const ranked = supabase
     .from('heroes')
-    .select('*', { count: 'exact', head: true })
+    .select('*', { count: 'planned', head: true })
     .gt('powerstats_total', 0);
   const below = supabase
     .from('heroes')
-    .select('*', { count: 'exact', head: true })
+    .select('*', { count: 'planned', head: true })
     .gt('powerstats_total', 0)
     .lt('powerstats_total', total);
   const [rankedRes, belowRes] = await Promise.all([ranked, below]);
   if (rankedRes.error || belowRes.error || !rankedRes.count) return null;
-  return Math.round(((belowRes.count ?? 0) / rankedRes.count) * 100);
+  // Clamp to 100: `below` is a subset of `ranked` so the exact ratio is always
+  // ≤ 1, but the two planned estimates are independent and could momentarily
+  // disagree, so guard against a >100% reading.
+  return Math.min(100, Math.round(((belowRes.count ?? 0) / rankedRes.count) * 100));
 }
 
 export async function getTopHeroByStat(

@@ -13,8 +13,6 @@ import { useExploreData } from '../../src/hooks/useExploreData';
 import type { FavouriteHero } from '../../src/types';
 import { RankingCard } from '../../src/components/web/home/RankingCard';
 import { HomeFooter } from '../../src/components/web/home/HomeFooter';
-import { CoverGallery } from '../../src/components/web/home/CoverGallery';
-import { EraTimeline } from '../../src/components/web/home/EraTimeline';
 import {
   TodaysMatchup as TodaysMatchupCard,
   TodaysMatchupSkeleton,
@@ -25,8 +23,9 @@ import { PulseTicker } from '../../src/components/web/home/PulseTicker';
 import { DailyChallengeBanner } from '../../src/components/game/DailyChallengeBanner';
 import { SeoHead } from '../../src/components/web/SeoHead';
 import { PublisherPods } from '../../src/components/web/home/PublisherPods';
-import { GreatestRivalries } from '../../src/components/web/home/GreatestRivalries';
-import { HallOfInfamy } from '../../src/components/web/home/HallOfInfamy';
+import { CategoryBrowseGrid } from '../../src/components/web/home/CategoryBrowseGrid';
+import { HallOfFame } from '../../src/components/web/home/HallOfFame';
+import { FeaturedRivalry } from '../../src/components/web/home/FeaturedRivalry';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ROW_CARD_HEIGHT = 310;
@@ -541,7 +540,9 @@ const pss = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 34,
     color: COLORS.beige,
-    lineHeight: 40,
+    // Flame clips its glyph bottoms at a tight line-height; give it ~1.3×.
+    lineHeight: 44,
+    paddingBottom: 2,
     marginBottom: 4,
   } as object,
   glassPanelRealName: {
@@ -970,141 +971,6 @@ const row = StyleSheet.create({
   titleRowHover: { opacity: 0.7 } as object,
 });
 
-// ── Dark editorial row section ────────────────────────────────────────────────
-function DarkHomeRow({
-  label,
-  title,
-  heroes,
-  onPress,
-  onViewAll,
-  grouped = false,
-}: {
-  label?: string;
-  title: string;
-  heroes: (Hero | FavouriteHero)[];
-  onPress: (id: string) => void;
-  onViewAll?: () => void;
-  /** When true, drops the per-row navy band + margin so several rows can share
-   *  one continuous dark zone wrapper (the "Dark Side"). */
-  grouped?: boolean;
-}) {
-  const {
-    sectionRef,
-    scrollRef,
-    isHovered,
-    canScrollLeft,
-    canScrollRight,
-    doScrollLeft,
-    doScrollRight,
-  } = useCarouselScroll(heroes.length);
-  const { width: winWidth } = useWindowDimensions();
-  const pagePad = winWidth < 640 ? 16 : 32;
-
-  if (heroes.length === 0) return null;
-  return (
-    <View ref={sectionRef} style={grouped ? (drow.sectionGrouped as object) : drow.section}>
-      <View style={[drow.header, { paddingLeft: pagePad }]}>
-        <View style={drow.headerLeft}>
-          <View style={drow.accentBar} />
-          <View style={drow.headerText}>
-            {!!label && <Text style={drow.label}>{label}</Text>}
-            {onViewAll ? (
-              <Pressable
-                onPress={onViewAll}
-                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [drow.titleRow, hovered && (drow.titleRowHover as object)] as object
-                }
-              >
-                <Text style={drow.title}>{title}</Text>
-                <Text
-                  style={
-                    {
-                      fontFamily: 'Flame-Regular',
-                      fontSize: 44,
-                      color: COLORS.beige,
-                      marginTop: 4,
-                      marginLeft: 4,
-                    } as object
-                  }
-                >
-                  ›
-                </Text>
-              </Pressable>
-            ) : (
-              <Text style={drow.title}>{title}</Text>
-            )}
-          </View>
-        </View>
-      </View>
-      {/* Scroll track starts at viewport left edge — cards bleed off sides when scrolling. */}
-      <View style={{ position: 'relative', minHeight: ROW_CARD_HEIGHT } as object}>
-        <View
-          ref={scrollRef}
-          style={[rowScrollStyle, { paddingLeft: pagePad, marginLeft: 0 }] as object}
-        >
-          {heroes.map((h) => (
-            <RowCard key={h.id} hero={h} onPress={() => onPress(String(h.id))} />
-          ))}
-        </View>
-        {isHovered && canScrollLeft && (
-          <CarouselArrow direction="left" onPress={doScrollLeft} contained />
-        )}
-        {isHovered && canScrollRight && (
-          <CarouselArrow direction="right" onPress={doScrollRight} contained />
-        )}
-      </View>
-    </View>
-  );
-}
-
-const drow = StyleSheet.create({
-  section: {
-    backgroundColor: COLORS.navy,
-    paddingTop: 28,
-    paddingBottom: 8,
-    marginBottom: 52,
-  } as object,
-  // Inside a shared dark zone: no own band/margin, just inter-row spacing.
-  sectionGrouped: {
-    paddingTop: 4,
-    paddingBottom: 8,
-    marginBottom: 28,
-  } as object,
-  header: {
-    marginBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    position: 'relative',
-    zIndex: 2,
-  } as object,
-  headerLeft: { flexDirection: 'row', alignItems: 'stretch', gap: 14 },
-  accentBar: {
-    width: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.orange,
-    minHeight: 38,
-  },
-  headerText: { gap: 2, justifyContent: 'center' },
-  label: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: COLORS.orange,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  title: { fontFamily: 'Flame-Regular', fontSize: 36, color: COLORS.beige, lineHeight: 38 },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    cursor: 'pointer',
-    transition: 'opacity 150ms ease',
-    alignSelf: 'flex-start',
-  } as object,
-  titleRowHover: { opacity: 0.7 } as object,
-});
-
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function WebHomeScreen() {
   const router = useRouter();
@@ -1180,22 +1046,31 @@ export default function WebHomeScreen() {
             <PublisherPods
               onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
             />
-            {homeData.matchup === undefined ? (
-              <TodaysMatchupSkeleton />
-            ) : homeData.matchup ? (
-              <TodaysMatchupCard
-                matchup={homeData.matchup}
-                onOpen={(path) => router.push(path as Parameters<typeof router.push>[0])}
-              />
-            ) : null}
-          </View>
-
-          {/* ── Daily Guess-the-Hero entry — prime spot under the spotlight ── */}
-          <View style={styles.dailyWrap}>
-            <DailyChallengeBanner
-              onPress={() => router.push('/play')}
-              style={styles.dailyBanner as object}
-            />
+            {/* Engage row — "Today's Battle" (vote) paired with the daily
+                Guess-the-Hero game. On desktop they sit side by side so the
+                matchup isn't a full-width bar and the game rides up beside it;
+                on mobile they stack. */}
+            <View
+              style={[styles.engageRow, isMobile && (styles.engageRowStack as object)] as object}
+            >
+              <View style={isMobile ? undefined : (styles.engageMatchup as object)}>
+                {homeData.matchup === undefined ? (
+                  <TodaysMatchupSkeleton />
+                ) : homeData.matchup ? (
+                  <TodaysMatchupCard
+                    matchup={homeData.matchup}
+                    onOpen={(path) => router.push(path as Parameters<typeof router.push>[0])}
+                  />
+                ) : null}
+              </View>
+              <View style={(isMobile ? styles.engageDailyStack : styles.engageDaily) as object}>
+                <DailyChallengeBanner
+                  onPress={() => router.push('/play')}
+                  tall={!isMobile}
+                  style={(isMobile ? styles.dailyBannerMobile : styles.dailyBannerGlass) as object}
+                />
+              </View>
+            </View>
           </View>
 
           {/* ── Orange ticker strip ────────────────────────────────────────── */}
@@ -1211,8 +1086,11 @@ export default function WebHomeScreen() {
             onScreen={homeData.onScreen ?? []}
             comingSoon={homeData.comingSoon ?? []}
             streaming={homeData.streaming ?? []}
+            trendingOnScreen={homeData.trendingOnScreen ?? []}
             personalized={homeData.trendingForUser ?? []}
             newComics={homeData.newComics}
+            wikiTrending={homeData.wikiTrending ?? []}
+            debuts={homeData.debutsThisMonth ?? []}
             onHeroPress={handlePress}
             onTitlePress={handleTitlePress}
             onIssuePress={handleIssuePress}
@@ -1229,14 +1107,9 @@ export default function WebHomeScreen() {
               onPress={handlePress}
             />
 
-            {/* ── The marquee browse row ────────────────────────────────────── */}
-            <HomeRow
-              label="By Appearances"
-              title="Most Iconic"
-              heroes={homeData.iconic ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/most-iconic')}
-            />
+            {/* ── Hall of Fame — Most Iconic, authored: a chosen #1 + ranked list
+                 instead of a flat rail of equals. ──────────────────────────── */}
+            <HallOfFame heroes={homeData.iconic ?? []} onPress={handlePress} />
 
             {/* ── Browse the Universe — the category doorways, with their own
                  header so the grid reads as a deliberate browse block, not an
@@ -1255,119 +1128,47 @@ export default function WebHomeScreen() {
               </Text>
             </View>
 
-            {/* ── More of the Library — publishers, teams, media & power ────── */}
-            <HomeRow
-              label="Publisher"
-              title="Marvel Universe"
-              heroes={homeData.marvel ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/universe/marvel')}
-            />
-            <HomeRow
-              label="Publisher"
-              title="DC Universe"
-              heroes={homeData.dc ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/universe/dc')}
-            />
-            <HomeRow
-              label="Mutantkind"
-              title="X-Men"
-              heroes={homeData.xmen ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/xmen')}
-            />
-            <HomeRow
-              label="Raw Power"
-              title="Strongest"
-              heroes={homeData.strongest ?? []}
-              statKey="strength"
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/strongest')}
-            />
-            <HomeRow
-              label="Great Minds"
-              title="Most Intelligent"
-              heroes={homeData.mostIntelligent ?? []}
-              statKey="intelligence"
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/most-intelligent')}
-            />
-            <HomeRow
-              label="Beyond the Comics"
-              title="Anime Legends"
-              heroes={homeData.anime ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/anime')}
-            />
-            <HomeRow
-              label="Press Start"
-              title="Video Game Heroes"
-              heroes={homeData.videoGames ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/video-games')}
-            />
-            <HomeRow
-              label="Franchise Icons"
-              title="Beyond the Comics"
-              heroes={homeData.franchiseIcons ?? []}
-              onPress={handlePress}
-              onViewAll={() => router.push('/category/franchise-icons')}
-            />
-            <HomeRow
-              label="Fresh to the Vault"
-              title="Newly Added"
-              heroes={homeData.newlyAdded ?? []}
-              onPress={handlePress}
+            {/* ── Browse the Universe — one calm grid of doorway tiles. Replaces
+                 the wall of category rails (and the old Dark Side rails:
+                 villains / horror / anti-heroes are tiles here too). ────────── */}
+            <CategoryBrowseGrid
+              covers={homeData.browseCovers}
+              onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
             />
 
-            {/* ── The Dark Side — one deliberate dark zone ──────────────────── */}
-            {((homeData.villains?.length ?? 0) > 0 ||
-              (homeData.antiHeroes?.length ?? 0) > 0 ||
-              (homeData.horror?.length ?? 0) > 0) && (
-              <View style={styles.darkZone}>
-                <DarkHomeRow
-                  grouped
-                  label="The Dark Side"
-                  title="Villains"
-                  heroes={homeData.villains ?? []}
-                  onPress={handlePress}
-                  onViewAll={() => router.push('/category/villain')}
-                />
-                <DarkHomeRow
-                  grouped
-                  label="Movie Nightmares"
-                  title="Horror Icons"
-                  heroes={homeData.horror ?? []}
-                  onPress={handlePress}
-                  onViewAll={() => router.push('/category/horror')}
-                />
-                <DarkHomeRow
-                  grouped
-                  label="Neither Good Nor Evil"
-                  title="Anti-Heroes"
-                  heroes={homeData.antiHeroes ?? []}
-                  onPress={handlePress}
-                  onViewAll={() => router.push('/category/anti-heroes')}
-                />
-              </View>
-            )}
+            {/* ── Fresh to the Vault — the one temporal rail (not a category) ── */}
+            <View style={styles.afterGrid}>
+              <HomeRow
+                label="Fresh to the Vault"
+                title="Newly Added"
+                heroes={homeData.newlyAdded ?? []}
+                onPress={handlePress}
+              />
+            </View>
 
-            {/* ── Go Deeper — the editorial features ────────────────────────── */}
+            {/* ── The Arena — one featured rivalry leads; the rest live in /versus. */}
             <View style={styles.browseHead}>
-              <Text style={styles.browseKicker as object}>Go Deeper</Text>
+              <Text style={styles.browseKicker as object}>The Arena</Text>
               <Text
                 style={
                   [styles.browseTitle, isMobile && (styles.browseTitleMobile as object)] as object
                 }
               >
-                Beyond the Page
+                Greatest Rivalries
+              </Text>
+              <Text style={styles.browseSubtitle as object}>
+                The debates that never settle — pick a side and see who the fans crown.
               </Text>
             </View>
-            <GreatestRivalries rivalries={homeData.rivalries ?? []} />
-            <HallOfInfamy villains={homeData.mostFeared ?? []} />
-            <EraTimeline eras={homeData.eras ?? []} onPress={handlePress} />
-            <CoverGallery covers={homeData.covers ?? []} onPress={handlePress} />
+            {(homeData.rivalries?.length ?? 0) > 0 && (
+              <FeaturedRivalry rivalry={homeData.rivalries![0]} />
+            )}
+            <Pressable
+              onPress={() => router.push('/versus' as Parameters<typeof router.push>[0])}
+              style={[styles.seeAllRow, { paddingHorizontal: isMobile ? 16 : 32 }] as object}
+            >
+              <Text style={styles.seeAllText as object}>See all rivalries →</Text>
+            </Pressable>
 
             {/* ── For You — warm close ──────────────────────────────────────── */}
             <HomeRow
@@ -1390,15 +1191,45 @@ export default function WebHomeScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  dailyWrap: { alignItems: 'center', paddingHorizontal: 16, marginTop: 18, marginBottom: 26 },
-  // Override the shared banner's phone margins: centre + constrain to the column.
-  dailyBanner: {
-    width: '100%',
-    maxWidth: 720,
+  // Engage row — matchup + daily game. Desktop: matchup takes the larger share,
+  // the game a narrower column on the right. Mobile: stack, cards keep own gutters.
+  engageRow: {
+    flexDirection: 'row',
+    // Stretch so the daily card grows to the matchup's height instead of
+    // floating short beside it.
+    alignItems: 'stretch',
+    gap: 20,
+    paddingHorizontal: 32,
+    marginTop: 16,
+  } as object,
+  engageRowStack: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 0,
+    paddingHorizontal: 0,
+    marginTop: 0,
+  } as object,
+  engageMatchup: { flex: 1.7, minWidth: 0 } as object,
+  engageDaily: { flex: 1, minWidth: 240, maxWidth: 440 } as object,
+  engageDailyStack: {} as object,
+  // Daily banner restyled to sit on the dark stage: drop the beige-sheet gutter,
+  // add a glass hairline so it reads as a sibling of the matchup card.
+  dailyBannerGlass: {
     marginHorizontal: 0,
     marginTop: 0,
+    marginBottom: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.09)',
     cursor: 'pointer',
-  },
+  } as object,
+  dailyBannerMobile: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.09)',
+    cursor: 'pointer',
+  } as object,
   root: { flex: 1, backgroundColor: COLORS.beige },
   scroll: { flex: 1 },
   // Desktop: the scroll surface is the dark stage colour, so overscroll at the
@@ -1417,11 +1248,16 @@ const styles = StyleSheet.create({
   darkStageMobile: { paddingTop: TOPBAR_HEIGHT - 4, paddingBottom: 16 } as object,
 
   // Beige canvas owns the carousel section (sits on the dark scroll surface).
+  // Comic-paper tactility — a faint halftone ink-dot grid + a whisper of vertical
+  // light so the canvas reads as printed stock, not a flat fill.
   beigeCanvas: {
     backgroundColor: COLORS.beige,
+    backgroundImage:
+      'radial-gradient(rgba(41,60,67,0.09) 1.1px, transparent 1.8px), linear-gradient(to bottom, rgba(255,255,255,0.85), rgba(255,255,255,0) 620px)',
+    backgroundSize: '18px 18px, 100% 100%',
     paddingTop: 40,
     paddingBottom: 24,
-  },
+  } as object,
 
   // "Browse the Universe" chapter break between the dynamic zone and the library.
   browseHead: { paddingHorizontal: 24, paddingBottom: 30, marginTop: -36 } as object,
@@ -1452,14 +1288,16 @@ const styles = StyleSheet.create({
     maxWidth: 560,
   } as object,
 
-  // The one deliberate dark moment in the canvas — the "Dark Side" zone holds
-  // the villain/grey-morality rows in a single continuous navy band.
-  darkZone: {
-    backgroundColor: COLORS.navy,
-    paddingTop: 28,
-    paddingBottom: 8,
-    marginBottom: 52,
-  },
+  // Breathing room between the browse grid and the "Newly Added" rail.
+  afterGrid: { marginTop: 44 },
+  // "See all rivalries →" link under the featured rivalry (the rail it replaced).
+  seeAllRow: { marginTop: -24, marginBottom: 52, alignSelf: 'flex-start' } as object,
+  seeAllText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.orange,
+    letterSpacing: 0.5,
+  } as object,
 
   // ── Home layout ──────────────────────────────────────────────────────────────
   discoverContent: {
