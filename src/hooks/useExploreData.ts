@@ -134,11 +134,15 @@ export function useExploreData(): ExploreData {
   useEffect(() => {
     // Fresh cache → already seeded above; skip the cold fan-out entirely.
     if (cachedExplore?.started && Date.now() - cachedExploreAt < EXPLORE_TTL) return;
-    cachedExploreAt = Date.now();
     // Lead the billboard with up to 2 characters on screen right now, then fill
     // with the curated spotlight pool (deduped). Views slice to their own size.
-    Promise.all([getSpotlightHeroes(SPOTLIGHT_POOL), getTrendingSpotlightHeroes(2)])
-      .then(([base, trend]) => {
+    // allSettled (not Promise.all): a flaky trending RPC must NOT zero out the
+    // whole billboard — Promise.all rejects if either source fails, which left the
+    // carousel empty (and cached empty) until a hard refresh.
+    Promise.allSettled([getTrendingSpotlightHeroes(2), getSpotlightHeroes(SPOTLIGHT_POOL)]).then(
+      ([trendRes, baseRes]) => {
+        const trend = trendRes.status === 'fulfilled' ? trendRes.value : [];
+        const base = baseRes.status === 'fulfilled' ? baseRes.value : [];
         const seen = new Set<string>();
         const merged: Hero[] = [];
         for (const h of [...trend, ...base]) {
@@ -147,9 +151,12 @@ export function useExploreData(): ExploreData {
             merged.push(h);
           }
         }
+        // Only mark the cache fresh once we actually have a billboard, so a total
+        // failure retries on the next mount instead of sticking for the full TTL.
+        if (merged.length > 0) cachedExploreAt = Date.now();
         setData((d) => ({ ...d, spotlight: merged, started: true }));
-      })
-      .catch(() => setData((d) => ({ ...d, started: true })));
+      },
+    );
 
     getActiveCampaigns()
       .then(set('campaigns'))
