@@ -461,6 +461,11 @@ export default function HomeScreen() {
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      {/* Two-tone bounce: the deep-navy root shows on the top rubber-band (matching
+          the spotlight), this beige fill shows on the bottom one (matching the
+          beige tail). Both sit behind the transparent FeedList; the opaque content
+          hides the seam — only the over-scroll gaps reveal them. */}
+      <View style={styles.bottomFill} pointerEvents="none" />
       {!initialLoaded ? (
         <HomeSkeleton insets={insets} />
       ) : (
@@ -500,6 +505,9 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, backgroundColor: COLORS.deepNavy, paddingBottom: 0 },
   // Beige paper tail so the bottom padding isn't a dark strip.
   footer: { height: 120 },
+  // Beige behind the bottom half — revealed on the bottom over-scroll bounce so
+  // it never flashes the deep-navy root under the beige tail.
+  bottomFill: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%', backgroundColor: COLORS.beige },
   // Chapter break ("Browse the Universe", "Beyond the Page").
   browseHead: { paddingHorizontal: 16, paddingTop: 22, paddingBottom: 4 },
   browseKicker: {
@@ -522,8 +530,15 @@ const styles = StyleSheet.create({
   // The dark stage overlaps the spotlight's fade; zIndex keeps the glass chips
   // painting over the portrait.
   podsOverlap: { marginTop: -SPOTLIGHT_OVERLAP, zIndex: 1 },
-  // Daily banner on the dark stage — a hairline so the navy card has an edge.
-  dailyOnDark: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)' },
+  // Daily banner on the dark stage — a hairline edge, plus even gaps top/bottom
+  // (the shared banner's defaults skew 16/4; matchup adds 12 above, ticker 0
+  // below, so 4/16 here lands a balanced ~16pt on each side).
+  dailyOnDark: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.09)',
+    marginTop: 4,
+    marginBottom: 16,
+  },
   // Top-anchored so the pull-down stretch grows the billboard downward (top pinned).
   spotlightWrap: { transformOrigin: 'top' },
 });
