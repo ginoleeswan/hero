@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   wrap: { backgroundColor: COLORS.deepNavy },
   dots: {
     position: 'absolute',
-    bottom: 86,
+    bottom: 22,
     left: 0,
     right: 0,
     flexDirection: 'row',

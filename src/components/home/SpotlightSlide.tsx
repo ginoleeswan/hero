@@ -52,7 +52,7 @@ export function SpotlightSlide({
   // dark base guarantees the light text reads over any art.
   return (
     <Pressable onPress={onPress} style={[styles.container, { height }]}>
-      <Animated.View style={[StyleSheet.absoluteFill, imageStyle]}>
+      <Animated.View style={[StyleSheet.absoluteFill, styles.imageWrap, imageStyle]}>
         <HeroImage
           id={hero.id}
           name={hero.name}
@@ -89,13 +89,18 @@ export function SpotlightSlide({
 
 const styles = StyleSheet.create({
   container: { overflow: 'hidden', backgroundColor: COLORS.deepNavy },
-  // Lifted so the dark stage can overlap the fade below without covering the name.
-  meta: { position: 'absolute', bottom: 116, left: 20, right: 20, alignItems: 'center' },
+  // Anchor the zoom (Ken Burns + overscroll) at the top so it grows downward and
+  // the top of the portrait stays pinned to the screen — never cropped/zoomed up.
+  imageWrap: { transformOrigin: 'top' },
+  // Sits low on the portrait; the dark stage overlaps the fade just below it.
+  meta: { position: 'absolute', bottom: 40, left: 20, right: 20, alignItems: 'center' },
   name: {
     fontFamily: 'Flame-Regular',
     fontSize: 38,
     color: COLORS.beige,
-    lineHeight: 42,
+    // Flame's glyphs need ~1.3× or the bottoms clip; keep numberOfLines at 1.
+    lineHeight: 50,
+    paddingBottom: 2,
     textAlign: 'center',
     textShadowColor: 'rgba(0,0,0,0.4)',
     textShadowOffset: { width: 0, height: 2 },

@@ -2,7 +2,7 @@
 // the daily battle and editorial "Beyond the Page" features (rivalries, most
 // feared, era timeline, first-appearance covers). Brought to parity with the web
 // explore so native shows the full catalogue's depth, not a thin slice.
-import { useState, useCallback, useMemo, type ReactNode, type ComponentType } from 'react';
+import { useState, useCallback, useMemo, type ComponentType } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,6 @@ import {
   StyleSheet,
   StatusBar,
   type ListRenderItem,
-  type ViewStyle,
-  type StyleProp,
   type FlatListProps,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,14 +18,17 @@ import Animated, {
   useSharedValue,
   useAnimatedScrollHandler,
   useAnimatedStyle,
+  interpolate,
+  Extrapolation,
   type AnimatedProps,
 } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, type Href } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../../src/constants/colors';
 import { HomeSkeleton } from '../../src/components/skeletons/HomeSkeleton';
-import { SpotlightCarousel } from '../../src/components/home/SpotlightCarousel';
+import { SpotlightCarousel, spotlightHeight } from '../../src/components/home/SpotlightCarousel';
 import { PaperSurface } from '../../src/components/home/PaperSurface';
 import { rowStyle } from '../../src/lib/home/rowStyle';
 import { HomeHeroRow, type RowHero } from '../../src/components/home/HomeHeroRow';
@@ -104,7 +105,11 @@ const DARK_ROWS = new Set<FeedRow['type']>([
 
 // The dark stage rides up into the spotlight's bottom fade so the glass chips
 // emerge from the portrait (no hard seam).
-const SPOTLIGHT_OVERLAP = 60;
+const SPOTLIGHT_OVERLAP = 14;
+
+// On scroll-down the portrait lags (moves at ~half speed) so the content slides
+// UP over it, instead of the whole billboard scrolling away.
+const SPOTLIGHT_PARALLAX = 0.5;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -143,8 +148,20 @@ export default function HomeScreen() {
   });
   // Counteract the overscroll bounce so the whole page holds still on pull-down —
   // only the spotlight portrait zooms (Apple TV style), no navy gap appears.
-  const contentShift = useAnimatedStyle(() => ({
-    transform: [{ translateY: scrollY.value < 0 ? scrollY.value : 0 }],
+  const spotH = spotlightHeight(insets.top);
+  // Pull-down (sy < 0): stretch the billboard, top-anchored, to fill the overscroll
+  // so no band is ever revealed behind it. Down-scroll (sy > 0): parallax lag so the
+  // dark stage slides up over the portrait instead of scrolling off with it.
+  const spotlightParallax = useAnimatedStyle(() => {
+    const sy = scrollY.value;
+    if (sy < 0) {
+      return { transform: [{ translateY: sy }, { scale: 1 - sy / spotH }] };
+    }
+    return { transform: [{ translateY: sy * SPOTLIGHT_PARALLAX }] };
+  });
+  // As the stage slides up over the portrait, a dark frost fades in over it.
+  const spotlightBlur = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [0, 220], [0, 1], Extrapolation.CLAMP),
   }));
   const spotlightPool = spotlight;
 
@@ -302,102 +319,118 @@ export default function HomeScreen() {
     ({ item, index }) => {
       const content = (() => {
         switch (item.type) {
-        case 'spotlight':
-          return (
-            <SpotlightCarousel
-              heroes={item.heroes}
-              insetTop={insets.top}
-              scrollY={scrollY}
-              onHeroPress={handlePress}
-              showLip={false}
-            />
-          );
-        case 'publishers':
-          return <PublisherGrid onPress={handlePublisherPress} />;
-        case 'daily':
-          return <DailyChallengeBanner onPress={() => handleOpenPath('/play')} />;
-        case 'matchup':
-          return <TodaysMatchup matchup={item.matchup} onOpen={handleOpenPath} />;
-        case 'ticker':
-          return <PulseTicker heroCount={item.heroCount} newlyAddedCount={item.newlyAddedCount} />;
-        case 'recent':
-          return (
-            <HomeHeroRow
-              label="Personal"
-              title="Recently Viewed"
-              heroes={item.heroes}
-              variant="thumb"
-              onPress={handlePress}
-              disabled={navigating}
-            />
-          );
-        case 'rightnow':
-          return (
-            <RightNowBand
-              campaign={item.campaign}
-              onScreen={item.onScreen}
-              comingSoon={item.comingSoon}
-              streaming={item.streaming}
-              personalized={item.personalized}
-              newComics={item.newComics}
-              wikiTrending={item.wikiTrending}
-              debuts={item.debuts}
-              onHeroPress={handlePress}
-              onTitlePress={handleTitlePress}
-              onIssuePress={handleIssuePress}
-              disabled={navigating}
-            />
-          );
-        case 'chapter':
-          return (
-            <View style={styles.browseHead}>
-              <Text style={styles.browseKicker}>{item.kicker}</Text>
-              <Text style={styles.browseTitle}>{item.title}</Text>
-            </View>
-          );
-        case 'favourites':
-          return (
-            <HomeHeroRow
-              label="Personal"
-              title="Your Favourites"
-              heroes={item.heroes}
-              variant="portrait"
-              onPress={handlePress}
-              disabled={navigating}
-            />
-          );
-        case 'halloffame':
-          return <HallOfFame heroes={item.heroes} onPress={handleHeroId} />;
-        case 'browsegrid':
-          return <CategoryPodGrid covers={browseCovers} onPress={handleBrowsePress} />;
-        case 'featuredrivalry':
-          return <FeaturedRivalry rivalry={item.rivalry} onOpen={handleOpenPath} />;
-        case 'seeall':
-          return (
-            <Pressable
-              style={styles.seeAllRow}
-              onPress={() => handleOpenPath(item.route as string)}
-            >
-              <Text style={styles.seeAllText}>{item.label}</Text>
-            </Pressable>
-          );
-        case 'curated': {
-          const rs = rowStyle(item.key);
-          return (
-            <HomeHeroRow
-              label={item.label}
-              title={item.title}
-              tone={rs.tone}
-              accent={rs.accent}
-              ranked={rs.ranked}
-              feature={rs.feature}
-              heroes={item.heroes.map(toRowHero)}
-              onPress={handlePress}
-              onViewAll={item.route ? () => router.push(item.route!) : undefined}
-              disabled={navigating}
-            />
-          );
-        }
+          case 'spotlight':
+            return (
+              <Animated.View style={[styles.spotlightWrap, spotlightParallax]}>
+                <SpotlightCarousel
+                  heroes={item.heroes}
+                  insetTop={insets.top}
+                  scrollY={scrollY}
+                  onHeroPress={handlePress}
+                  showLip={false}
+                />
+                <Animated.View
+                  style={[StyleSheet.absoluteFill, spotlightBlur]}
+                  pointerEvents="none"
+                >
+                  <BlurView intensity={48} tint="dark" style={StyleSheet.absoluteFill} />
+                </Animated.View>
+              </Animated.View>
+            );
+          case 'publishers':
+            return (
+              <View style={index > 0 ? styles.podsOverlap : undefined}>
+                <PublisherGrid onPress={handlePublisherPress} />
+              </View>
+            );
+          case 'daily':
+            return (
+              <DailyChallengeBanner onPress={() => handleOpenPath('/play')} style={styles.dailyOnDark} />
+            );
+          case 'matchup':
+            return <TodaysMatchup matchup={item.matchup} onOpen={handleOpenPath} />;
+          case 'ticker':
+            return (
+              <PulseTicker heroCount={item.heroCount} newlyAddedCount={item.newlyAddedCount} />
+            );
+          case 'recent':
+            return (
+              <HomeHeroRow
+                label="Personal"
+                title="Recently Viewed"
+                heroes={item.heroes}
+                variant="thumb"
+                onPress={handlePress}
+                disabled={navigating}
+              />
+            );
+          case 'rightnow':
+            return (
+              <RightNowBand
+                campaign={item.campaign}
+                onScreen={item.onScreen}
+                comingSoon={item.comingSoon}
+                streaming={item.streaming}
+                personalized={item.personalized}
+                newComics={item.newComics}
+                wikiTrending={item.wikiTrending}
+                debuts={item.debuts}
+                onHeroPress={handlePress}
+                onTitlePress={handleTitlePress}
+                onIssuePress={handleIssuePress}
+                disabled={navigating}
+              />
+            );
+          case 'chapter':
+            return (
+              <View style={styles.browseHead}>
+                <Text style={styles.browseKicker}>{item.kicker}</Text>
+                <Text style={styles.browseTitle}>{item.title}</Text>
+              </View>
+            );
+          case 'favourites':
+            return (
+              <HomeHeroRow
+                label="Personal"
+                title="Your Favourites"
+                heroes={item.heroes}
+                variant="portrait"
+                onPress={handlePress}
+                disabled={navigating}
+              />
+            );
+          case 'halloffame':
+            return <HallOfFame heroes={item.heroes} onPress={handleHeroId} />;
+          case 'browsegrid':
+            return <CategoryPodGrid covers={browseCovers} onPress={handleBrowsePress} />;
+          case 'featuredrivalry':
+            return <FeaturedRivalry rivalry={item.rivalry} onOpen={handleOpenPath} />;
+          case 'seeall':
+            return (
+              <Pressable
+                style={styles.seeAllRow}
+                onPress={() => handleOpenPath(item.route as string)}
+              >
+                <Text style={styles.seeAllText}>{item.label}</Text>
+              </Pressable>
+            );
+          case 'curated': {
+            const rs = rowStyle(item.key);
+            return (
+              <HomeHeroRow
+                label={item.label}
+                title={item.title}
+                tone={rs.tone}
+                accent={rs.accent}
+                ranked={rs.ranked}
+                feature={rs.feature}
+                heroes={item.heroes.map(toRowHero)}
+                onPress={handlePress}
+                onViewAll={item.route ? () => router.push(item.route!) : undefined}
+                disabled={navigating}
+              />
+            );
+          }
         }
       })();
       if (content == null) return null;
@@ -420,19 +453,9 @@ export default function HomeScreen() {
       navigating,
       router,
       firstBeigeIndex,
+      spotlightParallax,
+      spotlightBlur,
     ],
-  );
-
-  // Translate every rendered cell uniformly to counteract the overscroll bounce,
-  // exactly as the old wrapper did — only the spotlight portrait zooms (scrollY).
-  // Transforms don't affect layout, so virtualization measurement is unaffected.
-  const CellRenderer = useCallback(
-    ({ style, children, ...rest }: { style?: StyleProp<ViewStyle>; children?: ReactNode }) => (
-      <Animated.View style={[style, contentShift]} {...rest}>
-        {children}
-      </Animated.View>
-    ),
-    [contentShift],
   );
 
   return (
@@ -447,7 +470,6 @@ export default function HomeScreen() {
           data={rows}
           keyExtractor={keyExtractor}
           renderItem={renderRow}
-          CellRendererComponent={CellRenderer}
           showsVerticalScrollIndicator={false}
           contentInsetAdjustmentBehavior="never"
           automaticallyAdjustContentInsets={false}
@@ -466,7 +488,9 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.navy },
+  // Deep navy so the overscroll rubber-band reveals the same dark as the stage
+  // (no lighter-navy band behind the zooming portrait).
+  root: { flex: 1, backgroundColor: COLORS.deepNavy },
   // Transparent so the dark navy root shows under the status bar and on
   // overscroll (matching the spotlight) instead of a beige band.
   scroll: { flex: 1, backgroundColor: 'transparent' },
@@ -495,4 +519,11 @@ const styles = StyleSheet.create({
     color: COLORS.orange,
     letterSpacing: 0.5,
   },
+  // The dark stage overlaps the spotlight's fade; zIndex keeps the glass chips
+  // painting over the portrait.
+  podsOverlap: { marginTop: -SPOTLIGHT_OVERLAP, zIndex: 1 },
+  // Daily banner on the dark stage — a hairline so the navy card has an edge.
+  dailyOnDark: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)' },
+  // Top-anchored so the pull-down stretch grows the billboard downward (top pinned).
+  spotlightWrap: { transformOrigin: 'top' },
 });

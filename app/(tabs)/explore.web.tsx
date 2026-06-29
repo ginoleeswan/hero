@@ -540,7 +540,9 @@ const pss = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 34,
     color: COLORS.beige,
-    lineHeight: 40,
+    // Flame clips its glyph bottoms at a tight line-height; give it ~1.3×.
+    lineHeight: 44,
+    paddingBottom: 2,
     marginBottom: 4,
   } as object,
   glassPanelRealName: {

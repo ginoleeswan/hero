@@ -162,10 +162,10 @@ export function TodaysMatchup({
 }
 
 const m = StyleSheet.create({
-  section: { paddingTop: 14, paddingBottom: 16 },
+  section: { paddingTop: 8, paddingBottom: 12 },
   header: {
     paddingHorizontal: 15,
-    marginBottom: 12,
+    marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'stretch',
     gap: 11,
@@ -183,9 +183,11 @@ const m = StyleSheet.create({
 
   card: {
     marginHorizontal: 15,
-    backgroundColor: COLORS.navy,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 18,
     borderCurve: 'continuous',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.09)',
     paddingVertical: 20,
     paddingHorizontal: 18,
     alignItems: 'center',

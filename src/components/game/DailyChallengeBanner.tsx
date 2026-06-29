@@ -70,6 +70,35 @@ export function DailyChallengeBanner({
     );
   }
 
+  const inner = (
+    <>
+      {/* Mystery tile — a silhouette behind a question mark, hinting at the
+          blurred portrait you'll uncover. */}
+      <View style={styles.tile}>
+        <Ionicons name="person" size={40} color="rgba(245,235,220,0.14)" />
+        <Text style={styles.tileMark}>?</Text>
+      </View>
+
+      <View style={styles.body}>
+        <Text style={styles.kicker}>Daily Challenge</Text>
+        <Text style={styles.title}>Guess the Hero</Text>
+        {streak > 0 ? (
+          <View style={styles.streakRow}>
+            <Text style={styles.streakText}>🔥 {streak} day streak</Text>
+            <Text style={styles.dot}>·</Text>
+            <Text style={styles.sub}>Keep it alive</Text>
+          </View>
+        ) : (
+          <Text style={styles.sub}>A new mystery hero every day — can you name them?</Text>
+        )}
+      </View>
+
+      <View style={styles.cta}>
+        <Ionicons name="play" size={18} color="#fff" style={styles.ctaIcon} />
+      </View>
+    </>
+  );
+
   return (
     <Pressable
       onPress={onPress}
@@ -83,30 +112,7 @@ export function DailyChallengeBanner({
         end={{ x: 1, y: 1 }}
         style={styles.bg}
       >
-        {/* Mystery tile — a silhouette behind a question mark, hinting at the
-            blurred portrait you'll uncover. */}
-        <View style={styles.tile}>
-          <Ionicons name="person" size={40} color="rgba(245,235,220,0.14)" />
-          <Text style={styles.tileMark}>?</Text>
-        </View>
-
-        <View style={styles.body}>
-          <Text style={styles.kicker}>Daily Challenge</Text>
-          <Text style={styles.title}>Guess the Hero</Text>
-          {streak > 0 ? (
-            <View style={styles.streakRow}>
-              <Text style={styles.streakText}>🔥 {streak} day streak</Text>
-              <Text style={styles.dot}>·</Text>
-              <Text style={styles.sub}>Keep it alive</Text>
-            </View>
-          ) : (
-            <Text style={styles.sub}>A new mystery hero every day — can you name them?</Text>
-          )}
-        </View>
-
-        <View style={styles.cta}>
-          <Ionicons name="play" size={18} color="#fff" style={styles.ctaIcon} />
-        </View>
+        {inner}
       </LinearGradient>
     </Pressable>
   );

@@ -7,13 +7,7 @@ import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
 
-export function HallOfFame({
-  heroes,
-  onPress,
-}: {
-  heroes: Hero[];
-  onPress: (id: string) => void;
-}) {
+export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: string) => void }) {
   if (heroes.length === 0) return null;
   const lead = heroes[0];
   const rest = heroes.slice(1, 6);
