@@ -15,7 +15,10 @@ import {
   getRelatedHeroes,
   getRelationship,
   getPowerPercentile,
+  searchHeroes,
   searchHeroesPage,
+  getFamilyOpponents,
+  getHeroesByPowerRange,
   type CategorySlug,
   type CategoryPublisher,
   type PublisherFilter,
@@ -174,6 +177,47 @@ export function useHeroStats(id: string | undefined) {
     queryKey: id ? queryKeys.heroStats(id) : ['heroes', 'stats', 'disabled'],
     enabled: !!id,
     queryFn: () => loadHeroStats(id!),
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
+// ── Opponent picker (compare) ───────────────────────────────────────────────
+
+/** The full roster for the opponent picker — one large fetch, cached so
+ *  reopening the picker is instant instead of re-pulling ~600 rows. */
+export function useHeroRoster(limit = 600) {
+  return useQuery({
+    queryKey: queryKeys.heroRoster(limit),
+    queryFn: () => searchHeroes('', 'All', limit),
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
+/** Relationship rows for the picker — rivals (enemies), teammates, allies, and
+ *  bloodline — resolved in one round-trip, cached per hero. */
+export function usePickRelations(hero: string | undefined) {
+  return useQuery({
+    queryKey: hero ? queryKeys.pickRelations(hero) : ['heroes', 'pickRelations', 'disabled'],
+    enabled: !!hero,
+    queryFn: async () => {
+      const [rivals, teammates, allies, family] = await Promise.all([
+        getRelatedHeroes(hero!, 'enemy', { sameUniverse: true, limit: 40 }),
+        getRelatedHeroes(hero!, 'teammate', { sameUniverse: true, limit: 24 }),
+        getRelatedHeroes(hero!, 'ally', { sameUniverse: true, limit: 24 }),
+        getFamilyOpponents(hero!, 24),
+      ]);
+      return { rivals, teammates, allies, family };
+    },
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
+/** Heroes within a powerstats-total band — "comparable power" suggestions. */
+export function useHeroesByPowerRange(lo: number, hi: number, excludeId: string) {
+  return useQuery({
+    queryKey: queryKeys.powerRange(lo, hi, excludeId),
+    enabled: hi > 0,
+    queryFn: () => getHeroesByPowerRange(lo, hi, excludeId),
     staleTime: 1000 * 60 * 30,
   });
 }

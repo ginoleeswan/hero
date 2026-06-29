@@ -25,6 +25,10 @@ export const queryKeys = {
   heroLinks: (id: string) => ['heroes', 'links', id] as const,
   heroIssues: (id: string) => ['heroes', 'issues', id] as const,
   heroStats: (id: string) => ['heroes', 'stats', id] as const,
+  heroRoster: (limit: number) => ['heroes', 'roster', limit] as const,
+  pickRelations: (id: string) => ['heroes', 'pickRelations', id] as const,
+  powerRange: (lo: number, hi: number, excludeId: string) =>
+    ['heroes', 'powerRange', lo, hi, excludeId] as const,
   profile: (userId: string) => ['profile', userId] as const,
   team: (id: string) => ['teams', 'detail', id] as const,
   issue: (id: string) => ['comics', 'issue', id] as const,
