@@ -81,8 +81,10 @@ export async function getHeroNarrative(heroId: string): Promise<HeroNarrative> {
     supabase.from('hero_tags').select('tag, hero_tag_vocab(label, category)').eq('hero_id', heroId),
   ]);
 
-  if (factsRes.error) throw new Error(factsRes.error.message);
-  if (tagsRes.error) throw new Error(tagsRes.error.message);
+  // Degrade, don't throw: if tags fail, still show the facts (and vice versa) —
+  // one flaky query shouldn't blank the whole narrative section.
+  if (factsRes.error) console.warn('[getHeroNarrative] facts failed:', factsRes.error.message);
+  if (tagsRes.error) console.warn('[getHeroNarrative] tags failed:', tagsRes.error.message);
 
   return buildNarrative(
     (factsRes.data ?? []) as FactRow[],

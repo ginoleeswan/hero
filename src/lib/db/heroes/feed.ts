@@ -116,8 +116,12 @@ export async function getSpotlightHeroes(limit = 5): Promise<Hero[]> {
     .limit(SPOT_DISCOVERY_POOL);
 
   const [famousRes, discoveryRes] = await Promise.all([famousQuery, discoveryQuery]);
-  if (famousRes.error) throw new Error(famousRes.error.message);
-  if (discoveryRes.error) throw new Error(discoveryRes.error.message);
+  // Degrade, don't throw: a flaky pool must not drop the whole billboard — use
+  // whatever resolved (the caller falls back to trending if this comes back empty).
+  if (famousRes.error)
+    console.warn('[getSpotlightHeroes] famous pool failed:', famousRes.error.message);
+  if (discoveryRes.error)
+    console.warn('[getSpotlightHeroes] discovery pool failed:', discoveryRes.error.message);
 
   const famous = sampleN((famousRes.data ?? []) as unknown as Hero[], famousCount);
   const discovery = sampleN((discoveryRes.data ?? []) as unknown as Hero[], discoveryCount);
