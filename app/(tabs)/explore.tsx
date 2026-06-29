@@ -345,7 +345,10 @@ export default function HomeScreen() {
             );
           case 'daily':
             return (
-              <DailyChallengeBanner onPress={() => handleOpenPath('/play')} style={styles.dailyOnDark} />
+              <DailyChallengeBanner
+                onPress={() => handleOpenPath('/play')}
+                style={styles.dailyOnDark}
+              />
             );
           case 'matchup':
             return <TodaysMatchup matchup={item.matchup} onOpen={handleOpenPath} />;
@@ -507,7 +510,14 @@ const styles = StyleSheet.create({
   footer: { height: 120 },
   // Beige behind the bottom half — revealed on the bottom over-scroll bounce so
   // it never flashes the deep-navy root under the beige tail.
-  bottomFill: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%', backgroundColor: COLORS.beige },
+  bottomFill: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '55%',
+    backgroundColor: COLORS.beige,
+  },
   // Chapter break ("Browse the Universe", "Beyond the Page").
   browseHead: { paddingHorizontal: 16, paddingTop: 22, paddingBottom: 4 },
   browseKicker: {

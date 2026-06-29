@@ -468,8 +468,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       <nav>
         <div className="nav-brand">
           <svg className="nav-logo" viewBox="0 0 1024 1024" aria-hidden="true">
-              <path fill="var(--orange)" d={LOGO_PATH} />
-            </svg>
+            <path fill="var(--orange)" d={LOGO_PATH} />
+          </svg>
           <span className="nav-wordmark">mythique</span>
         </div>
         <button className="nav-cta" onClick={() => router.push('/(auth)/login')}>
