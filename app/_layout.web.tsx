@@ -20,6 +20,7 @@ import { WebChromeProvider, AdaptiveStatusBarCover } from '../src/contexts/WebCh
 import { CommandAlertsProvider } from '../src/contexts/CommandAlertsContext';
 import { queryClient } from '../src/lib/query/queryClient';
 import { COLORS } from '../src/constants/colors';
+import AnalyticsProvider from '../src/components/Analytics';
 
 // Expo Router renders this in place of the tree if a render throws, instead of a
 // blank white screen — a graceful, on-brand recovery surface for production.
@@ -198,6 +199,7 @@ export default function WebRootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <StatusBar style="dark" />
+        <AnalyticsProvider />
         <CommandAlertsProvider>
           <WebAuthGate fontsReady={fontsReady} />
         </CommandAlertsProvider>
