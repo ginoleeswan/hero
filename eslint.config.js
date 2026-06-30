@@ -23,10 +23,18 @@ module.exports = [
       'react-hooks/exhaustive-deps': 'warn',
       'react-hooks/preserve-manual-memoization': 'warn',
       'react/no-unescaped-entities': 'warn',
+      'no-unused-expressions': 'warn',
+    },
+  },
+  {
+    // `@typescript-eslint` rules must be scoped to the files for which
+    // eslint-config-expo registers the plugin (.ts/.tsx). Applying them to
+    // .jsx/.js too crashes ESLint with "could not find plugin".
+    files: ['**/*.ts', '**/*.tsx'],
+    rules: {
       '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/no-require-imports': 'warn',
       '@typescript-eslint/no-empty-object-type': 'warn',
-      'no-unused-expressions': 'warn',
     },
   },
   {
@@ -36,6 +44,9 @@ module.exports = [
       'node_modules/*',
       'supabase/functions/**', // Deno runtime — separate toolchain, excluded from tsconfig too
       'src/types/database.generated.ts', // generated
+      '.design-sync/**', // Claude Design sync tooling — previews import the bundled DS pkg, separate from the app module graph
+      '.ds-pkg/**', // design-sync build artifacts (gitignored; ESLint ignores .gitignore)
+      'ds-bundle/**', // design-sync bundle/vendor output (gitignored)
     ],
   },
 ];
