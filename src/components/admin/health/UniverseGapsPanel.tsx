@@ -28,7 +28,10 @@ import { searchUniverses } from '../../../lib/db/universes';
 
 type Flash = (msg: string, tone?: 'info' | 'success' | 'error' | 'pending') => void;
 
-const CATCH_ALL = 'Company-Licensed';
+// Fallback bucket for an undo when the hero's original publisher was NULL — the
+// set-universe RPC can't write an empty value, so park it back in the catch-all
+// (still surfaced here for re-placement) rather than fail the undo.
+const NULL_FALLBACK = 'Company-Licensed';
 const CLUSTER_MIN = 2; // a franchise guess shared by this many becomes a bulk cluster
 
 // Best-effort franchise guess from ComicVine team membership — a pre-fill the
@@ -42,6 +45,18 @@ const SUGGESTERS: [RegExp, string][] = [
   [/minbari|psi corps|grey council|narn|centauri/i, 'Babylon 5'],
   [/muppet/i, 'The Muppets'],
   [/nests|k' team|kof/i, 'SNK'],
+  // The Boys — every Vought faction/sub-team belongs to the one franchise.
+  [
+    /vought|the seven|payback|teenage kix|g-men|g-force|g-wiz|g-style|super duper|young americans|avenging squad|team titanic|paralactic|the boys/i,
+    'The Boys',
+  ],
+  [/girls of old town/i, 'Sin City'],
+  [/bureau for paranormal|b\.?p\.?r\.?d/i, 'Hellboy'],
+  [/house lannister|house stark|house targaryen|night's watch/i, 'Game of Thrones'],
+  [
+    /fire nation|water tribe|earth kingdom|air nomad|firebender|waterbender|earthbender|airbender/i,
+    'Avatar: The Last Airbender',
+  ],
 ];
 function suggestFranchise(teams: string[] | null): string {
   const hay = (teams ?? []).join(' ');
@@ -252,7 +267,12 @@ export function UniverseGapsPanel({
   // Optimistic drain: placed heroes leave the list immediately, before the refetch.
   const [placed, setPlaced] = useState<Set<string>>(new Set());
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
-  const [undo, setUndo] = useState<{ ids: string[]; universe: string } | null>(null);
+  // Track each placed hero's ORIGINAL bucket so an undo restores it exactly,
+  // rather than dumping everything into one hardcoded catch-all.
+  const [undo, setUndo] = useState<{
+    items: { id: string; from: string | null }[];
+    universe: string;
+  } | null>(null);
   const [undoing, setUndoing] = useState(false);
 
   const visible = useMemo(() => heroes.filter((h) => !placed.has(h.id)), [heroes, placed]);
@@ -287,7 +307,11 @@ export function UniverseGapsPanel({
       for (const id of ids) await setHeroUniverse(id, u);
       await refreshFameScores(); // placed → now fame-eligible
       setPlaced((prev) => new Set([...prev, ...ids]));
-      setUndo({ ids, universe: u });
+      const items = ids.map((id) => ({
+        id,
+        from: heroes.find((h) => h.id === id)?.currentPublisher ?? null,
+      }));
+      setUndo({ items, universe: u });
       flash(
         ids.length === 1 ? `${nameOf(ids[0])} → ${u}` : `Placed ${ids.length} characters → ${u}`,
         'success',
@@ -306,18 +330,18 @@ export function UniverseGapsPanel({
 
   const revert = async () => {
     if (!undo || undoing) return;
-    const { ids, universe } = undo;
+    const { items, universe } = undo;
     setUndoing(true);
     try {
-      for (const id of ids) await setHeroUniverse(id, CATCH_ALL);
+      for (const { id, from } of items) await setHeroUniverse(id, from ?? NULL_FALLBACK);
       await refreshFameScores();
       setPlaced((prev) => {
         const next = new Set(prev);
-        ids.forEach((id) => next.delete(id));
+        items.forEach(({ id }) => next.delete(id));
         return next;
       });
       setUndo(null);
-      flash(`Reverted ${ids.length} from ${universe} back to the catch-all.`, 'info');
+      flash(`Reverted ${items.length} from ${universe}.`, 'info');
     } catch (e) {
       flash(e instanceof Error ? e.message : 'Could not undo.', 'error');
     } finally {
@@ -345,11 +369,11 @@ export function UniverseGapsPanel({
       title="Needs a universe"
       hint={
         allDone
-          ? 'Catch-all cleared'
-          : `${visible.length} character${visible.length === 1 ? '' : 's'} still in the Company-Licensed catch-all`
+          ? 'Every enriched character has a universe'
+          : `${visible.length} enriched character${visible.length === 1 ? '' : 's'} without a universe`
       }
       action={
-        <InfoTip text="ComicVine gives the comic publisher, not the franchise, so these can't be auto-placed. Characters that share a best-guess franchise are grouped — correct the universe once and Set the whole cast (uncheck any that don't belong). Singletons place inline with canonical name suggestions. Placing a hero makes it fame-eligible; the last placement can be undone. Newly-ingested licensed characters land here." />
+        <InfoTip text="ComicVine-enriched characters with no real franchise — a NULL publisher, or the Company-Licensed / Creator-Owned catch-alls — which hides them from universe browsing and the fame pool. ComicVine gives the comic publisher, not the franchise, so these can't be auto-placed. Characters that share a best-guess franchise are grouped — correct the universe once and Set the whole cast (uncheck any that don't belong). Singletons place inline with canonical name suggestions. Placing a hero makes it fame-eligible; the last placement can be undone. (Un-enriched heroes are excluded — their universe fills automatically when the ComicVine drain reaches them.)" />
       }
     >
       {loading ? (
@@ -357,7 +381,7 @@ export function UniverseGapsPanel({
       ) : allDone ? (
         <View style={styles.done}>
           <Ionicons name="checkmark-circle" size={26} color={COLORS.green} />
-          <Text style={styles.doneText}>Every character has a universe.</Text>
+          <Text style={styles.doneText}>Every enriched character has a universe.</Text>
           {undo ? (
             <Pressable onPress={revert} disabled={undoing} style={styles.undoInline}>
               <Text style={styles.undoText}>{undoing ? 'Undoing…' : 'Undo last'}</Text>
@@ -370,7 +394,7 @@ export function UniverseGapsPanel({
             <View style={styles.undoBar}>
               <Ionicons name="arrow-undo-outline" size={15} color={COLORS.navy} />
               <Text style={styles.undoBarText} numberOfLines={1}>
-                Placed {undo.ids.length} → {undo.universe}
+                Placed {undo.items.length} → {undo.universe}
               </Text>
               <Pressable onPress={revert} disabled={undoing} hitSlop={6}>
                 <Text style={styles.undoText}>{undoing ? 'Undoing…' : 'Undo'}</Text>

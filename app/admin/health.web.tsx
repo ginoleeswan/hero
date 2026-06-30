@@ -86,7 +86,7 @@ export default function AdminHealthScreen() {
   });
   const unbrandedQ = useQuery({
     queryKey: ['unbrandedHeroes'],
-    queryFn: () => listUnbrandedHeroes(100),
+    queryFn: () => listUnbrandedHeroes(300),
     enabled: !!user,
   });
   const gateResolved = !authLoading && (!user || profileQ.isSuccess || profileQ.isError);

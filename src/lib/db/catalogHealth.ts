@@ -507,9 +507,15 @@ export async function fetchSourceCoverage(): Promise<SourceCoverage | null> {
 }
 
 // ── Unbranded universe gaps ──────────────────────────────────────────────────
-// "Company-Licensed" is the catch-all placeholder for licensed IP with no single
-// comic publisher; franchise assignment is hand-curated by comicvine_id, so every
-// new ingest re-grows this bucket. Surface it so it isn't silently forgotten.
+// A ComicVine-enriched hero can end up with no real franchise three ways: a NULL
+// publisher (ComicVine returned none), the 'Company-Licensed' catch-all, or the
+// 'Creator-Owned' bucket — all of which hide the character from universe browsing
+// and the fame pool. We surface every enriched one so the gap is drainable
+// (un-enriched heroes are excluded — their publisher fills when the ComicVine
+// drain reaches them, so they aren't an editorial task). Assignment stays
+// hand-curated; ComicVine gives the comic house, not the franchise.
+export const UNBRANDED_BUCKETS = ['Company-Licensed', 'Creator-Owned'] as const;
+
 export interface UnbrandedHero {
   id: string;
   name: string;
@@ -517,6 +523,9 @@ export interface UnbrandedHero {
   teams: string[] | null;
   hint: string | null;
   image: string | null;
+  /** The bucket it currently sits in (a UNBRANDED_BUCKETS value or null) — so an
+   *  undo restores it to exactly where it came from, not a hardcoded catch-all. */
+  currentPublisher: string | null;
 }
 
 const stripHtml = (s: string | null): string | null => {
@@ -538,15 +547,17 @@ export async function setHeroUniverse(heroId: string, publisher: string): Promis
   if (error) throw new Error(error.message);
 }
 
-/** Heroes still parked in the 'Company-Licensed' bucket, newest ingest first. */
-export async function listUnbrandedHeroes(limit = 100): Promise<UnbrandedHero[]> {
+/** ComicVine-enriched heroes with no real universe (NULL publisher or a catch-all
+ *  bucket), most-recognizable first so notable gaps surface at the top. */
+export async function listUnbrandedHeroes(limit = 300): Promise<UnbrandedHero[]> {
   const { data, error } = await supabase
     .from('heroes')
     .select(
-      'id, name, comicvine_id, teams, image_md_url, image_url, portrait_url, description, summary, added_at',
+      'id, name, publisher, comicvine_id, teams, image_md_url, image_url, portrait_url, description, summary, issue_count',
     )
-    .eq('publisher', 'Company-Licensed')
-    .order('added_at', { ascending: false })
+    .eq('comicvine_status', 'done')
+    .or(`publisher.is.null,publisher.in.("${UNBRANDED_BUCKETS.join('","')}")`)
+    .order('issue_count', { ascending: false, nullsFirst: false })
     .limit(limit);
   if (error) {
     console.warn('[listUnbrandedHeroes] error:', error.message);
@@ -559,5 +570,6 @@ export async function listUnbrandedHeroes(limit = 100): Promise<UnbrandedHero[]>
     teams: h.teams,
     image: h.portrait_url ?? h.image_md_url ?? h.image_url ?? null,
     hint: stripHtml(h.description) ?? stripHtml(h.summary),
+    currentPublisher: h.publisher,
   }));
 }
