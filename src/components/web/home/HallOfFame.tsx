@@ -99,7 +99,12 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
                   {/* Right-anchored: publisher at rest, swaps to an arrow on hover —
                       so the row stays justified edge-to-edge either way. */}
                   {hovered ? (
-                    <Ionicons name="arrow-forward" size={16} color={COLORS.orange} style={s.trailIcon as object} />
+                    <Ionicons
+                      name="arrow-forward"
+                      size={16}
+                      color={COLORS.orange}
+                      style={s.trailIcon as object}
+                    />
                   ) : (
                     !!h.publisher && (
                       <Text style={s.rowMeta as object} numberOfLines={1}>
