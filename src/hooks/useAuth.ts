@@ -5,6 +5,7 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../lib/supabase';
 import { getProfile, upsertProfile } from '../lib/db/profiles';
+import { trackEvent } from '../lib/analytics';
 
 interface AuthState {
   user: User | null;
@@ -55,11 +56,13 @@ export function useAuth(): AuthState {
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error) trackEvent('log_in', { method: 'password' });
     return { error };
   };
 
   const signUp = async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({ email, password });
+    if (!error) trackEvent('sign_up', { method: 'password' });
     return { error };
   };
 

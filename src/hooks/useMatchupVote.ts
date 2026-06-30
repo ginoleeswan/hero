@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './useAuth';
 import { matchupVoteKey, type MatchupSide } from '../lib/home/matchupVote';
 import { getMatchupTally, castMatchupVote, type MatchupTally } from '../lib/db/matchupVotes';
+import { trackEvent } from '../lib/analytics';
 
 export interface MatchupVoteState {
   /** The picked hero id, or null before the user has voted. */
@@ -65,6 +66,7 @@ export function useMatchupVote(heroAId: string, heroBId: string): MatchupVoteSta
       // Optimistic local reveal — instant, no account required.
       setPickedId(picked);
       AsyncStorage.setItem(key, side).catch(() => {});
+      trackEvent('matchup_vote', { authed: !!user });
       // Persist to the crowd tally only for signed-in users (RLS-locked rows;
       // an anonymous write would fail server-side, so we don't attempt it).
       if (user) {

@@ -3,6 +3,7 @@ import { searchUniverses, type UniverseResult } from '../lib/db/universes';
 import { searchTeams, type TeamSearchResult } from '../lib/db/teams';
 import { searchTitles, type TitleSearchResult } from '../lib/db/titles';
 import { useHeroSearch } from './useHeroSearch';
+import { trackEvent } from '../lib/analytics';
 import type { HeroSearchResult } from '../lib/db/heroes';
 
 export interface UnifiedSearch {
@@ -50,5 +51,14 @@ export function useUnifiedSearch(query: string, heroLimit = 100): UnifiedSearch 
   const { results: heroes, loading } = useHeroSearch(query, 'All', heroLimit);
   const teams = useDebouncedQuery(trimmed, searchTeams, 6);
   const titles = useDebouncedQuery(trimmed, searchTitles, 6);
+
+  // One analytics event per settled query (not per keystroke): debounce on the
+  // trimmed string and ignore 1-char noise. Query length only — never the term.
+  useEffect(() => {
+    if (trimmed.length < 2) return;
+    const timer = setTimeout(() => trackEvent('search', { length: trimmed.length }), 900);
+    return () => clearTimeout(timer);
+  }, [trimmed]);
+
   return { universes, teams, heroes, titles, loading, resultCount: heroes.length };
 }

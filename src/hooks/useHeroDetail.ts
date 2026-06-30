@@ -22,6 +22,7 @@ import {
 } from '../lib/db/favourites';
 import { useAuth } from './useAuth';
 import { useRecordView } from './useViewHistory';
+import { trackEvent } from '../lib/analytics';
 import { supabase } from '../lib/supabase';
 import { getHeroImages } from '../lib/db/heroImages';
 import type { CharacterData, HeroImage } from '../types';
@@ -344,6 +345,7 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
     }
     try {
       await (next ? addFavourite(user.id, id) : removeFavourite(user.id, id));
+      if (next) trackEvent('favourite_add', { hero_id: id });
       getHeroFavouriteCount(id)
         .then(setFavCount)
         .catch(() => {});
