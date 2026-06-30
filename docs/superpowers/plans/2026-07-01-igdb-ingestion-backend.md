@@ -310,6 +310,11 @@ export const IGDB_ALLOWLIST: FranchiseEntry[] = [
     publisher: 'Electronic Arts',
     marqueeTiers: { 'Commander Shepard': 3, 'Garrus Vakarian': 3, 'Liara T\'Soni': 2, 'Tali\'Zorah': 2 },
   },
+  {
+    franchise: 'Apex Legends',
+    publisher: 'Electronic Arts',
+    marqueeTiers: { Wraith: 3, Octane: 2, Bloodhound: 2, Lifeline: 2, Bangalore: 2, Pathfinder: 2 },
+  },
 ];
 
 const tierIndex = new Map<FranchiseEntry, Map<string, number>>();

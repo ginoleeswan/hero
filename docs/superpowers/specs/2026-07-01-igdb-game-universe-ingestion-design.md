@@ -62,7 +62,7 @@ obscure indie-game characters that all land at `fame_score` 0 and never surface.
 | PlayStation Studios | God of War |
 | Konami | Metal Gear |
 | Bethesda | The Elder Scrolls, Fallout |
-| Electronic Arts | Mass Effect |
+| Electronic Arts | Mass Effect, Apex Legends |
 
 Fast-follow candidates (not Phase 1): Five Nights at Freddy's, Elden Ring / Dark Souls
 (FromSoftware), The Last of Us, Assassin's Creed, plus franchise top-ups of existing
