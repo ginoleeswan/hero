@@ -62,6 +62,18 @@ export async function resolveFranchiseGameIds(
       return { franchiseId: withGames[0].id, gameIds: withGames[0].games ?? [] };
     }
   }
+  // Fallback: single-title / ungrouped franchises (e.g. NieR, Cyberpunk) have no
+  // franchise/collection entity but do exist as games whose characters ARE in
+  // IGDB. Match games by case-insensitive name PREFIX (not contains) so a short
+  // franchise like "NieR" doesn't pull unrelated games ("...Denier"/"Prisonnier").
+  if (!entry.igdbFranchiseId) {
+    const games = await igdbQuery<{ id: number }>(
+      client,
+      'games',
+      `fields id; where name ~ "${entry.franchise}"*; limit 100;`,
+    );
+    if (games.length) return { franchiseId: null, gameIds: games.map((g) => g.id) };
+  }
   return { franchiseId: null, gameIds: [] };
 }
 

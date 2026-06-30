@@ -49,6 +49,18 @@ describe('resolveFranchiseGameIds', () => {
     expect(franchiseId).toBe(10);
     expect(gameIds).toEqual([1, 2, 3]);
   });
+
+  it('falls back to matching games by name when no franchise/collection has games', async () => {
+    const fetchFn = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => [] }) // /franchises empty
+      .mockResolvedValueOnce({ ok: true, json: async () => [] }) // /collections empty
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: 80468 }, { id: 113345 }] }); // /games
+    const { franchiseId, gameIds } = await resolveFranchiseGameIds(clientWith(fetchFn), ff);
+    expect(franchiseId).toBeNull();
+    expect(gameIds).toEqual([80468, 113345]);
+    expect(fetchFn.mock.calls[2][0] as string).toContain('/games');
+  });
 });
 
 describe('fetchFranchiseCharacters', () => {
