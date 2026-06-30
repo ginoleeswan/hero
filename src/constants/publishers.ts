@@ -36,6 +36,7 @@ import AvatarLogo from '../../assets/brands/avatar-last-airbender.svg';
 import SnkLogo from '../../assets/brands/snk.svg';
 import TheBoysLogo from '../../assets/brands/the-boys.svg';
 import SinCityLogo from '../../assets/brands/sin-city.svg';
+import PokemonLogo from '../../assets/brands/pokemon.svg';
 
 /** A brand logo, either a raster image (PNG via require) or an SVG component
  *  (via react-native-svg-transformer). Render helpers branch on which it is. */
@@ -225,6 +226,17 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     colorDark: '#121016',
     logo: SinCityLogo,
     badgeSize: { width: 30, height: 20 },
+  },
+  {
+    slug: 'pokemon',
+    name: 'Pokémon',
+    query: 'Pokémon',
+    match: ['pokémon', 'pokemon'],
+    color: '#3B4CCA',
+    colorDark: '#1E2A7A',
+    logo: PokemonLogo,
+    // Full-colour gradient wordmark (yellow on blue) — keeps its own ink.
+    badgeSize: { width: 54, height: 20 },
   },
   {
     slug: 'gatchaman',
