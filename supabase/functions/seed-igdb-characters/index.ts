@@ -57,6 +57,22 @@ serve(async (req: Request) => {
   const now = new Date().toISOString();
   const results: unknown[] = [];
 
+  // Load ALL existing rows ONCE (PostgREST caps at 1000/req — heroes has ~36k,
+  // so we must page through every row or dedup silently misses re-home targets,
+  // prior igdb_id claims, and name collisions). The array is mutated as we
+  // insert/re-home so later franchises see earlier ones for cross-franchise dedup.
+  const rows: ExistingRow[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await sb
+      .from('heroes')
+      .select('id,name,publisher,comicvine_id,igdb_id')
+      .range(from, from + 999);
+    if (error) return json({ error: `load existing: ${error.message}` }, 500);
+    const page = (data ?? []) as ExistingRow[];
+    rows.push(...page);
+    if (page.length < 1000) break;
+  }
+
   // Process franchises not yet 'complete', up to `batches` per invocation.
   const { data: stateRows } = await sb.from('igdb_ingestion_state').select('franchise,status');
   const doneSet = new Set(
@@ -68,12 +84,6 @@ serve(async (req: Request) => {
     try {
       const { franchiseId, gameIds } = await resolveFranchiseGameIds(client, entry);
       const characters = await fetchFranchiseCharacters(client, gameIds);
-
-      // Load existing rows once per franchise (name + ids needed for dedup).
-      const { data: existing } = await sb
-        .from('heroes')
-        .select('id,name,publisher,comicvine_id,igdb_id');
-      const rows = (existing ?? []) as ExistingRow[];
 
       let inserted = 0;
       let rehomed = 0;
