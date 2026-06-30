@@ -36,9 +36,21 @@ const STATIC_ROUTES = [
 
 // Fixed category taxonomy — mirrors CategorySlug in src/lib/db/heroes/types.ts.
 const CATEGORY_SLUGS = [
-  'popular', 'villain', 'xmen', 'anti-heroes', 'marvel', 'dc', 'image',
-  'dark-horse', 'strongest', 'most-intelligent', 'most-iconic',
-  'franchise-icons', 'anime', 'video-games', 'horror',
+  'popular',
+  'villain',
+  'xmen',
+  'anti-heroes',
+  'marvel',
+  'dc',
+  'image',
+  'dark-horse',
+  'strongest',
+  'most-intelligent',
+  'most-iconic',
+  'franchise-icons',
+  'anime',
+  'video-games',
+  'horror',
 ];
 
 function xmlEscape(s) {
@@ -102,7 +114,8 @@ async function writeChunked(name, prefix, ids) {
   const files = [];
   for (let i = 0; i < ids.length; i += URLS_PER_FILE) {
     const slice = ids.slice(i, i + URLS_PER_FILE);
-    const file = ids.length > URLS_PER_FILE ? `${name}-${i / URLS_PER_FILE + 1}.xml` : `${name}.xml`;
+    const file =
+      ids.length > URLS_PER_FILE ? `${name}-${i / URLS_PER_FILE + 1}.xml` : `${name}.xml`;
     const entries = slice.map((id) => ({
       loc: `${prefix}/${encodeURIComponent(String(id))}`,
       changefreq: 'weekly',
