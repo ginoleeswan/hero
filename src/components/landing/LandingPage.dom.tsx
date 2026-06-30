@@ -939,7 +939,11 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                   <span className="browser-dot" />
                   <span className="browser-url">mythique</span>
                 </div>
-                <img src={screenshotDesktop} alt="Mythique explore feed on desktop" loading="lazy" />
+                <img
+                  src={screenshotDesktop}
+                  alt="Mythique explore feed on desktop"
+                  loading="lazy"
+                />
               </div>
               <div className="phone-frame phone-second">
                 <img src={screenshotMobile} alt="A character profile on mobile" loading="lazy" />
