@@ -631,7 +631,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             {[
               {
                 title: 'Explore the Universe',
-                desc: 'Browse 3,000+ characters across Marvel, DC, Disney, anime, games and beyond — curated collections that surface someone new every scroll.',
+                desc: 'Browse 30,000+ characters across Marvel, DC, Disney, anime, games and beyond — curated collections that surface someone new every scroll.',
                 icon: (
                   <>
                     <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
@@ -788,7 +788,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           <p className="section-eyebrow">Dive in</p>
           <h2 className="cta-glow">Explore. Compare. Argue.</h2>
           <p className="cta-sub">
-            3,000+ characters across every universe, deep profiles, living rivalries, and the only
+            30,000+ characters across every universe, deep profiles, living rivalries, and the only
             place to settle who&apos;d really win — free, no ads, on the web or in the app.
           </p>
           <button
