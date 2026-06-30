@@ -302,7 +302,8 @@ const CSS = `
     border-radius:14px; cursor:pointer; border-style:solid;
     transition:border-color 200ms,transform 150ms; min-width:160px;
   }
-  .app-store-badge:hover { border-color:var(--muted); transform:translateY(-2px); }
+  .app-store-badge:not(:disabled):hover { border-color:var(--muted); transform:translateY(-2px); }
+  .app-store-badge:disabled { cursor:default; opacity:0.55; }
   .badge-text { display:flex; flex-direction:column; text-align:left; }
   .badge-text span:first-child { font-size:10px; color:var(--muted); letter-spacing:0.5px; }
   .badge-text span:last-child  { font-family:'Righteous',sans-serif; font-size:16px; }
@@ -505,7 +506,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           <span className="hero-wordmark-large">mythique</span>
           <p className="hero-tagline">Know every icon. Settle every debate.</p>
           <p className="hero-sub">
-            Explore 3,000+ characters in rich detail, trace how they&apos;re connected, and pit any
+            Explore 30,000+ characters in rich detail, trace how they&apos;re connected, and pit any
             two head-to-head to settle who&apos;d really win. The whole universe — alive, connected,
             and yours to argue about.
           </p>
@@ -561,7 +562,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* STATS */}
       <div className="stats">
         <div className="stat-item">
-          <span className="stat-num">3,000+</span>
+          <span className="stat-num">30,000+</span>
           <span className="stat-label">Characters</span>
         </div>
         <div className="stat-item">
@@ -573,8 +574,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           <span className="stat-label">No Ads</span>
         </div>
         <div className="stat-item">
-          <span className="stat-num">Web &amp; App</span>
-          <span className="stat-label">Play Anywhere</span>
+          <span className="stat-num">Any Device</span>
+          <span className="stat-label">Right in Your Browser</span>
         </div>
       </div>
 
@@ -690,7 +691,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
               },
               {
                 title: 'Instant Search',
-                desc: 'Find any of 3,000+ characters in seconds — search by name, power, publisher or team affiliation.',
+                desc: 'Find any of 30,000+ characters in seconds — search by name, power, publisher or team affiliation.',
                 icon: (
                   <>
                     <circle cx="11" cy="11" r="8" />
@@ -738,7 +739,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 get lost in.
               </h2>
               <p className="section-sub">
-                Fast, beautiful, and endlessly deep — on the web or in your pocket.
+                Fast, beautiful, and endlessly deep — on desktop or mobile, right in your browser.
               </p>
               <ul className="feature-list">
                 {[
@@ -768,7 +769,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           <p className="section-eyebrow">The roster</p>
           <h2 className="section-heading">From every universe</h2>
           <p className="section-sub">
-            Marvel, DC, anime, video games and beyond — 3,000+ characters, deeply detailed, all in
+            Marvel, DC, anime, video games and beyond — 30,000+ characters, deeply detailed, all in
             one place.
           </p>
           <div className="hero-mosaic">
@@ -789,7 +790,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           <h2 className="cta-glow">Explore. Compare. Argue.</h2>
           <p className="cta-sub">
             30,000+ characters across every universe, deep profiles, living rivalries, and the only
-            place to settle who&apos;d really win — free, no ads, on the web or in the app.
+            place to settle who&apos;d really win — free, no ads, right in your browser.
           </p>
           <button
             className="btn-primary"
@@ -812,7 +813,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             Explore the universe
           </button>
           <div className="cta-buttons">
-            <button className="app-store-badge" aria-label="Download on the App Store">
+            <button className="app-store-badge" disabled aria-label="Coming soon to the App Store">
               <svg
                 className="badge-icon"
                 viewBox="0 0 24 24"
@@ -822,11 +823,11 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
               </svg>
               <div className="badge-text">
-                <span>Download on the</span>
+                <span>Coming soon to</span>
                 <span>App Store</span>
               </div>
             </button>
-            <button className="app-store-badge" aria-label="Get it on Google Play">
+            <button className="app-store-badge" disabled aria-label="Coming soon to Google Play">
               <svg
                 className="badge-icon"
                 viewBox="0 0 24 24"
@@ -836,7 +837,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 <path d="M3.18 23.76c.28.16.6.22.93.17l12.81-7.4-2.79-2.79-10.95 10zM.29 1.52A1.5 1.5 0 0 0 0 2.39v19.22c0 .31.09.6.29.87l.09.09 10.77-10.77v-.25L.38 1.43l-.09.09zM20.9 10.77l-2.71-1.56-3.07 3.08 3.07 3.07 2.74-1.58c.78-.45.78-1.58-.03-2.01zM4.11.24L16.92 7.63l-2.79 2.79L3.18.24A1.08 1.08 0 0 1 4.11.24z" />
               </svg>
               <div className="badge-text">
-                <span>Get it on</span>
+                <span>Coming soon to</span>
                 <span>Google Play</span>
               </div>
             </button>
