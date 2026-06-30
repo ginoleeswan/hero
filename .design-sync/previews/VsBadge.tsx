@@ -13,7 +13,16 @@ export const Glass = () => (
 );
 
 export const Sizes = () => (
-  <div style={{ padding: 28, background: '#f5ebdc', display: 'flex', flexDirection: 'row', gap: 16, alignItems: 'center' }}>
+  <div
+    style={{
+      padding: 28,
+      background: '#f5ebdc',
+      display: 'flex',
+      flexDirection: 'row',
+      gap: 16,
+      alignItems: 'center',
+    }}
+  >
     <VsBadge variant="solid" size={32} />
     <VsBadge variant="solid" size={46} />
     <VsBadge variant="solid" size={64} />
