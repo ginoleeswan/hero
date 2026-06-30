@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { usePathname, useSegments } from 'expo-router';
 import { recordPageView } from '../lib/db/pageViews';
 
@@ -21,5 +22,10 @@ export default function AnalyticsProvider() {
     void recordPageView(route, path);
   }, [path, route]);
 
-  return <Analytics route={route} path={path} />;
+  return (
+    <>
+      <Analytics route={route} path={path} />
+      <SpeedInsights route={route} />
+    </>
+  );
 }

@@ -13,6 +13,7 @@ import { Righteous_400Regular } from '@expo-google-fonts/righteous';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuth } from '../src/hooks/useAuth';
+import { usePresenceHeartbeat } from '../src/hooks/usePresenceHeartbeat';
 import { LogoLoader } from '../src/components/ui/LogoLoader';
 import { TopBar, TOPBAR_HEIGHT } from '../src/components/web/TopBar';
 import { SearchProvider } from '../src/contexts/SearchContext';
@@ -75,6 +76,13 @@ const eb = StyleSheet.create({
   },
   btnText: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: '#fff' },
 });
+
+// Drives the presence heartbeat app-wide (no-op when logged out). Rendered as a
+// sibling of the router so it lives for the whole session without re-mounting.
+function PresenceHeartbeat() {
+  usePresenceHeartbeat();
+  return null;
+}
 
 function WebAuthGate({ fontsReady }: { fontsReady: boolean }) {
   const { user, loading } = useAuth();
@@ -200,6 +208,7 @@ export default function WebRootLayout() {
       <QueryClientProvider client={queryClient}>
         <StatusBar style="dark" />
         <AnalyticsProvider />
+        <PresenceHeartbeat />
         <CommandAlertsProvider>
           <WebAuthGate fontsReady={fontsReady} />
         </CommandAlertsProvider>
