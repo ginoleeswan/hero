@@ -388,7 +388,7 @@ const EDIT_PROMPT = `Repaint the character in this image as a SIDE-ON profile po
 
 RENDERING — match this exact style: a RICHLY DETAILED, dimensional, SEMI-REALISTIC painterly digital portrait in the style of Mike Mitchell's Mondo Marvel/superhero profile portraits — his painterly, semi-realistic, side-profile character paintings (the detailed Wolverine/Thor/Deadpool-style portraits, NOT his cute chibi "Just Like Us" caricatures). Fully repaint the character with soft cinematic lighting, warm highlights and cool shadows, dimensional volumetric form, soft painterly brushwork and soft painted edges, plus fine rendered detail appropriate to the character — individual hair/fur strands, skin texture, fabric weave, metal sheen, surface grain. Do NOT keep a flat look: absolutely NOT bold flat colour blocking, NOT thick uniform black outlines, NOT cel-shading, NOT a simple poster, NOT a 3D/CGI render, NOT a photograph.
 
-OUTLINE: a clean, bright outline — a lighter or more vivid shade of the background colour — traces the whole character silhouette (sticker-style edge), cleanly separating it from the background.
+OUTLINE: optional and subtle. If any edge separation is used, it is a THIN, refined rim in a slightly lighter or contrasting shade of the background colour — never a thick, bold, white sticker outline. Many of these portraits have no outline at all, which is perfectly fine; favour a clean silhouette over a heavy outline.
 
 FRAMING: a head-and-shoulders headshot — the head and face are large and dominant, top of the head near the top edge, cropped at the base of the neck and the tops of the shoulders. Leave clear background space around the silhouette so the outline and the background motif stay visible. NO torso, NO arms, NO hands, NO body below the shoulders.
 
@@ -441,10 +441,10 @@ async function falEdit(
     body: JSON.stringify({
       prompt: useRefs ? MULTIREF_PROMPT : EDIT_PROMPT,
       image_urls: imageUrls,
-      // 3:4 portrait at full quality. Seedream custom dims must be ≥1920px and it only
-      // outputs PNG, so the file can exceed Cloudinary's 10MB cap — compressIfLarge()
-      // re-encodes to JPEG (same resolution) before upload rather than shrinking here.
-      image_size: 'portrait_4_3',
+      // 2:3 portrait — the locked house aspect ratio — at full quality. Seedream custom
+      // dims must be ≥1920px and it only outputs PNG, so the file can exceed Cloudinary's
+      // 10MB cap; compressIfLarge() re-encodes to JPEG (same resolution) before upload.
+      image_size: { width: 1920, height: 2880 },
       num_images: 1,
       enable_safety_checker: false,
       ...extra,
@@ -493,7 +493,10 @@ async function callImageModel(
 ): Promise<Uint8Array | 'PROHIBITED'> {
   const body = {
     contents: [{ parts }],
-    generationConfig: { responseModalities: ['IMAGE', 'TEXT'] },
+    generationConfig: {
+      responseModalities: ['IMAGE', 'TEXT'],
+      imageConfig: { aspectRatio: '2:3' }, // lock all Gemini portraits to the house 2:3
+    },
   };
 
   let lastError: Error | null = null;
