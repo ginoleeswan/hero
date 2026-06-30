@@ -1,0 +1,43 @@
+{
+  "pkg": "mythique-ds",
+  "globalName": "Mythique",
+  "projectId": "ec412569-6e7f-4aec-ad37-2da330de4982",
+  "shape": "package",
+  "docsDir": "../.design-sync/docs",
+  "readmeHeader": ".design-sync/conventions.md",
+  "overrides": {
+    "StatBar": { "cardMode": "column" },
+    "SocialDivider": { "cardMode": "column" },
+    "SkeletonBlock": { "cardMode": "column" },
+    "GettingStartedCard": { "cardMode": "column" }
+  },
+  "extraFonts": ["fonts/mythique-fonts.css"],
+  "componentSrcMap": {
+    "StatBar": "../src/components/web/StatBar.tsx",
+    "VsBadge": "../src/components/compare/VsBadge.tsx",
+    "SocialDivider": "../src/components/ui/SocialDivider.tsx",
+    "HeroLogo": "../src/components/web/HeroLogo.tsx",
+    "LightningBolt": "../src/components/compare/LightningBolt.tsx",
+    "DotGrid": "../src/components/ui/DotGrid.tsx",
+    "PaperSurface": "../src/components/home/PaperSurface.tsx",
+    "GettingStartedCard": "../src/components/ui/GettingStartedCard.tsx",
+    "HeroImage": "../src/components/HeroImage.tsx",
+    "ThumbCard": "../src/components/home/ThumbCard.tsx",
+    "SkeletonBlock": "../src/components/web/Skeleton.tsx",
+    "FilterChips": "../src/components/search/FilterChips.tsx"
+  },
+  "dtsPropsFor": {
+    "StatBar": "label: string;\nvalue: string;\ncolor: string;",
+    "VsBadge": "size?: number;\nvariant?: 'glass' | 'solid';",
+    "SocialDivider": "label?: string;",
+    "HeroLogo": "iconSize?: number;\nfontSize?: number;\ncolor?: string;\niconColor?: string;\ngap?: number;\niconOnly?: boolean;",
+    "LightningBolt": "height: number;\nwidth?: number;",
+    "DotGrid": "color?: string;\nspacing?: number;\nradius?: number;",
+    "PaperSurface": "children?: React.ReactNode;\nlip?: boolean;\nstyle?: object;",
+    "GettingStartedCard": "steps: { id: string; icon: string; label: string; done: boolean; onPress: () => void }[];",
+    "HeroImage": "id: string | number;\nname: string;\nimageUrl?: string | null;\nportraitUrl?: string | null;\nimageMdUrl?: string | null;\ngrid?: boolean;\nstyle?: object;\ncontentFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';\ncontentPosition?: string;\ncachePolicy?: 'none' | 'disk' | 'memory' | 'memory-disk';\nrecyclingKey?: string | null;\ntransition?: number | null;\nblurhash?: string | null;\nblurRadius?: number;\nonLoad?: () => void;",
+    "ThumbCard": "item: { id: string; name: string; image_url: string | null; portrait_url: string | null };\nonPress: () => void;\ndisabled?: boolean;",
+    "SkeletonBlock": "width?: number | string;\nheight: number;\nborderRadius?: number;\ndark?: boolean;\nstyle?: object;",
+    "FilterChips": "value: string;\noptions: { value: string; label: string }[];\nonChange: (value: string) => void;\nidPrefix?: string;"
+  }
+}

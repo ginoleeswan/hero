@@ -107,3 +107,9 @@ portrait-backup/
 
 # Supabase CLI local cache/metadata
 supabase/.temp/
+/.ds-sync/
+/.ds-pkg/
+/ds-bundle/
+/.design-sync/.cache/
+/.design-sync/learnings/
+/.design-sync/node_modules
