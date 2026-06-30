@@ -33,6 +33,7 @@ import LooneyTunesLogo from '../../assets/brands/looney-tunes.svg';
 import TmntLogo from '../../assets/brands/tmnt.svg';
 import StarTrekLogo from '../../assets/brands/star-trek.svg';
 import AvatarLogo from '../../assets/brands/avatar-last-airbender.svg';
+import SnkLogo from '../../assets/brands/snk.svg';
 
 /** A brand logo, either a raster image (PNG via require) or an SVG component
  *  (via react-native-svg-transformer). Render helpers branch on which it is. */
@@ -194,6 +195,11 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['snk'],
     color: '#D32F2F',
     colorDark: '#7F1B1B',
+    logo: SnkLogo,
+    // Source logo is blue; recoloured to a white silhouette so it reads on the
+    // red brand banner + dark chip.
+    badgeSize: { width: 80, height: 17 },
+    logoTint: '#FFFFFF',
   },
   {
     slug: 'gatchaman',
