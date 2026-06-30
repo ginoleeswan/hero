@@ -1170,9 +1170,10 @@ export default function WebHomeScreen() {
               <Text style={styles.seeAllText as object}>See all rivalries →</Text>
             </Pressable>
 
-            {/* ── For You — warm close ──────────────────────────────────────── */}
+            {/* ── For You — warm close. Distinct eyebrow from the "Personal /
+                 Jump Back In" rail up top so the two don't read as a dupe. ─── */}
             <HomeRow
-              label="Personal"
+              label="For You"
               title="Your Favourites"
               heroes={favourites}
               onPress={handlePress}

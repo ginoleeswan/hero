@@ -394,7 +394,7 @@ export default function HomeScreen() {
           case 'favourites':
             return (
               <HomeHeroRow
-                label="Personal"
+                label="For You"
                 title="Your Favourites"
                 heroes={item.heroes}
                 variant="portrait"
