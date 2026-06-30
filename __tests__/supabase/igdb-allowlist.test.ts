@@ -16,9 +16,7 @@ describe('igdb allowlist', () => {
     expect(IGDB_ALLOWLIST.find((e) => e.franchise === 'Final Fantasy')?.publisher).toBe(
       'Square Enix',
     );
-    expect(IGDB_ALLOWLIST.find((e) => e.franchise === 'Halo')?.publisher).toBe(
-      'Xbox Game Studios',
-    );
+    expect(IGDB_ALLOWLIST.find((e) => e.franchise === 'Halo')?.publisher).toBe('Xbox Game Studios');
   });
 
   it('every entry has a publisher and a marqueeTiers map', () => {

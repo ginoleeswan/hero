@@ -27,7 +27,12 @@ describe('mugShotUrl', () => {
 
 describe('characterToHeroRow', () => {
   it('maps an IGDB character to a new hero row with marquee tier + pending wikidata', () => {
-    const c: IgdbCharacter = { id: 55, name: 'Cloud Strife', description: 'SOLDIER.', mug_shot: { image_id: 'img1' } };
+    const c: IgdbCharacter = {
+      id: 55,
+      name: 'Cloud Strife',
+      description: 'SOLDIER.',
+      mug_shot: { image_id: 'img1' },
+    };
     const row = characterToHeroRow(c, ff, NOW);
     expect(row.id).toBe('igdb-55');
     expect(row.igdb_id).toBe('55');
@@ -51,7 +56,13 @@ describe('characterToHeroRow', () => {
 describe('dedupDecision', () => {
   it('skips when the igdb_id already exists', () => {
     const existing: ExistingRow[] = [
-      { id: 'igdb-55', name: 'Cloud Strife', publisher: 'Square Enix', comicvine_id: null, igdb_id: '55' },
+      {
+        id: 'igdb-55',
+        name: 'Cloud Strife',
+        publisher: 'Square Enix',
+        comicvine_id: null,
+        igdb_id: '55',
+      },
     ];
     const d = dedupDecision({ id: 55, name: 'Cloud Strife' }, ff, existing, NOW);
     expect(d.kind).toBe('skip');
@@ -59,7 +70,13 @@ describe('dedupDecision', () => {
 
   it('re-homes an orphaned game character (non-comic publisher)', () => {
     const existing: ExistingRow[] = [
-      { id: 'cv-900', name: 'Lara Croft', publisher: 'Crystal Dynamics', comicvine_id: '900', igdb_id: null },
+      {
+        id: 'cv-900',
+        name: 'Lara Croft',
+        publisher: 'Crystal Dynamics',
+        comicvine_id: '900',
+        igdb_id: null,
+      },
     ];
     const d = dedupDecision({ id: 7, name: 'Lara Croft' }, tr, existing, NOW);
     expect(d.kind).toBe('rehome');
@@ -87,7 +104,13 @@ describe('dedupDecision', () => {
 
   it('does NOT re-home a match already claimed by a different igdb_id', () => {
     const existing: ExistingRow[] = [
-      { id: 'igdb-5', name: 'Lara Croft', publisher: 'Square Enix', comicvine_id: null, igdb_id: '5' },
+      {
+        id: 'igdb-5',
+        name: 'Lara Croft',
+        publisher: 'Square Enix',
+        comicvine_id: null,
+        igdb_id: '5',
+      },
     ];
     // A different IGDB character (#7) with the same name must not overwrite #5's claim.
     const d = dedupDecision({ id: 7, name: 'Lara Croft' }, tr, existing, NOW);
