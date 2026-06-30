@@ -2,8 +2,8 @@
 
 ## Project
 
-**hero** — a superhero encyclopedia app built with Expo SDK 56 / React Native.  
-Targets iOS, Android, and Web.
+**Mythique** — a superhero/villain encyclopedia app built with Expo SDK 56 / React Native.  
+Targets iOS, Android, and Web. (Repo slug + internal package dir stay `hero`; the product is branded **Mythique**.)
 
 ## Package manager
 
@@ -41,12 +41,15 @@ app/
     login.tsx
     signup.tsx
   (tabs)/
-    _layout.tsx        Native Tabs (Discover / Search / Profile)
-    index.tsx          Discover screen — hero carousels from Supabase
+    _layout.tsx        Native Tabs (Explore / Search / Arena / Profile)
+    explore.tsx        Explore feed — curated rows from Supabase
     search.tsx
+    versus.tsx         Arena — matchup/battle hub
     profile.tsx
+  index.tsx            Landing page (web) / redirect to /explore (native)
   character/
     [id].tsx           Character detail screen
+  (plus: compare/ team/ universe/ category/ title/ issue/ biography/ versus/ admin/)
 
 src/
   components/
