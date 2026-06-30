@@ -7,10 +7,18 @@ import { HeroImage } from '../HeroImage';
 import { COLORS } from '../../constants/colors';
 import type { Hero } from '../../lib/db/heroes';
 
+// Rank tint — top 3 get progressively warmer orange (podium), rest stay dim.
+function rankColor(i: number): string {
+  if (i === 0) return 'rgba(231,115,51,0.70)';
+  if (i === 1) return 'rgba(231,115,51,0.45)';
+  if (i === 2) return 'rgba(231,115,51,0.30)';
+  return 'rgba(41,60,67,0.22)';
+}
+
 export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: string) => void }) {
   if (heroes.length === 0) return null;
   const lead = heroes[0];
-  const rest = heroes.slice(1, 6);
+  const rest = heroes.slice(1, 7);
 
   return (
     <View style={s.section}>
@@ -48,7 +56,7 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
       <View style={s.list}>
         {rest.map((h, i) => (
           <Pressable key={h.id} style={s.row} onPress={() => onPress(String(h.id))}>
-            <Text style={s.rank}>{String(i + 2).padStart(2, '0')}</Text>
+            <Text style={[s.rank, { color: rankColor(i) }]}>{String(i + 2).padStart(2, '0')}</Text>
             <View style={s.thumb}>
               <HeroImage
                 id={String(h.id)}
@@ -106,11 +114,12 @@ const s = StyleSheet.create({
     marginBottom: 6,
   },
   leadBody: { padding: 20 },
+  // "01" as a monument — matches the web treatment
   leadRank: {
     fontFamily: 'Flame-Regular',
-    fontSize: 13,
+    fontSize: 52,
     color: COLORS.orange,
-    letterSpacing: 2,
+    lineHeight: 50,
     marginBottom: 2,
   },
   leadName: { fontFamily: 'Flame-Regular', fontSize: 32, color: COLORS.beige, lineHeight: 34 },
@@ -122,27 +131,29 @@ const s = StyleSheet.create({
     color: 'rgba(245,235,220,0.6)',
     marginTop: 6,
   },
-  list: { marginTop: 6 },
+  list: { marginTop: 8 },
+  // No dividers — whitespace separates the rows (matches web)
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(41,60,67,0.08)',
+    gap: 14,
+    paddingVertical: 8,
   },
   rank: {
     fontFamily: 'Flame-Regular',
-    fontSize: 16,
-    color: 'rgba(41,60,67,0.35)',
-    width: 24,
+    fontSize: 20,
+    width: 30,
+    textAlign: 'right',
   },
+  // Circular portrait — reads as a character, not an app icon (matches web)
   thumb: {
-    width: 42,
-    height: 42,
-    borderRadius: 10,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
+    borderWidth: 2,
+    borderColor: 'rgba(41,60,67,0.1)',
   },
   rowName: {
     flex: 1,

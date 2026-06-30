@@ -1,11 +1,16 @@
-// "Hall of Fame" — the authored treatment of Most Iconic. Instead of a flat rail
-// of equal cards, it leads with a chosen #1 shown large and framed, beside a
-// compact ranked list. Same data (heroes by appearance count), but it reads as a
-// curated editorial moment with a point of view, not an inventory.
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../../HeroImage';
 import { COLORS } from '../../../constants/colors';
 import type { Hero } from '../../../lib/db/heroes';
+
+// Rank tint — first 3 entries get progressively warmer orange, rest stay dim
+function rankColor(i: number): string {
+  if (i === 0) return `rgba(231,115,51,0.70)`;
+  if (i === 1) return `rgba(231,115,51,0.45)`;
+  if (i === 2) return `rgba(231,115,51,0.30)`;
+  return 'rgba(41,60,67,0.22)';
+}
 
 export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: string) => void }) {
   const { width } = useWindowDimensions();
@@ -14,7 +19,8 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
 
   if (heroes.length === 0) return null;
   const lead = heroes[0];
-  const rest = heroes.slice(1, isDesktop ? 8 : 6);
+  // Desktop: 10 ranked entries in a 2-col spread beside the lead. Mobile: 6 stacked.
+  const rest = heroes.slice(1, isDesktop ? 11 : 6);
 
   return (
     <View style={[s.section, { paddingHorizontal: pad }] as object}>
@@ -27,7 +33,7 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
       </View>
 
       <View style={[s.body, !isDesktop && (s.bodyStack as object)] as object}>
-        {/* Featured #1 — the chosen lead, shown large. */}
+        {/* Featured #1 — dominates the left column */}
         <Pressable
           onPress={() => onPress(String(lead.id))}
           style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
@@ -40,7 +46,7 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
             imageUrl={lead.image_url}
             portraitUrl={lead.portrait_url}
             contentFit="cover"
-            contentPosition={{ top: '20%', left: '50%' }}
+            contentPosition={{ top: '10%', left: '50%' }}
             style={StyleSheet.absoluteFill as object}
             recyclingKey={String(lead.id)}
           />
@@ -59,8 +65,8 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
           </View>
         </Pressable>
 
-        {/* The rest of the canon — a tight ranked list, not a scroll. */}
-        <View style={s.list}>
+        {/* Ranked list — two-column power-ranking spread that fills the width */}
+        <View style={[s.list, isDesktop && (s.listGrid as object)] as object}>
           {rest.map((h, i) => (
             <Pressable
               key={h.id}
@@ -69,27 +75,39 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
                 [s.row, hovered && (s.rowHover as object)] as object
               }
             >
-              <Text style={s.rank as object}>{String(i + 2).padStart(2, '0')}</Text>
-              <View style={s.thumb}>
-                <HeroImage
-                  id={String(h.id)}
-                  name={h.name}
-                  imageUrl={h.image_url}
-                  portraitUrl={h.portrait_url}
-                  grid
-                  contentFit="cover"
-                  contentPosition={{ top: 0, left: '50%' }}
-                  style={StyleSheet.absoluteFill as object}
-                  recyclingKey={String(h.id)}
-                />
-              </View>
-              <Text style={s.rowName as object} numberOfLines={1}>
-                {h.name}
-              </Text>
-              {!!h.publisher && (
-                <Text style={s.rowMeta as object} numberOfLines={1}>
-                  {h.publisher}
-                </Text>
+              {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
+                <>
+                  <Text style={[s.rank, { color: rankColor(i) }] as object}>
+                    {String(i + 2).padStart(2, '0')}
+                  </Text>
+                  <View style={s.thumb}>
+                    <HeroImage
+                      id={String(h.id)}
+                      name={h.name}
+                      imageUrl={h.image_url}
+                      portraitUrl={h.portrait_url}
+                      grid
+                      contentFit="cover"
+                      contentPosition={{ top: 0, left: '50%' }}
+                      style={StyleSheet.absoluteFill as object}
+                      recyclingKey={String(h.id)}
+                    />
+                  </View>
+                  <Text style={s.rowName as object} numberOfLines={1}>
+                    {h.name}
+                  </Text>
+                  {/* Right-anchored: publisher at rest, swaps to an arrow on hover —
+                      so the row stays justified edge-to-edge either way. */}
+                  {hovered ? (
+                    <Ionicons name="arrow-forward" size={16} color={COLORS.orange} style={s.trailIcon as object} />
+                  ) : (
+                    !!h.publisher && (
+                      <Text style={s.rowMeta as object} numberOfLines={1}>
+                        {h.publisher}
+                      </Text>
+                    )
+                  )}
+                </>
               )}
             </Pressable>
           ))}
@@ -99,11 +117,19 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
   );
 }
 
+const LEAD_W = 300;
+// Card height = 5 row-cells, so the list bottom-aligns with the card exactly
+// and each cell stays tight around the portrait (no floaty vertical air).
 const LEAD_H = 360;
+const THUMB = 56;
 
 const s = StyleSheet.create({
-  section: { marginBottom: 52 },
-  head: { marginBottom: 22 },
+  // browseHead ("Browse the Universe") below carries marginTop: -36, so this
+  // marginBottom must be 52 + 36 = 88 to leave the same ~52px gap above THE
+  // LIBRARY that the HomeRow above leaves above THE CANON. Keeps the chapter
+  // breaks evenly spaced.
+  section: { marginBottom: 88 },
+  head: { marginBottom: 20 },
   kicker: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
@@ -114,120 +140,146 @@ const s = StyleSheet.create({
   } as object,
   title: {
     fontFamily: 'Flame-Regular',
-    fontSize: 40,
+    fontSize: 44,
     color: COLORS.navy,
-    lineHeight: 42,
+    lineHeight: 46,
   } as object,
   sub: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
-    color: 'rgba(41,60,67,0.6)',
-    lineHeight: 19,
-    marginTop: 6,
-    maxWidth: 560,
+    color: 'rgba(41,60,67,0.55)',
+    lineHeight: 20,
+    marginTop: 8,
+    maxWidth: 520,
   } as object,
 
-  body: { flexDirection: 'row', alignItems: 'stretch', gap: 24 },
-  bodyStack: { flexDirection: 'column' } as object,
+  // minHeight pins the row to the lead card's height so the section always
+  // reserves its full space — the grid list's `display: grid` height isn't
+  // reliably fed back into the flex row otherwise, causing the next section
+  // to overlap.
+  body: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, minHeight: LEAD_H },
+  bodyStack: { flexDirection: 'column', gap: 20, minHeight: 0 } as object,
 
-  // Featured #1
+  // Featured #1 — portrait-oriented card, fixed width so list gets more room
   lead: {
-    flex: 1.05,
-    minWidth: 0,
+    width: LEAD_W,
     height: LEAD_H,
     borderRadius: 18,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
     justifyContent: 'flex-end',
     cursor: 'pointer',
+    flexShrink: 0,
     transition: 'transform 200ms ease, box-shadow 200ms ease',
+    boxShadow: '0 8px 32px rgba(41,60,67,0.15)',
   } as object,
   leadHover: {
     transform: [{ translateY: -4 }],
-    boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
+    boxShadow: '0 24px 60px rgba(41,60,67,0.25)',
   } as object,
   leadScrim: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    inset: 0,
     backgroundImage:
-      'linear-gradient(to top, rgba(11,24,32,0.96) 0%, rgba(11,24,32,0.55) 42%, transparent 78%)',
+      'linear-gradient(to top, rgba(11,24,32,0.97) 0%, rgba(11,24,32,0.5) 45%, transparent 80%)',
   } as object,
-  leadBody: { padding: 24 },
+  leadBody: { padding: 28 },
+  // "01" as a monument — large, orange, unmistakable
   leadRank: {
     fontFamily: 'Flame-Regular',
-    fontSize: 13,
+    fontSize: 64,
     color: COLORS.orange,
-    letterSpacing: 2,
-    marginBottom: 2,
+    lineHeight: 60,
+    marginBottom: 4,
   } as object,
   leadName: {
     fontFamily: 'Flame-Regular',
-    fontSize: 38,
+    fontSize: 40,
     color: COLORS.beige,
-    lineHeight: 40,
-    textShadow: '0 2px 12px rgba(0,0,0,0.8)',
+    lineHeight: 42,
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 12,
   } as object,
   leadStat: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.6)',
-    marginTop: 6,
+    color: 'rgba(245,235,220,0.55)',
+    marginTop: 8,
   } as object,
   leadBlurb: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
-    color: 'rgba(245,235,220,0.78)',
+    color: 'rgba(245,235,220,0.72)',
     lineHeight: 19,
     marginTop: 10,
-    maxWidth: 420,
+    maxWidth: 400,
   } as object,
 
-  // Ranked list
-  list: { flex: 1, justifyContent: 'space-between' },
+  // Ranked list — two columns on desktop fill the width beside the lead card
+  list: { flex: 1, gap: 2 },
+  listGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gridTemplateRows: 'repeat(5, 1fr)',
+    gridAutoFlow: 'column',
+    columnGap: 28,
+    height: LEAD_H,
+  } as object,
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(41,60,67,0.08)',
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: 14,
     cursor: 'pointer',
     transition: 'background-color 150ms ease',
   } as object,
-  rowHover: { backgroundColor: 'rgba(41,60,67,0.06)' } as object,
+  rowHover: {
+    backgroundColor: 'rgba(41,60,67,0.06)',
+  } as object,
+  trailIcon: { marginLeft: 'auto' } as object,
+
+  // Big decorative rank — acts as a graphic element, not just metadata
   rank: {
     fontFamily: 'Flame-Regular',
-    fontSize: 18,
-    color: 'rgba(41,60,67,0.35)',
-    width: 26,
-  } as object,
-  thumb: {
+    fontSize: 22,
     width: 44,
-    height: 44,
-    borderRadius: 10,
+    textAlign: 'right',
+    lineHeight: 24,
+    flexShrink: 0,
+  } as object,
+
+  // Circular portrait — reads as a character, not an app icon
+  thumb: {
+    width: THUMB,
+    height: THUMB,
+    borderRadius: THUMB / 2,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
+    flexShrink: 0,
+    borderWidth: 2,
+    borderColor: 'rgba(41,60,67,0.1)',
   },
   rowName: {
     flex: 1,
     minWidth: 0,
     fontFamily: 'Flame-Regular',
-    fontSize: 18,
+    fontSize: 19,
     color: COLORS.navy,
-    lineHeight: 20,
+    lineHeight: 21,
   } as object,
   rowMeta: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    color: 'rgba(41,60,67,0.4)',
+    color: 'rgba(41,60,67,0.42)',
+    marginLeft: 'auto',
+    paddingLeft: 10,
+    flexShrink: 0,
   } as object,
 });

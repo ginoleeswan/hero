@@ -1,15 +1,12 @@
-// "This Month in History" — the authored treatment of the debut-issues rail.
-// Instead of a 12-card scroll, it leads with ONE notable anniversary shown large
-// (cover + "X years ago" + the cast it introduced), with the rest of the month's
-// vault spread across the right so the feature uses the full width instead of
-// leaving dead space. Inventory → editorial moment. Lives in the dark "Right Now"
-// band; reuses getDebutsThisMonth data untouched.
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { COLORS } from '../../../constants/colors';
+import { HeroImage } from '../../HeroImage';
 import type { DebutIssue, DebutCharacter } from '../../../lib/db/anniversaries';
 
 const MONTH = new Date().toLocaleString('en-US', { month: 'long' });
+
+type CharWithYear = DebutCharacter & { yearsAgo: number };
 
 function castLine(chars: DebutCharacter[]): string {
   if (chars.length === 0) return '';
@@ -31,119 +28,168 @@ export function ThisMonthInHistory({
   onHeroPress: (id: string) => void;
 }) {
   const { width } = useWindowDimensions();
-  const pad = width < 640 ? 16 : 32;
+  const pagePad = width < 640 ? 16 : 32;
   const isDesktop = width >= 860;
 
   if (debuts.length === 0) return null;
+
   const lead = debuts[0];
   const leadChar = lead.characters[0];
-  const rest = debuts.slice(1, isDesktop ? 7 : 5);
-  const miniW = isDesktop ? 84 : 64;
-
   const openLead = () => leadChar && onHeroPress(leadChar.id);
 
+  // All debut characters flattened, deduped — fill the character strip
+  const seen = new Set<string>();
+  const allChars: CharWithYear[] = [];
+  for (const d of debuts) {
+    for (const c of d.characters) {
+      if (!seen.has(c.id)) {
+        seen.add(c.id);
+        allChars.push({ ...c, yearsAgo: d.yearsAgo });
+      }
+    }
+  }
+
+  const COVER_W = isDesktop ? 190 : 130;
+  const COVER_H = Math.round(COVER_W * 1.5);
+  const AVATAR = isDesktop ? 52 : 44;
+
   return (
-    <View style={[s.section, { marginHorizontal: pad, padding: width < 640 ? 18 : 28 }] as object}>
+    <View style={[s.section, { paddingHorizontal: pagePad }] as object}>
+      <View style={s.rule as object} />
+
+      {/* Section header */}
       <View style={s.head}>
         <Text style={s.kicker as object}>From the Vault</Text>
         <Text style={s.title as object}>This Month in History</Text>
       </View>
 
+      {/* Content: cover thumbnail + editorial column */}
       <View style={[s.layout, !isDesktop && (s.layoutStack as object)] as object}>
-        {/* Featured anniversary (left half) */}
-        <View style={[s.feature, !isDesktop && (s.featureStack as object)] as object}>
-          <Pressable
-            onPress={openLead}
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-              [s.cover, hovered && (s.coverHover as object)] as object
-            }
-          >
-            <Image
-              source={coverUri(lead) ? { uri: coverUri(lead) } : undefined}
-              contentFit="cover"
-              style={StyleSheet.absoluteFill as object}
-            />
-          </Pressable>
+        {/* Cover — proper thumbnail at 2:3 */}
+        <Pressable
+          onPress={openLead}
+          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+            [
+              s.cover,
+              { width: COVER_W, height: COVER_H },
+              hovered && (s.coverHover as object),
+            ] as object
+          }
+        >
+          <Image
+            source={coverUri(lead) ? { uri: coverUri(lead) } : undefined}
+            contentFit="cover"
+            style={{ position: 'absolute', inset: 0 } as object}
+          />
+        </Pressable>
 
-          <View style={s.featureBody}>
-            <Text style={s.anniv as object}>
-              {lead.yearsAgo} {lead.yearsAgo === 1 ? 'year' : 'years'} ago
+        {/* Editorial column — headline + copy + character strip.
+            The column fills all remaining width; the ghost year anchors
+            top-right behind the content so there's no empty zone.        */}
+        <View style={s.editorial as object}>
+          {/* Ghost year — structural backdrop, behind everything */}
+          {isDesktop && !!lead.year && (
+            <Text
+              style={s.yearWatermark as object}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              numberOfLines={1}
+            >
+              {lead.year}
             </Text>
-            <Text style={s.issue as object} numberOfLines={1}>
-              {lead.seriesName}
-              {lead.issueNumber ? ` #${lead.issueNumber}` : ''} · {lead.year}
-            </Text>
-            {lead.characters.length > 0 && (
-              <Text style={s.intro as object} numberOfLines={2}>
-                First appearance of{' '}
-                <Text style={s.introName as object}>{castLine(lead.characters)}</Text>
-              </Text>
-            )}
-            {!!leadChar && (
-              <Pressable
-                onPress={openLead}
-                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [s.cta, hovered && (s.ctaHover as object)] as object
-                }
-              >
-                <Text style={s.ctaText as object}>Meet {leadChar.name} →</Text>
-              </Pressable>
-            )}
-          </View>
-        </View>
+          )}
 
-        {/* The rest of the month's vault — fills the right half. */}
-        {rest.length > 0 && (
-          <View style={[s.vault, isDesktop && (s.vaultRight as object)] as object}>
-            {isDesktop && <Text style={s.vaultLabel as object}>More from {MONTH}</Text>}
-            <View style={s.vaultRow}>
-              {rest.map((d) => {
-                const c = d.characters[0];
-                return (
+          <Text style={s.anniv as object}>
+            {lead.yearsAgo} {lead.yearsAgo === 1 ? 'year' : 'years'} ago
+          </Text>
+          <Text style={s.issue as object} numberOfLines={1}>
+            {lead.seriesName}
+            {lead.issueNumber ? ` #${lead.issueNumber}` : ''} · {lead.year}
+          </Text>
+          {lead.characters.length > 0 && (
+            <Text style={s.intro as object} numberOfLines={2}>
+              First appearance of{' '}
+              <Text style={s.introName as object}>{castLine(lead.characters)}</Text>
+            </Text>
+          )}
+          {!!leadChar && (
+            <Pressable
+              onPress={openLead}
+              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                [s.cta, hovered && (s.ctaHover as object)] as object
+              }
+            >
+              <Text style={s.ctaText as object}>Meet {leadChar.name} →</Text>
+            </Pressable>
+          )}
+
+          {/* Character strip — fills the lower half of the editorial column */}
+          {allChars.length > 0 && (
+            <View style={s.charBlock as object}>
+              <View style={s.charRule as object} />
+              <Text style={s.charLabel as object}>Also debuted in {MONTH}</Text>
+              <View style={[s.charStrip, !isDesktop && (s.charStripScroll as object)] as object}>
+                {allChars.map((c) => (
                   <Pressable
-                    key={d.issueId}
-                    onPress={() => c && onHeroPress(c.id)}
+                    key={c.id}
+                    onPress={() => onHeroPress(c.id)}
                     style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                      [
-                        s.mini,
-                        { width: miniW, height: Math.round(miniW * 1.5) },
-                        hovered && (s.miniHover as object),
-                      ] as object
+                      [s.charChip, hovered && (s.charChipHover as object)] as object
                     }
                   >
-                    <Image
-                      source={coverUri(d) ? { uri: coverUri(d) } : undefined}
-                      contentFit="cover"
-                      style={StyleSheet.absoluteFill as object}
-                    />
-                    <View style={s.miniBadge as object}>
-                      <Text style={s.miniBadgeText as object}>{d.yearsAgo}y</Text>
+                    <View
+                      style={
+                        [
+                          s.charAvatar,
+                          { width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2 },
+                        ] as object
+                      }
+                    >
+                      <HeroImage
+                        id={c.id}
+                        name={c.name}
+                        imageUrl={c.image_url}
+                        portraitUrl={c.portrait_url}
+                        grid
+                        contentFit="cover"
+                        contentPosition={{ top: '10%', left: '50%' }}
+                        style={
+                          {
+                            position: 'absolute',
+                            inset: 0,
+                            borderRadius: AVATAR / 2,
+                          } as object
+                        }
+                        recyclingKey={c.id}
+                      />
+                      <View style={[s.charAvatarRing, { borderRadius: AVATAR / 2 }] as object} />
                     </View>
+                    <Text style={s.charName as object} numberOfLines={1}>
+                      {c.name}
+                    </Text>
                   </Pressable>
-                );
-              })}
+                ))}
+              </View>
             </View>
-          </View>
-        )}
+          )}
+        </View>
       </View>
     </View>
   );
 }
 
-const COVER_W = 150;
-
 const s = StyleSheet.create({
-  // Boxed in a lighter-navy glass panel for containment + variation against the
-  // bare full-width rails around it.
   section: {
-    marginTop: 4,
+    marginTop: 8,
     marginBottom: 12,
-    backgroundColor: 'rgba(255,255,255,0.045)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 18,
   },
-  head: { marginBottom: 16 },
+  rule: {
+    height: 1,
+    marginBottom: 24,
+    backgroundImage: `linear-gradient(to right, transparent, ${COLORS.orange}55, transparent)`,
+  } as object,
+
+  head: { marginBottom: 18 },
   kicker: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
@@ -154,99 +200,153 @@ const s = StyleSheet.create({
   } as object,
   title: {
     fontFamily: 'Flame-Regular',
-    fontSize: 26,
+    fontSize: 28,
     color: COLORS.beige,
-    lineHeight: 28,
+    lineHeight: 30,
   } as object,
 
-  layout: { flexDirection: 'row', alignItems: 'center', gap: 40 },
-  layoutStack: { flexDirection: 'column', alignItems: 'stretch', gap: 22 } as object,
+  layout: { flexDirection: 'row', alignItems: 'flex-start', gap: 28 },
+  layoutStack: { flexDirection: 'column', gap: 20 } as object,
 
-  feature: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 22 },
-  featureStack: { flexDirection: 'column', alignItems: 'flex-start', gap: 16 } as object,
   cover: {
-    width: COVER_W,
-    height: Math.round(COVER_W * 1.5),
     borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
-    boxShadow: '0 16px 40px rgba(0,0,0,0.45)',
+    boxShadow: '0 20px 48px rgba(0,0,0,0.55)',
     cursor: 'pointer',
-    transition: 'transform 200ms ease',
+    transition: 'transform 200ms ease, box-shadow 200ms ease',
     flexShrink: 0,
   } as object,
-  coverHover: { transform: [{ translateY: -4 }] } as object,
-  featureBody: { flex: 1, minWidth: 0 },
+  coverHover: {
+    transform: [{ translateY: -5 }],
+    boxShadow: '0 28px 60px rgba(0,0,0,0.65)',
+  } as object,
+
+  // The editorial column fills remaining width and anchors the ghost year
+  editorial: {
+    flex: 1,
+    minWidth: 0,
+    position: 'relative',
+    overflow: 'hidden',
+    paddingTop: 4,
+  } as object,
+
+  // Ghost year — top-right of the editorial column, barely visible backdrop
+  yearWatermark: {
+    position: 'absolute',
+    right: -8,
+    top: -20,
+    fontFamily: 'Flame-Regular',
+    fontSize: 150,
+    lineHeight: 150,
+    color: 'rgba(245,235,220,0.05)',
+    pointerEvents: 'none',
+    userSelect: 'none',
+    zIndex: 0,
+  } as object,
+
   anniv: {
     fontFamily: 'Flame-Regular',
-    fontSize: 40,
+    fontSize: 56,
     color: COLORS.orange,
-    lineHeight: 42,
-    marginBottom: 4,
+    lineHeight: 58,
+    marginBottom: 6,
+    position: 'relative',
+    zIndex: 1,
   } as object,
   issue: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    letterSpacing: 1,
+    fontSize: 11,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.55)',
+    color: 'rgba(245,235,220,0.5)',
     marginBottom: 12,
+    position: 'relative',
+    zIndex: 1,
   } as object,
   intro: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 15,
     color: 'rgba(245,235,220,0.8)',
-    lineHeight: 21,
-    marginBottom: 16,
+    lineHeight: 22,
+    marginBottom: 18,
+    position: 'relative',
+    zIndex: 1,
   } as object,
   introName: { fontFamily: 'Nunito_700Bold', color: COLORS.beige } as object,
   cta: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(245,235,220,0.08)',
+    backgroundColor: 'rgba(231,115,51,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.18)',
+    borderColor: `${COLORS.orange}55`,
     borderRadius: 22,
     paddingVertical: 9,
     paddingHorizontal: 18,
     cursor: 'pointer',
     transition: 'background-color 150ms ease',
+    position: 'relative',
+    zIndex: 1,
   } as object,
-  ctaHover: { backgroundColor: 'rgba(245,235,220,0.14)' } as object,
-  ctaText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.beige } as object,
-
-  // Vault — the rest of the month.
-  vault: {},
-  vaultRight: { flex: 1, justifyContent: 'center' } as object,
-  vaultLabel: {
+  ctaHover: { backgroundColor: 'rgba(231,115,51,0.22)' } as object,
+  ctaText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.4)',
-    marginBottom: 12,
+    fontSize: 12,
+    color: COLORS.orange,
+    letterSpacing: 0.3,
   } as object,
-  vaultRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
-  mini: {
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: COLORS.navy,
-    cursor: 'pointer',
-    transition: 'transform 180ms ease',
+
+  // Character strip — below the editorial copy, fills the column bottom
+  charBlock: {
+    marginTop: 24,
+    position: 'relative',
+    zIndex: 1,
   } as object,
-  miniHover: { transform: [{ translateY: -3 }] } as object,
-  miniBadge: {
-    position: 'absolute',
-    top: 6,
-    left: 6,
-    backgroundColor: 'rgba(11,24,32,0.82)',
-    borderRadius: 6,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
+  charRule: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginBottom: 14,
   } as object,
-  miniBadgeText: {
+  charLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 9,
-    color: COLORS.orange,
-    letterSpacing: 0.5,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: 'rgba(245,235,220,0.35)',
+    marginBottom: 12,
+  } as object,
+  charStrip: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  charStripScroll: {
+    flexWrap: 'nowrap',
+    overflowX: 'auto',
+    scrollbarWidth: 'none',
+  } as object,
+  charChip: {
+    alignItems: 'center',
+    gap: 5,
+    cursor: 'pointer',
+    transition: 'opacity 150ms ease',
+    width: 60,
+  } as object,
+  charChipHover: { opacity: 0.7 } as object,
+  charAvatar: {
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+  } as object,
+  charAvatarRing: {
+    position: 'absolute',
+    inset: 0,
+    borderWidth: 1.5,
+    borderColor: 'rgba(245,235,220,0.1)',
+  } as object,
+  charName: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9,
+    color: 'rgba(245,235,220,0.65)',
+    textAlign: 'center',
+    letterSpacing: 0.1,
   } as object,
 });

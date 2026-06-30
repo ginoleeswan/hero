@@ -327,21 +327,32 @@ function ComicCoverRail({
   comics,
   onIssuePress,
   pagePad,
+  gridMode = false,
 }: {
   comics: NewComic[];
   onIssuePress: (issueId: string) => void;
   pagePad: number;
+  /** 2-row wrap grid for side-by-side desktop layout — fills column height. */
+  gridMode?: boolean;
 }) {
   if (comics.length === 0) return null;
+  // Grid: cap at 10 (5×2). Scroll: uncapped.
+  const items = gridMode ? comics.slice(0, 10) : comics;
   return (
     <View>
       <View style={[ccr.header, { paddingLeft: pagePad }]}>
         <Text style={ccr.label as object}>This Week</Text>
         <Text style={ccr.title as object}>New Comics</Text>
       </View>
-      <View style={[ccr.strip, { paddingLeft: pagePad, paddingRight: pagePad }] as object}>
-        {comics.map((comic) => {
-          // Format on-sale day as short month + day (e.g. "Jun 25")
+      <View
+        style={
+          [
+            gridMode ? ccr.grid : ccr.strip,
+            { paddingLeft: pagePad, paddingRight: pagePad },
+          ] as object
+        }
+      >
+        {items.map((comic) => {
           const saleDay = comic.storeDate
             ? new Date(comic.storeDate).toLocaleDateString('en-US', {
                 month: 'short',
@@ -352,18 +363,21 @@ function ComicCoverRail({
             comic.volumeName && comic.issueNumber
               ? `${comic.volumeName} #${comic.issueNumber}`
               : (comic.volumeName ?? comic.issueNumber ?? '');
+          const cardStyle = gridMode ? ccr.gridCard : ccr.card;
+          const hoverStyle = gridMode ? ccr.gridCardHover : ccr.cardHover;
           return (
             <Pressable
               key={comic.id}
               onPress={() => onIssuePress(comic.id)}
               style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                [ccr.card, hovered && (ccr.cardHover as object)] as object
+                [cardStyle, hovered && (hoverStyle as object)] as object
               }
             >
               {comic.coverUrl ? (
                 <Image
                   source={{ uri: comic.coverUrl }}
                   contentFit="cover"
+                  contentPosition="top"
                   style={{ position: 'absolute', inset: 0 } as object}
                 />
               ) : null}
@@ -524,9 +538,23 @@ export function RightNowBand({
         />
       )}
 
-      <ComicCoverRail comics={newComics} onIssuePress={onIssuePress} pagePad={pagePad} />
-
-      <TrendingMovers heroes={wikiTrending} onHeroPress={onHeroPress} />
+      {/* Comics + Movers: side-by-side on desktop when both have data */}
+      {isDesktop && newComics.length > 0 && wikiTrending.length > 0 ? (
+        <View style={[tw.row, { paddingHorizontal: pagePad }]}>
+          <View style={tw.moversCol}>
+            <TrendingMovers heroes={wikiTrending} onHeroPress={onHeroPress} inline />
+          </View>
+          <View style={tw.divider} />
+          <View style={tw.comicsCol}>
+            <ComicCoverRail comics={newComics} onIssuePress={onIssuePress} pagePad={0} gridMode />
+          </View>
+        </View>
+      ) : (
+        <>
+          <ComicCoverRail comics={newComics} onIssuePress={onIssuePress} pagePad={pagePad} />
+          <TrendingMovers heroes={wikiTrending} onHeroPress={onHeroPress} />
+        </>
+      )}
 
       <ThisMonthInHistory debuts={debuts} onHeroPress={onHeroPress} />
 
@@ -536,6 +564,29 @@ export function RightNowBand({
     </View>
   );
 }
+
+const tw = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  comicsCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  divider: {
+    width: 1,
+    alignSelf: 'stretch',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginHorizontal: 28,
+    marginTop: 4,
+  },
+  moversCol: {
+    width: 360,
+    flexShrink: 0,
+  },
+});
 
 const band = StyleSheet.create({
   band: { backgroundColor: COLORS.deepNavy, paddingTop: 28, paddingBottom: 28 },
@@ -803,7 +854,7 @@ const prw = StyleSheet.create({
   } as object,
 });
 
-// Comic Cover Rail — 2:3 cover cards (150×225), gold accent, on-sale-day badge.
+// Comic Cover Rail — 2:3 cover cards, gold accent, on-sale-day badge.
 const ccr = StyleSheet.create({
   header: { marginBottom: 14 },
   label: {
@@ -820,6 +871,8 @@ const ccr = StyleSheet.create({
     color: COLORS.beige,
     lineHeight: 30,
   } as object,
+
+  // Horizontal scroll (mobile / standalone)
   strip: {
     flexDirection: 'row',
     gap: 14,
@@ -842,6 +895,29 @@ const ccr = StyleSheet.create({
     transform: [{ translateY: -5 }],
     boxShadow: '0 18px 44px rgba(0,0,0,0.4)',
   } as object,
+
+  // 2-row CSS grid — 5 equal columns that fill the full width with no orphaned gaps.
+  // Uses display:grid (web-only) which RNW passes through to the DOM.
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(5, 1fr)',
+    gap: 10,
+  } as object,
+  gridCard: {
+    height: 210,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: COLORS.navy,
+    cursor: 'pointer',
+    justifyContent: 'flex-end',
+    position: 'relative',
+    transition: 'transform 180ms ease, box-shadow 180ms ease',
+  } as object,
+  gridCardHover: {
+    transform: [{ translateY: -4 }],
+    boxShadow: '0 14px 36px rgba(0,0,0,0.45)',
+  } as object,
+
   overlay: {
     position: 'absolute',
     inset: 0,
