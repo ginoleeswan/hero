@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { LOGO_MASK_PATH as LOGO_PATH } from '../../constants/logo';
 
-const screenshotHome = require('../../../assets/images/screenshots/home.PNG');
-const screenshotSearch = require('../../../assets/images/screenshots/search.PNG');
+const screenshotDesktop = require('../../../assets/images/screenshots/desktop-explore.png');
+const screenshotMobile = require('../../../assets/images/screenshots/mobile-spiderman.png');
 
 const P = (id: string) =>
   `https://res.cloudinary.com/dgrsb5o4p/image/upload/f_auto,q_auto,w_400/hero-portraits/${id}.jpg`;
@@ -65,6 +65,16 @@ const mosaicShuffled = weightedShuffle();
 const collageChars = collageShuffled.slice(0, 10);
 const mosaicChars = mosaicShuffled.slice(0, 10);
 const stripChars = collageShuffled.slice(0, 8);
+
+// Tale-of-the-tape proof — real power stats (l = Hulk #332, r = Iron Man #346)
+const TALE: { label: string; l: number; r: number }[] = [
+  { label: 'Strength', l: 100, r: 85 },
+  { label: 'Power', l: 98, r: 100 },
+  { label: 'Intelligence', l: 88, r: 100 },
+  { label: 'Durability', l: 100, r: 85 },
+  { label: 'Combat', l: 85, r: 64 },
+  { label: 'Speed', l: 63, r: 58 },
+];
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap');
@@ -254,11 +264,22 @@ const CSS = `
   .screenshots { background:var(--surface); padding:100px 40px; }
   .screenshots-inner { max-width:1100px; margin:0 auto; }
   .screenshots-layout { display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center; margin-top:64px; }
-  .screenshots-phones { display:flex; justify-content:center; align-items:flex-end; }
-  .phone-frame { border-radius:38px; overflow:hidden; border:2px solid rgba(255,255,255,0.1); box-shadow:0 24px 80px rgba(0,0,0,0.6); flex-shrink:0; }
+  .screenshots-phones { position:relative; display:flex; justify-content:center; align-items:center; min-height:320px; }
+  .browser-frame {
+    width:100%; max-width:520px; border-radius:14px; overflow:hidden;
+    border:1px solid var(--border); background:var(--card);
+    box-shadow:0 30px 80px rgba(0,0,0,0.6); transform:rotate(-1deg);
+  }
+  .browser-bar { display:flex; align-items:center; gap:7px; padding:11px 14px; background:var(--surface); border-bottom:1px solid var(--border); }
+  .browser-dot { width:10px; height:10px; border-radius:50%; }
+  .browser-dot:nth-child(1) { background:#ff5f57; }
+  .browser-dot:nth-child(2) { background:#febc2e; }
+  .browser-dot:nth-child(3) { background:#28c840; }
+  .browser-url { margin-left:10px; font-size:11px; color:var(--muted); background:var(--bg); padding:4px 16px; border-radius:100px; letter-spacing:0.5px; }
+  .browser-frame img { display:block; width:100%; height:auto; }
+  .phone-frame { border-radius:26px; overflow:hidden; border:2px solid rgba(255,255,255,0.12); box-shadow:0 18px 50px rgba(0,0,0,0.7); flex-shrink:0; }
   .phone-frame img { display:block; width:100%; height:auto; }
-  .phone-main   { width:220px; transform:rotate(-3deg); z-index:2; position:relative; }
-  .phone-second { width:190px; transform:rotate(5deg) translateX(-20px); opacity:0.85; }
+  .phone-second { position:absolute; right:-4px; bottom:-28px; width:128px; transform:rotate(4deg); z-index:3; }
   .screenshots-text .section-sub { margin-bottom:32px; }
   .feature-list { list-style:none; display:flex; flex-direction:column; gap:16px; }
   .feature-list li { display:flex; align-items:flex-start; gap:14px; font-size:15px; color:var(--beige); line-height:1.5; }
@@ -308,6 +329,44 @@ const CSS = `
   .badge-text span:first-child { font-size:10px; color:var(--muted); letter-spacing:0.5px; }
   .badge-text span:last-child  { font-family:'Righteous',sans-serif; font-size:16px; }
   .badge-icon { width:28px; height:28px; flex-shrink:0; }
+
+  /* Tale of the tape */
+  .tott { padding:100px 40px; background:var(--bg); }
+  .tott-inner { max-width:760px; margin:0 auto; text-align:center; }
+  .tott-inner .section-eyebrow { color:var(--orange); }
+  .tott-inner .section-sub { margin:0 auto; }
+  .tott-card {
+    margin-top:48px; background:var(--card); border:1px solid var(--border);
+    border-radius:24px; padding:36px; text-align:left;
+    --hulk:#63A936; --iron:#E77333;
+  }
+  .tott-head { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:20px; margin-bottom:32px; }
+  .tott-fighter { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .tott-portrait { width:96px; height:96px; border-radius:50%; overflow:hidden; border:3px solid; }
+  .tott-portrait.l { border-color:var(--hulk); }
+  .tott-portrait.r { border-color:var(--iron); }
+  .tott-portrait img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
+  .tott-name { font-family:'Righteous',sans-serif; font-size:18px; }
+  .tott-univ { font-size:11px; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; }
+  .tott-vs {
+    font-family:'Righteous',sans-serif; font-size:24px;
+    width:54px; height:54px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,var(--orange),var(--yellow));
+    color:#0b1820; box-shadow:0 6px 24px rgba(231,115,51,0.4);
+  }
+  .tott-bars { display:flex; flex-direction:column; gap:14px; }
+  .tott-row { display:grid; grid-template-columns:34px 1fr 120px 1fr 34px; align-items:center; gap:12px; }
+  .tott-val { font-family:'Righteous',sans-serif; font-size:15px; color:var(--muted); }
+  .tott-val.l { text-align:right; }
+  .tott-val.r { text-align:left; }
+  .tott-val.win.l { color:var(--hulk); }
+  .tott-val.win.r { color:var(--iron); }
+  .tott-label { font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); text-align:center; }
+  .tott-bar { position:relative; height:8px; background:var(--surface); border-radius:6px; overflow:hidden; }
+  .tott-fill { position:absolute; top:0; bottom:0; border-radius:6px; }
+  .tott-fill.l { right:0; background:var(--hulk); }
+  .tott-fill.r { left:0; background:var(--iron); }
 
   footer {
     padding:40px; border-top:1px solid var(--border);
@@ -377,9 +436,9 @@ const CSS = `
 
     /* Screenshots */
     .screenshots-layout { grid-template-columns:1fr; gap:36px; }
-    .screenshots-phones { order:-1; justify-content:center; }
-    .phone-second { display:none; }
-    .phone-main { width:min(240px,62vw); transform:none; }
+    .screenshots-phones { order:-1; justify-content:center; min-height:auto; padding-bottom:28px; }
+    .browser-frame { transform:none; max-width:100%; }
+    .phone-second { width:96px; right:4px; bottom:-14px; }
     .screenshots-text { text-align:center; }
     .screenshots-text .section-sub { margin-bottom:24px; }
     .feature-list li { justify-content:center; }
@@ -392,6 +451,18 @@ const CSS = `
 
     /* Final CTA */
     .cta-sub { font-size:15px; }
+
+    /* Tale of the tape */
+    .tott { padding:64px 20px; }
+    .tott-card { padding:24px 14px; border-radius:20px; margin-top:32px; }
+    .tott-head { gap:8px; margin-bottom:24px; }
+    .tott-portrait { width:64px; height:64px; }
+    .tott-name { font-size:15px; }
+    .tott-univ { font-size:9px; }
+    .tott-vs { width:44px; height:44px; font-size:19px; }
+    .tott-row { grid-template-columns:24px 1fr 64px 1fr 24px; gap:6px; }
+    .tott-val { font-size:13px; }
+    .tott-label { font-size:9px; letter-spacing:0.5px; }
   }
 
   @media (max-width:480px) {
@@ -506,7 +577,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           <span className="hero-wordmark-large">mythique</span>
           <p className="hero-tagline">Know every icon. Settle every debate.</p>
           <p className="hero-sub">
-            Explore 30,000+ characters in rich detail, trace how they&apos;re connected, and pit any
+            Explore 34,000+ characters in rich detail, trace how they&apos;re connected, and pit any
             two head-to-head to settle who&apos;d really win. The whole universe — alive, connected,
             and yours to argue about.
           </p>
@@ -562,20 +633,20 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* STATS */}
       <div className="stats">
         <div className="stat-item">
-          <span className="stat-num">30,000+</span>
+          <span className="stat-num">34,000+</span>
           <span className="stat-label">Characters</span>
         </div>
         <div className="stat-item">
-          <span className="stat-num">Every</span>
-          <span className="stat-label">Universe</span>
+          <span className="stat-num">180+</span>
+          <span className="stat-label">Universes</span>
         </div>
         <div className="stat-item">
-          <span className="stat-num">Free</span>
-          <span className="stat-label">No Ads</span>
+          <span className="stat-num">3,000+</span>
+          <span className="stat-label">Films &amp; Shows</span>
         </div>
         <div className="stat-item">
-          <span className="stat-num">Any Device</span>
-          <span className="stat-label">Right in Your Browser</span>
+          <span className="stat-num">430K+</span>
+          <span className="stat-label">Connections</span>
         </div>
       </div>
 
@@ -632,7 +703,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             {[
               {
                 title: 'Explore the Universe',
-                desc: 'Browse 30,000+ characters across Marvel, DC, Disney, anime, games and beyond — curated collections that surface someone new every scroll.',
+                desc: 'Browse 34,000+ characters across Marvel, DC, Disney, anime, games and beyond — curated collections that surface someone new every scroll.',
                 icon: (
                   <>
                     <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
@@ -691,7 +762,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
               },
               {
                 title: 'Instant Search',
-                desc: 'Find any of 30,000+ characters in seconds — search by name, power, publisher or team affiliation.',
+                desc: 'Find any of 34,000+ characters in seconds — search by name, power, publisher or team affiliation.',
                 icon: (
                   <>
                     <circle cx="11" cy="11" r="8" />
@@ -714,21 +785,100 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
         </div>
       </section>
 
+      {/* TALE OF THE TAPE */}
+      <section className="tott">
+        <div className="tott-inner">
+          <p className="section-eyebrow">The big question</p>
+          <h2 className="section-heading">Who&apos;d actually win?</h2>
+          <p className="section-sub">
+            Every matchup opens with the tale of the tape — real power stats, side by side. Then you
+            take a side and watch the verdict roll in.
+          </p>
+
+          <div className="tott-card">
+            <div className="tott-head">
+              <div className="tott-fighter">
+                <div className="tott-portrait l">
+                  <img src={P('332')} alt="Hulk" loading="lazy" />
+                </div>
+                <span className="tott-name">Hulk</span>
+                <span className="tott-univ">Marvel</span>
+              </div>
+              <div className="tott-vs" aria-hidden="true">
+                VS
+              </div>
+              <div className="tott-fighter">
+                <div className="tott-portrait r">
+                  <img src={P('346')} alt="Iron Man" loading="lazy" />
+                </div>
+                <span className="tott-name">Iron Man</span>
+                <span className="tott-univ">Marvel</span>
+              </div>
+            </div>
+
+            <div className="tott-bars">
+              {TALE.map((row) => {
+                const hulkWins = row.l > row.r;
+                const ironWins = row.r > row.l;
+                return (
+                  <div className="tott-row" key={row.label}>
+                    <span className={`tott-val l${hulkWins ? ' win' : ''}`}>{row.l}</span>
+                    <div className="tott-bar">
+                      <div className="tott-fill l" style={{ width: `${row.l}%` }} />
+                    </div>
+                    <span className="tott-label">{row.label}</span>
+                    <div className="tott-bar">
+                      <div className="tott-fill r" style={{ width: `${row.r}%` }} />
+                    </div>
+                    <span className={`tott-val r${ironWins ? ' win' : ''}`}>{row.r}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <button
+            className="btn-primary"
+            style={{ marginTop: 36 }}
+            onClick={() => router.push('/versus')}
+          >
+            <svg
+              className="btn-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
+              <path d="m13 19 6-6" />
+              <path d="m16 16 4 4" />
+              <path d="M14.5 6.5 18 3h3v3l-3.5 3.5" />
+              <path d="m5 14 4 4" />
+            </svg>
+            Settle a debate
+          </button>
+        </div>
+      </section>
+
       {/* SCREENSHOTS */}
       <section className="screenshots">
         <div className="screenshots-inner">
           <div className="screenshots-layout">
             <div className="screenshots-phones">
-              <div className="phone-frame phone-main">
-                <img src={screenshotHome} alt="Hero app home screen" width={220} />
+              <div className="browser-frame">
+                <div className="browser-bar" aria-hidden="true">
+                  <span className="browser-dot" />
+                  <span className="browser-dot" />
+                  <span className="browser-dot" />
+                  <span className="browser-url">mythique</span>
+                </div>
+                <img src={screenshotDesktop} alt="Mythique explore feed on desktop" loading="lazy" />
               </div>
               <div className="phone-frame phone-second">
-                <img
-                  src={screenshotSearch}
-                  alt="Hero app search screen"
-                  width={190}
-                  loading="lazy"
-                />
+                <img src={screenshotMobile} alt="A character profile on mobile" loading="lazy" />
               </div>
             </div>
             <div className="screenshots-text">
@@ -745,7 +895,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 {[
                   'Rich profiles — powers, origins, abilities & trivia',
                   'Rivalry and family-tree graphs you can explore',
-                  'Head-to-head matchups with live crowd verdicts',
+                  'Head-to-head matchups with the tale of the tape',
                   'Film, TV and game appearances for every hero',
                 ].map((item, i) => (
                   <li key={i}>
@@ -769,7 +919,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           <p className="section-eyebrow">The roster</p>
           <h2 className="section-heading">From every universe</h2>
           <p className="section-sub">
-            Marvel, DC, anime, video games and beyond — 30,000+ characters, deeply detailed, all in
+            Marvel, DC, anime, video games and beyond — 34,000+ characters, deeply detailed, all in
             one place.
           </p>
           <div className="hero-mosaic">

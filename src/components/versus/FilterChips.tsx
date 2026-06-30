@@ -15,7 +15,7 @@ const PUBLISHERS: PublisherFilter[] = ['All', 'Marvel', 'DC'];
 const ALIGNMENTS: AlignmentFilter[] = ['All', 'Heroes', 'Villains'];
 
 /** Two server-side filter groups (publisher · alignment) above the roster grid —
- *  the draft screen's primary tool for taming a 30,000+ character pool. */
+ *  the draft screen's primary tool for taming a 34,000+ character pool. */
 export function FilterChips({
   publisher,
   alignment,
