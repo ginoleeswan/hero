@@ -34,6 +34,8 @@ import TmntLogo from '../../assets/brands/tmnt.svg';
 import StarTrekLogo from '../../assets/brands/star-trek.svg';
 import AvatarLogo from '../../assets/brands/avatar-last-airbender.svg';
 import SnkLogo from '../../assets/brands/snk.svg';
+import TheBoysLogo from '../../assets/brands/the-boys.svg';
+import SinCityLogo from '../../assets/brands/sin-city.svg';
 
 /** A brand logo, either a raster image (PNG via require) or an SVG component
  *  (via react-native-svg-transformer). Render helpers branch on which it is. */
@@ -200,6 +202,29 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     // red brand banner + dark chip.
     badgeSize: { width: 80, height: 17 },
     logoTint: '#FFFFFF',
+  },
+  {
+    slug: 'the-boys',
+    name: 'The Boys',
+    query: 'The Boys',
+    match: ['the boys'],
+    color: '#C8102E',
+    colorDark: '#6E0309',
+    logo: TheBoysLogo,
+    // Grungy black wordmark → white silhouette on the Vought-red banner.
+    badgeSize: { width: 51, height: 20 },
+    logoTint: '#FFFFFF',
+  },
+  {
+    slug: 'sin-city',
+    name: 'Sin City',
+    query: 'Sin City',
+    match: ['sin city'],
+    // Noir stage — the logo keeps its own white + signature red.
+    color: '#2A2530',
+    colorDark: '#121016',
+    logo: SinCityLogo,
+    badgeSize: { width: 30, height: 20 },
   },
   {
     slug: 'gatchaman',
