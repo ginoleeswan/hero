@@ -15,6 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
   getUniverseMontage,
+  getCategoryMontage,
   getCategoryFacetCounts,
   CATEGORY_LABELS,
   CATEGORY_DESCRIPTIONS,
@@ -230,6 +231,11 @@ export default function WebCategoryScreen() {
   const universeTerm = !categorySlug && slug ? (brand?.query ?? decodeURIComponent(slug)) : null;
   const title = categorySlug ? CATEGORY_LABELS[categorySlug] : (brand?.name ?? slug ?? 'Heroes');
   const description = categorySlug ? CATEGORY_DESCRIPTIONS[categorySlug] : null;
+  // Both universes and categories now lead with a masthead banner: universes get
+  // the brand stage (logo + colour), categories get the editorial stage (display
+  // headline + thesis + full-colour roster). Anything with a banner drops the
+  // slim header's identity row and uses it for controls only.
+  const hasBanner = !!brand || !!categorySlug;
 
   const { filters, setFilter, reset } = useCategoryFilters(categorySlug);
   const activeChips = activeFilterList(categorySlug, filters);
@@ -294,6 +300,50 @@ export default function WebCategoryScreen() {
   // page (and unaffected by filter changes). Each carries a BlurHash for an
   // instant placeholder.
   const [montage, setMontage] = useState<{ uri: string; blurhash?: string | null }[]>([]);
+  // Build the shuffled banner montage from a montage-row source (lead hero first,
+  // then a varied handful from the top tier — re-rolled each visit).
+  const buildMontage = useCallback(
+    (
+      rows: {
+        portrait_url: string | null;
+        image_url: string | null;
+        portrait_blurhash: string | null;
+      }[],
+    ) => {
+      if (rows.length === 0) return [];
+      const pool = rows.slice(1, 24);
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      return [rows[0], ...pool.slice(0, 5)]
+        .map((h) => ({ uri: h.portrait_url ?? h.image_url, blurhash: h.portrait_blurhash }))
+        .filter((m): m is { uri: string; blurhash: string | null } => !!m.uri);
+    },
+    [],
+  );
+
+  // Editorial (category) montage — same instant-loading pattern as the universe
+  // one, but sourced from the category's top heroes (full colour in the banner).
+  const [catMontage, setCatMontage] = useState<{ uri: string; blurhash?: string | null }[]>([]);
+  useEffect(() => {
+    if (!categorySlug) {
+      setCatMontage([]);
+      return;
+    }
+    let cancelled = false;
+    getCategoryMontage(categorySlug)
+      .then((rows) => {
+        if (!cancelled) setCatMontage(buildMontage(rows));
+      })
+      .catch(() => {
+        if (!cancelled) setCatMontage([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [categorySlug, buildMontage]);
+
   useEffect(() => {
     if (!universeTerm) {
       setMontage([]);
@@ -302,17 +352,7 @@ export default function WebCategoryScreen() {
     let cancelled = false;
     getUniverseMontage(universeTerm)
       .then((rows) => {
-        if (cancelled || rows.length === 0) return;
-        const pool = rows.slice(1, 24);
-        for (let i = pool.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [pool[i], pool[j]] = [pool[j], pool[i]];
-        }
-        setMontage(
-          [rows[0], ...pool.slice(0, 5)]
-            .map((h) => ({ uri: h.portrait_url ?? h.image_url, blurhash: h.portrait_blurhash }))
-            .filter((m): m is { uri: string; blurhash: string | null } => !!m.uri),
-        );
+        if (!cancelled) setMontage(buildMontage(rows));
       })
       .catch(() => {
         if (!cancelled) setMontage([]);
@@ -320,7 +360,7 @@ export default function WebCategoryScreen() {
     return () => {
       cancelled = true;
     };
-  }, [universeTerm]);
+  }, [universeTerm, buildMontage]);
 
   // Drive the reveal. When page-0 data lands, fade the grid up over the opaque
   // skeleton, then unmount the skeleton; on a fresh load (re)arm it.
@@ -395,10 +435,11 @@ export default function WebCategoryScreen() {
         description={description ?? `Browse ${title} on Mythique — every universe, every icon.`}
         path={categorySlug ? `/category/${slug}` : `/universe/${slug}`}
       />
-      {/* Faction banner — registered universes get a brand-coloured stage with
-          their marquee hero. Categories + unregistered universes keep the slim
-          header below. Scrolls away; the sticky header carries the title after. */}
-      {brand && (
+      {/* Masthead banner. Registered universes get a brand-coloured stage with a
+          logo + marquee hero; categories get the editorial stage (display
+          headline + thesis + full-colour roster). Unregistered universes keep the
+          slim header below. Scrolls away; the headline detaches + parks. */}
+      {brand ? (
         <BrowseBanner
           title={title}
           color={brand.color}
@@ -412,28 +453,39 @@ export default function WebCategoryScreen() {
           compact={!isDesktop}
           sticky={isDesktop}
         />
-      )}
+      ) : categorySlug ? (
+        <BrowseBanner
+          editorial
+          title={title}
+          description={description}
+          total={total}
+          unitLabel="RESULT"
+          montage={catMontage}
+          compact={!isDesktop}
+          sticky={isDesktop}
+        />
+      ) : null}
       {/* ── Sticky header ────────────────────────────────────────────────────────
           The faction banner is the identity for universes, so on desktop it
           fully replaces this bar; on mobile we keep it for the search + filter
           controls but drop its (duplicate) title row. */}
-      {(!isDesktop || !brand) && (
+      {(!isDesktop || !hasBanner) && (
         <View
           style={
             [
               styles.header,
               { paddingHorizontal: contentPad },
-              // Universe (mobile): the banner is the masthead, so this bar is just
-              // controls — drop the big nav-clearance top padding and stick it
+              // Banner pages (mobile): the masthead is the identity, so this bar is
+              // just controls — drop the big nav-clearance top padding and stick it
               // right below the nav instead, so it isn't an awkward tall slab.
-              brand ? (styles.headerControlsOnly as object) : undefined,
+              hasBanner ? (styles.headerControlsOnly as object) : undefined,
             ] as object
           }
         >
           <View style={styles.headerInner}>
-            {/* Row 1 — identity (categories only; universes use the banner, which
-                collapses to a sticky bar on scroll). */}
-            {!brand && (
+            {/* Row 1 — identity (banner-less pages only; banner pages use the
+                masthead, which collapses to a sticky bar on scroll). */}
+            {!hasBanner && (
               <View style={styles.identityRow}>
                 <View style={styles.accentBar} />
                 <Text
@@ -546,9 +598,9 @@ export default function WebCategoryScreen() {
             // Mobile: pull the grid up close under the floating deck (the deck's
             // own paddingBottom already gives a little air).
             !isDesktop ? ({ paddingTop: 6 } as object) : undefined,
-            // Guarantee enough scroll room for the logo to fully detach + park,
-            // even when the grid and filter rail are both short.
-            brand && isDesktop ? ({ minHeight: 'calc(100vh - 60px)' } as object) : undefined,
+            // Guarantee enough scroll room for the headline to fully detach +
+            // park, even when the grid and filter rail are both short.
+            hasBanner && isDesktop ? ({ minHeight: 'calc(100vh - 60px)' } as object) : undefined,
           ] as object
         }
       >

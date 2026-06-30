@@ -30,8 +30,8 @@ const montageUri = (uri: string) =>
  */
 export function BrowseBanner({
   title,
-  color,
-  colorDark,
+  color = COLORS.navy,
+  colorDark = COLORS.deepNavy,
   total,
   leadName,
   logo,
@@ -41,10 +41,13 @@ export function BrowseBanner({
   compact,
   sticky,
   unitLabel = 'CHARACTER',
+  editorial = false,
+  description,
 }: {
   title: string;
-  color: string;
-  colorDark: string;
+  /** Brand stage colour. Omitted in editorial mode — the roster supplies the colour. */
+  color?: string;
+  colorDark?: string;
   total: number;
   leadName?: string | null;
   logo?: BrandLogo;
@@ -56,6 +59,16 @@ export function BrowseBanner({
   sticky?: boolean;
   /** Noun for the count, uppercased — "CHARACTER" for universes, "MEMBER" for teams. */
   unitLabel?: string;
+  /**
+   * Editorial mode (categories/themes): no brand identity. The headline is set
+   * in the display face over the plain ink/navy gallery surface, the roster runs
+   * as a neutral grayscale ghost gallery (no colour wash — the page's only colour
+   * is the headline + count), and the description is the thesis line. Universes
+   * stay logo-led with their brand-coloured duotone (editorial=false).
+   */
+  editorial?: boolean;
+  /** Editorial thesis line under the headline (the category's description). */
+  description?: string | null;
 }) {
   const stat =
     total > 0
@@ -166,11 +179,15 @@ export function BrowseBanner({
               paddingBottom: compact ? 40 : 32,
               paddingHorizontal: compact ? 16 : 32,
               paddingTop: compact ? 66 : 70,
-              // Brand radial wash only. The bottom-fade to canvas ink is a
-              // separate overlay (styles.bottomFade) rendered ABOVE the desktop
-              // portrait montage, so it dissolves the portraits into the floor
-              // too — not just the background behind them.
-              backgroundImage: `radial-gradient(125% 140% at 92% 4%, ${color} 0%, ${colorDark} 45%, ${COLORS.deepNavy} 100%)`,
+              // Brand radial wash (universe) OR a calm ink→navy gallery surface
+              // (editorial categories — no brand hue; the roster carries colour).
+              // The bottom-fade to canvas ink is a separate overlay
+              // (styles.bottomFade) rendered ABOVE the desktop portrait montage, so
+              // it dissolves the portraits into the floor too — not just the
+              // background behind them.
+              backgroundImage: editorial
+                ? `radial-gradient(120% 150% at 88% 0%, ${COLORS.navy} 0%, ${COLORS.deepNavy} 60%)`
+                : `radial-gradient(125% 140% at 92% 4%, ${color} 0%, ${colorDark} 45%, ${COLORS.deepNavy} 100%)`,
             },
           ] as object
         }
@@ -211,21 +228,29 @@ export function BrowseBanner({
                   style={[styles.montageTile, { zIndex: arr.length - i }] as object}
                 />
               ))}
-              {/* Duotone: a brand-colour wash blended onto the grayscale tiles
-                  (mix-blend `color` keeps their luminance, swaps the hue) so the
-                  roster reads as one brand-tinted "ghost gallery" on every
-                  universe — never muddy or dull regardless of the source art. */}
-              <View
-                style={[styles.montageTint, { backgroundColor: color }] as object}
-                pointerEvents="none"
-              />
+              {/* Duotone (universe only): a brand-colour wash blended onto the
+                  grayscale tiles (mix-blend `color` keeps their luminance, swaps
+                  the hue) so the roster reads as one brand "ghost gallery" — never
+                  muddy regardless of the source art. Editorial categories skip the
+                  wash: the grayscale base alone is a neutral silver ghost gallery,
+                  so the page's only colour is the headline + count. */}
+              {!editorial && (
+                <View
+                  style={[styles.montageTint, { backgroundColor: color }] as object}
+                  pointerEvents="none"
+                />
+              )}
             </View>
             <View
               style={
                 [
                   styles.montageScrim,
                   {
-                    backgroundImage: `linear-gradient(90deg, ${colorDark} 6%, transparent 58%), radial-gradient(120% 120% at 90% 4%, ${color}55 0%, transparent 55%)`,
+                    // Editorial: a neutral deep-navy left scrim keeps the headline
+                    // legible over the grayscale roster (no brand tint).
+                    backgroundImage: editorial
+                      ? `linear-gradient(90deg, ${COLORS.deepNavy} 8%, transparent 62%)`
+                      : `linear-gradient(90deg, ${colorDark} 6%, transparent 58%), radial-gradient(120% 120% at 90% 4%, ${color}55 0%, transparent 55%)`,
                   },
                 ] as object
               }
@@ -242,6 +267,16 @@ export function BrowseBanner({
           <View ref={slotRef} style={detach ? (styles.hiddenSlot as object) : undefined}>
             {renderHeadline(false)}
           </View>
+          {/* Editorial thesis line — the category's description, set as a real
+              supporting headline (categories have this copy; universes don't). */}
+          {editorial && description ? (
+            <Text
+              style={[styles.thesis, compact && (styles.thesisCompact as object)] as object}
+              numberOfLines={2}
+            >
+              {description}
+            </Text>
+          ) : null}
           {stat ? (
             <Text style={[styles.caption, !compact && (styles.captionDesktop as object)] as object}>
               {stat}
@@ -351,4 +386,16 @@ const styles = StyleSheet.create({
     transition: 'color 200ms ease, text-shadow 200ms ease',
   } as object,
   titleCompact: { fontSize: 42, lineHeight: 52 },
+  // Editorial thesis line — sits between the display headline and the count.
+  // Larger and warmer than the gold caption: it's the category's actual idea.
+  thesis: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 19,
+    lineHeight: 26,
+    color: 'rgba(245,235,220,0.82)',
+    marginTop: 16,
+    maxWidth: 560,
+    textShadow: '0 1px 10px rgba(0,0,0,0.55)',
+  } as object,
+  thesisCompact: { fontSize: 15, lineHeight: 21, marginTop: 10, maxWidth: 420 } as object,
 });

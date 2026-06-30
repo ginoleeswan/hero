@@ -438,6 +438,44 @@ export async function getUniverseMontage(term: string, limit = 24): Promise<Mont
   return rows;
 }
 
+// Session cache so re-visiting a category paints the montage instantly.
+const categoryMontageCache = new Map<CategorySlug, MontageHero[]>();
+
+/**
+ * Top heroes of a category for the editorial header montage — the category
+ * counterpart to getUniverseMontage. Reuses getCategoryPage (so every slug's
+ * predicate comes for free) with NO facet filters and fame ordering, so the
+ * montage is the category's most recognizable faces, stable regardless of the
+ * grid's current filters. Includes `portrait_blurhash` for an instant LQIP.
+ * Cached per slug for the session.
+ */
+export async function getCategoryMontage(slug: CategorySlug, limit = 24): Promise<MontageHero[]> {
+  const cached = categoryMontageCache.get(slug);
+  if (cached) return cached;
+  const { heroes } = await getCategoryPage(slug, {
+    page: 0,
+    pageSize: limit,
+    withCount: false,
+    publisher: 'all',
+    alignment: 'any',
+    gender: 'any',
+    hasStats: false,
+    tags: [],
+    search: '',
+    sort: 'popular',
+  });
+  const rows: MontageHero[] = heroes.map((h) => ({
+    id: String(h.id),
+    name: h.name,
+    image_url: h.image_url,
+    image_md_url: h.image_md_url,
+    portrait_url: h.portrait_url,
+    portrait_blurhash: h.portrait_blurhash,
+  }));
+  categoryMontageCache.set(slug, rows);
+  return rows;
+}
+
 /**
  * Paged heroes for a single TEAM browse page — the team equivalent of
  * getUniversePage. A team is "heroes whose `teams[]` array contains the team
