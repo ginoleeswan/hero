@@ -30,6 +30,9 @@ import SantaMonicaLogo from '../../assets/brands/santa-monica-studio.svg';
 import WarnerBrosLogo from '../../assets/brands/warner-bros.svg';
 import NetherRealmLogo from '../../assets/brands/netherrealm.svg';
 import LooneyTunesLogo from '../../assets/brands/looney-tunes.svg';
+import TmntLogo from '../../assets/brands/tmnt.svg';
+import StarTrekLogo from '../../assets/brands/star-trek.svg';
+import AvatarLogo from '../../assets/brands/avatar-last-airbender.svg';
 
 /** A brand logo, either a raster image (PNG via require) or an SVG component
  *  (via react-native-svg-transformer). Render helpers branch on which it is. */
@@ -178,6 +181,11 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['last airbender'],
     color: '#E8A33D',
     colorDark: '#9C6418',
+    logo: AvatarLogo,
+    // Brushstroke wordmark — Nickelodeon splat stripped, tinted cream so it
+    // reads on the orange banner and the dark chip alike.
+    badgeSize: { width: 57, height: 20 },
+    logoTint: '#F5EBDC',
   },
   {
     slug: 'snk',
@@ -251,6 +259,10 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['star trek'],
     color: '#2A6FB5',
     colorDark: '#16406B',
+    logo: StarTrekLogo,
+    // Single-colour gold wordmark — reads on the blue banner and dark chip, so
+    // keep the gold (no tint).
+    badgeSize: { width: 60, height: 18 },
   },
   {
     slug: 'green-hornet',
@@ -267,6 +279,9 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['teenage mutant', 'ninja turtles'],
     color: '#3FA535',
     colorDark: '#21601C',
+    logo: TmntLogo,
+    // Full-colour classic logo (red banner + green letters) — keep its own ink.
+    badgeSize: { width: 52, height: 20 },
   },
   {
     slug: 'conan',
