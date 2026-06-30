@@ -20,4 +20,14 @@ describe('getIgdbToken', () => {
       getIgdbToken('cid', 'secret', fetchFn as unknown as typeof fetch),
     ).rejects.toThrow(/twitch/i);
   });
+
+  it('throws when access_token is absent from a 200 response', async () => {
+    const fetchFn = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ expires_in: 5000 }), // no access_token
+    });
+    await expect(
+      getIgdbToken('cid', 'secret', fetchFn as unknown as typeof fetch),
+    ).rejects.toThrow(/twitch/i);
+  });
 });
