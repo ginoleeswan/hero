@@ -917,6 +917,8 @@ export type Database = {
           height_imperial: string | null
           height_metric: string | null
           id: string
+          igdb_id: string | null
+          igdb_status: string | null
           image_md_url: string | null
           image_url: string | null
           intelligence: number | null
@@ -994,6 +996,8 @@ export type Database = {
           height_imperial?: string | null
           height_metric?: string | null
           id: string
+          igdb_id?: string | null
+          igdb_status?: string | null
           image_md_url?: string | null
           image_url?: string | null
           intelligence?: number | null
@@ -1071,6 +1075,8 @@ export type Database = {
           height_imperial?: string | null
           height_metric?: string | null
           id?: string
+          igdb_id?: string | null
+          igdb_status?: string | null
           image_md_url?: string | null
           image_url?: string | null
           intelligence?: number | null
@@ -1142,6 +1148,39 @@ export type Database = {
           name?: string | null
           publisher?: string | null
           snapshot_at?: string | null
+        }
+        Relationships: []
+      }
+      igdb_ingestion_state: {
+        Row: {
+          franchise: string
+          igdb_franchise_id: number | null
+          inserted: number
+          last_synced_at: string | null
+          publisher: string
+          rehomed: number
+          skipped: number
+          status: string
+        }
+        Insert: {
+          franchise: string
+          igdb_franchise_id?: number | null
+          inserted?: number
+          last_synced_at?: string | null
+          publisher: string
+          rehomed?: number
+          skipped?: number
+          status?: string
+        }
+        Update: {
+          franchise?: string
+          igdb_franchise_id?: number | null
+          inserted?: number
+          last_synced_at?: string | null
+          publisher?: string
+          rehomed?: number
+          skipped?: number
+          status?: string
         }
         Relationships: []
       }
