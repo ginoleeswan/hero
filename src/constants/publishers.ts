@@ -521,7 +521,9 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     color: '#0046AD',
     colorDark: '#002C6E',
     logo: HasbroLogo,
-    badgeSize: { width: 16, height: 18 },
+    // Wide wordmark (~1.85:1) — silhouette tinted white on the brand chip.
+    badgeSize: { width: 37, height: 20 },
+    logoTint: '#FFFFFF',
   },
   {
     slug: 'kodansha',

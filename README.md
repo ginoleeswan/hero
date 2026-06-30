@@ -2,7 +2,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./assets/mythique-logo.svg" />
-  <img src="./assets/mythique-logo-ink.svg" alt="Mythique" width="96" />
+  <img src="./assets/mythique-logo-ink.svg" alt="Mythique" width="220" />
 </picture>
 
 <h1>Mythique</h1>
