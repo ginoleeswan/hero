@@ -1,6 +1,9 @@
 <div align="center">
 
-<img src="./public/og.png" alt="Mythique" width="104" height="104" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/mythique-logo.svg" />
+  <img src="./assets/mythique-logo-ink.svg" alt="Mythique" width="96" />
+</picture>
 
 <h1>Mythique</h1>
 
