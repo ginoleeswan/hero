@@ -346,6 +346,7 @@ const CSS = `
   .tott-portrait.l { border-color:var(--hulk); }
   .tott-portrait.r { border-color:var(--iron); }
   .tott-portrait img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
+  .tott-portrait.r img { transform:scaleX(-1); }
   .tott-name { font-family:'Righteous',sans-serif; font-size:18px; }
   .tott-univ { font-size:11px; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; }
   .tott-vs {
@@ -364,9 +365,16 @@ const CSS = `
   .tott-val.win.r { color:var(--iron); }
   .tott-label { font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); text-align:center; }
   .tott-bar { position:relative; height:8px; background:var(--surface); border-radius:6px; overflow:hidden; }
-  .tott-fill { position:absolute; top:0; bottom:0; border-radius:6px; }
-  .tott-fill.l { right:0; background:var(--hulk); }
-  .tott-fill.r { left:0; background:var(--iron); }
+  .tott-fill { position:absolute; top:0; bottom:0; border-radius:6px; transform:scaleX(0); transition:transform .9s cubic-bezier(.2,.8,.2,1); }
+  .tott-fill.l { right:0; background:var(--hulk); transform-origin:right; }
+  .tott-fill.r { left:0; background:var(--iron); transform-origin:left; }
+  .tott-card.in .tott-fill { transform:scaleX(1); }
+  .tott-card.in .tott-row:nth-child(1) .tott-fill { transition-delay:.05s; }
+  .tott-card.in .tott-row:nth-child(2) .tott-fill { transition-delay:.12s; }
+  .tott-card.in .tott-row:nth-child(3) .tott-fill { transition-delay:.19s; }
+  .tott-card.in .tott-row:nth-child(4) .tott-fill { transition-delay:.26s; }
+  .tott-card.in .tott-row:nth-child(5) .tott-fill { transition-delay:.33s; }
+  .tott-card.in .tott-row:nth-child(6) .tott-fill { transition-delay:.40s; }
 
   footer {
     padding:40px; border-top:1px solid var(--border);
@@ -478,9 +486,27 @@ const CSS = `
     footer { justify-content:center; text-align:center; flex-direction:column; align-items:center; }
   }
 
+  /* Scroll reveals */
+  .reveal { opacity:0; transform:translateY(26px); transition:opacity .7s cubic-bezier(.22,.7,.25,1), transform .7s cubic-bezier(.22,.7,.25,1); will-change:opacity,transform; }
+  .reveal.in { opacity:1; transform:none; }
+  .feature-card.reveal { transition:opacity .55s cubic-bezier(.22,.7,.25,1), transform .55s cubic-bezier(.22,.7,.25,1), border-color .25s ease; }
+  .mosaic-card.reveal { transition:opacity .55s cubic-bezier(.22,.7,.25,1), transform .55s cubic-bezier(.22,.7,.25,1), box-shadow .3s ease; }
+
+  /* Hero load-in sequence */
+  .hero-content > * { opacity:0; }
+  .loaded .hero-content > * { animation:heroIn .8s cubic-bezier(.22,.7,.25,1) both; }
+  .loaded .hero-content .hero-wordmark-large { animation-delay:.12s; }
+  .loaded .hero-content .hero-tagline { animation-delay:.26s; }
+  .loaded .hero-content .hero-sub { animation-delay:.38s; }
+  .loaded .hero-content .hero-ctas { animation-delay:.5s; }
+  @keyframes heroIn { from { opacity:0; transform:translateY(22px); } to { opacity:1; transform:none; } }
+
   @media (prefers-reduced-motion:reduce) {
     .hero-card,.scroll-hint,.marquee-track { animation:none; }
     * { transition-duration:0.01ms !important; }
+    .reveal { opacity:1 !important; transform:none !important; }
+    .tott-fill { transform:scaleX(1) !important; }
+    .hero-content > * { opacity:1 !important; animation:none !important; }
   }
 
   /* Font-loading splash */
@@ -512,11 +538,43 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
   const [fontsReady, setFontsReady] = useState(false);
 
   useEffect(() => {
-    document.fonts.ready.then(() => setFontsReady(true));
+    let done = false;
+    const ready = () => {
+      if (!done) {
+        done = true;
+        setFontsReady(true);
+      }
+    };
+    document.fonts.ready.then(ready);
+    const fallback = setTimeout(ready, 2000); // never leave the hero hidden
+    return () => clearTimeout(fallback);
+  }, []);
+
+  // Scroll-triggered reveals — animate each .reveal element once it enters view
+  useEffect(() => {
+    const els = Array.from(document.querySelectorAll('.reveal'));
+    if (!('IntersectionObserver' in window)) {
+      els.forEach((el) => el.classList.add('in'));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in');
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15, rootMargin: '0px 0px -8% 0px' },
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
   }, []);
 
   return (
     <div
+      className={fontsReady ? 'loaded' : undefined}
       style={{
         backgroundColor: '#0b1820',
         color: '#f5ebdc',
@@ -540,7 +598,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       <nav>
         <div className="nav-brand">
           <svg className="nav-logo" viewBox="0 0 1024 1024" aria-hidden="true">
-            <path fill="var(--orange)" d={LOGO_PATH} />
+            <path fill="var(--beige)" d={LOGO_PATH} />
           </svg>
           <span className="nav-wordmark">mythique</span>
         </div>
@@ -632,19 +690,19 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
 
       {/* STATS */}
       <div className="stats">
-        <div className="stat-item">
+        <div className="stat-item reveal">
           <span className="stat-num">34,000+</span>
           <span className="stat-label">Characters</span>
         </div>
-        <div className="stat-item">
+        <div className="stat-item reveal" style={{ transitionDelay: '80ms' }}>
           <span className="stat-num">180+</span>
           <span className="stat-label">Universes</span>
         </div>
-        <div className="stat-item">
+        <div className="stat-item reveal" style={{ transitionDelay: '160ms' }}>
           <span className="stat-num">3,000+</span>
           <span className="stat-label">Films &amp; Shows</span>
         </div>
-        <div className="stat-item">
+        <div className="stat-item reveal" style={{ transitionDelay: '240ms' }}>
           <span className="stat-num">430K+</span>
           <span className="stat-label">Connections</span>
         </div>
@@ -689,12 +747,12 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* FEATURES */}
       <section className="section">
         <div className="section-inner">
-          <p className="section-eyebrow">Why it&apos;s different</p>
-          <h2 className="section-heading">
+          <p className="section-eyebrow reveal">Why it&apos;s different</p>
+          <h2 className="section-heading reveal" style={{ transitionDelay: '60ms' }}>
             More than a wiki.
             <br />A universe you can play with.
           </h2>
-          <p className="section-sub">
+          <p className="section-sub reveal" style={{ transitionDelay: '120ms' }}>
             Explore every character in depth, see how they all connect, and settle the debates a
             static list never could. One living, opinionated multiverse — every franchise, every
             icon.
@@ -771,7 +829,11 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 ),
               },
             ].map((f, i) => (
-              <div key={i} className="feature-card">
+              <div
+                key={i}
+                className="feature-card reveal"
+                style={{ transitionDelay: `${(i % 3) * 80}ms` }}
+              >
                 <div className="feature-icon">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     {f.icon}
@@ -788,14 +850,16 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* TALE OF THE TAPE */}
       <section className="tott">
         <div className="tott-inner">
-          <p className="section-eyebrow">The big question</p>
-          <h2 className="section-heading">Who&apos;d actually win?</h2>
-          <p className="section-sub">
+          <p className="section-eyebrow reveal">The big question</p>
+          <h2 className="section-heading reveal" style={{ transitionDelay: '60ms' }}>
+            Who&apos;d actually win?
+          </h2>
+          <p className="section-sub reveal" style={{ transitionDelay: '120ms' }}>
             Every matchup opens with the tale of the tape — real power stats, side by side. Then you
             take a side and watch the verdict roll in.
           </p>
 
-          <div className="tott-card">
+          <div className="tott-card reveal" style={{ transitionDelay: '160ms' }}>
             <div className="tott-head">
               <div className="tott-fighter">
                 <div className="tott-portrait l">
@@ -838,8 +902,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           </div>
 
           <button
-            className="btn-primary"
-            style={{ marginTop: 36 }}
+            className="btn-primary reveal"
+            style={{ marginTop: 36, transitionDelay: '220ms' }}
             onClick={() => router.push('/versus')}
           >
             <svg
@@ -867,7 +931,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       <section className="screenshots">
         <div className="screenshots-inner">
           <div className="screenshots-layout">
-            <div className="screenshots-phones">
+            <div className="screenshots-phones reveal">
               <div className="browser-frame">
                 <div className="browser-bar" aria-hidden="true">
                   <span className="browser-dot" />
@@ -882,16 +946,16 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
               </div>
             </div>
             <div className="screenshots-text">
-              <p className="section-eyebrow">The experience</p>
-              <h2 className="section-heading">
+              <p className="section-eyebrow reveal">The experience</p>
+              <h2 className="section-heading reveal" style={{ transitionDelay: '60ms' }}>
                 Made to
                 <br />
                 get lost in.
               </h2>
-              <p className="section-sub">
+              <p className="section-sub reveal" style={{ transitionDelay: '120ms' }}>
                 Fast, beautiful, and endlessly deep — on desktop or mobile, right in your browser.
               </p>
-              <ul className="feature-list">
+              <ul className="feature-list reveal" style={{ transitionDelay: '180ms' }}>
                 {[
                   'Rich profiles — powers, origins, abilities & trivia',
                   'Rivalry and family-tree graphs you can explore',
@@ -916,15 +980,21 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* MOSAIC */}
       <section className="showcase">
         <div className="showcase-inner">
-          <p className="section-eyebrow">The roster</p>
-          <h2 className="section-heading">From every universe</h2>
-          <p className="section-sub">
+          <p className="section-eyebrow reveal">The roster</p>
+          <h2 className="section-heading reveal" style={{ transitionDelay: '60ms' }}>
+            From every universe
+          </h2>
+          <p className="section-sub reveal" style={{ transitionDelay: '120ms' }}>
             Marvel, DC, anime, video games and beyond — 34,000+ characters, deeply detailed, all in
             one place.
           </p>
           <div className="hero-mosaic">
-            {mosaicChars.map(([id, name]) => (
-              <div key={id} className="mosaic-card">
+            {mosaicChars.map(([id, name], i) => (
+              <div
+                key={id}
+                className="mosaic-card reveal"
+                style={{ transitionDelay: `${(i % 5) * 60}ms` }}
+              >
                 <img src={P(id)} alt={name} loading="lazy" />
                 <span className="mosaic-name">{name}</span>
               </div>
@@ -936,10 +1006,12 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* FINAL CTA */}
       <section className="cta-section">
         <div className="cta-inner">
-          <p className="section-eyebrow">Dive in</p>
-          <h2 className="cta-glow">Explore. Compare. Argue.</h2>
-          <p className="cta-sub">
-            30,000+ characters across every universe, deep profiles, living rivalries, and the only
+          <p className="section-eyebrow reveal">Dive in</p>
+          <h2 className="cta-glow reveal" style={{ transitionDelay: '60ms' }}>
+            Explore. Compare. Argue.
+          </h2>
+          <p className="cta-sub reveal" style={{ transitionDelay: '120ms' }}>
+            34,000+ characters across every universe, deep profiles, living rivalries, and the only
             place to settle who&apos;d really win — free, no ads, right in your browser.
           </p>
           <button
