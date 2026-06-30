@@ -121,7 +121,8 @@
     "moduleNameMapper": {
       "^react-native-reanimated/mock$": "<rootDir>/__mocks__/react-native-reanimated-mock-shim.js",
       "^@react-native-async-storage/async-storage$": "@react-native-async-storage/async-storage/jest/async-storage-mock",
-      "\\.svg$": "<rootDir>/__mocks__/svgMock.js"
+      "\\.svg$": "<rootDir>/__mocks__/svgMock.js",
+      "^(\\.{1,2}/.*)\\.ts$": "$1"
     }
   }
 }
