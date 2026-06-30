@@ -1,5 +1,6 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
 import { type PropsWithChildren } from 'react';
+import { SITE_URL } from '../src/constants/site';
 
 /**
  * Web-only HTML scaffold (server-rendered). Sets the document background to the
@@ -27,7 +28,7 @@ export default function Root({ children }: PropsWithChildren) {
           name="description"
           content="Explore characters, teams, films and universes from across all fiction — Marvel, DC, Disney, anime, games and beyond — and pit any two against each other on Mythique."
         />
-        <link rel="canonical" href="https://mythique.app/" />
+        <link rel="canonical" href={`${SITE_URL}/`} />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Mythique" />
         <meta property="og:title" content="Mythique — Every universe. Every icon." />
@@ -35,15 +36,15 @@ export default function Root({ children }: PropsWithChildren) {
           property="og:description"
           content="Explore every fictional universe — characters, teams and films from Marvel to anime — and settle who'd win."
         />
-        <meta property="og:url" content="https://mythique.app/" />
-        <meta property="og:image" content="https://mythique.app/og.png" />
+        <meta property="og:url" content={`${SITE_URL}/`} />
+        <meta property="og:image" content={`${SITE_URL}/og.png`} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Mythique — Every universe. Every icon." />
         <meta
           name="twitter:description"
           content="Explore every fictional universe — characters, teams and films from Marvel to anime — and settle who'd win."
         />
-        <meta name="twitter:image" content="https://mythique.app/og.png" />
+        <meta name="twitter:image" content={`${SITE_URL}/og.png`} />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
         {/* Standalone web-app capability. When the site is added to the iOS Home

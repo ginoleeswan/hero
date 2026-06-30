@@ -15,7 +15,13 @@ import { mkdir, writeFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-const BASE_URL = (process.env.SITEMAP_BASE_URL || 'https://mythique.app').replace(/\/$/, '');
+// Mirrors SITE_URL in src/constants/site.ts (this standalone build script can't
+// import TS). Override at build time with SITEMAP_BASE_URL. Flip both when the
+// custom domain is attached.
+const BASE_URL = (process.env.SITEMAP_BASE_URL || 'https://mythique-wiki.vercel.app').replace(
+  /\/$/,
+  '',
+);
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY;
 
@@ -170,6 +176,12 @@ async function main() {
 
   await writeFile(join(OUT_DIR, 'sitemap.xml'), sitemapIndex(indexFiles), 'utf8');
   console.log(`[sitemap] wrote ${OUT_DIR}/sitemap.xml index → ${indexFiles.length} child sitemaps`);
+
+  // Emit robots.txt from the same BASE_URL so its Sitemap directive can never
+  // drift from the sitemap we just wrote.
+  const robots = `User-agent: *\nAllow: /\nDisallow: /admin\n\nSitemap: ${BASE_URL}/sitemap.xml\n`;
+  await writeFile(join(OUT_DIR, 'robots.txt'), robots, 'utf8');
+  console.log(`[sitemap] wrote ${OUT_DIR}/robots.txt`);
 }
 
 main().catch((err) => {

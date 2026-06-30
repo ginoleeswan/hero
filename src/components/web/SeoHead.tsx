@@ -3,8 +3,7 @@
 // tags so each page is indexed and shares richly (the global defaults in
 // +html.tsx are the fallback). Used from the *.web.tsx route files.
 import Head from 'expo-router/head';
-
-const SITE = 'https://mythique.app';
+import { SITE_URL as SITE } from '../../constants/site';
 
 export function SeoHead({
   title,
