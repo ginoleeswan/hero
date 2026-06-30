@@ -44,6 +44,7 @@ import { CampaignsDomain } from '../../src/components/admin/health/domains/Campa
 import { ReviewDomain } from '../../src/components/admin/health/domains/ReviewDomain';
 import { CommunityDomain } from '../../src/components/admin/health/domains/CommunityDomain';
 import { TrafficDomain } from '../../src/components/admin/health/domains/TrafficDomain';
+import { ErrorsDomain } from '../../src/components/admin/health/domains/ErrorsDomain';
 import {
   useActivityLog,
   useCatalogActions,
@@ -113,6 +114,7 @@ export default function AdminHealthScreen() {
     recentEnrichedQ,
     communityQ,
     trafficQ,
+    errorsQ,
   } = useCatalogQueries({
     enabled: gateResolved && isAdmin,
     domain,
@@ -517,6 +519,9 @@ export default function AdminHealthScreen() {
             loading={trafficQ.isLoading}
             narrow={narrow}
           />
+        )}
+        {domain === 'errors' && (
+          <ErrorsDomain data={errorsQ.data ?? null} loading={errorsQ.isLoading} narrow={narrow} />
         )}
       </CommandShell>
       {/* Foreground Build board lives at page level so the top-strip Stop can halt it. */}

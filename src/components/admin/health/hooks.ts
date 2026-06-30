@@ -36,6 +36,7 @@ import { getPendingStatsCount } from '../../../lib/db/stats';
 import { getPendingPortraitCount } from '../../../lib/db/portraits';
 import { fetchCommunityOverview } from '../../../lib/db/community';
 import { fetchTrafficOverview } from '../../../lib/db/traffic';
+import { fetchClientErrorOverview } from '../../../lib/db/clientErrors';
 import type { LogTone, LogEntry, DomainKey } from './format';
 
 type Flash = (msg: string, tone?: LogTone) => void;
@@ -74,6 +75,7 @@ export function useCatalogQueries({
   const onSpend = domain === 'spend';
   const onCommunity = domain === 'community';
   const onTraffic = domain === 'traffic';
+  const onErrors = domain === 'errors';
 
   const healthQ = useQuery({
     queryKey: ['catalogHealth'],
@@ -182,6 +184,12 @@ export function useCatalogQueries({
     enabled: enabled && onTraffic,
     staleTime: 5 * 60_000,
   });
+  const errorsQ = useQuery({
+    queryKey: ['clientErrorOverview'],
+    queryFn: () => fetchClientErrorOverview(7),
+    enabled: enabled && onErrors,
+    staleTime: 60_000,
+  });
 
   // While a run is in flight, poll backlog + usage so the live numbers tick down.
   const runsData = runsQ.data;
@@ -230,6 +238,7 @@ export function useCatalogQueries({
     recentEnrichedQ,
     communityQ,
     trafficQ,
+    errorsQ,
   };
 }
 

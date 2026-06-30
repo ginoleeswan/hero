@@ -22,10 +22,17 @@ import { CommandAlertsProvider } from '../src/contexts/CommandAlertsContext';
 import { queryClient } from '../src/lib/query/queryClient';
 import { COLORS } from '../src/constants/colors';
 import AnalyticsProvider from '../src/components/Analytics';
+import { recordClientError, installGlobalErrorCapture } from '../src/lib/db/clientErrors';
 
 // Expo Router renders this in place of the tree if a render throws, instead of a
 // blank white screen — a graceful, on-brand recovery surface for production.
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  // Log the render crash to the self-hosted error feed (admin-read-only) before
+  // showing the recovery surface.
+  useEffect(() => {
+    recordClientError('boundary', error.message, { stack: error.stack });
+  }, [error]);
+
   return (
     <View style={eb.root}>
       <Text style={eb.title}>Something went wrong</Text>
@@ -184,7 +191,15 @@ export default function WebRootLayout() {
     const noZoomStyle = document.createElement('style');
     noZoomStyle.textContent = 'input,textarea,select{font-size:max(16px,1em)!important}';
     document.head.appendChild(noZoomStyle);
-    return () => noZoomStyle.remove();
+
+    // Capture uncaught errors + rejected promises that never reach a React
+    // ErrorBoundary, into the self-hosted error feed.
+    const removeErrorCapture = installGlobalErrorCapture();
+
+    return () => {
+      noZoomStyle.remove();
+      removeErrorCapture();
+    };
   }, []);
 
   const [fontsLoaded, fontError] = useFonts({

@@ -71,6 +71,42 @@ export type Database = {
         }
         Relationships: []
       }
+      client_errors: {
+        Row: {
+          created_at: string
+          id: number
+          kind: string
+          message: string
+          session_id: string | null
+          source: string | null
+          stack: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          kind: string
+          message: string
+          session_id?: string | null
+          source?: string | null
+          stack?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          kind?: string
+          message?: string
+          session_id?: string | null
+          source?: string | null
+          stack?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       comic_issue_appearances: {
         Row: {
           hero_id: string
@@ -1538,6 +1574,10 @@ export type Database = {
       admin_merge_heroes: {
         Args: { p_loser: string; p_winner: string }
         Returns: undefined
+      }
+      admin_recent_client_errors: {
+        Args: { p_days?: number; p_limit?: number }
+        Returns: Json
       }
       admin_reenrich_hero: { Args: { p_id: string }; Returns: string }
       admin_refresh_fame: { Args: never; Returns: number }
