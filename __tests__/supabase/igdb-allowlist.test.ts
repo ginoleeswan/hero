@@ -8,8 +8,11 @@ import {
 describe('igdb allowlist', () => {
   it('has 21 unique franchises across the expected publishers', () => {
     const names = IGDB_ALLOWLIST.map((e) => e.franchise);
-    expect(names.length).toBe(20);
-    expect(new Set(names).size).toBe(20);
+    expect(names.length).toBe(21);
+    expect(new Set(names).size).toBe(21);
+    expect(IGDB_ALLOWLIST.find((e) => e.franchise === 'Apex Legends')?.publisher).toBe(
+      'Electronic Arts',
+    );
     expect(IGDB_ALLOWLIST.find((e) => e.franchise === 'Final Fantasy')?.publisher).toBe(
       'Square Enix',
     );
