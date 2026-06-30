@@ -48,6 +48,9 @@ export type DedupDecision =
 
 // Universes IGDB ingestion must never hijack via a name collision. A row under
 // one of these with a comicvine_id is a comic character, not a game character.
+// Values are compared with exact === against heroes.publisher and were verified
+// verbatim against the live distribution (e.g. 'Marvel', not 'Marvel Comics');
+// keep them in sync with the DB's publisher strings when adding entries.
 export const PROTECTED_PUBLISHERS: Set<string> = new Set([
   'DC Comics', 'Marvel', 'Image', 'Dark Horse Comics', 'Archie Comics',
   'Valiant/Acclaim', 'Disney', 'Star Wars', 'Shueisha', 'Kodansha',
@@ -95,9 +98,12 @@ export function dedupDecision(
   const norm = normalizeName(c.name);
   const candidates = existing.filter((r) => normalizeName(r.name) === norm);
 
-  // Unambiguous, non-comic match -> re-home. Anything else (none, multiple, or a
-  // protected comic character sharing the name) -> insert a fresh row.
-  if (candidates.length === 1 && !isProtected(candidates[0])) {
+  // Unambiguous, non-comic, not-yet-claimed match -> re-home. Anything else
+  // (none, multiple, a protected comic character sharing the name, or a row
+  // already claimed by a DIFFERENT igdb_id) -> insert a fresh row. The
+  // already-claimed guard prevents a same-named second IGDB character from
+  // overwriting an earlier re-home's igdb_id/publisher.
+  if (candidates.length === 1 && candidates[0].igdb_id === null && !isProtected(candidates[0])) {
     return {
       kind: 'rehome',
       targetId: candidates[0].id,

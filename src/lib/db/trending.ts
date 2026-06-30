@@ -62,37 +62,29 @@ export interface TrendingTitle {
   characters: TrendingTitleCharacter[];
 }
 
-export async function getTrendingTitles(
-  bucket: TrendingBucket,
-  titleLimit = 6,
-  charsPerTitle = 12,
-): Promise<TrendingTitle[]> {
-  const { data, error } = await supabase.rpc('get_trending_titles', {
-    p_bucket: bucket,
-    p_title_limit: titleLimit,
-    p_chars_per_title: charsPerTitle,
-  });
-  if (error) {
-    console.warn('[getTrendingTitles] error:', error.message);
-    return [];
-  }
-  // Flat rows (title fields repeated per character) → grouped titles, preserving
-  // the RPC's order (titles by rank, characters by fame within each title).
+/** One flat row from get_trending_titles / get_trending_titles_multi — title
+ *  fields repeated per character. */
+interface TrendingTitleRow {
+  title_id: string;
+  title: string;
+  media_type: string | null;
+  release_date: string | null;
+  backdrop_url: string | null;
+  poster_url: string | null;
+  provider: string | null;
+  overview: string | null;
+  hero_id: string;
+  hero_name: string;
+  hero_image_url: string | null;
+  hero_portrait_url: string | null;
+}
+
+/** Fold flat per-character rows into grouped titles, preserving the RPC's order
+ *  (titles by rank, characters by fame within each title). Shared by the single-
+ *  and multi-bucket paths so their grouping can't drift. */
+function groupTitleRows(rows: TrendingTitleRow[]): TrendingTitle[] {
   const byTitle = new Map<string, TrendingTitle>();
-  for (const r of (data ?? []) as {
-    title_id: string;
-    title: string;
-    media_type: string | null;
-    release_date: string | null;
-    backdrop_url: string | null;
-    poster_url: string | null;
-    provider: string | null;
-    overview: string | null;
-    hero_id: string;
-    hero_name: string;
-    hero_image_url: string | null;
-    hero_portrait_url: string | null;
-  }[]) {
+  for (const r of rows) {
     let t = byTitle.get(r.title_id);
     if (!t) {
       t = {
@@ -117,6 +109,61 @@ export async function getTrendingTitles(
     });
   }
   return [...byTitle.values()];
+}
+
+export async function getTrendingTitles(
+  bucket: TrendingBucket,
+  titleLimit = 6,
+  charsPerTitle = 12,
+): Promise<TrendingTitle[]> {
+  const { data, error } = await supabase.rpc('get_trending_titles', {
+    p_bucket: bucket,
+    p_title_limit: titleLimit,
+    p_chars_per_title: charsPerTitle,
+  });
+  if (error) {
+    console.warn('[getTrendingTitles] error:', error.message);
+    return [];
+  }
+  return groupTitleRows((data ?? []) as TrendingTitleRow[]);
+}
+
+/**
+ * All trending-title buckets in ONE round-trip. The Explore home load needs three
+ * buckets (on_screen / coming_soon / streaming); rather than three separate RPC
+ * calls differing only by bucket, the get_trending_titles_multi RPC tags each row
+ * with its bucket and we split the flat result here. Per-bucket output is identical
+ * to calling getTrendingTitles for each. Degrades to empty buckets on error so a DB
+ * hiccup never errors the Explore band.
+ */
+export async function getTrendingTitlesMulti(
+  buckets: TrendingBucket[],
+  titleLimit = 6,
+  charsPerTitle = 12,
+): Promise<Record<TrendingBucket, TrendingTitle[]>> {
+  const out: Record<TrendingBucket, TrendingTitle[]> = {
+    on_screen: [],
+    coming_soon: [],
+    streaming: [],
+  };
+  const { data, error } = await supabase.rpc('get_trending_titles_multi', {
+    p_buckets: buckets,
+    p_title_limit: titleLimit,
+    p_chars_per_title: charsPerTitle,
+  });
+  if (error) {
+    console.warn('[getTrendingTitlesMulti] error:', error.message);
+    return out;
+  }
+  // Split flat rows by bucket (preserving order), then group each into titles.
+  const byBucket = new Map<TrendingBucket, TrendingTitleRow[]>();
+  for (const r of (data ?? []) as (TrendingTitleRow & { bucket: TrendingBucket })[]) {
+    const list = byBucket.get(r.bucket) ?? [];
+    list.push(r);
+    byBucket.set(r.bucket, list);
+  }
+  for (const [bucket, rows] of byBucket) out[bucket] = groupTitleRows(rows);
+  return out;
 }
 
 interface TrendingOnScreenRow {

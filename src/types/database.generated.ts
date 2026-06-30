@@ -1961,6 +1961,28 @@ export type Database = {
           title_id: string
         }[]
       }
+      get_trending_titles_multi: {
+        Args: {
+          p_buckets: string[]
+          p_chars_per_title?: number
+          p_title_limit?: number
+        }
+        Returns: {
+          backdrop_url: string
+          bucket: string
+          hero_id: string
+          hero_image_url: string
+          hero_name: string
+          hero_portrait_url: string
+          media_type: string
+          overview: string
+          poster_url: string
+          provider: string
+          release_date: string
+          title: string
+          title_id: string
+        }[]
+      }
       heroes_aliases_text: { Args: { arr: string[] }; Returns: string }
       link_tmdb_cast: { Args: never; Returns: number }
       mark_hero_unresolved: { Args: { p_hero_id: string }; Returns: undefined }

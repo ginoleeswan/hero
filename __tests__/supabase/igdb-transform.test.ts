@@ -85,6 +85,16 @@ describe('dedupDecision', () => {
     expect(d.kind).toBe('insert');
   });
 
+  it('does NOT re-home a match already claimed by a different igdb_id', () => {
+    const existing: ExistingRow[] = [
+      { id: 'igdb-5', name: 'Lara Croft', publisher: 'Square Enix', comicvine_id: null, igdb_id: '5' },
+    ];
+    // A different IGDB character (#7) with the same name must not overwrite #5's claim.
+    const d = dedupDecision({ id: 7, name: 'Lara Croft' }, tr, existing, NOW);
+    expect(d.kind).toBe('insert');
+    if (d.kind === 'insert') expect(d.row.id).toBe('igdb-7');
+  });
+
   it('inserts (not re-home) when the name is ambiguous across multiple rows', () => {
     const existing: ExistingRow[] = [
       { id: 'a', name: 'Sage', publisher: 'Crystal Dynamics', comicvine_id: null, igdb_id: null },

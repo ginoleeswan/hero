@@ -14,7 +14,7 @@ import {
 } from '../lib/db/heroes';
 import { getUserFavouriteHeroes } from '../lib/db/favourites';
 import {
-  getTrendingTitles,
+  getTrendingTitlesMulti,
   getTrendingOnScreen,
   getTrendingHeroesWiki,
   getActiveCampaigns,
@@ -183,14 +183,16 @@ export function useExploreData(): ExploreData {
     getDebutsThisMonth(14)
       .then(set('debutsThisMonth'))
       .catch(() => {});
-    getTrendingTitles('on_screen', 6)
-      .then(set('onScreen'))
-      .catch(() => {});
-    getTrendingTitles('coming_soon', 6)
-      .then(set('comingSoon'))
-      .catch(() => {});
-    getTrendingTitles('streaming', 6)
-      .then(set('streaming'))
+    // All three title buckets in one round-trip; set together when they land.
+    getTrendingTitlesMulti(['on_screen', 'coming_soon', 'streaming'], 6)
+      .then((b) =>
+        setData((d) => ({
+          ...d,
+          onScreen: b.on_screen,
+          comingSoon: b.coming_soon,
+          streaming: b.streaming,
+        })),
+      )
       .catch(() => {});
     getNewComics(12)
       .then(set('newComics'))
