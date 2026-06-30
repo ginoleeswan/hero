@@ -1,5 +1,5 @@
 import { supabase } from '../../supabase';
-import { DEFAULT_FILTERS, type CategoryFilters, type FacetCounts } from '../categoryFilters';
+import { type CategoryFilters, type FacetCounts } from '../categoryFilters';
 import type {
   Hero,
   CategorySlug,
@@ -518,40 +518,56 @@ export async function getTeamPage(
   return { heroes: (data ?? []) as Hero[], total: count ?? 0 };
 }
 
+/** One candidate row from the get_browse_covers RPC (top heroes per slug, by fame). */
+interface BrowseCoverCandidate {
+  slug: string;
+  pos: number;
+  id: string;
+  name: string;
+  image_url: string | null;
+  image_md_url: string | null;
+  portrait_url: string | null;
+}
+
 /**
  * One representative (most-popular) hero per browse category, for the image-backed
- * category tiles on the home screen. Fires a light single-row query per slug in
- * parallel; missing/empty categories simply don't get a cover (the tile falls
- * back to a solid colour).
+ * category tiles on the home screen. A single `get_browse_covers` RPC returns the
+ * top candidates for every slug at once (replacing the old per-slug fan-out of one
+ * getCategoryPage call each — 12 round-trips on every cold home load). We then
+ * greedily assign a *distinct* hero to each pod in slug order: the same
+ * most-popular hero otherwise tops multiple categories (Joker leads DC, Villains
+ * and Smartest), repeating the identical portrait across tiles and making the
+ * browse grid look broken. Missing/empty categories simply don't get a cover (the
+ * tile falls back to a solid colour).
  */
 export async function getBrowseCovers(slugs: CategorySlug[]): Promise<Record<string, BrowseCover>> {
-  // Fetch several candidates per category in parallel, then greedily assign a
-  // *distinct* representative hero to each pod in slug order. The same
-  // most-popular hero otherwise tops multiple categories (Batman leads DC,
-  // Strongest and Smartest), repeating the identical portrait across tiles and
-  // making the browse grid look broken.
-  const candidateLists = await Promise.all(
-    slugs.map(async (slug) => {
-      try {
-        const { heroes } = await getCategoryPage(slug, {
-          ...DEFAULT_FILTERS,
-          page: 0,
-          pageSize: 6,
-          withCount: false,
-          sort: 'popular',
-        });
-        return [slug, heroes] as const;
-      } catch {
-        return [slug, [] as Hero[]] as const;
-      }
-    }),
-  );
+  const { data, error } = await supabase.rpc('get_browse_covers', {
+    p_slugs: slugs,
+    p_per_slug: 6,
+  });
+  if (error) {
+    console.warn('[getBrowseCovers] error:', error.message);
+    return {};
+  }
+
+  // Group candidates by slug, preserving the RPC's fame order (rows arrive
+  // pos-ascending within each slug).
+  const bySlug = new Map<string, BrowseCoverCandidate[]>();
+  for (const row of (data ?? []) as BrowseCoverCandidate[]) {
+    const list = bySlug.get(row.slug) ?? [];
+    list.push(row);
+    bySlug.set(row.slug, list);
+  }
+
+  // Greedy distinct assignment, walking the requested slug order so an earlier
+  // pod claims a shared hero and a later one falls through to its next candidate.
   const used = new Set<string>();
   const out: Record<string, BrowseCover> = {};
-  for (const [slug, heroes] of candidateLists) {
-    const pick = heroes.find((h) => !used.has(String(h.id))) ?? heroes[0];
+  for (const slug of slugs) {
+    const candidates = bySlug.get(slug) ?? [];
+    const pick = candidates.find((c) => !used.has(c.id)) ?? candidates[0];
     if (!pick) continue;
-    used.add(String(pick.id));
+    used.add(pick.id);
     out[slug] = {
       name: pick.name,
       image_url: pick.image_url,

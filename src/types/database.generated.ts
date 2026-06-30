@@ -1733,6 +1733,18 @@ export type Database = {
           title_id: string
         }[]
       }
+      get_browse_covers: {
+        Args: { p_per_slug?: number; p_slugs: string[] }
+        Returns: {
+          id: string
+          image_md_url: string
+          image_url: string
+          name: string
+          portrait_url: string
+          pos: number
+          slug: string
+        }[]
+      }
       get_daily_distribution: { Args: { p_date: string }; Returns: Json }
       get_daily_hero: { Args: { p_date?: string }; Returns: Json }
       get_debuts_this_month: {
