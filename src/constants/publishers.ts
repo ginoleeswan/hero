@@ -23,7 +23,6 @@ import InsomniacLogo from '../../assets/brands/insomniac.svg';
 import NamcoLogo from '../../assets/brands/namco.svg';
 import BungieLogo from '../../assets/brands/bungie.svg';
 import CrystalDynamicsLogo from '../../assets/brands/crystal-dynamics.svg';
-import PlayStationStudiosLogo from '../../assets/brands/playstation-studios.svg';
 import XboxGameStudiosLogo from '../../assets/brands/xbox-game-studios.svg';
 import GodOfWarLogo from '../../assets/brands/god-of-war.svg';
 import HaloLogo from '../../assets/brands/halo.svg';
@@ -398,9 +397,9 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     match: ['playstation studios', 'playstation'],
     color: '#0070D1',
     colorDark: '#00358A',
-    logo: PlayStationStudiosLogo,
-    badgeSize: { width: 18, height: 20 },
-    logoTint: '#FFFFFF',
+    // No logo: the PlayStation Studios emblem is a dense, near-square mark that
+    // reads as an illegible blob when tinted white at eyebrow size. Falls back to
+    // a clean text wordmark until a wider wordmark-style SVG is supplied.
   },
   {
     slug: 'xbox-game-studios',
