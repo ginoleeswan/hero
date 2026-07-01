@@ -42,25 +42,6 @@ export const IGDB_ALLOWLIST: FranchiseEntry[] = [
     marqueeTiers: { 'Lara Croft': 4 },
   },
   {
-    franchise: 'League of Legends',
-    publisher: 'Riot Games',
-    marqueeTiers: {
-      Jinx: 4, Ahri: 3, Yasuo: 3, Lux: 3, Teemo: 3, Ezreal: 2, Garen: 2, Vi: 3, Jhin: 2,
-    },
-  },
-  {
-    franchise: 'Valorant',
-    publisher: 'Riot Games',
-    marqueeTiers: { Jett: 3, Sage: 2, Phoenix: 2, Reyna: 2 },
-  },
-  {
-    franchise: 'Overwatch',
-    publisher: 'Blizzard Entertainment',
-    marqueeTiers: {
-      Tracer: 4, Genji: 3, Reaper: 3, Mercy: 3, 'D.Va': 3, Widowmaker: 3, Reinhardt: 2,
-    },
-  },
-  {
     franchise: 'Warcraft',
     publisher: 'Blizzard Entertainment',
     marqueeTiers: {
@@ -79,27 +60,9 @@ export const IGDB_ALLOWLIST: FranchiseEntry[] = [
     marqueeTiers: { 'Geralt of Rivia': 4, Yennefer: 3, Ciri: 3, 'Triss Merigold': 3 },
   },
   {
-    franchise: 'Cyberpunk',
-    publisher: 'CD Projekt Red',
-    marqueeTiers: { 'Johnny Silverhand': 3, V: 3, 'Panam Palmer': 2 },
-  },
-  {
-    franchise: 'Genshin Impact',
-    publisher: 'HoYoverse',
-    marqueeTiers: {
-      'Raiden Shogun': 3, Zhongli: 3, 'Hu Tao': 3, Venti: 3, Ganyu: 3, Paimon: 3,
-      Klee: 2, Aether: 2, Lumine: 2,
-    },
-  },
-  {
     franchise: 'Persona',
     publisher: 'Atlus',
     marqueeTiers: { Joker: 3, 'Yu Narukami': 2, 'Makoto Yuki': 2, Morgana: 2 },
-  },
-  {
-    franchise: 'Tekken',
-    publisher: 'Bandai Namco',
-    marqueeTiers: { 'Kazuya Mishima': 3, 'Jin Kazama': 3, 'Heihachi Mishima': 3, 'Nina Williams': 2 },
   },
   {
     franchise: 'Halo',
@@ -131,12 +94,14 @@ export const IGDB_ALLOWLIST: FranchiseEntry[] = [
     publisher: 'Electronic Arts',
     marqueeTiers: { 'Commander Shepard': 3, 'Garrus Vakarian': 3, 'Liara T\'Soni': 2, 'Tali\'Zorah': 2 },
   },
-  {
-    franchise: 'Apex Legends',
-    publisher: 'Electronic Arts',
-    marqueeTiers: { Wraith: 3, Octane: 2, Bloodhound: 2, Lifeline: 2, Bangalore: 2, Pathfinder: 2 },
-  },
 ];
+
+// NOT INGESTABLE FROM IGDB — verified 2026-07-01 that IGDB has no character
+// records for these (their characters either don't exist there or aren't linked
+// to games): League of Legends, Valorant, Overwatch, Apex Legends, Genshin
+// Impact (hero-shooters/gacha), plus Cyberpunk and Tekken. They were dropped
+// from the allowlist above; sourcing them needs a different pipeline
+// (Wikipedia/Wikidata or a game-specific API), not IGDB.
 
 const tierIndex = new Map<FranchiseEntry, Map<string, number>>();
 
