@@ -34,28 +34,29 @@ describe('igdbQuery', () => {
 });
 
 describe('resolveFranchiseGameIds', () => {
-  it('picks the franchise with the most games and returns its game ids', async () => {
+  it('unions games from franchises, collections, and the name-prefix game match', async () => {
     const fetchFn = jest
       .fn()
-      // /franchises lookup
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => [
-          { id: 10, name: 'Final Fantasy', games: [1, 2, 3] },
-          { id: 11, name: 'Final Fantasy Tactics', games: [9] },
-        ],
-      });
+        json: async () => [{ id: 10, name: 'Final Fantasy', games: [1, 2, 3] }],
+      }) // /franchises
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ id: 99, name: 'Final Fantasy', games: [3, 4] }],
+      }) // /collections
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: 5 }] }); // /games prefix
     const { franchiseId, gameIds } = await resolveFranchiseGameIds(clientWith(fetchFn), ff);
-    expect(franchiseId).toBe(10);
-    expect(gameIds).toEqual([1, 2, 3]);
+    expect(franchiseId).toBe(10); // first franchises entry with games
+    expect(new Set(gameIds)).toEqual(new Set([1, 2, 3, 4, 5])); // deduped union
   });
 
-  it('falls back to matching games by name when no franchise/collection has games', async () => {
+  it('recovers games by name when franchise/collection have none (NieR case)', async () => {
     const fetchFn = jest
       .fn()
       .mockResolvedValueOnce({ ok: true, json: async () => [] }) // /franchises empty
-      .mockResolvedValueOnce({ ok: true, json: async () => [] }) // /collections empty
-      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: 80468 }, { id: 113345 }] }); // /games
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: 7, name: 'Nier', games: [] }] }) // /collections, no games
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: 80468 }, { id: 113345 }] }); // /games prefix
     const { franchiseId, gameIds } = await resolveFranchiseGameIds(clientWith(fetchFn), ff);
     expect(franchiseId).toBeNull();
     expect(gameIds).toEqual([80468, 113345]);

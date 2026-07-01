@@ -75,12 +75,12 @@ export const IGDB_ALLOWLIST: FranchiseEntry[] = [
   },
   {
     franchise: 'The Witcher',
-    publisher: 'CD Projekt',
+    publisher: 'CD Projekt Red',
     marqueeTiers: { 'Geralt of Rivia': 4, Yennefer: 3, Ciri: 3, 'Triss Merigold': 3 },
   },
   {
     franchise: 'Cyberpunk',
-    publisher: 'CD Projekt',
+    publisher: 'CD Projekt Red',
     marqueeTiers: { 'Johnny Silverhand': 3, V: 3, 'Panam Palmer': 2 },
   },
   {

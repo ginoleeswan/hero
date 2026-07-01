@@ -49,32 +49,36 @@ export async function resolveFranchiseGameIds(
   const where = entry.igdbFranchiseId
     ? `where id = ${entry.igdbFranchiseId};`
     : `where name ~ *"${entry.franchise}"*;`;
-  // Try /franchises first, then /collections as a fallback grouping.
+  // UNION every game source rather than short-circuiting on the first non-empty
+  // one: a franchise/collection can exist with games that have no characters
+  // (e.g. NieR's collection), while the characters actually live on games found
+  // only by name. Gathering from franchises + collections + a name-prefix game
+  // match maximizes coverage. Prefix (not contains) keeps a short name like
+  // "NieR" from pulling unrelated games ("...Denier"/"Prisonnier").
+  const gameIds = new Set<number>();
+  let franchiseId: number | null = entry.igdbFranchiseId ?? null;
   for (const endpoint of ['franchises', 'collections']) {
     const rows = await igdbQuery<FranchiseRow>(
       client,
       endpoint,
       `fields name,games; ${where} limit 50;`,
     );
-    const withGames = rows.filter((r) => (r.games?.length ?? 0) > 0);
-    if (withGames.length) {
-      withGames.sort((a, b) => (b.games?.length ?? 0) - (a.games?.length ?? 0));
-      return { franchiseId: withGames[0].id, gameIds: withGames[0].games ?? [] };
+    for (const r of rows) {
+      if (r.games?.length) {
+        if (franchiseId === null && endpoint === 'franchises') franchiseId = r.id;
+        for (const g of r.games) gameIds.add(g);
+      }
     }
   }
-  // Fallback: single-title / ungrouped franchises (e.g. NieR, Cyberpunk) have no
-  // franchise/collection entity but do exist as games whose characters ARE in
-  // IGDB. Match games by case-insensitive name PREFIX (not contains) so a short
-  // franchise like "NieR" doesn't pull unrelated games ("...Denier"/"Prisonnier").
   if (!entry.igdbFranchiseId) {
     const games = await igdbQuery<{ id: number }>(
       client,
       'games',
-      `fields id; where name ~ "${entry.franchise}"*; limit 100;`,
+      `fields id; where name ~ "${entry.franchise}"*; limit 200;`,
     );
-    if (games.length) return { franchiseId: null, gameIds: games.map((g) => g.id) };
+    for (const g of games) gameIds.add(g.id);
   }
-  return { franchiseId: null, gameIds: [] };
+  return { franchiseId, gameIds: [...gameIds] };
 }
 
 export async function fetchFranchiseCharacters(
