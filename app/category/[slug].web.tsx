@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   getUniverseMontage,
   getCategoryMontage,
+  getFranchiseMontage,
   getCategoryFacetCounts,
   CATEGORY_LABELS,
   CATEGORY_DESCRIPTIONS,
@@ -244,11 +245,12 @@ export default function WebCategoryScreen() {
     ? CATEGORY_LABELS[categorySlug]
     : (franchiseTerm ?? brand?.name ?? slug ?? 'Heroes');
   const description = categorySlug ? CATEGORY_DESCRIPTIONS[categorySlug] : null;
-  // Both universes and categories now lead with a masthead banner: universes get
-  // the brand stage (logo + colour), categories get the editorial stage (display
-  // headline + thesis + full-colour roster). Anything with a banner drops the
-  // slim header's identity row and uses it for controls only.
-  const hasBanner = !!brand || !!categorySlug;
+  // Every browse page leads with a masthead banner — the consistent pattern:
+  // a registered brand gets the logo stage; everything else (categories,
+  // unregistered universes, franchises) gets the editorial stage (headline +
+  // roster montage). The banner is always the identity, so the slim header
+  // below is controls-only.
+  const hasBanner = !!categorySlug || !!universeTerm || !!franchiseTerm;
 
   const { filters, setFilter, reset } = useCategoryFilters(categorySlug);
   const activeChips = activeFilterList(categorySlug, filters);
@@ -376,6 +378,29 @@ export default function WebCategoryScreen() {
     };
   }, [universeTerm, buildMontage]);
 
+  // Franchise montage — same instant-loading pattern, sourced from the franchise
+  // roster. Lets brand-less franchise pages lead with the editorial banner too.
+  const [franchiseMontage, setFranchiseMontage] = useState<
+    { uri: string; blurhash?: string | null }[]
+  >([]);
+  useEffect(() => {
+    if (!franchiseTerm) {
+      setFranchiseMontage([]);
+      return;
+    }
+    let cancelled = false;
+    getFranchiseMontage(franchiseTerm)
+      .then((rows) => {
+        if (!cancelled) setFranchiseMontage(buildMontage(rows));
+      })
+      .catch(() => {
+        if (!cancelled) setFranchiseMontage([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [franchiseTerm, buildMontage]);
+
   // Drive the reveal. When page-0 data lands, fade the grid up over the opaque
   // skeleton, then unmount the skeleton; on a fresh load (re)arm it.
   const gridReady = !loading && heroes.length > 0;
@@ -467,14 +492,16 @@ export default function WebCategoryScreen() {
           compact={!isDesktop}
           sticky={isDesktop}
         />
-      ) : categorySlug ? (
+      ) : hasBanner ? (
+        // Consistent fallback: categories, unregistered universes, and franchises
+        // all lead with the editorial stage (headline + roster montage).
         <BrowseBanner
           editorial
           title={title}
           description={description}
           total={total}
-          unitLabel="RESULT"
-          montage={catMontage}
+          unitLabel={categorySlug ? 'RESULT' : 'CHARACTER'}
+          montage={categorySlug ? catMontage : franchiseTerm ? franchiseMontage : montage}
           compact={!isDesktop}
           sticky={isDesktop}
         />

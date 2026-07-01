@@ -478,6 +478,26 @@ export async function getUniverseMontage(term: string, limit = 24): Promise<Mont
   return rows;
 }
 
+// Franchise montage cache, keyed on the exact franchise value.
+const franchiseMontageCache = new Map<string, MontageHero[]>();
+
+/** Franchise sibling of getUniverseMontage — top heroes of a franchise for the
+ *  header montage, matched exactly on `heroes.franchise`. Cached per franchise. */
+export async function getFranchiseMontage(term: string, limit = 24): Promise<MontageHero[]> {
+  const cached = franchiseMontageCache.get(term);
+  if (cached) return cached;
+  const { data, error } = await supabase
+    .from('heroes')
+    .select('id, name, image_url, image_md_url, portrait_url, portrait_blurhash')
+    .eq('franchise', term)
+    .order('fame_score', { ascending: false, nullsFirst: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as MontageHero[];
+  franchiseMontageCache.set(term, rows);
+  return rows;
+}
+
 // Session cache so re-visiting a category paints the montage instantly.
 const categoryMontageCache = new Map<CategorySlug, MontageHero[]>();
 
