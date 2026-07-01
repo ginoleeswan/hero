@@ -1509,48 +1509,85 @@ const CSS = `
     color:rgba(245,235,220,0.026); pointer-events:none; user-select:none; z-index:0;
   }
   .tott-inner { max-width:760px; margin:0 auto; text-align:center; position:relative; z-index:1; }
-  .tott-verdict { margin-top:20px; font-size:13px; color:var(--muted); letter-spacing:0.3px; }
-  .tott-verdict strong { color:#63A936; font-weight:600; }
+  .tott-verdict {
+    margin:24px 26px 0; padding:20px 0 26px; border-top:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap;
+    font-size:13px; color:var(--muted); letter-spacing:0.3px;
+  }
+  .tott-verdict strong { color:var(--hulk); font-weight:600; }
+  .tott-verdict-chip {
+    font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+    color:var(--yellow); border:1px solid rgba(249,178,34,0.35);
+    background:rgba(249,178,34,0.08); padding:4px 10px; border-radius:100px;
+  }
   .tott-inner .section-eyebrow { color:var(--orange); }
   .tott-inner .section-sub { margin:0 auto; }
   .tott-card {
     margin-top:48px; background:var(--card); border:1px solid var(--border);
-    border-radius:24px; padding:36px; text-align:left;
-    --hulk:#63A936; --iron:#E77333;
+    border-radius:24px; padding:0; text-align:left; overflow:hidden;
+    --hulk:#74B843; --iron:#E77333;
+    box-shadow:0 30px 90px rgba(0,0,0,0.45);
   }
-  .tott-head { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:20px; margin-bottom:32px; }
-  .tott-fighter { display:flex; flex-direction:column; align-items:center; gap:8px; }
-  .tott-portrait { width:96px; height:96px; border-radius:50%; overflow:hidden; border:3px solid; }
-  .tott-portrait.l { border-color:var(--hulk); }
-  .tott-portrait.r { border-color:var(--iron); }
-  .tott-portrait img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
-  .tott-portrait.r img { transform:scaleX(-1); }
-  .tott-name { font-family:'Righteous',sans-serif; font-size:18px; }
-  .tott-univ { font-size:11px; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; }
+
+  /* Fight-poster head: two full-bleed corners facing off across a diagonal seam */
+  .tott-head { position:relative; display:grid; grid-template-columns:1fr 1fr; margin-bottom:30px; }
+  .tott-corner { position:relative; height:200px; overflow:hidden; }
+  .tott-corner img { width:100%; height:100%; object-fit:cover; object-position:center 12%; display:block; }
+  .tott-corner.l { clip-path:polygon(0 0, 100% 0, calc(100% - 30px) 100%, 0 100%); }
+  .tott-corner.r { clip-path:polygon(30px 0, 100% 0, 100% 100%, 0 100%); }
+  .tott-corner.r img { transform:scaleX(-1); }
+  .tott-corner.l::after {
+    content:''; position:absolute; inset:0;
+    background:
+      linear-gradient(to top,rgba(26,45,62,0.96) 0%,rgba(26,45,62,0.25) 46%,transparent 70%),
+      linear-gradient(120deg,rgba(116,184,67,0.16) 0%,transparent 55%);
+  }
+  .tott-corner.r::after {
+    content:''; position:absolute; inset:0;
+    background:
+      linear-gradient(to top,rgba(26,45,62,0.96) 0%,rgba(26,45,62,0.25) 46%,transparent 70%),
+      linear-gradient(-120deg,rgba(231,115,51,0.18) 0%,transparent 55%);
+  }
+  .tott-id { position:absolute; bottom:16px; z-index:1; display:flex; flex-direction:column; gap:3px; }
+  .tott-id.l { left:22px; align-items:flex-start; }
+  .tott-id.r { right:22px; align-items:flex-end; }
+  .tott-name { font-family:'Righteous',sans-serif; font-size:24px; text-shadow:0 2px 14px rgba(0,0,0,0.8); }
+  .tott-univ { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--beige); opacity:0.75; display:flex; align-items:center; gap:6px; }
+  .tott-univ::before { content:''; width:7px; height:7px; border-radius:50%; background:var(--fc,#7a93a3); }
+  .tott-id.l .tott-univ { --fc:var(--hulk); }
+  .tott-id.r .tott-univ { --fc:var(--iron); flex-direction:row-reverse; }
   .tott-vs {
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:2;
     font-family:'Righteous',sans-serif; font-size:24px;
-    width:54px; height:54px; border-radius:50%;
+    width:60px; height:60px; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
     background:linear-gradient(135deg,var(--orange),var(--yellow));
+    border:4px solid #14222f;
     color:#0b1820; box-shadow:0 6px 24px rgba(231,115,51,0.4);
     animation:vsPulse 3.2s ease-in-out infinite;
   }
   @keyframes vsPulse {
     0%,100% { box-shadow:0 6px 24px rgba(231,115,51,0.4); }
-    50%      { box-shadow:0 6px 34px rgba(249,178,34,0.55); }
+    50%      { box-shadow:0 6px 38px rgba(249,178,34,0.6); }
   }
-  .tott-bars { display:flex; flex-direction:column; gap:14px; }
-  .tott-row { display:grid; grid-template-columns:34px 1fr 120px 1fr 34px; align-items:center; gap:12px; }
-  .tott-val { font-family:'Righteous',sans-serif; font-size:15px; color:var(--muted); }
-  .tott-val.l { text-align:right; }
-  .tott-val.r { text-align:left; }
-  .tott-val.win.l { color:var(--hulk); }
-  .tott-val.win.r { color:var(--iron); }
+  .tott-bars { display:flex; flex-direction:column; gap:4px; padding:0 26px; }
+  .tott-row {
+    display:grid; grid-template-columns:48px 1fr 120px 1fr 48px; align-items:center; gap:12px;
+    padding:7px 10px; border-radius:10px; transition:background 200ms;
+  }
+  .tott-row:hover { background:rgba(245,235,220,0.035); }
+  .tott-val { font-family:'Righteous',sans-serif; font-size:14px; color:var(--muted); padding:3px 0; }
+  .tott-val.l { text-align:right; justify-self:end; }
+  .tott-val.r { text-align:left; justify-self:start; }
+  .tott-val.win { padding:3px 9px; border-radius:7px; }
+  .tott-val.win.l { color:var(--hulk); background:rgba(116,184,67,0.13); }
+  .tott-val.win.r { color:var(--iron); background:rgba(231,115,51,0.13); }
   .tott-label { font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); text-align:center; }
   .tott-bar { position:relative; height:8px; background:var(--surface); border-radius:6px; overflow:hidden; }
   .tott-fill { position:absolute; top:0; bottom:0; border-radius:6px; transform:scaleX(0); transition:transform .9s cubic-bezier(.2,.8,.2,1); }
-  .tott-fill.l { right:0; background:var(--hulk); transform-origin:right; }
-  .tott-fill.r { left:0; background:var(--iron); transform-origin:left; }
+  .tott-fill.l { right:0; background:linear-gradient(90deg,#5a9a33,var(--hulk)); transform-origin:right; }
+  .tott-fill.r { left:0; background:linear-gradient(90deg,var(--iron),#f2813e); transform-origin:left; }
+  .tott-fill.lose { opacity:0.38; }
   .tott-card.in .tott-fill { transform:scaleX(1); }
   .tott-card.in .tott-row:nth-child(1) .tott-fill { transition-delay:.05s; }
   .tott-card.in .tott-row:nth-child(2) .tott-fill { transition-delay:.12s; }
@@ -1670,15 +1707,23 @@ const CSS = `
 
     /* Tale of the tape */
     .tott { padding:64px 20px; }
-    .tott-card { padding:24px 14px; border-radius:20px; margin-top:32px; }
-    .tott-head { gap:8px; margin-bottom:24px; }
-    .tott-portrait { width:64px; height:64px; }
-    .tott-name { font-size:15px; }
-    .tott-univ { font-size:9px; }
-    .tott-vs { width:44px; height:44px; font-size:19px; }
-    .tott-row { grid-template-columns:24px 1fr 64px 1fr 24px; gap:6px; }
-    .tott-val { font-size:13px; }
+    .tott-card { border-radius:20px; margin-top:32px; }
+    .tott-head { margin-bottom:18px; }
+    .tott-corner { height:132px; }
+    .tott-corner.l { clip-path:polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%); }
+    .tott-corner.r { clip-path:polygon(18px 0, 100% 0, 100% 100%, 0 100%); }
+    .tott-id { bottom:10px; }
+    .tott-id.l { left:12px; }
+    .tott-id.r { right:12px; }
+    .tott-name { font-size:16px; }
+    .tott-univ { font-size:8px; letter-spacing:1.5px; }
+    .tott-vs { width:46px; height:46px; font-size:19px; border-width:3px; }
+    .tott-bars { padding:0 8px; }
+    .tott-row { grid-template-columns:34px 1fr 64px 1fr 34px; gap:6px; padding:5px 6px; }
+    .tott-val { font-size:12px; }
+    .tott-val.win { padding:2px 6px; }
     .tott-label { font-size:9px; letter-spacing:0.5px; }
+    .tott-verdict { margin:16px 14px 0; padding:14px 0 18px; font-size:12px; }
   }
 
   @media (max-width:480px) {
@@ -2338,22 +2383,22 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
 
           <div className="tott-card reveal" style={{ transitionDelay: '160ms' }}>
             <div className="tott-head">
-              <div className="tott-fighter">
-                <div className="tott-portrait l">
-                  <img src={P('332')} alt="Hulk" loading="lazy" />
+              <div className="tott-corner l">
+                <img src={P800('332')} alt="Hulk" loading="lazy" />
+                <div className="tott-id l">
+                  <span className="tott-name">Hulk</span>
+                  <span className="tott-univ">Marvel</span>
                 </div>
-                <span className="tott-name">Hulk</span>
-                <span className="tott-univ">Marvel</span>
+              </div>
+              <div className="tott-corner r">
+                <img src={P800('346')} alt="Iron Man" loading="lazy" />
+                <div className="tott-id r">
+                  <span className="tott-name">Iron Man</span>
+                  <span className="tott-univ">Marvel</span>
+                </div>
               </div>
               <div className="tott-vs" aria-hidden="true">
                 VS
-              </div>
-              <div className="tott-fighter">
-                <div className="tott-portrait r">
-                  <img src={P('346')} alt="Iron Man" loading="lazy" />
-                </div>
-                <span className="tott-name">Iron Man</span>
-                <span className="tott-univ">Marvel</span>
               </div>
             </div>
 
@@ -2365,11 +2410,17 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                   <div className="tott-row" key={row.label}>
                     <span className={`tott-val l${hulkWins ? ' win' : ''}`}>{row.l}</span>
                     <div className="tott-bar">
-                      <div className="tott-fill l" style={{ width: `${row.l}%` }} />
+                      <div
+                        className={`tott-fill l${hulkWins ? '' : ' lose'}`}
+                        style={{ width: `${row.l}%` }}
+                      />
                     </div>
                     <span className="tott-label">{row.label}</span>
                     <div className="tott-bar">
-                      <div className="tott-fill r" style={{ width: `${row.r}%` }} />
+                      <div
+                        className={`tott-fill r${ironWins ? '' : ' lose'}`}
+                        style={{ width: `${row.r}%` }}
+                      />
                     </div>
                     <span className={`tott-val r${ironWins ? ' win' : ''}`}>{row.r}</span>
                   </div>
@@ -2378,6 +2429,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             </div>
 
             <p className="tott-verdict">
+              <span className="tott-verdict-chip">Stats verdict</span>
               The tape leans <strong>Hulk</strong> — four rounds to two. The crowd gets the final
               word.
             </p>
