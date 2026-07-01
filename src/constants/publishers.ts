@@ -677,3 +677,12 @@ export function publisherHref(publisher: string | null | undefined): string | nu
   const slug = brandForPublisher(publisher)?.slug ?? encodeURIComponent(publisher);
   return `/universe/${slug}`;
 }
+
+/** Link to a franchise browse page. Franchises have no brand registry, so the
+ *  route param is the URL-encoded display name (the screen decodes + exact-matches
+ *  heroes.franchise). Returns null for empty/whitespace franchises. */
+export function franchiseHref(franchise: string | null | undefined): string | null {
+  const f = franchise?.trim();
+  if (!f) return null;
+  return `/franchise/${encodeURIComponent(f)}`;
+}

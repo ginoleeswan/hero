@@ -15,7 +15,12 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter, type Href } from 'expo-router';
-import { brandForPublisher, publisherHref, type BrandLogo } from '../constants/publishers';
+import {
+  brandForPublisher,
+  publisherHref,
+  franchiseHref,
+  type BrandLogo,
+} from '../constants/publishers';
 
 /**
  * Render a brand logo at a fixed box. A logo is either an SVG component (via
@@ -98,19 +103,25 @@ export function PublisherLogoChip({
  * for category buckets (which aren't browsable universes). Shared by the native
  * and web character views so the two can't drift.
  */
+const norm = (s: string | null | undefined) => (s ?? '').trim().toLowerCase();
+
 export function UniverseEyebrow({
   publisher,
+  franchise,
   logoHeight = 18,
   textStyle,
 }: {
   publisher: string | null | undefined;
+  /** Sub-group within the universe (e.g. "Final Fantasy" under "Square Enix").
+   *  When present and distinct from the publisher, renders a two-tier breadcrumb. */
+  franchise?: string | null | undefined;
   logoHeight?: number;
   textStyle?: StyleProp<TextStyle>;
 }) {
   const router = useRouter();
   const brand = brandForPublisher(publisher);
 
-  const inner =
+  const universeInner =
     brand?.logo && brand.badgeSize ? (
       <PublisherLogoChip publisher={publisher} height={logoHeight} />
     ) : publisher ? (
@@ -119,20 +130,43 @@ export function UniverseEyebrow({
       </Text>
     ) : null;
 
-  if (!inner) return null;
+  if (!universeInner) return null;
 
-  const href = publisherHref(publisher);
-  if (!href) return inner;
-
-  return (
+  const uHref = publisherHref(publisher);
+  const universeNode = uHref ? (
     <Pressable
-      onPress={() => router.push(href as Href)}
+      onPress={() => router.push(uHref as Href)}
       accessibilityRole="link"
       accessibilityLabel={`Browse the ${publisher} universe`}
       style={({ pressed }) => (pressed ? styles.eyebrowPressed : undefined)}
     >
-      {inner}
+      {universeInner}
     </Pressable>
+  ) : (
+    universeInner
+  );
+
+  // Collapse the second tier when there's no franchise, or it just repeats the
+  // universe (e.g. Pokémon/Pokémon) — then the eyebrow is universe-only as before.
+  const fHref = franchiseHref(franchise);
+  const showFranchise = !!franchise && !!fHref && norm(franchise) !== norm(publisher);
+  if (!showFranchise) return universeNode;
+
+  return (
+    <View style={styles.eyebrowRow}>
+      {universeNode}
+      <Text style={[textStyle, styles.eyebrowSep]}>›</Text>
+      <Pressable
+        onPress={() => router.push(fHref as Href)}
+        accessibilityRole="link"
+        accessibilityLabel={`Browse the ${franchise} franchise`}
+        style={({ pressed }) => (pressed ? styles.eyebrowPressed : undefined)}
+      >
+        <Text style={textStyle} numberOfLines={1}>
+          {franchise}
+        </Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -189,6 +223,14 @@ const styles = StyleSheet.create({
   // Subtle press feedback for the tappable universe eyebrow.
   eyebrowPressed: {
     opacity: 0.6,
+  },
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  eyebrowSep: {
+    opacity: 0.5,
   },
   // Soft drop-shadow keeps the flat logo legible over busy/dark artwork. The
   // `filter` form follows the logo silhouette (so transparent marks like the DC

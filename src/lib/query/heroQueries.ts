@@ -8,6 +8,7 @@ import {
 import {
   getCategoryPage,
   getUniversePage,
+  getFranchisePage,
   getTeamPage,
   getHeroById,
   heroRowToCharacterData,
@@ -97,6 +98,25 @@ export function useUniverseHeroes(term: string | null, filters: CategoryFilters)
     initialPageParam: 0,
     queryFn: ({ pageParam }) =>
       getUniversePage(term!, {
+        page: pageParam,
+        pageSize: CATEGORY_PAGE_SIZE,
+        withCount: pageParam === 0,
+        ...filters,
+      }),
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.heroes.length === CATEGORY_PAGE_SIZE ? allPages.length : undefined,
+  });
+}
+
+/** Infinite list for a FRANCHISE browse page — franchise sibling of
+ *  useUniverseHeroes, keyed on an exact `heroes.franchise` value. */
+export function useFranchiseHeroes(term: string | null, filters: CategoryFilters) {
+  return useInfiniteQuery({
+    queryKey: term ? ['heroes', 'franchise', term, filters] : ['heroes', 'franchise', 'disabled'],
+    enabled: !!term,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      getFranchisePage(term!, {
         page: pageParam,
         pageSize: CATEGORY_PAGE_SIZE,
         withCount: pageParam === 0,

@@ -982,6 +982,7 @@ export default function CharacterScreen() {
                     <>
                       <UniverseEyebrow
                         publisher={data.stats.biography.publisher}
+                        franchise={heroRow?.franchise}
                         textStyle={styles.eyebrow}
                       />
 

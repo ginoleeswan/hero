@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { useLocalSearchParams, useRouter, usePathname, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
@@ -33,6 +33,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   useCategoryHeroes,
   useUniverseHeroes,
+  useFranchiseHeroes,
   prefetchHeroRow,
 } from '../../src/lib/query/heroQueries';
 import { publisherBySlug } from '../../src/constants/publishers';
@@ -145,14 +146,24 @@ function HeroGridCard({
 export default function CategoryScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
 
-  const categorySlug = VALID_SLUGS.has(slug as CategorySlug) ? (slug as CategorySlug) : null;
-  // Any non-category slug is treated as a universe (publisher/studio/franchise):
+  // This one screen serves three routes. /franchise/[slug] carries the franchise
+  // display name (URL-encoded) and matches heroes.franchise exactly; /category
+  // and /universe behave as before.
+  const isFranchise = pathname?.startsWith('/franchise') ?? false;
+  const franchiseTerm = isFranchise && slug ? decodeURIComponent(slug) : null;
+  const categorySlug =
+    !isFranchise && VALID_SLUGS.has(slug as CategorySlug) ? (slug as CategorySlug) : null;
+  // Any non-category, non-franchise slug is a universe (publisher/studio):
   // a registered brand routes by its ILIKE query, anything else by its raw name.
-  const brand = !categorySlug ? publisherBySlug(slug) : undefined;
-  const universeTerm = !categorySlug && slug ? (brand?.query ?? decodeURIComponent(slug)) : null;
-  const title = categorySlug ? CATEGORY_LABELS[categorySlug] : (brand?.name ?? slug ?? 'Heroes');
+  const isUniverse = !isFranchise && !categorySlug;
+  const brand = isUniverse ? publisherBySlug(slug) : undefined;
+  const universeTerm = isUniverse && slug ? (brand?.query ?? decodeURIComponent(slug)) : null;
+  const title = categorySlug
+    ? CATEGORY_LABELS[categorySlug]
+    : (franchiseTerm ?? brand?.name ?? slug ?? 'Heroes');
 
   const [filters, setFilters] = useState<CategoryFilters>(() => ({
     ...DEFAULT_FILTERS,
@@ -189,10 +200,11 @@ export default function CategoryScreen() {
     [filters, debouncedSearch],
   );
 
-  // One of these is active; the other is disabled (null source) and idle.
+  // One of these is active; the others are disabled (null source) and idle.
   const categoryQuery = useCategoryHeroes(categorySlug, queryFilters);
   const universeQuery = useUniverseHeroes(universeTerm, queryFilters);
-  const activeQuery = categorySlug ? categoryQuery : universeQuery;
+  const franchiseQuery = useFranchiseHeroes(franchiseTerm, queryFilters);
+  const activeQuery = categorySlug ? categoryQuery : isFranchise ? franchiseQuery : universeQuery;
 
   useEffect(() => {
     // Facet counts come from a category-keyed RPC; universe pages have no counts.

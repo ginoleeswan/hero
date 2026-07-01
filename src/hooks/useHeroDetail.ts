@@ -207,8 +207,13 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
       // ComicVine legitimately returns no powers/movies for civilians, and the
       // old field-nullness gate treated that as "unfetched", so ~97% of heroes
       // re-fetched ~13 ComicVine calls on every single view, forever.
+      // IGDB-sourced heroes have no ComicVine identity (comicvine_status stays
+      // null). Without this guard they'd fire a get-comicvine-hero read-through
+      // by name on every view — wasteful and liable to match the wrong comic
+      // character. Their DB row is already the source of truth.
       const cvStatus = heroRow.comicvine_status;
-      const needsComicVine = cvStatus == null || cvStatus === 'pending';
+      const isIgdbHero = heroRow.igdb_id != null;
+      const needsComicVine = !isIgdbHero && (cvStatus == null || cvStatus === 'pending');
       const moviesIncomplete =
         !needsComicVine &&
         heroRow.movie_count != null &&

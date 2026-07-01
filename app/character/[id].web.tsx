@@ -509,6 +509,7 @@ export default function WebCharacterScreen() {
   const {
     data,
     setData,
+    heroRow,
     user,
     isAdmin,
     comicVineLoading,
@@ -794,6 +795,7 @@ export default function WebCharacterScreen() {
                   <View style={styles.titleBlock}>
                     <UniverseEyebrow
                       publisher={stats.biography.publisher}
+                      franchise={heroRow?.franchise}
                       logoHeight={isDesktop ? 18 : 16}
                       textStyle={styles.stageEyebrow}
                     />
@@ -1682,6 +1684,7 @@ export default function WebCharacterScreen() {
                 <View style={styles.mIdentity}>
                   <UniverseEyebrow
                     publisher={stats.biography.publisher}
+                    franchise={heroRow?.franchise}
                     textStyle={styles.mEyebrow}
                   />
                   <Text style={styles.mName}>{stats.name}</Text>

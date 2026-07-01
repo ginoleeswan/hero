@@ -11,7 +11,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSkeletonGlow } from '../../src/components/web/Skeleton';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
   getUniverseMontage,
@@ -22,7 +22,11 @@ import {
   type CategorySlug,
   type Hero,
 } from '../../src/lib/db/heroes';
-import { useCategoryHeroes, useUniverseHeroes } from '../../src/lib/query/heroQueries';
+import {
+  useCategoryHeroes,
+  useUniverseHeroes,
+  useFranchiseHeroes,
+} from '../../src/lib/query/heroQueries';
 import { flattenCategoryPages } from '../../src/lib/query/heroCache';
 import { publisherBySlug } from '../../src/constants/publishers';
 import { SeoHead } from '../../src/components/web/SeoHead';
@@ -224,12 +228,21 @@ export default function WebCategoryScreen() {
   const gridFade = useRef(new Animated.Value(0)).current;
   const [skelMounted, setSkelMounted] = useState(true);
 
-  const categorySlug = VALID_SLUGS.has(slug as CategorySlug) ? (slug as CategorySlug) : null;
-  // Non-category slugs are universes (publisher/studio/franchise): a registered
-  // brand routes by its ILIKE query, otherwise the raw name.
-  const brand = !categorySlug ? publisherBySlug(slug) : undefined;
-  const universeTerm = !categorySlug && slug ? (brand?.query ?? decodeURIComponent(slug)) : null;
-  const title = categorySlug ? CATEGORY_LABELS[categorySlug] : (brand?.name ?? slug ?? 'Heroes');
+  const pathname = usePathname();
+  // /franchise/[slug] carries the franchise display name (URL-encoded) and
+  // matches heroes.franchise exactly; /category and /universe behave as before.
+  const isFranchise = pathname?.startsWith('/franchise') ?? false;
+  const franchiseTerm = isFranchise && slug ? decodeURIComponent(slug) : null;
+  const categorySlug =
+    !isFranchise && VALID_SLUGS.has(slug as CategorySlug) ? (slug as CategorySlug) : null;
+  // Non-category, non-franchise slugs are universes (publisher/studio): a
+  // registered brand routes by its ILIKE query, otherwise the raw name.
+  const isUniverse = !isFranchise && !categorySlug;
+  const brand = isUniverse ? publisherBySlug(slug) : undefined;
+  const universeTerm = isUniverse && slug ? (brand?.query ?? decodeURIComponent(slug)) : null;
+  const title = categorySlug
+    ? CATEGORY_LABELS[categorySlug]
+    : (franchiseTerm ?? brand?.name ?? slug ?? 'Heroes');
   const description = categorySlug ? CATEGORY_DESCRIPTIONS[categorySlug] : null;
   // Both universes and categories now lead with a masthead banner: universes get
   // the brand stage (logo + colour), categories get the editorial stage (display
@@ -239,8 +252,8 @@ export default function WebCategoryScreen() {
 
   const { filters, setFilter, reset } = useCategoryFilters(categorySlug);
   const activeChips = activeFilterList(categorySlug, filters);
-  // Both category and universe pages get the filter UI (universe omits publisher).
-  const browsable = !!categorySlug || !!universeTerm;
+  // Category, universe, and franchise pages all get the filter UI.
+  const browsable = !!categorySlug || !!universeTerm || !!franchiseTerm;
 
   // Debounce the search box into the query key so we don't refetch per keystroke;
   // facet selections (no search text) apply immediately. Mirrors the native screen.
@@ -259,7 +272,8 @@ export default function WebCategoryScreen() {
   // character) restores the loaded grid + scroll instead of refetching page 0.
   const categoryQuery = useCategoryHeroes(categorySlug, queryFilters);
   const universeQuery = useUniverseHeroes(universeTerm, queryFilters);
-  const activeQuery = categorySlug ? categoryQuery : universeQuery;
+  const franchiseQuery = useFranchiseHeroes(franchiseTerm, queryFilters);
+  const activeQuery = categorySlug ? categoryQuery : isFranchise ? franchiseQuery : universeQuery;
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = activeQuery;
 
   const heroes = flattenCategoryPages(activeQuery.data);

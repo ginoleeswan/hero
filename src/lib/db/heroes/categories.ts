@@ -402,6 +402,46 @@ export async function getUniversePage(
   return { heroes: (data ?? []) as Hero[], total: count ?? 0 };
 }
 
+/**
+ * Infinite, faceted list for a FRANCHISE browse page — franchise sibling of
+ * getUniversePage. Franchise is a clean tag (exact value), so it matches with
+ * `.eq()` rather than the publisher ILIKE. `term` is the franchise display name.
+ */
+export async function getFranchisePage(
+  term: string,
+  options: { page: number; pageSize?: number; withCount?: boolean } & CategoryFilters,
+): Promise<{ heroes: Hero[]; total: number }> {
+  const {
+    page,
+    pageSize = 48,
+    withCount = true,
+    alignment,
+    gender,
+    hasStats,
+    tags,
+    search,
+    sort,
+  } = options;
+  const tagList = tags ?? [];
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  const selectCols = tagList.length
+    ? `${CATEGORY_LIST_COLUMNS}, hero_tags!inner(tag)`
+    : CATEGORY_LIST_COLUMNS;
+
+  let q: any = supabase
+    .from('heroes')
+    .select(selectCols, withCount ? { count: 'estimated' } : undefined)
+    .eq('franchise', term);
+
+  q = applyListFacets(q, { alignment, gender, hasStats, tagList, search, sort });
+
+  const { data, error, count } = await q.range(from, to);
+  if (error) throw new Error(error.message);
+  return { heroes: (data ?? []) as Hero[], total: count ?? 0 };
+}
+
 /** One portrait in the universe-banner montage: the bits the header actually needs. */
 export interface MontageHero {
   id: string;
