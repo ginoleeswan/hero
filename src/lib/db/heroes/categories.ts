@@ -579,7 +579,7 @@ export async function getTeamPage(
 }
 
 /** One candidate row from the get_browse_covers RPC (top heroes per slug, by fame). */
-interface BrowseCoverCandidate {
+export interface BrowseCoverCandidate {
   slug: string;
   pos: number;
   id: string;
@@ -589,21 +589,71 @@ interface BrowseCoverCandidate {
   portrait_url: string | null;
 }
 
+// How deep into each fame-ranked category the rotation can reach.
+const POOL_SIZE = 40;
+// Rank-decay exponent: weight for a candidate at 1-based fame rank `pos` is
+// pos^(-WEIGHT_ALPHA). Higher = stronger bias toward the most famous.
+const WEIGHT_ALPHA = 1.0;
+
+type Rng = () => number; // returns a float in [0, 1)
+
+// Pick one candidate proportional to pos^(-WEIGHT_ALPHA). Because the pool is
+// already ordered by fame, rank-decay encodes "more popular → more likely"
+// without reading raw fame_score (robust to fame ties/zeros in the top N).
+function weightedPick(candidates: BrowseCoverCandidate[], rng: Rng): BrowseCoverCandidate {
+  const weights = candidates.map((c) => Math.pow(c.pos, -WEIGHT_ALPHA));
+  const total = weights.reduce((sum, w) => sum + w, 0);
+  let r = rng() * total;
+  for (let i = 0; i < candidates.length; i++) {
+    r -= weights[i];
+    if (r < 0) return candidates[i];
+  }
+  return candidates[candidates.length - 1]; // float-rounding guard
+}
+
 /**
- * One representative (most-popular) hero per browse category, for the image-backed
- * category tiles on the home screen. A single `get_browse_covers` RPC returns the
- * top candidates for every slug at once (replacing the old per-slug fan-out of one
- * getCategoryPage call each — 12 round-trips on every cold home load). We then
- * greedily assign a *distinct* hero to each pod in slug order: the same
- * most-popular hero otherwise tops multiple categories (Joker leads DC, Villains
- * and Smartest), repeating the identical portrait across tiles and making the
- * browse grid look broken. Missing/empty categories simply don't get a cover (the
- * tile falls back to a solid colour).
+ * Assign one DISTINCT cover candidate per slug, walking slugs in order. Within a
+ * slug, pick a fame-weighted-random candidate from those not yet used; an earlier
+ * pod claims a shared hero so a later one falls through to its next candidate
+ * (otherwise the same most-popular hero tops multiple tiles). Falls back to the
+ * first candidate if every candidate for a slug is already used, so the tile still
+ * gets art rather than the solid-colour fallback. Pure; `rng` is injectable for tests.
+ */
+export function pickDistinctCovers(
+  bySlug: Map<string, BrowseCoverCandidate[]>,
+  slugs: CategorySlug[],
+  rng: Rng = Math.random,
+): Record<string, BrowseCover> {
+  const used = new Set<string>();
+  const out: Record<string, BrowseCover> = {};
+  for (const slug of slugs) {
+    const candidates = bySlug.get(slug) ?? [];
+    const available = candidates.filter((c) => !used.has(c.id));
+    const pick = available.length > 0 ? weightedPick(available, rng) : candidates[0];
+    if (!pick) continue;
+    used.add(pick.id);
+    out[slug] = {
+      name: pick.name,
+      image_url: pick.image_url,
+      image_md_url: pick.image_md_url,
+      portrait_url: pick.portrait_url,
+    };
+  }
+  return out;
+}
+
+/**
+ * One representative hero per browse category, for the image-backed category tiles
+ * on the home screen and mobile-web search. A single `get_browse_covers` RPC returns
+ * the top `POOL_SIZE` heroes by fame for every slug at once; `pickDistinctCovers`
+ * then chooses a distinct, fame-weighted-random hero per pod so the grid varies each
+ * session instead of always showing the single most-famous face. Missing/empty
+ * categories simply don't get a cover (the tile falls back to a solid colour).
  */
 export async function getBrowseCovers(slugs: CategorySlug[]): Promise<Record<string, BrowseCover>> {
   const { data, error } = await supabase.rpc('get_browse_covers', {
     p_slugs: slugs,
-    p_per_slug: 6,
+    p_per_slug: POOL_SIZE,
   });
   if (error) {
     console.warn('[getBrowseCovers] error:', error.message);
@@ -619,23 +669,7 @@ export async function getBrowseCovers(slugs: CategorySlug[]): Promise<Record<str
     bySlug.set(row.slug, list);
   }
 
-  // Greedy distinct assignment, walking the requested slug order so an earlier
-  // pod claims a shared hero and a later one falls through to its next candidate.
-  const used = new Set<string>();
-  const out: Record<string, BrowseCover> = {};
-  for (const slug of slugs) {
-    const candidates = bySlug.get(slug) ?? [];
-    const pick = candidates.find((c) => !used.has(c.id)) ?? candidates[0];
-    if (!pick) continue;
-    used.add(pick.id);
-    out[slug] = {
-      name: pick.name,
-      image_url: pick.image_url,
-      image_md_url: pick.image_md_url,
-      portrait_url: pick.portrait_url,
-    };
-  }
-  return out;
+  return pickDistinctCovers(bySlug, slugs);
 }
 
 export async function getCategoryFacetCounts(
