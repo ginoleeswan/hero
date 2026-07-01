@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useWindowDimensions, View, Text, Pressable, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, EYEBROW, INK_TEXT } from '../../../constants/colors';
@@ -76,18 +77,48 @@ function Fighter({
   );
 }
 
+// One-shot impact pulse — a ring blooms out from the tally bar the moment a
+// fresh vote lands (comic-impact energy, no literal "POW"). Keyframes injected
+// once; skipped under prefers-reduced-motion.
+const IMPACT_KEYFRAMES_ID = 'mythique-impact-keyframes';
+function ensureImpactKeyframes() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById(IMPACT_KEYFRAMES_ID)) return;
+  const style = document.createElement('style');
+  style.id = IMPACT_KEYFRAMES_ID;
+  style.textContent =
+    '@keyframes mythique-impact { 0% { transform: scale(0.35); opacity: 0.9; } 100% { transform: scale(2.4); opacity: 0; } }';
+  document.head.appendChild(style);
+}
+
+function ImpactRing() {
+  const ref = useRef<View>(null);
+  useEffect(() => {
+    ensureImpactKeyframes();
+    const el = ref.current as unknown as HTMLElement | null;
+    if (!el) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    el.style.animation = 'mythique-impact 550ms cubic-bezier(0.16, 1, 0.3, 1) forwards';
+  }, []);
+  return <View ref={ref} style={m.impactRing as object} pointerEvents="none" />;
+}
+
 // The post-vote reveal: crowd split bar (falls back to the stat scorecard until
 // anyone has voted) + caption + AI verdict + link to the full breakdown.
+// `animate` (fresh vote this session) springs the bar from an even split to the
+// real tally and fires the impact ring.
 function Result({
   matchup,
   tally,
   onOpen,
   centered,
+  animate,
 }: {
   matchup: Matchup;
   tally: MatchupTally | null;
   onOpen: (path: string) => void;
   centered?: boolean;
+  animate?: boolean;
 }) {
   const { heroA, heroB, winsA, winsB } = matchup;
   const usingVotes = !!tally && tally.total > 0;
@@ -97,11 +128,26 @@ function Result({
   const caption = usingVotes
     ? `${tally!.total} ${tally!.total === 1 ? 'fan' : 'fans'} voted`
     : statLead(winsA, winsB, heroA.name, heroB.name);
+  const [grown, setGrown] = useState(
+    () =>
+      !animate ||
+      (typeof window !== 'undefined' &&
+        !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches),
+  );
+  useEffect(() => {
+    if (grown) return;
+    // Let the even split paint one frame before springing to the real tally.
+    const t = setTimeout(() => setGrown(true), 40);
+    return () => clearTimeout(t);
+  }, [grown]);
   return (
     <>
-      <View style={m.barTrack as object}>
-        <View style={[m.barFillA, { flex: Math.max(pctA, 1) }] as object} />
-        <View style={[m.barFillB, { flex: Math.max(pctB, 1) }] as object} />
+      <View style={m.barWrap as object}>
+        <View style={m.barTrack as object}>
+          <View style={[m.barFillA, { flex: grown ? Math.max(pctA, 1) : 50 }] as object} />
+          <View style={[m.barFillB, { flex: grown ? Math.max(pctB, 1) : 50 }] as object} />
+        </View>
+        {animate && <ImpactRing />}
       </View>
       <View style={m.barLabels as object}>
         <Text style={[m.barPct, { color: COLORS.orange }] as object}>{pctA}%</Text>
@@ -170,6 +216,17 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
 
   const { pickedId, tally, loaded, revealed, castVote } = useMatchupVote(heroA.id, heroB.id);
 
+  // True only for a vote cast this session — drives the tally spring + impact
+  // ring (a returning already-voted visitor gets the static reveal).
+  const [justVoted, setJustVoted] = useState(false);
+  const vote = useCallback(
+    (side: MatchupSide) => {
+      setJustVoted(true);
+      castVote(side);
+    },
+    [castVote],
+  );
+
   // ── Mobile: a centred "fight poster" — face-off portraits, then vote / reveal ──
   if (!isDesktop) {
     return (
@@ -183,7 +240,7 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
             overlap
             picked={pickedId === heroA.id}
             dimmed={revealed && pickedId !== heroA.id}
-            onVote={() => castVote('a')}
+            onVote={() => vote('a')}
           />
           <View style={m.vsBadge as object}>
             <Text style={m.vsText}>VS</Text>
@@ -195,16 +252,16 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
             overlap
             picked={pickedId === heroB.id}
             dimmed={revealed && pickedId !== heroB.id}
-            onVote={() => castVote('b')}
+            onVote={() => vote('b')}
           />
         </View>
         <Text style={[m.title, m.textCenter] as object} numberOfLines={1}>
           {heroA.name} vs {heroB.name}
         </Text>
         {!loaded ? null : revealed ? (
-          <Result matchup={matchup} tally={tally} onOpen={onOpen} centered />
+          <Result matchup={matchup} tally={tally} onOpen={onOpen} centered animate={justVoted} />
         ) : (
-          <VotePrompt heroA={heroA} heroB={heroB} onVote={castVote} centered />
+          <VotePrompt heroA={heroA} heroB={heroB} onVote={vote} centered />
         )}
       </View>
     );
@@ -221,7 +278,7 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
         size={DESKTOP_PORTRAIT}
         picked={pickedId === heroA.id}
         dimmed={revealed && pickedId !== heroA.id}
-        onVote={() => castVote('a')}
+        onVote={() => vote('a')}
       />
 
       <View style={m.infoCenter as object}>
@@ -238,9 +295,9 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
           </Text>
         </View>
         {!loaded ? null : revealed ? (
-          <Result matchup={matchup} tally={tally} onOpen={onOpen} centered />
+          <Result matchup={matchup} tally={tally} onOpen={onOpen} centered animate={justVoted} />
         ) : (
-          <VotePrompt heroA={heroA} heroB={heroB} onVote={castVote} centered />
+          <VotePrompt heroA={heroA} heroB={heroB} onVote={vote} centered />
         )}
       </View>
 
@@ -250,7 +307,7 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
         size={DESKTOP_PORTRAIT}
         picked={pickedId === heroB.id}
         dimmed={revealed && pickedId !== heroB.id}
-        onVote={() => castVote('b')}
+        onVote={() => vote('b')}
       />
     </View>
   );
@@ -497,6 +554,7 @@ const m = StyleSheet.create({
   voteBtnHover: { backgroundColor: 'rgba(245,235,220,0.14)' } as object,
   voteBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.beige },
 
+  barWrap: { alignSelf: 'stretch', position: 'relative', marginBottom: 8 } as object,
   barTrack: {
     flexDirection: 'row',
     alignSelf: 'stretch',
@@ -504,10 +562,29 @@ const m = StyleSheet.create({
     borderRadius: 5,
     overflow: 'hidden',
     backgroundColor: 'rgba(245,235,220,0.1)',
-    marginBottom: 8,
   } as object,
-  barFillA: { backgroundColor: COLORS.orange } as object,
-  barFillB: { backgroundColor: COLORS.blue } as object,
+  // Springy overshoot as the tally lands.
+  barFillA: {
+    backgroundColor: COLORS.orange,
+    transition: 'flex-grow 650ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+  } as object,
+  barFillB: {
+    backgroundColor: COLORS.blue,
+    transition: 'flex-grow 650ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+  } as object,
+  impactRing: {
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    width: 64,
+    height: 64,
+    marginLeft: -32,
+    marginTop: -32,
+    borderRadius: 32,
+    borderWidth: 3,
+    borderColor: COLORS.orange,
+    opacity: 0,
+  } as object,
   barLabels: {
     flexDirection: 'row',
     alignItems: 'center',

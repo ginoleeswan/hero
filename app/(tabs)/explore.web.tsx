@@ -16,6 +16,8 @@ import {
   pageGutter,
 } from '../../src/constants/colors';
 import { useAuth } from '../../src/hooks/useAuth';
+import { brandForPublisher } from '../../src/constants/publishers';
+import { Reveal } from '../../src/components/web/Reveal';
 import { HeroImage } from '../../src/components/HeroImage';
 import { WebHomeSkeleton } from '../../src/components/web/HomeSkeleton';
 import { type Hero } from '../../src/lib/db/heroes';
@@ -67,6 +69,10 @@ const rowScrollStyle = {
 
 // ── Row card (home carousel rows) ────────────────────────────────────────────
 function RowCard({ hero, onPress }: { hero: Hero | FavouriteHero; onPress: () => void }) {
+  // Fact line — the card answers "who is this?" on hover. FavouriteHero rows
+  // don't carry these fields; the line simply stays absent there.
+  const full = hero as Partial<Hero>;
+  const fact = [full.publisher, alignmentLabel(full.alignment)].filter(Boolean).join(' · ');
   return (
     <Pressable
       onPress={onPress}
@@ -91,6 +97,14 @@ function RowCard({ hero, onPress }: { hero: Hero | FavouriteHero; onPress: () =>
             <Text style={rc.name as object} numberOfLines={2}>
               {hero.name}
             </Text>
+            {!!fact && (
+              <Text
+                style={[rc.fact, hovered && (rc.factOn as object)] as object}
+                numberOfLines={1}
+              >
+                {fact}
+              </Text>
+            )}
           </View>
           {/* Signature seam — the house orange hairline surfaces on hover. */}
           <View style={[rc.seam, hovered && (rc.seamOn as object)] as object} />
@@ -144,7 +158,30 @@ const rc = StyleSheet.create({
     lineHeight: 18,
     textShadow: '0 1px 6px rgba(0,0,0,0.9)',
   } as object,
+  // Hover fact line — collapsed to zero height at rest so the name doesn't
+  // shift; unfolds under it on hover.
+  fact: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: INK_TEXT.faint,
+    maxHeight: 0,
+    opacity: 0,
+    overflow: 'hidden',
+    transition: 'opacity 200ms ease, max-height 200ms ease, margin-top 200ms ease',
+  } as object,
+  factOn: { maxHeight: 16, opacity: 1, marginTop: 4 } as object,
 });
+
+// Brand hex → rgba at the ambient-glow alpha (stage orbs).
+function glowColor(hex: string | undefined, alpha: number): string {
+  if (!hex || !/^#[0-9a-fA-F]{6}$/.test(hex)) return `rgba(231,115,51,${alpha})`;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
 // Map the raw alignment value (good/bad/neutral) to a display label.
 function alignmentLabel(alignment?: string | null): string | null {
@@ -252,9 +289,35 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
   }, [heroes.length, paused]);
 
   const hero = heroes[activeIndex];
+  const heroName = hero?.name ?? '';
+
+  // Type-as-scenery backdrop — the featured name set enormous behind the
+  // strip, ink-on-ink. Two-phase swap: fade the old name out, then swap and
+  // fade the new one in (skipped under prefers-reduced-motion).
+  const [backdrop, setBackdrop] = useState({ name: heroName, on: true });
+  useEffect(() => {
+    if (!heroName || heroName === backdrop.name) return;
+    const reduce = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const fadeOut = reduce
+      ? null
+      : setTimeout(() => setBackdrop((b) => ({ ...b, on: false })), 0);
+    const swapIn = setTimeout(
+      () => setBackdrop({ name: heroName, on: true }),
+      reduce ? 0 : 320,
+    );
+    return () => {
+      if (fadeOut) clearTimeout(fadeOut);
+      clearTimeout(swapIn);
+    };
+  }, [heroName, backdrop.name]);
+
   if (!hero) return null;
 
   const pagePad = pageGutter(width);
+  // Publisher-tinted ambience: the primary orb warms toward the featured
+  // hero's brand colour (Marvel red, DC blue…), easing over 800ms per turn.
+  const brandGlow = glowColor(brandForPublisher(hero.publisher)?.color, 0.16);
+  const backdropSize = Math.min(260, Math.max(140, Math.round(width * 0.15)));
 
   const activeScale =
     width >= 1600
@@ -277,9 +340,28 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
         style={[pss.wrap, { paddingHorizontal: pagePad, minHeight: stageHeight }] as object}
         {...({ onMouseEnter: () => setPaused(true), onMouseLeave: () => setPaused(false) } as object)}
       >
-        {/* Atmospheric orbs — decorative, no interaction */}
-        <View style={pss.orbA as object} />
+        {/* Atmospheric orbs — decorative, no interaction. Orb A carries the
+            featured hero's publisher tint. */}
+        <View style={[pss.orbA, { backgroundColor: brandGlow }] as object} />
         <View style={pss.orbB as object} />
+
+        {/* Type as scenery — the splash-page title behind the portraits. */}
+        <Text
+          style={
+            [
+              pss.backdropName,
+              {
+                fontSize: backdropSize,
+                lineHeight: Math.round(backdropSize * 1.05),
+                opacity: backdrop.on ? 1 : 0,
+              },
+            ] as object
+          }
+          numberOfLines={1}
+          aria-hidden
+        >
+          {backdrop.name.toUpperCase()}
+        </Text>
 
         <View style={pss.strip}>
           {heroes.map((h, index) => {
@@ -537,7 +619,9 @@ const pss = StyleSheet.create({
     left: 10,
   } as object,
 
-  // Atmospheric orbs (decorative, absolutely positioned)
+  // Atmospheric orbs (decorative, absolutely positioned). Orb A gets its
+  // backgroundColor inline (publisher tint) and blurs it into a soft bloom so
+  // the colour can transition smoothly (gradients can't animate).
   orbA: {
     position: 'absolute',
     width: 320,
@@ -545,7 +629,8 @@ const pss = StyleSheet.create({
     top: -60,
     left: 140,
     borderRadius: 160,
-    backgroundImage: 'radial-gradient(circle, rgba(231,115,51,0.10), transparent 70%)',
+    filter: 'blur(80px)',
+    transition: 'background-color 800ms ease',
     pointerEvents: 'none',
   } as object,
   orbB: {
@@ -556,6 +641,19 @@ const pss = StyleSheet.create({
     right: 180,
     borderRadius: 110,
     backgroundImage: 'radial-gradient(circle, rgba(21,161,171,0.07), transparent 70%)',
+    pointerEvents: 'none',
+  } as object,
+  // Type-as-scenery splash title: ink-on-ink, cropped by the stage edges,
+  // sitting under the portrait strip and glass panel.
+  backdropName: {
+    position: 'absolute',
+    bottom: -14,
+    left: -6,
+    fontFamily: 'Flame-Regular',
+    color: 'rgba(245,235,220,0.055)',
+    whiteSpace: 'nowrap',
+    letterSpacing: 2,
+    transition: 'opacity 320ms ease',
     pointerEvents: 'none',
   } as object,
 
@@ -1166,6 +1264,14 @@ export default function WebHomeScreen() {
           <View
             style={[styles.darkStage, isMobile && (styles.darkStageMobile as object)] as object}
           >
+            {/* Masthead dateline — the page is fresh *today*; Wednesdays get
+                the comics-culture nod. */}
+            <Text style={[styles.dateline, { paddingHorizontal: gutter }] as object}>
+              {new Date()
+                .toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+                .toUpperCase()}
+              {new Date().getDay() === 3 ? '  ·  NEW COMICS DAY' : ''}
+            </Text>
             {(homeData.spotlight?.length ?? 0) > 0 && (
               <PortraitStripSpotlight
                 heroes={homeData.spotlight!.slice(
@@ -1175,9 +1281,6 @@ export default function WebHomeScreen() {
                 onViewProfile={handlePress}
               />
             )}
-            <PublisherPods
-              onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
-            />
             {/* Engage row — "Today's Battle" (vote) paired with the daily
                 Guess-the-Hero game. On desktop they sit side by side so the
                 matchup isn't a full-width bar and the game rides up beside it;
@@ -1247,53 +1350,70 @@ export default function WebHomeScreen() {
               background only shows on the dark stage and on overscroll. */}
           <View style={styles.beigeCanvas}>
             {/* ── Continue (returners) ──────────────────────────────────────── */}
-            <HomeRow
-              label="Personal"
-              title="Jump Back In"
-              heroes={recentlyViewed}
-              onPress={handlePress}
-            />
+            <Reveal>
+              <HomeRow
+                label="Personal"
+                title="Jump Back In"
+                heroes={recentlyViewed}
+                onPress={handlePress}
+              />
+            </Reveal>
 
             {/* ── Hall of Fame — Most Iconic, authored: a chosen #1 + ranked list
                  instead of a flat rail of equals. ──────────────────────────── */}
-            <HallOfFame heroes={homeData.iconic ?? []} onPress={handlePress} />
+            <Reveal>
+              <HallOfFame heroes={homeData.iconic ?? []} onPress={handlePress} />
+            </Reveal>
 
             {/* ── Browse the Universe — the category doorways, with their own
                  header so the grid reads as a deliberate browse block, not an
                  orphaned slab under the carousel. ──────────────────────────── */}
-            <View style={[styles.browseHead, { paddingHorizontal: gutter }] as object}>
-              <Text style={styles.browseKicker as object}>The Library</Text>
-              <Text
-                style={
-                  [styles.browseTitle, isMobile && (styles.browseTitleMobile as object)] as object
-                }
-              >
-                Browse the Universe
-              </Text>
-              <Text style={styles.browseSubtitle as object}>
-                Pick your corner of the multiverse — publishers, teams, media and power rankings.
-              </Text>
-            </View>
+            <Reveal>
+              <View style={[styles.browseHead, { paddingHorizontal: gutter }] as object}>
+                <Text style={styles.browseKicker as object}>The Library</Text>
+                <Text
+                  style={
+                    [styles.browseTitle, isMobile && (styles.browseTitleMobile as object)] as object
+                  }
+                >
+                  Browse the Universe
+                </Text>
+                <Text style={styles.browseSubtitle as object}>
+                  Pick your corner of the multiverse — publishers, teams, media and power rankings.
+                </Text>
+              </View>
 
-            {/* ── Browse the Universe — one calm grid of doorway tiles. Replaces
-                 the wall of category rails (and the old Dark Side rails:
-                 villains / horror / anti-heroes are tiles here too). ────────── */}
-            <CategoryBrowseGrid
-              covers={homeData.browseCovers}
-              onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
-            />
+              {/* ── Publisher doorways — moved off the hero stage: they're
+                   navigation, so they open the Library rather than compete
+                   with the spotlight. ─────────────────────────────────────── */}
+              <View style={styles.podsOnPaper}>
+                <PublisherPods
+                  surface="paper"
+                  onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
+                />
+              </View>
+
+              {/* ── Browse the Universe — one calm grid of doorway tiles. Replaces
+                   the wall of category rails (and the old Dark Side rails:
+                   villains / horror / anti-heroes are tiles here too). ────────── */}
+              <CategoryBrowseGrid
+                covers={homeData.browseCovers}
+                onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
+              />
+            </Reveal>
 
             {/* ── Fresh to the Vault — the one temporal rail (not a category) ── */}
-            <View style={styles.afterGrid}>
+            <Reveal style={styles.afterGrid}>
               <HomeRow
                 label="Fresh to the Vault"
                 title="Newly Added"
                 heroes={homeData.newlyAdded ?? []}
                 onPress={handlePress}
               />
-            </View>
+            </Reveal>
 
             {/* ── The Arena — one featured rivalry leads; the rest live in /versus. */}
+            <Reveal>
             <View style={[styles.browseHead, { paddingHorizontal: gutter }] as object}>
               <Text style={styles.browseKicker as object}>The Arena</Text>
               <Text
@@ -1316,28 +1436,31 @@ export default function WebHomeScreen() {
             >
               <Text style={styles.seeAllText as object}>See all rivalries →</Text>
             </Pressable>
+            </Reveal>
 
             {/* ── For You — warm close. Distinct eyebrow from the "Personal /
                  Jump Back In" rail up top so the two don't read as a dupe.
                  Empty state is a conversion moment, never a silent gap. ────── */}
-            {favourites.length > 0 ? (
-              <HomeRow
-                label="For You"
-                title="Your Favourites"
-                heroes={favourites}
-                onPress={handlePress}
-              />
-            ) : (
-              <FavouritesInvite
-                gutter={gutter}
-                isAuthed={!!user}
-                onCta={() =>
-                  router.push((user ? '/search' : '/(auth)/login') as Parameters<
-                    typeof router.push
-                  >[0])
-                }
-              />
-            )}
+            <Reveal>
+              {favourites.length > 0 ? (
+                <HomeRow
+                  label="For You"
+                  title="Your Favourites"
+                  heroes={favourites}
+                  onPress={handlePress}
+                />
+              ) : (
+                <FavouritesInvite
+                  gutter={gutter}
+                  isAuthed={!!user}
+                  onCta={() =>
+                    router.push((user ? '/search' : '/(auth)/login') as Parameters<
+                      typeof router.push
+                    >[0])
+                  }
+                />
+              )}
+            </Reveal>
           </View>
 
           <HomeFooter
@@ -1407,6 +1530,14 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   } as object,
   darkStageMobile: { paddingTop: TOPBAR_HEIGHT - 4, paddingBottom: 16 } as object,
+  // Masthead dateline above the spotlight.
+  dateline: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 2.5,
+    color: INK_TEXT.faint,
+    marginBottom: 14,
+  } as object,
 
   // Beige canvas owns the carousel section (sits on the dark scroll surface).
   // Comic-paper tactility — a faint halftone ink-dot grid + a whisper of vertical
@@ -1455,6 +1586,9 @@ const styles = StyleSheet.create({
 
   // Breathing room between the browse grid and the "Newly Added" rail.
   afterGrid: { marginTop: 44 },
+  // Publisher doorways open the Library, sitting between the chapter head and
+  // the category grid.
+  podsOnPaper: { marginBottom: 18 },
   // "See all rivalries →" link under the featured rivalry (the rail it replaced).
   seeAllRow: { marginTop: -24, marginBottom: 52, alignSelf: 'flex-start' } as object,
   seeAllText: {

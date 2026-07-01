@@ -40,29 +40,39 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
             [s.lead, hovered && (s.leadHover as object)] as object
           }
         >
-          <HeroImage
-            id={String(lead.id)}
-            name={lead.name}
-            imageUrl={lead.image_url}
-            portraitUrl={lead.portrait_url}
-            contentFit="cover"
-            contentPosition={{ top: '10%', left: '50%' }}
-            style={StyleSheet.absoluteFill as object}
-            recyclingKey={String(lead.id)}
-          />
-          <View style={s.leadScrim as object} />
-          <View style={s.leadBody}>
-            <Text style={s.leadRank as object}>01</Text>
-            <Text style={s.leadName as object} numberOfLines={2}>
-              {lead.name}
-            </Text>
-            {!!lead.publisher && <Text style={s.leadStat as object}>{lead.publisher}</Text>}
-            {!!lead.summary && (
-              <Text style={s.leadBlurb as object} numberOfLines={2}>
-                {lead.summary}
-              </Text>
-            )}
-          </View>
+          {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
+            <>
+              <HeroImage
+                id={String(lead.id)}
+                name={lead.name}
+                imageUrl={lead.image_url}
+                portraitUrl={lead.portrait_url}
+                contentFit="cover"
+                contentPosition={{ top: '10%', left: '50%' }}
+                style={StyleSheet.absoluteFill as object}
+                recyclingKey={String(lead.id)}
+              />
+              <View style={s.leadScrim as object} />
+              <View style={s.leadBody}>
+                <Text style={s.leadRank as object}>01</Text>
+                <Text style={s.leadName as object} numberOfLines={2}>
+                  {lead.name}
+                </Text>
+                {!!lead.publisher && <Text style={s.leadStat as object}>{lead.publisher}</Text>}
+                {!!lead.summary && (
+                  <Text style={s.leadBlurb as object} numberOfLines={2}>
+                    {lead.summary}
+                  </Text>
+                )}
+              </View>
+              {/* Variant-cover foil: a diagonal light sweep crosses the #1 card
+                  on hover — the grail item gets the holo treatment. */}
+              <View
+                style={[s.foil, hovered && (s.foilOn as object)] as object}
+                pointerEvents="none"
+              />
+            </>
+          )}
         </Pressable>
 
         {/* Ranked list — two-column power-ranking spread that fills the width */}
@@ -182,6 +192,19 @@ const s = StyleSheet.create({
     transform: [{ translateY: -4 }],
     boxShadow: '0 24px 60px rgba(41,60,67,0.25)',
   } as object,
+  // Foil sheen — parked off-card at rest, sweeps across on hover.
+  foil: {
+    position: 'absolute',
+    top: '-20%',
+    left: '-60%',
+    width: '60%',
+    height: '140%',
+    backgroundImage:
+      'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.16) 46%, rgba(255,235,200,0.22) 50%, rgba(255,255,255,0.16) 54%, transparent 70%)',
+    transform: [{ translateX: '-40%' }],
+    transition: 'transform 900ms cubic-bezier(0.16, 1, 0.3, 1)',
+  } as object,
+  foilOn: { transform: [{ translateX: '400%' }] } as object,
   leadScrim: {
     position: 'absolute',
     inset: 0,
