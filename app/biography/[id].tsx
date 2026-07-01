@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   heroName: {
     fontFamily: 'Flame-Regular',
     fontSize: 28,
-    lineHeight: 32,
+    lineHeight: 35,
     color: COLORS.beige,
   },
   deck: {

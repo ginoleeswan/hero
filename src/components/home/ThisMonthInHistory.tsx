@@ -151,7 +151,7 @@ const s = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 27,
     color: COLORS.orange,
-    lineHeight: 31,
+    lineHeight: 33,
     marginBottom: 3,
   },
   issue: {

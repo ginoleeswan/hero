@@ -113,7 +113,7 @@ const s = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 22,
     color: COLORS.beige,
-    lineHeight: 24,
+    lineHeight: 27,
   },
   nameRight: { textAlign: 'right' },
 });

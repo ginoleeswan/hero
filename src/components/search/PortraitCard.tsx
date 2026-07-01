@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
   },
   cardOnDark: { boxShadow: '0 0 0 1px rgba(245,235,220,0.08)' },
   bottom: { position: 'absolute', bottom: 12, left: 13, right: 13 },
-  name: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.beige, lineHeight: 19 },
+  name: { fontFamily: 'Flame-Regular', fontSize: 16, color: COLORS.beige, lineHeight: 20 },
   realName: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10.5,

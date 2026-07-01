@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1b2a30',
   },
   identity: { flex: 1, justifyContent: 'center', gap: 6 },
-  name: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.navy, lineHeight: 27 },
+  name: { fontFamily: 'Flame-Regular', fontSize: 24, color: COLORS.navy, lineHeight: 30 },
   realName: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: 'rgba(41,60,67,0.6)' },
   chips: { flexDirection: 'row', gap: 7, marginTop: 4, flexWrap: 'wrap' },
   chip: {

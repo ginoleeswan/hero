@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Flame-Regular',
     fontSize: 72,
-    lineHeight: 84,
+    lineHeight: 88,
     color: BEIGE,
     textShadow: TITLE_SHADOW,
     transition: 'color 200ms ease, text-shadow 200ms ease',

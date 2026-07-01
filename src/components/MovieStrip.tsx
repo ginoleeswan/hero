@@ -596,7 +596,7 @@ const webStyles = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 26,
     color: '#fff',
-    lineHeight: 30,
+    lineHeight: 32,
   },
   featuredPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   featuredPill: {

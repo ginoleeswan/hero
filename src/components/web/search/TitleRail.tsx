@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Flame-Regular',
     fontSize: 13.5,
-    lineHeight: 16,
+    lineHeight: 17,
     color: COLORS.beige,
     marginTop: 7,
   } as object,

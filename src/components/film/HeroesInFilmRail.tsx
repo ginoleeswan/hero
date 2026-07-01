@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   cardName: {
     fontFamily: 'Flame-Regular',
     fontSize: 12,
-    lineHeight: 14,
+    lineHeight: 15,
     color: COLORS.beige,
     paddingHorizontal: 9,
     paddingBottom: 9,

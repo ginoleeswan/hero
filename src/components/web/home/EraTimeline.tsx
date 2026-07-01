@@ -193,7 +193,7 @@ const t = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 13,
     color: COLORS.navy,
-    lineHeight: 15,
+    lineHeight: 16,
   },
   cardYear: {
     fontFamily: 'Nunito_400Regular',

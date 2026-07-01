@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     opacity: 0.85,
     marginBottom: 6,
   },
-  stageTitle: { fontFamily: 'Flame-Regular', fontSize: 32, color: COLORS.beige, lineHeight: 36 },
+  stageTitle: { fontFamily: 'Flame-Regular', fontSize: 32, color: COLORS.beige, lineHeight: 40 },
   stageLogo: { alignSelf: 'flex-start' },
   sheetTop: {
     backgroundColor: COLORS.beige,

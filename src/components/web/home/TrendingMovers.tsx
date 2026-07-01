@@ -168,7 +168,7 @@ const s = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 14,
     color: COLORS.beige,
-    lineHeight: 16,
+    lineHeight: 18,
     flexShrink: 0,
   } as object,
   lane: {

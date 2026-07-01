@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 32,
     color: COLORS.beige,
-    lineHeight: 36,
+    lineHeight: 40,
   },
   tagline: {
     fontFamily: 'Nunito_400Regular',

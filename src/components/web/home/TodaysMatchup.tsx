@@ -468,7 +468,7 @@ const m = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 22,
     color: COLORS.beige,
-    lineHeight: 25,
+    lineHeight: 27,
     marginBottom: 8,
   },
   titleDesktop: {

@@ -137,6 +137,7 @@ Tests live in `__tests__/` mirroring the source tree. Run with `yarn test:ci`.
 - `StyleSheet.create` for all styles — no inline style objects except `StyleSheet.absoluteFill`.
 - Font families: `Flame-Bold` for headings, `FlameSans-Regular` for body, `Nunito_*` for UI text.
 - Background colour: `#f5ebdc` (`COLORS.beige`) — the app's base canvas.
+- **Clamped Flame text needs `lineHeight ≥ 1.22× fontSize`.** The Flame font's ink spans ~119% of its em box (tall caps + deep descenders). Any `Text` with `numberOfLines` set to a `Flame-Regular`/`Flame-Bold` style clips its descenders (`g`/`y`/`p`) if `lineHeight` is tighter — RNW turns `numberOfLines` into `-webkit-line-clamp` + `overflow: hidden`, so the descender gets cut. Non-clamped Flame text overflows visibly and is fine at any line-height.
 
 ## Platform-specific files (`.web.tsx` / `.tsx`)
 

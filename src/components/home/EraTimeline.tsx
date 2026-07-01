@@ -142,7 +142,7 @@ const t = StyleSheet.create({
     backgroundColor: COLORS.navy,
     marginBottom: 6,
   },
-  cardName: { fontFamily: 'Flame-Regular', fontSize: 13, color: COLORS.navy, lineHeight: 15 },
+  cardName: { fontFamily: 'Flame-Regular', fontSize: 13, color: COLORS.navy, lineHeight: 16 },
   cardYear: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 11,

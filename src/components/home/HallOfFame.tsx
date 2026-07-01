@@ -122,7 +122,7 @@ const s = StyleSheet.create({
     lineHeight: 50,
     marginBottom: 2,
   },
-  leadName: { fontFamily: 'Flame-Regular', fontSize: 32, color: COLORS.beige, lineHeight: 34 },
+  leadName: { fontFamily: 'Flame-Regular', fontSize: 32, color: COLORS.beige, lineHeight: 40 },
   leadStat: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
@@ -160,7 +160,7 @@ const s = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 17,
     color: COLORS.navy,
-    lineHeight: 19,
+    lineHeight: 21,
   },
   rowMeta: {
     fontFamily: 'Nunito_700Bold',

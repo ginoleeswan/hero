@@ -107,7 +107,7 @@ const s = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 22,
     color: COLORS.beige,
-    lineHeight: 24,
+    lineHeight: 27,
     textShadow: '0 2px 8px rgba(0,0,0,0.9)',
   } as object,
 });

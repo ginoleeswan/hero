@@ -647,7 +647,7 @@ const ch = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 40,
     color: COLORS.beige,
-    lineHeight: 42,
+    lineHeight: 49,
   } as object,
   blurb: {
     fontFamily: 'Nunito_400Regular',

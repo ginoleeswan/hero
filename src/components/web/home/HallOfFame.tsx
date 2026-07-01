@@ -275,7 +275,7 @@ const s = StyleSheet.create({
     fontFamily: 'Flame-Regular',
     fontSize: 19,
     color: COLORS.navy,
-    lineHeight: 21,
+    lineHeight: 24,
   } as object,
   rowMeta: {
     fontFamily: 'Nunito_700Bold',

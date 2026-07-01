@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
   cardDone: { borderColor: COLORS.goldAccent },
   cardWon: { borderColor: COLORS.green },
   cardFooter: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 12 },
-  cardName: { fontFamily: 'Flame-Regular', fontSize: 21, color: COLORS.beige, lineHeight: 24 },
+  cardName: { fontFamily: 'Flame-Regular', fontSize: 21, color: COLORS.beige, lineHeight: 26 },
   cardLink: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange, marginTop: 1 },
 
   dossier: {

@@ -339,7 +339,7 @@ const hero = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 6,
   },
-  headline: { fontFamily: 'Flame-Regular', fontSize: 28, color: COLORS.beige, lineHeight: 30 },
+  headline: { fontFamily: 'Flame-Regular', fontSize: 28, color: COLORS.beige, lineHeight: 35 },
   blurb: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
