@@ -50,7 +50,7 @@ import { CategoryPodGrid, BROWSE_PODS } from '../../src/components/home/Category
 import { PublisherGrid } from '../../src/components/home/PublisherGrid';
 import { PulseTicker } from '../../src/components/home/PulseTicker';
 import { DailyChallengeBanner } from '../../src/components/game/DailyChallengeBanner';
-import { useExploreData } from '../../src/hooks/useExploreData';
+import { useExploreData } from '../../src/lib/query/exploreQueries';
 import type { FavouriteHero } from '../../src/types';
 
 const SPOTLIGHT_POOL = 5;

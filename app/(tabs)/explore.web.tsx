@@ -9,7 +9,7 @@ import { HeroImage } from '../../src/components/HeroImage';
 import { WebHomeSkeleton } from '../../src/components/web/HomeSkeleton';
 import { type Hero } from '../../src/lib/db/heroes';
 import { RightNowBand } from '../../src/components/web/home/RightNowBand';
-import { useExploreData } from '../../src/hooks/useExploreData';
+import { useExploreData } from '../../src/lib/query/exploreQueries';
 import type { FavouriteHero } from '../../src/types';
 import { RankingCard } from '../../src/components/web/home/RankingCard';
 import { HomeFooter } from '../../src/components/web/home/HomeFooter';
