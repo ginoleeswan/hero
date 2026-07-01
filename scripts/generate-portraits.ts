@@ -249,9 +249,58 @@ async function uploadToCloudinary(heroId: string, imageBytes: Uint8Array): Promi
   return body.secure_url;
 }
 
+/**
+ * Write portrait_url back, with retry. The upload to Cloudinary happens BEFORE
+ * this write, so a single failed UPDATE here orphans an already-uploaded image
+ * (image in Cloudinary, portrait_url still NULL). Under high --concurrency the
+ * Supabase REST endpoint sheds connections (resets / pool exhaustion), so retry
+ * with backoff instead of losing the write. The reconcile pass (below) is the
+ * safety net if every retry still fails.
+ */
 async function setPortraitUrl(heroId: string, url: string): Promise<void> {
-  const { error } = await supabase.from('heroes').update({ portrait_url: url }).eq('id', heroId);
-  if (error) throw new Error(`DB update failed for ${heroId}: ${error.message}`);
+  let lastError: string | null = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 500 * Math.pow(2, attempt - 1)));
+    const { error } = await supabase.from('heroes').update({ portrait_url: url }).eq('id', heroId);
+    if (!error) return;
+    lastError = error.message;
+  }
+  throw new Error(`DB update failed for ${heroId} after 5 attempts: ${lastError}`);
+}
+
+/**
+ * List every hero-portraits/{id} asset in Cloudinary → its versioned secure_url.
+ * Used to self-heal orphans: heroes whose portrait was uploaded but whose
+ * portrait_url write was lost (e.g. a transient failure under high concurrency)
+ * are re-linked for free on the next run instead of being regenerated.
+ */
+async function listCloudinaryPortraits(): Promise<Map<string, string>> {
+  const assets = new Map<string, string>();
+  let cursor: string | undefined;
+  do {
+    const url = new URL(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/resources/image`);
+    url.searchParams.set('type', 'upload');
+    url.searchParams.set('prefix', 'hero-portraits/');
+    url.searchParams.set('max_results', '500');
+    if (cursor) url.searchParams.set('next_cursor', cursor);
+    const auth = 'Basic ' + Buffer.from(`${CLOUD_KEY}:${CLOUD_SECRET}`).toString('base64');
+    const res = await fetch(url, { headers: { Authorization: auth } });
+    if (!res.ok) throw new Error(`Cloudinary list failed: ${res.status} ${await res.text()}`);
+    const body = (await res.json()) as {
+      resources: { public_id: string; version: number; format: string; secure_url?: string }[];
+      next_cursor?: string;
+    };
+    for (const r of body.resources) {
+      const id = r.public_id.replace(/^hero-portraits\//, '');
+      assets.set(
+        id,
+        r.secure_url ??
+          `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/v${r.version}/${r.public_id}.${r.format}`,
+      );
+    }
+    cursor = body.next_cursor;
+  } while (cursor);
+  return assets;
 }
 
 /**
@@ -297,6 +346,73 @@ function compressIfLarge(heroId: string, bytes: Uint8Array): Uint8Array {
     } catch {
       /* ignore */
     }
+  }
+}
+
+/**
+ * Ask gemini-2.5-flash which way the head faces. The prompt only *requests* a
+ * right-facing profile; neither Gemini nor Seedream reliably obey it (Aslan/Simba
+ * came out left). Fail-open: any error returns true (no flip) so orientation never
+ * blocks a hero.
+ */
+async function facesRight(bytes: Uint8Array): Promise<boolean> {
+  const res = await fetch(GEMINI_TEXT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [
+            {
+              text: 'This is a side-profile character portrait. Is the head/face pointing toward the LEFT or the RIGHT side of the image? Reply with exactly one word: LEFT or RIGHT.',
+            },
+            {
+              inline_data: {
+                mime_type: bytes[0] === 0x89 ? 'image/png' : 'image/jpeg',
+                data: Buffer.from(bytes).toString('base64'),
+              },
+            },
+          ],
+        },
+      ],
+    }),
+  });
+  if (!res.ok) return true;
+  const json = (await res.json()) as {
+    candidates?: { content: { parts: { text?: string }[] } }[];
+  };
+  const answer =
+    json.candidates?.[0]?.content?.parts
+      ?.find((p) => p.text)
+      ?.text?.trim()
+      .toUpperCase() ?? '';
+  return !answer.startsWith('LEFT');
+}
+
+/** Horizontal mirror via macOS sips (in place), preserving the source format. */
+function flipHorizontal(heroId: string, bytes: Uint8Array): Uint8Array {
+  const p = join(tmpdir(), `flip-${heroId}-${Date.now()}.${bytes[0] === 0x89 ? 'png' : 'jpg'}`);
+  writeFileSync(p, bytes);
+  try {
+    execFileSync('sips', ['-f', 'horizontal', p], { stdio: 'ignore' });
+    return readFileSync(p);
+  } finally {
+    try {
+      unlinkSync(p);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/** Guarantee the portrait faces right — flip it if the vision check says it faces left. */
+async function orientRight(heroId: string, bytes: Uint8Array): Promise<Uint8Array> {
+  try {
+    if (await facesRight(bytes)) return bytes;
+    console.log(`  ↔ ${heroId}: faced left → flipped to face right`);
+    return flipHorizontal(heroId, bytes);
+  } catch {
+    return bytes;
   }
 }
 
@@ -749,10 +865,33 @@ async function phase2(filterHeroId?: string): Promise<void> {
     return;
   }
 
-  console.log(`Processing ${heroes.length} heroes with concurrency=${CONCURRENCY}\n`);
+  // Self-heal: any hero in the working set that already has a Cloudinary asset
+  // was generated on a prior run but never got its portrait_url written (a lost
+  // write, e.g. under high --concurrency). Re-link those for free instead of
+  // paying to regenerate, and drop them from the generation batch.
+  let workingSet = heroes;
+  if (!dryRun) {
+    const assets = await listCloudinaryPortraits();
+    const orphans = heroes.filter((h) => assets.has(h.id));
+    if (orphans.length) {
+      console.log(`Re-linking ${orphans.length} orphaned Cloudinary portraits (no regen)…`);
+      await withConcurrency(orphans, CONCURRENCY, async (hero) => {
+        try {
+          await setPortraitUrl(hero.id, assets.get(hero.id)!);
+          console.log(`  ↺ backfilled ${hero.name} (${hero.id})`);
+        } catch (err) {
+          console.error(`  ✗ backfill ${hero.id}: ${err instanceof Error ? err.message : err}`);
+        }
+      });
+      const orphanIds = new Set(orphans.map((h) => h.id));
+      workingSet = heroes.filter((h) => !orphanIds.has(h.id));
+    }
+  }
 
-  await withConcurrency(heroes, CONCURRENCY, async (hero, idx) => {
-    const label = `[${idx + 1}/${heroes.length}] ${hero.name} (${hero.id})`;
+  console.log(`Processing ${workingSet.length} heroes with concurrency=${CONCURRENCY}\n`);
+
+  await withConcurrency(workingSet, CONCURRENCY, async (hero, idx) => {
+    const label = `[${idx + 1}/${workingSet.length}] ${hero.name} (${hero.id})`;
 
     if (dryRun) {
       console.log(`  [dry-run] ${label}`);
@@ -763,7 +902,8 @@ async function phase2(filterHeroId?: string): Promise<void> {
       console.log(`  ⟳ ${label}`);
       const { base64, mimeType } = await fetchImageAsBase64(hero.image_url!);
       const generated = await generatePortrait(base64, mimeType, hero.name, hero.id);
-      const bytes = compressIfLarge(hero.id, generated);
+      const compressed = compressIfLarge(hero.id, generated);
+      const bytes = await orientRight(hero.id, compressed);
       const url = await uploadToCloudinary(hero.id, bytes);
       await setPortraitUrl(hero.id, url);
       console.log(`  ✓ ${label} → ${url}`);
