@@ -9,7 +9,7 @@ import {
 import { IGDB_ALLOWLIST } from '../../supabase/functions/_shared/igdb-allowlist';
 
 const ff = IGDB_ALLOWLIST.find((e) => e.franchise === 'Final Fantasy')!;
-const lol = IGDB_ALLOWLIST.find((e) => e.franchise === 'League of Legends')!;
+const witcher = IGDB_ALLOWLIST.find((e) => e.franchise === 'The Witcher')!;
 const tr = IGDB_ALLOWLIST.find((e) => e.franchise === 'Tomb Raider')!;
 const NOW = '2026-07-01T00:00:00.000Z';
 
@@ -90,15 +90,15 @@ describe('dedupDecision', () => {
 
   it('does NOT re-home a comic character that merely shares a name (collision)', () => {
     const existing: ExistingRow[] = [
-      { id: 'h_x', name: 'Jinx', publisher: 'DC Comics', comicvine_id: '111', igdb_id: null },
+      { id: 'h_x', name: 'Ciri', publisher: 'DC Comics', comicvine_id: '111', igdb_id: null },
     ];
-    const d = dedupDecision({ id: 22, name: 'Jinx' }, lol, existing, NOW);
+    const d = dedupDecision({ id: 22, name: 'Ciri' }, witcher, existing, NOW);
     expect(d.kind).toBe('insert');
     if (d.kind === 'insert') expect(d.row.id).toMatch(/^h_/);
   });
 
   it('inserts a new row when there is no match', () => {
-    const d = dedupDecision({ id: 30, name: 'Yasuo' }, lol, [], NOW);
+    const d = dedupDecision({ id: 30, name: 'Geralt of Rivia' }, witcher, [], NOW);
     expect(d.kind).toBe('insert');
   });
 
@@ -120,11 +120,10 @@ describe('dedupDecision', () => {
 
   it('inserts (not re-home) when the name is ambiguous across multiple rows', () => {
     const existing: ExistingRow[] = [
-      { id: 'a', name: 'Sage', publisher: 'Crystal Dynamics', comicvine_id: null, igdb_id: null },
-      { id: 'b', name: 'Sage', publisher: 'Some Studio', comicvine_id: null, igdb_id: null },
+      { id: 'a', name: 'Triss', publisher: 'Crystal Dynamics', comicvine_id: null, igdb_id: null },
+      { id: 'b', name: 'Triss', publisher: 'Some Studio', comicvine_id: null, igdb_id: null },
     ];
-    const valorant = IGDB_ALLOWLIST.find((e) => e.franchise === 'Valorant')!;
-    const d = dedupDecision({ id: 40, name: 'Sage' }, valorant, existing, NOW);
+    const d = dedupDecision({ id: 40, name: 'Triss' }, witcher, existing, NOW);
     expect(d.kind).toBe('insert');
   });
 });

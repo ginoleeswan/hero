@@ -15,6 +15,8 @@ describe('DOMAINS', () => {
       'spend',
       'community',
       'traffic',
+      'errors',
+      'reports',
     ]);
   });
 
@@ -41,6 +43,8 @@ describe('DOMAINS', () => {
       'spend',
       'community',
       'traffic',
+      'errors',
+      'reports',
     ]);
   });
 });
