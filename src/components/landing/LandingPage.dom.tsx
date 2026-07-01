@@ -1,7 +1,8 @@
 'use dom';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
+import * as THREE from 'three';
 import { LOGO_MASK_PATH as LOGO_PATH } from '../../constants/logo';
 
 const screenshotDesktop = require('../../../assets/images/screenshots/desktop-explore.png');
@@ -76,6 +77,777 @@ const TALE: { label: string; l: number; r: number }[] = [
   { label: 'Speed', l: 63, r: 58 },
 ];
 
+/* ------------------------------------------------------------------ */
+/* The Summoning — 3D hero data                                        */
+/* ------------------------------------------------------------------ */
+
+type Rel = 'enemy' | 'ally' | 'kin';
+
+interface Bond {
+  id: string;
+  name: string;
+  rel: Rel;
+}
+
+interface Summon {
+  id: string;
+  name: string;
+  universe: string;
+  bonds: Bond[];
+}
+
+const REL_COLOR: Record<Rel, string> = {
+  enemy: '#E77333',
+  ally: '#15A1AB',
+  kin: '#F9B222',
+};
+
+// The summonable roster. Bonds are real relationships from the graph,
+// hardcoded here so the landing page never blocks on the DB.
+const SUMMONS: Summon[] = [
+  {
+    id: '69',
+    name: 'Batman',
+    universe: 'DC',
+    bonds: [
+      { id: '370', name: 'Joker', rel: 'enemy' },
+      { id: 'cv-1691', name: 'Nightwing', rel: 'kin' },
+      { id: '165', name: 'Catwoman', rel: 'ally' },
+      { id: 'cv-5368', name: 'Oracle', rel: 'ally' },
+    ],
+  },
+  {
+    id: '717',
+    name: 'Wolverine',
+    universe: 'Marvel',
+    bonds: [
+      { id: '423', name: 'Magneto', rel: 'enemy' },
+      { id: 'cv-3552', name: 'Jean Grey', rel: 'ally' },
+      { id: '638', name: 'Storm', rel: 'ally' },
+      { id: '196', name: 'Cyclops', rel: 'ally' },
+    ],
+  },
+  {
+    id: '659',
+    name: 'Thor',
+    universe: 'Marvel',
+    bonds: [
+      { id: 'cv-4324', name: 'Loki', rel: 'kin' },
+      { id: '332', name: 'Hulk', rel: 'ally' },
+      { id: '149', name: 'Captain America', rel: 'ally' },
+    ],
+  },
+  {
+    id: '620',
+    name: 'Spider-Man',
+    universe: 'Marvel',
+    bonds: [
+      { id: '687', name: 'Venom', rel: 'enemy' },
+      { id: '201', name: 'Daredevil', rel: 'ally' },
+      { id: 'cv-3200', name: 'Black Widow', rel: 'ally' },
+    ],
+  },
+  {
+    id: '423',
+    name: 'Magneto',
+    universe: 'Marvel',
+    bonds: [
+      { id: '579', name: 'Scarlet Witch', rel: 'kin' },
+      { id: '717', name: 'Wolverine', rel: 'enemy' },
+      { id: '241', name: 'Emma Frost', rel: 'ally' },
+    ],
+  },
+  {
+    id: '638',
+    name: 'Storm',
+    universe: 'Marvel',
+    bonds: [
+      { id: '106', name: 'Black Panther', rel: 'kin' },
+      { id: 'cv-3552', name: 'Jean Grey', rel: 'ally' },
+      { id: '196', name: 'Cyclops', rel: 'ally' },
+    ],
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* The Summoning — engine                                              */
+/* ------------------------------------------------------------------ */
+
+const FOV = 38;
+const CAMERA_Z = 4.6;
+// Portrait plane in world units (2:3, like the source images)
+const PLANE_W = 2;
+const PLANE_H = 3;
+// Group footprint incl. halo — used to fit the scene into the stage rect
+const GROUP_W = 3.7;
+const GROUP_H = 3.5;
+
+const PARTICLE_VERT = `
+  attribute vec2 aUv;
+  attribute vec3 aScatter;
+  attribute float aSeed;
+  uniform sampler2D uTex;
+  uniform float uAssemble;
+  uniform float uTime;
+  uniform float uScale;
+  uniform float uSpacing;
+  varying vec3 vColor;
+  varying float vAlpha;
+
+  void main() {
+    vec3 tex = texture2D(uTex, aUv).rgb;
+    float lum = dot(tex, vec3(0.299, 0.587, 0.114));
+
+    // Staggered per-particle assembly, eased
+    float t = clamp(uAssemble * 1.45 - aSeed * 0.45, 0.0, 1.0);
+    t = t * t * (3.0 - 2.0 * t);
+
+    // Assembled home on the portrait plane, with a gentle breathing wave
+    vec3 home = vec3(
+      (aUv.x - 0.5) * ${PLANE_W.toFixed(1)},
+      (aUv.y - 0.5) * ${PLANE_H.toFixed(1)},
+      (aSeed - 0.5) * 0.06
+    );
+    home.x += 0.012 * sin(uTime * 1.3 + aUv.y * 9.0 + aSeed * 6.2831);
+    home.z += 0.035 * sin(uTime * 0.9 + aUv.x * 7.0 + aSeed * 6.2831);
+
+    // Dispersed stardust, slowly swirling
+    vec3 sc = aScatter;
+    float sw = uTime * 0.22 + aSeed * 6.2831;
+    sc.x += 0.28 * sin(sw);
+    sc.y += 0.2 * cos(sw * 1.3);
+    sc.z += 0.22 * sin(sw * 0.7);
+
+    vec3 pos = mix(sc, home, t);
+    vec4 mv = modelViewMatrix * vec4(pos, 1.0);
+    gl_Position = projectionMatrix * mv;
+
+    float worldSize = uSpacing * (0.85 + lum * 0.9) * mix(0.5, 1.25, t);
+    gl_PointSize = min(uScale * worldSize / -mv.z, 64.0);
+
+    vColor = tex;
+    vAlpha = mix(0.3, 1.0, t);
+  }
+`;
+
+const PARTICLE_FRAG = `
+  varying vec3 vColor;
+  varying float vAlpha;
+
+  void main() {
+    vec2 c = gl_PointCoord - 0.5;
+    float a = smoothstep(0.5, 0.3, length(c)) * vAlpha;
+    if (a < 0.02) discard;
+    gl_FragColor = vec4(vColor, a);
+  }
+`;
+
+interface SummonEngine {
+  dispose(): void;
+  setPaused(paused: boolean): void;
+  summonNext(): void;
+}
+
+interface EngineOpts {
+  canvas: HTMLCanvasElement;
+  container: HTMLElement;
+  stage: HTMLElement;
+  mobile: boolean;
+  onSummon: (s: Summon) => void;
+  onFail: () => void;
+}
+
+function loadImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`image failed: ${url}`));
+    img.src = url;
+  });
+}
+
+// A relationship-halo node: circular portrait, relation-coloured ring,
+// name + relation label — baked into one canvas texture.
+function drawBondNode(img: HTMLImageElement | null, bond: Bond): HTMLCanvasElement {
+  const W = 220;
+  const H = 280;
+  const cx = W / 2;
+  const cy = 96;
+  const r = 74;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return canvas;
+  const color = REL_COLOR[bond.rel];
+
+  // Soft glow behind the disc
+  const glow = ctx.createRadialGradient(cx, cy, r * 0.4, cx, cy, r * 1.35);
+  glow.addColorStop(0, `${color}55`);
+  glow.addColorStop(1, `${color}00`);
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, cy + r * 1.5);
+
+  // Circle-clipped portrait (crop toward the top of the 2:3 image — faces live there)
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.clip();
+  if (img) {
+    const side = Math.min(img.width, img.height);
+    const sy = Math.max(0, img.height * 0.04);
+    ctx.drawImage(img, (img.width - side) / 2, sy, side, side, cx - r, cy - r, r * 2, r * 2);
+  } else {
+    ctx.fillStyle = '#1a2d3e';
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+    ctx.fillStyle = '#f5ebdc';
+    ctx.font = "700 44px 'Righteous', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(bond.name.charAt(0), cx, cy);
+  }
+  ctx.restore();
+
+  // Relation ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 5;
+  ctx.stroke();
+
+  // Name + relation label
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#f5ebdc';
+  ctx.font = "600 21px 'Poppins', sans-serif";
+  ctx.fillText(bond.name, cx, cy + r + 36);
+  ctx.fillStyle = color;
+  ctx.font = "600 13px 'Poppins', sans-serif";
+  const rel = bond.rel.toUpperCase().split('').join('  ');
+  ctx.fillText(rel, cx, cy + r + 60);
+
+  return canvas;
+}
+
+function makeGlowSprite(rgb: string, alpha: number): THREE.Sprite {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const g = ctx.createRadialGradient(128, 128, 8, 128, 128, 128);
+    g.addColorStop(0, `rgba(${rgb},${alpha})`);
+    g.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 256, 256);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({
+    map: tex,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  return new THREE.Sprite(mat);
+}
+
+// Halo layout slots (pre-scale, relative to the portrait centre)
+const BOND_SLOTS: Record<number, [number, number, number][]> = {
+  1: [[1.5, 0.55, 0.1]],
+  2: [
+    [-1.5, 0.7, -0.2],
+    [1.5, -0.45, 0.15],
+  ],
+  3: [
+    [-1.5, 0.75, -0.2],
+    [1.52, 0.45, 0.15],
+    [-1.28, -0.95, 0.1],
+  ],
+  4: [
+    [-1.5, 0.8, -0.2],
+    [1.52, 0.7, 0.15],
+    [-1.38, -0.9, 0.12],
+    [1.45, -0.85, -0.15],
+  ],
+};
+
+function createSummoningScene(opts: EngineOpts): SummonEngine {
+  const { canvas, container, stage, mobile, onSummon, onFail } = opts;
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    alpha: true,
+    antialias: false,
+    powerPreference: 'high-performance',
+  });
+  renderer.setPixelRatio(dpr);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 40);
+  camera.position.set(0, 0, CAMERA_Z);
+
+  const disposables: { dispose(): void }[] = [renderer];
+  const track = <T extends { dispose(): void }>(d: T): T => {
+    disposables.push(d);
+    return d;
+  };
+
+  /* --- Starfield ------------------------------------------------- */
+  const STARS = mobile ? 140 : 300;
+  const starGeo = track(new THREE.BufferGeometry());
+  {
+    const pos = new Float32Array(STARS * 3);
+    const col = new Float32Array(STARS * 3);
+    const palette = [
+      new THREE.Color('#f5ebdc'),
+      new THREE.Color('#15A1AB'),
+      new THREE.Color('#E77333'),
+      new THREE.Color('#7a93a3'),
+    ];
+    for (let i = 0; i < STARS; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 14;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 8;
+      pos[i * 3 + 2] = -0.5 - Math.random() * 6;
+      const c = palette[Math.floor(Math.random() * palette.length)];
+      const dim = 0.25 + Math.random() * 0.5;
+      col[i * 3] = c.r * dim;
+      col[i * 3 + 1] = c.g * dim;
+      col[i * 3 + 2] = c.b * dim;
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    starGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  }
+  const starMat = track(
+    new THREE.PointsMaterial({
+      size: 0.022,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false,
+      sizeAttenuation: true,
+    }),
+  );
+  const stars = new THREE.Points(starGeo, starMat);
+  scene.add(stars);
+
+  /* --- Summon group (portrait + glows + halo) --------------------- */
+  const group = new THREE.Group();
+  scene.add(group);
+
+  const warmGlow = makeGlowSprite('231,115,51', 0.5);
+  warmGlow.scale.set(5.4, 5.4, 1);
+  warmGlow.position.set(-0.3, -0.6, -1.1);
+  warmGlow.material.opacity = 0;
+  track(warmGlow.material.map as THREE.Texture);
+  track(warmGlow.material);
+  group.add(warmGlow);
+
+  const coolGlow = makeGlowSprite('21,161,171', 0.35);
+  coolGlow.scale.set(3.6, 3.6, 1);
+  coolGlow.position.set(0.9, 1.0, -1.4);
+  coolGlow.material.opacity = 0;
+  track(coolGlow.material.map as THREE.Texture);
+  track(coolGlow.material);
+  group.add(coolGlow);
+
+  /* --- Portrait particles ----------------------------------------- */
+  const COLS = mobile ? 64 : 88;
+  const ROWS = mobile ? 96 : 132;
+  const COUNT = COLS * ROWS;
+
+  const particleGeo = track(new THREE.BufferGeometry());
+  {
+    const position = new Float32Array(COUNT * 3); // required by three, unused in shader
+    const uv = new Float32Array(COUNT * 2);
+    const scatter = new Float32Array(COUNT * 3);
+    const seed = new Float32Array(COUNT);
+    let i = 0;
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        uv[i * 2] = (x + 0.5) / COLS;
+        uv[i * 2 + 1] = (y + 0.5) / ROWS;
+        // Dispersed home: a loose shell around the portrait
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const rad = 1.7 + Math.random() * 1.3;
+        scatter[i * 3] = rad * Math.sin(phi) * Math.cos(theta);
+        scatter[i * 3 + 1] = rad * Math.sin(phi) * Math.sin(theta) * 0.8;
+        scatter[i * 3 + 2] = rad * Math.cos(phi) * 0.6 - 0.2;
+        seed[i] = Math.random();
+        i++;
+      }
+    }
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(position, 3));
+    particleGeo.setAttribute('aUv', new THREE.BufferAttribute(uv, 2));
+    particleGeo.setAttribute('aScatter', new THREE.BufferAttribute(scatter, 3));
+    particleGeo.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
+    particleGeo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 4);
+  }
+
+  const placeholderTex = track(
+    new THREE.DataTexture(new Uint8Array([11, 24, 32, 255]), 1, 1, THREE.RGBAFormat),
+  );
+  placeholderTex.needsUpdate = true;
+
+  const particleMat = track(
+    new THREE.ShaderMaterial({
+      vertexShader: PARTICLE_VERT,
+      fragmentShader: PARTICLE_FRAG,
+      transparent: true,
+      depthWrite: false,
+      uniforms: {
+        uTex: { value: placeholderTex },
+        uAssemble: { value: 0 },
+        uTime: { value: 0 },
+        uScale: { value: 1 },
+        uSpacing: { value: (PLANE_H / ROWS) * 1.25 },
+      },
+    }),
+  );
+  const particles = new THREE.Points(particleGeo, particleMat);
+  particles.frustumCulled = false;
+  group.add(particles);
+
+  /* --- Texture + halo caches -------------------------------------- */
+  const texCache = new Map<string, THREE.Texture>();
+  const texLoader = new THREE.TextureLoader();
+  const loadPortrait = (id: string): Promise<THREE.Texture> => {
+    const hit = texCache.get(id);
+    if (hit) return Promise.resolve(hit);
+    return texLoader.loadAsync(P(id)).then((tex) => {
+      tex.minFilter = THREE.LinearFilter;
+      tex.generateMipmaps = false;
+      texCache.set(id, tex);
+      return tex;
+    });
+  };
+
+  const nodeTexCache = new Map<string, THREE.CanvasTexture>();
+  const buildNodeTexture = async (bond: Bond): Promise<THREE.CanvasTexture> => {
+    const key = `${bond.id}:${bond.rel}`;
+    const hit = nodeTexCache.get(key);
+    if (hit) return hit;
+    const img = await loadImage(P(bond.id)).catch(() => null);
+    const tex = new THREE.CanvasTexture(drawBondNode(img, bond));
+    tex.minFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    nodeTexCache.set(key, tex);
+    return tex;
+  };
+
+  interface Halo {
+    group: THREE.Group;
+    materials: (THREE.MeshBasicMaterial | THREE.LineBasicMaterial)[];
+    nodes: { mesh: THREE.Mesh; base: THREE.Vector3; phase: number }[];
+    dispose(): void;
+  }
+
+  const buildHalo = async (s: Summon): Promise<Halo> => {
+    const g = new THREE.Group();
+    const materials: (THREE.MeshBasicMaterial | THREE.LineBasicMaterial)[] = [];
+    const nodes: Halo['nodes'] = [];
+    const owned: { dispose(): void }[] = [];
+    const slots = BOND_SLOTS[Math.min(s.bonds.length, 4)] ?? BOND_SLOTS[4];
+    const textures = await Promise.all(s.bonds.slice(0, 4).map(buildNodeTexture));
+
+    s.bonds.slice(0, 4).forEach((bond, i) => {
+      const [sx, sy, sz] = slots[i];
+      const base = new THREE.Vector3(sx, sy, sz);
+
+      // Node card
+      const nodeGeo = new THREE.PlaneGeometry(0.68, 0.86);
+      const nodeMat = new THREE.MeshBasicMaterial({
+        map: textures[i],
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      });
+      owned.push(nodeGeo, nodeMat);
+      const mesh = new THREE.Mesh(nodeGeo, nodeMat);
+      mesh.position.copy(base);
+      materials.push(nodeMat);
+      nodes.push({ mesh, base, phase: Math.random() * Math.PI * 2 });
+      g.add(mesh);
+
+      // Curved connection from the portrait's edge to the node
+      const dir = base.clone().setZ(0).normalize();
+      const edgeT =
+        1 / Math.sqrt((dir.x / (PLANE_W / 2 + 0.06)) ** 2 + (dir.y / (PLANE_H / 2 - 0.1)) ** 2);
+      const start = dir.clone().multiplyScalar(edgeT);
+      const end = base.clone().sub(dir.clone().multiplyScalar(0.42));
+      const mid = start.clone().add(end).multiplyScalar(0.5);
+      mid.z += 0.18;
+      mid.y += (Math.random() - 0.5) * 0.15;
+      const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(24));
+      const lineMat = new THREE.LineBasicMaterial({
+        color: new THREE.Color(REL_COLOR[bond.rel]),
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      });
+      owned.push(lineGeo, lineMat);
+      materials.push(lineMat);
+      g.add(new THREE.Line(lineGeo, lineMat));
+    });
+
+    return {
+      group: g,
+      materials,
+      nodes,
+      dispose: () => owned.forEach((d) => d.dispose()),
+    };
+  };
+  const haloCache = new Map<string, Halo>();
+  const getHalo = async (s: Summon): Promise<Halo> => {
+    const hit = haloCache.get(s.id);
+    if (hit) return hit;
+    const halo = await buildHalo(s);
+    haloCache.set(s.id, halo);
+    return halo;
+  };
+
+  /* --- State machine ----------------------------------------------- */
+  type Phase = 'waiting' | 'assemble' | 'hold' | 'disperse';
+  let phase: Phase = 'waiting';
+  let phaseT = 0;
+  let index = Math.floor(Math.random() * SUMMONS.length);
+  let activeHalo: Halo | null = null;
+  let haloAlpha = 0;
+  let disposed = false;
+  let paused = false;
+  let rafId = 0;
+  let loadFailures = 0;
+  let canvasReady = false;
+
+  const ASSEMBLE_S = 2.0;
+  const HOLD_S = 6.2;
+  const DISPERSE_S = 1.1;
+
+  const preload = (s: Summon) => {
+    loadPortrait(s.id).catch(() => {});
+    document.fonts.ready.then(() => {
+      if (!disposed) getHalo(s).catch(() => {});
+    });
+  };
+
+  const beginSummon = async (s: Summon) => {
+    try {
+      const tex = await loadPortrait(s.id);
+      if (disposed) return;
+      loadFailures = 0;
+      particleMat.uniforms.uTex.value = tex;
+      phase = 'assemble';
+      phaseT = 0;
+      onSummon(s);
+      // Halo attaches as soon as it's built (may land mid-assemble; that's fine)
+      document.fonts.ready.then(() =>
+        getHalo(s)
+          .then((halo) => {
+            if (disposed || SUMMONS[index].id !== s.id) return;
+            if (activeHalo) group.remove(activeHalo.group);
+            activeHalo = halo;
+            haloAlpha = 0;
+            group.add(halo.group);
+          })
+          .catch(() => {}),
+      );
+      // Warm the cache for the next legend while this one is on stage
+      preload(SUMMONS[(index + 1) % SUMMONS.length]);
+    } catch {
+      if (disposed) return;
+      // Portrait failed to load — skip to the next legend; if the whole
+      // roster fails (offline, CDN down), hand the hero back to the static path
+      loadFailures += 1;
+      if (loadFailures >= SUMMONS.length) {
+        onFail();
+        return;
+      }
+      index = (index + 1) % SUMMONS.length;
+      beginSummon(SUMMONS[index]);
+    }
+  };
+
+  const summonNext = () => {
+    if (disposed) return;
+    if (phase === 'hold' || (phase === 'assemble' && phaseT / ASSEMBLE_S > 0.5)) {
+      phase = 'disperse';
+      phaseT = 0;
+    }
+  };
+
+  /* --- Layout ------------------------------------------------------ */
+  const alignToStage = () => {
+    const cRect = container.getBoundingClientRect();
+    const sRect = stage.getBoundingClientRect();
+    if (cRect.width === 0 || cRect.height === 0) return;
+
+    renderer.setSize(cRect.width, cRect.height, false);
+    camera.aspect = cRect.width / cRect.height;
+    camera.updateProjectionMatrix();
+    particleMat.uniforms.uScale.value =
+      (cRect.height * dpr) / (2 * Math.tan(THREE.MathUtils.degToRad(FOV / 2)));
+
+    const visH = 2 * Math.tan(THREE.MathUtils.degToRad(FOV / 2)) * CAMERA_Z;
+    const visW = visH * camera.aspect;
+    const worldPerPxX = visW / cRect.width;
+    const worldPerPxY = visH / cRect.height;
+
+    const stageCx = sRect.left + sRect.width / 2 - (cRect.left + cRect.width / 2);
+    const stageCy = sRect.top + sRect.height / 2 - (cRect.top + cRect.height / 2);
+    group.position.x = stageCx * worldPerPxX;
+    group.position.y = -stageCy * worldPerPxY + 0.04;
+
+    const scale = Math.min(
+      (sRect.width * worldPerPxX) / GROUP_W,
+      (sRect.height * 0.92 * worldPerPxY) / GROUP_H,
+    );
+    const s = THREE.MathUtils.clamp(scale, 0.42, 1.05);
+    group.scale.set(s, s, s);
+  };
+
+  const ro = new ResizeObserver(alignToStage);
+  ro.observe(container);
+  ro.observe(stage);
+  alignToStage();
+
+  /* --- Pointer ------------------------------------------------------ */
+  const camTarget = new THREE.Vector2(0, 0);
+  const onMove = (e: PointerEvent) => {
+    if (e.pointerType !== 'mouse') return;
+    const r = container.getBoundingClientRect();
+    camTarget.set(
+      ((e.clientX - r.left) / r.width - 0.5) * 0.34,
+      -((e.clientY - r.top) / r.height - 0.5) * 0.22,
+    );
+  };
+  container.addEventListener('pointermove', onMove, { passive: true });
+
+  let downAt = 0;
+  let downX = 0;
+  let downY = 0;
+  const onDown = (e: PointerEvent) => {
+    downAt = performance.now();
+    downX = e.clientX;
+    downY = e.clientY;
+  };
+  const onUp = (e: PointerEvent) => {
+    if (
+      performance.now() - downAt < 350 &&
+      Math.hypot(e.clientX - downX, e.clientY - downY) < 12
+    ) {
+      summonNext();
+    }
+  };
+  canvas.addEventListener('pointerdown', onDown, { passive: true });
+  canvas.addEventListener('pointerup', onUp, { passive: true });
+
+  const onContextLost = (e: Event) => {
+    e.preventDefault();
+    onFail();
+  };
+  canvas.addEventListener('webglcontextlost', onContextLost);
+
+  /* --- Loop --------------------------------------------------------- */
+  const clock = new THREE.Clock();
+  let elapsed = 0;
+
+  const frame = () => {
+    if (disposed) return;
+    rafId = requestAnimationFrame(frame);
+    if (paused) return;
+    const dt = Math.min(clock.getDelta(), 0.05);
+    elapsed += dt;
+    phaseT += dt;
+
+    if (phase === 'assemble') {
+      particleMat.uniforms.uAssemble.value = Math.min(phaseT / ASSEMBLE_S, 1);
+      if (phaseT >= ASSEMBLE_S) {
+        phase = 'hold';
+        phaseT = 0;
+      }
+    } else if (phase === 'hold') {
+      particleMat.uniforms.uAssemble.value = 1;
+      if (phaseT >= HOLD_S) {
+        phase = 'disperse';
+        phaseT = 0;
+      }
+    } else if (phase === 'disperse') {
+      particleMat.uniforms.uAssemble.value = Math.max(1 - phaseT / DISPERSE_S, 0);
+      if (phaseT >= DISPERSE_S) {
+        phase = 'waiting';
+        phaseT = 0;
+        index = (index + 1) % SUMMONS.length;
+        beginSummon(SUMMONS[index]);
+      }
+    }
+
+    // Halo fades in late in assembly, out early in dispersal
+    const assembleV = particleMat.uniforms.uAssemble.value as number;
+    const haloTarget = (phase === 'hold' || phase === 'assemble') && assembleV > 0.75 ? 1 : 0;
+    haloAlpha += (haloTarget - haloAlpha) * Math.min(dt * 3.2, 1);
+    if (activeHalo) {
+      activeHalo.materials.forEach((m) => {
+        m.opacity =
+          m instanceof THREE.LineBasicMaterial ? haloAlpha * 0.65 : haloAlpha;
+      });
+      activeHalo.nodes.forEach((n) => {
+        n.mesh.position.y = n.base.y + Math.sin(elapsed * 0.8 + n.phase) * 0.045;
+        n.mesh.position.x = n.base.x + Math.cos(elapsed * 0.6 + n.phase) * 0.02;
+      });
+    }
+
+    // Glows breathe with the summon
+    warmGlow.material.opacity = 0.16 + assembleV * 0.3;
+    coolGlow.material.opacity = 0.08 + assembleV * 0.18;
+
+    // Camera parallax + slow starfield drift
+    camera.position.x += (camTarget.x - camera.position.x) * Math.min(dt * 4, 1);
+    camera.position.y += (camTarget.y - camera.position.y) * Math.min(dt * 4, 1);
+    stars.rotation.z = elapsed * 0.008;
+
+    particleMat.uniforms.uTime.value = elapsed;
+    renderer.render(scene, camera);
+    if (!canvasReady) {
+      canvasReady = true;
+      canvas.classList.add('ready');
+    }
+  };
+
+  beginSummon(SUMMONS[index]);
+  rafId = requestAnimationFrame(frame);
+
+  return {
+    setPaused(p: boolean) {
+      if (paused === p) return;
+      paused = p;
+      if (!p) clock.getDelta(); // swallow the paused interval
+    },
+    summonNext,
+    dispose() {
+      disposed = true;
+      cancelAnimationFrame(rafId);
+      ro.disconnect();
+      container.removeEventListener('pointermove', onMove);
+      canvas.removeEventListener('pointerdown', onDown);
+      canvas.removeEventListener('pointerup', onUp);
+      canvas.removeEventListener('webglcontextlost', onContextLost);
+      haloCache.forEach((h) => h.dispose());
+      nodeTexCache.forEach((t) => t.dispose());
+      texCache.forEach((t) => t.dispose());
+      starGeo.dispose();
+      disposables.forEach((d) => d.dispose());
+    },
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* CSS                                                                 */
+/* ------------------------------------------------------------------ */
+
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap');
 
@@ -83,7 +855,7 @@ const CSS = `
   :root {
     --bg:#0b1820; --surface:#142130; --card:#1a2d3e;
     --orange:#E77333; --yellow:#F9B222; --beige:#f5ebdc;
-    --muted:#7a93a3; --border:#253d50; --radius:16px;
+    --muted:#7a93a3; --border:#253d50; --teal:rgb(21,161,171); --radius:16px;
   }
   html {
     scroll-behavior: smooth;
@@ -125,6 +897,87 @@ const CSS = `
       radial-gradient(ellipse 80% 80% at 50% 50%,rgba(249,178,34,0.06) 0%,transparent 60%);
     pointer-events:none;
   }
+
+  /* --- The Summoning (3D hero) --- */
+  .summon-canvas {
+    position:absolute; inset:0; width:100%; height:100%;
+    opacity:0; transition:opacity 1.1s ease; z-index:1;
+    touch-action:pan-y; /* orbit-free: taps summon, scroll stays native */
+  }
+  .summon-canvas.ready { opacity:1; }
+  .hero--3d {
+    text-align:left;
+    padding:110px 24px 64px;
+  }
+  .hero-grid {
+    position:relative; z-index:2;
+    display:grid; grid-template-columns:minmax(400px,1fr) minmax(0,1.05fr);
+    gap:40px; align-items:center;
+    width:100%; max-width:1220px; margin:0 auto;
+    min-height:calc(100dvh - 190px);
+  }
+  .hero-panel {
+    position:relative;
+    background:linear-gradient(160deg,rgba(20,33,48,0.66) 0%,rgba(11,24,32,0.42) 100%);
+    -webkit-backdrop-filter:blur(18px) saturate(1.25);
+    backdrop-filter:blur(18px) saturate(1.25);
+    border:1px solid rgba(245,235,220,0.09);
+    border-radius:28px;
+    padding:44px 42px;
+    box-shadow:0 24px 80px rgba(0,0,0,0.45);
+  }
+  .hero-panel::before {
+    content:''; position:absolute; inset:0 0 auto 0; height:1px; border-radius:28px 28px 0 0;
+    background:linear-gradient(90deg,transparent,rgba(245,235,220,0.22),transparent);
+    pointer-events:none;
+  }
+  .hero--3d .hero-wordmark-large {
+    font-size:clamp(52px,7vw,92px); margin-bottom:28px; letter-spacing:-2px;
+  }
+  .hero--3d .hero-tagline { margin-bottom:14px; }
+  .hero--3d .hero-sub { margin:0 0 34px; max-width:440px; }
+  .hero--3d .hero-ctas { justify-content:flex-start; }
+
+  .summon-stage {
+    position:relative; align-self:stretch;
+    min-height:420px; pointer-events:none;
+  }
+  .summon-plate {
+    position:absolute; left:50%; bottom:-6px; transform:translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    pointer-events:none; white-space:nowrap;
+  }
+  .plate-name {
+    font-family:'Righteous',sans-serif; font-size:24px; color:var(--beige);
+    letter-spacing:0.5px; text-shadow:0 2px 18px rgba(11,24,32,0.9);
+    animation:plateIn .6s cubic-bezier(.22,.7,.25,1) both;
+  }
+  .plate-universe {
+    font-size:10px; font-weight:600; letter-spacing:3px; text-transform:uppercase;
+    color:var(--muted);
+  }
+  .plate-legend {
+    display:flex; gap:14px; margin-top:2px;
+    font-size:10px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--muted);
+  }
+  .plate-legend span { display:inline-flex; align-items:center; gap:5px; }
+  .legend-dot { width:7px; height:7px; border-radius:50%; display:inline-block; }
+  .plate-summon {
+    pointer-events:auto; margin-top:10px;
+    background:rgba(20,33,48,0.7); color:var(--beige);
+    border:1px solid var(--border); border-radius:100px;
+    font-family:'Righteous',sans-serif; font-size:12px; letter-spacing:0.5px;
+    padding:8px 18px; cursor:pointer;
+    -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
+    transition:border-color 200ms,transform 150ms,background 200ms;
+  }
+  .plate-summon:hover { border-color:var(--yellow); background:rgba(26,45,62,0.85); transform:translateY(-1px); }
+  @keyframes plateIn {
+    from { opacity:0; transform:translateY(10px); }
+    to   { opacity:1; transform:none; }
+  }
+
   .hero-collage { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
   .hero-card {
     position:absolute; border-radius:12px; overflow:hidden;
@@ -204,7 +1057,10 @@ const CSS = `
   }
 
   .stats {
-    background:var(--surface); border-top:1px solid var(--border);
+    background:
+      radial-gradient(ellipse 50% 90% at 50% 0%,rgba(231,115,51,0.07) 0%,transparent 70%),
+      var(--surface);
+    border-top:1px solid var(--border);
     border-bottom:1px solid var(--border); padding:28px 40px;
     display:flex; justify-content:center;
   }
@@ -250,13 +1106,18 @@ const CSS = `
   .feature-card {
     background:var(--card); border:1px solid var(--border);
     border-radius:var(--radius); padding:32px 28px;
-    transition:border-color 250ms,transform 200ms;
+    transition:border-color 250ms,transform 200ms,box-shadow 250ms;
   }
-  .feature-card:hover { border-color:var(--orange); transform:translateY(-4px); }
+  .feature-card:hover {
+    border-color:var(--orange); transform:translateY(-4px);
+    box-shadow:0 14px 44px rgba(231,115,51,0.13);
+  }
   .feature-icon {
     width:48px; height:48px; background:rgba(231,115,51,0.12); border-radius:12px;
     display:flex; align-items:center; justify-content:center; margin-bottom:20px;
+    transition:background 250ms,transform 250ms;
   }
+  .feature-card:hover .feature-icon { background:rgba(231,115,51,0.22); transform:scale(1.06); }
   .feature-icon svg { width:24px; height:24px; stroke:var(--orange); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
   .feature-title { font-family:'Righteous',sans-serif; font-size:18px; margin-bottom:12px; }
   .feature-desc { font-size:14px; color:var(--muted); line-height:1.7; }
@@ -355,6 +1216,11 @@ const CSS = `
     display:flex; align-items:center; justify-content:center;
     background:linear-gradient(135deg,var(--orange),var(--yellow));
     color:#0b1820; box-shadow:0 6px 24px rgba(231,115,51,0.4);
+    animation:vsPulse 3.2s ease-in-out infinite;
+  }
+  @keyframes vsPulse {
+    0%,100% { box-shadow:0 6px 24px rgba(231,115,51,0.4); }
+    50%      { box-shadow:0 6px 34px rgba(249,178,34,0.55); }
   }
   .tott-bars { display:flex; flex-direction:column; gap:14px; }
   .tott-row { display:grid; grid-template-columns:34px 1fr 120px 1fr 34px; align-items:center; gap:12px; }
@@ -393,14 +1259,26 @@ const CSS = `
     .stat-item { padding:0 28px; }
   }
 
+  @media (max-width:900px) {
+    .hero-grid { grid-template-columns:1fr; gap:8px; min-height:auto; }
+    .hero--3d { text-align:center; padding:100px 20px 40px; }
+    .hero--3d .hero-sub { margin:0 auto 30px; }
+    .hero--3d .hero-ctas { justify-content:center; }
+    .hero-panel { padding:30px 24px; }
+    .summon-stage { min-height:56vh; }
+  }
+
   @media (max-width:768px) {
     /* Nav */
     nav { padding:14px 20px; }
 
     /* Hero — tighter, no min-height */
     .hero { padding:88px 20px 52px; min-height:auto; }
+    .hero--3d { min-height:100dvh; padding:88px 16px 36px; }
     .hc1,.hc2,.hc3,.hc4,.hc5,.hc6,.hc7,.hc8,.hc9,.hc10 { display:none; }
     .scroll-hint { display:none; }
+    .plate-name { font-size:19px; }
+    .plate-legend { gap:10px; font-size:9px; }
 
     /* Hero strip — bleeds to viewport edges */
     .hero-strip {
@@ -409,6 +1287,7 @@ const CSS = `
       scrollbar-width:none;
     }
     .hero-strip::-webkit-scrollbar { display:none; }
+    .hero--3d .hero-strip { display:none; }
     .hero-strip-card {
       flex-shrink:0; width:88px; height:124px; border-radius:12px;
       overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.5);
@@ -477,6 +1356,7 @@ const CSS = `
     /* Full-width hero CTAs */
     .hero-ctas { flex-direction:column; align-items:stretch; width:100%; max-width:300px; margin:0 auto; }
     .btn-primary,.btn-secondary { justify-content:center; }
+    .summon-stage { min-height:52vh; }
 
     /* Store badges */
     .cta-buttons { flex-direction:column; align-items:center; width:100%; }
@@ -489,24 +1369,25 @@ const CSS = `
   /* Scroll reveals */
   .reveal { opacity:0; transform:translateY(26px); transition:opacity .7s cubic-bezier(.22,.7,.25,1), transform .7s cubic-bezier(.22,.7,.25,1); will-change:opacity,transform; }
   .reveal.in { opacity:1; transform:none; }
-  .feature-card.reveal { transition:opacity .55s cubic-bezier(.22,.7,.25,1), transform .55s cubic-bezier(.22,.7,.25,1), border-color .25s ease; }
+  .feature-card.reveal { transition:opacity .55s cubic-bezier(.22,.7,.25,1), transform .55s cubic-bezier(.22,.7,.25,1), border-color .25s ease, box-shadow .25s ease; }
   .mosaic-card.reveal { transition:opacity .55s cubic-bezier(.22,.7,.25,1), transform .55s cubic-bezier(.22,.7,.25,1), box-shadow .3s ease; }
 
   /* Hero load-in sequence */
-  .hero-content > * { opacity:0; }
-  .loaded .hero-content > * { animation:heroIn .8s cubic-bezier(.22,.7,.25,1) both; }
-  .loaded .hero-content .hero-wordmark-large { animation-delay:.12s; }
-  .loaded .hero-content .hero-tagline { animation-delay:.26s; }
-  .loaded .hero-content .hero-sub { animation-delay:.38s; }
-  .loaded .hero-content .hero-ctas { animation-delay:.5s; }
+  .hero-content > *, .hero-panel > * { opacity:0; }
+  .hero-panel::before { opacity:1; }
+  .loaded .hero-content > *, .loaded .hero-panel > * { animation:heroIn .8s cubic-bezier(.22,.7,.25,1) both; }
+  .loaded .hero-content .hero-wordmark-large, .loaded .hero-panel .hero-wordmark-large { animation-delay:.12s; }
+  .loaded .hero-content .hero-tagline, .loaded .hero-panel .hero-tagline { animation-delay:.26s; }
+  .loaded .hero-content .hero-sub, .loaded .hero-panel .hero-sub { animation-delay:.38s; }
+  .loaded .hero-content .hero-ctas, .loaded .hero-panel .hero-ctas { animation-delay:.5s; }
   @keyframes heroIn { from { opacity:0; transform:translateY(22px); } to { opacity:1; transform:none; } }
 
   @media (prefers-reduced-motion:reduce) {
-    .hero-card,.scroll-hint,.marquee-track { animation:none; }
+    .hero-card,.scroll-hint,.marquee-track,.tott-vs,.plate-name { animation:none; }
     * { transition-duration:0.01ms !important; }
     .reveal { opacity:1 !important; transform:none !important; }
     .tott-fill { transform:scaleX(1) !important; }
-    .hero-content > * { opacity:1 !important; animation:none !important; }
+    .hero-content > *, .hero-panel > * { opacity:1 !important; animation:none !important; }
   }
 
   /* Font-loading splash */
@@ -533,9 +1414,36 @@ const CSS = `
   }
 `;
 
+/* ------------------------------------------------------------------ */
+/* Component                                                            */
+/* ------------------------------------------------------------------ */
+
+function detect3DSupport(): boolean {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return false;
+  try {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+    const probe = document.createElement('canvas');
+    const gl = probe.getContext('webgl2');
+    if (!gl) return false;
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DOMProps }) {
   const router = useRouter();
   const [fontsReady, setFontsReady] = useState(false);
+  const [mode, setMode] = useState<'3d' | 'static'>(() => (detect3DSupport() ? '3d' : 'static'));
+  const [summoned, setSummoned] = useState<Summon | null>(null);
+
+  const heroRef = useRef<HTMLElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const engineRef = useRef<SummonEngine | null>(null);
+
+  const fallBack = useCallback(() => setMode('static'), []);
 
   useEffect(() => {
     let done = false;
@@ -549,6 +1457,53 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
     const fallback = setTimeout(ready, 2000); // never leave the hero hidden
     return () => clearTimeout(fallback);
   }, []);
+
+  // The Summoning — three.js lifecycle
+  useEffect(() => {
+    if (mode !== '3d') return;
+    const canvas = canvasRef.current;
+    const container = heroRef.current;
+    const stage = stageRef.current;
+    if (!canvas || !container || !stage) return;
+
+    let engine: SummonEngine;
+    try {
+      engine = createSummoningScene({
+        canvas,
+        container,
+        stage,
+        mobile: window.innerWidth < 768,
+        onSummon: setSummoned,
+        onFail: fallBack,
+      });
+    } catch {
+      // Renderer creation failed (blocked WebGL, headless, driver bug) —
+      // defer so the fallback render happens outside this effect pass.
+      const t = setTimeout(fallBack, 0);
+      return () => clearTimeout(t);
+    }
+    engineRef.current = engine;
+
+    // Pause when the hero scrolls out of view or the tab is hidden
+    let inView = true;
+    const applyPause = () => engine.setPaused(!inView || document.hidden);
+    const io = new IntersectionObserver(
+      (entries) => {
+        inView = entries[0]?.isIntersecting ?? true;
+        applyPause();
+      },
+      { threshold: 0.02 },
+    );
+    io.observe(container);
+    document.addEventListener('visibilitychange', applyPause);
+
+    return () => {
+      io.disconnect();
+      document.removeEventListener('visibilitychange', applyPause);
+      engine.dispose();
+      engineRef.current = null;
+    };
+  }, [mode, fallBack]);
 
   // Scroll-triggered reveals — animate each .reveal element once it enters view
   useEffect(() => {
@@ -571,6 +1526,55 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, []);
+
+  const is3D = mode === '3d';
+
+  const heroContent = (
+    <>
+      <div className="hero-badge">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+        Every universe. Every icon.
+      </div>
+      <span className="hero-wordmark-large">mythique</span>
+      <p className="hero-tagline">Know every icon. Settle every debate.</p>
+      <p className="hero-sub">
+        Explore 34,000+ characters in rich detail, trace how they&apos;re connected, and pit any
+        two head-to-head to settle who&apos;d really win. The whole universe — alive, connected,
+        and yours to argue about.
+      </p>
+      <div className="hero-ctas">
+        <button className="btn-primary" onClick={() => router.push('/explore')}>
+          <svg
+            className="btn-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+          </svg>
+          Explore the universe
+        </button>
+        <button className="btn-secondary" onClick={() => router.push('/versus')}>
+          Settle a debate →
+        </button>
+      </div>
+    </>
+  );
 
   return (
     <div
@@ -608,68 +1612,66 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       </nav>
 
       {/* HERO */}
-      <section className="hero">
-        <div className="hero-collage" aria-hidden="true">
-          {collageChars.map(([id], i) => (
-            <div key={id} className={`hero-card hc${i + 1}`}>
-              <img src={P(id)} alt="" loading="lazy" />
+      <section className={`hero${is3D ? ' hero--3d' : ''}`} ref={heroRef}>
+        {is3D ? (
+          <>
+            <canvas ref={canvasRef} className="summon-canvas" aria-hidden="true" />
+            <div className="hero-grid">
+              <div className="hero-panel">{heroContent}</div>
+              <div className="summon-stage" ref={stageRef}>
+                {summoned ? (
+                  <div className="summon-plate">
+                    <span className="plate-name" key={summoned.id} aria-hidden="true">
+                      {summoned.name}
+                    </span>
+                    <span className="plate-universe" aria-hidden="true">
+                      {summoned.universe}
+                    </span>
+                    <div className="plate-legend" aria-hidden="true">
+                      <span>
+                        <span className="legend-dot" style={{ background: REL_COLOR.enemy }} />
+                        Enemy
+                      </span>
+                      <span>
+                        <span className="legend-dot" style={{ background: REL_COLOR.ally }} />
+                        Ally
+                      </span>
+                      <span>
+                        <span className="legend-dot" style={{ background: REL_COLOR.kin }} />
+                        Kin
+                      </span>
+                    </div>
+                    <button
+                      className="plate-summon"
+                      onClick={() => engineRef.current?.summonNext()}
+                    >
+                      Summon another legend ↻
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </div>
-          ))}
-        </div>
-
-        <div className="hero-content">
-          <div className="hero-badge">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-            Every universe. Every icon.
-          </div>
-          <span className="hero-wordmark-large">mythique</span>
-          <p className="hero-tagline">Know every icon. Settle every debate.</p>
-          <p className="hero-sub">
-            Explore 34,000+ characters in rich detail, trace how they&apos;re connected, and pit any
-            two head-to-head to settle who&apos;d really win. The whole universe — alive, connected,
-            and yours to argue about.
-          </p>
-          <div className="hero-ctas">
-            <button className="btn-primary" onClick={() => router.push('/explore')}>
-              <svg
-                className="btn-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-              </svg>
-              Explore the universe
-            </button>
-            <button className="btn-secondary" onClick={() => router.push('/versus')}>
-              Settle a debate →
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile hero strip */}
-        <div className="hero-strip" aria-hidden="true">
-          {stripChars.map(([id]) => (
-            <div key={id} className="hero-strip-card">
-              <img src={P(id)} alt="" loading="lazy" />
+          </>
+        ) : (
+          <>
+            <div className="hero-collage" aria-hidden="true">
+              {collageChars.map(([id], i) => (
+                <div key={id} className={`hero-card hc${i + 1}`}>
+                  <img src={P(id)} alt="" loading="lazy" />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+            <div className="hero-content">{heroContent}</div>
+            {/* Mobile hero strip */}
+            <div className="hero-strip" aria-hidden="true">
+              {stripChars.map(([id]) => (
+                <div key={id} className="hero-strip-card">
+                  <img src={P(id)} alt="" loading="lazy" />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         <div className="scroll-hint" aria-hidden="true">
           <svg
