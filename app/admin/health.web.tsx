@@ -45,6 +45,8 @@ import { ReviewDomain } from '../../src/components/admin/health/domains/ReviewDo
 import { CommunityDomain } from '../../src/components/admin/health/domains/CommunityDomain';
 import { TrafficDomain } from '../../src/components/admin/health/domains/TrafficDomain';
 import { ErrorsDomain } from '../../src/components/admin/health/domains/ErrorsDomain';
+import { ReportsDomain } from '../../src/components/admin/health/domains/ReportsDomain';
+import { fetchReportsQueue } from '../../src/lib/db/reports';
 import {
   useActivityLog,
   useCatalogActions,
@@ -88,6 +90,11 @@ export default function AdminHealthScreen() {
   const unbrandedQ = useQuery({
     queryKey: ['unbrandedHeroes'],
     queryFn: () => listUnbrandedHeroes(300),
+    enabled: !!user,
+  });
+  const openReportsQ = useQuery({
+    queryKey: ['reportsQueue', 'open'],
+    queryFn: () => fetchReportsQueue('open'),
     enabled: !!user,
   });
   const gateResolved = !authLoading && (!user || profileQ.isSuccess || profileQ.isError);
@@ -246,8 +253,11 @@ export default function AdminHealthScreen() {
         tone: 'gold',
         text: `${unbranded} character${unbranded === 1 ? '' : 's'} need a universe — see Catalog › Hygiene.`,
       });
+    const openReports = openReportsQ.data?.length ?? 0;
+    if (openReports > 0)
+      a.push({ tone: 'red', text: `${openReports} open report${openReports === 1 ? '' : 's'}` });
     return a;
-  }, [pingQ.data, usageQ.data, runsQ.data, h, unbrandedQ.data]);
+  }, [pingQ.data, usageQ.data, runsQ.data, h, unbrandedQ.data, openReportsQ.data]);
 
   // Publish alerts to the global TopBar's bell (mobile has no command band).
   // Cleared on unmount so the bell never lingers off the command center.
@@ -523,6 +533,7 @@ export default function AdminHealthScreen() {
         {domain === 'errors' && (
           <ErrorsDomain data={errorsQ.data ?? null} loading={errorsQ.isLoading} narrow={narrow} />
         )}
+        {domain === 'reports' && <ReportsDomain />}
       </CommandShell>
       {/* Foreground Build board lives at page level so the top-strip Stop can halt it. */}
       {buildIds ? (

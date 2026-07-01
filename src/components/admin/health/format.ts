@@ -160,7 +160,8 @@ export type DomainKey =
   | 'spend'
   | 'community'
   | 'traffic'
-  | 'errors';
+  | 'errors'
+  | 'reports';
 
 export interface DomainDef {
   key: DomainKey;
@@ -182,6 +183,7 @@ export const DOMAINS: DomainDef[] = [
   { key: 'community', label: 'Community', icon: 'people-outline' },
   { key: 'traffic', label: 'Traffic', icon: 'trending-up-outline' },
   { key: 'errors', label: 'Errors', icon: 'bug-outline' },
+  { key: 'reports', label: 'Reports', icon: 'flag-outline' },
 ];
 
 /** Primary (non-placeholder) domain keys — the mobile bottom-bar set. */
