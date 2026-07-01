@@ -1262,6 +1262,59 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          created_at: string
+          detail: string | null
+          hero_id: string
+          id: number
+          image_url: string | null
+          reason: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          target_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          hero_id: string
+          id?: never
+          image_url?: string | null
+          reason: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          target_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          hero_id?: string
+          id?: never
+          image_url?: string | null
+          reason?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          target_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_hero_id_fkey"
+            columns: ["hero_id"]
+            isOneToOne: false
+            referencedRelation: "heroes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_battle_votes: {
         Row: {
           created_at: string
@@ -1590,6 +1643,10 @@ export type Database = {
       }
       _contrib_field_type: { Args: { p_field: string }; Returns: string }
       _parse_str_list: { Args: { p_raw: string }; Returns: string[] }
+      _report_reason_ok: {
+        Args: { p_reason: string; p_target: string }
+        Returns: boolean
+      }
       admin_add_comicvine_heroes: {
         Args: { p_heroes: Json }
         Returns: {
@@ -1620,9 +1677,22 @@ export type Database = {
       }
       admin_reenrich_hero: { Args: { p_id: string }; Returns: string }
       admin_refresh_fame: { Args: never; Returns: number }
+      admin_reports_queue: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_reason?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
       admin_reschedule_cron: {
         Args: { p_jobname: string; p_limit?: number; p_schedule: string }
         Returns: string
+      }
+      admin_resolve_report: {
+        Args: { p_decision: string; p_id: number; p_note: string }
+        Returns: Json
       }
       admin_retry_failed: { Args: never; Returns: number }
       admin_review_contribution: {
@@ -2050,6 +2120,16 @@ export type Database = {
           p_new_value: string
           p_note: string
           p_target_field: string
+        }
+        Returns: Json
+      }
+      submit_report: {
+        Args: {
+          p_detail: string
+          p_hero_id: string
+          p_image_url: string
+          p_reason: string
+          p_target_type: string
         }
         Returns: Json
       }
