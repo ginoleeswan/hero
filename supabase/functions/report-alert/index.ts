@@ -39,7 +39,10 @@ const TARGET_COLOR: Record<string, string> = {
 // Font Righteous, headers are the app's Flame face (self-hosted @font-face),
 // body is Nunito — all with web-safe fallbacks for clients that block webfonts.
 const A = 'https://rpvgqfaeiowisdubgxkg.supabase.co/storage/v1/object/public/brand';
-const MASK_CREAM = `${A}/mythique-mask.png`;
+// The full logo lockup (mask + "mythique" in Righteous) baked into one PNG, so
+// the identity is pixel-perfect in every client (incl. Outlook/Gmail, which
+// strip webfonts). Rendered from the real Righteous webfont.
+const LOCKUP = `${A}/mythique-lockup.png`;
 const MASK_INK = `${A}/mythique-mask-ink.png`;
 const FLAME_TTF = `${A}/Flame-Regular.ttf`;
 
@@ -124,10 +127,7 @@ function reportEmailHtml(o: {
 <table class="email-container" width="580" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;width:100%;border-radius:20px;overflow:hidden;border:1px solid rgba(41,60,67,0.06);box-shadow:0 6px 26px rgba(41,60,67,0.10);">
 
   <tr><td style="background-color:#293c43;padding:40px 48px 42px;text-align:center;background-image:radial-gradient(circle, rgba(245,235,220,0.09) 1.5px, transparent 1.5px);background-size:22px 22px;">
-    <table cellpadding="0" cellspacing="0" role="presentation" align="center"><tr>
-      <td valign="middle" style="padding-right:13px;line-height:0;"><img src="${MASK_CREAM}" width="76" height="29" alt="" style="display:block;width:76px;height:29px;"></td>
-      <td valign="middle" style="line-height:0;"><span style="font-family:${righteous};font-size:31px;font-weight:400;color:#f5ebdc;letter-spacing:0.5px;">mythique</span></td>
-    </tr></table>
+    <img src="${LOCKUP}" width="156" height="27" alt="mythique" style="display:block;width:156px;height:27px;margin:0 auto;">
     <div style="font-family:${font};font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(245,235,220,0.42);margin-top:16px;">Moderation desk</div>
   </td></tr>
 
