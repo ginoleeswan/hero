@@ -27,17 +27,28 @@ const TARGET_LABEL: Record<string, string> = {
   image: 'Gallery image',
   ai_portrait: 'AI portrait',
 };
-// Badge colour per target — mirrors the command-center ReportsDomain palette.
+// Badge colour per target — mirrors the command-center ReportsDomain palette
+// (all brand tokens: blue / orange / red).
 const TARGET_COLOR: Record<string, string> = {
-  page: '#15A1AB', // blue
-  image: '#E77333', // orange
-  ai_portrait: '#B5302B', // red
+  page: '#15A1AB',
+  image: '#E77333',
+  ai_portrait: '#B5302B',
 };
 
+// Brand assets (public `brand` storage bucket) + fonts. The wordmark is Google
+// Font Righteous, headers are the app's Flame face (self-hosted @font-face),
+// body is Nunito — all with web-safe fallbacks for clients that block webfonts.
+const A = 'https://rpvgqfaeiowisdubgxkg.supabase.co/storage/v1/object/public/brand';
+const MASK_CREAM = `${A}/mythique-mask.png`;
+const MASK_INK = `${A}/mythique-mask-ink.png`;
+const FLAME_TTF = `${A}/Flame-Regular.ttf`;
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 // Reports come from untrusted signed-in users, so every dynamic value rendered
-// into the alert email must be HTML-escaped, and image_url (free text on the
-// row) must be validated as an http(s) URL before it's used as a link — else a
-// crafted value could break out of an attribute and inject markup.
+// into the email must be HTML-escaped, and image_url (free text on the row)
+// must be validated as an http(s) URL before it's used — else a crafted value
+// could break out of an attribute and inject markup.
 const esc = (s: string): string =>
   s
     .replace(/&/g, '&amp;')
@@ -56,11 +67,10 @@ const safeHttpUrl = (u: string | null | undefined): string | null => {
   }
 };
 
-// Mythique-branded transactional email. Table + inline styles (renders across
-// Outlook.com / Gmail / Apple Mail); the app's signature ink band → orange seam
-// → warm paper, orange uppercase eyebrows. All dynamic fields must arrive
-// already HTML-escaped. Custom app fonts can't load in mail clients, so we use a
-// warm, humanist web-safe stack as the closest stand-in.
+// Mythique-branded transactional email — a sibling of the signup template:
+// navy dot-grid letterhead (mask + Righteous wordmark) → orange seam → white
+// body → beige footer. Palette is 100% brand tokens. All dynamic fields arrive
+// already escaped.
 function reportEmailHtml(o: {
   heroName: string;
   reasonText: string;
@@ -68,56 +78,98 @@ function reportEmailHtml(o: {
   targetText: string;
   detail: string | null;
   imgUrl: string | null;
+  meta: string;
   heroUrl: string;
   adminUrl: string;
-  reportId: number;
 }): string {
-  const ink = '#0b1820';
-  const navy = '#293C43';
-  const beige = '#f5ebdc';
-  const orange = '#E77333';
-  const grey = '#A2A19B';
-  const card = '#fffdf9';
-  const hair = '#ece0cf';
-  const badge = TARGET_COLOR[o.targetType] ?? navy;
-  const font = "'Trebuchet MS','Segoe UI',Helvetica,Arial,sans-serif";
+  const font = "'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
+  const flame = "'Flame',Georgia,'Times New Roman',serif";
+  const righteous = "'Righteous','Trebuchet MS',Verdana,sans-serif";
+  const badge = TARGET_COLOR[o.targetType] ?? '#293C43';
+
+  const thumbCell = o.imgUrl
+    ? `<td valign="top" width="132" style="width:132px;padding-left:20px;"><img src="${o.imgUrl}" width="112" height="140" alt="Reported image" style="display:block;width:112px;height:140px;border-radius:12px;object-fit:cover;border:1px solid rgba(41,60,67,0.12);"></td>`
+    : '';
+
+  const detailBlock = o.detail
+    ? `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:26px;"><tr><td style="background-color:#f5ebdc;border-left:3px solid #e77333;border-radius:0 12px 12px 0;padding:16px 18px;font-family:${font};font-size:15px;font-weight:400;color:#293c43;line-height:1.6;">&ldquo;${o.detail}&rdquo;</td></tr></table>`
+    : '';
+
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:${beige};">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:${beige};">New ${o.reasonText} report — ${o.heroName}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${beige};padding:28px 12px;"><tr><td align="center">
-<table role="presentation" width="560" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;background:${card};border-radius:18px;overflow:hidden;box-shadow:0 6px 22px -12px rgba(11,24,32,0.32);">
-<tr><td style="background:${ink};padding:22px 28px;">
-  <div style="font-family:${font};font-size:20px;font-weight:bold;letter-spacing:3px;color:${beige};text-transform:uppercase;">Mythique<span style="color:${orange};">.</span></div>
-  <div style="font-family:${font};font-size:10px;font-weight:bold;letter-spacing:2px;color:${orange};text-transform:uppercase;margin-top:4px;">Moderation desk</div>
-</td></tr>
-<tr><td style="height:3px;line-height:3px;font-size:0;background:${orange};">&nbsp;</td></tr>
-<tr><td style="padding:30px 28px 6px;">
-  <div style="font-family:${font};font-size:11px;font-weight:bold;letter-spacing:2px;color:${orange};text-transform:uppercase;">New report</div>
-  <div style="font-family:${font};font-size:26px;font-weight:bold;color:${navy};margin:6px 0 14px;line-height:1.15;">${o.heroName}</div>
-  <span style="display:inline-block;font-family:${font};font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:#ffffff;background:${badge};padding:5px 12px;border-radius:20px;">${o.targetText}</span>
-  <div style="font-family:${font};font-size:16px;font-weight:bold;color:${navy};margin:18px 0 0;">${o.reasonText}</div>
-  ${
-    o.detail
-      ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;"><tr><td style="background:${beige};border-left:3px solid ${orange};border-radius:8px;padding:12px 14px;font-family:${font};font-size:14px;color:${navy};line-height:1.55;">${o.detail}</td></tr></table>`
-      : ''
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">
+<title>New report — Mythique</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Righteous&display=swap');
+  @font-face { font-family:'Flame'; src:url('${FLAME_TTF}') format('truetype'); font-weight:400; font-style:normal; font-display:swap; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:0; background-color:#f5ebdc; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+  table { border-collapse:collapse; mso-table-lspace:0; mso-table-rspace:0; }
+  img { border:0; display:block; -ms-interpolation-mode:bicubic; }
+  a { text-decoration:none; }
+  @media (max-width:600px) {
+    .email-container { width:100% !important; }
+    .inner-pad { padding-left:28px !important; padding-right:28px !important; }
+    .heading-size { font-size:38px !important; }
   }
-  ${
-    o.imgUrl
-      ? `<div style="margin-top:18px;"><img src="${o.imgUrl}" alt="Reported image" width="120" style="width:120px;max-width:120px;height:auto;border-radius:10px;border:1px solid ${hair};display:block;"></div>`
-      : ''
-  }
-</td></tr>
-<tr><td style="padding:24px 28px 30px;">
-  <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-    <td style="border-radius:24px;background:${orange};"><a href="${o.heroUrl}" style="display:inline-block;font-family:${font};font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:24px;">Open character page</a></td>
-    <td style="width:10px;">&nbsp;</td>
-    <td style="border-radius:24px;border:1px solid ${navy};"><a href="${o.adminUrl}" style="display:inline-block;font-family:${font};font-size:14px;font-weight:bold;color:${navy};text-decoration:none;padding:12px 22px;border-radius:24px;">Review in command centre</a></td>
-  </tr></table>
-</td></tr>
-<tr><td style="padding:16px 28px;border-top:1px solid ${hair};background:${card};">
-  <div style="font-family:${font};font-size:12px;color:${grey};line-height:1.5;">You're receiving this because you moderate Mythique &middot; report #${o.reportId}</div>
-</td></tr>
+</style>
+</head>
+<body style="margin:0;padding:0;background-color:#f5ebdc;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f5ebdc;">${o.heroName} &mdash; ${o.reasonText}</div>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f5ebdc;">
+<tr><td align="center" style="padding:40px 16px 48px;">
+<table class="email-container" width="580" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;width:100%;border-radius:20px;overflow:hidden;box-shadow:0 12px 48px rgba(41,60,67,0.18);">
+
+  <tr><td style="background-color:#293c43;padding:40px 48px 42px;text-align:center;background-image:radial-gradient(circle, rgba(245,235,220,0.09) 1.5px, transparent 1.5px);background-size:22px 22px;">
+    <table cellpadding="0" cellspacing="0" role="presentation" align="center"><tr>
+      <td valign="middle" style="padding-right:13px;line-height:0;"><img src="${MASK_CREAM}" width="76" height="29" alt="" style="display:block;width:76px;height:29px;"></td>
+      <td valign="middle" style="line-height:0;"><span style="font-family:${righteous};font-size:31px;font-weight:400;color:#f5ebdc;letter-spacing:0.5px;">mythique</span></td>
+    </tr></table>
+    <div style="font-family:${font};font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(245,235,220,0.42);margin-top:16px;">Moderation desk</div>
+  </td></tr>
+
+  <tr><td style="background-color:#e77333;height:5px;font-size:0;line-height:0;">&nbsp;</td></tr>
+
+  <tr><td class="inner-pad" style="background-color:#ffffff;padding:46px 56px 44px;">
+    <p style="margin:0 0 18px;"><span style="font-family:${font};font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#e77333;background-color:rgba(231,115,51,0.10);border-radius:100px;padding:5px 12px;display:inline-block;">New report</span></p>
+    <h1 class="heading-size" style="margin:0 0 8px;font-family:${flame};font-size:42px;font-weight:400;color:#293c43;line-height:1.05;letter-spacing:-0.3px;">${o.heroName}</h1>
+    <p style="margin:0 0 30px;font-family:${font};font-size:13px;font-weight:600;letter-spacing:0.3px;color:#a2a19b;">${o.meta}</p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation"><tr>
+      <td valign="top">
+        <p style="margin:0 0 8px;font-family:${font};font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#a2a19b;">Flagged</p>
+        <span style="font-family:${font};font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#ffffff;background-color:${badge};border-radius:100px;padding:6px 13px;display:inline-block;">${o.targetText}</span>
+        <p style="margin:22px 0 8px;font-family:${font};font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#a2a19b;">Reason</p>
+        <p style="margin:0;font-family:${font};font-size:18px;font-weight:700;color:#293c43;line-height:1.3;">${o.reasonText}</p>
+      </td>
+      ${thumbCell}
+    </tr></table>
+
+    ${detailBlock}
+
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:32px;"><tr><td>
+      <a href="${o.adminUrl}" style="display:block;background-color:#e77333;color:#ffffff;font-family:${font};font-size:15px;font-weight:800;letter-spacing:0.3px;text-align:center;padding:16px 24px;border-radius:12px;box-shadow:0 8px 24px rgba(231,115,51,0.28);">Review in the command centre</a>
+    </td></tr></table>
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:12px;"><tr><td>
+      <a href="${o.heroUrl}" style="display:block;color:#293c43;font-family:${font};font-size:15px;font-weight:700;text-align:center;padding:15px 24px;border-radius:12px;border:1.5px solid rgba(41,60,67,0.22);">Open the character page</a>
+    </td></tr></table>
+  </td></tr>
+
+  <tr><td style="background-color:#f5ebdc;padding:24px 56px 28px;border-top:1px solid rgba(41,60,67,0.08);">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation"><tr>
+      <td valign="middle">
+        <table cellpadding="0" cellspacing="0" role="presentation"><tr>
+          <td valign="middle" style="padding-right:8px;line-height:0;"><img src="${MASK_INK}" width="44" height="17" alt="" style="display:block;width:44px;height:17px;opacity:0.5;"></td>
+          <td valign="middle" style="line-height:0;"><span style="font-family:${righteous};font-size:15px;color:#293c43;opacity:0.42;">mythique</span></td>
+        </tr></table>
+      </td>
+      <td valign="middle" align="right" style="font-family:${font};font-size:12px;font-weight:400;color:#a2a19b;line-height:1.5;text-align:right;">You moderate Mythique.<br>Resolving happens in the command centre.</td>
+    </tr></table>
+  </td></tr>
+
 </table>
 </td></tr></table>
 </body></html>`;
@@ -155,7 +207,12 @@ serve(async (req: Request) => {
     const heroUrl = `https://mythique.app/character/${encodeURIComponent(rep.hero_id)}`;
     const imgUrl = safeHttpUrl(rep.image_url);
 
-    // Subject is plain text (not HTML); the body gets escaped values.
+    const d = new Date(String(rep.created_at).replace(' ', 'T'));
+    const when = isNaN(d.getTime())
+      ? ''
+      : `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()} · ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`;
+    const meta = `Report #${rep.id}${when ? ` · ${when}` : ''}`;
+
     const html = reportEmailHtml({
       heroName: esc(heroName),
       reasonText: esc(reasonText),
@@ -163,9 +220,9 @@ serve(async (req: Request) => {
       targetText: esc(targetText),
       detail: rep.detail ? esc(String(rep.detail)) : null,
       imgUrl: imgUrl ? esc(imgUrl) : null,
+      meta: esc(meta),
       heroUrl,
       adminUrl: 'https://mythique.app/admin/health',
-      reportId: rep.id,
     });
 
     const res = await fetch('https://api.brevo.com/v3/smtp/email', {
