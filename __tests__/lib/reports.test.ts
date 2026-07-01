@@ -3,7 +3,14 @@ import { REPORT_REASONS, resolveReportTarget } from '../../src/lib/db/reports';
 describe('REPORT_REASONS', () => {
   it('exposes reason sets for page and image contexts', () => {
     expect(REPORT_REASONS.page.map((r) => r.code)).toEqual(
-      expect.arrayContaining(['inaccurate', 'ai_inaccurate', 'offensive', 'duplicate', 'spam', 'other']),
+      expect.arrayContaining([
+        'inaccurate',
+        'ai_inaccurate',
+        'offensive',
+        'duplicate',
+        'spam',
+        'other',
+      ]),
     );
     expect(REPORT_REASONS.image.map((r) => r.code)).toEqual(
       expect.arrayContaining(['wrong_subject', 'offensive', 'low_quality', 'other']),
