@@ -1529,13 +1529,26 @@ const CSS = `
     box-shadow:0 30px 90px rgba(0,0,0,0.45);
   }
 
-  /* Fight-poster head: two full-bleed corners facing off across a diagonal seam */
+  /* Fight-poster head: blurred ambient split + each fighter as a proper
+     2:3 mini trading card (the portrait art is 2:3 — never letterbox it) */
   .tott-head { position:relative; display:grid; grid-template-columns:1fr 1fr; margin-bottom:30px; }
-  .tott-corner { position:relative; height:200px; overflow:hidden; }
-  .tott-corner img { width:100%; height:100%; object-fit:cover; object-position:center 12%; display:block; }
+  .tott-corner { position:relative; height:212px; overflow:hidden; }
   .tott-corner.l { clip-path:polygon(0 0, 100% 0, calc(100% - 30px) 100%, 0 100%); }
   .tott-corner.r { clip-path:polygon(30px 0, 100% 0, 100% 100%, 0 100%); }
-  .tott-corner.r img { transform:scaleX(-1); }
+  .tott-bg {
+    position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;
+    filter:blur(18px) saturate(1.2); opacity:0.5; transform:scale(1.35);
+  }
+  .tott-corner.r .tott-bg { transform:scale(1.35) scaleX(-1); }
+  .tott-fcard {
+    position:absolute; bottom:16px; width:118px; aspect-ratio:2/3; z-index:1;
+    border-radius:12px; overflow:hidden;
+    box-shadow:0 16px 38px rgba(0,0,0,0.6);
+  }
+  .tott-fcard img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
+  .tott-fcard.l { left:26px; transform:rotate(-4deg); border:2px solid rgba(116,184,67,0.75); }
+  .tott-fcard.r { right:26px; transform:rotate(4deg); border:2px solid rgba(231,115,51,0.75); }
+  .tott-fcard.r img { transform:scaleX(-1); }
   .tott-corner.l::after {
     content:''; position:absolute; inset:0;
     background:
@@ -1548,9 +1561,9 @@ const CSS = `
       linear-gradient(to top,rgba(26,45,62,0.96) 0%,rgba(26,45,62,0.25) 46%,transparent 70%),
       linear-gradient(-120deg,rgba(231,115,51,0.18) 0%,transparent 55%);
   }
-  .tott-id { position:absolute; bottom:16px; z-index:1; display:flex; flex-direction:column; gap:3px; }
-  .tott-id.l { left:22px; align-items:flex-start; }
-  .tott-id.r { right:22px; align-items:flex-end; }
+  .tott-id { position:absolute; bottom:24px; z-index:1; display:flex; flex-direction:column; gap:3px; }
+  .tott-id.l { left:164px; align-items:flex-start; }
+  .tott-id.r { right:164px; align-items:flex-end; }
   .tott-name { font-family:'Righteous',sans-serif; font-size:24px; text-shadow:0 2px 14px rgba(0,0,0,0.8); }
   .tott-univ { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--beige); opacity:0.75; display:flex; align-items:center; gap:6px; }
   .tott-univ::before { content:''; width:7px; height:7px; border-radius:50%; background:var(--fc,#7a93a3); }
@@ -1709,13 +1722,16 @@ const CSS = `
     .tott { padding:64px 20px; }
     .tott-card { border-radius:20px; margin-top:32px; }
     .tott-head { margin-bottom:18px; }
-    .tott-corner { height:132px; }
+    .tott-corner { height:150px; }
     .tott-corner.l { clip-path:polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%); }
     .tott-corner.r { clip-path:polygon(18px 0, 100% 0, 100% 100%, 0 100%); }
-    .tott-id { bottom:10px; }
-    .tott-id.l { left:12px; }
-    .tott-id.r { right:12px; }
-    .tott-name { font-size:16px; }
+    .tott-fcard { width:78px; bottom:12px; border-radius:9px; }
+    .tott-fcard.l { left:12px; }
+    .tott-fcard.r { right:12px; }
+    .tott-id { bottom:16px; }
+    .tott-id.l { left:102px; }
+    .tott-id.r { right:102px; }
+    .tott-name { font-size:15px; }
     .tott-univ { font-size:8px; letter-spacing:1.5px; }
     .tott-vs { width:46px; height:46px; font-size:19px; border-width:3px; }
     .tott-bars { padding:0 8px; }
@@ -2384,14 +2400,20 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           <div className="tott-card reveal" style={{ transitionDelay: '160ms' }}>
             <div className="tott-head">
               <div className="tott-corner l">
-                <img src={P800('332')} alt="Hulk" loading="lazy" />
+                <img className="tott-bg" src={P('332')} alt="" aria-hidden="true" loading="lazy" />
+                <div className="tott-fcard l">
+                  <img src={P800('332')} alt="Hulk" loading="lazy" />
+                </div>
                 <div className="tott-id l">
                   <span className="tott-name">Hulk</span>
                   <span className="tott-univ">Marvel</span>
                 </div>
               </div>
               <div className="tott-corner r">
-                <img src={P800('346')} alt="Iron Man" loading="lazy" />
+                <img className="tott-bg" src={P('346')} alt="" aria-hidden="true" loading="lazy" />
+                <div className="tott-fcard r">
+                  <img src={P800('346')} alt="Iron Man" loading="lazy" />
+                </div>
                 <div className="tott-id r">
                   <span className="tott-name">Iron Man</span>
                   <span className="tott-univ">Marvel</span>
