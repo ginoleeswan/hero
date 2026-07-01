@@ -119,7 +119,14 @@ export function useExploreData(): ExploreData {
   const set = useCallback(
     <K extends keyof ExploreData>(key: K) =>
       (val: ExploreData[K]) =>
-        setData((d) => ({ ...d, [key]: val })),
+        setData((d) =>
+          // Revalidate-in-place must never blank a populated row: a flaky
+          // refetch that resolves to [] keeps the last-good value (SWR's "keep
+          // previous data on error"). First load is unaffected — the prior
+          // value is already []. Non-array values (heroCount, matchup) pass
+          // through and rely on their own null/undefined sentinels.
+          Array.isArray(val) && val.length === 0 ? d : { ...d, [key]: val },
+        ),
     [],
   );
 
@@ -157,7 +164,15 @@ export function useExploreData(): ExploreData {
         // but it must stay stale so the next mount refetches and self-heals,
         // rather than pinning 2 cards for the full TTL.
         if (base.length > 0) cachedExploreAt = Date.now();
-        setData((d) => ({ ...d, spotlight: merged, started: true }));
+        // Keep the last-good billboard if this load degraded to empty; only flip
+        // `started` so the skeleton always clears. Without this, a flaky remount
+        // revalidation blanks the carousel entirely (spotlight.length gate → no
+        // billboard rendered).
+        setData((d) => ({
+          ...d,
+          spotlight: merged.length > 0 ? merged : d.spotlight,
+          started: true,
+        }));
       },
     );
 
@@ -191,9 +206,9 @@ export function useExploreData(): ExploreData {
       .then((b) =>
         setData((d) => ({
           ...d,
-          onScreen: b.on_screen,
-          comingSoon: b.coming_soon,
-          streaming: b.streaming,
+          onScreen: b.on_screen.length ? b.on_screen : d.onScreen,
+          comingSoon: b.coming_soon.length ? b.coming_soon : d.comingSoon,
+          streaming: b.streaming.length ? b.streaming : d.streaming,
         })),
       )
       .catch(() => {});
