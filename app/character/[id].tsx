@@ -40,6 +40,8 @@ import { HeroLinksRow, heroLinksHasContent } from '../../src/components/HeroLink
 import { useHeroDetail } from '../../src/hooks/useHeroDetail';
 import { useHeroTeams } from '../../src/hooks/useHeroTeams';
 import { ContributeSheet } from '../../src/components/contribute/ContributeSheet';
+import { ReportSheet } from '../../src/components/report/ReportSheet';
+import type { ReportContext } from '../../src/lib/db/reports';
 import { isBlankValue } from '../../src/lib/contribute/missingFields';
 import {
   DOSSIER_GROUPS,
@@ -634,6 +636,7 @@ export default function CharacterScreen() {
     [],
   );
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [reportCtx, setReportCtx] = useState<{ context: ReportContext; imageUrl?: string | null } | null>(null);
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const compareScale = useRef(new Animated.Value(1)).current;
@@ -1548,11 +1551,11 @@ export default function CharacterScreen() {
                       activeOpacity={0.7}
                       onPress={() => {
                         setContributeMenu(false);
-                        setEditTarget({ field: null, current: null, report: true });
+                        setReportCtx({ context: 'page' });
                       }}
                     >
                       <Ionicons name="flag-outline" size={17} color={COLORS.navy} />
-                      <Text style={styles.contributeMenuText}>Report incorrect info</Text>
+                      <Text style={styles.contributeMenuText}>Report a problem</Text>
                     </TouchableOpacity>
                   </View>
                 ) : null}
@@ -1604,6 +1607,7 @@ export default function CharacterScreen() {
           images={lightboxImages}
           initialIndex={lightboxIndex}
           onClose={() => setLightboxImages([])}
+          onReport={(img) => setReportCtx({ context: 'image', imageUrl: img.url })}
         />
       ) : null}
 
@@ -1627,6 +1631,19 @@ export default function CharacterScreen() {
             const { data: fresh } = await heroRowQuery.refetch();
             if (fresh) setData(heroRowToCharacterData(fresh));
           }}
+        />
+      ) : null}
+      {data ? (
+        <ReportSheet
+          visible={reportCtx !== null}
+          onClose={() => setReportCtx(null)}
+          heroId={data.stats.id}
+          heroName={data.stats.name}
+          context={reportCtx?.context ?? 'page'}
+          imageUrl={reportCtx?.imageUrl ?? null}
+          portraitUrl={heroPortraitUrl}
+          user={user}
+          onRequestSignIn={() => router.push('/(auth)/login')}
         />
       ) : null}
 

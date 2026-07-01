@@ -19,9 +19,10 @@ interface Props {
   images: { url: string; caption?: string | null }[];
   initialIndex: number;
   onClose: () => void;
+  onReport?: (image: { url: string; caption?: string | null }) => void;
 }
 
-export function ImageLightbox({ images, initialIndex, onClose }: Props) {
+export function ImageLightbox({ images, initialIndex, onClose, onReport }: Props) {
   const insets = useSafeAreaInsets();
   const listRef = useRef<FlatList>(null);
   const indexRef = useRef(initialIndex);
@@ -106,6 +107,16 @@ export function ImageLightbox({ images, initialIndex, onClose }: Props) {
         >
           <Ionicons name="close" size={24} color="#fff" />
         </TouchableOpacity>
+        {onReport ? (
+          <TouchableOpacity
+            testID="lightbox-report"
+            onPress={() => onReport(images[indexRef.current])}
+            style={[styles.reportBtn, { top: insets.top + 12 }]}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="flag-outline" size={22} color="#fff" />
+          </TouchableOpacity>
+        ) : null}
       </View>
     </Modal>
   );
@@ -140,4 +151,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  reportBtn: { position: 'absolute', right: 64, padding: 6 },
 });

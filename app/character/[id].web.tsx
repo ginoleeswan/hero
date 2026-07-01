@@ -13,6 +13,8 @@ import { useHeroTeams } from '../../src/hooks/useHeroTeams';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 import { FadeOutSkeleton } from '../../src/components/ui/FadeOutSkeleton';
 import { ContributeSheet } from '../../src/components/contribute/ContributeSheet';
+import { ReportSheet } from '../../src/components/report/ReportSheet';
+import type { ReportContext } from '../../src/lib/db/reports';
 import { isBlankValue } from '../../src/lib/contribute/missingFields';
 import {
   DOSSIER_GROUPS,
@@ -560,6 +562,7 @@ export default function WebCharacterScreen() {
     [],
   );
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [reportCtx, setReportCtx] = useState<{ context: ReportContext; imageUrl?: string | null } | null>(null);
   // Measured desktop stage height — lets the overlapping portrait anchor to a
   // constant top position regardless of how much identity content the stage has.
   const [stageHeight, setStageHeight] = useState(0);
@@ -2206,11 +2209,11 @@ export default function WebCharacterScreen() {
                   style={s2.contributeMenuItem as object}
                   onPress={() => {
                     setContributeMenu(false);
-                    setEditTarget({ field: null, current: null, report: true });
+                    setReportCtx({ context: 'page' });
                   }}
                 >
                   <Ionicons name="flag-outline" size={17} color={COLORS.navy} />
-                  <Text style={s2.contributeMenuText as object}>Report incorrect info</Text>
+                  <Text style={s2.contributeMenuText as object}>Report a problem</Text>
                 </Pressable>
               </View>
             ) : null}
@@ -2233,6 +2236,17 @@ export default function WebCharacterScreen() {
             if (isAdmin) reloadHero();
           }}
         />
+        <ReportSheet
+          visible={reportCtx !== null}
+          onClose={() => setReportCtx(null)}
+          heroId={stats.id}
+          heroName={stats.name}
+          context={reportCtx?.context ?? 'page'}
+          imageUrl={reportCtx?.imageUrl ?? null}
+          portraitUrl={stats.image.portraitUrl ?? null}
+          user={user}
+          onRequestSignIn={() => router.push('/(auth)/login')}
+        />
         {/* end mobile */}
       </View>
       {showIssueModal && data?.firstIssue ? (
@@ -2243,6 +2257,7 @@ export default function WebCharacterScreen() {
           images={lightboxImages}
           initialIndex={lightboxIndex}
           onClose={() => setLightboxImages([])}
+          onReport={(img) => setReportCtx({ context: 'image', imageUrl: img.url })}
         />
       ) : null}
       {/* Crossfade reveal: the real page sits settled underneath while the same
