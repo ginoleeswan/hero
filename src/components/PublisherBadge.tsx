@@ -152,6 +152,16 @@ export function UniverseEyebrow({
   const showFranchise = !!franchise && !!fHref && norm(franchise) !== norm(publisher);
   if (!showFranchise) return universeNode;
 
+  const fBrand = brandForPublisher(franchise);
+  const franchiseInner =
+    fBrand?.logo && fBrand.badgeSize ? (
+      <PublisherLogoChip publisher={franchise} height={logoHeight} />
+    ) : (
+      <Text style={textStyle} numberOfLines={1}>
+        {franchise}
+      </Text>
+    );
+
   return (
     <View style={styles.eyebrowRow}>
       {universeNode}
@@ -162,9 +172,7 @@ export function UniverseEyebrow({
         accessibilityLabel={`Browse the ${franchise} franchise`}
         style={({ pressed }) => (pressed ? styles.eyebrowPressed : undefined)}
       >
-        <Text style={textStyle} numberOfLines={1}>
-          {franchise}
-        </Text>
+        {franchiseInner}
       </Pressable>
     </View>
   );

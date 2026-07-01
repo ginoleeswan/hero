@@ -29,7 +29,7 @@ import {
   useFranchiseHeroes,
 } from '../../src/lib/query/heroQueries';
 import { flattenCategoryPages } from '../../src/lib/query/heroCache';
-import { publisherBySlug } from '../../src/constants/publishers';
+import { publisherBySlug, brandForPublisher } from '../../src/constants/publishers';
 import { SeoHead } from '../../src/components/web/SeoHead';
 import {
   activeFilterList,
@@ -239,7 +239,13 @@ export default function WebCategoryScreen() {
   // Non-category, non-franchise slugs are universes (publisher/studio): a
   // registered brand routes by its ILIKE query, otherwise the raw name.
   const isUniverse = !isFranchise && !categorySlug;
-  const brand = isUniverse ? publisherBySlug(slug) : undefined;
+  // A registered brand drives the logo stage — universes resolve by slug,
+  // franchises (God of War, Halo) by their display name.
+  const brand = isUniverse
+    ? publisherBySlug(slug)
+    : isFranchise
+      ? brandForPublisher(franchiseTerm)
+      : undefined;
   const universeTerm = isUniverse && slug ? (brand?.query ?? decodeURIComponent(slug)) : null;
   const title = categorySlug
     ? CATEGORY_LABELS[categorySlug]
@@ -488,7 +494,7 @@ export default function WebCategoryScreen() {
           logo={brand.logo}
           badgeSize={brand.badgeSize}
           logoTint={brand.logoTint}
-          montage={montage}
+          montage={franchiseTerm ? franchiseMontage : montage}
           compact={!isDesktop}
           sticky={isDesktop}
         />

@@ -23,6 +23,10 @@ import InsomniacLogo from '../../assets/brands/insomniac.svg';
 import NamcoLogo from '../../assets/brands/namco.svg';
 import BungieLogo from '../../assets/brands/bungie.svg';
 import CrystalDynamicsLogo from '../../assets/brands/crystal-dynamics.svg';
+import PlayStationStudiosLogo from '../../assets/brands/playstation-studios.svg';
+import XboxGameStudiosLogo from '../../assets/brands/xbox-game-studios.svg';
+import GodOfWarLogo from '../../assets/brands/god-of-war.svg';
+import HaloLogo from '../../assets/brands/halo.svg';
 import HannaBarberaLogo from '../../assets/brands/hanna-barbera.svg';
 import HasbroLogo from '../../assets/brands/hasbro.svg';
 import MattelLogo from '../../assets/brands/mattel.svg';
@@ -385,6 +389,50 @@ export const PUBLISHER_BRANDS: PublisherBrand[] = [
     colorDark: '#0F5050',
     logo: CrystalDynamicsLogo,
     badgeSize: { width: 41, height: 13 },
+    logoTint: '#FFFFFF',
+  },
+  {
+    slug: 'playstation-studios',
+    name: 'PlayStation Studios',
+    query: 'playstation studios',
+    match: ['playstation studios', 'playstation'],
+    color: '#0070D1',
+    colorDark: '#00358A',
+    logo: PlayStationStudiosLogo,
+    badgeSize: { width: 18, height: 20 },
+    logoTint: '#FFFFFF',
+  },
+  {
+    slug: 'xbox-game-studios',
+    name: 'Xbox Game Studios',
+    query: 'xbox game studios',
+    match: ['xbox game studios', 'xbox game'],
+    color: '#107C10',
+    colorDark: '#0A4F0A',
+    logo: XboxGameStudiosLogo,
+    badgeSize: { width: 45, height: 26 },
+    logoTint: '#FFFFFF',
+  },
+  {
+    slug: 'god-of-war',
+    name: 'God of War',
+    query: 'god of war',
+    match: ['god of war'],
+    color: '#B33A3A',
+    colorDark: '#5A1717',
+    logo: GodOfWarLogo,
+    badgeSize: { width: 60, height: 13 },
+    logoTint: '#FFFFFF',
+  },
+  {
+    slug: 'halo',
+    name: 'Halo',
+    query: 'halo',
+    match: ['halo'],
+    color: '#2B7DB6',
+    colorDark: '#123A54',
+    logo: HaloLogo,
+    badgeSize: { width: 68, height: 10 },
     logoTint: '#FFFFFF',
   },
   {

@@ -36,7 +36,7 @@ import {
   useFranchiseHeroes,
   prefetchHeroRow,
 } from '../../src/lib/query/heroQueries';
-import { publisherBySlug } from '../../src/constants/publishers';
+import { publisherBySlug, brandForPublisher } from '../../src/constants/publishers';
 import { flattenCategoryPages } from '../../src/lib/query/heroCache';
 import { HeroImage } from '../../src/components/HeroImage';
 import { BrandLogoView } from '../../src/components/PublisherBadge';
@@ -159,7 +159,13 @@ export default function CategoryScreen() {
   // Any non-category, non-franchise slug is a universe (publisher/studio):
   // a registered brand routes by its ILIKE query, anything else by its raw name.
   const isUniverse = !isFranchise && !categorySlug;
-  const brand = isUniverse ? publisherBySlug(slug) : undefined;
+  // A registered brand drives the logo masthead — universes resolve by slug,
+  // franchises (God of War, Halo) by their display name.
+  const brand = isUniverse
+    ? publisherBySlug(slug)
+    : isFranchise
+      ? brandForPublisher(franchiseTerm)
+      : undefined;
   const universeTerm = isUniverse && slug ? (brand?.query ?? decodeURIComponent(slug)) : null;
   const title = categorySlug
     ? CATEGORY_LABELS[categorySlug]
