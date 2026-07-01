@@ -151,9 +151,12 @@ export function useExploreData(): ExploreData {
             merged.push(h);
           }
         }
-        // Only mark the cache fresh once we actually have a billboard, so a total
-        // failure retries on the next mount instead of sticking for the full TTL.
-        if (merged.length > 0) cachedExploreAt = Date.now();
+        // Only mark the cache fresh once the CURATED pool resolved — not merely
+        // when the billboard is non-empty. A trending-only result (base failed,
+        // trend gave ~2) is a degraded fallback: it still renders (no empty flash),
+        // but it must stay stale so the next mount refetches and self-heals,
+        // rather than pinning 2 cards for the full TTL.
+        if (base.length > 0) cachedExploreAt = Date.now();
         setData((d) => ({ ...d, spotlight: merged, started: true }));
       },
     );
