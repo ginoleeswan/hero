@@ -287,8 +287,8 @@ const REVEAL_FRAG = `
       f.y
     );
   }
-  float roundedRect(vec2 pa, vec2 half, float r) {
-    vec2 q = abs(pa) - half + r;
+  float roundedRect(vec2 pa, vec2 ext, float r) {
+    vec2 q = abs(pa) - ext + r;
     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
   }
 
@@ -709,7 +709,8 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
 
     s.bonds.slice(0, 4).forEach((bond, i) => {
       const [sx, sy, sz] = slots[i];
-      const base = new THREE.Vector3(sx, sy, sz);
+      // Narrow viewports pull the halo in so nodes never clip the screen edge
+      const base = new THREE.Vector3(mobile ? sx * 0.86 : sx, sy, sz);
 
       // Node card
       const nodeGeo = new THREE.PlaneGeometry(0.68, 0.86);
@@ -874,7 +875,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
       (sRect.width * worldPerPxX) / GROUP_W,
       (sRect.height * 0.92 * worldPerPxY) / GROUP_H,
     );
-    const s = THREE.MathUtils.clamp(scale, 0.42, 1.05);
+    const s = THREE.MathUtils.clamp(scale, 0.34, 1.05);
     group.scale.set(s, s, s);
   };
 
@@ -1288,10 +1289,17 @@ const CSS = `
 
   .features-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-top:64px; }
   .feature-card {
+    position:relative; overflow:hidden;
     background:var(--card); border:1px solid var(--border);
     border-radius:var(--radius); padding:32px 28px;
     transition:border-color 250ms,transform 200ms,box-shadow 250ms;
   }
+  .feature-card::after {
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(230px circle at var(--mx,50%) var(--my,50%),rgba(231,115,51,0.11),transparent 65%);
+    opacity:0; transition:opacity 250ms;
+  }
+  .feature-card:hover::after { opacity:1; }
   .feature-card:hover {
     border-color:var(--orange); transform:translateY(-4px);
     box-shadow:0 14px 44px rgba(231,115,51,0.13);
@@ -1342,7 +1350,13 @@ const CSS = `
     position:relative; cursor:pointer; transition:transform 250ms,box-shadow 250ms;
   }
   .mosaic-card:hover { transform:scale(1.04); box-shadow:0 16px 48px rgba(0,0,0,0.7); z-index:1; }
-  .mosaic-card img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
+  .mosaic-card::before {
+    content:''; position:absolute; inset:0; z-index:2; border-radius:14px;
+    border:1px solid transparent; pointer-events:none; transition:border-color 250ms;
+  }
+  .mosaic-card:hover::before { border-color:rgba(249,178,34,0.45); }
+  .mosaic-card img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; transition:transform 350ms ease; }
+  .mosaic-card:hover img { transform:scale(1.07); }
   .mosaic-card::after {
     content:''; position:absolute; inset:0;
     background:linear-gradient(to bottom,transparent 50%,rgba(11,24,32,0.85) 100%);
@@ -1352,7 +1366,14 @@ const CSS = `
     font-family:'Righteous',sans-serif; font-size:13px; color:var(--beige); z-index:1; letter-spacing:0.5px;
   }
 
-  .cta-section { padding:100px 40px; text-align:center; background:var(--surface); border-top:1px solid var(--border); }
+  .cta-section {
+    padding:100px 40px; text-align:center;
+    background:
+      radial-gradient(ellipse 60% 70% at 50% 0%,rgba(231,115,51,0.08) 0%,transparent 70%),
+      radial-gradient(ellipse 40% 50% at 80% 100%,rgba(21,161,171,0.06) 0%,transparent 70%),
+      var(--surface);
+    border-top:1px solid var(--border);
+  }
   .cta-inner { max-width:600px; margin:0 auto; }
   .cta-glow {
     display:inline-block;
@@ -1688,6 +1709,61 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
     };
   }, [mode, fallBack]);
 
+  // Stats count up the first time the band scrolls into view
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!('IntersectionObserver' in window)) return;
+    const els = Array.from(document.querySelectorAll<HTMLElement>('.stat-num[data-target]'));
+    if (els.length === 0) return;
+    let alive = true;
+    const animate = (el: HTMLElement) => {
+      const target = Number(el.dataset.target ?? '0');
+      const suffix = el.dataset.suffix ?? '';
+      const start = performance.now();
+      const dur = 1400;
+      const tick = (now: number) => {
+        if (!alive) return;
+        const p = Math.min((now - start) / dur, 1);
+        const eased = 1 - (1 - p) ** 3;
+        el.textContent = `${Math.round(target * eased).toLocaleString('en-US')}${suffix}`;
+        if (p < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    };
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            animate(entry.target as HTMLElement);
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.6 },
+    );
+    els.forEach((el) => io.observe(el));
+    return () => {
+      alive = false;
+      io.disconnect();
+    };
+  }, []);
+
+  // Feature cards: spotlight follows the pointer (desktop hover only)
+  useEffect(() => {
+    if (!window.matchMedia('(hover: hover)').matches) return;
+    const grid = document.querySelector<HTMLElement>('.features-grid');
+    if (!grid) return;
+    const onMove = (e: MouseEvent) => {
+      grid.querySelectorAll<HTMLElement>('.feature-card').forEach((cardEl) => {
+        const r = cardEl.getBoundingClientRect();
+        cardEl.style.setProperty('--mx', `${e.clientX - r.left}px`);
+        cardEl.style.setProperty('--my', `${e.clientY - r.top}px`);
+      });
+    };
+    grid.addEventListener('mousemove', onMove, { passive: true });
+    return () => grid.removeEventListener('mousemove', onMove);
+  }, []);
+
   // Scroll-triggered reveals — animate each .reveal element once it enters view
   useEffect(() => {
     const els = Array.from(document.querySelectorAll('.reveal'));
@@ -1862,19 +1938,27 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* STATS */}
       <div className="stats">
         <div className="stat-item reveal">
-          <span className="stat-num">34,000+</span>
+          <span className="stat-num" data-target="34000" data-suffix="+">
+            34,000+
+          </span>
           <span className="stat-label">Characters</span>
         </div>
         <div className="stat-item reveal" style={{ transitionDelay: '80ms' }}>
-          <span className="stat-num">180+</span>
+          <span className="stat-num" data-target="180" data-suffix="+">
+            180+
+          </span>
           <span className="stat-label">Universes</span>
         </div>
         <div className="stat-item reveal" style={{ transitionDelay: '160ms' }}>
-          <span className="stat-num">3,000+</span>
+          <span className="stat-num" data-target="3000" data-suffix="+">
+            3,000+
+          </span>
           <span className="stat-label">Films &amp; Shows</span>
         </div>
         <div className="stat-item reveal" style={{ transitionDelay: '240ms' }}>
-          <span className="stat-num">430K+</span>
+          <span className="stat-num" data-target="430" data-suffix="K+">
+            430K+
+          </span>
           <span className="stat-label">Connections</span>
         </div>
       </div>
