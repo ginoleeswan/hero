@@ -1,7 +1,7 @@
 // report-alert: emails the admin when a new report is filed. Invoked by an
 // AFTER INSERT trigger on public.reports (via pg_net) with { id }. Loads the
-// report via the service role and sends one email through Resend. No-ops
-// gracefully if RESEND_API_KEY is unset, so reports never depend on email.
+// report via the service role and sends one email through Brevo. No-ops
+// gracefully if BREVO_API_KEY is unset, so reports never depend on email.
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -71,11 +71,12 @@ serve(async (req: Request) => {
     const { data: hero } = await sb.from('heroes').select('name').eq('id', rep.hero_id).single();
     const heroName = hero?.name ?? rep.hero_id;
 
-    const apiKey = Deno.env.get('RESEND_API_KEY') ?? '';
-    if (!apiKey) return json({ status: 'skipped', reason: 'no RESEND_API_KEY' });
+    const apiKey = Deno.env.get('BREVO_API_KEY') ?? '';
+    if (!apiKey) return json({ status: 'skipped', reason: 'no BREVO_API_KEY' });
 
     const to = Deno.env.get('REPORT_ALERT_TO') ?? 'ginoswanepoel@gmail.com';
-    const from = Deno.env.get('REPORT_ALERT_FROM') ?? 'Mythique <reports@mythique.app>';
+    const senderEmail = Deno.env.get('REPORT_ALERT_FROM') ?? 'reports@mythique.app';
+    const senderName = Deno.env.get('REPORT_ALERT_FROM_NAME') ?? 'Mythique';
     const reasonText = REASON_LABEL[rep.reason] ?? rep.reason;
     const targetText = TARGET_LABEL[rep.target_type] ?? rep.target_type;
     const heroUrl = `https://mythique.app/character/${encodeURIComponent(rep.hero_id)}`;
@@ -89,10 +90,15 @@ serve(async (req: Request) => {
       <p><a href="${heroUrl}">Open the character page</a> · <a href="https://mythique.app/admin/health">Command center → Reports</a></p>
     `;
 
-    const res = await fetch('https://api.resend.com/emails', {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to, subject: `New report: ${reasonText} — ${heroName}`, html }),
+      headers: { 'api-key': apiKey, 'Content-Type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({
+        sender: { name: senderName, email: senderEmail },
+        to: [{ email: to }],
+        subject: `New report: ${reasonText} — ${heroName}`,
+        htmlContent: html,
+      }),
     });
     if (!res.ok) return json({ status: 'error', http: res.status, detail: await res.text() }, 502);
     return json({ status: 'sent' });
