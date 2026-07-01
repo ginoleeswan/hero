@@ -34,7 +34,7 @@ describe('characterToHeroRow', () => {
       mug_shot: { image_id: 'img1' },
     };
     const row = characterToHeroRow(c, ff, NOW);
-    expect(row.id).toBe('igdb-55');
+    expect(row.id).toMatch(/^h_[0-9a-f-]{36}$/);
     expect(row.igdb_id).toBe('55');
     expect(row.name).toBe('Cloud Strife');
     expect(row.publisher).toBe('Square Enix');
@@ -94,7 +94,7 @@ describe('dedupDecision', () => {
     ];
     const d = dedupDecision({ id: 22, name: 'Jinx' }, lol, existing, NOW);
     expect(d.kind).toBe('insert');
-    if (d.kind === 'insert') expect(d.row.id).toBe('igdb-22');
+    if (d.kind === 'insert') expect(d.row.id).toMatch(/^h_/);
   });
 
   it('inserts a new row when there is no match', () => {
@@ -102,20 +102,20 @@ describe('dedupDecision', () => {
     expect(d.kind).toBe('insert');
   });
 
-  it('does NOT re-home a match already claimed by a different igdb_id', () => {
+  it('skips a same-name character already ingested from IGDB (per-game duplicate)', () => {
     const existing: ExistingRow[] = [
       {
-        id: 'igdb-5',
+        id: 'h_abc',
         name: 'Lara Croft',
         publisher: 'Square Enix',
         comicvine_id: null,
         igdb_id: '5',
       },
     ];
-    // A different IGDB character (#7) with the same name must not overwrite #5's claim.
+    // IGDB lists the same character once per game; a second entry (#7) with the
+    // same name must NOT create a duplicate row.
     const d = dedupDecision({ id: 7, name: 'Lara Croft' }, tr, existing, NOW);
-    expect(d.kind).toBe('insert');
-    if (d.kind === 'insert') expect(d.row.id).toBe('igdb-7');
+    expect(d.kind).toBe('skip');
   });
 
   it('inserts (not re-home) when the name is ambiguous across multiple rows', () => {

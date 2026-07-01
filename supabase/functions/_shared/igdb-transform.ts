@@ -67,7 +67,9 @@ export function characterToHeroRow(
   now: string,
 ): NewHeroRow {
   return {
-    id: `igdb-${c.id}`,
+    // New catalogue rows use the h_<uuid> id scheme; the IGDB id lives in the
+    // igdb_id column, never in the row id.
+    id: `h_${crypto.randomUUID()}`,
     name: c.name,
     igdb_id: String(c.id),
     igdb_status: 'enriched',
@@ -98,12 +100,16 @@ export function dedupDecision(
   const norm = normalizeName(c.name);
   const candidates = existing.filter((r) => normalizeName(r.name) === norm);
 
+  // Already ingested from IGDB under this name -> skip. IGDB stores the same
+  // character once per game, so a franchise's character list contains many
+  // duplicate "Geralt of Rivia" entries with different igdb_ids; without this
+  // guard the first re-homes/inserts and every subsequent one creates a dupe.
+  // Also collapses the same character appearing across two allowlist franchises.
+  if (candidates.some((r) => r.igdb_id !== null)) return { kind: 'skip' };
+
   // Unambiguous, non-comic, not-yet-claimed match -> re-home. Anything else
-  // (none, multiple, a protected comic character sharing the name, or a row
-  // already claimed by a DIFFERENT igdb_id) -> insert a fresh row. The
-  // already-claimed guard prevents a same-named second IGDB character from
-  // overwriting an earlier re-home's igdb_id/publisher.
-  if (candidates.length === 1 && candidates[0].igdb_id === null && !isProtected(candidates[0])) {
+  // (none, multiple, or a protected comic character sharing the name) -> insert.
+  if (candidates.length === 1 && !isProtected(candidates[0])) {
     return {
       kind: 'rehome',
       targetId: candidates[0].id,
