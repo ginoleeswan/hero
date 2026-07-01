@@ -512,6 +512,7 @@ export default function WebCharacterScreen() {
     data,
     setData,
     heroRow,
+    heroPortraitUrl,
     user,
     isAdmin,
     comicVineLoading,
@@ -562,7 +563,10 @@ export default function WebCharacterScreen() {
     [],
   );
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [reportCtx, setReportCtx] = useState<{ context: ReportContext; imageUrl?: string | null } | null>(null);
+  const [reportCtx, setReportCtx] = useState<{
+    context: ReportContext;
+    imageUrl?: string | null;
+  } | null>(null);
   // Measured desktop stage height — lets the overlapping portrait anchor to a
   // constant top position regardless of how much identity content the stage has.
   const [stageHeight, setStageHeight] = useState(0);
@@ -2243,7 +2247,7 @@ export default function WebCharacterScreen() {
           heroName={stats.name}
           context={reportCtx?.context ?? 'page'}
           imageUrl={reportCtx?.imageUrl ?? null}
-          portraitUrl={stats.image.portraitUrl ?? null}
+          portraitUrl={heroPortraitUrl}
           user={user}
           onRequestSignIn={() => router.push('/(auth)/login')}
         />

@@ -28,6 +28,28 @@ const TARGET_LABEL: Record<string, string> = {
   ai_portrait: 'AI portrait',
 };
 
+// Reports come from untrusted signed-in users, so every dynamic value rendered
+// into the alert email must be HTML-escaped, and image_url (free text on the
+// row) must be validated as an http(s) URL before it's used as a link — else a
+// crafted value could break out of the href attribute and inject markup.
+const esc = (s: string): string =>
+  s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const safeHttpUrl = (u: string | null | undefined): string | null => {
+  if (!u) return null;
+  try {
+    const parsed = new URL(u);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : null;
+  } catch {
+    return null;
+  }
+};
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   try {
@@ -56,13 +78,14 @@ serve(async (req: Request) => {
     const from = Deno.env.get('REPORT_ALERT_FROM') ?? 'Mythique <reports@mythique.app>';
     const reasonText = REASON_LABEL[rep.reason] ?? rep.reason;
     const targetText = TARGET_LABEL[rep.target_type] ?? rep.target_type;
-    const heroUrl = `https://mythique.app/character/${rep.hero_id}`;
+    const heroUrl = `https://mythique.app/character/${encodeURIComponent(rep.hero_id)}`;
+    const imgUrl = safeHttpUrl(rep.image_url);
 
     const html = `
-      <h2>New report: ${reasonText}</h2>
-      <p><strong>${heroName}</strong> — ${targetText}</p>
-      ${rep.detail ? `<p>${String(rep.detail).replace(/</g, '&lt;')}</p>` : ''}
-      ${rep.image_url ? `<p><a href="${rep.image_url}">Reported image</a></p>` : ''}
+      <h2>New report: ${esc(reasonText)}</h2>
+      <p><strong>${esc(heroName)}</strong> — ${esc(targetText)}</p>
+      ${rep.detail ? `<p>${esc(String(rep.detail))}</p>` : ''}
+      ${imgUrl ? `<p><a href="${esc(imgUrl)}">Reported image</a></p>` : ''}
       <p><a href="${heroUrl}">Open the character page</a> · <a href="https://mythique.app/admin/health">Command center → Reports</a></p>
     `;
 
