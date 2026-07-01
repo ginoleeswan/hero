@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, pageGutter } from '../../../constants/colors';
 import { HeroLogo } from '../HeroLogo';
 
 interface HomeFooterProps {
@@ -56,7 +56,7 @@ function LinkColumn({
 export function HomeFooter({ heroCount, onNavigate }: HomeFooterProps) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
-  const pagePad = width < 640 ? 16 : 32;
+  const pagePad = pageGutter(width);
 
   return (
     <View style={[s.footer, { paddingHorizontal: pagePad }] as object}>
@@ -126,10 +126,10 @@ const s = StyleSheet.create({
   col: { gap: 12 },
   colTitle: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
+    fontSize: 11,
     letterSpacing: 2,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.35)',
+    color: 'rgba(245,235,220,0.5)',
     marginBottom: 4,
   } as object,
   linkWrap: { transition: 'opacity 150ms ease' } as object,

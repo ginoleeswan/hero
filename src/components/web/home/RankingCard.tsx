@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, ELEVATION, HOVER_TRANSITION, INK_TEXT } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import type { Hero } from '../../../lib/db/heroes';
 
@@ -59,17 +59,17 @@ const rc = StyleSheet.create({
   wrap: {
     width: CARD_W,
     height: CARD_H,
-    borderRadius: 10,
+    borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
     flexShrink: 0,
     cursor: 'pointer',
-    transition: 'transform 200ms ease, box-shadow 200ms ease',
+    transition: HOVER_TRANSITION,
     position: 'relative',
   } as object,
   wrapHover: {
     transform: [{ translateY: -6 }],
-    boxShadow: '0 20px 52px rgba(0,0,0,0.38)',
+    boxShadow: ELEVATION.hover,
     zIndex: 2,
   } as object,
   overlay: {
@@ -109,7 +109,7 @@ const rc = StyleSheet.create({
   } as object,
   statLabel: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: 'rgba(245,235,220,0.5)',
+    fontSize: 10,
+    color: INK_TEXT.faint,
   } as object,
 });

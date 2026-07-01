@@ -4,7 +4,13 @@
 // shows every door at once, nothing hidden behind a horizontal scroll.
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { HeroImage } from '../../HeroImage';
-import { COLORS } from '../../../constants/colors';
+import {
+  COLORS,
+  ELEVATION,
+  EYEBROW,
+  HOVER_TRANSITION,
+  pageGutter,
+} from '../../../constants/colors';
 import { BROWSE_PODS } from '../../home/CategoryPodGrid';
 import type { BrowseCover } from '../../../lib/db/heroes';
 
@@ -21,7 +27,7 @@ export function CategoryBrowseGrid({
   onNavigate: (path: string) => void;
 }) {
   const { width } = useWindowDimensions();
-  const pad = width < 640 ? 16 : 32;
+  const pad = pageGutter(width);
   const cols = width >= 1280 ? 4 : width >= 768 ? 3 : 2;
   const gap = 14;
   // Fixed tile size (not aspectRatio) — WebKit collapses aspectRatio grid cells.
@@ -46,24 +52,30 @@ export function CategoryBrowseGrid({
               ] as object
             }
           >
-            <HeroImage
-              id={p.slug}
-              name={c?.name ?? p.label}
-              imageUrl={c?.image_url ?? c?.image_md_url}
-              portraitUrl={c?.portrait_url}
-              grid
-              contentFit="cover"
-              contentPosition={{ top: '32%', left: '50%' }}
-              style={StyleSheet.absoluteFill as object}
-              recyclingKey={p.slug}
-            />
-            <View style={s.scrim as object} />
-            <View style={s.body}>
-              <Text style={s.kind as object}>{p.kind}</Text>
-              <Text style={s.label as object} numberOfLines={2}>
-                {p.label}
-              </Text>
-            </View>
+            {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
+              <>
+                <HeroImage
+                  id={p.slug}
+                  name={c?.name ?? p.label}
+                  imageUrl={c?.image_url ?? c?.image_md_url}
+                  portraitUrl={c?.portrait_url}
+                  grid
+                  contentFit="cover"
+                  contentPosition={{ top: '32%', left: '50%' }}
+                  style={StyleSheet.absoluteFill as object}
+                  recyclingKey={p.slug}
+                />
+                <View style={s.scrim as object} />
+                <View style={s.body}>
+                  <Text style={s.kind as object}>{p.kind}</Text>
+                  <Text style={s.label as object} numberOfLines={2}>
+                    {p.label}
+                  </Text>
+                </View>
+                {/* Signature seam — the house orange hairline surfaces on hover. */}
+                <View style={[s.seam, hovered && (s.seamOn as object)] as object} />
+              </>
+            )}
           </Pressable>
         );
       })}
@@ -79,12 +91,23 @@ const s = StyleSheet.create({
     backgroundColor: COLORS.navy,
     justifyContent: 'flex-end',
     cursor: 'pointer',
-    transition: 'transform 200ms ease, box-shadow 200ms ease',
+    transition: HOVER_TRANSITION,
   } as object,
   tileHover: {
     transform: [{ translateY: -6 }],
-    boxShadow: '0 20px 52px rgba(0,0,0,0.38)',
+    boxShadow: ELEVATION.hover,
   } as object,
+  seam: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundImage: `linear-gradient(90deg, transparent 0%, ${COLORS.orange} 30%, ${COLORS.orange} 70%, transparent 100%)`,
+    opacity: 0,
+    transition: 'opacity 200ms ease',
+  } as object,
+  seamOn: { opacity: 1 } as object,
   scrim: {
     position: 'absolute',
     top: 0,
@@ -96,11 +119,7 @@ const s = StyleSheet.create({
   } as object,
   body: { padding: 14 },
   kind: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    color: COLORS.orange,
+    ...EYEBROW,
     marginBottom: 3,
   } as object,
   label: {

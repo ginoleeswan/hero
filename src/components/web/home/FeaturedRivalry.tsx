@@ -4,7 +4,7 @@
 // arena; the rivalries rail below carries the rest.
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, ELEVATION, HOVER_TRANSITION, pageGutter } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import { VsBadge } from '../../compare/VsBadge';
 import type { Rivalry } from '../../../lib/db/heroes';
@@ -12,7 +12,7 @@ import type { Rivalry } from '../../../lib/db/heroes';
 export function FeaturedRivalry({ rivalry }: { rivalry: Rivalry }) {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const pagePad = width < 640 ? 16 : 32;
+  const pagePad = pageGutter(width);
   const h = width < 760 ? 260 : 360;
   const { a, b } = rivalry;
 
@@ -80,11 +80,11 @@ const s = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
     cursor: 'pointer',
-    transition: 'transform 200ms ease, box-shadow 200ms ease',
+    transition: HOVER_TRANSITION,
   } as object,
   cardHover: {
     transform: [{ translateY: -4 }],
-    boxShadow: '0 26px 64px rgba(0,0,0,0.4)',
+    boxShadow: ELEVATION.lifted,
   } as object,
   faceA: { position: 'absolute', top: 0, left: 0, width: '50%', height: '100%' } as object,
   // Mirror the right fighter so the two face inward, toward the VS (same

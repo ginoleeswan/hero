@@ -1,6 +1,6 @@
 import { useWindowDimensions, View, Text, Pressable, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, EYEBROW, INK_TEXT } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import { useSkeletonAnim, SkeletonBlock } from '../Skeleton';
 import { statSplit, statLead, type MatchupSide } from '../../../lib/home/matchupVote';
@@ -402,7 +402,7 @@ const m = StyleSheet.create({
   } as object,
   pickedTagText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 8,
+    fontSize: 10,
     color: '#fff',
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -457,13 +457,7 @@ const m = StyleSheet.create({
     gap: 5,
     marginBottom: 7,
   } as object,
-  eyebrow: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    letterSpacing: 2.5,
-    textTransform: 'uppercase',
-    color: COLORS.orange,
-  } as object,
+  eyebrow: { ...EYEBROW } as object,
   title: {
     fontFamily: 'Flame-Regular',
     fontSize: 22,
@@ -538,7 +532,7 @@ const m = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.45)',
+    color: INK_TEXT.faint,
   } as object,
   linkRow: { alignSelf: 'flex-start', cursor: 'pointer' } as object,
   linkRowCentered: { alignSelf: 'center' } as object,

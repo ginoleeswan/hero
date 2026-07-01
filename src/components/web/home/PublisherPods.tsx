@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
-import { COLORS } from '../../../constants/colors';
+import { pageGutter } from '../../../constants/colors';
 import { FEATURED_PUBLISHERS } from '../../../constants/publishers';
 import { BrandLogoView } from '../../PublisherBadge';
 
@@ -22,7 +22,7 @@ export function PublisherPods({ onNavigate }: { onNavigate: (path: string) => vo
         [
           s.row,
           !isDesktop && (s.rowWrap as object),
-          { paddingHorizontal: width < 640 ? 16 : 32 },
+          { paddingHorizontal: pageGutter(width) },
         ] as object
       }
     >

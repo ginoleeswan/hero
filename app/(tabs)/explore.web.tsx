@@ -4,7 +4,18 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { COLORS, SURFACE, SURFACE_GRADIENT } from '../../src/constants/colors';
+import {
+  COLORS,
+  SURFACE,
+  SURFACE_GRADIENT,
+  SEAM_COLOR,
+  ELEVATION,
+  INK_TEXT,
+  EYEBROW,
+  HOVER_TRANSITION,
+  pageGutter,
+} from '../../src/constants/colors';
+import { useAuth } from '../../src/hooks/useAuth';
 import { HeroImage } from '../../src/components/HeroImage';
 import { WebHomeSkeleton } from '../../src/components/web/HomeSkeleton';
 import { type Hero } from '../../src/lib/db/heroes';
@@ -63,22 +74,28 @@ function RowCard({ hero, onPress }: { hero: Hero | FavouriteHero; onPress: () =>
         [rc.wrap, hovered && (rc.wrapHover as object)] as object
       }
     >
-      <HeroImage
-        id={String(hero.id)}
-        name={hero.name}
-        imageUrl={hero.image_url}
-        portraitUrl={hero.portrait_url}
-        contentFit="cover"
-        contentPosition="top"
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
-        recyclingKey={String(hero.id)}
-      />
-      <View style={rc.overlay as object} />
-      <View style={rc.bottom}>
-        <Text style={rc.name as object} numberOfLines={2}>
-          {hero.name}
-        </Text>
-      </View>
+      {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
+        <>
+          <HeroImage
+            id={String(hero.id)}
+            name={hero.name}
+            imageUrl={hero.image_url}
+            portraitUrl={hero.portrait_url}
+            contentFit="cover"
+            contentPosition="top"
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as object}
+            recyclingKey={String(hero.id)}
+          />
+          <View style={rc.overlay as object} />
+          <View style={rc.bottom}>
+            <Text style={rc.name as object} numberOfLines={2}>
+              {hero.name}
+            </Text>
+          </View>
+          {/* Signature seam — the house orange hairline surfaces on hover. */}
+          <View style={[rc.seam, hovered && (rc.seamOn as object)] as object} />
+        </>
+      )}
     </Pressable>
   );
 }
@@ -87,18 +104,29 @@ const rc = StyleSheet.create({
   wrap: {
     width: ROW_CARD_WIDTH,
     height: ROW_CARD_HEIGHT,
-    borderRadius: 10,
+    borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
     flexShrink: 0,
     cursor: 'pointer',
-    transition: 'transform 200ms ease, box-shadow 200ms ease',
+    transition: HOVER_TRANSITION,
   } as object,
   wrapHover: {
     transform: [{ translateY: -6 }],
-    boxShadow: '0 20px 52px rgba(0,0,0,0.38)',
+    boxShadow: ELEVATION.hover,
     zIndex: 2,
   } as object,
+  seam: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundImage: `linear-gradient(90deg, transparent 0%, ${COLORS.orange} 30%, ${COLORS.orange} 70%, transparent 100%)`,
+    opacity: 0,
+    transition: 'opacity 200ms ease',
+  } as object,
+  seamOn: { opacity: 1 } as object,
   overlay: {
     position: 'absolute',
     top: 0,
@@ -206,18 +234,27 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
   const { width, height: windowHeight } = useWindowDimensions();
   const isDesktop = width >= 768;
   const [activeIndex, setActiveIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
 
-  // Auto-advance lives here — only re-renders this component, not the whole page
+  // Auto-advance lives here — only re-renders this component, not the whole
+  // page. Paused while the pointer rests on the stage (never yank the hero away
+  // mid-read) and disabled entirely under prefers-reduced-motion.
   useEffect(() => {
-    if (heroes.length <= 1) return;
+    if (heroes.length <= 1 || paused) return;
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    ) {
+      return;
+    }
     const timer = setInterval(() => setActiveIndex((i) => (i + 1) % heroes.length), 6000);
     return () => clearInterval(timer);
-  }, [heroes.length]);
+  }, [heroes.length, paused]);
 
   const hero = heroes[activeIndex];
   if (!hero) return null;
 
-  const pagePad = width < 640 ? 16 : 32;
+  const pagePad = pageGutter(width);
 
   const activeScale =
     width >= 1600
@@ -236,7 +273,10 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
     const stageHeight = Math.max(440, Math.min(500, windowHeight * 0.62));
 
     return (
-      <View style={[pss.wrap, { paddingHorizontal: pagePad, minHeight: stageHeight }] as object}>
+      <View
+        style={[pss.wrap, { paddingHorizontal: pagePad, minHeight: stageHeight }] as object}
+        {...({ onMouseEnter: () => setPaused(true), onMouseLeave: () => setPaused(false) } as object)}
+      >
         {/* Atmospheric orbs — decorative, no interaction */}
         <View style={pss.orbA as object} />
         <View style={pss.orbB as object} />
@@ -356,8 +396,12 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
                 <Pressable
                   key={i}
                   onPress={() => setActiveIndex(i)}
-                  style={[pss.dot, i === activeIndex && (pss.dotActive as object)] as object}
-                />
+                  accessibilityRole="button"
+                  accessibilityLabel={`Show featured hero ${i + 1} of ${heroes.length}`}
+                  style={pss.dotHit as object}
+                >
+                  <View style={[pss.dot, i === activeIndex && (pss.dotActive as object)] as object} />
+                </Pressable>
               ))}
             </View>
           </View>
@@ -411,8 +455,12 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
               <Pressable
                 key={i}
                 onPress={() => setActiveIndex(i)}
-                style={[pss.dot, i === activeIndex && (pss.dotActive as object)] as object}
-              />
+                accessibilityRole="button"
+                accessibilityLabel={`Show featured hero ${i + 1} of ${heroes.length}`}
+                style={pss.dotHit as object}
+              >
+                <View style={[pss.dot, i === activeIndex && (pss.dotActive as object)] as object} />
+              </Pressable>
             ))}
           </View>
         </View>
@@ -466,27 +514,25 @@ const pss = StyleSheet.create({
     position: 'absolute',
     top: 14,
     left: 14,
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: COLORS.orange,
-    letterSpacing: 2.5,
-    textTransform: 'uppercase',
+    ...EYEBROW,
     zIndex: 2,
   } as object,
+  // Character names set in Flame everywhere — the display face is the brand.
   cardName: {
     position: 'absolute',
     bottom: 14,
     left: 14,
     right: 14,
-    fontFamily: 'Nunito_700Bold',
+    fontFamily: 'Flame-Regular',
     fontSize: 18,
     color: COLORS.beige,
-    lineHeight: 22,
+    lineHeight: 23,
     textShadow: '0 2px 8px rgba(0,0,0,0.9)',
     zIndex: 2,
   } as object,
   cardNameNext: {
-    fontSize: 11,
+    fontSize: 12,
+    lineHeight: 16,
     bottom: 10,
     left: 10,
   } as object,
@@ -529,11 +575,7 @@ const pss = StyleSheet.create({
     zIndex: 3,
   } as object,
   glassPanelEyebrow: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 8,
-    letterSpacing: 2.5,
-    textTransform: 'uppercase',
-    color: COLORS.orange,
+    ...EYEBROW,
     marginBottom: 10,
   } as object,
   glassPanelName: {
@@ -547,9 +589,9 @@ const pss = StyleSheet.create({
   } as object,
   glassPanelRealName: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 12,
-    lineHeight: 16,
-    color: 'rgba(245,235,220,0.5)',
+    fontSize: 13,
+    lineHeight: 17,
+    color: INK_TEXT.faint,
     marginBottom: 16,
   } as object,
   metaRow: {
@@ -560,8 +602,8 @@ const pss = StyleSheet.create({
   } as object,
   glassPanelPub: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: 'rgba(245,235,220,0.4)',
+    fontSize: 11,
+    color: INK_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
   } as object,
@@ -575,16 +617,16 @@ const pss = StyleSheet.create({
   } as object,
   alignChipText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
+    fontSize: 10,
     color: COLORS.orange,
     textTransform: 'uppercase',
     letterSpacing: 1,
   } as object,
   glassPanelSummary: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    color: 'rgba(245,235,220,0.68)',
-    lineHeight: 21,
+    fontSize: 14,
+    color: INK_TEXT.muted,
+    lineHeight: 22,
     marginBottom: 20,
   } as object,
   statPills: {
@@ -610,8 +652,8 @@ const pss = StyleSheet.create({
   } as object,
   statPillKey: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: 'rgba(245,235,220,0.5)',
+    fontSize: 10,
+    color: INK_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 1,
   } as object,
@@ -635,24 +677,20 @@ const pss = StyleSheet.create({
   } as object,
   firstAppearance: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 11,
-    lineHeight: 15,
-    color: 'rgba(245,235,220,0.4)',
+    fontSize: 12,
+    lineHeight: 16,
+    color: INK_TEXT.faint,
   } as object,
 
   // Shared / mobile panel text
   panelLabel: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: COLORS.orange,
-    letterSpacing: 3,
-    textTransform: 'uppercase',
+    ...EYEBROW,
     marginBottom: 8,
   } as object,
   panelPub: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: 'rgba(245,235,220,0.4)',
+    color: INK_TEXT.faint,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginBottom: 14,
@@ -663,28 +701,35 @@ const pss = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 20,
   },
+  // The stage's single primary CTA — the most confident text on the panel.
   ctaBtn: {
     backgroundColor: COLORS.orange,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 24,
+    paddingHorizontal: 26,
+    paddingVertical: 13,
+    borderRadius: 26,
     transition: 'opacity 150ms ease',
   } as object,
   ctaBtnHover: { opacity: 0.85 } as object,
   ctaBtnText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
+    fontSize: 13,
     color: '#fff',
     textTransform: 'uppercase',
-    letterSpacing: 1.2,
+    letterSpacing: 1,
   },
-  dots: { flexDirection: 'row', gap: 6 },
+  dots: { flexDirection: 'row', gap: 2 },
+  // Padded hit area around each 6px dot so the target isn't a pinhead.
+  dotHit: {
+    paddingHorizontal: 5,
+    paddingVertical: 12,
+    cursor: 'pointer',
+    justifyContent: 'center',
+  } as object,
   dot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(245,235,220,0.2)',
-    cursor: 'pointer',
+    backgroundColor: 'rgba(245,235,220,0.25)',
     transition: 'all 200ms ease',
   } as object,
   dotActive: { width: 20, backgroundColor: COLORS.orange } as object,
@@ -796,6 +841,8 @@ function CarouselArrow({
         e.stopPropagation?.();
         onPress();
       }}
+      accessibilityRole="button"
+      accessibilityLabel={direction === 'left' ? 'Scroll row left' : 'Scroll row right'}
       style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [
           arr.btn,
@@ -804,7 +851,11 @@ function CarouselArrow({
         ] as object
       }
     >
-      <Text style={arr.chevron as object}>{direction === 'left' ? '‹' : '›'}</Text>
+      <MaterialCommunityIcons
+        name={direction === 'left' ? 'chevron-left' : 'chevron-right'}
+        size={26}
+        color={COLORS.navy}
+      />
     </Pressable>
   );
 }
@@ -818,7 +869,7 @@ const arr = StyleSheet.create({
     height: ARROW_SIZE,
     borderRadius: ARROW_SIZE / 2,
     backgroundColor: COLORS.beige,
-    boxShadow: '0 4px 20px rgba(0,0,0,0.22)',
+    boxShadow: ELEVATION.rest,
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
@@ -828,19 +879,11 @@ const arr = StyleSheet.create({
   } as object,
   btnHover: {
     transform: [{ scale: 1.12 }],
-    boxShadow: '0 8px 28px rgba(0,0,0,0.3)',
+    boxShadow: ELEVATION.hover,
   } as object,
   left: { left: -12 } as object, // -16 (scroll margin) + 4 inset
   right: { right: 8 } as object, // viewport-breakout row: 8px from viewport edge
   rightContained: { right: -12 } as object, // contained dark row: -16 (scroll margin) + 4 inset
-  chevron: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 24,
-    color: COLORS.navy,
-    lineHeight: 26,
-    textAlign: 'center',
-    marginTop: -1,
-  } as object,
 });
 
 // ── Home row section ──────────────────────────────────────────────────────────
@@ -870,7 +913,7 @@ function HomeRow({
   } = useCarouselScroll(heroes.length);
 
   const { width: winWidth } = useWindowDimensions();
-  const pagePad = winWidth < 640 ? 16 : 32;
+  const pagePad = pageGutter(winWidth);
 
   if (heroes.length === 0) return null;
   return (
@@ -952,13 +995,7 @@ const row = StyleSheet.create({
     minHeight: 38,
   },
   headerText: { gap: 2, justifyContent: 'center' },
-  label: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: COLORS.orange,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
+  label: { ...EYEBROW } as object,
   title: { fontFamily: 'Flame-Regular', fontSize: 36, color: COLORS.navy, lineHeight: 38 },
   titleRow: {
     flexDirection: 'row',
@@ -971,11 +1008,106 @@ const row = StyleSheet.create({
   titleRowHover: { opacity: 0.7 } as object,
 });
 
+// ── Favourites invite ─────────────────────────────────────────────────────────
+// Renders where "Your Favourites" would sit when the shelf is empty — the slot
+// becomes an invitation (the page's best ad for having an account) instead of
+// silently disappearing.
+function FavouritesInvite({
+  gutter,
+  isAuthed,
+  onCta,
+}: {
+  gutter: number;
+  isAuthed: boolean;
+  onCta: () => void;
+}) {
+  return (
+    <View style={[fi.section, { paddingHorizontal: gutter }] as object}>
+      <View style={fi.headerLeft}>
+        <View style={fi.accentBar} />
+        <View style={fi.headerText}>
+          <Text style={fi.label as object}>For You</Text>
+          <Text style={fi.title as object}>Start Your Collection</Text>
+        </View>
+      </View>
+      <Text style={fi.sub as object}>
+        {isAuthed
+          ? 'Tap the heart on any character and the legends you’d defend line up here.'
+          : 'Create a free account and keep the legends you’d defend in one place — favourites, votes and your own corner of the multiverse.'}
+      </Text>
+      <View style={fi.body}>
+        {[0, 1, 2].map((i) => (
+          <View key={i} style={fi.ghost as object}>
+            <MaterialCommunityIcons name="heart-outline" size={26} color="rgba(41,60,67,0.28)" />
+          </View>
+        ))}
+        <Pressable
+          onPress={onCta}
+          accessibilityRole="button"
+          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+            [fi.cta, hovered && (fi.ctaHover as object)] as object
+          }
+        >
+          <Text style={fi.ctaText}>{isAuthed ? 'Find your first favourite' : 'Sign up free'}</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const fi = StyleSheet.create({
+  section: { marginBottom: 52 },
+  headerLeft: { flexDirection: 'row', alignItems: 'stretch', gap: 14, marginBottom: 10 },
+  accentBar: { width: 4, borderRadius: 2, backgroundColor: COLORS.orange, minHeight: 38 },
+  headerText: { gap: 2, justifyContent: 'center' },
+  label: { ...EYEBROW } as object,
+  title: { fontFamily: 'Flame-Regular', fontSize: 36, color: COLORS.navy, lineHeight: 38 },
+  sub: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14,
+    lineHeight: 20,
+    color: 'rgba(41,60,67,0.65)',
+    maxWidth: 560,
+    marginBottom: 20,
+  } as object,
+  body: { flexDirection: 'row', alignItems: 'center', gap: 14, flexWrap: 'wrap' },
+  // Face-down card ghosts — dashed outlines where the collection will live.
+  ghost: {
+    width: 96,
+    height: 132,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(41,60,67,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  } as object,
+  cta: {
+    backgroundColor: COLORS.orange,
+    paddingHorizontal: 26,
+    paddingVertical: 13,
+    borderRadius: 26,
+    marginLeft: 10,
+    cursor: 'pointer',
+    transition: 'opacity 150ms ease',
+  } as object,
+  ctaHover: { opacity: 0.85 } as object,
+  ctaText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+});
+
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function WebHomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < 640;
+  const gutter = pageGutter(width);
+  const { user } = useAuth();
 
   // Explore opens on the hero stage and closes on the deep-navy footer, so the
   // whole screen reads as one immersive ink surface — top chrome and canvas both
@@ -1051,7 +1183,13 @@ export default function WebHomeScreen() {
                 matchup isn't a full-width bar and the game rides up beside it;
                 on mobile they stack. */}
             <View
-              style={[styles.engageRow, isMobile && (styles.engageRowStack as object)] as object}
+              style={
+                [
+                  styles.engageRow,
+                  { paddingHorizontal: gutter },
+                  isMobile && (styles.engageRowStack as object),
+                ] as object
+              }
             >
               <View style={isMobile ? undefined : (styles.engageMatchup as object)}>
                 {homeData.matchup === undefined ? (
@@ -1073,10 +1211,19 @@ export default function WebHomeScreen() {
             </View>
           </View>
 
-          {/* ── Orange ticker strip ────────────────────────────────────────── */}
+          {/* ── Orange ticker strip — live pulse, not wallpaper: today's battle
+               and the biggest trending name ride alongside the catalogue stats. */}
           <PulseTicker
             heroCount={totalHeroCount ?? 0}
             newlyAddedCount={homeData.newlyAdded?.length ?? 0}
+            pulses={
+              [
+                homeData.matchup
+                  ? `Today's Battle — ${homeData.matchup.heroA.name} vs ${homeData.matchup.heroB.name}`
+                  : null,
+                homeData.wikiTrending?.[0] ? `Trending Now: ${homeData.wikiTrending[0].name}` : null,
+              ].filter((s): s is string => !!s)
+            }
           />
 
           {/* ── Right Now — the dynamic editorial zone (campaign + trending +
@@ -1114,7 +1261,7 @@ export default function WebHomeScreen() {
             {/* ── Browse the Universe — the category doorways, with their own
                  header so the grid reads as a deliberate browse block, not an
                  orphaned slab under the carousel. ──────────────────────────── */}
-            <View style={styles.browseHead}>
+            <View style={[styles.browseHead, { paddingHorizontal: gutter }] as object}>
               <Text style={styles.browseKicker as object}>The Library</Text>
               <Text
                 style={
@@ -1147,7 +1294,7 @@ export default function WebHomeScreen() {
             </View>
 
             {/* ── The Arena — one featured rivalry leads; the rest live in /versus. */}
-            <View style={styles.browseHead}>
+            <View style={[styles.browseHead, { paddingHorizontal: gutter }] as object}>
               <Text style={styles.browseKicker as object}>The Arena</Text>
               <Text
                 style={
@@ -1165,19 +1312,32 @@ export default function WebHomeScreen() {
             )}
             <Pressable
               onPress={() => router.push('/versus' as Parameters<typeof router.push>[0])}
-              style={[styles.seeAllRow, { paddingHorizontal: isMobile ? 16 : 32 }] as object}
+              style={[styles.seeAllRow, { paddingHorizontal: gutter }] as object}
             >
               <Text style={styles.seeAllText as object}>See all rivalries →</Text>
             </Pressable>
 
             {/* ── For You — warm close. Distinct eyebrow from the "Personal /
-                 Jump Back In" rail up top so the two don't read as a dupe. ─── */}
-            <HomeRow
-              label="For You"
-              title="Your Favourites"
-              heroes={favourites}
-              onPress={handlePress}
-            />
+                 Jump Back In" rail up top so the two don't read as a dupe.
+                 Empty state is a conversion moment, never a silent gap. ────── */}
+            {favourites.length > 0 ? (
+              <HomeRow
+                label="For You"
+                title="Your Favourites"
+                heroes={favourites}
+                onPress={handlePress}
+              />
+            ) : (
+              <FavouritesInvite
+                gutter={gutter}
+                isAuthed={!!user}
+                onCta={() =>
+                  router.push((user ? '/search' : '/(auth)/login') as Parameters<
+                    typeof router.push
+                  >[0])
+                }
+              />
+            )}
           </View>
 
           <HomeFooter
@@ -1251,23 +1411,27 @@ const styles = StyleSheet.create({
   // Beige canvas owns the carousel section (sits on the dark scroll surface).
   // Comic-paper tactility — a faint halftone ink-dot grid + a whisper of vertical
   // light so the canvas reads as printed stock, not a flat fill.
+  // The ink→paper seam signature: a rounded paper lip with the warm orange
+  // hairline where the dark Right Now band hands over to the Library (mirrors
+  // the native PaperSurface lip).
   beigeCanvas: {
     backgroundColor: COLORS.beige,
     backgroundImage:
       'radial-gradient(rgba(41,60,67,0.09) 1.1px, transparent 1.8px), linear-gradient(to bottom, rgba(255,255,255,0.85), rgba(255,255,255,0) 620px)',
     backgroundSize: '18px 18px, 100% 100%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderTopColor: SEAM_COLOR,
     paddingTop: 40,
     paddingBottom: 24,
   } as object,
 
   // "Browse the Universe" chapter break between the dynamic zone and the library.
-  browseHead: { paddingHorizontal: 24, paddingBottom: 30, marginTop: -36 } as object,
+  browseHead: { paddingBottom: 30, marginTop: -36 } as object,
   browseKicker: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
+    ...EYEBROW,
     letterSpacing: 2.5,
-    textTransform: 'uppercase',
-    color: COLORS.orange,
     marginBottom: 4,
   } as object,
   browseTitle: {

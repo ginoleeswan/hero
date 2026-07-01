@@ -5,6 +5,9 @@ import { COLORS } from '../../../constants/colors';
 interface PulseTickerProps {
   heroCount: number;
   newlyAddedCount: number;
+  /** Live editorial segments (today's battle, trending name) — the actual
+   *  "pulse". They lead the loop so the strip earns its volume. */
+  pulses?: string[];
 }
 
 const KEYFRAMES_ID = 'mythique-ticker-keyframes';
@@ -26,9 +29,19 @@ function ensureKeyframes() {
  * Auto-scrolling marquee. Two identical copies sit in a content-width track that
  * translates by exactly -50% (one copy) via a CSS animation applied straight to
  * the DOM node — runs on the compositor, never stalls, seamless at any width.
+ * Pauses while hovered (so it can be read) and holds still entirely under
+ * prefers-reduced-motion.
  */
-export function PulseTicker({ heroCount, newlyAddedCount }: PulseTickerProps) {
-  const text = `${heroCount.toLocaleString()} Heroes & Villains  ·  Marvel, DC & Beyond  ·  Powers, Origins & First Appearances  ·  500+ Teams & Affiliations  ·  ${newlyAddedCount} Recently Added  ·  `;
+export function PulseTicker({ heroCount, newlyAddedCount, pulses = [] }: PulseTickerProps) {
+  const segments = [
+    ...pulses,
+    `${heroCount.toLocaleString()} Heroes & Villains`,
+    'Marvel, DC & Beyond',
+    'Powers, Origins & First Appearances',
+    '500+ Teams & Affiliations',
+    `${newlyAddedCount} Recently Added`,
+  ];
+  const text = `${segments.join('  ·  ')}  ·  `;
   const trackRef = useRef<View>(null);
 
   useEffect(() => {
@@ -37,8 +50,22 @@ export function PulseTicker({ heroCount, newlyAddedCount }: PulseTickerProps) {
     const el = trackRef.current as unknown as HTMLElement | null;
     if (!el) return;
     el.style.width = 'max-content';
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     el.style.willChange = 'transform';
     el.style.animation = `${ANIM_NAME} 32s linear infinite`;
+    const pause = () => {
+      el.style.animationPlayState = 'paused';
+    };
+    const resume = () => {
+      el.style.animationPlayState = 'running';
+    };
+    const wrap = el.parentElement;
+    wrap?.addEventListener('mouseenter', pause);
+    wrap?.addEventListener('mouseleave', resume);
+    return () => {
+      wrap?.removeEventListener('mouseenter', pause);
+      wrap?.removeEventListener('mouseleave', resume);
+    };
   }, []);
 
   return (

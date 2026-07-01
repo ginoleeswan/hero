@@ -6,7 +6,7 @@ import ReactDOM from 'react-dom';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { HeroImage } from '../../HeroImage';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, EYEBROW, INK_TEXT, pageGutter } from '../../../constants/colors';
 import {
   mergeTrendingTitles,
   trendingBadge,
@@ -282,7 +282,7 @@ function PersonalRow({
   onHeroPress: (id: string) => void;
 }) {
   const { width } = useWindowDimensions();
-  const pagePad = width < 640 ? 16 : 32;
+  const pagePad = pageGutter(width);
   return (
     <View style={{ marginTop: 8 }}>
       <View style={[pr.header, { paddingLeft: pagePad }]}>
@@ -474,7 +474,7 @@ export function RightNowBand({
 }: RightNowBandProps) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
-  const pagePad = width < 640 ? 16 : 32;
+  const pagePad = pageGutter(width);
   const hasAny =
     !!campaign ||
     onScreen.length > 0 ||
@@ -610,7 +610,7 @@ const band = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.45)',
+    color: INK_TEXT.faint,
   } as object,
   topRow: { flexDirection: 'row', gap: 20, marginBottom: 24, alignItems: 'stretch' },
 });
@@ -729,7 +729,7 @@ const wh = StyleSheet.create({
   title: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.beige } as object,
   badge: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
+    fontSize: 10,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
     marginTop: 2,
@@ -740,10 +740,7 @@ const pr = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'stretch', gap: 14, marginTop: 8, marginBottom: 14 },
   accentBar: { width: 4, borderRadius: 2, minHeight: 36 },
   label: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
+    ...EYEBROW,
     color: COLORS.skin,
   } as object,
   title: {
@@ -788,11 +785,7 @@ const pr = StyleSheet.create({
 const prw = StyleSheet.create({
   header: { marginBottom: 14 },
   label: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    color: COLORS.orange,
+    ...EYEBROW,
     marginBottom: 2,
   } as object,
   title: {
@@ -839,7 +832,7 @@ const prw = StyleSheet.create({
   } as object,
   badgeText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
+    fontSize: 10,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     color: '#fff',
@@ -858,10 +851,7 @@ const prw = StyleSheet.create({
 const ccr = StyleSheet.create({
   header: { marginBottom: 14 },
   label: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
+    ...EYEBROW,
     color: COLORS.gold,
     marginBottom: 2,
   } as object,
@@ -935,7 +925,7 @@ const ccr = StyleSheet.create({
   } as object,
   badgeText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
+    fontSize: 10,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     color: '#fff',

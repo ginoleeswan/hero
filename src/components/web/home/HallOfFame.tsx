@@ -1,7 +1,7 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../../HeroImage';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, pageGutter } from '../../../constants/colors';
 import type { Hero } from '../../../lib/db/heroes';
 
 // Rank tint — first 3 entries get progressively warmer orange, rest stay dim
@@ -15,7 +15,7 @@ function rankColor(i: number): string {
 export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: string) => void }) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
-  const pad = width < 640 ? 16 : 32;
+  const pad = pageGutter(width);
 
   if (heroes.length === 0) return null;
   const lead = heroes[0];
@@ -282,7 +282,7 @@ const s = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    color: 'rgba(41,60,67,0.42)',
+    color: 'rgba(41,60,67,0.55)',
     marginLeft: 'auto',
     paddingLeft: 10,
     flexShrink: 0,

@@ -1,7 +1,7 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { HeroImage } from '../../HeroImage';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, EYEBROW, pageGutter } from '../../../constants/colors';
 import type { WikiTrendingHero } from '../../../lib/db/trending';
 
 function MoverRow({
@@ -65,7 +65,7 @@ export function TrendingMovers({
   inline?: boolean;
 }) {
   const { width } = useWindowDimensions();
-  const pad = width < 640 ? 16 : 32;
+  const pad = pageGutter(width);
   const nameW = inline ? 120 : width < 760 ? 92 : 150;
 
   if (heroes.length === 0) return null;
@@ -117,11 +117,7 @@ const s = StyleSheet.create({
 
   head: { marginBottom: 14 },
   kicker: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    color: COLORS.orange,
+    ...EYEBROW,
     marginBottom: 2,
   } as object,
   title: {

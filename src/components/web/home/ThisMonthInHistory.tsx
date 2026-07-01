@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { COLORS } from '../../../constants/colors';
+import { COLORS, EYEBROW, pageGutter } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import type { DebutIssue, DebutCharacter } from '../../../lib/db/anniversaries';
 
@@ -28,7 +28,7 @@ export function ThisMonthInHistory({
   onHeroPress: (id: string) => void;
 }) {
   const { width } = useWindowDimensions();
-  const pagePad = width < 640 ? 16 : 32;
+  const pagePad = pageGutter(width);
   const isDesktop = width >= 860;
 
   if (debuts.length === 0) return null;
@@ -191,11 +191,7 @@ const s = StyleSheet.create({
 
   head: { marginBottom: 18 },
   kicker: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    color: COLORS.orange,
+    ...EYEBROW,
     marginBottom: 2,
   } as object,
   title: {
@@ -308,10 +304,10 @@ const s = StyleSheet.create({
   } as object,
   charLabel: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
+    fontSize: 10,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.35)',
+    color: 'rgba(245,235,220,0.55)',
     marginBottom: 12,
   } as object,
   charStrip: {
@@ -344,8 +340,8 @@ const s = StyleSheet.create({
   } as object,
   charName: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: 'rgba(245,235,220,0.65)',
+    fontSize: 10,
+    color: 'rgba(245,235,220,0.7)',
     textAlign: 'center',
     letterSpacing: 0.1,
   } as object,

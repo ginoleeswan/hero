@@ -69,3 +69,56 @@ export const SEAM_COLOR = 'rgba(231,115,51,0.20)';
  * warm surface rather than float on a cold grey one. Web (RNW box-shadow string).
  */
 export const CARD_SHADOW = '0 6px 22px -12px rgba(11,24,32,0.32)';
+
+/**
+ * Elevation scale for the paper canvas — all deep-navy tinted (never pure
+ * black) so lifted cards keep the warm "ink on paper" material story.
+ * `rest` = sitting on the surface, `hover` = the standard hover lift,
+ * `lifted` = hero/feature cards that float higher. Web box-shadow strings.
+ */
+export const ELEVATION = {
+  rest: CARD_SHADOW,
+  hover: '0 20px 48px -12px rgba(11,24,32,0.45)',
+  lifted: '0 26px 64px -16px rgba(11,24,32,0.55)',
+} as const;
+
+/**
+ * Text-on-ink opacity ramp. Supporting text on the dark stages must never drop
+ * below `faint` — beige under 0.55α on deepNavy fails the 4.5:1 contrast floor.
+ */
+export const INK_TEXT = {
+  primary: COLORS.beige,
+  muted: 'rgba(245,235,220,0.72)',
+  faint: 'rgba(245,235,220,0.6)',
+} as const;
+
+/**
+ * The house eyebrow — the small orange uppercase kicker above titles. One size
+ * everywhere: 11px is the legibility floor for tracked uppercase; the old 8–9px
+ * variants read as timid. Spread into a StyleSheet entry and override `color`
+ * only when the eyebrow sits muted (not accent) in context.
+ */
+export const EYEBROW = {
+  fontFamily: 'Nunito_700Bold',
+  fontSize: 11,
+  letterSpacing: 2,
+  textTransform: 'uppercase',
+  color: COLORS.orange,
+} as const;
+
+/** Standard hover-lift recipe (web) — one duration, one spring-ish curve. */
+export const HOVER_TRANSITION =
+  'transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1)';
+
+/**
+ * Content width cap for the web home/library zones. Sections stay visually
+ * full-bleed (backgrounds run edge to edge) but their content gutters widen so
+ * text and grids never dissolve on ultra-wide displays.
+ */
+export const CONTENT_MAX_WIDTH = 1440;
+
+/** Horizontal page gutter: 16 on phones, 32 on desktop, centered past 1440+64. */
+export function pageGutter(width: number): number {
+  if (width < 640) return 16;
+  return Math.max(32, Math.round((width - CONTENT_MAX_WIDTH) / 2));
+}
