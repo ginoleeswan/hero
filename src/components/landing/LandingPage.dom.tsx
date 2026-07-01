@@ -11,6 +11,10 @@ const screenshotMobile = require('../../../assets/images/screenshots/mobile-spid
 const P = (id: string) =>
   `https://res.cloudinary.com/dgrsb5o4p/image/upload/f_auto,q_auto,w_400/hero-portraits/${id}.jpg`;
 
+// High-res variant for the summoned portrait's crisp reveal
+const P800 = (id: string) =>
+  `https://res.cloudinary.com/dgrsb5o4p/image/upload/f_auto,q_auto,w_800/hero-portraits/${id}.jpg`;
+
 // [id, name, weight] — higher weight = more likely to appear each load
 const HERO_POOL: [string, string, number][] = [
   ['620', 'Spider-Man', 10],
@@ -102,6 +106,12 @@ const REL_COLOR: Record<Rel, string> = {
   kin: '#F9B222',
 };
 
+const REL_RGB: Record<Rel, string> = {
+  enemy: '231,115,51',
+  ally: '21,161,171',
+  kin: '249,178,34',
+};
+
 // The summonable roster. Bonds are real relationships from the graph,
 // hardcoded here so the landing page never blocks on the DB.
 const SUMMONS: Summon[] = [
@@ -188,6 +198,7 @@ const PARTICLE_VERT = `
   attribute float aSeed;
   uniform sampler2D uTex;
   uniform float uAssemble;
+  uniform float uReveal;
   uniform float uTime;
   uniform float uScale;
   uniform float uSpacing;
@@ -202,10 +213,11 @@ const PARTICLE_VERT = `
     float t = clamp(uAssemble * 1.45 - aSeed * 0.45, 0.0, 1.0);
     t = t * t * (3.0 - 2.0 * t);
 
-    // Assembled home on the portrait plane, with a gentle breathing wave
+    // Assembled home on the card's portrait window (inset from the frame),
+    // with a gentle breathing wave
     vec3 home = vec3(
-      (aUv.x - 0.5) * ${PLANE_W.toFixed(1)},
-      (aUv.y - 0.5) * ${PLANE_H.toFixed(1)},
+      (aUv.x - 0.5) * ${(PLANE_W * 0.875).toFixed(3)},
+      (aUv.y - 0.5) * ${(PLANE_H * 0.9183).toFixed(3)},
       (aSeed - 0.5) * 0.06
     );
     home.x += 0.012 * sin(uTime * 1.3 + aUv.y * 9.0 + aSeed * 6.2831);
@@ -226,7 +238,8 @@ const PARTICLE_VERT = `
     gl_PointSize = min(uScale * worldSize / -mv.z, 64.0);
 
     vColor = tex;
-    vAlpha = mix(0.3, 1.0, t);
+    // Once the crisp portrait has revealed, the particles recede to a shimmer
+    vAlpha = mix(0.3, 1.0, t) * (1.0 - uReveal * 0.72);
   }
 `;
 
@@ -239,6 +252,89 @@ const PARTICLE_FRAG = `
     float a = smoothstep(0.5, 0.3, length(c)) * vAlpha;
     if (a < 0.02) discard;
     gl_FragColor = vec4(vColor, a);
+  }
+`;
+
+const REVEAL_VERT = `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+// The crisp trading card that resolves out of the particles: rounded card
+// body, framed portrait window, gold keyline, iridescent holo sheen. While
+// materializing (uOpacity < 1) the edge is noise-torn; fully summoned it
+// settles into a clean card.
+const REVEAL_FRAG = `
+  uniform sampler2D uTex;
+  uniform float uOpacity;
+  uniform float uTime;
+  uniform vec2 uTilt;
+  varying vec2 vUv;
+
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+  float vnoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(
+      mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+      mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x),
+      f.y
+    );
+  }
+  float roundedRect(vec2 pa, vec2 half, float r) {
+    vec2 q = abs(pa) - half + r;
+    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+  }
+
+  void main() {
+    // Aspect-corrected space so corners stay circular on the 2:3 card
+    vec2 p = vUv * 2.0 - 1.0;
+    vec2 pa = vec2(p.x, p.y * 1.5);
+
+    float n = vnoise(vUv * 13.0 + uTime * 0.12) * 0.62
+            + vnoise(vUv * 38.0 - uTime * 0.08) * 0.38;
+
+    float sdCard = roundedRect(pa, vec2(0.96, 1.4625), 0.1);
+    float sdWindow = roundedRect(pa, vec2(0.875, 1.3775), 0.055);
+
+    // Materialization: torn edge that heals into a clean die-cut
+    float tear = (n - 0.5) * 0.24 * (1.0 - uOpacity);
+    float mask = smoothstep(0.012, -0.012, sdCard - tear);
+    if (mask * uOpacity < 0.01) discard;
+
+    // Card body (frame band)
+    vec3 col = mix(vec3(0.078, 0.145, 0.212), vec3(0.125, 0.216, 0.302), vUv.y);
+    col += (n - 0.5) * 0.03; // faint paper grain
+
+    // Portrait inside the window
+    vec2 uvP = (pa / vec2(0.875, 1.3775) + 1.0) * 0.5;
+    float window = smoothstep(0.008, -0.008, sdWindow);
+    vec3 art = texture2D(uTex, clamp(uvP, 0.0, 1.0)).rgb;
+    // Gentle vignette to seat the art in the frame
+    art *= 1.0 - 0.18 * smoothstep(0.45, 1.0, length(pa / vec2(1.0, 1.45)));
+    col = mix(col, art, window);
+
+    // Gold keyline around the window, hairline at the outer edge
+    float keyline = smoothstep(0.02, 0.0, abs(sdWindow)) ;
+    col = mix(col, vec3(0.976, 0.698, 0.133), keyline * 0.7);
+    float hairline = smoothstep(0.014, 0.0, abs(sdCard + 0.012));
+    col = mix(col, vec3(0.96, 0.92, 0.86), hairline * 0.28);
+
+    // Holo sheen: an iridescent band that sweeps with time and pointer tilt
+    float s = dot(pa, normalize(vec2(0.8, 1.0)));
+    float c = sin(uTime * 0.3) * 1.5 + uTilt.x * 4.0 - uTilt.y * 2.0;
+    float band = exp(-pow((s - c) * 2.6, 2.0));
+    vec3 iri = mix(vec3(0.082, 0.631, 0.671), vec3(0.976, 0.698, 0.133),
+                   0.5 + 0.5 * sin(s * 5.0 + uTime * 0.7));
+    col += iri * band * (0.1 + keyline * 0.35);
+
+    gl_FragColor = vec4(col, mask * uOpacity);
   }
 `;
 
@@ -453,8 +549,8 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
   group.add(coolGlow);
 
   /* --- Portrait particles ----------------------------------------- */
-  const COLS = mobile ? 64 : 88;
-  const ROWS = mobile ? 96 : 132;
+  const COLS = mobile ? 72 : 100;
+  const ROWS = mobile ? 108 : 150;
   const COUNT = COLS * ROWS;
 
   const particleGeo = track(new THREE.BufferGeometry());
@@ -500,15 +596,72 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
       uniforms: {
         uTex: { value: placeholderTex },
         uAssemble: { value: 0 },
+        uReveal: { value: 0 },
         uTime: { value: 0 },
         uScale: { value: 1 },
         uSpacing: { value: (PLANE_H / ROWS) * 1.25 },
       },
     }),
   );
+  // The card group tilts as one: particles assemble inside it, and the
+  // crisp card resolves around them, so the float reads as a single object.
+  const card = new THREE.Group();
+  group.add(card);
+
   const particles = new THREE.Points(particleGeo, particleMat);
   particles.frustumCulled = false;
-  group.add(particles);
+  particles.renderOrder = 1;
+  particles.position.z = 0.03; // in front of the card face
+  card.add(particles);
+
+  /* --- The trading card ------------------------------------------- */
+  const revealGeo = track(new THREE.PlaneGeometry(PLANE_W, PLANE_H));
+  const revealMat = track(
+    new THREE.ShaderMaterial({
+      vertexShader: REVEAL_VERT,
+      fragmentShader: REVEAL_FRAG,
+      transparent: true,
+      depthWrite: false,
+      uniforms: {
+        uTex: { value: placeholderTex },
+        uOpacity: { value: 0 },
+        uTime: { value: 0 },
+        uTilt: { value: new THREE.Vector2(0, 0) },
+      },
+    }),
+  );
+  const revealPlane = new THREE.Mesh(revealGeo, revealMat);
+  revealPlane.renderOrder = 0;
+  card.add(revealPlane);
+
+  // Soft floor shadow that grounds the floating card
+  const shadowCanvas = document.createElement('canvas');
+  shadowCanvas.width = 256;
+  shadowCanvas.height = 128;
+  {
+    const ctx = shadowCanvas.getContext('2d');
+    if (ctx) {
+      const g = ctx.createRadialGradient(128, 64, 4, 128, 64, 120);
+      g.addColorStop(0, 'rgba(0,0,0,0.55)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.scale(1, 0.5);
+      ctx.fillRect(0, 0, 256, 256);
+    }
+  }
+  const shadowTex = track(new THREE.CanvasTexture(shadowCanvas));
+  const shadowMat = track(
+    new THREE.SpriteMaterial({
+      map: shadowTex,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    }),
+  );
+  const shadow = new THREE.Sprite(shadowMat);
+  shadow.scale.set(2.4, 0.7, 1);
+  shadow.position.set(0, -1.85, -0.25);
+  group.add(shadow);
 
   /* --- Texture + halo caches -------------------------------------- */
   const texCache = new Map<string, THREE.Texture>();
@@ -516,7 +669,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
   const loadPortrait = (id: string): Promise<THREE.Texture> => {
     const hit = texCache.get(id);
     if (hit) return Promise.resolve(hit);
-    return texLoader.loadAsync(P(id)).then((tex) => {
+    return texLoader.loadAsync(P800(id)).then((tex) => {
       tex.minFilter = THREE.LinearFilter;
       tex.generateMipmaps = false;
       texCache.set(id, tex);
@@ -541,6 +694,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
     group: THREE.Group;
     materials: (THREE.MeshBasicMaterial | THREE.LineBasicMaterial)[];
     nodes: { mesh: THREE.Mesh; base: THREE.Vector3; phase: number }[];
+    pulses: { sprite: THREE.Sprite; curve: THREE.QuadraticBezierCurve3; phase: number }[];
     dispose(): void;
   }
 
@@ -548,6 +702,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
     const g = new THREE.Group();
     const materials: (THREE.MeshBasicMaterial | THREE.LineBasicMaterial)[] = [];
     const nodes: Halo['nodes'] = [];
+    const pulses: Halo['pulses'] = [];
     const owned: { dispose(): void }[] = [];
     const slots = BOND_SLOTS[Math.min(s.bonds.length, 4)] ?? BOND_SLOTS[4];
     const textures = await Promise.all(s.bonds.slice(0, 4).map(buildNodeTexture));
@@ -567,6 +722,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
       owned.push(nodeGeo, nodeMat);
       const mesh = new THREE.Mesh(nodeGeo, nodeMat);
       mesh.position.copy(base);
+      mesh.renderOrder = 3;
       materials.push(nodeMat);
       nodes.push({ mesh, base, phase: Math.random() * Math.PI * 2 });
       g.add(mesh);
@@ -591,13 +747,25 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
       });
       owned.push(lineGeo, lineMat);
       materials.push(lineMat);
-      g.add(new THREE.Line(lineGeo, lineMat));
+      const line = new THREE.Line(lineGeo, lineMat);
+      line.renderOrder = 3;
+      g.add(line);
+
+      // Energy pulse that travels the bond, card → node
+      const pulse = makeGlowSprite(REL_RGB[bond.rel], 0.9);
+      pulse.scale.set(0.16, 0.16, 1);
+      pulse.material.opacity = 0;
+      pulse.renderOrder = 4;
+      owned.push(pulse.material.map as THREE.Texture, pulse.material);
+      pulses.push({ sprite: pulse, curve, phase: Math.random() });
+      g.add(pulse);
     });
 
     return {
       group: g,
       materials,
       nodes,
+      pulses,
       dispose: () => owned.forEach((d) => d.dispose()),
     };
   };
@@ -640,6 +808,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
       if (disposed) return;
       loadFailures = 0;
       particleMat.uniforms.uTex.value = tex;
+      revealMat.uniforms.uTex.value = tex;
       phase = 'assemble';
       phaseT = 0;
       onSummon(s);
@@ -754,6 +923,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
   /* --- Loop --------------------------------------------------------- */
   const clock = new THREE.Clock();
   let elapsed = 0;
+  let reveal = 0;
 
   const frame = () => {
     if (disposed) return;
@@ -785,18 +955,38 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
       }
     }
 
-    // Halo fades in late in assembly, out early in dispersal
+    // The crisp card resolves once the particles have fully assembled,
+    // and dissolves back to dust the instant dispersal starts
     const assembleV = particleMat.uniforms.uAssemble.value as number;
+    const revealTarget = phase === 'hold' ? 1 : 0;
+    reveal += (revealTarget - reveal) * Math.min(dt * (revealTarget ? 2.6 : 7), 1);
+    revealMat.uniforms.uOpacity.value = reveal;
+    particleMat.uniforms.uReveal.value = reveal;
+    shadowMat.opacity = reveal * 0.42;
+
+    // The card floats: slow wobble plus pointer-follow tilt
+    const tiltX = camTarget.x * 0.35 + Math.sin(elapsed * 0.5) * 0.05;
+    const tiltY = -camTarget.y * 0.3 + Math.cos(elapsed * 0.42) * 0.035;
+    card.rotation.y += (tiltX - card.rotation.y) * Math.min(dt * 3, 1);
+    card.rotation.x += (tiltY - card.rotation.x) * Math.min(dt * 3, 1);
+    card.position.y = Math.sin(elapsed * 0.7) * 0.04 * reveal;
+    (revealMat.uniforms.uTilt.value as THREE.Vector2).set(card.rotation.y, card.rotation.x);
+
+    // Halo fades in late in assembly, out early in dispersal
     const haloTarget = (phase === 'hold' || phase === 'assemble') && assembleV > 0.75 ? 1 : 0;
     haloAlpha += (haloTarget - haloAlpha) * Math.min(dt * 3.2, 1);
     if (activeHalo) {
       activeHalo.materials.forEach((m) => {
-        m.opacity =
-          m instanceof THREE.LineBasicMaterial ? haloAlpha * 0.65 : haloAlpha;
+        m.opacity = m instanceof THREE.LineBasicMaterial ? haloAlpha * 0.9 : haloAlpha;
       });
       activeHalo.nodes.forEach((n) => {
         n.mesh.position.y = n.base.y + Math.sin(elapsed * 0.8 + n.phase) * 0.045;
         n.mesh.position.x = n.base.x + Math.cos(elapsed * 0.6 + n.phase) * 0.02;
+      });
+      activeHalo.pulses.forEach((pl) => {
+        const t = (elapsed * 0.22 + pl.phase) % 1;
+        pl.sprite.position.copy(pl.curve.getPoint(t));
+        pl.sprite.material.opacity = haloAlpha * Math.sin(t * Math.PI) * 0.9;
       });
     }
 
@@ -810,6 +1000,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
     stars.rotation.z = elapsed * 0.008;
 
     particleMat.uniforms.uTime.value = elapsed;
+    revealMat.uniforms.uTime.value = elapsed;
     renderer.render(scene, camera);
     if (!canvasReady) {
       canvasReady = true;
@@ -956,13 +1147,6 @@ const CSS = `
     font-size:10px; font-weight:600; letter-spacing:3px; text-transform:uppercase;
     color:var(--muted);
   }
-  .plate-legend {
-    display:flex; gap:14px; margin-top:2px;
-    font-size:10px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase;
-    color:var(--muted);
-  }
-  .plate-legend span { display:inline-flex; align-items:center; gap:5px; }
-  .legend-dot { width:7px; height:7px; border-radius:50%; display:inline-block; }
   .plate-summon {
     pointer-events:auto; margin-top:10px;
     background:rgba(20,33,48,0.7); color:var(--beige);
@@ -1278,7 +1462,6 @@ const CSS = `
     .hc1,.hc2,.hc3,.hc4,.hc5,.hc6,.hc7,.hc8,.hc9,.hc10 { display:none; }
     .scroll-hint { display:none; }
     .plate-name { font-size:19px; }
-    .plate-legend { gap:10px; font-size:9px; }
 
     /* Hero strip — bleeds to viewport edges */
     .hero-strip {
@@ -1627,20 +1810,6 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                     <span className="plate-universe" aria-hidden="true">
                       {summoned.universe}
                     </span>
-                    <div className="plate-legend" aria-hidden="true">
-                      <span>
-                        <span className="legend-dot" style={{ background: REL_COLOR.enemy }} />
-                        Enemy
-                      </span>
-                      <span>
-                        <span className="legend-dot" style={{ background: REL_COLOR.ally }} />
-                        Ally
-                      </span>
-                      <span>
-                        <span className="legend-dot" style={{ background: REL_COLOR.kin }} />
-                        Kin
-                      </span>
-                    </div>
                     <button
                       className="plate-summon"
                       onClick={() => engineRef.current?.summonNext()}
