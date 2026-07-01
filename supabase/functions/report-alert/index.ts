@@ -106,7 +106,7 @@ function reportEmailHtml(o: {
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Righteous&display=swap');
   @font-face { font-family:'Flame'; src:url('${FLAME_TTF}') format('truetype'); font-weight:400; font-style:normal; font-display:swap; }
   * { box-sizing:border-box; }
-  body { margin:0; padding:0; background-color:#f5ebdc; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+  body { margin:0; padding:0; background-color:#ffffff; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
   table { border-collapse:collapse; mso-table-lspace:0; mso-table-rspace:0; }
   img { border:0; display:block; -ms-interpolation-mode:bicubic; }
   a { text-decoration:none; }
@@ -117,11 +117,11 @@ function reportEmailHtml(o: {
   }
 </style>
 </head>
-<body style="margin:0;padding:0;background-color:#f5ebdc;">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f5ebdc;">${o.heroName} &mdash; ${o.reasonText}</div>
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f5ebdc;">
+<body style="margin:0;padding:0;background-color:#ffffff;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#ffffff;">${o.heroName} &mdash; ${o.reasonText}</div>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#ffffff;">
 <tr><td align="center" style="padding:40px 16px 48px;">
-<table class="email-container" width="580" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;width:100%;border-radius:20px;overflow:hidden;box-shadow:0 12px 48px rgba(41,60,67,0.18);">
+<table class="email-container" width="580" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;width:100%;border-radius:20px;overflow:hidden;border:1px solid rgba(41,60,67,0.06);box-shadow:0 6px 26px rgba(41,60,67,0.10);">
 
   <tr><td style="background-color:#293c43;padding:40px 48px 42px;text-align:center;background-image:radial-gradient(circle, rgba(245,235,220,0.09) 1.5px, transparent 1.5px);background-size:22px 22px;">
     <table cellpadding="0" cellspacing="0" role="presentation" align="center"><tr>
