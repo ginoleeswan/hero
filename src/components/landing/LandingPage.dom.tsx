@@ -68,7 +68,7 @@ const collageShuffled = weightedShuffle();
 const mosaicShuffled = weightedShuffle();
 
 const collageChars = collageShuffled.slice(0, 10);
-const mosaicChars = mosaicShuffled.slice(0, 10);
+const mosaicChars = mosaicShuffled.slice(0, 11);
 const stripChars = collageShuffled.slice(0, 8);
 
 // Tale-of-the-tape proof — real power stats (l = Hulk #332, r = Iron Man #346)
@@ -1065,6 +1065,15 @@ const CSS = `
     display:flex; align-items:center; justify-content:space-between;
     padding:20px 40px;
     background:linear-gradient(to bottom,rgba(11,24,32,0.95) 0%,transparent 100%);
+    border-bottom:1px solid transparent;
+    transition:border-color .35s ease, padding .3s ease, background-color .35s ease;
+  }
+  nav.nav-solid {
+    background:rgba(11,24,32,0.78);
+    -webkit-backdrop-filter:blur(16px) saturate(1.2);
+    backdrop-filter:blur(16px) saturate(1.2);
+    border-bottom-color:rgba(37,61,80,0.7);
+    padding-top:14px; padding-bottom:14px;
   }
   .nav-brand { display:flex; align-items:center; gap:10px; }
   .nav-logo { height:32px; width:32px; }
@@ -1241,25 +1250,47 @@ const CSS = `
     50%      { transform:translateX(-50%) translateY(6px); }
   }
 
+  /* Bond-spectrum hairline — the page's structural signature. The gradient is
+     the relation legend from the hero: enemy orange -> kin yellow -> ally teal. */
+  .hairline { position:relative; }
+  .hairline::before {
+    content:''; position:absolute; top:-1px; left:0; right:0; height:2px;
+    background:linear-gradient(90deg,#E77333 0%,#F9B222 45%,#15A1AB 100%);
+    opacity:0.75; pointer-events:none;
+  }
+
   .stats {
     background:
       radial-gradient(ellipse 50% 90% at 50% 0%,rgba(231,115,51,0.07) 0%,transparent 70%),
       var(--surface);
-    border-top:1px solid var(--border);
-    border-bottom:1px solid var(--border); padding:28px 40px;
-    display:flex; justify-content:center;
+    border-bottom:1px solid var(--border);
+    padding:0 40px;
+  }
+  .stats-inner {
+    max-width:1100px; margin:0 auto; padding:40px 0;
+    display:grid; grid-template-columns:repeat(4,1fr);
   }
   .stat-item {
-    display:flex; flex-direction:column; align-items:center;
-    padding:0 48px; border-right:1px solid var(--border);
+    display:flex; flex-direction:column; align-items:flex-start;
+    padding:0 36px; border-right:1px solid var(--border);
   }
+  .stat-item:first-child { padding-left:0; }
   .stat-item:last-child { border-right:none; }
-  .stat-num { font-family:'Righteous',sans-serif; font-size:32px; color:var(--yellow); line-height:1; }
-  .stat-label { font-size:12px; color:var(--muted); letter-spacing:0.5px; margin-top:4px; }
+  .stat-num { font-family:'Righteous',sans-serif; font-size:clamp(30px,3.4vw,42px); color:var(--beige); line-height:1; }
+  .stat-tick { display:block; width:26px; height:3px; border-radius:2px; margin:12px 0 8px; }
+  .stat-label { font-size:12px; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; }
 
   .marquee-wrapper {
-    overflow:hidden; padding:18px 0; background:var(--orange);
+    overflow:hidden; padding:18px 0;
+    background:linear-gradient(100deg,#d9662a 0%,var(--orange) 45%,#f2813e 100%);
     border-top:1px solid rgba(255,255,255,0.1); border-bottom:1px solid rgba(0,0,0,0.2);
+    transform:rotate(-1.2deg) scale(1.02);
+    margin:10px 0;
+    box-shadow:0 12px 40px rgba(231,115,51,0.18);
+  }
+  .mq-outline {
+    color:transparent;
+    -webkit-text-stroke:1.1px rgba(255,255,255,0.85);
   }
   .marquee-track {
     display:flex; gap:48px; animation:marquee 30s linear infinite; width:max-content;
@@ -1280,6 +1311,11 @@ const CSS = `
   .section-eyebrow {
     font-size:11px; font-weight:600; letter-spacing:2px; text-transform:uppercase;
     color:var(--orange); margin-bottom:16px;
+  }
+  .section-eyebrow::before {
+    content:''; display:inline-block; width:22px; height:2px; border-radius:2px;
+    margin-right:10px; vertical-align:3.5px;
+    background:linear-gradient(90deg,var(--orange),var(--yellow));
   }
   .section-heading {
     font-family:'Righteous',sans-serif; font-size:clamp(28px,4vw,44px);
@@ -1314,14 +1350,72 @@ const CSS = `
   .feature-title { font-family:'Righteous',sans-serif; font-size:18px; margin-bottom:12px; }
   .feature-desc { font-size:14px; color:var(--muted); line-height:1.7; }
 
+  /* Bento variants — the graph and the debate are the product's two moats,
+     so they get the big cells and live visuals; the rest stay quiet. */
+  .fc-wide { grid-column:span 2; display:grid; grid-template-columns:1fr 200px; column-gap:20px; align-items:center; }
+  .fc-wide .fc-copy { min-width:0; }
+  .fc-tall { grid-row:span 2; display:flex; flex-direction:column; }
+  .fc-tall .fc-visual { margin-top:auto; padding-top:24px; }
+
+  /* Mini bond web — real portraits, real relation colours */
+  .fc-web { position:relative; height:170px; }
+  .fc-web svg { position:absolute; inset:0; width:100%; height:100%; }
+  .fc-web-node { position:absolute; display:flex; flex-direction:column; align-items:center; gap:4px; transform:translate(-50%,-50%); }
+  .fc-web-node img {
+    width:44px; height:44px; border-radius:50%; object-fit:cover; object-position:top;
+    border:2px solid var(--node-c,#7a93a3); display:block;
+    box-shadow:0 0 14px rgba(0,0,0,0.5);
+  }
+  .fc-web-node span { font-size:8px; font-weight:600; letter-spacing:1.5px; color:var(--node-c,#7a93a3); text-transform:uppercase; }
+
+  /* Mini tale-of-the-tape */
+  .fc-bars { display:flex; flex-direction:column; gap:10px; }
+  .fc-bar-row { display:grid; grid-template-columns:1fr 1fr; gap:4px; align-items:center; }
+  .fc-bar-label { grid-column:1 / -1; font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
+  .fc-bar { position:relative; height:6px; border-radius:4px; background:var(--surface); overflow:hidden; }
+  .fc-bar i { position:absolute; top:0; bottom:0; border-radius:4px; transform:scaleX(0); transition:transform .9s cubic-bezier(.2,.8,.2,1) .25s; }
+  .fc-bar.l i { right:0; background:var(--orange); transform-origin:right; }
+  .fc-bar.r i { left:0; background:var(--teal); transform-origin:left; }
+  .feature-card.in .fc-bar i { transform:scaleX(1); }
+
+  /* Poster chips for On Screen */
+  .fc-posters { display:flex; gap:10px; }
+  .fc-poster {
+    position:relative; width:64px; aspect-ratio:2/3; border-radius:8px; overflow:hidden;
+    border:1px solid rgba(245,235,220,0.12); box-shadow:0 8px 22px rgba(0,0,0,0.5);
+  }
+  .fc-poster img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
+  .fc-poster::after {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(to top,rgba(11,24,32,0.75),transparent 55%);
+  }
+  .fc-poster i {
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:0; height:0; border-left:9px solid rgba(255,255,255,0.92);
+    border-top:6px solid transparent; border-bottom:6px solid transparent;
+    filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6)); z-index:1;
+  }
+
   .screenshots { background:var(--surface); padding:100px 40px; }
   .screenshots-inner { max-width:1100px; margin:0 auto; }
   .screenshots-layout { display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center; margin-top:64px; }
   .screenshots-phones { position:relative; display:flex; justify-content:center; align-items:center; min-height:320px; }
+  .screenshots-phones::before {
+    content:''; position:absolute; inset:-10% -6%; pointer-events:none;
+    background:
+      radial-gradient(45% 55% at 38% 45%,rgba(21,161,171,0.14) 0%,transparent 70%),
+      radial-gradient(38% 45% at 78% 72%,rgba(231,115,51,0.13) 0%,transparent 70%);
+  }
   .browser-frame {
+    position:relative;
     width:100%; max-width:520px; border-radius:14px; overflow:hidden;
     border:1px solid var(--border); background:var(--card);
-    box-shadow:0 30px 80px rgba(0,0,0,0.6); transform:rotate(-1deg);
+    box-shadow:0 30px 80px rgba(0,0,0,0.6);
+    transform:perspective(1400px) rotateY(7deg) rotateX(2.5deg) rotate(-1deg);
+    transition:transform .6s cubic-bezier(.22,.7,.25,1);
+  }
+  @media (hover:hover) {
+    .screenshots-phones:hover .browser-frame { transform:perspective(1400px) rotateY(0deg) rotateX(0deg) rotate(0deg); }
   }
   .browser-bar { display:flex; align-items:center; gap:7px; padding:11px 14px; background:var(--surface); border-bottom:1px solid var(--border); }
   .browser-dot { width:10px; height:10px; border-radius:50%; }
@@ -1344,7 +1438,18 @@ const CSS = `
 
   .showcase { padding:100px 40px; }
   .showcase-inner { max-width:1100px; margin:0 auto; }
-  .hero-mosaic { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-top:56px; }
+  .hero-mosaic { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-top:56px; grid-auto-flow:dense; }
+  .mosaic-card.featured { grid-column:span 2; grid-row:span 2; }
+  .mosaic-card.featured .mosaic-name { font-size:19px; bottom:18px; }
+  .mosaic-more {
+    border:1px dashed rgba(122,147,163,0.55); border-radius:14px; aspect-ratio:2/3;
+    background:transparent; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+    padding:12px; transition:border-color 250ms,background 250ms,transform 250ms;
+  }
+  .mosaic-more:hover { border-color:var(--yellow); background:rgba(249,178,34,0.06); transform:scale(1.03); }
+  .mosaic-more-num { font-family:'Righteous',sans-serif; font-size:20px; color:var(--yellow); }
+  .mosaic-more-label { font-size:11px; color:var(--muted); letter-spacing:0.5px; line-height:1.5; text-align:center; }
   .mosaic-card {
     border-radius:14px; overflow:hidden; aspect-ratio:2/3;
     position:relative; cursor:pointer; transition:transform 250ms,box-shadow 250ms;
@@ -1397,8 +1502,15 @@ const CSS = `
   .badge-icon { width:28px; height:28px; flex-shrink:0; }
 
   /* Tale of the tape */
-  .tott { padding:100px 40px; background:var(--bg); }
-  .tott-inner { max-width:760px; margin:0 auto; text-align:center; }
+  .tott { padding:100px 40px; background:var(--bg); position:relative; overflow:hidden; }
+  .tott-watermark {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-6deg);
+    font-family:'Righteous',sans-serif; font-size:clamp(240px,36vw,520px); line-height:1;
+    color:rgba(245,235,220,0.026); pointer-events:none; user-select:none; z-index:0;
+  }
+  .tott-inner { max-width:760px; margin:0 auto; text-align:center; position:relative; z-index:1; }
+  .tott-verdict { margin-top:20px; font-size:13px; color:var(--muted); letter-spacing:0.3px; }
+  .tott-verdict strong { color:#63A936; font-weight:600; }
   .tott-inner .section-eyebrow { color:var(--orange); }
   .tott-inner .section-sub { margin:0 auto; }
   .tott-card {
@@ -1450,17 +1562,21 @@ const CSS = `
   footer {
     padding:40px; border-top:1px solid var(--border);
     display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;
+    position:relative;
   }
   footer img { height:22px; opacity:0.7; }
   footer p { font-size:13px; color:var(--muted); }
+  .footer-tag { font-size:12px; color:var(--muted); letter-spacing:0.5px; opacity:0.8; }
 
   /* Hero strip — mobile only */
   .hero-strip { display:none; }
 
   @media (max-width:1024px) {
     .features-grid { grid-template-columns:repeat(2,1fr); }
+    .fc-wide { grid-column:span 2; }
+    .fc-tall { grid-row:auto; }
     .hero-mosaic { grid-template-columns:repeat(4,1fr); }
-    .hero-mosaic .mosaic-card:last-child { display:none; }
+    .hero-mosaic .mosaic-card:nth-child(n+9):not(.mosaic-more) { display:none; }
     .stat-item { padding:0 28px; }
   }
 
@@ -1499,13 +1615,19 @@ const CSS = `
     .hero-strip-card img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
 
     /* Stats — 2×2 grid */
-    .stats { display:grid; grid-template-columns:1fr 1fr; padding:0; gap:0; }
-    .stat-item { border-right:none; border-bottom:1px solid var(--border); padding:24px 16px; align-items:center; }
+    .stats { padding:0; }
+    .stats-inner { display:grid; grid-template-columns:1fr 1fr; padding:0; gap:0; }
+    .stat-item { border-right:none; border-bottom:1px solid var(--border); padding:22px 20px; align-items:flex-start; }
+    .stat-item:first-child { padding-left:20px; }
     .stat-item:nth-child(odd)  { border-right:1px solid var(--border); }
     .stat-item:nth-child(3),
     .stat-item:nth-child(4)    { border-bottom:none; }
-    .stat-num  { font-size:22px; }
-    .stat-label { font-size:11px; }
+    .stat-num  { font-size:24px; }
+    .stat-tick { margin:8px 0 6px; }
+    .stat-label { font-size:10px; }
+
+    /* Marquee — straighten on small screens (a tilted edge eats width) */
+    .marquee-wrapper { transform:none; margin:0; }
 
     /* Sections */
     .section,.screenshots,.showcase,.cta-section { padding:64px 20px; }
@@ -1514,10 +1636,13 @@ const CSS = `
 
     /* Features — grid layout: icon left, title+desc right */
     .features-grid { grid-template-columns:1fr; gap:10px; margin-top:36px; }
-    .feature-card {
+    .feature-card, .feature-card.fc-wide, .feature-card.fc-tall {
       display:grid; grid-template-columns:40px 1fr;
       grid-template-rows:auto auto; column-gap:14px; row-gap:4px; padding:18px;
+      grid-column:auto; grid-row:auto;
     }
+    .fc-wide .fc-copy { display:contents; }
+    .fc-visual { display:none; }
     .feature-icon {
       grid-row:1/3; align-self:start; margin-bottom:0;
       width:40px; height:40px; border-radius:10px;
@@ -1534,11 +1659,11 @@ const CSS = `
     .screenshots-text .section-sub { margin-bottom:24px; }
     .feature-list li { justify-content:center; }
 
-    /* Mosaic — 3 cols, 2 rows */
+    /* Mosaic — 3 cols; featured tile keeps its 2x2 */
     .hero-mosaic { grid-template-columns:repeat(3,1fr); gap:8px; margin-top:36px; }
-    .hero-mosaic .mosaic-card { display:block; }
-    .hero-mosaic .mosaic-card:nth-child(n+7) { display:none; }
+    .hero-mosaic .mosaic-card:nth-child(n+9):not(.mosaic-more) { display:none; }
     .mosaic-name { font-size:11px; bottom:8px; }
+    .mosaic-card.featured .mosaic-name { font-size:15px; bottom:12px; }
 
     /* Final CTA */
     .cta-sub { font-size:15px; }
@@ -1591,6 +1716,8 @@ const CSS = `
     * { transition-duration:0.01ms !important; }
     .reveal { opacity:1 !important; transform:none !important; }
     .tott-fill { transform:scaleX(1) !important; }
+    .fc-bar i { transform:scaleX(1) !important; }
+    .marquee-wrapper { transform:none; }
     .hero-content > *, .hero-panel > * { opacity:1 !important; animation:none !important; }
   }
 
@@ -1708,6 +1835,16 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       engineRef.current = null;
     };
   }, [mode, fallBack]);
+
+  // Nav turns glass once the page scrolls
+  useEffect(() => {
+    const nav = document.querySelector('nav');
+    if (!nav) return;
+    const onScroll = () => nav.classList.toggle('nav-solid', window.scrollY > 40);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // Stats count up the first time the band scrolls into view
   useEffect(() => {
@@ -1936,30 +2073,39 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       </section>
 
       {/* STATS */}
-      <div className="stats">
-        <div className="stat-item reveal">
-          <span className="stat-num" data-target="34000" data-suffix="+">
-            34,000+
-          </span>
-          <span className="stat-label">Characters</span>
-        </div>
-        <div className="stat-item reveal" style={{ transitionDelay: '80ms' }}>
-          <span className="stat-num" data-target="180" data-suffix="+">
-            180+
-          </span>
-          <span className="stat-label">Universes</span>
-        </div>
-        <div className="stat-item reveal" style={{ transitionDelay: '160ms' }}>
-          <span className="stat-num" data-target="3000" data-suffix="+">
-            3,000+
-          </span>
-          <span className="stat-label">Films &amp; Shows</span>
-        </div>
-        <div className="stat-item reveal" style={{ transitionDelay: '240ms' }}>
-          <span className="stat-num" data-target="430" data-suffix="K+">
-            430K+
-          </span>
-          <span className="stat-label">Connections</span>
+      <div className="stats hairline">
+        <div className="stats-inner">
+          <div className="stat-item reveal">
+            <span className="stat-num" data-target="34000" data-suffix="+">
+              34,000+
+            </span>
+            <span className="stat-tick" style={{ background: '#E77333' }} />
+            <span className="stat-label">Characters</span>
+          </div>
+          <div className="stat-item reveal" style={{ transitionDelay: '80ms' }}>
+            <span className="stat-num" data-target="180" data-suffix="+">
+              180+
+            </span>
+            <span className="stat-tick" style={{ background: '#F9B222' }} />
+            <span className="stat-label">Universes</span>
+          </div>
+          <div className="stat-item reveal" style={{ transitionDelay: '160ms' }}>
+            <span className="stat-num" data-target="3000" data-suffix="+">
+              3,000+
+            </span>
+            <span className="stat-tick" style={{ background: '#15A1AB' }} />
+            <span className="stat-label">Films &amp; Shows</span>
+          </div>
+          <div className="stat-item reveal" style={{ transitionDelay: '240ms' }}>
+            <span className="stat-num" data-target="430" data-suffix="K+">
+              430K+
+            </span>
+            <span
+              className="stat-tick"
+              style={{ background: 'linear-gradient(90deg,#E77333,#F9B222,#15A1AB)' }}
+            />
+            <span className="stat-label">Connections</span>
+          </div>
         </div>
       </div>
 
@@ -1986,7 +2132,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 'Storm',
                 'Captain America',
               ].map((name, j) => (
-                <span key={j}>
+                <span key={j} className={j % 2 ? 'mq-outline' : undefined}>
                   {name}
                   <span
                     className="marquee-dot"
@@ -2013,97 +2159,173 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             icon.
           </p>
           <div className="features-grid">
-            {[
-              {
-                title: 'Explore the Universe',
-                desc: 'Browse 34,000+ characters across Marvel, DC, Disney, anime, games and beyond — curated collections that surface someone new every scroll.',
-                icon: (
-                  <>
-                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </>
-                ),
-              },
-              {
-                title: 'Deep Profiles',
-                desc: 'Powers, origins, abilities, real names and did-you-knows — the full dossier behind every character, not just a stat block.',
-                icon: (
-                  <>
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                  </>
-                ),
-              },
-              {
-                title: 'Rivalries & Family Trees',
-                desc: 'See who they fight, who they love, and who they’re related to — every hero mapped into a living web of allies, enemies and kin.',
-                icon: (
-                  <>
+            {/* Rivalries & Family Trees — wide cell with a live bond web */}
+            <div className="feature-card fc-wide reveal">
+              <div className="fc-copy">
+                <div className="feature-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="18" cy="5" r="3" />
                     <circle cx="6" cy="12" r="3" />
                     <circle cx="18" cy="19" r="3" />
                     <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
                     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                  </>
-                ),
-              },
-              {
-                title: 'Settle the Debate',
-                desc: 'Pit any two head-to-head, take a side, and watch the winner reveal — crowd vote plus the tale of the tape. The "who’d win" argument, finally settled.',
-                icon: (
-                  <>
-                    <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
-                    <path d="m13 19 6-6" />
-                    <path d="m16 16 4 4" />
-                    <path d="m19 21 2-2" />
-                    <path d="M14.5 6.5 18 3h3v3l-3.5 3.5" />
-                    <path d="m5 14 4 4" />
-                    <path d="m7 17-2 2" />
-                    <path d="m3 19 2 2" />
-                  </>
-                ),
-              },
-              {
-                title: 'On Screen',
-                desc: 'Every film, show and game a character appears in — with trailers and where to stream them next.',
-                icon: (
-                  <>
-                    <polygon points="23 7 16 12 23 17 23 7" />
-                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                  </>
-                ),
-              },
-              {
-                title: 'Instant Search',
-                desc: 'Find any of 34,000+ characters in seconds — search by name, power, publisher or team affiliation.',
-                icon: (
-                  <>
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </>
-                ),
-              },
-            ].map((f, i) => (
-              <div
-                key={i}
-                className="feature-card reveal"
-                style={{ transitionDelay: `${(i % 3) * 80}ms` }}
-              >
-                <div className="feature-icon">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    {f.icon}
                   </svg>
                 </div>
-                <h3 className="feature-title">{f.title}</h3>
-                <p className="feature-desc">{f.desc}</p>
+                <h3 className="feature-title">Rivalries &amp; Family Trees</h3>
+                <p className="feature-desc">
+                  See who they fight, who they love, and who they’re related to — every hero mapped
+                  into a living web of allies, enemies and kin.
+                </p>
               </div>
-            ))}
+              <div className="fc-visual fc-web" aria-hidden="true">
+                <svg viewBox="0 0 200 170" preserveAspectRatio="none">
+                  <line x1="84" y1="65" x2="36" y2="122" stroke="#E77333" strokeWidth="1.5" opacity="0.75" />
+                  <line x1="84" y1="65" x2="164" y2="126" stroke="#15A1AB" strokeWidth="1.5" opacity="0.75" />
+                  <line x1="84" y1="65" x2="160" y2="37" stroke="#F9B222" strokeWidth="1.5" opacity="0.75" />
+                </svg>
+                <div className="fc-web-node" style={{ left: '42%', top: '38%' }}>
+                  <img src={P('69')} alt="" loading="lazy" />
+                </div>
+                <div
+                  className="fc-web-node"
+                  style={{ left: '18%', top: '72%', ['--node-c' as never]: '#E77333' }}
+                >
+                  <img src={P('370')} alt="" loading="lazy" />
+                  <span>Enemy</span>
+                </div>
+                <div
+                  className="fc-web-node"
+                  style={{ left: '82%', top: '74%', ['--node-c' as never]: '#15A1AB' }}
+                >
+                  <img src={P('165')} alt="" loading="lazy" />
+                  <span>Ally</span>
+                </div>
+                <div
+                  className="fc-web-node"
+                  style={{ left: '80%', top: '22%', ['--node-c' as never]: '#F9B222' }}
+                >
+                  <img src={P('cv-1691')} alt="" loading="lazy" />
+                  <span>Kin</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Settle the Debate — tall cell with mini tape bars */}
+            <div className="feature-card fc-tall reveal" style={{ transitionDelay: '80ms' }}>
+              <div className="feature-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
+                  <path d="m13 19 6-6" />
+                  <path d="m16 16 4 4" />
+                  <path d="m19 21 2-2" />
+                  <path d="M14.5 6.5 18 3h3v3l-3.5 3.5" />
+                  <path d="m5 14 4 4" />
+                  <path d="m7 17-2 2" />
+                  <path d="m3 19 2 2" />
+                </svg>
+              </div>
+              <h3 className="feature-title">Settle the Debate</h3>
+              <p className="feature-desc">
+                Pit any two head-to-head, take a side, and watch the winner reveal — crowd vote
+                plus the tale of the tape. The &quot;who’d win&quot; argument, finally settled.
+              </p>
+              <div className="fc-visual fc-bars" aria-hidden="true">
+                {[
+                  { label: 'Strength', l: 88, r: 56 },
+                  { label: 'Speed', l: 52, r: 81 },
+                  { label: 'Intelligence', l: 60, r: 94 },
+                ].map((b) => (
+                  <div className="fc-bar-row" key={b.label}>
+                    <span className="fc-bar-label">{b.label}</span>
+                    <div className="fc-bar l">
+                      <i style={{ width: `${b.l}%` }} />
+                    </div>
+                    <div className="fc-bar r">
+                      <i style={{ width: `${b.r}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Explore the Universe */}
+            <div className="feature-card reveal" style={{ transitionDelay: '60ms' }}>
+              <div className="feature-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </div>
+              <h3 className="feature-title">Explore the Universe</h3>
+              <p className="feature-desc">
+                Browse 34,000+ characters across Marvel, DC, Disney, anime, games and beyond —
+                curated collections that surface someone new every scroll.
+              </p>
+            </div>
+
+            {/* Deep Profiles */}
+            <div className="feature-card reveal" style={{ transitionDelay: '120ms' }}>
+              <div className="feature-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                </svg>
+              </div>
+              <h3 className="feature-title">Deep Profiles</h3>
+              <p className="feature-desc">
+                Powers, origins, abilities, real names and did-you-knows — the full dossier behind
+                every character, not just a stat block.
+              </p>
+            </div>
+
+            {/* On Screen — wide cell with poster chips */}
+            <div className="feature-card fc-wide reveal" style={{ transitionDelay: '100ms' }}>
+              <div className="fc-copy">
+                <div className="feature-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <polygon points="23 7 16 12 23 17 23 7" />
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                  </svg>
+                </div>
+                <h3 className="feature-title">On Screen</h3>
+                <p className="feature-desc">
+                  Every film, show and game a character appears in — with trailers and where to
+                  stream them next.
+                </p>
+              </div>
+              <div className="fc-visual fc-posters" aria-hidden="true">
+                {['346', '620', '720'].map((id) => (
+                  <div className="fc-poster" key={id}>
+                    <img src={P(id)} alt="" loading="lazy" />
+                    <i />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Instant Search */}
+            <div className="feature-card reveal" style={{ transitionDelay: '160ms' }}>
+              <div className="feature-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </div>
+              <h3 className="feature-title">Instant Search</h3>
+              <p className="feature-desc">
+                Find any of 34,000+ characters in seconds — search by name, power, publisher or
+                team affiliation.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* TALE OF THE TAPE */}
       <section className="tott">
+        <span className="tott-watermark" aria-hidden="true">
+          VS
+        </span>
         <div className="tott-inner">
           <p className="section-eyebrow reveal">The big question</p>
           <h2 className="section-heading reveal" style={{ transitionDelay: '60ms' }}>
@@ -2154,6 +2376,11 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 );
               })}
             </div>
+
+            <p className="tott-verdict">
+              The tape leans <strong>Hulk</strong> — four rounds to two. The crowd gets the final
+              word.
+            </p>
           </div>
 
           <button
@@ -2251,19 +2478,31 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             {mosaicChars.map(([id, name], i) => (
               <div
                 key={id}
-                className="mosaic-card reveal"
+                className={`mosaic-card reveal${i === 0 ? ' featured' : ''}`}
                 style={{ transitionDelay: `${(i % 5) * 60}ms` }}
               >
-                <img src={P(id)} alt={name} loading="lazy" />
+                <img src={i === 0 ? P800(id) : P(id)} alt={name} loading="lazy" />
                 <span className="mosaic-name">{name}</span>
               </div>
             ))}
+            <button
+              className="mosaic-more reveal"
+              onClick={() => router.push('/explore')}
+              aria-label="Explore all 34,000+ characters"
+            >
+              <span className="mosaic-more-num">+33,990</span>
+              <span className="mosaic-more-label">
+                more legends.
+                <br />
+                Explore them all →
+              </span>
+            </button>
           </div>
         </div>
       </section>
 
       {/* FINAL CTA */}
-      <section className="cta-section">
+      <section className="cta-section hairline">
         <div className="cta-inner">
           <p className="section-eyebrow reveal">Dive in</p>
           <h2 className="cta-glow reveal" style={{ transitionDelay: '60ms' }}>
@@ -2327,10 +2566,11 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       </section>
 
       {/* FOOTER */}
-      <footer>
+      <footer className="hairline">
         <span className="nav-wordmark" style={{ opacity: 0.6 }}>
           mythique
         </span>
+        <span className="footer-tag">Know every icon. Settle every debate.</span>
         <p>© 2026 Mythique. All rights reserved.</p>
       </footer>
     </div>
