@@ -636,7 +636,10 @@ export default function CharacterScreen() {
     [],
   );
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [reportCtx, setReportCtx] = useState<{ context: ReportContext; imageUrl?: string | null } | null>(null);
+  const [reportCtx, setReportCtx] = useState<{
+    context: ReportContext;
+    imageUrl?: string | null;
+  } | null>(null);
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const compareScale = useRef(new Animated.Value(1)).current;

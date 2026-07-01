@@ -161,7 +161,10 @@ export function useExploreData(): ExploreData {
     queryKey: exploreKeys.titleBuckets,
     queryFn: () => getTrendingTitlesMulti(['on_screen', 'coming_soon', 'streaming'], 6),
   });
-  const campaigns = useQuery({ queryKey: exploreKeys.campaigns, queryFn: () => getActiveCampaigns() });
+  const campaigns = useQuery({
+    queryKey: exploreKeys.campaigns,
+    queryFn: () => getActiveCampaigns(),
+  });
   const newComics = useQuery({ queryKey: exploreKeys.newComics, queryFn: () => getNewComics(12) });
   const matchup = useQuery({ queryKey: exploreKeys.matchup, queryFn: () => getTodaysMatchup() });
   const heroCount = useQuery({ queryKey: exploreKeys.heroCount, queryFn: () => getHeroCount() });
