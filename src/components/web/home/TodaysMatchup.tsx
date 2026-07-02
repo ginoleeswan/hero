@@ -77,6 +77,57 @@ function Fighter({
   );
 }
 
+// Desktop fighter: a full-bleed face owning one flank of the poster card,
+// edge-to-edge and facing inward; a scrim fades it into the card body so the
+// centre column reads cleanly. Tapping the face votes. The losing side (after
+// reveal) dims and desaturates.
+function FighterFace({
+  hero,
+  side,
+  picked,
+  dimmed,
+  onVote,
+}: {
+  hero: Matchup['heroA'];
+  side: 'a' | 'b';
+  picked: boolean;
+  dimmed: boolean;
+  onVote: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onVote}
+      accessibilityRole="button"
+      accessibilityLabel={`Vote for ${hero.name}`}
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+        [
+          m.face,
+          side === 'a' ? m.faceLeft : m.faceRight,
+          dimmed && (m.faceDimmed as object),
+          hovered && !dimmed && (m.faceHover as object),
+        ] as object
+      }
+    >
+      <HeroImage
+        id={hero.id}
+        name={hero.name}
+        imageUrl={hero.image_url}
+        portraitUrl={hero.portrait_url}
+        contentFit="cover"
+        contentPosition={{ top: '20%', left: '50%' }}
+        style={[StyleSheet.absoluteFill, side === 'b' && (m.faceInward as object)]}
+        recyclingKey={hero.id}
+      />
+      <View style={(side === 'a' ? m.faceScrimA : m.faceScrimB) as object} />
+      {picked && (
+        <View style={m.facePickedTag as object}>
+          <Text style={m.pickedTagText as object}>Your pick</Text>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
 // One-shot impact pulse — a ring blooms out from the tally bar the moment a
 // fresh vote lands (comic-impact energy, no literal "POW"). Keyframes injected
 // once; skipped under prefers-reduced-motion.
@@ -187,7 +238,7 @@ function VotePrompt({
         <Pressable
           onPress={() => onVote('a')}
           style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [m.voteBtn, hovered && (m.voteBtnHover as object)] as object
+            [m.voteBtn, hovered && (m.voteBtnHoverA as object)] as object
           }
         >
           <Text style={m.voteBtnText} numberOfLines={1}>
@@ -197,7 +248,7 @@ function VotePrompt({
         <Pressable
           onPress={() => onVote('b')}
           style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [m.voteBtn, hovered && (m.voteBtnHover as object)] as object
+            [m.voteBtn, hovered && (m.voteBtnHoverB as object)] as object
           }
         >
           <Text style={m.voteBtnText} numberOfLines={1}>
@@ -267,18 +318,24 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
     );
   }
 
-  // ── Desktop: a symmetric "fight poster" — large portraits flank a centred
-  // content column so the card fills the wide dark stage as a balanced matchup
-  // rather than tiny portraits beside a bar stretched across the whole page. ──
+  // ── Desktop: a full-bleed fight poster — the fighters own the card's flanks
+  // edge-to-edge, facing inward (same language as the FeaturedRivalry banner),
+  // and the centre column floats over the seam between them. ──
   return (
     <View style={[m.card, m.cardDesktop] as object}>
-      <Fighter
+      <FighterFace
         hero={heroA}
         side="a"
-        size={DESKTOP_PORTRAIT}
         picked={pickedId === heroA.id}
         dimmed={revealed && pickedId !== heroA.id}
         onVote={() => vote('a')}
+      />
+      <FighterFace
+        hero={heroB}
+        side="b"
+        picked={pickedId === heroB.id}
+        dimmed={revealed && pickedId !== heroB.id}
+        onVote={() => vote('b')}
       />
 
       <View style={m.infoCenter as object}>
@@ -300,15 +357,6 @@ export function TodaysMatchup({ matchup, onOpen }: TodaysMatchupProps) {
           <VotePrompt heroA={heroA} heroB={heroB} onVote={vote} centered />
         )}
       </View>
-
-      <Fighter
-        hero={heroB}
-        side="b"
-        size={DESKTOP_PORTRAIT}
-        picked={pickedId === heroB.id}
-        dimmed={revealed && pickedId !== heroB.id}
-        onVote={() => vote('b')}
-      />
     </View>
   );
 }
@@ -344,12 +392,10 @@ export function TodaysMatchupSkeleton() {
 
   return (
     <View style={[m.card, m.cardDesktop] as object}>
-      <SkeletonBlock
-        opacity={opacity}
-        dark
-        width={DESKTOP_PORTRAIT}
-        height={DESKTOP_PORTRAIT}
-        borderRadius={16}
+      {/* Dim flank blocks where the fighter faces will land. */}
+      <View style={[m.face, m.faceLeft, { backgroundColor: 'rgba(245,235,220,0.05)' }] as object} />
+      <View
+        style={[m.face, m.faceRight, { backgroundColor: 'rgba(245,235,220,0.05)' }] as object}
       />
       <View style={m.infoCenter as object}>
         <SkeletonBlock opacity={opacity} dark width={110} height={9} style={{ marginBottom: 10 }} />
@@ -370,19 +416,11 @@ export function TodaysMatchupSkeleton() {
         />
         <SkeletonBlock opacity={opacity} dark width="70%" height={14} />
       </View>
-      <SkeletonBlock
-        opacity={opacity}
-        dark
-        width={DESKTOP_PORTRAIT}
-        height={DESKTOP_PORTRAIT}
-        borderRadius={16}
-      />
     </View>
   );
 }
 
 const PORTRAIT = 76;
-const DESKTOP_PORTRAIT = 140;
 
 const m = StyleSheet.create({
   card: {
@@ -398,11 +436,61 @@ const m = StyleSheet.create({
   } as object,
   cardDesktop: {
     // No outer margin — the explore "engage row" owns the horizontal padding and
-    // pairs this card with the daily game beside it.
+    // pairs this card with the daily game beside it. Solid body (not glass) so
+    // the fighter-face scrims can fade into it seamlessly; the faces are
+    // absolutely positioned, so the flex row only lays out the centre column.
     marginTop: 0,
     justifyContent: 'center',
-    gap: 40,
-    paddingVertical: 26,
+    gap: 0,
+    paddingVertical: 30,
+    paddingHorizontal: 24,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: '#131f27',
+    minHeight: 250,
+  } as object,
+
+  // ── Desktop fighter faces — full-bleed flanks of the poster ────────────────
+  face: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: '27%',
+    cursor: 'pointer',
+    overflow: 'hidden',
+    transition: 'opacity 250ms ease, filter 250ms ease',
+  } as object,
+  faceLeft: { left: 0 } as object,
+  faceRight: { right: 0 } as object,
+  faceScrimA: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundImage:
+      'linear-gradient(to right, rgba(19,31,39,0) 0%, rgba(19,31,39,0.45) 60%, #131f27 100%)',
+  } as object,
+  faceScrimB: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundImage:
+      'linear-gradient(to left, rgba(19,31,39,0) 0%, rgba(19,31,39,0.45) 60%, #131f27 100%)',
+  } as object,
+  faceHover: { opacity: 0.92 } as object,
+  // Post-reveal losing side: dim + drain the colour.
+  faceDimmed: { opacity: 0.45, filter: 'grayscale(0.6)' } as object,
+  facePickedTag: {
+    position: 'absolute',
+    bottom: 10,
+    left: 10,
+    backgroundColor: COLORS.orange,
+    paddingVertical: 3,
+    paddingHorizontal: 9,
+    borderRadius: 6,
   } as object,
   cardMobile: {
     flexDirection: 'column',
@@ -486,6 +574,7 @@ const m = StyleSheet.create({
     minWidth: 0,
     maxWidth: 460,
     alignItems: 'center',
+    zIndex: 2,
   } as object,
   titleRow: {
     flexDirection: 'row',
@@ -549,9 +638,18 @@ const m = StyleSheet.create({
     paddingHorizontal: 12,
     alignItems: 'center',
     cursor: 'pointer',
-    transition: 'background-color 150ms ease',
+    transition: 'background-color 150ms ease, border-color 150ms ease',
   } as object,
-  voteBtnHover: { backgroundColor: 'rgba(245,235,220,0.14)' } as object,
+  // Vote buttons take their fighter's corner colour on hover — the same
+  // orange/blue the tally bar resolves to.
+  voteBtnHoverA: {
+    backgroundColor: 'rgba(231,115,51,0.22)',
+    borderColor: 'rgba(231,115,51,0.6)',
+  } as object,
+  voteBtnHoverB: {
+    backgroundColor: 'rgba(21,161,171,0.22)',
+    borderColor: 'rgba(21,161,171,0.6)',
+  } as object,
   voteBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.beige },
 
   barWrap: { alignSelf: 'stretch', position: 'relative', marginBottom: 8 } as object,

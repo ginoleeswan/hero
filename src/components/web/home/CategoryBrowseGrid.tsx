@@ -19,6 +19,11 @@ function pathFor(slug: string, kind: string): string {
   return kind === 'Publisher' ? `/universe/${slug}` : `/category/${slug}`;
 }
 
+// The web Library shows publisher doorways as the logo pod row directly above
+// this grid, so publisher tiles here would be duplicates — the grid keeps the
+// thematic axes (archetypes, teams, media, rankings).
+const GRID_PODS = BROWSE_PODS.filter((p) => p.kind !== 'Publisher');
+
 export function CategoryBrowseGrid({
   covers,
   onNavigate,
@@ -36,8 +41,9 @@ export function CategoryBrowseGrid({
 
   return (
     <View style={[s.grid, { paddingHorizontal: pad, gap }] as object}>
-      {BROWSE_PODS.map((p) => {
+      {GRID_PODS.map((p) => {
         const c = covers?.[p.slug];
+        const coverUrl = c?.portrait_url ?? c?.image_url ?? c?.image_md_url;
         return (
           <Pressable
             key={p.slug}
@@ -54,17 +60,22 @@ export function CategoryBrowseGrid({
           >
             {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
               <>
-                <HeroImage
-                  id={p.slug}
-                  name={c?.name ?? p.label}
-                  imageUrl={c?.image_url ?? c?.image_md_url}
-                  portraitUrl={c?.portrait_url}
-                  grid
-                  contentFit="cover"
-                  contentPosition={{ top: '32%', left: '50%' }}
-                  style={StyleSheet.absoluteFill as object}
-                  recyclingKey={p.slug}
-                />
+                {/* Only render the cover when we actually have art — the
+                    HeroImage initials fallback reads as broken on a doorway
+                    tile; a clean ink tile with the label is the better empty. */}
+                {!!coverUrl && (
+                  <HeroImage
+                    id={p.slug}
+                    name={c?.name ?? p.label}
+                    imageUrl={c?.image_url ?? c?.image_md_url}
+                    portraitUrl={c?.portrait_url}
+                    grid
+                    contentFit="cover"
+                    contentPosition={{ top: '32%', left: '50%' }}
+                    style={StyleSheet.absoluteFill as object}
+                    recyclingKey={p.slug}
+                  />
+                )}
                 <View style={s.scrim as object} />
                 <View style={s.body}>
                   <Text style={s.kind as object}>{p.kind}</Text>

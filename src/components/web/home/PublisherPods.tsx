@@ -37,8 +37,12 @@ export function PublisherPods({
       }
     >
       {FEATURED_PUBLISHERS.map((p) => {
-        const logoWidth =
-          p.logo && p.badgeSize ? LOGO_H * (p.badgeSize.width / p.badgeSize.height) : 0;
+        // Wide wordmarks (Marvel) sit right at LOGO_H, but compact/tall marks
+        // (Dark Horse, 16×24) come out as a speck — give them extra height so
+        // every pod reads at similar visual weight.
+        const aspect = p.badgeSize ? p.badgeSize.width / p.badgeSize.height : 1;
+        const logoH = aspect < 1.2 ? 62 : LOGO_H;
+        const logoWidth = p.logo && p.badgeSize ? logoH * aspect : 0;
         const tint = onPaper && p.logoTint?.toUpperCase() === '#FFFFFF' ? p.color : p.logoTint;
         return (
           <Pressable
@@ -56,7 +60,7 @@ export function PublisherPods({
             }
           >
             {p.logo && p.badgeSize ? (
-              <BrandLogoView logo={p.logo} width={logoWidth} height={LOGO_H} tint={tint} />
+              <BrandLogoView logo={p.logo} width={logoWidth} height={logoH} tint={tint} />
             ) : (
               <Text style={[s.wordmark, { color: p.color }]} numberOfLines={1}>
                 {p.name}

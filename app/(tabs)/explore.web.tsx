@@ -98,10 +98,7 @@ function RowCard({ hero, onPress }: { hero: Hero | FavouriteHero; onPress: () =>
               {hero.name}
             </Text>
             {!!fact && (
-              <Text
-                style={[rc.fact, hovered && (rc.factOn as object)] as object}
-                numberOfLines={1}
-              >
+              <Text style={[rc.fact, hovered && (rc.factOn as object)] as object} numberOfLines={1}>
                 {fact}
               </Text>
             )}
@@ -298,13 +295,8 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
   useEffect(() => {
     if (!heroName || heroName === backdrop.name) return;
     const reduce = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const fadeOut = reduce
-      ? null
-      : setTimeout(() => setBackdrop((b) => ({ ...b, on: false })), 0);
-    const swapIn = setTimeout(
-      () => setBackdrop({ name: heroName, on: true }),
-      reduce ? 0 : 320,
-    );
+    const fadeOut = reduce ? null : setTimeout(() => setBackdrop((b) => ({ ...b, on: false })), 0);
+    const swapIn = setTimeout(() => setBackdrop({ name: heroName, on: true }), reduce ? 0 : 320);
     return () => {
       if (fadeOut) clearTimeout(fadeOut);
       clearTimeout(swapIn);
@@ -338,7 +330,10 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
     return (
       <View
         style={[pss.wrap, { paddingHorizontal: pagePad, minHeight: stageHeight }] as object}
-        {...({ onMouseEnter: () => setPaused(true), onMouseLeave: () => setPaused(false) } as object)}
+        {...({
+          onMouseEnter: () => setPaused(true),
+          onMouseLeave: () => setPaused(false),
+        } as object)}
       >
         {/* Atmospheric orbs — decorative, no interaction. Orb A carries the
             featured hero's publisher tint. */}
@@ -482,7 +477,9 @@ const PortraitStripSpotlight = React.memo(function PortraitStripSpotlight({
                   accessibilityLabel={`Show featured hero ${i + 1} of ${heroes.length}`}
                   style={pss.dotHit as object}
                 >
-                  <View style={[pss.dot, i === activeIndex && (pss.dotActive as object)] as object} />
+                  <View
+                    style={[pss.dot, i === activeIndex && (pss.dotActive as object)] as object}
+                  />
                 </Pressable>
               ))}
             </View>
@@ -650,7 +647,7 @@ const pss = StyleSheet.create({
     bottom: -14,
     left: -6,
     fontFamily: 'Flame-Regular',
-    color: 'rgba(245,235,220,0.055)',
+    color: 'rgba(245,235,220,0.07)',
     whiteSpace: 'nowrap',
     letterSpacing: 2,
     transition: 'opacity 320ms ease',
@@ -1319,14 +1316,12 @@ export default function WebHomeScreen() {
           <PulseTicker
             heroCount={totalHeroCount ?? 0}
             newlyAddedCount={homeData.newlyAdded?.length ?? 0}
-            pulses={
-              [
-                homeData.matchup
-                  ? `Today's Battle — ${homeData.matchup.heroA.name} vs ${homeData.matchup.heroB.name}`
-                  : null,
-                homeData.wikiTrending?.[0] ? `Trending Now: ${homeData.wikiTrending[0].name}` : null,
-              ].filter((s): s is string => !!s)
-            }
+            pulses={[
+              homeData.matchup
+                ? `Today's Battle — ${homeData.matchup.heroA.name} vs ${homeData.matchup.heroB.name}`
+                : null,
+              homeData.wikiTrending?.[0] ? `Trending Now: ${homeData.wikiTrending[0].name}` : null,
+            ].filter((s): s is string => !!s)}
           />
 
           {/* ── Right Now — the dynamic editorial zone (campaign + trending +
@@ -1414,28 +1409,28 @@ export default function WebHomeScreen() {
 
             {/* ── The Arena — one featured rivalry leads; the rest live in /versus. */}
             <Reveal>
-            <View style={[styles.browseHead, { paddingHorizontal: gutter }] as object}>
-              <Text style={styles.browseKicker as object}>The Arena</Text>
-              <Text
-                style={
-                  [styles.browseTitle, isMobile && (styles.browseTitleMobile as object)] as object
-                }
+              <View style={[styles.browseHead, { paddingHorizontal: gutter }] as object}>
+                <Text style={styles.browseKicker as object}>The Arena</Text>
+                <Text
+                  style={
+                    [styles.browseTitle, isMobile && (styles.browseTitleMobile as object)] as object
+                  }
+                >
+                  Greatest Rivalries
+                </Text>
+                <Text style={styles.browseSubtitle as object}>
+                  The debates that never settle — pick a side and see who the fans crown.
+                </Text>
+              </View>
+              {(homeData.rivalries?.length ?? 0) > 0 && (
+                <FeaturedRivalry rivalry={homeData.rivalries![0]} />
+              )}
+              <Pressable
+                onPress={() => router.push('/versus' as Parameters<typeof router.push>[0])}
+                style={[styles.seeAllRow, { paddingHorizontal: gutter }] as object}
               >
-                Greatest Rivalries
-              </Text>
-              <Text style={styles.browseSubtitle as object}>
-                The debates that never settle — pick a side and see who the fans crown.
-              </Text>
-            </View>
-            {(homeData.rivalries?.length ?? 0) > 0 && (
-              <FeaturedRivalry rivalry={homeData.rivalries![0]} />
-            )}
-            <Pressable
-              onPress={() => router.push('/versus' as Parameters<typeof router.push>[0])}
-              style={[styles.seeAllRow, { paddingHorizontal: gutter }] as object}
-            >
-              <Text style={styles.seeAllText as object}>See all rivalries →</Text>
-            </Pressable>
+                <Text style={styles.seeAllText as object}>See all rivalries →</Text>
+              </Pressable>
             </Reveal>
 
             {/* ── For You — warm close. Distinct eyebrow from the "Personal /
@@ -1454,9 +1449,9 @@ export default function WebHomeScreen() {
                   gutter={gutter}
                   isAuthed={!!user}
                   onCta={() =>
-                    router.push((user ? '/search' : '/(auth)/login') as Parameters<
-                      typeof router.push
-                    >[0])
+                    router.push(
+                      (user ? '/search' : '/(auth)/login') as Parameters<typeof router.push>[0],
+                    )
                   }
                 />
               )}
