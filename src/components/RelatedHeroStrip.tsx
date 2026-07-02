@@ -1,7 +1,15 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  Platform,
+  Pressable,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS } from '../constants/colors';
+import { COLORS, HOVER_TRANSITION } from '../constants/colors';
 import { HeroImage } from './HeroImage';
 import type { RelatedHeroCard } from '../lib/db/heroes';
 
@@ -92,11 +100,17 @@ export function RelatedHeroStrip({
           contentContainerStyle={styles.cardsRow}
         >
           {cards.map((hero) => (
-            <TouchableOpacity
+            <Pressable
               key={hero.id}
-              activeOpacity={0.85}
               onPress={() => onPressHero(hero)}
-              style={[styles.card, cardEdge]}
+              style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) =>
+                [
+                  styles.card,
+                  cardEdge,
+                  hovered && styles.cardHover,
+                  pressed && { opacity: 0.85 },
+                ] as object
+              }
               accessibilityRole="button"
               accessibilityLabel={`View ${hero.name}`}
             >
@@ -121,7 +135,7 @@ export function RelatedHeroStrip({
               <Text style={styles.cardName} numberOfLines={2}>
                 {hero.name}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           ))}
           {monogramTiles
             ? visibleChips.map((name) => (
@@ -193,7 +207,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.navy,
     justifyContent: 'flex-end',
     boxShadow: '0px 4px 10px rgba(41,60,67,0.22)',
-  },
+    // Web-only hover ease; native ignores hover entirely.
+    ...(Platform.OS === 'web' ? ({ transition: HOVER_TRANSITION } as object) : null),
+  } as object,
+  cardHover: {
+    transform: [{ translateY: -3 }],
+    boxShadow: '0px 10px 22px rgba(41,60,67,0.30)',
+  } as object,
   cardImage: { position: 'absolute', top: 0, left: 0, width: CARD_W, height: CARD_H },
   cardName: {
     fontFamily: 'Flame-Regular',
