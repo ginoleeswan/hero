@@ -18,6 +18,7 @@ import { MatchupRow } from '../../src/components/web/versus/MatchupRow';
 import { MatchupCard } from '../../src/components/web/versus/MatchupCard';
 import { useDiscoveryRows } from '../../src/hooks/useDiscoveryRows';
 import { HallOfInfamy } from '../../src/components/web/home/HallOfInfamy';
+import { Reveal } from '../../src/components/web/Reveal';
 
 export default function VersusHubWeb() {
   // The page ends on the dark deck section — keep the canvas deep-navy so it
@@ -60,10 +61,22 @@ export default function VersusHubWeb() {
     <View style={s.root}>
       {/* ── Navy game-lobby stage ── */}
       <View style={[s.stage, { paddingHorizontal: contentPad }] as object}>
+        {/* Type-as-scenery: a colossal ink-on-ink VS behind the duel, flanked
+            by the two corner-colour blooms (orange vs blue) — the stage takes
+            sides before the cards even load. */}
+        <Text
+          style={[s.backdropVs, { fontSize: Math.min(440, Math.round(width * 0.34)) }] as object}
+          numberOfLines={1}
+          aria-hidden
+        >
+          VS
+        </Text>
+        <View style={s.glowA as object} />
+        <View style={s.glowB as object} />
         <View style={s.stageInner}>
           <Text style={s.eyebrow}>{"★ Today's Showdown ★"}</Text>
           {matchup ? (
-            <Text style={s.title} numberOfLines={1}>
+            <Text style={[s.title, !isDesktop && (s.titleMobile as object)] as object} numberOfLines={1}>
               {matchup.heroA.name} vs {matchup.heroB.name}
             </Text>
           ) : (
@@ -135,76 +148,98 @@ export default function VersusHubWeb() {
       <View style={[s.feed, { paddingHorizontal: contentPad }] as object}>
         <View style={s.feedInner}>
           {rows.rivalries.length > 0 && (
-            <MatchupRow
-              label="⚔ Greatest Rivalries"
-              blurb="The grudge matches fans want to see"
-              wrap={isDesktop}
-            >
-              {rows.rivalries.map((m) => (
-                <MatchupCard
-                  key={`${m.a.id}-${m.b.id}`}
-                  a={heroSide(m.a)}
-                  b={heroSide(m.b)}
-                  large={isDesktop}
-                  onOpen={() => openArena(m.a, m.b)}
-                />
-              ))}
-            </MatchupRow>
+            <Reveal>
+              <MatchupRow
+                icon="sword-cross"
+                kicker="Grudge Matches"
+                title="Greatest Rivalries"
+                blurb="The debates that never settle — fans keep score."
+                wrap={isDesktop}
+              >
+                {rows.rivalries.map((m) => (
+                  <MatchupCard
+                    key={`${m.a.id}-${m.b.id}`}
+                    a={heroSide(m.a)}
+                    b={heroSide(m.b)}
+                    large={isDesktop}
+                    onOpen={() => openArena(m.a, m.b)}
+                  />
+                ))}
+              </MatchupRow>
+            </Reveal>
           )}
 
           {rows.dream.length > 0 && (
-            <MatchupRow
-              label="💥 Dream Matches"
-              blurb="Cross-universe — who would win?"
-              wrap={isDesktop}
-            >
-              {rows.dream.map((m) => (
-                <MatchupCard
-                  key={`${m.a.id}-${m.b.id}`}
-                  a={heroSide(m.a)}
-                  b={heroSide(m.b)}
-                  large={isDesktop}
-                  onOpen={() => openArena(m.a, m.b)}
-                />
-              ))}
-            </MatchupRow>
+            <Reveal>
+              <MatchupRow
+                icon="star-four-points"
+                kicker="Cross-Universe"
+                title="Dream Matches"
+                blurb="Marvel meets DC — clashes the comics can't print."
+                wrap={isDesktop}
+              >
+                {rows.dream.map((m) => (
+                  <MatchupCard
+                    key={`${m.a.id}-${m.b.id}`}
+                    a={heroSide(m.a)}
+                    b={heroSide(m.b)}
+                    large={isDesktop}
+                    onOpen={() => openArena(m.a, m.b)}
+                  />
+                ))}
+              </MatchupRow>
+            </Reveal>
           )}
 
           {rows.goliath.length > 0 && (
-            <MatchupRow
-              label="🏆 David vs Goliath"
-              blurb="Underdogs against the heavyweights"
-              wrap={isDesktop}
-            >
-              {rows.goliath.map((m) => (
-                <MatchupCard
-                  key={`${m.a.id}-${m.b.id}`}
-                  a={heroSide(m.a)}
-                  b={heroSide(m.b)}
-                  large={isDesktop}
-                  onOpen={() => openArena(m.a, m.b)}
-                />
-              ))}
-            </MatchupRow>
+            <Reveal>
+              <MatchupRow
+                icon="scale-unbalanced"
+                kicker="The Upsets"
+                title="David vs Goliath"
+                blurb="Underdogs against the heavyweights."
+                wrap={isDesktop}
+              >
+                {rows.goliath.map((m) => (
+                  <MatchupCard
+                    key={`${m.a.id}-${m.b.id}`}
+                    a={heroSide(m.a)}
+                    b={heroSide(m.b)}
+                    large={isDesktop}
+                    onOpen={() => openArena(m.a, m.b)}
+                  />
+                ))}
+              </MatchupRow>
+            </Reveal>
           )}
 
           {rows.teams.length > 0 && (
-            <MatchupRow label="🦸 Team Battles" blurb="Iconic squads clash" wrap={isDesktop}>
-              {rows.teams.map((m) => (
-                <MatchupCard
-                  key={`${m.a.id}-${m.b.id}`}
-                  a={{ name: m.a.name, art: m.a.logo_url }}
-                  b={{ name: m.b.name, art: m.b.logo_url }}
-                  fit="contain"
-                  large={isDesktop}
-                  onOpen={() => openTeam(m.a.id, m.b.id)}
-                />
-              ))}
-            </MatchupRow>
+            <Reveal>
+              <MatchupRow
+                icon="account-group"
+                kicker="Squads"
+                title="Team Battles"
+                blurb="Iconic squads clash — roster against roster."
+                wrap={isDesktop}
+              >
+                {rows.teams.map((m) => (
+                  <MatchupCard
+                    key={`${m.a.id}-${m.b.id}`}
+                    a={{ name: m.a.name, art: m.a.logo_url }}
+                    b={{ name: m.b.name, art: m.b.logo_url }}
+                    fit="contain"
+                    large={isDesktop}
+                    onOpen={() => openTeam(m.a.id, m.b.id)}
+                  />
+                ))}
+              </MatchupRow>
+            </Reveal>
           )}
 
           {/* Public Enemies — flush so it aligns with the matchup rows above. */}
-          <HallOfInfamy villains={mostFeared} flush />
+          <Reveal>
+            <HallOfInfamy villains={mostFeared} flush />
+          </Reveal>
         </View>
       </View>
     </View>
@@ -219,6 +254,42 @@ const s = StyleSheet.create({
     backgroundImage: SURFACE_GRADIENT.stageImmersive,
     paddingTop: TOPBAR_HEIGHT + 26,
     paddingBottom: 34,
+    position: 'relative',
+    overflow: 'hidden',
+  } as object,
+  // Colossal VS, ink-on-ink, centred behind the duel.
+  backdropVs: {
+    position: 'absolute',
+    alignSelf: 'center',
+    top: 10,
+    fontFamily: 'Flame-Regular',
+    color: 'rgba(245,235,220,0.045)',
+    letterSpacing: 12,
+    whiteSpace: 'nowrap',
+    pointerEvents: 'none',
+  } as object,
+  // The two corners' colour blooms — orange (A) vs blue (B).
+  glowA: {
+    position: 'absolute',
+    width: 340,
+    height: 340,
+    borderRadius: 170,
+    top: 60,
+    left: '8%',
+    backgroundColor: 'rgba(231,115,51,0.10)',
+    filter: 'blur(90px)',
+    pointerEvents: 'none',
+  } as object,
+  glowB: {
+    position: 'absolute',
+    width: 340,
+    height: 340,
+    borderRadius: 170,
+    top: 60,
+    right: '8%',
+    backgroundColor: 'rgba(21,161,171,0.10)',
+    filter: 'blur(90px)',
+    pointerEvents: 'none',
   } as object,
   stageInner: { width: '100%', maxWidth: 880, alignSelf: 'center', alignItems: 'center' },
   eyebrow: {
@@ -227,15 +298,17 @@ const s = StyleSheet.create({
     letterSpacing: 4,
     textTransform: 'uppercase',
     color: COLORS.goldAccent,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   title: {
     fontFamily: 'Flame-Regular',
-    fontSize: 26,
+    fontSize: 34,
+    lineHeight: 42,
     color: COLORS.beige,
-    marginBottom: 22,
+    marginBottom: 24,
     textAlign: 'center',
   },
+  titleMobile: { fontSize: 24, lineHeight: 30 } as object,
 
   // skeleton while the matchup query resolves
   skeleton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 250 },

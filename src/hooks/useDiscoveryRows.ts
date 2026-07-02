@@ -22,11 +22,24 @@ export function useDiscoveryRows(): {
 
   return useMemo(
     () => ({
-      rivalries: rivalries.map((r) => ({ a: r.a, b: r.b })),
-      dream: buildDreamMatches(iconicPool, 8),
-      goliath: buildGoliathMatches(iconicPool, 8),
-      teams: buildTeamMatches(teams, 6),
+      rivalries: uniquePairs(rivalries.map((r) => ({ a: r.a, b: r.b }))),
+      dream: uniquePairs(buildDreamMatches(iconicPool, 8)),
+      goliath: uniquePairs(buildGoliathMatches(iconicPool, 8)),
+      teams: uniquePairs(buildTeamMatches(teams, 6)),
     }),
     [rivalries, iconicPool, teams],
   );
+}
+
+// Each list must hold unique pairs — the cards key on `${a.id}-${b.id}`, so a
+// repeated pair (source data can drift daily) becomes a duplicate React key.
+// Enforce the invariant here, at the derivation layer, for all four rows.
+function uniquePairs<T extends { a: { id: string }; b: { id: string } }>(list: T[]): T[] {
+  const seen = new Set<string>();
+  return list.filter((m) => {
+    const key = `${m.a.id}-${m.b.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }

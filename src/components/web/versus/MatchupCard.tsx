@@ -80,9 +80,12 @@ const s = StyleSheet.create({
   card: {
     gap: 8,
     cursor: 'pointer',
-    transition: 'transform 160ms ease',
+    transition: 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1), filter 200ms ease',
   } as object,
-  cardHover: { transform: [{ translateY: -4 }] } as object,
+  cardHover: {
+    transform: [{ translateY: -4 }],
+    filter: 'drop-shadow(0 14px 24px rgba(0,0,0,0.45))',
+  } as object,
   duo: { flexDirection: 'row', gap: 2, position: 'relative' },
   portrait: {
     borderRadius: 12,
