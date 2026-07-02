@@ -48,14 +48,16 @@ function Corner({
   );
 }
 
-// ── The fighters — a layer above the corner press-targets. Each portrait FILLS
-// its half (no dead flanks): it spans from the arena's outer edge inward, its
-// inner edge clip-pathed collinear with the slash so the art dies into the gold
-// band. The name + publisher ride the bottom-outer corner over a scrim.
+// ── The fighters — a layer above the corner press-targets. The half is FILLED
+// (no dead flanks) by a blurred wash of the fighter's own art; a sharp,
+// portrait-aspect figure hugs the slash on top of it so the character reads
+// clean and complete (no landscape over-crop). Inner edge clip-pathed collinear
+// with the slash; name + publisher ride the bottom-outer corner.
 function FighterPortrait({
   hero,
   side,
   boxW,
+  fgW,
   over,
   dxHalf,
   isDesktop,
@@ -65,6 +67,7 @@ function FighterPortrait({
   hero: MatchupHero;
   side: 'a' | 'b';
   boxW: number;
+  fgW: number;
   over: number;
   dxHalf: number;
   isDesktop: boolean;
@@ -78,6 +81,12 @@ function FighterPortrait({
       ? `polygon(0 0, calc(100% - ${over - dxHalf}px) 0, calc(100% - ${over + dxHalf}px) 100%, 0 100%)`
       : `polygon(${over + dxHalf}px 0, 100% 0, 100% 100%, ${over - dxHalf}px 100%)`;
   const anchor = side === 'a' ? { left: 0 } : { right: 0 };
+  const imgProps = {
+    id: hero.id,
+    name: hero.name,
+    imageUrl: hero.image_url,
+    portraitUrl: hero.portrait_url,
+  };
   return (
     <View
       style={
@@ -85,28 +94,45 @@ function FighterPortrait({
           c.portraitBox,
           anchor,
           { width: boxW, clipPath: clip },
-          hovered && (c.portraitHover as object),
           dimmed && (c.portraitDim as object),
         ] as object
       }
       pointerEvents="none"
     >
+      {/* Blurred wash of the fighter's own art — fills the half with its
+          palette, no hard crop. */}
       <HeroImage
-        id={hero.id}
-        name={hero.name}
-        imageUrl={hero.image_url}
-        portraitUrl={hero.portrait_url}
+        {...imgProps}
         contentFit="cover"
-        // Push the face inward toward the slash on both sides (B is mirrored,
-        // so the same crop lands it facing left → toward the centre).
-        contentPosition={{ top: '6%', left: '62%' }}
-        style={[StyleSheet.absoluteFill, side === 'b' && (c.mirror as object)] as object}
+        contentPosition="center"
+        style={[StyleSheet.absoluteFill, c.backdrop] as object}
       />
+      <View style={c.backdropTint as object} />
+
+      {/* Sharp figure — portrait-aspect, hugging the slash so the two face
+          off across it. Cropping portrait art inside a portrait box stays
+          clean; the face is nudged toward the centre. */}
+      <View
+        style={
+          [
+            c.figure,
+            { width: fgW },
+            side === 'a' ? { right: 0 } : { left: 0 },
+            hovered && (c.portraitHover as object),
+          ] as object
+        }
+      >
+        <HeroImage
+          {...imgProps}
+          contentFit="cover"
+          contentPosition={{ top: '4%', left: side === 'a' ? '58%' : '58%' }}
+          style={[StyleSheet.absoluteFill, side === 'b' && (c.mirror as object)] as object}
+        />
+      </View>
+
       {/* Bottom scrim so the name stays legible over the art. */}
       <View style={c.bottomScrim as object} />
-      <View
-        style={[c.nameBlock, side === 'a' ? c.nameBlockA : c.nameBlockB] as object}
-      >
+      <View style={[c.nameBlock, side === 'a' ? c.nameBlockA : c.nameBlockB] as object}>
         {!!hero.publisher && (
           <Text
             style={[c.pub, side === 'b' && (c.textRight as object)] as object}
@@ -252,6 +278,9 @@ export function ShowdownStage({
   const dxHalf = Math.round((Math.tan((7 * Math.PI) / 180) * arenaH) / 2);
   const over = dxHalf + 10;
   const boxW = Math.round(stageW / 2 + over);
+  // Sharp figure is portrait-aspect, sized off the arena height — never wider
+  // than its half, so it always sits cleanly against the slash.
+  const fgW = Math.round(Math.min(stageW / 2, arenaH * 0.82));
   const [hoverSide, setHoverSide] = useState<'a' | 'b' | null>(null);
 
   return (
@@ -266,6 +295,7 @@ export function ShowdownStage({
           hero={heroA}
           side="a"
           boxW={boxW}
+          fgW={fgW}
           over={over}
           dxHalf={dxHalf}
           isDesktop={isDesktop}
@@ -276,6 +306,7 @@ export function ShowdownStage({
           hero={heroB}
           side="b"
           boxW={boxW}
+          fgW={fgW}
           over={over}
           dxHalf={dxHalf}
           isDesktop={isDesktop}
@@ -376,13 +407,32 @@ const c = StyleSheet.create({
     cursor: 'pointer',
     backgroundColor: '#0c161d',
   } as object,
-  // Each portrait fills its half; the inner edge is clipped to the slash.
+  // Each fighter fills its half; the inner edge is clipped to the slash.
   portraitBox: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     overflow: 'hidden',
     transition: 'opacity 300ms ease, filter 300ms ease',
+  } as object,
+  // Blurred wash of the fighter's art filling the whole half (scaled up so the
+  // blur has no soft edge inside the box).
+  backdrop: { filter: 'blur(34px)', transform: [{ scale: 1.25 }] } as object,
+  backdropTint: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(8,14,19,0.5)',
+  } as object,
+  // The sharp portrait-aspect figure hugging the slash.
+  figure: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    overflow: 'hidden',
+    transition: 'filter 300ms ease',
   } as object,
   portraitHover: { filter: 'brightness(1.12)' } as object,
   portraitDim: { opacity: 0.5, filter: 'grayscale(0.65)' } as object,
