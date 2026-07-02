@@ -6,7 +6,7 @@
 // lights your corner and drains the loser's colour. "See full breakdown →"
 // opens the full fight.
 import { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, EYEBROW } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
@@ -25,7 +25,6 @@ const ACCENT_B = COLORS.blue;
 function Corner({
   hero,
   side,
-  picked,
   dimmed,
   revealed,
   isDesktop,
@@ -34,7 +33,6 @@ function Corner({
 }: {
   hero: MatchupHero;
   side: 'a' | 'b';
-  picked: boolean;
   dimmed: boolean;
   revealed: boolean;
   isDesktop: boolean;
@@ -52,23 +50,19 @@ function Corner({
       accessibilityLabel={`Vote for ${hero.name}`}
       style={[c.corner, dimmed && (c.cornerDim as object)] as object}
     >
-      {/* Corner-colour atmosphere behind the fighter. */}
+      {/* Corner-colour atmosphere in the outer flank (fully clear of the
+          portrait column, so its blur never forms a hard seam). */}
       <View
         style={
           [
             c.glow,
             { backgroundColor: `${accent}45` },
-            side === 'a' ? { right: '4%' } : { left: '4%' },
+            side === 'a' ? { left: '4%' } : { right: '4%' },
           ] as object
         }
         pointerEvents="none"
       />
       <View style={c.bottomScrim as object} pointerEvents="none" />
-      {picked && (
-        <View style={[c.pickTag, { backgroundColor: accent }, side === 'b' && (c.pickTagB as object)] as object}>
-          <Text style={c.pickTagText as object}>Your pick</Text>
-        </View>
-      )}
       <View style={[c.nameBlock, side === 'b' && (c.nameBlockB as object)] as object}>
         {!!hero.publisher && (
           <Text
@@ -276,9 +270,15 @@ export function ShowdownStage({
   ).filter(([, a, b]) => a != null && b != null) as [string, number, number][];
 
   const arenaH = isDesktop ? 430 : 280;
-  // Portrait art is ~3:4 — derive the column width from the arena height so
-  // the crop stays composed at every viewport.
-  const portraitW = Math.round(arenaH * 0.82);
+  // Portrait columns: composed like a character-select — wide enough to fill
+  // most of the half (no dead flanks), bounded so the crop stays intentional
+  // at every viewport.
+  const { width: winW } = useWindowDimensions();
+  const stageW = Math.min(1240, winW - (winW < 640 ? 32 : 64));
+  const halfW = stageW / 2;
+  const portraitW = Math.round(
+    Math.min(halfW * 0.85, Math.max(arenaH * 0.82, halfW * 0.72)),
+  );
   const [hoverSide, setHoverSide] = useState<'a' | 'b' | null>(null);
 
   return (
@@ -287,7 +287,6 @@ export function ShowdownStage({
         <Corner
           hero={heroA}
           side="a"
-          picked={pickedA}
           dimmed={revealed && !pickedA}
           revealed={revealed}
           isDesktop={isDesktop}
@@ -297,7 +296,6 @@ export function ShowdownStage({
         <Corner
           hero={heroB}
           side="b"
-          picked={pickedId === heroB.id}
           dimmed={revealed && pickedId !== heroB.id}
           revealed={revealed}
           isDesktop={isDesktop}
@@ -322,6 +320,18 @@ export function ShowdownStage({
           hovered={hoverSide === 'b' && !revealed}
           dimmed={revealed && pickedId !== heroB.id}
         />
+
+        {/* Your-pick tags — arena level, so they paint above the portraits. */}
+        {revealed && pickedA && (
+          <View style={[c.pickTag, c.pickTagA, { backgroundColor: ACCENT_A }] as object}>
+            <Text style={c.pickTagText as object}>Your pick</Text>
+          </View>
+        )}
+        {revealed && pickedId === heroB.id && (
+          <View style={[c.pickTag, c.pickTagB, { backgroundColor: ACCENT_B }] as object}>
+            <Text style={c.pickTagText as object}>Your pick</Text>
+          </View>
+        )}
 
         {/* The slash — a glowing gold band riding the split, carrying a
             diamond VS badge. */}
@@ -349,27 +359,33 @@ export function ShowdownStage({
         </Pressable>
       </View>
 
-      {/* Tale of the tape */}
-      {tape.length > 0 && (
-        <View style={t.tape as object}>
-          {tape.map(([label, a, b]) => (
-            <TapeRow key={label} label={label} a={a} b={b} />
-          ))}
-        </View>
-      )}
-
-      {!revealed ? (
-        <Text style={c.prompt as object}>Who takes it? Pick a side.</Text>
-      ) : (
-        <CrowdBar
-          pctA={pctA}
-          pctB={pctB}
-          caption={caption}
-          pickedA={pickedA}
-          animate={justVoted}
-          onOpen={() => onOpen(heroA, heroB)}
-        />
-      )}
+      {/* Ringside panel: the tale of the tape + the call to pick a side,
+          resolving into the crowd's verdict after the vote. */}
+      <View style={c.panel as object}>
+        {tape.length > 0 && (
+          <>
+            <Text style={c.panelKicker as object}>Tale of the tape</Text>
+            <View style={t.tape as object}>
+              {tape.map(([label, a, b]) => (
+                <TapeRow key={label} label={label} a={a} b={b} />
+              ))}
+            </View>
+            <View style={c.panelRule as object} />
+          </>
+        )}
+        {!revealed ? (
+          <Text style={c.prompt as object}>Who takes it? Pick a side.</Text>
+        ) : (
+          <CrowdBar
+            pctA={pctA}
+            pctB={pctB}
+            caption={caption}
+            pickedA={pickedA}
+            animate={justVoted}
+            onOpen={() => onOpen(heroA, heroB)}
+          />
+        )}
+      </View>
     </View>
   );
 }
@@ -447,16 +463,20 @@ const c = StyleSheet.create({
   } as object,
   nameMobile: { fontSize: 22, lineHeight: 28 } as object,
 
+  // Positioned at arena level (never inside a corner) so left/right anchors
+  // are explicit per side and the tag paints above the portrait layer.
   pickTag: {
     position: 'absolute',
     top: 14,
-    left: 14,
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 8,
-    zIndex: 3,
+    zIndex: 5,
+    alignSelf: 'flex-start',
   } as object,
-  pickTagB: { left: undefined, right: 14 } as object,
+  pickTagA: { left: 14 } as object,
+  // Inset past the shuffle chip that owns the very corner.
+  pickTagB: { right: 58 } as object,
   pickTagText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
@@ -541,14 +561,39 @@ const c = StyleSheet.create({
   } as object,
   shuffleHover: { backgroundColor: 'rgba(11,24,32,0.9)' } as object,
 
+  // Ringside panel — glass card housing the tape and the vote/verdict.
+  panel: {
+    width: 640,
+    maxWidth: '100%',
+    marginTop: 16,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.1)',
+    borderRadius: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+  } as object,
+  panelKicker: {
+    ...EYEBROW,
+    fontSize: 10,
+    color: 'rgba(206,155,51,0.9)',
+    marginBottom: 12,
+  } as object,
+  panelRule: {
+    alignSelf: 'stretch',
+    height: 1,
+    backgroundColor: 'rgba(245,235,220,0.08)',
+    marginTop: 16,
+    marginBottom: 14,
+  } as object,
   prompt: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 14,
-    color: 'rgba(245,235,220,0.75)',
-    marginTop: 18,
+    color: 'rgba(245,235,220,0.8)',
   } as object,
 
-  reveal: { width: 380, maxWidth: '100%', marginTop: 18 } as object,
+  reveal: { width: '100%' } as object,
   barTrack: {
     flexDirection: 'row',
     height: 12,
@@ -582,21 +627,30 @@ const c = StyleSheet.create({
     textTransform: 'uppercase',
     color: 'rgba(245,235,220,0.6)',
   } as object,
-  linkRow: { alignSelf: 'center', marginTop: 8, cursor: 'pointer' } as object,
-  linkHover: { opacity: 0.8 } as object,
+  // The verdict's action — a real gold pill, not a whispered text link.
+  linkRow: {
+    alignSelf: 'center',
+    marginTop: 14,
+    backgroundColor: COLORS.goldAccent,
+    borderRadius: 22,
+    paddingVertical: 10,
+    paddingHorizontal: 22,
+    cursor: 'pointer',
+    transition: 'opacity 150ms ease, transform 150ms ease',
+  } as object,
+  linkHover: { opacity: 0.9, transform: [{ scale: 1.04 }] } as object,
   link: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
-    color: COLORS.goldAccent,
-    letterSpacing: 0.3,
+    color: COLORS.deepNavy,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   } as object,
 });
 
 const t = StyleSheet.create({
   tape: {
-    width: 560,
-    maxWidth: '100%',
-    marginTop: 18,
+    alignSelf: 'stretch',
     gap: 8,
   } as object,
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
