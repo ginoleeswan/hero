@@ -238,8 +238,8 @@ const PARTICLE_VERT = `
     gl_PointSize = min(uScale * worldSize / -mv.z, 64.0);
 
     vColor = tex;
-    // Once the crisp portrait has revealed, the particles recede to a shimmer
-    vAlpha = mix(0.3, 1.0, t) * (1.0 - uReveal * 0.72);
+    // Once the crisp card has revealed, the particles get out of its way
+    vAlpha = mix(0.3, 1.0, t) * (1.0 - uReveal * 0.93);
   }
 `;
 
@@ -308,23 +308,23 @@ const REVEAL_FRAG = `
     float mask = smoothstep(0.012, -0.012, sdCard - tear);
     if (mask * uOpacity < 0.01) discard;
 
-    // Card body (frame band)
-    vec3 col = mix(vec3(0.078, 0.145, 0.212), vec3(0.125, 0.216, 0.302), vUv.y);
+    // Card body (frame band) — warm-lit navy so it separates from the void
+    vec3 col = mix(vec3(0.1, 0.18, 0.25), vec3(0.16, 0.27, 0.36), vUv.y);
     col += (n - 0.5) * 0.03; // faint paper grain
 
     // Portrait inside the window
     vec2 uvP = (pa / vec2(0.875, 1.3775) + 1.0) * 0.5;
     float window = smoothstep(0.008, -0.008, sdWindow);
     vec3 art = texture2D(uTex, clamp(uvP, 0.0, 1.0)).rgb;
-    // Gentle vignette to seat the art in the frame
-    art *= 1.0 - 0.18 * smoothstep(0.45, 1.0, length(pa / vec2(1.0, 1.45)));
+    // Whisper of a vignette — just enough to seat the art
+    art *= 1.0 - 0.09 * smoothstep(0.55, 1.0, length(pa / vec2(1.0, 1.45)));
     col = mix(col, art, window);
 
-    // Gold keyline around the window, hairline at the outer edge
-    float keyline = smoothstep(0.02, 0.0, abs(sdWindow)) ;
-    col = mix(col, vec3(0.976, 0.698, 0.133), keyline * 0.7);
-    float hairline = smoothstep(0.014, 0.0, abs(sdCard + 0.012));
-    col = mix(col, vec3(0.96, 0.92, 0.86), hairline * 0.28);
+    // Gold keyline around the window, bright hairline at the outer edge
+    float keyline = smoothstep(0.02, 0.0, abs(sdWindow));
+    col = mix(col, vec3(0.976, 0.698, 0.133), keyline * 0.9);
+    float hairline = smoothstep(0.016, 0.0, abs(sdCard + 0.012));
+    col = mix(col, vec3(0.96, 0.92, 0.86), hairline * 0.5);
 
     // Holo sheen: an iridescent band that sweeps with time and pointer tilt
     float s = dot(pa, normalize(vec2(0.8, 1.0)));
@@ -670,8 +670,10 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
     const hit = texCache.get(id);
     if (hit) return Promise.resolve(hit);
     return texLoader.loadAsync(P800(id)).then((tex) => {
-      tex.minFilter = THREE.LinearFilter;
-      tex.generateMipmaps = false;
+      // Trilinear + anisotropy keeps the card crisp while it tilts
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.generateMipmaps = true;
+      tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
       texCache.set(id, tex);
       return tex;
     });
@@ -905,10 +907,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
     downY = e.clientY;
   };
   const onUp = (e: PointerEvent) => {
-    if (
-      performance.now() - downAt < 350 &&
-      Math.hypot(e.clientX - downX, e.clientY - downY) < 12
-    ) {
+    if (performance.now() - downAt < 350 && Math.hypot(e.clientX - downX, e.clientY - downY) < 12) {
       summonNext();
     }
   };
@@ -1149,7 +1148,7 @@ const CSS = `
     pointer-events:none; white-space:nowrap;
   }
   .plate-name {
-    font-family:'Righteous',sans-serif; font-size:24px; color:var(--beige);
+    font-family:'Righteous',sans-serif; font-size:30px; color:var(--beige);
     letter-spacing:0.5px; text-shadow:0 2px 18px rgba(11,24,32,0.9);
     animation:plateIn .6s cubic-bezier(.22,.7,.25,1) both;
   }
@@ -1529,54 +1528,73 @@ const CSS = `
     box-shadow:0 30px 90px rgba(0,0,0,0.45);
   }
 
-  /* Fight-poster head: blurred ambient split + each fighter as a proper
-     2:3 mini trading card (the portrait art is 2:3 — never letterbox it) */
-  .tott-head { position:relative; display:grid; grid-template-columns:1fr 1fr; margin-bottom:30px; }
-  .tott-corner { position:relative; height:212px; overflow:hidden; }
-  .tott-corner.l { clip-path:polygon(0 0, 100% 0, calc(100% - 30px) 100%, 0 100%); }
-  .tott-corner.r { clip-path:polygon(30px 0, 100% 0, 100% 100%, 0 100%); }
-  .tott-bg {
-    position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block;
-    filter:blur(18px) saturate(1.2); opacity:0.5; transform:scale(1.35);
+  /* Fight-card head: broadcast-graphic split. Two duotone colour fields with
+     a comic halftone texture meet at an angled gold seam; each fighter is a
+     2:3 mini trading card breaking out of the band, with an oversized name
+     and a rounds-won pip scoreboard. */
+  .tott-head { position:relative; height:248px; margin-bottom:44px; }
+  .tott-field { position:absolute; inset:0; overflow:hidden; }
+  .tott-field::before {
+    content:''; position:absolute; inset:0;
+    clip-path:polygon(0 0, calc(50% + 42px) 0, calc(50% - 42px) 100%, 0 100%);
+    background:
+      radial-gradient(circle at 1.2px 1.2px, rgba(245,235,220,0.05) 1.2px, transparent 1.9px),
+      radial-gradient(130% 160% at 0% 0%, rgba(116,184,67,0.32) 0%, rgba(116,184,67,0.05) 52%, transparent 78%),
+      linear-gradient(115deg, #16291d 0%, #101f2a 78%);
+    background-size:13px 13px, auto, auto;
   }
-  .tott-corner.r .tott-bg { transform:scale(1.35) scaleX(-1); }
+  .tott-field::after {
+    content:''; position:absolute; inset:0;
+    clip-path:polygon(calc(50% + 48px) 0, 100% 0, 100% 100%, calc(50% - 36px) 100%);
+    background:
+      radial-gradient(circle at 1.2px 1.2px, rgba(245,235,220,0.05) 1.2px, transparent 1.9px),
+      radial-gradient(130% 160% at 100% 0%, rgba(231,115,51,0.32) 0%, rgba(231,115,51,0.06) 52%, transparent 78%),
+      linear-gradient(-115deg, #2b1b12 0%, #101f2a 78%);
+    background-size:13px 13px, auto, auto;
+  }
+  .tott-seam {
+    position:absolute; top:-8%; bottom:-8%; left:50%; width:4px;
+    background:linear-gradient(180deg,var(--yellow),var(--orange));
+    transform:translateX(-50%) rotate(19deg);
+    border-radius:3px; opacity:0.9;
+    box-shadow:0 0 20px rgba(249,178,34,0.4);
+  }
   .tott-fcard {
-    position:absolute; bottom:16px; width:118px; aspect-ratio:2/3; z-index:1;
-    border-radius:12px; overflow:hidden;
-    box-shadow:0 16px 38px rgba(0,0,0,0.6);
+    position:absolute; bottom:-24px; width:150px; aspect-ratio:2/3; z-index:1;
+    border-radius:14px; overflow:hidden;
+    box-shadow:0 24px 50px rgba(0,0,0,0.65);
   }
   .tott-fcard img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
-  .tott-fcard.l { left:26px; transform:rotate(-4deg); border:2px solid rgba(116,184,67,0.75); }
-  .tott-fcard.r { right:26px; transform:rotate(4deg); border:2px solid rgba(231,115,51,0.75); }
+  .tott-fcard.l { left:30px; transform:rotate(-5deg); border:2px solid rgba(116,184,67,0.8); }
+  .tott-fcard.r { right:30px; transform:rotate(5deg); border:2px solid rgba(231,115,51,0.8); }
   .tott-fcard.r img { transform:scaleX(-1); }
-  .tott-corner.l::after {
-    content:''; position:absolute; inset:0;
-    background:
-      linear-gradient(to top,rgba(26,45,62,0.96) 0%,rgba(26,45,62,0.25) 46%,transparent 70%),
-      linear-gradient(120deg,rgba(116,184,67,0.16) 0%,transparent 55%);
+  .tott-id { position:absolute; top:50%; transform:translateY(-50%); z-index:1; display:flex; flex-direction:column; gap:7px; }
+  .tott-id.l { left:206px; align-items:flex-start; }
+  .tott-id.r { right:206px; align-items:flex-end; text-align:right; }
+  .tott-name {
+    font-family:'Righteous',sans-serif; font-size:clamp(26px,3.5vw,40px);
+    text-transform:uppercase; letter-spacing:0.5px; line-height:1.02;
+    text-shadow:0 3px 20px rgba(0,0,0,0.7);
+    max-width:150px; /* long names wrap to two lines instead of crossing the seam */
   }
-  .tott-corner.r::after {
-    content:''; position:absolute; inset:0;
-    background:
-      linear-gradient(to top,rgba(26,45,62,0.96) 0%,rgba(26,45,62,0.25) 46%,transparent 70%),
-      linear-gradient(-120deg,rgba(231,115,51,0.18) 0%,transparent 55%);
-  }
-  .tott-id { position:absolute; bottom:24px; z-index:1; display:flex; flex-direction:column; gap:3px; }
-  .tott-id.l { left:164px; align-items:flex-start; }
-  .tott-id.r { right:164px; align-items:flex-end; }
-  .tott-name { font-family:'Righteous',sans-serif; font-size:24px; text-shadow:0 2px 14px rgba(0,0,0,0.8); }
+  .tott-pips { display:flex; gap:5px; margin-top:2px; }
+  .tott-pips i { width:9px; height:9px; border-radius:50%; background:var(--pc,#7a93a3); box-shadow:0 1px 6px rgba(0,0,0,0.45); }
+  .tott-pips.l { --pc:var(--hulk); }
+  .tott-pips.r { --pc:var(--iron); }
+  .tott-pip-label { font-size:8px; font-weight:600; letter-spacing:2px; color:var(--muted); text-transform:uppercase; }
   .tott-univ { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--beige); opacity:0.75; display:flex; align-items:center; gap:6px; }
   .tott-univ::before { content:''; width:7px; height:7px; border-radius:50%; background:var(--fc,#7a93a3); }
   .tott-id.l .tott-univ { --fc:var(--hulk); }
   .tott-id.r .tott-univ { --fc:var(--iron); flex-direction:row-reverse; }
   .tott-vs {
     position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:2;
-    font-family:'Righteous',sans-serif; font-size:24px;
-    width:60px; height:60px; border-radius:50%;
+    font-family:'Righteous',sans-serif; font-size:28px;
+    width:74px; height:74px; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
     background:linear-gradient(135deg,var(--orange),var(--yellow));
-    border:4px solid #14222f;
-    color:#0b1820; box-shadow:0 6px 24px rgba(231,115,51,0.4);
+    border:5px solid #14222f;
+    color:#0b1820;
+    box-shadow:0 6px 24px rgba(231,115,51,0.4), 0 0 0 7px rgba(249,178,34,0.12);
     animation:vsPulse 3.2s ease-in-out infinite;
   }
   @keyframes vsPulse {
@@ -1721,19 +1739,21 @@ const CSS = `
     /* Tale of the tape */
     .tott { padding:64px 20px; }
     .tott-card { border-radius:20px; margin-top:32px; }
-    .tott-head { margin-bottom:18px; }
-    .tott-corner { height:150px; }
-    .tott-corner.l { clip-path:polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%); }
-    .tott-corner.r { clip-path:polygon(18px 0, 100% 0, 100% 100%, 0 100%); }
-    .tott-fcard { width:78px; bottom:12px; border-radius:9px; }
-    .tott-fcard.l { left:12px; }
-    .tott-fcard.r { right:12px; }
-    .tott-id { bottom:16px; }
-    .tott-id.l { left:102px; }
-    .tott-id.r { right:102px; }
-    .tott-name { font-size:15px; }
+    .tott-head { height:168px; margin-bottom:30px; }
+    .tott-field::before { clip-path:polygon(0 0, calc(50% + 26px) 0, calc(50% - 26px) 100%, 0 100%); }
+    .tott-field::after { clip-path:polygon(calc(50% + 31px) 0, 100% 0, 100% 100%, calc(50% - 21px) 100%); }
+    .tott-seam { width:3px; transform:translateX(-50%) rotate(17deg); }
+    .tott-fcard { width:88px; bottom:-14px; border-radius:10px; }
+    .tott-fcard.l { left:14px; }
+    .tott-fcard.r { right:14px; }
+    .tott-id { gap:4px; }
+    .tott-id.l { left:114px; }
+    .tott-id.r { right:114px; }
+    .tott-name { font-size:18px; max-width:84px; }
     .tott-univ { font-size:8px; letter-spacing:1.5px; }
-    .tott-vs { width:46px; height:46px; font-size:19px; border-width:3px; }
+    .tott-pips { gap:4px; }
+    .tott-pips i { width:7px; height:7px; }
+    .tott-vs { width:50px; height:50px; font-size:20px; border-width:4px; }
     .tott-bars { padding:0 8px; }
     .tott-row { grid-template-columns:34px 1fr 64px 1fr 34px; gap:6px; padding:5px 6px; }
     .tott-val { font-size:12px; }
@@ -2005,9 +2025,9 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       <span className="hero-wordmark-large">mythique</span>
       <p className="hero-tagline">Know every icon. Settle every debate.</p>
       <p className="hero-sub">
-        Explore 34,000+ characters in rich detail, trace how they&apos;re connected, and pit any
-        two head-to-head to settle who&apos;d really win. The whole universe — alive, connected,
-        and yours to argue about.
+        Explore 34,000+ characters in rich detail, trace how they&apos;re connected, and pit any two
+        head-to-head to settle who&apos;d really win. The whole universe — alive, connected, and
+        yours to argue about.
       </p>
       <div className="hero-ctas">
         <button className="btn-primary" onClick={() => router.push('/explore')}>
@@ -2240,9 +2260,33 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
               </div>
               <div className="fc-visual fc-web" aria-hidden="true">
                 <svg viewBox="0 0 200 170" preserveAspectRatio="none">
-                  <line x1="84" y1="65" x2="36" y2="122" stroke="#E77333" strokeWidth="1.5" opacity="0.75" />
-                  <line x1="84" y1="65" x2="164" y2="126" stroke="#15A1AB" strokeWidth="1.5" opacity="0.75" />
-                  <line x1="84" y1="65" x2="160" y2="37" stroke="#F9B222" strokeWidth="1.5" opacity="0.75" />
+                  <line
+                    x1="84"
+                    y1="65"
+                    x2="36"
+                    y2="122"
+                    stroke="#E77333"
+                    strokeWidth="1.5"
+                    opacity="0.75"
+                  />
+                  <line
+                    x1="84"
+                    y1="65"
+                    x2="164"
+                    y2="126"
+                    stroke="#15A1AB"
+                    strokeWidth="1.5"
+                    opacity="0.75"
+                  />
+                  <line
+                    x1="84"
+                    y1="65"
+                    x2="160"
+                    y2="37"
+                    stroke="#F9B222"
+                    strokeWidth="1.5"
+                    opacity="0.75"
+                  />
                 </svg>
                 <div className="fc-web-node" style={{ left: '42%', top: '38%' }}>
                   <img src={P('69')} alt="" loading="lazy" />
@@ -2287,8 +2331,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
               </div>
               <h3 className="feature-title">Settle the Debate</h3>
               <p className="feature-desc">
-                Pit any two head-to-head, take a side, and watch the winner reveal — crowd vote
-                plus the tale of the tape. The &quot;who’d win&quot; argument, finally settled.
+                Pit any two head-to-head, take a side, and watch the winner reveal — crowd vote plus
+                the tale of the tape. The &quot;who’d win&quot; argument, finally settled.
               </p>
               <div className="fc-visual fc-bars" aria-hidden="true">
                 {[
@@ -2374,8 +2418,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
               </div>
               <h3 className="feature-title">Instant Search</h3>
               <p className="feature-desc">
-                Find any of 34,000+ characters in seconds — search by name, power, publisher or
-                team affiliation.
+                Find any of 34,000+ characters in seconds — search by name, power, publisher or team
+                affiliation.
               </p>
             </div>
           </div>
@@ -2399,25 +2443,33 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
 
           <div className="tott-card reveal" style={{ transitionDelay: '160ms' }}>
             <div className="tott-head">
-              <div className="tott-corner l">
-                <img className="tott-bg" src={P('332')} alt="" aria-hidden="true" loading="lazy" />
-                <div className="tott-fcard l">
-                  <img src={P800('332')} alt="Hulk" loading="lazy" />
-                </div>
-                <div className="tott-id l">
-                  <span className="tott-name">Hulk</span>
-                  <span className="tott-univ">Marvel</span>
-                </div>
+              <div className="tott-field" aria-hidden="true" />
+              <span className="tott-seam" aria-hidden="true" />
+              <div className="tott-fcard l">
+                <img src={P800('332')} alt="Hulk" loading="lazy" />
               </div>
-              <div className="tott-corner r">
-                <img className="tott-bg" src={P('346')} alt="" aria-hidden="true" loading="lazy" />
-                <div className="tott-fcard r">
-                  <img src={P800('346')} alt="Iron Man" loading="lazy" />
+              <div className="tott-id l">
+                <span className="tott-name">Hulk</span>
+                <span className="tott-univ">Marvel</span>
+                <div className="tott-pips l" aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                  <i />
                 </div>
-                <div className="tott-id r">
-                  <span className="tott-name">Iron Man</span>
-                  <span className="tott-univ">Marvel</span>
+                <span className="tott-pip-label">Rounds won</span>
+              </div>
+              <div className="tott-fcard r">
+                <img src={P800('346')} alt="Iron Man" loading="lazy" />
+              </div>
+              <div className="tott-id r">
+                <span className="tott-name">Iron Man</span>
+                <span className="tott-univ">Marvel</span>
+                <div className="tott-pips r" aria-hidden="true">
+                  <i />
+                  <i />
                 </div>
+                <span className="tott-pip-label">Rounds won</span>
               </div>
               <div className="tott-vs" aria-hidden="true">
                 VS
