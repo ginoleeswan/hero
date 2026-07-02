@@ -2256,18 +2256,20 @@ export default function WebCharacterScreen() {
                       }
                     >
                       <GalleryStrip
-                      images={galleryImages.map((g) => ({ url: g.url, caption: g.caption }))}
-                      onPress={(i) => {
-                        const issueId = galleryImages[i]?.issueId;
-                        if (issueId) {
-                          router.push(`/issue/cvi:${issueId}` as Parameters<typeof router.push>[0]);
-                          return;
-                        }
-                        setLightboxImages(
-                          galleryImages.map((g) => ({ url: g.url, caption: g.caption })),
-                        );
-                        setLightboxIndex(i);
-                      }}
+                        images={galleryImages.map((g) => ({ url: g.url, caption: g.caption }))}
+                        onPress={(i) => {
+                          const issueId = galleryImages[i]?.issueId;
+                          if (issueId) {
+                            router.push(
+                              `/issue/cvi:${issueId}` as Parameters<typeof router.push>[0],
+                            );
+                            return;
+                          }
+                          setLightboxImages(
+                            galleryImages.map((g) => ({ url: g.url, caption: g.caption })),
+                          );
+                          setLightboxIndex(i);
+                        }}
                       />
                     </View>
                   </View>
