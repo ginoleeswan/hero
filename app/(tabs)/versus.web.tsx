@@ -77,7 +77,15 @@ export default function VersusHubWeb() {
           )}
 
           {loading && !matchup ? (
-            <View style={[s.skelArena, { height: isDesktop ? 430 : 280 }] as object} />
+            <View style={s.skelDeck}>
+              <View
+                style={[s.skelCard, s.skelTiltL, { width: isDesktop ? 260 : 150, height: isDesktop ? 346 : 200 }] as object}
+              />
+              <View style={s.skelCoin} />
+              <View
+                style={[s.skelCard, s.skelTiltR, { width: isDesktop ? 260 : 150, height: isDesktop ? 346 : 200 }] as object}
+              />
+            </View>
           ) : matchup ? (
             <ShowdownStage
               matchup={matchup}
@@ -289,13 +297,26 @@ const s = StyleSheet.create({
   },
   titleMobile: { fontSize: 24, lineHeight: 30 } as object,
 
-  // Arena-shaped skeleton while the matchup query resolves.
-  skelArena: {
-    width: '100%',
-    borderRadius: 22,
+  // Card-deck skeleton while the matchup query resolves.
+  skelDeck: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  skelCard: {
+    borderRadius: 18,
     backgroundColor: 'rgba(245,235,220,0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(206,155,51,0.15)',
+    borderColor: 'rgba(206,155,51,0.12)',
+  } as object,
+  skelTiltL: { transform: [{ rotate: '-3deg' }] } as object,
+  skelTiltR: { transform: [{ rotate: '3deg' }] } as object,
+  skelCoin: {
+    width: 60,
+    height: 60,
+    borderRadius: 14,
+    marginHorizontal: -16,
+    zIndex: 2,
+    transform: [{ rotate: '45deg' }],
+    backgroundColor: 'rgba(245,235,220,0.07)',
+    borderWidth: 2,
+    borderColor: 'rgba(206,155,51,0.4)',
   } as object,
 
   actions: {

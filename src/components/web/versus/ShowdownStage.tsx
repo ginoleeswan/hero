@@ -1,12 +1,9 @@
-// src/components/web/versus/ShowdownStage.tsx — the Main Event of the web
-// Arena: a full-bleed fight-night stage. The two fighters own half the arena
-// each, split by the gold slash and VS coin; the entire half is the vote
-// button. A tale of the tape (INT/STR/SPD as opposing bars) sits under the
-// fighters; voting springs the crowd bar from an even split to the real tally,
-// lights your corner and drains the loser's colour. "See full breakdown →"
-// opens the full fight.
+// src/components/web/versus/ShowdownStage.tsx — the Main Event of the web Arena.
+// Two portrait fighter cards face off across a gold VS diamond; tapping a card
+// casts your vote. Below, a ringside panel shows the tale of the tape and — once
+// voted — the crowd's split, with a gold pill into the full breakdown.
 import { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, EYEBROW } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
@@ -18,143 +15,75 @@ import type { FighterArt } from '../../../lib/compareHandoff';
 const ACCENT_A = COLORS.orange;
 const ACCENT_B = COLORS.blue;
 
-// ── One half of the arena — the fighter's corner, and the vote button ────────
-// The corner owns the colour panel, glow, name block and vote press; the
-// portrait itself lives in a sibling layer above (see PortraitLayer) so its
-// inner edge can be clipped collinear with the diagonal slash.
-function Corner({
+// ── A portrait fighter card — the vote button. Full character render in a
+// clean portrait crop, faction-accent frame, name + publisher on a bottom
+// scrim. Picked → accent ring + tag; the loser dims + desaturates on reveal.
+function FighterCard({
   hero,
   side,
+  picked,
+  dimmed,
   revealed,
+  w,
+  h,
   onPress,
-  onHover,
 }: {
   hero: MatchupHero;
   side: 'a' | 'b';
+  picked: boolean;
+  dimmed: boolean;
   revealed: boolean;
+  w: number;
+  h: number;
   onPress: () => void;
-  onHover: (side: 'a' | 'b' | null) => void;
 }) {
+  const accent = side === 'a' ? ACCENT_A : ACCENT_B;
   return (
     <Pressable
       onPress={onPress}
       disabled={revealed}
-      onHoverIn={() => onHover(side)}
-      onHoverOut={() => onHover(null)}
       accessibilityRole="button"
       accessibilityLabel={`Vote for ${hero.name}`}
-      style={c.corner as object}
-    />
-  );
-}
-
-// ── The fighters — a layer above the corner press-targets. The half is FILLED
-// (no dead flanks) by a blurred wash of the fighter's own art; a sharp,
-// portrait-aspect figure hugs the slash on top of it so the character reads
-// clean and complete (no landscape over-crop). Inner edge clip-pathed collinear
-// with the slash; name + publisher ride the bottom-outer corner.
-function FighterPortrait({
-  hero,
-  side,
-  boxW,
-  fgW,
-  over,
-  dxHalf,
-  isDesktop,
-  hovered,
-  dimmed,
-}: {
-  hero: MatchupHero;
-  side: 'a' | 'b';
-  boxW: number;
-  fgW: number;
-  over: number;
-  dxHalf: number;
-  isDesktop: boolean;
-  hovered: boolean;
-  dimmed: boolean;
-}) {
-  // Inner edge follows the slash (skewX(-7°): top leans right of centre, bottom
-  // left). 100% = box width, whose inner edge sits `over` past the centreline.
-  const clip =
-    side === 'a'
-      ? `polygon(0 0, calc(100% - ${over - dxHalf}px) 0, calc(100% - ${over + dxHalf}px) 100%, 0 100%)`
-      : `polygon(${over + dxHalf}px 0, 100% 0, 100% 100%, ${over - dxHalf}px 100%)`;
-  const anchor = side === 'a' ? { left: 0 } : { right: 0 };
-  const imgProps = {
-    id: hero.id,
-    name: hero.name,
-    imageUrl: hero.image_url,
-    portraitUrl: hero.portrait_url,
-  };
-  return (
-    <View
-      style={
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
         [
-          c.portraitBox,
-          anchor,
-          { width: boxW, clipPath: clip },
-          dimmed && (c.portraitDim as object),
+          fc.card,
+          { width: w, height: h },
+          side === 'a' ? fc.tiltL : fc.tiltR,
+          hovered && !revealed && (fc.cardHover as object),
+          dimmed && (fc.cardDim as object),
         ] as object
       }
-      pointerEvents="none"
     >
-      {/* Blurred wash of the fighter's own art — fills the half with its
-          palette, no hard crop. */}
       <HeroImage
-        {...imgProps}
+        id={hero.id}
+        name={hero.name}
+        imageUrl={hero.image_url}
+        portraitUrl={hero.portrait_url}
         contentFit="cover"
-        contentPosition="center"
-        style={[StyleSheet.absoluteFill, c.backdrop] as object}
+        contentPosition={{ top: '8%', left: '50%' }}
+        style={[StyleSheet.absoluteFill, side === 'b' && (fc.mirror as object)] as object}
       />
-      <View style={c.backdropTint as object} />
-
-      {/* Sharp figure — portrait-aspect, hugging the slash so the two face
-          off across it. Cropping portrait art inside a portrait box stays
-          clean; the face is nudged toward the centre. */}
-      <View
-        style={
-          [
-            c.figure,
-            { width: fgW },
-            side === 'a' ? { right: 0 } : { left: 0 },
-            hovered && (c.portraitHover as object),
-          ] as object
-        }
-      >
-        <HeroImage
-          {...imgProps}
-          contentFit="cover"
-          contentPosition={{ top: '4%', left: side === 'a' ? '58%' : '58%' }}
-          style={[StyleSheet.absoluteFill, side === 'b' && (c.mirror as object)] as object}
-        />
-      </View>
-
-      {/* Bottom scrim so the name stays legible over the art. */}
-      <View style={c.bottomScrim as object} />
-      <View style={[c.nameBlock, side === 'a' ? c.nameBlockA : c.nameBlockB] as object}>
+      <View style={fc.scrim as object} pointerEvents="none" />
+      {picked && (
+        <View style={[fc.pickTag, { backgroundColor: accent }] as object}>
+          <Text style={fc.pickTagText as object}>Your pick</Text>
+        </View>
+      )}
+      <View style={fc.body}>
         {!!hero.publisher && (
-          <Text
-            style={[c.pub, side === 'b' && (c.textRight as object)] as object}
-            numberOfLines={1}
-          >
+          <Text style={fc.pub as object} numberOfLines={1}>
             {hero.publisher}
           </Text>
         )}
-        <Text
-          style={
-            [
-              c.name,
-              !isDesktop && (c.nameMobile as object),
-              side === 'b' && (c.textRight as object),
-            ] as object
-          }
-          numberOfLines={2}
-        >
+        <Text style={fc.name as object} numberOfLines={2}>
           {hero.name}
         </Text>
       </View>
-    </View>
+      <View
+        style={[StyleSheet.absoluteFill, fc.frame, { borderColor: accent }] as object}
+        pointerEvents="none"
+      />
+    </Pressable>
   );
 }
 
@@ -238,14 +167,12 @@ export function ShowdownStage({
   matchup: TodaysMatchup;
   isDesktop: boolean;
   onOpen: (a: FighterArt, b: FighterArt) => void;
-  /** Deal a fresh random matchup — the corner shuffle chip. */
+  /** Deal a fresh random bout. */
   onShuffle: () => void;
 }) {
   const { heroA, heroB, winsA, winsB } = matchup;
   const { revealed, pickedId, tally, castVote } = useMatchupVote(heroA.id, heroB.id);
 
-  // Fresh vote this session → the crowd bar springs; a returning voter gets
-  // the settled tally.
   const [justVoted, setJustVoted] = useState(false);
   const vote = (side: MatchupSide) => {
     setJustVoted(true);
@@ -261,6 +188,10 @@ export function ShowdownStage({
     : statLead(winsA, winsB, heroA.name, heroB.name);
   const pickedA = pickedId === heroA.id;
 
+  const cardW = isDesktop ? 260 : 150;
+  const cardH = isDesktop ? 346 : 200;
+  const coin = isDesktop ? 76 : 54;
+
   // Tale of the tape — rows render only when both fighters have the stat.
   const tape = (
     [
@@ -270,86 +201,49 @@ export function ShowdownStage({
     ] as const
   ).filter(([, a, b]) => a != null && b != null) as [string, number, number][];
 
-  const arenaH = isDesktop ? 430 : 280;
-  // Each portrait fills its half + a small overlap past the centreline, so the
-  // clip can bite the inner edge at the slash angle with no dead flanks.
-  const { width: winW } = useWindowDimensions();
-  const stageW = Math.min(1240, winW - (winW < 640 ? 32 : 64));
-  const dxHalf = Math.round((Math.tan((7 * Math.PI) / 180) * arenaH) / 2);
-  const over = dxHalf + 10;
-  const boxW = Math.round(stageW / 2 + over);
-  // Sharp figure is portrait-aspect, sized off the arena height — never wider
-  // than its half, so it always sits cleanly against the slash.
-  const fgW = Math.round(Math.min(stageW / 2, arenaH * 0.82));
-  const [hoverSide, setHoverSide] = useState<'a' | 'b' | null>(null);
-
   return (
     <View style={c.wrap}>
-      <View style={[c.arena, { height: arenaH }] as object}>
-        <Corner hero={heroA} side="a" revealed={revealed} onPress={() => vote('a')} onHover={setHoverSide} />
-        <Corner hero={heroB} side="b" revealed={revealed} onPress={() => vote('b')} onHover={setHoverSide} />
-
-        {/* Fighters — above the corner press-targets, each filling its half and
-            clipped to the slash's angle. */}
-        <FighterPortrait
+      <View style={c.deck}>
+        <FighterCard
           hero={heroA}
           side="a"
-          boxW={boxW}
-          fgW={fgW}
-          over={over}
-          dxHalf={dxHalf}
-          isDesktop={isDesktop}
-          hovered={hoverSide === 'a' && !revealed}
+          picked={pickedA}
           dimmed={revealed && !pickedA}
-        />
-        <FighterPortrait
-          hero={heroB}
-          side="b"
-          boxW={boxW}
-          fgW={fgW}
-          over={over}
-          dxHalf={dxHalf}
-          isDesktop={isDesktop}
-          hovered={hoverSide === 'b' && !revealed}
-          dimmed={revealed && pickedId !== heroB.id}
+          revealed={revealed}
+          w={cardW}
+          h={cardH}
+          onPress={() => vote('a')}
         />
 
-        {/* Your-pick tags — arena level, so they paint above the portraits. */}
-        {revealed && pickedA && (
-          <View style={[c.pickTag, c.pickTagA, { backgroundColor: ACCENT_A }] as object}>
-            <Text style={c.pickTagText as object}>Your pick</Text>
+        <View style={c.center}>
+          <View
+            style={[c.coin, { width: coin, height: coin, borderRadius: 14 }] as object}
+            pointerEvents="none"
+          >
+            <Text style={[c.coinText, { fontSize: coin * 0.3 }] as object}>VS</Text>
           </View>
-        )}
-        {revealed && pickedId === heroB.id && (
-          <View style={[c.pickTag, c.pickTagB, { backgroundColor: ACCENT_B }] as object}>
-            <Text style={c.pickTagText as object}>Your pick</Text>
-          </View>
-        )}
-
-        {/* The slash — a glowing gold band riding the split, carrying a
-            diamond VS badge. */}
-        <View style={c.seam as object} pointerEvents="none" />
-        <View style={c.slash as object} pointerEvents="none" />
-        <View
-          style={[c.badge, !isDesktop && (c.badgeMobile as object)] as object}
-          pointerEvents="none"
-        >
-          <Text style={[c.badgeText, !isDesktop && (c.badgeTextMobile as object)] as object}>
-            VS
-          </Text>
+          <Pressable
+            onPress={onShuffle}
+            accessibilityRole="button"
+            accessibilityLabel="Shuffle to a random matchup"
+            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+              [c.shuffle, hovered && (c.shuffleHover as object)] as object
+            }
+          >
+            <Ionicons name="shuffle" size={15} color={COLORS.beige} />
+          </Pressable>
         </View>
 
-        {/* Shuffle chip — deal a fresh random bout. */}
-        <Pressable
-          onPress={onShuffle}
-          accessibilityRole="button"
-          accessibilityLabel="Shuffle to a random matchup"
-          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [c.shuffle, hovered && (c.shuffleHover as object)] as object
-          }
-        >
-          <Ionicons name="shuffle" size={16} color={COLORS.beige} />
-        </Pressable>
+        <FighterCard
+          hero={heroB}
+          side="b"
+          picked={pickedId === heroB.id}
+          dimmed={revealed && pickedId !== heroB.id}
+          revealed={revealed}
+          w={cardW}
+          h={cardH}
+          onPress={() => vote('b')}
+        />
       </View>
 
       {/* Ringside panel: the tale of the tape + the call to pick a side,
@@ -367,7 +261,7 @@ export function ShowdownStage({
           </>
         )}
         {!revealed ? (
-          <Text style={c.prompt as object}>Who takes it? Pick a side.</Text>
+          <Text style={c.prompt as object}>Who takes it? Tap a card.</Text>
         ) : (
           <CrowdBar
             pctA={pctA}
@@ -383,61 +277,27 @@ export function ShowdownStage({
   );
 }
 
-const c = StyleSheet.create({
-  wrap: { alignItems: 'center', width: '100%' },
-
-  // The arena floor — full-width rounded block housing the two corners.
-  arena: {
-    width: '100%',
-    flexDirection: 'row',
-    borderRadius: 22,
+// ── Fighter card ──────────────────────────────────────────────────────────────
+const fc = StyleSheet.create({
+  card: {
+    borderRadius: 18,
     overflow: 'hidden',
     backgroundColor: '#0d1a22',
-    borderWidth: 1,
-    borderColor: 'rgba(206,155,51,0.18)',
-    boxShadow: '0 30px 80px rgba(0,0,0,0.5)',
-    position: 'relative',
-  } as object,
-
-  // Vote target — half the arena, transparent (the portrait layer paints the
-  // visuals). z-index keeps it under the portraits but above the arena floor.
-  corner: {
-    width: '50%',
-    height: '100%',
     cursor: 'pointer',
-    backgroundColor: '#0c161d',
+    boxShadow: '0 22px 50px rgba(0,0,0,0.5)',
+    transition: 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms ease',
+    justifyContent: 'flex-end',
   } as object,
-  // Each fighter fills its half; the inner edge is clipped to the slash.
-  portraitBox: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    overflow: 'hidden',
-    transition: 'opacity 300ms ease, filter 300ms ease',
+  tiltL: { transform: [{ rotate: '-3deg' }] } as object,
+  tiltR: { transform: [{ rotate: '3deg' }] } as object,
+  cardHover: {
+    transform: [{ rotate: '0deg' }, { translateY: -8 }],
+    boxShadow: '0 30px 64px rgba(0,0,0,0.6)',
+    zIndex: 3,
   } as object,
-  // Blurred wash of the fighter's art filling the whole half (scaled up so the
-  // blur has no soft edge inside the box).
-  backdrop: { filter: 'blur(34px)', transform: [{ scale: 1.25 }] } as object,
-  backdropTint: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(8,14,19,0.5)',
-  } as object,
-  // The sharp portrait-aspect figure hugging the slash.
-  figure: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    overflow: 'hidden',
-    transition: 'filter 300ms ease',
-  } as object,
-  portraitHover: { filter: 'brightness(1.12)' } as object,
-  portraitDim: { opacity: 0.5, filter: 'grayscale(0.65)' } as object,
+  cardDim: { opacity: 0.45, filter: 'grayscale(0.6)' } as object,
   mirror: { transform: [{ scaleX: -1 }] } as object,
-  bottomScrim: {
+  scrim: {
     position: 'absolute',
     left: 0,
     right: 0,
@@ -445,42 +305,16 @@ const c = StyleSheet.create({
     height: '55%',
     backgroundImage: 'linear-gradient(to top, rgba(8,14,19,0.96) 0%, transparent 100%)',
   } as object,
-
-  // Fighter identity anchored to the portrait's outer-bottom corner. Per-side
-  // anchors are explicit (RN style-merge won't clear a base `left` with
-  // `undefined`), so A pins left and B pins right.
-  nameBlock: { position: 'absolute', bottom: 20, maxWidth: '66%' } as object,
-  nameBlockA: { left: 26 } as object,
-  nameBlockB: { right: 26, alignItems: 'flex-end' } as object,
-  textRight: { textAlign: 'right' } as object,
-  pub: {
-    ...EYEBROW,
-    color: 'rgba(245,235,220,0.65)',
-    marginBottom: 4,
-  } as object,
-  name: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 42,
-    lineHeight: 52,
-    color: COLORS.beige,
-    textShadow: '0 2px 12px rgba(0,0,0,0.9)',
-  } as object,
-  nameMobile: { fontSize: 22, lineHeight: 28 } as object,
-
-  // Positioned at arena level (never inside a corner) so left/right anchors
-  // are explicit per side and the tag paints above the portrait layer.
+  frame: { borderWidth: 2, borderRadius: 18, opacity: 0.9 } as object,
   pickTag: {
     position: 'absolute',
-    top: 14,
+    top: 12,
+    left: 12,
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 8,
-    zIndex: 5,
-    alignSelf: 'flex-start',
+    zIndex: 3,
   } as object,
-  pickTagA: { left: 14 } as object,
-  // Inset past the shuffle chip that owns the very corner.
-  pickTagB: { right: 58 } as object,
   pickTagText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
@@ -488,41 +322,29 @@ const c = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
   } as object,
+  body: { padding: 16 },
+  pub: {
+    ...EYEBROW,
+    color: 'rgba(245,235,220,0.6)',
+    marginBottom: 4,
+  } as object,
+  name: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 26,
+    lineHeight: 30,
+    color: COLORS.beige,
+    textShadow: '0 2px 10px rgba(0,0,0,0.9)',
+  } as object,
+});
 
-  // Slash: soft dark separation, then a bold gold band with a real glow —
-  // broadcast-graphics energy, not a hairline.
-  seam: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: '50%',
-    width: 130,
-    marginLeft: -65,
-    transform: [{ skewX: '-7deg' }],
-    backgroundImage:
-      'linear-gradient(to right, transparent 0%, rgba(8,14,19,0.85) 50%, transparent 100%)',
-  } as object,
-  slash: {
-    position: 'absolute',
-    top: -16,
-    bottom: -16,
-    left: '50%',
-    width: 9,
-    marginLeft: -4,
-    transform: [{ skewX: '-7deg' }],
-    backgroundImage: `linear-gradient(to bottom, transparent 0%, ${COLORS.goldAccent} 18%, #F3D27A 50%, ${COLORS.goldAccent} 82%, transparent 100%)`,
-    boxShadow: `0 0 28px ${COLORS.goldAccent}66`,
-  } as object,
-  // Diamond VS badge riding the band.
-  badge: {
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    width: 66,
-    height: 66,
-    marginLeft: -33,
-    marginTop: -33,
-    borderRadius: 14,
+// ── Stage layout ────────────────────────────────────────────────────────────
+const c = StyleSheet.create({
+  wrap: { alignItems: 'center', width: '100%' },
+  deck: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+
+  // Centre column between the cards — VS diamond + shuffle chip.
+  center: { alignItems: 'center', marginHorizontal: -20, zIndex: 4, gap: 12 },
+  coin: {
     transform: [{ rotate: '45deg' }],
     backgroundColor: COLORS.deepNavy,
     borderWidth: 2,
@@ -530,46 +352,31 @@ const c = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     boxShadow: `0 0 0 6px rgba(11,24,32,0.6), 0 0 30px ${COLORS.goldAccent}55`,
-    zIndex: 4,
   } as object,
-  badgeMobile: {
-    width: 50,
-    height: 50,
-    marginLeft: -25,
-    marginTop: -25,
-    borderRadius: 11,
-  } as object,
-  badgeText: {
+  coinText: {
     fontFamily: 'Flame-Regular',
-    fontSize: 22,
     color: COLORS.goldAccent,
     transform: [{ rotate: '-45deg' }],
   } as object,
-  badgeTextMobile: { fontSize: 16 } as object,
-
   shuffle: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(11,24,32,0.6)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.2)',
+    borderColor: 'rgba(245,235,220,0.18)',
     cursor: 'pointer',
     transition: 'background-color 150ms ease',
-    zIndex: 5,
   } as object,
-  shuffleHover: { backgroundColor: 'rgba(11,24,32,0.9)' } as object,
+  shuffleHover: { backgroundColor: 'rgba(255,255,255,0.12)' } as object,
 
   // Ringside panel — glass card housing the tape and the vote/verdict.
   panel: {
     width: 640,
     maxWidth: '100%',
-    marginTop: 16,
+    marginTop: 24,
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: 1,
@@ -631,7 +438,6 @@ const c = StyleSheet.create({
     textTransform: 'uppercase',
     color: 'rgba(245,235,220,0.6)',
   } as object,
-  // The verdict's action — a real gold pill, not a whispered text link.
   linkRow: {
     alignSelf: 'center',
     marginTop: 14,
@@ -653,10 +459,7 @@ const c = StyleSheet.create({
 });
 
 const t = StyleSheet.create({
-  tape: {
-    alignSelf: 'stretch',
-    gap: 8,
-  } as object,
+  tape: { alignSelf: 'stretch', gap: 8 } as object,
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   val: {
     fontFamily: 'Flame-Regular',
@@ -673,7 +476,6 @@ const t = StyleSheet.create({
     backgroundColor: 'rgba(245,235,220,0.1)',
     overflow: 'hidden',
   } as object,
-  // Left track fills toward the centre (right-anchored).
   trackL: { alignItems: 'flex-end' } as object,
   fill: { height: 5, borderRadius: 3 } as object,
   label: {
