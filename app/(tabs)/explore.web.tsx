@@ -1322,6 +1322,11 @@ export default function WebHomeScreen() {
                 onViewProfile={handlePress}
               />
             )}
+            {/* Publisher doorways — glass pods on the ink stage, right under
+                the spotlight (their original, correct home). */}
+            <PublisherPods
+              onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
+            />
             {/* Engage row — "Today's Battle" (vote) paired with the daily
                 Guess-the-Hero game. On desktop they sit side by side so the
                 matchup isn't a full-width bar and the game rides up beside it;
@@ -1420,16 +1425,6 @@ export default function WebHomeScreen() {
                 <Text style={styles.browseSubtitle as object}>
                   Pick your corner of the multiverse — publishers, teams, media and power rankings.
                 </Text>
-              </View>
-
-              {/* ── Publisher doorways — moved off the hero stage: they're
-                   navigation, so they open the Library rather than compete
-                   with the spotlight. ─────────────────────────────────────── */}
-              <View style={styles.podsOnPaper}>
-                <PublisherPods
-                  surface="paper"
-                  onNavigate={(path) => router.push(path as Parameters<typeof router.push>[0])}
-                />
               </View>
 
               {/* ── Browse the Universe — one calm grid of doorway tiles. Replaces
@@ -1634,9 +1629,6 @@ const styles = StyleSheet.create({
 
   // Breathing room between the browse grid and the "Newly Added" rail.
   afterGrid: { marginTop: 44 },
-  // Publisher doorways open the Library, sitting between the chapter head and
-  // the category grid.
-  podsOnPaper: { marginBottom: 18 },
   // "See all rivalries →" link under the featured rivalry (the rail it replaced).
   seeAllRow: { marginTop: -24, marginBottom: 52, alignSelf: 'flex-start' } as object,
   seeAllText: {

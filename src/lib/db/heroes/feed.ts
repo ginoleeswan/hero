@@ -116,12 +116,19 @@ export async function getSpotlightHeroes(limit = 5): Promise<Hero[]> {
     .limit(SPOT_DISCOVERY_POOL);
 
   const [famousRes, discoveryRes] = await Promise.all([famousQuery, discoveryQuery]);
-  // Degrade, don't throw: a flaky pool must not drop the whole billboard — use
-  // whatever resolved (the caller falls back to trending if this comes back empty).
-  if (famousRes.error)
+  // Throw, don't degrade: the explore fan-out can exhaust the connection pool
+  // and 500 one of these queries. Swallowing that error caches a 2-hero (or
+  // empty) billboard as "success" for the whole staleTime — throwing instead
+  // lets React Query's backoff retry land after the burst and self-heal to the
+  // full pool within a second or two.
+  if (famousRes.error) {
     console.warn('[getSpotlightHeroes] famous pool failed:', famousRes.error.message);
-  if (discoveryRes.error)
+    throw famousRes.error;
+  }
+  if (discoveryRes.error) {
     console.warn('[getSpotlightHeroes] discovery pool failed:', discoveryRes.error.message);
+    throw discoveryRes.error;
+  }
 
   const famous = sampleN((famousRes.data ?? []) as unknown as Hero[], famousCount);
   const discovery = sampleN((discoveryRes.data ?? []) as unknown as Hero[], discoveryCount);

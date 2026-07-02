@@ -656,8 +656,12 @@ export async function getBrowseCovers(slugs: CategorySlug[]): Promise<Record<str
     p_per_slug: POOL_SIZE,
   });
   if (error) {
+    // Throw, don't degrade — a connection-pool 500 during the explore fan-out
+    // would otherwise cache an artless tile grid as "success" for the whole
+    // staleTime. React Query (and useBrowseCovers' catch) handle the failure;
+    // the retry lands after the burst.
     console.warn('[getBrowseCovers] error:', error.message);
-    return {};
+    throw error;
   }
 
   // Group candidates by slug, preserving the RPC's fame order (rows arrive
