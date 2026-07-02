@@ -27,6 +27,7 @@ import { heroImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
+import { PullQuoteBio } from '../../src/components/web/character/PullQuoteBio';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { groupTitlesByMedia } from '../../src/lib/db/titles';
@@ -1168,39 +1169,15 @@ export default function WebCharacterScreen() {
                       <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
                     </View>
                   ) : details.summary || details.description ? (
-                    <View style={styles.summaryBox}>
-                      {details.summary ? (
-                        <Text style={styles.summaryText}>
-                          {details.summary}
-                          {'  '}
-                          <MaterialCommunityIcons
-                            name="pencil"
-                            size={15}
-                            color="rgba(41,60,67,0.5)"
-                            onPress={() =>
-                              setEditTarget({
-                                field: SUMMARY_FIELD,
-                                current: details.summary ?? null,
-                              })
-                            }
-                          />
-                        </Text>
-                      ) : null}
-                      {details.description ? (
-                        <Pressable
-                          onPress={() => router.push(`/biography/${id}`)}
-                          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                            [
-                              styles.biographyLink,
-                              hovered && (styles.biographyLinkHover as object),
-                            ] as object
-                          }
-                        >
-                          <Text style={styles.biographyLinkText}>Read biography</Text>
-                          <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
-                        </Pressable>
-                      ) : null}
-                    </View>
+                    <PullQuoteBio
+                      summary={details.summary ?? ''}
+                      accent={theme.accent}
+                      hasBiography={!!details.description}
+                      onReadMore={() => router.push(`/biography/${id}`)}
+                      onEdit={() =>
+                        setEditTarget({ field: SUMMARY_FIELD, current: details.summary ?? null })
+                      }
+                    />
                   ) : null}
 
                   {/* Abilities — power explainers fold in as the "Decoded" strip */}
@@ -1935,37 +1912,15 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : details.summary || details.description ? (
                   <View style={styles.mBlock}>
-                    {details.summary ? (
-                      <Text style={styles.mSummary}>
-                        {details.summary}
-                        {'  '}
-                        <MaterialCommunityIcons
-                          name="pencil"
-                          size={14}
-                          color="rgba(41,60,67,0.5)"
-                          onPress={() =>
-                            setEditTarget({
-                              field: SUMMARY_FIELD,
-                              current: details.summary ?? null,
-                            })
-                          }
-                        />
-                      </Text>
-                    ) : null}
-                    {details.description ? (
-                      <Pressable
-                        onPress={() => router.push(`/biography/${id}`)}
-                        style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                          [
-                            styles.biographyLink,
-                            hovered && (styles.biographyLinkHover as object),
-                          ] as object
-                        }
-                      >
-                        <Text style={styles.biographyLinkText}>Read biography</Text>
-                        <Ionicons name="chevron-forward" size={13} color={COLORS.orange} />
-                      </Pressable>
-                    ) : null}
+                    <PullQuoteBio
+                      summary={details.summary ?? ''}
+                      accent={theme.accent}
+                      hasBiography={!!details.description}
+                      onReadMore={() => router.push(`/biography/${id}`)}
+                      onEdit={() =>
+                        setEditTarget({ field: SUMMARY_FIELD, current: details.summary ?? null })
+                      }
+                    />
                   </View>
                 ) : null}
 
@@ -3242,20 +3197,6 @@ const styles = StyleSheet.create({
     height: 3,
     zIndex: 3,
   } as object,
-  biographyLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-end',
-    gap: 4,
-    paddingTop: 10,
-  },
-  biographyLinkHover: { opacity: 0.7 },
-  biographyLinkText: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 13,
-    color: COLORS.orange,
-  },
-
   // ── Desktop body — main editorial column + overlapping side rail ─────────────
   bodyDesktopNew: {
     flexDirection: 'row',
@@ -3418,14 +3359,6 @@ const styles = StyleSheet.create({
     borderColor: '#e8ddd0',
     boxShadow: '0 6px 22px rgba(41,60,67,0.06)',
   } as object,
-  summaryText: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 15,
-    color: COLORS.navy,
-    lineHeight: 24,
-    maxWidth: 720,
-  },
-
   // Segmented tab bar
   tabBar: {
     flexDirection: 'row',
@@ -3769,13 +3702,6 @@ const styles = StyleSheet.create({
     color: COLORS.navy,
   },
   mFamilyBlock: { paddingHorizontal: 20, paddingTop: 18 },
-  mSummary: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 14,
-    lineHeight: 22,
-    color: COLORS.navy,
-    opacity: 0.85,
-  },
   mStatsCard: { backgroundColor: 'rgba(41,60,67,0.05)', borderRadius: 16, padding: 16 },
   mStatRows: { gap: 14 },
   mStatTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
