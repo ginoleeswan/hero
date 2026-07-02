@@ -1,6 +1,7 @@
 import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
-import { COLORS } from '../../../constants/colors';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { COLORS, EYEBROW, INK_TEXT } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
 import type { FearedVillain } from '../../../lib/db/heroes';
 
@@ -64,12 +65,17 @@ export function HallOfInfamy({
 
   return (
     <View style={c.section}>
+      {/* Chapter head — same grammar as the Arena's discovery rows (this
+          section lives on the ink Versus feed). */}
       <View style={[c.header, { paddingLeft: pagePad }] as object}>
-        <View style={c.accentBar} />
-        <View style={c.headerText}>
-          <Text style={c.label}>Public Enemies</Text>
-          <Text style={c.title}>Most Feared</Text>
+        <View style={c.kickerRow}>
+          <MaterialCommunityIcons name="skull-outline" size={13} color={COLORS.orange} />
+          <Text style={c.label as object}>Public Enemies</Text>
         </View>
+        <Text style={c.title}>Most Feared</Text>
+        <Text style={c.blurb as object}>
+          The villains the most heroes line up against — ranked by enemies made.
+        </Text>
       </View>
       <ScrollView
         horizontal
@@ -91,17 +97,16 @@ export function HallOfInfamy({
 
 const c = StyleSheet.create({
   section: { marginBottom: 52 },
-  header: { flexDirection: 'row', alignItems: 'stretch', gap: 14, marginBottom: 22 },
-  accentBar: { width: 4, borderRadius: 2, backgroundColor: COLORS.orange, minHeight: 38 },
-  headerText: { gap: 2, justifyContent: 'center' },
-  label: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 9,
-    color: COLORS.orange,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  title: { fontFamily: 'Flame-Regular', fontSize: 36, color: COLORS.navy, lineHeight: 38 },
+  header: { gap: 2, marginBottom: 16 },
+  kickerRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
+  label: { ...EYEBROW } as object,
+  title: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.beige, lineHeight: 30 },
+  blurb: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: INK_TEXT.faint,
+    marginTop: 2,
+  } as object,
 
   row: { flexDirection: 'row', gap: 16, paddingTop: 4, paddingBottom: 8 },
   card: {

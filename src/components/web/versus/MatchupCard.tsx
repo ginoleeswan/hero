@@ -37,7 +37,7 @@ export function MatchupCard({ a, b, onOpen, fit = 'cover', large = false }: Prop
           <VsBadge size={large ? 38 : 32} variant="glass" />
         </View>
       </View>
-      <Text style={s.names} numberOfLines={1}>
+      <Text style={[s.names, { maxWidth: pw * 2 + 2 }] as object} numberOfLines={2}>
         <Text style={s.nameA}>{a.name}</Text>
         <Text style={s.vsTxt}> vs </Text>
         <Text style={s.nameB}>{b.name}</Text>
@@ -68,8 +68,18 @@ function Portrait({
           contentFit={fit}
         />
       ) : (
-        <View style={[StyleSheet.absoluteFill, s.mono, { backgroundColor: tint }]}>
-          <Text style={s.monoTxt}>{side.name.slice(0, 1)}</Text>
+        // No art (usually a team without a logo): a faction-tinted wordmark
+        // tile — the full name in Flame, not a lone initial.
+        <View style={[StyleSheet.absoluteFill, s.mono] as object}>
+          <View
+            style={
+              [StyleSheet.absoluteFill, { backgroundColor: tint, opacity: 0.42 }] as object
+            }
+          />
+          <View style={s.monoScrim as object} />
+          <Text style={s.monoName} numberOfLines={3}>
+            {side.name}
+          </Text>
         </View>
       )}
     </View>
@@ -94,8 +104,24 @@ const s = StyleSheet.create({
     backgroundColor: '#16242b',
   },
   mirror: { transform: [{ scaleX: -1 }] },
-  mono: { alignItems: 'center', justifyContent: 'center' },
-  monoTxt: { fontFamily: 'Flame-Regular', fontSize: 30, color: 'rgba(255,255,255,0.85)' },
+  mono: { alignItems: 'center', justifyContent: 'center', padding: 8 },
+  monoScrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundImage:
+      'linear-gradient(to bottom, rgba(11,24,32,0.1) 0%, rgba(11,24,32,0.55) 100%)',
+  } as object,
+  monoName: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 15,
+    lineHeight: 19,
+    color: 'rgba(245,235,220,0.95)',
+    textAlign: 'center',
+    textShadow: '0 1px 6px rgba(0,0,0,0.6)',
+  } as object,
   vs: {
     position: 'absolute',
     left: 0,

@@ -156,7 +156,9 @@ export default function VersusHubWeb() {
                 blurb="The debates that never settle — fans keep score."
                 wrap={isDesktop}
               >
-                {rows.rivalries.map((m) => (
+                {/* Cap at 10 on the desktop grid (two full 5-up rows) so the
+                    section never trails off with a 2-card orphan row. */}
+                {(isDesktop ? rows.rivalries.slice(0, 10) : rows.rivalries).map((m) => (
                   <MatchupCard
                     key={`${m.a.id}-${m.b.id}`}
                     a={heroSide(m.a)}
