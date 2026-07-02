@@ -25,21 +25,16 @@ const ACCENT_B = COLORS.blue;
 function Corner({
   hero,
   side,
-  dimmed,
   revealed,
-  isDesktop,
   onPress,
   onHover,
 }: {
   hero: MatchupHero;
   side: 'a' | 'b';
-  dimmed: boolean;
   revealed: boolean;
-  isDesktop: boolean;
   onPress: () => void;
   onHover: (side: 'a' | 'b' | null) => void;
 }) {
-  const accent = side === 'a' ? ACCENT_A : ACCENT_B;
   return (
     <Pressable
       onPress={onPress}
@@ -48,22 +43,70 @@ function Corner({
       onHoverOut={() => onHover(null)}
       accessibilityRole="button"
       accessibilityLabel={`Vote for ${hero.name}`}
-      style={[c.corner, dimmed && (c.cornerDim as object)] as object}
+      style={c.corner as object}
+    />
+  );
+}
+
+// ── The fighters — a layer above the corner press-targets. Each portrait FILLS
+// its half (no dead flanks): it spans from the arena's outer edge inward, its
+// inner edge clip-pathed collinear with the slash so the art dies into the gold
+// band. The name + publisher ride the bottom-outer corner over a scrim.
+function FighterPortrait({
+  hero,
+  side,
+  boxW,
+  over,
+  dxHalf,
+  isDesktop,
+  hovered,
+  dimmed,
+}: {
+  hero: MatchupHero;
+  side: 'a' | 'b';
+  boxW: number;
+  over: number;
+  dxHalf: number;
+  isDesktop: boolean;
+  hovered: boolean;
+  dimmed: boolean;
+}) {
+  // Inner edge follows the slash (skewX(-7°): top leans right of centre, bottom
+  // left). 100% = box width, whose inner edge sits `over` past the centreline.
+  const clip =
+    side === 'a'
+      ? `polygon(0 0, calc(100% - ${over - dxHalf}px) 0, calc(100% - ${over + dxHalf}px) 100%, 0 100%)`
+      : `polygon(${over + dxHalf}px 0, 100% 0, 100% 100%, ${over - dxHalf}px 100%)`;
+  const anchor = side === 'a' ? { left: 0 } : { right: 0 };
+  return (
+    <View
+      style={
+        [
+          c.portraitBox,
+          anchor,
+          { width: boxW, clipPath: clip },
+          hovered && (c.portraitHover as object),
+          dimmed && (c.portraitDim as object),
+        ] as object
+      }
+      pointerEvents="none"
     >
-      {/* Corner-colour atmosphere in the outer flank (fully clear of the
-          portrait column, so its blur never forms a hard seam). */}
-      <View
-        style={
-          [
-            c.glow,
-            { backgroundColor: `${accent}45` },
-            side === 'a' ? { left: '4%' } : { right: '4%' },
-          ] as object
-        }
-        pointerEvents="none"
+      <HeroImage
+        id={hero.id}
+        name={hero.name}
+        imageUrl={hero.image_url}
+        portraitUrl={hero.portrait_url}
+        contentFit="cover"
+        // Push the face inward toward the slash on both sides (B is mirrored,
+        // so the same crop lands it facing left → toward the centre).
+        contentPosition={{ top: '6%', left: '62%' }}
+        style={[StyleSheet.absoluteFill, side === 'b' && (c.mirror as object)] as object}
       />
-      <View style={c.bottomScrim as object} pointerEvents="none" />
-      <View style={[c.nameBlock, side === 'b' && (c.nameBlockB as object)] as object}>
+      {/* Bottom scrim so the name stays legible over the art. */}
+      <View style={c.bottomScrim as object} />
+      <View
+        style={[c.nameBlock, side === 'a' ? c.nameBlockA : c.nameBlockB] as object}
+      >
         {!!hero.publisher && (
           <Text
             style={[c.pub, side === 'b' && (c.textRight as object)] as object}
@@ -85,74 +128,6 @@ function Corner({
           {hero.name}
         </Text>
       </View>
-    </Pressable>
-  );
-}
-
-// ── The fighters — a decorative layer above the corners so each portrait can
-// cross the centreline and be clipped at exactly the slash's angle. The two
-// inner edges are collinear with the gold band: the art dies into the slash.
-function FighterPortrait({
-  hero,
-  side,
-  portraitW,
-  arenaH,
-  hovered,
-  dimmed,
-}: {
-  hero: MatchupHero;
-  side: 'a' | 'b';
-  portraitW: number;
-  arenaH: number;
-  hovered: boolean;
-  dimmed: boolean;
-}) {
-  // The slash is skewX(-7°): its top leans right of centre, its bottom left.
-  const dxHalf = Math.round((Math.tan((7 * Math.PI) / 180) * arenaH) / 2);
-  const over = dxHalf + 10; // how far the box crosses the centreline
-  const clip =
-    side === 'a'
-      ? `polygon(0 0, calc(100% - ${over - dxHalf}px) 0, calc(100% - ${over + dxHalf}px) 100%, 0 100%)`
-      : `polygon(${over + dxHalf}px 0, 100% 0, 100% 100%, ${over - dxHalf}px 100%)`;
-  const anchor =
-    side === 'a'
-      ? { right: '50%', marginRight: -over }
-      : { left: '50%', marginLeft: -over };
-  return (
-    <View
-      style={
-        [
-          c.portraitBox,
-          anchor,
-          { width: portraitW + over, clipPath: clip },
-          hovered && (c.portraitHover as object),
-          dimmed && (c.cornerDim as object),
-        ] as object
-      }
-      pointerEvents="none"
-    >
-      <HeroImage
-        id={hero.id}
-        name={hero.name}
-        imageUrl={hero.image_url}
-        portraitUrl={hero.portrait_url}
-        contentFit="cover"
-        contentPosition={{ top: '8%', left: '50%' }}
-        style={[StyleSheet.absoluteFill, side === 'b' && (c.mirror as object)] as object}
-      />
-      {/* Outer edge dissolves into the panel. */}
-      <View
-        style={
-          [
-            StyleSheet.absoluteFill,
-            {
-              backgroundImage: `linear-gradient(to ${side === 'a' ? 'left' : 'right'}, transparent 62%, #0c161d 100%)`,
-            },
-          ] as object
-        }
-      />
-      {/* Feet fade into the arena floor so the name stays legible. */}
-      <View style={c.bottomScrim as object} />
     </View>
   );
 }
@@ -270,53 +245,40 @@ export function ShowdownStage({
   ).filter(([, a, b]) => a != null && b != null) as [string, number, number][];
 
   const arenaH = isDesktop ? 430 : 280;
-  // Portrait columns: composed like a character-select — wide enough to fill
-  // most of the half (no dead flanks), bounded so the crop stays intentional
-  // at every viewport.
+  // Each portrait fills its half + a small overlap past the centreline, so the
+  // clip can bite the inner edge at the slash angle with no dead flanks.
   const { width: winW } = useWindowDimensions();
   const stageW = Math.min(1240, winW - (winW < 640 ? 32 : 64));
-  const halfW = stageW / 2;
-  const portraitW = Math.round(
-    Math.min(halfW * 0.85, Math.max(arenaH * 0.82, halfW * 0.72)),
-  );
+  const dxHalf = Math.round((Math.tan((7 * Math.PI) / 180) * arenaH) / 2);
+  const over = dxHalf + 10;
+  const boxW = Math.round(stageW / 2 + over);
   const [hoverSide, setHoverSide] = useState<'a' | 'b' | null>(null);
 
   return (
     <View style={c.wrap}>
       <View style={[c.arena, { height: arenaH }] as object}>
-        <Corner
-          hero={heroA}
-          side="a"
-          dimmed={revealed && !pickedA}
-          revealed={revealed}
-          isDesktop={isDesktop}
-          onPress={() => vote('a')}
-          onHover={setHoverSide}
-        />
-        <Corner
-          hero={heroB}
-          side="b"
-          dimmed={revealed && pickedId !== heroB.id}
-          revealed={revealed}
-          isDesktop={isDesktop}
-          onPress={() => vote('b')}
-          onHover={setHoverSide}
-        />
+        <Corner hero={heroA} side="a" revealed={revealed} onPress={() => vote('a')} onHover={setHoverSide} />
+        <Corner hero={heroB} side="b" revealed={revealed} onPress={() => vote('b')} onHover={setHoverSide} />
 
-        {/* Fighters — above the corner panels, clipped to the slash's angle. */}
+        {/* Fighters — above the corner press-targets, each filling its half and
+            clipped to the slash's angle. */}
         <FighterPortrait
           hero={heroA}
           side="a"
-          portraitW={portraitW}
-          arenaH={arenaH}
+          boxW={boxW}
+          over={over}
+          dxHalf={dxHalf}
+          isDesktop={isDesktop}
           hovered={hoverSide === 'a' && !revealed}
           dimmed={revealed && !pickedA}
         />
         <FighterPortrait
           hero={heroB}
           side="b"
-          portraitW={portraitW}
-          arenaH={arenaH}
+          boxW={boxW}
+          over={over}
+          dxHalf={dxHalf}
+          isDesktop={isDesktop}
           hovered={hoverSide === 'b' && !revealed}
           dimmed={revealed && pickedId !== heroB.id}
         />
@@ -406,48 +368,40 @@ const c = StyleSheet.create({
     position: 'relative',
   } as object,
 
+  // Vote target — half the arena, transparent (the portrait layer paints the
+  // visuals). z-index keeps it under the portraits but above the arena floor.
   corner: {
     width: '50%',
     height: '100%',
-    overflow: 'hidden',
     cursor: 'pointer',
-    transition: 'opacity 300ms ease, filter 300ms ease',
-    position: 'relative',
     backgroundColor: '#0c161d',
   } as object,
-  cornerDim: { opacity: 0.45, filter: 'grayscale(0.6)' } as object,
-  // Corner-colour bloom behind the fighter.
-  glow: {
-    position: 'absolute',
-    width: 380,
-    height: 380,
-    borderRadius: 190,
-    top: '18%',
-    filter: 'blur(80px)',
-  } as object,
-  // The fixed-aspect portrait column, clipped collinear with the slash.
+  // Each portrait fills its half; the inner edge is clipped to the slash.
   portraitBox: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     overflow: 'hidden',
-    maxWidth: '92%',
     transition: 'opacity 300ms ease, filter 300ms ease',
   } as object,
   portraitHover: { filter: 'brightness(1.12)' } as object,
+  portraitDim: { opacity: 0.5, filter: 'grayscale(0.65)' } as object,
   mirror: { transform: [{ scaleX: -1 }] } as object,
   bottomScrim: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: '46%',
-    backgroundImage: 'linear-gradient(to top, rgba(8,14,19,0.95) 0%, transparent 100%)',
+    height: '55%',
+    backgroundImage: 'linear-gradient(to top, rgba(8,14,19,0.96) 0%, transparent 100%)',
   } as object,
 
-  // Fighter identity anchored to the corner's outer edge.
-  nameBlock: { position: 'absolute', bottom: 18, left: 22, right: 84 },
-  nameBlockB: { left: 84, right: 22 } as object,
+  // Fighter identity anchored to the portrait's outer-bottom corner. Per-side
+  // anchors are explicit (RN style-merge won't clear a base `left` with
+  // `undefined`), so A pins left and B pins right.
+  nameBlock: { position: 'absolute', bottom: 20, maxWidth: '66%' } as object,
+  nameBlockA: { left: 26 } as object,
+  nameBlockB: { right: 26, alignItems: 'flex-end' } as object,
   textRight: { textAlign: 'right' } as object,
   pub: {
     ...EYEBROW,
