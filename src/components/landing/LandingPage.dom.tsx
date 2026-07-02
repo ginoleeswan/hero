@@ -1122,6 +1122,7 @@ const CSS = `
     --bg:#0b1820; --surface:#142130; --card:#1a2d3e;
     --orange:#E77333; --yellow:#F9B222; --beige:#f5ebdc;
     --muted:#7a93a3; --border:#253d50; --teal:rgb(21,161,171); --radius:16px;
+    --ease:cubic-bezier(.16,1,.3,1); /* expo-out — the page's one easing voice */
   }
   html {
     scroll-behavior: smooth;
@@ -1353,12 +1354,14 @@ const CSS = `
      band from bleeding past the viewport and causing page-level horizontal
      scroll (a rotated full-width box's bounding rect is always wider than
      the box itself). The rotation/scale lives on the inner layer instead. */
-  .marquee-clip { overflow:hidden; width:100%; margin:10px 0; }
+  .marquee-clip { overflow:hidden; width:100%; margin:2px 0; padding:18px 0; }
   .marquee-wrapper {
     overflow:hidden; padding:18px 0;
+    /* Overscan past both edges so the tilt never shows a cut end */
+    width:112%; margin-left:-6%;
     background:linear-gradient(100deg,#d9662a 0%,var(--orange) 45%,#f2813e 100%);
     border-top:1px solid rgba(255,255,255,0.1); border-bottom:1px solid rgba(0,0,0,0.2);
-    transform:rotate(-1.2deg) scale(1.02);
+    transform:rotate(-1.2deg);
     box-shadow:0 12px 40px rgba(231,115,51,0.18);
   }
   .mq-outline {
@@ -1769,8 +1772,8 @@ const CSS = `
     .stat-label { font-size:10px; }
 
     /* Marquee — straighten on small screens (a tilted edge eats width) */
-    .marquee-clip { margin:0; }
-    .marquee-wrapper { transform:none; }
+    .marquee-clip { margin:0; padding:0; }
+    .marquee-wrapper { transform:none; width:100%; margin-left:0; }
 
     /* Sections */
     .section,.screenshots,.showcase,.cta-section { padding:64px 20px; }
@@ -1851,16 +1854,35 @@ const CSS = `
     footer { justify-content:center; text-align:center; flex-direction:column; align-items:center; }
   }
 
-  /* Scroll reveals */
-  .reveal { opacity:0; transform:translateY(26px); transition:opacity .7s cubic-bezier(.22,.7,.25,1), transform .7s cubic-bezier(.22,.7,.25,1); will-change:opacity,transform; }
-  .reveal.in { opacity:1; transform:none; }
-  .feature-card.reveal { transition:opacity .55s cubic-bezier(.22,.7,.25,1), transform .55s cubic-bezier(.22,.7,.25,1), border-color .25s ease, box-shadow .25s ease; }
-  .mosaic-card.reveal { transition:opacity .55s cubic-bezier(.22,.7,.25,1), transform .55s cubic-bezier(.22,.7,.25,1), box-shadow .3s ease; }
+  /* Scroll reveals — one easing voice, different verbs per element:
+     text rises, headlines resolve out of blur, cards settle from scale,
+     eyebrows wipe in like the ticker, mosaic art breathes to rest. */
+  .reveal { opacity:0; transform:translateY(28px); transition:opacity .8s var(--ease), transform .8s var(--ease), filter .8s var(--ease); will-change:opacity,transform; }
+  .reveal.in { opacity:1; transform:none; filter:none; }
+  .rv-blur { filter:blur(14px); transform:translateY(14px); }
+  .rv-scale { transform:translateY(30px) scale(0.94); }
+  .rv-wipe {
+    opacity:1; transform:none;
+    clip-path:inset(-20% 100% -20% 0);
+    transition:clip-path .9s var(--ease);
+  }
+  .rv-wipe.in { clip-path:inset(-20% -5% -20% 0); }
+  .feature-card.reveal { transition:opacity .7s var(--ease), transform .7s var(--ease), border-color .25s ease, box-shadow .25s ease; }
+  .mosaic-card.reveal { transition:opacity .7s var(--ease), transform .7s var(--ease), box-shadow .3s ease; }
+  /* Ken Burns settle: the art drifts to rest as its tile arrives */
+  .mosaic-card.reveal img { transform:scale(1.14); transition:transform 1.3s var(--ease); }
+  .mosaic-card.reveal.in img { transform:scale(1); }
+  .mosaic-card.reveal.in:hover img { transform:scale(1.07); }
+
+  /* Press feedback — buttons give a little under the finger */
+  .btn-primary:active, .btn-secondary:active, .nav-cta:active, .plate-summon:active, .mosaic-more:active {
+    transform:translateY(0) scale(0.97);
+  }
 
   /* Hero load-in sequence */
   .hero-content > *, .hero-panel > * { opacity:0; }
   .hero-panel::before { opacity:1; }
-  .loaded .hero-content > *, .loaded .hero-panel > * { animation:heroIn .8s cubic-bezier(.22,.7,.25,1) both; }
+  .loaded .hero-content > *, .loaded .hero-panel > * { animation:heroIn .9s var(--ease) both; }
   .loaded .hero-content .hero-wordmark-large, .loaded .hero-panel .hero-wordmark-large { animation-delay:.12s; }
   .loaded .hero-content .hero-tagline, .loaded .hero-panel .hero-tagline { animation-delay:.26s; }
   .loaded .hero-content .hero-sub, .loaded .hero-panel .hero-sub { animation-delay:.38s; }
@@ -1870,10 +1892,12 @@ const CSS = `
   @media (prefers-reduced-motion:reduce) {
     .hero-card,.scroll-hint,.marquee-track,.tott-vs,.plate-name { animation:none; }
     * { transition-duration:0.01ms !important; }
-    .reveal { opacity:1 !important; transform:none !important; }
+    .reveal { opacity:1 !important; transform:none !important; filter:none !important; clip-path:none !important; }
+    .mosaic-card.reveal img { transform:none !important; }
     .tott-fill { transform:scaleX(1) !important; }
     .fc-bar i { transform:scaleX(1) !important; }
-    .marquee-wrapper { transform:none; }
+    .marquee-wrapper { transform:none; width:100%; margin-left:0; }
+    .marquee-clip { padding:0; }
     .hero-content > *, .hero-panel > * { opacity:1 !important; animation:none !important; }
   }
 
@@ -2056,6 +2080,39 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
     grid.addEventListener('mousemove', onMove, { passive: true });
     return () => grid.removeEventListener('mousemove', onMove);
   }, []);
+
+  // Scroll-linked depth: the hero copy sinks and dims as the page scrolls
+  // away, and the VS watermark drifts against the scroll — two quiet
+  // parallax notes, transforms only, one rAF per scroll burst.
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const panel = document.querySelector<HTMLElement>('.hero-panel, .hero-content');
+    const watermark = document.querySelector<HTMLElement>('.tott-watermark');
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const vh = window.innerHeight;
+      if (panel) {
+        const p = Math.min(window.scrollY / (vh * 0.9), 1);
+        panel.style.transform = `translateY(${(p * 70).toFixed(1)}px)`;
+        panel.style.opacity = (1 - p * 0.85).toFixed(3);
+      }
+      if (watermark) {
+        const r = watermark.getBoundingClientRect();
+        const p = (r.top + r.height / 2 - vh / 2) / vh;
+        watermark.style.transform = `translate(-50%, calc(-50% + ${(-p * 90).toFixed(1)}px)) rotate(-6deg)`;
+      }
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    update();
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [mode]);
 
   // Scroll-triggered reveals — animate each .reveal element once it enters view
   useEffect(() => {
@@ -2306,8 +2363,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* FEATURES */}
       <section className="section">
         <div className="section-inner">
-          <p className="section-eyebrow reveal">Why it&apos;s different</p>
-          <h2 className="section-heading reveal" style={{ transitionDelay: '60ms' }}>
+          <p className="section-eyebrow reveal rv-wipe">Why it&apos;s different</p>
+          <h2 className="section-heading reveal rv-blur" style={{ transitionDelay: '60ms' }}>
             More than a wiki.
             <br />A universe you can play with.
           </h2>
@@ -2318,7 +2375,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           </p>
           <div className="features-grid">
             {/* Rivalries & Family Trees — wide cell with a live bond web */}
-            <div className="feature-card fc-wide reveal">
+            <div className="feature-card fc-wide reveal rv-scale">
               <div className="fc-copy">
                 <div className="feature-icon">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -2393,7 +2450,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             </div>
 
             {/* Settle the Debate — tall cell with mini tape bars */}
-            <div className="feature-card fc-tall reveal" style={{ transitionDelay: '80ms' }}>
+            <div className="feature-card fc-tall reveal rv-scale" style={{ transitionDelay: '80ms' }}>
               <div className="feature-icon">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
@@ -2431,7 +2488,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             </div>
 
             {/* Explore the Universe */}
-            <div className="feature-card reveal" style={{ transitionDelay: '60ms' }}>
+            <div className="feature-card reveal rv-scale" style={{ transitionDelay: '60ms' }}>
               <div className="feature-icon">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
@@ -2446,7 +2503,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             </div>
 
             {/* Deep Profiles */}
-            <div className="feature-card reveal" style={{ transitionDelay: '120ms' }}>
+            <div className="feature-card reveal rv-scale" style={{ transitionDelay: '120ms' }}>
               <div className="feature-icon">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
@@ -2461,7 +2518,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             </div>
 
             {/* On Screen — wide cell with poster chips */}
-            <div className="feature-card fc-wide reveal" style={{ transitionDelay: '100ms' }}>
+            <div className="feature-card fc-wide reveal rv-scale" style={{ transitionDelay: '100ms' }}>
               <div className="fc-copy">
                 <div className="feature-icon">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -2486,7 +2543,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             </div>
 
             {/* Instant Search */}
-            <div className="feature-card reveal" style={{ transitionDelay: '160ms' }}>
+            <div className="feature-card reveal rv-scale" style={{ transitionDelay: '160ms' }}>
               <div className="feature-icon">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="11" cy="11" r="8" />
@@ -2509,8 +2566,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           VS
         </span>
         <div className="tott-inner">
-          <p className="section-eyebrow reveal">The big question</p>
-          <h2 className="section-heading reveal" style={{ transitionDelay: '60ms' }}>
+          <p className="section-eyebrow reveal rv-wipe">The big question</p>
+          <h2 className="section-heading reveal rv-blur" style={{ transitionDelay: '60ms' }}>
             Who&apos;d actually win?
           </h2>
           <p className="section-sub reveal" style={{ transitionDelay: '120ms' }}>
@@ -2518,7 +2575,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             take a side and watch the verdict roll in.
           </p>
 
-          <div className="tott-card reveal" style={{ transitionDelay: '160ms' }}>
+          <div className="tott-card reveal rv-scale" style={{ transitionDelay: '160ms' }}>
             <div className="tott-head">
               <div className="tott-field" aria-hidden="true" />
               <span className="tott-seam" aria-hidden="true" />
@@ -2616,7 +2673,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       <section className="screenshots">
         <div className="screenshots-inner">
           <div className="screenshots-layout">
-            <div className="screenshots-phones reveal">
+            <div className="screenshots-phones reveal rv-scale">
               <div className="browser-frame">
                 <div className="browser-bar" aria-hidden="true">
                   <span className="browser-dot" />
@@ -2635,8 +2692,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
               </div>
             </div>
             <div className="screenshots-text">
-              <p className="section-eyebrow reveal">The experience</p>
-              <h2 className="section-heading reveal" style={{ transitionDelay: '60ms' }}>
+              <p className="section-eyebrow reveal rv-wipe">The experience</p>
+              <h2 className="section-heading reveal rv-blur" style={{ transitionDelay: '60ms' }}>
                 Made to
                 <br />
                 get lost in.
@@ -2669,8 +2726,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* MOSAIC */}
       <section className="showcase">
         <div className="showcase-inner">
-          <p className="section-eyebrow reveal">The roster</p>
-          <h2 className="section-heading reveal" style={{ transitionDelay: '60ms' }}>
+          <p className="section-eyebrow reveal rv-wipe">The roster</p>
+          <h2 className="section-heading reveal rv-blur" style={{ transitionDelay: '60ms' }}>
             From every universe
           </h2>
           <p className="section-sub reveal" style={{ transitionDelay: '120ms' }}>
@@ -2681,7 +2738,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             {mosaicChars.map(([id, name], i) => (
               <div
                 key={id}
-                className={`mosaic-card reveal${i === 0 ? ' featured' : ''}`}
+                className={`mosaic-card reveal rv-scale${i === 0 ? ' featured' : ''}`}
                 style={{ transitionDelay: `${(i % 5) * 60}ms` }}
               >
                 <img src={i === 0 ? P800(id) : P(id)} alt={name} loading="lazy" />
@@ -2707,8 +2764,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       {/* FINAL CTA */}
       <section className="cta-section hairline">
         <div className="cta-inner">
-          <p className="section-eyebrow reveal">Dive in</p>
-          <h2 className="cta-glow reveal" style={{ transitionDelay: '60ms' }}>
+          <p className="section-eyebrow reveal rv-wipe">Dive in</p>
+          <h2 className="cta-glow reveal rv-blur" style={{ transitionDelay: '60ms' }}>
             Explore. Compare. Argue.
           </h2>
           <p className="cta-sub reveal" style={{ transitionDelay: '120ms' }}>
