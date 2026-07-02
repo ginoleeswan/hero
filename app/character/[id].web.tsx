@@ -905,10 +905,17 @@ export default function WebCharacterScreen() {
                     </View>
                   </View>
                 </View>
+
+                {/* Theme trait chips — identity, so they live with the name */}
+                {narrative && narrative.tags.length > 0 ? (
+                  <View style={styles.stageTraits}>
+                    <TraitBand tags={narrative.tags} onInk />
+                  </View>
+                ) : null}
               </View>
             </View>
 
-            {/* Soft alignment glow at the bottom edge — replaces the hard border */}
+            {/* Soft accent glow at the bottom edge — replaces the hard border */}
             <View
               style={
                 [
@@ -931,13 +938,6 @@ export default function WebCharacterScreen() {
               <View style={styles.bodyDesktopNew}>
                 {/* Main column — continuous editorial sections */}
                 <View style={styles.mainCol}>
-                  {/* Theme trait band — colour-coded by vocab category */}
-                  {narrative && narrative.tags.length > 0 ? (
-                    <View style={styles.webTraitBand}>
-                      <TraitBand tags={narrative.tags} />
-                    </View>
-                  ) : null}
-
                   {/* Power stats band */}
                   <View style={styles.card}>
                     <View style={styles.statCardHeader}>
@@ -1758,6 +1758,13 @@ export default function WebCharacterScreen() {
                   <Text style={styles.mName}>{stats.name}</Text>
                   {alias ? <Text style={styles.mAlias}>{alias}</Text> : null}
 
+                  {/* Theme trait chips — identity, so they live with the name */}
+                  {narrative && narrative.tags.length > 0 ? (
+                    <View style={styles.mStageTraits}>
+                      <TraitBand tags={narrative.tags} onInk />
+                    </View>
+                  ) : null}
+
                   <View style={styles.mVitals}>
                     {powerTotal > 0 ? (
                       <View style={styles.mVitalItem}>
@@ -1817,13 +1824,6 @@ export default function WebCharacterScreen() {
 
               {/* Beige content sheet rising over the hero */}
               <View style={styles.mSheet}>
-                {/* Theme trait band — colour-coded by vocab category */}
-                {narrative && narrative.tags.length > 0 ? (
-                  <View style={styles.mTraitBand}>
-                    <TraitBand tags={narrative.tags} />
-                  </View>
-                ) : null}
-
                 {comicVineLoading && !details.summary ? (
                   <View style={styles.mBlock}>
                     <SkeletonBlock
@@ -2864,8 +2864,8 @@ const sk = StyleSheet.create({
 
 const styles = StyleSheet.create({
   // Narrative additions
-  webTraitBand: { marginBottom: 2 },
-  mTraitBand: { paddingHorizontal: 20, paddingTop: 18 },
+  stageTraits: { marginTop: 14 },
+  mStageTraits: { marginTop: 10 },
   eraText: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 14.5,
