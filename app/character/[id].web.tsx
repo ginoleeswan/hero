@@ -28,6 +28,10 @@ import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { PullQuoteBio } from '../../src/components/web/character/PullQuoteBio';
+import {
+  SignaturePowerTiles,
+  pickSignaturePowers,
+} from '../../src/components/web/character/SignaturePowers';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { groupTitlesByMedia } from '../../src/lib/db/titles';
@@ -36,7 +40,6 @@ import { HeroLinksRow, heroLinksHasContent } from '../../src/components/HeroLink
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
 import { TraitBand } from '../../src/components/character/TraitBand';
 import { DidYouKnowDeck } from '../../src/components/character/DidYouKnowDeck';
-import { PowersDecoded } from '../../src/components/character/PowersDecoded';
 import { type PowerExplainer } from '../../src/lib/db/heroFacts';
 import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
@@ -1186,6 +1189,7 @@ export default function WebCharacterScreen() {
                     loading={comicVineLoading}
                     skeletonOpacity={skeletonOpacity}
                     explainers={narrative?.powerExplainers ?? []}
+                    accent={theme.accent}
                     onEdit={() =>
                       setEditTarget({
                         field: POWERS_FIELD,
@@ -2109,11 +2113,24 @@ export default function WebCharacterScreen() {
                   ) : null}
                 </View>
 
-                {/* Abilities — power explainers fold in as the "Decoded" strip */}
+                {/* Signature tier headlines; AbilitiesSection (shared with
+                    native) keeps the full categorized grid below */}
+                {!comicVineLoading && details.powers && details.powers.length > 0 ? (
+                  <View style={styles.mBlock}>
+                    <SignaturePowerTiles
+                      powers={details.powers}
+                      explainers={narrative?.powerExplainers ?? []}
+                      accent={theme.accent}
+                    />
+                  </View>
+                ) : null}
+
+                {/* Abilities grid — blurbs live on the signature tiles above,
+                    so the shared section's decoded strip stays empty here */}
                 <AbilitiesSection
                   powers={details.powers}
                   loading={comicVineLoading}
-                  explainers={narrative?.powerExplainers ?? []}
+                  explainers={[]}
                   onEdit={() =>
                     setEditTarget({
                       field: POWERS_FIELD,
@@ -2464,17 +2481,22 @@ function WebAbilitiesCard({
   loading,
   skeletonOpacity,
   explainers = [],
+  accent,
   onEdit,
 }: {
   powers: string[] | null;
   loading: boolean;
   skeletonOpacity: ReturnType<typeof useSkeletonAnim>;
   explainers?: PowerExplainer[];
+  accent: string;
   onEdit?: () => void;
 }) {
   // Pristine when empty — the card only appears once a hero has abilities.
   if (!loading && (!powers || powers.length === 0)) return null;
 
+  // Signature tiles headline the decoded powers; the categorized grid below
+  // stays complete so groups keep their true shape.
+  const hasSignature = pickSignaturePowers(powers, explainers).length > 0;
   const groups = powers ? groupPowers(powers) : [];
 
   return (
@@ -2507,6 +2529,11 @@ function WebAbilitiesCard({
       ) : powers && powers.length > 0 ? (
         <>
           <AbilitiesHead onEdit={onEdit} />
+          {hasSignature ? (
+            <View style={styles.signatureWrap}>
+              <SignaturePowerTiles powers={powers} explainers={explainers} accent={accent} />
+            </View>
+          ) : null}
           {groups.map((g, gi) => (
             <View
               key={g.category}
@@ -2531,7 +2558,6 @@ function WebAbilitiesCard({
               </View>
             </View>
           ))}
-          <PowersDecoded explainers={explainers} />
         </>
       ) : null}
     </View>
@@ -3749,6 +3775,7 @@ const styles = StyleSheet.create({
   mDebutCtaText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange },
 
   // Abilities — categorized groups
+  signatureWrap: { marginBottom: 18 },
   abilityGroup: { marginBottom: 18 },
   abilityGroupHead: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 12 },
   abilityGroupMarker: { width: 16, height: 3, borderRadius: 2 },
