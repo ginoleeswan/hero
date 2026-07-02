@@ -9,6 +9,11 @@ export interface MatchupHero {
   image_url: string | null;
   portrait_url: string | null;
   publisher: string | null;
+  /** Tale-of-the-tape stats (0–100); present because the daily pool carries
+   *  full stat rows. Optional so older cached shapes stay valid. */
+  intelligence?: number | null;
+  strength?: number | null;
+  speed?: number | null;
 }
 
 export interface TodaysMatchup {
@@ -43,6 +48,9 @@ const toMatchupHero = (h: Hero): MatchupHero => ({
   image_url: h.image_url,
   portrait_url: h.portrait_url,
   publisher: h.publisher,
+  intelligence: h.intelligence,
+  strength: h.strength,
+  speed: h.speed,
 });
 
 /**

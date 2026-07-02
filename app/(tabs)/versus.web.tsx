@@ -84,15 +84,10 @@ export default function VersusHubWeb() {
           )}
 
           {loading && !matchup ? (
-            <View style={s.skeleton}>
-              <View style={[s.skelCard, s.tiltL] as object} />
-              <View style={s.skelCoin} />
-              <View style={[s.skelCard, s.tiltR] as object} />
-            </View>
+            <View style={[s.skelArena, { height: isDesktop ? 430 : 280 }] as object} />
           ) : matchup ? (
             <ShowdownStage
               matchup={matchup}
-              iconicPool={iconicPool}
               isDesktop={isDesktop}
               onOpen={openArena}
               onShuffle={surprise}
@@ -293,7 +288,7 @@ const s = StyleSheet.create({
     filter: 'blur(90px)',
     pointerEvents: 'none',
   } as object,
-  stageInner: { width: '100%', maxWidth: 880, alignSelf: 'center', alignItems: 'center' },
+  stageInner: { width: '100%', maxWidth: 1240, alignSelf: 'center', alignItems: 'center' },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11.5,
@@ -312,26 +307,14 @@ const s = StyleSheet.create({
   },
   titleMobile: { fontSize: 24, lineHeight: 30 } as object,
 
-  // skeleton while the matchup query resolves
-  skeleton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 250 },
-  skelCard: {
-    width: 190,
-    height: 250,
-    borderRadius: 18,
-    backgroundColor: 'rgba(245,235,220,0.06)',
+  // Arena-shaped skeleton while the matchup query resolves.
+  skelArena: {
+    width: '100%',
+    borderRadius: 22,
+    backgroundColor: 'rgba(245,235,220,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(206,155,51,0.15)',
   } as object,
-  skelCoin: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    marginHorizontal: -18,
-    zIndex: 2,
-    backgroundColor: 'rgba(245,235,220,0.08)',
-    borderWidth: 2.5,
-    borderColor: 'rgba(206,155,51,0.4)',
-  } as object,
-  tiltL: { transform: [{ rotate: '-4deg' }] } as object,
-  tiltR: { transform: [{ rotate: '4deg' }] } as object,
 
   actions: {
     flexDirection: 'row',
