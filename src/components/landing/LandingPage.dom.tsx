@@ -97,6 +97,8 @@ interface Summon {
   id: string;
   name: string;
   universe: string;
+  /** Signature colour — tints the hero section while this legend is on stage */
+  accent: string;
   bonds: Bond[];
 }
 
@@ -119,6 +121,7 @@ const SUMMONS: Summon[] = [
     id: '69',
     name: 'Batman',
     universe: 'DC',
+    accent: '#F9B222',
     bonds: [
       { id: '370', name: 'Joker', rel: 'enemy' },
       { id: 'cv-1691', name: 'Nightwing', rel: 'kin' },
@@ -130,6 +133,7 @@ const SUMMONS: Summon[] = [
     id: '717',
     name: 'Wolverine',
     universe: 'Marvel',
+    accent: '#FFC53D',
     bonds: [
       { id: '423', name: 'Magneto', rel: 'enemy' },
       { id: 'cv-3552', name: 'Jean Grey', rel: 'ally' },
@@ -141,6 +145,7 @@ const SUMMONS: Summon[] = [
     id: '659',
     name: 'Thor',
     universe: 'Marvel',
+    accent: '#7FB8FF',
     bonds: [
       { id: 'cv-4324', name: 'Loki', rel: 'kin' },
       { id: '332', name: 'Hulk', rel: 'ally' },
@@ -151,6 +156,7 @@ const SUMMONS: Summon[] = [
     id: '620',
     name: 'Spider-Man',
     universe: 'Marvel',
+    accent: '#E5484D',
     bonds: [
       { id: '687', name: 'Venom', rel: 'enemy' },
       { id: '201', name: 'Daredevil', rel: 'ally' },
@@ -161,6 +167,7 @@ const SUMMONS: Summon[] = [
     id: '423',
     name: 'Magneto',
     universe: 'Marvel',
+    accent: '#C266DD',
     bonds: [
       { id: '579', name: 'Scarlet Witch', rel: 'kin' },
       { id: '717', name: 'Wolverine', rel: 'enemy' },
@@ -171,6 +178,7 @@ const SUMMONS: Summon[] = [
     id: '638',
     name: 'Storm',
     universe: 'Marvel',
+    accent: '#DDE9F8',
     bonds: [
       { id: '106', name: 'Black Panther', rel: 'kin' },
       { id: 'cv-3552', name: 'Jean Grey', rel: 'ally' },
@@ -189,7 +197,7 @@ const CAMERA_Z = 4.6;
 const PLANE_W = 2;
 const PLANE_H = 3;
 // Group footprint incl. halo — used to fit the scene into the stage rect
-const GROUP_W = 3.7;
+const GROUP_W = 3.95;
 const GROUP_H = 3.5;
 
 const PARTICLE_VERT = `
@@ -222,8 +230,8 @@ const PARTICLE_VERT = `
     // Assembled home on the card's portrait window (inset from the frame),
     // with a gentle breathing wave
     vec3 home = vec3(
-      (aUv.x - 0.5) * ${(PLANE_W * 0.875).toFixed(3)},
-      (aUv.y - 0.5) * ${(PLANE_H * 0.9183).toFixed(3)},
+      (aUv.x - 0.5) * ${(PLANE_W * 0.93).toFixed(3)},
+      (aUv.y - 0.5) * ${(PLANE_H * 0.9467).toFixed(3)},
       (aSeed - 0.5) * 0.06
     );
     home.x += 0.012 * sin(uTime * 1.3 + aUv.y * 9.0 + aSeed * 6.2831);
@@ -313,7 +321,7 @@ const REVEAL_FRAG = `
             + vnoise(vUv * 38.0 - uTime * 0.08) * 0.38;
 
     float sdCard = roundedRect(pa, vec2(0.96, 1.4625), 0.1);
-    float sdWindow = roundedRect(pa, vec2(0.875, 1.3775), 0.055);
+    float sdWindow = roundedRect(pa, vec2(0.93, 1.42), 0.05);
 
     // Materialization: torn edge that heals into a clean die-cut
     float tear = (n - 0.5) * 0.24 * (1.0 - uOpacity);
@@ -325,7 +333,7 @@ const REVEAL_FRAG = `
     col += (n - 0.5) * 0.03; // faint paper grain
 
     // Portrait inside the window
-    vec2 uvP = (pa / vec2(0.875, 1.3775) + 1.0) * 0.5;
+    vec2 uvP = (pa / vec2(0.93, 1.42) + 1.0) * 0.5;
     float window = smoothstep(0.008, -0.008, sdWindow);
     vec3 art = texture2D(uTex, clamp(uvP, 0.0, 1.0)).rgb;
     // Whisper of a vignette — just enough to seat the art
@@ -378,11 +386,11 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 // A relationship-halo node: circular portrait, relation-coloured ring,
 // name + relation label — baked into one canvas texture.
 function drawBondNode(img: HTMLImageElement | null, bond: Bond): HTMLCanvasElement {
-  const W = 220;
-  const H = 280;
+  const W = 320;
+  const H = 400;
   const cx = W / 2;
-  const cy = 96;
-  const r = 74;
+  const cy = 140;
+  const r = 108;
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
@@ -410,7 +418,7 @@ function drawBondNode(img: HTMLImageElement | null, bond: Bond): HTMLCanvasEleme
     ctx.fillStyle = '#1a2d3e';
     ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
     ctx.fillStyle = '#f5ebdc';
-    ctx.font = "700 44px 'Righteous', sans-serif";
+    ctx.font = "700 64px 'Righteous', sans-serif";
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(bond.name.charAt(0), cx, cy);
@@ -421,19 +429,19 @@ function drawBondNode(img: HTMLImageElement | null, bond: Bond): HTMLCanvasEleme
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.strokeStyle = color;
-  ctx.lineWidth = 5;
+  ctx.lineWidth = 7;
   ctx.stroke();
 
   // Name + relation label
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = '#f5ebdc';
-  ctx.font = "600 21px 'Poppins', sans-serif";
-  ctx.fillText(bond.name, cx, cy + r + 36);
+  ctx.font = "600 30px 'Poppins', sans-serif";
+  ctx.fillText(bond.name, cx, cy + r + 52);
   ctx.fillStyle = color;
-  ctx.font = "600 13px 'Poppins', sans-serif";
+  ctx.font = "600 19px 'Poppins', sans-serif";
   const rel = bond.rel.toUpperCase().split('').join('  ');
-  ctx.fillText(rel, cx, cy + r + 60);
+  ctx.fillText(rel, cx, cy + r + 86);
 
   return canvas;
 }
@@ -730,7 +738,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
       const base = new THREE.Vector3(mobile ? sx * 0.86 : sx, sy, sz);
 
       // Node card
-      const nodeGeo = new THREE.PlaneGeometry(0.68, 0.86);
+      const nodeGeo = new THREE.PlaneGeometry(0.82, 1.025);
       const nodeMat = new THREE.MeshBasicMaterial({
         map: textures[i],
         transparent: true,
@@ -770,8 +778,8 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
       g.add(line);
 
       // Energy pulse that travels the bond, card → node
-      const pulse = makeGlowSprite(REL_RGB[bond.rel], 0.9);
-      pulse.scale.set(0.16, 0.16, 1);
+      const pulse = makeGlowSprite(REL_RGB[bond.rel], 0.95);
+      pulse.scale.set(0.24, 0.24, 1);
       pulse.material.opacity = 0;
       pulse.renderOrder = 4;
       owned.push(pulse.material.map as THREE.Texture, pulse.material);
@@ -833,6 +841,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
       loadFailures = 0;
       particleMat.uniforms.uTex.value = tex;
       revealMat.uniforms.uTex.value = tex;
+      warmGlow.material.color.set(s.accent);
       phase = 'assemble';
       phaseT = 0;
       onSummon(s);
@@ -919,13 +928,13 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
     const stageCx = sRect.left + sRect.width / 2 - (cRect.left + cRect.width / 2);
     const stageCy = sRect.top + sRect.height / 2 - (cRect.top + cRect.height / 2);
     group.position.x = stageCx * worldPerPxX;
-    group.position.y = -stageCy * worldPerPxY + 0.04;
+    group.position.y = -stageCy * worldPerPxY + 0.14;
 
     const scale = Math.min(
       (sRect.width * worldPerPxX) / GROUP_W,
-      (sRect.height * 0.92 * worldPerPxY) / GROUP_H,
+      (sRect.height * 0.84 * worldPerPxY) / GROUP_H,
     );
-    const s = THREE.MathUtils.clamp(scale, 0.34, 1.05);
+    const s = THREE.MathUtils.clamp(scale, 0.34, 1.18);
     group.scale.set(s, s, s);
   };
 
@@ -936,6 +945,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
 
   /* --- Pointer ------------------------------------------------------ */
   const camTarget = new THREE.Vector2(0, 0);
+
   const onMove = (e: PointerEvent) => {
     if (e.pointerType !== 'mouse') return;
     const r = container.getBoundingClientRect();
@@ -1003,6 +1013,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
         index = pn.index;
         onSummon(pn.s);
         revealMat.uniforms.uTex.value = pn.tex;
+        warmGlow.material.color.set(pn.s.accent);
         if (activeHalo) {
           group.remove(activeHalo.group);
           activeHalo = null;
@@ -1052,7 +1063,7 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
     haloAlpha += (haloTarget - haloAlpha) * Math.min(dt * 3.2, 1);
     if (activeHalo) {
       activeHalo.materials.forEach((m) => {
-        m.opacity = m instanceof THREE.LineBasicMaterial ? haloAlpha * 0.9 : haloAlpha;
+        m.opacity = haloAlpha;
       });
       activeHalo.nodes.forEach((n) => {
         n.mesh.position.y = n.base.y + Math.sin(elapsed * 0.8 + n.phase) * 0.045;
@@ -1181,21 +1192,25 @@ const CSS = `
     touch-action:pan-y; /* orbit-free: taps summon, scroll stays native */
   }
   .summon-canvas.ready { opacity:1; }
+  .hero-accent {
+    position:absolute; inset:0; pointer-events:none; z-index:1;
+    background:radial-gradient(48% 42% at 27% 42%,var(--accent-soft,rgba(231,115,51,0.12)) 0%,transparent 72%);
+  }
   .hero--3d {
     text-align:left;
     padding:110px 24px 64px;
   }
   .hero-grid {
     position:relative; z-index:2;
-    display:grid; grid-template-columns:minmax(400px,1fr) minmax(0,1.05fr);
-    gap:40px; align-items:center;
+    display:grid; grid-template-columns:minmax(380px,0.95fr) minmax(0,1.3fr);
+    gap:0; align-items:center;
     width:100%; max-width:1220px; margin:0 auto;
     min-height:calc(100dvh - 190px);
   }
   /* No container — the copy sits directly in the starfield; a soft local
      darkening behind it keeps the type readable without drawing a box */
   .hero-panel {
-    position:relative;
+    position:relative; z-index:2;
     padding:24px 0;
   }
   .hero-panel::before {
@@ -1204,6 +1219,8 @@ const CSS = `
   }
   .hero--3d .hero-wordmark-large {
     font-size:clamp(52px,7vw,92px); margin-bottom:28px; letter-spacing:-2px;
+    text-shadow:0 6px 70px var(--accent-strong,rgba(231,115,51,0.35));
+    transition:text-shadow 1.2s ease;
   }
   .hero--3d .hero-tagline { margin-bottom:14px; }
   .hero--3d .hero-sub { margin:0 0 34px; max-width:440px; }
@@ -1212,11 +1229,16 @@ const CSS = `
   .summon-stage {
     position:relative; align-self:stretch;
     min-height:420px; pointer-events:none;
+    margin-left:-72px; /* the scene drifts behind the copy column's edge */
   }
   .summon-plate {
     position:absolute; left:50%; bottom:-6px; transform:translateX(-50%);
     display:flex; flex-direction:column; align-items:center; gap:6px;
     pointer-events:none; white-space:nowrap;
+  }
+  .summon-plate::before {
+    content:''; width:36px; height:3px; border-radius:2px; margin-bottom:4px;
+    background:var(--accent,var(--yellow)); transition:background .8s ease;
   }
   .plate-name {
     font-family:'Righteous',sans-serif; font-size:30px; color:var(--beige);
@@ -1731,7 +1753,7 @@ const CSS = `
     .hero--3d .hero-sub { margin:0 auto 30px; }
     .hero--3d .hero-ctas { justify-content:center; }
     .hero-panel { padding:8px 0 0; }
-    .summon-stage { min-height:56vh; }
+    .summon-stage { min-height:56vh; margin-left:0; }
   }
 
   @media (max-width:768px) {
@@ -1889,6 +1911,23 @@ const CSS = `
   .loaded .hero-content .hero-ctas, .loaded .hero-panel .hero-ctas { animation-delay:.5s; }
   @keyframes heroIn { from { opacity:0; transform:translateY(22px); } to { opacity:1; transform:none; } }
 
+  /* The overture: wordmark letters resolve one by one, then the summon lands */
+  .wm-l { display:inline-block; opacity:0; }
+  .loaded .wm-l { animation:wmIn .9s var(--ease) both; }
+  .loaded .hero-content .hero-wordmark-large, .loaded .hero-panel .hero-wordmark-large { animation:none; opacity:1; }
+  @keyframes wmIn {
+    from { opacity:0; transform:translateY(26px) scale(0.96); filter:blur(12px); }
+    to   { opacity:1; transform:none; filter:none; }
+  }
+  .summon-hint {
+    position:absolute; top:4%; left:6%;
+    font-size:11px; font-weight:600; letter-spacing:2.5px; text-transform:uppercase;
+    color:var(--muted); display:flex; align-items:center; gap:8px;
+    opacity:0; animation:hintIn 1s var(--ease) 3.2s both; pointer-events:none;
+  }
+  .summon-hint::before { content:'✦'; color:var(--yellow); font-size:13px; }
+  @keyframes hintIn { from { opacity:0; transform:translateY(8px); } to { opacity:0.85; transform:none; } }
+
   @media (prefers-reduced-motion:reduce) {
     .hero-card,.scroll-hint,.marquee-track,.tott-vs,.plate-name { animation:none; }
     * { transition-duration:0.01ms !important; }
@@ -1899,6 +1938,7 @@ const CSS = `
     .marquee-wrapper { transform:none; width:100%; margin-left:0; }
     .marquee-clip { padding:0; }
     .hero-content > *, .hero-panel > * { opacity:1 !important; animation:none !important; }
+    .wm-l { opacity:1 !important; animation:none !important; }
   }
 
   /* Font-loading splash */
@@ -1929,6 +1969,11 @@ const CSS = `
 /* Component                                                            */
 /* ------------------------------------------------------------------ */
 
+function hexToRgba(hex: string, alpha: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+}
+
 function detect3DSupport(): boolean {
   if (typeof window === 'undefined' || typeof document === 'undefined') return false;
   try {
@@ -1948,6 +1993,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
   const [fontsReady, setFontsReady] = useState(false);
   const [mode, setMode] = useState<'3d' | 'static'>(() => (detect3DSupport() ? '3d' : 'static'));
   const [summoned, setSummoned] = useState<Summon | null>(null);
+  const [interacted, setInteracted] = useState(false);
 
   const heroRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1995,6 +2041,9 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
     }
     engineRef.current = engine;
 
+    const markInteracted = () => setInteracted(true);
+    canvas.addEventListener('pointerup', markInteracted, { once: true });
+
     // Pause when the hero scrolls out of view or the tab is hidden
     let inView = true;
     const applyPause = () => engine.setPaused(!inView || document.hidden);
@@ -2011,6 +2060,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
     return () => {
       io.disconnect();
       document.removeEventListener('visibilitychange', applyPause);
+      canvas.removeEventListener('pointerup', markInteracted);
       engine.dispose();
       engineRef.current = null;
     };
@@ -2080,6 +2130,16 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
     grid.addEventListener('mousemove', onMove, { passive: true });
     return () => grid.removeEventListener('mousemove', onMove);
   }, []);
+
+  // The page breathes with each summon: the legend's signature colour
+  // tints the wordmark glow, the accent wash, and the nameplate dash
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero || !summoned) return;
+    hero.style.setProperty('--accent', summoned.accent);
+    hero.style.setProperty('--accent-soft', hexToRgba(summoned.accent, 0.14));
+    hero.style.setProperty('--accent-strong', hexToRgba(summoned.accent, 0.4));
+  }, [summoned]);
 
   // Scroll-linked depth: the hero copy sinks and dims as the page scrolls
   // away, and the VS watermark drifts against the scroll — two quiet
@@ -2154,7 +2214,18 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
         </svg>
         Every universe. Every icon.
       </div>
-      <span className="hero-wordmark-large">mythique</span>
+      <span className="hero-wordmark-large" aria-label="mythique">
+        {'mythique'.split('').map((ch, i) => (
+          <span
+            key={i}
+            className="wm-l"
+            aria-hidden="true"
+            style={{ animationDelay: `${0.12 + i * 0.055}s` }}
+          >
+            {ch}
+          </span>
+        ))}
+      </span>
       <p className="hero-tagline">Know every icon. Settle every debate.</p>
       <p className="hero-sub">
         Explore 34,000+ characters in rich detail, trace how they&apos;re connected, and pit any two
@@ -2225,9 +2296,15 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
         {is3D ? (
           <>
             <canvas ref={canvasRef} className="summon-canvas" aria-hidden="true" />
+            <div className="hero-accent" aria-hidden="true" />
             <div className="hero-grid">
               <div className="hero-panel">{heroContent}</div>
               <div className="summon-stage" ref={stageRef}>
+                {!interacted ? (
+                  <span className="summon-hint" aria-hidden="true">
+                    Tap the stars to summon
+                  </span>
+                ) : null}
                 {summoned ? (
                   <div className="summon-plate">
                     <span className="plate-name" key={summoned.id} aria-hidden="true">
@@ -2238,7 +2315,10 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                     </span>
                     <button
                       className="plate-summon"
-                      onClick={() => engineRef.current?.summonNext()}
+                      onClick={() => {
+                        setInteracted(true);
+                        engineRef.current?.summonNext();
+                      }}
                     >
                       Summon another legend ↻
                     </button>
@@ -2450,7 +2530,10 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             </div>
 
             {/* Settle the Debate — tall cell with mini tape bars */}
-            <div className="feature-card fc-tall reveal rv-scale" style={{ transitionDelay: '80ms' }}>
+            <div
+              className="feature-card fc-tall reveal rv-scale"
+              style={{ transitionDelay: '80ms' }}
+            >
               <div className="feature-icon">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
@@ -2518,7 +2601,10 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             </div>
 
             {/* On Screen — wide cell with poster chips */}
-            <div className="feature-card fc-wide reveal rv-scale" style={{ transitionDelay: '100ms' }}>
+            <div
+              className="feature-card fc-wide reveal rv-scale"
+              style={{ transitionDelay: '100ms' }}
+            >
               <div className="fc-copy">
                 <div className="feature-icon">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
