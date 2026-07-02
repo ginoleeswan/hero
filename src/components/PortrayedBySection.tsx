@@ -19,7 +19,8 @@ function Group({
         <Text style={styles.groupLabel}>{label}</Text>
       </View>
       <View style={styles.chips}>
-        {names.map((n) => (
+        {/* Deduped — the same performer recurs across titles and keys the list */}
+        {Array.from(new Set(names)).map((n) => (
           <View key={n} style={styles.chip}>
             <Text style={styles.chipText}>{n}</Text>
           </View>

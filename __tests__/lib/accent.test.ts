@@ -2,8 +2,7 @@ import { blurhashAverageColor, deriveCharacterTheme } from '../../src/lib/accent
 
 // Build test hashes programmatically: chars 0-1 (size flag / max AC) are
 // irrelevant to the DC decode; chars 2-5 encode the DC as base83.
-const B83 =
-  '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#$%*+,-.:;=?@[]^_{|}~';
+const B83 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#$%*+,-.:;=?@[]^_{|}~';
 const hashWithDc = (r: number, g: number, b: number) => {
   const dc = (r << 16) | (g << 8) | b;
   const enc = [3, 2, 1, 0].map((p) => B83[Math.floor(dc / 83 ** p) % 83]).join('');

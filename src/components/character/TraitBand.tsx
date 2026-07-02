@@ -2,6 +2,18 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { HeroTagChip } from '../../lib/db/heroFacts';
 import { traitColor, withAlpha } from './traitColors';
 
+// Mix a hex color toward white — on the ink band the raw category hues sink
+// into the dark; lifting them keeps the tint while restoring legibility.
+function towardWhite(hex: string, amount: number): string {
+  const ch = (i: number) =>
+    Math.round(
+      parseInt(hex.slice(i, i + 2), 16) + (255 - parseInt(hex.slice(i, i + 2), 16)) * amount,
+    )
+      .toString(16)
+      .padStart(2, '0');
+  return `#${ch(1)}${ch(3)}${ch(5)}`;
+}
+
 interface Props {
   tags: HeroTagChip[];
   /** Dark-stage variant: translucent pills tuned for the ink band. */
@@ -29,8 +41,10 @@ export function TraitBand({ tags, onInk }: Props) {
                 : { backgroundColor: withAlpha(c, 0.1), borderColor: withAlpha(c, 0.35) },
             ]}
           >
-            <View style={[styles.dot, { backgroundColor: c }]} />
-            <Text style={[styles.label, { color: onInk ? withAlpha(c, 0.95) : c }]}>{t.label}</Text>
+            <View style={[styles.dot, { backgroundColor: onInk ? towardWhite(c, 0.35) : c }]} />
+            <Text style={[styles.label, { color: onInk ? towardWhite(c, 0.55) : c }]}>
+              {t.label}
+            </Text>
           </View>
         );
       })}

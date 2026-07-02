@@ -15,8 +15,7 @@ export interface CharacterTheme {
   accentWash: string;
 }
 
-const B83 =
-  '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#$%*+,-.:;=?@[]^_{|}~';
+const B83 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz#$%*+,-.:;=?@[]^_{|}~';
 
 function decode83(str: string): number | null {
   let value = 0;

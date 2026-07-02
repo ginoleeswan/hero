@@ -615,12 +615,17 @@ export default function WebCharacterScreen() {
 
   // Affiliations + their team-id resolution are derived BEFORE any early return
   // so these hooks run on every render (data may be null / errored on first paint).
-  const affiliations: string[] = data?.details.teams?.length
-    ? data.details.teams
-    : (data?.stats.connections['group-affiliation'] ?? '')
-        .split(/[,;]/)
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0 && !JUNK_VALUES.has(s.toLowerCase()));
+  // Deduped — team names repeat in the raw data and they key the chip list.
+  const affiliations: string[] = Array.from(
+    new Set(
+      data?.details.teams?.length
+        ? data.details.teams
+        : (data?.stats.connections['group-affiliation'] ?? '')
+            .split(/[,;]/)
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0 && !JUNK_VALUES.has(s.toLowerCase())),
+    ),
+  );
   // Affiliations that match a real team become doorways into /team/[id].
   const resolveTeamId = useHeroTeams(affiliations);
 
@@ -852,6 +857,14 @@ export default function WebCharacterScreen() {
                       {stats.name}
                     </Text>
                     {alias ? <Text style={styles.heroAlias}>{alias}</Text> : null}
+
+                    {/* Theme trait chips — inside the title block so the meta
+                        pills keep bottom-aligning with the identity content */}
+                    {narrative && narrative.tags.length > 0 ? (
+                      <View style={styles.stageTraits}>
+                        <TraitBand tags={narrative.tags} onInk />
+                      </View>
+                    ) : null}
                   </View>
 
                   {/* Meta block — credit on top, pills anchored to the name baseline */}
@@ -919,13 +932,6 @@ export default function WebCharacterScreen() {
                     </View>
                   </View>
                 </View>
-
-                {/* Theme trait chips — identity, so they live with the name */}
-                {narrative && narrative.tags.length > 0 ? (
-                  <View style={styles.stageTraits}>
-                    <TraitBand tags={narrative.tags} onInk />
-                  </View>
-                ) : null}
               </View>
             </View>
 
@@ -935,8 +941,8 @@ export default function WebCharacterScreen() {
                 [
                   styles.stageAccent,
                   {
-                    backgroundColor: theme.accent,
-                    boxShadow: `0 0 22px ${theme.accentDeep}`,
+                    backgroundColor: theme.accentDeep + 'b3',
+                    boxShadow: `0 0 18px ${theme.accentDeep}99`,
                     pointerEvents: 'none',
                   },
                 ] as object
@@ -1007,7 +1013,9 @@ export default function WebCharacterScreen() {
                             }
                           >
                             <Ionicons name="git-compare-outline" size={14} color={theme.accent} />
-                            <Text style={[styles.compareBtnText, { color: theme.accent }] as object}>
+                            <Text
+                              style={[styles.compareBtnText, { color: theme.accent }] as object}
+                            >
                               Compare
                             </Text>
                           </Pressable>
@@ -1032,7 +1040,9 @@ export default function WebCharacterScreen() {
                       </View>
                     </View>
                     <View
-                      style={[styles.cardDivider, { backgroundColor: theme.accent + '22' }] as object}
+                      style={
+                        [styles.cardDivider, { backgroundColor: theme.accent + '22' }] as object
+                      }
                     />
                     {isAdmin && statsEditing ? (
                       <StatEditList
@@ -1082,6 +1092,8 @@ export default function WebCharacterScreen() {
                                     styles.bandFill,
                                     {
                                       width: `${fill}%` as unknown as number,
+                                      // Tiny values still read as a deliberate fill.
+                                      minWidth: fill > 0 ? 5 : 0,
                                       backgroundColor: color,
                                     },
                                   ]}
@@ -1105,7 +1117,9 @@ export default function WebCharacterScreen() {
                     )}
                     {!statsEditing && !statsGenerating ? (
                       <View
-                        style={[styles.powerFooter, { borderTopColor: theme.accent + '1f' }] as object}
+                        style={
+                          [styles.powerFooter, { borderTopColor: theme.accent + '1f' }] as object
+                        }
                       >
                         <View style={styles.medianLegend}>
                           <View style={styles.medianLegendTick} />
@@ -2038,6 +2052,8 @@ export default function WebCharacterScreen() {
                                       styles.bandFill,
                                       {
                                         width: `${fill}%` as unknown as number,
+                                        // Tiny values still read as a deliberate fill.
+                                        minWidth: fill > 0 ? 5 : 0,
                                         backgroundColor: color,
                                       },
                                     ]}
@@ -2126,7 +2142,9 @@ export default function WebCharacterScreen() {
                             }
                           >
                             <Ionicons name="git-compare-outline" size={14} color={theme.accent} />
-                            <Text style={[styles.compareBtnText, { color: theme.accent }] as object}>
+                            <Text
+                              style={[styles.compareBtnText, { color: theme.accent }] as object}
+                            >
                               Compare
                             </Text>
                           </Pressable>
