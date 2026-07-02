@@ -74,12 +74,13 @@ html, body, #root {
   height: 100%;
   height: 100dvh !important;
 }
-/* The document's DEFAULT background. The iOS Safari status-bar inset and the
-   frosted toolbar show whatever the body background is at that moment, so the
-   default has to be the app's dark backdrop (deep-navy) — otherwise every
-   loading/transition phase (font load, auth settle, the landing iframe's splash)
-   shows a beige body through the bars before a route paints its own canvas.
-   Content pages override this to beige at runtime via useWebCanvas, so the
-   frosted toolbar still reads transparent over beige content there. */
+/* The document background, pinned deep-navy on EVERY route. In a plain iOS Safari
+   tab both the status-bar strip and the bottom toolbar are tinted from the body
+   background, so keeping it a single dark value gives consistent dark system
+   chrome on every page (instead of it flipping to each screen's content colour)
+   and keeps every loading/transition phase dark. Light screens paint their own
+   beige on a container that fills the full scroll height — the navy body only
+   shows through the system chrome and on overscroll, never under content. Screens
+   declare this via useScreenChrome, which no longer repaints the body. */
 html, body { background-color: #0b1820; overscroll-behavior-y: none; }
 `;

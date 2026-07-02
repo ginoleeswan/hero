@@ -75,7 +75,9 @@ export function LegalScreen({ doc }: { doc: LegalDoc }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.beige },
+  // minHeight (not flex:1) so the beige fills the full scroll height over the
+  // now-navy body — flex:1 clamps to 100dvh and would leak navy past the fold.
+  container: { minHeight: '100dvh', backgroundColor: COLORS.beige } as object,
   scroll: { paddingHorizontal: 20, maxWidth: 720, width: '100%', alignSelf: 'center' },
   backBtn: {
     width: 38,

@@ -508,7 +508,10 @@ export default function WebBiographyScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: COLORS.beige },
+  // minHeight (not flex:1) so the beige (desktop) grows to the full scroll height
+  // over the now-navy body; flex:1 clamps to 100dvh and would leak navy past the
+  // fold. Mobile overrides the fill to deepNavy below (canvas is already ink).
+  scroll: { minHeight: '100dvh', backgroundColor: COLORS.beige } as object,
   // Mobile: the scroll surface goes dark so the header fuses uninterrupted into the
   // dark status strip (no beige peeking between). The beige comes from mobileBody.
   scrollDarkMobile: { backgroundColor: COLORS.deepNavy } as object,

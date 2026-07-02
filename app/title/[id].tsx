@@ -437,7 +437,14 @@ const styles = StyleSheet.create({
   loadingShell: { flex: 1, backgroundColor: COLORS.deepNavy },
   // Web: document-scrolled page (no inner ScrollView) so the body bleeds under
   // the iOS Safari toolbar. paddingBottom keeps the last card off the toolbar.
-  webPage: { width: '100%', backgroundColor: COLORS.beige, paddingBottom: 40 },
+  // minHeight floors the beige at one viewport so a short page doesn't leak the
+  // now-navy body below it; grows to content past that under document scroll.
+  webPage: {
+    width: '100%',
+    minHeight: '100dvh',
+    backgroundColor: COLORS.beige,
+    paddingBottom: 40,
+  } as object,
   // Positioned wrapper for the body so the FadeOutSkeleton overlay (absoluteFill)
   // scopes to the body region and aligns with it (the body floats up across the
   // seam via marginTop, which the overlay inherits identically).
