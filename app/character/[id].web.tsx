@@ -30,6 +30,7 @@ import { deriveCharacterTheme } from '../../src/lib/accent';
 import { PullQuoteBio } from '../../src/components/web/character/PullQuoteBio';
 import { LegendBand } from '../../src/components/web/character/LegendBand';
 import { PowerStatCell } from '../../src/components/web/character/PowerStatCell';
+import { Reveal } from '../../src/components/web/Reveal';
 import {
   SignaturePowerTiles,
   pickSignaturePowers,
@@ -1149,31 +1150,35 @@ export default function WebCharacterScreen() {
                       <SkeletonBlock opacity={skeletonOpacity} height={12} width="65%" />
                     </View>
                   ) : details.summary || details.description ? (
-                    <PullQuoteBio
-                      summary={details.summary ?? ''}
-                      accent={theme.accent}
-                      hasBiography={!!details.description}
-                      onReadMore={() => router.push(`/biography/${id}`)}
-                      onEdit={() =>
-                        setEditTarget({ field: SUMMARY_FIELD, current: details.summary ?? null })
-                      }
-                    />
+                    <Reveal>
+                      <PullQuoteBio
+                        summary={details.summary ?? ''}
+                        accent={theme.accent}
+                        hasBiography={!!details.description}
+                        onReadMore={() => router.push(`/biography/${id}`)}
+                        onEdit={() =>
+                          setEditTarget({ field: SUMMARY_FIELD, current: details.summary ?? null })
+                        }
+                      />
+                    </Reveal>
                   ) : null}
 
                   {/* Abilities — power explainers fold in as the "Decoded" strip */}
-                  <WebAbilitiesCard
-                    powers={details.powers}
-                    loading={comicVineLoading}
-                    skeletonOpacity={skeletonOpacity}
-                    explainers={narrative?.powerExplainers ?? []}
-                    accent={theme.accent}
-                    onEdit={() =>
-                      setEditTarget({
-                        field: POWERS_FIELD,
-                        current: details.powers?.length ? details.powers.join('\n') : null,
-                      })
-                    }
-                  />
+                  <Reveal>
+                    <WebAbilitiesCard
+                      powers={details.powers}
+                      loading={comicVineLoading}
+                      skeletonOpacity={skeletonOpacity}
+                      explainers={narrative?.powerExplainers ?? []}
+                      accent={theme.accent}
+                      onEdit={() =>
+                        setEditTarget({
+                          field: POWERS_FIELD,
+                          current: details.powers?.length ? details.powers.join('\n') : null,
+                        })
+                      }
+                    />
+                  </Reveal>
 
                   {/* Enemies & Allies */}
                   {comicVineLoading ? (
@@ -1209,92 +1214,94 @@ export default function WebCharacterScreen() {
                     allyNames.length ||
                     teammateNames.length ||
                     affiliations.length ? (
-                    <View style={styles.card}>
-                      <Text style={styles.cardTitle}>Enemies, Allies &amp; Teams</Text>
-                      <View style={styles.cardDivider} />
-                      {/* Break out of the card's 20px padding so the strips align */}
-                      <View style={{ marginHorizontal: -20 }}>
-                        {enemyNames.length ? (
-                          <RelatedHeroStrip
-                            label="Enemies"
-                            names={enemyNames}
-                            heroMap={relatedHeroMap}
-                            kind="enemy"
-                            edgeTint
-                            monogramTiles
-                            onPressHero={(h) =>
-                              router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
-                            }
-                          />
-                        ) : null}
-                        {allyNames.length ? (
-                          <RelatedHeroStrip
-                            label="Allies"
-                            names={allyNames}
-                            heroMap={relatedHeroMap}
-                            kind="ally"
-                            edgeTint
-                            monogramTiles
-                            onPressHero={(h) =>
-                              router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
-                            }
-                          />
-                        ) : null}
-                        {teammateNames.length ? (
-                          <RelatedHeroStrip
-                            label="Teammates"
-                            names={teammateNames}
-                            heroMap={relatedHeroMap}
-                            kind="teammate"
-                            edgeTint
-                            monogramTiles
-                            onPressHero={(h) =>
-                              router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
-                            }
-                          />
+                    <Reveal>
+                      <View style={styles.card}>
+                        <Text style={styles.cardTitle}>Enemies, Allies &amp; Teams</Text>
+                        <View style={styles.cardDivider} />
+                        {/* Break out of the card's 20px padding so the strips align */}
+                        <View style={{ marginHorizontal: -20 }}>
+                          {enemyNames.length ? (
+                            <RelatedHeroStrip
+                              label="Enemies"
+                              names={enemyNames}
+                              heroMap={relatedHeroMap}
+                              kind="enemy"
+                              edgeTint
+                              monogramTiles
+                              onPressHero={(h) =>
+                                router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                              }
+                            />
+                          ) : null}
+                          {allyNames.length ? (
+                            <RelatedHeroStrip
+                              label="Allies"
+                              names={allyNames}
+                              heroMap={relatedHeroMap}
+                              kind="ally"
+                              edgeTint
+                              monogramTiles
+                              onPressHero={(h) =>
+                                router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                              }
+                            />
+                          ) : null}
+                          {teammateNames.length ? (
+                            <RelatedHeroStrip
+                              label="Teammates"
+                              names={teammateNames}
+                              heroMap={relatedHeroMap}
+                              kind="teammate"
+                              edgeTint
+                              monogramTiles
+                              onPressHero={(h) =>
+                                router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                              }
+                            />
+                          ) : null}
+                        </View>
+                        {affiliations.length ? (
+                          <View style={styles.affGroup}>
+                            <Text style={styles.chipGroupLabel}>Affiliations</Text>
+                            <View style={styles.chipRow}>
+                              {affiliations.map((t) => {
+                                const teamId = resolveTeamId(t);
+                                if (!teamId) {
+                                  return (
+                                    <View key={t} style={styles.affChip}>
+                                      <Text style={styles.affChipText}>{t}</Text>
+                                    </View>
+                                  );
+                                }
+                                return (
+                                  <Pressable
+                                    key={t}
+                                    onPress={() =>
+                                      router.push(
+                                        `/team/${teamId}` as Parameters<typeof router.push>[0],
+                                      )
+                                    }
+                                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                                      [
+                                        styles.affChip,
+                                        styles.affChipLink,
+                                        hovered && (styles.affChipLinkHover as object),
+                                      ] as object
+                                    }
+                                  >
+                                    <Text
+                                      style={[styles.affChipText, styles.affChipLinkText] as object}
+                                    >
+                                      {t}
+                                    </Text>
+                                  </Pressable>
+                                );
+                              })}
+                            </View>
+                          </View>
                         ) : null}
                       </View>
-                      {affiliations.length ? (
-                        <View style={styles.affGroup}>
-                          <Text style={styles.chipGroupLabel}>Affiliations</Text>
-                          <View style={styles.chipRow}>
-                            {affiliations.map((t) => {
-                              const teamId = resolveTeamId(t);
-                              if (!teamId) {
-                                return (
-                                  <View key={t} style={styles.affChip}>
-                                    <Text style={styles.affChipText}>{t}</Text>
-                                  </View>
-                                );
-                              }
-                              return (
-                                <Pressable
-                                  key={t}
-                                  onPress={() =>
-                                    router.push(
-                                      `/team/${teamId}` as Parameters<typeof router.push>[0],
-                                    )
-                                  }
-                                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                                    [
-                                      styles.affChip,
-                                      styles.affChipLink,
-                                      hovered && (styles.affChipLinkHover as object),
-                                    ] as object
-                                  }
-                                >
-                                  <Text
-                                    style={[styles.affChipText, styles.affChipLinkText] as object}
-                                  >
-                                    {t}
-                                  </Text>
-                                </Pressable>
-                              );
-                            })}
-                          </View>
-                        </View>
-                      ) : null}
-                    </View>
+                    </Reveal>
                   ) : null}
 
                   {/* On screen */}
@@ -1331,50 +1338,58 @@ export default function WebCharacterScreen() {
                     (() => {
                       const groups = groupTitlesByMedia(titles);
                       return (
-                        <View style={styles.card}>
-                          {groups.film.length > 0 ? (
-                            <>
-                              <Text style={styles.cardTitle}>On Screen ({groups.film.length})</Text>
-                              <View style={styles.cardDivider} />
-                              <MovieStrip
-                                titles={groups.film}
-                                totalCount={groups.film.length}
-                                contentInset={20}
-                                bleedMargin={20}
-                              />
-                            </>
-                          ) : null}
-                          {groups.tv.length > 0 ? (
-                            <View style={groups.film.length > 0 ? { marginTop: 22 } : undefined}>
-                              <Text style={styles.cardTitle}>Television ({groups.tv.length})</Text>
-                              <View style={styles.cardDivider} />
-                              <MovieStrip
-                                titles={groups.tv}
-                                totalCount={groups.tv.length}
-                                contentInset={20}
-                                bleedMargin={20}
-                              />
-                            </View>
-                          ) : null}
-                        </View>
+                        <Reveal>
+                          <View style={styles.card}>
+                            {groups.film.length > 0 ? (
+                              <>
+                                <Text style={styles.cardTitle}>
+                                  On Screen ({groups.film.length})
+                                </Text>
+                                <View style={styles.cardDivider} />
+                                <MovieStrip
+                                  titles={groups.film}
+                                  totalCount={groups.film.length}
+                                  contentInset={20}
+                                  bleedMargin={20}
+                                />
+                              </>
+                            ) : null}
+                            {groups.tv.length > 0 ? (
+                              <View style={groups.film.length > 0 ? { marginTop: 22 } : undefined}>
+                                <Text style={styles.cardTitle}>
+                                  Television ({groups.tv.length})
+                                </Text>
+                                <View style={styles.cardDivider} />
+                                <MovieStrip
+                                  titles={groups.tv}
+                                  totalCount={groups.tv.length}
+                                  contentInset={20}
+                                  bleedMargin={20}
+                                />
+                              </View>
+                            ) : null}
+                          </View>
+                        </Reveal>
                       );
                     })()
                   ) : null}
 
                   {/* Legend — debut, trivia, portrayals on one timeline */}
-                  <LegendBand
-                    accent={theme.accent}
-                    accentWash={theme.accentWash}
-                    firstIssue={data.firstIssue ?? null}
-                    facts={narrative?.didYouKnow ?? []}
-                    portrayals={portrayals}
-                    onPressDebut={() =>
-                      data.firstIssue &&
-                      router.push(
-                        `/issue/cvi:${data.firstIssue.id}` as Parameters<typeof router.push>[0],
-                      )
-                    }
-                  />
+                  <Reveal>
+                    <LegendBand
+                      accent={theme.accent}
+                      accentWash={theme.accentWash}
+                      firstIssue={data.firstIssue ?? null}
+                      facts={narrative?.didYouKnow ?? []}
+                      portrayals={portrayals}
+                      onPressDebut={() =>
+                        data.firstIssue &&
+                        router.push(
+                          `/issue/cvi:${data.firstIssue.id}` as Parameters<typeof router.push>[0],
+                        )
+                      }
+                    />
+                  </Reveal>
 
                   {/* In Print — debut feature + cover gallery */}
                   {comicVineLoading ? (
@@ -1408,81 +1423,92 @@ export default function WebCharacterScreen() {
                       </View>
                     </View>
                   ) : newIssues.length > 0 || (galleryImages && galleryImages.length > 0) ? (
-                    <View style={styles.card}>
-                      <View style={styles.inPrintHeader}>
-                        <Text style={styles.cardTitle}>In Print</Text>
-                        {data.firstIssue?.coverDate ? (
-                          <Text style={styles.inPrintSince}>
-                            Since {data.firstIssue.coverDate.slice(0, 4)}
-                          </Text>
-                        ) : null}
-                      </View>
-                      <View style={styles.cardDivider} />
-                      {newIssues.length > 0 ? (
-                        <View style={{ marginHorizontal: -20, marginBottom: 6 }}>
-                          <ComicCoverRail
-                            comics={newIssues}
-                            onLight
-                            onIssuePress={(issueId) =>
-                              router.push(`/issue/${issueId}` as Parameters<typeof router.push>[0])
-                            }
-                          />
-                        </View>
-                      ) : null}
-                      <View style={styles.inPrintBody}>
-                        {/* Gallery — character art + covers (multi-source);
-                            the debut moved up into the Legend band */}
-                        {galleryImages && galleryImages.length > 0 ? (
-                          <View style={styles.inPrintGallery}>
-                            <Text style={styles.inPrintGalleryLabel}>
-                              Gallery · {galleryImages.length}
+                    <Reveal>
+                      <View style={styles.card}>
+                        <View style={styles.inPrintHeader}>
+                          <Text style={styles.cardTitle}>In Print</Text>
+                          {data.firstIssue?.coverDate ? (
+                            <Text style={styles.inPrintSince}>
+                              Since {data.firstIssue.coverDate.slice(0, 4)}
                             </Text>
-                            {/* Filmstrip fade — the run reads as film running off-frame */}
-                            <View
-                              style={
-                                [
-                                  { marginRight: -20 },
-                                  {
-                                    maskImage:
-                                      'linear-gradient(90deg, black 82%, transparent 100%)',
-                                    WebkitMaskImage:
-                                      'linear-gradient(90deg, black 82%, transparent 100%)',
-                                  },
-                                ] as object
+                          ) : null}
+                        </View>
+                        <View style={styles.cardDivider} />
+                        {newIssues.length > 0 ? (
+                          <View style={{ marginHorizontal: -20, marginBottom: 6 }}>
+                            <ComicCoverRail
+                              comics={newIssues}
+                              onLight
+                              onIssuePress={(issueId) =>
+                                router.push(
+                                  `/issue/${issueId}` as Parameters<typeof router.push>[0],
+                                )
                               }
-                            >
-                              <GalleryStrip
-                                images={galleryImages.map((g) => ({
-                                  url: g.url,
-                                  caption: g.caption,
-                                }))}
-                                onPress={(i) => {
-                                  const issueId = galleryImages[i]?.issueId;
-                                  if (issueId) {
-                                    router.push(
-                                      `/issue/cvi:${issueId}` as Parameters<typeof router.push>[0],
-                                    );
-                                    return;
-                                  }
-                                  setLightboxImages(
-                                    galleryImages.map((g) => ({ url: g.url, caption: g.caption })),
-                                  );
-                                  setLightboxIndex(i);
-                                }}
-                              />
-                            </View>
+                            />
                           </View>
                         ) : null}
+                        <View style={styles.inPrintBody}>
+                          {/* Gallery — character art + covers (multi-source);
+                            the debut moved up into the Legend band */}
+                          {galleryImages && galleryImages.length > 0 ? (
+                            <View style={styles.inPrintGallery}>
+                              <Text style={styles.inPrintGalleryLabel}>
+                                Gallery · {galleryImages.length}
+                              </Text>
+                              {/* Filmstrip fade — the run reads as film running off-frame */}
+                              <View
+                                style={
+                                  [
+                                    { marginRight: -20 },
+                                    {
+                                      maskImage:
+                                        'linear-gradient(90deg, black 82%, transparent 100%)',
+                                      WebkitMaskImage:
+                                        'linear-gradient(90deg, black 82%, transparent 100%)',
+                                    },
+                                  ] as object
+                                }
+                              >
+                                <GalleryStrip
+                                  images={galleryImages.map((g) => ({
+                                    url: g.url,
+                                    caption: g.caption,
+                                  }))}
+                                  onPress={(i) => {
+                                    const issueId = galleryImages[i]?.issueId;
+                                    if (issueId) {
+                                      router.push(
+                                        `/issue/cvi:${issueId}` as Parameters<
+                                          typeof router.push
+                                        >[0],
+                                      );
+                                      return;
+                                    }
+                                    setLightboxImages(
+                                      galleryImages.map((g) => ({
+                                        url: g.url,
+                                        caption: g.caption,
+                                      })),
+                                    );
+                                    setLightboxIndex(i);
+                                  }}
+                                />
+                              </View>
+                            </View>
+                          ) : null}
+                        </View>
                       </View>
-                    </View>
+                    </Reveal>
                   ) : null}
 
                   {/* Elsewhere — external links drop to a quiet footer register */}
                   {heroLinksHasContent(links) ? (
-                    <View style={styles.linksFooter}>
-                      <Text style={styles.linksFooterLabel}>Elsewhere</Text>
-                      <HeroLinksRow links={links!} contentInset={0} />
-                    </View>
+                    <Reveal>
+                      <View style={styles.linksFooter}>
+                        <Text style={styles.linksFooterLabel}>Elsewhere</Text>
+                        <HeroLinksRow links={links!} contentInset={0} />
+                      </View>
+                    </Reveal>
                   ) : null}
                 </View>
 
@@ -2033,13 +2059,15 @@ export default function WebCharacterScreen() {
                 {/* Signature tier headlines; AbilitiesSection (shared with
                     native) keeps the full categorized grid below */}
                 {!comicVineLoading && details.powers && details.powers.length > 0 ? (
-                  <View style={styles.mBlock}>
-                    <SignaturePowerTiles
-                      powers={details.powers}
-                      explainers={narrative?.powerExplainers ?? []}
-                      accent={theme.accent}
-                    />
-                  </View>
+                  <Reveal>
+                    <View style={styles.mBlock}>
+                      <SignaturePowerTiles
+                        powers={details.powers}
+                        explainers={narrative?.powerExplainers ?? []}
+                        accent={theme.accent}
+                      />
+                    </View>
+                  </Reveal>
                 ) : null}
 
                 {/* Abilities grid — blurbs live on the signature tiles above,
@@ -2057,21 +2085,23 @@ export default function WebCharacterScreen() {
                 />
 
                 {/* Legend — debut, trivia, portrayals on one timeline */}
-                <View style={styles.mBlock}>
-                  <LegendBand
-                    accent={theme.accent}
-                    accentWash={theme.accentWash}
-                    firstIssue={data.firstIssue ?? null}
-                    facts={narrative?.didYouKnow ?? []}
-                    portrayals={portrayals}
-                    onPressDebut={() =>
-                      data.firstIssue &&
-                      router.push(
-                        `/issue/cvi:${data.firstIssue.id}` as Parameters<typeof router.push>[0],
-                      )
-                    }
-                  />
-                </View>
+                <Reveal>
+                  <View style={styles.mBlock}>
+                    <LegendBand
+                      accent={theme.accent}
+                      accentWash={theme.accentWash}
+                      firstIssue={data.firstIssue ?? null}
+                      facts={narrative?.didYouKnow ?? []}
+                      portrayals={portrayals}
+                      onPressDebut={() =>
+                        data.firstIssue &&
+                        router.push(
+                          `/issue/cvi:${data.firstIssue.id}` as Parameters<typeof router.push>[0],
+                        )
+                      }
+                    />
+                  </View>
+                </Reveal>
 
                 {/* Family tree */}
                 {family.length > 0 ? (
@@ -2087,51 +2117,53 @@ export default function WebCharacterScreen() {
                 {/* Enemies & Allies */}
                 {!comicVineLoading &&
                 (enemyNames.length || allyNames.length || teammateNames.length) ? (
-                  <View style={styles.mSection}>
-                    <View style={styles.mSectionHead}>
-                      <Text style={styles.mSectionTitle}>Enemies, Allies &amp; Teams</Text>
-                      <View style={styles.mSectionDivider} />
+                  <Reveal>
+                    <View style={styles.mSection}>
+                      <View style={styles.mSectionHead}>
+                        <Text style={styles.mSectionTitle}>Enemies, Allies &amp; Teams</Text>
+                        <View style={styles.mSectionDivider} />
+                      </View>
+                      {enemyNames.length ? (
+                        <RelatedHeroStrip
+                          label="Enemies"
+                          names={enemyNames}
+                          heroMap={relatedHeroMap}
+                          kind="enemy"
+                          edgeTint
+                          monogramTiles
+                          onPressHero={(h) =>
+                            router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                          }
+                        />
+                      ) : null}
+                      {allyNames.length ? (
+                        <RelatedHeroStrip
+                          label="Allies"
+                          names={allyNames}
+                          heroMap={relatedHeroMap}
+                          kind="ally"
+                          edgeTint
+                          monogramTiles
+                          onPressHero={(h) =>
+                            router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                          }
+                        />
+                      ) : null}
+                      {teammateNames.length ? (
+                        <RelatedHeroStrip
+                          label="Teammates"
+                          names={teammateNames}
+                          heroMap={relatedHeroMap}
+                          kind="teammate"
+                          edgeTint
+                          monogramTiles
+                          onPressHero={(h) =>
+                            router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
+                          }
+                        />
+                      ) : null}
                     </View>
-                    {enemyNames.length ? (
-                      <RelatedHeroStrip
-                        label="Enemies"
-                        names={enemyNames}
-                        heroMap={relatedHeroMap}
-                        kind="enemy"
-                        edgeTint
-                        monogramTiles
-                        onPressHero={(h) =>
-                          router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
-                        }
-                      />
-                    ) : null}
-                    {allyNames.length ? (
-                      <RelatedHeroStrip
-                        label="Allies"
-                        names={allyNames}
-                        heroMap={relatedHeroMap}
-                        kind="ally"
-                        edgeTint
-                        monogramTiles
-                        onPressHero={(h) =>
-                          router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
-                        }
-                      />
-                    ) : null}
-                    {teammateNames.length ? (
-                      <RelatedHeroStrip
-                        label="Teammates"
-                        names={teammateNames}
-                        heroMap={relatedHeroMap}
-                        kind="teammate"
-                        edgeTint
-                        monogramTiles
-                        onPressHero={(h) =>
-                          router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
-                        }
-                      />
-                    ) : null}
-                  </View>
+                  </Reveal>
                 ) : null}
 
                 {/* On Screen — film + TV grouped in one section, mirroring web desktop */}
@@ -2244,10 +2276,12 @@ export default function WebCharacterScreen() {
 
                 {/* Elsewhere — external links drop to a quiet footer register */}
                 {heroLinksHasContent(links) ? (
-                  <View style={[styles.mBlock, styles.linksFooter] as object}>
-                    <Text style={styles.linksFooterLabel}>Elsewhere</Text>
-                    <HeroLinksRow links={links!} contentInset={0} />
-                  </View>
+                  <Reveal>
+                    <View style={[styles.mBlock, styles.linksFooter] as object}>
+                      <Text style={styles.linksFooterLabel}>Elsewhere</Text>
+                      <HeroLinksRow links={links!} contentInset={0} />
+                    </View>
+                  </Reveal>
                 ) : null}
               </View>
             </View>
