@@ -51,7 +51,8 @@ export function DailyChallengeBanner({
               <Text style={styles.title}>Guess the Hero</Text>
               {streak > 0 ? (
                 <View style={styles.streakRow}>
-                  <Text style={styles.streakText}>🔥 {streak} day streak</Text>
+                  <Ionicons name="flame" size={13} color={COLORS.orange} />
+                  <Text style={styles.streakText}>{streak} day streak</Text>
                   <Text style={styles.dot}>·</Text>
                   <Text style={styles.sub}>Keep it alive</Text>
                 </View>
@@ -84,7 +85,8 @@ export function DailyChallengeBanner({
         <Text style={styles.title}>Guess the Hero</Text>
         {streak > 0 ? (
           <View style={styles.streakRow}>
-            <Text style={styles.streakText}>🔥 {streak} day streak</Text>
+            <Ionicons name="flame" size={13} color={COLORS.orange} />
+            <Text style={styles.streakText}>{streak} day streak</Text>
             <Text style={styles.dot}>·</Text>
             <Text style={styles.sub}>Keep it alive</Text>
           </View>
@@ -163,8 +165,8 @@ const styles = StyleSheet.create({
   body: { flex: 1 },
   kicker: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
-    letterSpacing: 1.6,
+    fontSize: 11,
+    letterSpacing: 2,
     textTransform: 'uppercase',
     color: COLORS.orange,
   },

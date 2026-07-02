@@ -222,6 +222,15 @@ function CampaignHero({
   );
 }
 
+// Rank tint — the podium warms orange (same ramp as the Hall of Fame), the
+// rest stay dim beige.
+function hotRankColor(i: number): string {
+  if (i === 0) return 'rgba(231,115,51,0.9)';
+  if (i === 1) return 'rgba(231,115,51,0.6)';
+  if (i === 2) return 'rgba(231,115,51,0.4)';
+  return 'rgba(245,235,220,0.35)';
+}
+
 function WhatsHot({
   titles,
   onTitlePress,
@@ -244,7 +253,7 @@ function WhatsHot({
               [wh.row, hovered && (wh.rowHover as object)] as object
             }
           >
-            <Text style={wh.rank as object}>{i + 1}</Text>
+            <Text style={[wh.rank, { color: hotRankColor(i) }] as object}>{i + 1}</Text>
             <View style={wh.thumb as object}>
               {posterUri ? (
                 <Image
@@ -495,11 +504,24 @@ export function RightNowBand({
 
   return (
     <View style={band.band}>
+      {/* Chapter head — same kicker + Flame title grammar as The Library and
+          The Arena, so the dark zone reads as a chapter, not a stray label. */}
       <View style={[band.header, { paddingHorizontal: pagePad }]}>
-        <View style={band.pulse as object} />
-        <Text style={band.kicker as object}>Right Now</Text>
-        <View style={{ flex: 1 }} />
-        <Text style={band.fresh as object}>Updated today</Text>
+        <View style={band.headText}>
+          <Text style={band.kicker as object}>The Pulse</Text>
+          <Text
+            style={[band.title, !isDesktop && { fontSize: 30, lineHeight: 32 }] as object}
+          >
+            Right Now
+          </Text>
+          <Text style={band.sub as object}>
+            The movies, shows and comics moving the multiverse this week.
+          </Text>
+        </View>
+        <View style={band.freshChip as object}>
+          <View style={band.pulse as object} />
+          <Text style={band.fresh as object}>Updated today</Text>
+        </View>
       </View>
 
       {isDesktop && campaign && campaign.characters.length > 0 ? (
@@ -589,21 +611,53 @@ const tw = StyleSheet.create({
 });
 
 const band = StyleSheet.create({
-  band: { backgroundColor: COLORS.deepNavy, paddingTop: 28, paddingBottom: 28 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 18 },
+  band: { backgroundColor: COLORS.deepNavy, paddingTop: 32, paddingBottom: 28 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 16,
+    marginBottom: 22,
+  } as object,
+  headText: { gap: 2, flexShrink: 1 },
   pulse: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: COLORS.orange,
     boxShadow: `0 0 0 4px ${COLORS.orange}33`,
   } as object,
   kicker: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    letterSpacing: 3,
-    textTransform: 'uppercase',
+    ...EYEBROW,
+    letterSpacing: 2.5,
+    marginBottom: 4,
+  } as object,
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 40,
     color: COLORS.beige,
+    lineHeight: 42,
+  } as object,
+  sub: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 14,
+    color: INK_TEXT.muted,
+    lineHeight: 19,
+    marginTop: 4,
+    maxWidth: 560,
+  } as object,
+  // "Updated today" as a live chip — dot + label, bottom-aligned with the title.
+  freshChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.14)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    marginBottom: 4,
   } as object,
   fresh: {
     fontFamily: 'Nunito_700Bold',

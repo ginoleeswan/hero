@@ -118,7 +118,7 @@ const s = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     lineHeight: 20,
-    color: 'rgba(245,235,220,0.5)',
+    color: 'rgba(245,235,220,0.62)',
     marginTop: 16,
   } as object,
   columns: { flexDirection: 'row', gap: 64 },

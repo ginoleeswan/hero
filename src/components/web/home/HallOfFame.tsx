@@ -162,7 +162,7 @@ const s = StyleSheet.create({
   sub: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
-    color: 'rgba(41,60,67,0.55)',
+    color: 'rgba(41,60,67,0.65)',
     lineHeight: 20,
     marginTop: 8,
     maxWidth: 520,

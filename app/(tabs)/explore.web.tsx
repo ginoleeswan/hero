@@ -1549,6 +1549,12 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     borderTopWidth: 1,
     borderTopColor: SEAM_COLOR,
+    // Mirror the lip at the bottom edge — the paper lifts off the ink at both
+    // ends, so the sheet reads as one object resting on the dark floor.
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: SEAM_COLOR,
     paddingTop: 40,
     paddingBottom: 24,
   } as object,
