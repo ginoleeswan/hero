@@ -1279,12 +1279,16 @@ const CSS = `
   .stat-tick { display:block; width:26px; height:3px; border-radius:2px; margin:12px 0 8px; }
   .stat-label { font-size:12px; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; }
 
+  /* Outer clipper never transforms — it's what actually stops the tilted
+     band from bleeding past the viewport and causing page-level horizontal
+     scroll (a rotated full-width box's bounding rect is always wider than
+     the box itself). The rotation/scale lives on the inner layer instead. */
+  .marquee-clip { overflow:hidden; width:100%; margin:10px 0; }
   .marquee-wrapper {
     overflow:hidden; padding:18px 0;
     background:linear-gradient(100deg,#d9662a 0%,var(--orange) 45%,#f2813e 100%);
     border-top:1px solid rgba(255,255,255,0.1); border-bottom:1px solid rgba(0,0,0,0.2);
     transform:rotate(-1.2deg) scale(1.02);
-    margin:10px 0;
     box-shadow:0 12px 40px rgba(231,115,51,0.18);
   }
   .mq-outline {
@@ -1695,7 +1699,8 @@ const CSS = `
     .stat-label { font-size:10px; }
 
     /* Marquee — straighten on small screens (a tilted edge eats width) */
-    .marquee-wrapper { transform:none; margin:0; }
+    .marquee-clip { margin:0; }
+    .marquee-wrapper { transform:none; }
 
     /* Sections */
     .section,.screenshots,.showcase,.cta-section { padding:64px 20px; }
@@ -2191,38 +2196,40 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
       </div>
 
       {/* MARQUEE */}
-      <div className="marquee-wrapper" aria-hidden="true">
-        <div className="marquee-track">
-          {[0, 1].map((i) => (
-            <div key={i} className="marquee-item">
-              {[
-                'Spider-Man',
-                'Batman',
-                'Iron Man',
-                'Wonder Woman',
-                'Black Panther',
-                'Thor',
-                'Deadpool',
-                'Wolverine',
-                'Doctor Strange',
-                'Hulk',
-                'Magneto',
-                'Joker',
-                'Loki',
-                'Venom',
-                'Storm',
-                'Captain America',
-              ].map((name, j) => (
-                <span key={j} className={j % 2 ? 'mq-outline' : undefined}>
-                  {name}
-                  <span
-                    className="marquee-dot"
-                    style={{ display: 'inline-block', marginLeft: 48 }}
-                  />
-                </span>
-              ))}
-            </div>
-          ))}
+      <div className="marquee-clip">
+        <div className="marquee-wrapper" aria-hidden="true">
+          <div className="marquee-track">
+            {[0, 1].map((i) => (
+              <div key={i} className="marquee-item">
+                {[
+                  'Spider-Man',
+                  'Batman',
+                  'Iron Man',
+                  'Wonder Woman',
+                  'Black Panther',
+                  'Thor',
+                  'Deadpool',
+                  'Wolverine',
+                  'Doctor Strange',
+                  'Hulk',
+                  'Magneto',
+                  'Joker',
+                  'Loki',
+                  'Venom',
+                  'Storm',
+                  'Captain America',
+                ].map((name, j) => (
+                  <span key={j} className={j % 2 ? 'mq-outline' : undefined}>
+                    {name}
+                    <span
+                      className="marquee-dot"
+                      style={{ display: 'inline-block', marginLeft: 48 }}
+                    />
+                  </span>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
