@@ -31,6 +31,7 @@ import { PullQuoteBio } from '../../src/components/web/character/PullQuoteBio';
 import { LegendBand } from '../../src/components/web/character/LegendBand';
 import { PowerStatCell } from '../../src/components/web/character/PowerStatCell';
 import { Reveal } from '../../src/components/web/Reveal';
+import { SectionDotRail } from '../../src/components/web/character/SectionDotRail';
 import {
   SignaturePowerTiles,
   pickSignaturePowers,
@@ -960,12 +961,26 @@ export default function WebCharacterScreen() {
         <View style={styles.bodyWrap}>
           {isDesktop ? (
             <>
+              {/* Quiet section dot-rail — wide desktop only */}
+              {width >= 1180 ? (
+                <SectionDotRail
+                  accent={theme.accent}
+                  sections={[
+                    { id: 'sec-power', label: 'Power' },
+                    { id: 'sec-abilities', label: 'Abilities' },
+                    { id: 'sec-relations', label: 'Relations' },
+                    { id: 'sec-legend', label: 'Legend' },
+                    { id: 'sec-print', label: 'In Print' },
+                  ]}
+                />
+              ) : null}
               <View style={styles.bodyDesktopNew}>
                 {/* Main column — continuous editorial sections */}
                 <View style={styles.mainCol}>
                   {/* Power Profile — card grammar, but washed with the character's
                       accent at the crown, fading to clean white where the bars live */}
                   <View
+                    nativeID="sec-power"
                     style={
                       [
                         styles.powerBand,
@@ -1164,21 +1179,23 @@ export default function WebCharacterScreen() {
                   ) : null}
 
                   {/* Abilities — power explainers fold in as the "Decoded" strip */}
-                  <Reveal>
-                    <WebAbilitiesCard
-                      powers={details.powers}
-                      loading={comicVineLoading}
-                      skeletonOpacity={skeletonOpacity}
-                      explainers={narrative?.powerExplainers ?? []}
-                      accent={theme.accent}
-                      onEdit={() =>
-                        setEditTarget({
-                          field: POWERS_FIELD,
-                          current: details.powers?.length ? details.powers.join('\n') : null,
-                        })
-                      }
-                    />
-                  </Reveal>
+                  <View nativeID="sec-abilities">
+                    <Reveal>
+                      <WebAbilitiesCard
+                        powers={details.powers}
+                        loading={comicVineLoading}
+                        skeletonOpacity={skeletonOpacity}
+                        explainers={narrative?.powerExplainers ?? []}
+                        accent={theme.accent}
+                        onEdit={() =>
+                          setEditTarget({
+                            field: POWERS_FIELD,
+                            current: details.powers?.length ? details.powers.join('\n') : null,
+                          })
+                        }
+                      />
+                    </Reveal>
+                  </View>
 
                   {/* Enemies & Allies */}
                   {comicVineLoading ? (
@@ -1215,7 +1232,7 @@ export default function WebCharacterScreen() {
                     teammateNames.length ||
                     affiliations.length ? (
                     <Reveal>
-                      <View style={styles.card}>
+                      <View nativeID="sec-relations" style={styles.card}>
                         <Text style={styles.cardTitle}>Enemies, Allies &amp; Teams</Text>
                         <View style={styles.cardDivider} />
                         {/* Break out of the card's 20px padding so the strips align */}
@@ -1375,21 +1392,23 @@ export default function WebCharacterScreen() {
                   ) : null}
 
                   {/* Legend — debut, trivia, portrayals on one timeline */}
-                  <Reveal>
-                    <LegendBand
-                      accent={theme.accent}
-                      accentWash={theme.accentWash}
-                      firstIssue={data.firstIssue ?? null}
-                      facts={narrative?.didYouKnow ?? []}
-                      portrayals={portrayals}
-                      onPressDebut={() =>
-                        data.firstIssue &&
-                        router.push(
-                          `/issue/cvi:${data.firstIssue.id}` as Parameters<typeof router.push>[0],
-                        )
-                      }
-                    />
-                  </Reveal>
+                  <View nativeID="sec-legend">
+                    <Reveal>
+                      <LegendBand
+                        accent={theme.accent}
+                        accentWash={theme.accentWash}
+                        firstIssue={data.firstIssue ?? null}
+                        facts={narrative?.didYouKnow ?? []}
+                        portrayals={portrayals}
+                        onPressDebut={() =>
+                          data.firstIssue &&
+                          router.push(
+                            `/issue/cvi:${data.firstIssue.id}` as Parameters<typeof router.push>[0],
+                          )
+                        }
+                      />
+                    </Reveal>
+                  </View>
 
                   {/* In Print — debut feature + cover gallery */}
                   {comicVineLoading ? (
@@ -1424,7 +1443,7 @@ export default function WebCharacterScreen() {
                     </View>
                   ) : newIssues.length > 0 || (galleryImages && galleryImages.length > 0) ? (
                     <Reveal>
-                      <View style={styles.card}>
+                      <View nativeID="sec-print" style={styles.card}>
                         <View style={styles.inPrintHeader}>
                           <Text style={styles.cardTitle}>In Print</Text>
                           {data.firstIssue?.coverDate ? (
