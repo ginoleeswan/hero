@@ -61,16 +61,9 @@ export default function VersusHubWeb() {
     <View style={s.root}>
       {/* ── Navy game-lobby stage ── */}
       <View style={[s.stage, { paddingHorizontal: contentPad }] as object}>
-        {/* Type-as-scenery: a colossal ink-on-ink VS behind the duel, flanked
-            by the two corner-colour blooms (orange vs blue) — the stage takes
-            sides before the cards even load. */}
-        <Text
-          style={[s.backdropVs, { fontSize: Math.min(440, Math.round(width * 0.34)) }] as object}
-          numberOfLines={1}
-          aria-hidden
-        >
-          VS
-        </Text>
+        {/* Corner-colour blooms (orange vs blue) — the stage takes sides
+            before the arena even loads. The arena block itself carries the
+            type drama now. */}
         <View style={s.glowA as object} />
         <View style={s.glowB as object} />
         <View style={s.stageInner}>
@@ -253,17 +246,6 @@ const s = StyleSheet.create({
     paddingBottom: 34,
     position: 'relative',
     overflow: 'hidden',
-  } as object,
-  // Colossal VS, ink-on-ink, centred behind the duel.
-  backdropVs: {
-    position: 'absolute',
-    alignSelf: 'center',
-    top: 10,
-    fontFamily: 'Flame-Regular',
-    color: 'rgba(245,235,220,0.045)',
-    letterSpacing: 12,
-    whiteSpace: 'nowrap',
-    pointerEvents: 'none',
   } as object,
   // The two corners' colour blooms — orange (A) vs blue (B).
   glowA: {
