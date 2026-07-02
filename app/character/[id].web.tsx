@@ -1398,15 +1398,6 @@ export default function WebCharacterScreen() {
                     }
                   />
 
-                  {/* Links */}
-                  {heroLinksHasContent(links) ? (
-                    <View style={styles.card}>
-                      <Text style={styles.cardTitle}>Links</Text>
-                      <View style={styles.cardDivider} />
-                      <HeroLinksRow links={links!} contentInset={0} />
-                    </View>
-                  ) : null}
-
                   {/* In Print — debut feature + cover gallery */}
                   {comicVineLoading ? (
                     <View style={styles.card}>
@@ -1468,7 +1459,20 @@ export default function WebCharacterScreen() {
                             <Text style={styles.inPrintGalleryLabel}>
                               Gallery · {galleryImages.length}
                             </Text>
-                            <View style={{ marginRight: -20 }}>
+                            {/* Filmstrip fade — the run reads as film running off-frame */}
+                            <View
+                              style={
+                                [
+                                  { marginRight: -20 },
+                                  {
+                                    maskImage:
+                                      'linear-gradient(90deg, black 82%, transparent 100%)',
+                                    WebkitMaskImage:
+                                      'linear-gradient(90deg, black 82%, transparent 100%)',
+                                  },
+                                ] as object
+                              }
+                            >
                               <GalleryStrip
                                 images={galleryImages.map((g) => ({
                                   url: g.url,
@@ -1492,6 +1496,14 @@ export default function WebCharacterScreen() {
                           </View>
                         ) : null}
                       </View>
+                    </View>
+                  ) : null}
+
+                  {/* Elsewhere — external links drop to a quiet footer register */}
+                  {heroLinksHasContent(links) ? (
+                    <View style={styles.linksFooter}>
+                      <Text style={styles.linksFooterLabel}>Elsewhere</Text>
+                      <HeroLinksRow links={links!} contentInset={0} />
                     </View>
                   ) : null}
                 </View>
@@ -2215,17 +2227,6 @@ export default function WebCharacterScreen() {
                     })()
                   : null}
 
-                {/* Links */}
-                {heroLinksHasContent(links) ? (
-                  <View style={styles.mSection}>
-                    <View style={styles.mSectionHead}>
-                      <Text style={styles.mSectionTitle}>Links</Text>
-                      <View style={styles.mSectionDivider} />
-                    </View>
-                    <HeroLinksRow links={links!} contentInset={20} />
-                  </View>
-                ) : null}
-
                 {/* On shelves now — recent issues featuring this character */}
                 {newIssues.length > 0 ? (
                   <View style={styles.mSection}>
@@ -2246,7 +2247,15 @@ export default function WebCharacterScreen() {
                       <Text style={styles.mSectionTitle}>Gallery · {galleryImages.length}</Text>
                       <View style={styles.mSectionDivider} />
                     </View>
-                    <GalleryStrip
+                    <View
+                      style={
+                        {
+                          maskImage: 'linear-gradient(90deg, black 82%, transparent 100%)',
+                          WebkitMaskImage: 'linear-gradient(90deg, black 82%, transparent 100%)',
+                        } as object
+                      }
+                    >
+                      <GalleryStrip
                       images={galleryImages.map((g) => ({ url: g.url, caption: g.caption }))}
                       onPress={(i) => {
                         const issueId = galleryImages[i]?.issueId;
@@ -2259,7 +2268,8 @@ export default function WebCharacterScreen() {
                         );
                         setLightboxIndex(i);
                       }}
-                    />
+                      />
+                    </View>
                   </View>
                 ) : null}
 
@@ -2274,6 +2284,14 @@ export default function WebCharacterScreen() {
                     onEditField={(field, current) => setEditTarget({ field, current })}
                   />
                 </View>
+
+                {/* Elsewhere — external links drop to a quiet footer register */}
+                {heroLinksHasContent(links) ? (
+                  <View style={[styles.mBlock, styles.linksFooter] as object}>
+                    <Text style={styles.linksFooterLabel}>Elsewhere</Text>
+                    <HeroLinksRow links={links!} contentInset={0} />
+                  </View>
+                ) : null}
               </View>
             </View>
           )}
@@ -3923,6 +3941,22 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   inPrintBody: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+
+  // External links — the page's quiet footer register.
+  linksFooter: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(41,60,67,0.12)',
+    paddingTop: 18,
+    marginTop: 4,
+    gap: 12,
+  },
+  linksFooterLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: 'rgba(41,60,67,0.5)',
+  },
 
   // Cover gallery — the run that followed the debut
   inPrintGallery: { flex: 1, minWidth: 0, gap: 10 } as object,
