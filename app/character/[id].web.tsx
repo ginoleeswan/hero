@@ -446,12 +446,15 @@ function FactTile({
   value,
   wide,
   accent,
+  iconTint,
 }: {
   icon: IoniconName;
   label: string;
   value: string | null | undefined;
   wide?: boolean;
   accent?: string;
+  /** Ambient page accent for the icon when the tile itself isn't accent-tinted. */
+  iconTint?: string;
 }) {
   const v = cleanFact(value);
   if (!v) return null;
@@ -460,7 +463,7 @@ function FactTile({
     <View style={[styles.factTile, wide && styles.factTileWide, tint] as object}>
       <Text style={styles.factLabel}>{label}</Text>
       <View style={styles.factValueRow}>
-        <Ionicons name={icon} size={12} color={accent ?? COLORS.navy + '70'} />
+        <Ionicons name={icon} size={12} color={accent ?? iconTint ?? COLORS.navy + '70'} />
         <Text
           style={[styles.factValue, accent ? { color: accent } : null] as object}
           numberOfLines={2}
@@ -949,18 +952,22 @@ export default function WebCharacterScreen() {
               <View style={styles.bodyDesktopNew}>
                 {/* Main column — continuous editorial sections */}
                 <View style={styles.mainCol}>
-                  {/* Power Profile — accent-washed band, first thing under the seam */}
+                  {/* Power Profile — card grammar, but washed with the character's
+                      accent at the crown, fading to clean white where the bars live */}
                   <View
                     style={
                       [
                         styles.powerBand,
-                        { backgroundColor: theme.accentWash, borderColor: theme.accent + '2b' },
+                        {
+                          backgroundImage: `linear-gradient(180deg, ${theme.accentWash} 0%, rgba(255,255,255,0) 65%)`,
+                          borderColor: theme.accent + '33',
+                        },
                       ] as object
                     }
                   >
                     <View style={styles.statCardHeader}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
+                        <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Profile</Text>
                         {data.statsSource === 'ai' ? (
                           <View style={styles.aiBadge}>
                             <Text style={styles.aiBadgeText}>AI</Text>
@@ -1007,19 +1014,26 @@ export default function WebCharacterScreen() {
                         ) : null}
                         {powerScore !== null ? (
                           <View
-                            style={[
-                              styles.powerScorePill,
-                              { backgroundColor: alignmentColor + '22' },
-                            ]}
+                            style={
+                              [
+                                styles.powerScorePill,
+                                {
+                                  backgroundColor: theme.accent + '1a',
+                                  borderColor: theme.accent + '33',
+                                },
+                              ] as object
+                            }
                           >
-                            <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
+                            <Text style={[styles.powerScoreValue, { color: theme.accent }]}>
                               {powerScore}
                             </Text>
                           </View>
                         ) : null}
                       </View>
                     </View>
-                    <View style={styles.cardDivider} />
+                    <View
+                      style={[styles.cardDivider, { backgroundColor: theme.accent + '22' }] as object}
+                    />
                     {isAdmin && statsEditing ? (
                       <StatEditList
                         stats={stats}
@@ -1089,26 +1103,36 @@ export default function WebCharacterScreen() {
                         })}
                       </View>
                     )}
-                    {percentile != null && percentile > 0 ? (
-                      <View style={styles.percentileRow}>
-                        <View
-                          style={
-                            [
-                              styles.percentileBadge,
-                              {
-                                backgroundColor: theme.accent + '1a',
-                                borderColor: theme.accent + '40',
-                              },
-                            ] as object
-                          }
-                        >
-                          <Ionicons name="flash" size={11} color={theme.accent} />
-                          <Text
-                            style={[styles.percentileBadgeText, { color: theme.accent }] as object}
-                          >
-                            Stronger than {percentile}% of heroes
-                          </Text>
+                    {!statsEditing && !statsGenerating ? (
+                      <View
+                        style={[styles.powerFooter, { borderTopColor: theme.accent + '1f' }] as object}
+                      >
+                        <View style={styles.medianLegend}>
+                          <View style={styles.medianLegendTick} />
+                          <Text style={styles.medianLegendText}>catalog median</Text>
                         </View>
+                        {percentile != null && percentile > 0 ? (
+                          <View
+                            style={
+                              [
+                                styles.percentileBadge,
+                                {
+                                  backgroundColor: theme.accent + '14',
+                                  borderColor: theme.accent + '3d',
+                                },
+                              ] as object
+                            }
+                          >
+                            <Ionicons name="flash" size={11} color={theme.accent} />
+                            <Text
+                              style={
+                                [styles.percentileBadgeText, { color: theme.accent }] as object
+                              }
+                            >
+                              Stronger than {percentile}% of heroes
+                            </Text>
+                          </View>
+                        ) : null}
                       </View>
                     ) : null}
                   </View>
@@ -1719,6 +1743,7 @@ export default function WebCharacterScreen() {
                               value={r.value}
                               wide={r.wide}
                               accent={r.accent}
+                              iconTint={theme.accent}
                             />
                           ));
                         })()}
@@ -1930,18 +1955,21 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : null}
 
-                {/* Power Profile — accent-washed band */}
+                {/* Power Profile — card grammar with the accent crown wash */}
                 <View
                   style={
                     [
                       styles.mBlock,
                       styles.mPowerBand,
-                      { backgroundColor: theme.accentWash, borderColor: theme.accent + '2b' },
+                      {
+                        backgroundImage: `linear-gradient(180deg, ${theme.accentWash} 0%, rgba(255,255,255,0) 65%)`,
+                        borderColor: theme.accent + '33',
+                      },
                     ] as object
                   }
                 >
                   <View style={styles.mStatTitleRow}>
-                    <Text style={styles.mSectionTitle}>Power Stats</Text>
+                    <Text style={styles.mSectionTitle}>Power Profile</Text>
                     {data.statsSource === 'ai' ? (
                       <View style={styles.aiBadge}>
                         <Text style={styles.aiBadgeText}>AI</Text>
@@ -1955,7 +1983,11 @@ export default function WebCharacterScreen() {
                       />
                     ) : null}
                   </View>
-                  <View style={styles.mSectionDivider} />
+                  <View
+                    style={
+                      [styles.mSectionDivider, { backgroundColor: theme.accent + '22' }] as object
+                    }
+                  />
                   {isAdmin && statsEditing ? (
                     <StatEditList
                       stats={stats}
@@ -2054,12 +2086,17 @@ export default function WebCharacterScreen() {
                       <View style={styles.mStatFooterRight}>
                         {powerScore !== null ? (
                           <View
-                            style={[
-                              styles.powerScorePill,
-                              { backgroundColor: alignmentColor + '22' },
-                            ]}
+                            style={
+                              [
+                                styles.powerScorePill,
+                                {
+                                  backgroundColor: theme.accent + '1a',
+                                  borderColor: theme.accent + '33',
+                                },
+                              ] as object
+                            }
                           >
-                            <Text style={[styles.powerScoreValue, { color: alignmentColor }]}>
+                            <Text style={[styles.powerScoreValue, { color: theme.accent }]}>
                               {powerScore}
                             </Text>
                           </View>
@@ -3221,14 +3258,14 @@ const styles = StyleSheet.create({
   portraitOverlapDesktop: { marginTop: -210 } as object,
 
   // Full-width power-stat band — 6 columns, dramatized.
-  statBand: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
+  statBand: { flexDirection: 'row', alignItems: 'flex-end', gap: 14 },
   bandCell: { flex: 1, alignItems: 'center', gap: 8 },
   bandVal: { fontFamily: 'Flame-Regular', fontSize: 30, lineHeight: 32 } as object,
   bandTrack: {
-    width: '72%',
-    height: 5,
+    width: '88%',
+    height: 6,
     borderRadius: 3,
-    backgroundColor: '#ece3d6',
+    backgroundColor: 'rgba(41,60,67,0.10)',
     overflow: 'hidden',
   } as object,
   bandFill: { height: '100%' as unknown as number, borderRadius: 3 },
@@ -3238,7 +3275,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 2,
-    backgroundColor: 'rgba(41,60,67,0.30)',
+    backgroundColor: 'rgba(41,60,67,0.35)',
   } as object,
   bandLabel: {
     fontFamily: 'FlameSans-Regular',
@@ -3435,9 +3472,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   powerScorePill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     borderRadius: 20,
+    borderWidth: 1,
   },
   powerScoreValue: {
     fontFamily: 'Flame-Regular',
@@ -3467,12 +3505,35 @@ const styles = StyleSheet.create({
     borderColor: '#e8ddd0',
     boxShadow: '0 6px 22px rgba(41,60,67,0.06)',
   } as object,
-  // Power Profile — same metrics as `card`, but the character's accent wash
-  // instead of white chrome (dynamic backgroundColor/borderColor at render).
+  // Power Profile — card grammar (white base + shadow) with the character's
+  // accent as a crown wash + hairline (dynamic backgroundImage/borderColor).
   powerBand: {
-    borderRadius: 18,
+    backgroundColor: 'white',
+    borderRadius: 14,
     padding: 20,
     borderWidth: 1,
+    boxShadow: '0 6px 22px rgba(41,60,67,0.06)',
+  } as object,
+  powerFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
+  medianLegend: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  medianLegendTick: {
+    width: 2,
+    height: 10,
+    borderRadius: 1,
+    backgroundColor: 'rgba(41,60,67,0.35)',
+  },
+  medianLegendText: {
+    fontFamily: 'FlameSans-Regular',
+    fontSize: 11,
+    color: 'rgba(41,60,67,0.55)',
+    letterSpacing: 0.3,
   },
   cardTitle: {
     fontFamily: 'Flame-Regular',
@@ -3484,7 +3545,6 @@ const styles = StyleSheet.create({
   },
   cardDivider: { height: 1, backgroundColor: '#ede5da', marginBottom: 14 },
 
-  percentileRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 },
   percentileBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -3621,16 +3681,19 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   mBlock: { paddingHorizontal: 20, paddingTop: 18 },
-  // Mobile Power Profile — inset band; horizontal padding compensates the
-  // margin so content stays flush with sibling mBlock text (12 + 8 = 20).
+  // Mobile Power Profile — inset white card with the accent crown wash;
+  // horizontal padding compensates the margin so content stays flush with
+  // sibling mBlock text (12 + 8 = 20).
   mPowerBand: {
+    backgroundColor: 'white',
     marginHorizontal: 12,
     marginTop: 6,
     paddingHorizontal: 8,
     paddingBottom: 16,
-    borderRadius: 18,
+    borderRadius: 14,
     borderWidth: 1,
-  },
+    boxShadow: '0 6px 22px rgba(41,60,67,0.06)',
+  } as object,
 
   // Dossier — collapsible card ported from the native screen.
   dossierBar: {
@@ -3843,9 +3906,9 @@ const styles = StyleSheet.create({
   factGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   factTile: {
     width: '48.5%',
-    backgroundColor: COLORS.navy + '08',
+    backgroundColor: COLORS.navy + '06',
     borderWidth: 1,
-    borderColor: COLORS.navy + '0f',
+    borderColor: 'rgba(41,60,67,0.10)',
     borderRadius: 10,
     paddingVertical: 7,
     paddingHorizontal: 9,

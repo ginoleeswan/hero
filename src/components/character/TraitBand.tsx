@@ -25,7 +25,7 @@ export function TraitBand({ tags, onInk }: Props) {
             style={[
               styles.pill,
               onInk
-                ? { backgroundColor: withAlpha(c, 0.16), borderColor: withAlpha(c, 0.45) }
+                ? { backgroundColor: withAlpha(c, 0.22), borderColor: withAlpha(c, 0.6) }
                 : { backgroundColor: withAlpha(c, 0.1), borderColor: withAlpha(c, 0.35) },
             ]}
           >
