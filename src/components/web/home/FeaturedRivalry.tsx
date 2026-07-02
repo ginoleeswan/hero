@@ -24,50 +24,57 @@ export function FeaturedRivalry({ rivalry }: { rivalry: Rivalry }) {
           [s.card, { height: h }, hovered && (s.cardHover as object)] as object
         }
       >
-        <HeroImage
-          id={a.id}
-          name={a.name}
-          imageUrl={a.image_url}
-          portraitUrl={a.portrait_url}
-          contentFit="cover"
-          // Short, wide containers crop a horizontal slice — anchor down the
-          // image so the face rides up into frame instead of the top of the head.
-          contentPosition={{ top: '32%', left: '50%' }}
-          style={s.faceA as object}
-        />
-        <HeroImage
-          id={b.id}
-          name={b.name}
-          imageUrl={b.image_url}
-          portraitUrl={b.portrait_url}
-          contentFit="cover"
-          // Short, wide containers crop a horizontal slice — anchor down the
-          // image so the face rides up into frame instead of the top of the head.
-          contentPosition={{ top: '32%', left: '50%' }}
-          style={s.faceB as object}
-        />
-        <View style={s.seam as object} />
-        <View style={s.scrim as object} />
+        {({ hovered }: { pressed: boolean; hovered?: boolean }) => (
+          <>
+            {/* Diagonal panel split — the comic slash. Faces zoom slowly on
+                hover (cinematic, not springy). */}
+            <HeroImage
+              id={a.id}
+              name={a.name}
+              imageUrl={a.image_url}
+              portraitUrl={a.portrait_url}
+              contentFit="cover"
+              // Short, wide containers crop a horizontal slice — anchor down the
+              // image so the face rides up into frame instead of the top of the head.
+              contentPosition={{ top: '32%', left: '50%' }}
+              style={[s.faceA, hovered && (s.faceZoom as object)] as object}
+            />
+            <HeroImage
+              id={b.id}
+              name={b.name}
+              imageUrl={b.image_url}
+              portraitUrl={b.portrait_url}
+              contentFit="cover"
+              // Short, wide containers crop a horizontal slice — anchor down the
+              // image so the face rides up into frame instead of the top of the head.
+              contentPosition={{ top: '32%', left: '50%' }}
+              style={[s.faceB, hovered && (s.faceZoomB as object)] as object}
+            />
+            <View style={s.seam as object} />
+            <View style={s.slash as object} />
+            <View style={s.scrim as object} />
 
-        <Text style={s.kicker as object}>
-          {rivalry.crossUniverse ? 'Dream Match' : 'Settle the Debate'}
-        </Text>
+            <Text style={s.kicker as object}>
+              {rivalry.crossUniverse ? 'Dream Match' : 'Settle the Debate'}
+            </Text>
 
-        <View style={s.center as object}>
-          <VsBadge size={width < 760 ? 52 : 68} variant="solid" />
-          <View style={s.cta as object}>
-            <Text style={s.ctaText as object}>Open the Arena →</Text>
-          </View>
-        </View>
+            <View style={s.center as object}>
+              <VsBadge size={width < 760 ? 52 : 68} variant="solid" />
+              <View style={[s.cta, hovered && (s.ctaHover as object)] as object}>
+                <Text style={s.ctaText as object}>Open the Arena →</Text>
+              </View>
+            </View>
 
-        <View style={s.names as object}>
-          <Text style={s.name as object} numberOfLines={1}>
-            {a.name}
-          </Text>
-          <Text style={[s.name, { textAlign: 'right' }] as object} numberOfLines={1}>
-            {b.name}
-          </Text>
-        </View>
+            <View style={s.names as object}>
+              <Text style={s.name as object} numberOfLines={1}>
+                {a.name}
+              </Text>
+              <Text style={[s.name, { textAlign: 'right' }] as object} numberOfLines={1}>
+                {b.name}
+              </Text>
+            </View>
+          </>
+        )}
       </Pressable>
     </View>
   );
@@ -86,7 +93,14 @@ const s = StyleSheet.create({
     transform: [{ translateY: -4 }],
     boxShadow: ELEVATION.lifted,
   } as object,
-  faceA: { position: 'absolute', top: 0, left: 0, width: '50%', height: '100%' } as object,
+  faceA: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '50%',
+    height: '100%',
+    transition: 'transform 900ms cubic-bezier(0.16, 1, 0.3, 1)',
+  } as object,
   // Mirror the right fighter so the two face inward, toward the VS (same
   // convention as the matchup card).
   faceB: {
@@ -96,16 +110,35 @@ const s = StyleSheet.create({
     width: '50%',
     height: '100%',
     transform: [{ scaleX: -1 }],
+    transition: 'transform 900ms cubic-bezier(0.16, 1, 0.3, 1)',
   } as object,
+  // Slow cinematic push-in on hover. Face B's zoom must restate the mirror —
+  // transform arrays replace, they don't merge.
+  faceZoom: { transform: [{ scale: 1.05 }] } as object,
+  faceZoomB: { transform: [{ scaleX: -1 }, { scale: 1.05 }] } as object,
+  // Skewed seam band — wide enough to swallow the straight joint underneath,
+  // so the visible divide reads as a diagonal comic-panel slash.
   seam: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     left: '50%',
-    width: 120,
-    marginLeft: -60,
+    width: 150,
+    marginLeft: -75,
+    transform: [{ skewX: '-7deg' }],
     backgroundImage:
       'linear-gradient(to right, transparent 0%, rgba(11,24,32,0.7) 50%, transparent 100%)',
+  } as object,
+  // The slash itself — a warm hairline riding the diagonal seam.
+  slash: {
+    position: 'absolute',
+    top: -12,
+    bottom: -12,
+    left: '50%',
+    width: 3,
+    marginLeft: -1,
+    transform: [{ skewX: '-7deg' }],
+    backgroundImage: `linear-gradient(to bottom, transparent 0%, ${COLORS.orange}AA 25%, ${COLORS.orange}AA 75%, transparent 100%)`,
   } as object,
   scrim: {
     position: 'absolute',
@@ -148,7 +181,9 @@ const s = StyleSheet.create({
     borderRadius: 24,
     paddingVertical: 9,
     paddingHorizontal: 20,
+    transition: 'transform 200ms ease',
   } as object,
+  ctaHover: { transform: [{ scale: 1.06 }] } as object,
   ctaText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,

@@ -78,7 +78,7 @@ export function HomeFooter({ heroCount, onNavigate }: HomeFooterProps) {
         numberOfLines={1}
         aria-hidden
       >
-        MYTHIQUE
+        mythique
       </Text>
       <View style={s.inner}>
         <View style={[s.top, !isDesktop && (s.topStack as object)] as object}>
@@ -127,13 +127,14 @@ const s = StyleSheet.create({
   } as object,
   // The foot of the page: brand set enormous, ink-on-ink, cropped by the
   // bottom edge (mirrors the spotlight's splash-name).
+  // Set in Righteous lowercase — the actual brand wordmark, not display type.
   wordmarkBackdrop: {
     position: 'absolute',
-    bottom: -28,
+    bottom: -34,
     alignSelf: 'center',
-    fontFamily: 'Flame-Regular',
+    fontFamily: 'Righteous_400Regular',
     color: 'rgba(245,235,220,0.045)',
-    letterSpacing: 10,
+    letterSpacing: 4,
     whiteSpace: 'nowrap',
     pointerEvents: 'none',
   } as object,

@@ -204,17 +204,20 @@ const s = StyleSheet.create({
   layout: { flexDirection: 'row', alignItems: 'flex-start', gap: 28 },
   layoutStack: { flexDirection: 'column', gap: 20 } as object,
 
+  // Rests at a slight collector's tilt; straightens and lifts on hover, like
+  // picking the issue up off the table.
   cover: {
     borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
     boxShadow: '0 20px 48px rgba(0,0,0,0.55)',
     cursor: 'pointer',
-    transition: 'transform 200ms ease, box-shadow 200ms ease',
+    transition: 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 300ms ease',
     flexShrink: 0,
+    transform: [{ rotate: '-2.5deg' }],
   } as object,
   coverHover: {
-    transform: [{ translateY: -5 }],
+    transform: [{ rotate: '0deg' }, { translateY: -6 }],
     boxShadow: '0 28px 60px rgba(0,0,0,0.65)',
   } as object,
 
@@ -228,14 +231,16 @@ const s = StyleSheet.create({
   } as object,
 
   // Ghost year — top-right of the editorial column, barely visible backdrop
+  // Same ink-on-ink splash treatment as the spotlight's name backdrop.
   yearWatermark: {
     position: 'absolute',
-    right: -8,
-    top: -20,
+    right: -12,
+    top: -28,
     fontFamily: 'Flame-Regular',
-    fontSize: 150,
-    lineHeight: 150,
-    color: 'rgba(245,235,220,0.05)',
+    fontSize: 210,
+    lineHeight: 210,
+    letterSpacing: 4,
+    color: 'rgba(245,235,220,0.055)',
     pointerEvents: 'none',
     userSelect: 'none',
     zIndex: 0,
@@ -270,25 +275,26 @@ const s = StyleSheet.create({
     zIndex: 1,
   } as object,
   introName: { fontFamily: 'Nunito_700Bold', color: COLORS.beige } as object,
+  // The section's one action — full primary weight, same pill language as
+  // the spotlight's View Profile.
   cta: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(231,115,51,0.12)',
-    borderWidth: 1,
-    borderColor: `${COLORS.orange}55`,
-    borderRadius: 22,
-    paddingVertical: 9,
-    paddingHorizontal: 18,
+    backgroundColor: COLORS.orange,
+    borderRadius: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 22,
     cursor: 'pointer',
-    transition: 'background-color 150ms ease',
+    transition: 'opacity 150ms ease',
     position: 'relative',
     zIndex: 1,
   } as object,
-  ctaHover: { backgroundColor: 'rgba(231,115,51,0.22)' } as object,
+  ctaHover: { opacity: 0.85 } as object,
   ctaText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
-    color: COLORS.orange,
-    letterSpacing: 0.3,
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   } as object,
 
   // Character strip — below the editorial copy, fills the column bottom
@@ -325,7 +331,7 @@ const s = StyleSheet.create({
     gap: 5,
     cursor: 'pointer',
     transition: 'opacity 150ms ease',
-    width: 60,
+    width: 74,
   } as object,
   charChipHover: { opacity: 0.7 } as object,
   charAvatar: {
