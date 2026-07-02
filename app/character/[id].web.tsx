@@ -1242,6 +1242,8 @@ export default function WebCharacterScreen() {
                             names={enemyNames}
                             heroMap={relatedHeroMap}
                             kind="enemy"
+                            edgeTint
+                            monogramTiles
                             onPressHero={(h) =>
                               router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
                             }
@@ -1253,6 +1255,8 @@ export default function WebCharacterScreen() {
                             names={allyNames}
                             heroMap={relatedHeroMap}
                             kind="ally"
+                            edgeTint
+                            monogramTiles
                             onPressHero={(h) =>
                               router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
                             }
@@ -1264,6 +1268,8 @@ export default function WebCharacterScreen() {
                             names={teammateNames}
                             heroMap={relatedHeroMap}
                             kind="teammate"
+                            edgeTint
+                            monogramTiles
                             onPressHero={(h) =>
                               router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
                             }
@@ -2125,6 +2131,8 @@ export default function WebCharacterScreen() {
                         names={enemyNames}
                         heroMap={relatedHeroMap}
                         kind="enemy"
+                        edgeTint
+                        monogramTiles
                         onPressHero={(h) =>
                           router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
                         }
@@ -2136,6 +2144,8 @@ export default function WebCharacterScreen() {
                         names={allyNames}
                         heroMap={relatedHeroMap}
                         kind="ally"
+                        edgeTint
+                        monogramTiles
                         onPressHero={(h) =>
                           router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
                         }
@@ -2147,6 +2157,8 @@ export default function WebCharacterScreen() {
                         names={teammateNames}
                         heroMap={relatedHeroMap}
                         kind="teammate"
+                        edgeTint
+                        monogramTiles
                         onPressHero={(h) =>
                           router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
                         }

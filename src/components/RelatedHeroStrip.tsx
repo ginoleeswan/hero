@@ -21,18 +21,34 @@ const ACCENT: Record<RelatedKind, string> = {
  * resolve to a hero in our DB render as navigable portrait cards; the rest fall
  * back to plain text chips so nothing is dropped.
  */
+/** Initials for a hero without a resolvable portrait — "Lex Luthor" → "LL". */
+export function monogram(name: string): string {
+  const words = name.split(/[\s-]+/).filter(Boolean);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return name
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 export function RelatedHeroStrip({
   label,
   names,
   heroMap,
   kind,
   onPressHero,
+  edgeTint,
+  monogramTiles,
 }: {
   label: string;
   names: string[];
   heroMap: Map<string, RelatedHeroCard>;
   kind: RelatedKind;
   onPressHero: (hero: RelatedHeroCard) => void;
+  /** Web dossier variant: cards carry a kind-tinted edge. */
+  edgeTint?: boolean;
+  /** Web dossier variant: unresolved names render as monogram tiles in the shelf. */
+  monogramTiles?: boolean;
 }) {
   const [showAllChips, setShowAllChips] = useState(false);
   if (names.length === 0) return null;
@@ -40,6 +56,7 @@ export function RelatedHeroStrip({
   const cards: RelatedHeroCard[] = [];
   const unresolved: string[] = [];
   const seen = new Set<string>();
+  const seenNames = new Set<string>();
   for (const raw of names) {
     const name = raw.trim();
     if (!name || name === '-' || name === 'null') continue;
@@ -49,8 +66,9 @@ export function RelatedHeroStrip({
         cards.push(hero);
         seen.add(hero.id);
       }
-    } else {
+    } else if (!seenNames.has(name)) {
       unresolved.push(name);
+      seenNames.add(name);
     }
   }
   if (cards.length === 0 && unresolved.length === 0) return null;
@@ -58,6 +76,7 @@ export function RelatedHeroStrip({
   const accent = ACCENT[kind];
   const visibleChips = showAllChips ? unresolved : unresolved.slice(0, 8);
   const remainder = unresolved.length - visibleChips.length;
+  const cardEdge = edgeTint ? { borderWidth: 1, borderColor: accent + '4d' } : null;
 
   return (
     <View style={styles.block}>
@@ -66,7 +85,7 @@ export function RelatedHeroStrip({
         <Text style={styles.label}>{label}</Text>
       </View>
 
-      {cards.length > 0 ? (
+      {cards.length > 0 || (monogramTiles && unresolved.length > 0) ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -77,7 +96,7 @@ export function RelatedHeroStrip({
               key={hero.id}
               activeOpacity={0.85}
               onPress={() => onPressHero(hero)}
-              style={styles.card}
+              style={[styles.card, cardEdge]}
               accessibilityRole="button"
               accessibilityLabel={`View ${hero.name}`}
             >
@@ -104,10 +123,29 @@ export function RelatedHeroStrip({
               </Text>
             </TouchableOpacity>
           ))}
+          {monogramTiles
+            ? visibleChips.map((name) => (
+                <View key={name} style={[styles.card, styles.monoTile, cardEdge]}>
+                  <Text style={[styles.monoText, { color: accent }]}>{monogram(name)}</Text>
+                  <Text style={styles.cardName} numberOfLines={2}>
+                    {name}
+                  </Text>
+                </View>
+              ))
+            : null}
+          {monogramTiles && !showAllChips && remainder > 0 ? (
+            <TouchableOpacity
+              style={[styles.card, styles.monoTile, cardEdge]}
+              onPress={() => setShowAllChips(true)}
+            >
+              <Text style={[styles.monoText, { color: accent }]}>+{remainder}</Text>
+              <Text style={styles.cardName}>more</Text>
+            </TouchableOpacity>
+          ) : null}
         </ScrollView>
       ) : null}
 
-      {unresolved.length > 0 ? (
+      {!monogramTiles && unresolved.length > 0 ? (
         <View style={[styles.chipsWrap, cards.length > 0 && styles.chipsWrapSpaced]}>
           {visibleChips.map((name, i) => (
             <View key={`${i}-${name}`} style={styles.chip}>
@@ -165,6 +203,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingBottom: 9,
   },
+  // Portrait-less relations keep their spot in the shelf as monogram tiles.
+  monoTile: { alignItems: 'center', justifyContent: 'space-between', paddingTop: 34 },
+  monoText: { fontFamily: 'Flame-Regular', fontSize: 32, lineHeight: 40 },
 
   // Fallback chips for names that don't resolve to a hero row.
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 20 },
