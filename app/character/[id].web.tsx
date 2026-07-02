@@ -29,6 +29,7 @@ import { COLORS, SURFACE } from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { PullQuoteBio } from '../../src/components/web/character/PullQuoteBio';
 import { LegendBand } from '../../src/components/web/character/LegendBand';
+import { PowerStatCell } from '../../src/components/web/character/PowerStatCell';
 import {
   SignaturePowerTiles,
   pickSignaturePowers,
@@ -1083,37 +1084,14 @@ export default function WebCharacterScreen() {
                             (stats.powerstats as Record<string, string>)[key] ?? '0',
                             10,
                           );
-                          const fill = isNaN(raw) ? 0 : Math.min(raw, 100);
                           return (
-                            <View key={key} style={styles.bandCell}>
-                              <Text style={[styles.bandVal, { color }]}>
-                                {isNaN(raw) ? '—' : raw}
-                              </Text>
-                              <View style={styles.bandTrack}>
-                                <View
-                                  style={[
-                                    styles.bandFill,
-                                    {
-                                      width: `${fill}%` as unknown as number,
-                                      // Tiny values still read as a deliberate fill.
-                                      minWidth: fill > 0 ? 5 : 0,
-                                      backgroundColor: color,
-                                    },
-                                  ]}
-                                />
-                                {STAT_MEDIANS[key] != null ? (
-                                  <View
-                                    style={
-                                      [
-                                        styles.bandMedianTick,
-                                        { left: `${STAT_MEDIANS[key]}%` },
-                                      ] as object
-                                    }
-                                  />
-                                ) : null}
-                              </View>
-                              <Text style={styles.bandLabel}>{label}</Text>
-                            </View>
+                            <PowerStatCell
+                              key={key}
+                              value={isNaN(raw) ? null : raw}
+                              label={label}
+                              color={color}
+                              median={STAT_MEDIANS[key]}
+                            />
                           );
                         })}
                       </View>
@@ -1961,37 +1939,14 @@ export default function WebCharacterScreen() {
                               (stats.powerstats as Record<string, string>)[key] ?? '0',
                               10,
                             );
-                            const fill = isNaN(raw) ? 0 : Math.min(raw, 100);
                             return (
-                              <View key={key} style={styles.bandCell}>
-                                <Text style={[styles.bandVal, { color }]}>
-                                  {isNaN(raw) ? '—' : raw}
-                                </Text>
-                                <View style={styles.bandTrack}>
-                                  <View
-                                    style={[
-                                      styles.bandFill,
-                                      {
-                                        width: `${fill}%` as unknown as number,
-                                        // Tiny values still read as a deliberate fill.
-                                        minWidth: fill > 0 ? 5 : 0,
-                                        backgroundColor: color,
-                                      },
-                                    ]}
-                                  />
-                                  {STAT_MEDIANS[key] != null ? (
-                                    <View
-                                      style={
-                                        [
-                                          styles.bandMedianTick,
-                                          { left: `${STAT_MEDIANS[key]}%` },
-                                        ] as object
-                                      }
-                                    />
-                                  ) : null}
-                                </View>
-                                <Text style={styles.bandLabel}>{label}</Text>
-                              </View>
+                              <PowerStatCell
+                                key={key}
+                                value={isNaN(raw) ? null : raw}
+                                label={label}
+                                color={color}
+                                median={STAT_MEDIANS[key]}
+                              />
                             );
                           })}
                         </View>
@@ -3173,33 +3128,10 @@ const styles = StyleSheet.create({
   // Pull the portrait up so it straddles the header/body seam (magazine profile).
   portraitOverlapDesktop: { marginTop: -210 } as object,
 
-  // Full-width power-stat band — 6 columns, dramatized.
+  // Full-width power-stat band — 6 columns, dramatized. Loaded cells render
+  // via PowerStatCell; bandCell survives for the loading skeletons.
   statBand: { flexDirection: 'row', alignItems: 'flex-end', gap: 14 },
   bandCell: { flex: 1, alignItems: 'center', gap: 8 },
-  bandVal: { fontFamily: 'Flame-Regular', fontSize: 30, lineHeight: 32 } as object,
-  bandTrack: {
-    width: '88%',
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(41,60,67,0.10)',
-    overflow: 'hidden',
-  } as object,
-  bandFill: { height: '100%' as unknown as number, borderRadius: 3 },
-  // Catalog-median marker inside the track (track clips it to its rounded box).
-  bandMedianTick: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 2,
-    backgroundColor: 'rgba(41,60,67,0.35)',
-  } as object,
-  bandLabel: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 10,
-    color: COLORS.grey,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.8,
-  },
 
   // ── Desktop two-column body (legacy / mobile-shared) ─────────────────────────
   bodyDesktop: {
