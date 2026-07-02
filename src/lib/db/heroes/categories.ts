@@ -663,16 +663,22 @@ export async function getBrowseCovers(slugs: CategorySlug[]): Promise<Record<str
     console.warn('[getBrowseCovers] error:', error.message);
     throw error;
   }
+  return assignBrowseCovers((data ?? []) as BrowseCoverCandidate[], slugs);
+}
 
-  // Group candidates by slug, preserving the RPC's fame order (rows arrive
-  // pos-ascending within each slug).
+/** Flat get_browse_covers rows → one distinct cover per slug. Rows must arrive
+ *  pos-ascending within each slug (the RPC's fame order). Shared with the
+ *  explore-bundle path. */
+export function assignBrowseCovers(
+  rows: BrowseCoverCandidate[],
+  slugs: CategorySlug[],
+): Record<string, BrowseCover> {
   const bySlug = new Map<string, BrowseCoverCandidate[]>();
-  for (const row of (data ?? []) as BrowseCoverCandidate[]) {
+  for (const row of rows) {
     const list = bySlug.get(row.slug) ?? [];
     list.push(row);
     bySlug.set(row.slug, list);
   }
-
   return pickDistinctCovers(bySlug, slugs);
 }
 

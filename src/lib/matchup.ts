@@ -59,7 +59,16 @@ const toMatchupHero = (h: Hero): MatchupHero => ({
  * generated via the AI edge function on first request with a graceful fallback).
  */
 export async function getTodaysMatchup(): Promise<TodaysMatchup | null> {
-  const pool = await getIconicHeroes(24);
+  return getTodaysMatchupFromPool(await getIconicHeroes(24));
+}
+
+/**
+ * Same as getTodaysMatchup, but the fame-ranked iconic pool is supplied by the
+ * caller — the explore bundle already carries it, so only the verdict (cached
+ * per pair) costs a round trip. Pass the first 24 heroes to match
+ * getTodaysMatchup's pool and keep the daily pair identical across surfaces.
+ */
+export async function getTodaysMatchupFromPool(pool: Hero[]): Promise<TodaysMatchup | null> {
   if (pool.length < 2) return null;
 
   const seed = dailySeed();

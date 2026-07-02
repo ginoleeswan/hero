@@ -82,10 +82,37 @@ function sampleN<T>(arr: T[], n: number): T[] {
   return copy.slice(0, n);
 }
 
-export async function getSpotlightHeroes(limit = 5): Promise<Hero[]> {
+/**
+ * Assemble the billboard from raw pools: lead with the (already-gated) trending
+ * heroes, then fill with a fresh famous/discovery sample so the lineup rotates
+ * per load. Pure — shared by getSpotlightHeroes (which fetches its own pools)
+ * and the explore bundle (whose pools arrive in one RPC).
+ */
+export function assembleSpotlight(
+  trending: Hero[],
+  famousPool: Hero[],
+  discoveryPool: Hero[],
+  limit = 5,
+): Hero[] {
   const discoveryCount = Math.max(1, Math.round(limit * 0.2));
   const famousCount = Math.max(0, limit - discoveryCount);
+  const famous = sampleN(famousPool, famousCount);
+  const discovery = sampleN(discoveryPool, discoveryCount);
+  // Shuffle the sampled set so the discovery hero isn't pinned to the last slot.
+  const base = sampleN([...famous, ...discovery], limit);
 
+  const seen = new Set<string>();
+  const merged: Hero[] = [];
+  for (const h of [...trending, ...base]) {
+    if (!seen.has(h.id)) {
+      seen.add(h.id);
+      merged.push(h);
+    }
+  }
+  return merged;
+}
+
+export async function getSpotlightHeroes(limit = 5): Promise<Hero[]> {
   // The powerstats floor keeps the billboard to actual heroes/villains: it drops
   // famous-by-association civilians (Alfred, Lois Lane, Jimmy Olsen, Goofy…) who
   // inherit their franchise's film count, while still keeping low-stat but real
@@ -130,11 +157,12 @@ export async function getSpotlightHeroes(limit = 5): Promise<Hero[]> {
     throw discoveryRes.error;
   }
 
-  const famous = sampleN((famousRes.data ?? []) as unknown as Hero[], famousCount);
-  const discovery = sampleN((discoveryRes.data ?? []) as unknown as Hero[], discoveryCount);
-
-  // Shuffle the merged set so the discovery hero isn't pinned to the last slot.
-  return sampleN([...famous, ...discovery], limit);
+  return assembleSpotlight(
+    [],
+    (famousRes.data ?? []) as unknown as Hero[],
+    (discoveryRes.data ?? []) as unknown as Hero[],
+    limit,
+  );
 }
 
 /**

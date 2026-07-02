@@ -1839,6 +1839,10 @@ export type Database = {
           year: number
         }[]
       }
+      get_explore_bundle: {
+        Args: { p_browse_per_slug?: number; p_browse_slugs: string[] }
+        Returns: Json
+      }
       get_family_opponents: {
         Args: { p_hero_id: string; p_limit?: number }
         Returns: {
@@ -2295,4 +2299,3 @@ export const Constants = {
     },
   },
 } as const
-

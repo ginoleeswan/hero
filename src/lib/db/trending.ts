@@ -64,7 +64,7 @@ export interface TrendingTitle {
 
 /** One flat row from get_trending_titles / get_trending_titles_multi — title
  *  fields repeated per character. */
-interface TrendingTitleRow {
+export interface TrendingTitleRow {
   title_id: string;
   title: string;
   media_type: string | null;
@@ -82,7 +82,7 @@ interface TrendingTitleRow {
 /** Fold flat per-character rows into grouped titles, preserving the RPC's order
  *  (titles by rank, characters by fame within each title). Shared by the single-
  *  and multi-bucket paths so their grouping can't drift. */
-function groupTitleRows(rows: TrendingTitleRow[]): TrendingTitle[] {
+export function groupTitleRows(rows: TrendingTitleRow[]): TrendingTitle[] {
   const byTitle = new Map<string, TrendingTitle>();
   for (const r of rows) {
     let t = byTitle.get(r.title_id);
@@ -155,18 +155,30 @@ export async function getTrendingTitlesMulti(
     console.warn('[getTrendingTitlesMulti] error:', error.message);
     return out;
   }
-  // Split flat rows by bucket (preserving order), then group each into titles.
+  return splitTitleBuckets((data ?? []) as (TrendingTitleRow & { bucket: TrendingBucket })[]);
+}
+
+/** Split flat multi-bucket rows by bucket (preserving order), then group each
+ *  into titles. Shared with the explore-bundle path. */
+export function splitTitleBuckets(
+  rows: (TrendingTitleRow & { bucket: TrendingBucket })[],
+): Record<TrendingBucket, TrendingTitle[]> {
+  const out: Record<TrendingBucket, TrendingTitle[]> = {
+    on_screen: [],
+    coming_soon: [],
+    streaming: [],
+  };
   const byBucket = new Map<TrendingBucket, TrendingTitleRow[]>();
-  for (const r of (data ?? []) as (TrendingTitleRow & { bucket: TrendingBucket })[]) {
+  for (const r of rows) {
     const list = byBucket.get(r.bucket) ?? [];
     list.push(r);
     byBucket.set(r.bucket, list);
   }
-  for (const [bucket, rows] of byBucket) out[bucket] = groupTitleRows(rows);
+  for (const [bucket, bucketRows] of byBucket) out[bucket] = groupTitleRows(bucketRows);
   return out;
 }
 
-interface TrendingOnScreenRow {
+export interface TrendingOnScreenRow {
   title_id: string;
   title: string;
   media_type: string | null;
@@ -192,8 +204,14 @@ export async function getTrendingOnScreen(limit = 12): Promise<TrendingTitle[]> 
     console.warn('[getTrendingOnScreen] error:', error.message);
     return [];
   }
+  return groupOnScreenRows((data ?? []) as unknown as TrendingOnScreenRow[]);
+}
+
+/** Flat get_trending_on_screen rows → grouped titles (trailer_key carried).
+ *  Shared with the explore-bundle path. */
+export function groupOnScreenRows(rows: TrendingOnScreenRow[]): TrendingTitle[] {
   const byId = new Map<string, TrendingTitle>();
-  for (const r of (data ?? []) as unknown as TrendingOnScreenRow[]) {
+  for (const r of rows) {
     let t = byId.get(r.title_id);
     if (!t) {
       t = {
@@ -237,32 +255,26 @@ export interface Campaign {
   characters: TrendingTitleCharacter[];
 }
 
-/** Active editorial campaigns (premieres, events, launches) resolved to their
- *  characters. Empty when nothing is scheduled for right now. */
-export async function getActiveCampaigns(limit = 3, chars = 16): Promise<Campaign[]> {
-  const { data, error } = await supabase.rpc('get_active_campaigns', {
-    p_limit: limit,
-    p_chars: chars,
-  });
-  if (error) {
-    console.warn('[getActiveCampaigns] error:', error.message);
-    return [];
-  }
+/** One flat row from the get_active_campaigns RPC. */
+export interface CampaignRow {
+  campaign_id: string;
+  label: string;
+  headline: string;
+  blurb: string | null;
+  accent: string | null;
+  backdrop_url: string | null;
+  poster_url: string | null;
+  title_id: string | null;
+  hero_id: string;
+  hero_name: string;
+  hero_image_url: string | null;
+  hero_portrait_url: string | null;
+}
+
+/** Flat RPC rows → grouped campaigns. Shared with the explore-bundle path. */
+export function groupCampaignRows(rows: CampaignRow[]): Campaign[] {
   const byId = new Map<string, Campaign>();
-  for (const r of (data ?? []) as {
-    campaign_id: string;
-    label: string;
-    headline: string;
-    blurb: string | null;
-    accent: string | null;
-    backdrop_url: string | null;
-    poster_url: string | null;
-    title_id: string | null;
-    hero_id: string;
-    hero_name: string;
-    hero_image_url: string | null;
-    hero_portrait_url: string | null;
-  }[]) {
+  for (const r of rows) {
     let c = byId.get(r.campaign_id);
     if (!c) {
       c = {
@@ -285,7 +297,21 @@ export async function getActiveCampaigns(limit = 3, chars = 16): Promise<Campaig
       portrait_url: r.hero_portrait_url,
     });
   }
-  const manual = [...byId.values()];
+  return [...byId.values()];
+}
+
+/** Active editorial campaigns (premieres, events, launches) resolved to their
+ *  characters. Empty when nothing is scheduled for right now. */
+export async function getActiveCampaigns(limit = 3, chars = 16): Promise<Campaign[]> {
+  const { data, error } = await supabase.rpc('get_active_campaigns', {
+    p_limit: limit,
+    p_chars: chars,
+  });
+  if (error) {
+    console.warn('[getActiveCampaigns] error:', error.message);
+    return [];
+  }
+  const manual = groupCampaignRows((data ?? []) as CampaignRow[]);
   if (manual.length > 0) return manual;
 
   // No editorial campaign live → auto-generate the hero from the trending slate so
@@ -293,17 +319,27 @@ export async function getActiveCampaigns(limit = 3, chars = 16): Promise<Campaig
   // the popularity+character-gated pool (the RPC only surfaces titles that have
   // catalogue characters) keeps it fresh on refresh / return visits but relevant.
   // On-screen leads; fall back to streaming when nothing is in cinemas.
-  const auto = await synthesizeCampaignFromTrending();
+  let pool = await getTrendingTitles('on_screen', 8);
+  if (pool.filter((t) => t.backdrop_url && t.characters.length > 0).length === 0) {
+    pool = await getTrendingTitles('streaming', 8);
+  }
+  const auto = synthesizeCampaignFromPool([pool]);
   return auto ? [auto] : [];
 }
 
 /** Build a one-off Campaign from a random popular trending title — the automatic
- *  fallback for the "Right Now" hero when no editorial campaign is scheduled. */
-async function synthesizeCampaignFromTrending(): Promise<Campaign | null> {
+ *  fallback for the "Right Now" hero when no editorial campaign is scheduled.
+ *  Pools are tried in order (on-screen leads, streaming as fallback); pure aside
+ *  from the random pick, so the explore bundle can feed it already-fetched
+ *  bucket lists instead of re-fetching. */
+export function synthesizeCampaignFromPool(pools: TrendingTitle[][]): Campaign | null {
   const usable = (ts: TrendingTitle[]) =>
     ts.filter((t) => t.backdrop_url && t.characters.length > 0);
-  let pool = usable(await getTrendingTitles('on_screen', 8));
-  if (pool.length === 0) pool = usable(await getTrendingTitles('streaming', 8));
+  let pool: TrendingTitle[] = [];
+  for (const candidates of pools) {
+    pool = usable(candidates);
+    if (pool.length > 0) break;
+  }
   if (pool.length === 0) return null;
   const t = pool[Math.floor(Math.random() * pool.length)];
   const badge = trendingBadge(t);
@@ -430,7 +466,7 @@ export interface WikiTrendingHero {
   spikePct: number;
 }
 
-interface WikiTrendingRow {
+export interface WikiTrendingRow {
   id: string;
   name: string;
   image_url: string | null;
@@ -439,17 +475,9 @@ interface WikiTrendingRow {
   pageviews_spike: number | string | null;
 }
 
-/** Characters whose Wikipedia pageviews spiked this week. Degrades to [] so a DB
- *  hiccup never errors the Explore band. */
-export async function getTrendingHeroesWiki(limit = 12): Promise<WikiTrendingHero[]> {
-  const { data, error } = await supabase.rpc('get_trending_heroes_wiki', {
-    p_limit: limit,
-  } as never);
-  if (error) {
-    console.warn('[getTrendingHeroesWiki] error:', error.message);
-    return [];
-  }
-  return ((data ?? []) as unknown as WikiTrendingRow[]).map((r) => {
+/** Flat RPC rows → WikiTrendingHero. Shared with the explore-bundle path. */
+export function mapWikiTrendingRows(rows: WikiTrendingRow[]): WikiTrendingHero[] {
+  return rows.map((r) => {
     const spike =
       typeof r.pageviews_spike === 'string'
         ? parseFloat(r.pageviews_spike)
@@ -463,4 +491,17 @@ export async function getTrendingHeroesWiki(limit = 12): Promise<WikiTrendingHer
       spikePct: Math.max(0, Math.round((spike - 1) * 100)),
     };
   });
+}
+
+/** Characters whose Wikipedia pageviews spiked this week. Degrades to [] so a DB
+ *  hiccup never errors the Explore band. */
+export async function getTrendingHeroesWiki(limit = 12): Promise<WikiTrendingHero[]> {
+  const { data, error } = await supabase.rpc('get_trending_heroes_wiki', {
+    p_limit: limit,
+  } as never);
+  if (error) {
+    console.warn('[getTrendingHeroesWiki] error:', error.message);
+    return [];
+  }
+  return mapWikiTrendingRows((data ?? []) as unknown as WikiTrendingRow[]);
 }

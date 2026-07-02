@@ -40,19 +40,9 @@ export const queryKeys = {
 // (and don't leak across accounts) when the signed-in user changes.
 export const exploreKeys = {
   root: ['explore'] as const,
-  spotlight: ['explore', 'spotlight'] as const,
-  iconic: ['explore', 'iconic'] as const,
-  newlyAdded: ['explore', 'newlyAdded'] as const,
-  rivalries: ['explore', 'rivalries'] as const,
-  browseCovers: ['explore', 'browseCovers'] as const,
-  trendingOnScreen: ['explore', 'trendingOnScreen'] as const,
-  wikiTrending: ['explore', 'wikiTrending'] as const,
-  debuts: ['explore', 'debuts'] as const,
-  titleBuckets: ['explore', 'titleBuckets'] as const,
-  campaigns: ['explore', 'campaigns'] as const,
-  newComics: ['explore', 'newComics'] as const,
+  /** Every anonymous section in one get_explore_bundle RPC round trip. */
+  bundle: ['explore', 'bundle'] as const,
   matchup: ['explore', 'matchup'] as const,
-  heroCount: ['explore', 'heroCount'] as const,
   recentlyViewed: (userId: string) => ['explore', 'recentlyViewed', userId] as const,
   favourites: (userId: string) => ['explore', 'favourites', userId] as const,
   trendingForUser: (userId: string) => ['explore', 'trendingForUser', userId] as const,

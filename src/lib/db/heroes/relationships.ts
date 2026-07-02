@@ -112,6 +112,28 @@ export function relationshipBadge(
   return null;
 }
 
+/** One flat row from the get_top_rivalries RPC. */
+export interface RivalryRow {
+  a_id: string;
+  a_name: string;
+  a_image_url: string | null;
+  a_portrait_url: string | null;
+  b_id: string;
+  b_name: string;
+  b_image_url: string | null;
+  b_portrait_url: string | null;
+  cross_universe: boolean;
+}
+
+/** Flat RPC rows → Rivalry pairs. Shared with the explore-bundle path. */
+export function mapRivalryRows(rows: RivalryRow[]): Rivalry[] {
+  return rows.map((r) => ({
+    a: { id: r.a_id, name: r.a_name, image_url: r.a_image_url, portrait_url: r.a_portrait_url },
+    b: { id: r.b_id, name: r.b_name, image_url: r.b_image_url, portrait_url: r.b_portrait_url },
+    crossUniverse: r.cross_universe,
+  }));
+}
+
 /** Iconic rivalries (curated marquee matchups), ranked by combined popularity —
  *  the explore "Greatest Rivalries" carousel + the rivalries page. */
 export async function getTopRivalries(limit = 12): Promise<Rivalry[]> {
@@ -120,11 +142,7 @@ export async function getTopRivalries(limit = 12): Promise<Rivalry[]> {
     console.warn('[getTopRivalries] error:', error.message);
     return [];
   }
-  return (data ?? []).map((r) => ({
-    a: { id: r.a_id, name: r.a_name, image_url: r.a_image_url, portrait_url: r.a_portrait_url },
-    b: { id: r.b_id, name: r.b_name, image_url: r.b_image_url, portrait_url: r.b_portrait_url },
-    crossUniverse: r.cross_universe,
-  }));
+  return mapRivalryRows((data ?? []) as RivalryRow[]);
 }
 
 export async function getHeroesByNames(names: string[]): Promise<RelatedHeroCard[]> {

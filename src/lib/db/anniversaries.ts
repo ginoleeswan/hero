@@ -25,7 +25,7 @@ export interface DebutIssue {
   characters: DebutCharacter[];
 }
 
-interface DebutIssueRow {
+export interface DebutIssueRow {
   issue_id: string;
   series_name: string | null;
   issue_number: string | null;
@@ -34,17 +34,10 @@ interface DebutIssueRow {
   characters: DebutCharacter[] | null;
 }
 
-/** Recognizable debut issues from the current calendar month, ranked by their top
- *  character's fame, each with its debutant cast. Degrades to [] so a DB hiccup
- *  never errors the Explore band. */
-export async function getDebutsThisMonth(limit = 12): Promise<DebutIssue[]> {
-  const { data, error } = await supabase.rpc('get_debuts_this_month', { p_limit: limit } as never);
-  if (error) {
-    console.warn('[getDebutsThisMonth] error:', error.message);
-    return [];
-  }
+/** Flat RPC rows → DebutIssue. Shared with the explore-bundle path. */
+export function mapDebutRows(rows: DebutIssueRow[]): DebutIssue[] {
   const currentYear = new Date().getFullYear();
-  return ((data ?? []) as unknown as DebutIssueRow[]).map((r) => {
+  return rows.map((r) => {
     const year = r.debut_year ?? currentYear;
     return {
       issueId: r.issue_id,
@@ -56,4 +49,16 @@ export async function getDebutsThisMonth(limit = 12): Promise<DebutIssue[]> {
       characters: r.characters ?? [],
     };
   });
+}
+
+/** Recognizable debut issues from the current calendar month, ranked by their top
+ *  character's fame, each with its debutant cast. Degrades to [] so a DB hiccup
+ *  never errors the Explore band. */
+export async function getDebutsThisMonth(limit = 12): Promise<DebutIssue[]> {
+  const { data, error } = await supabase.rpc('get_debuts_this_month', { p_limit: limit } as never);
+  if (error) {
+    console.warn('[getDebutsThisMonth] error:', error.message);
+    return [];
+  }
+  return mapDebutRows((data ?? []) as unknown as DebutIssueRow[]);
 }
