@@ -28,6 +28,7 @@ import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { PullQuoteBio } from '../../src/components/web/character/PullQuoteBio';
+import { LegendBand } from '../../src/components/web/character/LegendBand';
 import {
   SignaturePowerTiles,
   pickSignaturePowers,
@@ -35,11 +36,9 @@ import {
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { groupTitlesByMedia } from '../../src/lib/db/titles';
-import { PortrayedBySection } from '../../src/components/PortrayedBySection';
 import { HeroLinksRow, heroLinksHasContent } from '../../src/components/HeroLinksRow';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
 import { TraitBand } from '../../src/components/character/TraitBand';
-import { DidYouKnowDeck } from '../../src/components/character/DidYouKnowDeck';
 import { type PowerExplainer } from '../../src/lib/db/heroFacts';
 import { RelatedHeroStrip } from '../../src/components/RelatedHeroStrip';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
@@ -1198,15 +1197,6 @@ export default function WebCharacterScreen() {
                     }
                   />
 
-                  {/* Did You Know — swipeable trivia deck */}
-                  {narrative && narrative.didYouKnow.length > 0 ? (
-                    <View style={styles.card}>
-                      <Text style={styles.cardTitle}>Did You Know</Text>
-                      <View style={styles.cardDivider} />
-                      <DidYouKnowDeck facts={narrative.didYouKnow} />
-                    </View>
-                  ) : null}
-
                   {/* Enemies & Allies */}
                   {comicVineLoading ? (
                     <View style={styles.card}>
@@ -1387,15 +1377,20 @@ export default function WebCharacterScreen() {
                     })()
                   ) : null}
 
-                  {/* Portrayed By */}
-                  {portrayals &&
-                  (portrayals.performers.length > 0 || portrayals.voiceActors.length > 0) ? (
-                    <View style={styles.card}>
-                      <Text style={styles.cardTitle}>Portrayed By</Text>
-                      <View style={styles.cardDivider} />
-                      <PortrayedBySection portrayals={portrayals} contentInset={0} />
-                    </View>
-                  ) : null}
+                  {/* Legend — debut, trivia, portrayals on one timeline */}
+                  <LegendBand
+                    accent={theme.accent}
+                    accentWash={theme.accentWash}
+                    firstIssue={data.firstIssue ?? null}
+                    facts={narrative?.didYouKnow ?? []}
+                    portrayals={portrayals}
+                    onPressDebut={() =>
+                      data.firstIssue &&
+                      router.push(
+                        `/issue/cvi:${data.firstIssue.id}` as Parameters<typeof router.push>[0],
+                      )
+                    }
+                  />
 
                   {/* Links */}
                   {heroLinksHasContent(links) ? (
@@ -1437,9 +1432,7 @@ export default function WebCharacterScreen() {
                         </View>
                       </View>
                     </View>
-                  ) : newIssues.length > 0 ||
-                    data.firstIssue?.imageUrl ||
-                    (galleryImages && galleryImages.length > 0) ? (
+                  ) : newIssues.length > 0 || (galleryImages && galleryImages.length > 0) ? (
                     <View style={styles.card}>
                       <View style={styles.inPrintHeader}>
                         <Text style={styles.cardTitle}>In Print</Text>
@@ -1462,57 +1455,8 @@ export default function WebCharacterScreen() {
                         </View>
                       ) : null}
                       <View style={styles.inPrintBody}>
-                        {/* Debut — the first issue, given hero treatment */}
-                        {data.firstIssue?.imageUrl ? (
-                          <Pressable
-                            onPress={() =>
-                              router.push(
-                                `/issue/cvi:${data.firstIssue!.id}` as Parameters<
-                                  typeof router.push
-                                >[0],
-                              )
-                            }
-                            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                              [
-                                styles.debutBlock,
-                                hovered && (styles.debutBlockHover as object),
-                              ] as object
-                            }
-                          >
-                            <View style={styles.debutCoverWrap}>
-                              <img
-                                src={data.firstIssue.imageUrl}
-                                style={{
-                                  width: '100%',
-                                  height: '100%',
-                                  objectFit: 'cover',
-                                  display: 'block',
-                                }}
-                              />
-                              <View
-                                style={
-                                  [styles.debutCoverScrim, { pointerEvents: 'none' }] as object
-                                }
-                              />
-                              <View style={styles.debutBadge}>
-                                <Ionicons name="ribbon" size={11} color={COLORS.deepNavy} />
-                                <Text style={styles.debutBadgeText}>1st Appearance</Text>
-                              </View>
-                              {data.firstIssue.coverDate ? (
-                                <Text style={styles.debutYear}>
-                                  {data.firstIssue.coverDate.slice(0, 4)}
-                                </Text>
-                              ) : null}
-                            </View>
-                            {data.firstIssue.name ? (
-                              <Text style={styles.debutName} numberOfLines={2}>
-                                {data.firstIssue.name.split(';')[0].trim()}
-                              </Text>
-                            ) : null}
-                          </Pressable>
-                        ) : null}
-
-                        {/* Gallery — character art + covers (multi-source) */}
+                        {/* Gallery — character art + covers (multi-source);
+                            the debut moved up into the Legend band */}
                         {galleryImages && galleryImages.length > 0 ? (
                           <View style={styles.inPrintGallery}>
                             <Text style={styles.inPrintGalleryLabel}>
@@ -2139,16 +2083,22 @@ export default function WebCharacterScreen() {
                   }
                 />
 
-                {/* Did You Know — swipeable trivia deck */}
-                {narrative && narrative.didYouKnow.length > 0 ? (
-                  <View style={styles.mSection}>
-                    <View style={styles.mSectionHead}>
-                      <Text style={styles.mSectionTitle}>Did You Know</Text>
-                      <View style={styles.mSectionDivider} />
-                    </View>
-                    <DidYouKnowDeck facts={narrative.didYouKnow} contentInset={20} />
-                  </View>
-                ) : null}
+                {/* Legend — debut, trivia, portrayals on one timeline */}
+                <View style={styles.mBlock}>
+                  <LegendBand
+                    accent={theme.accent}
+                    accentWash={theme.accentWash}
+                    firstIssue={data.firstIssue ?? null}
+                    facts={narrative?.didYouKnow ?? []}
+                    portrayals={portrayals}
+                    onPressDebut={() =>
+                      data.firstIssue &&
+                      router.push(
+                        `/issue/cvi:${data.firstIssue.id}` as Parameters<typeof router.push>[0],
+                      )
+                    }
+                  />
+                </View>
 
                 {/* Family tree */}
                 {family.length > 0 ? (
@@ -2253,18 +2203,6 @@ export default function WebCharacterScreen() {
                     })()
                   : null}
 
-                {/* Portrayed By */}
-                {portrayals &&
-                (portrayals.performers.length > 0 || portrayals.voiceActors.length > 0) ? (
-                  <View style={styles.mSection}>
-                    <View style={styles.mSectionHead}>
-                      <Text style={styles.mSectionTitle}>Portrayed By</Text>
-                      <View style={styles.mSectionDivider} />
-                    </View>
-                    <PortrayedBySection portrayals={portrayals} contentInset={20} />
-                  </View>
-                ) : null}
-
                 {/* Links */}
                 {heroLinksHasContent(links) ? (
                   <View style={styles.mSection}>
@@ -2310,45 +2248,6 @@ export default function WebCharacterScreen() {
                         setLightboxIndex(i);
                       }}
                     />
-                  </View>
-                ) : null}
-
-                {/* First Appearance */}
-                {data.firstIssue?.imageUrl ? (
-                  <View style={styles.mBlock}>
-                    <Text style={styles.mSectionTitle}>First Appearance</Text>
-                    <View style={styles.mSectionDivider} />
-                    <Pressable
-                      onPress={() =>
-                        router.push(
-                          `/issue/cvi:${data.firstIssue!.id}` as Parameters<typeof router.push>[0],
-                        )
-                      }
-                      style={styles.mDebutCard}
-                    >
-                      <Image
-                        source={{ uri: data.firstIssue.imageUrl }}
-                        style={styles.mDebutCover as object}
-                        contentFit="cover"
-                        cachePolicy="memory-disk"
-                      />
-                      <View style={styles.mDebutMeta}>
-                        {data.firstIssue.name ? (
-                          <Text style={styles.mDebutTitle}>
-                            {data.firstIssue.name.split(';')[0].trim()}
-                          </Text>
-                        ) : null}
-                        {data.firstIssue.coverDate ? (
-                          <Text style={styles.mDebutYear}>
-                            {data.firstIssue.coverDate.slice(0, 4)}
-                          </Text>
-                        ) : null}
-                        <View style={styles.mDebutCta}>
-                          <Text style={styles.mDebutCtaText}>View issue</Text>
-                          <Ionicons name="chevron-forward" size={14} color={COLORS.orange} />
-                        </View>
-                      </View>
-                    </Pressable>
                   </View>
                 ) : null}
 
@@ -3760,20 +3659,6 @@ const styles = StyleSheet.create({
   // the strip itself stays edge-to-edge.
   mSectionHead: { paddingHorizontal: 20 },
   mSectionBody: { paddingHorizontal: 20 },
-  mDebutCard: {
-    flexDirection: 'row',
-    gap: 14,
-    backgroundColor: 'rgba(41,60,67,0.05)',
-    borderRadius: 16,
-    padding: 12,
-  },
-  mDebutCover: { width: 92, height: 138, borderRadius: 8, backgroundColor: COLORS.deepNavy },
-  mDebutMeta: { flex: 1, justifyContent: 'center', gap: 6 },
-  mDebutTitle: { fontFamily: 'Flame-Regular', fontSize: 16, lineHeight: 21, color: COLORS.navy },
-  mDebutYear: { fontFamily: 'FlameSans-Regular', fontSize: 12, color: '#54606A' },
-  mDebutCta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
-  mDebutCtaText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange },
-
   // Abilities — categorized groups
   signatureWrap: { marginBottom: 18 },
   abilityGroup: { marginBottom: 18 },
@@ -4026,72 +3911,6 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   inPrintBody: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-
-  // Debut poster — the first issue, given hero treatment
-  debutBlock: {
-    width: 150,
-    flexShrink: 0,
-    cursor: 'pointer',
-    transition: 'transform 180ms ease',
-  } as object,
-  debutBlockHover: { transform: [{ translateY: -3 }] } as object,
-  debutCoverWrap: {
-    width: 150,
-    height: 222,
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: COLORS.navy,
-    borderWidth: 1.5,
-    borderColor: COLORS.goldAccent,
-    boxShadow: '0 8px 24px rgba(41,60,67,0.26)',
-  } as object,
-  debutCoverScrim: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: '55%',
-    backgroundImage: 'linear-gradient(to top, rgba(11,24,32,0.85), transparent)',
-  } as object,
-  debutBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 20,
-    backgroundColor: COLORS.goldAccent,
-  } as object,
-  debutBadgeText: {
-    fontFamily: 'FlameSans-Regular',
-    fontWeight: '700',
-    fontSize: 10,
-    letterSpacing: 0.3,
-    color: COLORS.deepNavy,
-  },
-  debutYear: {
-    position: 'absolute',
-    left: 12,
-    bottom: 10,
-    fontFamily: 'Flame-Regular',
-    fontSize: 30,
-    lineHeight: 32,
-    color: COLORS.beige,
-    textShadowColor: 'rgba(0,0,0,0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
-  } as object,
-  debutName: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 12.5,
-    color: COLORS.navy,
-    opacity: 0.75,
-    lineHeight: 17,
-    marginTop: 10,
-  },
 
   // Cover gallery — the run that followed the debut
   inPrintGallery: { flex: 1, minWidth: 0, gap: 10 } as object,
