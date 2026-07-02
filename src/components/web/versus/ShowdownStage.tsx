@@ -95,11 +95,15 @@ function TapeRow({ label, a, b }: { label: string; a: number; b: number }) {
         {a}
       </Text>
       <View style={[t.track, t.trackL] as object}>
-        <View style={[t.fill, { width: `${Math.min(100, a)}%`, backgroundColor: ACCENT_A }] as object} />
+        <View
+          style={[t.fill, { width: `${Math.min(100, a)}%`, backgroundColor: ACCENT_A }] as object}
+        />
       </View>
       <Text style={t.label as object}>{label}</Text>
       <View style={t.track as object}>
-        <View style={[t.fill, { width: `${Math.min(100, b)}%`, backgroundColor: ACCENT_B }] as object} />
+        <View
+          style={[t.fill, { width: `${Math.min(100, b)}%`, backgroundColor: ACCENT_B }] as object}
+        />
       </View>
       <Text style={[t.val, { color: ACCENT_B }, b >= a && (t.valLead as object)] as object}>
         {b}

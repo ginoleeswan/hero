@@ -69,7 +69,10 @@ export default function VersusHubWeb() {
         <View style={s.stageInner}>
           <Text style={s.eyebrow}>{"★ Today's Showdown ★"}</Text>
           {matchup ? (
-            <Text style={[s.title, !isDesktop && (s.titleMobile as object)] as object} numberOfLines={1}>
+            <Text
+              style={[s.title, !isDesktop && (s.titleMobile as object)] as object}
+              numberOfLines={1}
+            >
               {matchup.heroA.name} vs {matchup.heroB.name}
             </Text>
           ) : (
@@ -79,11 +82,23 @@ export default function VersusHubWeb() {
           {loading && !matchup ? (
             <View style={s.skelDeck}>
               <View
-                style={[s.skelCard, s.skelTiltL, { width: isDesktop ? 260 : 150, height: isDesktop ? 346 : 200 }] as object}
+                style={
+                  [
+                    s.skelCard,
+                    s.skelTiltL,
+                    { width: isDesktop ? 260 : 150, height: isDesktop ? 346 : 200 },
+                  ] as object
+                }
               />
               <View style={s.skelCoin} />
               <View
-                style={[s.skelCard, s.skelTiltR, { width: isDesktop ? 260 : 150, height: isDesktop ? 346 : 200 }] as object}
+                style={
+                  [
+                    s.skelCard,
+                    s.skelTiltR,
+                    { width: isDesktop ? 260 : 150, height: isDesktop ? 346 : 200 },
+                  ] as object
+                }
               />
             </View>
           ) : matchup ? (

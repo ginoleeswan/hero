@@ -72,9 +72,7 @@ function Portrait({
         // tile — the full name in Flame, not a lone initial.
         <View style={[StyleSheet.absoluteFill, s.mono] as object}>
           <View
-            style={
-              [StyleSheet.absoluteFill, { backgroundColor: tint, opacity: 0.42 }] as object
-            }
+            style={[StyleSheet.absoluteFill, { backgroundColor: tint, opacity: 0.42 }] as object}
           />
           <View style={s.monoScrim as object} />
           <Text style={s.monoName} numberOfLines={3}>
@@ -111,8 +109,7 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundImage:
-      'linear-gradient(to bottom, rgba(11,24,32,0.1) 0%, rgba(11,24,32,0.55) 100%)',
+    backgroundImage: 'linear-gradient(to bottom, rgba(11,24,32,0.1) 0%, rgba(11,24,32,0.55) 100%)',
   } as object,
   monoName: {
     fontFamily: 'Flame-Regular',

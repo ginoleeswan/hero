@@ -509,9 +509,7 @@ export function RightNowBand({
       <View style={[band.header, { paddingHorizontal: pagePad }]}>
         <View style={band.headText}>
           <Text style={band.kicker as object}>The Pulse</Text>
-          <Text
-            style={[band.title, !isDesktop && { fontSize: 30, lineHeight: 32 }] as object}
-          >
+          <Text style={[band.title, !isDesktop && { fontSize: 30, lineHeight: 32 }] as object}>
             Right Now
           </Text>
           <Text style={band.sub as object}>

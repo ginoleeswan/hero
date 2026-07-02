@@ -113,3 +113,6 @@ supabase/.temp/
 /.design-sync/.cache/
 /.design-sync/learnings/
 /.design-sync/node_modules
+
+# Local AI-portrait reference art (copyrighted game renders, do not commit)
+reference-portraits/

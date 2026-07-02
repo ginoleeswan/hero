@@ -1158,11 +1158,7 @@ function FavouritesInvite({
                 ] as object
               }
             >
-              <MaterialCommunityIcons
-                name="heart-outline"
-                size={26}
-                color="rgba(41,60,67,0.28)"
-              />
+              <MaterialCommunityIcons name="heart-outline" size={26} color="rgba(41,60,67,0.28)" />
             </View>
           ))}
         </View>
