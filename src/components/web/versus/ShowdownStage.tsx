@@ -57,7 +57,7 @@ function Corner({
         style={
           [
             c.glow,
-            { backgroundColor: `${accent}2E` },
+            { backgroundColor: `${accent}45` },
             side === 'a' ? { right: '4%' } : { left: '4%' },
           ] as object
         }
