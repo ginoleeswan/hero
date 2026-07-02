@@ -1,4 +1,4 @@
-import { useEffect, useState, Fragment, type ComponentProps } from 'react';
+import { useEffect, useMemo, useState, Fragment, type ComponentProps } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -26,6 +26,7 @@ import {
 import { heroImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS, SURFACE } from '../../src/constants/colors';
+import { deriveCharacterTheme } from '../../src/lib/accent';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { groupTitlesByMedia } from '../../src/lib/db/titles';
@@ -538,6 +539,16 @@ export default function WebCharacterScreen() {
     teammateNames,
   } = useHeroDetail({ id });
 
+  // Ambient per-character palette — blurhash average color → publisher → teal.
+  const theme = useMemo(
+    () =>
+      deriveCharacterTheme({
+        portrait_blurhash: heroRow?.portrait_blurhash,
+        publisher: heroRow?.publisher ?? data?.stats.biography.publisher ?? null,
+      }),
+    [heroRow, data],
+  );
+
   // Cold-load choreography (mirrors the title page): a single `loading` flag drives
   // a four-phase skeleton→content transition so the swap reads as a cross-dissolve.
   //   pre       — within the anti-flash window: show only the deepNavy shell, so an
@@ -777,13 +788,25 @@ export default function WebCharacterScreen() {
             ) : null}
             {/* Gradient scrim keeps the identity text legible over the backdrop */}
             <View style={[styles.stageScrim, { pointerEvents: 'none' }] as object} />
-            {/* Atmospheric orbs — alignment-tinted, purely decorative */}
+            {/* Name-side accent bloom — the character's own color owns the band */}
+            <View
+              style={
+                [
+                  StyleSheet.absoluteFill,
+                  {
+                    backgroundImage: `radial-gradient(55% 90% at 16% 35%, ${theme.accentDeep}59, transparent 70%)`,
+                    pointerEvents: 'none',
+                  },
+                ] as object
+              }
+            />
+            {/* Atmospheric orbs — accent-tinted, purely decorative */}
             <View
               style={
                 [
                   styles.orbA,
                   {
-                    backgroundImage: `radial-gradient(circle, ${alignmentColor}2e, transparent 70%)`,
+                    backgroundImage: `radial-gradient(circle, ${theme.accent}40, transparent 70%)`,
                     pointerEvents: 'none',
                   },
                 ] as object
@@ -849,18 +872,34 @@ export default function WebCharacterScreen() {
                           </Text>
                         </View>
                       ) : null}
-                      {powerScore !== null ? (
-                        <View style={styles.metaPill}>
-                          <Text style={styles.metaPillVal}>{powerScore}</Text>
-                          <Text style={styles.metaPillKey}>Power</Text>
-                        </View>
-                      ) : null}
-                      {(details.issueCount ?? 0) > 0 ? (
-                        <View style={styles.metaPill}>
-                          <Text style={styles.metaPillVal}>
-                            {details.issueCount!.toLocaleString()}
-                          </Text>
-                          <Text style={styles.metaPillKey}>Issues</Text>
+                      {powerScore !== null || (details.issueCount ?? 0) > 0 ? (
+                        <View
+                          style={[styles.statStrip, { borderColor: theme.accent + '44' }] as object}
+                        >
+                          {powerScore !== null ? (
+                            <View style={styles.statStripItem}>
+                              <Text style={styles.metaPillVal}>{powerScore}</Text>
+                              <Text style={styles.metaPillKey}>Power</Text>
+                            </View>
+                          ) : null}
+                          {powerScore !== null && (details.issueCount ?? 0) > 0 ? (
+                            <View
+                              style={
+                                [
+                                  styles.statStripDiv,
+                                  { backgroundColor: theme.accent + '55' },
+                                ] as object
+                              }
+                            />
+                          ) : null}
+                          {(details.issueCount ?? 0) > 0 ? (
+                            <View style={styles.statStripItem}>
+                              <Text style={styles.metaPillVal}>
+                                {details.issueCount!.toLocaleString()}
+                              </Text>
+                              <Text style={styles.metaPillKey}>Issues</Text>
+                            </View>
+                          ) : null}
                         </View>
                       ) : null}
                     </View>
@@ -875,8 +914,8 @@ export default function WebCharacterScreen() {
                 [
                   styles.stageAccent,
                   {
-                    backgroundColor: alignmentColor,
-                    boxShadow: `0 0 18px ${alignmentColor}`,
+                    backgroundColor: theme.accent,
+                    boxShadow: `0 0 22px ${theme.accentDeep}`,
                     pointerEvents: 'none',
                   },
                 ] as object
@@ -1435,7 +1474,17 @@ export default function WebCharacterScreen() {
 
                 {/* Side column — overlapping portrait + quick facts */}
                 <View style={[styles.sideCol, { marginTop: portraitOverlap }] as object}>
-                  <View style={styles.portraitCard}>
+                  <View
+                    style={
+                      [
+                        styles.portraitCard,
+                        {
+                          // Depth shadow + the character's accent halo.
+                          boxShadow: `0 24px 52px rgba(11,24,32,0.30), 0 0 0 1px ${theme.accent}33, 0 18px 60px -18px ${theme.accentDeep}bb`,
+                        },
+                      ] as object
+                    }
+                  >
                     <HeroImage
                       id={id}
                       name={stats.name}
@@ -1659,6 +1708,18 @@ export default function WebCharacterScreen() {
                 />
                 <View style={[styles.mScrimTop, { pointerEvents: 'none' }] as object} />
                 <View style={[styles.mScrimBottom, { pointerEvents: 'none' }] as object} />
+                {/* Character accent bloom rising from the sheet edge */}
+                <View
+                  style={
+                    [
+                      StyleSheet.absoluteFill,
+                      {
+                        backgroundImage: `radial-gradient(90% 55% at 50% 100%, ${theme.accentDeep}66, transparent 72%)`,
+                        pointerEvents: 'none',
+                      },
+                    ] as object
+                  }
+                />
 
                 <View style={styles.mControls}>
                   <Pressable
@@ -2991,17 +3052,21 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1.2,
   },
-  metaPill: {
+  statStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 999,
+    backgroundColor: 'rgba(245,235,220,0.06)',
+  },
+  statStripItem: {
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
   },
+  statStripDiv: { width: 1, alignSelf: 'stretch', marginVertical: 7 },
   metaPillVal: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.beige },
   metaPillKey: {
     fontFamily: 'Nunito_700Bold',
