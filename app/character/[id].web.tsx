@@ -58,6 +58,17 @@ const STAT_CONFIG = [
 
 const JUNK_VALUES = new Set(['-', 'null', 'none', 'no alter egos found.', 'n/a', 'unknown']);
 
+// Catalog median per stat (heroes with non-zero stats, 2026-07-02) — the faint
+// tick on each Power Profile bar that makes "94 intelligence" mean something.
+const STAT_MEDIANS: Record<string, number> = {
+  intelligence: 50,
+  strength: 24,
+  speed: 30,
+  durability: 36,
+  power: 30,
+  combat: 40,
+};
+
 // Mobile immersive portrait header height as a fraction of the viewport. Shared by
 // the live page AND the loading skeleton so the two stay pixel-aligned — the
 // skeleton crossfades out OVER the settled content, so any drift here shows up as a
@@ -938,8 +949,15 @@ export default function WebCharacterScreen() {
               <View style={styles.bodyDesktopNew}>
                 {/* Main column — continuous editorial sections */}
                 <View style={styles.mainCol}>
-                  {/* Power stats band */}
-                  <View style={styles.card}>
+                  {/* Power Profile — accent-washed band, first thing under the seam */}
+                  <View
+                    style={
+                      [
+                        styles.powerBand,
+                        { backgroundColor: theme.accentWash, borderColor: theme.accent + '2b' },
+                      ] as object
+                    }
+                  >
                     <View style={styles.statCardHeader}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Power Stats</Text>
@@ -968,13 +986,23 @@ export default function WebCharacterScreen() {
                             style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                               [
                                 styles.compareBtn,
-                                hovered && !statsGenerating && (styles.compareBtnHover as object),
+                                {
+                                  borderColor: theme.accent + '40',
+                                  backgroundColor: theme.accent + '0f',
+                                },
+                                hovered &&
+                                  !statsGenerating && {
+                                    backgroundColor: theme.accent + '1f',
+                                    borderColor: theme.accent + '80',
+                                  },
                                 statsGenerating && { opacity: 0.5 },
                               ] as object
                             }
                           >
-                            <Ionicons name="git-compare-outline" size={14} color={COLORS.orange} />
-                            <Text style={styles.compareBtnText}>Compare</Text>
+                            <Ionicons name="git-compare-outline" size={14} color={theme.accent} />
+                            <Text style={[styles.compareBtnText, { color: theme.accent }] as object}>
+                              Compare
+                            </Text>
                           </Pressable>
                         ) : null}
                         {powerScore !== null ? (
@@ -1044,6 +1072,16 @@ export default function WebCharacterScreen() {
                                     },
                                   ]}
                                 />
+                                {STAT_MEDIANS[key] != null ? (
+                                  <View
+                                    style={
+                                      [
+                                        styles.bandMedianTick,
+                                        { left: `${STAT_MEDIANS[key]}%` },
+                                      ] as object
+                                    }
+                                  />
+                                ) : null}
                               </View>
                               <Text style={styles.bandLabel}>{label}</Text>
                             </View>
@@ -1052,9 +1090,26 @@ export default function WebCharacterScreen() {
                       </View>
                     )}
                     {percentile != null && percentile > 0 ? (
-                      <Text style={styles.percentileText}>
-                        Stronger than {percentile}% of heroes
-                      </Text>
+                      <View style={styles.percentileRow}>
+                        <View
+                          style={
+                            [
+                              styles.percentileBadge,
+                              {
+                                backgroundColor: theme.accent + '1a',
+                                borderColor: theme.accent + '40',
+                              },
+                            ] as object
+                          }
+                        >
+                          <Ionicons name="flash" size={11} color={theme.accent} />
+                          <Text
+                            style={[styles.percentileBadgeText, { color: theme.accent }] as object}
+                          >
+                            Stronger than {percentile}% of heroes
+                          </Text>
+                        </View>
+                      </View>
                     ) : null}
                   </View>
 
@@ -1875,8 +1930,16 @@ export default function WebCharacterScreen() {
                   </View>
                 ) : null}
 
-                {/* Power Stats */}
-                <View style={styles.mBlock}>
+                {/* Power Profile — accent-washed band */}
+                <View
+                  style={
+                    [
+                      styles.mBlock,
+                      styles.mPowerBand,
+                      { backgroundColor: theme.accentWash, borderColor: theme.accent + '2b' },
+                    ] as object
+                  }
+                >
                   <View style={styles.mStatTitleRow}>
                     <Text style={styles.mSectionTitle}>Power Stats</Text>
                     {data.statsSource === 'ai' ? (
@@ -1947,6 +2010,16 @@ export default function WebCharacterScreen() {
                                       },
                                     ]}
                                   />
+                                  {STAT_MEDIANS[key] != null ? (
+                                    <View
+                                      style={
+                                        [
+                                          styles.bandMedianTick,
+                                          { left: `${STAT_MEDIANS[key]}%` },
+                                        ] as object
+                                      }
+                                    />
+                                  ) : null}
                                 </View>
                                 <Text style={styles.bandLabel}>{label}</Text>
                               </View>
@@ -1959,9 +2032,24 @@ export default function WebCharacterScreen() {
                   {percentile != null || powerScore !== null || statsGenerating ? (
                     <View style={styles.mStatFooter}>
                       {percentile != null && percentile > 0 ? (
-                        <Text style={styles.percentileText}>
-                          Stronger than {percentile}% of heroes
-                        </Text>
+                        <View
+                          style={
+                            [
+                              styles.percentileBadge,
+                              {
+                                backgroundColor: theme.accent + '1a',
+                                borderColor: theme.accent + '40',
+                              },
+                            ] as object
+                          }
+                        >
+                          <Ionicons name="flash" size={11} color={theme.accent} />
+                          <Text
+                            style={[styles.percentileBadgeText, { color: theme.accent }] as object}
+                          >
+                            Stronger than {percentile}% of heroes
+                          </Text>
+                        </View>
                       ) : null}
                       <View style={styles.mStatFooterRight}>
                         {powerScore !== null ? (
@@ -1987,13 +2075,23 @@ export default function WebCharacterScreen() {
                             style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                               [
                                 styles.compareBtn,
-                                hovered && !statsGenerating && (styles.compareBtnHover as object),
+                                {
+                                  borderColor: theme.accent + '40',
+                                  backgroundColor: theme.accent + '0f',
+                                },
+                                hovered &&
+                                  !statsGenerating && {
+                                    backgroundColor: theme.accent + '1f',
+                                    borderColor: theme.accent + '80',
+                                  },
                                 statsGenerating && { opacity: 0.5 },
                               ] as object
                             }
                           >
-                            <Ionicons name="git-compare-outline" size={14} color={COLORS.orange} />
-                            <Text style={styles.compareBtnText}>Compare</Text>
+                            <Ionicons name="git-compare-outline" size={14} color={theme.accent} />
+                            <Text style={[styles.compareBtnText, { color: theme.accent }] as object}>
+                              Compare
+                            </Text>
                           </Pressable>
                         ) : null}
                       </View>
@@ -3134,6 +3232,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   } as object,
   bandFill: { height: '100%' as unknown as number, borderRadius: 3 },
+  // Catalog-median marker inside the track (track clips it to its rounded box).
+  bandMedianTick: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 2,
+    backgroundColor: 'rgba(41,60,67,0.30)',
+  } as object,
   bandLabel: {
     fontFamily: 'FlameSans-Regular',
     fontSize: 10,
@@ -3322,10 +3428,6 @@ const styles = StyleSheet.create({
     cursor: 'pointer',
     transition: 'background-color 150ms ease, border-color 150ms ease',
   } as object,
-  compareBtnHover: {
-    backgroundColor: COLORS.orange + '1f',
-    borderColor: COLORS.orange + '80',
-  } as object,
   compareBtnText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
@@ -3365,6 +3467,13 @@ const styles = StyleSheet.create({
     borderColor: '#e8ddd0',
     boxShadow: '0 6px 22px rgba(41,60,67,0.06)',
   } as object,
+  // Power Profile — same metrics as `card`, but the character's accent wash
+  // instead of white chrome (dynamic backgroundColor/borderColor at render).
+  powerBand: {
+    borderRadius: 18,
+    padding: 20,
+    borderWidth: 1,
+  },
   cardTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 11,
@@ -3375,14 +3484,17 @@ const styles = StyleSheet.create({
   },
   cardDivider: { height: 1, backgroundColor: '#ede5da', marginBottom: 14 },
 
-  percentileText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    color: COLORS.orange,
-    textAlign: 'right',
-    marginTop: 6,
-    letterSpacing: 0.2,
+  percentileRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 },
+  percentileBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
+  percentileBadgeText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 12 },
 
   // ── Mobile native-style immersive layout ──
   mHero: {
@@ -3509,6 +3621,16 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   mBlock: { paddingHorizontal: 20, paddingTop: 18 },
+  // Mobile Power Profile — inset band; horizontal padding compensates the
+  // margin so content stays flush with sibling mBlock text (12 + 8 = 20).
+  mPowerBand: {
+    marginHorizontal: 12,
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingBottom: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+  },
 
   // Dossier — collapsible card ported from the native screen.
   dossierBar: {
