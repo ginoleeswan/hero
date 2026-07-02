@@ -88,8 +88,26 @@ export function PullQuoteBio({
 }
 
 const styles = StyleSheet.create({
-  wrap: { flexDirection: 'row', gap: 16, paddingVertical: 6 },
-  quoteBar: { width: 3, borderRadius: 2, alignSelf: 'stretch' },
+  // Card chrome matching the page's other sections — the accent quote-bar is
+  // the card's left edge, so the editorial moment stays anchored in the rhythm
+  // instead of floating loose on the beige.
+  wrap: {
+    flexDirection: 'row',
+    gap: 16,
+    backgroundColor: 'white',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#e8ddd0',
+    boxShadow: '0 6px 22px rgba(41,60,67,0.06)',
+    padding: 20,
+    overflow: 'hidden',
+  } as object,
+  quoteBar: {
+    width: 3,
+    borderRadius: 2,
+    alignSelf: 'stretch',
+    marginVertical: 2,
+  },
   body: { flex: 1, gap: 10, maxWidth: 720 },
   // Non-clamped Flame display — free-wrapping, so no descender clipping risk.
   lead: { fontFamily: 'Flame-Regular', fontSize: 23, lineHeight: 32, color: COLORS.navy },
