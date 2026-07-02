@@ -115,17 +115,23 @@ const s = StyleSheet.create({
     height: 110,
     backgroundImage: 'linear-gradient(to top, rgba(11,24,32,0.95) 0%, transparent 100%)',
   } as object,
+  // Pinned over unpredictable cover art (bright yellows included) — the plate
+  // + shadow keep it legible on anything.
   kicker: {
     position: 'absolute',
-    top: 20,
-    left: 0,
-    right: 0,
+    top: 16,
+    alignSelf: 'center',
     textAlign: 'center',
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
     letterSpacing: 3,
     textTransform: 'uppercase',
-    color: COLORS.orange,
+    color: COLORS.beige,
+    backgroundColor: 'rgba(11,24,32,0.72)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 14,
+    textShadow: '0 1px 4px rgba(0,0,0,0.6)',
   } as object,
   center: {
     position: 'absolute',

@@ -1118,33 +1118,54 @@ function FavouritesInvite({
 }) {
   return (
     <View style={[fi.section, { paddingHorizontal: gutter }] as object}>
-      <View style={fi.headerLeft}>
-        <View style={fi.accentBar} />
-        <View style={fi.headerText}>
+      {/* One contained paper card — copy + CTA beside a fanned hand of
+          face-down collection cards, so the slot reads as a designed object
+          rather than loose furniture on the canvas. */}
+      <View style={fi.card as object}>
+        <View style={fi.copy}>
           <Text style={fi.label as object}>For You</Text>
           <Text style={fi.title as object}>Start Your Collection</Text>
+          <Text style={fi.sub as object}>
+            {isAuthed
+              ? 'Tap the heart on any character and the legends you’d defend line up here.'
+              : 'Create a free account and keep the legends you’d defend in one place — favourites, votes and your own corner of the multiverse.'}
+          </Text>
+          <Pressable
+            onPress={onCta}
+            accessibilityRole="button"
+            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+              [fi.cta, hovered && (fi.ctaHover as object)] as object
+            }
+          >
+            <Text style={fi.ctaText}>
+              {isAuthed ? 'Find your first favourite' : 'Sign up free'}
+            </Text>
+          </Pressable>
         </View>
-      </View>
-      <Text style={fi.sub as object}>
-        {isAuthed
-          ? 'Tap the heart on any character and the legends you’d defend line up here.'
-          : 'Create a free account and keep the legends you’d defend in one place — favourites, votes and your own corner of the multiverse.'}
-      </Text>
-      <View style={fi.body}>
-        {[0, 1, 2].map((i) => (
-          <View key={i} style={fi.ghost as object}>
-            <MaterialCommunityIcons name="heart-outline" size={26} color="rgba(41,60,67,0.28)" />
-          </View>
-        ))}
-        <Pressable
-          onPress={onCta}
-          accessibilityRole="button"
-          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [fi.cta, hovered && (fi.ctaHover as object)] as object
-          }
-        >
-          <Text style={fi.ctaText}>{isAuthed ? 'Find your first favourite' : 'Sign up free'}</Text>
-        </Pressable>
+        <View style={fi.fan as object}>
+          {[
+            { deg: '-10deg', y: 6 },
+            { deg: '-1deg', y: -6 },
+            { deg: '9deg', y: 8 },
+          ].map((t, i) => (
+            <View
+              key={i}
+              style={
+                [
+                  fi.ghost,
+                  i > 0 && (fi.ghostOverlap as object),
+                  { transform: [{ rotate: t.deg }, { translateY: t.y }] },
+                ] as object
+              }
+            >
+              <MaterialCommunityIcons
+                name="heart-outline"
+                size={26}
+                color="rgba(41,60,67,0.28)"
+              />
+            </View>
+          ))}
+        </View>
       </View>
     </View>
   );
@@ -1152,37 +1173,60 @@ function FavouritesInvite({
 
 const fi = StyleSheet.create({
   section: { marginBottom: 52 },
-  headerLeft: { flexDirection: 'row', alignItems: 'stretch', gap: 14, marginBottom: 10 },
-  accentBar: { width: 4, borderRadius: 2, backgroundColor: COLORS.orange, minHeight: 38 },
-  headerText: { gap: 2, justifyContent: 'center' },
-  label: { ...EYEBROW } as object,
-  title: { fontFamily: 'Flame-Regular', fontSize: 36, color: COLORS.navy, lineHeight: 38 },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 28,
+    backgroundColor: '#fffdf9',
+    borderWidth: 1,
+    borderColor: 'rgba(41,60,67,0.12)',
+    borderRadius: 20,
+    paddingVertical: 32,
+    paddingHorizontal: 34,
+    boxShadow: ELEVATION.rest,
+  } as object,
+  copy: { flex: 1, minWidth: 300 },
+  label: { ...EYEBROW, marginBottom: 6 } as object,
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 36,
+    color: COLORS.navy,
+    lineHeight: 40,
+    marginBottom: 8,
+  },
   sub: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 21,
     color: 'rgba(41,60,67,0.65)',
-    maxWidth: 560,
-    marginBottom: 20,
+    maxWidth: 520,
+    marginBottom: 22,
   } as object,
-  body: { flexDirection: 'row', alignItems: 'center', gap: 14, flexWrap: 'wrap' },
-  // Face-down card ghosts — dashed outlines where the collection will live.
+  // The fanned hand — three face-down cards waiting to be dealt.
+  fan: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  } as object,
   ghost: {
     width: 96,
     height: 132,
     borderRadius: 14,
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: 'rgba(41,60,67,0.22)',
+    borderColor: 'rgba(41,60,67,0.25)',
+    backgroundColor: 'rgba(41,60,67,0.03)',
     alignItems: 'center',
     justifyContent: 'center',
   } as object,
+  ghostOverlap: { marginLeft: -34 } as object,
   cta: {
     backgroundColor: COLORS.orange,
     paddingHorizontal: 26,
     paddingVertical: 13,
     borderRadius: 26,
-    marginLeft: 10,
+    alignSelf: 'flex-start',
     cursor: 'pointer',
     transition: 'opacity 150ms ease',
   } as object,
@@ -1494,6 +1538,9 @@ const styles = StyleSheet.create({
   // Daily banner restyled to sit on the dark stage: drop the beige-sheet gutter,
   // add a glass hairline so it reads as a sibling of the matchup card.
   dailyBannerGlass: {
+    // Fill the engage column so the card bottoms out level with the matchup
+    // poster beside it (no orphaned gap under the CTA).
+    flex: 1,
     marginHorizontal: 0,
     marginTop: 0,
     marginBottom: 0,

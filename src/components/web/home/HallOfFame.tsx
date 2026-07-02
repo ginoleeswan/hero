@@ -103,11 +103,18 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
                       recyclingKey={String(h.id)}
                     />
                   </View>
-                  <Text style={s.rowName as object} numberOfLines={1}>
-                    {h.name}
-                  </Text>
-                  {/* Right-anchored: publisher at rest, swaps to an arrow on hover —
-                      so the row stays justified edge-to-edge either way. */}
+                  <View style={s.rowText}>
+                    <Text style={s.rowName as object} numberOfLines={1}>
+                      {h.name}
+                    </Text>
+                    {!!h.publisher && (
+                      <Text style={s.rowPub as object} numberOfLines={1}>
+                        {h.publisher}
+                      </Text>
+                    )}
+                  </View>
+                  {/* Right-anchored: the fame meter at rest (the section IS a
+                      fame ranking — show the data), an arrow on hover. */}
                   {hovered ? (
                     <Ionicons
                       name="arrow-forward"
@@ -116,11 +123,16 @@ export function HallOfFame({ heroes, onPress }: { heroes: Hero[]; onPress: (id: 
                       style={s.trailIcon as object}
                     />
                   ) : (
-                    !!h.publisher && (
-                      <Text style={s.rowMeta as object} numberOfLines={1}>
-                        {h.publisher}
-                      </Text>
-                    )
+                    <View style={s.fameTrack as object}>
+                      <View
+                        style={
+                          [
+                            s.fameFill,
+                            { width: `${Math.max(8, Math.round(h.fame_score ?? 0))}%` },
+                          ] as object
+                        }
+                      />
+                    </View>
                   )}
                 </>
               )}
@@ -265,6 +277,8 @@ const s = StyleSheet.create({
     borderRadius: 14,
     cursor: 'pointer',
     transition: 'background-color 150ms ease',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(41,60,67,0.08)',
   } as object,
   rowHover: {
     backgroundColor: 'rgba(41,60,67,0.06)',
@@ -292,22 +306,34 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(41,60,67,0.1)',
   },
+  rowText: { flex: 1, minWidth: 0, gap: 1 },
   rowName: {
-    flex: 1,
-    minWidth: 0,
     fontFamily: 'Flame-Regular',
     fontSize: 19,
     color: COLORS.navy,
     lineHeight: 24,
   } as object,
-  rowMeta: {
+  rowPub: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
     letterSpacing: 1,
     textTransform: 'uppercase',
     color: 'rgba(41,60,67,0.55)',
+  } as object,
+  // Fame meter — a quiet data bar filling the row's right side.
+  fameTrack: {
+    width: 84,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(41,60,67,0.12)',
+    overflow: 'hidden',
     marginLeft: 'auto',
-    paddingLeft: 10,
     flexShrink: 0,
+  } as object,
+  fameFill: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.orange,
+    opacity: 0.75,
   } as object,
 });

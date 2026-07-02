@@ -26,6 +26,12 @@ const DISCOVER: FooterLink[] = [
   { label: 'X-Men', path: '/category/xmen' },
 ];
 
+const COMPETE: FooterLink[] = [
+  { label: 'The Arena', path: '/versus' },
+  { label: "Today's Battle", path: '/versus' },
+  { label: 'Guess the Hero', path: '/play' },
+];
+
 function LinkColumn({
   title,
   links,
@@ -60,6 +66,20 @@ export function HomeFooter({ heroCount, onNavigate }: HomeFooterProps) {
 
   return (
     <View style={[s.footer, { paddingHorizontal: pagePad }] as object}>
+      {/* Ink-on-ink wordmark bleeding off the page's foot — bookends the
+          spotlight's splash-name up top. */}
+      <Text
+        style={
+          [
+            s.wordmarkBackdrop,
+            { fontSize: Math.min(220, Math.max(110, Math.round(width * 0.14))) },
+          ] as object
+        }
+        numberOfLines={1}
+        aria-hidden
+      >
+        MYTHIQUE
+      </Text>
       <View style={s.inner}>
         <View style={[s.top, !isDesktop && (s.topStack as object)] as object}>
           <View style={s.brand}>
@@ -71,6 +91,7 @@ export function HomeFooter({ heroCount, onNavigate }: HomeFooterProps) {
           <View style={[s.columns, !isDesktop && (s.columnsStack as object)] as object}>
             <LinkColumn title="Browse" links={BROWSE} onNavigate={onNavigate} />
             <LinkColumn title="Discover" links={DISCOVER} onNavigate={onNavigate} />
+            <LinkColumn title="Compete" links={COMPETE} onNavigate={onNavigate} />
           </View>
         </View>
 
@@ -99,14 +120,29 @@ export function HomeFooter({ heroCount, onNavigate }: HomeFooterProps) {
 const s = StyleSheet.create({
   footer: {
     backgroundColor: COLORS.deepNavy,
-    paddingTop: 56,
-    paddingBottom: 48,
-  },
+    paddingTop: 64,
+    paddingBottom: 56,
+    position: 'relative',
+    overflow: 'hidden',
+  } as object,
+  // The foot of the page: brand set enormous, ink-on-ink, cropped by the
+  // bottom edge (mirrors the spotlight's splash-name).
+  wordmarkBackdrop: {
+    position: 'absolute',
+    bottom: -28,
+    alignSelf: 'center',
+    fontFamily: 'Flame-Regular',
+    color: 'rgba(245,235,220,0.045)',
+    letterSpacing: 10,
+    whiteSpace: 'nowrap',
+    pointerEvents: 'none',
+  } as object,
   inner: {
     maxWidth: 1180,
     width: '100%',
     alignSelf: 'center',
-  },
+    zIndex: 1,
+  } as object,
   top: {
     flexDirection: 'row',
     justifyContent: 'space-between',

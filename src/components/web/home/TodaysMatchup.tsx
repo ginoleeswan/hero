@@ -238,7 +238,7 @@ function VotePrompt({
         <Pressable
           onPress={() => onVote('a')}
           style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [m.voteBtn, hovered && (m.voteBtnHoverA as object)] as object
+            [m.voteBtn, m.voteBtnA, hovered && (m.voteBtnHoverA as object)] as object
           }
         >
           <Text style={m.voteBtnText} numberOfLines={1}>
@@ -248,7 +248,7 @@ function VotePrompt({
         <Pressable
           onPress={() => onVote('b')}
           style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [m.voteBtn, hovered && (m.voteBtnHoverB as object)] as object
+            [m.voteBtn, m.voteBtnB, hovered && (m.voteBtnHoverB as object)] as object
           }
         >
           <Text style={m.voteBtnText} numberOfLines={1}>
@@ -640,8 +640,10 @@ const m = StyleSheet.create({
     cursor: 'pointer',
     transition: 'background-color 150ms ease, border-color 150ms ease',
   } as object,
-  // Vote buttons take their fighter's corner colour on hover — the same
-  // orange/blue the tally bar resolves to.
+  // Each button carries its fighter's corner colour — a whisper at rest,
+  // committed on hover (the same orange/blue the tally bar resolves to).
+  voteBtnA: { borderColor: 'rgba(231,115,51,0.35)' } as object,
+  voteBtnB: { borderColor: 'rgba(21,161,171,0.4)' } as object,
   voteBtnHoverA: {
     backgroundColor: 'rgba(231,115,51,0.22)',
     borderColor: 'rgba(231,115,51,0.6)',
