@@ -197,6 +197,9 @@ const PARTICLE_VERT = `
   attribute vec3 aScatter;
   attribute float aSeed;
   uniform sampler2D uTex;
+  uniform sampler2D uTexB;
+  uniform float uMix;
+  uniform float uSwirl;
   uniform float uAssemble;
   uniform float uReveal;
   uniform float uTime;
@@ -206,7 +209,10 @@ const PARTICLE_VERT = `
   varying float vAlpha;
 
   void main() {
-    vec3 tex = texture2D(uTex, aUv).rgb;
+    // Crossfade between the outgoing and incoming legend mid-flight, staggered
+    // per particle so the colour change ripples through the cloud
+    float mixT = clamp(uMix * 1.6 - aSeed * 0.6, 0.0, 1.0);
+    vec3 tex = mix(texture2D(uTex, aUv).rgb, texture2D(uTexB, aUv).rgb, mixT);
     float lum = dot(tex, vec3(0.299, 0.587, 0.114));
 
     // Staggered per-particle assembly, eased
@@ -223,12 +229,18 @@ const PARTICLE_VERT = `
     home.x += 0.012 * sin(uTime * 1.3 + aUv.y * 9.0 + aSeed * 6.2831);
     home.z += 0.035 * sin(uTime * 0.9 + aUv.x * 7.0 + aSeed * 6.2831);
 
-    // Dispersed stardust, slowly swirling
+    // Dispersed stardust, slowly swirling; during a morph the swirl surges
+    // and the cloud rotates so the change of form reads as one motion
     vec3 sc = aScatter;
     float sw = uTime * 0.22 + aSeed * 6.2831;
-    sc.x += 0.28 * sin(sw);
-    sc.y += 0.2 * cos(sw * 1.3);
-    sc.z += 0.22 * sin(sw * 0.7);
+    float surge = 1.0 + uSwirl * 1.4;
+    sc.x += 0.28 * sin(sw) * surge;
+    sc.y += 0.2 * cos(sw * 1.3) * surge;
+    sc.z += 0.22 * sin(sw * 0.7) * surge;
+    float ang = uSwirl * (0.9 + aSeed * 0.5);
+    float ca = cos(ang);
+    float sa = sin(ang);
+    sc.xy = mat2(ca, -sa, sa, ca) * sc.xy;
 
     vec3 pos = mix(sc, home, t);
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
@@ -595,6 +607,9 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
       depthWrite: false,
       uniforms: {
         uTex: { value: placeholderTex },
+        uTexB: { value: placeholderTex },
+        uMix: { value: 0 },
+        uSwirl: { value: 0 },
         uAssemble: { value: 0 },
         uReveal: { value: 0 },
         uTime: { value: 0 },
@@ -782,7 +797,10 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
   };
 
   /* --- State machine ----------------------------------------------- */
-  type Phase = 'waiting' | 'assemble' | 'hold' | 'disperse';
+  // 'morph' replaces the old disperse -> wait -> reassemble chain: one
+  // continuous cosine curve where the cloud lifts, swirls, crossfades to
+  // the next legend mid-air, and lands — no dead stop, no colour pop.
+  type Phase = 'waiting' | 'assemble' | 'hold' | 'morph';
   let phase: Phase = 'waiting';
   let phaseT = 0;
   let index = Math.floor(Math.random() * SUMMONS.length);
@@ -793,10 +811,13 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
   let rafId = 0;
   let loadFailures = 0;
   let canvasReady = false;
+  let morphPending = false;
+  let morphSwapped = false;
+  let pendingNext: { s: Summon; tex: THREE.Texture; index: number } | null = null;
 
   const ASSEMBLE_S = 2.0;
   const HOLD_S = 6.2;
-  const DISPERSE_S = 1.1;
+  const MORPH_S = 2.6;
 
   const preload = (s: Summon) => {
     loadPortrait(s.id).catch(() => {});
@@ -843,12 +864,39 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
     }
   };
 
+  // Loads the next legend, then starts the morph. If a portrait fails,
+  // walks the roster; a full sweep of failures falls back to static.
+  const startMorph = () => {
+    if (disposed || morphPending || phase !== 'hold') return;
+    morphPending = true;
+    const tryLoad = (i: number, attempts: number) => {
+      const nextIndex = i % SUMMONS.length;
+      const s = SUMMONS[nextIndex];
+      loadPortrait(s.id)
+        .then((tex) => {
+          if (disposed) return;
+          pendingNext = { s, tex, index: nextIndex };
+          particleMat.uniforms.uTexB.value = tex;
+          morphSwapped = false;
+          morphPending = false;
+          phase = 'morph';
+          phaseT = 0;
+        })
+        .catch(() => {
+          if (disposed) return;
+          if (attempts >= SUMMONS.length) {
+            onFail();
+            return;
+          }
+          tryLoad(nextIndex + 1, attempts + 1);
+        });
+    };
+    tryLoad(index + 1, 1);
+  };
+
   const summonNext = () => {
     if (disposed) return;
-    if (phase === 'hold' || (phase === 'assemble' && phaseT / ASSEMBLE_S > 0.5)) {
-      phase = 'disperse';
-      phaseT = 0;
-    }
+    startMorph();
   };
 
   /* --- Layout ------------------------------------------------------ */
@@ -941,17 +989,44 @@ function createSummoningScene(opts: EngineOpts): SummonEngine {
       }
     } else if (phase === 'hold') {
       particleMat.uniforms.uAssemble.value = 1;
-      if (phaseT >= HOLD_S) {
-        phase = 'disperse';
-        phaseT = 0;
+      if (phaseT >= HOLD_S) startMorph();
+    } else if (phase === 'morph') {
+      const p = Math.min(phaseT / MORPH_S, 1);
+      // One cosine breath: 1 -> 0 -> 1, never stopping
+      particleMat.uniforms.uAssemble.value = 0.5 + 0.5 * Math.cos(Math.PI * 2 * p);
+      particleMat.uniforms.uSwirl.value = Math.sin(Math.PI * p);
+      particleMat.uniforms.uMix.value = THREE.MathUtils.smoothstep(p, 0.36, 0.62);
+      if (!morphSwapped && p >= 0.5 && pendingNext) {
+        // Identity changes at the trough, while the cloud is pure stardust
+        morphSwapped = true;
+        const pn = pendingNext;
+        index = pn.index;
+        onSummon(pn.s);
+        revealMat.uniforms.uTex.value = pn.tex;
+        if (activeHalo) {
+          group.remove(activeHalo.group);
+          activeHalo = null;
+        }
+        haloAlpha = 0;
+        document.fonts.ready.then(() =>
+          getHalo(pn.s)
+            .then((halo) => {
+              if (disposed || SUMMONS[index].id !== pn.s.id) return;
+              activeHalo = halo;
+              group.add(halo.group);
+            })
+            .catch(() => {}),
+        );
       }
-    } else if (phase === 'disperse') {
-      particleMat.uniforms.uAssemble.value = Math.max(1 - phaseT / DISPERSE_S, 0);
-      if (phaseT >= DISPERSE_S) {
-        phase = 'waiting';
+      if (p >= 1 && pendingNext) {
+        particleMat.uniforms.uTex.value = pendingNext.tex;
+        particleMat.uniforms.uMix.value = 0;
+        particleMat.uniforms.uSwirl.value = 0;
+        particleMat.uniforms.uAssemble.value = 1;
+        pendingNext = null;
+        phase = 'hold';
         phaseT = 0;
-        index = (index + 1) % SUMMONS.length;
-        beginSummon(SUMMONS[index]);
+        preload(SUMMONS[(index + 1) % SUMMONS.length]);
       }
     }
 
@@ -1116,20 +1191,15 @@ const CSS = `
     width:100%; max-width:1220px; margin:0 auto;
     min-height:calc(100dvh - 190px);
   }
+  /* No container — the copy sits directly in the starfield; a soft local
+     darkening behind it keeps the type readable without drawing a box */
   .hero-panel {
     position:relative;
-    background:linear-gradient(160deg,rgba(20,33,48,0.66) 0%,rgba(11,24,32,0.42) 100%);
-    -webkit-backdrop-filter:blur(18px) saturate(1.25);
-    backdrop-filter:blur(18px) saturate(1.25);
-    border:1px solid rgba(245,235,220,0.09);
-    border-radius:28px;
-    padding:44px 42px;
-    box-shadow:0 24px 80px rgba(0,0,0,0.45);
+    padding:24px 0;
   }
   .hero-panel::before {
-    content:''; position:absolute; inset:0 0 auto 0; height:1px; border-radius:28px 28px 0 0;
-    background:linear-gradient(90deg,transparent,rgba(245,235,220,0.22),transparent);
-    pointer-events:none;
+    content:''; position:absolute; inset:-60px -80px; pointer-events:none; z-index:-1;
+    background:radial-gradient(70% 60% at 40% 45%,rgba(11,24,32,0.72) 0%,rgba(11,24,32,0.3) 55%,transparent 78%);
   }
   .hero--3d .hero-wordmark-large {
     font-size:clamp(52px,7vw,92px); margin-bottom:28px; letter-spacing:-2px;
@@ -1657,7 +1727,7 @@ const CSS = `
     .hero--3d { text-align:center; padding:100px 20px 40px; }
     .hero--3d .hero-sub { margin:0 auto 30px; }
     .hero--3d .hero-ctas { justify-content:center; }
-    .hero-panel { padding:30px 24px; }
+    .hero-panel { padding:8px 0 0; }
     .summon-stage { min-height:56vh; }
   }
 
