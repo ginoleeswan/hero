@@ -1,7 +1,34 @@
 {
   "buildCommand": "yarn expo export -p web && node scripts/generate-sitemap.mjs",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "functions": {
+    "api/og.tsx": { "includeFiles": "assets/fonts/**" }
+  },
+  "rewrites": [
+    {
+      "source": "/character/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|WhatsApp|Slackbot|Discordbot|TelegramBot|LinkedInBot|Pinterestbot|redditbot|Applebot).*"
+        }
+      ],
+      "destination": "/api/share-meta?kind=character&id=:id"
+    },
+    {
+      "source": "/compare/:hero/:opponent",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|WhatsApp|Slackbot|Discordbot|TelegramBot|LinkedInBot|Pinterestbot|redditbot|Applebot).*"
+        }
+      ],
+      "destination": "/api/share-meta?kind=vs&a=:hero&b=:opponent"
+    },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",

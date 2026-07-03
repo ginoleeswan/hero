@@ -51,6 +51,7 @@ import { ComicCoverRail } from '../../src/components/home/ComicCoverRail';
 import { ImageLightbox } from '../../src/components/ImageLightbox';
 import { UniverseEyebrow } from '../../src/components/PublisherBadge';
 import { SeoHead } from '../../src/components/web/SeoHead';
+import { SITE_URL } from '../../src/constants/site';
 import type { HeroStats } from '../../src/types';
 
 const STAT_CONFIG = [
@@ -690,7 +691,9 @@ export default function WebCharacterScreen() {
       .trim()
       .slice(0, 155)
       .trim() + (seoRaw.length > 155 ? '…' : '');
-  const seoImage = stats.image.portraitUrl || stats.image.url || undefined;
+  // Branded 1200×630 card from the OG renderer (falls back to the raw portrait
+  // for heroes with no art — the renderer handles that itself too).
+  const seoImage = `${SITE_URL}/api/og?hero=${encodeURIComponent(String(id))}`;
 
   // Editable-field → current value, shared by the mobile dossier editor and the
   // desktop contribute card (the screen has both stats + details).

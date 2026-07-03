@@ -24,6 +24,9 @@ import { StatBattleRow } from '../../../src/components/compare/StatBattleRow';
 import { VsBadge } from '../../../src/components/compare/VsBadge';
 import { MatchupBadge } from '../../../src/components/compare/MatchupBadge';
 import { useRelationship } from '../../../src/lib/query/heroQueries';
+import { SeoHead } from '../../../src/components/web/SeoHead';
+import { SITE_URL } from '../../../src/constants/site';
+import { vsShareLine } from '../../../src/lib/share';
 import { relationshipBadge } from '../../../src/lib/db/heroes';
 import { getFighterArt, stashFighters } from '../../../src/lib/compareHandoff';
 import { withViewTransition } from '../../../src/lib/viewTransition';
@@ -313,11 +316,12 @@ export default function WebCompareScreen() {
       return;
     }
     const url = typeof window !== 'undefined' ? window.location.href : '';
+    const line = vsShareLine(nameA, nameB, tally?.votesA ?? 0, tally?.votesB ?? 0);
     try {
       if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare?.({ url })) {
-        await navigator.share({ title: `${nameA} vs ${nameB}`, url });
+        await navigator.share({ title: `${nameA} vs ${nameB}`, text: line, url });
       } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(`${line} ${url}`);
         flash('Link copied!');
       }
     } catch {
@@ -334,6 +338,18 @@ export default function WebCompareScreen() {
     if (router.canGoBack()) router.back();
     else router.replace(`/character/${hero}`);
   };
+
+  // Per-matchup SEO/social head (JS-rendering crawlers; link-preview bots get
+  // the same tags server-side from api/share-meta via the vercel.json rewrite).
+  const seo =
+    nameA && nameB ? (
+      <SeoHead
+        title={`${nameA} vs ${nameB} — Mythique`}
+        description={vsShareLine(nameA, nameB, tally?.votesA ?? 0, tally?.votesB ?? 0)}
+        path={`/compare/${hero}/${opponent}`}
+        image={`${SITE_URL}/api/og?a=${encodeURIComponent(hero)}&b=${encodeURIComponent(opponent)}`}
+      />
+    ) : null;
 
   const controlButtons = (
     <>
@@ -366,6 +382,7 @@ export default function WebCompareScreen() {
        over the navy; portraits flank a centered scorecard ("Tale of the Tape"). */
     return (
       <View style={styles.desktopRoot}>
+        {seo}
         {hiddenCard}
         <View style={[styles.controls, styles.controlsDesktop] as object}>{controlButtons}</View>
         <View style={styles.arena}>
@@ -434,6 +451,7 @@ export default function WebCompareScreen() {
      a full stat list. */
   return (
     <View style={[styles.scroll, styles.contentOuter] as object}>
+      {seo}
       {hiddenCard}
       <View style={styles.mobileNavyTop as object}>
         <View style={[styles.mobileCard, { width: mobileCardW }]}>
