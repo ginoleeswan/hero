@@ -72,7 +72,7 @@ export function HomeFooter({ heroCount, onNavigate }: HomeFooterProps) {
         style={
           [
             s.wordmarkBackdrop,
-            { fontSize: Math.min(220, Math.max(110, Math.round(width * 0.14))) },
+            { fontSize: Math.min(220, Math.max(80, Math.round(width * 0.14))) },
           ] as object
         }
         numberOfLines={1}
@@ -130,7 +130,7 @@ const s = StyleSheet.create({
   // Set in Righteous lowercase — the actual brand wordmark, not display type.
   wordmarkBackdrop: {
     position: 'absolute',
-    bottom: -34,
+    bottom: -6,
     alignSelf: 'center',
     fontFamily: 'Righteous_400Regular',
     color: 'rgba(245,235,220,0.045)',
