@@ -4,7 +4,7 @@
 //   node scripts/fetch-og-site.mjs [origin]   (default: production SITE_URL)
 import { writeFile } from 'node:fs/promises';
 
-const origin = process.argv[2] ?? 'https://mythique-wiki.vercel.app';
+const origin = process.argv[2] ?? 'https://mythique.app';
 const url = `${origin}/api/og`;
 
 const res = await fetch(url);
