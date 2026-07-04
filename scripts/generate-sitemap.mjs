@@ -16,9 +16,9 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 // Mirrors SITE_URL in src/constants/site.ts (this standalone build script can't
-// import TS). Override at build time with SITEMAP_BASE_URL. Flip both when the
-// custom domain is attached.
-const BASE_URL = (process.env.SITEMAP_BASE_URL || 'https://mythique-wiki.vercel.app').replace(
+// import TS). Override at build time with SITEMAP_BASE_URL. Keep in sync with
+// SITE_URL if the origin ever changes.
+const BASE_URL = (process.env.SITEMAP_BASE_URL || 'https://mythique.app').replace(
   /\/$/,
   '',
 );
