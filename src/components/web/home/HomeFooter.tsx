@@ -46,7 +46,7 @@ function LinkColumn({
       <Text style={s.colTitle as object}>{title}</Text>
       {links.map((l) => (
         <Pressable
-          key={l.path}
+          key={l.label}
           onPress={() => onNavigate(l.path)}
           style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
             [s.linkWrap, hovered && (s.linkWrapHover as object)] as object
