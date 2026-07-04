@@ -1,4 +1,4 @@
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { COLORS, EYEBROW, pageGutter } from '../../../constants/colors';
 import { HeroImage } from '../../HeroImage';
@@ -86,7 +86,7 @@ export function ThisMonthInHistory({
         {/* Editorial column — headline + copy + character strip.
             The column fills all remaining width; the ghost year anchors
             top-right behind the content so there's no empty zone.        */}
-        <View style={s.editorial as object}>
+        <View style={[s.editorial, !isDesktop && { overflow: 'visible' }] as object}>
           {/* Ghost year — structural backdrop, behind everything */}
           {isDesktop && !!lead.year && (
             <Text
@@ -128,8 +128,8 @@ export function ThisMonthInHistory({
             <View style={s.charBlock as object}>
               <View style={s.charRule as object} />
               <Text style={s.charLabel as object}>Also debuted in {MONTH}</Text>
-              <View style={[s.charStrip, !isDesktop && (s.charStripScroll as object)] as object}>
-                {allChars.map((c) => (
+              {(() => {
+                const chips = allChars.map((c) => (
                   <Pressable
                     key={c.id}
                     onPress={() => onHeroPress(c.id)}
@@ -168,8 +168,28 @@ export function ThisMonthInHistory({
                       {c.name}
                     </Text>
                   </Pressable>
-                ))}
-              </View>
+                ));
+
+                // Desktop wraps into a grid; mobile scrolls horizontally so the
+                // roster never forces the page wider than the viewport.
+                return isDesktop ? (
+                  <View style={s.charStrip}>{chips}</View>
+                ) : (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    // Bleed the strip out to the screen edges: cancel the
+                    // section gutter with a negative margin, then restore it as
+                    // content padding so chips rest aligned but scroll edge-to-edge.
+                    style={{ marginHorizontal: -pagePad } as object}
+                    contentContainerStyle={
+                      [s.charStripScrollContent, { paddingHorizontal: pagePad }] as object
+                    }
+                  >
+                    {chips}
+                  </ScrollView>
+                );
+              })()}
             </View>
           )}
         </View>
@@ -202,7 +222,10 @@ const s = StyleSheet.create({
   } as object,
 
   layout: { flexDirection: 'row', alignItems: 'flex-start', gap: 28 },
-  layoutStack: { flexDirection: 'column', gap: 20 } as object,
+  // Column stack must stretch children — the base row style sets
+  // alignItems:'flex-start', which in a column sizes the editorial column to
+  // its content's min-width (the nowrap roster), overflowing the viewport.
+  layoutStack: { flexDirection: 'column', alignItems: 'stretch', gap: 20 } as object,
 
   // Rests at a slight collector's tilt; straightens and lifts on hover, like
   // picking the issue up off the table.
@@ -321,10 +344,9 @@ const s = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 16,
   },
-  charStripScroll: {
-    flexWrap: 'nowrap',
-    overflowX: 'auto',
-    scrollbarWidth: 'none',
+  charStripScrollContent: {
+    flexDirection: 'row',
+    gap: 16,
   } as object,
   charChip: {
     alignItems: 'center',
@@ -332,6 +354,7 @@ const s = StyleSheet.create({
     cursor: 'pointer',
     transition: 'opacity 150ms ease',
     width: 74,
+    flexShrink: 0,
   } as object,
   charChipHover: { opacity: 0.7 } as object,
   charAvatar: {
