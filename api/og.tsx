@@ -3,11 +3,17 @@
 //   /api/og?a=<id>&b=<id> — VS card (both portraits, tale of the tape)
 //   /api/og (no params) — site-wide brand card (snapshotted to public/og.png
 //                         by scripts/fetch-og-site.mjs)
-// Fonts are read from assets/fonts (shipped via includeFiles in vercel.json).
-// Any failure falls back to the brand card — never a broken image.
+//
+// Runs on the Edge runtime: standalone @vercel/og functions must be Edge for
+// Vercel to bundle the underlying satori/resvg WASM — on the Node runtime the
+// renderer fails to initialise. Fonts are therefore loaded via URL imports
+// (traced + inlined by the bundler) rather than node:fs, which Edge lacks.
+//
+// Any failure falls back to a redirect to the static brand card (public/og.png)
+// so a share link never yields a broken image.
 import { ImageResponse } from '@vercel/og';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+
+export const config = { runtime: 'edge' };
 
 const NAVY = '#0b1820';
 const BEIGE = '#f5ebdc';
@@ -34,17 +40,22 @@ async function fetchHero(id: string): Promise<OgHero | null> {
   return rows[0] ?? null;
 }
 
-function font(file: string) {
-  return readFileSync(join(process.cwd(), 'assets', 'fonts', file));
-}
-
-let fonts: { name: string; data: Buffer; style: 'normal' }[] | null = null;
+// Edge runtime has no node:fs — load the font bytes via URL imports so the
+// bundler traces and inlines them. Cached across warm invocations.
+let fontsPromise: Promise<{ name: string; data: ArrayBuffer; style: 'normal' }[]> | null = null;
 function getFonts() {
-  fonts ??= [
-    { name: 'Flame', data: font('Flame-Regular.ttf'), style: 'normal' },
-    { name: 'FlameSans', data: font('FlameSans-Regular.ttf'), style: 'normal' },
-  ];
-  return fonts;
+  fontsPromise ??= Promise.all([
+    fetch(new URL('../assets/fonts/Flame-Regular.ttf', import.meta.url)).then((r) =>
+      r.arrayBuffer(),
+    ),
+    fetch(new URL('../assets/fonts/FlameSans-Regular.ttf', import.meta.url)).then((r) =>
+      r.arrayBuffer(),
+    ),
+  ]).then(([flame, flameSans]) => [
+    { name: 'Flame', data: flame, style: 'normal' as const },
+    { name: 'FlameSans', data: flameSans, style: 'normal' as const },
+  ]);
+  return fontsPromise;
 }
 
 const wordmark = (size = 30) => (
@@ -239,8 +250,8 @@ function vsCard(a: OgHero, b: OgHero, imgA: string | null, imgB: string | null) 
 const art = (h: OgHero) => h.portrait_url || h.image_url;
 
 export default async function handler(req: Request) {
-  let card = siteCard();
   try {
+    let card = siteCard();
     const { searchParams } = new URL(req.url);
     const heroId = searchParams.get('hero');
     const aId = searchParams.get('a');
@@ -252,15 +263,16 @@ export default async function handler(req: Request) {
       const [a, b] = await Promise.all([fetchHero(aId), fetchHero(bId)]);
       if (a && b) card = vsCard(a, b, art(a), art(b));
     }
+    return new ImageResponse(card, {
+      width: 1200,
+      height: 630,
+      fonts: await getFonts(),
+      headers: {
+        'cache-control': 'public, s-maxage=86400, stale-while-revalidate=604800',
+      },
+    });
   } catch {
-    // brand card fallback
+    // Never emit a broken image — fall back to the static brand card.
+    return Response.redirect(new URL('/og.png', req.url).toString(), 302);
   }
-  return new ImageResponse(card, {
-    width: 1200,
-    height: 630,
-    fonts: getFonts(),
-    headers: {
-      'cache-control': 'public, s-maxage=86400, stale-while-revalidate=604800',
-    },
-  });
 }

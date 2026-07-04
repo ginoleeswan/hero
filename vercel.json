@@ -1,9 +1,6 @@
 {
   "buildCommand": "yarn expo export -p web && node scripts/generate-sitemap.mjs",
   "outputDirectory": "dist",
-  "functions": {
-    "api/og.tsx": { "includeFiles": "assets/fonts/**" }
-  },
   "rewrites": [
     {
       "source": "/character/:id",
