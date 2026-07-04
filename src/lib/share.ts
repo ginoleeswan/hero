@@ -2,12 +2,7 @@
 // share-meta function (api/_lib/shareMeta.ts). Pure string logic only.
 
 /** "Goku vs Superman — 78% say Goku. You?" (falls back cleanly with no votes). */
-export function vsShareLine(
-  nameA: string,
-  nameB: string,
-  votesA: number,
-  votesB: number
-): string {
+export function vsShareLine(nameA: string, nameB: string, votesA: number, votesB: number): string {
   const total = votesA + votesB;
   if (total > 0) {
     const aLeads = votesA >= votesB;

@@ -217,18 +217,19 @@ function StatChip({
 
 // ── Portrait strip spotlight ──────────────────────────────────────────────────
 const ACCORDION_SCALES = {
-  // Extra-wide displays (1600px+) — more, larger cards so the strip fills width
+  // Extra-wide displays (1600px+). Content is capped at CONTENT_MAX_WIDTH, so
+  // the strip mustn't eat the whole band — these widths leave the glass panel a
+  // comfortable ~460px within 1440 (strip ≈ 964 + gap). Entry count matches the
+  // 8-hero pool (optimalPoolSize) so every slot is fed.
   xlarge: [
-    { w: 360, o: 1 },
-    { w: 190, o: 0.82 },
-    { w: 140, o: 0.66 },
-    { w: 108, o: 0.54 },
-    { w: 82, o: 0.44 },
-    { w: 62, o: 0.36 },
-    { w: 46, o: 0.28 },
-    { w: 34, o: 0.2 },
-    { w: 24, o: 0.13 },
-    { w: 18, o: 0.08 },
+    { w: 320, o: 1 },
+    { w: 172, o: 0.82 },
+    { w: 124, o: 0.66 },
+    { w: 92, o: 0.54 },
+    { w: 66, o: 0.44 },
+    { w: 48, o: 0.36 },
+    { w: 34, o: 0.28 },
+    { w: 24, o: 0.2 },
   ],
   // Ultra-wide displays (1200px+)
   large: [
@@ -566,6 +567,11 @@ const pss = StyleSheet.create({
     gap: 12,
     contain: 'layout style',
     height: '100%',
+    // Yield to the glass panel if the fixed card widths ever exceed the band:
+    // the rightmost accordion slivers clip (via the wrap's overflow) instead of
+    // the panel's edge getting sheared.
+    flexShrink: 1,
+    minWidth: 0,
   } as object,
   card: {
     borderRadius: 14,

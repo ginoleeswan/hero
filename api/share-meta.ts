@@ -3,13 +3,7 @@
 // /character and /compare links unfurl with page-specific OG tags. Humans never
 // hit this route; if they do, the meta-refresh sends them to the real page.
 // Any lookup failure falls back to the site-wide card — never a broken unfurl.
-import {
-  buildMetaHtml,
-  characterMeta,
-  siteMeta,
-  vsMeta,
-  type HeroLite,
-} from './_lib/shareMeta';
+import { buildMetaHtml, characterMeta, siteMeta, vsMeta, type HeroLite } from './_lib/shareMeta';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '';
@@ -23,7 +17,7 @@ type Res = {
 
 async function fetchHero(id: string): Promise<HeroLite | null> {
   const url = `${SUPABASE_URL}/rest/v1/heroes?id=eq.${encodeURIComponent(
-    id
+    id,
   )}&select=id,name,publisher`;
   const r = await fetch(url, { headers: { apikey: SUPABASE_KEY } });
   if (!r.ok) return null;

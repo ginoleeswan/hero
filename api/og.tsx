@@ -26,7 +26,7 @@ type OgHero = {
 
 async function fetchHero(id: string): Promise<OgHero | null> {
   const url = `${SUPABASE_URL}/rest/v1/heroes?id=eq.${encodeURIComponent(
-    id
+    id,
   )}&select=id,name,publisher,portrait_url,image_url`;
   const r = await fetch(url, { headers: { apikey: SUPABASE_KEY } });
   if (!r.ok) return null;
@@ -48,7 +48,9 @@ function getFonts() {
 }
 
 const wordmark = (size = 30) => (
-  <div style={{ display: 'flex', fontFamily: 'Flame', fontSize: size, color: GOLD, letterSpacing: 6 }}>
+  <div
+    style={{ display: 'flex', fontFamily: 'Flame', fontSize: size, color: GOLD, letterSpacing: 6 }}
+  >
     MYTHIQUE
   </div>
 );
@@ -66,10 +68,26 @@ function siteCard() {
         background: `linear-gradient(160deg, ${NAVY} 60%, #14283a)`,
       }}
     >
-      <div style={{ display: 'flex', fontFamily: 'Flame', fontSize: 130, color: BEIGE, letterSpacing: 10 }}>
+      <div
+        style={{
+          display: 'flex',
+          fontFamily: 'Flame',
+          fontSize: 130,
+          color: BEIGE,
+          letterSpacing: 10,
+        }}
+      >
         MYTHIQUE
       </div>
-      <div style={{ display: 'flex', fontFamily: 'FlameSans', fontSize: 40, color: GOLD, marginTop: 18 }}>
+      <div
+        style={{
+          display: 'flex',
+          fontFamily: 'FlameSans',
+          fontSize: 40,
+          color: GOLD,
+          marginTop: 18,
+        }}
+      >
         Every universe. Every icon.
       </div>
     </div>
@@ -83,18 +101,58 @@ function portraitImg(src: string, width: number) {
 
 function characterCard(hero: OgHero, img: string | null) {
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', background: `linear-gradient(160deg, ${NAVY} 55%, #14283a)` }}>
-      <div style={{ display: 'flex', flex: 1, flexDirection: 'column', justifyContent: 'center', padding: '0 72px' }}>
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        background: `linear-gradient(160deg, ${NAVY} 55%, #14283a)`,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          flex: 1,
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '0 72px',
+        }}
+      >
         {wordmark()}
-        <div style={{ display: 'flex', fontFamily: 'Flame', fontSize: 92, color: BEIGE, lineHeight: 1.22, marginTop: 20 }}>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'Flame',
+            fontSize: 92,
+            color: BEIGE,
+            lineHeight: 1.22,
+            marginTop: 20,
+          }}
+        >
           {hero.name}
         </div>
         {hero.publisher ? (
-          <div style={{ display: 'flex', fontFamily: 'FlameSans', fontSize: 34, color: '#9db4c4', marginTop: 12 }}>
+          <div
+            style={{
+              display: 'flex',
+              fontFamily: 'FlameSans',
+              fontSize: 34,
+              color: '#9db4c4',
+              marginTop: 12,
+            }}
+          >
             {hero.publisher}
           </div>
         ) : null}
-        <div style={{ display: 'flex', fontFamily: 'FlameSans', fontSize: 26, color: GOLD, marginTop: 44 }}>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'FlameSans',
+            fontSize: 26,
+            color: GOLD,
+            marginTop: 44,
+          }}
+        >
           Every universe. Every icon.
         </div>
       </div>
@@ -105,20 +163,71 @@ function characterCard(hero: OgHero, img: string | null) {
 
 function vsCard(a: OgHero, b: OgHero, imgA: string | null, imgB: string | null) {
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', background: `linear-gradient(90deg, ${NAVY}, #1d1426 50%, ${NAVY})` }}>
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        background: `linear-gradient(90deg, ${NAVY}, #1d1426 50%, ${NAVY})`,
+      }}
+    >
       {imgA ? portraitImg(imgA, 360) : <div style={{ display: 'flex', width: 360 }} />}
-      <div style={{ display: 'flex', flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 24px' }}>
+      <div
+        style={{
+          display: 'flex',
+          flex: 1,
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0 24px',
+        }}
+      >
         {wordmark(24)}
-        <div style={{ display: 'flex', fontFamily: 'Flame', fontSize: 52, color: BEIGE, marginTop: 26, textAlign: 'center', lineHeight: 1.22 }}>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'Flame',
+            fontSize: 52,
+            color: BEIGE,
+            marginTop: 26,
+            textAlign: 'center',
+            lineHeight: 1.22,
+          }}
+        >
           {a.name}
         </div>
-        <div style={{ display: 'flex', fontFamily: 'Flame', fontSize: 66, color: GOLD, margin: '6px 0' }}>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'Flame',
+            fontSize: 66,
+            color: GOLD,
+            margin: '6px 0',
+          }}
+        >
           VS
         </div>
-        <div style={{ display: 'flex', fontFamily: 'Flame', fontSize: 52, color: BEIGE, textAlign: 'center', lineHeight: 1.22 }}>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'Flame',
+            fontSize: 52,
+            color: BEIGE,
+            textAlign: 'center',
+            lineHeight: 1.22,
+          }}
+        >
           {b.name}
         </div>
-        <div style={{ display: 'flex', fontFamily: 'FlameSans', fontSize: 24, color: '#9db4c4', marginTop: 26 }}>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'FlameSans',
+            fontSize: 24,
+            color: '#9db4c4',
+            marginTop: 26,
+          }}
+        >
           Who wins? Vote on Mythique
         </div>
       </div>
