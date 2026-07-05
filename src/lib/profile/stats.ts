@@ -1,5 +1,5 @@
 export interface ProfileStat {
-  key: 'saved' | 'battles' | 'streak' | 'crowd' | 'badges';
+  key: 'saved' | 'battles' | 'streak' | 'badges';
   label: string;
   value: string;
   loading?: boolean;
@@ -8,7 +8,7 @@ export interface ProfileStat {
 export interface ProfileStatInput {
   savedCount: number;
   favouritesLoading: boolean;
-  battle: { total: number; agreePct: number; streak: number } | null;
+  battle: { total: number; streak: number } | null;
   badgesEarned: number;
 }
 
@@ -40,14 +40,6 @@ export function buildProfileStats(input: ProfileStatInput): ProfileStat[] {
         key: 'streak',
         label: 'Streak',
         value: String(battle.streak),
-        loading: undefined,
-      });
-    }
-    if (battle.agreePct > 0) {
-      stats.push({
-        key: 'crowd',
-        label: 'Crowd',
-        value: `${battle.agreePct}%`,
         loading: undefined,
       });
     }

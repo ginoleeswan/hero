@@ -360,8 +360,8 @@ export default function WebProfileScreen() {
     badgesEarned,
   });
 
-  const handleStatPress = (key: 'saved' | 'battles' | 'streak' | 'crowd' | 'badges') => {
-    if (key === 'battles' || key === 'streak' || key === 'crowd') router.push('/versus');
+  const handleStatPress = (key: 'saved' | 'battles' | 'streak' | 'badges') => {
+    if (key === 'battles' || key === 'streak') router.push('/versus');
   };
 
   // Shareable "My Universe" poster — off-screen card + share().

@@ -34,25 +34,25 @@ describe('buildProfileStats', () => {
     expect(stats[1]).toMatchObject({ key: 'badges', value: '7' });
   });
 
-  it('expands battle into battles/streak/crowd, dropping zero components', () => {
+  it('expands battle into battles/streak, dropping zero components', () => {
     const stats = buildProfileStats({
       savedCount: 3,
       favouritesLoading: false,
-      battle: { total: 34, agreePct: 83, streak: 0 },
+      battle: { total: 34, streak: 0 },
       badgesEarned: 0,
     });
-    expect(stats.map((s) => s.key)).toEqual(['saved', 'battles', 'crowd']);
-    const crowd = stats.find((s) => s.key === 'crowd');
-    expect(crowd?.value).toBe('83%');
+    expect(stats.map((s) => s.key)).toEqual(['saved', 'battles']);
+    const battles = stats.find((s) => s.key === 'battles');
+    expect(battles?.value).toBe('34');
   });
 
-  it('full house keeps the fixed order saved,battles,streak,crowd,badges', () => {
+  it('full house keeps the fixed order saved,battles,streak,badges', () => {
     const stats = buildProfileStats({
       savedCount: 12,
       favouritesLoading: false,
-      battle: { total: 34, agreePct: 83, streak: 5 },
+      battle: { total: 34, streak: 5 },
       badgesEarned: 7,
     });
-    expect(stats.map((s) => s.key)).toEqual(['saved', 'battles', 'streak', 'crowd', 'badges']);
+    expect(stats.map((s) => s.key)).toEqual(['saved', 'battles', 'streak', 'badges']);
   });
 });
