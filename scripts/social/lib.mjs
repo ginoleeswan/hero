@@ -77,7 +77,7 @@ export async function heroByName(sb, name) {
 }
 
 // Extended profile fields for character-showcase (bio) carousels.
-const HERO_FULL = HERO_SELECT + ',full_name,first_appearance,alignment,race,occupation,aliases,place_of_birth,group_affiliation';
+const HERO_FULL = HERO_SELECT + ',full_name,first_appearance,alignment,race,occupation,aliases,place_of_birth,group_affiliation,powers,movie_count,issue_count,wikidata_sitelinks';
 export async function heroFullByName(sb, name) {
   const rows = await sb.rest(`heroes?name=eq.${q(name)}&select=${HERO_FULL}&limit=1`);
   return rows[0] || null;
@@ -85,6 +85,20 @@ export async function heroFullByName(sb, name) {
 // Random popular characters for bio showcases.
 export async function popularHeroes(sb, n) {
   return sb.rest(`heroes?select=${HERO_FULL}&order=fame_score.desc&limit=${n}`);
+}
+
+// Relationship graph (enemies / allies), family, and key/value enrichment facts.
+export async function getRelated(sb, id, kind, limit = 6) {
+  try { return await sb.rpc('get_related_heroes', { p_hero_id: id, p_kind: kind, p_limit: limit, p_same_universe: false }); }
+  catch { return []; }
+}
+export async function getFamily(sb, id, limit = 6) {
+  try { return await sb.rpc('get_family_opponents', { p_hero_id: id, p_limit: limit }); }
+  catch { return []; }
+}
+export async function getFact(sb, id, key) {
+  try { const r = await sb.rest(`hero_facts?hero_id=eq.${id}&key=eq.${q(key)}&select=value&limit=1`); return r[0]?.value ?? null; }
+  catch { return null; }
 }
 export const famousPool = (sb) => sb.rest(`heroes?select=${HERO_SELECT}&order=fame_score.desc&limit=${FAME_POOL}`);
 
@@ -170,13 +184,17 @@ export function fonts() {
     S: b64(join(ROOT, 'assets/fonts/FlameSans-Regular.ttf')),
   };
 }
-export async function portraitDataUri(hero) {
-  const src = hero.portrait_url || hero.image_url || hero.image_md_url;
-  const r = await fetch(src);
-  const buf = Buffer.from(await r.arrayBuffer());
-  const mime = src.endsWith('.png') ? 'image/png' : 'image/jpeg';
-  return `data:${mime};base64,${buf.toString('base64')}`;
+export async function imgDataUri(src) {
+  if (!src) return null;
+  try {
+    const r = await fetch(src);
+    if (!r.ok) return null;
+    const buf = Buffer.from(await r.arrayBuffer());
+    const mime = src.endsWith('.png') ? 'image/png' : 'image/jpeg';
+    return `data:${mime};base64,${buf.toString('base64')}`;
+  } catch { return null; }
 }
+export const portraitDataUri = (hero) => imgDataUri(hero.portrait_url || hero.image_url || hero.image_md_url);
 
 export const COLORS = { O: '#e8823a', T: '#37a3c4', GOLD: '#e0a83e', CREAM: '#f5ebdc', NAVY: '#06121a' };
 export const grainUri = () => `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>`)}`;
