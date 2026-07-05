@@ -4,7 +4,8 @@ Generate on-brand social content from **real matchup data**, styled like the
 app's matchup screen. Two tools share one data layer (`lib.mjs`):
 
 - **`generate-reels.mjs`** — fast-cut 9:16 videos for TikTok / Reels / Shorts (`.mp4`)
-- **`generate-carousels.mjs`** — 4:5 Instagram carousel slides (`.png` set)
+- **`generate-carousels.mjs`** — 4:5 matchup carousel slides (`.png` set)
+- **`generate-bios.mjs`** — 4:5 character-showcase "character file" carousel (portrait, power stats, profile dossier, aliases) — flexes the catalogue depth
 
 ## What they do
 
@@ -39,10 +40,14 @@ node scripts/social/generate-reels.mjs --count 8 --dry-run
 # TikTok/Reels videos -> out/social/<slug>/video.mp4 + caption.txt
 node scripts/social/generate-reels.mjs --count 8
 
-# Instagram carousels -> out/social/<slug>/carousel/slide-1..4.png + caption.txt
+# Instagram matchup carousels -> out/social/<slug>/carousel/slide-1..4.png + caption.txt
 node scripts/social/generate-carousels.mjs --count 8
 
-# force a specific matchup (either tool)
+# Character-file carousels -> out/social/bio-<slug>/slide-1..4.png + caption.txt
+node scripts/social/generate-bios.mjs --count 8
+node scripts/social/generate-bios.mjs --character "Batman"
+
+# force a specific matchup
 node scripts/social/generate-carousels.mjs --matchup "Goku,Superman"
 ```
 

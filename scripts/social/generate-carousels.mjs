@@ -14,28 +14,13 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   loadEnv, makeSb, selectMatchups, resolveManual, hydrate, fonts, slugFor,
-  OUT_DIR, renderPng, COLORS, grainUri, fontFace, STAT_KEYS,
+  OUT_DIR, renderPng, COLORS, slide, STAT_KEYS,
 } from './lib.mjs';
 
 const { O, T, GOLD, CREAM, NAVY } = COLORS;
 const cap1 = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-
-const BASE = (F) => `${fontFace(F)}
-*{margin:0;padding:0;box-sizing:border-box;}html,body{width:1080px;height:1350px;overflow:hidden;background:${NAVY};font-family:'F';color:${CREAM};}
-.page{position:relative;width:1080px;height:1350px;overflow:hidden;background:radial-gradient(60% 44% at 50% 32%, rgba(224,168,62,.12), transparent 62%), radial-gradient(120% 90% at 50% 8%, #12242f, ${NAVY} 72%);}
-.dots{position:absolute;inset:0;background-image:radial-gradient(circle, rgba(224,168,62,.10) 1.3px, transparent 1.9px);background-size:30px;-webkit-mask-image:radial-gradient(130% 100% at 50% 40%, transparent 42%, #000);opacity:.55;}
-.grain{position:absolute;inset:0;background-image:url("${grainUri()}");background-size:340px;opacity:.05;mix-blend-mode:overlay;}
-.foot{position:absolute;bottom:46px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:16px;opacity:.9;}
-.foot .wm{font-family:'R';font-size:40px;color:${CREAM};}.foot .at{font-family:'F';font-size:26px;color:${GOLD};letter-spacing:1px;}
-.g{color:${GOLD};}.o{color:${O};}.t{color:${T};}
-.sqc{position:relative;border-radius:23%/17%;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.6);}
-.sqc img{width:100%;height:100%;object-fit:cover;}.sqc img.flip{transform:scaleX(-1);}.sqc .glare{position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,.13),transparent 40%);}
-.stroke{-webkit-text-stroke:8px ${NAVY};paint-order:stroke fill;}
-`;
-
-const page = (F, inner, extra = '') => `<!doctype html><html><head><meta charset="utf-8"><style>${BASE(F)}${extra}</style></head><body><div class="page"><div class="dots"></div><div class="grain"></div>${inner}<div class="foot"><span class="wm">mythique</span><span class="at">@mythiqueapp</span></div></div></body></html>`;
-
-const brandFootHidden = ''; // slides all share the footer
+const STAT_TITLE = 'HEAD TO HEAD'; // stat comparison slide heading
+const page = (F, inner, extra = '') => slide(F, inner, extra);
 
 function slideCover(M, F) {
   const inner = `
@@ -57,13 +42,13 @@ function slideTape(M, F) {
     return `<div style="margin:0 0 22px 0">
       <div style="text-align:center;font-size:31px;letter-spacing:3px;color:${GOLD};margin-bottom:8px">${k.toUpperCase()}</div>
       <div style="display:flex;align-items:center;gap:24px;padding:0 70px">
-        <span class="stroke" style="width:150px;text-align:right;font-size:62px;color:${ca}">${av}</span>
+        <span class="pop" style="width:150px;text-align:right;font-size:62px;color:${ca}">${av}</span>
         <div style="flex:1;height:32px;border-radius:20px;overflow:hidden;display:flex;border:4px solid rgba(245,235,220,.15);background:#0e2330"><div style="width:${pa}%;background:${O}"></div><div style="flex:1;background:${T}"></div></div>
-        <span class="stroke" style="width:150px;text-align:left;font-size:62px;color:${cb}">${bv}</span>
+        <span class="pop" style="width:150px;text-align:left;font-size:62px;color:${cb}">${bv}</span>
       </div></div>`;
   }).join('');
   const inner = `
-   <div style="position:absolute;top:76px;left:0;right:0;text-align:center;font-size:64px;letter-spacing:4px;color:${GOLD}" class="stroke">TALE OF THE TAPE</div>
+   <div style="position:absolute;top:76px;left:0;right:0;text-align:center;font-size:64px;letter-spacing:4px;color:${GOLD}" class="stroke">${STAT_TITLE}</div>
    <div style="position:absolute;top:180px;left:70px;right:70px;display:flex;justify-content:space-between;font-size:52px" class="stroke"><span class="o">${M.a.name}</span><span class="t">${M.b.name}</span></div>
    <div style="position:absolute;top:276px;left:0;right:0">${rows}</div>`;
   return page(F, inner);
@@ -75,7 +60,7 @@ function slideVerdict(M, F) {
    <div style="position:absolute;top:96px;left:0;right:0;text-align:center;font-size:52px;letter-spacing:6px;color:${GOLD}">WINNER</div>
    <div style="position:absolute;top:150px;left:50%;transform:translateX(-50%);width:220px;height:8px;background:${GOLD};border-radius:6px"></div>
    <div class="sqc" style="position:absolute;top:230px;left:50%;transform:translateX(-50%);width:470px;height:600px;border:8px solid ${GOLD};box-shadow:0 0 120px 8px rgba(224,168,62,.75)"><img class="${win.flip ? 'flip' : ''}" src="${win.img}"><div class="glare"></div></div>
-   <div style="position:absolute;top:836px;left:0;right:0;text-align:center;font-size:96px;color:${GOLD}" class="stroke">${win.name} WINS</div>
+   <div style="position:absolute;top:836px;left:0;right:0;text-align:center;font-size:96px;color:${GOLD}" class="pop">${win.name} WINS</div>
    <div style="position:absolute;top:964px;left:90px;right:90px;text-align:center;font-family:'R';font-size:46px;line-height:1.32;color:${CREAM}"><span style="color:${GOLD};font-size:76px;vertical-align:-16px">&ldquo;</span>${M.verdict}<span style="color:${GOLD};font-size:76px;vertical-align:-16px">&rdquo;</span></div>`;
   return page(F, inner);
 }
@@ -85,7 +70,7 @@ function slideVote(M, F) {
   const inner = `
    <div style="position:absolute;top:150px;left:0;right:0;text-align:center;font-size:80px" class="stroke">BUT THE <span class="g">FANS</span><br>DISAGREE</div>
    <div style="position:absolute;top:560px;left:90px;right:90px;height:80px;border-radius:44px;overflow:hidden;display:flex;border:6px solid rgba(245,235,220,.2)"><div style="width:${M.voteA}%;background:${O}"></div><div style="flex:1;background:${T}"></div></div>
-   <div style="position:absolute;top:680px;left:90px;right:90px;display:flex;justify-content:space-between;font-size:96px" class="stroke"><span class="o">${M.voteA}%</span><span class="t">${M.voteB}%</span></div>
+   <div style="position:absolute;top:680px;left:90px;right:90px;display:flex;justify-content:space-between;font-size:96px" class="pop"><span class="o">${M.voteA}%</span><span class="t">${M.voteB}%</span></div>
    <div style="position:absolute;top:840px;left:0;right:0;text-align:center;font-family:'S';font-size:44px;color:#9db4c4">${lead} is winning the vote</div>
    <div style="position:absolute;top:990px;left:0;right:0;text-align:center;font-size:76px" class="stroke">who's <span class="g">YOUR</span> pick?</div>
    <div style="position:absolute;top:1110px;left:0;right:0;text-align:center;font-family:'S';font-size:40px;color:${CREAM}">comment below 👇  ·  vote on mythique.app</div>`;

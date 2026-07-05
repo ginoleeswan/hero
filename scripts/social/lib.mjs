@@ -75,6 +75,17 @@ export async function heroByName(sb, name) {
   const rows = await sb.rest(`heroes?name=eq.${q(name)}&select=${HERO_SELECT}&limit=1`);
   return rows[0] || null;
 }
+
+// Extended profile fields for character-showcase (bio) carousels.
+const HERO_FULL = HERO_SELECT + ',full_name,first_appearance,alignment,race,occupation,aliases,place_of_birth,group_affiliation';
+export async function heroFullByName(sb, name) {
+  const rows = await sb.rest(`heroes?name=eq.${q(name)}&select=${HERO_FULL}&limit=1`);
+  return rows[0] || null;
+}
+// Random popular characters for bio showcases.
+export async function popularHeroes(sb, n) {
+  return sb.rest(`heroes?select=${HERO_FULL}&order=fame_score.desc&limit=${n}`);
+}
 export const famousPool = (sb) => sb.rest(`heroes?select=${HERO_SELECT}&order=fame_score.desc&limit=${FAME_POOL}`);
 
 // A matchup is postable if it has a real, close-ish vote split.
@@ -155,6 +166,7 @@ export function fonts() {
   return {
     R: b64(join(ROOT, 'node_modules/@expo-google-fonts/righteous/400Regular/Righteous_400Regular.ttf')),
     F: b64(join(ROOT, 'assets/fonts/Flame-Bold.ttf')),
+    FR: b64(join(ROOT, 'assets/fonts/Flame-Regular.ttf')),
     S: b64(join(ROOT, 'assets/fonts/FlameSans-Regular.ttf')),
   };
 }
@@ -168,7 +180,27 @@ export async function portraitDataUri(hero) {
 
 export const COLORS = { O: '#e8823a', T: '#37a3c4', GOLD: '#e0a83e', CREAM: '#f5ebdc', NAVY: '#06121a' };
 export const grainUri = () => `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>`)}`;
-export const fontFace = (F) => `@font-face{font-family:'R';src:url(data:font/ttf;base64,${F.R});}@font-face{font-family:'F';src:url(data:font/ttf;base64,${F.F});}@font-face{font-family:'S';src:url(data:font/ttf;base64,${F.S});}`;
+export const fontFace = (F) => `@font-face{font-family:'R';src:url(data:font/ttf;base64,${F.R});}@font-face{font-family:'F';src:url(data:font/ttf;base64,${F.F});}@font-face{font-family:'FR';src:url(data:font/ttf;base64,${F.FR});}@font-face{font-family:'S';src:url(data:font/ttf;base64,${F.S});}`;
+
+// Shared 1080x1350 carousel slide shell (navy brand background + footer). Default
+// text is the regular Flame weight ('FR'); use class="pop" for the loud, bold
+// numbers only. Callers supply `inner` (absolutely-positioned content).
+export const slideCss = (F) => {
+  const { O, T, GOLD, CREAM, NAVY } = COLORS;
+  return `${fontFace(F)}
+*{margin:0;padding:0;box-sizing:border-box;}html,body{width:1080px;height:1350px;overflow:hidden;background:${NAVY};font-family:'FR';color:${CREAM};}
+.page{position:relative;width:1080px;height:1350px;overflow:hidden;background:radial-gradient(60% 44% at 50% 32%, rgba(224,168,62,.12), transparent 62%), radial-gradient(120% 90% at 50% 8%, #12242f, ${NAVY} 72%);}
+.dots{position:absolute;inset:0;background-image:radial-gradient(circle, rgba(224,168,62,.10) 1.3px, transparent 1.9px);background-size:30px;-webkit-mask-image:radial-gradient(130% 100% at 50% 40%, transparent 42%, #000);opacity:.55;}
+.grain{position:absolute;inset:0;background-image:url("${grainUri()}");background-size:340px;opacity:.05;mix-blend-mode:overlay;}
+.foot{position:absolute;bottom:46px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:16px;opacity:.9;}
+.foot .wm{font-family:'R';font-size:40px;color:${CREAM};}.foot .at{font-family:'FR';font-size:26px;color:${GOLD};letter-spacing:1px;}
+.g{color:${GOLD};}.o{color:${O};}.t{color:${T};}
+.sqc{position:relative;border-radius:23%/17%;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.6);}
+.sqc img{width:100%;height:100%;object-fit:cover;}.sqc img.flip{transform:scaleX(-1);}.sqc .glare{position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,.13),transparent 40%);}
+.stroke{-webkit-text-stroke:3px ${NAVY};paint-order:stroke fill;}
+.pop{font-family:'F';-webkit-text-stroke:7px ${NAVY};paint-order:stroke fill;}`;
+};
+export const slide = (F, inner, extra = '') => `<!doctype html><html><head><meta charset="utf-8"><style>${slideCss(F)}${extra}</style></head><body><div class="page"><div class="dots"></div><div class="grain"></div>${inner}<div class="foot"><span class="wm">mythique</span><span class="at">@mythiqueapp</span></div></div></body></html>`;
 
 async function launchChrome() {
   const pw = await import('playwright-core');
