@@ -2657,8 +2657,8 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             Who&apos;d actually win?
           </h2>
           <p className="section-sub reveal" style={{ transitionDelay: '120ms' }}>
-            Every matchup opens with real power stats, side by side. Then you
-            take a side and watch the verdict roll in.
+            Every matchup opens with real power stats, side by side. Then you take a side and watch
+            the verdict roll in.
           </p>
 
           <div className="tott-card reveal rv-scale" style={{ transitionDelay: '160ms' }}>

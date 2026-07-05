@@ -1,13 +1,5 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-  Linking,
-} from 'react-native';
+import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Redirect } from 'expo-router';
 import { useAuth } from '../src/hooks/useAuth';
@@ -43,9 +35,14 @@ function SettingRow({
   busy?: boolean;
   busyLabel?: string;
 }) {
-  const iconColor = tone === 'orange' ? COLORS.orange : tone === 'danger' ? COLORS.red : COLORS.navy;
+  const iconColor =
+    tone === 'orange' ? COLORS.orange : tone === 'danger' ? COLORS.red : COLORS.navy;
   const badgeStyle =
-    tone === 'orange' ? styles.badgeOrange : tone === 'danger' ? styles.badgeDanger : styles.badgeNavy;
+    tone === 'orange'
+      ? styles.badgeOrange
+      : tone === 'danger'
+        ? styles.badgeDanger
+        : styles.badgeNavy;
 
   const inner = (
     <>
