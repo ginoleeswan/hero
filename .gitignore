@@ -116,3 +116,4 @@ supabase/.temp/
 
 # Local AI-portrait reference art (copyrighted game renders, do not commit)
 reference-portraits/
+out/
