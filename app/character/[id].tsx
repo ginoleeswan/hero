@@ -1175,7 +1175,9 @@ export default function CharacterScreen() {
                       })}
                     </View>
                   ) : (
-                    <View style={styles.statsCard}>
+                    <View
+                      style={[styles.statsCard, { borderColor: theme.accent + '2b' }] as object}
+                    >
                       <View style={styles.statsGrid}>
                         {STAT_CONFIG.map(({ key, label, tint }) => (
                           <StatDial
@@ -1190,9 +1192,29 @@ export default function CharacterScreen() {
                         <View style={styles.statTotalRow}>
                           <Text style={styles.statTotal}>Total {powerTotal} / 600</Text>
                           {percentile != null && percentile > 0 ? (
-                            <Text style={styles.statPercentile}>
-                              Stronger than {percentile}% of heroes
-                            </Text>
+                            <View
+                              style={
+                                [
+                                  styles.statPercentileBadge,
+                                  {
+                                    backgroundColor: theme.accent + '14',
+                                    borderColor: theme.accent + '3d',
+                                  },
+                                ] as object
+                              }
+                            >
+                              <Ionicons name="flash" size={11} color={theme.accent} />
+                              <Text
+                                style={
+                                  [
+                                    styles.statPercentileBadgeText,
+                                    { color: theme.accent },
+                                  ] as object
+                                }
+                              >
+                                Stronger than {percentile}%
+                              </Text>
+                            </View>
                           ) : null}
                         </View>
                       ) : null}
@@ -2032,6 +2054,7 @@ const styles = StyleSheet.create({
   statsCard: {
     backgroundColor: 'rgba(41,60,67,0.05)',
     borderRadius: 18,
+    borderWidth: 1,
     paddingVertical: 16,
     paddingHorizontal: 4,
   },
@@ -2061,8 +2084,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
     paddingHorizontal: 12,
-    marginTop: 2,
+    marginTop: 4,
   },
   statTotal: {
     fontFamily: 'FlameSans-Regular',
@@ -2071,12 +2096,16 @@ const styles = StyleSheet.create({
     opacity: 0.45,
     letterSpacing: 0.3,
   },
-  statPercentile: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: COLORS.orange,
-    letterSpacing: 0.2,
+  statPercentileBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
+  statPercentileBadgeText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 12 },
 
   // Info rows
   infoRow: {
