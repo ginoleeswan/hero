@@ -196,23 +196,31 @@ export function CommunitySkeleton({ narrow }: { narrow: boolean }) {
 export function TrafficSkeleton({ narrow }: { narrow: boolean }) {
   return (
     <Bento>
+      {/* Headline KPI band */}
+      <SkTiles n={4} />
+      {/* Trend chart */}
+      <SkPanel>
+        <SkBars n={narrow ? 16 : 24} height={narrow ? 150 : 180} />
+      </SkPanel>
+      {/* Top heroes + live */}
       <Bento.Row narrow={narrow}>
         <SkPanel style={s.flex15}>
-          <SkTiles n={3} />
+          <SkRows n={6} thumb />
         </SkPanel>
         <SkPanel style={s.flex1}>
-          <SkBars n={5} height={72} />
+          <SkRows n={6} thumb={false} />
         </SkPanel>
       </Bento.Row>
-      <SkPanel>
-        <SkBars n={20} height={96} />
-      </SkPanel>
+      {/* Breakdowns */}
       <Bento.Row narrow={narrow}>
         <SkPanel style={s.flex1}>
-          <SkRows n={5} thumb={false} />
+          <SkBarList n={5} />
         </SkPanel>
         <SkPanel style={s.flex1}>
-          <SkRows n={5} thumb={false} />
+          <SkBarList n={5} />
+        </SkPanel>
+        <SkPanel style={s.flex1}>
+          <SkBarList n={4} />
         </SkPanel>
       </Bento.Row>
     </Bento>

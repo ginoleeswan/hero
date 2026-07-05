@@ -1,19 +1,32 @@
-// Traffic domain — self-hosted web analytics (page_views) for the command
-// center. Read-only view of the admin_traffic_overview() RPC: headline totals +
-// live "active now", a daily trend, and top pages / referrers / device split.
-import { View, Text, StyleSheet } from 'react-native';
+// Traffic domain — self-hosted web analytics (page_views) for the command center.
+// Reads admin_traffic_overview(): headline KPIs with period-over-period growth
+// deltas + sparklines, a readable views/visitors trend with a range toggle, what's
+// hot (top heroes resolved to names), a live activity feed, and supporting
+// breakdowns (pages / referrers / devices).
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';
 import { Bento } from '../Bento';
-import { StatTile, EmptyState } from '../ui';
+import { EmptyState, HeroThumb, PillGroup } from '../ui';
 import { TrafficSkeleton } from '../skeletons';
+import { TrafficKpi, pctDelta } from './traffic/TrafficKpi';
+import { TrafficTrendChart } from './traffic/TrafficTrendChart';
+import { LiveFeed } from './traffic/LiveFeed';
 import type {
   TrafficOverview,
   RouteViews,
   ReferrerViews,
   DeviceViews,
+  HeroViews,
 } from '../../../../lib/db/traffic';
+
+const RANGES = [
+  { label: '7d', value: 7 },
+  { label: '28d', value: 28 },
+  { label: '90d', value: 90 },
+];
 
 // Horizontal bar-list row: label on the left, a proportional fill, value right.
 function BarRow({ label, value, max }: { label: string; value: number; max: number }) {
@@ -55,15 +68,60 @@ function BarList<T>({
   );
 }
 
+// Signed-in vs anonymous split — a two-segment bar with a small caption. Slots
+// into the "Signed-in share" KPI tile's footer.
+function SignedSplit({ signedIn, anon }: { signedIn: number; anon: number }) {
+  const total = signedIn + anon;
+  const pct = total > 0 ? Math.round((signedIn / total) * 100) : 0;
+  return (
+    <View style={s.splitWrap}>
+      <View style={s.splitTrack}>
+        <View style={[s.splitFill, { width: `${pct}%` }]} />
+      </View>
+      <Text style={s.splitCap} numberOfLines={1}>
+        {signedIn.toLocaleString()} signed-in · {anon.toLocaleString()} guests
+      </Text>
+    </View>
+  );
+}
+
+// Top-hero row: rank thumbnail, name, view count, and a proportional bar.
+function HeroRow({ hero, max, onPress }: { hero: HeroViews; max: number; onPress: () => void }) {
+  const pct = max > 0 ? Math.max(4, Math.round((hero.views / max) * 100)) : 0;
+  return (
+    <Pressable onPress={onPress} style={s.heroRow}>
+      <HeroThumb uri={hero.image} size={34} radius={9} />
+      <View style={s.heroInfo}>
+        <View style={s.heroTop}>
+          <Text style={s.heroName} numberOfLines={1}>
+            {hero.name}
+          </Text>
+          <Text style={s.heroViews}>{hero.views.toLocaleString()}</Text>
+        </View>
+        <View style={s.heroTrack}>
+          <View style={[s.heroFill, { width: `${pct}%` }]} />
+        </View>
+      </View>
+      <Ionicons name="open-outline" size={14} color="rgba(41,60,67,0.3)" />
+    </Pressable>
+  );
+}
+
 export function TrafficDomain({
   data,
   loading,
   narrow,
+  days,
+  onDaysChange,
 }: {
   data: TrafficOverview | null;
   loading: boolean;
   narrow: boolean;
+  days: number;
+  onDaysChange: (d: number) => void;
 }) {
+  const router = useRouter();
+
   if (loading && !data) {
     return <TrafficSkeleton narrow={narrow} />;
   }
@@ -80,65 +138,90 @@ export function TrafficDomain({
     );
   }
 
-  const days = data.series;
-  const maxViews = Math.max(1, ...days.map((d) => d.views));
+  const { totals, prev, audience, series, topHeroes, live, activeNow, today } = data;
+  const seriesViews = series.map((d) => d.views);
+  const seriesVisitors = series.map((d) => d.visitors);
+  const signedTotal = audience.signedIn + audience.anon;
+  const signedPct = signedTotal > 0 ? Math.round((audience.signedIn / signedTotal) * 100) : 0;
+  const heroMax = Math.max(1, ...topHeroes.map((h) => h.views));
+  const perDay = (n: number) => Math.max(1, Math.round(n / data.rangeDays));
 
   return (
     <Bento>
-      <Bento.Row narrow={narrow}>
-        {/* Headline */}
-        <Panel title="Traffic" hint={`Last ${data.rangeDays} days`} style={s.flex15}>
-          <View style={s.tiles}>
-            <StatTile
-              label="Page views"
-              value={data.totals.pageViews.toLocaleString()}
-              tint={COLORS.navy}
-            />
-            <StatTile
-              label="Visitors"
-              value={data.totals.visitors.toLocaleString()}
-              tint={COLORS.blue}
-            />
-            <StatTile
-              label="Active now"
-              value={data.activeNow.toLocaleString()}
-              tint={COLORS.green}
-            />
-          </View>
-        </Panel>
+      {/* Headline KPIs — value + growth delta + trend shape */}
+      <View style={s.kpiRow}>
+        <TrafficKpi
+          label="Page views"
+          value={totals.pageViews.toLocaleString()}
+          tint={COLORS.navy}
+          delta={pctDelta(totals.pageViews, prev.pageViews)}
+          spark={seriesViews}
+          footer={
+            <Text style={s.kpiFoot}>{perDay(totals.pageViews).toLocaleString()}/day avg</Text>
+          }
+        />
+        <TrafficKpi
+          label="Visitors"
+          value={totals.visitors.toLocaleString()}
+          tint={COLORS.blue}
+          delta={pctDelta(totals.visitors, prev.visitors)}
+          spark={seriesVisitors}
+          footer={<Text style={s.kpiFoot}>{perDay(totals.visitors).toLocaleString()}/day avg</Text>}
+        />
+        <TrafficKpi
+          label="Active now"
+          value={activeNow.toLocaleString()}
+          tint={COLORS.green}
+          live
+          footer={<Text style={s.kpiFoot}>{today.views.toLocaleString()} views today</Text>}
+        />
+        <TrafficKpi
+          label="Signed-in share"
+          value={`${signedPct}%`}
+          tint={COLORS.orange}
+          footer={<SignedSplit signedIn={audience.signedIn} anon={audience.anon} />}
+        />
+      </View>
 
-        {/* Devices */}
-        <Panel title="Devices" hint="Views by device" style={s.flex1}>
-          <BarList<DeviceViews>
-            rows={data.devices}
-            empty="No device data yet."
-            label={(d) => d.label}
-            value={(d) => d.views}
-          />
-        </Panel>
-      </Bento.Row>
-
-      {/* Traffic over time */}
-      <Panel title="Traffic over time" hint="Page views per day">
-        {days.length === 0 || maxViews === 1 ? (
+      {/* Trend — the readable dual-series chart + range toggle */}
+      <Panel
+        title="Traffic over time"
+        hint={`Views & visitors · last ${data.rangeDays} days`}
+        action={<PillGroup options={RANGES} value={days} onChange={onDaysChange} />}
+      >
+        {totals.pageViews === 0 ? (
           <EmptyState text="No views recorded yet — the trend fills in daily." />
         ) : (
-          <View style={s.bars}>
-            {days.map((d) => (
-              <View key={d.day} style={s.barCol}>
-                <View style={s.barColTrack}>
-                  <View
-                    style={[s.barColFill, { height: `${Math.round((d.views / maxViews) * 100)}%` }]}
-                  />
-                </View>
-              </View>
-            ))}
-          </View>
+          <TrafficTrendChart series={series} height={narrow ? 176 : 210} />
         )}
       </Panel>
 
+      {/* What's hot + who's here now */}
       <Bento.Row narrow={narrow}>
-        {/* Top pages */}
+        <Panel title="Top heroes" hint="Most-viewed characters" style={s.flex15}>
+          {topHeroes.length === 0 ? (
+            <EmptyState text="No character views yet." />
+          ) : (
+            <View style={s.heroList}>
+              {topHeroes.map((h) => (
+                <HeroRow
+                  key={h.id}
+                  hero={h}
+                  max={heroMax}
+                  onPress={() => router.push(`/character/${h.id}`)}
+                />
+              ))}
+            </View>
+          )}
+        </Panel>
+
+        <Panel title="Live activity" hint="Most recent views" style={s.flex1}>
+          <LiveFeed hits={live} activeNow={activeNow} />
+        </Panel>
+      </Bento.Row>
+
+      {/* Breakdowns */}
+      <Bento.Row narrow={narrow}>
         <Panel title="Top pages" hint="Grouped routes" style={s.flex1}>
           <BarList<RouteViews>
             rows={data.topPages}
@@ -147,14 +230,20 @@ export function TrafficDomain({
             value={(r) => r.views}
           />
         </Panel>
-
-        {/* Top referrers */}
         <Panel title="Top referrers" hint="Where visitors arrive from" style={s.flex1}>
           <BarList<ReferrerViews>
             rows={data.topReferrers}
             empty="No external referrers yet."
             label={(r) => r.source}
             value={(r) => r.views}
+          />
+        </Panel>
+        <Panel title="Devices" hint="Views by device" style={s.flex1}>
+          <BarList<DeviceViews>
+            rows={data.devices}
+            empty="No device data yet."
+            label={(d) => d.label}
+            value={(d) => d.views}
           />
         </Panel>
       </Bento.Row>
@@ -165,13 +254,33 @@ export function TrafficDomain({
 const s = StyleSheet.create({
   flex1: { flex: 1 },
   flex15: { flex: 1.5 },
-  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  // Daily trend (vertical bars)
-  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 90, marginTop: 4 },
-  barCol: { flex: 1, height: '100%', justifyContent: 'flex-end' },
-  barColTrack: { width: '100%', height: '100%', justifyContent: 'flex-end' },
-  barColFill: { width: '100%', backgroundColor: COLORS.blue, borderRadius: 2, minHeight: 2 },
-  // Horizontal bar lists
+  kpiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  kpiFoot: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey },
+  // Signed-in split
+  splitWrap: { flex: 1, gap: 4 },
+  splitTrack: {
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(41,60,67,0.1)',
+    overflow: 'hidden',
+  },
+  splitFill: { height: '100%', borderRadius: 999, backgroundColor: COLORS.orange },
+  splitCap: { fontFamily: 'Nunito_400Regular', fontSize: 10.5, color: COLORS.grey },
+  // Top heroes
+  heroList: { gap: 2 },
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
+  heroInfo: { flex: 1, gap: 4 },
+  heroTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: 8,
+  },
+  heroName: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
+  heroViews: { fontFamily: 'Flame-Regular', fontSize: 13, color: COLORS.navy },
+  heroTrack: { height: 5, borderRadius: 999, backgroundColor: '#efe6d6', overflow: 'hidden' },
+  heroFill: { height: '100%', borderRadius: 999, backgroundColor: COLORS.orange },
+  // Horizontal bar lists (breakdowns)
   barList: { gap: 8 },
   barRow: { gap: 4 },
   barLabelWrap: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },

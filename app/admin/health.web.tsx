@@ -80,6 +80,7 @@ export default function AdminHealthScreen() {
   const [pubFilter, setPubFilter] = useState<string | null>(null);
   const [historyLimit, setHistoryLimit] = useState(30);
   const [ambiguousLimit, setAmbiguousLimit] = useState(25);
+  const [trafficDays, setTrafficDays] = useState(28);
   // The live foreground Build board's working set. Lifted here so the top-strip
   // Stop can halt it too — a true universal kill switch across server + client runs.
   const [buildIds, setBuildIds] = useState<string[] | null>(null);
@@ -138,11 +139,12 @@ export default function AdminHealthScreen() {
     heroQuery,
     historyLimit,
     ambiguousLimit,
+    trafficDays,
   });
 
   const drainJob = cronQ.data?.find((j) => j.jobname === DRAIN_CRON);
   const cronOn = !!drainJob?.active;
-  const { log, toast, flash, logEvent, clearLog } = useActivityLog();
+  const { log, flash, logEvent, clearLog } = useActivityLog();
   const queryClient = useQueryClient();
   const {
     busy,
@@ -157,7 +159,6 @@ export default function AdminHealthScreen() {
     onBulkAccept,
     onRunResolve,
     onRunEnrich,
-    onToggleCron,
     onToggleAnyCron,
     onRescheduleCron,
     onRefresh,
@@ -550,6 +551,8 @@ export default function AdminHealthScreen() {
               data={trafficQ.data ?? null}
               loading={trafficQ.isLoading}
               narrow={narrow}
+              days={trafficDays}
+              onDaysChange={setTrafficDays}
             />
           )}
           {domain === 'errors' && (

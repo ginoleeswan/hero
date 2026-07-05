@@ -55,6 +55,7 @@ export function useCatalogQueries({
   heroQuery,
   historyLimit,
   ambiguousLimit,
+  trafficDays,
 }: {
   enabled: boolean;
   domain: DomainKey;
@@ -64,6 +65,7 @@ export function useCatalogQueries({
   heroQuery: string;
   historyLimit: number;
   ambiguousLimit: number;
+  trafficDays: number;
 }) {
   const queryClient = useQueryClient();
   // Only run/poll a query on the tab(s) that actually render its data — avoids
@@ -179,10 +181,11 @@ export function useCatalogQueries({
     staleTime: 60_000,
   });
   const trafficQ = useQuery({
-    queryKey: ['trafficOverview'],
-    queryFn: () => fetchTrafficOverview(28),
+    queryKey: ['trafficOverview', trafficDays],
+    queryFn: () => fetchTrafficOverview(trafficDays),
     enabled: enabled && onTraffic,
     staleTime: 5 * 60_000,
+    placeholderData: (prev) => prev, // keep the chart up while switching ranges
   });
   const errorsQ = useQuery({
     queryKey: ['clientErrorOverview'],

@@ -21,16 +21,41 @@ export interface DeviceViews {
   label: string;
   views: number;
 }
+/** A character route resolved to the hero being viewed. */
+export interface HeroViews {
+  id: string;
+  name: string;
+  image: string | null;
+  views: number;
+}
+/** One recent page view for the live activity feed. `name` is set when the path
+ *  is a character route that resolves to a hero. */
+export interface LiveHit {
+  route: string;
+  path: string;
+  name: string | null;
+  at: string;
+}
 
 export interface TrafficOverview {
   rangeDays: number;
   totals: { pageViews: number; visitors: number };
+  /** Same-length previous window — for period-over-period growth deltas. */
+  prev: { pageViews: number; visitors: number };
+  /** Distinct signed-in vs anonymous visitors over the window. */
+  audience: { signedIn: number; anon: number };
+  today: { views: number; visitors: number };
+  yesterday: { views: number };
   /** Unique visitors seen in the last 5 minutes. */
   activeNow: number;
   series: TrafficSeriesPoint[];
   topPages: RouteViews[];
   topReferrers: ReferrerViews[];
   devices: DeviceViews[];
+  /** Which characters are being viewed, resolved to names. */
+  topHeroes: HeroViews[];
+  /** Most recent views for the live feed, newest first. */
+  live: LiveHit[];
 }
 
 type OverviewJson = ({ authorized: false } | ({ authorized: true } & TrafficOverview)) | null;
@@ -51,10 +76,16 @@ export async function fetchTrafficOverview(days = 28): Promise<TrafficOverview |
   return {
     rangeDays: json.rangeDays,
     totals: json.totals,
+    prev: json.prev ?? { pageViews: 0, visitors: 0 },
+    audience: json.audience ?? { signedIn: 0, anon: 0 },
+    today: json.today ?? { views: 0, visitors: 0 },
+    yesterday: json.yesterday ?? { views: 0 },
     activeNow: json.activeNow,
     series: json.series,
     topPages: json.topPages,
     topReferrers: json.topReferrers,
     devices: json.devices,
+    topHeroes: json.topHeroes ?? [],
+    live: json.live ?? [],
   };
 }
