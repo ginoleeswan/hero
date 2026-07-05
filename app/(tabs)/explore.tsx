@@ -12,7 +12,6 @@ import {
   type ListRenderItem,
   type FlatListProps,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   FadeIn,
   useSharedValue,

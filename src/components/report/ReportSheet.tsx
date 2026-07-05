@@ -115,7 +115,7 @@ export function ReportSheet({
               </View>
               <Text style={s.doneTitle}>Reported</Text>
               <Text style={s.doneSub}>Thanks for flagging this.</Text>
-              <Text style={s.doneMeta}>We'll take a look shortly.</Text>
+              <Text style={s.doneMeta}>We’ll take a look shortly.</Text>
               <Pressable onPress={onClose} style={[s.btn, s.btnPrimary]}>
                 <Text style={s.btnPrimaryText}>Done</Text>
               </Pressable>
@@ -124,7 +124,7 @@ export function ReportSheet({
             <View style={s.body}>
               <Text style={s.kicker}>{heroName}</Text>
               <Text style={s.prompt}>Report a problem</Text>
-              <Text style={s.guideline}>What's wrong here?</Text>
+              <Text style={s.guideline}>What’s wrong here?</Text>
 
               {thumb ? <Image source={{ uri: thumb }} style={s.thumb} contentFit="cover" /> : null}
 

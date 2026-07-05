@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { Session, User } from '@supabase/supabase-js';
-import * as Linking from 'expo-linking';
-import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../lib/supabase';
 import { getProfile, upsertProfile } from '../lib/db/profiles';
 import { trackEvent } from '../lib/analytics';

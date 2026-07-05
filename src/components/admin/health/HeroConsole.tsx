@@ -46,7 +46,7 @@ export function HeroConsole({
           {heroSearchLoading ? (
             <ActivityIndicator color={COLORS.orange} style={{ marginTop: 14 }} />
           ) : heroResults.length === 0 ? (
-            <Text style={styles.empty}>No heroes match "{heroQuery}".</Text>
+            <Text style={styles.empty}>No heroes match “{heroQuery}”.</Text>
           ) : (
             heroResults.map((hero) => {
               const st = hero.comicvine_status ?? 'none';

@@ -51,7 +51,6 @@ export function useTeamBattle(battleId?: string): UseTeamBattle {
     queryKey: ['teamBattle', battleId ?? 'today'],
     staleTime: 1000 * 60 * 60,
     queryFn: async () => {
-      let aId: string, bId: string, aName: string, bName: string;
       if (battleId && parseBattleId(battleId)) {
         const teams = await getFeaturedTeams();
         const [pa, pb] = parseBattleId(battleId)!;

@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
-import { getPowerIcon, groupPowers } from '../constants/powerIcons';
+import { groupPowers } from '../constants/powerIcons';
 import { Skeleton } from './ui/Skeleton';
 import { SkeletonProvider } from './ui/SkeletonProvider';
 import { PowersDecoded } from './character/PowersDecoded';

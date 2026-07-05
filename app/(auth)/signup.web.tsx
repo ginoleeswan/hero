@@ -68,7 +68,7 @@ export default function WebSignupScreen() {
         A confirmation link was sent to{'\n'}
         <Text style={styles.pendingEmail}>{pendingEmail}</Text>
       </Text>
-      <Text style={styles.pendingHint}>Can't find it? Check your Spam or Junk folder.</Text>
+      <Text style={styles.pendingHint}>Can’t find it? Check your Spam or Junk folder.</Text>
       <Pressable onPress={() => router.push('/(auth)/login')} style={styles.pendingCta as object}>
         <Text style={styles.pendingCtaText}>Back to Sign In</Text>
       </Pressable>

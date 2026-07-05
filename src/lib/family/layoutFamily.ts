@@ -8,7 +8,6 @@ import type { FamilyGraph, FamilyMember } from './types';
 export const HERO_ID = '__hero__';
 
 const NODE_W = 158;
-const NODE_H = 50;
 const GAP_X = 26;
 const ROW_H = 120;
 const PAD = NODE_W / 2 + 16;

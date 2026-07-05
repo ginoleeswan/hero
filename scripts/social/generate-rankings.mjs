@@ -15,7 +15,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadEnv, makeSb, imgDataUri, fonts, OUT_DIR, renderPng, COLORS, slide } from './lib.mjs';
 
-const { O, T, GOLD, CREAM, NAVY } = COLORS;
+const { GOLD, CREAM } = COLORS;
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const clip = (s, n) => { s = String(s ?? ''); return s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s; };
 

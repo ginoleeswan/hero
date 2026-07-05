@@ -32,8 +32,6 @@ function roleLabel(member: FamilyMember): string {
   return member.relation.replace(/_/g, ' ');
 }
 
-const initial = (name: string) => (name.trim()[0] ?? '?').toUpperCase();
-
 // ── Canvas node visual ───────────────────────────────────────────────────────
 function CanvasNode({
   node,

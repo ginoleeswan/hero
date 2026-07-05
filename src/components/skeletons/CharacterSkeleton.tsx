@@ -1,10 +1,6 @@
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Skeleton } from '../ui/Skeleton';
 import { SkeletonProvider } from '../ui/SkeletonProvider';
-import { COLORS } from '../../constants/colors';
-
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
-const HERO_IMAGE_HEIGHT = Math.round(SCREEN_HEIGHT * 0.6);
 
 function NameBlock() {
   return (

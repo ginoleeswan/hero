@@ -16,7 +16,7 @@ import {
   getRelated, getFamily, getFact, fonts, OUT_DIR, renderPng, COLORS, slide, STAT_KEYS,
 } from './lib.mjs';
 
-const { O, T, GOLD, CREAM, NAVY } = COLORS;
+const { O, T, GOLD, CREAM } = COLORS;
 const RED = '#e2503f';
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const clip = (s, n) => { s = String(s ?? ''); return s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s; };

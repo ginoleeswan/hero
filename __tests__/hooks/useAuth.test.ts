@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react-native';
+import { renderHook } from '@testing-library/react-native';
 import { useAuth } from '../../src/hooks/useAuth';
 
 jest.mock('../../src/lib/supabase', () => ({

@@ -7,7 +7,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { NotFoundView, LoadErrorView } from '../../src/components/NotFoundView';
 import { getHeroById, heroRowToCharacterData } from '../../src/lib/db/heroes';
 import { FamilyCanvas } from '../../src/components/family/FamilyCanvas.web';
-import { getPowerIcon, groupPowers } from '../../src/constants/powerIcons';
+import { groupPowers } from '../../src/constants/powerIcons';
 import { useHeroDetail } from '../../src/hooks/useHeroDetail';
 import { useHeroTeams } from '../../src/hooks/useHeroTeams';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
@@ -83,14 +83,6 @@ const STAT_MEDIANS: Record<string, number> = {
 const M_HERO_RATIO = 0.9;
 
 // Map the raw alignment value to a display label (mirrors the Explore stage).
-function alignmentLabel(alignment?: string | null): string | null {
-  const a = (alignment ?? '').toLowerCase();
-  if (a === 'good') return 'Hero';
-  if (a === 'bad') return 'Villain';
-  if (a === 'neutral') return 'Anti-Hero';
-  return null;
-}
-
 function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value || value === '' || JUNK_VALUES.has(value.toLowerCase().trim())) return null;
   return (
@@ -482,39 +474,6 @@ function FactTile({
   );
 }
 
-function ExpandableChipGroup({
-  label,
-  chips,
-  chipStyle,
-  chipTextStyle,
-}: {
-  label: string;
-  chips: string[];
-  chipStyle: object;
-  chipTextStyle: object;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const visible = expanded ? chips : chips.slice(0, 10);
-  const remainder = chips.length - 10;
-  return (
-    <View style={styles.chipGroup}>
-      <Text style={styles.chipGroupLabel}>{label}</Text>
-      <View style={styles.chipRow}>
-        {visible.map((name, i) => (
-          <View key={i} style={chipStyle as object}>
-            <Text style={chipTextStyle as object}>{name}</Text>
-          </View>
-        ))}
-        {!expanded && remainder > 0 ? (
-          <Pressable onPress={() => setExpanded(true)} style={chipStyle as object}>
-            <Text style={chipTextStyle as object}>+{remainder} more</Text>
-          </Pressable>
-        ) : null}
-      </View>
-    </View>
-  );
-}
-
 export default function WebCharacterScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -590,7 +549,6 @@ export default function WebCharacterScreen() {
     report?: boolean;
   } | null>(null);
   const [showIssueModal, setShowIssueModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'details' | 'universe'>('overview');
   const [lightboxImages, setLightboxImages] = useState<{ url: string; caption?: string | null }[]>(
     [],
   );

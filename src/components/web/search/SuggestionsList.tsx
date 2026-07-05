@@ -32,7 +32,7 @@ export function SuggestionsList({
   if (suggestions.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No characters found for "{query}"</Text>
+        <Text style={styles.emptyText}>No characters found for “{query}”</Text>
       </View>
     );
   }

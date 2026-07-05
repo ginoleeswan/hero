@@ -164,7 +164,7 @@ export default function WebLoginScreen() {
       </Pressable>
 
       <Pressable onPress={() => router.push('/(auth)/signup')} style={styles.switchRow as object}>
-        <Text style={styles.switchText}>Don't have an account? </Text>
+        <Text style={styles.switchText}>Don’t have an account? </Text>
         <Text style={styles.switchLink}>Sign up</Text>
       </Pressable>
 

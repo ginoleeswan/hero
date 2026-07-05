@@ -44,13 +44,11 @@ async function listAll(): Promise<string[]> {
 
 async function main() {
   // Guard: verify no DB rows still point at Supabase Storage.
-  const { data: remaining, error: checkErr } = await sb
+  const { error: checkErr } = await sb
     .from('heroes')
     .select('id', { count: 'exact', head: true })
     .like('portrait_url', '%supabase.co/storage%');
   if (checkErr) throw new Error(`safety check: ${checkErr.message}`);
-  const stillReferenced = (remaining as unknown as { count: number } | null)?.count ?? 0;
-  // Re-query with count
   const { count } = await sb
     .from('heroes')
     .select('*', { count: 'exact', head: true })

@@ -378,7 +378,7 @@ export function AddHeroesPanel({
       </ScrollView>
       {mode === 'popular' ? (
         <Text style={styles.popularHint}>
-          ComicVine's most-published characters that aren't in your catalogue yet — top appearances
+          ComicVine’s most-published characters that aren’t in your catalogue yet — top appearances
           first. Tick the ones worth adding.
         </Text>
       ) : !group ? (
@@ -522,7 +522,7 @@ export function AddHeroesPanel({
           <ScrollView style={styles.scroll} nestedScrollEnabled>
             {newRows.length === 0 && !loading ? (
               <Text style={styles.empty}>
-                No gaps on the pages loaded so far — they're all in your catalogue. Load more to dig
+                No gaps on the pages loaded so far — they’re all in your catalogue. Load more to dig
                 deeper.
               </Text>
             ) : null}

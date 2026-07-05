@@ -11,7 +11,7 @@ module.exports = [
     // (Buffer, process, …). `playwright-core` is an optional, dynamically
     // imported peer the operator installs ad-hoc — not a tracked dependency —
     // so import resolution is off here.
-    files: ['scripts/**', '.ds-sync/**'],
+    files: ['scripts/**'],
     languageOptions: { globals: { ...globals.node } },
     rules: { 'import/no-unresolved': 'off' },
   },
@@ -56,6 +56,7 @@ module.exports = [
       'supabase/functions/**', // Deno runtime — separate toolchain, excluded from tsconfig too
       'src/types/database.generated.ts', // generated
       '.design-sync/**', // Claude Design sync tooling — previews import the bundled DS pkg, separate from the app module graph
+      '.ds-sync/**', // design-sync tooling output (gitignored; ESLint ignores .gitignore)
       '.ds-pkg/**', // design-sync build artifacts (gitignored; ESLint ignores .gitignore)
       'ds-bundle/**', // design-sync bundle/vendor output (gitignored)
     ],

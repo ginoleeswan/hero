@@ -11,7 +11,6 @@ interface LightningBoltProps {
  * width defaults to 52 — keep this narrow so portraits have max space.
  */
 export function LightningBolt({ height, width = 52 }: LightningBoltProps) {
-  const W = 52;
   const H = 280;
 
   const shadowPath = `

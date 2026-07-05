@@ -32,7 +32,7 @@ export function CharacterPreview({
   if (!detail) {
     return (
       <View style={styles.wrap}>
-        <Text style={styles.muted}>Couldn't load ComicVine details for this character.</Text>
+        <Text style={styles.muted}>Couldn’t load ComicVine details for this character.</Text>
       </View>
     );
   }

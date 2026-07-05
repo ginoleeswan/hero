@@ -103,7 +103,7 @@ export default function WebForgotPasswordScreen() {
           <Text style={styles.resendCooldown}>Resend in {resendCooldown}s…</Text>
         ) : (
           <Pressable onPress={handleResend} disabled={loading} style={styles.resendLink as object}>
-            <Text style={styles.resendLinkText}>Didn't get it? Resend</Text>
+            <Text style={styles.resendLinkText}>Didn’t get it? Resend</Text>
           </Pressable>
         )}
       </View>
@@ -124,7 +124,7 @@ export default function WebForgotPasswordScreen() {
         <View style={styles.headingAccent} />
         <View style={styles.headingText}>
           <Text style={styles.heading}>Reset password</Text>
-          <Text style={styles.subheading}>We'll email you a link to get back in.</Text>
+          <Text style={styles.subheading}>We’ll email you a link to get back in.</Text>
         </View>
       </View>
 
@@ -202,7 +202,7 @@ export default function WebForgotPasswordScreen() {
         <Image source={LOGIN_HERO} style={styles.illustration as object} contentFit="cover" />
         <View style={styles.brandBottom}>
           <Text style={styles.brandTagline}>Every universe.{'\n'}Every icon.</Text>
-          <Text style={styles.brandSub}>Forgot your password?{'\n'}We've got you covered.</Text>
+          <Text style={styles.brandSub}>Forgot your password?{'\n'}We’ve got you covered.</Text>
           <View style={styles.brandAccent} />
         </View>
       </View>

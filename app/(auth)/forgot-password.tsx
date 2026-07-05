@@ -118,7 +118,7 @@ export default function ForgotPasswordScreen() {
                     <Text style={styles.resendCooldown}>Resend in {resendCooldown}s…</Text>
                   ) : (
                     <Pressable onPress={handleResend} disabled={loading}>
-                      <Text style={styles.resendLink}>Didn't get it? Resend</Text>
+                      <Text style={styles.resendLink}>Didn’t get it? Resend</Text>
                     </Pressable>
                   )}
                 </View>
@@ -130,7 +130,7 @@ export default function ForgotPasswordScreen() {
                   <Ionicons name="mail-outline" size={28} color={COLORS.beige} />
                 </View>
                 <Text style={styles.title}>Reset password</Text>
-                <Text style={styles.subtitle}>We'll email you a link to reset it.</Text>
+                <Text style={styles.subtitle}>We’ll email you a link to reset it.</Text>
 
                 {error && (
                   <View style={styles.errorBox}>
