@@ -634,6 +634,13 @@ export default function WebProfileScreen() {
                     />
                   </Pressable>
                 ))}
+                <Pressable
+                  onPress={() => router.push('/explore')}
+                  style={[mob.ghostTile, { width: thumbSize, height: thumbSize * 1.25 }]}
+                >
+                  <Ionicons name="add" size={24} color={COLORS.orange} />
+                  <Text style={mob.ghostText}>Add</Text>
+                </Pressable>
               </View>
             )}
           </SectionShell>
@@ -959,6 +966,9 @@ export default function WebProfileScreen() {
                       key={hero.id}
                       onPress={() => router.push(`/character/${hero.id}`)}
                       onLongPress={() => handleUnfavourite(hero)}
+                      style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                        [desk.cardWrap, hovered && (desk.cardWrapHover as object)] as object
+                      }
                     >
                       <WebHeroCard
                         id={hero.id}
@@ -969,6 +979,17 @@ export default function WebProfileScreen() {
                       />
                     </Pressable>
                   ))}
+                  {/* Ghost tile — keeps a small collection from looking empty and
+                      invites another save. */}
+                  <Pressable
+                    onPress={() => router.push('/explore')}
+                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                      [desk.ghostTile, hovered && (desk.ghostTileHover as object)] as object
+                    }
+                  >
+                    <Ionicons name="add" size={26} color={COLORS.orange} />
+                    <Text style={desk.ghostText}>Add heroes</Text>
+                  </Pressable>
                 </View>
               )}
             </SectionShell>
@@ -1333,6 +1354,16 @@ const mob = StyleSheet.create({
     borderRadius: 10,
   },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  ghostTile: {
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#e3d5c1',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  ghostText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange },
   thumb: { overflow: 'hidden' },
   center: { paddingVertical: 32, alignItems: 'center' },
   emptyState: { alignItems: 'center', paddingVertical: 36, paddingHorizontal: 24 },
@@ -1499,6 +1530,11 @@ const desk = StyleSheet.create({
     flexShrink: 0,
     marginTop: -60,
     zIndex: 10,
+    // Pin identity + stats in view while the long right column scrolls. Clears
+    // the fixed nav header at the top.
+    position: 'sticky',
+    top: 88,
+    alignSelf: 'flex-start',
   } as object,
   avatarZone: {
     alignItems: 'center',
@@ -1647,11 +1683,12 @@ const desk = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // Ko-fi footer (reuses the old account-row shape)
+  // Settings / Ko-fi cards (reuse the old account-row shape)
   kofiCard: {
     backgroundColor: 'white',
     borderRadius: 16,
     overflow: 'hidden',
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -1700,8 +1737,26 @@ const desk = StyleSheet.create({
   // Main panel
   main: {
     flex: 1,
-    paddingTop: 24,
+    paddingTop: 8,
   },
+  cardWrap: { borderRadius: 16, transition: 'transform 160ms ease' } as object,
+  cardWrapHover: { transform: [{ translateY: -4 }] } as object,
+  ghostTile: {
+    alignSelf: 'stretch',
+    minHeight: 200,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#e3d5c1',
+    borderStyle: 'dashed',
+    backgroundColor: 'rgba(255,255,255,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    cursor: 'pointer',
+    transition: 'background-color 160ms ease, border-color 160ms ease',
+  } as object,
+  ghostTileHover: { backgroundColor: '#fff5ee', borderColor: COLORS.orange } as object,
+  ghostText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.orange },
   battleBlock: { marginBottom: 28, gap: 14 },
   // Your Universe
   tasteInsight: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.navy, marginBottom: 4 },
