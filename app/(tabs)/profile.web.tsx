@@ -25,11 +25,12 @@ import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { useProfileData } from '../../src/hooks/useProfileData';
 import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
-import { describeContribution, type MyContribution } from '../../src/lib/db/contributions';
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
 import { computeBadges, earnedCount, type Badge } from '../../src/lib/profile/badges';
 import { buildProfileStats } from '../../src/lib/profile/stats';
 import { StatStrip } from '../../src/components/profile/StatStrip';
+import { SectionShell } from '../../src/components/profile/SectionShell';
+import { ContributionsList } from '../../src/components/profile/ContributionsList';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { COLORS, SURFACE } from '../../src/constants/colors';
@@ -74,18 +75,6 @@ function username(email: string) {
   return email.split('@')[0] ?? email;
 }
 
-const STATUS_BG: Record<MyContribution['status'], string> = {
-  pending: 'rgba(231,115,51,0.14)',
-  approved: 'rgba(99,169,54,0.16)',
-  rejected: '#e8ddd0',
-  superseded: '#e8ddd0',
-};
-const STATUS_FG: Record<MyContribution['status'], string> = {
-  pending: COLORS.orange,
-  approved: COLORS.green,
-  rejected: COLORS.grey,
-  superseded: COLORS.grey,
-};
 
 function GuestWebProfileScreen() {
   const router = useRouter();
@@ -596,117 +585,27 @@ export default function WebProfileScreen() {
 
           {/* ── Your Universe ── */}
           {showTaste && (
-            <>
-              <View style={mob.section}>
-                <View style={mob.sectionHeader}>
-                  <View style={mob.sectionAccent} />
-                  <Text style={[mob.sectionTitle, mob.sectionTitleElevated]}>Your Universe</Text>
-                </View>
-                {!!tasteInsight && <Text style={mob.tasteInsight}>{tasteInsight}</Text>}
-                {tasteChips.length > 0 && (
-                  <View style={mob.tasteChipRow}>
-                    {tasteChips.map((c) => (
-                      <View key={c} style={mob.tasteChip}>
-                        <Text style={mob.tasteChipText}>{c}</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-                <Text style={mob.tasteFootnote}>{tasteFootnote}</Text>
-              </View>
-              <View style={mob.hairline} />
-            </>
-          )}
-
-          {/* ── Badges ── */}
-          <View style={mob.section}>
-            <View style={mob.sectionHeader}>
-              <View style={mob.sectionAccent} />
-              <Text style={[mob.sectionTitle, mob.sectionTitleElevated]}>Badges</Text>
-              <Text style={mob.sectionCount}>
-                {badgesEarned}/{badges.length}
-              </Text>
-            </View>
-            <View style={mob.badgeWall}>
-              {badges.map((b) => (
-                <Pressable
-                  key={b.id}
-                  onPress={() => setSelectedBadge(b)}
-                  style={
-                    [mob.badgeTile, mob.badgeTileBtn, !b.earned && mob.badgeTileLocked] as object
-                  }
-                >
-                  <View
-                    style={[
-                      mob.badgeIcon,
-                      b.earned ? (mob.badgeIconEarned as object) : (mob.badgeIconLocked as object),
-                    ]}
-                  >
-                    <Ionicons
-                      name={b.icon as keyof typeof Ionicons.glyphMap}
-                      size={22}
-                      color={b.earned ? '#fff' : COLORS.grey}
-                    />
-                  </View>
-                  <Text
-                    style={[mob.badgeLabel, !b.earned && (mob.badgeLabelLocked as object)]}
-                    numberOfLines={1}
-                  >
-                    {b.label}
-                  </Text>
-                  <Text style={mob.badgeSub} numberOfLines={1}>
-                    {!b.earned && b.progress
-                      ? `${Math.min(b.progress.current, b.progress.target)}/${b.progress.target}`
-                      : b.earned
-                        ? 'Earned'
-                        : ''}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-          <View style={mob.hairline} />
-
-          {/* ── My Contributions ── */}
-          {contributions.length > 0 && (
-            <>
-              <View style={mob.section}>
-                <View style={mob.sectionHeader}>
-                  <Text style={mob.sectionTitle}>My Contributions</Text>
-                  <Text style={mob.sectionCount}>{contributions.length}</Text>
-                </View>
-                <View style={mob.contribList}>
-                  {contributions.slice(0, 12).map((c) => (
-                    <View key={c.id} style={mob.contribRow}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={mob.contribHero} numberOfLines={1}>
-                          {c.hero_name}
-                        </Text>
-                        <Text style={mob.contribWhat} numberOfLines={1}>
-                          {describeContribution(c)}
-                        </Text>
-                      </View>
-                      <View style={[mob.statusPill, { backgroundColor: STATUS_BG[c.status] }]}>
-                        <Text style={[mob.statusText, { color: STATUS_FG[c.status] }]}>
-                          {c.status}
-                        </Text>
-                      </View>
+            <SectionShell title="Your Universe" style={mob.shellGutter}>
+              {!!tasteInsight && <Text style={mob.tasteInsight}>{tasteInsight}</Text>}
+              {tasteChips.length > 0 && (
+                <View style={mob.tasteChipRow}>
+                  {tasteChips.map((c) => (
+                    <View key={c} style={mob.tasteChip}>
+                      <Text style={mob.tasteChipText}>{c}</Text>
                     </View>
                   ))}
                 </View>
-              </View>
-              <View style={mob.hairline} />
-            </>
+              )}
+              <Text style={mob.tasteFootnote}>{tasteFootnote}</Text>
+            </SectionShell>
           )}
 
-          {/* ── My Favourites ── */}
-          <View style={mob.section}>
-            <View style={mob.sectionHeader}>
-              <Text style={mob.sectionTitle}>My Favourites</Text>
-              {!loading && favourites.length > 0 && (
-                <Text style={mob.sectionCount}>{favourites.length}</Text>
-              )}
-            </View>
+          {/* ── Collection (anchor) ── */}
+          <SectionShell
+            title="Collection"
+            count={!loading && favourites.length > 0 ? String(favourites.length) : undefined}
+            style={mob.shellGutter}
+          >
             {loading ? (
               <MobileFavSkeleton thumbSize={thumbSize} />
             ) : favourites.length === 0 ? (
@@ -747,7 +646,63 @@ export default function WebProfileScreen() {
                 ))}
               </View>
             )}
-          </View>
+          </SectionShell>
+
+          {/* ── Badges ── */}
+          <SectionShell
+            title="Badges"
+            count={`${badgesEarned}/${badges.length}`}
+            style={mob.shellGutter}
+          >
+            <View style={mob.badgeWall}>
+              {badges.map((b) => (
+                <Pressable
+                  key={b.id}
+                  onPress={() => setSelectedBadge(b)}
+                  style={
+                    [mob.badgeTile, mob.badgeTileBtn, !b.earned && mob.badgeTileLocked] as object
+                  }
+                >
+                  <View
+                    style={[
+                      mob.badgeIcon,
+                      b.earned ? (mob.badgeIconEarned as object) : (mob.badgeIconLocked as object),
+                    ]}
+                  >
+                    <Ionicons
+                      name={b.icon as keyof typeof Ionicons.glyphMap}
+                      size={22}
+                      color={b.earned ? '#fff' : COLORS.grey}
+                    />
+                  </View>
+                  <Text
+                    style={[mob.badgeLabel, !b.earned && (mob.badgeLabelLocked as object)]}
+                    numberOfLines={1}
+                  >
+                    {b.label}
+                  </Text>
+                  <Text style={mob.badgeSub} numberOfLines={1}>
+                    {!b.earned && b.progress
+                      ? `${Math.min(b.progress.current, b.progress.target)}/${b.progress.target}`
+                      : b.earned
+                        ? 'Earned'
+                        : ''}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </SectionShell>
+
+          {/* ── Contributions ── */}
+          {contributions.length > 0 && (
+            <SectionShell
+              title="Contributions"
+              count={String(contributions.length)}
+              style={mob.shellGutter}
+            >
+              <ContributionsList contributions={contributions} />
+            </SectionShell>
+          )}
 
           <View style={mob.kofiCard}>
             <Pressable
@@ -946,11 +901,7 @@ export default function WebProfileScreen() {
             {gettingStartedReady && <GettingStartedCard steps={gettingStartedSteps} />}
 
             {showTaste && (
-              <View style={desk.battleBlock}>
-                <View style={desk.sectionHeaderElevated}>
-                  <View style={desk.sectionAccent} />
-                  <Text style={[desk.sectionTitle, desk.sectionTitleElevated]}>Your Universe</Text>
-                </View>
+              <SectionShell title="Your Universe">
                 {!!tasteInsight && <Text style={desk.tasteInsight}>{tasteInsight}</Text>}
                 {tasteChips.length > 0 && (
                   <View style={desk.tasteChipRow}>
@@ -962,16 +913,56 @@ export default function WebProfileScreen() {
                   </View>
                 )}
                 <Text style={desk.tasteFootnote}>{tasteFootnote}</Text>
-              </View>
+              </SectionShell>
             )}
-            <View style={desk.battleBlock}>
-              <View style={desk.badgeHead}>
-                <View style={desk.sectionAccent} />
-                <Text style={[desk.sectionTitle, desk.sectionTitleElevated]}>Badges</Text>
-                <Text style={desk.sectionCount}>
-                  {badgesEarned}/{badges.length}
-                </Text>
-              </View>
+
+            {/* Collection — the anchor: the fan's saved heroes, filling the width. */}
+            <SectionShell
+              title="Collection"
+              count={!loading && favourites.length > 0 ? String(favourites.length) : undefined}
+            >
+              {loading ? (
+                <DeskFavSkeleton />
+              ) : favourites.length === 0 ? (
+                <View style={desk.emptyState}>
+                  <View style={desk.emptyIconWrap}>
+                    <Ionicons name="heart-outline" size={32} color={COLORS.orange} />
+                  </View>
+                  <Text style={desk.emptyTitle}>Nothing saved yet</Text>
+                  <Text style={desk.emptyBody}>
+                    Open any hero and tap the heart to build your collection
+                  </Text>
+                  <Pressable
+                    onPress={() => router.push('/explore')}
+                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                      [desk.browseBtn, hovered && (desk.browseBtnHover as object)] as object
+                    }
+                  >
+                    <Text style={desk.browseBtnText}>Browse heroes</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={deskGrid as object}>
+                  {favourites.map((hero) => (
+                    <Pressable
+                      key={hero.id}
+                      onPress={() => router.push(`/character/${hero.id}`)}
+                      onLongPress={() => handleUnfavourite(hero)}
+                    >
+                      <WebHeroCard
+                        id={hero.id}
+                        name={hero.name}
+                        imageUrl={hero.image_url}
+                        portraitUrl={hero.portrait_url}
+                        onPress={() => router.push(`/character/${hero.id}`)}
+                      />
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </SectionShell>
+
+            <SectionShell title="Badges" count={`${badgesEarned}/${badges.length}`}>
               <View style={desk.badgeWall}>
                 {badges.map((b) => (
                   <Pressable
@@ -1015,76 +1006,12 @@ export default function WebProfileScreen() {
                   </Pressable>
                 ))}
               </View>
-            </View>
-            {contributions.length > 0 && (
-              <View style={desk.battleBlock}>
-                <Text style={desk.sectionTitle}>My Contributions</Text>
-                <View style={desk.contribList}>
-                  {contributions.slice(0, 12).map((c) => (
-                    <View key={c.id} style={desk.contribRow}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={desk.contribHero} numberOfLines={1}>
-                          {c.hero_name}
-                        </Text>
-                        <Text style={desk.contribWhat} numberOfLines={1}>
-                          {describeContribution(c)}
-                        </Text>
-                      </View>
-                      <View style={[desk.statusPill, { backgroundColor: STATUS_BG[c.status] }]}>
-                        <Text style={[desk.statusText, { color: STATUS_FG[c.status] }]}>
-                          {c.status}
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-            <View style={desk.sectionHeader}>
-              <Text style={desk.sectionTitle}>My Favourites</Text>
-              {!loading && favourites.length > 0 && (
-                <Text style={desk.sectionCount}>{favourites.length}</Text>
-              )}
-            </View>
+            </SectionShell>
 
-            {loading ? (
-              <DeskFavSkeleton />
-            ) : favourites.length === 0 ? (
-              <View style={desk.emptyState}>
-                <View style={desk.emptyIconWrap}>
-                  <Ionicons name="heart-outline" size={32} color={COLORS.orange} />
-                </View>
-                <Text style={desk.emptyTitle}>Nothing saved yet</Text>
-                <Text style={desk.emptyBody}>
-                  Open any hero and tap the heart to build your collection
-                </Text>
-                <Pressable
-                  onPress={() => router.push('/explore')}
-                  style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                    [desk.browseBtn, hovered && (desk.browseBtnHover as object)] as object
-                  }
-                >
-                  <Text style={desk.browseBtnText}>Browse heroes</Text>
-                </Pressable>
-              </View>
-            ) : (
-              <View style={deskGrid as object}>
-                {favourites.map((hero) => (
-                  <Pressable
-                    key={hero.id}
-                    onPress={() => router.push(`/character/${hero.id}`)}
-                    onLongPress={() => handleUnfavourite(hero)}
-                  >
-                    <WebHeroCard
-                      id={hero.id}
-                      name={hero.name}
-                      imageUrl={hero.image_url}
-                      portraitUrl={hero.portrait_url}
-                      onPress={() => router.push(`/character/${hero.id}`)}
-                    />
-                  </Pressable>
-                ))}
-              </View>
+            {contributions.length > 0 && (
+              <SectionShell title="Contributions" count={String(contributions.length)}>
+                <ContributionsList contributions={contributions} />
+              </SectionShell>
             )}
           </View>
         </View>
@@ -1384,6 +1311,7 @@ const mob = StyleSheet.create({
 
   // Favourites
   section: { paddingHorizontal: 16, marginBottom: 24 },
+  shellGutter: { marginHorizontal: 16 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   sectionTitle: {
     fontFamily: 'Flame-Regular',

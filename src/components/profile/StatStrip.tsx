@@ -3,6 +3,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
 import type { ProfileStat } from '../../lib/profile/stats';
 
+/**
+ * The fan's stat block — the signature of the profile "dossier". Renders the
+ * at-a-glance stats (saved, battles, streak, crowd %, badges) as one framed
+ * instrument panel of hairline-divided cells, echoing a character's power-stat
+ * block, rather than a scatter of separate chips. Empty → renders nothing.
+ */
 export function StatStrip({
   stats,
   onPressStat,
@@ -13,8 +19,8 @@ export function StatStrip({
   if (stats.length === 0) return null;
 
   return (
-    <View style={styles.row}>
-      {stats.map((s) => {
+    <View style={styles.block}>
+      {stats.map((s, i) => {
         const inner = (
           <>
             {s.loading ? (
@@ -22,7 +28,7 @@ export function StatStrip({
             ) : (
               <View style={styles.valueRow}>
                 {s.key === 'streak' && (
-                  <Ionicons name="flame" size={16} color={COLORS.orange} style={styles.flame} />
+                  <Ionicons name="flame" size={15} color={COLORS.orange} style={styles.flame} />
                 )}
                 <Text style={styles.value}>{s.value}</Text>
               </View>
@@ -32,12 +38,20 @@ export function StatStrip({
             </Text>
           </>
         );
+        const cellStyle = [styles.cell, i > 0 && styles.cellDivider];
         return onPressStat ? (
-          <Pressable key={s.key} onPress={() => onPressStat(s.key)} style={styles.tile}>
+          <Pressable
+            key={s.key}
+            onPress={() => onPressStat(s.key)}
+            style={({ hovered }: { pressed: boolean; hovered?: boolean }) => [
+              cellStyle,
+              hovered && styles.cellHover,
+            ]}
+          >
             {inner}
           </Pressable>
         ) : (
-          <View key={s.key} style={styles.tile}>
+          <View key={s.key} style={cellStyle}>
             {inner}
           </View>
         );
@@ -47,42 +61,47 @@ export function StatStrip({
 }
 
 const styles = StyleSheet.create({
-  row: {
+  block: {
     flexDirection: 'row',
     alignSelf: 'stretch',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  tile: {
-    flex: 1,
-    maxWidth: 110,
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 6,
-    backgroundColor: '#fff',
-    borderRadius: 14,
+    backgroundColor: '#fbf3ea',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(41,60,67,0.08)',
+    borderColor: '#f0e2d0',
+    overflow: 'hidden',
   },
-  valueRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  cell: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  cellDivider: {
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderLeftColor: '#ecdcc7',
+  },
+  cellHover: { backgroundColor: '#fdece0' } as object,
+  valueRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   flame: { marginTop: 1 },
   value: {
     fontFamily: 'Flame-Regular',
-    fontSize: 22,
-    lineHeight: 27, // ≥ 1.22× fontSize for Flame descenders
+    fontSize: 21,
+    lineHeight: 26, // ≥ 1.22× fontSize for Flame descenders
     color: COLORS.navy,
   },
   skeleton: {
-    width: 28,
-    height: 22,
+    width: 24,
+    height: 21,
     borderRadius: 6,
     backgroundColor: 'rgba(41,60,67,0.10)',
   },
   label: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
+    fontSize: 10.5,
+    letterSpacing: 0.3,
     color: COLORS.grey,
-    marginTop: 2,
+    marginTop: 3,
     textAlign: 'center',
   },
 });

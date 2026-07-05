@@ -29,12 +29,27 @@ export function buildProfileStats(input: ProfileStatInput): ProfileStat[] {
   }
 
   if (battle && battle.total > 0) {
-    stats.push({ key: 'battles', label: 'Battles', value: String(battle.total), loading: undefined });
+    stats.push({
+      key: 'battles',
+      label: 'Battles',
+      value: String(battle.total),
+      loading: undefined,
+    });
     if (battle.streak > 0) {
-      stats.push({ key: 'streak', label: 'Streak', value: String(battle.streak), loading: undefined });
+      stats.push({
+        key: 'streak',
+        label: 'Streak',
+        value: String(battle.streak),
+        loading: undefined,
+      });
     }
     if (battle.agreePct > 0) {
-      stats.push({ key: 'crowd', label: 'With the crowd', value: `${battle.agreePct}%`, loading: undefined });
+      stats.push({
+        key: 'crowd',
+        label: 'Crowd',
+        value: `${battle.agreePct}%`,
+        loading: undefined,
+      });
     }
   }
 
