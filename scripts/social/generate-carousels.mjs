@@ -95,7 +95,7 @@ function caption(M) {
   const a = M.a.name, b = M.b.name, w = M[M.winner].name;
   const lead = M.voteA >= M.voteB ? a : b;
   return [
-    `${cap1(a.toLowerCase())} vs ${cap1(b.toLowerCase())} — who would win? Swipe for the tale of the tape 🥊`, ``,
+    `${cap1(a.toLowerCase())} vs ${cap1(b.toLowerCase())}: who would win? Swipe for the full breakdown 🥊`, ``,
     `Our model gives it to ${cap1(w.toLowerCase())}, but the fans have ${cap1(lead.toLowerCase())} ahead ${Math.max(M.voteA, M.voteB)}/${Math.min(M.voteA, M.voteB)}.`,
     `Who's right? Drop your pick 👇`, ``,
     `Explore 34,000+ characters and settle any matchup on mythique.app`, ``,

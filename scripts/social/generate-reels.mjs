@@ -35,7 +35,7 @@ function buildHtml(M, F) {
 .grain{position:absolute;inset:0;background-image:url("${grain}");background-size:340px;opacity:.05;mix-blend-mode:overlay;}
 .scene{position:absolute;inset:0;opacity:0;}.scene.on{opacity:1;}
 .sq{position:absolute;top:520px;width:452px;}.sq.l{left:60px;}.sq.r{right:60px;}
-.sqin{position:relative;width:452px;height:600px;border-radius:23%/17%;overflow:hidden;border:7px solid var(--tc);box-shadow:0 30px 70px rgba(0,0,0,.6),0 0 60px -10px var(--tc);}
+.sqin{position:relative;width:452px;height:600px;border-radius:23%/17%;overflow:hidden;border:7px solid var(--tc);box-shadow:0 30px 70px rgba(0,0,0,.6),0 0 60px -10px var(--tc);animation:drift 7s ease-in-out infinite alternate;}
 .sqin img{width:100%;height:100%;object-fit:cover;}.sqin img.flip{transform:scaleX(-1);}.sqin.loser{filter:grayscale(1) brightness(.42);}
 .glare{position:absolute;inset:0;background:linear-gradient(120deg, rgba(255,255,255,.14), transparent 40%);}
 .pname{text-align:center;font-size:60px;margin-top:20px;-webkit-text-stroke:8px ${NAVY};paint-order:stroke fill;}
@@ -59,6 +59,7 @@ function buildHtml(M, F) {
 .winnerlbl{position:absolute;top:360px;left:0;right:0;text-align:center;font-size:64px;color:${GOLD};letter-spacing:4px;-webkit-text-stroke:6px ${NAVY};paint-order:stroke fill;}
 .winnerlbl .u{display:block;width:220px;height:8px;background:${GOLD};margin:14px auto 0;border-radius:6px;}
 .wglow{position:absolute;top:520px;width:452px;height:600px;border-radius:23%/17%;box-shadow:0 0 130px 12px rgba(224,168,62,.85);}
+#s_win .pname{display:none;}#s_win.on{animation:shake .5s cubic-bezier(.36,.07,.19,.97) both;}.scene.on .wglow{animation:burst .55s .12s both;}#s_win .flash{background:radial-gradient(circle at 50% 42%, rgba(255,233,194,.95), #fff 55%);}
 .xmark{position:absolute;top:640px;font-size:300px;color:#e2402f;z-index:6;-webkit-text-stroke:14px ${NAVY};paint-order:stroke fill;opacity:0;}
 .scene.on .xmark{animation:xin .4s .25s cubic-bezier(.2,1.6,.4,1) both;}
 .bigwin{position:absolute;top:1200px;left:0;right:0;text-align:center;font-size:112px;color:${GOLD};-webkit-text-stroke:11px ${NAVY};paint-order:stroke fill;}
@@ -76,7 +77,10 @@ function buildHtml(M, F) {
 @keyframes slam{from{opacity:0;transform:scale(.6)}70%{transform:scale(1.07)}to{opacity:1;transform:scale(1)}}
 @keyframes inL{from{opacity:0;transform:translateX(-120px)}to{opacity:1;transform:none}}@keyframes inR{from{opacity:0;transform:translateX(120px)}to{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:translateX(-50%) scale(.2)}to{opacity:1;transform:translateX(-50%) scale(1)}}
-@keyframes flash{from{opacity:.9}to{opacity:0}}@keyframes xin{from{opacity:0;transform:scale(2) rotate(-18deg)}to{opacity:1;transform:scale(1) rotate(-10deg)}}
+@keyframes flash{from{opacity:.92}to{opacity:0}}@keyframes xin{from{opacity:0;transform:scale(2) rotate(-18deg)}to{opacity:1;transform:scale(1) rotate(-10deg)}}
+@keyframes drift{from{transform:scale(1)}to{transform:scale(1.05)}}
+@keyframes shake{10%,90%{transform:translateX(-7px)}20%,80%{transform:translateX(9px)}30%,50%,70%{transform:translateX(-15px)}40%,60%{transform:translateX(15px)}}
+@keyframes burst{0%{opacity:0;transform:scale(.5)}60%{opacity:1;transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
 @keyframes upIn{from{opacity:0;transform:translateY(36px)}to{opacity:1;transform:none}}
 </style></head><body>
 <div class="root"><div class="dots"></div><div class="grain"></div>
@@ -122,7 +126,7 @@ function caption(M) {
   const a = M.a.name, b = M.b.name, w = M[M.winner].name;
   const lead = M.voteA >= M.voteB ? a : b;
   return [
-    `${a} vs ${b} — who actually wins? 🥊`, ``,
+    `${a} vs ${b}: who actually wins? 🥊`, ``,
     `Our model says ${w}. But the fans have ${lead} ahead ${Math.max(M.voteA, M.voteB)}/${Math.min(M.voteA, M.voteB)} 👀`,
     `"${M.verdict}"`, ``,
     `Who's your pick? Settle it on mythique.app`, ``,
