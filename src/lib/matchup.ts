@@ -9,7 +9,7 @@ export interface MatchupHero {
   image_url: string | null;
   portrait_url: string | null;
   publisher: string | null;
-  /** Tale-of-the-tape stats (0–100); present because the daily pool carries
+  /** head-to-head stats (0–100); present because the daily pool carries
    *  full stat rows. Optional so older cached shapes stay valid. */
   intelligence?: number | null;
   strength?: number | null;

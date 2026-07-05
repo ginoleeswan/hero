@@ -1,6 +1,6 @@
 // src/lib/home/matchupVote.ts — pure helpers for the daily "Who would win?" vote.
 // The vote is persisted locally (AsyncStorage) so a user's pick is remembered for
-// the day; the reveal shows the stat scorecard ("tale of the tape") + AI verdict.
+// the day; the reveal shows the stat scorecard ("head to head") + AI verdict.
 // Community-aggregate tallies would be a backend follow-up (a votes table + RPC).
 
 export type MatchupSide = 'a' | 'b';
@@ -31,7 +31,7 @@ export function statSplit(winsA: number, winsB: number): { pctA: number; pctB: n
   return { pctA, pctB: 100 - pctA };
 }
 
-/** Short verdict-line on who the tale of the tape favours. */
+/** Short verdict-line on who the head to head favours. */
 export function statLead(winsA: number, winsB: number, nameA: string, nameB: string): string {
   if (winsA === winsB) return 'Evenly matched on the tape';
   return `${winsA > winsB ? nameA : nameB} leads ${Math.max(winsA, winsB)}–${Math.min(winsA, winsB)} on stats`;

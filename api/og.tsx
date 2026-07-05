@@ -1,6 +1,6 @@
 // Dynamic 1200×630 Open Graph card renderer (@vercel/og / satori).
 //   /api/og?hero=<id>   — character card (portrait + name + universe)
-//   /api/og?a=<id>&b=<id> — VS card (both portraits, tale of the tape)
+//   /api/og?a=<id>&b=<id> — VS card (both portraits, head to head)
 //   /api/og (no params) — site-wide brand card (snapshotted to public/og.png
 //                         by scripts/fetch-og-site.mjs)
 //

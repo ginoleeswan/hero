@@ -5,7 +5,7 @@
 //
 // The poster's split uses the STAT scorecard (winsA/winsB), not the live crowd
 // tally — a freshly-shared matchup usually has ~1 vote, and "100% · 1 fan voted"
-// makes a poor poster. The tale-of-the-tape split is always meaningful.
+// makes a poor poster. The head-to-head split is always meaningful.
 import { useCallback, useRef, useState, type ReactElement } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
