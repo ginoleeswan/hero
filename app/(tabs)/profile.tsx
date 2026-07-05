@@ -27,7 +27,6 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { useProfileData } from '../../src/hooks/useProfileData';
-import { ChangePasswordModal } from '../../src/components/ui/ChangePasswordModal';
 import { EditDisplayNameModal } from '../../src/components/ui/EditDisplayNameModal';
 import { BadgeDetailModal } from '../../src/components/ui/BadgeDetailModal';
 import {
@@ -36,37 +35,31 @@ import {
 } from '../../src/components/ui/GettingStartedCard';
 import { useUniverseShareImage } from '../../src/hooks/useUniverseShareImage';
 import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
-import { describeContribution, type MyContribution } from '../../src/lib/db/contributions';
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
 import { computeBadges, earnedCount, type Badge } from '../../src/lib/profile/badges';
-import { providerMeta } from '../../src/lib/profile/provider';
+import { buildProfileStats } from '../../src/lib/profile/stats';
+import { fanTier, tierProgress } from '../../src/lib/profile/fanTier';
+import { StatStrip } from '../../src/components/profile/StatStrip';
+import { SectionShell } from '../../src/components/profile/SectionShell';
+import { ContributionsList } from '../../src/components/profile/ContributionsList';
+import { TasteMixBar } from '../../src/components/profile/TasteMixBar';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
 import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const THUMB_SIZE = (SCREEN_WIDTH - 32 - 8) / 3;
+// Sized to fit 3 across inside a SectionShell panel (16 gutter + 24 padding
+// each side + two 8px gaps).
+const THUMB_SIZE = (SCREEN_WIDTH - 32 - 48 - 16) / 3;
+// Badge tiles: 4 across inside the same panel (three 10px gaps).
+const BADGE_TILE = (SCREEN_WIDTH - 32 - 48 - 30) / 4;
 
 const KO_FI_URL = 'https://ko-fi.com/glstudio';
 
 function username(email: string) {
   return email.split('@')[0] ?? email;
 }
-
-// ── My Contributions presentation ───────────────────────────────────────────
-const STATUS_BG: Record<MyContribution['status'], string> = {
-  pending: 'rgba(231,115,51,0.14)',
-  approved: 'rgba(99,169,54,0.16)',
-  rejected: '#e8ddd0',
-  superseded: '#e8ddd0',
-};
-const STATUS_FG: Record<MyContribution['status'], string> = {
-  pending: COLORS.orange,
-  approved: COLORS.green,
-  rejected: COLORS.grey,
-  superseded: COLORS.grey,
-};
 
 function FavouriteThumb({
   hero,
@@ -261,7 +254,7 @@ function GuestProfileScreen() {
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user, signOut, changePassword, deleteAccount } = useAuth();
+  const { user } = useAuth();
   const {
     profile,
     loading: profileLoading,
@@ -277,9 +270,6 @@ export default function ProfileScreen() {
   const { favourites, setFavourites, battle, contributions, taste, loading, refetch } =
     useProfileData(user?.id);
   const [refreshing, setRefreshing] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
-  const [deletingAccount, setDeletingAccount] = useState(false);
-  const [showChangePassword, setShowChangePassword] = useState(false);
   const [showEditName, setShowEditName] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const { toast, showToast } = useToast();
@@ -294,34 +284,6 @@ export default function ProfileScreen() {
     setRefreshing(true);
     refetch().finally(() => setRefreshing(false));
   }, [refetch]);
-
-  const handleSignOut = async () => {
-    setSigningOut(true);
-    await signOut();
-    router.replace('/explore');
-  };
-
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'This will permanently delete your account and all your data. This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete Account',
-          style: 'destructive',
-          onPress: async () => {
-            setDeletingAccount(true);
-            const { error } = await deleteAccount();
-            if (error) {
-              setDeletingAccount(false);
-              Alert.alert('Error', error.message);
-            }
-          },
-        },
-      ],
-    );
-  };
 
   const handleAvatarLongPress = () => {
     if (!profile?.avatar_url) return;
@@ -359,25 +321,24 @@ export default function ProfileScreen() {
 
   const email = user?.email ?? '';
   const name = profile?.display_name ?? username(email);
-  const provider = user?.app_metadata?.provider ?? 'email';
-  const isEmailUser = provider === 'email' || !user?.app_metadata?.provider;
   const joinedDate = user?.created_at
     ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : null;
 
-  // "Your Universe" — a one-line lean + a handful of franchise/tag chips.
+  // "Your Universe" — taste facets + a handful of franchise/tag chips.
   const tasteChips = taste
     ? Array.from(
         new Set([...taste.franchises.map((f) => f.name), ...taste.tags.map((t) => t.label)]),
       ).slice(0, 7)
     : [];
-  const tasteInsight = taste
-    ? [
-        dominantAlignment(taste),
-        taste.publishers[0]?.name && shortPublisher(taste.publishers[0].name),
-      ]
-        .filter(Boolean)
-        .join(' · ')
+  const tasteAlignment = taste ? dominantAlignment(taste) : null;
+  const tasteTopUniverse = taste?.publishers[0]?.name
+    ? shortPublisher(taste.publishers[0].name)
+    : null;
+  const tasteInsight = [tasteAlignment, tasteTopUniverse].filter(Boolean).join(' · ');
+  const showTaste = !!taste && taste.basedOn > 0 && (!!tasteInsight || tasteChips.length > 0);
+  const tasteFootnote = taste
+    ? `Based on ${taste.basedOn} ${taste.basedOn === 1 ? 'hero' : 'heroes'} you've saved & viewed`
     : '';
 
   // Badges — derived from account age + favourites + matchup record + taste.
@@ -389,6 +350,25 @@ export default function ProfileScreen() {
     topPublisher: taste?.publishers[0]?.name ?? null,
   });
   const badgesEarned = earnedCount(badges);
+
+  // Fan identity — stat block, tier label, and progress to the next tier.
+  const tierInput = {
+    saves: favourites.length,
+    votes: battle?.total ?? 0,
+    contributions: contributions.length,
+    badges: badgesEarned,
+  };
+  const tier = fanTier(tierInput);
+  const tierProg = tierProgress(tierInput);
+  const profileStats = buildProfileStats({
+    savedCount: favourites.length,
+    favouritesLoading: loading,
+    battle,
+    badgesEarned,
+  });
+  const handleStatPress = (key: 'saved' | 'battles' | 'streak' | 'badges') => {
+    if (key === 'battles' || key === 'streak') router.push('/versus');
+  };
 
   // Shareable "My Universe" poster — off-screen card + share().
   const {
@@ -477,12 +457,6 @@ export default function ProfileScreen() {
   const handleUpdateName = async (newName: string) => {
     await updateDisplayName(newName);
     showToast('Display name updated');
-  };
-
-  const handleChangePassword = async (current: string, next: string) => {
-    const result = await changePassword(current, next);
-    if (!result.error) showToast('Password updated');
-    return result;
   };
 
   // All hooks above run unconditionally; the guest view branches only here.
@@ -604,7 +578,7 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Identity */}
+        {/* Fan ID — identity, stat block, tier */}
         <View style={styles.identityBlock}>
           <TouchableOpacity
             onPress={() => setShowEditName(true)}
@@ -619,72 +593,101 @@ export default function ProfileScreen() {
               style={styles.pencilIcon}
             />
           </TouchableOpacity>
-          <Text style={styles.email}>{email}</Text>
-          <View style={styles.statPill}>
-            <Ionicons name="heart" size={14} color={COLORS.orange} />
-            <Text style={styles.statPillText}>
-              {loading ? '–' : favourites.length} saved heroes
-            </Text>
+          <View style={styles.tierPill}>
+            <Ionicons name={tier.icon} size={12} color={COLORS.orange} />
+            <Text style={styles.tierText}>{tier.name}</Text>
           </View>
+          <Text style={styles.email}>{email}</Text>
+          {joinedDate && <Text style={styles.memberSince}>Member since {joinedDate}</Text>}
+
+          <View style={styles.statStripWrap}>
+            <StatStrip stats={profileStats} onPressStat={handleStatPress} />
+          </View>
+
+          {tierProg.next && (
+            <View style={styles.tierProg}>
+              <View style={styles.tierProgTrack}>
+                <View
+                  style={[styles.tierProgFill, { width: `${Math.round(tierProg.pct * 100)}%` }]}
+                />
+              </View>
+              <Text style={styles.tierProgText}>
+                {tierProg.remaining} to {tierProg.next}
+              </Text>
+            </View>
+          )}
 
           <TouchableOpacity
             onPress={handleShareUniverse}
             disabled={sharingUniverse}
             style={styles.shareUniverseBtn}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
             {sharingUniverse ? (
-              <ActivityIndicator size="small" color={COLORS.navy} />
+              <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
-                <Ionicons name="share-outline" size={15} color={COLORS.navy} />
+                <Ionicons name="share-outline" size={15} color="#fff" />
                 <Text style={styles.shareUniverseText}>Share my universe</Text>
               </>
             )}
           </TouchableOpacity>
         </View>
 
-        <View style={styles.hairline} />
+        {/* Settings + Support */}
+        <View style={styles.actionCards}>
+          <TouchableOpacity
+            style={styles.accountCard}
+            onPress={() => router.push('/settings')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.accountRow}>
+              <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
+                <Ionicons name="settings-outline" size={16} color={COLORS.navy} />
+              </View>
+              <Text style={styles.accountLabel}>Settings</Text>
+              <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.accountCard}
+            onPress={() => Linking.openURL(KO_FI_URL)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.accountRow}>
+              <View style={[styles.accountIconBadge, styles.accountIconBadgeOrange]}>
+                <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
+              </View>
+              <Text style={styles.accountLabel}>Support this project</Text>
+              <Text style={styles.accountValue}>Ko-fi</Text>
+              <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+            </View>
+          </TouchableOpacity>
+        </View>
 
         {gettingStartedReady && <GettingStartedCard steps={gettingStartedSteps} />}
 
-        {/* Battle Record — surfaces the user's matchup votes (Today's Battle). */}
-        {battle && battle.total > 0 && (
-          <>
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Battle Record</Text>
-              </View>
-              <View style={styles.battleRow}>
-                <View style={styles.battleTile}>
-                  <Text style={styles.battleValue}>{battle.total}</Text>
-                  <Text style={styles.battleLabel}>
-                    {battle.total === 1 ? 'Battle' : 'Battles'}
-                  </Text>
+        {/* Your Universe */}
+        {showTaste && (
+          <SectionShell title="Your Universe" style={styles.shellGutter}>
+            <View style={styles.tasteReadout}>
+              {!!tasteAlignment && (
+                <View style={styles.tasteFacet}>
+                  <Text style={styles.tasteFacetLabel}>Leans</Text>
+                  <Text style={styles.tasteFacetValue}>{tasteAlignment}</Text>
                 </View>
-                <View style={styles.battleTile}>
-                  <Text style={styles.battleValue}>{battle.agreePct}%</Text>
-                  <Text style={styles.battleLabel}>With the crowd</Text>
+              )}
+              {!!tasteTopUniverse && (
+                <View style={styles.tasteFacet}>
+                  <Text style={styles.tasteFacetLabel}>Top universe</Text>
+                  <Text style={styles.tasteFacetValue}>{tasteTopUniverse}</Text>
                 </View>
-                <View style={styles.battleTile}>
-                  <Text style={styles.battleValue}>{battle.streak}</Text>
-                  <Text style={styles.battleLabel}>Day streak</Text>
-                </View>
-              </View>
+              )}
             </View>
-            <View style={styles.hairline} />
-          </>
-        )}
-
-        {/* Your Universe — taste profile from favourites + view history. */}
-        {taste && taste.basedOn > 0 && (!!tasteInsight || tasteChips.length > 0) && (
-          <>
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Your Universe</Text>
-              </View>
-              {!!tasteInsight && <Text style={styles.tasteInsight}>{tasteInsight}</Text>}
-              {tasteChips.length > 0 && (
+            {!!taste && <TasteMixBar facets={taste.publishers} />}
+            {tasteChips.length > 0 && (
+              <>
+                <Text style={styles.tasteEyebrow}>Favourite franchises</Text>
                 <View style={styles.tasteChipRow}>
                   {tasteChips.map((c) => (
                     <View key={c} style={styles.tasteChip}>
@@ -692,108 +695,18 @@ export default function ProfileScreen() {
                     </View>
                   ))}
                 </View>
-              )}
-              <Text style={styles.tasteFootnote}>
-                {`Based on ${taste.basedOn} ${taste.basedOn === 1 ? 'hero' : 'heroes'} you've saved & viewed`}
-              </Text>
-            </View>
-            <View style={styles.hairline} />
-          </>
-        )}
-
-        {/* Badges — derived achievements (account age, favourites, votes, taste). */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Badges</Text>
-            <Text style={styles.sectionCount}>
-              {badgesEarned}/{badges.length}
-            </Text>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.badgeRow}
-          >
-            {badges.map((b) => (
-              <PressScale
-                key={b.id}
-                onPress={() => setSelectedBadge(b)}
-                scale={0.92}
-                style={[styles.badgeTile, !b.earned && styles.badgeTileLocked]}
-              >
-                <View
-                  style={[
-                    styles.badgeIcon,
-                    b.earned ? styles.badgeIconEarned : styles.badgeIconLocked,
-                  ]}
-                >
-                  <Ionicons
-                    name={b.icon as keyof typeof Ionicons.glyphMap}
-                    size={22}
-                    color={b.earned ? '#fff' : COLORS.grey}
-                  />
-                </View>
-                <Text
-                  style={[styles.badgeLabel, !b.earned && styles.badgeLabelLocked]}
-                  numberOfLines={1}
-                >
-                  {b.label}
-                </Text>
-                <Text style={styles.badgeSub} numberOfLines={1}>
-                  {!b.earned && b.progress
-                    ? `${Math.min(b.progress.current, b.progress.target)}/${b.progress.target}`
-                    : b.earned
-                      ? 'Earned'
-                      : ''}
-                </Text>
-              </PressScale>
-            ))}
-          </ScrollView>
-        </View>
-
-        <View style={styles.hairline} />
-
-        {/* My Contributions — submissions + their review status. */}
-        {contributions.length > 0 && (
-          <>
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>My Contributions</Text>
-                <Text style={styles.sectionCount}>{contributions.length}</Text>
-              </View>
-              <View style={styles.contribList}>
-                {contributions.slice(0, 12).map((c) => (
-                  <View key={c.id} style={styles.contribRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.contribHero} numberOfLines={1}>
-                        {c.hero_name}
-                      </Text>
-                      <Text style={styles.contribWhat} numberOfLines={1}>
-                        {describeContribution(c)}
-                      </Text>
-                    </View>
-                    <View style={[styles.statusPill, { backgroundColor: STATUS_BG[c.status] }]}>
-                      <Text style={[styles.statusText, { color: STATUS_FG[c.status] }]}>
-                        {c.status}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
-            <View style={styles.hairline} />
-          </>
-        )}
-
-        {/* My Favourites */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>My Favourites</Text>
-            {!loading && favourites.length > 0 && (
-              <Text style={styles.sectionCount}>{favourites.length}</Text>
+              </>
             )}
-          </View>
+            <Text style={styles.tasteFootnote}>{tasteFootnote}</Text>
+          </SectionShell>
+        )}
 
+        {/* Collection */}
+        <SectionShell
+          title="Collection"
+          count={!loading && favourites.length > 0 ? String(favourites.length) : undefined}
+          style={styles.shellGutter}
+        >
           {loading ? (
             <FavouritesSkeleton />
           ) : favourites.length === 0 ? (
@@ -823,132 +736,92 @@ export default function ProfileScreen() {
                   onLongPress={() => handleUnfavourite(hero)}
                 />
               ))}
+              <TouchableOpacity
+                style={styles.ghostTile}
+                onPress={() => router.push('/explore')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="add" size={24} color={COLORS.orange} />
+                <Text style={styles.ghostText}>Add</Text>
+              </TouchableOpacity>
             </View>
           )}
-        </View>
+        </SectionShell>
 
-        {/* Account section */}
-        <View style={styles.accountSection}>
-          <Text style={styles.accountSectionTitle}>Account</Text>
-
-          <View style={styles.accountCard}>
-            <View style={styles.accountRow}>
-              <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-                <Ionicons name="mail-outline" size={16} color={COLORS.navy} />
-              </View>
-              <Text style={styles.accountLabel}>Email</Text>
-              <Text style={styles.accountValue} numberOfLines={1}>
-                {email}
-              </Text>
-            </View>
-
-            {!isEmailUser && (
-              <>
-                <View style={styles.divider} />
-                <View style={styles.accountRow}>
-                  <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-                    <Ionicons name={providerMeta(provider).icon} size={16} color={COLORS.navy} />
-                  </View>
-                  <Text style={styles.accountLabel}>Signed in with</Text>
-                  <Text style={styles.accountValue}>{providerMeta(provider).label}</Text>
-                </View>
-              </>
-            )}
-
-            {isEmailUser && (
-              <>
-                <View style={styles.divider} />
-                <TouchableOpacity
-                  style={styles.accountRow}
-                  onPress={() => setShowChangePassword(true)}
-                  activeOpacity={0.7}
+        {/* Badges */}
+        <SectionShell
+          title="Badges"
+          count={`${badgesEarned}/${badges.length}`}
+          style={styles.shellGutter}
+        >
+          <View style={styles.badgeWall}>
+            {badges.map((b) => {
+              const pct = b.progress
+                ? Math.round(
+                    (Math.min(b.progress.current, b.progress.target) / b.progress.target) * 100,
+                  )
+                : 0;
+              return (
+                <PressScale
+                  key={b.id}
+                  onPress={() => setSelectedBadge(b)}
+                  scale={0.92}
+                  style={[styles.badgeTile, !b.earned && styles.badgeTileLocked]}
                 >
-                  <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-                    <Ionicons name="lock-closed-outline" size={16} color={COLORS.navy} />
-                  </View>
-                  <Text style={styles.accountLabel}>Change Password</Text>
-                  <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-                </TouchableOpacity>
-              </>
-            )}
-
-            {joinedDate && (
-              <>
-                <View style={styles.divider} />
-                <View style={styles.accountRow}>
-                  <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-                    <Ionicons name="calendar-outline" size={16} color={COLORS.navy} />
-                  </View>
-                  <Text style={styles.accountLabel}>Member since</Text>
-                  <Text style={styles.accountValue}>{joinedDate}</Text>
-                </View>
-              </>
-            )}
-
-            <View style={styles.divider} />
-
-            <TouchableOpacity
-              style={styles.accountRow}
-              onPress={() => Linking.openURL(KO_FI_URL)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.accountIconBadge, styles.accountIconBadgeOrange]}>
-                <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
-              </View>
-              <Text style={styles.accountLabel}>Support this project</Text>
-              <Text style={styles.accountValue}>Ko-fi</Text>
-              <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-            </TouchableOpacity>
-
-            <View style={styles.divider} />
-
-            <TouchableOpacity
-              style={styles.accountRow}
-              onPress={handleSignOut}
-              disabled={signingOut}
-              activeOpacity={0.7}
-            >
-              {signingOut ? (
-                <ActivityIndicator
-                  size="small"
-                  color={COLORS.red}
-                  style={styles.signingOutIndicator}
-                />
-              ) : (
-                <View style={[styles.accountIconBadge, styles.accountIconBadgeRed]}>
-                  <Ionicons name="log-out-outline" size={16} color={COLORS.red} />
-                </View>
-              )}
-              <Text style={[styles.accountLabel, styles.accountLabelDanger]}>
-                {signingOut ? 'Signing out…' : 'Sign Out'}
-              </Text>
-            </TouchableOpacity>
-
-            <View style={styles.divider} />
-
-            <TouchableOpacity
-              style={styles.accountRow}
-              onPress={handleDeleteAccount}
-              disabled={deletingAccount}
-              activeOpacity={0.7}
-            >
-              {deletingAccount ? (
-                <ActivityIndicator
-                  size="small"
-                  color={COLORS.red}
-                  style={styles.signingOutIndicator}
-                />
-              ) : (
-                <View style={[styles.accountIconBadge, styles.accountIconBadgeRed]}>
-                  <Ionicons name="trash-outline" size={16} color={COLORS.red} />
-                </View>
-              )}
-              <Text style={[styles.accountLabel, styles.accountLabelDanger]}>
-                {deletingAccount ? 'Deleting account…' : 'Delete Account'}
-              </Text>
-            </TouchableOpacity>
+                  {b.earned ? (
+                    <LinearGradient
+                      colors={['#f2924d', '#d9591f']}
+                      style={[styles.badgeIcon, styles.badgeIconEarned]}
+                    >
+                      <Ionicons
+                        name={b.icon as keyof typeof Ionicons.glyphMap}
+                        size={22}
+                        color="#fff"
+                      />
+                    </LinearGradient>
+                  ) : (
+                    <View style={[styles.badgeIcon, styles.badgeIconLocked]}>
+                      <Ionicons
+                        name={b.icon as keyof typeof Ionicons.glyphMap}
+                        size={22}
+                        color={COLORS.grey}
+                      />
+                    </View>
+                  )}
+                  <Text
+                    style={[styles.badgeLabel, !b.earned && styles.badgeLabelLocked]}
+                    numberOfLines={1}
+                  >
+                    {b.label}
+                  </Text>
+                  <Text style={styles.badgeSub} numberOfLines={1}>
+                    {!b.earned && b.progress
+                      ? `${Math.min(b.progress.current, b.progress.target)}/${b.progress.target}`
+                      : b.earned
+                        ? 'Earned'
+                        : ''}
+                  </Text>
+                  {!b.earned && b.progress && (
+                    <View style={styles.badgeBarTrack}>
+                      <View style={[styles.badgeBarFill, { width: `${pct}%` }]} />
+                    </View>
+                  )}
+                </PressScale>
+              );
+            })}
           </View>
-        </View>
+        </SectionShell>
+
+        {/* Contributions */}
+        {contributions.length > 0 && (
+          <SectionShell
+            title="Contributions"
+            count={String(contributions.length)}
+            style={styles.shellGutter}
+          >
+            <ContributionsList contributions={contributions} />
+          </SectionShell>
+        )}
 
         {/* Disclaimer */}
         <Text style={styles.disclaimer}>
@@ -957,11 +830,6 @@ export default function ProfileScreen() {
         </Text>
       </ScrollView>
 
-      <ChangePasswordModal
-        visible={showChangePassword}
-        onClose={() => setShowChangePassword(false)}
-        onSubmit={handleChangePassword}
-      />
       <EditDisplayNameModal
         visible={showEditName}
         currentName={name}
@@ -1248,43 +1116,133 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     color: COLORS.grey,
-    marginBottom: 16,
+    marginBottom: 2,
   },
-  statPill: {
+  memberSince: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: COLORS.grey,
+    marginBottom: 14,
+  },
+  tierPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#fff5ee',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
+    gap: 4,
+    backgroundColor: '#fff2e8',
     borderWidth: 1,
-    borderColor: '#fde0cc',
+    borderColor: '#fbdcc4',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: 8,
   },
-  statPillText: {
+  tierText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
+    fontSize: 11,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
     color: COLORS.orange,
+  },
+  statStripWrap: { alignSelf: 'stretch', paddingHorizontal: 8 },
+  tierProg: { alignSelf: 'stretch', alignItems: 'center', marginTop: 14, paddingHorizontal: 8 },
+  tierProgTrack: {
+    width: '100%',
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#eaddcb',
+    overflow: 'hidden',
+  },
+  tierProgFill: { height: 5, borderRadius: 3, backgroundColor: COLORS.orange },
+  tierProgText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    color: COLORS.grey,
+    marginTop: 5,
   },
   shareUniverseBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'stretch',
     gap: 7,
-    marginTop: 12,
-    paddingHorizontal: 18,
-    paddingVertical: 9,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#d8ccbb',
-    backgroundColor: '#fff',
+    marginTop: 16,
+    marginHorizontal: 8,
+    paddingVertical: 13,
+    borderRadius: 12,
+    backgroundColor: COLORS.orange,
+    shadowColor: COLORS.orange,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.32,
+    shadowRadius: 12,
+    elevation: 3,
   },
   shareUniverseText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: COLORS.navy,
-    letterSpacing: 0.2,
+    fontSize: 14,
+    color: '#fff',
+    letterSpacing: 0.3,
   },
+  actionCards: {
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    gap: 10,
+  },
+  shellGutter: { marginHorizontal: 16 },
+  tasteReadout: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  tasteFacet: {
+    flex: 1,
+    backgroundColor: '#fbf3ea',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f0e2d0',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  tasteFacetLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9.5,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: COLORS.grey,
+    marginBottom: 3,
+  },
+  tasteFacetValue: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 17,
+    lineHeight: 22,
+    color: COLORS.navy,
+  },
+  tasteEyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10.5,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: COLORS.grey,
+    marginBottom: 9,
+  },
+  ghostTile: {
+    width: THUMB_SIZE,
+    height: THUMB_SIZE * 1.25,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#e3d5c1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  ghostText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.orange },
+  badgeWall: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  badgeBarTrack: {
+    width: '100%',
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#e6d8c4',
+    marginTop: 5,
+    overflow: 'hidden',
+  },
+  badgeBarFill: { height: 4, borderRadius: 2, backgroundColor: COLORS.orange },
 
   // Hairline
   hairline: {
@@ -1368,18 +1326,29 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 
-  badgeRow: { gap: 10, paddingRight: 16 },
-  badgeTile: { width: 92, alignItems: 'center', gap: 6 },
-  badgeTileLocked: { opacity: 0.55 },
+  badgeTile: { width: BADGE_TILE, alignItems: 'center', gap: 6 },
+  badgeTileLocked: { opacity: 0.6 },
   badgeIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeIconEarned: { backgroundColor: COLORS.orange },
-  badgeIconLocked: { backgroundColor: '#e8ddd0' },
+  badgeIconEarned: {
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.4)',
+    shadowColor: COLORS.orange,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  badgeIconLocked: {
+    backgroundColor: '#efe6d8',
+    borderWidth: 1.5,
+    borderColor: '#d9cbb6',
+  },
   badgeLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
@@ -1427,7 +1396,7 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 4,
+    gap: 8,
   },
   thumb: {
     width: THUMB_SIZE,
@@ -1435,11 +1404,11 @@ const styles = StyleSheet.create({
   },
   thumbName: {
     position: 'absolute',
-    bottom: 16,
-    left: 16,
+    bottom: 12,
+    left: 12,
     right: 6,
     fontFamily: 'Flame-Regular',
-    fontSize: 10,
+    fontSize: 11,
     color: '#fff',
   },
 
