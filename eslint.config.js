@@ -1,9 +1,20 @@
 // Flat config (ESLint 9+). eslint-config-expo bundles the React Native /
 // React Hooks / import rules tuned for Expo projects.
 const expoConfig = require('eslint-config-expo/flat');
+const globals = require('globals');
 
 module.exports = [
   ...expoConfig,
+  {
+    // Node tooling scripts (portrait generation, social pipelines, design-sync).
+    // These run under Node, not the RN/web bundle, so they get Node globals
+    // (Buffer, process, …). `playwright-core` is an optional, dynamically
+    // imported peer the operator installs ad-hoc — not a tracked dependency —
+    // so import resolution is off here.
+    files: ['scripts/**', '.ds-sync/**'],
+    languageOptions: { globals: { ...globals.node } },
+    rules: { 'import/no-unresolved': 'off' },
+  },
   {
     // Pin the React version so eslint-plugin-react skips runtime detection,
     // whose getFilename() call crashes under ESLint 10's flat-config context.
