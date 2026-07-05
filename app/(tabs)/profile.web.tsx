@@ -1000,11 +1000,12 @@ export default function WebProfileScreen() {
                   <Pressable
                     key={b.id}
                     onPress={() => setSelectedBadge(b)}
-                    style={
+                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                       [
                         desk.badgeTile,
                         desk.badgeTileBtn,
                         !b.earned && desk.badgeTileLocked,
+                        hovered && (desk.badgeTileHover as object),
                       ] as object
                     }
                   >
@@ -1272,10 +1273,12 @@ const mob = StyleSheet.create({
   },
   tasteChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tasteChip: {
-    backgroundColor: '#e8ddd0',
+    backgroundColor: '#fbf4ec',
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: '#efe1cf',
   },
   tasteChipText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   tasteFootnote: {
@@ -1318,8 +1321,19 @@ const mob = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeIconEarned: { backgroundColor: COLORS.orange } as object,
-  badgeIconLocked: { backgroundColor: '#e8ddd0' } as object,
+  badgeIconEarned: {
+    backgroundColor: COLORS.orange,
+    backgroundImage: 'linear-gradient(150deg, #f2924d 0%, #d9591f 100%)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.4)',
+    boxShadow: '0 6px 16px rgba(231,115,51,0.38)',
+  } as object,
+  badgeIconLocked: {
+    backgroundColor: '#efe6d8',
+    borderWidth: 1.5,
+    borderColor: '#d9cbb6',
+    borderStyle: 'dashed',
+  } as object,
   badgeLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
@@ -1783,10 +1797,12 @@ const desk = StyleSheet.create({
   },
   tasteChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tasteChip: {
-    backgroundColor: '#e8ddd0',
+    backgroundColor: '#fbf4ec',
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: '#efe1cf',
   },
   tasteChipText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
   tasteFootnote: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
@@ -1814,9 +1830,10 @@ const desk = StyleSheet.create({
     textTransform: 'uppercase',
   },
   badgeWall: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
-  badgeTile: { width: 88, alignItems: 'center', gap: 7 },
+  badgeTile: { width: 88, alignItems: 'center', gap: 7, transition: 'transform 160ms ease' } as object,
   badgeTileBtn: { cursor: 'pointer' } as object,
   badgeTileLocked: { opacity: 0.55 } as object,
+  badgeTileHover: { transform: [{ translateY: -3 }] } as object,
   badgeIcon: {
     width: 60,
     height: 60,
@@ -1824,8 +1841,19 @@ const desk = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeIconEarned: { backgroundColor: COLORS.orange } as object,
-  badgeIconLocked: { backgroundColor: '#e8ddd0' } as object,
+  badgeIconEarned: {
+    backgroundColor: COLORS.orange,
+    backgroundImage: 'linear-gradient(150deg, #f2924d 0%, #d9591f 100%)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.4)',
+    boxShadow: '0 6px 16px rgba(231,115,51,0.38)',
+  } as object,
+  badgeIconLocked: {
+    backgroundColor: '#efe6d8',
+    borderWidth: 1.5,
+    borderColor: '#d9cbb6',
+    borderStyle: 'dashed',
+  } as object,
   badgeLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,
