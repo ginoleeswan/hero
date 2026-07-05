@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, Redirect } from 'expo-router';
 import { useAuth } from '../src/hooks/useAuth';
 import { useProfile } from '../src/hooks/useProfile';
 import { ChangePasswordModal } from '../src/components/ui/ChangePasswordModal';
@@ -71,10 +71,9 @@ export default function SettingsScreen() {
   const isEmailUser = provider === 'email' || !user?.app_metadata?.provider;
 
   // All hooks above run unconditionally; guests are bounced back to Explore.
-  if (!user) {
-    router.replace('/explore');
-    return null;
-  }
+  // <Redirect> defers the navigation dispatch internally, so it's safe to
+  // render (unlike calling router.replace during render).
+  if (!user) return <Redirect href="/explore" />;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>

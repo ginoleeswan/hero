@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, Redirect } from 'expo-router';
 import { useAuth } from '../src/hooks/useAuth';
 import { useProfile } from '../src/hooks/useProfile';
 import { ChangePasswordModal } from '../src/components/ui/ChangePasswordModal';
@@ -62,10 +62,9 @@ export default function WebSettingsScreen() {
   const isEmailUser = provider === 'email' || !user?.app_metadata?.provider;
 
   // All hooks above run unconditionally; guests are bounced back to Explore.
-  if (!user) {
-    router.replace('/explore');
-    return null;
-  }
+  // <Redirect> defers the navigation dispatch internally, so it's safe to
+  // render (unlike calling router.replace during render).
+  if (!user) return <Redirect href="/explore" />;
 
   return (
     <View style={styles.root}>
@@ -170,7 +169,7 @@ export default function WebSettingsScreen() {
             }
           >
             {signingOut ? (
-              <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
+              <ActivityIndicator size="small" color={COLORS.red} style={styles.rowIndicator} />
             ) : (
               <View style={[styles.accountIconBadge, styles.accountIconBadgeRed]}>
                 <Ionicons name="log-out-outline" size={16} color={COLORS.red} />
@@ -190,7 +189,7 @@ export default function WebSettingsScreen() {
             }
           >
             {deletingAccount ? (
-              <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
+              <ActivityIndicator size="small" color={COLORS.red} style={styles.rowIndicator} />
             ) : (
               <View style={[styles.accountIconBadge, styles.accountIconBadgeRed]}>
                 <Ionicons name="trash-outline" size={16} color={COLORS.red} />
@@ -297,6 +296,7 @@ const styles = StyleSheet.create({
     maxWidth: 200,
   },
   accountLabelDanger: { color: COLORS.red },
+  rowIndicator: { marginRight: 10 },
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: '#ede5d8',
