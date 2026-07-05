@@ -52,6 +52,7 @@ import {
 } from '../../src/lib/db/contributions';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS } from '../../src/constants/colors';
+import { deriveCharacterTheme } from '../../src/lib/accent';
 import { CharacterSkeleton } from '../../src/components/skeletons/CharacterSkeleton';
 import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
@@ -623,6 +624,16 @@ export default function CharacterScreen() {
     toggleFavourite,
   } = useHeroDetail({ id, paramName, paramImageUri });
 
+  // Ambient per-character palette — blurhash average color → publisher → teal.
+  const theme = useMemo(
+    () =>
+      deriveCharacterTheme({
+        portrait_blurhash: heroRow?.portrait_blurhash,
+        publisher: heroRow?.publisher ?? data?.stats.biography.publisher ?? null,
+      }),
+    [heroRow, data],
+  );
+
   // View-only UI state (edit affordances, first-issue modal, image lightbox).
   const [statsEditing, setStatsEditing] = useState(false);
   const [contributeMenu, setContributeMenu] = useState(false);
@@ -956,6 +967,14 @@ export default function CharacterScreen() {
           colors={['transparent', 'rgba(20,28,32,0.68)', 'rgba(20,28,32,0.94)']}
           locations={[0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
+        />
+        {/* Character accent bloom rising into the sheet seam — the hero's own
+            colour washes up over the dark scrim where art meets the beige. */}
+        <LinearGradient
+          colors={['transparent', theme.accentDeep + '00', theme.accentDeep + '66']}
+          locations={[0.55, 0.78, 1]}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
         />
       </Animated.View>
 
