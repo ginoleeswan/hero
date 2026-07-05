@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert, Linking } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  Linking,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Redirect } from 'expo-router';
 import { useAuth } from '../src/hooks/useAuth';
@@ -9,8 +17,72 @@ import { providerMeta } from '../src/lib/profile/provider';
 import { COLORS, SURFACE } from '../src/constants/colors';
 import { Toast, useToast } from '../src/components/ui/Toast';
 import { useScreenChrome } from '../src/hooks/useScreenChrome';
+import { SectionShell } from '../src/components/profile/SectionShell';
 
 const KO_FI_URL = 'https://ko-fi.com/glstudio';
+
+type RowTone = 'navy' | 'orange' | 'danger';
+
+/** One settings row — icon badge + label, with an optional value or chevron. */
+function SettingRow({
+  icon,
+  label,
+  value,
+  tone = 'navy',
+  onPress,
+  chevron,
+  busy,
+  busyLabel,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value?: string;
+  tone?: RowTone;
+  onPress?: () => void;
+  chevron?: boolean;
+  busy?: boolean;
+  busyLabel?: string;
+}) {
+  const iconColor = tone === 'orange' ? COLORS.orange : tone === 'danger' ? COLORS.red : COLORS.navy;
+  const badgeStyle =
+    tone === 'orange' ? styles.badgeOrange : tone === 'danger' ? styles.badgeDanger : styles.badgeNavy;
+
+  const inner = (
+    <>
+      {busy ? (
+        <ActivityIndicator size="small" color={iconColor} style={styles.rowIndicator} />
+      ) : (
+        <View style={[styles.badge, badgeStyle]}>
+          <Ionicons name={icon} size={16} color={iconColor} />
+        </View>
+      )}
+      <Text style={[styles.label, tone === 'danger' && styles.labelDanger]}>
+        {busy && busyLabel ? busyLabel : label}
+      </Text>
+      {value != null && (
+        <Text style={styles.value} numberOfLines={1}>
+          {value}
+        </Text>
+      )}
+      {chevron && <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />}
+    </>
+  );
+
+  if (!onPress) return <View style={styles.row}>{inner}</View>;
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={busy}
+      style={({ hovered }: { pressed: boolean; hovered?: boolean }) => [
+        styles.row,
+        styles.rowPressable,
+        hovered && styles.rowHover,
+      ]}
+    >
+      {inner}
+    </Pressable>
+  );
+}
 
 export default function WebSettingsScreen() {
   const router = useRouter();
@@ -71,138 +143,88 @@ export default function WebSettingsScreen() {
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-            [styles.backBtn, hovered && (styles.backBtnHover as object)] as object
-          }
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
-          <Ionicons name="chevron-back" size={22} color={COLORS.navy} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      <View style={styles.content}>
-        <View style={styles.accountCard}>
-          <View style={styles.accountRow as object}>
-            <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-              <Ionicons name="mail-outline" size={16} color={COLORS.navy} />
-            </View>
-            <Text style={styles.accountLabel}>Email</Text>
-            <Text style={styles.accountValue} numberOfLines={1}>
-              {email}
-            </Text>
-          </View>
-
-          {!isEmailUser && (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.accountRow as object}>
-                <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-                  <Ionicons name={providerMeta(provider).icon} size={16} color={COLORS.navy} />
-                </View>
-                <Text style={styles.accountLabel}>Signed in with</Text>
-                <Text style={styles.accountValue}>{providerMeta(provider).label}</Text>
-              </View>
-            </>
-          )}
-
-          {isEmailUser && (
-            <>
-              <View style={styles.divider} />
-              <Pressable
-                onPress={() => setShowChangePassword(true)}
-                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [styles.accountRow, hovered && (styles.accountRowHover as object)] as object
-                }
-              >
-                <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-                  <Ionicons name="lock-closed-outline" size={16} color={COLORS.navy} />
-                </View>
-                <Text style={styles.accountLabel}>Change Password</Text>
-                <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-              </Pressable>
-            </>
-          )}
-
-          {profile?.is_admin && (
-            <>
-              <View style={styles.divider} />
-              <Pressable
-                onPress={() => router.push('/admin/health')}
-                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [styles.accountRow, hovered && (styles.accountRowHover as object)] as object
-                }
-              >
-                <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-                  <Ionicons name="stats-chart-outline" size={16} color={COLORS.navy} />
-                </View>
-                <Text style={styles.accountLabel}>Catalog Health</Text>
-                <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-              </Pressable>
-            </>
-          )}
-
-          <View style={styles.divider} />
+      <View style={styles.column}>
+        {/* Title — sits below the persistent top nav, left-aligned with a back
+            affordance so it never collides with the nav's centred icons. */}
+        <View style={styles.titleRow}>
           <Pressable
-            onPress={() => Linking.openURL(KO_FI_URL)}
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-              [styles.accountRow, hovered && (styles.accountRowHover as object)] as object
-            }
+            onPress={() => router.back()}
+            style={({ hovered }: { pressed: boolean; hovered?: boolean }) => [
+              styles.backBtn,
+              hovered && (styles.backBtnHover as object),
+            ]}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
           >
-            <View style={[styles.accountIconBadge, styles.accountIconBadgeOrange]}>
-              <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
-            </View>
-            <Text style={styles.accountLabel}>Support this project</Text>
-            <Text style={styles.accountValue}>Ko-fi</Text>
-            <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+            <Ionicons name="chevron-back" size={22} color={COLORS.navy} />
           </Pressable>
-
-          <View style={styles.divider} />
-          <Pressable
-            onPress={handleSignOut}
-            disabled={signingOut}
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-              [styles.accountRow, hovered && (styles.accountRowHover as object)] as object
-            }
-          >
-            {signingOut ? (
-              <ActivityIndicator size="small" color={COLORS.red} style={styles.rowIndicator} />
-            ) : (
-              <View style={[styles.accountIconBadge, styles.accountIconBadgeRed]}>
-                <Ionicons name="log-out-outline" size={16} color={COLORS.red} />
-              </View>
-            )}
-            <Text style={[styles.accountLabel, styles.accountLabelDanger]}>
-              {signingOut ? 'Signing out…' : 'Sign Out'}
-            </Text>
-          </Pressable>
-
-          <View style={styles.divider} />
-          <Pressable
-            onPress={handleDeleteAccount}
-            disabled={deletingAccount}
-            style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-              [styles.accountRow, hovered && (styles.accountRowHover as object)] as object
-            }
-          >
-            {deletingAccount ? (
-              <ActivityIndicator size="small" color={COLORS.red} style={styles.rowIndicator} />
-            ) : (
-              <View style={[styles.accountIconBadge, styles.accountIconBadgeRed]}>
-                <Ionicons name="trash-outline" size={16} color={COLORS.red} />
-              </View>
-            )}
-            <Text style={[styles.accountLabel, styles.accountLabelDanger]}>
-              {deletingAccount ? 'Deleting account…' : 'Delete Account'}
-            </Text>
-          </Pressable>
+          <Text style={styles.title}>Settings</Text>
         </View>
+
+        <SectionShell title="Account">
+          <SettingRow icon="mail-outline" label="Email" value={email} />
+          {!isEmailUser && (
+            <SettingRow
+              icon={providerMeta(provider).icon}
+              label="Signed in with"
+              value={providerMeta(provider).label}
+            />
+          )}
+          {isEmailUser && (
+            <SettingRow
+              icon="lock-closed-outline"
+              label="Change password"
+              onPress={() => setShowChangePassword(true)}
+              chevron
+            />
+          )}
+        </SectionShell>
+
+        {profile?.is_admin && (
+          <SectionShell title="Admin">
+            <SettingRow
+              icon="stats-chart-outline"
+              label="Catalog Health"
+              onPress={() => router.push('/admin/health')}
+              chevron
+            />
+          </SectionShell>
+        )}
+
+        <SectionShell title="Support">
+          <Text style={styles.supportBlurb}>
+            Mythique is a free, unofficial fan project. If you enjoy it, a coffee keeps it going.
+          </Text>
+          <SettingRow
+            icon="heart-outline"
+            label="Support this project"
+            value="Ko-fi"
+            tone="orange"
+            onPress={() => Linking.openURL(KO_FI_URL)}
+            chevron
+          />
+        </SectionShell>
+
+        <SectionShell title="Account actions">
+          <SettingRow
+            icon="log-out-outline"
+            label="Sign out"
+            tone="danger"
+            onPress={handleSignOut}
+            busy={signingOut}
+            busyLabel="Signing out…"
+          />
+          <View style={styles.rowDivider} />
+          <SettingRow
+            icon="trash-outline"
+            label="Delete account"
+            tone="danger"
+            onPress={handleDeleteAccount}
+            busy={deletingAccount}
+            busyLabel="Deleting account…"
+          />
+        </SectionShell>
 
         <Text style={styles.disclaimer}>
           Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics, or
@@ -222,96 +244,93 @@ export default function WebSettingsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
+  column: {
+    maxWidth: 640,
+    alignSelf: 'center',
+    width: '100%',
+    paddingHorizontal: 20,
+    paddingTop: 92, // clear the fixed top nav
+    paddingBottom: 48,
+  } as object,
 
-  header: {
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    gap: 4,
+    marginBottom: 18,
+    marginLeft: -8,
   },
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
   } as object,
   backBtnHover: { backgroundColor: 'rgba(41,60,67,0.06)' } as object,
-  headerTitle: {
-    flex: 1,
+  title: {
     fontFamily: 'Flame-Regular',
-    fontSize: 22,
-    lineHeight: 27,
+    fontSize: 32,
+    lineHeight: 40, // ≥ 1.22× fontSize for Flame descenders
     color: COLORS.navy,
-    textAlign: 'center',
-  },
-  headerSpacer: { width: 36 },
-
-  content: {
-    maxWidth: 640,
-    alignSelf: 'center',
-    width: '100%',
-    paddingHorizontal: 16,
-    paddingBottom: 40,
   },
 
-  // Account card
-  accountCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+  supportBlurb: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    lineHeight: 19,
+    color: COLORS.grey,
+    marginBottom: 8,
   },
-  accountRow: {
+
+  // Rows
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 13,
     gap: 12,
-    cursor: 'pointer',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    marginHorizontal: -10,
+    borderRadius: 12,
   } as object,
-  accountRowHover: { backgroundColor: 'rgba(41,60,67,0.04)' } as object,
-  accountIconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+  rowPressable: { cursor: 'pointer' } as object,
+  rowHover: { backgroundColor: 'rgba(231,115,51,0.06)' } as object,
+  rowDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#ede5d8',
+  },
+  badge: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  accountIconBadgeNavy: { backgroundColor: '#e8f0f2' },
-  accountIconBadgeRed: { backgroundColor: '#fde8e8' },
-  accountIconBadgeOrange: { backgroundColor: '#fff5ee' },
-  accountLabel: {
+  badgeNavy: { backgroundColor: '#e8f0f2' },
+  badgeOrange: { backgroundColor: '#fff5ee' },
+  badgeDanger: { backgroundColor: '#fde8e8' },
+  label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 14,
     color: COLORS.navy,
     flex: 1,
   },
-  accountValue: {
+  labelDanger: { color: COLORS.red },
+  value: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.grey,
-    maxWidth: 200,
+    maxWidth: 240,
   },
-  accountLabelDanger: { color: COLORS.red },
-  rowIndicator: { marginRight: 10 },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#ede5d8',
-    marginHorizontal: 16,
-  },
+  rowIndicator: { width: 34, marginRight: 0 },
+
   disclaimer: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 10,
-    color: 'rgba(29,45,51,0.35)',
+    fontSize: 11,
+    color: 'rgba(29,45,51,0.4)',
     textAlign: 'center',
-    paddingHorizontal: 8,
-    paddingTop: 14,
-    paddingBottom: 4,
+    paddingHorizontal: 12,
+    marginTop: 8,
   },
 });
