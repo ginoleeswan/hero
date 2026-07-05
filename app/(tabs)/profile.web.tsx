@@ -702,6 +702,22 @@ export default function WebProfileScreen() {
                         ? 'Earned'
                         : ''}
                   </Text>
+                  {!b.earned && b.progress && (
+                    <View style={mob.badgeBarTrack}>
+                      <View
+                        style={[
+                          mob.badgeBarFill,
+                          {
+                            width: `${Math.round(
+                              (Math.min(b.progress.current, b.progress.target) /
+                                b.progress.target) *
+                                100,
+                            )}%`,
+                          },
+                        ]}
+                      />
+                    </View>
+                  )}
                 </Pressable>
               ))}
             </View>
@@ -1072,6 +1088,22 @@ export default function WebProfileScreen() {
                           ? 'Earned'
                           : ''}
                     </Text>
+                    {!b.earned && b.progress && (
+                      <View style={desk.badgeBarTrack}>
+                        <View
+                          style={[
+                            desk.badgeBarFill,
+                            {
+                              width: `${Math.round(
+                                (Math.min(b.progress.current, b.progress.target) /
+                                  b.progress.target) *
+                                  100,
+                              )}%`,
+                            },
+                          ]}
+                        />
+                      </View>
+                    )}
                   </Pressable>
                 ))}
               </View>
@@ -1409,6 +1441,15 @@ const mob = StyleSheet.create({
     textTransform: 'uppercase',
     color: COLORS.grey,
   } as object,
+  badgeBarTrack: {
+    width: '100%',
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#e6d8c4',
+    marginTop: 5,
+    overflow: 'hidden',
+  },
+  badgeBarFill: { height: 4, borderRadius: 2, backgroundColor: COLORS.orange } as object,
 
   // Favourites
   section: { paddingHorizontal: 16, marginBottom: 24 },
@@ -1963,6 +2004,15 @@ const desk = StyleSheet.create({
     textTransform: 'uppercase',
     color: COLORS.grey,
   } as object,
+  badgeBarTrack: {
+    width: '100%',
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#e6d8c4',
+    marginTop: 5,
+    overflow: 'hidden',
+  },
+  badgeBarFill: { height: 4, borderRadius: 2, backgroundColor: COLORS.orange } as object,
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',

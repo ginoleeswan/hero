@@ -3,7 +3,11 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../constants/colors';
-import { describeContribution, type MyContribution } from '../../lib/db/contributions';
+import {
+  describeContribution,
+  parsePgArrayLiteral,
+  type MyContribution,
+} from '../../lib/db/contributions';
 
 /** Status → dot colour. A single small dot carries the state a full pill used to. */
 const STATUS_DOT: Record<MyContribution['status'], string> = {
@@ -25,6 +29,24 @@ const COLLAPSED_COUNT = 5;
 /** Sentence-case a bare field label ("publisher" → "Publisher"). */
 function titleCase(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** Clean a stored value for display — unwrap pg-array list literals to "a, b". */
+function valuePreview(raw: string): string {
+  const v = raw.trim();
+  if (v.startsWith('{') && v.endsWith('}')) return parsePgArrayLiteral(v).join(', ');
+  return v;
+}
+
+/**
+ * What the contribution changed, favouring the concrete value the user set
+ * ("Publisher · The Muppets") over a bare field name repeated down the list.
+ * Facts/reports keep their own phrasing.
+ */
+function rowDetail(c: MyContribution): string {
+  const label = titleCase(describeContribution(c));
+  if (c.kind === 'field' && c.new_value) return `${label} · ${valuePreview(c.new_value)}`;
+  return label;
 }
 
 /**
@@ -66,7 +88,7 @@ export function ContributionsList({ contributions }: { contributions: MyContribu
             {c.hero_name}
           </Text>
           <Text style={styles.what} numberOfLines={1}>
-            {titleCase(describeContribution(c))}
+            {rowDetail(c)}
           </Text>
           <Text style={[styles.status, { color: STATUS_DOT[c.status] }]}>
             {STATUS_WORD[c.status]}
