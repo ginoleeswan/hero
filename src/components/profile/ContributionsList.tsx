@@ -34,6 +34,16 @@ function titleCase(s: string): string {
  * dot, hero, what changed — and collapse to the first few with a show-all
  * toggle, so a prolific contributor doesn't push their collection off-screen.
  */
+/** "12 approved · 3 pending" — only the non-zero states, most-settled first. */
+function summarize(contributions: MyContribution[]): string {
+  const order: MyContribution['status'][] = ['approved', 'pending', 'rejected', 'superseded'];
+  return order
+    .map((status) => ({ status, n: contributions.filter((c) => c.status === status).length }))
+    .filter((s) => s.n > 0)
+    .map((s) => `${s.n} ${STATUS_WORD[s.status].toLowerCase()}`)
+    .join(' · ');
+}
+
 export function ContributionsList({ contributions }: { contributions: MyContribution[] }) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
@@ -41,6 +51,7 @@ export function ContributionsList({ contributions }: { contributions: MyContribu
 
   return (
     <View>
+      <Text style={styles.summary}>{summarize(contributions)}</Text>
       {shown.map((c) => (
         <Pressable
           key={c.id}
@@ -86,6 +97,14 @@ export function ContributionsList({ contributions }: { contributions: MyContribu
 }
 
 const styles = StyleSheet.create({
+  summary: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+    color: COLORS.grey,
+    marginBottom: 10,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

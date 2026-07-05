@@ -31,6 +31,7 @@ import { buildProfileStats } from '../../src/lib/profile/stats';
 import { StatStrip } from '../../src/components/profile/StatStrip';
 import { SectionShell } from '../../src/components/profile/SectionShell';
 import { ContributionsList } from '../../src/components/profile/ContributionsList';
+import { TasteMixBar } from '../../src/components/profile/TasteMixBar';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { COLORS, SURFACE, SEAM_COLOR } from '../../src/constants/colors';
@@ -589,6 +590,7 @@ export default function WebProfileScreen() {
                   </View>
                 )}
               </View>
+              {!!taste && <TasteMixBar facets={taste.publishers} />}
               {tasteChips.length > 0 && (
                 <>
                   <Text style={mob.tasteEyebrow}>Favourite franchises</Text>
@@ -951,6 +953,7 @@ export default function WebProfileScreen() {
                     </View>
                   )}
                 </View>
+                {!!taste && <TasteMixBar facets={taste.publishers} />}
                 {tasteChips.length > 0 && (
                   <>
                     <Text style={desk.tasteEyebrow}>Favourite franchises</Text>
