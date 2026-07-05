@@ -2,13 +2,14 @@
 // catalogue and how healthy its link is. The app's data spine is source-agnostic
 // (internal id = identity; each source id is an attribute), so this reads each
 // source's coverage + status side by side. A no-scroll dashboard (fills the view).
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Bento } from '../Bento';
 import { Panel } from '../Panel';
 import { pct } from '../format';
 import type { SourceCoverage } from '../../../../lib/db/catalogHealth';
+import { SourcesSkeleton } from '../skeletons';
 
 function Stat({ value, label, tint }: { value: number | string; label: string; tint?: string }) {
   return (
@@ -79,11 +80,7 @@ export function SourcesDomain({
   narrow: boolean;
 }) {
   if (loading || !cov) {
-    return (
-      <View style={s.center}>
-        <ActivityIndicator color={COLORS.orange} />
-      </View>
-    );
+    return <SourcesSkeleton narrow={narrow} />;
   }
   const total = cov.total;
   return (
@@ -162,7 +159,6 @@ export function SourcesDomain({
 }
 
 const s = StyleSheet.create({
-  center: { paddingVertical: 40, alignItems: 'center' },
   card: { flex: 1, gap: 12 },
   cardFill: { minHeight: 0 },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 11 },

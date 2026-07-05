@@ -1,12 +1,13 @@
 // Traffic domain — self-hosted web analytics (page_views) for the command
 // center. Read-only view of the admin_traffic_overview() RPC: headline totals +
 // live "active now", a daily trend, and top pages / referrers / device split.
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';
 import { Bento } from '../Bento';
 import { StatTile, EmptyState } from '../ui';
+import { TrafficSkeleton } from '../skeletons';
 import type {
   TrafficOverview,
   RouteViews,
@@ -64,11 +65,7 @@ export function TrafficDomain({
   narrow: boolean;
 }) {
   if (loading && !data) {
-    return (
-      <Panel title="Traffic">
-        <ActivityIndicator color={COLORS.orange} style={{ marginTop: 16 }} />
-      </Panel>
-    );
+    return <TrafficSkeleton narrow={narrow} />;
   }
   if (!data) {
     return (

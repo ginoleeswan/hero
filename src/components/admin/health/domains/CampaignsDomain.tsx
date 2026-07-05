@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Panel } from '../Panel';
+import { SkRows } from '../skeletons';
 import { COLORS } from '../../../../constants/colors';
 import {
   listCampaigns,
@@ -233,7 +234,7 @@ export function CampaignsDomain() {
 
       <Panel title="Campaigns" hint={`${campaigns.length} total`}>
         {campaignsQ.isLoading ? (
-          <Text style={s.muted}>Loading…</Text>
+          <SkRows n={4} thumb={false} />
         ) : campaigns.length === 0 ? (
           <Text style={s.muted}>No campaigns yet — create one above.</Text>
         ) : (

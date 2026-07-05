@@ -7,6 +7,7 @@ import { View, Text, Pressable, StyleSheet, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Panel } from '../Panel';
+import { SkRows } from '../skeletons';
 import { COLORS } from '../../../../constants/colors';
 import {
   fetchReportsQueue,
@@ -72,7 +73,7 @@ export function ReportsDomain() {
         </View>
         {!!err && <Text style={s.err}>{err}</Text>}
         {q.isLoading ? (
-          <Text style={s.muted}>Loading…</Text>
+          <SkRows n={5} thumb={false} />
         ) : rows.length === 0 ? (
           <Text style={s.muted}>No {status} reports.</Text>
         ) : (

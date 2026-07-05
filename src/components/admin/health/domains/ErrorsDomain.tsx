@@ -2,12 +2,13 @@
 // center. Read-only view of the admin_recent_client_errors() RPC: headline
 // totals + kind split, then the top recurring signatures (collapsed on message)
 // with the latest raw rows for drill-down. Mirrors the Traffic domain.
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';
 import { Bento } from '../Bento';
 import { StatTile, EmptyState } from '../ui';
+import { ErrorsSkeleton } from '../skeletons';
 import type {
   ClientErrorOverview,
   ClientErrorSignature,
@@ -62,11 +63,7 @@ export function ErrorsDomain({
   narrow: boolean;
 }) {
   if (loading && !data) {
-    return (
-      <Panel title="Errors">
-        <ActivityIndicator color={COLORS.orange} style={{ marginTop: 16 }} />
-      </Panel>
-    );
+    return <ErrorsSkeleton narrow={narrow} />;
   }
   if (!data) {
     return (

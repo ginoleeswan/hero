@@ -1,19 +1,16 @@
-import { ActivityIndicator, View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 import { type GeminiSpend } from '../../../../lib/db/catalogHealth';
 import { Panel } from '../Panel';
+import { SpendSkeleton } from '../skeletons';
 
 const money = (n: number, cur?: string) =>
   cur && cur !== 'USD' ? `${n.toFixed(2)} ${cur}` : `$${n.toFixed(2)}`;
 
 export function SpendDomain({ spend, loading }: { spend?: GeminiSpend; loading: boolean }) {
   if (loading || !spend) {
-    return (
-      <Panel title="Gemini / GCP Spend">
-        <ActivityIndicator color={COLORS.orange} style={{ marginTop: 16 }} />
-      </Panel>
-    );
+    return <SpendSkeleton />;
   }
   if (!spend.available) {
     return (

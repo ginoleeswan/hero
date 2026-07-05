@@ -47,6 +47,13 @@ import { TrafficDomain } from '../../src/components/admin/health/domains/Traffic
 import { ErrorsDomain } from '../../src/components/admin/health/domains/ErrorsDomain';
 import { ReportsDomain } from '../../src/components/admin/health/domains/ReportsDomain';
 import { fetchReportsQueue } from '../../src/lib/db/reports';
+import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
+import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
+import {
+  CommandHomeSkeleton,
+  CatalogSkeleton,
+  PipelinesSkeleton,
+} from '../../src/components/admin/health/skeletons';
 import {
   useActivityLog,
   useCatalogActions,
@@ -170,6 +177,11 @@ export default function AdminHealthScreen() {
   };
 
   const h = healthQ.data;
+  // The three dashboard tabs are gated on the catalog_health snapshot (`h`). Drive
+  // their skeleton off a phased transition so a fast load (now ~80ms) never flashes
+  // a half-frame of skeleton — only a load that outlasts the delay shows one.
+  const healthLoadPhase = useSkeletonTransition(!h);
+  const showHealthSkeleton = healthLoadPhase === 'skeleton';
 
   // Catalog completeness = mean of the five tracked metric percentages.
   const overall = useMemo(() => {
@@ -353,188 +365,199 @@ export default function AdminHealthScreen() {
           </View>
         </View>
       ) : null}
-      <CommandShell
-        domain={domain}
-        onDomain={setDomain}
-        overall={overall}
-        pending={pendingNow}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-        narrow={narrow}
-        fill={
-          domain === 'command' ||
-          domain === 'sources' ||
-          domain === 'pipelines' ||
-          domain === 'catalog'
-        }
-        ribbon={onlyOnBuild ? ribbon : null}
-        alerts={alerts}
-      >
-        {h && domain === 'command' && (
-          <CommandHome
-            h={h}
-            overall={overall}
-            snaps={snapsQ.data ?? []}
-            gaps={gapsQ.data}
-            spend={spendQ.data}
-            progress={enrichProgressQ.data}
-            narrow={narrow}
-            onJump={goToBackfill}
-            onOpenSpend={() => setDomain('spend')}
-            onOpenBuild={() => setDomain('pipelines')}
-            onSnapshot={onSnapshot}
-            snapshotting={busy === 'snapshot'}
-          />
-        )}
-        {h && domain === 'catalog' && (
-          <Bento fill={!narrow}>
-            <SubTabs
-              tabs={[
-                { key: 'coverage', label: 'Coverage', icon: 'stats-chart-outline' },
-                { key: 'distributions', label: 'Distributions', icon: 'pie-chart-outline' },
-                { key: 'hygiene', label: 'Hygiene', icon: 'git-merge-outline' },
-                { key: 'review', label: 'Review', icon: 'shield-checkmark-outline' },
-              ]}
-              active={catSub}
-              onChange={setCatSub}
-            />
-            {catSub === 'coverage' || catSub === 'distributions' ? (
-              <CatalogDomain
+      <SkeletonProvider>
+        <CommandShell
+          domain={domain}
+          onDomain={setDomain}
+          overall={overall}
+          pending={pendingNow}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          narrow={narrow}
+          fill={
+            domain === 'command' ||
+            domain === 'sources' ||
+            domain === 'pipelines' ||
+            domain === 'catalog'
+          }
+          ribbon={onlyOnBuild ? ribbon : null}
+          alerts={alerts}
+        >
+          {domain === 'command' &&
+            (h ? (
+              <CommandHome
                 h={h}
+                overall={overall}
+                snaps={snapsQ.data ?? []}
                 gaps={gapsQ.data}
-                gapsLoading={gapsQ.isLoading}
-                dist={distQ.data}
-                metric={metric}
-                setMetric={setMetric}
-                page={page}
-                setPage={setPage}
-                pubFilter={pubFilter}
-                setPubFilter={setPubFilter}
-                pickPublisher={pickPublisher}
-                anim={anim}
+                spend={spendQ.data}
+                progress={enrichProgressQ.data}
                 narrow={narrow}
-                sub={catSub}
-                fill={!narrow}
+                onJump={goToBackfill}
+                onOpenSpend={() => setDomain('spend')}
+                onOpenBuild={() => setDomain('pipelines')}
+                onSnapshot={onSnapshot}
+                snapshotting={busy === 'snapshot'}
               />
-            ) : null}
-            {catSub === 'hygiene' ? (
-              <ScrollView
-                style={!narrow ? { flex: 1, minHeight: 0 } : undefined}
-                nestedScrollEnabled
-              >
-                <HeroConsole
-                  heroQuery={heroQuery}
-                  setHeroQuery={setHeroQuery}
-                  heroResults={heroSearchQ.data ?? []}
-                  heroSearchLoading={heroSearchQ.isLoading}
-                  busy={busy}
-                  onReenrich={onReenrich}
+            ) : showHealthSkeleton ? (
+              <CommandHomeSkeleton narrow={narrow} />
+            ) : null)}
+          {domain === 'catalog' &&
+            (h ? (
+              <Bento fill={!narrow}>
+                <SubTabs
+                  tabs={[
+                    { key: 'coverage', label: 'Coverage', icon: 'stats-chart-outline' },
+                    { key: 'distributions', label: 'Distributions', icon: 'pie-chart-outline' },
+                    { key: 'hygiene', label: 'Hygiene', icon: 'git-merge-outline' },
+                    { key: 'review', label: 'Review', icon: 'shield-checkmark-outline' },
+                  ]}
+                  active={catSub}
+                  onChange={setCatSub}
                 />
-                <View style={{ marginTop: 14 }}>
-                  <DuplicatesPanel
-                    flash={flash}
-                    onChanged={() => {
-                      queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
-                      queryClient.invalidateQueries({ queryKey: ['catalogDistributions'] });
-                      queryClient.invalidateQueries({ queryKey: ['backfillGaps'] });
-                    }}
+                {catSub === 'coverage' || catSub === 'distributions' ? (
+                  <CatalogDomain
+                    h={h}
+                    gaps={gapsQ.data}
+                    gapsLoading={gapsQ.isLoading}
+                    dist={distQ.data}
+                    metric={metric}
+                    setMetric={setMetric}
+                    page={page}
+                    setPage={setPage}
+                    pubFilter={pubFilter}
+                    setPubFilter={setPubFilter}
+                    pickPublisher={pickPublisher}
+                    anim={anim}
+                    narrow={narrow}
+                    sub={catSub}
+                    fill={!narrow}
                   />
-                </View>
-                <View style={{ marginTop: 14 }}>
-                  <UniverseGapsPanel
-                    heroes={unbrandedQ.data ?? []}
-                    loading={unbrandedQ.isLoading}
-                    flash={flash}
-                    onChanged={() => {
-                      queryClient.invalidateQueries({ queryKey: ['unbrandedHeroes'] });
-                      queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
-                    }}
-                  />
-                </View>
-              </ScrollView>
-            ) : null}
-            {catSub === 'review' ? (
-              <ScrollView
-                style={!narrow ? { flex: 1, minHeight: 0 } : undefined}
-                nestedScrollEnabled
-              >
-                <ReviewDomain />
-              </ScrollView>
-            ) : null}
-          </Bento>
-        )}
-        {h && domain === 'pipelines' && (
-          <PipelinesDomain
-            data={{
-              h,
-              progress: enrichProgressQ.data,
-              ambiguous: ambiguousQ.data ?? [],
-              ambiguousFetching: ambiguousQ.isFetching,
-              statsPending: statsPendingQ.data ?? 0,
-              portraitsPending: portraitsPendingQ.data ?? 0,
-              spend: spendQ.data,
-              crons: cronQ.data ?? [],
-              runs,
-              runsTotal: runsQ.data?.total ?? 0,
-              runsLoading: runsQ.isLoading,
-              runsFetching: runsQ.isFetching,
-              recentlyEnriched: recentEnrichedQ.data ?? [],
-              log,
-            }}
-            actions={{
-              onLoadMoreAmbiguous: () => setAmbiguousLimit((l) => l + 25),
-              onRunDrain,
-              onRetryFailed,
-              onToggleAnyCron,
-              onRescheduleCron,
-              onRunResolve,
-              onRunEnrich,
-              onResolveQid,
-              onMarkUnresolved,
-              onBulkAccept,
-              onLoadMore: () => setHistoryLimit((l) => l + 30),
-              clearLog,
-              flash,
-              onHeroesAdded: () => {
-                // Attach popularity to the new/changed heroes now, not next week.
-                void refreshFameScores();
-                queryClient.invalidateQueries({ queryKey: ['enrichmentProgress'] });
-                queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
-                queryClient.invalidateQueries({ queryKey: ['statsPending'] });
-                queryClient.invalidateQueries({ queryKey: ['portraitsPending'] });
-              },
-            }}
-            controls={{ buildIds, setBuildIds, busy, batchSize, setBatchSize, narrow }}
-          />
-        )}
-        {domain === 'sources' && (
-          <SourcesDomain cov={sourceCovQ.data} loading={sourceCovQ.isLoading} narrow={narrow} />
-        )}
-        {domain === 'campaigns' && <CampaignsDomain />}
-        {domain === 'spend' && <SpendDomain spend={spendQ.data} loading={spendQ.isLoading} />}
-        {domain === 'community' && (
-          <CommunityDomain
-            data={communityQ.data ?? null}
-            loading={communityQ.isLoading}
-            narrow={narrow}
-            onOpenReview={() => {
-              setCatSub('review');
-              setDomain('catalog');
-            }}
-          />
-        )}
-        {domain === 'traffic' && (
-          <TrafficDomain
-            data={trafficQ.data ?? null}
-            loading={trafficQ.isLoading}
-            narrow={narrow}
-          />
-        )}
-        {domain === 'errors' && (
-          <ErrorsDomain data={errorsQ.data ?? null} loading={errorsQ.isLoading} narrow={narrow} />
-        )}
-        {domain === 'reports' && <ReportsDomain />}
-      </CommandShell>
+                ) : null}
+                {catSub === 'hygiene' ? (
+                  <ScrollView
+                    style={!narrow ? { flex: 1, minHeight: 0 } : undefined}
+                    nestedScrollEnabled
+                  >
+                    <HeroConsole
+                      heroQuery={heroQuery}
+                      setHeroQuery={setHeroQuery}
+                      heroResults={heroSearchQ.data ?? []}
+                      heroSearchLoading={heroSearchQ.isLoading}
+                      busy={busy}
+                      onReenrich={onReenrich}
+                    />
+                    <View style={{ marginTop: 14 }}>
+                      <DuplicatesPanel
+                        flash={flash}
+                        onChanged={() => {
+                          queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
+                          queryClient.invalidateQueries({ queryKey: ['catalogDistributions'] });
+                          queryClient.invalidateQueries({ queryKey: ['backfillGaps'] });
+                        }}
+                      />
+                    </View>
+                    <View style={{ marginTop: 14 }}>
+                      <UniverseGapsPanel
+                        heroes={unbrandedQ.data ?? []}
+                        loading={unbrandedQ.isLoading}
+                        flash={flash}
+                        onChanged={() => {
+                          queryClient.invalidateQueries({ queryKey: ['unbrandedHeroes'] });
+                          queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
+                        }}
+                      />
+                    </View>
+                  </ScrollView>
+                ) : null}
+                {catSub === 'review' ? (
+                  <ScrollView
+                    style={!narrow ? { flex: 1, minHeight: 0 } : undefined}
+                    nestedScrollEnabled
+                  >
+                    <ReviewDomain />
+                  </ScrollView>
+                ) : null}
+              </Bento>
+            ) : showHealthSkeleton ? (
+              <CatalogSkeleton narrow={narrow} />
+            ) : null)}
+          {domain === 'pipelines' &&
+            (h ? (
+              <PipelinesDomain
+                data={{
+                  h,
+                  progress: enrichProgressQ.data,
+                  ambiguous: ambiguousQ.data ?? [],
+                  ambiguousFetching: ambiguousQ.isFetching,
+                  statsPending: statsPendingQ.data ?? 0,
+                  portraitsPending: portraitsPendingQ.data ?? 0,
+                  spend: spendQ.data,
+                  crons: cronQ.data ?? [],
+                  runs,
+                  runsTotal: runsQ.data?.total ?? 0,
+                  runsLoading: runsQ.isLoading,
+                  runsFetching: runsQ.isFetching,
+                  recentlyEnriched: recentEnrichedQ.data ?? [],
+                  log,
+                }}
+                actions={{
+                  onLoadMoreAmbiguous: () => setAmbiguousLimit((l) => l + 25),
+                  onRunDrain,
+                  onRetryFailed,
+                  onToggleAnyCron,
+                  onRescheduleCron,
+                  onRunResolve,
+                  onRunEnrich,
+                  onResolveQid,
+                  onMarkUnresolved,
+                  onBulkAccept,
+                  onLoadMore: () => setHistoryLimit((l) => l + 30),
+                  clearLog,
+                  flash,
+                  onHeroesAdded: () => {
+                    // Attach popularity to the new/changed heroes now, not next week.
+                    void refreshFameScores();
+                    queryClient.invalidateQueries({ queryKey: ['enrichmentProgress'] });
+                    queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
+                    queryClient.invalidateQueries({ queryKey: ['statsPending'] });
+                    queryClient.invalidateQueries({ queryKey: ['portraitsPending'] });
+                  },
+                }}
+                controls={{ buildIds, setBuildIds, busy, batchSize, setBatchSize, narrow }}
+              />
+            ) : showHealthSkeleton ? (
+              <PipelinesSkeleton narrow={narrow} />
+            ) : null)}
+          {domain === 'sources' && (
+            <SourcesDomain cov={sourceCovQ.data} loading={sourceCovQ.isLoading} narrow={narrow} />
+          )}
+          {domain === 'campaigns' && <CampaignsDomain />}
+          {domain === 'spend' && <SpendDomain spend={spendQ.data} loading={spendQ.isLoading} />}
+          {domain === 'community' && (
+            <CommunityDomain
+              data={communityQ.data ?? null}
+              loading={communityQ.isLoading}
+              narrow={narrow}
+              onOpenReview={() => {
+                setCatSub('review');
+                setDomain('catalog');
+              }}
+            />
+          )}
+          {domain === 'traffic' && (
+            <TrafficDomain
+              data={trafficQ.data ?? null}
+              loading={trafficQ.isLoading}
+              narrow={narrow}
+            />
+          )}
+          {domain === 'errors' && (
+            <ErrorsDomain data={errorsQ.data ?? null} loading={errorsQ.isLoading} narrow={narrow} />
+          )}
+          {domain === 'reports' && <ReportsDomain />}
+        </CommandShell>
+      </SkeletonProvider>
       {/* Foreground Build board lives at page level so the top-strip Stop can halt it. */}
       {buildIds ? (
         <BuildBoard

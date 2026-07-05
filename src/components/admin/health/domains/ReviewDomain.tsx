@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Panel } from '../Panel';
+import { SkRows } from '../skeletons';
 import { COLORS } from '../../../../constants/colors';
 import {
   getReviewQueue,
@@ -69,7 +70,7 @@ export function ReviewDomain() {
       >
         {!!err && <Text style={s.err}>{err}</Text>}
         {queueQ.isLoading ? (
-          <Text style={s.muted}>Loading…</Text>
+          <SkRows n={5} thumb />
         ) : queue.length === 0 ? (
           <Text style={s.muted}>The queue is clear — no pending contributions.</Text>
         ) : (

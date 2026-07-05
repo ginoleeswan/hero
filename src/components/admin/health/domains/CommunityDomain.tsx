@@ -2,13 +2,14 @@
 // Aggregates come from one admin-guarded RPC (see src/lib/db/community.ts); this
 // is a pure view of that data. No mutations: moderation lives in ReviewDomain
 // (the "Open review" action just deep-links there).
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';
 import { Bento } from '../Bento';
 import { HeroThumb, StatTile, EmptyState, Chip } from '../ui';
+import { CommunitySkeleton } from '../skeletons';
 import { relTime } from '../format';
 import type {
   CommunityOverview,
@@ -162,11 +163,7 @@ export function CommunityDomain({
   const goHero = (id: string) => router.push(`/character/${id}`);
 
   if (loading && !data) {
-    return (
-      <Panel title="Community">
-        <ActivityIndicator color={COLORS.orange} style={{ marginTop: 16 }} />
-      </Panel>
-    );
+    return <CommunitySkeleton narrow={narrow} />;
   }
   if (!data) {
     return (
