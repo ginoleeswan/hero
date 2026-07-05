@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { COLORS } from '../../constants/colors';
 import { describeContribution, type MyContribution } from '../../lib/db/contributions';
 
@@ -34,14 +35,21 @@ function titleCase(s: string): string {
  * toggle, so a prolific contributor doesn't push their collection off-screen.
  */
 export function ContributionsList({ contributions }: { contributions: MyContribution[] }) {
+  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const shown = expanded ? contributions : contributions.slice(0, COLLAPSED_COUNT);
-  const hiddenCount = contributions.length - shown.length;
 
   return (
     <View>
       {shown.map((c) => (
-        <View key={c.id} style={styles.row}>
+        <Pressable
+          key={c.id}
+          onPress={() => router.push(`/character/${c.hero_id}`)}
+          style={({ hovered }: { pressed: boolean; hovered?: boolean }) => [
+            styles.row,
+            hovered && styles.rowHover,
+          ]}
+        >
           <View style={[styles.dot, { backgroundColor: STATUS_DOT[c.status] }]} />
           <Text style={styles.hero} numberOfLines={1}>
             {c.hero_name}
@@ -52,7 +60,7 @@ export function ContributionsList({ contributions }: { contributions: MyContribu
           <Text style={[styles.status, { color: STATUS_DOT[c.status] }]}>
             {STATUS_WORD[c.status]}
           </Text>
-        </View>
+        </Pressable>
       ))}
 
       {contributions.length > COLLAPSED_COUNT && (
@@ -82,10 +90,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingVertical: 9,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    marginHorizontal: -8,
+    borderRadius: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(41,60,67,0.08)',
-  },
+    cursor: 'pointer',
+  } as object,
+  rowHover: { backgroundColor: 'rgba(231,115,51,0.06)' } as object,
   dot: { width: 8, height: 8, borderRadius: 4 },
   hero: {
     fontFamily: 'Nunito_700Bold',

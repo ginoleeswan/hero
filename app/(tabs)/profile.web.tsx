@@ -558,10 +558,10 @@ export default function WebProfileScreen() {
               style={mob.shareUniverseBtn as object}
             >
               {sharingUniverse ? (
-                <ActivityIndicator size="small" color={COLORS.navy} />
+                <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <>
-                  <Ionicons name="share-outline" size={15} color={COLORS.navy} />
+                  <Ionicons name="share-outline" size={15} color="#fff" />
                   <Text style={mob.shareUniverseText}>Share my universe</Text>
                 </>
               )}
@@ -877,13 +877,15 @@ export default function WebProfileScreen() {
               <Pressable
                 onPress={handleShareUniverse}
                 disabled={sharingUniverse}
-                style={desk.shareUniverseBtn as object}
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                  [desk.shareUniverseBtn, hovered && (desk.shareUniverseBtnHover as object)] as object
+                }
               >
                 {sharingUniverse ? (
-                  <ActivityIndicator size="small" color={COLORS.navy} />
+                  <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <>
-                    <Ionicons name="share-outline" size={15} color={COLORS.navy} />
+                    <Ionicons name="share-outline" size={15} color="#fff" />
                     <Text style={desk.shareUniverseText}>Share my universe</Text>
                   </>
                 )}
@@ -1270,20 +1272,20 @@ const mob = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'stretch',
     gap: 7,
-    marginTop: 12,
+    marginTop: 14,
     paddingHorizontal: 18,
-    paddingVertical: 9,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#d8ccbb',
-    backgroundColor: '#fff',
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: COLORS.orange,
+    boxShadow: '0 6px 16px rgba(231,115,51,0.32)',
     cursor: 'pointer',
   } as object,
   shareUniverseText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: COLORS.navy,
+    fontSize: 14,
+    color: '#fff',
     letterSpacing: 0.2,
   },
 
@@ -1751,21 +1753,26 @@ const desk = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'stretch',
     gap: 7,
-    marginTop: 12,
+    marginTop: 16,
     paddingHorizontal: 18,
-    paddingVertical: 9,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#d8ccbb',
-    backgroundColor: '#fff',
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: COLORS.orange,
+    boxShadow: '0 6px 16px rgba(231,115,51,0.32)',
     cursor: 'pointer',
+    transition: 'transform 150ms ease, box-shadow 150ms ease',
+  } as object,
+  shareUniverseBtnHover: {
+    transform: [{ translateY: -1 }],
+    boxShadow: '0 9px 22px rgba(231,115,51,0.42)',
   } as object,
   shareUniverseText: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: COLORS.navy,
-    letterSpacing: 0.2,
+    fontSize: 14,
+    color: '#fff',
+    letterSpacing: 0.3,
   },
 
   // Settings / Ko-fi cards (reuse the old account-row shape)
