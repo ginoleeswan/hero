@@ -216,7 +216,12 @@ export const slideCss = (F) => {
 .sqc{position:relative;border-radius:23%/17%;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.6);}
 .sqc img{width:100%;height:100%;object-fit:cover;}.sqc img.flip{transform:scaleX(-1);}.sqc .glare{position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,.13),transparent 40%);}
 .stroke{-webkit-text-stroke:3px ${NAVY};paint-order:stroke fill;}
-.pop{font-family:'F';-webkit-text-stroke:7px ${NAVY};paint-order:stroke fill;}`;
+.pop{font-family:'F';-webkit-text-stroke:7px ${NAVY};paint-order:stroke fill;}
+/* centered content band: fills the space between the top margin and the footer,
+   vertically centred, so info slides never leave dead space at the bottom */
+.body{position:absolute;left:0;right:0;top:64px;bottom:168px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 60px;text-align:center;}
+.h1{font-size:64px;letter-spacing:5px;color:${GOLD};margin:0 0 60px 0;-webkit-text-stroke:3px ${NAVY};paint-order:stroke fill;}
+.full{width:100%;}`;
 };
 export const slide = (F, inner, extra = '') => `<!doctype html><html><head><meta charset="utf-8"><style>${slideCss(F)}${extra}</style></head><body><div class="page"><div class="dots"></div><div class="grain"></div>${inner}<div class="foot"><span class="wm">mythique</span><span class="at">@mythiqueapp</span></div></div></body></html>`;
 
