@@ -1,8 +1,8 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { COLORS } from '../../../constants/colors';
-import { getPowerIcon } from '../../../constants/powerIcons';
-import type { PowerExplainer } from '../../../lib/db/heroFacts';
+import { COLORS } from '../../constants/colors';
+import { getPowerIcon } from '../../constants/powerIcons';
+import type { PowerExplainer } from '../../lib/db/heroFacts';
 
 const MAX_SIGNATURE = 4;
 

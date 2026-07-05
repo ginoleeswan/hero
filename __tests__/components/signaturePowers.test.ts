@@ -1,4 +1,4 @@
-import { pickSignaturePowers } from '../../src/components/web/character/SignaturePowers';
+import { pickSignaturePowers } from '../../src/components/character/SignaturePowers';
 
 const EXPL = [
   { power: 'Flight', text: 'Defies gravity.' },

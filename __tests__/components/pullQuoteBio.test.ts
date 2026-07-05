@@ -1,4 +1,4 @@
-import { splitLeadSentence } from '../../src/components/web/character/PullQuoteBio';
+import { splitLeadSentence } from '../../src/components/character/PullQuoteBio';
 
 describe('splitLeadSentence', () => {
   it('splits on the first sentence boundary', () => {

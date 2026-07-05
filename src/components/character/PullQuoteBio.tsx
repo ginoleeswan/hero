@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { COLORS } from '../../../constants/colors';
+import { COLORS } from '../../constants/colors';
 
 /**
  * First sentence of a bio teaser, for the pull-quote treatment. A boundary is

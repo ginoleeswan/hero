@@ -27,7 +27,7 @@ import { heroImageSource } from '../../src/constants/heroImages';
 import { HeroImage } from '../../src/components/HeroImage';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import { deriveCharacterTheme } from '../../src/lib/accent';
-import { PullQuoteBio } from '../../src/components/web/character/PullQuoteBio';
+import { PullQuoteBio } from '../../src/components/character/PullQuoteBio';
 import { LegendBand } from '../../src/components/web/character/LegendBand';
 import { PowerStatCell } from '../../src/components/web/character/PowerStatCell';
 import { Reveal } from '../../src/components/web/Reveal';
@@ -35,7 +35,7 @@ import { SectionDotRail } from '../../src/components/web/character/SectionDotRai
 import {
   SignaturePowerTiles,
   pickSignaturePowers,
-} from '../../src/components/web/character/SignaturePowers';
+} from '../../src/components/character/SignaturePowers';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { groupTitlesByMedia } from '../../src/lib/db/titles';
