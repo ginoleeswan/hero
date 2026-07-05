@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Pressable,
-  TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -19,8 +18,68 @@ import { ChangePasswordModal } from '../src/components/ui/ChangePasswordModal';
 import { providerMeta } from '../src/lib/profile/provider';
 import { COLORS } from '../src/constants/colors';
 import { Toast, useToast } from '../src/components/ui/Toast';
+import { SectionShell } from '../src/components/profile/SectionShell';
 
 const KO_FI_URL = 'https://ko-fi.com/glstudio';
+
+type RowTone = 'navy' | 'orange' | 'danger';
+
+/** One settings row — icon badge + label, with an optional value or chevron. */
+function SettingRow({
+  icon,
+  label,
+  value,
+  tone = 'navy',
+  onPress,
+  chevron,
+  busy,
+  busyLabel,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value?: string;
+  tone?: RowTone;
+  onPress?: () => void;
+  chevron?: boolean;
+  busy?: boolean;
+  busyLabel?: string;
+}) {
+  const iconColor = tone === 'orange' ? COLORS.orange : tone === 'danger' ? COLORS.red : COLORS.navy;
+  const badgeStyle =
+    tone === 'orange' ? styles.badgeOrange : tone === 'danger' ? styles.badgeDanger : styles.badgeNavy;
+
+  const inner = (
+    <>
+      {busy ? (
+        <ActivityIndicator size="small" color={iconColor} style={styles.rowIndicator} />
+      ) : (
+        <View style={[styles.badge, badgeStyle]}>
+          <Ionicons name={icon} size={16} color={iconColor} />
+        </View>
+      )}
+      <Text style={[styles.label, tone === 'danger' && styles.labelDanger]}>
+        {busy && busyLabel ? busyLabel : label}
+      </Text>
+      {value != null && (
+        <Text style={styles.value} numberOfLines={1}>
+          {value}
+        </Text>
+      )}
+      {chevron && <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />}
+    </>
+  );
+
+  if (!onPress) return <View style={styles.row}>{inner}</View>;
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={busy}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+    >
+      {inner}
+    </Pressable>
+  );
+}
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -80,134 +139,83 @@ export default function SettingsScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backBtn}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
-          <Ionicons name="chevron-back" size={22} color={COLORS.navy} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
       <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.accountCard}>
-          <View style={styles.accountRow}>
-            <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-              <Ionicons name="mail-outline" size={16} color={COLORS.navy} />
-            </View>
-            <Text style={styles.accountLabel}>Email</Text>
-            <Text style={styles.accountValue} numberOfLines={1}>
-              {email}
-            </Text>
-          </View>
-
-          {!isEmailUser && (
-            <>
-              <View style={styles.divider} />
-              <View style={styles.accountRow}>
-                <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-                  <Ionicons name={providerMeta(provider).icon} size={16} color={COLORS.navy} />
-                </View>
-                <Text style={styles.accountLabel}>Signed in with</Text>
-                <Text style={styles.accountValue}>{providerMeta(provider).label}</Text>
-              </View>
-            </>
-          )}
-
-          {isEmailUser && (
-            <>
-              <View style={styles.divider} />
-              <TouchableOpacity
-                style={styles.accountRow}
-                onPress={() => setShowChangePassword(true)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-                  <Ionicons name="lock-closed-outline" size={16} color={COLORS.navy} />
-                </View>
-                <Text style={styles.accountLabel}>Change Password</Text>
-                <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-              </TouchableOpacity>
-            </>
-          )}
-
-          {profile?.is_admin && (
-            <>
-              <View style={styles.divider} />
-              <TouchableOpacity
-                style={styles.accountRow}
-                onPress={() => router.push('/admin/health')}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.accountIconBadge, styles.accountIconBadgeNavy]}>
-                  <Ionicons name="stats-chart-outline" size={16} color={COLORS.navy} />
-                </View>
-                <Text style={styles.accountLabel}>Catalog Health</Text>
-                <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-              </TouchableOpacity>
-            </>
-          )}
-
-          <View style={styles.divider} />
-
-          <TouchableOpacity
-            style={styles.accountRow}
-            onPress={() => Linking.openURL(KO_FI_URL)}
-            activeOpacity={0.7}
+        <View style={styles.titleRow}>
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.backBtn, pressed && styles.rowPressed]}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
           >
-            <View style={[styles.accountIconBadge, styles.accountIconBadgeOrange]}>
-              <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
-            </View>
-            <Text style={styles.accountLabel}>Support this project</Text>
-            <Text style={styles.accountValue}>Ko-fi</Text>
-            <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          <TouchableOpacity
-            style={styles.accountRow}
-            onPress={handleSignOut}
-            disabled={signingOut}
-            activeOpacity={0.7}
-          >
-            {signingOut ? (
-              <ActivityIndicator size="small" color={COLORS.red} style={styles.rowIndicator} />
-            ) : (
-              <View style={[styles.accountIconBadge, styles.accountIconBadgeRed]}>
-                <Ionicons name="log-out-outline" size={16} color={COLORS.red} />
-              </View>
-            )}
-            <Text style={[styles.accountLabel, styles.accountLabelDanger]}>
-              {signingOut ? 'Signing out…' : 'Sign Out'}
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          <TouchableOpacity
-            style={styles.accountRow}
-            onPress={handleDeleteAccount}
-            disabled={deletingAccount}
-            activeOpacity={0.7}
-          >
-            {deletingAccount ? (
-              <ActivityIndicator size="small" color={COLORS.red} style={styles.rowIndicator} />
-            ) : (
-              <View style={[styles.accountIconBadge, styles.accountIconBadgeRed]}>
-                <Ionicons name="trash-outline" size={16} color={COLORS.red} />
-              </View>
-            )}
-            <Text style={[styles.accountLabel, styles.accountLabelDanger]}>
-              {deletingAccount ? 'Deleting account…' : 'Delete Account'}
-            </Text>
-          </TouchableOpacity>
+            <Ionicons name="chevron-back" size={22} color={COLORS.navy} />
+          </Pressable>
+          <Text style={styles.title}>Settings</Text>
         </View>
+
+        <SectionShell title="Account">
+          <SettingRow icon="mail-outline" label="Email" value={email} />
+          {!isEmailUser && (
+            <SettingRow
+              icon={providerMeta(provider).icon}
+              label="Signed in with"
+              value={providerMeta(provider).label}
+            />
+          )}
+          {isEmailUser && (
+            <SettingRow
+              icon="lock-closed-outline"
+              label="Change password"
+              onPress={() => setShowChangePassword(true)}
+              chevron
+            />
+          )}
+        </SectionShell>
+
+        {profile?.is_admin && (
+          <SectionShell title="Admin">
+            <SettingRow
+              icon="stats-chart-outline"
+              label="Catalog Health"
+              onPress={() => router.push('/admin/health')}
+              chevron
+            />
+          </SectionShell>
+        )}
+
+        <SectionShell title="Support">
+          <Text style={styles.supportBlurb}>
+            Mythique is a free, unofficial fan project. If you enjoy it, a coffee keeps it going.
+          </Text>
+          <SettingRow
+            icon="heart-outline"
+            label="Support this project"
+            value="Ko-fi"
+            tone="orange"
+            onPress={() => Linking.openURL(KO_FI_URL)}
+            chevron
+          />
+        </SectionShell>
+
+        <SectionShell title="Account actions">
+          <SettingRow
+            icon="log-out-outline"
+            label="Sign out"
+            tone="danger"
+            onPress={handleSignOut}
+            busy={signingOut}
+            busyLabel="Signing out…"
+          />
+          <View style={styles.rowDivider} />
+          <SettingRow
+            icon="trash-outline"
+            label="Delete account"
+            tone="danger"
+            onPress={handleDeleteAccount}
+            busy={deletingAccount}
+            busyLabel="Deleting account…"
+          />
+        </SectionShell>
 
         <Text style={styles.disclaimer}>
           Unofficial fan app. Not affiliated with or endorsed by Marvel Entertainment, DC Comics, or
@@ -227,88 +235,86 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.beige },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    flex: 1,
-    fontFamily: 'Flame-Regular',
-    fontSize: 22,
-    lineHeight: 27,
-    color: COLORS.navy,
-    textAlign: 'center',
-  },
-  headerSpacer: { width: 36 },
-
   scroll: {
     paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingTop: 8,
+    paddingBottom: 48,
   },
 
-  // Account card
-  accountCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  accountRow: {
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    gap: 12,
+    gap: 4,
+    marginBottom: 16,
+    marginLeft: -8,
   },
-  accountIconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  accountIconBadgeNavy: { backgroundColor: '#e8f0f2' },
-  accountIconBadgeRed: { backgroundColor: '#fde8e8' },
-  accountIconBadgeOrange: { backgroundColor: '#fff5ee' },
-  accountLabel: {
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 30,
+    lineHeight: 37, // ≥ 1.22× fontSize for Flame descenders
+    color: COLORS.navy,
+  },
+
+  supportBlurb: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    lineHeight: 19,
+    color: COLORS.grey,
+    marginBottom: 8,
+  },
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    marginHorizontal: -10,
+    borderRadius: 12,
+  },
+  rowPressed: { backgroundColor: 'rgba(231,115,51,0.08)' },
+  rowDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#ede5d8',
+  },
+  badge: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeNavy: { backgroundColor: '#e8f0f2' },
+  badgeOrange: { backgroundColor: '#fff5ee' },
+  badgeDanger: { backgroundColor: '#fde8e8' },
+  label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 15,
     color: COLORS.navy,
     flex: 1,
   },
-  accountValue: {
+  labelDanger: { color: COLORS.red },
+  value: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     color: COLORS.grey,
+    maxWidth: 200,
   },
-  rowIndicator: { marginRight: 10 },
-  accountLabelDanger: { color: COLORS.red },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#ede5d8',
-    marginHorizontal: 16,
-  },
+  rowIndicator: { width: 34 },
+
   disclaimer: {
     fontFamily: 'Nunito_400Regular',
-    fontSize: 10,
-    color: 'rgba(29,45,51,0.35)',
+    fontSize: 11,
+    color: 'rgba(29,45,51,0.4)',
     textAlign: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 8,
+    paddingHorizontal: 12,
+    marginTop: 8,
   },
 });
