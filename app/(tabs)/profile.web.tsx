@@ -24,12 +24,12 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { useProfileData } from '../../src/hooks/useProfileData';
-import { ChangePasswordModal } from '../../src/components/ui/ChangePasswordModal';
 import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
 import { describeContribution, type MyContribution } from '../../src/lib/db/contributions';
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
 import { computeBadges, earnedCount, type Badge } from '../../src/lib/profile/badges';
-import { providerMeta } from '../../src/lib/profile/provider';
+import { buildProfileStats } from '../../src/lib/profile/stats';
+import { StatStrip } from '../../src/components/profile/StatStrip';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
 import { COLORS, SURFACE } from '../../src/constants/colors';
@@ -281,7 +281,7 @@ export default function WebProfileScreen() {
   // return so it applies in both states). Ink — not navy — so iOS doesn't wash
   // the status bar to a light scrim; the cover banner's dark top fuses with it.
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
-  const { user, signOut, changePassword, deleteAccount } = useAuth();
+  const { user } = useAuth();
   const {
     profile,
     loading: profileLoading,
@@ -296,9 +296,6 @@ export default function WebProfileScreen() {
   } = useProfile(user?.id);
   const { favourites, setFavourites, battle, contributions, taste, loading, refetch } =
     useProfileData(user?.id);
-  const [signingOut, setSigningOut] = useState(false);
-  const [deletingAccount, setDeletingAccount] = useState(false);
-  const [showChangePassword, setShowChangePassword] = useState(false);
   const [showEditName, setShowEditName] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const { toast, showToast } = useToast();
@@ -314,34 +311,6 @@ export default function WebProfileScreen() {
     document.addEventListener('visibilitychange', handler);
     return () => document.removeEventListener('visibilitychange', handler);
   }, [refetch]);
-
-  const handleSignOut = async () => {
-    setSigningOut(true);
-    await signOut();
-    router.replace('/explore');
-  };
-
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'This will permanently delete your account and all your data. This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete Account',
-          style: 'destructive',
-          onPress: async () => {
-            setDeletingAccount(true);
-            const { error } = await deleteAccount();
-            if (error) {
-              setDeletingAccount(false);
-              Alert.alert('Error', error.message);
-            }
-          },
-        },
-      ],
-    );
-  };
 
   const handleAvatarRightClick = (e: { preventDefault: () => void }) => {
     e.preventDefault();
@@ -363,8 +332,6 @@ export default function WebProfileScreen() {
 
   const email = user?.email ?? '';
   const name = profile?.display_name ?? username(email);
-  const provider = user?.app_metadata?.provider ?? 'email';
-  const isEmailUser = provider === 'email' || !user?.app_metadata?.provider;
   const joinedDate = user?.created_at
     ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : null;
@@ -397,6 +364,17 @@ export default function WebProfileScreen() {
     topPublisher: taste?.publishers[0]?.name ?? null,
   });
   const badgesEarned = earnedCount(badges);
+
+  const profileStats = buildProfileStats({
+    savedCount: favourites.length,
+    favouritesLoading: loading,
+    battle,
+    badgesEarned,
+  });
+
+  const handleStatPress = (key: 'saved' | 'battles' | 'streak' | 'crowd' | 'badges') => {
+    if (key === 'battles' || key === 'streak' || key === 'crowd') router.push('/versus');
+  };
 
   // Shareable "My Universe" poster — off-screen card + share().
   const {
@@ -459,12 +437,6 @@ export default function WebProfileScreen() {
   const handleUpdateName = async (newName: string) => {
     await updateDisplayName(newName);
     showToast('Display name updated');
-  };
-
-  const handleChangePassword = async (current: string, next: string) => {
-    const result = await changePassword(current, next);
-    if (!result.error) showToast('Password updated');
-    return result;
   };
 
   const handleUnfavourite = (hero: FavouriteHero) => {
@@ -531,6 +503,16 @@ export default function WebProfileScreen() {
                 {profile?.cover_url ? 'Edit cover' : 'Add cover'}
               </Text>
             </View>
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation?.();
+                router.push('/settings');
+              }}
+              style={mob.settingsGear}
+              hitSlop={8}
+            >
+              <Ionicons name="settings-outline" size={16} color="white" />
+            </Pressable>
           </Pressable>
 
           {/* ── Avatar overlap ── */}
@@ -588,10 +570,9 @@ export default function WebProfileScreen() {
               />
             </Pressable>
             <Text style={mob.email}>{email}</Text>
-            <View style={mob.statPill}>
-              <Ionicons name="heart" size={14} color={COLORS.orange} />
-              <Text style={mob.statPillText}>{loading ? '–' : favourites.length} saved heroes</Text>
-            </View>
+            {joinedDate && <Text style={mob.memberSince}>Member since {joinedDate}</Text>}
+
+            <StatStrip stats={profileStats} onPressStat={handleStatPress} />
 
             <Pressable
               onPress={handleShareUniverse}
@@ -613,38 +594,13 @@ export default function WebProfileScreen() {
 
           {gettingStartedReady && <GettingStartedCard steps={gettingStartedSteps} />}
 
-          {/* ── Battle Record ── */}
-          {battle && battle.total > 0 && (
-            <>
-              <View style={mob.section}>
-                <View style={mob.sectionHeader}>
-                  <Text style={mob.sectionTitle}>Battle Record</Text>
-                </View>
-                <View style={mob.battleRow}>
-                  <View style={mob.battleTile}>
-                    <Text style={mob.battleValue}>{battle.total}</Text>
-                    <Text style={mob.battleLabel}>{battle.total === 1 ? 'Battle' : 'Battles'}</Text>
-                  </View>
-                  <View style={mob.battleTile}>
-                    <Text style={mob.battleValue}>{battle.agreePct}%</Text>
-                    <Text style={mob.battleLabel}>With the crowd</Text>
-                  </View>
-                  <View style={mob.battleTile}>
-                    <Text style={mob.battleValue}>{battle.streak}</Text>
-                    <Text style={mob.battleLabel}>Day streak</Text>
-                  </View>
-                </View>
-              </View>
-              <View style={mob.hairline} />
-            </>
-          )}
-
           {/* ── Your Universe ── */}
           {showTaste && (
             <>
               <View style={mob.section}>
                 <View style={mob.sectionHeader}>
-                  <Text style={mob.sectionTitle}>Your Universe</Text>
+                  <View style={mob.sectionAccent} />
+                  <Text style={[mob.sectionTitle, mob.sectionTitleElevated]}>Your Universe</Text>
                 </View>
                 {!!tasteInsight && <Text style={mob.tasteInsight}>{tasteInsight}</Text>}
                 {tasteChips.length > 0 && (
@@ -665,7 +621,8 @@ export default function WebProfileScreen() {
           {/* ── Badges ── */}
           <View style={mob.section}>
             <View style={mob.sectionHeader}>
-              <Text style={mob.sectionTitle}>Badges</Text>
+              <View style={mob.sectionAccent} />
+              <Text style={[mob.sectionTitle, mob.sectionTitleElevated]}>Badges</Text>
               <Text style={mob.sectionCount}>
                 {badgesEarned}/{badges.length}
               </Text>
@@ -792,137 +749,20 @@ export default function WebProfileScreen() {
             )}
           </View>
 
-          {/* ── Account ── */}
-          <View style={mob.accountSection}>
-            <Text style={mob.accountSectionTitle}>Account</Text>
-            <View style={mob.accountCard}>
-              <View style={mob.accountRow}>
-                <View style={[mob.accountIconBadge, mob.accountIconBadgeNavy]}>
-                  <Ionicons name="mail-outline" size={16} color={COLORS.navy} />
-                </View>
-                <Text style={mob.accountLabel}>Email</Text>
-                <Text style={[mob.accountValue, { maxWidth: width * 0.4 }]} numberOfLines={1}>
-                  {email}
-                </Text>
+          <View style={mob.kofiCard}>
+            <Pressable
+              onPress={() => Linking.openURL(KO_FI_URL)}
+              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
+              }
+            >
+              <View style={[mob.accountIconBadge, mob.accountIconBadgeOrange]}>
+                <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
               </View>
-
-              {!isEmailUser && (
-                <>
-                  <View style={mob.divider} />
-                  <View style={mob.accountRow as object}>
-                    <View style={[mob.accountIconBadge, mob.accountIconBadgeNavy]}>
-                      <Ionicons name={providerMeta(provider).icon} size={16} color={COLORS.navy} />
-                    </View>
-                    <Text style={mob.accountLabel}>Signed in with</Text>
-                    <Text style={mob.accountValue}>{providerMeta(provider).label}</Text>
-                  </View>
-                </>
-              )}
-
-              {isEmailUser && (
-                <>
-                  <View style={mob.divider} />
-                  <Pressable
-                    onPress={() => setShowChangePassword(true)}
-                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                      [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
-                    }
-                  >
-                    <View style={[mob.accountIconBadge, mob.accountIconBadgeNavy]}>
-                      <Ionicons name="lock-closed-outline" size={16} color={COLORS.navy} />
-                    </View>
-                    <Text style={mob.accountLabel}>Change Password</Text>
-                    <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-                  </Pressable>
-                </>
-              )}
-
-              {joinedDate && (
-                <>
-                  <View style={mob.divider} />
-                  <View style={mob.accountRow as object}>
-                    <View style={[mob.accountIconBadge, mob.accountIconBadgeNavy]}>
-                      <Ionicons name="calendar-outline" size={16} color={COLORS.navy} />
-                    </View>
-                    <Text style={mob.accountLabel}>Member since</Text>
-                    <Text style={mob.accountValue}>{joinedDate}</Text>
-                  </View>
-                </>
-              )}
-
-              {profile?.is_admin && (
-                <>
-                  <View style={mob.divider} />
-                  <Pressable
-                    onPress={() => router.push('/admin/health')}
-                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                      [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
-                    }
-                  >
-                    <View style={[mob.accountIconBadge, mob.accountIconBadgeNavy]}>
-                      <Ionicons name="stats-chart-outline" size={16} color={COLORS.navy} />
-                    </View>
-                    <Text style={mob.accountLabel}>Catalog Health</Text>
-                    <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-                  </Pressable>
-                </>
-              )}
-
-              <View style={mob.divider} />
-              <Pressable
-                onPress={() => Linking.openURL(KO_FI_URL)}
-                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
-                }
-              >
-                <View style={[mob.accountIconBadge, mob.accountIconBadgeOrange]}>
-                  <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
-                </View>
-                <Text style={mob.accountLabel}>Support this project</Text>
-                <Text style={mob.accountValue}>Ko-fi</Text>
-                <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-              </Pressable>
-
-              <View style={mob.divider} />
-              <Pressable
-                onPress={handleSignOut}
-                disabled={signingOut}
-                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
-                }
-              >
-                {signingOut ? (
-                  <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
-                ) : (
-                  <View style={[mob.accountIconBadge, mob.accountIconBadgeRed]}>
-                    <Ionicons name="log-out-outline" size={16} color={COLORS.red} />
-                  </View>
-                )}
-                <Text style={[mob.accountLabel, mob.accountLabelDanger]}>
-                  {signingOut ? 'Signing out…' : 'Sign Out'}
-                </Text>
-              </Pressable>
-
-              <View style={mob.divider} />
-              <Pressable
-                onPress={handleDeleteAccount}
-                disabled={deletingAccount}
-                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
-                }
-              >
-                {deletingAccount ? (
-                  <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
-                ) : (
-                  <View style={[mob.accountIconBadge, mob.accountIconBadgeRed]}>
-                    <Ionicons name="trash-outline" size={16} color={COLORS.red} />
-                  </View>
-                )}
-                <Text style={[mob.accountLabel, mob.accountLabelDanger]}>
-                  {deletingAccount ? 'Deleting account…' : 'Delete Account'}
-                </Text>
-              </Pressable>
-            </View>
+              <Text style={mob.accountLabel}>Support this project</Text>
+              <Text style={mob.accountValue}>Ko-fi</Text>
+              <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+            </Pressable>
           </View>
 
           <Text style={mob.disclaimer}>
@@ -931,11 +771,6 @@ export default function WebProfileScreen() {
           </Text>
         </View>
 
-        <ChangePasswordModal
-          visible={showChangePassword}
-          onClose={() => setShowChangePassword(false)}
-          onSubmit={handleChangePassword}
-        />
         <EditDisplayNameModal
           visible={showEditName}
           currentName={name}
@@ -989,6 +824,16 @@ export default function WebProfileScreen() {
           <Ionicons name="camera-outline" size={13} color="white" />
           <Text style={desk.editCoverText}>{profile?.cover_url ? 'Edit cover' : 'Add cover'}</Text>
         </View>
+        <Pressable
+          onPress={(e) => {
+            e.stopPropagation?.();
+            router.push('/settings');
+          }}
+          style={desk.settingsGear}
+          hitSlop={8}
+        >
+          <Ionicons name="settings-outline" size={17} color="white" />
+        </Pressable>
       </Pressable>
 
       {/* Content — max 1200px */}
@@ -1051,13 +896,11 @@ export default function WebProfileScreen() {
               </Pressable>
 
               <Text style={desk.email as object}>{email}</Text>
+              {joinedDate && (
+                <Text style={desk.memberSince as object}>Member since {joinedDate}</Text>
+              )}
 
-              <View style={desk.statPill}>
-                <Ionicons name="heart" size={14} color={COLORS.orange} />
-                <Text style={desk.statPillText}>
-                  {loading ? '–' : favourites.length} saved heroes
-                </Text>
-              </View>
+              <StatStrip stats={profileStats} onPressStat={handleStatPress} />
 
               <Pressable
                 onPress={handleShareUniverse}
@@ -1075,133 +918,20 @@ export default function WebProfileScreen() {
               </Pressable>
             </View>
 
-            {/* Account card */}
-            <View style={desk.accountCard}>
-              <View style={desk.accountRow as object}>
-                <View style={[desk.accountIconBadge, desk.accountIconBadgeNavy]}>
-                  <Ionicons name="mail-outline" size={16} color={COLORS.navy} />
-                </View>
-                <Text style={desk.accountLabel}>Email</Text>
-                <Text style={desk.accountValue} numberOfLines={1}>
-                  {email}
-                </Text>
-              </View>
-
-              {!isEmailUser && (
-                <>
-                  <View style={desk.divider} />
-                  <View style={desk.accountRow as object}>
-                    <View style={[desk.accountIconBadge, desk.accountIconBadgeNavy]}>
-                      <Ionicons name={providerMeta(provider).icon} size={16} color={COLORS.navy} />
-                    </View>
-                    <Text style={desk.accountLabel}>Signed in with</Text>
-                    <Text style={desk.accountValue}>{providerMeta(provider).label}</Text>
-                  </View>
-                </>
-              )}
-
-              {isEmailUser && (
-                <>
-                  <View style={desk.divider} />
-                  <Pressable
-                    onPress={() => setShowChangePassword(true)}
-                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                      [desk.accountRow, hovered && (desk.accountRowHover as object)] as object
-                    }
-                  >
-                    <View style={[desk.accountIconBadge, desk.accountIconBadgeNavy]}>
-                      <Ionicons name="lock-closed-outline" size={16} color={COLORS.navy} />
-                    </View>
-                    <Text style={desk.accountLabel}>Change Password</Text>
-                    <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-                  </Pressable>
-                </>
-              )}
-
-              {joinedDate && (
-                <>
-                  <View style={desk.divider} />
-                  <View style={desk.accountRow as object}>
-                    <View style={[desk.accountIconBadge, desk.accountIconBadgeNavy]}>
-                      <Ionicons name="calendar-outline" size={16} color={COLORS.navy} />
-                    </View>
-                    <Text style={desk.accountLabel}>Member since</Text>
-                    <Text style={desk.accountValue}>{joinedDate}</Text>
-                  </View>
-                </>
-              )}
-
-              {profile?.is_admin && (
-                <>
-                  <View style={desk.divider} />
-                  <Pressable
-                    onPress={() => router.push('/admin/health')}
-                    style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                      [desk.accountRow, hovered && (desk.accountRowHover as object)] as object
-                    }
-                  >
-                    <View style={[desk.accountIconBadge, desk.accountIconBadgeNavy]}>
-                      <Ionicons name="stats-chart-outline" size={16} color={COLORS.navy} />
-                    </View>
-                    <Text style={desk.accountLabel}>Catalog Health</Text>
-                    <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-                  </Pressable>
-                </>
-              )}
-
-              <View style={desk.divider} />
+            {/* Ko-fi footer */}
+            <View style={desk.kofiCard}>
               <Pressable
                 onPress={() => Linking.openURL(KO_FI_URL)}
                 style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                   [desk.accountRow, hovered && (desk.accountRowHover as object)] as object
                 }
               >
-                <View style={[desk.accountIconBadge, desk.accountIconBadgeRed]}>
+                <View style={[desk.accountIconBadge, desk.accountIconBadgeOrange]}>
                   <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
                 </View>
                 <Text style={desk.accountLabel}>Support this project</Text>
                 <Text style={desk.accountValue}>Ko-fi</Text>
                 <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
-              </Pressable>
-
-              <View style={desk.divider} />
-              <Pressable
-                onPress={handleSignOut}
-                disabled={signingOut}
-                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [desk.accountRow, hovered && (desk.accountRowHover as object)] as object
-                }
-              >
-                {signingOut ? (
-                  <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
-                ) : (
-                  <View style={[desk.accountIconBadge, desk.accountIconBadgeRed]}>
-                    <Ionicons name="log-out-outline" size={16} color={COLORS.red} />
-                  </View>
-                )}
-                <Text style={[desk.accountLabel, desk.accountLabelDanger]}>
-                  {signingOut ? 'Signing out…' : 'Sign Out'}
-                </Text>
-              </Pressable>
-
-              <View style={desk.divider} />
-              <Pressable
-                onPress={handleDeleteAccount}
-                disabled={deletingAccount}
-                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [desk.accountRow, hovered && (desk.accountRowHover as object)] as object
-                }
-              >
-                {deletingAccount ? (
-                  <ActivityIndicator size="small" color={COLORS.red} style={{ marginRight: 10 }} />
-                ) : (
-                  <View style={[desk.accountIconBadge, desk.accountIconBadgeRed]}>
-                    <Ionicons name="trash-outline" size={16} color={COLORS.red} />
-                  </View>
-                )}
-                <Text style={[desk.accountLabel, desk.accountLabelDanger]}>
-                  {deletingAccount ? 'Deleting account…' : 'Delete Account'}
-                </Text>
               </Pressable>
             </View>
 
@@ -1211,34 +941,16 @@ export default function WebProfileScreen() {
             </Text>
           </View>
 
-          {/* ── Main: Battle Record + My Favourites ── */}
+          {/* ── Main: Your Universe, Badges, Contributions, Favourites ── */}
           <View style={desk.main}>
             {gettingStartedReady && <GettingStartedCard steps={gettingStartedSteps} />}
 
-            {battle && battle.total > 0 && (
-              <View style={desk.battleBlock}>
-                <Text style={desk.sectionTitle}>Battle Record</Text>
-                <View style={desk.battleRow}>
-                  <View style={desk.battleTile}>
-                    <Text style={desk.battleValue}>{battle.total}</Text>
-                    <Text style={desk.battleLabel}>
-                      {battle.total === 1 ? 'Battle' : 'Battles'}
-                    </Text>
-                  </View>
-                  <View style={desk.battleTile}>
-                    <Text style={desk.battleValue}>{battle.agreePct}%</Text>
-                    <Text style={desk.battleLabel}>With the crowd</Text>
-                  </View>
-                  <View style={desk.battleTile}>
-                    <Text style={desk.battleValue}>{battle.streak}</Text>
-                    <Text style={desk.battleLabel}>Day streak</Text>
-                  </View>
-                </View>
-              </View>
-            )}
             {showTaste && (
               <View style={desk.battleBlock}>
-                <Text style={desk.sectionTitle}>Your Universe</Text>
+                <View style={desk.sectionHeaderElevated}>
+                  <View style={desk.sectionAccent} />
+                  <Text style={[desk.sectionTitle, desk.sectionTitleElevated]}>Your Universe</Text>
+                </View>
                 {!!tasteInsight && <Text style={desk.tasteInsight}>{tasteInsight}</Text>}
                 {tasteChips.length > 0 && (
                   <View style={desk.tasteChipRow}>
@@ -1254,7 +966,8 @@ export default function WebProfileScreen() {
             )}
             <View style={desk.battleBlock}>
               <View style={desk.badgeHead}>
-                <Text style={desk.sectionTitle}>Badges</Text>
+                <View style={desk.sectionAccent} />
+                <Text style={[desk.sectionTitle, desk.sectionTitleElevated]}>Badges</Text>
                 <Text style={desk.sectionCount}>
                   {badgesEarned}/{badges.length}
                 </Text>
@@ -1377,11 +1090,6 @@ export default function WebProfileScreen() {
         </View>
       </View>
 
-      <ChangePasswordModal
-        visible={showChangePassword}
-        onClose={() => setShowChangePassword(false)}
-        onSubmit={handleChangePassword}
-      />
       <EditDisplayNameModal
         visible={showEditName}
         currentName={name}
@@ -1447,6 +1155,21 @@ const mob = StyleSheet.create({
     color: 'white',
     letterSpacing: 0.2,
   },
+  settingsGear: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    zIndex: 5,
+    cursor: 'pointer',
+  } as object,
 
   // Avatar
   avatarZone: {
@@ -1556,23 +1279,13 @@ const mob = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     color: COLORS.grey,
+    marginBottom: 2,
+  },
+  memberSince: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: COLORS.grey,
     marginBottom: 16,
-  },
-  statPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#fff5ee',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#fde0cc',
-  },
-  statPillText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: COLORS.orange,
   },
   shareUniverseBtn: {
     flexDirection: 'row',
@@ -1601,25 +1314,6 @@ const mob = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 20,
   },
-
-  // Battle Record
-  battleRow: { flexDirection: 'row', gap: 10 },
-  battleTile: {
-    flex: 1,
-    backgroundColor: COLORS.navy,
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-    gap: 3,
-  } as object,
-  battleValue: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.beige, lineHeight: 28 },
-  battleLabel: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.55)',
-  } as object,
 
   // Your Universe
   tasteInsight: { fontFamily: 'Flame-Regular', fontSize: 18, color: COLORS.navy, marginBottom: 12 },
@@ -1697,6 +1391,14 @@ const mob = StyleSheet.create({
     color: COLORS.navy,
     flex: 1,
   },
+  sectionTitleElevated: { fontSize: 23 },
+  sectionAccent: {
+    width: 3,
+    height: 18,
+    borderRadius: 2,
+    backgroundColor: COLORS.orange,
+    marginRight: 9,
+  },
   sectionCount: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 13,
@@ -1748,18 +1450,13 @@ const mob = StyleSheet.create({
     color: COLORS.beige,
   },
 
-  // Account
-  accountSection: { paddingHorizontal: 16, marginBottom: 8 },
-  accountSectionTitle: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 20,
-    color: COLORS.navy,
-    marginBottom: 12,
-  },
-  accountCard: {
+  // Ko-fi footer (reuses the old account-row shape)
+  kofiCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
     overflow: 'hidden',
+    marginHorizontal: 16,
+    marginBottom: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -1782,8 +1479,6 @@ const mob = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  accountIconBadgeNavy: { backgroundColor: '#e8f0f2' },
-  accountIconBadgeRed: { backgroundColor: '#fde8e8' },
   accountIconBadgeOrange: { backgroundColor: '#fff5ee' },
   accountLabel: {
     fontFamily: 'Nunito_700Bold',
@@ -1795,12 +1490,6 @@ const mob = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
     color: COLORS.grey,
-  },
-  accountLabelDanger: { color: COLORS.red },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#ede5d8',
-    marginHorizontal: 16,
   },
 
   disclaimer: {
@@ -1865,6 +1554,21 @@ const desk = StyleSheet.create({
     color: 'white',
     letterSpacing: 0.2,
   },
+  settingsGear: {
+    position: 'absolute',
+    top: 16,
+    right: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    zIndex: 5,
+    cursor: 'pointer',
+  } as object,
 
   // Content layout
   contentOuter: {
@@ -2003,25 +1707,16 @@ const desk = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
     color: COLORS.grey,
+    marginBottom: 2,
+    textAlign: 'center',
+  } as object,
+  memberSince: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11,
+    color: COLORS.grey,
     marginBottom: 14,
     textAlign: 'center',
   } as object,
-  statPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#fff5ee',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#fde0cc',
-  },
-  statPillText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: COLORS.orange,
-  },
   shareUniverseBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2043,8 +1738,8 @@ const desk = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // Account card
-  accountCard: {
+  // Ko-fi footer (reuses the old account-row shape)
+  kofiCard: {
     backgroundColor: 'white',
     borderRadius: 16,
     overflow: 'hidden',
@@ -2070,8 +1765,7 @@ const desk = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  accountIconBadgeNavy: { backgroundColor: '#e8f0f2' },
-  accountIconBadgeRed: { backgroundColor: '#fde8e8' },
+  accountIconBadgeOrange: { backgroundColor: '#fff5ee' },
   accountLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 14,
@@ -2083,12 +1777,6 @@ const desk = StyleSheet.create({
     fontSize: 12,
     color: COLORS.grey,
     maxWidth: 140,
-  },
-  accountLabelDanger: { color: COLORS.red },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#ede5d8',
-    marginHorizontal: 16,
   },
   disclaimer: {
     fontFamily: 'Nunito_400Regular',
@@ -2105,25 +1793,7 @@ const desk = StyleSheet.create({
     flex: 1,
     paddingTop: 24,
   },
-  // Battle Record
   battleBlock: { marginBottom: 28, gap: 14 },
-  battleRow: { flexDirection: 'row', gap: 12 },
-  battleTile: {
-    flex: 1,
-    backgroundColor: COLORS.navy,
-    borderRadius: 16,
-    paddingVertical: 20,
-    alignItems: 'center',
-    gap: 4,
-  } as object,
-  battleValue: { fontFamily: 'Flame-Regular', fontSize: 34, color: COLORS.beige, lineHeight: 36 },
-  battleLabel: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.55)',
-  } as object,
   // Your Universe
   tasteInsight: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.navy, marginBottom: 4 },
   tasteChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -2190,11 +1860,24 @@ const desk = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  sectionHeaderElevated: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   sectionTitle: {
     fontFamily: 'Flame-Regular',
     fontSize: 26,
     color: COLORS.navy,
     flex: 1,
+  },
+  sectionTitleElevated: { fontSize: 30 },
+  sectionAccent: {
+    width: 3,
+    height: 22,
+    borderRadius: 2,
+    backgroundColor: COLORS.orange,
+    marginRight: 10,
   },
   sectionCount: {
     fontFamily: 'Nunito_700Bold',
