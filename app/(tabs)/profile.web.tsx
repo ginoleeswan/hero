@@ -28,7 +28,7 @@ import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
 import { computeBadges, earnedCount, type Badge } from '../../src/lib/profile/badges';
 import { buildProfileStats } from '../../src/lib/profile/stats';
-import { fanTier } from '../../src/lib/profile/fanTier';
+import { fanTier, tierProgress } from '../../src/lib/profile/fanTier';
 import { StatStrip } from '../../src/components/profile/StatStrip';
 import { SectionShell } from '../../src/components/profile/SectionShell';
 import { ContributionsList } from '../../src/components/profile/ContributionsList';
@@ -76,7 +76,6 @@ function DeskFavSkeleton() {
 function username(email: string) {
   return email.split('@')[0] ?? email;
 }
-
 
 function GuestWebProfileScreen() {
   const router = useRouter();
@@ -356,12 +355,14 @@ export default function WebProfileScreen() {
   const badgesEarned = earnedCount(badges);
 
   // Fan tier — a single aspirational identity label from overall activity.
-  const tier = fanTier({
+  const tierInput = {
     saves: favourites.length,
     votes: battle?.total ?? 0,
     contributions: contributions.length,
     badges: badgesEarned,
-  });
+  };
+  const tier = fanTier(tierInput);
+  const tierProg = tierProgress(tierInput);
 
   const profileStats = buildProfileStats({
     savedCount: favourites.length,
@@ -565,6 +566,19 @@ export default function WebProfileScreen() {
             {joinedDate && <Text style={mob.memberSince}>Member since {joinedDate}</Text>}
 
             <StatStrip stats={profileStats} onPressStat={handleStatPress} />
+
+            {tierProg.next && (
+              <View style={mob.tierProg}>
+                <View style={mob.tierProgTrack}>
+                  <View
+                    style={[mob.tierProgFill, { width: `${Math.round(tierProg.pct * 100)}%` }]}
+                  />
+                </View>
+                <Text style={mob.tierProgText}>
+                  {tierProg.remaining} to {tierProg.next}
+                </Text>
+              </View>
+            )}
 
             <Pressable
               onPress={handleShareUniverse}
@@ -910,11 +924,27 @@ export default function WebProfileScreen() {
 
               <StatStrip stats={profileStats} onPressStat={handleStatPress} />
 
+              {tierProg.next && (
+                <View style={desk.tierProg}>
+                  <View style={desk.tierProgTrack}>
+                    <View
+                      style={[desk.tierProgFill, { width: `${Math.round(tierProg.pct * 100)}%` }]}
+                    />
+                  </View>
+                  <Text style={desk.tierProgText}>
+                    {tierProg.remaining} to {tierProg.next}
+                  </Text>
+                </View>
+              )}
+
               <Pressable
                 onPress={handleShareUniverse}
                 disabled={sharingUniverse}
                 style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
-                  [desk.shareUniverseBtn, hovered && (desk.shareUniverseBtnHover as object)] as object
+                  [
+                    desk.shareUniverseBtn,
+                    hovered && (desk.shareUniverseBtnHover as object),
+                  ] as object
                 }
               >
                 {sharingUniverse ? (
@@ -1300,6 +1330,23 @@ const mob = StyleSheet.create({
     letterSpacing: 0.4,
     textTransform: 'uppercase',
     color: COLORS.orange,
+  } as object,
+  tierProg: { alignSelf: 'stretch', alignItems: 'center', marginTop: 14 },
+  tierProgTrack: {
+    width: '100%',
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#eaddcb',
+    overflow: 'hidden',
+  },
+  tierProgFill: { height: 5, borderRadius: 3, backgroundColor: COLORS.orange } as object,
+  tierProgText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    color: COLORS.grey,
+    marginTop: 5,
   } as object,
   nameEditRow: {
     flexDirection: 'row',
@@ -1809,6 +1856,23 @@ const desk = StyleSheet.create({
     textTransform: 'uppercase',
     color: COLORS.orange,
   } as object,
+  tierProg: { alignSelf: 'stretch', alignItems: 'center', marginTop: 14 },
+  tierProgTrack: {
+    width: '100%',
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#eaddcb',
+    overflow: 'hidden',
+  },
+  tierProgFill: { height: 5, borderRadius: 3, backgroundColor: COLORS.orange } as object,
+  tierProgText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    color: COLORS.grey,
+    marginTop: 5,
+  } as object,
   nameEditRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2024,7 +2088,12 @@ const desk = StyleSheet.create({
     textTransform: 'uppercase',
   },
   badgeWall: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
-  badgeTile: { width: 88, alignItems: 'center', gap: 7, transition: 'transform 160ms ease' } as object,
+  badgeTile: {
+    width: 88,
+    alignItems: 'center',
+    gap: 7,
+    transition: 'transform 160ms ease',
+  } as object,
   badgeTileBtn: { cursor: 'pointer' } as object,
   badgeTileLocked: { opacity: 0.55 } as object,
   badgeTileHover: { transform: [{ translateY: -3 }] } as object,

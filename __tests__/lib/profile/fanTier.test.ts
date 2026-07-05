@@ -1,4 +1,4 @@
-import { fanScore, fanTier } from '../../../src/lib/profile/fanTier';
+import { fanScore, fanTier, tierProgress } from '../../../src/lib/profile/fanTier';
 
 describe('fanScore', () => {
   it('weights badges 3x and sums the rest', () => {
@@ -26,5 +26,21 @@ describe('fanTier', () => {
 
   it('caps at Legend for very high activity', () => {
     expect(fanTier({ saves: 100, votes: 100, contributions: 100, badges: 10 }).name).toBe('Legend');
+  });
+});
+
+describe('tierProgress', () => {
+  it('points to the next tier with remaining count', () => {
+    // score 50 → Collector (floor 40), next Curator (100)
+    const p = tierProgress({ saves: 1, votes: 8, contributions: 38, badges: 1 });
+    expect(p.next).toBe('Curator');
+    expect(p.remaining).toBe(50);
+    expect(p.pct).toBeCloseTo(10 / 60, 5);
+  });
+
+  it('is maxed at Legend', () => {
+    const p = tierProgress({ saves: 100, votes: 100, contributions: 100, badges: 10 });
+    expect(p.next).toBeNull();
+    expect(p.remaining).toBe(0);
   });
 });
