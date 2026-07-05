@@ -46,10 +46,10 @@ export function SectionShell({
 const styles = StyleSheet.create({
   shell: {
     backgroundColor: '#fff',
-    borderRadius: 20,
-    paddingTop: 18,
-    paddingBottom: 20,
-    marginBottom: 18,
+    borderRadius: 22,
+    paddingTop: 22,
+    paddingBottom: 24,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: 'rgba(41,60,67,0.06)',
     // Soft warm-dark lift so panels rise off the beige (deep-navy tint, never black).
@@ -62,8 +62,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 14,
+    paddingHorizontal: 24,
+    marginBottom: 16,
   },
   accent: {
     width: 4,
@@ -86,5 +86,5 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   headerRight: { marginLeft: 'auto' },
-  body: { paddingHorizontal: 20 },
+  body: { paddingHorizontal: 24 },
 });

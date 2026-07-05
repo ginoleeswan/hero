@@ -89,6 +89,7 @@ const styles = StyleSheet.create({
     fontSize: 21,
     lineHeight: 26, // ≥ 1.22× fontSize for Flame descenders
     color: COLORS.navy,
+    fontVariant: ['tabular-nums'], // figures align across cells
   },
   skeleton: {
     width: 24,
@@ -98,10 +99,11 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 10.5,
-    letterSpacing: 0.3,
+    fontSize: 10,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
     color: COLORS.grey,
-    marginTop: 3,
+    marginTop: 4,
     textAlign: 'center',
   },
 });

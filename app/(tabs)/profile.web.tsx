@@ -33,7 +33,7 @@ import { SectionShell } from '../../src/components/profile/SectionShell';
 import { ContributionsList } from '../../src/components/profile/ContributionsList';
 import { WebHeroCard } from '../../src/components/web/WebHeroCard';
 import { useSkeletonAnim, SkeletonBlock } from '../../src/components/web/Skeleton';
-import { COLORS, SURFACE } from '../../src/constants/colors';
+import { COLORS, SURFACE, SEAM_COLOR } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import Svg, { Path } from 'react-native-svg';
@@ -1072,6 +1072,8 @@ const mob = StyleSheet.create({
     height: 160,
     overflow: 'hidden',
     cursor: 'pointer',
+    borderBottomWidth: 2,
+    borderBottomColor: SEAM_COLOR,
   } as object,
   coverDots: {
     position: 'absolute',
@@ -1079,8 +1081,9 @@ const mob = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundImage: 'radial-gradient(circle, rgba(231,115,51,0.22) 1.5px, transparent 1.5px)',
-    backgroundSize: '14px 14px',
+    backgroundImage:
+      'radial-gradient(circle, rgba(231,115,51,0.16) 1.5px, transparent 1.5px), radial-gradient(120% 90% at 50% -8%, transparent 42%, rgba(11,24,32,0.55) 100%)',
+    backgroundSize: '15px 15px, 100% 100%',
   } as object,
   coverOverlay: {
     ...StyleSheet.absoluteFill,
@@ -1260,7 +1263,13 @@ const mob = StyleSheet.create({
   },
 
   // Your Universe
-  tasteInsight: { fontFamily: 'Flame-Regular', fontSize: 18, color: COLORS.navy, marginBottom: 12 },
+  tasteInsight: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 15,
+    lineHeight: 19,
+    color: COLORS.navy,
+    marginBottom: 12,
+  },
   tasteChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tasteChip: {
     backgroundColor: '#e8ddd0',
@@ -1467,6 +1476,9 @@ const desk = StyleSheet.create({
     height: 220,
     overflow: 'hidden',
     cursor: 'pointer',
+    // Warm ink→paper seam where the dark band meets beige — the app's signature transition.
+    borderBottomWidth: 2,
+    borderBottomColor: SEAM_COLOR,
   } as object,
   coverDots: {
     position: 'absolute',
@@ -1474,8 +1486,11 @@ const desk = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundImage: 'radial-gradient(circle, rgba(231,115,51,0.22) 1.5px, transparent 1.5px)',
-    backgroundSize: '14px 14px',
+    // Finer dot texture + a depth vignette (edges/floor recede) so the band reads
+    // as dimensional rather than flat.
+    backgroundImage:
+      'radial-gradient(circle, rgba(231,115,51,0.16) 1.5px, transparent 1.5px), radial-gradient(120% 90% at 50% -8%, transparent 42%, rgba(11,24,32,0.55) 100%)',
+    backgroundSize: '15px 15px, 100% 100%',
   } as object,
   coverLogo: {
     position: 'absolute',
@@ -1759,7 +1774,13 @@ const desk = StyleSheet.create({
   ghostText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.orange },
   battleBlock: { marginBottom: 28, gap: 14 },
   // Your Universe
-  tasteInsight: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.navy, marginBottom: 4 },
+  tasteInsight: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 16,
+    lineHeight: 20,
+    color: COLORS.navy,
+    marginBottom: 10,
+  },
   tasteChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tasteChip: {
     backgroundColor: '#e8ddd0',
