@@ -16,7 +16,7 @@ export default function WebSettingsScreen() {
   const router = useRouter();
   // Ink chrome over a beige canvas, matching the rest of the web shell.
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
-  const { user, signOut, changePassword, deleteAccount } = useAuth();
+  const { user, loading: authLoading, signOut, changePassword, deleteAccount } = useAuth();
   const { profile } = useProfile(user?.id);
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -61,7 +61,10 @@ export default function WebSettingsScreen() {
   const provider = user?.app_metadata?.provider ?? 'email';
   const isEmailUser = provider === 'email' || !user?.app_metadata?.provider;
 
-  // All hooks above run unconditionally; guests are bounced back to Explore.
+  // All hooks above run unconditionally. useAuth resolves the session async and
+  // starts as { user: null, loading: true }; wait for it to settle before
+  // deciding, or a signed-in user gets bounced to Explore on the first render.
+  if (authLoading) return null;
   // <Redirect> defers the navigation dispatch internally, so it's safe to
   // render (unlike calling router.replace during render).
   if (!user) return <Redirect href="/explore" />;
