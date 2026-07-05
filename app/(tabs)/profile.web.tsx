@@ -492,16 +492,6 @@ export default function WebProfileScreen() {
                 {profile?.cover_url ? 'Edit cover' : 'Add cover'}
               </Text>
             </View>
-            <Pressable
-              onPress={(e) => {
-                e.stopPropagation?.();
-                router.push('/settings');
-              }}
-              style={mob.settingsGear}
-              hitSlop={8}
-            >
-              <Ionicons name="settings-outline" size={16} color="white" />
-            </Pressable>
           </Pressable>
 
           {/* ── Avatar overlap ── */}
@@ -706,6 +696,21 @@ export default function WebProfileScreen() {
 
           <View style={mob.kofiCard}>
             <Pressable
+              onPress={() => router.push('/settings')}
+              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
+              }
+            >
+              <View style={[mob.accountIconBadge, mob.accountIconBadgeOrange]}>
+                <Ionicons name="settings-outline" size={16} color={COLORS.navy} />
+              </View>
+              <Text style={mob.accountLabel}>Settings</Text>
+              <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
+            </Pressable>
+          </View>
+
+          <View style={mob.kofiCard}>
+            <Pressable
               onPress={() => Linking.openURL(KO_FI_URL)}
               style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                 [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
@@ -779,16 +784,6 @@ export default function WebProfileScreen() {
           <Ionicons name="camera-outline" size={13} color="white" />
           <Text style={desk.editCoverText}>{profile?.cover_url ? 'Edit cover' : 'Add cover'}</Text>
         </View>
-        <Pressable
-          onPress={(e) => {
-            e.stopPropagation?.();
-            router.push('/settings');
-          }}
-          style={desk.settingsGear}
-          hitSlop={8}
-        >
-          <Ionicons name="settings-outline" size={17} color="white" />
-        </Pressable>
       </Pressable>
 
       {/* Content — max 1200px */}
@@ -870,6 +865,22 @@ export default function WebProfileScreen() {
                     <Text style={desk.shareUniverseText}>Share my universe</Text>
                   </>
                 )}
+              </Pressable>
+            </View>
+
+            {/* Settings */}
+            <View style={desk.kofiCard}>
+              <Pressable
+                onPress={() => router.push('/settings')}
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                  [desk.accountRow, hovered && (desk.accountRowHover as object)] as object
+                }
+              >
+                <View style={[desk.accountIconBadge, desk.accountIconBadgeOrange]}>
+                  <Ionicons name="settings-outline" size={16} color={COLORS.navy} />
+                </View>
+                <Text style={desk.accountLabel}>Settings</Text>
+                <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
               </Pressable>
             </View>
 
@@ -1082,21 +1093,6 @@ const mob = StyleSheet.create({
     color: 'white',
     letterSpacing: 0.2,
   },
-  settingsGear: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    zIndex: 5,
-    cursor: 'pointer',
-  } as object,
 
   // Avatar
   avatarZone: {
@@ -1482,21 +1478,6 @@ const desk = StyleSheet.create({
     color: 'white',
     letterSpacing: 0.2,
   },
-  settingsGear: {
-    position: 'absolute',
-    top: 16,
-    right: 20,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    zIndex: 5,
-    cursor: 'pointer',
-  } as object,
 
   // Content layout
   contentOuter: {
