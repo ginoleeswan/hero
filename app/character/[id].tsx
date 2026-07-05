@@ -1315,6 +1315,8 @@ export default function CharacterScreen() {
                         names={enemyNames}
                         heroMap={relatedHeroMap}
                         kind="enemy"
+                        edgeTint
+                        monogramTiles
                         onPressHero={(h) =>
                           router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
                         }
@@ -1326,6 +1328,8 @@ export default function CharacterScreen() {
                         names={allyNames}
                         heroMap={relatedHeroMap}
                         kind="ally"
+                        edgeTint
+                        monogramTiles
                         onPressHero={(h) =>
                           router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
                         }
@@ -1337,6 +1341,8 @@ export default function CharacterScreen() {
                         names={teammateNames}
                         heroMap={relatedHeroMap}
                         kind="teammate"
+                        edgeTint
+                        monogramTiles
                         onPressHero={(h) =>
                           router.push(`/character/${h.id}?name=${encodeURIComponent(h.name)}`)
                         }
@@ -1462,7 +1468,9 @@ export default function CharacterScreen() {
                         accessibilityRole="button"
                         accessibilityLabel="View first appearance issue"
                       >
-                        <View style={styles.debutCard}>
+                        <View
+                          style={[styles.debutCard, { borderColor: theme.accent + '2b' }] as object}
+                        >
                           <View style={styles.debutCover}>
                             <Image
                               source={{ uri: data.firstIssue!.imageUrl! }}
@@ -2159,6 +2167,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(41,60,67,0.05)',
     borderRadius: 16,
     borderCurve: 'continuous',
+    borderWidth: 1,
     padding: 12,
   },
   debutCover: {
