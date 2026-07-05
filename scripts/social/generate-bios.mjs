@@ -132,7 +132,7 @@ function caption(h) {
   const tl = titlecase(tagline(h));
   const bits = [h.movie_count && `${h.movie_count} films`, h.issue_count && `${fmt(h.issue_count)} comics`].filter(Boolean).join('  ·  ');
   return [
-    `The full file on ${h.name} — ${tl}. 🦸`, ``,
+    `The full file on ${h.name}: ${tl}. 🦸`, ``,
     bits ? `${bits}. Powers, rivalries, and every matchup on mythique.app.` : `Powers, rivalries, and every matchup on mythique.app.`,
     `One of 34,000+ characters.`, ``,
     `#${h.name.replace(/[^a-z0-9]/gi, '')} #${(h.publisher || '').replace(/[^a-z0-9]/gi, '')} #superheroes #comics #anime #marvel #dc #mythique`,
