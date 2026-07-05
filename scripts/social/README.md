@@ -6,6 +6,7 @@ app's matchup screen. Two tools share one data layer (`lib.mjs`):
 - **`generate-reels.mjs`** — fast-cut 9:16 videos for TikTok / Reels / Shorts (`.mp4`)
 - **`generate-carousels.mjs`** — 4:5 matchup carousel slides (`.png` set)
 - **`generate-bios.mjs`** — 4:5 character-showcase "character file" carousel (portrait, power stats, profile dossier, aliases) — flexes the catalogue depth
+- **`generate-rankings.mjs`** — 4:5 "Top N" countdown leaderboard carousel, built on `fame_score` or any stat (e.g. most famous villains, strongest characters)
 
 ## What they do
 
@@ -43,9 +44,14 @@ node scripts/social/generate-reels.mjs --count 8
 # Instagram matchup carousels -> out/social/<slug>/carousel/slide-1..4.png + caption.txt
 node scripts/social/generate-carousels.mjs --count 8
 
-# Character-file carousels -> out/social/bio-<slug>/slide-1..4.png + caption.txt
+# Character-file carousels -> out/social/bio-<slug>/slide-1..N.png + caption.txt
 node scripts/social/generate-bios.mjs --count 8
 node scripts/social/generate-bios.mjs --character "Batman"
+
+# Ranking carousels -> out/social/ranking-<slug>/slide-1..N.png + caption.txt
+node scripts/social/generate-rankings.mjs --alignment bad          # most famous villains
+node scripts/social/generate-rankings.mjs --by strength            # strongest characters
+node scripts/social/generate-rankings.mjs --by intelligence --publisher "Marvel Comics"
 
 # force a specific matchup
 node scripts/social/generate-carousels.mjs --matchup "Goku,Superman"
