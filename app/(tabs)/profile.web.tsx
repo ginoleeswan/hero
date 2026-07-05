@@ -28,6 +28,7 @@ import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
 import { computeBadges, earnedCount, type Badge } from '../../src/lib/profile/badges';
 import { buildProfileStats } from '../../src/lib/profile/stats';
+import { fanTier } from '../../src/lib/profile/fanTier';
 import { StatStrip } from '../../src/components/profile/StatStrip';
 import { SectionShell } from '../../src/components/profile/SectionShell';
 import { ContributionsList } from '../../src/components/profile/ContributionsList';
@@ -354,6 +355,14 @@ export default function WebProfileScreen() {
   });
   const badgesEarned = earnedCount(badges);
 
+  // Fan tier — a single aspirational identity label from overall activity.
+  const tier = fanTier({
+    saves: favourites.length,
+    votes: battle?.total ?? 0,
+    contributions: contributions.length,
+    badges: badgesEarned,
+  });
+
   const profileStats = buildProfileStats({
     savedCount: favourites.length,
     favouritesLoading: loading,
@@ -548,6 +557,10 @@ export default function WebProfileScreen() {
                 style={mob.pencilIcon}
               />
             </Pressable>
+            <View style={mob.tierPill}>
+              <Ionicons name={tier.icon} size={12} color={COLORS.orange} />
+              <Text style={mob.tierText}>{tier.name}</Text>
+            </View>
             <Text style={mob.email}>{email}</Text>
             {joinedDate && <Text style={mob.memberSince}>Member since {joinedDate}</Text>}
 
@@ -884,6 +897,11 @@ export default function WebProfileScreen() {
                   style={desk.pencilIcon}
                 />
               </Pressable>
+
+              <View style={desk.tierPill}>
+                <Ionicons name={tier.icon} size={12} color={COLORS.orange} />
+                <Text style={desk.tierText}>{tier.name}</Text>
+              </View>
 
               <Text style={desk.email as object}>{email}</Text>
               {joinedDate && (
@@ -1263,6 +1281,26 @@ const mob = StyleSheet.create({
   } as object,
   username: { fontFamily: 'Flame-Regular', fontSize: 22, color: COLORS.navy },
   pencilIcon: { marginLeft: 6, marginTop: 2 },
+  tierPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: 4,
+    backgroundColor: '#fff2e8',
+    borderWidth: 1,
+    borderColor: '#fbdcc4',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginTop: 6,
+  },
+  tierText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    color: COLORS.orange,
+  } as object,
   nameEditRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1751,6 +1789,26 @@ const desk = StyleSheet.create({
   } as object,
   username: { fontFamily: 'Flame-Regular', fontSize: 20, color: COLORS.navy },
   pencilIcon: { marginLeft: 6, marginTop: 2 },
+  tierPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: 4,
+    backgroundColor: '#fff2e8',
+    borderWidth: 1,
+    borderColor: '#fbdcc4',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginTop: 6,
+  },
+  tierText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    color: COLORS.orange,
+  } as object,
   nameEditRow: {
     flexDirection: 'row',
     alignItems: 'center',
