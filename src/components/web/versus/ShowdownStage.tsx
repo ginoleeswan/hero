@@ -1,6 +1,6 @@
 // src/components/web/versus/ShowdownStage.tsx — the Main Event of the web Arena.
 // Two portrait fighter cards face off across a gold VS diamond; tapping a card
-// casts your vote. Below, a ringside panel shows the tale of the tape and — once
+// casts your vote. Below, a ringside panel shows the head to head and — once
 // voted — the crowd's split, with a gold pill into the full breakdown.
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
@@ -87,7 +87,7 @@ function FighterCard({
   );
 }
 
-// ── Tale of the tape — one stat, two bars meeting in the middle ──────────────
+// ── Head to head — one stat, two bars meeting in the middle ──────────────
 function TapeRow({ label, a, b }: { label: string; a: number; b: number }) {
   return (
     <View style={t.row}>
@@ -196,7 +196,7 @@ export function ShowdownStage({
   const cardH = isDesktop ? 346 : 200;
   const coin = isDesktop ? 76 : 54;
 
-  // Tale of the tape — rows render only when both fighters have the stat.
+  // Head to head — rows render only when both fighters have the stat.
   const tape = (
     [
       ['INT', heroA.intelligence, heroB.intelligence],
@@ -250,12 +250,12 @@ export function ShowdownStage({
         />
       </View>
 
-      {/* Ringside panel: the tale of the tape + the call to pick a side,
+      {/* Ringside panel: the head to head + the call to pick a side,
           resolving into the crowd's verdict after the vote. */}
       <View style={c.panel as object}>
         {tape.length > 0 && (
           <>
-            <Text style={c.panelKicker as object}>Tale of the tape</Text>
+            <Text style={c.panelKicker as object}>Head to head</Text>
             <View style={t.tape as object}>
               {tape.map(([label, a, b]) => (
                 <TapeRow key={label} label={label} a={a} b={b} />

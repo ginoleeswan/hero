@@ -71,7 +71,7 @@ const collageChars = collageShuffled.slice(0, 10);
 const mosaicChars = mosaicShuffled.slice(0, 11);
 const stripChars = collageShuffled.slice(0, 8);
 
-// Tale-of-the-tape proof — real power stats (l = Hulk #332, r = Iron Man #346)
+// head-to-head proof — real power stats (l = Hulk #332, r = Iron Man #346)
 const TALE: { label: string; l: number; r: number }[] = [
   { label: 'Strength', l: 100, r: 85 },
   { label: 'Power', l: 98, r: 100 },
@@ -1466,7 +1466,7 @@ const CSS = `
   }
   .fc-web-node span { font-size:8px; font-weight:600; letter-spacing:1.5px; color:var(--node-c,#7a93a3); text-transform:uppercase; }
 
-  /* Mini tale-of-the-tape */
+  /* Mini head-to-head */
   .fc-bars { display:flex; flex-direction:column; gap:10px; }
   .fc-bar-row { display:grid; grid-template-columns:1fr 1fr; gap:4px; align-items:center; }
   .fc-bar-label { grid-column:1 / -1; font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
@@ -1599,7 +1599,7 @@ const CSS = `
   .badge-text span:last-child  { font-family:'Righteous',sans-serif; font-size:16px; }
   .badge-icon { width:28px; height:28px; flex-shrink:0; }
 
-  /* Tale of the tape */
+  /* Head to head */
   .tott { padding:100px 40px; background:var(--bg); position:relative; overflow:hidden; }
   .tott-watermark {
     position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-6deg);
@@ -1836,7 +1836,7 @@ const CSS = `
     /* Final CTA */
     .cta-sub { font-size:15px; }
 
-    /* Tale of the tape */
+    /* Head to head */
     .tott { padding:64px 20px; }
     .tott-card { border-radius:20px; margin-top:32px; }
     .tott-head { height:168px; margin-bottom:30px; }
@@ -2549,7 +2549,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
               <h3 className="feature-title">Settle the Debate</h3>
               <p className="feature-desc">
                 Pit any two head-to-head, take a side, and watch the winner reveal — crowd vote plus
-                the tale of the tape. The &quot;who’d win&quot; argument, finally settled.
+                the head to head. The &quot;who’d win&quot; argument, finally settled.
               </p>
               <div className="fc-visual fc-bars" aria-hidden="true">
                 {[
@@ -2646,7 +2646,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
         </div>
       </section>
 
-      {/* TALE OF THE TAPE */}
+      {/* HEAD TO HEAD */}
       <section className="tott">
         <span className="tott-watermark" aria-hidden="true">
           VS
@@ -2657,7 +2657,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
             Who&apos;d actually win?
           </h2>
           <p className="section-sub reveal" style={{ transitionDelay: '120ms' }}>
-            Every matchup opens with the tale of the tape — real power stats, side by side. Then you
+            Every matchup opens with real power stats, side by side. Then you
             take a side and watch the verdict roll in.
           </p>
 
@@ -2791,7 +2791,7 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
                 {[
                   'Rich profiles — powers, origins, abilities & trivia',
                   'Rivalry and family-tree graphs you can explore',
-                  'Head-to-head matchups with the tale of the tape',
+                  'Head-to-head matchups with real power stats',
                   'Film, TV and game appearances for every hero',
                 ].map((item, i) => (
                   <li key={i}>

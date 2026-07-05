@@ -7,7 +7,7 @@
 //   node scripts/social/generate-carousels.mjs --matchup "Goku,Superman"
 //   node scripts/social/generate-carousels.mjs --count 6 --dry-run
 //
-// Slides: 1) cover / hook  2) tale of the tape  3) verdict + winner
+// Slides: 1) cover / hook  2) head to head  3) verdict + winner
 //         4) fan vote + CTA.  See ./README.md.
 
 import { mkdirSync, writeFileSync } from 'node:fs';

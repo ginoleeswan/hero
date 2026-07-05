@@ -379,7 +379,7 @@ export default function WebCompareScreen() {
 
   if (isDesktop) {
     /* Desktop — chromeless full-bleed arena, no page scroll. Floating Back/Share
-       over the navy; portraits flank a centered scorecard ("Tale of the Tape"). */
+       over the navy; portraits flank a centered scorecard ("Head to Head"). */
     return (
       <View style={styles.desktopRoot}>
         {seo}
