@@ -1082,36 +1082,6 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     marginTop: 2,
   },
-  nameEditRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'stretch',
-    marginBottom: 4,
-    gap: 4,
-  },
-  nameInput: {
-    flex: 1,
-    fontFamily: 'Flame-Regular',
-    fontSize: 22,
-    color: COLORS.navy,
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.orange,
-    paddingVertical: 2,
-    paddingHorizontal: 4,
-    maxWidth: SCREEN_WIDTH * 0.65,
-  },
-  nameAction: {
-    padding: 6,
-  },
-  nameCharCount: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 11,
-    color: 'rgba(41,60,67,0.35)',
-    alignSelf: 'stretch',
-    textAlign: 'right',
-    marginTop: 2,
-    marginBottom: 4,
-  },
   email: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 13,
@@ -1245,48 +1215,10 @@ const styles = StyleSheet.create({
   badgeBarFill: { height: 4, borderRadius: 2, backgroundColor: COLORS.orange },
 
   // Hairline
-  hairline: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#e8ddd0',
-    marginHorizontal: 16,
-    marginBottom: 20,
-  },
 
   // Battle Record — three stat tiles on the navy card surface.
-  battleRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  battleTile: {
-    flex: 1,
-    backgroundColor: COLORS.navy,
-    borderRadius: 14,
-    borderCurve: 'continuous',
-    paddingVertical: 16,
-    alignItems: 'center',
-    gap: 3,
-  },
-  battleValue: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 26,
-    color: COLORS.beige,
-    lineHeight: 28,
-  },
-  battleLabel: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    color: 'rgba(245,235,220,0.55)',
-  },
 
   // Your Universe (taste profile)
-  tasteInsight: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 18,
-    color: COLORS.navy,
-    marginBottom: 12,
-  },
   tasteChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tasteChip: {
     backgroundColor: '#e8ddd0',
@@ -1304,27 +1236,6 @@ const styles = StyleSheet.create({
 
   // Badges
   // My Contributions
-  contribList: { gap: 8 },
-  contribRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(41,60,67,0.08)',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  contribHero: { fontFamily: 'Flame-Regular', fontSize: 15, color: COLORS.navy },
-  contribWhat: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, marginTop: 1 },
-  statusPill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  statusText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 10,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
 
   badgeTile: { width: BADGE_TILE, alignItems: 'center', gap: 6 },
   badgeTileLocked: { opacity: 0.6 },
@@ -1365,30 +1276,6 @@ const styles = StyleSheet.create({
   },
 
   // Favourites
-  section: {
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 20,
-    color: COLORS.navy,
-    flex: 1,
-  },
-  sectionCount: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    color: COLORS.grey,
-    backgroundColor: '#e8ddd0',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
   center: {
     paddingVertical: 32,
     alignItems: 'center',
@@ -1454,16 +1341,6 @@ const styles = StyleSheet.create({
   },
 
   // Account section
-  accountSection: {
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  accountSectionTitle: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 20,
-    color: COLORS.navy,
-    marginBottom: 12,
-  },
   accountCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -1491,9 +1368,6 @@ const styles = StyleSheet.create({
   accountIconBadgeNavy: {
     backgroundColor: '#e8f0f2',
   },
-  accountIconBadgeRed: {
-    backgroundColor: '#fde8e8',
-  },
   accountIconBadgeOrange: {
     backgroundColor: '#fff5ee',
   },
@@ -1508,12 +1382,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.grey,
     maxWidth: SCREEN_WIDTH * 0.4,
-  },
-  signingOutIndicator: {
-    marginRight: 10,
-  },
-  accountLabelDanger: {
-    color: COLORS.red,
   },
   divider: {
     height: StyleSheet.hairlineWidth,
