@@ -1571,7 +1571,7 @@ const mob = StyleSheet.create({
   // Ko-fi footer (reuses the old account-row shape)
   kofiCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: 'hidden',
     marginHorizontal: 16,
     marginBottom: 4,
@@ -1748,7 +1748,7 @@ const desk = StyleSheet.create({
   // Profile card (name / email / stat pill)
   profileCard: {
     backgroundColor: 'white',
-    borderRadius: 16,
+    borderRadius: 18,
     marginTop: -50,
     paddingTop: 62,
     paddingHorizontal: 16,
@@ -1880,7 +1880,7 @@ const desk = StyleSheet.create({
   // Settings / Ko-fi cards (reuse the old account-row shape)
   kofiCard: {
     backgroundColor: 'white',
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: 'hidden',
     marginBottom: 12,
     shadowColor: '#000',

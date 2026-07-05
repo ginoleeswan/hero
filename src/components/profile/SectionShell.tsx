@@ -46,7 +46,7 @@ export function SectionShell({
 const styles = StyleSheet.create({
   shell: {
     backgroundColor: '#fff',
-    borderRadius: 22,
+    borderRadius: 20,
     paddingTop: 22,
     paddingBottom: 24,
     marginBottom: 20,
