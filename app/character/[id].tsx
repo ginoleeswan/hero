@@ -58,6 +58,11 @@ import { Skeleton } from '../../src/components/ui/Skeleton';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { AbilitiesSection } from '../../src/components/AbilitiesSection';
 import { TraitBand } from '../../src/components/character/TraitBand';
+import { PullQuoteBio } from '../../src/components/character/PullQuoteBio';
+import {
+  SignaturePowerTiles,
+  pickSignaturePowers,
+} from '../../src/components/character/SignaturePowers';
 import { DidYouKnowDeck } from '../../src/components/character/DidYouKnowDeck';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { FirstIssueModal } from '../../src/components/FirstIssueModal';
@@ -1107,33 +1112,18 @@ export default function CharacterScreen() {
                   </SkeletonProvider>
                 ) : data.details.summary || data.details.description ? (
                   <View style={styles.summaryBlock}>
-                    {data.details.summary ? (
-                      <Text style={styles.summary}>
-                        {data.details.summary}
-                        {'  '}
-                        <MaterialCommunityIcons
-                          name="pencil"
-                          size={14}
-                          color="rgba(41,60,67,0.5)"
-                          suppressHighlighting
-                          onPress={() =>
-                            setEditTarget({
-                              field: SUMMARY_FIELD,
-                              current: data.details.summary ?? null,
-                            })
-                          }
-                        />
-                      </Text>
-                    ) : null}
-                    {data.details.description ? (
-                      <TouchableOpacity
-                        style={styles.biographyLink}
-                        onPress={() => router.push(`/biography/${id}`)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.biographyLinkText}>Full biography →</Text>
-                      </TouchableOpacity>
-                    ) : null}
+                    <PullQuoteBio
+                      summary={data.details.summary ?? ''}
+                      accent={theme.accent}
+                      hasBiography={!!data.details.description}
+                      onReadMore={() => router.push(`/biography/${id}`)}
+                      onEdit={() =>
+                        setEditTarget({
+                          field: SUMMARY_FIELD,
+                          current: data.details.summary ?? null,
+                        })
+                      }
+                    />
                   </View>
                 ) : null}
               </View>
@@ -1223,9 +1213,20 @@ export default function CharacterScreen() {
                 </Section>
               </View>
 
-              {/* Abilities — power explainers fold in as the "Decoded" strip. The
-                  header pencil edits the whole list (one per line). */}
+              {/* Abilities — signature tier headlines (blurb-backed powers) above
+                  the categorized grid; header pencil edits the whole list. */}
               <View onLayout={registerAnchor('abilities')}>
+                {!comicVineLoading &&
+                pickSignaturePowers(data.details.powers, narrative?.powerExplainers ?? []).length >
+                  0 ? (
+                  <View style={styles.signatureWrap}>
+                    <SignaturePowerTiles
+                      powers={data.details.powers}
+                      explainers={narrative?.powerExplainers ?? []}
+                      accent={theme.accent}
+                    />
+                  </View>
+                ) : null}
                 <AbilitiesSection
                   powers={data.details.powers}
                   loading={comicVineLoading}
@@ -1923,21 +1924,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
 
-  // Summary
-  summaryBlock: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10 },
-  biographyLink: { alignSelf: 'flex-end', paddingTop: 10 },
-  biographyLinkText: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 13,
-    color: COLORS.orange,
-  },
-  summary: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 14,
-    color: COLORS.navy,
-    lineHeight: 22,
-    opacity: 0.85,
-  },
+  // Summary — wrapper gutter only; PullQuoteBio brings its own card + padding.
+  summaryBlock: { paddingHorizontal: 20, paddingVertical: 6 },
+  // Signature-power tiles above the abilities grid — same 20px section gutter.
+  signatureWrap: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8 },
 
   // Sections
   section: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
