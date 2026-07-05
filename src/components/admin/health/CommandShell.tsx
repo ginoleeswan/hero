@@ -19,7 +19,7 @@ import { Gauge } from './charts';
 import { type Alert } from './AlertStack';
 import { NotificationBell } from './NotificationBell';
 
-const CHROME_TOP = '#10242e'; // matches the retired Masthead gradient start
+export const CHROME_TOP = '#10242e'; // matches the retired Masthead gradient start
 
 // The 4 fixed mobile tabs (most-used). Everything else lives in the "More" sheet.
 const MOBILE_TABS: DomainKey[] = ['command', 'catalog', 'pipelines', 'traffic'];
@@ -277,7 +277,8 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   brandCol: { gap: 1 },
-  kicker: { fontFamily: 'Nunito_700Bold', fontSize: 10, letterSpacing: 2.2, color: COLORS.orange },
+  // 11px is the house floor for tracked uppercase kickers (colors.ts EYEBROW).
+  kicker: { fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 2, color: COLORS.orange },
   brand: { fontFamily: 'Flame-Regular', fontSize: 19, color: '#fff', lineHeight: 23 },
   topRight: { flexDirection: 'row', alignItems: 'center', gap: 12, zIndex: 100 },
   refresh: {
@@ -410,10 +411,11 @@ const styles = StyleSheet.create({
   },
   moreTitle: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 10.5,
+    // 11px + 0.6α: the tracked-uppercase size floor and text-on-ink contrast floor.
+    fontSize: 11,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.45)',
+    color: 'rgba(255,255,255,0.6)',
     paddingHorizontal: 12,
     paddingTop: 6,
     paddingBottom: 4,

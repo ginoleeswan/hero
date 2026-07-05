@@ -87,7 +87,7 @@ export function SourcesDomain({
   }
   const total = cov.total;
   return (
-    <Bento fill>
+    <Bento fill={!narrow}>
       <Bento.Row narrow={narrow} fill>
         <SourceCard
           icon="flash-outline"

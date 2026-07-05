@@ -193,7 +193,10 @@ export const primaryDomainKeys = (): DomainKey[] =>
 // ── Density scale (compact command-center spacing/sizing) ──────────────────────
 export const DENSITY = {
   panelPad: 12,
-  panelPadNarrow: 12,
+  // Mobile gets more inner breathing room than the dense desktop grid, so full-
+  // width content (bar lists, rows) doesn't run flush to the card edge and read
+  // as spilling out of the box.
+  panelPadNarrow: 18,
   radius: 12,
   gap: 10,
   rowH: 28,

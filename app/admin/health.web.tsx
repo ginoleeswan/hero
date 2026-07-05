@@ -24,7 +24,7 @@ import {
   METRICS,
   type DomainKey,
 } from '../../src/components/admin/health/format';
-import { CommandShell } from '../../src/components/admin/health/CommandShell';
+import { CommandShell, CHROME_TOP } from '../../src/components/admin/health/CommandShell';
 import { VitalsBar } from '../../src/components/admin/health/VitalsBar';
 import { type Alert } from '../../src/components/admin/health/AlertStack';
 import { CommandHome } from '../../src/components/admin/health/domains/CommandHome';
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 999,
-    backgroundColor: '#10242e',
+    backgroundColor: CHROME_TOP,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',

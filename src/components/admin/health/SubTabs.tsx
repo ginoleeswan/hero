@@ -38,6 +38,7 @@ export function SubTabs<T extends string>({
               <Ionicons name={t.icon} size={14} color={on ? '#fff' : 'rgba(255,255,255,0.65)'} />
             ) : null}
             <Text
+              numberOfLines={1}
               style={[styles.pillText, narrow && styles.pillTextNarrow, on && styles.pillTextOn]}
             >
               {t.label}
@@ -70,10 +71,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.07)',
   },
   // Mobile: slimmer pills (less padding, icons dropped in the view), allowed to
-  // shrink so all tabs fit one line.
-  pillNarrow: { paddingHorizontal: 9, paddingVertical: 6, gap: 4, flexShrink: 1 },
+  // shrink so all tabs fit one line, and tall enough to meet the 44pt touch floor.
+  pillNarrow: {
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    gap: 4,
+    flexShrink: 1,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
   pillOn: { backgroundColor: COLORS.orange },
-  pillText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: 'rgba(255,255,255,0.65)' },
+  // flexShrink lets the label give up width (with numberOfLines) so a long tab
+  // like "Distributions" truncates instead of pushing the no-wrap row off-screen.
+  pillText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.65)',
+    flexShrink: 1,
+  },
   pillTextNarrow: { fontSize: 12 },
   pillTextOn: { color: '#fff' },
   badge: {

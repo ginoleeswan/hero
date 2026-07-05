@@ -128,7 +128,7 @@ export function VitalsBar({
             <Pressable
               onPress={() => onStop(activeRun.id)}
               disabled={stopping || activeRun.cancel_requested}
-              style={s.stopBtn}
+              style={[s.stopBtn, narrow && s.stopBtnNarrow]}
             >
               {stopping ? (
                 <ActivityIndicator size="small" color="#fff" />
@@ -146,7 +146,7 @@ export function VitalsBar({
                 build
               </Text>
             </View>
-            <Pressable onPress={onStopBuild} style={s.stopBtn}>
+            <Pressable onPress={onStopBuild} style={[s.stopBtn, narrow && s.stopBtnNarrow]}>
               <Ionicons name="stop" size={11} color="#fff" />
               <Text style={s.stopText}>Stop</Text>
             </Pressable>
@@ -204,27 +204,32 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     gap: 14,
   },
-  // Mobile: one tight no-wrap row — 5 equal cells, no dividers, no sub-captions.
+  // Mobile: KPI cells wrap (3-then-2) once they'd be crammed below ~90px, so the
+  // dense strip never squeezes the numbers past legibility on the narrowest phones.
   barNarrow: {
-    flexWrap: 'nowrap',
+    flexWrap: 'wrap',
     columnGap: 8,
+    rowGap: 10,
     gap: 8,
     paddingVertical: 8,
     paddingHorizontal: 10,
   },
   cell: { gap: 2, minWidth: 80, justifyContent: 'center' },
   cellWide: { flex: 1, minWidth: 150 },
-  cellNarrow: { flex: 1, minWidth: 0, gap: 1 },
-  labelNarrow: { fontSize: 8.5, letterSpacing: 0.3 },
-  valueNarrow: { fontSize: 15, lineHeight: 17 },
+  cellNarrow: { flex: 1, minWidth: 90, gap: 1 },
+  // 10px is the legibility floor for tracked uppercase labels (see EYEBROW note in colors.ts).
+  labelNarrow: { fontSize: 10, letterSpacing: 0.4 },
+  // lineHeight ≥ 1.22× fontSize so clamped Flame values keep their descenders.
+  valueNarrow: { fontSize: 15, lineHeight: 19 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   label: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,
     letterSpacing: 0.8,
-    color: 'rgba(255,255,255,0.5)',
+    // 0.6α is the documented text-on-ink contrast floor (colors.ts INK_TEXT).
+    color: 'rgba(255,255,255,0.6)',
   },
-  value: { fontFamily: 'Flame-Regular', fontSize: 21, color: '#fff', lineHeight: 23 },
+  value: { fontFamily: 'Flame-Regular', fontSize: 21, color: '#fff', lineHeight: 26 },
   usage: { fontFamily: 'Flame-Regular', fontSize: 14, marginLeft: 'auto' },
   sub: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: 'rgba(255,255,255,0.45)' },
   dot: { width: 8, height: 8, borderRadius: 8 },
@@ -248,5 +253,7 @@ const s = StyleSheet.create({
     paddingVertical: 3,
     marginTop: 2,
   },
+  // Mobile: 44pt touch floor for a destructive action (kill a live run).
+  stopBtnNarrow: { minHeight: 44, paddingHorizontal: 14, justifyContent: 'center' },
   stopText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: '#fff' },
 });

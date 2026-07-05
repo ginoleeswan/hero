@@ -1,7 +1,14 @@
 // Command-center buttons. One home for the orange-primary / beige-ghost /
 // tinted-tone buttons (with optional icon + loading spinner) that every domain
 // was hand-rolling, plus a square icon-only button for toolbars and row actions.
-import { Pressable, Text, ActivityIndicator, StyleSheet, type ViewStyle } from 'react-native';
+import {
+  Pressable,
+  Text,
+  ActivityIndicator,
+  StyleSheet,
+  useWindowDimensions,
+  type ViewStyle,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
 
@@ -40,6 +47,8 @@ export function Button({
 }) {
   const t = TONE[tone];
   const off = disabled || loading;
+  // Mobile: enforce the 44pt touch-target floor (desktop stays compact for density).
+  const narrow = useWindowDimensions().width < 760;
   return (
     <Pressable
       onPress={onPress}
@@ -48,6 +57,7 @@ export function Button({
       style={[
         styles.base,
         size === 'sm' ? styles.sm : styles.md,
+        narrow && styles.touch,
         { backgroundColor: t.bg },
         off && styles.dim,
         style as ViewStyle,
@@ -82,12 +92,16 @@ export function IconButton({
   accessibilityLabel?: string;
   style?: ViewStyle | ViewStyle[];
 }) {
+  // Mobile: expand the tap area to the 44pt floor without inflating the visual box.
+  const narrow = useWindowDimensions().width < 760;
   const box = size === 'sm' ? 26 : 30;
+  const slop = narrow ? Math.max(0, Math.round((44 - box) / 2)) : 0;
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
       accessibilityLabel={accessibilityLabel}
+      hitSlop={slop}
       style={[
         styles.icon,
         { width: box, height: box },
@@ -105,6 +119,8 @@ const styles = StyleSheet.create({
   base: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   sm: { borderRadius: 9, paddingHorizontal: 11, paddingVertical: 6 },
   md: { borderRadius: 11, paddingHorizontal: 14, paddingVertical: 9 },
+  // Mobile touch floor — content stays centered within the taller box.
+  touch: { minHeight: 44 },
   label: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
   labelSm: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
   dim: { opacity: 0.4 },

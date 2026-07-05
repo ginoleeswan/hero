@@ -42,7 +42,19 @@ export function Panel({
   const { width } = useWindowDimensions();
   const narrow = width < 760;
   return (
-    <View style={[styles.panel, fill && styles.fill, style as ViewStyle]}>
+    <View
+      style={[
+        styles.panel,
+        narrow && styles.panelNarrow,
+        fill && styles.fill,
+        style as ViewStyle,
+        // Mobile stacks panels vertically, so any `flex`/`flex:1.5` a domain passes
+        // (for desktop side-by-side width ratios) must be neutralised — otherwise a
+        // flex-basis:0% panel gets sized by flex instead of its content and a tall
+        // list spills under the bottom padding. Applied AFTER `style` so it wins.
+        narrow && !fill && styles.panelStack,
+      ]}
+    >
       {(title || action) && (
         <View style={styles.head}>
           <View style={styles.headText}>
@@ -75,6 +87,11 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
   },
+  // Independently-tunable mobile card padding (wires DENSITY.panelPadNarrow so the
+  // token isn't dead — more generous than the dense desktop pad).
+  panelNarrow: { padding: DENSITY.panelPadNarrow },
+  // Mobile: size to content, ignoring desktop flex ratios (see call site).
+  panelStack: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto' },
   // Fill mode: stretch into the row's height (align-items: stretch) and clip, so
   // the body ScrollView can bound itself and scroll instead of growing the page.
   // A caller may override `flex` (e.g. flex: 1.5) via `style`; minHeight/overflow

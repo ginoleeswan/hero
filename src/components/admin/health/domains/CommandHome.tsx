@@ -94,7 +94,7 @@ export function CommandHome({
   const allClear = needsYou === 0 && failed === 0 && toEnrich === 0 && !overBudget;
 
   return (
-    <Bento fill>
+    <Bento fill={!narrow}>
       <Bento.Row narrow={narrow} fill>
         {/* Catalogue health — headline % + completeness trend */}
         <Panel
@@ -102,7 +102,7 @@ export function CommandHome({
           hint={`${h.total.toLocaleString()} heroes tracked`}
           style={s.flex15}
           action={
-            <Pressable onPress={() => onJump()} style={s.mini}>
+            <Pressable onPress={() => onJump()} style={[s.mini, narrow && s.miniNarrow]}>
               <Text style={s.miniText}>View coverage</Text>
               <Ionicons name="chevron-forward" size={13} color={COLORS.navy} />
             </Pressable>
@@ -116,7 +116,7 @@ export function CommandHome({
             <Pressable
               onPress={onSnapshot}
               disabled={snapshotting}
-              style={[s.mini, snapshotting && s.dim]}
+              style={[s.mini, narrow && s.miniNarrow, snapshotting && s.dim]}
             >
               {snapshotting ? (
                 <ActivityIndicator size="small" color={COLORS.navy} />
@@ -193,7 +193,7 @@ export function CommandHome({
           hint="Weakest metric · most-viewed first"
           style={s.flex15}
           action={
-            <Pressable onPress={() => onJump()} style={s.mini}>
+            <Pressable onPress={() => onJump()} style={[s.mini, narrow && s.miniNarrow]}>
               <Text style={s.miniText}>View all</Text>
               <Ionicons name="chevron-forward" size={13} color={COLORS.navy} />
             </Pressable>
@@ -275,7 +275,8 @@ const s = StyleSheet.create({
   },
   // Needs-attention rows
   atList: { gap: 4 },
-  atRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7 },
+  // paddingVertical 8 + 28px icon = 44pt tap target.
+  atRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
   atIcon: {
     width: 28,
     height: 28,
@@ -294,6 +295,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 5,
   },
+  // Mobile: meet the 44pt touch floor (desktop keeps the compact chip).
+  miniNarrow: { minHeight: 44, paddingHorizontal: 12, justifyContent: 'center' },
   miniText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   dim: { opacity: 0.4 },
   empty: { alignItems: 'center', gap: 6, paddingVertical: 22 },
@@ -304,7 +307,8 @@ const s = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 220,
   },
-  qRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 5 },
+  // paddingVertical 7 + 30px thumb = 44pt tap target.
+  qRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 7 },
   qInfo: { flex: 1, gap: 1 },
   qName: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
   qSub: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey },
