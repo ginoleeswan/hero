@@ -331,14 +331,13 @@ export default function WebProfileScreen() {
         new Set([...taste.franchises.map((f) => f.name), ...taste.tags.map((t) => t.label)]),
       ).slice(0, 8)
     : [];
-  const tasteInsight = taste
-    ? [
-        dominantAlignment(taste),
-        taste.publishers[0]?.name && shortPublisher(taste.publishers[0].name),
-      ]
-        .filter(Boolean)
-        .join(' · ')
-    : '';
+  // Two headline taste facets, shown as a structured readout in "Your Universe".
+  const tasteAlignment = taste ? dominantAlignment(taste) : null;
+  const tasteTopUniverse = taste?.publishers[0]?.name
+    ? shortPublisher(taste.publishers[0].name)
+    : null;
+  // Kept as a single joined string for the shareable universe card.
+  const tasteInsight = [tasteAlignment, tasteTopUniverse].filter(Boolean).join(' · ');
   const showTaste = !!taste && taste.basedOn > 0 && (!!tasteInsight || tasteChips.length > 0);
   const tasteFootnote = taste
     ? `Based on ${taste.basedOn} ${taste.basedOn === 1 ? 'hero' : 'heroes'} you've saved & viewed`
@@ -576,15 +575,31 @@ export default function WebProfileScreen() {
           {/* ── Your Universe ── */}
           {showTaste && (
             <SectionShell title="Your Universe" style={mob.shellGutter}>
-              {!!tasteInsight && <Text style={mob.tasteInsight}>{tasteInsight}</Text>}
+              <View style={mob.tasteReadout}>
+                {!!tasteAlignment && (
+                  <View style={mob.tasteFacet}>
+                    <Text style={mob.tasteFacetLabel}>Leans</Text>
+                    <Text style={mob.tasteFacetValue}>{tasteAlignment}</Text>
+                  </View>
+                )}
+                {!!tasteTopUniverse && (
+                  <View style={mob.tasteFacet}>
+                    <Text style={mob.tasteFacetLabel}>Top universe</Text>
+                    <Text style={mob.tasteFacetValue}>{tasteTopUniverse}</Text>
+                  </View>
+                )}
+              </View>
               {tasteChips.length > 0 && (
-                <View style={mob.tasteChipRow}>
-                  {tasteChips.map((c) => (
-                    <View key={c} style={mob.tasteChip}>
-                      <Text style={mob.tasteChipText}>{c}</Text>
-                    </View>
-                  ))}
-                </View>
+                <>
+                  <Text style={mob.tasteEyebrow}>Favourite franchises</Text>
+                  <View style={mob.tasteChipRow}>
+                    {tasteChips.map((c) => (
+                      <View key={c} style={mob.tasteChip}>
+                        <Text style={mob.tasteChipText}>{c}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
               )}
               <Text style={mob.tasteFootnote}>{tasteFootnote}</Text>
             </SectionShell>
@@ -920,15 +935,31 @@ export default function WebProfileScreen() {
 
             {showTaste && (
               <SectionShell title="Your Universe">
-                {!!tasteInsight && <Text style={desk.tasteInsight}>{tasteInsight}</Text>}
+                <View style={desk.tasteReadout}>
+                  {!!tasteAlignment && (
+                    <View style={desk.tasteFacet}>
+                      <Text style={desk.tasteFacetLabel}>Leans</Text>
+                      <Text style={desk.tasteFacetValue}>{tasteAlignment}</Text>
+                    </View>
+                  )}
+                  {!!tasteTopUniverse && (
+                    <View style={desk.tasteFacet}>
+                      <Text style={desk.tasteFacetLabel}>Top universe</Text>
+                      <Text style={desk.tasteFacetValue}>{tasteTopUniverse}</Text>
+                    </View>
+                  )}
+                </View>
                 {tasteChips.length > 0 && (
-                  <View style={desk.tasteChipRow}>
-                    {tasteChips.map((c) => (
-                      <View key={c} style={desk.tasteChip}>
-                        <Text style={desk.tasteChipText}>{c}</Text>
-                      </View>
-                    ))}
-                  </View>
+                  <>
+                    <Text style={desk.tasteEyebrow}>Favourite franchises</Text>
+                    <View style={desk.tasteChipRow}>
+                      {tasteChips.map((c) => (
+                        <View key={c} style={desk.tasteChip}>
+                          <Text style={desk.tasteChipText}>{c}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </>
                 )}
                 <Text style={desk.tasteFootnote}>{tasteFootnote}</Text>
               </SectionShell>
@@ -1264,13 +1295,38 @@ const mob = StyleSheet.create({
   },
 
   // Your Universe
-  tasteInsight: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 15,
-    lineHeight: 19,
-    color: COLORS.navy,
-    marginBottom: 12,
+  tasteReadout: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  tasteFacet: {
+    flex: 1,
+    backgroundColor: '#fbf3ea',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f0e2d0',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
+  tasteFacetLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 9.5,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: COLORS.grey,
+    marginBottom: 3,
+  } as object,
+  tasteFacetValue: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 17,
+    lineHeight: 22,
+    color: COLORS.navy,
+  },
+  tasteEyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10.5,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: COLORS.grey,
+    marginBottom: 9,
+  } as object,
   tasteChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tasteChip: {
     backgroundColor: '#fbf4ec',
@@ -1771,9 +1827,8 @@ const desk = StyleSheet.create({
   cardWrap: { borderRadius: 16, transition: 'transform 160ms ease' } as object,
   cardWrapHover: { transform: [{ translateY: -4 }] } as object,
   ghostTile: {
-    alignSelf: 'stretch',
-    minHeight: 200,
-    borderRadius: 16,
+    height: 180, // exact match to WebHeroCard's fixed card height
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: '#e3d5c1',
     borderStyle: 'dashed',
@@ -1788,13 +1843,38 @@ const desk = StyleSheet.create({
   ghostText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.orange },
   battleBlock: { marginBottom: 28, gap: 14 },
   // Your Universe
-  tasteInsight: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 16,
-    lineHeight: 20,
-    color: COLORS.navy,
-    marginBottom: 10,
+  tasteReadout: { flexDirection: 'row', gap: 10, marginBottom: 18 },
+  tasteFacet: {
+    flex: 1,
+    backgroundColor: '#fbf3ea',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#f0e2d0',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
   },
+  tasteFacetLabel: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: COLORS.grey,
+    marginBottom: 4,
+  } as object,
+  tasteFacetValue: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 19,
+    lineHeight: 24,
+    color: COLORS.navy,
+  },
+  tasteEyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: COLORS.grey,
+    marginBottom: 10,
+  } as object,
   tasteChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tasteChip: {
     backgroundColor: '#fbf4ec',
@@ -1805,7 +1885,12 @@ const desk = StyleSheet.create({
     borderColor: '#efe1cf',
   },
   tasteChipText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.navy },
-  tasteFootnote: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: COLORS.grey },
+  tasteFootnote: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 13,
+    color: COLORS.grey,
+    marginTop: 16,
+  },
   // Badges
   badgeHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   contribList: { gap: 8 },
@@ -1951,6 +2036,6 @@ const desk = StyleSheet.create({
 
 const deskGrid = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-  gap: 14,
+  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+  gap: 16,
 };
