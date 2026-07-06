@@ -87,6 +87,14 @@ export function HomeFooter({ heroCount, onNavigate }: HomeFooterProps) {
             <Text style={s.tagline as object}>
               Every universe, every icon — characters, teams and films from across all fiction.
             </Text>
+            <Pressable
+              onPress={() => onNavigate('/support')}
+              style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                [s.support, hovered && (s.supportHover as object)] as object
+              }
+            >
+              <Text style={s.supportText as object}>♥ Support Mythique — it’s free & ad-free</Text>
+            </Pressable>
           </View>
           <View style={[s.columns, !isDesktop && (s.columnsStack as object)] as object}>
             <LinkColumn title="Browse" links={BROWSE} onNavigate={onNavigate} />
@@ -157,6 +165,15 @@ const s = StyleSheet.create({
     lineHeight: 20,
     color: 'rgba(245,235,220,0.62)',
     marginTop: 16,
+  } as object,
+  support: { marginTop: 16, alignSelf: 'flex-start', transition: 'opacity 150ms ease' } as object,
+  supportHover: { opacity: 0.8 } as object,
+  supportText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 13,
+    color: COLORS.orange,
+    letterSpacing: 0.2,
+    cursor: 'pointer',
   } as object,
   columns: { flexDirection: 'row', gap: 64 },
   columnsStack: { gap: 40 } as object,

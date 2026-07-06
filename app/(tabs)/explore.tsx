@@ -481,7 +481,16 @@ export default function HomeScreen() {
           contentInsetAdjustmentBehavior="never"
           automaticallyAdjustContentInsets={false}
           contentContainerStyle={styles.content}
-          ListFooterComponent={<PaperSurface style={styles.footer} />}
+          ListFooterComponent={
+            <PaperSurface style={styles.footer}>
+              <Pressable
+                style={styles.supportPill}
+                onPress={() => router.push('/support' as Href)}
+              >
+                <Text style={styles.supportText}>♥ Support Mythique — it’s free &amp; ad-free</Text>
+              </Pressable>
+            </PaperSurface>
+          }
           scrollEventThrottle={16}
           onScroll={scrollHandler}
           initialNumToRender={3}
@@ -506,7 +515,16 @@ const styles = StyleSheet.create({
   // the spotlight.
   content: { flexGrow: 1, backgroundColor: COLORS.deepNavy, paddingBottom: 0 },
   // Beige paper tail so the bottom padding isn't a dark strip.
-  footer: { height: 120 },
+  footer: { minHeight: 120, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  supportPill: {
+    backgroundColor: '#fff',
+    borderRadius: 999,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderWidth: 1,
+    borderColor: '#f0e2d0',
+  },
+  supportText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: COLORS.orange },
   // Beige behind the bottom half — revealed on the bottom over-scroll bounce so
   // it never flashes the deep-navy root under the beige tail.
   bottomFill: {
