@@ -71,6 +71,76 @@ Everything lands in the git-ignored `out/social/` folder, each with a ready
 The matchup carousel is 4 slides: cover / hook, head to head, verdict + winner,
 fan vote + CTA.
 
+## Advertising vs organic
+
+There are **two tracks**, and they follow different rules:
+
+- **Organic** (the four generators above) — content for Mythique's own accounts.
+  The broadly-tolerated fan-content zone; **unrestricted** (uses AI portraits and,
+  as a fallback, the source ComicVine/IGDB image).
+- **Advertising** (`ads/`) — creative for anything you'd put **ad spend** behind
+  (paid social, paid UA, the website hero). This is commercial promotion, so it
+  runs through a strict, conservative **safety layer** and is **data-first** — it
+  leans on what's genuinely ours (catalogue scale, community votes, the fame
+  score, the design system), not on franchise characters.
+
+Design + rationale: `docs/superpowers/specs/2026-07-06-social-ad-safety-split-design.md`.
+
+### The safety layer — `safety.mjs`
+
+Single source of truth for what a character may show **in a paid ad**. Each hero
+gets a risk tier from its `publisher` (`S/A/B/C`, with per-character overrides):
+
+| Tier | In a paid ad… | Who |
+| --- | --- | --- |
+| **S** | nothing (name + data only) | Marvel, Disney, Nintendo/Pokémon, manga, DC-adjacent majors, HP, LOTR, Alien… |
+| **A** | stylized only (duotone) | DC Comics, Dark Horse, major game studios |
+| **B** | small raw portrait when data dominates | smaller / licensed publishers |
+| **C** | full-fidelity portrait | public-domain, non-fictional, Mythique-original |
+
+Hard invariants: unknown publisher → **Tier A** (never C); **ads never use the
+official-art fallback** (`safePortrait(hero, {context:'ad'})` emits your render or
+nothing); every ad slide carries the disclaimer footer. `matchup`/`ranking` are
+extra-conservative: **no franchise faces** — plates/names + data only.
+
+### Audit — what's in the catalogue
+
+```sh
+node scripts/social/audit-safety.mjs   # → out/social/safety-report.md
+```
+
+Classifies all ~35k heroes by tier, lists untiered publishers to review, and
+quantifies the safe-to-depict pool. Re-run after catalogue growth.
+
+### Ad generators — `ads/`
+
+```sh
+# Brand ads — six concepts, each a different facet of the app, zero character IP
+node scripts/social/ads/ad-brand.mjs --style constellation --size all
+#   --style scale | constellation | powerstats | versus | leaderboard | dossier | all
+#   --size  1x1 | 4x5 | 9x16 | 16x9 | og | all
+
+# Matchup — data-first "who would win" (community vote + stat tug-of-war, no faces)
+node scripts/social/ads/ad-matchup.mjs --matchup "Goku,Superman" --size all   # 1x1|4x5|9x16
+
+# Ranking — leaderboard on the fame score / a stat (names + rank countdown)
+node scripts/social/ads/ad-ranking.mjs --by fame --count 10 --size all
+#   --by fame | strength | speed | intelligence | durability | power | combat
+
+# Website hero + OG share card (left-aligned landing composition)
+node scripts/social/ads/ad-web-hero.mjs --size all   # 16x9 | og | wide
+```
+
+Shared: `ads/shell.mjs` (parametric `{w,h}` brand shell + disclaimer) and
+`ads/stylize.mjs` (zero-dep SVG duotone/poster/halftone). Everything lands in
+`out/social/ad-*/`.
+
+**The line not to cross:** paid ads that show a recognizable Tier-S face (even
+stylized). The safety layer is built to make that hard, but it's a judgment call —
+keep ad spend on the data-first material.
+
+Unit tests for the safety logic: `yarn test:social`.
+
 ## Posting
 
 - **Reels are silent by design.** Add a **trending sound** in-app; the cuts are
