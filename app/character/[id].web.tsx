@@ -36,6 +36,7 @@ import {
   SignaturePowerTiles,
   pickSignaturePowers,
 } from '../../src/components/character/SignaturePowers';
+import { SocialWebPreview } from '../../src/components/web/character/SocialWebPreview';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { MovieStrip } from '../../src/components/MovieStrip';
 import { groupTitlesByMedia } from '../../src/lib/db/titles';
@@ -1238,6 +1239,15 @@ export default function WebCharacterScreen() {
                             />
                           ) : null}
                         </View>
+                        <SocialWebPreview
+                          heroId={id}
+                          accent={theme.accent}
+                          onExplore={() =>
+                            router.push(
+                              `/character/${id}/universe` as Parameters<typeof router.push>[0],
+                            )
+                          }
+                        />
                         {affiliations.length ? (
                           <View style={styles.affGroup}>
                             <Text style={styles.chipGroupLabel}>Affiliations</Text>
@@ -2142,6 +2152,17 @@ export default function WebCharacterScreen() {
                           }
                         />
                       ) : null}
+                      <View style={styles.mSocialWeb}>
+                        <SocialWebPreview
+                          heroId={id}
+                          accent={theme.accent}
+                          onExplore={() =>
+                            router.push(
+                              `/character/${id}/universe` as Parameters<typeof router.push>[0],
+                            )
+                          }
+                        />
+                      </View>
                     </View>
                   </Reveal>
                 ) : null}
@@ -3616,6 +3637,7 @@ const styles = StyleSheet.create({
   },
   mStatFooterRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   mSection: { paddingTop: 18 },
+  mSocialWeb: { paddingHorizontal: 20, paddingTop: 8 },
   mSubBlock: { marginTop: 22 },
   // Padding for edge-to-edge rails (MovieStrip) so the featured card + decade
   // labels inset to 20 while the shelves still bleed out via bleedMargin.
