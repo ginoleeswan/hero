@@ -59,7 +59,7 @@ export function SocialWebSearch({
                     imageMdUrl={n.image_md_url}
                     grid
                     contentFit="cover"
-                    contentPosition={{ top: '-15%', left: '50%' }}
+                    contentPosition={{ top: '28%', left: '50%' }}
                     style={StyleSheet.absoluteFill}
                     recyclingKey={n.id}
                   />
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   } as object,
   input: {
     flex: 1,
-    fontFamily: 'Nunito_600SemiBold',
+    fontFamily: 'Nunito_700Bold',
     fontSize: 14,
     color: INK_TEXT.primary,
     outlineStyle: 'none',

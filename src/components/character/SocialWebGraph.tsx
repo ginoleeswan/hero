@@ -271,7 +271,7 @@ export function SocialWebGraph({
                   contentFit="cover"
                   // Shift the portrait up so the face (not the hair) fills the
                   // circle — negative top pulls the image up, revealing the chin.
-                  contentPosition={{ top: '-15%', left: '50%' }}
+                  contentPosition={{ top: '28%', left: '50%' }}
                   style={{ width: d, height: d }}
                   recyclingKey={n.id}
                 />

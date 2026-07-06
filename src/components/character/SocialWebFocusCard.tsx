@@ -55,7 +55,7 @@ export function SocialWebFocusCard({
           imageMdUrl={node.image_md_url}
           grid
           contentFit="cover"
-          contentPosition={{ top: '-15%', left: '50%' }}
+          contentPosition={{ top: '28%', left: '50%' }}
           style={StyleSheet.absoluteFill}
           recyclingKey={node.id}
         />
