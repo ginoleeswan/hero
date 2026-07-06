@@ -1734,6 +1734,11 @@ const CSS = `
   footer img { height:22px; opacity:0.7; }
   footer p { font-size:13px; color:var(--muted); }
   .footer-tag { font-size:12px; color:var(--muted); letter-spacing:0.5px; opacity:0.8; }
+  .footer-support {
+    font-size:13px; color:var(--muted); text-decoration:none;
+    transition:color 150ms;
+  }
+  .footer-support:hover { color:var(--teal); }
 
   /* Hero strip — mobile only */
   .hero-strip { display:none; }
@@ -2917,6 +2922,16 @@ export default function LandingPage({ dom: _dom }: { dom?: import('expo/dom').DO
           mythique
         </span>
         <span className="footer-tag">Know every icon. Settle every debate.</span>
+        <a
+          className="footer-support"
+          href="/support"
+          onClick={(e) => {
+            e.preventDefault();
+            router.push('/support');
+          }}
+        >
+          Support Mythique
+        </a>
         <p>© 2026 Mythique. All rights reserved.</p>
       </footer>
     </div>
