@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { tierOf, adImagery, tierAllowed, DISCLAIMER } from './safety.mjs';
+import { tierOf, adImagery, tierAllowed, filterPool, DISCLAIMER } from './safety.mjs';
 
 test('tierOf: per-character override wins over publisher', () => {
   assert.equal(tierOf({ id: 'ov1', publisher: 'Marvel' }), 'C'); // ov1 overridden to C below
@@ -40,4 +40,22 @@ test('tierAllowed: maxTier admits its tier and every less-risky one', () => {
 
 test('DISCLAIMER is the exact approved copy', () => {
   assert.equal(DISCLAIMER, 'Unofficial fan encyclopedia. Characters © their respective owners.');
+});
+
+test('filterPool: keeps only heroes no riskier than maxTier, above minFame', () => {
+  const rows = [
+    { id: 'm', publisher: 'Marvel', fame_score: 90 },           // S
+    { id: 'dc', publisher: 'DC Comics', fame_score: 80 },       // A
+    { id: 'cl', publisher: 'Company-Licensed', fame_score: 70 },// B
+    { id: 'pd', publisher: 'In the Public Domain', fame_score: 65 }, // C
+    { id: 'pdlow', publisher: 'In the Public Domain', fame_score: 5 }, // C, low fame
+  ];
+  const c = filterPool(rows, { maxTier: 'C', minFame: 40 }).map((h) => h.id);
+  assert.deepEqual(c, ['pd']); // only C-tier above fame 40
+
+  const b = filterPool(rows, { maxTier: 'B', minFame: 0 }).map((h) => h.id);
+  assert.deepEqual(b, ['cl', 'pd', 'pdlow']); // B and C tiers, any fame
+
+  const a = filterPool(rows, { maxTier: 'A', minFame: 0 }).map((h) => h.id);
+  assert.deepEqual(a, ['dc', 'cl', 'pd', 'pdlow']); // A, B, C — never S
 });

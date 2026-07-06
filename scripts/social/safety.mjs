@@ -1,6 +1,7 @@
 // Single source of truth for social-content IP risk. A hero's TIER (S/A/B/C)
 // governs what it may depict in a PAID AD. Organic posting is never restricted.
 // Design: docs/superpowers/specs/2026-07-06-social-ad-safety-split-design.md
+import { famousPool } from './lib.mjs';
 
 // Risk order, most → least restricted. Higher number = riskier to depict.
 export const TIER_RISK = { S: 3, A: 2, B: 1, C: 0 };
@@ -59,3 +60,16 @@ export function tierAllowed(tier, maxTier) {
 }
 
 export const DISCLAIMER = 'Unofficial fan encyclopedia. Characters © their respective owners.';
+
+// Pure: filter a hero array to those allowed at maxTier and at/above minFame.
+export function filterPool(rows, { maxTier = 'C', minFame = 0 } = {}) {
+  return rows.filter(
+    (h) => (h.fame_score ?? 0) >= minFame && tierAllowed(tierOf(h), maxTier),
+  );
+}
+
+// I/O: the top-famous pool, filtered to what an ad may select. Draws from
+// lib's famousPool (top-160 by fame_score, includes publisher).
+export async function safePool(sb, opts = {}) {
+  return filterPool(await famousPool(sb), opts);
+}
