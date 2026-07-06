@@ -20,26 +20,23 @@ export function useDonationNudge() {
     }
   }, []);
 
-  const syncMilestones = useCallback(
-    async (input: { tier: string; earnedBadgeIds: string[] }) => {
-      const sig = `${input.tier}|${[...input.earnedBadgeIds].sort().join(',')}`;
-      if (lastSig.current === sig) return;
-      lastSig.current = sig;
+  const syncMilestones = useCallback(async (input: { tier: string; earnedBadgeIds: string[] }) => {
+    const sig = `${input.tier}|${[...input.earnedBadgeIds].sort().join(',')}`;
+    if (lastSig.current === sig) return;
+    lastSig.current = sig;
 
-      const state = await loadPromptState();
-      const milestone = detectMilestone(
-        { lastSeenTier: state.lastSeenTier, seenBadgeIds: state.seenBadgeIds },
-        input,
-      );
-      // Always record the current baseline so a milestone only counts once.
-      await savePromptState({ lastSeenTier: input.tier, seenBadgeIds: input.earnedBadgeIds });
-      if (milestone && shouldPrompt(state, Date.now())) {
-        await savePromptState({ lastShownAt: Date.now() });
-        setVisible(true);
-      }
-    },
-    [],
-  );
+    const state = await loadPromptState();
+    const milestone = detectMilestone(
+      { lastSeenTier: state.lastSeenTier, seenBadgeIds: state.seenBadgeIds },
+      input,
+    );
+    // Always record the current baseline so a milestone only counts once.
+    await savePromptState({ lastSeenTier: input.tier, seenBadgeIds: input.earnedBadgeIds });
+    if (milestone && shouldPrompt(state, Date.now())) {
+      await savePromptState({ lastShownAt: Date.now() });
+      setVisible(true);
+    }
+  }, []);
 
   const onConvert = useCallback(() => {
     void savePromptState({ lastConvertedAt: Date.now() });

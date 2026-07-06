@@ -26,9 +26,14 @@ export const DEFAULT_STATE: DonationPromptState = {
 /** Very gentle: ≥30d since any show, ≥90d since a dismiss or convert. */
 export function shouldPrompt(state: DonationPromptState, now: number): boolean {
   const sinceShown = state.lastShownAt == null ? Infinity : now - state.lastShownAt;
-  const lastAction = Math.max(state.lastDismissedAt ?? -Infinity, state.lastConvertedAt ?? -Infinity);
+  const lastAction = Math.max(
+    state.lastDismissedAt ?? -Infinity,
+    state.lastConvertedAt ?? -Infinity,
+  );
   const sinceAction = lastAction === -Infinity ? Infinity : now - lastAction;
-  return sinceShown >= MIN_DAYS_BETWEEN_SHOWS * DAY && sinceAction >= BACKOFF_DAYS_AFTER_ACTION * DAY;
+  return (
+    sinceShown >= MIN_DAYS_BETWEEN_SHOWS * DAY && sinceAction >= BACKOFF_DAYS_AFTER_ACTION * DAY
+  );
 }
 
 /** Which new milestone fired (if any). Null-tier prev = first-run seed → never fires. */

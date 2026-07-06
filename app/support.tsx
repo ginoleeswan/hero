@@ -35,8 +35,8 @@ export default function SupportScreen() {
 
         <SectionShell title="Why support?">
           <Text style={styles.body}>
-            Mythique is a free, unofficial fan encyclopedia built by one person. No ads, no
-            paywall — just heroes. If it’s brought you a bit of joy, a coffee keeps it alive.
+            Mythique is a free, unofficial fan encyclopedia built by one person. No ads, no paywall
+            — just heroes. If it’s brought you a bit of joy, a coffee keeps it alive.
           </Text>
         </SectionShell>
 
@@ -77,7 +77,13 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 48,
   },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 16, marginLeft: -8 },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 16,
+    marginLeft: -8,
+  },
   backBtn: {
     width: 40,
     height: 40,

@@ -38,8 +38,8 @@ export default function WebSupportScreen() {
 
         <SectionShell title="Why support?">
           <Text style={styles.body}>
-            Mythique is a free, unofficial fan encyclopedia built by one person. No ads, no
-            paywall — just heroes. If it’s brought you a bit of joy, a coffee keeps it alive.
+            Mythique is a free, unofficial fan encyclopedia built by one person. No ads, no paywall
+            — just heroes. If it’s brought you a bit of joy, a coffee keeps it alive.
           </Text>
         </SectionShell>
 
@@ -89,7 +89,13 @@ const styles = StyleSheet.create({
     paddingTop: 92,
     paddingBottom: 48,
   } as object,
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 18, marginLeft: -8 },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 18,
+    marginLeft: -8,
+  },
   backBtn: {
     width: 40,
     height: 40,

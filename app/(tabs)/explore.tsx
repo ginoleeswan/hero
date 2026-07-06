@@ -483,10 +483,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.content}
           ListFooterComponent={
             <PaperSurface style={styles.footer}>
-              <Pressable
-                style={styles.supportPill}
-                onPress={() => router.push('/support' as Href)}
-              >
+              <Pressable style={styles.supportPill} onPress={() => router.push('/support' as Href)}>
                 <Text style={styles.supportText}>♥ Support Mythique — it’s free &amp; ad-free</Text>
               </Pressable>
             </PaperSurface>
