@@ -11,7 +11,6 @@ import {
   Alert,
   ActionSheetIOS,
   Platform,
-  Linking,
 } from 'react-native';
 import Svg, { Defs, Pattern, Circle, Rect, Path } from 'react-native-svg';
 import { LOGO_MASK_PATH as HERO_LOGO_PATH } from '../../src/constants/logo';
@@ -27,6 +26,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { useProfileData } from '../../src/hooks/useProfileData';
+import { openKofi } from '../../src/lib/support/kofi';
 import { EditDisplayNameModal } from '../../src/components/ui/EditDisplayNameModal';
 import { BadgeDetailModal } from '../../src/components/ui/BadgeDetailModal';
 import {
@@ -54,8 +54,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const THUMB_SIZE = (SCREEN_WIDTH - 32 - 48 - 16) / 3;
 // Badge tiles: 4 across inside the same panel (three 10px gaps).
 const BADGE_TILE = (SCREEN_WIDTH - 32 - 48 - 30) / 4;
-
-const KO_FI_URL = 'https://ko-fi.com/glstudio';
 
 function username(email: string) {
   return email.split('@')[0] ?? email;
@@ -230,7 +228,7 @@ function GuestProfileScreen() {
         <View style={styles.guestSection}>
           <TouchableOpacity
             style={styles.supportRow}
-            onPress={() => Linking.openURL(KO_FI_URL)}
+            onPress={openKofi}
             activeOpacity={0.7}
           >
             <View style={[styles.accountIconBadge, styles.accountIconBadgeOrange]}>
@@ -651,7 +649,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.accountCard}
-            onPress={() => Linking.openURL(KO_FI_URL)}
+            onPress={openKofi}
             activeOpacity={0.7}
           >
             <View style={styles.accountRow}>

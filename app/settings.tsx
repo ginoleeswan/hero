@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  Linking,
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,11 +15,10 @@ import { useAuth } from '../src/hooks/useAuth';
 import { useProfile } from '../src/hooks/useProfile';
 import { ChangePasswordModal } from '../src/components/ui/ChangePasswordModal';
 import { providerMeta } from '../src/lib/profile/provider';
+import { openKofi } from '../src/lib/support/kofi';
 import { COLORS } from '../src/constants/colors';
 import { Toast, useToast } from '../src/components/ui/Toast';
 import { SectionShell } from '../src/components/profile/SectionShell';
-
-const KO_FI_URL = 'https://ko-fi.com/glstudio';
 
 type RowTone = 'navy' | 'orange' | 'danger';
 
@@ -197,7 +195,7 @@ export default function SettingsScreen() {
             label="Support this project"
             value="Ko-fi"
             tone="orange"
-            onPress={() => Linking.openURL(KO_FI_URL)}
+            onPress={openKofi}
             chevron
           />
         </SectionShell>

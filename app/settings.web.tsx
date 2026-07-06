@@ -1,17 +1,16 @@
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert, Linking } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Redirect } from 'expo-router';
 import { useAuth } from '../src/hooks/useAuth';
 import { useProfile } from '../src/hooks/useProfile';
 import { ChangePasswordModal } from '../src/components/ui/ChangePasswordModal';
 import { providerMeta } from '../src/lib/profile/provider';
+import { openKofi } from '../src/lib/support/kofi';
 import { COLORS, SURFACE } from '../src/constants/colors';
 import { Toast, useToast } from '../src/components/ui/Toast';
 import { useScreenChrome } from '../src/hooks/useScreenChrome';
 import { SectionShell } from '../src/components/profile/SectionShell';
-
-const KO_FI_URL = 'https://ko-fi.com/glstudio';
 
 type RowTone = 'navy' | 'orange' | 'danger';
 
@@ -198,7 +197,7 @@ export default function WebSettingsScreen() {
             label="Support this project"
             value="Ko-fi"
             tone="orange"
-            onPress={() => Linking.openURL(KO_FI_URL)}
+            onPress={openKofi}
             chevron
           />
         </SectionShell>

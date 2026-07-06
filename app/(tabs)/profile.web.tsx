@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   Alert,
   useWindowDimensions,
-  Linking,
 } from 'react-native';
 import { EditDisplayNameModal } from '../../src/components/ui/EditDisplayNameModal';
 import { BadgeDetailModal } from '../../src/components/ui/BadgeDetailModal';
@@ -24,6 +23,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { useProfileData } from '../../src/hooks/useProfileData';
+import { openKofi } from '../../src/lib/support/kofi';
 import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
 import { computeBadges, earnedCount, type Badge } from '../../src/lib/profile/badges';
@@ -39,8 +39,6 @@ import { COLORS, SURFACE, SEAM_COLOR } from '../../src/constants/colors';
 import { Toast, useToast } from '../../src/components/ui/Toast';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import Svg, { Path } from 'react-native-svg';
-
-const KO_FI_URL = 'https://ko-fi.com/glstudio';
 
 const SIDEBAR_BREAKPOINT = 640;
 
@@ -110,7 +108,7 @@ function GuestWebProfileScreen() {
 
       <View style={guest.kofiCard}>
         <Pressable
-          onPress={() => Linking.openURL(KO_FI_URL)}
+          onPress={openKofi}
           style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
             [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
           }
@@ -778,7 +776,7 @@ export default function WebProfileScreen() {
 
           <View style={mob.kofiCard}>
             <Pressable
-              onPress={() => Linking.openURL(KO_FI_URL)}
+              onPress={openKofi}
               style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                 [mob.accountRow, hovered && (mob.accountRowHover as object)] as object
               }
@@ -977,7 +975,7 @@ export default function WebProfileScreen() {
             {/* Ko-fi footer */}
             <View style={desk.kofiCard}>
               <Pressable
-                onPress={() => Linking.openURL(KO_FI_URL)}
+                onPress={openKofi}
                 style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
                   [desk.accountRow, hovered && (desk.accountRowHover as object)] as object
                 }
