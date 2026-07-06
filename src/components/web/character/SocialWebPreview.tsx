@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getHeroNeighborhood } from '../../../lib/db/heroes/neighborhood';
-import { SocialWebGraph } from './SocialWebGraph';
+import { SocialWebGraph } from '../../character/SocialWebGraph';
 
 // Compact, calm social-web preview below the relationship shelves. Fetches a
 // small neighbourhood; the whole band taps through to the full-screen explorer.
