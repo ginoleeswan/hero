@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SURFACE } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { getHeroNeighborhood } from '../../src/lib/db/heroes/neighborhood';
-import { SocialWebGraph } from '../../src/components/web/character/SocialWebGraph';
+import { SocialWebGraph } from '../../src/components/character/SocialWebGraph';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 
