@@ -8,6 +8,7 @@ import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { getHeroNeighborhood } from '../../src/lib/db/heroes/neighborhood';
 import { SocialWebGraph } from '../../src/components/web/character/SocialWebGraph';
 import { deriveCharacterTheme } from '../../src/lib/accent';
+import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 
 export default function SocialWebExplorer() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -30,7 +31,8 @@ export default function SocialWebExplorer() {
     [focusNode],
   );
 
-  const size = Math.min(width, height - 140);
+  // Fit within the space left by the TopBar clearance, header, and hint row.
+  const size = Math.max(280, Math.min(width - 32, height - TOPBAR_HEIGHT - 180));
 
   return (
     <View style={styles.screen}>
@@ -87,9 +89,11 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 16,
     paddingHorizontal: 16,
-    paddingTop: 12,
+    // Clear the transparent global TopBar (every web route bleeds under it).
+    paddingTop: TOPBAR_HEIGHT + 14,
     paddingBottom: 8,
   },
   back: { padding: 6 },
