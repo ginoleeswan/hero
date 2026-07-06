@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,8 @@ import {
   type GettingStartedStep,
 } from '../../src/components/ui/GettingStartedCard';
 import { useUniverseShareImage } from '../../src/hooks/useUniverseShareImage';
+import { useDonationNudge } from '../../src/hooks/useDonationNudge';
+import { DonateNudge } from '../../src/components/support/DonateNudge';
 import { removeFavourite, type FavouriteHero } from '../../src/lib/db/favourites';
 import { dominantAlignment, shortPublisher } from '../../src/lib/db/taste';
 import { computeBadges, earnedCount, type Badge } from '../../src/lib/profile/badges';
@@ -358,6 +360,17 @@ export default function ProfileScreen() {
   };
   const tier = fanTier(tierInput);
   const tierProg = tierProgress(tierInput);
+
+  const nudge = useDonationNudge();
+  useEffect(() => {
+    if (loading) return;
+    void nudge.syncMilestones({
+      tier: tier.name,
+      earnedBadgeIds: badges.filter((b) => b.earned).map((b) => b.id),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, tier.name, badges]);
+
   const profileStats = buildProfileStats({
     savedCount: favourites.length,
     favouritesLoading: loading,
@@ -389,6 +402,7 @@ export default function ProfileScreen() {
     const result = await shareUniverse();
     if (result === 'error') showToast('Could not create your card');
     else if (result === 'unsupported') showToast('Sharing not available');
+    else void nudge.requestNudge('share');
   };
 
   // Onboarding checklist — disappears once every step is complete. Hold it back
@@ -837,6 +851,7 @@ export default function ProfileScreen() {
       <BadgeDetailModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
       {universeCard}
       <Toast message={toast.message} visible={toast.visible} />
+      <DonateNudge visible={nudge.visible} onConvert={nudge.onConvert} onDismiss={nudge.onDismiss} />
     </View>
   );
 }

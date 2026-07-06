@@ -15,6 +15,8 @@ import {
   type GettingStartedStep,
 } from '../../src/components/ui/GettingStartedCard';
 import { useUniverseShareImage } from '../../src/hooks/useUniverseShareImage';
+import { useDonationNudge } from '../../src/hooks/useDonationNudge';
+import { DonateNudge } from '../../src/components/support/DonateNudge';
 import { LOGO_MASK_PATH as HERO_LOGO_PATH } from '../../src/constants/logo';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -362,6 +364,16 @@ export default function WebProfileScreen() {
   const tier = fanTier(tierInput);
   const tierProg = tierProgress(tierInput);
 
+  const nudge = useDonationNudge();
+  useEffect(() => {
+    if (loading) return;
+    void nudge.syncMilestones({
+      tier: tier.name,
+      earnedBadgeIds: badges.filter((b) => b.earned).map((b) => b.id),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, tier.name, badges]);
+
   const profileStats = buildProfileStats({
     savedCount: favourites.length,
     favouritesLoading: loading,
@@ -393,7 +405,10 @@ export default function WebProfileScreen() {
   const handleShareUniverse = async () => {
     const result = await shareUniverse();
     if (result === 'error') showToast('Could not create your card');
-    else if (result === 'downloaded') showToast('Saved your universe card');
+    else {
+      if (result === 'downloaded') showToast('Saved your universe card');
+      void nudge.requestNudge('share'); // 'shared' | 'downloaded'
+    }
   };
 
   // Onboarding checklist — disappears once every step is complete. Hold it back
@@ -805,6 +820,7 @@ export default function WebProfileScreen() {
         <BadgeDetailModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
         {universeCard}
         <Toast message={toast.message} visible={toast.visible} />
+        <DonateNudge visible={nudge.visible} onConvert={nudge.onConvert} onDismiss={nudge.onDismiss} />
       </View>
     );
   }
@@ -1173,6 +1189,7 @@ export default function WebProfileScreen() {
       <BadgeDetailModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
       {universeCard}
       <Toast message={toast.message} visible={toast.visible} />
+      <DonateNudge visible={nudge.visible} onConvert={nudge.onConvert} onDismiss={nudge.onDismiss} />
     </View>
   );
 }
