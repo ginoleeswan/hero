@@ -1,8 +1,119 @@
-import { Redirect, useLocalSearchParams } from 'expo-router';
+import { useState, useMemo } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SURFACE, INK_TEXT } from '../../src/constants/colors';
+import { getHeroNeighborhood } from '../../src/lib/db/heroes/neighborhood';
+import { SocialWebCanvas } from '../../src/components/character/SocialWebCanvas';
+import { deriveCharacterTheme } from '../../src/lib/accent';
 
-// Native placeholder — the interactive social-web explorer is a web feature for
-// now; native falls back to the character dossier until its own explorer pass.
-export default function SocialWebNative() {
+export default function SocialWebExplorerNative() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  return <Redirect href={`/character/${id}`} />;
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  const [focusSubject, setFocusSubject] = useState<string>(id);
+  const { data } = useQuery({
+    queryKey: ['neighborhood', focusSubject, 24],
+    queryFn: () => getHeroNeighborhood(focusSubject, 24),
+    staleTime: 5 * 60 * 1000,
+  });
+  const subjectNode = data?.nodes.find((n) => n.id === focusSubject);
+  const theme = useMemo(
+    () => deriveCharacterTheme({ publisher: subjectNode?.publisher ?? null }),
+    [subjectNode],
+  );
+  const sparse = data && data.nodes.length < 3;
+
+  return (
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
+        <Pressable
+          onPress={() => (router.canGoBack() ? router.back() : router.replace(`/character/${id}`))}
+          style={styles.back}
+        >
+          <Ionicons name="arrow-back" size={22} color={INK_TEXT.primary} />
+        </Pressable>
+        <Text style={styles.title} numberOfLines={1}>
+          {subjectNode ? `${subjectNode.name}'s universe` : 'Universe'}
+        </Text>
+      </View>
+      <View style={styles.legendRow}>
+        <Legend color={COLORS.red} label="Enemy" />
+        <Legend color={COLORS.green} label="Ally" />
+        <Legend color={COLORS.blue} label="Team" />
+      </View>
+
+      {data && !sparse ? (
+        <SocialWebCanvas
+          neighborhood={data}
+          subjectId={focusSubject}
+          accent={theme.accent}
+          onNavigate={(nodeId) =>
+            router.push(`/character/${nodeId}` as Parameters<typeof router.push>[0])
+          }
+          onRecenter={(nodeId) => setFocusSubject(nodeId)}
+        />
+      ) : (
+        <View style={styles.empty}>
+          <Text style={styles.emptyText}>
+            {sparse ? 'Not enough connections to map yet.' : 'Mapping the universe…'}
+          </Text>
+        </View>
+      )}
+
+      <Text style={[styles.hint, { paddingBottom: insets.bottom + 12 }] as object}>
+        Tap to focus · long-press to recenter · Open to visit
+      </Text>
+    </View>
+  );
 }
+
+function Legend({ color, label }: { color: string; label: string }) {
+  return (
+    <View style={styles.legendItem}>
+      <View style={[styles.dot, { backgroundColor: color }]} />
+      <Text style={styles.legendText}>{label}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: SURFACE.ink },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingTop: 8,
+  },
+  back: { padding: 6 },
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 22,
+    lineHeight: 28,
+    color: INK_TEXT.primary,
+    flex: 1,
+  } as object,
+  legendRow: {
+    flexDirection: 'row',
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 4,
+  },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  legendText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: INK_TEXT.muted },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  emptyText: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: INK_TEXT.faint },
+  hint: {
+    textAlign: 'center',
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11,
+    color: INK_TEXT.faint,
+    paddingTop: 8,
+  },
+});
