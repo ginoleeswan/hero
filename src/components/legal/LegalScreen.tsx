@@ -18,9 +18,13 @@ export function LegalScreen({ doc }: { doc: LegalDoc }) {
   const isWeb = Platform.OS === 'web';
   const topPad = (isWeb ? WEB_NAV_CLEARANCE : insets.top) + 12;
 
-  // Web: document scroll so the beige page bleeds under the iOS Safari toolbar.
-  // No-op on native.
-  useScreenChrome({ top: SURFACE.paper, canvas: SURFACE.paper });
+  // Top edge is deep-navy (matching every other page) so the iOS Safari
+  // status-bar strip and the web nav read dark — never a beige status bar that
+  // blends into the system UI. The canvas stays beige: the body content is
+  // unchanged and scrolling to the bottom shows beige, never a dark peek-through.
+  // Web-only (document scroll also lets the page bleed under the iOS Safari
+  // toolbar); no-op on native.
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
 
   const content = (
     <>
