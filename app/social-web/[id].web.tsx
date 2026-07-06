@@ -29,6 +29,7 @@ export default function SocialWebExplorer() {
     [subjectNode],
   );
 
+  const [activeKinds, setActiveKinds] = useState({ enemy: true, ally: true, teammate: true });
   const [focusId, setFocusId] = useState<string | null>(null);
   const focusNode = (focusId && data?.nodes.find((n) => n.id === focusId)) || null;
   const focusKind = focusNode ? subjectKind(data!.edges, focusSubject, focusNode.id) : null;
@@ -66,9 +67,24 @@ export default function SocialWebExplorer() {
           {subjectNode ? `${subjectNode.name}'s universe` : 'Universe'}
         </Text>
         <View style={styles.legend}>
-          <Legend color={COLORS.red} label="Enemy" />
-          <Legend color={COLORS.green} label="Ally" />
-          <Legend color={COLORS.blue} label="Team" />
+          <Legend
+            color={COLORS.red}
+            label="Enemy"
+            active={activeKinds.enemy}
+            onToggle={() => setActiveKinds((k) => ({ ...k, enemy: !k.enemy }))}
+          />
+          <Legend
+            color={COLORS.green}
+            label="Ally"
+            active={activeKinds.ally}
+            onToggle={() => setActiveKinds((k) => ({ ...k, ally: !k.ally }))}
+          />
+          <Legend
+            color={COLORS.blue}
+            label="Team"
+            active={activeKinds.teammate}
+            onToggle={() => setActiveKinds((k) => ({ ...k, teammate: !k.teammate }))}
+          />
         </View>
       </View>
 
@@ -80,6 +96,7 @@ export default function SocialWebExplorer() {
           focusId={focusId}
           onFocusChange={setFocusId}
           sharedIds={sharedIds}
+          activeKinds={activeKinds}
           onRecenter={(nodeId) => {
             setFocusSubject(nodeId);
             setFocusId(null);
@@ -112,12 +129,31 @@ export default function SocialWebExplorer() {
   );
 }
 
-function Legend({ color, label }: { color: string; label: string }) {
+function Legend({
+  color,
+  label,
+  active,
+  onToggle,
+}: {
+  color: string;
+  label: string;
+  active: boolean;
+  onToggle: () => void;
+}) {
   return (
-    <View style={styles.legendItem}>
-      <View style={[styles.dot, { backgroundColor: color }]} />
-      <Text style={styles.legendText}>{label}</Text>
-    </View>
+    <Pressable style={styles.legendItem} onPress={onToggle}>
+      <View
+        style={[
+          styles.dot,
+          {
+            backgroundColor: active ? color : 'transparent',
+            borderWidth: active ? 0 : 1.5,
+            borderColor: color,
+          },
+        ]}
+      />
+      <Text style={[styles.legendText, !active && { opacity: 0.4 }] as object}>{label}</Text>
+    </Pressable>
   );
 }
 

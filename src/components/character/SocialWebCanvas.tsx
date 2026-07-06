@@ -22,6 +22,7 @@ export function SocialWebCanvas({
   onFocusChange,
   onRecenter,
   sharedIds,
+  activeKinds,
 }: {
   neighborhood: Neighborhood;
   subjectId: string;
@@ -30,6 +31,7 @@ export function SocialWebCanvas({
   onFocusChange: (id: string | null) => void;
   onRecenter: (id: string) => void;
   sharedIds?: Set<string>;
+  activeKinds?: { enemy: boolean; ally: boolean; teammate: boolean };
 }) {
   const [vp, setVp] = useState({ w: 0, h: 0 });
 
@@ -126,6 +128,7 @@ export function SocialWebCanvas({
             size={GRAPH}
             focusId={focusId}
             sharedIds={sharedIds}
+            activeKinds={activeKinds}
             onNodePress={(id) => onFocusChange(focusId === id ? null : id)}
             onNodeLongPress={(id) => onRecenter(id)}
           />

@@ -36,6 +36,7 @@ export function SocialWebGraph({
   size,
   focusId = null,
   sharedIds,
+  activeKinds,
   onNodePress,
   onNodeLongPress,
 }: {
@@ -45,9 +46,11 @@ export function SocialWebGraph({
   size: number;
   focusId?: string | null;
   sharedIds?: Set<string>;
+  activeKinds?: { enemy: boolean; ally: boolean; teammate: boolean };
   onNodePress?: (id: string) => void;
   onNodeLongPress?: (id: string) => void;
 }) {
+  const kinds = activeKinds ?? { enemy: true, ally: true, teammate: true };
   const { nodes, edges } = neighborhood;
   const positions = useMemo(
     () =>
@@ -119,6 +122,7 @@ export function SocialWebGraph({
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
         {edges.map((e, i) => {
+          if (!kinds[e.kind]) return null;
           const a = at(e.from);
           const b = at(e.to);
           const lit = isEdgeLit(e, focusId);
@@ -173,6 +177,8 @@ export function SocialWebGraph({
         const kind = n.is_subject ? null : subjectKind(edges, subjectId, n.id);
         const ring = n.is_subject ? accent : kind ? KIND_COLOR[kind] : COLORS.grey;
         const lit = isNodeLit(n.id, focusId, connected);
+        // A node whose only tie to the subject is a filtered-out kind fades away.
+        const filtered = kind ? !kinds[kind] : false;
         // entrance: lerp from centre outward
         const ex = cx + (p.x - cx) * entrance;
         const ey = cy + (p.y - cy) * entrance;
@@ -191,11 +197,11 @@ export function SocialWebGraph({
                   top: ey - d / 2,
                   width: d,
                   height: d,
-                  opacity: lit ? entrance : 0.2 * entrance,
+                  opacity: filtered ? 0.15 * entrance : lit ? entrance : 0.2 * entrance,
                 },
               ] as object
             }
-            pointerEvents="box-none"
+            pointerEvents={filtered ? 'none' : 'box-none'}
           >
             {/* halo */}
             {n.is_subject ? (
