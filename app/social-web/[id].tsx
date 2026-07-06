@@ -46,6 +46,12 @@ export default function SocialWebExplorerNative() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      {/* Full-screen nebula behind the chrome while the neighbourhood loads */}
+      {!data ? (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <NebulaLoader />
+        </View>
+      ) : null}
       <View style={styles.header}>
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.replace(`/character/${id}`))}
@@ -98,7 +104,7 @@ export default function SocialWebExplorerNative() {
           <Text style={styles.emptyText}>Not enough connections to map yet.</Text>
         </View>
       ) : (
-        <NebulaLoader />
+        <View style={{ flex: 1 }} />
       )}
 
       {data && !sparse ? (

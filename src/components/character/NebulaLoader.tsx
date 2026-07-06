@@ -31,11 +31,13 @@ function mulberry32(seed: number) {
 
 // Nebula clouds as fractions of the viewport; layer 0 = back (dim/slow), 1 = front.
 const CLOUDS = [
-  { x: 0.32, y: 0.34, r: 0.42, c: '#3a2b8f', o: 0.42, layer: 0 }, // indigo
-  { x: 0.7, y: 0.3, r: 0.34, c: '#6d2f8f', o: 0.4, layer: 0 }, // violet
-  { x: 0.55, y: 0.6, r: 0.46, c: '#b0338f', o: 0.5, layer: 1 }, // magenta
-  { x: 0.26, y: 0.64, r: 0.32, c: '#2f7f8f', o: 0.44, layer: 1 }, // teal
-  { x: 0.8, y: 0.62, r: 0.28, c: '#b0556f', o: 0.4, layer: 1 }, // rose
+  { x: 0.22, y: 0.3, r: 0.5, c: '#3a2b8f', o: 0.4, layer: 0 }, // indigo
+  { x: 0.74, y: 0.26, r: 0.44, c: '#6d2f8f', o: 0.38, layer: 0 }, // violet
+  { x: 0.5, y: 0.52, r: 0.62, c: '#4a1f96', o: 0.3, layer: 0 }, // deep central wash
+  { x: 0.58, y: 0.62, r: 0.46, c: '#b0338f', o: 0.48, layer: 1 }, // magenta
+  { x: 0.24, y: 0.66, r: 0.36, c: '#2f7f8f', o: 0.42, layer: 1 }, // teal
+  { x: 0.82, y: 0.6, r: 0.32, c: '#b0556f', o: 0.4, layer: 1 }, // rose
+  { x: 0.4, y: 0.22, r: 0.26, c: '#c86bb0', o: 0.34, layer: 1 }, // pink highlight
 ];
 
 const OVERSCAN = 48; // layers extend past the viewport so drift never bares an edge
@@ -47,11 +49,11 @@ function CloudLayer({ layer, w, h }: { layer: number; w: number; h: number }) {
   const rng = useMemo(() => mulberry32(layer === 0 ? 1337 : 7331), [layer]);
   const stars = useMemo(
     () =>
-      Array.from({ length: layer === 0 ? 22 : 34 }, () => ({
+      Array.from({ length: layer === 0 ? 34 : 52 }, () => ({
         x: rng() * W,
         y: rng() * H,
-        r: 0.5 + rng() * (layer === 0 ? 0.9 : 1.3),
-        o: 0.25 + rng() * (layer === 0 ? 0.35 : 0.6),
+        r: 0.4 + rng() * (layer === 0 ? 0.9 : 1.4),
+        o: 0.22 + rng() * (layer === 0 ? 0.35 : 0.62),
       })),
     [rng, W, H, layer],
   );
@@ -152,6 +154,10 @@ export function NebulaLoader({ label = 'Mapping the universe…' }: { label?: st
           {/* core + rings + vignette (static position) */}
           <Svg width={vp.w} height={vp.h} style={StyleSheet.absoluteFill} pointerEvents="none">
             <Defs>
+              <RadialGradient id="galaxy" cx="50%" cy="50%" r="50%">
+                <Stop offset="0%" stopColor="#c9a8ff" stopOpacity={0.28} />
+                <Stop offset="100%" stopColor="#c9a8ff" stopOpacity={0} />
+              </RadialGradient>
               <RadialGradient id="core" cx="50%" cy="50%" r="50%">
                 <Stop offset="0%" stopColor="#fbeede" stopOpacity={0.95} />
                 <Stop offset="100%" stopColor="#fbeede" stopOpacity={0} />
@@ -162,6 +168,7 @@ export function NebulaLoader({ label = 'Mapping the universe…' }: { label?: st
                 <Stop offset="100%" stopColor={SURFACE.ink} stopOpacity={1} />
               </RadialGradient>
             </Defs>
+            <Circle cx={cx} cy={cy} r={Math.max(vp.w, vp.h) * 0.28} fill="url(#galaxy)" />
             <Circle cx={cx} cy={cy} r={22} fill="url(#core)" />
             <Circle cx={cx} cy={cy} r={3} fill="#fff7ec" />
             <AnimatedCircle

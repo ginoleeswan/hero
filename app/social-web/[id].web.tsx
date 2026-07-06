@@ -59,6 +59,12 @@ export default function SocialWebExplorer() {
           ] as object
         }
       />
+      {/* Full-screen nebula behind the chrome while the neighbourhood loads */}
+      {!data ? (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <NebulaLoader />
+        </View>
+      ) : null}
       <View style={styles.header}>
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
@@ -111,7 +117,9 @@ export default function SocialWebExplorer() {
           <Text style={styles.emptyText}>Not enough connections to map yet.</Text>
         </View>
       ) : (
-        <NebulaLoader />
+        // Loading: a flex spacer holds the header up / hint down; the nebula
+        // itself is a full-screen layer behind the chrome (rendered below).
+        <View style={{ flex: 1 }} />
       )}
 
       {data && !sparse ? (
