@@ -193,6 +193,12 @@ export default function WebSettingsScreen() {
             Mythique is a free, unofficial fan project. If you enjoy it, a coffee keeps it going.
           </Text>
           <SettingRow
+            icon="information-circle-outline"
+            label="About supporting"
+            onPress={() => router.push('/support')}
+            chevron
+          />
+          <SettingRow
             icon="heart-outline"
             label="Support this project"
             value="Ko-fi"
