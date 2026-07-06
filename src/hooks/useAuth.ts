@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
@@ -27,6 +27,25 @@ export function useAuth(): AuthState {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Declared before the auth-state effect that calls it (stable identity so the
+  // subscription doesn't re-bind). Merges Google OAuth metadata into the profile.
+  const syncGoogleProfile = useCallback(async (user: User) => {
+    try {
+      const meta = user.user_metadata ?? {};
+      const existing = await getProfile(user.id);
+      const supabaseHost = process.env.EXPO_PUBLIC_SUPABASE_URL?.replace('https://', '') ?? '';
+      const hasOwnAvatar = !!existing?.avatar_url?.includes(supabaseHost);
+      await upsertProfile(user.id, {
+        display_name: (meta.full_name as string | undefined) ?? existing?.display_name ?? undefined,
+        avatar_url: hasOwnAvatar
+          ? existing!.avatar_url!
+          : ((meta.avatar_url as string | undefined) ?? existing?.avatar_url ?? undefined),
+      });
+    } catch {
+      // non-fatal — profile sync failure shouldn't block sign-in
+    }
+  }, []);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -50,7 +69,7 @@ export function useAuth(): AuthState {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [syncGoogleProfile]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -71,23 +90,6 @@ export function useAuth(): AuthState {
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     return { error };
-  };
-
-  const syncGoogleProfile = async (user: User) => {
-    try {
-      const meta = user.user_metadata ?? {};
-      const existing = await getProfile(user.id);
-      const supabaseHost = process.env.EXPO_PUBLIC_SUPABASE_URL?.replace('https://', '') ?? '';
-      const hasOwnAvatar = !!existing?.avatar_url?.includes(supabaseHost);
-      await upsertProfile(user.id, {
-        display_name: (meta.full_name as string | undefined) ?? existing?.display_name ?? undefined,
-        avatar_url: hasOwnAvatar
-          ? existing!.avatar_url!
-          : ((meta.avatar_url as string | undefined) ?? existing?.avatar_url ?? undefined),
-      });
-    } catch {
-      // non-fatal — profile sync failure shouldn't block sign-in
-    }
   };
 
   const syncAppleProfile = async (
@@ -120,6 +122,7 @@ export function useAuth(): AuthState {
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- native-only module, loaded lazily off the web path
       const { GoogleSignin } = require('@react-native-google-signin/google-signin');
       await GoogleSignin.hasPlayServices();
       const { data: googleData } = await GoogleSignin.signIn();
@@ -146,6 +149,7 @@ export function useAuth(): AuthState {
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- iOS-only native module, loaded lazily off the web path
       const AppleAuthentication = require('expo-apple-authentication');
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [

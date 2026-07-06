@@ -205,6 +205,8 @@ export default function WebSearchScreen() {
   }, []);
   useEffect(() => {
     if (!user?.id) {
+      // Signed-out: no history. Effect-based fetch (pre-React-Query).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRecentlyViewed([]);
       return;
     }
@@ -263,6 +265,8 @@ export default function WebSearchScreen() {
   // loads + initial paint without virtualisation machinery. Resets per result set.
   const [visibleCount, setVisibleCount] = useState(GRID_PAGE);
   useEffect(() => {
+    // Restart the progressive window whenever the result set changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setVisibleCount(GRID_PAGE);
   }, [gridHeroes]);
   useEffect(() => {
@@ -280,10 +284,12 @@ export default function WebSearchScreen() {
   );
 
   // Sync the input FROM the URL (deep links, back/forward, nav palette).
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setNavQuery(urlQ);
     setInputQuery(urlQ);
   }, [urlQ]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Mirror the committed query back INTO the URL so results stay shareable.
   useEffect(() => {
@@ -304,7 +310,9 @@ export default function WebSearchScreen() {
   // `trimmed` changes per keystroke, so read it through a ref to keep goToHero
   // referentially stable (addSearch, router and setPeek are already stable).
   const trimmedRef = useRef(trimmed);
-  trimmedRef.current = trimmed;
+  useEffect(() => {
+    trimmedRef.current = trimmed;
+  });
   const goToHero = useCallback(
     (id: string) => {
       if (trimmedRef.current) addSearch(trimmedRef.current);

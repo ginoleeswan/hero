@@ -1,4 +1,4 @@
-import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
+import { Modal, Text, Pressable, StyleSheet } from 'react-native';
 import { COLORS } from '../../constants/colors';
 
 export function DonateNudge({
@@ -16,7 +16,7 @@ export function DonateNudge({
         <Pressable style={styles.card} onPress={() => {}}>
           <Text style={styles.emoji}>☕</Text>
           <Text style={styles.title}>Enjoying Mythique?</Text>
-          <Text style={styles.body}>It's free, made by one person — a coffee keeps it alive.</Text>
+          <Text style={styles.body}>It’s free, made by one person — a coffee keeps it alive.</Text>
           <Pressable
             onPress={onConvert}
             style={({ pressed }) => [styles.primary, pressed && styles.primaryPressed]}

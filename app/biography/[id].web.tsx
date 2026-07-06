@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -322,13 +322,14 @@ export default function WebBiographyScreen() {
   // a hero's full biography after viewing the character is instant.
   const hero = useHeroRow(id).data ?? null;
   // Derive the rendered HTML + table of contents from the description (no effect).
-  const { processedHtml, toc } = useMemo(() => {
+  // The React Compiler memoises this derivation automatically.
+  const { processedHtml, toc } = ((): { processedHtml: string; toc: string[] } => {
     if (!hero?.description) return { processedHtml: '', toc: [] as string[] };
     const { processedHtml: html, toc: headings } = extractHeadings(
       preprocessHtml(hero.description),
     );
     return { processedHtml: html, toc: headings };
-  }, [hero?.description]);
+  })();
 
   const heroImage = id ? heroImageSource(String(id), hero?.image_url, hero?.portrait_url) : null;
 

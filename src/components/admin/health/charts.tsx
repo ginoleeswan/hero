@@ -65,7 +65,9 @@ export function Donut({
   const stroke = 17;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
-  let acc = 0;
+  const fracs = segments.map((s) => (total > 0 ? s.value / total : 0));
+  // Cumulative fraction preceding each segment — the ring's rotation offset.
+  const offsets = fracs.map((_, i) => fracs.slice(0, i).reduce((sum, f) => sum + f, 0));
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
@@ -77,24 +79,19 @@ export function Donut({
           strokeWidth={stroke}
           fill="none"
         />
-        {segments.map((s, i) => {
-          const frac = total > 0 ? s.value / total : 0;
-          const el = (
-            <Circle
-              key={i}
-              cx={size / 2}
-              cy={size / 2}
-              r={r}
-              stroke={s.color}
-              strokeWidth={stroke}
-              fill="none"
-              strokeDasharray={`${frac * c} ${c}`}
-              strokeDashoffset={-acc * c}
-            />
-          );
-          acc += frac;
-          return el;
-        })}
+        {segments.map((s, i) => (
+          <Circle
+            key={i}
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            stroke={s.color}
+            strokeWidth={stroke}
+            fill="none"
+            strokeDasharray={`${fracs[i] * c} ${c}`}
+            strokeDashoffset={-offsets[i] * c}
+          />
+        ))}
       </Svg>
       <View style={{ position: 'absolute', alignItems: 'center' }}>
         <Text style={styles.donutNum}>{total.toLocaleString()}</Text>

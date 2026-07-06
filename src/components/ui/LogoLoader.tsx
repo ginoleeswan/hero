@@ -26,7 +26,7 @@ export function LogoLoader() {
       -1,
       false,
     );
-  }, []);
+  }, [progress]);
 
   const animatedProps = useAnimatedProps(() => {
     // Stroke draws in over first 60% of cycle

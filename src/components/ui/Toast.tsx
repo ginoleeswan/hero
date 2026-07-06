@@ -26,7 +26,7 @@ interface Props {
 }
 
 export function Toast({ message, visible }: Props) {
-  const opacity = useRef(new Animated.Value(0)).current;
+  const [opacity] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.timing(opacity, {

@@ -47,8 +47,11 @@ export function ReportSheet({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  // Reset the form to a clean slate each time the sheet opens. Fires only on the
+  // visible transition; keeping it in an effect avoids remounting mid-animation.
   useEffect(() => {
     if (visible) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReason(null);
       setDetail('');
       setError(null);

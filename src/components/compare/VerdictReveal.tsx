@@ -34,7 +34,7 @@ export function VerdictReveal({
       -1,
       true,
     );
-  }, []);
+  }, [pulse]);
 
   const skeletonStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
 

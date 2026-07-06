@@ -1,10 +1,10 @@
-import { createContext, useContext, useEffect, useRef } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { Animated, Easing } from 'react-native';
 
 const SkeletonContext = createContext<Animated.Value | null>(null);
 
 export function SkeletonProvider({ children }: { children: React.ReactNode }) {
-  const shimmer = useRef(new Animated.Value(1)).current;
+  const [shimmer] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
     Animated.loop(

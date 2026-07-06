@@ -49,7 +49,9 @@ export function DuplicatesPanel({ flash, onChanged }: { flash: Flash; onChanged:
     }
   }, []);
 
+  // Initial load on mount. `load` sets loading/data state internally.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
@@ -133,7 +135,8 @@ export function DuplicatesPanel({ flash, onChanged }: { flash: Flash; onChanged:
                         onPress={() =>
                           setSeparate((s) => {
                             const n = new Set(s);
-                            n.has(h.heroId) ? n.delete(h.heroId) : n.add(h.heroId);
+                            if (n.has(h.heroId)) n.delete(h.heroId);
+                            else n.add(h.heroId);
                             return n;
                           })
                         }

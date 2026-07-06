@@ -26,6 +26,9 @@ function useDebouncedQuery<T>(
   const [items, setItems] = useState<T[]>([]);
   useEffect(() => {
     if (!trimmed) {
+      // Clear results for an empty query. Effect-based fetch (pre-React-Query);
+      // the reset guards a stale flash before the next debounced fetch.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setItems([]);
       return;
     }

@@ -89,6 +89,8 @@ export function SearchDropdownContent({
   const [recentlyViewed, setRecentlyViewed] = useState<RailHero[]>([]);
   useEffect(() => {
     if (!isEmptyQuery || !user?.id) {
+      // Only the idle palette shows history; clear otherwise. Effect-based fetch.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRecentlyViewed([]);
       return;
     }

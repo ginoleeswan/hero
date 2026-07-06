@@ -108,6 +108,9 @@ function WebAuthGate({ fontsReady }: { fontsReady: boolean }) {
     if (user && (inAuthGroup || isRoot)) {
       router.replace('/explore');
     } else {
+      // Auth gate resolved (no redirect needed) — reveal the app. Driven by
+      // async session + route segments, so it belongs in an effect.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSettled(true);
     }
   }, [user, loading, segs, inAuthGroup, router]);

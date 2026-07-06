@@ -20,7 +20,7 @@ const PORTRAIT_CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.6);
 const DETAIL_HERO_RATIO = (SCREEN_HEIGHT * 0.66) / SCREEN_WIDTH; // height ÷ width
 const PORTRAIT_CARD_HEIGHT = Math.round(PORTRAIT_CARD_WIDTH * DETAIL_HERO_RATIO);
 
-export interface RowHero extends ThumbHero {}
+export type RowHero = ThumbHero;
 
 /**
  * Portrait card that navigates via the Apple Zoom transition, with a spring

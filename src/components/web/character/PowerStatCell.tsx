@@ -69,6 +69,8 @@ export function PowerStatCell({
     if (!play || animatedRef.current) return;
     animatedRef.current = true;
     if (reducedMotion()) {
+      // Skip the count-up animation; jump straight to the final value.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplay(target);
       return;
     }

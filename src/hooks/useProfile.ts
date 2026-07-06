@@ -30,6 +30,8 @@ export function useProfile(userId: string | undefined): UseProfileResult {
 
   useEffect(() => {
     if (!userId) {
+      // Signed-out: nothing to load. Effect-based fetch (pre-React-Query).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }

@@ -32,7 +32,7 @@ export function ChangePasswordModal({ visible, onClose, onSubmit }: Props) {
   const [error, setError] = useState<string | null>(null);
   const nextRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const [slideAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (isWeb) return;

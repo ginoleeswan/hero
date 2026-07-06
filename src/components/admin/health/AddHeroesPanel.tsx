@@ -100,6 +100,8 @@ export function AddHeroesPanel({
   // progress (queued → ComicVine → … → built) and doesn't sit stale after a build.
   useEffect(() => {
     if (addedSession.length === 0) {
+      // Nothing added yet — clear the poll map. Effect polls a live build stage.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStages({});
       return;
     }
@@ -144,7 +146,8 @@ export function AddHeroesPanel({
   const PAGE = 100; // ComicVine's max page size — fewer, denser calls
   const BATCH_PAGES = 3; // pages fetched per click, concurrently
   const loadPopular = async (off: number, append: boolean) => {
-    append ? setPopularLoading(true) : setLoading(true);
+    if (append) setPopularLoading(true);
+    else setLoading(true);
     try {
       const offsets = Array.from({ length: BATCH_PAGES }, (_, i) => off + i * PAGE);
       const pages = await Promise.all(offsets.map((o) => fetchPopularCharacters(o)));
@@ -169,11 +172,13 @@ export function AddHeroesPanel({
     } catch (e) {
       flash(`Couldn't load popular: ${(e as Error).message}`, 'error');
     } finally {
-      append ? setPopularLoading(false) : setLoading(false);
+      if (append) setPopularLoading(false);
+      else setLoading(false);
     }
   };
 
   // Load the first page of popular gaps when that mode is entered.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (mode !== 'popular') return;
     setPopularEnd(false);
@@ -181,12 +186,15 @@ export function AddHeroesPanel({
     loadPopular(0, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Live (debounced) search whenever the query or mode changes.
   useEffect(() => {
     if (mode === 'popular') return; // discovery mode handles its own loading
     if (group) return; // browsing a roster, don't re-search
     if (query.trim().length < 2) {
+      // Too short to search — clear results. `reset` sets state internally.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       reset();
       return;
     }
@@ -250,7 +258,8 @@ export function AddHeroesPanel({
   const toggle = (id: string) =>
     setSelected((p) => {
       const s = new Set(p);
-      s.has(id) ? s.delete(id) : s.add(id);
+      if (s.has(id)) s.delete(id);
+      else s.add(id);
       return s;
     });
   const selectAllNew = () => setSelected(new Set(newRows.map((r) => r.id)));

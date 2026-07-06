@@ -1,6 +1,11 @@
 // src/components/family/FamilyCanvas.web.tsx
 // Pannable / zoomable family tree for web. Uses react-native-reanimated 4 +
 // react-native-gesture-handler for pan + pinch, react-native-svg for edges.
+//
+// Writing `sharedValue.value = …` in gesture/callback handlers is the Reanimated
+// API, not a React mutation; the compiler's immutability rule can't model shared
+// values, so it's disabled for this file.
+/* eslint-disable react-hooks/immutability */
 import { useMemo, useState, useEffect, useCallback, type ReactElement } from 'react';
 import { View, Text, Pressable, StyleSheet, Modal, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';

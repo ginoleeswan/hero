@@ -12,6 +12,8 @@ export function useIdleHeroes(enabled: boolean, limit = 6) {
     if (!enabled || cache) return;
 
     let cancelled = false;
+    // Loading flag for a one-time lazy fetch (pre-React-Query).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true);
     (async () => {
       try {

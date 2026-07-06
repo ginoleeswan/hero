@@ -32,13 +32,18 @@ export function SearchPalette() {
   };
 
   // Reset the keyboard cursor whenever the query changes — the item list shifts.
-  useEffect(() => {
+  // Adjusted during render (React's documented pattern) rather than in an effect.
+  const [highlightQuery, setHighlightQuery] = useState(query);
+  if (highlightQuery !== query) {
+    setHighlightQuery(query);
     setHighlight(-1);
-  }, [query]);
+  }
 
   // Open fresh: clear any term left in the shared query (the results page mirrors
   // ?q= into context) and focus the field. An empty query surfaces the idle view
   // — trending + recent searches — so a new search starts from a clean slate.
+  // Reset lives in the effect because it's paired with the focus timer below.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!searchFocused) return;
     setQuery('');
@@ -46,6 +51,7 @@ export function SearchPalette() {
     const t = setTimeout(() => inputRef.current?.focus(), 20);
     return () => clearTimeout(t);
   }, [searchFocused]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Escape closes; arrows move the cursor through the result rows; Enter opens the
   // highlighted row (universe → /universe, hero → /character), falling through to

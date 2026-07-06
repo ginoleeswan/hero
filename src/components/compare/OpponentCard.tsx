@@ -75,10 +75,15 @@ function OpponentCardBase({
   // Gentle skeleton pulse that sits BEHIND the image. expo-image fades in on
   // top of it and covers it once loaded, so the skeleton never lingers even if
   // an onLoad event is missed; onLoad just stops the animation to save cycles.
+  // Reset the loaded flag when the card shows a different opponent. Adjusting
+  // state during render (React's documented pattern) instead of an effect avoids
+  // a frame where the new portrait shows without its skeleton.
   const [loaded, setLoaded] = useState(false);
-  useEffect(() => {
+  const [loadedFor, setLoadedFor] = useState(item.id);
+  if (loadedFor !== item.id) {
+    setLoadedFor(item.id);
     setLoaded(false);
-  }, [item.id]);
+  }
 
   const pulse = useSharedValue(0.65);
   useEffect(() => {

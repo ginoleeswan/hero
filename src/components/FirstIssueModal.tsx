@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -94,8 +94,8 @@ export function FirstIssueModal({ firstIssue, onClose }: Props) {
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === 'web' && width >= 700;
 
-  const sheetY = useRef(new Animated.Value(900)).current;
-  const bgOpacity = useRef(new Animated.Value(0)).current;
+  const [sheetY] = useState(() => new Animated.Value(900));
+  const [bgOpacity] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (Platform.OS !== 'web') {
@@ -110,7 +110,7 @@ export function FirstIssueModal({ firstIssue, onClose }: Props) {
         }),
       ]).start();
     }
-  }, []);
+  }, [sheetY, bgOpacity]);
 
   const handleClose = () => {
     if (Platform.OS !== 'web') {

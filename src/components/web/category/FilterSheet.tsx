@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Easing, View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { COLORS } from '../../../constants/colors';
 import type { CategorySlug } from '../../../lib/db/heroes';
@@ -29,8 +29,11 @@ export function FilterSheet({
   hasActive,
 }: Props) {
   const [mounted, setMounted] = useState(open);
-  const anim = useRef(new Animated.Value(open ? 1 : 0)).current;
+  const [anim] = useState(() => new Animated.Value(open ? 1 : 0));
 
+  // Mount-on-open / animate-out-then-unmount lifecycle for the sheet. Mount flag
+  // is paired with the open/close animation, so it lives in the effect.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open) {
       setMounted(true);
@@ -51,6 +54,7 @@ export function FilterSheet({
       });
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!mounted) return null;
 

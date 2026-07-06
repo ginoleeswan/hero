@@ -21,11 +21,13 @@ function AppleLogo() {
 export function AppleSignInButton({ onPress, loading }: Props) {
   // Native iOS: Apple requires their official button component
   if (Platform.OS === 'ios') {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- iOS-only native module, required lazily behind the platform guard
+    const AppleAuth = require('expo-apple-authentication');
     const {
       AppleAuthenticationButton,
       AppleAuthenticationButtonType,
       AppleAuthenticationButtonStyle,
-    } = require('expo-apple-authentication');
+    } = AppleAuth;
 
     return (
       <AppleAuthenticationButton

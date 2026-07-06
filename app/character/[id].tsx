@@ -657,8 +657,8 @@ export default function CharacterScreen() {
     imageUrl?: string | null;
   } | null>(null);
 
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const compareScale = useRef(new Animated.Value(1)).current;
+  const [scrollY] = useState(() => new Animated.Value(0));
+  const [compareScale] = useState(() => new Animated.Value(1));
 
   const springCompare = (toValue: number) =>
     Animated.spring(compareScale, {
@@ -804,7 +804,9 @@ export default function CharacterScreen() {
     teammateNames,
     narrative,
   ]);
-  sectionOrder.current = presentSections.map((s) => s.key);
+  useEffect(() => {
+    sectionOrder.current = presentSections.map((s) => s.key);
+  }, [presentSections]);
 
   const handleShare = useCallback(async () => {
     const name = data?.stats.name ?? heroRow?.name ?? paramName;
@@ -989,6 +991,10 @@ export default function CharacterScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
+        // Idiomatic RN Animated.event: useNativeDriver wires the scroll offset
+        // into scrollY natively (no value read during render). handleScroll only
+        // touches section refs at scroll time. Safe; the compiler can't model it.
+        // eslint-disable-next-line react-hooks/refs
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
           useNativeDriver: true,
           listener: handleScroll,

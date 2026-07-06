@@ -1,9 +1,9 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Animated, View } from 'react-native';
 
 /** Single shared animation value — call once per skeleton screen so all blocks pulse in sync. */
 export function useSkeletonAnim() {
-  const opacity = useRef(new Animated.Value(0.5)).current;
+  const [opacity] = useState(() => new Animated.Value(0.5));
   useEffect(() => {
     const anim = Animated.loop(
       Animated.sequence([

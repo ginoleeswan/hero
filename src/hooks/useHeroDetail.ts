@@ -179,6 +179,9 @@ export function useHeroDetail({ id, paramName, paramImageUri }: UseHeroDetailPar
     // an `enriched_at` timestamp and previously fell through to a 404'ing
     // SuperheroAPI fetch that wiped the screen.
     if (heroRow) {
+      // Seed the screen from the already-loaded row so it paints instantly.
+      // Effect-based detail fetch (pre-React-Query).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setData(heroRowToCharacterData(heroRow));
 
       // Gallery images (primary art + covers, multi-source) from hero_images.

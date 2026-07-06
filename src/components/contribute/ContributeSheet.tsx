@@ -56,6 +56,9 @@ export function ContributeSheet({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
+  // Seed/reset the form each time the sheet opens. Fires on the visible
+  // transition, so it stays an effect rather than a mid-animation remount.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (visible) {
       // Lists and stats are edited in place (retyping a whole list is hostile),
@@ -69,6 +72,7 @@ export function ContributeSheet({
       setSubmitting(false);
     }
   }, [visible, field, currentValue]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const isReport = report;
   const isFact = !field && !report;

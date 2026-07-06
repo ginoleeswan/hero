@@ -28,6 +28,9 @@ if (Platform.OS !== 'web') {
   // which (when absent) throws an uncaught "failed to determine clientID" error.
   if (iosClientId || webClientId) {
     try {
+      // Lazy require: the native module isn't present on web, so it can't be a
+      // static top-level import.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { GoogleSignin } = require('@react-native-google-signin/google-signin');
       GoogleSignin.configure({ iosClientId, webClientId });
     } catch {
@@ -62,9 +65,12 @@ function AuthGate({ fontsReady }: { fontsReady: boolean }) {
     if (user && (inAuthGroup || atRoot)) {
       router.replace('/explore');
     } else {
+      // Auth gate resolved (no redirect needed) — reveal the app. Driven by
+      // async session + route segments, so it belongs in an effect.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSettled(true);
     }
-  }, [user, loading, segments]);
+  }, [user, loading, segments, router]);
 
   // Single boot gate: one LogoLoader spans the whole cold start (fonts + auth)
   // so the logo animation runs continuously instead of restarting at the

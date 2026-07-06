@@ -32,9 +32,12 @@ export function useSkeletonTransition(
 
   // Layout effect so the loaded→crossfade switch lands BEFORE paint — otherwise
   // the first content frame would flash bare for a tick before the overlay mounts.
+  // Skeleton crossfade state machine: phase is driven by `loading` plus timers,
+  // so the transitions genuinely belong in a (layout) effect.
   useLayoutEffect(() => {
     if (loading) {
       shown.current = false;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPhase('pre');
       const t = setTimeout(() => {
         shown.current = true;

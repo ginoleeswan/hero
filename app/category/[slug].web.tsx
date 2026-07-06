@@ -1,5 +1,5 @@
 // app/category/[slug].web.tsx — Full grid view for a hero category (web)
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -226,7 +226,7 @@ export default function WebCategoryScreen() {
 
   // Reveal the grid by fading it up OVER an opaque skeleton (which then unmounts)
   // — no double-transparency dip, no hard "pop".
-  const gridFade = useRef(new Animated.Value(0)).current;
+  const [gridFade] = useState(() => new Animated.Value(0));
   const [skelMounted, setSkelMounted] = useState(true);
 
   const pathname = usePathname();
@@ -292,6 +292,8 @@ export default function WebCategoryScreen() {
   // Facet counts come from a category-keyed RPC; universe pages have none.
   useEffect(() => {
     if (!categorySlug) {
+      // Universe pages have no facet counts. Effect-based fetch (pre-React-Query).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCounts(null);
       return;
     }
@@ -350,6 +352,7 @@ export default function WebCategoryScreen() {
   const [catMontage, setCatMontage] = useState<{ uri: string; blurhash?: string | null }[]>([]);
   useEffect(() => {
     if (!categorySlug) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCatMontage([]);
       return;
     }
@@ -368,6 +371,7 @@ export default function WebCategoryScreen() {
 
   useEffect(() => {
     if (!universeTerm) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMontage([]);
       return;
     }
@@ -391,6 +395,7 @@ export default function WebCategoryScreen() {
   >([]);
   useEffect(() => {
     if (!franchiseTerm) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFranchiseMontage([]);
       return;
     }
@@ -410,6 +415,7 @@ export default function WebCategoryScreen() {
   // Drive the reveal. When page-0 data lands, fade the grid up over the opaque
   // skeleton, then unmount the skeleton; on a fresh load (re)arm it.
   const gridReady = !loading && heroes.length > 0;
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (gridReady) {
       gridFade.setValue(0);
@@ -422,6 +428,7 @@ export default function WebCategoryScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gridReady]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const [peek, setPeek] = useState<PeekHero | null>(null);
 

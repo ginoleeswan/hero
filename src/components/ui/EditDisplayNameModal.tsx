@@ -27,7 +27,7 @@ export function EditDisplayNameModal({ visible, currentName, onClose, onSubmit }
   const [value, setValue] = useState(currentName);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<TextInput>(null);
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const [slideAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (isWeb) return;
@@ -39,8 +39,12 @@ export function EditDisplayNameModal({ visible, currentName, onClose, onSubmit }
     }).start();
   }, [visible, slideAnim]);
 
+  // Seed the field with the current name and focus it when the sheet opens. The
+  // reset is paired with the focus timer, so it stays an effect (fires on the
+  // open transition, not every render).
   useEffect(() => {
     if (visible) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValue(currentName);
       setTimeout(() => inputRef.current?.focus(), 100);
     }

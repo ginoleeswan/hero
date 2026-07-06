@@ -24,7 +24,7 @@ type Spot = { hero: PortraitHero };
 
 function PortraitSpotlight({ spot }: { spot: Spot }) {
   const generating = !spot.hero.portrait;
-  const fade = useRef(new Animated.Value(0)).current;
+  const [fade] = useState(() => new Animated.Value(0));
   useEffect(() => {
     if (spot.hero.portrait) {
       fade.setValue(0);

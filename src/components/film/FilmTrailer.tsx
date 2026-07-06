@@ -23,6 +23,7 @@ let WebView: React.ComponentType<{
 }> | null = null;
 if (Platform.OS !== 'web') {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- native-only, lazily loaded behind a platform guard
     WebView = require('react-native-webview').WebView;
   } catch {
     // not linked — will fall back to Linking.openURL

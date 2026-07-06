@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal, View, Text, Pressable, StyleSheet, Platform, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants/colors';
@@ -13,7 +13,7 @@ interface Props {
 
 export function BadgeDetailModal({ badge, onClose }: Props) {
   const visible = !!badge;
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const [slideAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (isWeb) return;
@@ -26,9 +26,9 @@ export function BadgeDetailModal({ badge, onClose }: Props) {
   }, [visible, slideAnim]);
 
   // Keep last badge during the close animation so content doesn't blank out.
-  const shown = useRef<Badge | null>(badge);
-  if (badge) shown.current = badge;
-  const b = badge ?? shown.current;
+  const [shown, setShown] = useState<Badge | null>(badge);
+  if (badge && badge !== shown) setShown(badge);
+  const b = badge ?? shown;
 
   const progressPct =
     b?.progress && !b.earned

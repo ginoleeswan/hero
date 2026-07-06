@@ -236,6 +236,8 @@ export default function WebTeamScreen() {
   const topMemberId = heroes[0]?.id;
   useEffect(() => {
     if (heroes.length === 0) {
+      // No roster yet — clear the montage. Derived from async-loaded heroes.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMontage([]);
       return;
     }

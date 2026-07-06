@@ -118,10 +118,8 @@ export default function BiographyScreen() {
   // a hero's full biography after viewing the character is instant.
   const hero = useHeroRow(id).data ?? null;
 
-  const html = useMemo(
-    () => (hero?.description ? preprocessHtml(hero.description) : null),
-    [hero?.description],
-  );
+  // The React Compiler memoises this derivation automatically.
+  const html = hero?.description ? preprocessHtml(hero.description) : null;
 
   const contentWidth = width - 40;
 

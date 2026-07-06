@@ -171,6 +171,8 @@ export default function SearchScreen() {
   useEffect(() => {
     const q = debouncedQuery.trim();
     if (!q) {
+      // Clear when the query empties. Effect-based fetch (pre-React-Query).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTeams([]);
       return;
     }
@@ -192,6 +194,8 @@ export default function SearchScreen() {
   useEffect(() => {
     const q = debouncedQuery.trim();
     if (!q) {
+      // Clear when the query empties. Effect-based fetch (pre-React-Query).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTitles([]);
       return;
     }

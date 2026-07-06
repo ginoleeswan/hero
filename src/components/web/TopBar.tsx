@@ -119,12 +119,15 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
     return () => window.removeEventListener('scroll', onScroll, true);
   }, [isMobile]);
 
-  // New routes start at the top — reset until the next scroll event.
+  // New routes start at the top — reset the scroll-derived bar state on
+  // navigation, then the scroll listener above takes over.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setScrolled(false);
     setMobHidden(false);
     setMobAtTop(true);
   }, [pathname]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // ⌘K / Ctrl-K (and "/" when not already typing) open the palette on desktop.
   useEffect(() => {

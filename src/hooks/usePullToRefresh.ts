@@ -13,7 +13,9 @@ export function usePullToRefresh(onRefresh: () => void | Promise<void>, enabled 
   const [refreshing, setRefreshing] = useState(false);
   // Keep the latest callback without re-subscribing listeners every render.
   const cbRef = useRef(onRefresh);
-  cbRef.current = onRefresh;
+  useEffect(() => {
+    cbRef.current = onRefresh;
+  });
 
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return undefined;

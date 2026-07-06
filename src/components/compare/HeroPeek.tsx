@@ -77,6 +77,8 @@ export function HeroPeek({
   }, [progress]);
 
   const close = (after: () => void) => {
+    // Reanimated shared-value write (library API, not a React mutation).
+    // eslint-disable-next-line react-hooks/immutability
     progress.value = withTiming(0, { duration: 200 }, (finished) => {
       if (finished) runOnJS(after)();
     });

@@ -72,7 +72,7 @@ export function ClashPortraits({
 
     // Names fade in
     labelsOp.value = withDelay(680, withTiming(1, { duration: 320 }));
-  }, []);
+  }, [badgeP, labelsOp, leftX, rightX]);
 
   // Result reveal — the loser quietly recedes once the winner is known. Driven
   // by `winner` (not mount) so it also fires when the result resolves behind a
@@ -86,7 +86,7 @@ export function ClashPortraits({
       200,
       withTiming(1, { duration: 460, easing: Easing.out(Easing.cubic) }),
     );
-  }, [winner]);
+  }, [winner, resultOp]);
 
   const leftStyle = useAnimatedStyle(() => ({ transform: [{ translateX: leftX.value }] }));
   const rightStyle = useAnimatedStyle(() => ({ transform: [{ translateX: rightX.value }] }));

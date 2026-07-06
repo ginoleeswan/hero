@@ -34,6 +34,9 @@ export function useHeroSearch(
 
   useEffect(() => {
     if (!hasCriteria) {
+      // Clear results when there's nothing to search. Effect-based fetch
+      // (pre-React-Query); reset guards a stale flash before the next fetch.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResults([]);
       setLoading(false);
       return;

@@ -153,6 +153,7 @@ export function HeartButton({ favourited, loading, onPress }: HeartButtonProps) 
     }
 
     // Reanimated shared values are stable refs — intentionally omitted from deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [favourited]);
 
   const heartStyle = useAnimatedStyle(() => ({

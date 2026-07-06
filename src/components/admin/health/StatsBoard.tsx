@@ -30,12 +30,14 @@ type Spot = { hero: StatsHero; stats: HeroStatValues | null };
 
 // One animated dial: bar fills and the number counts up to the value on reveal.
 function Dial({ label, value }: { label: string; value: number | null }) {
-  const a = useRef(new Animated.Value(0)).current;
+  const [a] = useState(() => new Animated.Value(0));
   const [shown, setShown] = useState(0);
   useEffect(() => {
     if (value == null) {
       a.stopAnimation();
       a.setValue(0);
+      // Reset the displayed count alongside the animation value.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShown(0);
       return;
     }

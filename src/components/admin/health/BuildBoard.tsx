@@ -179,7 +179,7 @@ export function BuildBoard({
     } finally {
       running.current = false;
     }
-  }, [heroIds]);
+  }, [sharedRows]);
 
   useEffect(() => {
     ctrl.current = { stopped: false, paused: false };

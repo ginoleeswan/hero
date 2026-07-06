@@ -215,6 +215,8 @@ export default function CategoryScreen() {
   useEffect(() => {
     // Facet counts come from a category-keyed RPC; universe pages have no counts.
     if (!categorySlug) {
+      // Universe pages have no facet counts. Effect-based fetch (pre-React-Query).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCounts(null);
       return;
     }

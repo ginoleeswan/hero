@@ -2,6 +2,7 @@ import React from 'react';
 import { render, fireEvent, userEvent } from '@testing-library/react-native';
 import { HeartButton } from '../../src/components/HeartButton';
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- jest.mock factory must use require (it's hoisted above imports)
 jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 jest.mock('@expo/vector-icons', () => ({
   Ionicons: 'Ionicons',
