@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { View, Pressable, StyleSheet, Platform } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Svg, { Defs, Pattern, Circle, Rect } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { INK_TEXT } from '../../constants/colors';
 import { SocialWebGraph } from './SocialWebGraph';
@@ -103,6 +104,19 @@ export function SocialWebCanvas({
       // @ts-expect-error onWheel is a web-only DOM prop RNW forwards to the node
       onWheel={onWheel}
     >
+      {/* Fixed starfield behind the panning graph — deep space, not moving with pan. */}
+      {vp.w > 0 ? (
+        <Svg width={vp.w} height={vp.h} style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Defs>
+            <Pattern id="stars" x={0} y={0} width={38} height={38} patternUnits="userSpaceOnUse">
+              <Circle cx={2} cy={2} r={1} fill="rgba(245,235,220,0.10)" />
+              <Circle cx={22} cy={14} r={0.7} fill="rgba(245,235,220,0.07)" />
+              <Circle cx={12} cy={28} r={0.9} fill="rgba(245,235,220,0.08)" />
+            </Pattern>
+          </Defs>
+          <Rect x={0} y={0} width={vp.w} height={vp.h} fill="url(#stars)" />
+        </Svg>
+      ) : null}
       <GestureDetector gesture={gesture}>
         <Animated.View style={[styles.canvas, canvasStyle]}>
           <SocialWebGraph

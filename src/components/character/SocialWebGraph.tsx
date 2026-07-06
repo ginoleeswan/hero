@@ -4,6 +4,7 @@ import Svg, { Line } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedProps,
   withRepeat,
   withTiming,
   Easing,
@@ -103,6 +104,17 @@ export function SocialWebGraph({
   }, [pulse]);
   const pulseStyle = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
 
+  // Living subject edges: a dash offset loops so energy appears to flow along
+  // the subject's connections (the second, gated loop).
+  const dash = useSharedValue(0);
+  useEffect(() => {
+    if (reducedMotion()) return;
+    dash.value = withRepeat(withTiming(-10, { duration: 900, easing: Easing.linear }), -1, false);
+  }, [dash]);
+  const dashProps = useAnimatedProps(() => ({ strokeDashoffset: dash.value }));
+  const AnimatedLine = useMemo(() => Animated.createAnimatedComponent(Line), []);
+  const flow = !reducedMotion();
+
   return (
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
@@ -136,6 +148,20 @@ export function SocialWebGraph({
                 strokeWidth={incident ? 1.8 : 1}
                 opacity={entrance}
               />
+              {/* living energy flow on lit subject edges */}
+              {incident && lit && flow ? (
+                <AnimatedLine
+                  x1={a.x}
+                  y1={a.y}
+                  x2={b.x}
+                  y2={b.y}
+                  stroke={color + 'aa'}
+                  strokeWidth={1.4}
+                  strokeDasharray="2 8"
+                  animatedProps={dashProps}
+                  opacity={entrance}
+                />
+              ) : null}
             </Fragment>
           );
         })}
