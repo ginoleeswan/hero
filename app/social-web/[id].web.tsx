@@ -9,6 +9,7 @@ import { getHeroNeighborhood, subjectKind } from '../../src/lib/db/heroes/neighb
 import { nodeDegree, sharedWithSubject } from '../../src/components/character/socialWebFocus';
 import { SocialWebCanvas } from '../../src/components/character/SocialWebCanvas';
 import { SocialWebFocusCard } from '../../src/components/character/SocialWebFocusCard';
+import { SocialWebSearch } from '../../src/components/character/SocialWebSearch';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 
@@ -31,6 +32,7 @@ export default function SocialWebExplorer() {
 
   const [activeKinds, setActiveKinds] = useState({ enemy: true, ally: true, teammate: true });
   const [focusId, setFocusId] = useState<string | null>(null);
+  const [centerOnId, setCenterOnId] = useState<string | null>(null);
   const focusNode = (focusId && data?.nodes.find((n) => n.id === focusId)) || null;
   const focusKind = focusNode ? subjectKind(data!.edges, focusSubject, focusNode.id) : null;
   const focusDegree = focusNode ? nodeDegree(data!.edges, focusNode.id) : 0;
@@ -97,6 +99,7 @@ export default function SocialWebExplorer() {
           onFocusChange={setFocusId}
           sharedIds={sharedIds}
           activeKinds={activeKinds}
+          centerOnId={centerOnId}
           onRecenter={(nodeId) => {
             setFocusSubject(nodeId);
             setFocusId(null);
@@ -109,6 +112,20 @@ export default function SocialWebExplorer() {
           </Text>
         </View>
       )}
+
+      {data && !sparse ? (
+        <View style={styles.searchOverlay}>
+          <SocialWebSearch
+            nodes={data.nodes}
+            onPick={(pid) => {
+              setFocusId(pid);
+              setCenterOnId(pid);
+              // allow re-centring the same node on a later pick
+              setTimeout(() => setCenterOnId(null), 400);
+            }}
+          />
+        </View>
+      ) : null}
 
       {focusNode && !focusNode.is_subject ? (
         <SocialWebFocusCard
@@ -180,6 +197,7 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   legendText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: INK_TEXT.muted },
+  searchOverlay: { position: 'absolute', left: 16, top: TOPBAR_HEIGHT + 60, zIndex: 20 } as object,
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: INK_TEXT.faint },
   hint: {

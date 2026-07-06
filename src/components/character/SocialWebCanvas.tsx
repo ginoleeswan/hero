@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Pressable, StyleSheet, Platform } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Svg, { Defs, Pattern, Circle, Rect } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { INK_TEXT } from '../../constants/colors';
 import { SocialWebGraph } from './SocialWebGraph';
+import { layoutNeighborhood } from '../../lib/graph/forceLayout';
 import type { Neighborhood } from '../../lib/db/heroes/neighborhood';
 
 const GRAPH = 720; // fixed logical canvas the graph lays out within
@@ -23,6 +24,7 @@ export function SocialWebCanvas({
   onRecenter,
   sharedIds,
   activeKinds,
+  centerOnId,
 }: {
   neighborhood: Neighborhood;
   subjectId: string;
@@ -32,6 +34,7 @@ export function SocialWebCanvas({
   onRecenter: (id: string) => void;
   sharedIds?: Set<string>;
   activeKinds?: { enemy: boolean; ally: boolean; teammate: boolean };
+  centerOnId?: string | null;
 }) {
   const [vp, setVp] = useState({ w: 0, h: 0 });
 
@@ -55,6 +58,22 @@ export function SocialWebCanvas({
   useEffect(() => {
     fit();
   }, [fit, subjectId]);
+
+  // Search selected a node → glide the camera so that node sits centred.
+  useEffect(() => {
+    if (!centerOnId || vp.w === 0) return;
+    const pos = layoutNeighborhood(
+      neighborhood.nodes.map((n) => ({ id: n.id, isSubject: n.is_subject })),
+      neighborhood.edges,
+    ).get(centerOnId);
+    if (!pos) return;
+    const R = GRAPH / 2 - 48; // matches SocialWebGraph R
+    const nx = GRAPH / 2 + pos.x * R;
+    const ny = GRAPH / 2 + pos.y * R;
+    const s = scale.value;
+    tx.value = withTiming(vp.w / 2 - nx * s);
+    ty.value = withTiming(vp.h / 2 - ny * s);
+  }, [centerOnId, vp.w, vp.h, neighborhood, scale, tx, ty]);
 
   const pan = Gesture.Pan()
     .activeOffsetX([-8, 8])
