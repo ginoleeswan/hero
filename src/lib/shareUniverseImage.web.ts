@@ -5,7 +5,9 @@
 // — mirroring ShareableUniverseCard — then shares (Web Share API) or downloads.
 import type { RefObject } from 'react';
 import type { View } from 'react-native';
-import { COLORS } from '../constants/colors';
+import { COLORS, SHARE_CARD } from '../constants/colors';
+import { MARK_ASPECT, mythiqueMarkDataUri } from '../constants/brandMark';
+import { cardTextureDataUri } from '../constants/cardTexture';
 import { UNIVERSE_CARD_SIZE } from '../components/profile/ShareableUniverseCard';
 import type { UniversePosterData } from './shareUniverseImage.types';
 
@@ -155,33 +157,43 @@ async function renderPoster(d: UniversePosterData): Promise<HTMLCanvasElement> {
   const fonts = (document as unknown as { fonts?: FontFaceSet }).fonts;
   if (fonts) {
     await Promise.all([
-      fonts.load('52px "Flame-Regular"'),
+      fonts.load(`56px "${SHARE_CARD.wordmarkFamilyRN}"`),
+      fonts.load('40px "Flame-Regular"'),
       fonts.load('30px "Nunito_700Bold"'),
     ]).catch(() => {});
   }
 
-  const [avatarImg, ...heroImgs] = await Promise.all([
+  const [textureImg, markImg, avatarImg, ...heroImgs] = await Promise.all([
+    loadImage(cardTextureDataUri(N, N, SHARE_CARD.accent)).catch(() => null),
+    loadImage(mythiqueMarkDataUri(SHARE_CARD.accent)).catch(() => null),
     d.avatarUri ? loadImage(d.avatarUri).catch(() => null) : Promise.resolve(null),
     ...d.topHeroes
       .slice(0, 3)
       .map((h) => (h.uri ? loadImage(h.uri).catch(() => null) : Promise.resolve(null))),
   ]);
 
-  // Background
+  // Background — the shared share-card vignette (matches native + OG).
   const bg = ctx.createLinearGradient(0, 0, 0, N);
-  bg.addColorStop(0, '#1b2a30');
-  bg.addColorStop(1, COLORS.navy);
+  for (const stop of SHARE_CARD.bg) bg.addColorStop(stop.at, stop.color);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, N, N);
 
-  // Header
+  // Texture — warm top glow + edge-framed halftone, over the vignette.
+  if (textureImg) ctx.drawImage(textureImg, 0, 0, N, N);
+
+  // Header — gold mask lockup: emblem over lowercase Righteous over gold eyebrow.
   ctx.textAlign = 'center';
+  if (markImg) {
+    const mh = 50;
+    const mw = mh * MARK_ASPECT;
+    ctx.drawImage(markImg, (N - mw) / 2, 52, mw, mh);
+  }
   ctx.fillStyle = COLORS.beige;
-  ctx.font = '52px "Flame-Regular", serif';
-  ctx.fillText('mythique', N / 2, 118);
-  ctx.fillStyle = COLORS.orange;
+  ctx.font = `56px "${SHARE_CARD.wordmarkFamilyRN}", sans-serif`;
+  ctx.fillText('mythique', N / 2, 160);
+  ctx.fillStyle = SHARE_CARD.accent;
   ctx.font = '26px "Nunito_700Bold", sans-serif';
-  ctx.fillText(spaced('MY UNIVERSE'), N / 2, 168);
+  ctx.fillText(spaced('MY UNIVERSE'), N / 2, 202);
 
   // Identity — avatar circle + name + stats
   const avCx = pad + 80;
@@ -209,7 +221,7 @@ async function renderPoster(d: UniversePosterData): Promise<HTMLCanvasElement> {
   ctx.beginPath();
   ctx.arc(avCx, avCy, r, 0, Math.PI * 2);
   ctx.lineWidth = 5;
-  ctx.strokeStyle = COLORS.orange;
+  ctx.strokeStyle = SHARE_CARD.accent;
   ctx.stroke();
 
   // Name + stats

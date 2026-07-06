@@ -6,7 +6,13 @@
 // image looks identical regardless of the device that produced it.
 import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { COLORS } from '../../constants/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SHARE_CARD } from '../../constants/colors';
+import { MythiqueMark } from '../ui/MythiqueMark';
+import { CardTexture } from '../ui/CardTexture';
+
+const BG_COLORS = SHARE_CARD.bg.map((s) => s.color) as [string, string, string];
+const BG_LOCATIONS = SHARE_CARD.bg.map((s) => s.at) as [number, number, number];
 
 export const SHARE_CARD_SIZE = 1080;
 
@@ -82,7 +88,10 @@ export function ShareableMatchupCard({
 
   return (
     <View style={s.root}>
+      <LinearGradient colors={BG_COLORS} locations={BG_LOCATIONS} style={StyleSheet.absoluteFill} />
+      <CardTexture size={SHARE_CARD_SIZE} glow={SHARE_CARD.accent} />
       <View style={s.header}>
+        <MythiqueMark height={50} color={SHARE_CARD.accent} />
         <Text style={s.wordmark}>mythique</Text>
         <Text style={s.eyebrow}>WHO WOULD WIN?</Text>
       </View>
@@ -106,7 +115,7 @@ export function ShareableMatchupCard({
           <Text style={[s.pct, { color: COLORS.blue }]}>{pctB}%</Text>
         </View>
         {verdict ? (
-          <Text style={s.verdict} numberOfLines={3}>
+          <Text style={s.verdict} numberOfLines={2}>
             {`“${verdict}”`}
           </Text>
         ) : null}
@@ -120,25 +129,30 @@ const s = StyleSheet.create({
   root: {
     width: SHARE_CARD_SIZE,
     height: SHARE_CARD_SIZE,
-    backgroundColor: COLORS.navy,
+    backgroundColor: SHARE_CARD.ink,
     paddingHorizontal: 56,
     paddingTop: 56,
     paddingBottom: 56,
     justifyContent: 'space-between',
   },
   header: { alignItems: 'center', gap: 14 },
-  wordmark: { fontFamily: 'Flame-Regular', fontSize: 52, color: COLORS.beige },
+  wordmark: {
+    fontFamily: SHARE_CARD.wordmarkFamilyRN,
+    fontSize: 56,
+    letterSpacing: -1,
+    color: COLORS.beige,
+  },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 26,
     letterSpacing: 8,
-    color: COLORS.goldAccent,
+    color: SHARE_CARD.accent,
   },
 
   stage: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1 },
   side: {
     flex: 1,
-    height: 620,
+    height: 560,
     borderRadius: 36,
     overflow: 'hidden',
     backgroundColor: '#1b2a30',
@@ -197,7 +211,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 6,
-    borderColor: COLORS.navy,
+    borderColor: SHARE_CARD.ink,
   },
   vsText: { fontFamily: 'Flame-Regular', fontSize: 46, color: '#fff' },
 

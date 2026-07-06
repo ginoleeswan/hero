@@ -7,7 +7,9 @@
 // Portraits are CORS-clean (Cloudinary), so drawImage + toBlob never taints.
 import type { RefObject } from 'react';
 import type { View } from 'react-native';
-import { COLORS } from '../constants/colors';
+import { COLORS, SHARE_CARD } from '../constants/colors';
+import { MARK_ASPECT, mythiqueMarkDataUri } from '../constants/brandMark';
+import { cardTextureDataUri } from '../constants/cardTexture';
 import { SHARE_CARD_SIZE } from '../components/compare/ShareableMatchupCard';
 
 export type ShareImageResult = 'shared' | 'downloaded' | 'unsupported' | 'error';
@@ -113,7 +115,7 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
     }
   }
   if (line) lines.push(line);
-  return lines.slice(0, 3);
+  return lines.slice(0, 2);
 }
 
 async function renderPoster(d: PosterData): Promise<HTMLCanvasElement> {
@@ -130,6 +132,7 @@ async function renderPoster(d: PosterData): Promise<HTMLCanvasElement> {
   const fonts = (document as unknown as { fonts?: FontFaceSet }).fonts;
   if (fonts) {
     await Promise.all([
+      fonts.load(`56px "${SHARE_CARD.wordmarkFamilyRN}"`),
       fonts.load('56px "Flame-Regular"'),
       fonts.load('26px "Nunito_700Bold"'),
       fonts.load('30px "Nunito_400Regular"'),
@@ -138,31 +141,41 @@ async function renderPoster(d: PosterData): Promise<HTMLCanvasElement> {
     });
   }
 
-  const [imgA, imgB] = await Promise.all([
+  const [imgA, imgB, markImg, textureImg] = await Promise.all([
     d.imageA?.uri ? loadImage(d.imageA.uri).catch(() => null) : Promise.resolve(null),
     d.imageB?.uri ? loadImage(d.imageB.uri).catch(() => null) : Promise.resolve(null),
+    loadImage(mythiqueMarkDataUri(SHARE_CARD.accent)).catch(() => null),
+    loadImage(cardTextureDataUri(N, N, SHARE_CARD.accent)).catch(() => null),
   ]);
 
-  // Background
+  // Background — the shared share-card vignette (matches native + OG).
   const bg = ctx.createLinearGradient(0, 0, 0, N);
-  bg.addColorStop(0, '#1b2a30');
-  bg.addColorStop(1, COLORS.deepNavy);
+  for (const stop of SHARE_CARD.bg) bg.addColorStop(stop.at, stop.color);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, N, N);
 
+  // Texture — warm top glow + edge-framed halftone, over the vignette.
+  if (textureImg) ctx.drawImage(textureImg, 0, 0, N, N);
+
   ctx.textAlign = 'center';
 
-  // Header
+  // Header — gold mask lockup: emblem over lowercase Righteous over gold eyebrow.
+  if (markImg) {
+    const mh = 50;
+    const mw = mh * MARK_ASPECT;
+    ctx.drawImage(markImg, (N - mw) / 2, 44, mw, mh);
+  }
   ctx.fillStyle = COLORS.beige;
-  ctx.font = '56px "Flame-Regular", serif';
-  ctx.fillText('mythique', N / 2, 112);
-  ctx.fillStyle = COLORS.goldAccent;
+  ctx.font = `56px "${SHARE_CARD.wordmarkFamilyRN}", sans-serif`;
+  ctx.fillText('mythique', N / 2, 152);
+  ctx.fillStyle = SHARE_CARD.accent;
   ctx.font = '26px "Nunito_700Bold", sans-serif';
-  ctx.fillText('W H O   W O U L D   W I N ?', N / 2, 160);
+  ctx.fillText('W H O   W O U L D   W I N ?', N / 2, 192);
 
-  // Portrait panels
-  const top = 210;
-  const h = 600;
+  // Portrait panels — shorter than before so the footer (bar + verdict + CTA)
+  // has room and the verdict never collides with the CTA.
+  const top = 214;
+  const h = 556;
   const pw = 458;
   const lx = 56;
   const rx = N - 56 - pw;
@@ -225,8 +238,8 @@ async function renderPoster(d: PosterData): Promise<HTMLCanvasElement> {
   const cy = top + h / 2;
   ctx.save();
   ctx.fillStyle = COLORS.orange;
-  ctx.strokeStyle = COLORS.deepNavy;
-  ctx.lineWidth = 8;
+  ctx.strokeStyle = SHARE_CARD.ink;
+  ctx.lineWidth = 6;
   ctx.beginPath();
   ctx.arc(cx, cy, 60, 0, Math.PI * 2);
   ctx.fill();
@@ -236,8 +249,9 @@ async function renderPoster(d: PosterData): Promise<HTMLCanvasElement> {
   ctx.fillText('VS', cx, cy + 15);
   ctx.restore();
 
-  // Split bar
-  const barY = top + h + 56;
+  // Footer rows are pinned to explicit baselines (not derived from the portrait
+  // height) so the vote bar, verdict and CTA keep fixed clearances.
+  const barY = 800; // top of the split bar
   const barX = 56;
   const barW = N - 112;
   const aw = Math.round((barW * Math.max(d.pctA, 1)) / Math.max(d.pctA + d.pctB, 1));
@@ -250,35 +264,35 @@ async function renderPoster(d: PosterData): Promise<HTMLCanvasElement> {
   ctx.fillRect(barX + aw, barY, barW - aw, 24);
   ctx.restore();
 
-  // Bar labels
+  // Bar labels — percentages flank a centred caption, just below the bar.
   ctx.font = '38px "Flame-Regular", serif';
   ctx.textAlign = 'left';
   ctx.fillStyle = COLORS.orange;
-  ctx.fillText(`${d.pctA}%`, barX, barY + 78);
+  ctx.fillText(`${d.pctA}%`, barX, barY + 64);
   ctx.textAlign = 'right';
   ctx.fillStyle = COLORS.blue;
-  ctx.fillText(`${d.pctB}%`, barX + barW, barY + 78);
+  ctx.fillText(`${d.pctB}%`, barX + barW, barY + 64);
   ctx.textAlign = 'center';
   ctx.fillStyle = 'rgba(245,235,220,0.6)';
   ctx.font = '22px "Nunito_700Bold", sans-serif';
-  ctx.fillText(d.caption.toUpperCase(), N / 2, barY + 72);
+  ctx.fillText(d.caption.toUpperCase(), N / 2, barY + 58);
 
-  // Verdict (wrapped)
-  let y = barY + 140;
+  // Verdict (wrapped, max 2 lines) — centred in the gap above the CTA.
   if (d.verdict) {
+    let y = barY + 116;
     ctx.font = 'italic 30px "Nunito_400Regular", sans-serif';
     ctx.fillStyle = 'rgba(245,235,220,0.85)';
     const lines = wrapText(ctx, `“${d.verdict}”`, N - 200);
     for (const ln of lines) {
       ctx.fillText(ln, N / 2, y);
-      y += 42;
+      y += 40;
     }
   }
 
   // CTA footer
   ctx.font = '22px "Nunito_700Bold", sans-serif';
   ctx.fillStyle = 'rgba(245,235,220,0.4)';
-  ctx.fillText('SETTLE THE DEBATE · MYTHIQUE', N / 2, N - 46);
+  ctx.fillText('SETTLE THE DEBATE · MYTHIQUE', N / 2, N - 40);
 
   return canvas;
 }

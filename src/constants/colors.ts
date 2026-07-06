@@ -23,6 +23,44 @@ export const COLORS = {
  * canvas. Pages declare their top + canvas through `useScreenChrome`, never by
  * reaching for a raw navy hex.
  */
+/**
+ * Share-card identity — the dark cinematic posters + OG cards that carry the
+ * brand outside the app (iMessage, X, IG, Discord). ONE system for all three
+ * renderers (native view-shot, web canvas, edge/satori OG) so a shared card
+ * looks identical wherever it's drawn. This block is pure data with no RN
+ * imports, so `api/` may import it directly (keeps the OG route RN-free while
+ * still sharing the exact palette instead of re-hardcoding a drifting one).
+ *
+ * Roles are deliberate: the wordmark is always beige lowercase Righteous (quiet
+ * authority, never colored); `accent` gold is the single brand-label colour
+ * (eyebrows, winner crown); orange + teal stay reserved for *competitive*
+ * meaning (the VS badge, the A/B vote split) so identity never fights gameplay.
+ */
+export const SHARE_CARD = {
+  ink: COLORS.deepNavy,
+  beige: COLORS.beige,
+  /** The one prestige/label accent. */
+  accent: COLORS.goldAccent,
+  /** Competitive accents — semantic (data), never branding. */
+  sideA: COLORS.orange,
+  sideB: COLORS.blue,
+  /** Vertical vignette stops (top→bottom): a lifted crown easing to the ink floor. */
+  bg: [
+    { at: 0, color: '#22333c' },
+    { at: 0.55, color: '#13232c' },
+    { at: 1, color: COLORS.deepNavy },
+  ],
+  /** Wordmark family — same face, different registration name per renderer. */
+  wordmarkFamilyRN: 'Righteous_400Regular',
+  wordmarkFamilyOG: 'Righteous',
+} as const;
+
+/** CSS `linear-gradient(...)` for the share-card vignette (canvas/satori/RNW). */
+export const shareCardBgCss = (angle = '180deg'): string =>
+  `linear-gradient(${angle}, ${SHARE_CARD.bg
+    .map((s) => `${s.color} ${Math.round(s.at * 100)}%`)
+    .join(', ')})`;
+
 export const SURFACE = {
   /** Content bodies + the iOS Safari bottom-toolbar zone. */
   paper: COLORS.beige,

@@ -5,7 +5,13 @@
 // .web sibling redraws it via canvas because RN-web snapshots render blank).
 import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { COLORS } from '../../constants/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SHARE_CARD } from '../../constants/colors';
+import { MythiqueMark } from '../ui/MythiqueMark';
+import { CardTexture } from '../ui/CardTexture';
+
+const BG_COLORS = SHARE_CARD.bg.map((s) => s.color) as [string, string, string];
+const BG_LOCATIONS = SHARE_CARD.bg.map((s) => s.at) as [number, number, number];
 
 export const UNIVERSE_CARD_SIZE = 1080;
 
@@ -60,7 +66,10 @@ export function ShareableUniverseCard({
 }: ShareableUniverseCardProps) {
   return (
     <View style={s.root}>
+      <LinearGradient colors={BG_COLORS} locations={BG_LOCATIONS} style={StyleSheet.absoluteFill} />
+      <CardTexture size={UNIVERSE_CARD_SIZE} glow={SHARE_CARD.accent} />
       <View style={s.header}>
+        <MythiqueMark height={50} color={SHARE_CARD.accent} />
         <Text style={s.wordmark}>mythique</Text>
         <Text style={s.eyebrow}>MY UNIVERSE</Text>
       </View>
@@ -112,19 +121,24 @@ const s = StyleSheet.create({
   root: {
     width: UNIVERSE_CARD_SIZE,
     height: UNIVERSE_CARD_SIZE,
-    backgroundColor: COLORS.navy,
+    backgroundColor: SHARE_CARD.ink,
     paddingHorizontal: 64,
     paddingTop: 64,
     paddingBottom: 56,
     justifyContent: 'space-between',
   },
   header: { alignItems: 'center', gap: 14 },
-  wordmark: { fontFamily: 'Flame-Regular', fontSize: 52, color: COLORS.beige },
+  wordmark: {
+    fontFamily: SHARE_CARD.wordmarkFamilyRN,
+    fontSize: 56,
+    letterSpacing: -1,
+    color: COLORS.beige,
+  },
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 26,
     letterSpacing: 10,
-    color: COLORS.orange,
+    color: SHARE_CARD.accent,
   },
 
   identity: { flexDirection: 'row', alignItems: 'center', gap: 32 },
@@ -133,7 +147,7 @@ const s = StyleSheet.create({
     height: 160,
     borderRadius: 80,
     borderWidth: 5,
-    borderColor: COLORS.orange,
+    borderColor: SHARE_CARD.accent,
   } as object,
   avatarFallback: {
     backgroundColor: '#1b2a30',
@@ -148,7 +162,7 @@ const s = StyleSheet.create({
   tiles: { flexDirection: 'row', gap: 24 },
   tile: {
     flex: 1,
-    height: 420,
+    height: 400,
     borderRadius: 32,
     overflow: 'hidden',
     backgroundColor: '#1b2a30',
