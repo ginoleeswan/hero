@@ -70,6 +70,9 @@ export function SocialWebGraph({
     return { x: cx + p.x * R, y: cy + p.y * R };
   };
 
+  // Web hover (no-op on native): drives the node lift + name-chip reveal.
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
   // Mount entrance: 0→1, re-keyed when the subject (neighbourhood) changes.
   const [entrance, setEntrance] = useState(() => (reducedMotion() ? 1 : 0));
   useEffect(() => {
@@ -149,6 +152,8 @@ export function SocialWebGraph({
         const ex = cx + (p.x - cx) * entrance;
         const ey = cy + (p.y - cy) * entrance;
         const isFocused = focusId === n.id;
+        const hovered = hoveredId === n.id;
+        const showChip = n.is_subject || isFocused || hovered;
         return (
           <View
             key={n.id}
@@ -206,6 +211,8 @@ export function SocialWebGraph({
             <Pressable
               onPress={() => onNodePress?.(n.id)}
               onLongPress={() => onNodeLongPress?.(n.id)}
+              onHoverIn={() => setHoveredId(n.id)}
+              onHoverOut={() => setHoveredId((c) => (c === n.id ? null : c))}
               style={
                 [
                   styles.node,
@@ -215,6 +222,8 @@ export function SocialWebGraph({
                     borderRadius: d / 2,
                     borderColor: ring,
                     borderWidth: n.is_subject ? 3 : 2,
+                    transform: [{ scale: hovered ? 1.08 : 1 }],
+                    transition: 'transform 160ms ease',
                   },
                 ] as object
               }
@@ -251,6 +260,8 @@ export function SocialWebGraph({
                 <Text style={styles.openText}>Open</Text>
                 <Ionicons name="chevron-forward" size={11} color={INK_TEXT.primary} />
               </Pressable>
+            ) : showChip ? (
+              <NameChip name={n.name} />
             ) : null}
           </View>
         );
@@ -259,8 +270,29 @@ export function SocialWebGraph({
   );
 }
 
+function NameChip({ name }: { name: string }) {
+  return (
+    <View style={styles.nameChip} pointerEvents="none">
+      <Text style={styles.nameChipText} numberOfLines={1}>
+        {name}
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   nodeWrap: { position: 'absolute', alignItems: 'center', justifyContent: 'center' } as object,
+  nameChip: {
+    position: 'absolute',
+    bottom: -20,
+    alignSelf: 'center',
+    maxWidth: 120,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: 'rgba(11,24,32,0.9)',
+  } as object,
+  nameChipText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 10, color: INK_TEXT.primary },
   halo: { position: 'absolute' } as object,
   node: { overflow: 'hidden', backgroundColor: COLORS.navy } as object,
   mono: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.navy },
