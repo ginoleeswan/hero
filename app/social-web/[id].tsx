@@ -10,6 +10,7 @@ import { nodeDegree, sharedWithSubject } from '../../src/components/character/so
 import { SocialWebCanvas } from '../../src/components/character/SocialWebCanvas';
 import { SocialWebFocusCard } from '../../src/components/character/SocialWebFocusCard';
 import { SocialWebSearch } from '../../src/components/character/SocialWebSearch';
+import { NebulaLoader } from '../../src/components/character/NebulaLoader';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 
 export default function SocialWebExplorerNative() {
@@ -92,12 +93,12 @@ export default function SocialWebExplorerNative() {
             setFocusId(null);
           }}
         />
-      ) : (
+      ) : sparse ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyText}>
-            {sparse ? 'Not enough connections to map yet.' : 'Mapping the universe…'}
-          </Text>
+          <Text style={styles.emptyText}>Not enough connections to map yet.</Text>
         </View>
+      ) : (
+        <NebulaLoader />
       )}
 
       {data && !sparse ? (
