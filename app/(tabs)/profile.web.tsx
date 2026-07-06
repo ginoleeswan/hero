@@ -284,7 +284,7 @@ export default function WebProfileScreen() {
     removeCover,
     updateDisplayName,
   } = useProfile(user?.id);
-  const { favourites, setFavourites, battle, contributions, taste, loading, refetch } =
+  const { favourites, setFavourites, battle, contributions, taste, loading, settled, refetch } =
     useProfileData(user?.id);
   const [showEditName, setShowEditName] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
@@ -366,13 +366,16 @@ export default function WebProfileScreen() {
 
   const nudge = useDonationNudge();
   useEffect(() => {
-    if (loading) return;
+    // Gate on `settled` (all sources loaded), not `loading` (favourites only),
+    // so the tier/badge snapshot is complete — a partial baseline could
+    // otherwise trigger a spurious "level-up" nudge when the slow RPCs land.
+    if (!settled) return;
     void nudge.syncMilestones({
       tier: tier.name,
       earnedBadgeIds: badges.filter((b) => b.earned).map((b) => b.id),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, tier.name, badges]);
+  }, [settled, tier.name, badges]);
 
   const profileStats = buildProfileStats({
     savedCount: favourites.length,
@@ -821,7 +824,11 @@ export default function WebProfileScreen() {
         <BadgeDetailModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
         {universeCard}
         <Toast message={toast.message} visible={toast.visible} />
-        <DonateNudge visible={nudge.visible} onConvert={nudge.onConvert} onDismiss={nudge.onDismiss} />
+        <DonateNudge
+          visible={nudge.visible}
+          onConvert={nudge.onConvert}
+          onDismiss={nudge.onDismiss}
+        />
       </View>
     );
   }
@@ -1190,7 +1197,11 @@ export default function WebProfileScreen() {
       <BadgeDetailModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
       {universeCard}
       <Toast message={toast.message} visible={toast.visible} />
-      <DonateNudge visible={nudge.visible} onConvert={nudge.onConvert} onDismiss={nudge.onDismiss} />
+      <DonateNudge
+        visible={nudge.visible}
+        onConvert={nudge.onConvert}
+        onDismiss={nudge.onDismiss}
+      />
     </View>
   );
 }

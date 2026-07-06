@@ -12,6 +12,10 @@ export interface ProfileData {
   contributions: MyContribution[];
   taste: TasteProfile | null;
   loading: boolean;
+  /** True once ALL four sources have settled (not just favourites). Use this —
+   *  not `loading` — to gate anything that reads the full picture (e.g. the fan
+   *  tier / milestone detector), so it never runs on a partially-loaded snapshot. */
+  settled: boolean;
   /** Re-fetch all profile data. Resolves when the favourites fetch settles, so
    *  callers can drive their own pull-to-refresh spinner off the promise. */
   refetch: () => Promise<void>;
@@ -32,23 +36,28 @@ export function useProfileData(userId: string | undefined): ProfileData {
   const [contributions, setContributions] = useState<MyContribution[]>([]);
   const [taste, setTaste] = useState<TasteProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [settled, setSettled] = useState(false);
 
   const refetch = useCallback((): Promise<void> => {
     if (!userId) return Promise.resolve();
-    getBattleRecord()
+    const battleP = getBattleRecord()
       .then(setBattle)
       .catch(() => {});
-    getTasteProfile()
+    const tasteP = getTasteProfile()
       .then(setTaste)
       .catch(() => {});
-    getMyContributions()
+    const contribP = getMyContributions()
       .then(setContributions)
       .catch(() => {});
-    return getUserFavouriteHeroes(userId)
+    const favP = getUserFavouriteHeroes(userId)
       .then(setFavourites)
       .catch(() => setFavourites([]))
       .finally(() => setLoading(false));
+    // `settled` flips only once every source has resolved, so consumers can gate
+    // full-picture logic (fan tier / milestone nudge) on a complete snapshot.
+    void Promise.allSettled([battleP, tasteP, contribP, favP]).then(() => setSettled(true));
+    return favP;
   }, [userId]);
 
-  return { favourites, setFavourites, battle, contributions, taste, loading, refetch };
+  return { favourites, setFavourites, battle, contributions, taste, loading, settled, refetch };
 }

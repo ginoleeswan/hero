@@ -228,11 +228,7 @@ function GuestProfileScreen() {
 
         {/* Support */}
         <View style={styles.guestSection}>
-          <TouchableOpacity
-            style={styles.supportRow}
-            onPress={openKofi}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity style={styles.supportRow} onPress={openKofi} activeOpacity={0.7}>
             <View style={[styles.accountIconBadge, styles.accountIconBadgeOrange]}>
               <Ionicons name="cafe-outline" size={16} color={COLORS.orange} />
             </View>
@@ -267,7 +263,7 @@ export default function ProfileScreen() {
     removeCover,
     updateDisplayName,
   } = useProfile(user?.id);
-  const { favourites, setFavourites, battle, contributions, taste, loading, refetch } =
+  const { favourites, setFavourites, battle, contributions, taste, loading, settled, refetch } =
     useProfileData(user?.id);
   const [refreshing, setRefreshing] = useState(false);
   const [showEditName, setShowEditName] = useState(false);
@@ -363,13 +359,16 @@ export default function ProfileScreen() {
 
   const nudge = useDonationNudge();
   useEffect(() => {
-    if (loading) return;
+    // Gate on `settled` (all sources loaded), not `loading` (favourites only),
+    // so the tier/badge snapshot is complete — a partial baseline could
+    // otherwise trigger a spurious "level-up" nudge when the slow RPCs land.
+    if (!settled) return;
     void nudge.syncMilestones({
       tier: tier.name,
       earnedBadgeIds: badges.filter((b) => b.earned).map((b) => b.id),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, tier.name, badges]);
+  }, [settled, tier.name, badges]);
 
   const profileStats = buildProfileStats({
     savedCount: favourites.length,
@@ -661,11 +660,7 @@ export default function ProfileScreen() {
               <Ionicons name="chevron-forward" size={16} color="rgba(41,60,67,0.3)" />
             </View>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.accountCard}
-            onPress={openKofi}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity style={styles.accountCard} onPress={openKofi} activeOpacity={0.7}>
             <View style={styles.accountRow}>
               <View style={[styles.accountIconBadge, styles.accountIconBadgeOrange]}>
                 <Ionicons name="heart-outline" size={16} color={COLORS.orange} />
@@ -851,7 +846,11 @@ export default function ProfileScreen() {
       <BadgeDetailModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
       {universeCard}
       <Toast message={toast.message} visible={toast.visible} />
-      <DonateNudge visible={nudge.visible} onConvert={nudge.onConvert} onDismiss={nudge.onDismiss} />
+      <DonateNudge
+        visible={nudge.visible}
+        onConvert={nudge.onConvert}
+        onDismiss={nudge.onDismiss}
+      />
     </View>
   );
 }
