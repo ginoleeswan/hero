@@ -1243,9 +1243,7 @@ export default function WebCharacterScreen() {
                           heroId={id}
                           accent={theme.accent}
                           onExplore={() =>
-                            router.push(
-                              `/character/${id}/universe` as Parameters<typeof router.push>[0],
-                            )
+                            router.push(`/social-web/${id}` as Parameters<typeof router.push>[0])
                           }
                         />
                         {affiliations.length ? (
@@ -2157,9 +2155,7 @@ export default function WebCharacterScreen() {
                           heroId={id}
                           accent={theme.accent}
                           onExplore={() =>
-                            router.push(
-                              `/character/${id}/universe` as Parameters<typeof router.push>[0],
-                            )
+                            router.push(`/social-web/${id}` as Parameters<typeof router.push>[0])
                           }
                         />
                       </View>
