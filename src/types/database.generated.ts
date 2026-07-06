@@ -455,6 +455,30 @@ export type Database = {
         }
         Relationships: []
       }
+      explore_bundle_cache: {
+        Row: {
+          id: number
+          payload: Json
+          per_slug: number
+          refreshed_at: string
+          slugs: string[]
+        }
+        Insert: {
+          id: number
+          payload: Json
+          per_slug: number
+          refreshed_at?: string
+          slugs: string[]
+        }
+        Update: {
+          id?: number
+          payload?: Json
+          per_slug?: number
+          refreshed_at?: string
+          slugs?: string[]
+        }
+        Relationships: []
+      }
       featured_campaigns: {
         Row: {
           accent: string | null
@@ -1763,6 +1787,10 @@ export type Database = {
         }
         Returns: Json
       }
+      compute_explore_bundle: {
+        Args: { p_browse_per_slug?: number; p_browse_slugs: string[] }
+        Returns: Json
+      }
       compute_fame_score: {
         Args: {
           p_n_issue: number
@@ -1854,6 +1882,10 @@ export type Database = {
           portrait_url: string
           publisher: string
         }[]
+      }
+      get_hero_neighborhood: {
+        Args: { p_hero_id: string; p_limit?: number }
+        Returns: Json
       }
       get_matchup_tally: { Args: { p_a: string; p_b: string }; Returns: Json }
       get_most_feared: {
@@ -2068,6 +2100,7 @@ export type Database = {
         Args: { p_date: string; p_guesses: number; p_won: boolean }
         Returns: undefined
       }
+      refresh_explore_bundle: { Args: never; Returns: undefined }
       refresh_fame: { Args: never; Returns: number }
       register_film_match: {
         Args: {
