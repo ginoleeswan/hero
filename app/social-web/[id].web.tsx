@@ -5,8 +5,10 @@ import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SURFACE, INK_TEXT } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
-import { getHeroNeighborhood } from '../../src/lib/db/heroes/neighborhood';
+import { getHeroNeighborhood, subjectKind } from '../../src/lib/db/heroes/neighborhood';
+import { nodeDegree, sharedWithSubject } from '../../src/components/character/socialWebFocus';
 import { SocialWebCanvas } from '../../src/components/character/SocialWebCanvas';
+import { SocialWebFocusCard } from '../../src/components/character/SocialWebFocusCard';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 
@@ -25,6 +27,16 @@ export default function SocialWebExplorer() {
   const theme = useMemo(
     () => deriveCharacterTheme({ publisher: subjectNode?.publisher ?? null }),
     [subjectNode],
+  );
+
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const focusNode = (focusId && data?.nodes.find((n) => n.id === focusId)) || null;
+  const focusKind = focusNode ? subjectKind(data!.edges, focusSubject, focusNode.id) : null;
+  const focusDegree = focusNode ? nodeDegree(data!.edges, focusNode.id) : 0;
+  const sharedIds = useMemo(
+    () =>
+      focusId && data ? sharedWithSubject(data.edges, focusSubject, focusId) : new Set<string>(),
+    [focusId, data, focusSubject],
   );
 
   const sparse = data && data.nodes.length < 3;
@@ -65,10 +77,13 @@ export default function SocialWebExplorer() {
           neighborhood={data}
           subjectId={focusSubject}
           accent={theme.accent}
-          onNavigate={(nodeId) =>
-            router.push(`/character/${nodeId}` as Parameters<typeof router.push>[0])
-          }
-          onRecenter={(nodeId) => setFocusSubject(nodeId)}
+          focusId={focusId}
+          onFocusChange={setFocusId}
+          sharedIds={sharedIds}
+          onRecenter={(nodeId) => {
+            setFocusSubject(nodeId);
+            setFocusId(null);
+          }}
         />
       ) : (
         <View style={styles.empty}>
@@ -78,7 +93,21 @@ export default function SocialWebExplorer() {
         </View>
       )}
 
-      <Text style={styles.hint}>Tap a node to focus · long-press to recenter · Open to visit</Text>
+      {focusNode && !focusNode.is_subject ? (
+        <SocialWebFocusCard
+          node={focusNode}
+          subjectName={subjectNode?.name ?? ''}
+          kind={focusKind}
+          degree={focusDegree}
+          accent={theme.accent}
+          onView={() =>
+            router.push(`/character/${focusNode.id}` as Parameters<typeof router.push>[0])
+          }
+          onClose={() => setFocusId(null)}
+        />
+      ) : null}
+
+      <Text style={styles.hint}>Tap a node to focus · long-press to recenter</Text>
     </View>
   );
 }

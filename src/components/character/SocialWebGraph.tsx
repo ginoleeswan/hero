@@ -8,7 +8,6 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
 import { COLORS, INK_TEXT } from '../../constants/colors';
 import { HeroImage } from '../HeroImage';
 import { monogram } from '../RelatedHeroStrip';
@@ -35,18 +34,18 @@ export function SocialWebGraph({
   accent,
   size,
   focusId = null,
+  sharedIds,
   onNodePress,
   onNodeLongPress,
-  onNodeOpen,
 }: {
   neighborhood: Neighborhood;
   subjectId: string;
   accent: string;
   size: number;
   focusId?: string | null;
+  sharedIds?: Set<string>;
   onNodePress?: (id: string) => void;
   onNodeLongPress?: (id: string) => void;
-  onNodeOpen?: (id: string) => void;
 }) {
   const { nodes, edges } = neighborhood;
   const positions = useMemo(
@@ -152,6 +151,7 @@ export function SocialWebGraph({
         const ex = cx + (p.x - cx) * entrance;
         const ey = cy + (p.y - cy) * entrance;
         const isFocused = focusId === n.id;
+        const isShared = sharedIds?.has(n.id) ?? false;
         const hovered = hoveredId === n.id;
         const showChip = n.is_subject || isFocused || hovered;
         return (
@@ -196,12 +196,12 @@ export function SocialWebGraph({
                   [
                     styles.halo,
                     {
-                      width: d + 12,
-                      height: d + 12,
-                      borderRadius: (d + 12) / 2,
-                      backgroundColor: ring + (isFocused ? '3a' : '1f'),
-                      left: -6,
-                      top: -6,
+                      width: d + (isShared ? 16 : 12),
+                      height: d + (isShared ? 16 : 12),
+                      borderRadius: (d + (isShared ? 16 : 12)) / 2,
+                      backgroundColor: ring + (isFocused || isShared ? '55' : '1f'),
+                      left: isShared ? -8 : -6,
+                      top: isShared ? -8 : -6,
                     },
                   ] as object
                 }
@@ -251,18 +251,7 @@ export function SocialWebGraph({
                 </View>
               )}
             </Pressable>
-            {/* Open affordance on the focused node */}
-            {isFocused && !n.is_subject ? (
-              <Pressable
-                onPress={() => onNodeOpen?.(n.id)}
-                style={[styles.openChip, { borderColor: ring }] as object}
-              >
-                <Text style={styles.openText}>Open</Text>
-                <Ionicons name="chevron-forward" size={11} color={INK_TEXT.primary} />
-              </Pressable>
-            ) : showChip ? (
-              <NameChip name={n.name} />
-            ) : null}
+            {showChip ? <NameChip name={n.name} /> : null}
           </View>
         );
       })}
@@ -297,17 +286,4 @@ const styles = StyleSheet.create({
   node: { overflow: 'hidden', backgroundColor: COLORS.navy } as object,
   mono: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.navy },
   monoText: { fontFamily: 'Flame-Regular', fontSize: 16, lineHeight: 20 } as object,
-  openChip: {
-    position: 'absolute',
-    bottom: -26,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-    borderWidth: 1,
-    backgroundColor: 'rgba(11,24,32,0.85)',
-  } as object,
-  openText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 10, color: INK_TEXT.primary },
 });

@@ -10,23 +10,27 @@ import type { Neighborhood } from '../../lib/db/heroes/neighborhood';
 const GRAPH = 720; // fixed logical canvas the graph lays out within
 
 // Gestured, zoomable, focus-aware viewport around the constellation renderer.
-// Pan + pinch (+ wheel on web), zoom buttons, auto-fit. Owns focus state and
-// forwards node navigate / recenter to the host screen.
+// Pan + pinch (+ wheel on web), zoom buttons, auto-fit. Focus state is owned by
+// the host screen (so the detail card + search can drive it); the canvas owns
+// only the camera transform and forwards node focus / recenter.
 export function SocialWebCanvas({
   neighborhood,
   subjectId,
   accent,
-  onNavigate,
+  focusId,
+  onFocusChange,
   onRecenter,
+  sharedIds,
 }: {
   neighborhood: Neighborhood;
   subjectId: string;
   accent: string;
-  onNavigate: (id: string) => void;
+  focusId: string | null;
+  onFocusChange: (id: string | null) => void;
   onRecenter: (id: string) => void;
+  sharedIds?: Set<string>;
 }) {
   const [vp, setVp] = useState({ w: 0, h: 0 });
-  const [focusId, setFocusId] = useState<string | null>(null);
 
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
@@ -43,9 +47,9 @@ export function SocialWebCanvas({
     ty.value = vp.h / 2 - GRAPH / 2;
   }, [vp.w, vp.h, tx, ty, scale]);
 
-  // Re-fit when the viewport or the neighbourhood (subject) changes; clear focus.
+  // Re-fit when the viewport or the neighbourhood (subject) changes. The screen
+  // clears focus on recenter, so the canvas doesn't touch focus here.
   useEffect(() => {
-    setFocusId(null);
     fit();
   }, [fit, subjectId]);
 
@@ -107,9 +111,9 @@ export function SocialWebCanvas({
             accent={accent}
             size={GRAPH}
             focusId={focusId}
-            onNodePress={(id) => setFocusId((cur) => (cur === id ? null : id))}
+            sharedIds={sharedIds}
+            onNodePress={(id) => onFocusChange(focusId === id ? null : id)}
             onNodeLongPress={(id) => onRecenter(id)}
-            onNodeOpen={(id) => onNavigate(id)}
           />
         </Animated.View>
       </GestureDetector>
