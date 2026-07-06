@@ -46,7 +46,9 @@ export function SocialWebSearch({
                   onPick(n.id);
                   setQ('');
                 }}
-                style={styles.row}
+                style={({ hovered }: { pressed: boolean; hovered?: boolean }) =>
+                  [styles.row, hovered && styles.rowHover] as object
+                }
               >
                 <View style={styles.thumb}>
                   <HeroImage
@@ -75,47 +77,57 @@ export function SocialWebSearch({
 }
 
 const styles = StyleSheet.create({
-  wrap: { width: 240, maxWidth: '70%' } as object,
+  wrap: { width: 260, maxWidth: '76%' } as object,
   field: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    height: 38,
-    borderRadius: 999,
-    backgroundColor: 'rgba(245,235,220,0.10)',
+    gap: 9,
+    paddingHorizontal: 13,
+    height: 42,
+    borderRadius: 12,
+    borderCurve: 'continuous',
+    backgroundColor: 'rgba(11,24,32,0.66)',
     borderWidth: 1,
-    borderColor: 'rgba(245,235,220,0.18)',
-  },
+    borderColor: 'rgba(245,235,220,0.16)',
+    backdropFilter: 'blur(12px)',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+  } as object,
   input: {
     flex: 1,
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 14,
     color: INK_TEXT.primary,
     outlineStyle: 'none',
   } as object,
   results: {
-    marginTop: 6,
+    marginTop: 8,
     borderRadius: 12,
+    borderCurve: 'continuous',
     overflow: 'hidden',
-    backgroundColor: 'rgba(11,24,32,0.95)',
+    backgroundColor: 'rgba(11,24,32,0.82)',
     borderWidth: 1,
     borderColor: 'rgba(245,235,220,0.14)',
-  },
+    backdropFilter: 'blur(12px)',
+    boxShadow: '0 12px 30px rgba(0,0,0,0.4)',
+  } as object,
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
+    gap: 11,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+    transition: 'background-color 120ms ease',
+  } as object,
+  rowHover: { backgroundColor: 'rgba(245,235,220,0.08)' } as object,
   thumb: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     overflow: 'hidden',
     backgroundColor: COLORS.navy,
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.14)',
   } as object,
-  rowName: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13, color: INK_TEXT.primary },
-  empty: { fontFamily: 'FlameSans-Regular', fontSize: 12, color: INK_TEXT.faint, padding: 12 },
+  rowName: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 13.5, color: INK_TEXT.primary },
+  empty: { fontFamily: 'FlameSans-Regular', fontSize: 12.5, color: INK_TEXT.faint, padding: 13 },
 });
