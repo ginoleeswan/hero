@@ -11226,6 +11226,7 @@ __metadata:
     jest: "npm:^29.2.1"
     jest-expo: "npm:~56.0.5"
     node-addon-api: "npm:^8.8.0"
+    playwright-core: "npm:^1.61.1"
     prettier: "npm:^3.8.1"
     react: "npm:19.2.3"
     react-dom: "npm:19.2.3"
@@ -11909,6 +11910,15 @@ __metadata:
   dependencies:
     find-up: "npm:^4.0.0"
   checksum: 10c0/c56bda7769e04907a88423feb320babaed0711af8c436ce3e56763ab1021ba107c7b0cafb11cde7529f669cfc22bffcaebffb573645cbd63842ea9fb17cd7728
+  languageName: node
+  linkType: hard
+
+"playwright-core@npm:^1.61.1":
+  version: 1.61.1
+  resolution: "playwright-core@npm:1.61.1"
+  bin:
+    playwright-core: cli.js
+  checksum: 10c0/c28896ba82a602182e240ed4f9c467fb0dd9cb57d510f8aba9f25183fe1cde3a0105725a29baffa4157fe885bbb11e228032a2aad0424111584fde45303f07bd
   languageName: node
   linkType: hard
 
