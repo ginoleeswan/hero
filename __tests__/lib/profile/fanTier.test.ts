@@ -1,4 +1,4 @@
-import { fanScore, fanTier, tierProgress } from '../../../src/lib/profile/fanTier';
+import { fanScore, fanTier, tierProgress, tierRank } from '../../../src/lib/profile/fanTier';
 
 describe('fanScore', () => {
   it('weights badges 3x and sums the rest', () => {
@@ -42,5 +42,17 @@ describe('tierProgress', () => {
     const p = tierProgress({ saves: 100, votes: 100, contributions: 100, badges: 10 });
     expect(p.next).toBeNull();
     expect(p.remaining).toBe(0);
+  });
+});
+
+describe('tierRank', () => {
+  it('orders tiers low → high', () => {
+    expect(tierRank('Newcomer')).toBeLessThan(tierRank('Fan'));
+    expect(tierRank('Fan')).toBeLessThan(tierRank('Collector'));
+    expect(tierRank('Collector')).toBeLessThan(tierRank('Curator'));
+    expect(tierRank('Curator')).toBeLessThan(tierRank('Legend'));
+  });
+  it('returns -1 for an unknown tier', () => {
+    expect(tierRank('Nope')).toBe(-1);
   });
 });

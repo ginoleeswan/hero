@@ -38,6 +38,13 @@ const TIERS: { min: number; name: string; icon: IoniconName }[] = [
   { min: 0, name: 'Newcomer', icon: 'sparkles' },
 ];
 
+/** Rank of a tier by name (higher = better). Unknown → -1. */
+export function tierRank(name: string): number {
+  // TIERS is descending by min; reverse-index gives low→high rank.
+  const idx = TIERS.findIndex((t) => t.name === name);
+  return idx === -1 ? -1 : TIERS.length - 1 - idx;
+}
+
 /** Maps activity to a named fan tier with an icon. */
 export function fanTier(input: FanTierInput): FanTier {
   const score = fanScore(input);
