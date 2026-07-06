@@ -17,7 +17,7 @@ html,body{width:${w}px;height:${h}px;overflow:hidden;background:${NAVY};font-fam
 .foot .wm{font-family:'R';font-size:${Math.round(h * 0.03)}px;color:${CREAM};}
 .foot .at{font-family:'FR';font-size:${Math.round(h * 0.02)}px;color:${GOLD};letter-spacing:1px;}
 .foot .disc{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;font-size:${Math.round(h * 0.014)}px;color:rgba(245,235,220,.55);text-align:center;padding:0 40px;letter-spacing:.3px;}
-.g{color:${GOLD};}.pop{font-family:'F';-webkit-text-stroke:${Math.round(h * 0.006)}px ${NAVY};paint-order:stroke fill;}
+.g{color:${GOLD};}.pop{font-family:'FR';-webkit-text-stroke:${Math.round(h * 0.006)}px ${NAVY};paint-order:stroke fill;}
 .styl img{width:100%;height:100%;object-fit:cover;}
 ${extra}`;
   return `<!doctype html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${svgFilterDefs()}<div class="page"><div class="dots"></div><div class="grain"></div>${inner}<div class="foot"><div class="row"><span class="wm">mythique</span><span class="at">@mythiqueapp</span></div><div class="disc">${DISCLAIMER}</div></div></div></body></html>`;
