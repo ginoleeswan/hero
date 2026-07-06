@@ -13,4 +13,5 @@ export * from './heroes/core';
 export * from './heroes/feed';
 export * from './heroes/categories';
 export * from './heroes/relationships';
+export * from './heroes/neighborhood';
 export * from './heroes/transforms';
