@@ -70,43 +70,6 @@ function radar(width) {
   return `<svg width="${width}" height="${H}" viewBox="0 0 ${width} ${H}"><defs><radialGradient id="rg" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="${GOLD}" stop-opacity="0.34"/><stop offset="100%" stop-color="${ORANGE}" stop-opacity="0.14"/></radialGradient></defs>${rings}${spokes}<polygon points="${dp}" fill="url(#rg)" stroke="${GOLD}" stroke-width="${(width * 0.005).toFixed(1)}" stroke-linejoin="round"/>${dots}${labs}</svg>`;
 }
 
-// Comic-book VS splash: diagonal fighting-game split, Ben-Day halftone, hard ink
-// outlines, radial speed lines, Impact poster type. Deliberately un-SaaS.
-function versusComic(w, h) {
-  const ink = '#0b0b0b', paper = '#f6eddd';
-  const edge = Math.round(Math.min(w, h) * 0.011);
-  const vs = Math.round(h * 0.24), nameF = Math.round(h * 0.062), dot = Math.round(h * 0.02);
-  const cx = w / 2, cy = h * 0.42;
-  let lines = '';
-  for (let a = 0; a < 360; a += 8) { const r = Math.max(w, h); const x = cx + r * Math.cos((a * Math.PI) / 180), y = cy + r * Math.sin((a * Math.PI) / 180); lines += `<line x1="${cx}" y1="${cy.toFixed(0)}" x2="${x.toFixed(0)}" y2="${y.toFixed(0)}" stroke="rgba(11,11,11,0.10)" stroke-width="${a % 24 === 0 ? 5 : 2}"/>`; }
-  return `<style>
-    .cv-panel{position:absolute;top:${Math.round(h * 0.022)}px;left:${Math.round(w * 0.025)}px;right:${Math.round(w * 0.025)}px;bottom:${Math.round(h * 0.115)}px;border:${edge}px solid ${ink};border-radius:${Math.round(h * 0.016)}px;overflow:hidden;background:${ink};box-shadow:0 24px 60px -20px rgba(0,0,0,.7)}
-    .cv-h{position:absolute;inset:0}
-    .cv-a{background:radial-gradient(circle at 32% 28%, #f19a44, #d16f27);clip-path:polygon(0 0,64% 0,36% 100%,0 100%)}
-    .cv-b{background:radial-gradient(circle at 70% 74%, #5cc2df, #2c8fb0);clip-path:polygon(64% 0,100% 0,100% 100%,36% 100%)}
-    .cv-dots{position:absolute;inset:0;background-image:radial-gradient(circle, rgba(11,11,11,.28) 26%, transparent 28%);background-size:${dot}px ${dot}px;mix-blend-mode:multiply;opacity:.55}
-    .cv-speed{position:absolute;inset:0}
-    .cv-slash{position:absolute;top:-8%;bottom:-8%;left:50%;width:${Math.round(w * 0.028)}px;background:${paper};transform:translateX(-50%) skewX(-18deg);box-shadow:0 0 0 ${edge}px ${ink}}
-    .cv-cap{position:absolute;top:${Math.round(h * 0.035)}px;left:50%;transform:translateX(-50%) rotate(-2deg);background:${paper};border:${edge}px solid ${ink};padding:${Math.round(h * 0.012)}px ${Math.round(w * 0.045)}px;font-family:Impact,'Arial Narrow',sans-serif;font-size:${Math.round(h * 0.05)}px;letter-spacing:2px;color:${ink};box-shadow:7px 7px 0 rgba(11,11,11,.4)}
-    .cv-vs{position:absolute;top:${Math.round(cy)}px;left:50%;transform:translate(-50%,-50%) rotate(-7deg);font-family:Impact,'Arial Narrow',sans-serif;font-size:${vs}px;line-height:1;color:${paper};-webkit-text-stroke:${Math.round(vs * 0.055)}px ${ink};paint-order:stroke fill;text-shadow:9px 9px 0 rgba(11,11,11,.45)}
-    .cv-n{position:absolute;font-family:Impact,'Arial Narrow',sans-serif;font-size:${nameF}px;line-height:.95;color:${paper};-webkit-text-stroke:${Math.round(nameF * 0.05)}px ${ink};paint-order:stroke fill;letter-spacing:1px}
-    .cv-na{top:${Math.round(h * 0.19)}px;left:${Math.round(w * 0.07)}px;transform:rotate(-6deg)}
-    .cv-nb{bottom:${Math.round(h * 0.19)}px;right:${Math.round(w * 0.07)}px;transform:rotate(-6deg);text-align:right}
-    .cv-cta{position:absolute;bottom:${Math.round(h * 0.035)}px;left:50%;transform:translateX(-50%) rotate(1deg);background:${ink};padding:${Math.round(h * 0.012)}px ${Math.round(w * 0.05)}px;font-family:Impact,'Arial Narrow',sans-serif;font-size:${Math.round(h * 0.032)}px;letter-spacing:2px;color:${GOLD}}
-  </style>
-  <div class="cv-panel">
-    <div class="cv-h cv-a"></div><div class="cv-h cv-b"></div>
-    <div class="cv-dots"></div>
-    <svg class="cv-speed" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${lines}</svg>
-    <div class="cv-slash"></div>
-    <div class="cv-cap">WHO WOULD WIN?!</div>
-    <div class="cv-n cv-na">HERO</div>
-    <div class="cv-n cv-nb">VILLAIN</div>
-    <div class="cv-vs">VS</div>
-    <div class="cv-cta">YOU DECIDE · VOTE NOW</div>
-  </div>`;
-}
-
 const STYLES = {
   // 1 — the sheer size of the catalogue
   scale: (w, h, d) => stage(w, h,
