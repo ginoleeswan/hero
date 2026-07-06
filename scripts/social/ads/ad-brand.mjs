@@ -47,13 +47,26 @@ function constellationSvg(w, h) {
   return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="position:absolute;inset:0">${edges}${dots}</svg>`;
 }
 
-function bar(h, label, pct, w) {
-  const track = Math.round(w * 0.5);
-  return `<div style="display:flex;align-items:center;gap:${Math.round(w * 0.02)}px;margin:${Math.round(h * 0.009)}px 0">
-    <span style="font-family:'S';font-size:${Math.round(h * 0.022)}px;letter-spacing:.12em;color:${MUTED};width:${Math.round(w * 0.30)}px;text-align:right">${label}</span>
-    <div style="width:${track}px;height:${Math.round(h * 0.026)}px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden">
-      <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,${ORANGE},${GOLD});border-radius:99px"></div></div>
-    <span class="pop" style="font-size:${Math.round(h * 0.026)}px;color:${GOLD};width:${Math.round(w * 0.07)}px;text-align:left">${pct}</span></div>`;
+// Hexagonal power-grid (radar) — the iconic superhero-stats visual.
+function radar(size) {
+  const stats = [['INTELLIGENCE', 88], ['STRENGTH', 74], ['SPEED', 92], ['DURABILITY', 69], ['POWER', 84], ['COMBAT', 78]];
+  const cx = size / 2, cy = size / 2, R = size * 0.27;
+  const ang = (i) => ((-90 + 60 * i) * Math.PI) / 180;
+  const pt = (i, r) => [cx + r * Math.cos(ang(i)), cy + r * Math.sin(ang(i))];
+  const poly = (r) => stats.map((_, i) => pt(i, r).map((n) => n.toFixed(1)).join(',')).join(' ');
+  let rings = '';
+  for (const f of [0.25, 0.5, 0.75, 1]) rings += `<polygon points="${poly(R * f)}" fill="none" stroke="rgba(246,237,221,0.09)" stroke-width="1"/>`;
+  let spokes = '';
+  for (let i = 0; i < 6; i++) { const [x, y] = pt(i, R); spokes += `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(246,237,221,0.07)" stroke-width="1"/>`; }
+  const dp = stats.map(([, v], i) => pt(i, (R * v) / 100).map((n) => n.toFixed(1)).join(',')).join(' ');
+  const dots = stats.map(([, v], i) => { const [x, y] = pt(i, (R * v) / 100); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(size * 0.008).toFixed(1)}" fill="${GOLD}"/>`; }).join('');
+  const labs = stats.map(([l, v], i) => {
+    const [x, y] = pt(i, R * 1.26);
+    const anchor = Math.abs(x - cx) < size * 0.03 ? 'middle' : x > cx ? 'start' : 'end';
+    const fs = (size * 0.03).toFixed(0);
+    return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${anchor}" dominant-baseline="middle" style="font-family:'S';font-size:${fs}px;letter-spacing:.06em;fill:${MUTED}">${l} <tspan fill="${GOLD}">${v}</tspan></text>`;
+  }).join('');
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><defs><radialGradient id="rg" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="${GOLD}" stop-opacity="0.34"/><stop offset="100%" stop-color="${ORANGE}" stop-opacity="0.14"/></radialGradient></defs>${rings}${spokes}<polygon points="${dp}" fill="url(#rg)" stroke="${GOLD}" stroke-width="${(size * 0.005).toFixed(1)}" stroke-linejoin="round"/>${dots}${labs}</svg>`;
 }
 
 const STYLES = {
@@ -74,13 +87,11 @@ const STYLES = {
        <div style="font-size:${Math.round(h * 0.032)}px;color:${MUTED};margin-top:${Math.round(h * 0.028)}px;max-width:${Math.round(w * 0.7)}px">${nice(d.count)} heroes &amp; villains — allies, rivals, families, teams.</div>
        ${cta(h)}`)}`,
 
-  // 3 — the powerstats rating system
+  // 3 — the powerstats rating system, as a hexagonal power grid
   powerstats: (w, h, d) => stage(w, h,
-    `${eyebrow(h, 'SIX POWERS · ONE SCORE')}
-     <div class="pop" style="font-size:${Math.round(h * 0.07)}px;line-height:1;color:${CREAM};margin-bottom:${Math.round(h * 0.045)}px">Every hero, rated.</div>
-     <div style="width:100%;max-width:${Math.round(w * 0.86)}px">
-       ${bar(h, 'INTELLIGENCE', 88, w)}${bar(h, 'STRENGTH', 74, w)}${bar(h, 'SPEED', 92, w)}
-       ${bar(h, 'DURABILITY', 69, w)}${bar(h, 'POWER', 84, w)}${bar(h, 'COMBAT', 78, w)}</div>
+    `${eyebrow(h, 'SIX POWERS · ONE GRID')}
+     <div class="pop" style="font-size:${Math.round(h * 0.062)}px;line-height:1;color:${CREAM};margin-bottom:${Math.round(h * 0.01)}px">Every hero, rated.</div>
+     <div style="margin:${Math.round(h * 0.005)}px 0">${radar(Math.round(Math.min(w, h) * 0.62))}</div>
      ${cta(h)}`),
 
   // 4 — the debate / vote hub (no faces)
