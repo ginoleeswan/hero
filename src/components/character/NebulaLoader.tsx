@@ -87,50 +87,49 @@ export function NebulaLoader({ label = 'Mapping the universe…' }: { label?: st
   const [vp, setVp] = useState({ w: 0, h: 0 });
   const still = reducedMotion();
 
-  const driftBack = useSharedValue(0.5);
-  const driftFront = useSharedValue(0.5);
-  const pulse = useSharedValue(0);
-
+  // One continuous clock (0→1, looping, never reversing) drives everything.
+  // Every derived motion uses INTEGER harmonics of it, so at the 1→0 wrap each
+  // sine returns to phase and the whole scene flows seamlessly — no stutter.
+  const clock = useSharedValue(0);
   useEffect(() => {
     if (still) return;
-    driftBack.value = withRepeat(
-      withTiming(1, { duration: 13000, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true,
-    );
-    driftFront.value = withRepeat(
-      withTiming(0, { duration: 9000, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true,
-    );
-    pulse.value = withRepeat(
-      withTiming(1, { duration: 2600, easing: Easing.out(Easing.quad) }),
-      -1,
-    );
-  }, [still, driftBack, driftFront, pulse]);
+    clock.value = withRepeat(withTiming(1, { duration: 28000, easing: Easing.linear }), -1, false);
+  }, [still, clock]);
 
-  const backStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: (driftBack.value - 0.5) * 26 },
-      { translateY: (driftBack.value - 0.5) * 18 },
-    ],
-  }));
-  const frontStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: (driftFront.value - 0.5) * 40 },
-      { translateY: (0.5 - driftFront.value) * 30 },
-    ],
-  }));
+  const TAU = Math.PI * 2;
+  // Back layer: a slow, wide orbit + a gentle breathe.
+  const backStyle = useAnimatedStyle(() => {
+    const a = clock.value * TAU;
+    return {
+      transform: [
+        { translateX: Math.sin(a) * 24 },
+        { translateY: Math.cos(a) * 18 },
+        { scale: 1 + Math.sin(a * 2) * 0.03 },
+      ],
+    };
+  });
+  // Front layer: a tighter, faster counter-orbit (2×) offset in phase.
+  const frontStyle = useAnimatedStyle(() => {
+    const a = clock.value * TAU;
+    return {
+      transform: [
+        { translateX: Math.sin(a * 2 + 1.3) * 36 },
+        { translateY: Math.cos(a * 2 + 1.3) * 27 },
+        { scale: 1 + Math.cos(a * 3) * 0.04 },
+      ],
+    };
+  });
 
   const coreR = 5;
-  const range = 34;
+  const range = 36;
+  // Rings emanate 8× per clock loop (~every 3.5s), continuous across the wrap.
   const ring1 = useAnimatedProps(() => {
-    const p = pulse.value;
-    return { r: coreR + p * range, opacity: (1 - p) * 0.45 };
+    const p = (clock.value * 8) % 1;
+    return { r: coreR + p * range, opacity: (1 - p) * 0.5 };
   });
   const ring2 = useAnimatedProps(() => {
-    const p = (pulse.value + 0.5) % 1;
-    return { r: coreR + p * range, opacity: (1 - p) * 0.45 };
+    const p = (clock.value * 8 + 0.5) % 1;
+    return { r: coreR + p * range, opacity: (1 - p) * 0.5 };
   });
 
   const cx = vp.w / 2;
@@ -157,9 +156,10 @@ export function NebulaLoader({ label = 'Mapping the universe…' }: { label?: st
                 <Stop offset="0%" stopColor="#fbeede" stopOpacity={0.95} />
                 <Stop offset="100%" stopColor="#fbeede" stopOpacity={0} />
               </RadialGradient>
-              <RadialGradient id="vignette" cx="50%" cy="50%" r="70%">
-                <Stop offset="55%" stopColor={SURFACE.ink} stopOpacity={0} />
-                <Stop offset="100%" stopColor={SURFACE.ink} stopOpacity={0.9} />
+              <RadialGradient id="vignette" cx="50%" cy="50%" r="72%">
+                <Stop offset="34%" stopColor={SURFACE.ink} stopOpacity={0} />
+                <Stop offset="82%" stopColor={SURFACE.ink} stopOpacity={0.7} />
+                <Stop offset="100%" stopColor={SURFACE.ink} stopOpacity={1} />
               </RadialGradient>
             </Defs>
             <Circle cx={cx} cy={cy} r={22} fill="url(#core)" />
