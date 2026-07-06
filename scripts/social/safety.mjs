@@ -1,7 +1,7 @@
 // Single source of truth for social-content IP risk. A hero's TIER (S/A/B/C)
 // governs what it may depict in a PAID AD. Organic posting is never restricted.
 // Design: docs/superpowers/specs/2026-07-06-social-ad-safety-split-design.md
-import { famousPool } from './lib.mjs';
+import { famousPool, imgDataUri } from './lib.mjs';
 
 // Risk order, most → least restricted. Higher number = riskier to depict.
 export const TIER_RISK = { S: 3, A: 2, B: 1, C: 0 };
@@ -97,4 +97,31 @@ export function filterPool(rows, { maxTier = 'C', minFame = 0 } = {}) {
 // lib's famousPool (top-160 by fame_score, includes publisher).
 export async function safePool(sb, opts = {}) {
   return filterPool(await famousPool(sb), opts);
+}
+
+// Pure: which hero image fields may be used, and whether to stylize, per context.
+// AD CONTEXT NEVER INCLUDES image_url/image_md_url — only the Mythique render.
+export function portraitPlan(hero, context) {
+  if (context === 'organic') {
+    return { fields: ['portrait_url', 'image_url', 'image_md_url'], stylize: false };
+  }
+  switch (adImagery(hero)) {
+    case 'stylized': return { fields: ['portrait_url'], stylize: true };
+    case 'small-raw':
+    case 'full': return { fields: ['portrait_url'], stylize: false };
+    case 'none':
+    default: return { fields: [], stylize: false };
+  }
+}
+
+// I/O: resolve the first available allowed field to a data-URI. null = show no face.
+export async function safePortrait(hero, { context }) {
+  const plan = portraitPlan(hero, context);
+  for (const f of plan.fields) {
+    if (hero[f]) {
+      const uri = await imgDataUri(hero[f]);
+      if (uri) return { uri, stylize: plan.stylize };
+    }
+  }
+  return null;
 }

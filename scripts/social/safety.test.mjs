@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { tierOf, adImagery, tierAllowed, filterPool, DISCLAIMER } from './safety.mjs';
+import { tierOf, adImagery, tierAllowed, filterPool, portraitPlan, DISCLAIMER } from './safety.mjs';
 
 test('tierOf: per-character override wins over publisher', () => {
   assert.equal(tierOf({ id: 'ov1', publisher: 'Marvel' }), 'C'); // ov1 overridden to C below
@@ -55,6 +55,18 @@ test('tierAllowed: maxTier admits its tier and every less-risky one', () => {
 
 test('DISCLAIMER is the exact approved copy', () => {
   assert.equal(DISCLAIMER, 'Unofficial fan encyclopedia. Characters © their respective owners.');
+});
+
+test('portraitPlan: organic uses the full fallback chain, never stylized', () => {
+  assert.deepEqual(portraitPlan({ publisher: 'Marvel' }, 'organic'),
+    { fields: ['portrait_url', 'image_url', 'image_md_url'], stylize: false });
+});
+
+test('portraitPlan: ad never references official art (only portrait_url or nothing)', () => {
+  assert.deepEqual(portraitPlan({ publisher: 'Marvel' }, 'ad'), { fields: [], stylize: false }); // S: none
+  assert.deepEqual(portraitPlan({ publisher: 'DC Comics' }, 'ad'), { fields: ['portrait_url'], stylize: true }); // A: stylized
+  assert.deepEqual(portraitPlan({ publisher: 'Company-Licensed' }, 'ad'), { fields: ['portrait_url'], stylize: false }); // B: small-raw
+  assert.deepEqual(portraitPlan({ publisher: 'In the Public Domain' }, 'ad'), { fields: ['portrait_url'], stylize: false }); // C: full
 });
 
 test('filterPool: keeps only heroes no riskier than maxTier, above minFame', () => {
