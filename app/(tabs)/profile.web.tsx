@@ -405,9 +405,10 @@ export default function WebProfileScreen() {
   const handleShareUniverse = async () => {
     const result = await shareUniverse();
     if (result === 'error') showToast('Could not create your card');
+    else if (result === 'unsupported') showToast('Sharing not available');
     else {
       if (result === 'downloaded') showToast('Saved your universe card');
-      void nudge.requestNudge('share'); // 'shared' | 'downloaded'
+      void nudge.requestNudge('share'); // success: 'shared' | 'downloaded'
     }
   };
 
