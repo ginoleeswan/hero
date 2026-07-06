@@ -132,8 +132,18 @@ const STYLES = {
      ${radar(Math.round(Math.min(w, h) * 0.72))}
      ${cta(h)}`),
 
-  // 4 — the debate / vote hub, as a comic-book VS splash (no faces)
-  versus: (w, h) => versusComic(w, h),
+  // 4 — the debate / vote hub (no faces)
+  versus: (w, h, d) => {
+    const plate = Math.round(w * 0.28);
+    const p = (glyph, c) => `<div style="width:${plate}px;height:${plate}px;border-radius:26%;background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.01));border:2px solid ${c};display:flex;align-items:center;justify-content:center;box-shadow:0 20px 50px -20px rgba(0,0,0,.7)"><span class="pop" style="font-size:${Math.round(plate * 0.5)}px;color:${c}">?</span></div>`;
+    return stage(w, h,
+      `${eyebrow(h, 'SETTLE THE ARGUMENT')}
+       <div style="display:flex;align-items:center;gap:${Math.round(w * 0.045)}px;margin-bottom:${Math.round(h * 0.04)}px">
+         ${p('?', ORANGE)}<span class="pop" style="font-size:${Math.round(h * 0.07)}px;color:${GOLD}">VS</span>${p('?', TEAL)}</div>
+       <div class="pop" style="font-size:${Math.round(h * 0.06)}px;color:${CREAM}">Who would win?</div>
+       <div style="font-size:${Math.round(h * 0.032)}px;color:${MUTED};margin-top:${Math.round(h * 0.014)}px">You decide. Cast your vote.</div>
+       ${cta(h)}`);
+  },
 
   // 5 — the rankings / fame score
   leaderboard: (w, h, d) => {

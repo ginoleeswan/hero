@@ -151,7 +151,12 @@ function siteCard(origin: string, chars: string) {
     >
       {textureLayer}
       {/* Mascot bust, bleeding off the right and bottom. */}
-      <img src={bust} height={720} alt="" style={{ position: 'absolute', right: -18, bottom: -48 }} />
+      <img
+        src={bust}
+        height={720}
+        alt=""
+        style={{ position: 'absolute', right: -18, bottom: -48 }}
+      />
       {/* Full-bleed left wash — anchors the text with no hard edge. */}
       <div
         style={{
@@ -163,10 +168,30 @@ function siteCard(origin: string, chars: string) {
           background: `linear-gradient(90deg, rgba(11,24,32,0.92) 0%, rgba(11,24,32,0.5) 34%, rgba(11,24,32,0) 60%)`,
         }}
       />
-      {corner({ top: 30, left: 30, borderTop: `2px solid ${BRACKET}`, borderLeft: `2px solid ${BRACKET}` })}
-      {corner({ top: 30, right: 30, borderTop: `2px solid ${BRACKET}`, borderRight: `2px solid ${BRACKET}` })}
-      {corner({ bottom: 30, left: 30, borderBottom: `2px solid ${BRACKET}`, borderLeft: `2px solid ${BRACKET}` })}
-      {corner({ bottom: 30, right: 30, borderBottom: `2px solid ${BRACKET}`, borderRight: `2px solid ${BRACKET}` })}
+      {corner({
+        top: 30,
+        left: 30,
+        borderTop: `2px solid ${BRACKET}`,
+        borderLeft: `2px solid ${BRACKET}`,
+      })}
+      {corner({
+        top: 30,
+        right: 30,
+        borderTop: `2px solid ${BRACKET}`,
+        borderRight: `2px solid ${BRACKET}`,
+      })}
+      {corner({
+        bottom: 30,
+        left: 30,
+        borderBottom: `2px solid ${BRACKET}`,
+        borderLeft: `2px solid ${BRACKET}`,
+      })}
+      {corner({
+        bottom: 30,
+        right: 30,
+        borderBottom: `2px solid ${BRACKET}`,
+        borderRight: `2px solid ${BRACKET}`,
+      })}
 
       <div
         style={{
@@ -190,10 +215,26 @@ function siteCard(origin: string, chars: string) {
         >
           THE HERO & VILLAIN ENCYCLOPEDIA
         </div>
-        <div style={{ display: 'flex', fontFamily: 'Righteous', fontSize: 116, color: BEIGE, marginTop: 12 }}>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'Righteous',
+            fontSize: 116,
+            color: BEIGE,
+            marginTop: 12,
+          }}
+        >
           mythique
         </div>
-        <div style={{ display: 'flex', fontFamily: 'FlameSans', fontSize: 40, color: BEIGE, marginTop: 8 }}>
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'FlameSans',
+            fontSize: 40,
+            color: BEIGE,
+            marginTop: 8,
+          }}
+        >
           Every universe. Every icon.
         </div>
         <div
@@ -211,7 +252,9 @@ function siteCard(origin: string, chars: string) {
           }}
         >
           <span style={{ color: GOLD, letterSpacing: 2 }}>WHO WOULD WIN?</span>
-          <div style={{ width: 1, height: 24, background: BRACKET, marginLeft: 18, marginRight: 18 }} />
+          <div
+            style={{ width: 1, height: 24, background: BRACKET, marginLeft: 18, marginRight: 18 }}
+          />
           <span style={{ color: MUTED }}>{`${chars} CHARACTERS`}</span>
         </div>
       </div>

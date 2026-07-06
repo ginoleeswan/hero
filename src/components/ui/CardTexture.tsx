@@ -6,13 +6,7 @@ import Svg, { Rect, Defs, RadialGradient, Stop, Pattern, Circle, Mask, G } from 
 import { StyleSheet } from 'react-native';
 import { TEXTURE } from '../../constants/cardTexture';
 
-export function CardTexture({
-  size,
-  glow = TEXTURE.glowColor,
-}: {
-  size: number;
-  glow?: string;
-}) {
+export function CardTexture({ size, glow = TEXTURE.glowColor }: { size: number; glow?: string }) {
   const t = TEXTURE.dotTile;
   const c = t / 2;
   return (
