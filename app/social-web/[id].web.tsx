@@ -1,50 +1,57 @@
 import { useState, useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SURFACE } from '../../src/constants/colors';
+import { COLORS, SURFACE, INK_TEXT } from '../../src/constants/colors';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { getHeroNeighborhood } from '../../src/lib/db/heroes/neighborhood';
-import { SocialWebGraph } from '../../src/components/character/SocialWebGraph';
+import { SocialWebCanvas } from '../../src/components/character/SocialWebCanvas';
 import { deriveCharacterTheme } from '../../src/lib/accent';
 import { TOPBAR_HEIGHT } from '../../src/components/web/TopBar';
 
 export default function SocialWebExplorer() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { width, height } = useWindowDimensions();
-  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.paper });
+  useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
 
-  // The graph re-centres on focusId without changing the route (entry id stays
-  // the URL). Long-pressing a node walks the universe hero to hero.
-  const [focusId, setFocusId] = useState<string>(id);
+  const [focusSubject, setFocusSubject] = useState<string>(id);
   const { data } = useQuery({
-    queryKey: ['neighborhood', focusId, 24],
-    queryFn: () => getHeroNeighborhood(focusId, 24),
+    queryKey: ['neighborhood', focusSubject, 24],
+    queryFn: () => getHeroNeighborhood(focusSubject, 24),
     staleTime: 5 * 60 * 1000,
   });
-
-  const focusNode = data?.nodes.find((n) => n.id === focusId);
+  const subjectNode = data?.nodes.find((n) => n.id === focusSubject);
   const theme = useMemo(
-    () => deriveCharacterTheme({ publisher: focusNode?.publisher ?? null }),
-    [focusNode],
+    () => deriveCharacterTheme({ publisher: subjectNode?.publisher ?? null }),
+    [subjectNode],
   );
 
-  // Fit within the space left by the TopBar clearance, header, and hint row.
-  const size = Math.max(280, Math.min(width - 32, height - TOPBAR_HEIGHT - 180));
+  const sparse = data && data.nodes.length < 3;
 
   return (
     <View style={styles.screen}>
+      {/* accent bloom from centre */}
+      <View
+        style={
+          [
+            StyleSheet.absoluteFill,
+            {
+              backgroundImage: `radial-gradient(60% 50% at 50% 48%, ${theme.accentDeep}4d, transparent 72%)`,
+              pointerEvents: 'none',
+            },
+          ] as object
+        }
+      />
       <View style={styles.header}>
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/explore'))}
           style={styles.back}
         >
-          <Ionicons name="arrow-back" size={20} color={COLORS.navy} />
+          <Ionicons name="arrow-back" size={20} color={INK_TEXT.primary} />
         </Pressable>
         <Text style={styles.title} numberOfLines={1}>
-          {focusNode ? `${focusNode.name}'s universe` : 'Universe'}
+          {subjectNode ? `${subjectNode.name}'s universe` : 'Universe'}
         </Text>
         <View style={styles.legend}>
           <Legend color={COLORS.red} label="Enemy" />
@@ -52,25 +59,26 @@ export default function SocialWebExplorer() {
           <Legend color={COLORS.blue} label="Team" />
         </View>
       </View>
-      <View style={styles.canvas}>
-        {data && data.nodes.length > 0 ? (
-          <SocialWebGraph
-            neighborhood={data}
-            subjectId={focusId}
-            accent={theme.accent}
-            size={size}
-            onNodePress={(nodeId) =>
-              nodeId === focusId
-                ? undefined
-                : router.push(`/character/${nodeId}` as Parameters<typeof router.push>[0])
-            }
-            onNodeLongPress={(nodeId) => setFocusId(nodeId)}
-          />
-        ) : (
-          <Text style={styles.empty}>Mapping the universe…</Text>
-        )}
-      </View>
-      <Text style={styles.hint}>Tap a node to visit · long-press to recenter</Text>
+
+      {data && !sparse ? (
+        <SocialWebCanvas
+          neighborhood={data}
+          subjectId={focusSubject}
+          accent={theme.accent}
+          onNavigate={(nodeId) =>
+            router.push(`/character/${nodeId}` as Parameters<typeof router.push>[0])
+          }
+          onRecenter={(nodeId) => setFocusSubject(nodeId)}
+        />
+      ) : (
+        <View style={styles.empty}>
+          <Text style={styles.emptyText}>
+            {sparse ? 'Not enough connections to map yet.' : 'Mapping the universe…'}
+          </Text>
+        </View>
+      )}
+
+      <Text style={styles.hint}>Tap a node to focus · long-press to recenter · Open to visit</Text>
     </View>
   );
 }
@@ -85,36 +93,35 @@ function Legend({ color, label }: { color: string; label: string }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.beige },
+  screen: { flex: 1, backgroundColor: SURFACE.ink },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 16,
     paddingHorizontal: 16,
-    // Clear the transparent global TopBar (every web route bleeds under it).
     paddingTop: TOPBAR_HEIGHT + 14,
     paddingBottom: 8,
   },
   back: { padding: 6 },
   title: {
     fontFamily: 'Flame-Regular',
-    fontSize: 20,
-    lineHeight: 26,
-    color: COLORS.navy,
+    fontSize: 22,
+    lineHeight: 28,
+    color: INK_TEXT.primary,
     flex: 1,
   } as object,
   legend: { flexDirection: 'row', gap: 12 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: 'rgba(41,60,67,0.6)' },
-  canvas: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  empty: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: 'rgba(41,60,67,0.5)' },
+  legendText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: INK_TEXT.muted },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  emptyText: { fontFamily: 'FlameSans-Regular', fontSize: 14, color: INK_TEXT.faint },
   hint: {
     textAlign: 'center',
     fontFamily: 'Nunito_700Bold',
     fontSize: 11,
-    color: 'rgba(41,60,67,0.45)',
-    paddingBottom: 16,
+    color: INK_TEXT.faint,
+    paddingVertical: 14,
   },
 });
