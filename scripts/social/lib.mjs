@@ -47,6 +47,7 @@ export function loadEnv() {
 export function makeSb({ url, key }) {
   const headers = { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
   return {
+    url, headers,
     async rest(path) {
       const r = await fetch(`${url}/rest/v1/${path}`, { headers });
       if (!r.ok) throw new Error(`REST ${path} -> ${r.status}`);
