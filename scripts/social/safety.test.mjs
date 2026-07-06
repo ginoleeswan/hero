@@ -14,6 +14,21 @@ test('tierOf: known publishers map to their tier', () => {
   assert.equal(tierOf({ publisher: 'In the Public Domain' }), 'C');
 });
 
+test('tierOf: high-value film/TV/literary franchises are S (no-depict)', () => {
+  for (const p of ['J. K. Rowling', 'Alien', 'Predator', 'The Lord of the Rings',
+    'Game of Thrones', 'South Park', 'Halloween', 'Indiana Jones', 'The Lego Group',
+    'Jurassic Park', 'The Chronicles of Narnia', 'Hakusensha']) {
+    assert.equal(tierOf({ publisher: p }), 'S', p);
+  }
+});
+
+test('tierOf: major game studios and comic publishers are A (stylized only)', () => {
+  for (const p of ['Bethesda', 'Blizzard Entertainment', 'Electronic Arts',
+    'Ubisoft Entertainment', 'Dark Horse Comics', 'Boom! Studios']) {
+    assert.equal(tierOf({ publisher: p }), 'A', p);
+  }
+});
+
 test('tierOf: unknown / missing publisher defaults to A (conservative)', () => {
   assert.equal(tierOf({ publisher: 'Totally New Publisher' }), 'A');
   assert.equal(tierOf({ publisher: null }), 'A');

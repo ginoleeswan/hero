@@ -14,12 +14,37 @@ export const PUBLISHER_TIER = {
   'Looney Tunes': 'S', 'Hanna-Barbera': 'S', Bongo: 'S', 'Star Trek': 'S',
   'The Terminator': 'S', Conan: 'S', 'Teenage Mutant Ninja Turtles': 'S',
   Hasbro: 'S', Mattel: 'S',
+  // S — film / TV / literary franchises owned by aggressive media conglomerates
+  'J. K. Rowling': 'S', 'Indiana Jones': 'S', RoboCop: 'S', 'Friday the 13th': 'S',
+  'A Nightmare on Elm Street': 'S', Hellraiser: 'S', Halloween: 'S', "Child's Play": 'S',
+  Alien: 'S', Predator: 'S', 'Buffy the Vampire Slayer': 'S', 'Ben 10': 'S',
+  'Mission: Impossible': 'S', 'Babylon 5': 'S', 'Avatar: The Last Airbender': 'S',
+  'The Green Hornet': 'S', 'Game of Thrones': 'S', 'The Lord of the Rings': 'S',
+  'The Chronicles of Narnia': 'S', 'Jurassic Park': 'S', 'Woody Woodpecker': 'S',
+  'Alvin and the Chipmunks': 'S', 'South Park': 'S', 'Captain Planet': 'S',
+  Darkman: 'S', Rocky: 'S', 'Rocky & Bullwinkle': 'S', 'The Bionic Woman': 'S',
+  ALF: 'S', 'Death Race': 'S', 'Spy Kids': 'S', 'The Lego Group': 'S',
+  'Kool-Aid': 'S', 'NBC - Heroes': 'S', 'Sony Pictures': 'S',
+  // S — manga / anime publishers (consistent with Shueisha/Kodansha)
+  Gatchaman: 'S', Hakusensha: 'S', 'Kadokawa Shoten': 'S', Shogakukan: 'S',
+  'ASCII Media Works': 'S',
   // A — stylized only (DC + other US comics + major game studios)
   'DC Comics': 'A', Image: 'A', 'Archie Comics': 'A', 'Top Cow Productions': 'A',
   Rebellion: 'A', 'Harvey Comics': 'A', Hellboy: 'A', Capcom: 'A',
   'Square Enix': 'A', Sega: 'A', 'NetherRealm Studios': 'A', Konami: 'A',
   'CD Projekt Red': 'A', 'PlayStation Studios': 'A', 'Xbox Game Studios': 'A',
   Atlus: 'A', Dupuis: 'A', 'NBC Studios': 'A', 'The Boys': 'A',
+  // A — more AAA game studios
+  Bethesda: 'A', 'Blizzard Entertainment': 'A', 'Electronic Arts': 'A',
+  'Ubisoft Entertainment': 'A', 'Insomniac Games': 'A', SNK: 'A', Namco: 'A',
+  Tecmo: 'A', 'Digital Extremes': 'A', 'Radical Entertainment': 'A', 'Sony Publishing': 'A',
+  // A — more comic publishers (creator/company IP)
+  'Dark Horse Comics': 'A', 'Dynamite Entertainment': 'A', 'Valiant/Acclaim': 'A',
+  Malibu: 'A', 'Boom! Studios': 'A', 'Zenescope Entertainment': 'A', 'Oni Press': 'A',
+  'Aspen MLT': 'A', 'Avatar Press': 'A', 'Vault Comics': 'A', 'Chaos! Comics': 'A',
+  Charlton: 'A', EC: 'A', Crossgen: 'A', 'Fawcett Publications': 'A', 'Quality Comics': 'A',
+  'Sin City': 'A', Preacher: 'A', 'Kick-Ass': 'A', 'Tank Girl': 'A',
+  Dargaud: 'A', 'Le Lombard': 'A', 'Sergio Bonelli Editore': 'A',
   // B — restrained
   'Company-Licensed': 'B',
   // C — safe to depict full-fidelity
