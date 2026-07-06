@@ -37,6 +37,7 @@ export function SocialWebGraph({
   focusId = null,
   sharedIds,
   activeKinds,
+  nodeScale = 1,
   onNodePress,
   onNodeLongPress,
 }: {
@@ -47,6 +48,8 @@ export function SocialWebGraph({
   focusId?: string | null;
   sharedIds?: Set<string>;
   activeKinds?: { enemy: boolean; ally: boolean; teammate: boolean };
+  /** Shrink nodes (e.g. for the compact preview) without changing layout. */
+  nodeScale?: number;
   onNodePress?: (id: string) => void;
   onNodeLongPress?: (id: string) => void;
 }) {
@@ -173,7 +176,7 @@ export function SocialWebGraph({
       {nodes.map((n) => {
         const p = at(n.id);
         const fame = n.fame_score ?? 0;
-        const d = n.is_subject ? 72 : Math.round(40 + 12 * (fame / 100));
+        const d = Math.round((n.is_subject ? 72 : 40 + 12 * (fame / 100)) * nodeScale);
         const kind = n.is_subject ? null : subjectKind(edges, subjectId, n.id);
         const ring = n.is_subject ? accent : kind ? KIND_COLOR[kind] : COLORS.grey;
         const lit = isNodeLit(n.id, focusId, connected);
