@@ -1,4 +1,10 @@
-import { connectedIds, isEdgeLit, isNodeLit } from '../../src/components/character/socialWebFocus';
+import {
+  connectedIds,
+  isEdgeLit,
+  isNodeLit,
+  nodeDegree,
+  sharedWithSubject,
+} from '../../src/components/character/socialWebFocus';
 
 const edges = [
   { from: 'S', to: 'A' },
@@ -21,5 +27,28 @@ describe('socialWebFocus', () => {
     expect(isNodeLit('C', null, conn)).toBe(true);
     expect(isNodeLit('A', 'S', conn)).toBe(true);
     expect(isNodeLit('C', 'S', conn)).toBe(false);
+  });
+});
+
+describe('nodeDegree', () => {
+  it('counts incident edges in either direction', () => {
+    expect(nodeDegree(edges, 'S')).toBe(2);
+    expect(nodeDegree(edges, 'A')).toBe(2);
+    expect(nodeDegree(edges, 'C')).toBe(1);
+  });
+});
+
+describe('sharedWithSubject', () => {
+  const e2 = [
+    { from: 'S', to: 'A' },
+    { from: 'S', to: 'X' },
+    { from: 'F', to: 'A' }, // A is shared: adjacent to both S and F
+    { from: 'F', to: 'Y' },
+  ];
+  it('returns nodes adjacent to both subject and focus', () => {
+    expect(sharedWithSubject(e2, 'S', 'F')).toEqual(new Set(['A']));
+  });
+  it('is empty when focus is the subject', () => {
+    expect(sharedWithSubject(e2, 'S', 'S')).toEqual(new Set());
   });
 });
