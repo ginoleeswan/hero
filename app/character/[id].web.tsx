@@ -3786,17 +3786,17 @@ const styles = StyleSheet.create({
 
   // Enemies & Allies chips
   chipGroup: { marginBottom: 12 },
+  // Matches the SOCIAL WEB preview header (Nunito_800ExtraBold, tracked, muted).
   chipGroupLabel: {
-    fontFamily: 'FlameSans-Regular',
-    fontSize: 10,
-    color: COLORS.navy,
-    opacity: 0.5,
+    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: 11,
+    color: 'rgba(41,60,67,0.55)',
     textTransform: 'uppercase' as const,
-    letterSpacing: 1,
-    marginBottom: 6,
+    letterSpacing: 1.2,
+    marginBottom: 8,
   },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  affGroup: { marginTop: 4 },
+  affGroup: { marginTop: 16 },
   affChip: {
     backgroundColor: COLORS.navy + '0d',
     borderWidth: 1,

@@ -42,6 +42,8 @@ export function SocialWebPreview({
         style={[styles.portal, { borderColor: accent + '2b' }] as object}
         onLayout={(e) => setW(e.nativeEvent.layout.width)}
       >
+        {/* subtle halftone dust — a faint dot grid for texture */}
+        <View style={[StyleSheet.absoluteFill, styles.halftone] as object} pointerEvents="none" />
         {/* accent bloom from centre */}
         <View
           style={
@@ -54,6 +56,8 @@ export function SocialWebPreview({
             ] as object
           }
         />
+        {/* depth vignette — darkens the edges so the portal reads deep */}
+        <View style={[StyleSheet.absoluteFill, styles.vignette] as object} pointerEvents="none" />
         {w > 0 ? (
           <SocialWebGraph
             neighborhood={data}
@@ -95,5 +99,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'hidden',
     backgroundColor: SURFACE.ink,
+    // A soft top-lit gradient over the ink so it isn't a flat slab.
+    backgroundImage: 'radial-gradient(120% 90% at 50% 0%, #16303c 0%, #0b1820 60%)',
+  } as object,
+  halftone: {
+    backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.05) 1px, transparent 1.6px)',
+    backgroundSize: '18px 18px',
+  } as object,
+  vignette: {
+    backgroundImage: 'radial-gradient(120% 85% at 50% 45%, transparent 52%, rgba(0,0,0,0.4) 100%)',
   } as object,
 });
