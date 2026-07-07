@@ -118,6 +118,42 @@ const RECIPES = [
   },
 ];
 
+// ------------------------------------------------------------ launch plan ----
+// The first three posts for a brand-new account, in order. Each step maps to an
+// organic recipe so it can be (re)generated from the Launch view itself.
+const LAUNCH = [
+  {
+    n: 1, title: 'Top 10 Most Famous Villains', kind: 'Ranking carousel · portraits',
+    why: 'The strongest cold open — says exactly what the account is in one glance, works via hashtag discovery with zero followers, and strangers will argue in the comments.',
+    tip: 'Post 12:00–14:00 · upload slides in order · reply to every comment',
+    dir: 'ranking-top-10-most-famous-villains', sub: '',
+    recipe: 'rankings', values: { '--alignment': 'bad', '--count': '10' },
+  },
+  {
+    n: 2, title: 'Character File: Batman', kind: 'Bio carousel · next day',
+    why: 'Depth — “this account has files on everyone.” Value content that earns the follow once post #1 brings people in.',
+    tip: 'Post 12:00–14:00 · tag the character’s fandom hashtags',
+    dir: 'bio-batman', sub: '',
+    recipe: 'bios', values: { '--character': 'Batman', '--count': '1' },
+  },
+  {
+    n: 3, title: 'Goku vs Superman', kind: 'Matchup carousel · day 3',
+    why: 'The debate hook — lands on a profile that already looks like something. Ask the question again as your first comment.',
+    tip: 'Post 18:00–20:00 · winner is on the last slide — don’t spoil it in the caption',
+    dir: 'goku-vs-superman', sub: 'carousel',
+    recipe: 'carousels', values: { '--matchup': 'Goku,Superman', '--count': '1' },
+  },
+];
+function launchState() {
+  return LAUNCH.map((s) => {
+    const abs = join(OUT, s.dir, s.sub);
+    let slides = [];
+    try { slides = readdirSync(abs).filter((f) => /^slide-\d+\.png$/.test(f)).sort((a, b) => a.localeCompare(b, 'en', { numeric: true })).map((f) => join(s.dir, s.sub, f)); } catch { /* not generated yet */ }
+    const cap = rel(join(s.dir, s.sub, 'caption.txt'));
+    return { ...s, slides, caption: cap };
+  });
+}
+
 // ------------------------------------------------------------ fs helpers ----
 const rel = (p) => (existsSync(join(OUT, p)) ? p : null);
 function latestIn(dirRe, pick) {
@@ -191,6 +227,7 @@ const server = createServer((req, res) => {
       recipes: RECIPES.map((r) => ({ ...r, script: undefined, sample: r.sample(), fields: r.fields })),
       brandSamples: Object.fromEntries(BRAND_STYLES.map((s) => [s, rel(join('ad-brand', `${s}-1x1.png`))])),
       week: latestWeek(),
+      launch: launchState(),
       busy: !!(job && !job.done),
     });
   }
@@ -317,6 +354,26 @@ svg.i{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-widt
 .pchk.on{color:#8fd6a8;border-color:rgba(143,214,168,.45);background:rgba(143,214,168,.07)}
 .empty{border:1px dashed rgba(246,237,221,.18);border-radius:var(--r-l);padding:52px 30px;text-align:center;color:var(--muted)}
 .empty .big{font-family:var(--disp);font-size:17px;color:var(--cream);margin-bottom:6px}
+/* ---------------- launch ---------------- */
+.prof{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 26px}
+.prof .pchk{margin-left:0}
+.lstep{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--r-l);padding:20px 22px;margin-bottom:18px;box-shadow:0 14px 34px -24px rgba(0,0,0,.85)}
+.lstep.is-done{opacity:.45;filter:saturate(.65)}
+.lhead{display:flex;align-items:flex-start;gap:16px}
+.lnum{font-family:var(--disp);font-size:26px;color:var(--gold);line-height:1;width:34px;flex:none;padding-top:2px}
+.lbody{flex:1;min-width:0}
+.ltitle{font-family:var(--disp);font-size:17px;letter-spacing:.2px}
+.lkind{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);margin:3px 0 8px}
+.lwhy{font-size:13px;color:var(--muted);max-width:70ch}
+.ltip{font-size:12px;color:var(--cream);opacity:.75;margin-top:8px;display:flex;align-items:center;gap:7px}
+.ltip svg.i{width:13px;height:13px;color:var(--gold)}
+.lslides{display:flex;gap:9px;overflow-x:auto;padding:14px 0 6px}
+.lslides img{height:130px;border-radius:9px;border:1px solid var(--line);cursor:zoom-in;flex:none}
+.lslides img:hover{border-color:var(--goldline)}
+.lacts{display:flex;gap:10px;align-items:center;margin-top:10px}
+.lnext{border:1px dashed rgba(246,237,221,.18);border-radius:var(--r-l);padding:18px 22px;color:var(--muted);font-size:13px;display:flex;align-items:center;gap:10px}
+.lnext svg.i{color:var(--gold)}
+.lnext b{color:var(--cream);cursor:pointer;border-bottom:1px dotted var(--muted)}
 /* ---------------- recipe ---------------- */
 .duo{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(310px,.95fr);gap:30px;align-items:start;margin-top:4px}
 @media(max-width:1000px){.duo{grid-template-columns:1fr}}
@@ -381,7 +438,8 @@ const ICONS={
  clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v4.8l3 1.8"/>',
  open:'<path d="M13.5 5H19v5.5M19 5l-8.5 8.5M19 13.5V18a2 2 0 01-2 2H7a2 2 0 01-2-2V8a2 2 0 012-2h4.5"/>',
  copy:'<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M5.5 15.5h-1a2 2 0 01-2-2v-9a2 2 0 012-2h9a2 2 0 012 2v1"/>',
- check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>'};
+ check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+ flag:'<path d="M5.5 21V4.5"/><path d="M5.5 4.5c4.5-2.4 8.5 2.4 13 0v9c-4.5 2.4-8.5-2.4-13 0"/>'};
 const I=(n,cls='i')=>'<svg class="'+cls+'" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[n]||ICONS.sparkle)+'</svg>';
 let STATE=null, VIEW=location.hash.slice(1)||'week', VALUES={}, polling=null;
 const $=(s,el=document)=>el.querySelector(s);
@@ -392,12 +450,14 @@ async function load(){STATE=await (await fetch('/api/state')).json();render();}
 function nav(to){VIEW=to;location.hash=to;VALUES={};render();$('#main').scrollTop=0;}
 window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(h&&h!==VIEW){VIEW=h;VALUES={};render();}});
 
-function render(){renderNav();VIEW==='week'?renderWeek():renderRecipe();}
+function render(){renderNav();VIEW==='week'?renderWeek():VIEW==='launch'?renderLaunch():renderRecipe();}
 function renderNav(){
-  const groups=[['This week',['week']],['Ad-safe',['ad-brand','ad-matchup','ad-ranking','ad-web-hero']],['Organic',['carousels','bios','rankings','reels']]];
-  $('#nav').innerHTML=groups.map(([t,ids])=>'<div class="sec">'+t+'</div>'+ids.map(id=>{
-    const r=STATE.recipes.find(x=>x.id===id);
-    return '<div class="item'+(VIEW===(id==='week'?'week':id)?' on':'')+'" onclick="nav(\\''+(id==='week'?'week':id)+'\\')">'+I(r.icon)+' '+r.title+'</div>';
+  const groups=[['Start here',[{id:'launch',icon:'flag',title:'Launch plan'}]],
+    ['This week',['week']],['Ad-safe',['ad-brand','ad-matchup','ad-ranking','ad-web-hero']],['Organic',['carousels','bios','rankings','reels']]];
+  $('#nav').innerHTML=groups.map(([t,ids])=>'<div class="sec">'+t+'</div>'+ids.map(x=>{
+    const r=typeof x==='string'?STATE.recipes.find(q=>q.id===x):x;
+    const id=r.id;
+    return '<div class="item'+(VIEW===id?' on':'')+'" onclick="nav(\\''+id+'\\')">'+I(r.icon)+' '+r.title+'</div>';
   }).join('')).join('');
 }
 const activity='<div id="activity"><div class="ahead" id="ahead">'+'Activity'+'</div><div id="log"></div><div id="results"><div class="imgs" id="rImgs"></div><div class="bar"><span id="rMsg"></span><button class="btn ghost" id="rOpen">'+I('open')+' Open folder</button></div></div></div>';
@@ -434,6 +494,42 @@ function renderWeek(){
     box.checked=localStorage.getItem(id)==='1';sync();
     box.addEventListener('change',()=>{localStorage.setItem(id,box.checked?'1':'0');sync();});
   });
+}
+function renderLaunch(){
+  const profItems=[['avatar','Set the avatar (gold mark on navy)'],['bio','Bio: “The hero & villain encyclopedia — 35,000+ legends, ranked & rated”'],['link','Add the mythique.app link']];
+  const prof='<div class="prof">'+profItems.map(([k,t])=>'<label class="pchk" data-k="mq-prof-'+k+'"><input type="checkbox"><span>'+t+'</span></label>').join('')+'</div>';
+  const steps=STATE.launch.map(s=>{
+    const has=s.slides.length>0;
+    const slides=has?'<div class="lslides">'+s.slides.map(p=>'<img loading="lazy" src="/file?p='+encodeURIComponent(p)+'" onclick="window.open(this.src)">').join('')+'</div>':'';
+    const acts='<div class="lacts">'+
+      (has?(s.caption?'<button class="mini" onclick="copyText(\\''+s.caption+'\\',this)">'+I('copy')+' Caption</button>':'')+
+        '<button class="mini" onclick="fetch(\\'/api/open?p=\\'+encodeURIComponent(\\''+s.dir+'\\'))">'+I('file')+' Folder</button>'
+        :'<button class="mini" onclick="runRecipe(\\''+s.recipe+'\\','+esc(JSON.stringify(s.values)).replace(/"/g,'&quot;')+')">'+I('sparkle')+' Generate this post</button>')+
+      '<label class="pchk" data-k="mq-launch-'+s.n+'"><input type="checkbox"><span>posted</span></label></div>';
+    return '<div class="lstep" data-k="mq-launch-'+s.n+'"><div class="lhead"><div class="lnum">'+s.n+'</div><div class="lbody">'+
+      '<div class="ltitle">'+s.title+'</div><div class="lkind">'+s.kind+'</div>'+
+      '<div class="lwhy">'+s.why+'</div><div class="ltip">'+I('clock')+' '+s.tip+'</div>'+slides+acts+'</div></div></div>';
+  }).join('');
+  $('#pg').innerHTML='<div class="crumb">Studio <b>›</b> Start here</div>'+
+    '<div class="viewhead"><h1>Launch plan</h1></div>'+
+    '<div class="desc">Your first three posts, in order, one per day — each one makes the profile stronger for the next. Set up the profile first, then work down the list.</div>'+
+    prof+busyBanner()+steps+
+    '<div class="lnext">'+I('calendar')+' All three posted? Switch to <b onclick="nav(\\'week\\')">This week</b> for the ongoing rhythm — and reply to every comment in your first month.</div>'+activity;
+  document.querySelectorAll('[data-k]').forEach(el=>{
+    const box=el.matches('label')?$('input',el):$('label.pchk input',el);
+    const lab=el.matches('label')?el:$('label.pchk',el);
+    if(!box)return;
+    const key=lab.dataset.k||el.dataset.k;
+    const sync=()=>{lab.classList.toggle('on',box.checked);if(el.classList.contains('lstep'))el.classList.toggle('is-done',box.checked);};
+    box.checked=localStorage.getItem(key)==='1';sync();
+    box.addEventListener('change',()=>{localStorage.setItem(key,box.checked?'1':'0');sync();});
+  });
+}
+async function copyText(p,btn){
+  try{const t=await (await fetch('/file?p='+encodeURIComponent(p))).text();
+    await navigator.clipboard.writeText(t);btn.innerHTML=I('check')+' Copied';}
+  catch{btn.textContent='No caption';}
+  setTimeout(()=>btn.innerHTML=I('copy')+' Caption',1300);
 }
 async function copyCaption(base,btn){
   try{const t=await (await fetch('/week/'+encodeURIComponent(base)+'.caption.txt')).text();
