@@ -1,10 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { SURFACE } from '../../../constants/colors';
 import { getHeroNeighborhood } from '../../../lib/db/heroes/neighborhood';
 import { SocialWebGraph } from '../../character/SocialWebGraph';
+
+const reducedMotion = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+const TAU = Math.PI * 2;
 
 // Compact, calm social-web preview below the relationship shelves. A dark
 // "portal" panel so the constellation renderer reads on its own terms (the
@@ -24,6 +36,18 @@ export function SocialWebPreview({
     staleTime: 5 * 60 * 1000,
   });
   const [w, setW] = useState(0);
+
+  // A very slow ambient drift of the dust layer — barely perceptible float.
+  const drift = useSharedValue(0);
+  useEffect(() => {
+    if (reducedMotion()) return;
+    drift.value = withRepeat(withTiming(1, { duration: 40000, easing: Easing.linear }), -1, false);
+  }, [drift]);
+  const dustStyle = useAnimatedStyle(() => {
+    const a = drift.value * TAU;
+    return { transform: [{ translateX: Math.sin(a) * 10 }, { translateY: Math.cos(a) * 8 }] };
+  });
+
   if (!data || data.nodes.length < 3) return null; // subject + <2 neighbours → skip
 
   // Square graph must fit the portal's height (300); centre it in the wide panel.
@@ -42,8 +66,8 @@ export function SocialWebPreview({
         style={[styles.portal, { borderColor: accent + '2b' }] as object}
         onLayout={(e) => setW(e.nativeEvent.layout.width)}
       >
-        {/* subtle halftone dust — a faint dot grid for texture */}
-        <View style={[StyleSheet.absoluteFill, styles.halftone] as object} pointerEvents="none" />
+        {/* subtle halftone dust — a faint dot grid, slowly drifting */}
+        <Animated.View style={[styles.halftone, dustStyle] as object} pointerEvents="none" />
         {/* accent bloom from centre */}
         <View
           style={
@@ -103,6 +127,12 @@ const styles = StyleSheet.create({
     backgroundImage: 'radial-gradient(120% 90% at 50% 0%, #16303c 0%, #0b1820 60%)',
   } as object,
   halftone: {
+    // Overscan so the slow drift never exposes an edge.
+    position: 'absolute',
+    left: -20,
+    right: -20,
+    top: -20,
+    bottom: -20,
     backgroundImage: 'radial-gradient(circle, rgba(245,235,220,0.05) 1px, transparent 1.6px)',
     backgroundSize: '18px 18px',
   } as object,
