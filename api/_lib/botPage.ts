@@ -7,7 +7,7 @@
 // Kept free of runtime deps (like shareMeta.ts) so it's unit-testable under
 // jest and safe to bundle into the RN-free Vercel functions in api/.
 import { SITE_URL } from '../../src/constants/site';
-import { escapeHtml } from './shareMeta';
+import { escapeHtml, vsShareLine } from './shareMeta';
 
 /** The hero columns the bot page renders. Subset of the heroes Row. */
 export type BotHero = {
@@ -119,13 +119,12 @@ function jsonLd(hero: BotHero, description: string): string {
     { '@type': 'ListItem', position: 2, name: 'Characters', item: `${SITE_URL}/search` },
     { '@type': 'ListItem', position: 3, name: hero.name },
   ];
-  const doc = {
+  return serializeLd({
     '@context': 'https://schema.org',
     '@type': 'ProfilePage',
     mainEntity: person,
     breadcrumb: { '@type': 'BreadcrumbList', itemListElement: crumbs },
-  };
-  return JSON.stringify(doc).replace(/</g, '\\u003c');
+  });
 }
 
 const STATS: Array<[keyof BotHero, string]> = [
@@ -171,6 +170,54 @@ const PAGE_CSS =
   'background:#f5ebdc;color:#221c14;line-height:1.55}img{max-width:16rem;height:auto}' +
   'table{border-collapse:collapse}th{text-align:left;padding-right:1rem}a{color:#8a5a00}';
 
+const FOOTER =
+  `<footer><p><a href="/explore">Explore more characters on Mythique</a> · ` +
+  `<a href="/">Mythique — every universe, every icon</a></p></footer>`;
+
+type DocSpec = {
+  title: string;
+  description: string;
+  /** Site-absolute canonical path, e.g. "/character/h_abc". */
+  path: string;
+  ogImage: string;
+  ogType: string;
+  /** Pre-serialized JSON-LD (already `<`-escaped). */
+  jsonLd: string;
+  body: string;
+};
+
+/** Shared document shell: full head (canonical + OG), JSON-LD, styled body.
+ *  No meta-refresh — search engines must index these URLs, not follow a redirect. */
+function buildDoc(spec: DocSpec): string {
+  const t = escapeHtml(spec.title);
+  const d = escapeHtml(spec.description);
+  const url = `${SITE_URL}${spec.path}`;
+  return `<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${t}</title>
+<meta name="description" content="${d}">
+<link rel="canonical" href="${url}">
+<meta property="og:type" content="${escapeHtml(spec.ogType)}">
+<meta property="og:site_name" content="Mythique">
+<meta property="og:title" content="${t}">
+<meta property="og:description" content="${d}">
+<meta property="og:url" content="${url}">
+<meta property="og:image" content="${escapeHtml(spec.ogImage)}">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">${spec.jsonLd}</script>
+<style>${PAGE_CSS}</style>
+</head><body>
+${spec.body}
+</body></html>`;
+}
+
+/** Serialize JSON-LD with `<` escaped so page-data text can never close the script tag. */
+function serializeLd(doc: Record<string, unknown>): string {
+  return JSON.stringify(doc).replace(/</g, '\\u003c');
+}
+
 /**
  * The full crawlable character page: complete head (canonical + OG, matching
  * the share-meta card), JSON-LD, and a semantic body with dense internal links
@@ -179,11 +226,7 @@ const PAGE_CSS =
  */
 export function buildCharacterBotPage(hero: BotHero, rel: BotHeroRelations): string {
   const name = escapeHtml(hero.name);
-  const title = escapeHtml(`${hero.name} — Powers, Stats, Allies & Enemies | Mythique`);
   const desc = metaDescription(hero);
-  const descAttr = escapeHtml(desc);
-  const url = `${SITE_URL}/character/${encodeURIComponent(hero.id)}`;
-  const ogImage = `${SITE_URL}/api/og?hero=${encodeURIComponent(hero.id)}`;
   const img = hero.portrait_url ?? hero.image_url;
   // ComicVine descriptions can be whole wiki articles — keep the prose real
   // (crawlers value it) but bounded, so no page balloons to tens of KB.
@@ -234,29 +277,213 @@ export function buildCharacterBotPage(hero: BotHero, rel: BotHeroRelations): str
     section('Enemies', relationList(rel.enemies)),
     section('Teammates', relationList(rel.teammates)),
     section('Matchups', versusLinks(hero, rel.enemies)),
-    `<footer><p><a href="/explore">Explore more characters on Mythique</a> · ` +
-      `<a href="/">Mythique — every universe, every icon</a></p></footer>`,
+    FOOTER,
   ].join('\n');
 
-  return `<!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${title}</title>
-<meta name="description" content="${descAttr}">
-<link rel="canonical" href="${url}">
-<meta property="og:type" content="profile">
-<meta property="og:site_name" content="Mythique">
-<meta property="og:title" content="${title}">
-<meta property="og:description" content="${descAttr}">
-<meta property="og:url" content="${url}">
-<meta property="og:image" content="${escapeHtml(ogImage)}">
-<meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">${jsonLd(hero, desc)}</script>
-<style>${PAGE_CSS}</style>
-</head><body>
-${body}
-</body></html>`;
+  return buildDoc({
+    title: `${hero.name} — Powers, Stats, Allies & Enemies | Mythique`,
+    description: desc,
+    path: `/character/${encodeURIComponent(hero.id)}`,
+    ogImage: `${SITE_URL}/api/og?hero=${encodeURIComponent(hero.id)}`,
+    ogType: 'profile',
+    jsonLd: jsonLd(hero, desc),
+    body,
+  });
+}
+
+/** The title columns the bot page renders. Subset of the titles Row. */
+export type BotTitle = {
+  id: string;
+  title: string;
+  media_type: string;
+  year: number | null;
+  release_date: string | null;
+  runtime: number | null;
+  vote_average: number | null;
+  overview: string | null;
+  poster_url: string | null;
+};
+
+/**
+ * Crawlable title (film/TV) page: overview, key facts, and — the graph value —
+ * links to every catalogue character appearing in it.
+ */
+export function buildTitleBotPage(t: BotTitle, characters: RelatedLite[]): string {
+  const isTv = t.media_type === 'tv';
+  const label = isTv ? 'TV series' : 'Film';
+  const yearSuffix = t.year ? ` (${t.year})` : '';
+  const desc =
+    stripHtml(t.overview) ||
+    `${label} — every character from ${t.title} on Mythique, with powers, stats and matchups.`;
+  const facts = [
+    factRow('Type', label),
+    factRow('Release date', t.release_date),
+    factRow('Runtime', t.runtime ? `${t.runtime} min` : null),
+    factRow('Rating', typeof t.vote_average === 'number' ? `${t.vote_average}/10` : null),
+  ].join('');
+  const ld: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': isTv ? 'TVSeries' : 'Movie',
+    name: t.title,
+    url: `${SITE_URL}/title/${encodeURIComponent(t.id)}`,
+  };
+  if (desc) ld.description = desc;
+  if (t.poster_url) ld.image = t.poster_url;
+  if (t.release_date) ld.datePublished = t.release_date;
+  const body = [
+    `<header><h1>${escapeHtml(t.title)}${escapeHtml(yearSuffix)}</h1><p>${label}</p></header>`,
+    t.poster_url
+      ? `<img src="${escapeHtml(t.poster_url)}" alt="${escapeHtml(t.title)} poster">`
+      : '',
+    desc ? section('About', `<p>${escapeHtml(desc)}</p>`) : '',
+    facts ? section('Details', `<table>${facts}</table>`) : '',
+    section('Characters', relationList(characters)),
+    FOOTER,
+  ].join('\n');
+  return buildDoc({
+    title: `${t.title}${yearSuffix} — Characters & Details | Mythique`,
+    description: desc.length > 300 ? `${desc.slice(0, 297)}…` : desc,
+    path: `/title/${encodeURIComponent(t.id)}`,
+    ogImage: t.poster_url ?? `${SITE_URL}/og.png`,
+    ogType: isTv ? 'video.tv_show' : 'video.movie',
+    jsonLd: serializeLd(ld),
+    body,
+  });
+}
+
+/** The team columns the bot page renders. Subset of the teams Row. */
+export type BotTeam = {
+  id: string;
+  name: string;
+  publisher: string | null;
+  member_count: number;
+};
+
+/** Crawlable team page: roster links into the character graph. */
+export function buildTeamBotPage(team: BotTeam, members: RelatedLite[]): string {
+  const uniPath = universePath(team.publisher);
+  const universe = team.publisher
+    ? uniPath
+      ? `<a href="${escapeHtml(uniPath)}">${escapeHtml(team.publisher)}</a>`
+      : escapeHtml(team.publisher)
+    : '';
+  const desc =
+    `${team.name} — team roster, members and universe on Mythique.` +
+    (team.member_count > 0 ? ` ${team.member_count} known members.` : '');
+  const ld: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: `${team.name} — Mythique`,
+    url: `${SITE_URL}/team/${encodeURIComponent(team.id)}`,
+    description: desc,
+  };
+  if (members.length > 0) {
+    ld.mainEntity = {
+      '@type': 'ItemList',
+      name: `${team.name} members`,
+      itemListElement: members.map((m, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: m.name,
+        url: `${SITE_URL}/character/${encodeURIComponent(m.id)}`,
+      })),
+    };
+  }
+  const body = [
+    `<header><h1>${escapeHtml(team.name)}</h1>${universe ? `<p>${universe}</p>` : ''}</header>`,
+    section(
+      'Profile',
+      `<table>${factRow(
+        'Known members',
+        team.member_count > 0 ? String(team.member_count) : null,
+      )}${factRow('Universe', team.publisher)}</table>`,
+    ),
+    section('Members', relationList(members)),
+    FOOTER,
+  ].join('\n');
+  return buildDoc({
+    title: `${team.name} — Members & Roster | Mythique`,
+    description: desc,
+    path: `/team/${encodeURIComponent(team.id)}`,
+    ogImage: `${SITE_URL}/og.png`,
+    ogType: 'website',
+    jsonLd: serializeLd(ld),
+    body,
+  });
+}
+
+/**
+ * Crawlable versus page — targets the "X vs Y who would win" query space.
+ * Stat-by-stat table, community tally, and onward matchup links. /compare/a/b
+ * and /compare/b/a render the same comparison, so the canonical uses the
+ * sorted-id order — both URLs declare one indexable page.
+ */
+export function buildVsBotPage(
+  a: BotHero,
+  b: BotHero,
+  tally: { votesA: number; votesB: number },
+  moreOpponents: { forA: RelatedLite[]; forB: RelatedLite[] },
+): string {
+  const [cA, cB] = [a, b].sort((x, y) => (x.id < y.id ? -1 : 1));
+  const titleText = `${a.name} vs ${b.name} — Who Would Win? | Mythique`;
+  const desc = vsShareLine(a.name, b.name, tally.votesA, tally.votesB);
+  const statRows = STATS.map(([key, label]) => {
+    const va = a[key];
+    const vb = b[key];
+    if (typeof va !== 'number' && typeof vb !== 'number') return '';
+    const cell = (v: unknown) => (typeof v === 'number' ? `${v}/100` : '—');
+    return `<tr><th scope="row">${label}</th><td>${cell(va)}</td><td>${cell(vb)}</td></tr>`;
+  }).join('');
+  const statsTableHtml = statRows
+    ? `<table><tr><th></th><th>${escapeHtml(a.name)}</th><th>${escapeHtml(
+        b.name,
+      )}</th></tr>${statRows}</table>`
+    : '';
+  const total = tally.votesA + tally.votesB;
+  const tallyLine =
+    total > 0
+      ? `<p>Community votes: ${escapeHtml(a.name)} ${tally.votesA} — ${
+          tally.votesB
+        } ${escapeHtml(b.name)}.</p>`
+      : `<p>No votes yet — <a href="/compare/${encodeURIComponent(a.id)}/${encodeURIComponent(
+          b.id,
+        )}">cast the first vote on Mythique</a>.</p>`;
+  const more = [
+    ...moreOpponents.forA.filter((o) => o.id !== b.id).slice(0, 3).map((o) => ({ hero: a, opp: o })),
+    ...moreOpponents.forB.filter((o) => o.id !== a.id).slice(0, 3).map((o) => ({ hero: b, opp: o })),
+  ]
+    .map(
+      ({ hero, opp }) =>
+        `<li><a href="/compare/${encodeURIComponent(hero.id)}/${encodeURIComponent(opp.id)}">` +
+        `${escapeHtml(hero.name)} vs ${escapeHtml(opp.name)} — who wins?</a></li>`,
+    )
+    .join('');
+  const body = [
+    `<header><h1>${escapeHtml(a.name)} vs ${escapeHtml(b.name)}</h1>${tallyLine}</header>`,
+    section('Stat by stat', statsTableHtml),
+    section(
+      'The fighters',
+      `<ul><li>${heroLink(a)} — full profile, powers and enemies</li>` +
+        `<li>${heroLink(b)} — full profile, powers and enemies</li></ul>`,
+    ),
+    section('More matchups', more ? `<ul>${more}</ul>` : ''),
+    FOOTER,
+  ].join('\n');
+  return buildDoc({
+    title: titleText,
+    description: desc,
+    path: `/compare/${encodeURIComponent(cA.id)}/${encodeURIComponent(cB.id)}`,
+    ogImage: `${SITE_URL}/api/og?a=${encodeURIComponent(a.id)}&b=${encodeURIComponent(b.id)}`,
+    ogType: 'website',
+    jsonLd: serializeLd({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: titleText,
+      description: desc,
+      url: `${SITE_URL}/compare/${encodeURIComponent(cA.id)}/${encodeURIComponent(cB.id)}`,
+    }),
+    body,
+  });
 }
 
 /** Unknown-id response — noindex so crawlers drop dead URLs instead of

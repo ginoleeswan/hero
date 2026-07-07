@@ -25,6 +25,28 @@
       "destination": "/api/bot-page?kind=character&id=:id"
     },
     {
+      "source": "/title/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot).*"
+        }
+      ],
+      "destination": "/api/bot-page?kind=title&id=:id"
+    },
+    {
+      "source": "/team/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot).*"
+        }
+      ],
+      "destination": "/api/bot-page?kind=team&id=:id"
+    },
+    {
       "source": "/compare/:hero/:opponent",
       "has": [
         {
@@ -34,6 +56,17 @@
         }
       ],
       "destination": "/api/share-meta?kind=vs&a=:hero&b=:opponent"
+    },
+    {
+      "source": "/compare/:hero/:opponent",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot).*"
+        }
+      ],
+      "destination": "/api/bot-page?kind=vs&a=:hero&b=:opponent"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ],

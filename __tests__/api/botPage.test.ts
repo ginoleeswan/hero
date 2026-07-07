@@ -1,10 +1,14 @@
 import {
   buildCharacterBotPage,
   buildNotFoundPage,
+  buildTeamBotPage,
+  buildTitleBotPage,
+  buildVsBotPage,
   metaDescription,
   stripHtml,
   universePath,
   type BotHero,
+  type BotTitle,
 } from '../../api/_lib/botPage';
 
 const hero = (overrides: Partial<BotHero> = {}): BotHero => ({
@@ -129,6 +133,79 @@ describe('buildCharacterBotPage', () => {
     expect(bare).not.toContain('<h2>Powers</h2>');
     expect(bare).not.toContain('<h2>Allies</h2>');
     expect(bare).not.toContain('<h2>Matchups</h2>');
+  });
+});
+
+describe('buildTitleBotPage', () => {
+  const title: BotTitle = {
+    id: 'tmdb:603',
+    title: 'The Matrix',
+    media_type: 'movie',
+    year: 1999,
+    release_date: '1999-03-31',
+    runtime: 136,
+    vote_average: 8.2,
+    overview: 'A hacker learns the truth.',
+    poster_url: 'https://img.example/matrix.jpg',
+  };
+  const html = buildTitleBotPage(title, [{ id: 'h_neo', name: 'Neo' }]);
+
+  it('emits Movie JSON-LD, canonical and facts', () => {
+    expect(html).toContain('"@type":"Movie"');
+    expect(html).toContain('rel="canonical" href="https://mythique.app/title/tmdb%3A603"');
+    expect(html).toContain('<title>The Matrix (1999) — Characters &amp; Details | Mythique</title>');
+    expect(html).toContain('136 min');
+  });
+
+  it('links appearing characters', () => {
+    expect(html).toContain('href="/character/h_neo"');
+  });
+
+  it('uses TVSeries for tv media', () => {
+    expect(buildTitleBotPage({ ...title, media_type: 'tv' }, [])).toContain('"@type":"TVSeries"');
+  });
+});
+
+describe('buildTeamBotPage', () => {
+  const html = buildTeamBotPage(
+    { id: 't_1', name: 'Justice League', publisher: 'DC Comics', member_count: 12 },
+    [{ id: 'h_1', name: 'Superman' }],
+  );
+
+  it('emits canonical, roster links and member ItemList', () => {
+    expect(html).toContain('rel="canonical" href="https://mythique.app/team/t_1"');
+    expect(html).toContain('<title>Justice League — Members &amp; Roster | Mythique</title>');
+    expect(html).toContain('href="/character/h_1"');
+    expect(html).toContain('"@type":"ItemList"');
+    expect(html).toContain('href="/universe/DC%20Comics"');
+  });
+});
+
+describe('buildVsBotPage', () => {
+  const a = hero();
+  const b = hero({ id: 'h_9', name: 'Doomsday', strength: 100, intelligence: 40 });
+  const html = buildVsBotPage(a, b, { votesA: 3, votesB: 1 }, {
+    forA: [{ id: 'h_9', name: 'Doomsday' }, { id: 'h_3', name: 'Lex Luthor' }],
+    forB: [{ id: 'h_1', name: 'Superman' }, { id: 'h_10', name: 'Darkseid' }],
+  });
+
+  it('canonicalizes to sorted-id order regardless of request order', () => {
+    expect(html).toContain('rel="canonical" href="https://mythique.app/compare/h_1/h_9"');
+    const flipped = buildVsBotPage(b, a, { votesA: 1, votesB: 3 }, { forA: [], forB: [] });
+    expect(flipped).toContain('rel="canonical" href="https://mythique.app/compare/h_1/h_9"');
+  });
+
+  it('renders the tally and stat comparison', () => {
+    expect(html).toContain('Community votes: Superman 3 — 1 Doomsday.');
+    expect(html).toContain('<th>Superman</th><th>Doomsday</th>');
+  });
+
+  it('links both fighters and onward matchups, skipping the current pair', () => {
+    expect(html).toContain('href="/character/h_1"');
+    expect(html).toContain('href="/character/h_9"');
+    expect(html).toContain('href="/compare/h_1/h_3"');
+    expect(html).toContain('href="/compare/h_9/h_10"');
+    expect(html).not.toContain('Superman vs Doomsday — who wins?');
   });
 });
 
