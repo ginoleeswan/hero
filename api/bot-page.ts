@@ -83,15 +83,12 @@ async function fetchTitle(id: string): Promise<BotTitle | null> {
 async function fetchTitleCharacters(titleId: string): Promise<RelatedLite[]> {
   try {
     const url =
-      `${SUPABASE_URL}/rest/v1/hero_media_appearances?title_id=eq.${encodeURIComponent(
-        titleId,
-      )}` + `&select=rank,heroes(id,name)&order=rank.desc.nullslast&limit=24`;
+      `${SUPABASE_URL}/rest/v1/hero_media_appearances?title_id=eq.${encodeURIComponent(titleId)}` +
+      `&select=rank,heroes(id,name)&order=rank.desc.nullslast&limit=24`;
     const r = await fetch(url, { headers: { apikey: SUPABASE_KEY } });
     if (!r.ok) return [];
     const rows = (await r.json()) as Array<{ heroes: { id?: string; name?: string } | null }>;
-    return rows
-      .map((row) => row.heroes)
-      .filter((h): h is RelatedLite => !!h && !!h.id && !!h.name);
+    return rows.map((row) => row.heroes).filter((h): h is RelatedLite => !!h && !!h.id && !!h.name);
   } catch {
     return [];
   }

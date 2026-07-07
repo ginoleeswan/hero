@@ -449,8 +449,14 @@ export function buildVsBotPage(
           b.id,
         )}">cast the first vote on Mythique</a>.</p>`;
   const more = [
-    ...moreOpponents.forA.filter((o) => o.id !== b.id).slice(0, 3).map((o) => ({ hero: a, opp: o })),
-    ...moreOpponents.forB.filter((o) => o.id !== a.id).slice(0, 3).map((o) => ({ hero: b, opp: o })),
+    ...moreOpponents.forA
+      .filter((o) => o.id !== b.id)
+      .slice(0, 3)
+      .map((o) => ({ hero: a, opp: o })),
+    ...moreOpponents.forB
+      .filter((o) => o.id !== a.id)
+      .slice(0, 3)
+      .map((o) => ({ hero: b, opp: o })),
   ]
     .map(
       ({ hero, opp }) =>

@@ -153,7 +153,9 @@ describe('buildTitleBotPage', () => {
   it('emits Movie JSON-LD, canonical and facts', () => {
     expect(html).toContain('"@type":"Movie"');
     expect(html).toContain('rel="canonical" href="https://mythique.app/title/tmdb%3A603"');
-    expect(html).toContain('<title>The Matrix (1999) — Characters &amp; Details | Mythique</title>');
+    expect(html).toContain(
+      '<title>The Matrix (1999) — Characters &amp; Details | Mythique</title>',
+    );
     expect(html).toContain('136 min');
   });
 
@@ -184,10 +186,21 @@ describe('buildTeamBotPage', () => {
 describe('buildVsBotPage', () => {
   const a = hero();
   const b = hero({ id: 'h_9', name: 'Doomsday', strength: 100, intelligence: 40 });
-  const html = buildVsBotPage(a, b, { votesA: 3, votesB: 1 }, {
-    forA: [{ id: 'h_9', name: 'Doomsday' }, { id: 'h_3', name: 'Lex Luthor' }],
-    forB: [{ id: 'h_1', name: 'Superman' }, { id: 'h_10', name: 'Darkseid' }],
-  });
+  const html = buildVsBotPage(
+    a,
+    b,
+    { votesA: 3, votesB: 1 },
+    {
+      forA: [
+        { id: 'h_9', name: 'Doomsday' },
+        { id: 'h_3', name: 'Lex Luthor' },
+      ],
+      forB: [
+        { id: 'h_1', name: 'Superman' },
+        { id: 'h_10', name: 'Darkseid' },
+      ],
+    },
+  );
 
   it('canonicalizes to sorted-id order regardless of request order', () => {
     expect(html).toContain('rel="canonical" href="https://mythique.app/compare/h_1/h_9"');
