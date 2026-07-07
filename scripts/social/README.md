@@ -131,9 +131,12 @@ node scripts/social/ads/ad-ranking.mjs --by fame --count 10 --size all
 node scripts/social/ads/ad-web-hero.mjs --size all   # 16x9 | og | wide
 
 # A full posting week in one command → out/social/week-YYYY-MM-DD/
-# 7 day-prefixed posts (brand/matchup/ranking mix, rotates weekly) + captions + PLAN.md
+# 7 day-prefixed posts (brand/matchup/ranking mix, rotates weekly) + captions
+# + PLAN.md + week.html — a visual planner: open it in a browser for previews,
+# where/when/how per post, one-click caption copy, and posted checkboxes.
 node scripts/social/ads/batch-week.mjs               # 4x5 feed; --size 9x16 for stories
 node scripts/social/ads/batch-week.mjs --dry-run     # print the plan only
+open "out/social/week-$(date +%F)/week.html"         # the planner
 ```
 
 Shared: `ads/shell.mjs` (parametric `{w,h}` brand shell + disclaimer) and
