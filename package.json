@@ -10,6 +10,7 @@
     "test": "jest --watchAll",
     "test:ci": "jest --ci",
     "test:social": "node --test \"scripts/social/**/*.test.mjs\"",
+    "social": "node scripts/social/studio.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
