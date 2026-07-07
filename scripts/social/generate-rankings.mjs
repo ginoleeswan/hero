@@ -44,44 +44,64 @@ async function fetchRanking(sb, opts) {
   if (opts.alignment) filter += `&alignment=eq.${opts.alignment}`;
   if (opts.publisher) filter += `&publisher=eq.${encodeURIComponent(opts.publisher)}`;
   let order;
-  if (opts.by === 'fame') order = 'fame_score.desc';
-  else { filter += `&${opts.by}=not.is.null`; order = `${opts.by}.desc.nullslast,fame_score.desc`; }
+  // issue_count tiebreak: many heroes tie on fame; without it the list order is
+  // arbitrary and changes between runs (Elmer Fudd once outranked Venom).
+  if (opts.by === 'fame') order = 'fame_score.desc,issue_count.desc.nullslast';
+  else { filter += `&${opts.by}=not.is.null`; order = `${opts.by}.desc.nullslast,fame_score.desc,issue_count.desc.nullslast`; }
   const rows = await sb.rest(`heroes?select=${cols.join(',')}${filter}&order=${order}&limit=${opts.count}`);
   return rows.map((r, i) => ({ ...r, rank: i + 1, value: r[metric] ?? 0 }));
 }
 
 // ---- slides ----
-function slideCover(t, F) {
+// Overlapping avatar row — the composition anchor for cover + finale.
+function avatarRow(imgs, size, bigIdx = -1) {
+  const rings = [GOLD, '#e8823a', '#37a3c4'];
+  const items = imgs.map((src, i) => {
+    const big = i === bigIdx;
+    const s = big ? Math.round(size * 1.22) : size;
+    const ring = big ? GOLD : `${rings[i % 3]}88`;
+    const z = big ? 9 : 5 - Math.abs(i - Math.floor(imgs.length / 2));
+    return `<div style="width:${s}px;height:${s}px;border-radius:50%;overflow:hidden;border:6px solid ${ring};flex:none;box-shadow:0 16px 40px rgba(0,0,0,.6);margin-left:${i ? -Math.round(size * 0.24) : 0}px;position:relative;z-index:${z};${big ? `box-shadow:0 0 60px rgba(224,168,62,.35),0 16px 40px rgba(0,0,0,.6);` : ''}">
+      <img src="${src}" style="width:100%;height:100%;object-fit:cover"></div>`;
+  }).join('');
+  return `<div style="display:flex;align-items:center;justify-content:center">${items}</div>`;
+}
+
+function slideCover(t, F, faces) {
   return slide(F, `<div class="body">
-    <div style="font-size:38px;letter-spacing:8px;color:${GOLD};margin-bottom:34px">THE RANKING</div>
-    <div style="font-size:104px;line-height:1.04;color:${CREAM};margin-bottom:40px" class="stroke">${esc(t.title)}</div>
-    <div style="font-size:38px;letter-spacing:4px;color:${GOLD};margin-bottom:80px">${esc(t.sub)}</div>
+    <div style="font-size:36px;letter-spacing:8px;color:${GOLD};margin-bottom:30px">THE RANKING</div>
+    <div style="font-size:100px;line-height:1.04;color:${CREAM};margin-bottom:30px" class="stroke">${esc(t.title)}</div>
+    <div style="font-size:34px;letter-spacing:4px;color:${GOLD}">${esc(t.sub)}</div>
+    ${faces.length ? `<div style="margin:64px 0 70px">${avatarRow(faces, 176)}</div>` : '<div style="height:70px"></div>'}
     <div style="font-family:'S';font-size:40px;color:#9db4c4">swipe to count down →</div></div>`);
 }
 
 function rankRow(e) {
   const top = e.rank === 1;
-  const border = top ? GOLD : 'rgba(224,168,62,.45)';
-  const bg = top ? 'background:rgba(224,168,62,.10);border:2px solid rgba(224,168,62,.4);' : 'border-bottom:1px solid rgba(245,235,220,.08);';
-  const size = top ? 150 : 112;
-  return `<div style="display:flex;align-items:center;gap:26px;width:100%;padding:${top ? '22px 26px' : '16px 8px'};border-radius:${top ? '28px' : '0'};${bg}">
-      <span class="pop" style="width:120px;text-align:center;font-size:${top ? 96 : 68}px;color:${GOLD}">${e.rank}</span>
-      <div style="width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;border:5px solid ${border};flex:none;box-shadow:0 8px 24px rgba(0,0,0,.5)"><img src="${e.img}" style="width:100%;height:100%;object-fit:cover"></div>
-      <span style="flex:1;text-align:left;font-family:'S';font-size:${top ? 58 : 48}px;color:${CREAM};line-height:1.05">${esc(clip(e.name, 22))}</span>
-      <span class="pop" style="font-size:${top ? 78 : 60}px;color:${top ? GOLD : CREAM}">${e.value}</span></div>`;
+  const border = top ? GOLD : 'rgba(224,168,62,.4)';
+  const bg = top ? 'background:rgba(224,168,62,.10);border:2px solid rgba(224,168,62,.45);' : 'border-bottom:1px solid rgba(245,235,220,.08);';
+  const size = top ? 180 : 142;
+  return `<div style="display:flex;align-items:center;gap:32px;width:100%;padding:${top ? '26px 30px' : '14px 10px'};border-radius:${top ? '32px' : '0'};${bg}">
+      <span class="pop" style="width:112px;text-align:center;font-size:${top ? 100 : 70}px;color:${GOLD}">${e.rank}</span>
+      <div style="width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;border:6px solid ${border};flex:none;box-shadow:0 10px 28px rgba(0,0,0,.55)"><img src="${e.img}" style="width:100%;height:100%;object-fit:cover"></div>
+      <div style="flex:1;min-width:0;text-align:left">
+        <div style="font-family:'S';font-size:${top ? 64 : 54}px;color:${CREAM};line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(clip(e.name, 20))}</div>
+        <div style="font-family:'FR';font-size:27px;letter-spacing:3px;color:${top ? GOLD : '#9db4c4'};margin-top:4px">FAME ${e.value}</div>
+      </div></div>`;
 }
 
 function slideRanks(t, rows, F, showTitle) {
   const list = rows.map(rankRow).join('');
-  const head = showTitle ? `<div class="h1" style="font-size:52px">${esc(t.title)}</div>` : '';
-  return slide(F, `<div class="body">${head}<div class="full" style="display:flex;flex-direction:column;gap:14px">${list}</div></div>`);
+  const head = showTitle ? `<div class="h1" style="font-size:52px;margin-bottom:30px">${esc(t.title)}</div>` : '';
+  return slide(F, `<div class="body">${head}<div class="full" style="display:flex;flex-direction:column;justify-content:space-evenly;flex:1;min-height:0">${list}</div></div>`);
 }
 
-function slideCta(t, F) {
+function slideCta(t, F, podium) {
   return slide(F, `<div class="body">
-    <div style="font-size:56px;color:${CREAM};margin-bottom:66px">see the full ranking &amp;<br>every character on</div>
-    <div style="font-size:96px;margin-bottom:90px" class="stroke"><span class="g">mythique.app</span></div>
-    <div style="font-size:64px;margin-bottom:16px" class="stroke">follow <span class="g">@mythiqueapp</span></div>
+    ${podium.length ? `<div style="margin-bottom:56px">${avatarRow(podium, 172, 1)}</div>` : ''}
+    <div style="font-size:54px;color:${CREAM};margin-bottom:50px">see the full ranking &amp;<br>every character on</div>
+    <div style="font-size:92px;margin-bottom:70px" class="stroke"><span class="g">mythique.app</span></div>
+    <div style="font-size:58px;margin-bottom:14px" class="stroke">follow <span class="g">@mythiqueapp</span></div>
     <div style="font-family:'S';font-size:38px;color:#9db4c4">daily matchups, rankings &amp; character files</div></div>`);
 }
 
@@ -126,10 +146,16 @@ async function main() {
   const desc = [...valid].reverse();
   const pages = chunk(desc, 5);
 
+  // cover: top-5 faces, order scrambled so the countdown isn't spoiled;
+  // finale: the podium (2nd, 1st big, 3rd) — earned after the reveal.
+  const top5 = valid.slice(0, 5).map((e) => e.img);
+  const faces = [top5[3], top5[0], top5[2], top5[1], top5[4]].filter(Boolean); // centre ≠ #1 (no spoiler)
+  const podium = valid.length >= 3 ? [valid[1].img, valid[0].img, valid[2].img] : [];
+
   const F = fonts();
-  const slides = [slideCover(t, F)];
+  const slides = [slideCover(t, F, faces)];
   pages.forEach((pg, i) => slides.push(slideRanks(t, pg, F, i === 0)));
-  slides.push(slideCta(t, F));
+  slides.push(slideCta(t, F, podium));
 
   const slug = t.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const dir = join(OUT_DIR, `ranking-${slug}`);

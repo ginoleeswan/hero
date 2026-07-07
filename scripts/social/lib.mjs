@@ -89,8 +89,8 @@ export async function popularHeroes(sb, n) {
 }
 
 // Relationship graph (enemies / allies), family, and key/value enrichment facts.
-export async function getRelated(sb, id, kind, limit = 6) {
-  try { return await sb.rpc('get_related_heroes', { p_hero_id: id, p_kind: kind, p_limit: limit, p_same_universe: false }); }
+export async function getRelated(sb, id, kind, limit = 6, sameUniverse = false) {
+  try { return await sb.rpc('get_related_heroes', { p_hero_id: id, p_kind: kind, p_limit: limit, p_same_universe: sameUniverse }); }
   catch { return []; }
 }
 export async function getFamily(sb, id, limit = 6) {

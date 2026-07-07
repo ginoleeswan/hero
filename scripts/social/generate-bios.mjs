@@ -92,7 +92,7 @@ function slideAbilities(h, F) {
 function thumbRow(label, tone, people) {
   const cells = people.map((p) => `<div style="display:inline-block;width:210px;margin:0 8px;text-align:center;vertical-align:top">
       <div style="width:168px;height:168px;border-radius:50%;overflow:hidden;border:5px solid ${tone};margin:0 auto;box-shadow:0 10px 30px rgba(0,0,0,.5)"><img src="${p.img}" style="width:100%;height:100%;object-fit:cover"></div>
-      <div style="font-family:'S';font-size:29px;color:${CREAM};margin-top:14px;line-height:1.05">${esc(clip(p.name, 16))}</div></div>`).join('');
+      <div style="font-family:'S';font-size:29px;color:${CREAM};margin-top:14px;line-height:1.2">${esc(clip(p.name, 26))}</div></div>`).join('');
   return `<div style="margin-bottom:60px"><div style="text-align:center;font-size:42px;letter-spacing:5px;color:${tone};margin-bottom:24px">${label}</div><div style="text-align:center;white-space:nowrap">${cells}</div></div>`;
 }
 
@@ -153,14 +153,14 @@ async function build(sb, h, F) {
   const [img, year, enemiesRaw, alliesRaw, familyRaw] = await Promise.all([
     portraitDataUri(h),
     getFact(sb, h.id, 'first_appearance_year'),
-    getRelated(sb, h.id, 'enemy', 5),
-    getRelated(sb, h.id, 'ally', 5),
+    getRelated(sb, h.id, 'enemy', 5, true),
+    getRelated(sb, h.id, 'ally', 5, true),
     getFamily(sb, h.id, 5),
   ]);
   const yr = year ? parseInt(year, 10) : null;
   const [enemies, allies, family] = await Promise.all([withThumbs(enemiesRaw, 4), withThumbs(alliesRaw, 4), withThumbs(familyRaw, 4)]);
   const groups = [
-    enemies.length && { label: 'ENEMIES', tone: RED, people: enemies },
+    enemies.length && { label: 'RIVALS', tone: RED, people: enemies },
     allies.length && { label: 'ALLIES', tone: T, people: allies },
     family.length && { label: 'FAMILY', tone: GOLD, people: family },
   ].filter(Boolean).slice(0, 3);

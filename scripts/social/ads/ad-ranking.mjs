@@ -17,7 +17,8 @@ async function fetchRanking(sb, by, count) {
   const metric = by === 'fame' ? 'fame_score' : by;
   const cols = ['id', 'name', 'fame_score'];
   if (by !== 'fame') cols.push(by);
-  const order = by === 'fame' ? 'fame_score.desc' : `${by}.desc.nullslast,fame_score.desc`;
+  // issue_count tiebreak keeps tie order deterministic run-to-run
+  const order = by === 'fame' ? 'fame_score.desc,issue_count.desc.nullslast' : `${by}.desc.nullslast,fame_score.desc,issue_count.desc.nullslast`;
   const filter = by === 'fame' ? '' : `&${by}=not.is.null`;
   const rows = await sb.rest(`heroes?select=${cols.join(',')}&order=${order}${filter}&limit=${count}`);
   return rows.map((r, i) => ({ rank: i + 1, name: r.name, value: r[metric] ?? 0 }));
