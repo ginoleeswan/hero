@@ -669,16 +669,26 @@ export default function CharacterScreen() {
       useNativeDriver: true,
     }).start();
 
-  // Parallax: image drifts up at ~0.3x scroll speed as content covers it
-  // Overscroll zoom: when scrollY < 0, translateY tracks half the overscroll
-  // so the scaled image stays anchored at the top edge
+  // Two regimes, both anchored so the image never detaches from the sheet:
+  // • Scroll up (scrollY > 0): parallax — the image drifts up at ~0.3x as the
+  //   beige sheet rises to cover it.
+  // • Pull down (scrollY < 0): a top-pinned stretchy header. The container's
+  //   transform-origin is its top edge (see styles.heroImageContainer), so
+  //   scaling alone grows it *downward*; no overscroll translate is needed.
+  //   With scale = 1 + overscroll/HERO_IMAGE_HEIGHT (the [-H,0]→[2,1] ramp), the
+  //   bottom edge lands at HERO_IMAGE_HEIGHT + overscroll — exactly tracking the
+  //   sheet, which slides down by the same overscroll — so the sheet's rounded
+  //   lip keeps its constant SHEET_OVERLAP grip on live image at *any* pull
+  //   depth. No gap, no exposed hard edge, no corner lip. (The left side is
+  //   intentionally unclamped so the glue holds even past a full-height pull.)
   const imageTranslateY = scrollY.interpolate({
     inputRange: [-HERO_IMAGE_HEIGHT, 0, HERO_IMAGE_HEIGHT],
-    outputRange: [-HERO_IMAGE_HEIGHT / 2, 0, -HERO_IMAGE_HEIGHT / 3],
+    outputRange: [0, 0, -HERO_IMAGE_HEIGHT / 3],
     extrapolate: 'clamp',
   });
 
-  // Scale up on overscroll (scrollY < 0). At scrollY = 0 → scale 1.
+  // Scale up on overscroll (scrollY < 0). At scrollY = 0 → scale 1. Pivots on the
+  // top edge (transformOrigin), so the image stretches down to meet the sheet.
   const imageScale = scrollY.interpolate({
     inputRange: [-HERO_IMAGE_HEIGHT, 0],
     outputRange: [2, 1],
@@ -1738,6 +1748,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     overflow: 'hidden',
+    // Pivot the overscroll zoom on the top edge so the image stretches *down* to
+    // meet the beige sheet (top pinned under the notch, bottom glued to content)
+    // — the mature stretchy-header behaviour that never reveals an edge or gap.
+    transformOrigin: '50% 0%',
   },
   heroImage: { width: '100%', height: '100%' },
   // Share + favourite sit side by side at the header's right edge.
