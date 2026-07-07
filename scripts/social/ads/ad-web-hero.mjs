@@ -18,7 +18,7 @@ async function heroCount(sb) {
     return Number.isFinite(n) ? n : null;
   } catch { return null; }
 }
-const nice = (c) => (c ? `${(Math.floor(c / 1000) * 1000).toLocaleString()}+` : '35,000+');
+const nice = (c) => (c ? `${(Math.floor(c / 1000) * 1000).toLocaleString('en-US')}+` : '35,000+');
 
 // Faint concentric-hexagon motif for the right side.
 function hexMotif(cx, cy, R) {

@@ -73,11 +73,11 @@ async function main() {
       <div style="display:flex;justify-content:space-between;width:100%;max-width:${Math.round(w * 0.86)}px;font-family:'S';font-size:${Math.round(h * 0.024)}px;color:${CREAM};margin-bottom:${Math.round(h * 0.006)}px">
         <span style="color:${ORANGE}">${sel.ka.name}</span><span style="color:${TEAL}">${sel.kb.name}</span></div>
       <div style="width:100%;max-width:${Math.round(w * 0.86)}px;height:${Math.round(h * 0.05)}px;border-radius:12px;overflow:hidden;display:flex">
-        <div style="width:${data.voteA}%;background:${ORANGE};display:flex;align-items:center;padding-left:18px" class="pop"><span style="font-size:${Math.round(h * 0.03)}px;color:#3a1c08">${data.voteA}%</span></div>
-        <div style="width:${data.voteB}%;background:${TEAL};display:flex;align-items:center;justify-content:flex-end;padding-right:18px" class="pop"><span style="font-size:${Math.round(h * 0.03)}px;color:#082530">${data.voteB}%</span></div></div>
+        <div style="width:${data.voteA}%;background:${ORANGE};display:flex;align-items:center;padding-left:18px"><span style="font-family:'FR';font-size:${Math.round(h * 0.03)}px;color:#3a1c08">${data.voteA}%</span></div>
+        <div style="width:${data.voteB}%;background:${TEAL};display:flex;align-items:center;justify-content:flex-end;padding-right:18px"><span style="font-family:'FR';font-size:${Math.round(h * 0.03)}px;color:#082530">${data.voteB}%</span></div></div>
       <div style="font-size:${Math.round(h * 0.02)}px;color:${MUTED};margin:${Math.round(h * 0.008)}px 0 ${Math.round(h * 0.022)}px">the community vote${sel.total ? ` · ${sel.total} in` : ''}</div>
       <div style="width:100%;max-width:${Math.round(w * 0.86)}px">${statRows}</div>
-      <div style="font-size:${Math.round(h * 0.03)}px;margin-top:${Math.round(h * 0.03)}px" class="g pop">cast your vote · mythique.app</div>
+      <div style="font-size:${Math.round(h * 0.03)}px;letter-spacing:.5px;margin-top:${Math.round(h * 0.03)}px"><span style="color:${MUTED}">cast your vote · </span><span class="g pop">mythique.app&thinsp;→</span></div>
     </div>`;
 
     await renderPng(adShell(fonts(), { w, h }, inner), join(dir, `${size}.png`), w, h);

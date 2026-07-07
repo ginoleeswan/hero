@@ -40,7 +40,7 @@ function render(rows, title, sub, w, h) {
     <div style="font-size:${Math.round(h * 0.025)}px;letter-spacing:.2em;color:${GOLD};margin-bottom:${Math.round(h * 0.01)}px">${sub}</div>
     <div class="pop" style="font-size:${Math.round(h * 0.052)}px;color:${CREAM};margin-bottom:${Math.round(h * 0.028)}px;text-align:center">${title}</div>
     <div style="width:100%;max-width:${Math.round(w * 0.86)}px;display:flex;flex-direction:column;gap:${Math.round(gap)}px">${list}</div>
-    <div style="font-size:${Math.round(h * 0.028)}px;margin-top:${Math.round(h * 0.028)}px" class="g pop">see the full list · mythique.app</div>
+    <div style="font-size:${Math.round(h * 0.028)}px;letter-spacing:.5px;margin-top:${Math.round(h * 0.028)}px"><span style="color:${MUTED}">see the full list · </span><span class="g pop">mythique.app&thinsp;→</span></div>
   </div>`;
 }
 

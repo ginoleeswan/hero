@@ -18,19 +18,19 @@ async function heroCount(sb) {
     return Number.isFinite(n) ? n : null;
   } catch { return null; }
 }
-const nice = (count) => (count ? `${(Math.floor(count / 1000) * 1000).toLocaleString()}+` : '35,000+');
+const nice = (count) => (count ? `${(Math.floor(count / 1000) * 1000).toLocaleString('en-US')}+` : '35,000+');
 
 // A centred stage that clears the shell's footer.
 const stage = (w, h, inner, extra = '') =>
-  `<div style="position:absolute;left:0;right:0;top:0;bottom:${Math.round(h * 0.12)}px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 ${Math.round(w * 0.08)}px;${extra}">${inner}</div>`;
+  `<div style="position:absolute;left:0;right:0;top:0;bottom:${Math.round(h * 0.12)}px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 ${Math.round(w * 0.08)}px ${Math.round(h * 0.03)}px;${extra}">${inner}</div>`;
 // Left-anchored stack (vertically centred) — ratio-safe compositional variety.
 const stageLeft = (w, h, inner, wid = 0.74) =>
-  `<div style="position:absolute;left:${Math.round(w * 0.09)}px;top:0;bottom:${Math.round(h * 0.12)}px;width:${Math.round(w * wid)}px;display:flex;flex-direction:column;justify-content:center;text-align:left">${inner}</div>`;
+  `<div style="position:absolute;left:${Math.round(w * 0.09)}px;top:0;bottom:${Math.round(h * 0.12)}px;width:${Math.round(w * wid)}px;display:flex;flex-direction:column;justify-content:center;text-align:left;padding-bottom:${Math.round(h * 0.03)}px">${inner}</div>`;
 // Bottom-left corner anchor — for text over a full-bleed visual.
 const stageCorner = (w, h, inner, wid = 0.6) =>
   `<div style="position:absolute;left:${Math.round(w * 0.08)}px;bottom:${Math.round(h * 0.155)}px;width:${Math.round(w * wid)}px;text-align:left">${inner}</div>`;
 const eyebrow = (h, t, color = GOLD) => `<div style="font-size:${Math.round(h * 0.028)}px;letter-spacing:.24em;color:${color};margin-bottom:${Math.round(h * 0.028)}px">${t}</div>`;
-const cta = (h) => `<div style="font-size:${Math.round(h * 0.04)}px;margin-top:${Math.round(h * 0.05)}px" class="g pop" >mythique.app</div>`;
+const cta = (h, top = 0.045) => `<div style="font-size:${Math.round(h * 0.034)}px;letter-spacing:.5px;margin-top:${Math.round(h * top)}px" class="g pop">mythique.app&thinsp;→</div>`;
 
 // seeded PRNG for a deterministic constellation
 function rng(seed) { return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -91,20 +91,20 @@ const STYLES = {
     ${stageCorner(w, h,
     `<div style="font-size:${Math.round(h * 0.026)}px;letter-spacing:.22em;color:${TEAL};margin-bottom:${Math.round(h * 0.016)}px">THE SOCIAL WEB</div>
        <div class="pop" style="font-size:${Math.round(h * 0.075)}px;line-height:1.0;color:${CREAM}">Everyone is<br>connected.</div>
-       <div style="font-size:${Math.round(h * 0.03)}px;color:${MUTED};margin-top:${Math.round(h * 0.02)}px;max-width:${Math.round(w * 0.52)}px">${nice(d.count)} heroes &amp; villains — allies, rivals, families &amp; teams.</div>
-       <div style="font-size:${Math.round(h * 0.036)}px;margin-top:${Math.round(h * 0.028)}px" class="g pop">mythique.app</div>`, 0.62)}`,
+       <div style="font-size:${Math.round(h * 0.03)}px;color:${MUTED};margin-top:${Math.round(h * 0.02)}px">${nice(d.count)} heroes &amp; villains —<br>allies, rivals, families &amp; teams.</div>
+       ${cta(h, 0.028)}`, 0.62)}`,
 
   // 3 — the powerstats rating system, as a hexagonal power grid
   powerstats: (w, h, d) => stage(w, h,
     `${eyebrow(h, 'SIX POWERS · ONE GRID')}
-     <div class="pop" style="font-size:${Math.round(h * 0.062)}px;line-height:1;color:${CREAM};margin-bottom:${Math.round(h * 0.03)}px">Every hero, rated.</div>
-     ${radar(Math.round(Math.min(w, h) * 0.72))}
-     ${cta(h)}`),
+     <div class="pop" style="font-size:${Math.round(h * 0.062)}px;line-height:1;color:${CREAM};margin-bottom:${Math.round(h * 0.02)}px">Every hero, rated.</div>
+     ${radar(Math.round(Math.min(w, h) * 0.64))}
+     ${cta(h, 0.035)}`),
 
   // 4 — the debate / vote hub (no faces)
   versus: (w, h, d) => {
     const plate = Math.round(w * 0.28);
-    const p = (glyph, c) => `<div style="width:${plate}px;height:${plate}px;border-radius:26%;background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.01));border:2px solid ${c};display:flex;align-items:center;justify-content:center;box-shadow:0 20px 50px -20px rgba(0,0,0,.7)"><span class="pop" style="font-size:${Math.round(plate * 0.5)}px;color:${c}">?</span></div>`;
+    const p = (glyph, c) => `<div style="width:${plate}px;height:${plate}px;border-radius:26%;background:rgba(255,255,255,.035);border:${Math.max(2, Math.round(plate * 0.011))}px solid ${c};display:flex;align-items:center;justify-content:center;box-shadow:0 20px 50px -20px rgba(0,0,0,.7)"><span class="pop" style="font-size:${Math.round(plate * 0.5)}px;color:${c}">?</span></div>`;
     return stage(w, h,
       `${eyebrow(h, 'SETTLE THE ARGUMENT')}
        <div style="display:flex;align-items:center;gap:${Math.round(w * 0.045)}px;margin-bottom:${Math.round(h * 0.04)}px">
@@ -128,8 +128,7 @@ const STYLES = {
       `<div style="font-size:${Math.round(h * 0.026)}px;letter-spacing:.2em;color:${GOLD};margin-bottom:${Math.round(h * 0.014)}px">THE RANKINGS</div>
        <div class="pop" style="font-size:${Math.round(h * 0.066)}px;line-height:1;color:${CREAM};margin-bottom:${Math.round(h * 0.028)}px">Who's really<br>number one?</div>
        <div style="width:100%">${list}</div>
-       <div style="font-size:${Math.round(h * 0.026)}px;color:${MUTED};margin-top:${Math.round(h * 0.02)}px">Ranked by the Mythique fame score.</div>
-       ${cta(h)}`, 0.82);
+       <div style="font-size:${Math.round(h * 0.03)}px;margin-top:${Math.round(h * 0.024)}px"><span style="color:${MUTED}">Ranked by the Mythique fame score · </span><span class="g pop" style="letter-spacing:.5px">mythique.app&thinsp;→</span></div>`, 0.82);
   },
 
   // 6 — the encyclopedia dossier (redaction as the IP-safe device; left-anchored)
@@ -149,8 +148,7 @@ const STYLES = {
          ${field('THREAT LEVEL', meter)}
          ${field('POWERS', red(Math.round(w * 0.26)))}
        </div>
-       <div style="font-size:${Math.round(h * 0.028)}px;color:${MUTED};margin-top:${Math.round(h * 0.024)}px">One of ${nice(d.count)} files.</div>
-       ${cta(h)}`, 0.72);
+       <div style="font-size:${Math.round(h * 0.03)}px;margin-top:${Math.round(h * 0.028)}px"><span style="color:${MUTED}">One of ${nice(d.count)} files · </span><span class="g pop" style="letter-spacing:.5px">mythique.app&thinsp;→</span></div>`, 0.72);
   },
 };
 
