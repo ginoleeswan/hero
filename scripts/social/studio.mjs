@@ -8,7 +8,7 @@
 // pleasant surface. Design: docs/superpowers/specs/2026-07-07-social-studio-design.md
 import { createServer } from 'node:http';
 import { execFile } from 'node:child_process';
-import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync, existsSync, cpSync } from 'node:fs';
 import { join, resolve, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -252,6 +252,23 @@ const server = createServer((req, res) => {
     const since = Number(url.searchParams.get('since') || 0);
     return json(res, 200, { lines: job.log.slice(since), total: job.log.length, done: job.done, code: job.code, newFiles: job.done ? job.newFiles : [] });
   }
+  if (url.pathname === '/api/sync' && req.method === 'POST') {
+    // Copy the launch pack + latest week into iCloud Drive → appears in the
+    // iPhone Files app automatically. Posting then needs no Mac at all.
+    const icloud = join(process.env.HOME || '', 'Library', 'Mobile Documents', 'com~apple~CloudDocs');
+    if (!existsSync(icloud)) return json(res, 400, { error: 'iCloud Drive is not enabled on this Mac.' });
+    const dest = join(icloud, 'Mythique Social');
+    try {
+      let folders = 0;
+      for (const s of LAUNCH) {
+        const src = join(OUT, s.dir, s.sub);
+        if (existsSync(src)) { cpSync(src, join(dest, `launch-${s.n}-${s.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`), { recursive: true }); folders++; }
+      }
+      const wk = latestWeek();
+      if (wk) { cpSync(join(OUT, wk.folder), join(dest, wk.folder), { recursive: true }); folders++; }
+      return json(res, 200, { ok: true, folders });
+    } catch (e) { return json(res, 500, { error: String(e.message || e) }); }
+  }
   if (url.pathname === '/api/open') {
     const p = url.searchParams.get('p') || '';
     const abs = resolve(OUT, p);
@@ -272,6 +289,7 @@ const server = createServer((req, res) => {
 function page() {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mythique — Social Studio</title>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#06121a">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2306121a'/%3E%3Ccircle cx='16' cy='16' r='6.5' fill='none' stroke='%23e0a83e' stroke-width='2.4'/%3E%3C/svg%3E">
 <style>
 @font-face{font-family:'Righteous';src:url('/font.ttf') format('truetype');font-display:swap}
@@ -415,7 +433,29 @@ svg.i{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-widt
 #results img:hover{border-color:var(--goldline)}
 #results .bar{display:flex;gap:14px;align-items:center;margin-top:12px}
 .ok{color:#8fd6a8;font-weight:600}.err{color:#ff8f6b;font-weight:600}
+/* ---------------- mobile ---------------- */
+#top{display:none}
+@media(max-width:820px){
+  html,body{height:auto}
+  body{display:block;overflow:visible}
+  #side{display:none}
+  #top{display:block;position:sticky;top:0;z-index:50;background:rgba(8,20,30,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:14px 16px 0}
+  #top .brand{font-family:var(--disp);font-size:18px}
+  #top .brand i{font-style:normal;color:var(--gold)}
+  #tnav{display:flex;gap:7px;overflow-x:auto;padding:10px 0 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  #tnav::-webkit-scrollbar{display:none}
+  .titem{display:inline-flex;align-items:center;gap:6px;flex:none;font-size:12.5px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:6px 13px;cursor:pointer;white-space:nowrap}
+  .titem.on{color:var(--gold);border-color:var(--goldline);background:rgba(224,168,62,.1);font-weight:600}
+  .titem svg.i{width:13px;height:13px}
+  #main{overflow:visible}
+  .page{padding:20px 16px 70px}
+  .viewhead h1{font-size:22px}
+  .weekbar .btn{padding:9px 14px;font-size:12.5px}
+  .lslides img{height:110px}
+  #results img{height:150px}
+}
 </style></head><body>
+<header id="top"><div class="brand">mythique<i>.</i> studio</div><div id="tnav"></div></header>
 <nav id="side">
   <div class="brand">mythique<i>.</i> studio</div>
   <div class="tag">social content, one click at a time</div>
@@ -439,7 +479,8 @@ const ICONS={
  open:'<path d="M13.5 5H19v5.5M19 5l-8.5 8.5M19 13.5V18a2 2 0 01-2 2H7a2 2 0 01-2-2V8a2 2 0 012-2h4.5"/>',
  copy:'<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M5.5 15.5h-1a2 2 0 01-2-2v-9a2 2 0 012-2h9a2 2 0 012 2v1"/>',
  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
- flag:'<path d="M5.5 21V4.5"/><path d="M5.5 4.5c4.5-2.4 8.5 2.4 13 0v9c-4.5 2.4-8.5-2.4-13 0"/>'};
+ flag:'<path d="M5.5 21V4.5"/><path d="M5.5 4.5c4.5-2.4 8.5 2.4 13 0v9c-4.5 2.4-8.5-2.4-13 0"/>',
+ phone:'<rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 17.5h2"/>'};
 const I=(n,cls='i')=>'<svg class="'+cls+'" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[n]||ICONS.sparkle)+'</svg>';
 let STATE=null, VIEW=location.hash.slice(1)||'week', VALUES={}, polling=null;
 const $=(s,el=document)=>el.querySelector(s);
@@ -454,11 +495,20 @@ function render(){renderNav();VIEW==='week'?renderWeek():VIEW==='launch'?renderL
 function renderNav(){
   const groups=[['Start here',[{id:'launch',icon:'flag',title:'Launch plan'}]],
     ['This week',['week']],['Ad-safe',['ad-brand','ad-matchup','ad-ranking','ad-web-hero']],['Organic',['carousels','bios','rankings','reels']]];
+  const all=[];
   $('#nav').innerHTML=groups.map(([t,ids])=>'<div class="sec">'+t+'</div>'+ids.map(x=>{
     const r=typeof x==='string'?STATE.recipes.find(q=>q.id===x):x;
-    const id=r.id;
-    return '<div class="item'+(VIEW===id?' on':'')+'" onclick="nav(\\''+id+'\\')">'+I(r.icon)+' '+r.title+'</div>';
+    all.push(r);
+    return '<div class="item'+(VIEW===r.id?' on':'')+'" onclick="nav(\\''+r.id+'\\')">'+I(r.icon)+' '+r.title+'</div>';
   }).join('')).join('');
+  $('#tnav').innerHTML=all.map(r=>'<span class="titem'+(VIEW===r.id?' on':'')+'" onclick="nav(\\''+r.id+'\\')">'+I(r.icon)+' '+r.title+'</span>').join('');
+}
+async function syncPhone(btn){
+  btn.disabled=true;const was=btn.innerHTML;btn.innerHTML='<span class="spin"></span> Syncing…';
+  try{const r=await (await fetch('/api/sync',{method:'POST'})).json();
+    btn.innerHTML=r.ok?I('check')+' In Files app ('+r.folders+' folders)':'✗ '+(r.error||'failed');}
+  catch{btn.innerHTML='✗ failed';}
+  btn.disabled=false;setTimeout(()=>btn.innerHTML=was,2600);
 }
 const activity='<div id="activity"><div class="ahead" id="ahead">'+'Activity'+'</div><div id="log"></div><div id="results"><div class="imgs" id="rImgs"></div><div class="bar"><span id="rMsg"></span><button class="btn ghost" id="rOpen">'+I('open')+' Open folder</button></div></div></div>';
 function busyBanner(){return '<div class="banner" id="busy" style="'+(STATE.busy?'display:flex':'')+'"><span class="spin" style="border-color:rgba(224,168,62,.3);border-top-color:var(--gold)"></span> A generation is running — controls unlock when it finishes.</div>';}
@@ -485,7 +535,8 @@ function renderWeek(){
     '<div class="desc">Generate once, then post one card a day — copy the caption, post it, tick it off. Ticks stay in sync with the planner.</div>'+
     '<div class="weekbar">'+busyBanner()+'<button class="btn" id="genWeek" '+(STATE.busy?'disabled':'')+'>'+I('calendar')+' Generate content week</button>'+
     (wk?'<button class="btn ghost" onclick="window.open(\\'/week/week.html\\')">'+I('open')+' Planner</button>'+
-        '<button class="btn ghost" onclick="fetch(\\'/api/open?p=\\'+encodeURIComponent(STATE.week.folder))">'+I('file')+' Folder</button>':'')+
+        '<button class="btn ghost" onclick="fetch(\\'/api/open?p=\\'+encodeURIComponent(STATE.week.folder))">'+I('file')+' Folder</button>'+
+        '<button class="btn ghost" onclick="syncPhone(this)">'+I('phone')+' Sync to iPhone</button>':'')+
     '</div>'+cards+activity;
   $('#genWeek').onclick=()=>runRecipe('week',{'--size':'4x5'});
   document.querySelectorAll('.wcard').forEach(card=>{
@@ -513,7 +564,7 @@ function renderLaunch(){
   $('#pg').innerHTML='<div class="crumb">Studio <b>›</b> Start here</div>'+
     '<div class="viewhead"><h1>Launch plan</h1></div>'+
     '<div class="desc">Your first three posts, in order, one per day — each one makes the profile stronger for the next. Set up the profile first, then work down the list.</div>'+
-    prof+busyBanner()+steps+
+    prof+'<div class="weekbar"><button class="btn ghost" onclick="syncPhone(this)">'+I('phone')+' Sync to iPhone (iCloud Files)</button></div>'+busyBanner()+steps+
     '<div class="lnext">'+I('calendar')+' All three posted? Switch to <b onclick="nav(\\'week\\')">This week</b> for the ongoing rhythm — and reply to every comment in your first month.</div>'+activity;
   document.querySelectorAll('[data-k]').forEach(el=>{
     const box=el.matches('label')?$('input',el):$('label.pchk input',el);
@@ -608,6 +659,15 @@ load();
 </script></body></html>`;
 }
 
-server.listen(PORT, '127.0.0.1', () => {
+// --lan exposes the studio on your local network (phone on the same Wi-Fi).
+const LAN = process.argv.includes('--lan');
+server.listen(PORT, LAN ? '0.0.0.0' : '127.0.0.1', () => {
   console.log(`Social Studio → http://127.0.0.1:${PORT}`);
+  if (LAN) {
+    const host = execFile('hostname', [], (e, out) => {
+      const h = String(out || '').trim().replace(/\.local$/, '');
+      if (h) console.log(`      on iPhone → http://${h}.local:${PORT}   (same Wi-Fi · Add to Home Screen)`);
+    });
+    void host;
+  }
 });
