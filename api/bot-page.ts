@@ -46,7 +46,12 @@ async function fetchRelated(
     const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_related_heroes`, {
       method: 'POST',
       headers: { apikey: SUPABASE_KEY, 'content-type': 'application/json' },
-      body: JSON.stringify({ p_hero_id: heroId, p_kind: kind, p_limit: 12, p_same_universe: false }),
+      body: JSON.stringify({
+        p_hero_id: heroId,
+        p_kind: kind,
+        p_limit: 12,
+        p_same_universe: false,
+      }),
     });
     if (!r.ok) return [];
     const rows = (await r.json()) as Array<{ id?: string; name?: string }>;

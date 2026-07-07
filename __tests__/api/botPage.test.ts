@@ -79,7 +79,9 @@ describe('buildCharacterBotPage', () => {
   });
 
   it('emits head meta, canonical and OG', () => {
-    expect(html).toContain('<title>Superman — Powers, Stats, Allies &amp; Enemies | Mythique</title>');
+    expect(html).toContain(
+      '<title>Superman — Powers, Stats, Allies &amp; Enemies | Mythique</title>',
+    );
     expect(html).toContain('rel="canonical" href="https://mythique.app/character/h_1"');
     expect(html).toContain('og:image');
     expect(html).toContain('/api/og?hero=h_1');
