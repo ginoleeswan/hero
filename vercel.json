@@ -14,6 +14,17 @@
       "destination": "/api/share-meta?kind=character&id=:id"
     },
     {
+      "source": "/character/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*([Gg]ooglebot|Google-InspectionTool|GoogleOther|[Bb]ingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|SeznamBot|PetalBot).*"
+        }
+      ],
+      "destination": "/api/bot-page?kind=character&id=:id"
+    },
+    {
       "source": "/compare/:hero/:opponent",
       "has": [
         {
