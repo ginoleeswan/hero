@@ -9,8 +9,8 @@ export function adShell(F, { w, h }, inner, extra = '') {
   const css = `${fontFace(F)}
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:${w}px;height:${h}px;overflow:hidden;background:${NAVY};font-family:'FR';color:${CREAM};}
-.page{position:relative;width:${w}px;height:${h}px;overflow:hidden;background:radial-gradient(60% 44% at 50% 30%, rgba(224,168,62,.12), transparent 62%), radial-gradient(120% 90% at 50% 6%, #12242f, ${NAVY} 72%);}
-.dots{position:absolute;inset:0;background-image:radial-gradient(circle, rgba(224,168,62,.10) 1.3px, transparent 1.9px);background-size:30px;-webkit-mask-image:radial-gradient(130% 100% at 50% 40%, transparent 42%, #000);opacity:.5;}
+.page{position:relative;width:${w}px;height:${h}px;overflow:hidden;background:radial-gradient(100% 58% at 50% -10%, rgba(224,168,62,.07), transparent 55%), linear-gradient(#0d1f2b, ${NAVY} 62%);}
+.dots{position:absolute;inset:0;background-image:radial-gradient(circle, rgba(224,168,62,.09) 1.2px, transparent 1.8px);background-size:38px;-webkit-mask-image:radial-gradient(130% 100% at 50% 40%, transparent 52%, #000);opacity:.26;}
 .grain{position:absolute;inset:0;background-image:url("${grainUri()}");background-size:340px;opacity:.05;mix-blend-mode:overlay;}
 .foot{position:absolute;bottom:${Math.round(h * 0.035)}px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:8px;opacity:.92;}
 .foot .row{display:flex;align-items:center;gap:16px;}
