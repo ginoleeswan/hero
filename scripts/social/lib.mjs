@@ -48,17 +48,22 @@ export function makeSb({ url, key }) {
   const headers = { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
   return {
     url, headers,
-    // Cold queries intermittently 500 (statement_timeout on a cold plan) —
-    // retry with backoff so batch generators don't die on a session's first
-    // fetch. 4xx fails fast (won't heal on retry).
+    // Cold queries intermittently 500 (statement_timeout on a cold plan) and a
+    // loaded DB can hang a socket — retry with backoff + a per-attempt abort
+    // timeout so batch generators neither die on the first fetch nor stall
+    // forever. 4xx fails fast (won't heal on retry).
     async rest(path) {
       let last;
       for (let attempt = 0; attempt < 3; attempt++) {
         if (attempt) await new Promise((res) => setTimeout(res, 1500 * attempt));
-        const r = await fetch(`${url}/rest/v1/${path}`, { headers });
-        if (r.ok) return r.json();
-        last = r.status;
-        if (r.status < 500) break;
+        try {
+          const r = await fetch(`${url}/rest/v1/${path}`, { headers, signal: AbortSignal.timeout(15000) });
+          if (r.ok) return r.json();
+          last = r.status;
+          if (r.status < 500) break;
+        } catch (e) {
+          last = e?.name === 'TimeoutError' ? 'timeout' : (e?.message ?? 'network');
+        }
       }
       throw new Error(`REST ${path} -> ${last}`);
     },
