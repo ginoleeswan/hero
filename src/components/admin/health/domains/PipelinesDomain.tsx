@@ -3,7 +3,7 @@
 // working sets, and composes the focused sub-views — Add (bring characters in) ·
 // Enrich (the funnel + "Needs you" review) · Generate (AI powerstats/portraits) ·
 // Activity (log · recently built · crons) · Runs (the run-history dashboard).
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { Bento } from '../Bento';
 import { Panel } from '../Panel';
@@ -19,6 +19,7 @@ import { PipelineFunnel } from './PipelineFunnel';
 import { NeedsYou } from './NeedsYou';
 import { RecentlyBuilt } from './RecentlyBuilt';
 import { CronList } from './CronList';
+import { SpendDomain } from './SpendDomain';
 import { type Stage } from './pipelineHelpers';
 import { getPendingBuildIds } from '../../../../lib/db/build';
 import { getPendingStatsIds } from '../../../../lib/db/stats';
@@ -28,20 +29,25 @@ import {
   STATS_COST_PER_ITEM,
   PORTRAIT_COST_PER_ITEM,
   estCost,
+  type LaneJump,
 } from '../format';
 import { COLORS } from '../../../../constants/colors';
 import type { PipelinesData, PipelinesActions, PipelinesControls } from './pipelinesTypes';
 
 const BATCH_OPTIONS = [10, 25, 50];
 
+export type BuildSub = 'add' | 'enrich' | 'generate' | 'activity' | 'runs' | 'spend';
+
 export function PipelinesDomain({
   data,
   actions,
   controls,
+  jump,
 }: {
   data: PipelinesData;
   actions: PipelinesActions;
   controls: PipelinesControls;
+  jump?: LaneJump<BuildSub> | null;
 }) {
   const {
     h,
@@ -78,11 +84,17 @@ export function PipelinesDomain({
   const { buildIds, setBuildIds, busy, batchSize, setBatchSize, narrow } = controls;
 
   // Sub-tabs split the dense Build domain into focused, no-scroll views.
-  const [sub, setSub] = useState<'add' | 'enrich' | 'generate' | 'activity' | 'runs'>('add');
+  const [sub, setSub] = useState<BuildSub>('add');
   const [statsIds, setStatsIds] = useState<string[] | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
   const [portraitIds, setPortraitIds] = useState<string[] | null>(null);
   const [loadingPortraits, setLoadingPortraits] = useState(false);
+
+  // Deep-link from another lane (e.g. Overview's spend card): land on the given
+  // sub-tab. `n` is bumped on every jump so repeat jumps to the same sub re-fire.
+  useEffect(() => {
+    if (jump) setSub(jump.sub);
+  }, [jump]);
 
   const p = progress ?? {
     heroesTotal: 0,
@@ -245,6 +257,7 @@ export function PipelinesDomain({
           },
           { key: 'activity', label: 'Activity', icon: 'pulse-outline' },
           { key: 'runs', label: 'Runs', icon: 'time-outline' },
+          { key: 'spend', label: 'Spend', icon: 'cash-outline' },
         ]}
         active={sub}
         onChange={setSub}
@@ -444,6 +457,9 @@ export function PipelinesDomain({
           </Panel>
         </Bento.Row>
       ) : null}
+
+      {/* Spend — Gemini/GCP billing panel (moved from its own standalone tab). */}
+      {sub === 'spend' ? <SpendDomain spend={spend} loading={!spend} /> : null}
 
       {statsIds ? (
         <StatsBoard
