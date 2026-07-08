@@ -1,4 +1,4 @@
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { COLORS, SURFACE } from '../../../src/constants/colors';
 import { useTeamBattle } from '../../../src/hooks/useTeamBattle';
@@ -6,6 +6,7 @@ import { useAuth } from '../../../src/hooks/useAuth';
 import { useScreenChrome } from '../../../src/hooks/useScreenChrome';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
 import { ClashArena } from '../../../src/components/versus/ClashArena';
+import { ClashSkeleton } from '../../../src/components/versus/ClashSkeleton';
 
 export default function TeamClashWeb() {
   useScreenChrome({ top: SURFACE.ink, canvas: SURFACE.ink });
@@ -24,8 +25,8 @@ export default function TeamClashWeb() {
 
   if (loading || !sideA || !sideB || !result) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={COLORS.goldAccent} />
+      <View style={[styles.root, styles.content]}>
+        <ClashSkeleton topInset={TOPBAR_HEIGHT} bottomInset={24} />
       </View>
     );
   }
@@ -50,11 +51,4 @@ export default function TeamClashWeb() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.deepNavy },
   content: { flexGrow: 1 },
-  center: {
-    flex: 1,
-    minHeight: 400,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.deepNavy,
-  },
 });

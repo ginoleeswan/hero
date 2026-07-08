@@ -1,4 +1,4 @@
-import { View, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { COLORS } from '../../../src/constants/colors';
 import { useTeamBattle } from '../../../src/hooks/useTeamBattle';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { ClashArena } from '../../../src/components/versus/ClashArena';
+import { ClashSkeleton } from '../../../src/components/versus/ClashSkeleton';
 
 export default function TeamClashScreen() {
   const { battleId } = useLocalSearchParams<{ battleId: string }>();
@@ -26,9 +27,10 @@ export default function TeamClashScreen() {
 
   if (loading || !sideA || !sideB || !result) {
     return (
-      <View style={[styles.root, styles.center]}>
+      <View style={styles.root}>
         <Stack.Screen options={{ headerShown: false }} />
-        <ActivityIndicator color={COLORS.goldAccent} />
+        <StatusBar style="light" />
+        <ClashSkeleton topInset={insets.top} bottomInset={insets.bottom} />
       </View>
     );
   }
@@ -55,5 +57,4 @@ export default function TeamClashScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.deepNavy },
   content: { flexGrow: 1 },
-  center: { alignItems: 'center', justifyContent: 'center' },
 });

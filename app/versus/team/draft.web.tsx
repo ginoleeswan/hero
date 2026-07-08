@@ -1,4 +1,4 @@
-import { View, ActivityIndicator, StyleSheet, Text, Pressable } from 'react-native';
+import { View, StyleSheet, Text, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SURFACE } from '../../../src/constants/colors';
@@ -6,6 +6,7 @@ import { useDraftBattle } from '../../../src/hooks/useDraftBattle';
 import { useScreenChrome } from '../../../src/hooks/useScreenChrome';
 import { TOPBAR_HEIGHT } from '../../../src/components/web/TopBar';
 import { ClashArena } from '../../../src/components/versus/ClashArena';
+import { ClashSkeleton } from '../../../src/components/versus/ClashSkeleton';
 import { parseIds } from '../../../src/lib/parseIds';
 
 export default function DraftClashWeb() {
@@ -18,8 +19,8 @@ export default function DraftClashWeb() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={COLORS.goldAccent} />
+      <View style={[styles.root, styles.content]}>
+        <ClashSkeleton topInset={TOPBAR_HEIGHT} bottomInset={24} />
       </View>
     );
   }

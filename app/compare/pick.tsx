@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useHeroSearchInfinite } from '../../src/lib/query/heroQueries';
 import { OpponentCard } from '../../src/components/compare/OpponentCard';
+import { CardSkeleton } from '../../src/components/compare/CardSkeleton';
 import { HeroPeek, type PeekHero } from '../../src/components/compare/HeroPeek';
 import { VsBadge } from '../../src/components/compare/VsBadge';
 import { BuilderSide } from '../../src/components/versus/BuilderSide';
@@ -209,6 +210,15 @@ export default function BattleBuilderScreen() {
         contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 96 }]}
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={header}
+        ListEmptyComponent={
+          searchQ.isPending ? (
+            <View style={styles.skeletonGrid}>
+              {Array.from({ length: 12 }).map((_, i) => (
+                <CardSkeleton key={i} width={CARD_W} height={CARD_H} />
+              ))}
+            </View>
+          ) : null
+        }
         onEndReached={() => {
           if (searchQ.hasNextPage && !searchQ.isFetchingNextPage) searchQ.fetchNextPage();
         }}
@@ -384,6 +394,13 @@ const styles = StyleSheet.create({
 
   listContent: { backgroundColor: COLORS.beige, flexGrow: 1 },
   gridRow: { gap: GAP, marginBottom: GAP, paddingHorizontal: H_PAD },
+  skeletonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: GAP,
+    paddingHorizontal: H_PAD,
+    paddingTop: GAP,
+  },
   ctaBar: {
     position: 'absolute',
     left: 0,

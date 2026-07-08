@@ -1,4 +1,4 @@
-import { View, ScrollView, StyleSheet, ActivityIndicator, Text, Pressable } from 'react-native';
+import { View, ScrollView, StyleSheet, Text, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../../../src/constants/colors';
 import { useDraftBattle } from '../../../src/hooks/useDraftBattle';
 import { ClashArena } from '../../../src/components/versus/ClashArena';
+import { ClashSkeleton } from '../../../src/components/versus/ClashSkeleton';
 import { parseIds } from '../../../src/lib/parseIds';
 
 export default function DraftClashScreen() {
@@ -18,9 +19,10 @@ export default function DraftClashScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.root, styles.center]}>
+      <View style={styles.root}>
         <Stack.Screen options={{ headerShown: false }} />
-        <ActivityIndicator color={COLORS.goldAccent} />
+        <StatusBar style="light" />
+        <ClashSkeleton topInset={insets.top + 44} bottomInset={insets.bottom} />
       </View>
     );
   }

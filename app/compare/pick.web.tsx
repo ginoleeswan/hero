@@ -13,6 +13,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useHeroSearchInfinite } from '../../src/lib/query/heroQueries';
 import { OpponentCard } from '../../src/components/compare/OpponentCard';
+import { CardSkeleton } from '../../src/components/compare/CardSkeleton';
 import { FilterChips } from '../../src/components/versus/FilterChips';
 import { PresetRail } from '../../src/components/versus/PresetRail';
 import { DuelDock } from '../../src/components/versus/DuelDock';
@@ -207,7 +208,13 @@ export default function BattleBuilderWeb() {
   );
 
   const grid =
-    poolHeroes.length === 0 && !searchQ.isPending ? (
+    poolHeroes.length === 0 && searchQ.isPending ? (
+      <View style={s.grid}>
+        {Array.from({ length: 18 }).map((_, i) => (
+          <CardSkeleton key={i} width={cardW} height={Math.round(cardW * 1.32)} />
+        ))}
+      </View>
+    ) : poolHeroes.length === 0 ? (
       <Text style={s.empty}>No fighters match these filters.</Text>
     ) : (
       <View style={s.grid}>
