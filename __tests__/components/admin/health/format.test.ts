@@ -35,9 +35,9 @@ describe('DOMAINS', () => {
 });
 
 describe('DENSITY', () => {
-  it('exposes a compact scale used across panels', () => {
-    expect(DENSITY.panelPad).toBeLessThanOrEqual(12);
-    expect(DENSITY.radius).toBeLessThanOrEqual(12);
+  it('exposes a compact scale used across panels (premium pass: 14px pad/radius)', () => {
+    expect(DENSITY.panelPad).toBeLessThanOrEqual(16);
+    expect(DENSITY.radius).toBeLessThanOrEqual(16);
     expect(DENSITY.rowH).toBeLessThanOrEqual(30);
   });
 });

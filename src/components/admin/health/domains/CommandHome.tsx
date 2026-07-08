@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { COLORS } from '../../../../constants/colors';
 import { Panel } from '../Panel';
 import { Bento } from '../Bento';
+import { Button, Well } from '../ui';
 import { HeroThumb } from '../atoms';
 import { CompletenessChart } from '../charts';
 import { healthColor, GEMINI_MONTHLY_BUDGET } from '../format';
@@ -63,6 +64,8 @@ export function CommandHome({
   onSnapshot,
   snapshotting,
   inboxCount,
+  onRunDrain,
+  draining,
 }: {
   h: CatalogHealth;
   overall: number;
@@ -78,6 +81,8 @@ export function CommandHome({
   onSnapshot: () => void;
   snapshotting: boolean;
   inboxCount: number;
+  onRunDrain: () => void;
+  draining: boolean;
 }) {
   const router = useRouter();
   const queue = gaps?.heroes.slice(0, 4) ?? [];
@@ -149,7 +154,7 @@ export function CommandHome({
               <Text style={s.emptyText}>All clear — nothing needs you right now.</Text>
             </View>
           ) : (
-            <View style={s.atList}>
+            <Well>
               {inboxCount > 0 ? (
                 <AttentionRow
                   icon="mail-unread-outline"
@@ -195,8 +200,20 @@ export function CommandHome({
                   onPress={onOpenSpend}
                 />
               ) : null}
-            </View>
+            </Well>
           )}
+          {/* The one primary action on the glance: clear the backlog from here —
+              no detour through Build. Hidden when there's nothing to run. */}
+          {!allClear && toEnrich > 0 && !overBudget ? (
+            <Button
+              tone="primary"
+              icon="play"
+              label="Run enrichment now"
+              onPress={onRunDrain}
+              loading={draining}
+              style={s.runBtn}
+            />
+          ) : null}
         </Panel>
       </Bento.Row>
 
@@ -219,35 +236,56 @@ export function CommandHome({
               <Text style={s.emptyText}>Queue clear.</Text>
             </View>
           ) : (
-            queue.map((hero) => (
-              <Pressable
-                key={hero.id}
-                onPress={() => router.push(`/character/${hero.id}`)}
-                style={s.qRow}
-              >
-                <HeroThumb uri={hero.image_url} size={30} radius={8} />
-                <View style={s.qInfo}>
-                  <Text style={s.qName} numberOfLines={1}>
-                    {hero.name}
-                  </Text>
-                  <Text style={s.qSub} numberOfLines={1}>
-                    {hero.publisher ?? '—'}
-                    {hero.issue_count != null ? ` · ${hero.issue_count.toLocaleString()} apps` : ''}
-                  </Text>
-                </View>
-                <Ionicons name="open-outline" size={15} color="rgba(41,60,67,0.3)" />
-              </Pressable>
-            ))
+            <Well>
+              {queue.map((hero) => (
+                <Pressable
+                  key={hero.id}
+                  onPress={() => router.push(`/character/${hero.id}`)}
+                  style={s.qRow}
+                >
+                  <HeroThumb uri={hero.image_url} size={30} radius={8} />
+                  <View style={s.qInfo}>
+                    <Text style={s.qName} numberOfLines={1}>
+                      {hero.name}
+                    </Text>
+                    <Text style={s.qSub} numberOfLines={1}>
+                      {hero.publisher ?? '—'}
+                      {hero.issue_count != null
+                        ? ` · ${hero.issue_count.toLocaleString()} apps`
+                        : ''}
+                    </Text>
+                  </View>
+                  <Ionicons name="open-outline" size={15} color="rgba(41,60,67,0.3)" />
+                </Pressable>
+              ))}
+            </Well>
           )}
         </Panel>
 
         {/* Spend */}
         <Panel title="Spend · 28d" hint="Gemini / GCP" style={s.flex1}>
           <Pressable onPress={onOpenSpend} style={s.spendWrap}>
+            {/* Spend against its cap — a number with context, not a bare number. */}
             <Text style={s.spendBig}>
               {spend?.available ? `$${(spend.monthToDate ?? 0).toFixed(0)}` : '—'}
+              {spend?.available ? (
+                <Text style={s.spendCap}> / ${GEMINI_MONTHLY_BUDGET}</Text>
+              ) : null}
             </Text>
             <Text style={s.spendLabel}>month to date</Text>
+            {spend?.available ? (
+              <View style={s.meter}>
+                <View
+                  style={[
+                    s.meterFill,
+                    {
+                      width: `${Math.min(100, Math.round(((spend.monthToDate ?? 0) / GEMINI_MONTHLY_BUDGET) * 100))}%`,
+                    },
+                    overBudget && s.meterOver,
+                  ]}
+                />
+              </View>
+            ) : null}
             {days.length > 0 && (
               <View style={s.spendBars}>
                 {days.map((d) => (
@@ -287,8 +325,8 @@ const s = StyleSheet.create({
     color: COLORS.grey,
     textTransform: 'uppercase',
   },
-  // Needs-attention rows
-  atList: { gap: 4 },
+  // Needs-attention rows (list chrome lives in ui/Well now)
+  runBtn: { marginTop: 12, alignSelf: 'flex-start' },
   // paddingVertical 8 + 28px icon = 44pt tap target.
   atRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
   atIcon: {
@@ -327,7 +365,23 @@ const s = StyleSheet.create({
   qName: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.black },
   qSub: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey },
   spendWrap: { gap: 2 },
-  spendBig: { fontFamily: 'Flame-Regular', fontSize: 26, color: COLORS.black, lineHeight: 28 },
+  spendBig: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 26,
+    color: COLORS.black,
+    lineHeight: 28,
+    fontVariant: ['tabular-nums'],
+  },
+  spendCap: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: COLORS.grey },
+  meter: {
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(20,32,40,0.08)',
+    marginTop: 8,
+    overflow: 'hidden',
+  },
+  meterFill: { height: '100%', borderRadius: 999, backgroundColor: COLORS.orange },
+  meterOver: { backgroundColor: COLORS.red },
   spendLabel: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 10,

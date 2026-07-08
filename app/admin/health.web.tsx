@@ -303,6 +303,8 @@ export default function AdminHealthScreen() {
                 onSnapshot={onSnapshot}
                 snapshotting={busy === 'snapshot'}
                 inboxCount={(openReportsQ.data?.length ?? 0) + (reviewQ.data?.length ?? 0)}
+                onRunDrain={onRunDrain}
+                draining={busy === 'drain'}
               />
             ) : showHealthSkeleton ? (
               <CommandHomeSkeleton narrow={narrow} />
