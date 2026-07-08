@@ -1,0 +1,90 @@
+// Carousel renderer — every angle becomes a 3-5 slide, franchise-free story.
+// Slides share the adShell (disclaimer baked in) and the balanced stage math
+// from ad-brand.mjs; assertNoPortrait gates every slide.
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { renderPng, COLORS } from '../lib.mjs';
+import { adShell } from './shell.mjs';
+import { assertNoPortrait } from './safe-assert.mjs';
+
+const GOLD = '#e0a83e', ORANGE = '#e8823a', TEAL = '#4fb3d0', CREAM = '#f6eddd', MUTED = '#9db4c4';
+const SIZES = { '4x5': [1080, 1350], '1x1': [1080, 1080] };
+const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+
+const stage = (w, h, inner) =>
+  `<div style="position:absolute;left:0;right:0;top:${Math.round(h * 0.055)}px;bottom:${Math.round(h * 0.11)}px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 ${Math.round(w * 0.08)}px">${inner}</div>`;
+const eyebrow = (h, t, color = GOLD) => `<div style="font-size:${Math.round(h * 0.028)}px;letter-spacing:.24em;color:${color};margin-bottom:${Math.round(h * 0.028)}px">${t}</div>`;
+const head = (h, t, size = 0.07) => `<div class="pop" style="font-size:${Math.round(h * size)}px;line-height:1;color:${CREAM}">${t}</div>`;
+const sub = (h, t) => `<div style="font-size:${Math.round(h * 0.032)}px;color:${MUTED};margin-top:${Math.round(h * 0.02)}px">${t}</div>`;
+const bar = (w, h, pct, color, hh = 0.04) =>
+  `<div style="width:100%;height:${Math.round(h * hh)}px;border-radius:999px;background:rgba(255,255,255,.04);box-shadow:inset 0 1px 3px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.07)"><div style="width:${pct}%;height:100%;border-radius:999px;background:linear-gradient(90deg, ${ORANGE}, ${GOLD})"></div></div>`;
+const plate = (w, c) => { const p = Math.round(w * 0.26); return `<div style="width:${p}px;height:${p}px;border-radius:26%;background:rgba(255,255,255,.035);border:${Math.max(2, Math.round(p * 0.011))}px solid ${c};display:flex;align-items:center;justify-content:center"><span class="pop" style="font-size:${Math.round(p * 0.5)}px;color:${c}">?</span></div>`; };
+
+const SLIDES = {
+  matchup: (e, w, h) => {
+    const { a, b, rounds } = e.data;
+    const hook = stage(w, h, `${eyebrow(h, 'SETTLE THE ARGUMENT')}
+      <div style="display:flex;align-items:center;gap:${Math.round(w * 0.05)}px;margin-bottom:${Math.round(h * 0.05)}px">${plate(w, ORANGE)}<span class="pop" style="font-size:${Math.round(h * 0.07)}px;color:${GOLD}">VS</span>${plate(w, TEAL)}</div>
+      ${head(h, `${a.name} vs ${b.name}`, 0.06)}${sub(h, 'Round by round. Swipe →')}`);
+    const roundSlides = rounds.map(([label, av, bv], i) => stage(w, h,
+      `${eyebrow(h, `ROUND ${i + 1}`)}${head(h, label, 0.075)}
+       <div style="width:100%;margin-top:${Math.round(h * 0.05)}px;text-align:left">
+         <div style="display:flex;justify-content:space-between;font-size:${Math.round(h * 0.034)}px;margin-bottom:8px"><span style="color:${ORANGE}">${a.name}</span><span class="pop" style="color:${ORANGE}">${av}</span></div>${bar(w, h, av, ORANGE)}
+         <div style="display:flex;justify-content:space-between;font-size:${Math.round(h * 0.034)}px;margin:24px 0 8px"><span style="color:${TEAL}">${b.name}</span><span class="pop" style="color:${TEAL}">${bv}</span></div>${bar(w, h, bv, TEAL)}
+       </div>
+       <div class="pop" style="font-size:${Math.round(h * 0.042)}px;color:${av >= bv ? ORANGE : TEAL};margin-top:${Math.round(h * 0.05)}px">${av >= bv ? a.name : b.name} TAKES IT</div>`));
+    const cta = stage(w, h, `${head(h, 'Who’s right?', 0.085)}${sub(h, 'The stats say one thing. The fans say another.')}
+      <div class="g pop" style="font-size:${Math.round(h * 0.04)}px;margin-top:${Math.round(h * 0.05)}px">Vote on mythique.app&thinsp;→</div>`);
+    return [hook, ...roundSlides, cta];
+  },
+  ranking: (e, w, h) => {
+    const { label, rows } = e.data;
+    const hook = stage(w, h, `${eyebrow(h, 'THE RANKINGS')}${head(h, `Top 10 ${label}`, 0.08)}${sub(h, 'Counted down. Swipe →')}`);
+    const half = (rs, from) => stage(w, h, `${eyebrow(h, `#${from} → #${from - 4}`)}
+      <div style="width:100%">${rs.map((r, i) => `<div style="display:flex;align-items:center;gap:${Math.round(w * 0.03)}px;padding:${Math.round(h * 0.012)}px 0">
+        <span class="pop" style="font-size:${Math.round(h * 0.045)}px;color:${GOLD};width:${Math.round(w * 0.1)}px;text-align:left">${from - i}</span>
+        <span style="flex:1;text-align:left;font-size:${Math.round(h * 0.036)}px;color:${CREAM}">${r.name}</span>
+        <span class="pop" style="font-size:${Math.round(h * 0.036)}px;color:${MUTED}">${r.value}</span></div>
+        ${bar(w, h, r.value, GOLD, 0.014)}`).join('')}</div>`);
+    const cta = stage(w, h, `${head(h, 'Agree with #1?', 0.075)}${sub(h, 'Argue your case in the comments 👇')}
+      <div class="g pop" style="font-size:${Math.round(h * 0.04)}px;margin-top:${Math.round(h * 0.05)}px">Full rankings · mythique.app&thinsp;→</div>`);
+    return [hook, half(rows.slice(5, 10).reverse(), 10), half(rows.slice(0, 5).reverse(), 5), cta];
+  },
+  guess: (e, w, h) => {
+    const g = e.data;
+    const statRows = Object.entries(g.stats).map(([k, v]) => `<div style="display:flex;justify-content:space-between;font-size:${Math.round(h * 0.034)}px;padding:${Math.round(h * 0.012)}px 0;border-bottom:1px solid rgba(224,168,62,.14)"><span style="letter-spacing:.14em;color:${MUTED}">${k.toUpperCase()}</span><span class="pop" style="color:${GOLD}">${v}</span></div>`).join('');
+    return [
+      stage(w, h, `${eyebrow(h, 'GUESS THE HERO')}${head(h, 'Six stats.<br>One legend.', 0.07)}
+        <div style="width:100%;margin-top:${Math.round(h * 0.04)}px;background:rgba(13,30,42,.92);border:1px solid rgba(224,168,62,.28);border-radius:${Math.round(h * 0.018)}px;padding:${Math.round(h * 0.025)}px ${Math.round(w * 0.05)}px">${statRows}</div>
+        ${sub(h, 'Who is it? Answer next slide →')}`),
+      stage(w, h, `${eyebrow(h, 'THE ANSWER')}${head(h, g.name, 0.09)}${sub(h, `Fame ${g.fame_score}/100 · one of 35,000+ rated files`)}
+        <div class="g pop" style="font-size:${Math.round(h * 0.04)}px;margin-top:${Math.round(h * 0.05)}px">mythique.app&thinsp;→</div>`),
+    ];
+  },
+  fact: (e, w, h) => {
+    const f = e.data;
+    return [
+      stage(w, h, `${eyebrow(h, 'DID YOU KNOW')}${head(h, f.headline, 0.062)}
+        <div class="pop" style="font-size:${Math.round(h * 0.14)}px;color:${GOLD};margin:${Math.round(h * 0.04)}px 0">${f.stat}</div>${sub(h, f.detail)}`),
+      stage(w, h, `${head(h, 'There’s a file on everyone.', 0.065)}${sub(h, '35,000+ heroes & villains — powers, matchups, rankings & lore')}
+        <div class="g pop" style="font-size:${Math.round(h * 0.04)}px;margin-top:${Math.round(h * 0.05)}px">mythique.app&thinsp;→</div>`),
+    ];
+  },
+};
+
+export async function renderCarousel(entry, { outDir, F, size = '4x5' }) {
+  const [w, h] = SIZES[size];
+  const dir = join(outDir, `${String(entry.ord).padStart(2, '0')}-${slug(entry.title)}`);
+  mkdirSync(dir, { recursive: true });
+  const inners = SLIDES[entry.angle](entry, w, h);
+  const slides = [];
+  for (let i = 0; i < inners.length; i++) {
+    const html = adShell(F, { w, h }, inners[i]);
+    assertNoPortrait(html, `carousel:${entry.angle}:${entry.title}`);
+    const out = join(dir, `slide-${i + 1}.png`);
+    await renderPng(html, out, w, h);
+    slides.push(out);
+  }
+  writeFileSync(join(dir, 'caption.txt'), entry.caption);
+  return { dir, slides };
+}
