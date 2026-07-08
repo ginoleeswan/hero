@@ -150,15 +150,18 @@ function reelShell(F, scenes, { still = false, seed = 11 } = {}) {
 .visor{position:absolute;left:34%;top:33%;width:34%;height:9%;z-index:3;background:radial-gradient(50% 50% at 50% 50%, rgba(240,160,90,.55), transparent 70%);mix-blend-mode:screen;animation:visorPulse 2.4s ease-in-out infinite alternate}
 .mglow{position:absolute;left:50%;top:52%;width:1000px;height:1000px;transform:translate(-50%,-50%);background:radial-gradient(circle, rgba(232,130,58,.30), rgba(224,168,62,.10) 45%, transparent 65%);z-index:1}
 .mfade{position:absolute;left:-80px;right:-80px;bottom:-6px;height:220px;background:linear-gradient(180deg, transparent, ${NAVY} 80%);z-index:3}
-.plates{display:flex;align-items:center;gap:44px;margin-bottom:52px}
-.pcol{display:flex;flex-direction:column;align-items:center;gap:18px}
+/* Equal fixed-width columns: the VS coin stays dead-center no matter how the
+   two names differ in length (a name-width pcol shifts the coin off axis). */
+.plates{display:flex;align-items:flex-start;justify-content:center;gap:36px;margin-bottom:52px;width:100%}
+.pcol{display:flex;flex-direction:column;align-items:center;gap:18px;width:330px;flex:none}
+.plates .vscoin{margin-top:72px}
 .plate{width:290px;height:290px;border-radius:26%;background:rgba(255,255,255,.035);display:flex;align-items:flex-end;justify-content:center;overflow:hidden;box-shadow:0 26px 60px -22px rgba(0,0,0,.75);transition:box-shadow .5s}
 .plate svg{margin-bottom:-6px}
 .po{border:9px solid ${O};color:${O}}.pt{border:9px solid ${T};color:${T}}
 .po.lit{box-shadow:0 0 90px -6px rgba(232,130,58,.75), 0 26px 60px -22px rgba(0,0,0,.75)}
 .pt.lit{box-shadow:0 0 90px -6px rgba(79,179,208,.75), 0 26px 60px -22px rgba(0,0,0,.75)}
 .scene.on .plate{animation:rise .6s cubic-bezier(.2,1.4,.35,1) both}
-.pname{font-size:50px;-webkit-text-stroke:6px ${NAVY};paint-order:stroke fill}
+.pname{font-size:46px;line-height:1.12;-webkit-text-stroke:6px ${NAVY};paint-order:stroke fill}
 .vscoin{width:146px;height:146px;border-radius:50%;background:${NAVY};border:6px solid ${GOLD};color:${GOLD};display:flex;align-items:center;justify-content:center;font-size:62px;box-shadow:0 0 56px rgba(224,168,62,.55);flex:none}
 .scene.on .vscoin{animation:pop .5s .2s cubic-bezier(.2,1.7,.4,1) both}
 .pips{display:flex;gap:14px;margin-bottom:40px}
@@ -182,11 +185,14 @@ ${sparkCss}
 .scene.on .bloomhit{animation:bloomhit 1s ease-out both}
 .sideglow{position:absolute;inset:0;opacity:0;pointer-events:none}
 .scene.on .sideglow{animation:sideIn .7s .5s ease-out both}
-.sideglow.a{background:radial-gradient(48% 40% at 18% 38%, rgba(232,130,58,.28), transparent 70%)}
-.sideglow.b{background:radial-gradient(48% 40% at 82% 38%, rgba(79,179,208,.28), transparent 70%)}
+/* Winner glow: radius sized so the visible falloff completes INSIDE the frame
+   (a wider ellipse clips flat against the edge). */
+.sideglow.a{background:radial-gradient(30% 26% at 26% 36%, rgba(232,130,58,.30), transparent 70%)}
+.sideglow.b{background:radial-gradient(30% 26% at 74% 36%, rgba(79,179,208,.30), transparent 70%)}
 .foot{position:absolute;bottom:52px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:12px;opacity:.92;z-index:5}
 .foot .wmimg{height:52px}
 .foot .disc{font-family:-apple-system,Arial,sans-serif;font-size:24px;color:rgba(245,235,220,.5)}
+.esc1,.esc2,.esc3{display:flex;flex-direction:column;align-items:center;width:100%}
 .esc1{transform:scale(1)}.esc2{transform:scale(1.04)}.esc3{transform:scale(1.08)}
 .scene.on .shake{animation:shake .5s .9s cubic-bezier(.36,.07,.19,.97) both}
 .ghosts{position:absolute;left:84px;top:400px;text-align:left;z-index:1;opacity:.5}
