@@ -15,10 +15,15 @@ import { renderVideo, renderPng, COLORS, grainUri, fontFace, ROOT } from '../lib
 import { DISCLAIMER } from '../safety.mjs';
 import { assertNoPortrait } from './safe-assert.mjs';
 import { rng } from './plan.mjs';
+import { silhouette, SILHOUETTE_KINDS } from './silhouettes.mjs';
 
 const { O, T, GOLD, CREAM, NAVY } = COLORS;
 const MUT = '#9db4c4';
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+// Beat grid — all scene durations snap to musical beats (130 BPM) so cuts land
+// on the beat of whatever trending audio gets added in-app.
+const BEAT = 60000 / 130; // ≈ 461.5ms
+const beats = (n) => Math.round(BEAT * n);
 
 // ── Brand kit (local files → data URIs; the safety gate allows data:) ─────────
 const pngUri = (p) => `data:image/png;base64,${readFileSync(p).toString('base64')}`;
@@ -69,19 +74,28 @@ function radarSvg(stats, width = 660) {
 }
 
 // ── Shared fragments ──────────────────────────────────────────────────────────
-// The mascot — the recurring hook face. Bottom-anchored bust with a warm rim
-// glow, fading into the stage so text reads above it.
-const mascot = (h = 760) => `
-  <div class="mwrap" style="height:${h}px">
-    <div class="mglow"></div>
-    <img class="mascot" src="${BRAND.mascot}" style="height:${h}px">
-    <div class="mfade"></div>
+// Editorial hook layout — the mascot bust gazes viewer-left, so he anchors the
+// RIGHT of the frame with the copy block sitting in his gaze line on the left.
+// The bust gets a slow push-in + a soft visor-glow pulse so it reads as video,
+// never as a pasted still.
+const hookLayout = (title, sub, { mascotH = 900 } = {}) => `
+  <div class="hook">
+    <div class="mwrap" style="height:${mascotH}px">
+      <div class="mglow"></div>
+      <img class="mascot" src="${BRAND.mascot}" style="height:${mascotH}px">
+      <div class="visor"></div>
+      <div class="mfade"></div>
+    </div>
+    <div class="hcopy">
+      <div class="in1">${title}</div>
+      ${sub ? `<div class="mut in2" style="margin-top:22px">${sub}</div>` : ''}
+    </div>
   </div>`;
 const plates = (aName, bName, glow = null) => `
   <div class="plates">
-    <div class="pcol"><div class="plate po ${glow === 'a' ? 'lit' : ''}"><span>?</span></div><div class="pname" style="color:${O}">${aName}</div></div>
+    <div class="pcol"><div class="plate po ${glow === 'a' ? 'lit' : ''}">${silhouette('spikes', { size: 230, rim: O })}</div><div class="pname" style="color:${O}">${aName}</div></div>
     <div class="vscoin">VS</div>
-    <div class="pcol"><div class="plate pt ${glow === 'b' ? 'lit' : ''}"><span>?</span></div><div class="pname" style="color:${T}">${bName}</div></div>
+    <div class="pcol"><div class="plate pt ${glow === 'b' ? 'lit' : ''}">${silhouette('cowl', { size: 230, rim: T })}</div><div class="pname" style="color:${T}">${bName}</div></div>
   </div>`;
 const pips = (total, lit) => `<div class="pips">${Array.from({ length: total }, (_, i) => `<span class="pip ${i < lit ? 'lit' : ''}"></span>`).join('')}</div>`;
 const ring = (n) => `
@@ -126,15 +140,20 @@ function reelShell(F, scenes, { still = false, seed = 11 } = {}) {
 .scene.on .in1{animation:upIn .55s cubic-bezier(.16,1,.3,1) both}.scene.on .in2{animation:upIn .55s .14s cubic-bezier(.16,1,.3,1) both}
 .scene.on .in3{animation:upIn .55s .28s cubic-bezier(.16,1,.3,1) both}.scene.on .in4{animation:upIn .55s .42s cubic-bezier(.16,1,.3,1) both}
 .scene.on .rise{animation:rise .7s cubic-bezier(.2,1.4,.35,1) both}
-.mwrap{position:relative;display:flex;align-items:flex-end;justify-content:center;margin-bottom:8px}
-.scene.on .mwrap{animation:mIn .8s cubic-bezier(.2,1.2,.3,1) both}
-.mascot{position:relative;z-index:2;filter:drop-shadow(0 0 60px rgba(232,130,58,.35)) drop-shadow(0 24px 50px rgba(0,0,0,.6))}
-.mglow{position:absolute;left:50%;top:52%;width:900px;height:900px;transform:translate(-50%,-50%);background:radial-gradient(circle, rgba(232,130,58,.30), rgba(224,168,62,.10) 45%, transparent 65%);z-index:1}
-.mfade{position:absolute;left:-60px;right:-60px;bottom:-4px;height:180px;background:linear-gradient(180deg, transparent, ${NAVY} 78%);z-index:3}
+.hook{position:absolute;inset:0}
+.hcopy{position:absolute;left:80px;right:420px;top:420px;text-align:left;z-index:4}
+.hcopy .in1{font-size:108px;line-height:1.04;color:${CREAM};-webkit-text-stroke:7px ${NAVY};paint-order:stroke fill}
+.hcopy .mut{margin-top:22px;text-align:left}
+.mwrap{position:absolute;right:-130px;bottom:150px;z-index:2}
+.scene.on .mwrap{animation:mIn .9s cubic-bezier(.2,1.2,.3,1) both}
+.mascot{position:relative;z-index:2;filter:drop-shadow(0 0 60px rgba(232,130,58,.35)) drop-shadow(0 24px 50px rgba(0,0,0,.6));animation:mPush 3.2s ease-out both}
+.visor{position:absolute;left:34%;top:33%;width:34%;height:9%;z-index:3;background:radial-gradient(50% 50% at 50% 50%, rgba(240,160,90,.55), transparent 70%);mix-blend-mode:screen;animation:visorPulse 2.4s ease-in-out infinite alternate}
+.mglow{position:absolute;left:50%;top:52%;width:1000px;height:1000px;transform:translate(-50%,-50%);background:radial-gradient(circle, rgba(232,130,58,.30), rgba(224,168,62,.10) 45%, transparent 65%);z-index:1}
+.mfade{position:absolute;left:-80px;right:-80px;bottom:-6px;height:220px;background:linear-gradient(180deg, transparent, ${NAVY} 80%);z-index:3}
 .plates{display:flex;align-items:center;gap:44px;margin-bottom:52px}
 .pcol{display:flex;flex-direction:column;align-items:center;gap:18px}
-.plate{width:290px;height:290px;border-radius:26%;background:rgba(255,255,255,.035);display:flex;align-items:center;justify-content:center;box-shadow:0 26px 60px -22px rgba(0,0,0,.75);transition:box-shadow .5s}
-.plate span{font-size:145px}
+.plate{width:290px;height:290px;border-radius:26%;background:rgba(255,255,255,.035);display:flex;align-items:flex-end;justify-content:center;overflow:hidden;box-shadow:0 26px 60px -22px rgba(0,0,0,.75);transition:box-shadow .5s}
+.plate svg{margin-bottom:-6px}
 .po{border:9px solid ${O};color:${O}}.pt{border:9px solid ${T};color:${T}}
 .po.lit{box-shadow:0 0 90px -6px rgba(232,130,58,.75), 0 26px 60px -22px rgba(0,0,0,.75)}
 .pt.lit{box-shadow:0 0 90px -6px rgba(79,179,208,.75), 0 26px 60px -22px rgba(0,0,0,.75)}
@@ -168,6 +187,14 @@ ${sparkCss}
 .foot{position:absolute;bottom:52px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:12px;opacity:.92;z-index:5}
 .foot .wmimg{height:52px}
 .foot .disc{font-family:-apple-system,Arial,sans-serif;font-size:24px;color:rgba(245,235,220,.5)}
+.esc1{transform:scale(1)}.esc2{transform:scale(1.04)}.esc3{transform:scale(1.08)}
+.scene.on .shake{animation:shake .5s .9s cubic-bezier(.36,.07,.19,.97) both}
+.ghosts{position:absolute;left:84px;top:400px;text-align:left;z-index:1;opacity:.5}
+.ghosts div{font-family:'S';font-size:34px;color:${MUT};margin-bottom:10px}
+.ghosts b{color:${GOLD};font-family:'FR';margin-right:14px}
+@keyframes shake{10%,90%{transform:translateX(-6px)}20%,80%{transform:translateX(8px)}30%,50%,70%{transform:translateX(-12px)}40%,60%{transform:translateX(12px)}}
+@keyframes mPush{from{transform:scale(1)}to{transform:scale(1.06)}}
+@keyframes visorPulse{from{opacity:.35}to{opacity:.95}}
 @keyframes upIn{from{opacity:0;transform:translateY(38px)}to{opacity:1;transform:none}}
 @keyframes rise{from{opacity:0;transform:translateY(60px) scale(.92)}to{opacity:1;transform:none}}
 @keyframes mIn{from{opacity:0;transform:translateY(90px) scale(.94)}to{opacity:1;transform:none}}
@@ -218,19 +245,22 @@ const SCENES = {
     const round = (r, i) => {
       const pct = Math.round((r[1] / (r[1] + r[2])) * 100);
       const aw = r[1] >= r[2];
-      return { id: `r${i}`, ms: 2350, html: `
+      const last = i === n - 1;
+      return { id: `r${i}`, ms: beats(5), html: `
+      <div class="esc${i + 1}">
       ${plates(a.name, b.name, aw ? 'a' : 'b')}
       <div class="sideglow ${aw ? 'a' : 'b'}"></div>
       ${pips(n, i + 1)}
       <div class="eyebrow in1">ROUND ${i + 1} — ${r[0]}</div>
       <div class="big in2" style="font-size:104px"><span class="orange cnt" data-to="${r[1]}">0</span><span class="gold" style="font-size:64px"> · </span><span class="teal cnt" data-to="${r[2]}">0</span></div>
-      <div class="tug in3" style="width:88%"><div class="fa" data-w="${pct}"></div><div class="fb" data-w="${pct}"></div><div class="notch"></div></div>
-      <div class="mut in4" style="color:${aw ? O : T}">${aw ? a.name : b.name} takes it</div>` };
+      <div class="tug in3 ${last ? 'shake' : ''}" style="width:88%"><div class="fa" data-w="${pct}"></div><div class="fb" data-w="${pct}"></div><div class="notch"></div></div>
+      <div class="mut in4" style="color:${aw ? O : T}">${aw ? a.name : b.name} takes it</div>
+      </div>` };
     };
     return [
-      { id: 'hook', ms: 2100, html: `${mascot(720)}<div class="big in1" style="font-size:96px">${a.name} <span class="gold">vs</span> ${b.name}</div><div class="mut in2">${n} rounds. Real stats. You decide.</div>` },
+      { id: 'hook', ms: beats(4), html: hookLayout(`${a.name}<br><span class="gold">vs</span> ${b.name}`, `${n} rounds. Real stats.<br>You decide.`) },
       ...rounds.slice(0, n).map(round),
-      { id: 'cta', ms: 3500, bloom: true, html: `${plates(a.name, b.name)}<div class="big rise" style="font-size:108px">Who’s right?</div><div class="mut in3">The stats say one thing.<br>The fans say another.</div><div class="mut in4 gold" style="font-size:46px;margin-top:40px">Vote · mythique.app</div>` },
+      { id: 'cta', ms: beats(8), bloom: true, html: `${plates(a.name, b.name)}<div class="big rise" style="font-size:108px">Who’s right?</div><div class="mut in3">The stats say one thing.<br>The fans say another.</div><div class="mut in4 gold" style="font-size:46px;margin-top:40px">Vote · mythique.app</div>` },
     ];
   },
   // Countdown with momentum: lit pips track progress; each rank keeps the same
@@ -239,24 +269,27 @@ const SCENES = {
     const { label, rows } = e.data;
     const picks = [rows[9], rows[6], rows[4], rows[2], rows[1]];
     const ranks = [10, 7, 5, 3, 2];
-    const item = (r, rank, idx) => ({ id: `k${rank}`, ms: 1450, html: `
+    const ghost = (idx) => idx === 0 ? '' : `<div class="ghosts">${picks.slice(0, idx).map((g, j) => `<div><b>#${ranks[j]}</b>${g.name}</div>`).join('')}</div>`;
+    const item = (r, rank, idx) => ({ id: `k${rank}`, ms: beats(3), html: `
+      ${ghost(idx)}
       ${pips(6, idx + 1)}
       <div class="eyebrow in1">TOP 10 ${label.toUpperCase()}</div>
-      <div class="huge rise" style="font-size:190px">#${rank}</div>
-      <div class="big in2" style="font-size:92px">${r.name}</div>
-      <div class="track in3" style="width:72%"><div class="fill" data-w="${r.value}"></div></div>
+      <div class="huge rise" style="font-size:230px">#${rank}</div>
+      <div class="big in2" style="font-size:100px">${r.name}</div>
+      <div class="track in3" style="width:78%"><div class="fill" data-w="${r.value}"></div></div>
       <div class="mut in3"><span class="cnt" data-to="${r.value}">0</span>/100</div>` });
     return [
-      { id: 'hook', ms: 2000, html: `${mascot(680)}<div class="big in1">Top 10<br><span class="gold">${label}</span></div><div class="mut in2">#10 → #1. Hold on.</div>` },
+      { id: 'hook', ms: beats(4), html: hookLayout(`Top 10<br><span class="gold">${label}</span>`, `#10 → #1. Hold on.`) },
       ...picks.map((r, i) => item(r, ranks[i], i)),
-      { id: 'k1', ms: 2500, bloom: true, html: `
+      { id: 'k1', ms: beats(6), bloom: true, html: `
+        ${ghost(5)}
         ${pips(6, 6)}
         <div class="eyebrow in1">TOP 10 ${label.toUpperCase()}</div>
-        <div class="huge rise">#1</div>
-        <div class="big in2" style="font-size:100px;color:${GOLD};-webkit-text-stroke:8px ${NAVY}">${rows[0].name}</div>
-        <div class="track in3" style="width:72%"><div class="fill" data-w="${rows[0].value}"></div></div>
+        <div class="huge rise" style="font-size:250px">#1</div>
+        <div class="big in2" style="font-size:104px;color:${GOLD};-webkit-text-stroke:8px ${NAVY}">${rows[0].name}</div>
+        <div class="track in3" style="width:78%"><div class="fill" data-w="${rows[0].value}"></div></div>
         <div class="mut in3"><span class="cnt" data-to="${rows[0].value}">0</span>/100</div>` },
-      { id: 'cta', ms: 1900, html: `<div class="big rise">Agree?</div><div class="mut in2">Argue your case 👇</div><div class="mut in3 gold" style="font-size:46px;margin-top:40px">Full top 100 · mythique.app</div>` },
+      { id: 'cta', ms: beats(4), html: `<div class="big rise">Agree?</div><div class="mut in2">Argue your case 👇</div><div class="mut in3 gold" style="font-size:46px;margin-top:40px">Full top 100 · mythique.app</div>` },
     ];
   },
   // The mascot poses the riddle; the radar draws itself; ring-sweep 3·2·1
@@ -264,12 +297,12 @@ const SCENES = {
   guess: (e) => {
     const g = e.data;
     return [
-      { id: 'hook', ms: 2000, html: `${mascot(680)}<div class="big in1">Six stats.<br>One legend.</div><div class="mut in2">Can you read the grid?</div>` },
-      { id: 'radar', ms: 3400, html: `<div class="radar"><div class="eyebrow in1">READ THE GRID</div><div class="in2 rise">${radarSvg(g.stats)}</div><div class="mut in3">Who is it?</div></div>` },
-      { id: 'c3', ms: 900, html: ring(3) },
-      { id: 'c2', ms: 900, html: ring(2) },
-      { id: 'c1', ms: 900, html: ring(1) },
-      { id: 'reveal', ms: 3900, bloom: true, html: `<div class="eyebrow in1">IT’S</div><div class="big rise" style="font-size:150px;color:${GOLD};-webkit-text-stroke:9px ${NAVY}">${g.name}</div><div class="mut in3">Fame ${g.fame_score}/100 · did you get it?</div><div class="mut in4 gold" style="font-size:44px;margin-top:36px">mythique.app</div>` },
+      { id: 'hook', ms: beats(4), html: hookLayout(`Six stats.<br>One legend.`, `Can you read the grid?`) },
+      { id: 'radar', ms: beats(7), html: `<div class="radar"><div class="eyebrow in1">READ THE GRID</div><div class="in2 rise">${radarSvg(g.stats)}</div><div class="mut in3">Who is it?</div></div>` },
+      { id: 'c3', ms: beats(2), html: ring(3) },
+      { id: 'c2', ms: beats(2), html: ring(2) },
+      { id: 'c1', ms: beats(2), html: ring(1) },
+      { id: 'reveal', ms: beats(8), bloom: true, html: `<div class="rise" style="margin-bottom:8px">${silhouette('cowl', { size: 300, rim: GOLD })}</div><div class="eyebrow in1">IT’S</div><div class="big in2" style="font-size:140px;color:${GOLD};-webkit-text-stroke:9px ${NAVY}">${g.name}</div><div class="mut in3">Fame ${g.fame_score}/100 · did you get it?</div><div class="mut in4 gold" style="font-size:44px;margin-top:36px">mythique.app</div>` },
     ];
   },
   // Mascot delivers the hook; big odometer stat under rays; dossier close.
@@ -277,9 +310,9 @@ const SCENES = {
     const f = e.data;
     const statNum = /^\d+$/.test(f.stat);
     return [
-      { id: 'hook', ms: 2300, html: `${mascot(660)}<div class="eyebrow in1">DID YOU KNOW</div><div class="big in2" style="font-size:88px">${f.headline}</div>` },
-      { id: 'stat', ms: 4300, bloom: true, html: `<div class="huge rise">${statNum ? `<span class="cnt" data-to="${f.stat}">0</span>` : f.stat}</div><div class="mut in2" style="font-size:46px">${f.detail}</div>` },
-      { id: 'cta', ms: 3900, html: `<div class="big rise" style="font-size:92px">There’s a file<br>on everyone.</div><div class="mut in2">35,000+ heroes &amp; villains — rated &amp; ranked</div><div class="mut in3 gold" style="font-size:46px;margin-top:40px">mythique.app</div>` },
+      { id: 'hook', ms: beats(5), html: hookLayout(`<span class="eyebrow" style="display:block;margin-bottom:26px">DID YOU KNOW</span>${f.headline}`, null) },
+      { id: 'stat', ms: beats(9), bloom: true, html: `<div class="huge rise">${statNum ? `<span class="cnt" data-to="${f.stat}">0</span>` : f.stat}</div><div class="mut in2" style="font-size:46px">${f.detail}</div>` },
+      { id: 'cta', ms: beats(8), html: `<div class="big rise" style="font-size:92px">There’s a file<br>on everyone.</div><div class="mut in2">35,000+ heroes &amp; villains — rated &amp; ranked</div><div class="mut in3 gold" style="font-size:46px;margin-top:40px">mythique.app</div>` },
     ];
   },
 };
