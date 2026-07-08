@@ -41,6 +41,7 @@ import { listUnbrandedHeroes, fetchSourceCoverage } from '../../src/lib/db/catal
 import { SpendDomain } from '../../src/components/admin/health/domains/SpendDomain';
 import { SourcesDomain } from '../../src/components/admin/health/domains/SourcesDomain';
 import { CampaignsDomain } from '../../src/components/admin/health/domains/CampaignsDomain';
+import { SocialDomain } from '../../src/components/admin/health/domains/SocialDomain';
 import { ReviewDomain } from '../../src/components/admin/health/domains/ReviewDomain';
 import { CommunityDomain } from '../../src/components/admin/health/domains/CommunityDomain';
 import { TrafficDomain } from '../../src/components/admin/health/domains/TrafficDomain';
@@ -534,6 +535,7 @@ export default function AdminHealthScreen() {
             <SourcesDomain cov={sourceCovQ.data} loading={sourceCovQ.isLoading} narrow={narrow} />
           )}
           {domain === 'campaigns' && <CampaignsDomain />}
+          {domain === 'social' && <SocialDomain />}
           {domain === 'spend' && <SpendDomain spend={spendQ.data} loading={spendQ.isLoading} />}
           {domain === 'community' && (
             <CommunityDomain

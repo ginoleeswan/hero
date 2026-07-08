@@ -157,6 +157,7 @@ export type DomainKey =
   | 'sources'
   | 'pipelines'
   | 'campaigns'
+  | 'social'
   | 'spend'
   | 'community'
   | 'traffic'
@@ -179,6 +180,7 @@ export const DOMAINS: DomainDef[] = [
   { key: 'sources', label: 'Sources', icon: 'git-network-outline' },
   { key: 'pipelines', label: 'Build', icon: 'construct-outline' },
   { key: 'campaigns', label: 'Campaigns', icon: 'megaphone-outline' },
+  { key: 'social', label: 'Social', icon: 'share-social-outline' },
   { key: 'spend', label: 'Spend', icon: 'cash-outline' },
   { key: 'community', label: 'Community', icon: 'people-outline' },
   { key: 'traffic', label: 'Traffic', icon: 'trending-up-outline' },
