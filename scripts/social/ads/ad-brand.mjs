@@ -6,6 +6,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadEnv, makeSb, fonts, OUT_DIR, renderPng } from '../lib.mjs';
 import { adShell } from './shell.mjs';
+import { rng } from './plan.mjs';
 
 const SIZES = { '1x1': [1080, 1080], '4x5': [1080, 1350], '9x16': [1080, 1920], '16x9': [1920, 1080], og: [1200, 630] };
 const GOLD = '#e0a83e', ORANGE = '#e8823a', TEAL = '#4fb3d0', CREAM = '#f6eddd', MUTED = '#9db4c4';
@@ -33,9 +34,6 @@ const stageCorner = (w, h, inner, wid = 0.6) =>
   `<div style="position:absolute;left:${Math.round(w * 0.08)}px;bottom:${Math.round(h * 0.155)}px;width:${Math.round(w * wid)}px;text-align:left">${inner}</div>`;
 const eyebrow = (h, t, color = GOLD) => `<div style="font-size:${Math.round(h * 0.028)}px;letter-spacing:.24em;color:${color};margin-bottom:${Math.round(h * 0.028)}px">${t}</div>`;
 const cta = (h, top = 0.045) => `<div style="font-size:${Math.round(h * 0.034)}px;letter-spacing:.5px;margin-top:${Math.round(h * top)}px" class="g pop">mythique.app&thinsp;→</div>`;
-
-// seeded PRNG for a deterministic constellation
-function rng(seed) { return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
 function constellationSvg(w, h) {
   const r = rng(7);
