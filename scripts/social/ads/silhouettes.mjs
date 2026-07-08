@@ -4,8 +4,9 @@
 // the guess reveal. Solid ink fill with a subtle colored rim so they read as
 // figures at thumbnail size, not blobs.
 const BUSTS = {
-  // Cowl with short ears + squared shoulders (the "knight" archetype).
-  cowl: `M100 178 C100 148 106 122 122 104 C112 96 108 84 110 72 L118 78 C120 60 132 44 150 38 C168 44 180 60 182 78 L190 72 C192 84 188 96 178 104 C194 122 200 148 200 178 C226 184 246 196 258 214 L258 232 L42 232 L42 214 C54 196 74 184 100 178 Z`,
+  // Cowl: sharp pointed ears, low crown, jaw taper, caped shoulders (the
+  // "knight" archetype).
+  cowl: `M116 36 L134 64 C140 58 145 56 150 56 C155 56 160 58 166 64 L184 36 L190 70 C196 84 198 96 196 108 C194 124 186 138 174 146 L174 158 C204 164 228 176 244 194 C250 200 254 208 256 216 L256 232 L44 232 L44 216 C46 208 50 200 56 194 C72 176 96 164 126 158 L126 146 C114 138 106 124 104 108 C102 96 104 84 110 70 Z`,
   // Rounded hood over the head (the "mystic" archetype).
   hood: `M150 30 C186 30 214 62 218 104 C220 130 214 152 202 168 C228 178 246 194 256 214 L256 232 L44 232 L44 214 C54 194 72 178 98 168 C86 152 80 130 82 104 C86 62 114 30 150 30 Z M150 58 C128 58 112 78 110 104 C108 128 118 148 134 156 L166 156 C182 148 192 128 190 104 C188 78 172 58 150 58 Z`,
   // Jagged upswept hair + lean shoulders (the "saiyan" archetype).
