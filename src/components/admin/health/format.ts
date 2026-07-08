@@ -224,11 +224,20 @@ export interface AlertInputs {
 export function buildAlerts(i: AlertInputs): Alert[] {
   const a: Alert[] = [];
   if (i.cvPing === 'limited')
-    a.push({ tone: 'gold', text: 'ComicVine is rate-limited right now — drains will mostly retry.' });
+    a.push({
+      tone: 'gold',
+      text: 'ComicVine is rate-limited right now — drains will mostly retry.',
+    });
   else if (i.cvUsage >= CV_HOURLY_CAP * 0.8)
-    a.push({ tone: 'gold', text: `ComicVine usage high — ${i.cvUsage}/${CV_HOURLY_CAP} calls this hour.` });
+    a.push({
+      tone: 'gold',
+      text: `ComicVine usage high — ${i.cvUsage}/${CV_HOURLY_CAP} calls this hour.`,
+    });
   if (i.cvFailed > 0)
-    a.push({ tone: 'red', text: `${i.cvFailed} hero(es) marked failed — use "Retry failed" on the Build tab.` });
+    a.push({
+      tone: 'red',
+      text: `${i.cvFailed} hero(es) marked failed — use "Retry failed" on the Build tab.`,
+    });
   if (i.lastRunStatus === 'error')
     a.push({ tone: 'red', text: 'The last run errored — see the Build tab.' });
   if (i.unbrandedCount > 0)
@@ -237,7 +246,10 @@ export function buildAlerts(i: AlertInputs): Alert[] {
       text: `${i.unbrandedCount} character${i.unbrandedCount === 1 ? '' : 's'} need a universe — see Catalog › Hygiene.`,
     });
   if (i.openReports > 0)
-    a.push({ tone: 'red', text: `${i.openReports} open report${i.openReports === 1 ? '' : 's'} — see Inbox.` });
+    a.push({
+      tone: 'red',
+      text: `${i.openReports} open report${i.openReports === 1 ? '' : 's'} — see Inbox.`,
+    });
   return a;
 }
 
@@ -286,7 +298,9 @@ export function backlogEtaLabel(runs: RunLike[], actionable: number): string | n
   const perMin = ms > 0 ? done / (ms / 60000) : 0;
   if (perMin <= 0 || actionable <= 0) return null;
   const etaMin = actionable / perMin;
-  return etaMin >= 60 ? `~${(etaMin / 60).toFixed(1)}h to clear` : `~${Math.ceil(etaMin)}m to clear`;
+  return etaMin >= 60
+    ? `~${(etaMin / 60).toFixed(1)}h to clear`
+    : `~${Math.ceil(etaMin)}m to clear`;
 }
 
 // ── Lane deep-links ──────────────────────────────────────────────────────────────

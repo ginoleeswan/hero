@@ -43,12 +43,8 @@ describe('buildAlerts', () => {
   });
 
   it('points open reports at the Inbox lane with singular/plural copy', () => {
-    expect(buildAlerts({ ...base, openReports: 1 })[0].text).toBe(
-      '1 open report — see Inbox.',
-    );
-    expect(buildAlerts({ ...base, openReports: 2 })[0].text).toBe(
-      '2 open reports — see Inbox.',
-    );
+    expect(buildAlerts({ ...base, openReports: 1 })[0].text).toBe('1 open report — see Inbox.');
+    expect(buildAlerts({ ...base, openReports: 2 })[0].text).toBe('2 open reports — see Inbox.');
   });
 
   it('flags unbranded heroes toward Catalog › Hygiene', () => {
@@ -94,9 +90,7 @@ describe('backlogEtaLabel', () => {
   });
 
   it('is null when nothing is actionable', () => {
-    expect(
-      backlogEtaLabel([{ status: 'done', duration_ms: 60_000, done: 10 }], 0),
-    ).toBeNull();
+    expect(backlogEtaLabel([{ status: 'done', duration_ms: 60_000, done: 10 }], 0)).toBeNull();
   });
 
   it('formats minutes under an hour, hours above', () => {
