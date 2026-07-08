@@ -20,12 +20,14 @@ async function heroCount(sb) {
 }
 const nice = (count) => (count ? `${(Math.floor(count / 1000) * 1000).toLocaleString('en-US')}+` : '35,000+');
 
-// A centred stage that clears the shell's footer.
+// A centred stage that clears the shell's footer. Offsets are balanced (a small
+// top inset vs. the footer clearance) so content sits at the true optical centre
+// instead of riding high — the fix for the old top-heavy / dead-bottom look.
 const stage = (w, h, inner, extra = '') =>
-  `<div style="position:absolute;left:0;right:0;top:0;bottom:${Math.round(h * 0.12)}px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 ${Math.round(w * 0.08)}px ${Math.round(h * 0.03)}px;${extra}">${inner}</div>`;
+  `<div style="position:absolute;left:0;right:0;top:${Math.round(h * 0.055)}px;bottom:${Math.round(h * 0.11)}px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 ${Math.round(w * 0.08)}px;${extra}">${inner}</div>`;
 // Left-anchored stack (vertically centred) — ratio-safe compositional variety.
 const stageLeft = (w, h, inner, wid = 0.74) =>
-  `<div style="position:absolute;left:${Math.round(w * 0.09)}px;top:0;bottom:${Math.round(h * 0.12)}px;width:${Math.round(w * wid)}px;display:flex;flex-direction:column;justify-content:center;text-align:left;padding-bottom:${Math.round(h * 0.03)}px">${inner}</div>`;
+  `<div style="position:absolute;left:${Math.round(w * 0.09)}px;top:${Math.round(h * 0.055)}px;bottom:${Math.round(h * 0.11)}px;width:${Math.round(w * wid)}px;display:flex;flex-direction:column;justify-content:center;text-align:left">${inner}</div>`;
 // Bottom-left corner anchor — for text over a full-bleed visual.
 const stageCorner = (w, h, inner, wid = 0.6) =>
   `<div style="position:absolute;left:${Math.round(w * 0.08)}px;bottom:${Math.round(h * 0.155)}px;width:${Math.round(w * wid)}px;text-align:left">${inner}</div>`;
@@ -80,10 +82,10 @@ const STYLES = {
   // 1 — the sheer size of the catalogue
   scale: (w, h, d) => stage(w, h,
     `${eyebrow(h, 'THE HERO &amp; VILLAIN ENCYCLOPEDIA')}
-     <div class="pop" style="font-size:${Math.round(h * 0.155)}px;line-height:.92;color:${GOLD}">${nice(d.count)}</div>
-     <div style="font-size:${Math.round(h * 0.05)}px;margin:${Math.round(h * 0.012)}px 0 ${Math.round(h * 0.038)}px">heroes &amp; villains, ranked &amp; rated</div>
+     <div class="pop" style="font-size:${Math.round(h * 0.165)}px;line-height:.9;color:${GOLD}">${nice(d.count)}</div>
+     <div style="font-size:${Math.round(h * 0.052)}px;margin:${Math.round(h * 0.024)}px 0 ${Math.round(h * 0.05)}px">heroes &amp; villains, ranked &amp; rated</div>
      <div style="font-size:${Math.round(h * 0.03)}px;color:${MUTED}">powers · matchups · rankings · lore</div>
-     ${cta(h)}`),
+     ${cta(h, 0.06)}`),
 
   // 2 — the relationship graph / Social Web
   constellation: (w, h, d) => `${constellationSvg(w, h)}
@@ -97,58 +99,62 @@ const STYLES = {
   // 3 — the powerstats rating system, as a hexagonal power grid
   powerstats: (w, h, d) => stage(w, h,
     `${eyebrow(h, 'SIX POWERS · ONE GRID')}
-     <div class="pop" style="font-size:${Math.round(h * 0.062)}px;line-height:1;color:${CREAM};margin-bottom:${Math.round(h * 0.02)}px">Every hero, rated.</div>
-     ${radar(Math.round(Math.min(w, h) * 0.64))}
-     ${cta(h, 0.035)}`),
+     <div class="pop" style="font-size:${Math.round(h * 0.066)}px;line-height:1;color:${CREAM};margin-bottom:${Math.round(h * 0.036)}px">Every hero, rated.</div>
+     ${radar(Math.round(Math.min(w, h) * 0.72))}
+     ${cta(h, 0.055)}`),
 
   // 4 — the debate / vote hub (no faces)
   versus: (w, h, d) => {
-    const plate = Math.round(w * 0.28);
+    const plate = Math.round(w * 0.31);
     const p = (glyph, c) => `<div style="width:${plate}px;height:${plate}px;border-radius:26%;background:rgba(255,255,255,.035);border:${Math.max(2, Math.round(plate * 0.011))}px solid ${c};display:flex;align-items:center;justify-content:center;box-shadow:0 20px 50px -20px rgba(0,0,0,.7)"><span class="pop" style="font-size:${Math.round(plate * 0.5)}px;color:${c}">?</span></div>`;
     return stage(w, h,
       `${eyebrow(h, 'SETTLE THE ARGUMENT')}
-       <div style="display:flex;align-items:center;gap:${Math.round(w * 0.045)}px;margin-bottom:${Math.round(h * 0.04)}px">
-         ${p('?', ORANGE)}<span class="pop" style="font-size:${Math.round(h * 0.07)}px;color:${GOLD}">VS</span>${p('?', TEAL)}</div>
-       <div class="pop" style="font-size:${Math.round(h * 0.06)}px;color:${CREAM}">Who would win?</div>
-       <div style="font-size:${Math.round(h * 0.032)}px;color:${MUTED};margin-top:${Math.round(h * 0.014)}px">You decide. Cast your vote.</div>
-       ${cta(h)}`);
+       <div style="display:flex;align-items:center;gap:${Math.round(w * 0.05)}px;margin-bottom:${Math.round(h * 0.055)}px">
+         ${p('?', ORANGE)}<span class="pop" style="font-size:${Math.round(h * 0.075)}px;color:${GOLD}">VS</span>${p('?', TEAL)}</div>
+       <div class="pop" style="font-size:${Math.round(h * 0.066)}px;color:${CREAM}">Who would win?</div>
+       <div style="font-size:${Math.round(h * 0.032)}px;color:${MUTED};margin-top:${Math.round(h * 0.02)}px">You decide. Cast your vote.</div>
+       ${cta(h, 0.06)}`);
   },
 
   // 5 — the rankings / fame score  (left-anchored for variety)
   leaderboard: (w, h, d) => {
     const rows = [['1', 96], ['2', 88], ['3', 79], ['4', 71], ['5', 64]];
+    const barH = (top) => Math.round(h * (top ? 0.052 : 0.044));
     const list = rows.map(([rank, pct]) => {
       const top = rank === '1';
-      return `<div style="display:flex;align-items:center;gap:${Math.round(w * 0.025)}px;width:100%;padding:${Math.round(h * 0.006)}px 0">
-        <span class="pop" style="font-size:${Math.round(h * (top ? 0.062 : 0.046))}px;color:${GOLD};width:${Math.round(w * 0.08)}px;text-align:left">${rank}</span>
-        <div style="flex:1;height:${Math.round(h * (top ? 0.05 : 0.036))}px;border-radius:12px;background:${top ? 'rgba(224,168,62,.14)' : 'rgba(255,255,255,.05)'};border:1px solid ${top ? GOLD : 'rgba(255,255,255,.06)'};overflow:hidden">
-          <div style="width:${pct}%;height:100%;background:rgba(224,168,62,.26)"></div></div></div>`;
+      // Recessed track (clearly visible) with a clean gold→amber fill — the
+      // descending lengths read as a real ranking, not muddy smears.
+      return `<div style="display:flex;align-items:center;gap:${Math.round(w * 0.028)}px;width:100%;padding:${Math.round(h * 0.011)}px 0">
+        <span class="pop" style="font-size:${Math.round(h * (top ? 0.06 : 0.05))}px;color:${GOLD};width:${Math.round(w * 0.075)}px;text-align:left">${rank}</span>
+        <div style="flex:1;height:${barH(top)}px;border-radius:${Math.round(barH(top) / 2)}px;background:rgba(255,255,255,.04);box-shadow:inset 0 1px 3px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.07)">
+          <div style="width:${pct}%;height:100%;border-radius:${Math.round(barH(top) / 2)}px;background:linear-gradient(90deg, ${ORANGE}, ${GOLD});box-shadow:0 2px 10px -3px ${GOLD}${top ? '' : ';opacity:.82'}"></div></div></div>`;
     }).join('');
     return stageLeft(w, h,
-      `<div style="font-size:${Math.round(h * 0.026)}px;letter-spacing:.2em;color:${GOLD};margin-bottom:${Math.round(h * 0.014)}px">THE RANKINGS</div>
-       <div class="pop" style="font-size:${Math.round(h * 0.066)}px;line-height:1;color:${CREAM};margin-bottom:${Math.round(h * 0.028)}px">Who's really<br>number one?</div>
+      `<div style="font-size:${Math.round(h * 0.026)}px;letter-spacing:.2em;color:${GOLD};margin-bottom:${Math.round(h * 0.018)}px">THE RANKINGS</div>
+       <div class="pop" style="font-size:${Math.round(h * 0.066)}px;line-height:1;color:${CREAM};margin-bottom:${Math.round(h * 0.036)}px">Who's really<br>number one?</div>
        <div style="width:100%">${list}</div>
-       <div style="font-size:${Math.round(h * 0.03)}px;margin-top:${Math.round(h * 0.024)}px"><span style="color:${MUTED}">Ranked by the Mythique fame score · </span><span class="g pop" style="letter-spacing:.5px">mythique.app&thinsp;→</span></div>`, 0.82);
+       <div style="font-size:${Math.round(h * 0.03)}px;margin-top:${Math.round(h * 0.036)}px"><span style="color:${MUTED}">Ranked by the Mythique fame score · </span><span class="g pop" style="letter-spacing:.5px">mythique.app&thinsp;→</span></div>`, 0.82);
   },
 
   // 6 — the encyclopedia dossier (redaction as the IP-safe device; left-anchored)
   dossier: (w, h, d) => {
     const red = (u) => `<span style="display:inline-block;height:${Math.round(h * 0.019)}px;width:${u}px;background:${CREAM};opacity:.8;border-radius:3px;vertical-align:middle"></span>`;
-    const field = (k, v) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:${Math.round(h * 0.013)}px 0;border-bottom:1px solid rgba(224,168,62,.14)">
+    const field = (k, v) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:${Math.round(h * 0.017)}px 0;border-bottom:1px solid rgba(224,168,62,.14)">
       <span style="font-family:'S';font-size:${Math.round(h * 0.018)}px;letter-spacing:.14em;color:${MUTED}">${k}</span><span>${v}</span></div>`;
     const meter = `<div style="display:inline-flex;gap:5px;vertical-align:middle">${[1, 1, 1, 1, 0].map((on) => `<span style="width:${Math.round(w * 0.028)}px;height:${Math.round(h * 0.016)}px;border-radius:3px;background:${on ? GOLD : 'rgba(255,255,255,.12)'}"></span>`).join('')}</div>`;
     return stageLeft(w, h,
-      `<div style="font-size:${Math.round(h * 0.025)}px;letter-spacing:.2em;color:${GOLD};margin-bottom:${Math.round(h * 0.016)}px">MYTHIQUE · CLASSIFIED FILE</div>
-       <div class="pop" style="font-size:${Math.round(h * 0.058)}px;line-height:1;color:${CREAM};margin-bottom:${Math.round(h * 0.028)}px">The file on every<br>hero &amp; villain.</div>
-       <div style="width:100%;background:rgba(13,30,42,.92);border:1px solid rgba(224,168,62,.28);border-radius:${Math.round(h * 0.018)}px;padding:${Math.round(h * 0.024)}px ${Math.round(w * 0.04)}px;box-shadow:0 24px 60px -28px rgba(0,0,0,.8)">
-         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:${Math.round(h * 0.008)}px">
+      `<div style="font-size:${Math.round(h * 0.025)}px;letter-spacing:.2em;color:${GOLD};margin-bottom:${Math.round(h * 0.02)}px">MYTHIQUE · CLASSIFIED FILE</div>
+       <div class="pop" style="font-size:${Math.round(h * 0.058)}px;line-height:1;color:${CREAM};margin-bottom:${Math.round(h * 0.036)}px">The file on every<br>hero &amp; villain.</div>
+       <div style="width:100%;background:rgba(13,30,42,.92);border:1px solid rgba(224,168,62,.28);border-radius:${Math.round(h * 0.018)}px;padding:${Math.round(h * 0.03)}px ${Math.round(w * 0.04)}px;box-shadow:0 24px 60px -28px rgba(0,0,0,.8)">
+         <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:${Math.round(h * 0.017)}px;border-bottom:1px solid rgba(224,168,62,.14)">
            <span style="font-family:'S';font-size:${Math.round(h * 0.019)}px;letter-spacing:.1em;color:${MUTED}">FILE No.</span><span>${red(Math.round(w * 0.1))}</span></div>
          ${field('ALIGNMENT', red(Math.round(w * 0.15)))}
          ${field('FIRST APPEARANCE', red(Math.round(w * 0.2)))}
          ${field('THREAT LEVEL', meter)}
-         ${field('POWERS', red(Math.round(w * 0.26)))}
+         <div style="display:flex;justify-content:space-between;align-items:center;padding-top:${Math.round(h * 0.017)}px">
+           <span style="font-family:'S';font-size:${Math.round(h * 0.018)}px;letter-spacing:.14em;color:${MUTED}">POWERS</span><span>${red(Math.round(w * 0.26))}</span></div>
        </div>
-       <div style="font-size:${Math.round(h * 0.03)}px;margin-top:${Math.round(h * 0.028)}px"><span style="color:${MUTED}">One of ${nice(d.count)} files · </span><span class="g pop" style="letter-spacing:.5px">mythique.app&thinsp;→</span></div>`, 0.72);
+       <div style="font-size:${Math.round(h * 0.03)}px;margin-top:${Math.round(h * 0.036)}px"><span style="color:${MUTED}">One of ${nice(d.count)} files · </span><span class="g pop" style="letter-spacing:.5px">mythique.app&thinsp;→</span></div>`, 0.72);
   },
 };
 
