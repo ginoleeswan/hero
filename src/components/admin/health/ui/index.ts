@@ -6,5 +6,6 @@ export { LoadMore } from './LoadMore';
 export { EmptyState } from './EmptyState';
 export { StatTile } from './StatTile';
 export { Well } from './Well';
+export { CardGrid } from './CardGrid';
 // Long-standing atoms re-exported so callers have one UI entry point.
 export { HeroThumb, Chip } from '../atoms';
