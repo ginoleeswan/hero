@@ -27,7 +27,9 @@ export function Sparkline({
     const y = pad + h - ((v - min) / span) * h;
     return [x, y] as const;
   });
-  const line = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
+  const line = pts
+    .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`)
+    .join(' ');
   const area = `${line} L${pts[pts.length - 1][0].toFixed(1)} ${height} L${pts[0][0].toFixed(1)} ${height} Z`;
   const [ex, ey] = pts[pts.length - 1];
   return (
@@ -39,7 +41,14 @@ export function Sparkline({
         </LinearGradient>
       </Defs>
       <Path d={area} fill="url(#spark)" />
-      <Path d={line} stroke={color} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <Path
+        d={line}
+        stroke={color}
+        strokeWidth={2}
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
       <Circle cx={ex} cy={ey} r={3.2} fill={color} />
     </Svg>
   );

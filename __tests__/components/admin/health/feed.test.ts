@@ -23,7 +23,14 @@ describe('mergeActivityFeed', () => {
   it('orders all three streams newest-first', () => {
     const feed = mergeActivityFeed({
       runs: [run({ id: 7, created_at: '2026-07-08T10:00:00.000Z' })],
-      live: [{ route: '/character/x', path: '/character/x', name: 'Batman', at: '2026-07-08T10:05:00.000Z' }],
+      live: [
+        {
+          route: '/character/x',
+          path: '/character/x',
+          name: 'Batman',
+          at: '2026-07-08T10:05:00.000Z',
+        },
+      ],
       community: [{ kind: 'vote', at: '2026-07-08T10:02:00.000Z', heroId: 'g', heroName: 'Goku' }],
     });
     expect(feed.map((f) => f.text)).toEqual([

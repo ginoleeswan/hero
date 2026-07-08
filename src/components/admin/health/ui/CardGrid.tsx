@@ -20,11 +20,13 @@ export function CardGrid({
 }) {
   return (
     <View
-      style={[
-        styles.grid,
-        { gridTemplateColumns: `repeat(auto-fill, minmax(${min}px, 1fr))` },
-        style,
-      ] as object}
+      style={
+        [
+          styles.grid,
+          { gridTemplateColumns: `repeat(auto-fill, minmax(${min}px, 1fr))` },
+          style,
+        ] as object
+      }
     >
       {children}
     </View>

@@ -19,7 +19,11 @@ export interface Vital {
 
 function VitalTile({ v }: { v: Vital }) {
   return (
-    <Pressable style={styles.tile} onPress={v.onPress} accessibilityLabel={`${v.label}: ${v.value}`}>
+    <Pressable
+      style={styles.tile}
+      onPress={v.onPress}
+      accessibilityLabel={`${v.label}: ${v.value}`}
+    >
       <View style={styles.head}>
         <Ionicons name={v.icon} size={13} color={v.tint ?? COLORS.navy} />
         <Text style={styles.label} numberOfLines={1}>
@@ -94,7 +98,14 @@ const styles = StyleSheet.create({
     color: COLORS.black,
     fontVariant: ['tabular-nums'],
   },
-  delta: { flexDirection: 'row', alignItems: 'center', gap: 1, borderRadius: 5, paddingHorizontal: 4, paddingVertical: 1 },
+  delta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 1,
+    borderRadius: 5,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+  },
   up: { backgroundColor: 'rgba(63,157,106,0.14)' },
   down: { backgroundColor: 'rgba(209,80,63,0.14)' },
   deltaText: { fontFamily: 'Nunito_700Bold', fontSize: 10 },

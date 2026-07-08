@@ -150,15 +150,14 @@ export function SocialDomain() {
             <View style={styles.ruleRow}>
               <Text style={styles.ruleBadgeGreen}>ORGANIC</Text>
               <Text style={styles.ruleText}>
-                Post anything from the studio to feed/stories/TikTok — fan content, no
-                restrictions.
+                Post anything from the studio to feed/stories/TikTok — fan content, no restrictions.
               </Text>
             </View>
             <View style={styles.ruleRow}>
               <Text style={styles.ruleBadgeRed}>NEVER BOOST</Text>
               <Text style={styles.ruleText}>
-                Tier S characters (Marvel, Disney, anime/Shueisha, Star Wars, Pokémon…) in a paid
-                ad — takedown + ad-account strike risk.
+                Tier S characters (Marvel, Disney, anime/Shueisha, Star Wars, Pokémon…) in a paid ad
+                — takedown + ad-account strike risk.
               </Text>
             </View>
             <View style={styles.ruleRow}>

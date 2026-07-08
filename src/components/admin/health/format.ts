@@ -198,8 +198,10 @@ export const CC = {
   hairline: 'rgba(20,32,40,0.06)',
   /** The warm seam — used only where ink meets work: rail edge, under the band. */
   seam: 'rgba(231,115,51,0.45)',
-  seamV: 'linear-gradient(180deg, transparent, rgba(231,115,51,0.45) 30%, rgba(231,115,51,0.45) 70%, transparent)',
-  seamH: 'linear-gradient(90deg, rgba(231,115,51,0.55), rgba(231,115,51,0.18) 45%, transparent 85%)',
+  seamV:
+    'linear-gradient(180deg, transparent, rgba(231,115,51,0.45) 30%, rgba(231,115,51,0.45) 70%, transparent)',
+  seamH:
+    'linear-gradient(90deg, rgba(231,115,51,0.55), rgba(231,115,51,0.18) 45%, transparent 85%)',
   /** Jewel primary — bevel highlight + bottom shade + warm bloom (ui/Button). */
   primary: 'linear-gradient(180deg, #f5934e 0%, #E77333 55%, #d9631f 100%)',
   primaryShadow:

@@ -29,7 +29,9 @@ export function ActivityFeed({ items, narrow }: { items: FeedItem[]; narrow: boo
   ));
   // On desktop the panel is a fixed-height fill cell → scroll inside it. On
   // mobile the whole page scrolls, so render flat (no nested scroller).
-  return narrow ? <View>{body}</View> : (
+  return narrow ? (
+    <View>{body}</View>
+  ) : (
     <ScrollView style={styles.scroll} nestedScrollEnabled showsVerticalScrollIndicator>
       {body}
     </ScrollView>
@@ -42,7 +44,18 @@ const styles = StyleSheet.create({
   rowDivide: { borderTopWidth: 1, borderTopColor: CC.hairline },
   icon: { width: 26, height: 26, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
   text: { flex: 1, fontFamily: 'Nunito_700Bold', fontSize: 12.5, color: COLORS.navy },
-  time: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: COLORS.grey, fontVariant: ['tabular-nums'] },
+  time: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 11,
+    color: COLORS.grey,
+    fontVariant: ['tabular-nums'],
+  },
   empty: { alignItems: 'center', gap: 8, paddingVertical: 30 },
-  emptyText: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: COLORS.grey, textAlign: 'center', maxWidth: 240 },
+  emptyText: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 12,
+    color: COLORS.grey,
+    textAlign: 'center',
+    maxWidth: 240,
+  },
 });

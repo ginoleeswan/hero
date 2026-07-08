@@ -17,7 +17,12 @@ export interface FeedItem {
 
 const runItem = (r: EnrichmentRun): FeedItem => {
   if (r.status === 'error')
-    return { at: r.created_at, icon: 'close-circle', tint: COLORS.red, text: `Run #${r.id} errored` };
+    return {
+      at: r.created_at,
+      icon: 'close-circle',
+      tint: COLORS.red,
+      text: `Run #${r.id} errored`,
+    };
   if (r.status === 'running')
     return {
       at: r.created_at,
@@ -26,7 +31,12 @@ const runItem = (r: EnrichmentRun): FeedItem => {
       text: `Run #${r.id} running · ${r.done} enriched`,
     };
   if (r.status === 'stopped')
-    return { at: r.created_at, icon: 'stop-circle', tint: COLORS.navy, text: `Run #${r.id} stopped` };
+    return {
+      at: r.created_at,
+      icon: 'stop-circle',
+      tint: COLORS.navy,
+      text: `Run #${r.id} stopped`,
+    };
   return {
     at: r.created_at,
     icon: 'checkmark-circle',

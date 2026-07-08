@@ -221,7 +221,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.08)',
   },
   // The warm ink stage (deep ink + faint warm vignette) — web-only CSS string.
-  bodyBg: { flex: 1, width: '100%', backgroundColor: COLORS.deepNavy, backgroundImage: CC.stage } as object,
+  bodyBg: {
+    flex: 1,
+    width: '100%',
+    backgroundColor: COLORS.deepNavy,
+    backgroundImage: CC.stage,
+  } as object,
   bandSeam: {
     position: 'absolute',
     left: 0,
