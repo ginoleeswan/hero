@@ -34,8 +34,7 @@ export default function DraftClashWeb() {
 
   // Document-flow (not a nested ScrollView): the whole app scrolls the document
   // so iOS Safari's toolbar collapses and content bleeds edge-to-edge under it.
-  const editTeams = () =>
-    router.canGoBack() ? router.back() : router.replace('/compare/pick');
+  const editTeams = () => (router.canGoBack() ? router.back() : router.replace('/compare/pick'));
 
   return (
     <View style={[styles.root, styles.content]}>

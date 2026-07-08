@@ -122,7 +122,10 @@ function Atmosphere() {
           style={
             [
               StyleSheet.absoluteFill,
-              { backgroundColor: COLORS.deepNavy, backgroundImage: SURFACE_GRADIENT.stageImmersive },
+              {
+                backgroundColor: COLORS.deepNavy,
+                backgroundImage: SURFACE_GRADIENT.stageImmersive,
+              },
             ] as object
           }
         />
