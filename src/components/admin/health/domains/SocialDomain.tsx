@@ -5,6 +5,7 @@
 // so it syncs across devices. Web-only, like the rest of the command center.
 import { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Panel } from '../Panel';
@@ -44,6 +45,8 @@ function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPos
         <Image source={{ uri: post.image_url }} style={styles.thumb} contentFit="cover" />
       </Pressable>
       <View style={styles.body}>
+        {/* Everything flows left beside the title — no orphaned right-aligned
+            metadata drifting across a wide panel. */}
         <View style={styles.titleRow}>
           {post.day ? <Text style={styles.day}>{post.day.toUpperCase()}</Text> : null}
           <Text style={styles.title} numberOfLines={1}>
@@ -101,6 +104,9 @@ function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPos
 export function SocialDomain() {
   const qc = useQueryClient();
   const postsQ = useQuery({ queryKey: ['socialPosts'], queryFn: listSocialPosts });
+  // Boosting rules are reference material — collapsed by default so the queue
+  // (the actual work) leads the lane.
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   const onToggle = async (p: SocialPost) => {
     await setSocialPosted(p.id, !p.posted_at);
@@ -113,34 +119,54 @@ export function SocialDomain() {
   return (
     <View style={styles.wrap}>
       {/* Boosting rules — mirrors scripts/social/safety.mjs (the tier system).
-          Organic posting is unrestricted; PAID ads are tier-gated. */}
-      <Panel title="Safe to post?" hint="Organic is unrestricted — boosting (paid ads) is tier-gated">
-        <View style={styles.ruleRow}>
-          <Text style={styles.ruleBadgeGreen}>ORGANIC</Text>
-          <Text style={styles.ruleText}>
-            Post anything from the studio to feed/stories/TikTok — fan content, no restrictions.
-          </Text>
-        </View>
-        <View style={styles.ruleRow}>
-          <Text style={styles.ruleBadgeRed}>NEVER BOOST</Text>
-          <Text style={styles.ruleText}>
-            Tier S characters (Marvel, Disney, anime/Shueisha, Star Wars, Pokémon…) in a paid ad —
-            takedown + ad-account strike risk.
-          </Text>
-        </View>
-        <View style={styles.ruleRow}>
-          <Text style={styles.ruleBadgeAmber}>STYLIZED ONLY</Text>
-          <Text style={styles.ruleText}>
-            Tier A (DC, Image, major game studios) may appear in ads only via the stylized ads
-            pipeline (scripts/social/ads).
-          </Text>
-        </View>
-        <View style={styles.ruleRow}>
-          <Text style={styles.ruleBadgeGreen}>BOOST OK</Text>
-          <Text style={styles.ruleText}>
-            Ads-pipeline output (brand, tier-checked matchups/rankings) — safe to put money behind.
-          </Text>
-        </View>
+          Organic posting is unrestricted; PAID ads are tier-gated. Collapsed
+          disclosure: one line of reference until you need it. */}
+      <Panel
+        title="Safe to post?"
+        hint="Organic is unrestricted — boosting (paid ads) is tier-gated"
+        action={
+          <Pressable onPress={() => setRulesOpen((v) => !v)} hitSlop={8} style={styles.rulesToggle}>
+            <Text style={styles.rulesToggleText}>{rulesOpen ? 'Hide rules' : 'Rules'}</Text>
+            <Ionicons
+              name={rulesOpen ? 'chevron-up' : 'chevron-down'}
+              size={13}
+              color={COLORS.navy}
+            />
+          </Pressable>
+        }
+      >
+        {rulesOpen ? (
+          <>
+            <View style={styles.ruleRow}>
+              <Text style={styles.ruleBadgeGreen}>ORGANIC</Text>
+              <Text style={styles.ruleText}>
+                Post anything from the studio to feed/stories/TikTok — fan content, no
+                restrictions.
+              </Text>
+            </View>
+            <View style={styles.ruleRow}>
+              <Text style={styles.ruleBadgeRed}>NEVER BOOST</Text>
+              <Text style={styles.ruleText}>
+                Tier S characters (Marvel, Disney, anime/Shueisha, Star Wars, Pokémon…) in a paid
+                ad — takedown + ad-account strike risk.
+              </Text>
+            </View>
+            <View style={styles.ruleRow}>
+              <Text style={styles.ruleBadgeAmber}>STYLIZED ONLY</Text>
+              <Text style={styles.ruleText}>
+                Tier A (DC, Image, major game studios) may appear in ads only via the stylized ads
+                pipeline (scripts/social/ads).
+              </Text>
+            </View>
+            <View style={styles.ruleRow}>
+              <Text style={styles.ruleBadgeGreen}>BOOST OK</Text>
+              <Text style={styles.ruleText}>
+                Ads-pipeline output (brand, tier-checked matchups/rankings) — safe to put money
+                behind.
+              </Text>
+            </View>
+          </>
+        ) : null}
       </Panel>
       {postsQ.isLoading ? (
         <Panel title="Social queue">
@@ -179,8 +205,20 @@ export function SocialDomain() {
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 12 },
+  // Capped width: a posting checklist reads as a list, not a full-bleed sheet —
+  // on wide desktops uncapped rows strand their actions across ~1000px of gap.
+  wrap: { gap: 12, maxWidth: 980, width: '100%' },
   panel: { marginBottom: 12 },
+  rulesToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#efe6d6',
+    borderRadius: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  rulesToggleText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: COLORS.navy },
   empty: { color: COLORS.grey, fontSize: 13, lineHeight: 19 },
   row: {
     flexDirection: 'row',
@@ -205,7 +243,9 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
     overflow: 'hidden',
   },
-  title: { flex: 1, color: COLORS.black, fontSize: 13.5, fontWeight: '700' },
+  // flexShrink (not flex:1) — the title yields to the badge/slide-count beside
+  // it instead of shoving them to the panel's far edge.
+  title: { flexShrink: 1, color: COLORS.black, fontSize: 13.5, fontWeight: '700' },
   slides: { color: COLORS.grey, fontSize: 11 },
   guide: { color: COLORS.grey, fontSize: 11.5 },
   music: { color: '#8a6420', fontSize: 11.5 },
