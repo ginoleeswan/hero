@@ -48,10 +48,19 @@ export function makeSb({ url, key }) {
   const headers = { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
   return {
     url, headers,
+    // Cold queries intermittently 500 (statement_timeout on a cold plan) —
+    // retry with backoff so batch generators don't die on a session's first
+    // fetch. 4xx fails fast (won't heal on retry).
     async rest(path) {
-      const r = await fetch(`${url}/rest/v1/${path}`, { headers });
-      if (!r.ok) throw new Error(`REST ${path} -> ${r.status}`);
-      return r.json();
+      let last;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt) await new Promise((res) => setTimeout(res, 1500 * attempt));
+        const r = await fetch(`${url}/rest/v1/${path}`, { headers });
+        if (r.ok) return r.json();
+        last = r.status;
+        if (r.status < 500) break;
+      }
+      throw new Error(`REST ${path} -> ${last}`);
     },
     async rpc(fn, body) {
       const r = await fetch(`${url}/rest/v1/rpc/${fn}`, { method: 'POST', headers, body: JSON.stringify(body) });
