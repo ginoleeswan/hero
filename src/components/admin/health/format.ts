@@ -2,6 +2,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import type { CatalogHealth, CoverageMetric } from '../../../lib/db/catalogHealth';
+import type { Alert } from './AlertStack';
 
 export const DRAIN_CRON = 'enrich-comicvine-pending';
 export const CV_HOURLY_CAP = 200;
@@ -205,3 +206,85 @@ export const DENSITY = {
   labelSize: 10,
   hintSize: 11,
 } as const;
+
+// ── Command-center alert + backlog derivations (pure, unit-tested) ────────────
+
+/** Everything the alert stack derives from — plain values, no query objects. */
+export interface AlertInputs {
+  /** ComicVine ping result ('ok' | 'limited' | 'error' | undefined while loading). */
+  cvPing: string | undefined;
+  cvUsage: number;
+  cvFailed: number;
+  lastRunStatus: string | undefined;
+  unbrandedCount: number;
+  openReports: number;
+}
+
+/** Derive the alert list (bell + mobile banner) from current vitals. */
+export function buildAlerts(i: AlertInputs): Alert[] {
+  const a: Alert[] = [];
+  if (i.cvPing === 'limited')
+    a.push({ tone: 'gold', text: 'ComicVine is rate-limited right now — drains will mostly retry.' });
+  else if (i.cvUsage >= CV_HOURLY_CAP * 0.8)
+    a.push({ tone: 'gold', text: `ComicVine usage high — ${i.cvUsage}/${CV_HOURLY_CAP} calls this hour.` });
+  if (i.cvFailed > 0)
+    a.push({ tone: 'red', text: `${i.cvFailed} hero(es) marked failed — use "Retry failed" on the Build tab.` });
+  if (i.lastRunStatus === 'error')
+    a.push({ tone: 'red', text: 'The last run errored — see the Build tab.' });
+  if (i.unbrandedCount > 0)
+    a.push({
+      tone: 'gold',
+      text: `${i.unbrandedCount} character${i.unbrandedCount === 1 ? '' : 's'} need a universe — see Catalog › Hygiene.`,
+    });
+  if (i.openReports > 0)
+    a.push({ tone: 'red', text: `${i.openReports} open report${i.openReports === 1 ? '' : 's'} — see Inbox.` });
+  return a;
+}
+
+/** The subset of EnrichmentProgress the backlog math needs. */
+export interface BacklogProgress {
+  heroesTotal: number;
+  enriched: number;
+  comicvineUnmatched: number;
+  ambiguous: number;
+  unresolved: number;
+}
+
+/**
+ * The real enrichment backlog: heroes still needing an actionable step — not yet
+ * fully enriched and not terminally failed / awaiting review / unresolvable.
+ */
+export function actionableBacklog(
+  progress: BacklogProgress | undefined,
+  cvFailed: number,
+  pendingNow: number,
+): number {
+  if (!progress) return pendingNow;
+  return Math.max(
+    0,
+    progress.heroesTotal -
+      progress.enriched -
+      cvFailed -
+      progress.comicvineUnmatched -
+      progress.ambiguous -
+      progress.unresolved,
+  );
+}
+
+/** The subset of a run row the ETA math needs. */
+export interface RunLike {
+  status: string;
+  duration_ms: number | null;
+  done: number;
+}
+
+/** "~5m to clear" / "~1.5h to clear" at the observed drain rate, or null. */
+export function backlogEtaLabel(runs: RunLike[], actionable: number): string | null {
+  const drained = runs.filter((r) => r.duration_ms && r.done > 0);
+  const ms = drained.reduce((a, r) => a + (r.duration_ms ?? 0), 0);
+  const done = drained.reduce((a, r) => a + r.done, 0);
+  const perMin = ms > 0 ? done / (ms / 60000) : 0;
+  if (perMin <= 0 || actionable <= 0) return null;
+  const etaMin = actionable / perMin;
+  return etaMin >= 60 ? `~${(etaMin / 60).toFixed(1)}h to clear` : `~${Math.ceil(etaMin)}m to clear`;
+}
