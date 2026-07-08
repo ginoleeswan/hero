@@ -29,7 +29,7 @@ export function ClashMeter({ splitA, tintA, tintB, animate, delay = 0 }: Props) 
 
   useEffect(() => {
     charge.value = animate
-      ? withDelay(delay, withTiming(splitA, { duration: 820, easing: Easing.out(Easing.cubic) }))
+      ? withDelay(delay, withTiming(splitA, { duration: 500, easing: Easing.out(Easing.cubic) }))
       : splitA;
   }, [splitA, animate, delay, charge]);
 

@@ -90,14 +90,7 @@ export function HeroBattleCard({
 
   return (
     <Animated.View
-      entering={
-        animate
-          ? FadeInDown.delay(index * 80)
-              .duration(440)
-              .springify()
-              .damping(15)
-          : undefined
-      }
+      entering={animate ? FadeInDown.delay(index * 30).duration(260) : undefined}
       style={[
         styles.glow,
         {

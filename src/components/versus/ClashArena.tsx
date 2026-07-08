@@ -1,17 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  FadeIn,
-  ZoomIn,
-  useSharedValue,
-  useAnimatedStyle,
-  withDelay,
-  withSequence,
-  withTiming,
-  useReducedMotion,
-} from 'react-native-reanimated';
+import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { COLORS } from '../../constants/colors';
 import type { TeamSide, TeamBattleResult, RosterHero } from '../../lib/teamBattle';
 import { HeroBattleCard } from './HeroBattleCard';
@@ -27,11 +18,11 @@ const STOPWORDS = new Set(['of', 'the', 'and', 'a', '&']);
 const CONTAINER_W = 1280;
 const CENTER_W = 360; // the headline column
 
-// Beat timeline (ms): cards deal → synergy ignites → CLASH lands → meter charges.
-const T_SYNERGY = 760;
-const T_CLASH = 960;
-const T_METER = 1140;
-const T_VERDICT = 1700;
+// Fast, subtle entrance (ms): everything is on screen within ~450ms so the
+// vote CTA is never hidden behind a cinematic beat timeline.
+const T_SYNERGY = 100;
+const T_METER = 0;
+const T_VERDICT = 120;
 
 function crestInitials(name: string): string {
   const letters = name
@@ -73,7 +64,6 @@ export function ClashArena({
   return (
     <View style={[styles.stage, { paddingTop: topInset + 18, paddingBottom: bottomInset + 28 }]}>
       <Atmosphere />
-      <Flash animate={animate} />
 
       <View style={styles.container}>
         {isWide ? (
@@ -111,8 +101,8 @@ export function ClashArena({
   );
 }
 
-/* ── Arena light: a navy stage that lifts toward the top (theatrical, neutral)
- *    with a faint gold crown and a deepening floor. No team-coloured washes. ─ */
+/* ── Arena light: the hub's game-lobby stage — a navy lift toward the crown,
+ *    corner blooms that take sides (orange A / blue B), a deepening floor. ─ */
 function Atmosphere() {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -123,28 +113,20 @@ function Atmosphere() {
         style={StyleSheet.absoluteFill}
       />
       <LinearGradient
-        colors={['rgba(206,155,51,0.10)', 'transparent']}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={styles.spot}
+        colors={['rgba(231,115,51,0.13)', 'transparent']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.9, y: 0.9 }}
+        style={styles.bloomA}
+      />
+      <LinearGradient
+        colors={['rgba(21,161,171,0.13)', 'transparent']}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0.1, y: 0.9 }}
+        style={styles.bloomB}
       />
       <LinearGradient colors={['transparent', 'rgba(0,0,0,0.45)']} style={styles.vignette} />
     </View>
   );
-}
-
-function Flash({ animate }: { animate: boolean }) {
-  const v = useSharedValue(0);
-  useEffect(() => {
-    if (animate) {
-      v.value = withDelay(
-        T_CLASH - 40,
-        withSequence(withTiming(0.5, { duration: 110 }), withTiming(0, { duration: 440 })),
-      );
-    }
-  }, [animate, v]);
-  const style = useAnimatedStyle(() => ({ opacity: v.value }));
-  return <Animated.View pointerEvents="none" style={[styles.flash, style]} />;
 }
 
 /* ── Desktop Grand Duel: crested header, two clickable roster columns flanking
@@ -373,7 +355,7 @@ function DuelSpot({
 /* ── Mobile faceoff bar: two crested coins meeting at a gold "vs" ──────────── */
 function FactionBar({ nameA, nameB, animate }: { nameA: string; nameB: string; animate: boolean }) {
   return (
-    <Animated.View entering={animate ? FadeIn.duration(360) : undefined} style={styles.faceoff}>
+    <Animated.View entering={animate ? FadeIn.duration(240) : undefined} style={styles.faceoff}>
       <LinearGradient colors={[TINT_A, COLORS.deepNavy]} style={styles.coinSm}>
         <Text style={styles.coinSmTxt}>{crestInitials(nameA)}</Text>
       </LinearGradient>
@@ -409,7 +391,7 @@ function FactionCrest({
   const reverse = align === 'B';
   return (
     <Animated.View
-      entering={animate ? FadeIn.delay(120).duration(360) : undefined}
+      entering={animate ? FadeIn.delay(60).duration(240) : undefined}
       style={[styles.crest, reverse ? styles.crestReverse : null]}
     >
       <LinearGradient colors={[tint, COLORS.deepNavy]} style={styles.coin}>
@@ -430,7 +412,7 @@ function FactionCrest({
   );
 }
 
-/* ── The result: CLASH wordmark, score numerals, front-line meter, synergy ── */
+/* ── The result: house eyebrow, score numerals, front-line meter, synergy ── */
 function ClashHeadline({
   sideA,
   sideB,
@@ -447,10 +429,10 @@ function ClashHeadline({
   return (
     <View style={styles.headline}>
       <Animated.Text
-        entering={animate ? ZoomIn.delay(T_CLASH).duration(300) : undefined}
-        style={styles.clash}
+        entering={animate ? FadeIn.duration(200) : undefined}
+        style={styles.eyebrow}
       >
-        CLASH
+        {'★ Team Battle ★'}
       </Animated.Text>
       <View style={styles.scoreRow}>
         <Text style={[styles.score, { color: TINT_A }]}>{result.splitA}</Text>
@@ -556,17 +538,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
-  spot: { position: 'absolute', left: 0, right: 0, top: 0, height: '55%' },
+  bloomA: { position: 'absolute', left: 0, top: 0, width: '55%', height: '42%' },
+  bloomB: { position: 'absolute', right: 0, top: 0, width: '55%', height: '42%' },
   vignette: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%' },
-  flash: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: GOLD,
-    zIndex: 5,
-  },
   container: { width: '100%', maxWidth: CONTAINER_W, alignSelf: 'center', zIndex: 1 },
 
   /* ── desktop grand duel ── symmetric flex-1 / fixed-centre / flex-1 so the
@@ -650,21 +624,20 @@ const styles = StyleSheet.create({
 
   /* clash headline */
   headline: { alignItems: 'center', width: '100%' },
-  clash: {
-    fontFamily: 'Flame-Regular',
-    fontSize: 30,
+  // The house eyebrow — same voice as the hub's "Today's Showdown" kicker.
+  eyebrow: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 11.5,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
     color: GOLD,
-    letterSpacing: 2,
-    textShadowColor: 'rgba(206,155,51,0.55)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 18,
   },
   scoreRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'center',
     gap: 16,
-    marginTop: 4,
+    marginTop: 8,
     marginBottom: 14,
   },
   score: { fontFamily: 'Flame-Regular', fontSize: 48, lineHeight: 52 },

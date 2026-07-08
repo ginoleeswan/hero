@@ -88,7 +88,7 @@ export function HeroVsHero({
   useEffect(() => {
     if (animate) {
       p.value = 0;
-      p.value = withTiming(1, { duration: 480, easing: Easing.out(Easing.cubic) });
+      p.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.cubic) });
     } else {
       p.value = 1;
     }
