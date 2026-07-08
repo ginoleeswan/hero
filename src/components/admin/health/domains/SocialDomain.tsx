@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Panel } from '../Panel';
-import { CardGrid } from '../ui';
+import { CardGrid, PillGroup } from '../ui';
 import { CC } from '../format';
 import { SkRows } from '../skeletons';
 import { COLORS } from '../../../../constants/colors';
@@ -20,9 +20,24 @@ const GOLD = '#e0a83e';
 function batchLabel(batch: string): string {
   if (batch === 'launch') return 'Launch plan — first three posts';
   if (batch === 'ad-toolkit') return 'Ad toolkit — evergreen, safe to boost';
-  const m = batch.match(/^week-(\d{4}-\d{2}-\d{2})$/);
-  return m ? `Content week · ${m[1]}` : batch;
+  const week = batch.match(/^week-(\d{4}-\d{2}-\d{2})$/);
+  if (week) return `Content week · ${week[1]}`;
+  const adLibrary = batch.match(/^ad-library-(\d{4}-\d{2})$/);
+  if (adLibrary) return `Ad library · ${adLibrary[1]} — safe to boost`;
+  return batch;
 }
+
+type Filter = 'all' | 'matchup' | 'ranking' | 'guess' | 'fact' | 'reel' | 'carousel';
+
+const FILTER_OPTIONS: { label: string; value: Filter }[] = [
+  { label: 'All', value: 'all' },
+  { label: 'Matchup', value: 'matchup' },
+  { label: 'Ranking', value: 'ranking' },
+  { label: 'Guess', value: 'guess' },
+  { label: 'Fact', value: 'fact' },
+  { label: 'Reels', value: 'reel' },
+  { label: 'Carousels', value: 'carousel' },
+];
 
 function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPost) => void }) {
   const [copied, setCopied] = useState(false);
@@ -31,6 +46,7 @@ function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPos
   // opens its own tab from its own tap, which blockers allow.
   const [slidesOpen, setSlidesOpen] = useState(false);
   const posted = !!post.posted_at;
+  const isVideo = post.media_type === 'video' && !!post.video_url;
 
   const copyCaption = async () => {
     try {
@@ -46,8 +62,16 @@ function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPos
     <View style={[styles.card, posted && styles.cardDone]}>
       {/* Cover + identity strip */}
       <View style={styles.cardTop}>
-        <Pressable onPress={() => window.open(post.image_url, '_blank')}>
+        <Pressable
+          style={styles.thumbWrap}
+          onPress={() => window.open(isVideo ? post.video_url! : post.image_url, '_blank')}
+        >
           <Image source={{ uri: post.image_url }} style={styles.thumb} contentFit="cover" />
+          {isVideo ? (
+            <View style={styles.playBadge}>
+              <Text style={styles.playBadgeText}>▶</Text>
+            </View>
+          ) : null}
         </Pressable>
         <View style={styles.cardHead}>
           <View style={styles.titleRow}>
@@ -55,7 +79,8 @@ function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPos
             <Text style={post.ad_safety === 'ad_safe' ? styles.badgeSafe : styles.badgeOrganic}>
               {post.ad_safety === 'ad_safe' ? 'BOOST OK' : 'ORGANIC ONLY'}
             </Text>
-            {post.slide_urls.length > 1 ? (
+            {isVideo ? <Text style={styles.badgeReel}>REEL</Text> : null}
+            {!isVideo && post.slide_urls.length > 1 ? (
               <Text style={styles.slides}>{post.slide_urls.length} slides</Text>
             ) : null}
           </View>
@@ -81,7 +106,11 @@ function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPos
         <Pressable style={styles.miniBtn} onPress={copyCaption} disabled={!post.caption}>
           <Text style={styles.miniBtnText}>{copied ? 'Copied ✓' : 'Copy caption'}</Text>
         </Pressable>
-        {post.slide_urls.length > 1 ? (
+        {isVideo ? (
+          <Pressable style={styles.miniBtn} onPress={() => window.open(post.video_url!, '_blank')}>
+            <Text style={styles.miniBtnText}>Open reel</Text>
+          </Pressable>
+        ) : post.slide_urls.length > 1 ? (
           <Pressable style={styles.miniBtn} onPress={() => setSlidesOpen((v) => !v)}>
             <Text style={styles.miniBtnText}>
               {slidesOpen ? 'Hide slides' : `Slides (${post.slide_urls.length})`}
@@ -118,13 +147,24 @@ export function SocialDomain() {
   // Boosting rules are reference material — collapsed by default so the queue
   // (the actual work) leads the lane.
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [filter, setFilter] = useState<Filter>('all');
 
   const onToggle = async (p: SocialPost) => {
     await setSocialPosted(p.id, !p.posted_at);
     qc.invalidateQueries({ queryKey: ['socialPosts'] });
   };
 
-  const posts = postsQ.data ?? [];
+  const matches = (p: SocialPost) =>
+    filter === 'all'
+      ? true
+      : filter === 'reel'
+        ? p.media_type === 'video'
+        : filter === 'carousel'
+          ? p.media_type !== 'video'
+          : p.angle === filter;
+
+  const allPosts = postsQ.data ?? [];
+  const posts = allPosts.filter(matches);
   const batches = [...new Set(posts.map((p) => p.batch))];
 
   return (
@@ -182,7 +222,7 @@ export function SocialDomain() {
         <Panel title="Social queue">
           <SkRows n={4} />
         </Panel>
-      ) : posts.length === 0 ? (
+      ) : allPosts.length === 0 ? (
         <Panel
           title="Social queue"
           hint="Nothing published yet — generate in the Social Studio, then run: node scripts/social/publish-posts.mjs"
@@ -193,24 +233,39 @@ export function SocialDomain() {
           </Text>
         </Panel>
       ) : (
-        batches.map((batch) => {
-          const group = posts.filter((p) => p.batch === batch);
-          const done = group.filter((p) => p.posted_at).length;
-          return (
-            <Panel
-              key={batch}
-              title={batchLabel(batch)}
-              hint={`${done}/${group.length} posted`}
-              style={styles.panel}
-            >
-              <CardGrid min={340}>
-                {group.map((p) => (
-                  <PostRow key={p.id} post={p} onToggle={onToggle} />
-                ))}
-              </CardGrid>
+        <>
+          <PillGroup
+            options={FILTER_OPTIONS}
+            value={filter}
+            onChange={setFilter}
+            variant="solid"
+            style={styles.filterRow}
+          />
+          {posts.length === 0 ? (
+            <Panel title="Social queue" hint="No posts match this filter">
+              <Text style={styles.empty}>Try a different angle or format chip above.</Text>
             </Panel>
-          );
-        })
+          ) : (
+            batches.map((batch) => {
+              const group = posts.filter((p) => p.batch === batch);
+              const done = group.filter((p) => p.posted_at).length;
+              return (
+                <Panel
+                  key={batch}
+                  title={batchLabel(batch)}
+                  hint={`${done}/${group.length} posted`}
+                  style={styles.panel}
+                >
+                  <CardGrid min={340}>
+                    {group.map((p) => (
+                      <PostRow key={p.id} post={p} onToggle={onToggle} />
+                    ))}
+                  </CardGrid>
+                </Panel>
+              );
+            })
+          )}
+        </>
       )}
     </View>
   );
@@ -221,6 +276,7 @@ const styles = StyleSheet.create({
   // single stranded column.
   wrap: { gap: 12, width: '100%' },
   panel: { marginBottom: 12 },
+  filterRow: { marginBottom: 2 },
   rulesToggle: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -246,6 +302,21 @@ const styles = StyleSheet.create({
   cardTop: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   cardHead: { flex: 1, minWidth: 0, gap: 4 },
   thumb: { width: 56, height: 70, borderRadius: 8, backgroundColor: '#0b1c27' },
+  thumbWrap: { position: 'relative' },
+  playBadge: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: -10,
+    marginLeft: -10,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playBadgeText: { color: '#fff', fontSize: 9, lineHeight: 10 },
   titleRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   day: {
     color: GOLD,
@@ -277,6 +348,17 @@ const styles = StyleSheet.create({
   badgeSafe: {
     color: '#2ea05a',
     backgroundColor: 'rgba(46,160,90,0.12)',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    overflow: 'hidden',
+  },
+  badgeReel: {
+    color: '#fff',
+    backgroundColor: COLORS.navy,
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.6,
