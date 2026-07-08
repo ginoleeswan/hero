@@ -19,8 +19,10 @@ async function buildDraftSide(ids: string[], id: 'draft-a' | 'draft-b'): Promise
   if (roster.length === 0) return null;
   const synergy = await getTeamSynergy(roster.map((h) => h.id));
   const captain = roster[0];
+  // "Team Wolverine" for a squad — a bare captain name reads like a 1-v-1.
+  const name = roster.length > 1 ? `Team ${captain.name}` : (captain?.name ?? 'Team');
   return {
-    team: { id, name: captain?.name ?? 'Team', publisher: null, logo_url: null },
+    team: { id, name, publisher: null, logo_url: null },
     roster,
     synergy,
   };

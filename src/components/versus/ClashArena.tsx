@@ -35,7 +35,7 @@ interface Props {
   sideA: TeamSide;
   sideB: TeamSide;
   result: TeamBattleResult;
-  tally: { votesA: number; votesB: number; total: number } | null;
+  tally: { votesA: number; votesB: number; total: number; myPick?: string | null } | null;
   onVote: (teamId: string) => void;
   topInset?: number;
   bottomInset?: number;
@@ -160,7 +160,7 @@ function DesktopDuel({
   sideA: TeamSide;
   sideB: TeamSide;
   result: TeamBattleResult;
-  tally: { votesA: number; votesB: number; total: number } | null;
+  tally: { votesA: number; votesB: number; total: number; myPick?: string | null } | null;
   onVote: (teamId: string) => void;
   nameA: string;
   nameB: string;
@@ -475,7 +475,7 @@ function VerdictVotes({
   sideB: TeamSide;
   nameA: string;
   nameB: string;
-  tally: { votesA: number; votesB: number; total: number } | null;
+  tally: { votesA: number; votesB: number; total: number; myPick?: string | null } | null;
   onVote: (teamId: string) => void;
   animate: boolean;
   votable?: boolean;
@@ -498,11 +498,15 @@ function VerdictVotes({
             <VoteButton
               tint={TINT_A}
               name={nameA}
+              picked={!!sideA.team && tally?.myPick === sideA.team.id}
+              dimmed={!!tally?.myPick && tally.myPick !== sideA.team?.id}
               onPress={() => sideA.team && onVote(sideA.team.id)}
             />
             <VoteButton
               tint={TINT_B}
               name={nameB}
+              picked={!!sideB.team && tally?.myPick === sideB.team.id}
+              dimmed={!!tally?.myPick && tally.myPick !== sideB.team?.id}
               onPress={() => sideB.team && onVote(sideB.team.id)}
             />
           </Animated.View>
@@ -517,17 +521,38 @@ function VerdictVotes({
   );
 }
 
-function VoteButton({ tint, name, onPress }: { tint: string; name: string; onPress: () => void }) {
+/** A faction vote CTA. Once the viewer has voted, their pick wears a gold edge
+ *  + check and the other side recedes — tapping the other side switches the vote. */
+function VoteButton({
+  tint,
+  name,
+  picked,
+  dimmed,
+  onPress,
+}: {
+  tint: string;
+  name: string;
+  picked?: boolean;
+  dimmed?: boolean;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       style={({ pressed }) => [
         styles.voteBtn,
         { backgroundColor: tint },
+        picked ? styles.votePicked : null,
+        dimmed ? styles.voteDimmed : null,
         pressed ? styles.votePressed : null,
       ]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: !!picked }}
     >
-      <Text style={styles.voteTop}>VOTE</Text>
+      <View style={styles.voteTopRow}>
+        {picked ? <Ionicons name="checkmark-circle" size={14} color={GOLD} /> : null}
+        <Text style={styles.voteTop}>{picked ? 'YOUR PICK' : 'VOTE'}</Text>
+      </View>
       <Text style={styles.voteName} numberOfLines={1}>
         {name}
       </Text>
@@ -676,8 +701,18 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   votes: { flexDirection: 'row', gap: 12, marginTop: 12 },
-  voteBtn: { flex: 1, borderRadius: 14, paddingVertical: 10, alignItems: 'center' },
+  voteBtn: {
+    flex: 1,
+    borderRadius: 14,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  votePicked: { borderColor: GOLD },
+  voteDimmed: { opacity: 0.45 },
   votePressed: { opacity: 0.82 },
+  voteTopRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   voteTop: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#fff', letterSpacing: 1.5 },
   voteName: {
     fontFamily: 'Nunito_700Bold',

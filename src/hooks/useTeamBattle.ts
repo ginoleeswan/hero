@@ -57,7 +57,7 @@ export function useTeamBattle(battleId?: string): UseTeamBattle {
         const ta = teams.find((t) => t.id === pa);
         const tb = teams.find((t) => t.id === pb);
         if (!ta || !tb) return null;
-        const [sa, sb] = [await buildSide(ta), await buildSide(tb)];
+        const [sa, sb] = await Promise.all([buildSide(ta), buildSide(tb)]);
         const result = resolveTeamBattle(sa, sb);
         return {
           sideA: sa,
@@ -71,7 +71,7 @@ export function useTeamBattle(battleId?: string): UseTeamBattle {
       }
       const today = await getTodaysTeamBattle();
       if (!today) return null;
-      const [sa, sb] = [await buildSide(today.teamA), await buildSide(today.teamB)];
+      const [sa, sb] = await Promise.all([buildSide(today.teamA), buildSide(today.teamB)]);
       const result = resolveTeamBattle(sa, sb);
       return {
         sideA: sa,
