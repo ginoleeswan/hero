@@ -1863,6 +1863,7 @@ export type Database = {
         }
         Returns: number
       }
+      enrichment_progress: { Args: never; Returns: Json }
       find_duplicate_heroes: {
         Args: { p_limit?: number }
         Returns: {

@@ -371,54 +371,28 @@ export async function getRunHeroes(runId: number): Promise<{ id: string; name: s
   return (data as unknown as Row[]).filter((r) => r.heroes !== null).map((r) => r.heroes!);
 }
 
-async function awaitCount(qb: PromiseLike<{ count: number | null }>): Promise<number> {
-  const { count } = await qb;
-  return count ?? 0;
-}
-
-/** One snapshot of every enrichment pipeline's progress, for the Enrichment hub. */
+/** One snapshot of every enrichment pipeline's progress, for the Enrichment hub.
+ *  All counts come back from a single `enrichment_progress()` RPC (two server-side
+ *  scans) rather than 11 parallel `count: 'exact'` head queries. The old approach
+ *  swallowed per-query errors — an intermittent statement-timeout on any one count
+ *  returned null → 0, corrupting the funnel with false zeros. One round trip either
+ *  fully succeeds or throws, so the numbers can no longer be partially wrong. */
 export async function getEnrichmentProgress(): Promise<EnrichmentProgress> {
-  const heroCount = () => supabase.from('heroes').select('*', { count: 'exact', head: true });
-  const titleCount = () => supabase.from('titles').select('*', { count: 'exact', head: true });
-  const [
-    heroesTotal,
-    comicvineDone,
-    comicvineUnmatched,
-    resolved,
-    ambiguous,
-    unresolved,
-    enriched,
-    filmTitles,
-    tvTitles,
-    gameTitles,
-    mediaDone,
-  ] = await Promise.all([
-    awaitCount(heroCount()),
-    awaitCount(heroCount().eq('comicvine_status', 'done')),
-    awaitCount(heroCount().eq('comicvine_status', 'unmatched')),
-    awaitCount(heroCount().eq('wikidata_status', 'resolved')),
-    awaitCount(heroCount().eq('wikidata_status', 'ambiguous')),
-    awaitCount(heroCount().eq('wikidata_status', 'unresolved')),
-    awaitCount(
-      heroCount().eq('wikidata_status', 'resolved').not('wikidata_enriched_at', 'is', null),
-    ),
-    awaitCount(titleCount().eq('media_type', 'film')),
-    awaitCount(titleCount().eq('media_type', 'tv')),
-    awaitCount(titleCount().eq('media_type', 'game')),
-    awaitCount(titleCount().eq('source', 'tmdb').eq('enrich_status', 'done')),
-  ]);
+  const { data, error } = await supabase.rpc('enrichment_progress');
+  if (error) throw error;
+  const d = (data ?? {}) as Partial<EnrichmentProgress>;
   return {
-    heroesTotal,
-    comicvineDone,
-    comicvineUnmatched,
-    resolved,
-    ambiguous,
-    unresolved,
-    enriched,
-    filmTitles,
-    tvTitles,
-    gameTitles,
-    mediaDone,
+    heroesTotal: d.heroesTotal ?? 0,
+    comicvineDone: d.comicvineDone ?? 0,
+    comicvineUnmatched: d.comicvineUnmatched ?? 0,
+    resolved: d.resolved ?? 0,
+    ambiguous: d.ambiguous ?? 0,
+    unresolved: d.unresolved ?? 0,
+    enriched: d.enriched ?? 0,
+    filmTitles: d.filmTitles ?? 0,
+    tvTitles: d.tvTitles ?? 0,
+    gameTitles: d.gameTitles ?? 0,
+    mediaDone: d.mediaDone ?? 0,
   };
 }
 
