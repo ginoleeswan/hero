@@ -176,14 +176,46 @@ export const DOMAINS: DomainDef[] = [
   { key: 'publish', label: 'Publish', icon: 'megaphone-outline' },
 ];
 
+// ── Premium surface tokens — the ink-on-paper execution (web-only screen, so
+// CSS gradient/shadow strings are fine; cast at the style site). One home for
+// the command center's material story: warm ink stage, paper worktop cards,
+// recessed data wells, and the single warm seam. ──────────────────────────────
+export const CC = {
+  /** Ink stage behind everything — deep ink with a faint warm vignette. */
+  stage: `radial-gradient(120% 80% at 85% 110%, rgba(231,115,51,0.05) 0%, transparent 55%), radial-gradient(140% 90% at 20% -10%, #17282f 0%, ${COLORS.deepNavy} 62%)`,
+  /** Paper worktop card — warm, faint top-light gradient over the solid fallback. */
+  cardBg: '#f9f4e9',
+  card: 'linear-gradient(178deg, #fcf8f0 0%, #f6efe1 100%)',
+  cardBorder: 'rgba(20,32,40,0.12)',
+  /** 1px light-catch on the card's top edge. */
+  cardLightCatch: 'rgba(255,255,255,0.95)',
+  cardShadow:
+    '0 1px 0 rgba(255,255,255,0.55) inset, 0 1px 2px rgba(6,14,20,0.25), 0 14px 34px -16px rgba(6,14,20,0.6)',
+  /** Recessed data well (lists sit *in* the paper, actions rest *on* it). */
+  well: 'rgba(20,32,40,0.05)',
+  wellBorder: 'rgba(20,32,40,0.05)',
+  wellShadow: 'inset 0 2px 4px -2px rgba(6,14,20,0.16)',
+  hairline: 'rgba(20,32,40,0.06)',
+  /** The warm seam — used only where ink meets work: rail edge, under the band. */
+  seam: 'rgba(231,115,51,0.45)',
+  seamV: 'linear-gradient(180deg, transparent, rgba(231,115,51,0.45) 30%, rgba(231,115,51,0.45) 70%, transparent)',
+  seamH: 'linear-gradient(90deg, rgba(231,115,51,0.55), rgba(231,115,51,0.18) 45%, transparent 85%)',
+  /** Jewel primary — bevel highlight + bottom shade + warm bloom (ui/Button). */
+  primary: 'linear-gradient(180deg, #f5934e 0%, #E77333 55%, #d9631f 100%)',
+  primaryShadow:
+    '0 1px 0 rgba(255,255,255,0.35) inset, 0 -1px 0 rgba(0,0,0,0.15) inset, 0 8px 18px -8px rgba(231,115,51,0.75)',
+  railOn: 'linear-gradient(180deg, #f18a41, #E06A28)',
+  railOnShadow: '0 1px 0 rgba(255,255,255,0.25) inset, 0 8px 18px -8px rgba(231,115,51,0.8)',
+} as const;
+
 // ── Density scale (compact command-center spacing/sizing) ──────────────────────
 export const DENSITY = {
-  panelPad: 12,
+  panelPad: 14,
   // Mobile gets more inner breathing room than the dense desktop grid, so full-
   // width content (bar lists, rows) doesn't run flush to the card edge and read
   // as spilling out of the box.
   panelPadNarrow: 18,
-  radius: 12,
+  radius: 14,
   gap: 10,
   rowH: 28,
   labelSize: 10,

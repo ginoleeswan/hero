@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../constants/colors';
+import { CC } from '../format';
 
 export type ButtonTone = 'primary' | 'ghost' | 'danger' | 'success';
 type ButtonSize = 'sm' | 'md';
@@ -59,6 +60,8 @@ export function Button({
         size === 'sm' ? styles.sm : styles.md,
         narrow && styles.touch,
         { backgroundColor: t.bg },
+        // Jewel finish on the one action that matters: bevel + warm bloom.
+        tone === 'primary' && !off && styles.primaryJewel,
         off && styles.dim,
         style as ViewStyle,
       ]}
@@ -124,6 +127,11 @@ const styles = StyleSheet.create({
   label: { fontFamily: 'Nunito_700Bold', fontSize: 13 },
   labelSm: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
   dim: { opacity: 0.4 },
+  // Web-only screen: CSS gradient/shadow strings are house style here.
+  primaryJewel: {
+    backgroundImage: CC.primary,
+    boxShadow: CC.primaryShadow,
+  } as object,
   icon: {
     borderRadius: 8,
     alignItems: 'center',

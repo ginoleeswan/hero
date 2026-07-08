@@ -8,8 +8,10 @@ import { healthColor } from './format';
 
 // ── Completeness gauge ────────────────────────────────────────────────────────
 export function Gauge({ value, size = 150 }: { value: number; size?: number }) {
+  // Fine ring, not a pie: instrument-grade at chrome sizes (the 46px band gauge
+  // reads as a bezel), sturdier at dashboard sizes.
   const small = size < 110;
-  const stroke = small ? 8 : size < 130 ? 10 : 12;
+  const stroke = small ? 4 : size < 130 ? 10 : 12;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const tint = healthColor(value);

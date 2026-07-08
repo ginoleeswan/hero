@@ -40,6 +40,7 @@ const styles = StyleSheet.create({
   },
   // 3-up on mobile: 3×96 + 2×8 gap = 320 ≤ the ~315px tile area of a 375px phone.
   tileNarrow: { flexBasis: 96, minWidth: 88, paddingHorizontal: 11 },
-  value: { fontFamily: 'Flame-Regular', fontSize: 24, lineHeight: 26 },
+  // Tabular figures so KPI rows don't shimmy as values tick.
+  value: { fontFamily: 'Flame-Regular', fontSize: 24, lineHeight: 26, fontVariant: ['tabular-nums'] },
   label: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: COLORS.grey },
 });

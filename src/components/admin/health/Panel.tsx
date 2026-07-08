@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { type ReactNode } from 'react';
 import { COLORS } from '../../../constants/colors';
-import { DENSITY } from './format';
+import { CC, DENSITY } from './format';
 
 export function Panel({
   title,
@@ -76,17 +76,19 @@ export function Panel({
 }
 
 const styles = StyleSheet.create({
+  // Paper worktop card: warm gradient over a solid fallback, a 1px light-catch
+  // on the top edge, and a layered warm-dark shadow so it *rests on* the ink
+  // stage instead of floating in a void. (Web-only screen — CSS strings OK.)
   panel: {
-    backgroundColor: '#fffdf8',
+    backgroundColor: CC.cardBg,
+    backgroundImage: CC.card,
     borderRadius: DENSITY.radius,
     padding: DENSITY.panelPad,
     borderWidth: 1,
-    borderColor: 'rgba(41,60,67,0.07)',
-    shadowColor: '#3a2a14',
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-  },
+    borderColor: CC.cardBorder,
+    borderTopColor: CC.cardLightCatch,
+    boxShadow: CC.cardShadow,
+  } as object,
   // Independently-tunable mobile card padding (wires DENSITY.panelPadNarrow so the
   // token isn't dead — more generous than the dense desktop pad).
   panelNarrow: { padding: DENSITY.panelPadNarrow },
