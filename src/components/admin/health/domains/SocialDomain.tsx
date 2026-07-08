@@ -22,6 +22,10 @@ function batchLabel(batch: string): string {
 
 function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPost) => void }) {
   const [copied, setCopied] = useState(false);
+  // Carousel slides expand inline (multi-tab window.open is popup-blocked after
+  // the first — only one slide ever opened, esp. on iOS Safari). Each thumbnail
+  // opens its own tab from its own tap, which blockers allow.
+  const [slidesOpen, setSlidesOpen] = useState(false);
   const posted = !!post.posted_at;
 
   const copyCaption = async () => {
@@ -60,11 +64,10 @@ function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPos
             <Text style={styles.miniBtnText}>{copied ? 'Copied ✓' : 'Copy caption'}</Text>
           </Pressable>
           {post.slide_urls.length > 1 ? (
-            <Pressable
-              style={styles.miniBtn}
-              onPress={() => post.slide_urls.forEach((u) => window.open(u, '_blank'))}
-            >
-              <Text style={styles.miniBtnText}>Open all slides</Text>
+            <Pressable style={styles.miniBtn} onPress={() => setSlidesOpen((v) => !v)}>
+              <Text style={styles.miniBtnText}>
+                {slidesOpen ? 'Hide slides' : `Slides (${post.slide_urls.length})`}
+              </Text>
             </Pressable>
           ) : null}
           <Pressable
@@ -76,6 +79,16 @@ function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPos
             </Text>
           </Pressable>
         </View>
+        {slidesOpen ? (
+          <View style={styles.slideStrip}>
+            {post.slide_urls.map((u, i) => (
+              <Pressable key={u} onPress={() => window.open(u, '_blank')} style={styles.slideCell}>
+                <Image source={{ uri: u }} style={styles.slideThumb} contentFit="cover" />
+                <Text style={styles.slideNum}>{i + 1}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -161,6 +174,23 @@ const styles = StyleSheet.create({
   title: { flex: 1, color: COLORS.black, fontSize: 13.5, fontWeight: '700' },
   slides: { color: COLORS.grey, fontSize: 11 },
   guide: { color: COLORS.grey, fontSize: 11.5 },
+  // Inline slide strip (expanded carousel preview) — wraps on narrow screens.
+  slideStrip: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  slideCell: { position: 'relative' },
+  slideThumb: { width: 56, height: 70, borderRadius: 6, backgroundColor: '#0b1c27' },
+  slideNum: {
+    position: 'absolute',
+    bottom: 3,
+    right: 4,
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '800',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    overflow: 'hidden',
+  },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
   miniBtn: {
     borderWidth: 1,
