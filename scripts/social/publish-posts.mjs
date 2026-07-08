@@ -79,7 +79,26 @@ function collect() {
     }
   }
   posts.push(...collectAdToolkit());
+  posts.push(...collectAdLibrary());
   return posts;
+}
+
+// The monthly ad-safe library (batch-month.mjs output) — newest batch only.
+// Reels carry { video: mp4Path, poster } and upload as Cloudinary video.
+function collectAdLibrary() {
+  const libs = readdirSync(OUT).filter((d) => /^ad-library-\d{4}-\d{2}$/.test(d)).sort();
+  const latest = libs[libs.length - 1];
+  if (!latest) return [];
+  let manifest;
+  try { manifest = JSON.parse(readFileSync(join(OUT, latest, 'manifest.json'), 'utf8')); } catch { return []; }
+  return manifest.entries.map((e) => ({
+    batch: latest, ord: e.ord, day: null, kind: e.angle, title: e.title,
+    dir: join(OUT, latest, e.dir),
+    files: e.format === 'carousel' ? e.slides : [e.poster],
+    video: e.format === 'reel' ? e.mp4 : null,
+    caption: e.caption, where: e.format === 'reel' ? 'Reels · TikTok' : 'IG feed · TikTok photo', when: '',
+    adSafety: 'ad_safe', angle: e.angle, music: e.music,
+  }));
 }
 
 // The always-available boostable set — the brand looks + web hero, franchise-free.
@@ -120,14 +139,25 @@ async function main() {
       urls.push(r.secure_url);
       process.stdout.write('.');
     }
+    let videoUrl = null;
+    if (p.video) {
+      const vid = await cloudinary.uploader.upload(join(p.dir, p.video), {
+        public_id: `mythique/social/${p.batch}/${p.ord}-reel`, overwrite: true, resource_type: 'video',
+      });
+      videoUrl = vid.secure_url;
+      process.stdout.write('▶');
+    }
     rows.push({
       batch: p.batch, ord: p.ord, day: p.day, kind: p.kind, title: p.title,
       image_url: urls[0], slide_urls: urls, caption: p.caption,
       guide_where: p.where, guide_when: p.when,
-      guide_music: suggestMusic(p.kind, p.title),
+      guide_music: p.music ?? suggestMusic(p.kind, p.title),
       // Set at collection time: organic studio carousels are 'organic'; the
-      // ads pipeline (weeks + brand toolkit) is franchise-free 'ad_safe'.
+      // ads pipeline (weeks + brand toolkit + monthly library) is franchise-free 'ad_safe'.
       ad_safety: p.adSafety ?? 'organic',
+      media_type: p.video ? 'video' : 'image',
+      video_url: videoUrl,
+      angle: p.angle ?? null,
     });
   }
   console.log('\nImages uploaded. Upserting rows…');
