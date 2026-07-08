@@ -49,6 +49,9 @@ function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPos
           <Text style={styles.title} numberOfLines={1}>
             {post.title}
           </Text>
+          <Text style={post.ad_safety === 'ad_safe' ? styles.badgeSafe : styles.badgeOrganic}>
+            {post.ad_safety === 'ad_safe' ? 'BOOST OK' : 'ORGANIC ONLY'}
+          </Text>
           {post.slide_urls.length > 1 ? (
             <Text style={styles.slides}>{post.slide_urls.length} slides</Text>
           ) : null}
@@ -59,6 +62,7 @@ function PostRow({ post, onToggle }: { post: SocialPost; onToggle: (p: SocialPos
             {post.guide_when ? ` · ${post.guide_when}` : ''}
           </Text>
         ) : null}
+        {post.guide_music ? <Text style={styles.music}>♪ {post.guide_music}</Text> : null}
         <View style={styles.actions}>
           <Pressable style={styles.miniBtn} onPress={copyCaption} disabled={!post.caption}>
             <Text style={styles.miniBtnText}>{copied ? 'Copied ✓' : 'Copy caption'}</Text>
@@ -108,6 +112,36 @@ export function SocialDomain() {
 
   return (
     <View style={styles.wrap}>
+      {/* Boosting rules — mirrors scripts/social/safety.mjs (the tier system).
+          Organic posting is unrestricted; PAID ads are tier-gated. */}
+      <Panel title="Safe to post?" hint="Organic is unrestricted — boosting (paid ads) is tier-gated">
+        <View style={styles.ruleRow}>
+          <Text style={styles.ruleBadgeGreen}>ORGANIC</Text>
+          <Text style={styles.ruleText}>
+            Post anything from the studio to feed/stories/TikTok — fan content, no restrictions.
+          </Text>
+        </View>
+        <View style={styles.ruleRow}>
+          <Text style={styles.ruleBadgeRed}>NEVER BOOST</Text>
+          <Text style={styles.ruleText}>
+            Tier S characters (Marvel, Disney, anime/Shueisha, Star Wars, Pokémon…) in a paid ad —
+            takedown + ad-account strike risk.
+          </Text>
+        </View>
+        <View style={styles.ruleRow}>
+          <Text style={styles.ruleBadgeAmber}>STYLIZED ONLY</Text>
+          <Text style={styles.ruleText}>
+            Tier A (DC, Image, major game studios) may appear in ads only via the stylized ads
+            pipeline (scripts/social/ads).
+          </Text>
+        </View>
+        <View style={styles.ruleRow}>
+          <Text style={styles.ruleBadgeGreen}>BOOST OK</Text>
+          <Text style={styles.ruleText}>
+            Ads-pipeline output (brand, tier-checked matchups/rankings) — safe to put money behind.
+          </Text>
+        </View>
+      </Panel>
       {postsQ.isLoading ? (
         <Panel title="Social queue">
           <SkRows n={4} />
@@ -174,6 +208,70 @@ const styles = StyleSheet.create({
   title: { flex: 1, color: COLORS.black, fontSize: 13.5, fontWeight: '700' },
   slides: { color: COLORS.grey, fontSize: 11 },
   guide: { color: COLORS.grey, fontSize: 11.5 },
+  music: { color: '#8a6420', fontSize: 11.5 },
+  badgeOrganic: {
+    color: '#b9892c',
+    backgroundColor: 'rgba(217,164,65,0.14)',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    overflow: 'hidden',
+  },
+  badgeSafe: {
+    color: '#2ea05a',
+    backgroundColor: 'rgba(46,160,90,0.12)',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    overflow: 'hidden',
+  },
+  ruleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 4 },
+  ruleText: { flex: 1, color: COLORS.navy, fontSize: 12, lineHeight: 17 },
+  ruleBadgeGreen: {
+    color: '#2ea05a',
+    backgroundColor: 'rgba(46,160,90,0.12)',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    overflow: 'hidden',
+    minWidth: 86,
+    textAlign: 'center',
+  },
+  ruleBadgeRed: {
+    color: '#c34430',
+    backgroundColor: 'rgba(209,80,63,0.12)',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    overflow: 'hidden',
+    minWidth: 86,
+    textAlign: 'center',
+  },
+  ruleBadgeAmber: {
+    color: '#b9892c',
+    backgroundColor: 'rgba(217,164,65,0.14)',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    overflow: 'hidden',
+    minWidth: 86,
+    textAlign: 'center',
+  },
   // Inline slide strip (expanded carousel preview) — wraps on narrow screens.
   slideStrip: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   slideCell: { position: 'relative' },

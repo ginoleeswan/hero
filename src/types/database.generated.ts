@@ -1341,10 +1341,12 @@ export type Database = {
       }
       social_posts: {
         Row: {
+          ad_safety: string
           batch: string
           caption: string
           created_at: string
           day: string | null
+          guide_music: string | null
           guide_when: string | null
           guide_where: string | null
           id: string
@@ -1356,10 +1358,12 @@ export type Database = {
           title: string
         }
         Insert: {
+          ad_safety?: string
           batch: string
           caption?: string
           created_at?: string
           day?: string | null
+          guide_music?: string | null
           guide_when?: string | null
           guide_where?: string | null
           id?: string
@@ -1371,10 +1375,12 @@ export type Database = {
           title: string
         }
         Update: {
+          ad_safety?: string
           batch?: string
           caption?: string
           created_at?: string
           day?: string | null
+          guide_music?: string | null
           guide_when?: string | null
           guide_where?: string | null
           id?: string

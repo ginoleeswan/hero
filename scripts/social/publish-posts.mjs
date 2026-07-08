@@ -12,6 +12,7 @@ import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { v2 as cloudinary } from 'cloudinary';
+import { suggestMusic } from './music.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..', '..');
@@ -93,6 +94,10 @@ async function main() {
       batch: p.batch, ord: p.ord, day: p.day, kind: p.kind, title: p.title,
       image_url: urls[0], slide_urls: urls, caption: p.caption,
       guide_where: p.where, guide_when: p.when,
+      guide_music: suggestMusic(p.kind, p.title),
+      // Everything from the organic studio is organic-only (never boost as a
+      // paid ad) — the tier-checked ads pipeline publishes 'ad_safe' rows.
+      ad_safety: 'organic',
     });
   }
   console.log('\nImages uploaded. Upserting rows…');
