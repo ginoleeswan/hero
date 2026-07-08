@@ -288,3 +288,14 @@ export function backlogEtaLabel(runs: RunLike[], actionable: number): string | n
   const etaMin = actionable / perMin;
   return etaMin >= 60 ? `~${(etaMin / 60).toFixed(1)}h to clear` : `~${Math.ceil(etaMin)}m to clear`;
 }
+
+// ── Lane deep-links ──────────────────────────────────────────────────────────────
+
+/**
+ * Cross-lane deep-link payload: which sub-tab to land on. `n` is a monotonically
+ * increasing token so repeating the same jump re-fires the lane's effect.
+ */
+export interface LaneJump<S extends string> {
+  sub: S;
+  n: number;
+}
