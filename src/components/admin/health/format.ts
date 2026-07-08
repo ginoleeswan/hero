@@ -151,47 +151,30 @@ export const WORKLIST_LABEL: Record<CoverageMetric, string> = {
   firstIssue: 'First Issue',
 };
 
-// ── Domains (command-center rail) ─────────────────────────────────────────────
-export type DomainKey =
-  | 'command'
-  | 'catalog'
-  | 'sources'
-  | 'pipelines'
-  | 'campaigns'
-  | 'social'
-  | 'spend'
-  | 'community'
-  | 'traffic'
-  | 'errors'
-  | 'reports';
+// ── Domains (command-center rail) — 6 purpose-driven lanes ────────────────────
+export type DomainKey = 'command' | 'catalog' | 'pipelines' | 'inbox' | 'audience' | 'publish';
 
 export interface DomainDef {
   key: DomainKey;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
-  /** Future app-wide domains: render a "coming soon" placeholder. */
-  placeholder?: boolean;
-  /** Show the pending backlog badge on this rail item. */
-  badge?: 'pending';
+  /** Which page-level badge count shows on this rail/tab item. */
+  badge?: 'pending' | 'inbox';
+  /**
+   * Fill lanes lock to the viewport on desktop (the bento divides the height,
+   * lists scroll within panels); non-fill lanes scroll the content region.
+   */
+  fill?: boolean;
 }
 
 export const DOMAINS: DomainDef[] = [
-  { key: 'command', label: 'Overview', icon: 'grid' },
-  { key: 'catalog', label: 'Catalog', icon: 'albums', badge: 'pending' },
-  { key: 'sources', label: 'Sources', icon: 'git-network-outline' },
-  { key: 'pipelines', label: 'Build', icon: 'construct-outline' },
-  { key: 'campaigns', label: 'Campaigns', icon: 'megaphone-outline' },
-  { key: 'social', label: 'Social', icon: 'share-social-outline' },
-  { key: 'spend', label: 'Spend', icon: 'cash-outline' },
-  { key: 'community', label: 'Community', icon: 'people-outline' },
-  { key: 'traffic', label: 'Traffic', icon: 'trending-up-outline' },
-  { key: 'errors', label: 'Errors', icon: 'bug-outline' },
-  { key: 'reports', label: 'Reports', icon: 'flag-outline' },
+  { key: 'command', label: 'Overview', icon: 'grid', fill: true },
+  { key: 'catalog', label: 'Catalog', icon: 'albums', badge: 'pending', fill: true },
+  { key: 'pipelines', label: 'Build', icon: 'construct-outline', fill: true },
+  { key: 'inbox', label: 'Inbox', icon: 'file-tray-full-outline', badge: 'inbox' },
+  { key: 'audience', label: 'Audience', icon: 'people-outline' },
+  { key: 'publish', label: 'Publish', icon: 'megaphone-outline' },
 ];
-
-/** Primary (non-placeholder) domain keys — the mobile bottom-bar set. */
-export const primaryDomainKeys = (): DomainKey[] =>
-  DOMAINS.filter((d) => !d.placeholder).map((d) => d.key);
 
 // ── Density scale (compact command-center spacing/sizing) ──────────────────────
 export const DENSITY = {

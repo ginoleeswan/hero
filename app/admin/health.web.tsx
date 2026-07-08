@@ -1,12 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  View,
-  Animated,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  useWindowDimensions,
-} from 'react-native';
+import { View, Animated, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCommandAlerts } from '../../src/contexts/CommandAlertsContext';
 import { usePullToRefresh } from '../../src/hooks/usePullToRefresh';
@@ -16,38 +9,38 @@ import { getProfile } from '../../src/lib/db/profiles';
 import { useScreenChrome } from '../../src/hooks/useScreenChrome';
 import { LogoLoader } from '../../src/components/ui/LogoLoader';
 import { COLORS, SURFACE } from '../../src/constants/colors';
-import { type CoverageMetric } from '../../src/lib/db/catalogHealth';
 import {
   DRAIN_CRON,
   CV_HOURLY_CAP,
   pct,
   METRICS,
+  buildAlerts,
+  actionableBacklog,
+  backlogEtaLabel,
   type DomainKey,
+  type LaneJump,
 } from '../../src/components/admin/health/format';
 import { CommandShell, CHROME_TOP } from '../../src/components/admin/health/CommandShell';
 import { VitalsBar } from '../../src/components/admin/health/VitalsBar';
 import { type Alert } from '../../src/components/admin/health/AlertStack';
 import { CommandHome } from '../../src/components/admin/health/domains/CommandHome';
-import { CatalogDomain } from '../../src/components/admin/health/domains/CatalogDomain';
+import {
+  CatalogLane,
+  type CatalogJump,
+} from '../../src/components/admin/health/domains/CatalogLane';
 import { Bento } from '../../src/components/admin/health/Bento';
-import { SubTabs } from '../../src/components/admin/health/SubTabs';
-import { PipelinesDomain } from '../../src/components/admin/health/domains/PipelinesDomain';
+import {
+  PipelinesDomain,
+  type BuildSub,
+} from '../../src/components/admin/health/domains/PipelinesDomain';
 import { BuildBoard } from '../../src/components/admin/health/BuildBoard';
 import { refreshFameScores } from '../../src/lib/db/build';
-import { HeroConsole } from '../../src/components/admin/health/HeroConsole';
-import { DuplicatesPanel } from '../../src/components/admin/health/DuplicatesPanel';
-import { UniverseGapsPanel } from '../../src/components/admin/health/UniverseGapsPanel';
-import { listUnbrandedHeroes, fetchSourceCoverage } from '../../src/lib/db/catalogHealth';
-import { SpendDomain } from '../../src/components/admin/health/domains/SpendDomain';
-import { SourcesDomain } from '../../src/components/admin/health/domains/SourcesDomain';
-import { CampaignsDomain } from '../../src/components/admin/health/domains/CampaignsDomain';
-import { SocialDomain } from '../../src/components/admin/health/domains/SocialDomain';
-import { ReviewDomain } from '../../src/components/admin/health/domains/ReviewDomain';
-import { CommunityDomain } from '../../src/components/admin/health/domains/CommunityDomain';
-import { TrafficDomain } from '../../src/components/admin/health/domains/TrafficDomain';
-import { ErrorsDomain } from '../../src/components/admin/health/domains/ErrorsDomain';
-import { ReportsDomain } from '../../src/components/admin/health/domains/ReportsDomain';
+import { listUnbrandedHeroes } from '../../src/lib/db/catalogHealth';
+import { InboxLane, type InboxSub } from '../../src/components/admin/health/domains/InboxLane';
+import { AudienceLane } from '../../src/components/admin/health/domains/AudienceLane';
+import { PublishLane } from '../../src/components/admin/health/domains/PublishLane';
 import { fetchReportsQueue } from '../../src/lib/db/reports';
+import { getReviewQueue } from '../../src/lib/db/contributions';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 import {
@@ -59,6 +52,7 @@ import {
   useActivityLog,
   useCatalogActions,
   useCatalogQueries,
+  useRunLogStream,
 } from '../../src/components/admin/health/hooks';
 
 export default function AdminHealthScreen() {
@@ -70,31 +64,35 @@ export default function AdminHealthScreen() {
   const narrow = winW < 760;
   const { user, loading: authLoading } = useAuth();
 
-  const [metric, setMetric] = useState<CoverageMetric>('portrait');
-  const [catSub, setCatSub] = useState<'coverage' | 'distributions' | 'hygiene' | 'review'>(
-    'coverage',
-  );
-  const [page, setPage] = useState(0);
   const [domain, setDomain] = useState<DomainKey>('command');
-  const [heroQuery, setHeroQuery] = useState('');
   const [batchSize, setBatchSize] = useState(25);
-  const [pubFilter, setPubFilter] = useState<string | null>(null);
   const [historyLimit, setHistoryLimit] = useState(30);
   const [ambiguousLimit, setAmbiguousLimit] = useState(25);
-  const [trafficDays, setTrafficDays] = useState(28);
   // The live foreground Build board's working set. Lifted here so the top-strip
   // Stop can halt it too — a true universal kill switch across server + client runs.
   const [buildIds, setBuildIds] = useState<string[] | null>(null);
+  // Cross-lane deep-links: monotonically increasing token per lane.
+  const [catalogJump, setCatalogJump] = useState<CatalogJump | null>(null);
+  const [inboxJump, setInboxJump] = useState<LaneJump<InboxSub> | null>(null);
+  const [buildJump, setBuildJump] = useState<LaneJump<BuildSub> | null>(null);
+
+  const jumpCatalog = (j: Omit<CatalogJump, 'n'>) => {
+    setCatalogJump({ ...j, n: (catalogJump?.n ?? 0) + 1 });
+    setDomain('catalog');
+  };
+  const jumpInbox = (sub: InboxSub) => {
+    setInboxJump({ sub, n: (inboxJump?.n ?? 0) + 1 });
+    setDomain('inbox');
+  };
+  const jumpBuild = (sub: BuildSub) => {
+    setBuildJump({ sub, n: (buildJump?.n ?? 0) + 1 });
+    setDomain('pipelines');
+  };
 
   const profileQ = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: () => getProfile(user!.id),
     enabled: !!user,
-  });
-  const sourceCovQ = useQuery({
-    queryKey: ['sourceCoverage'],
-    queryFn: fetchSourceCoverage,
-    enabled: !!user && domain === 'sources',
   });
   const unbrandedQ = useQuery({
     queryKey: ['unbrandedHeroes'],
@@ -112,15 +110,21 @@ export default function AdminHealthScreen() {
     if (gateResolved && !isAdmin) router.replace('/explore');
   }, [gateResolved, isAdmin, router]);
 
+  // Review-queue count for the Inbox rail badge (shares the lane's cache key).
+  const reviewQ = useQuery({
+    queryKey: ['reviewQueue'],
+    queryFn: () => getReviewQueue(),
+    enabled: gateResolved && isAdmin,
+    staleTime: 30_000,
+  });
+
   const {
     healthQ,
     gapsQ,
     runsQ,
     cronQ,
-    heroSearchQ,
     pingQ,
     usageQ,
-    distQ,
     snapsQ,
     spendQ,
     ambiguousQ,
@@ -128,19 +132,11 @@ export default function AdminHealthScreen() {
     statsPendingQ,
     portraitsPendingQ,
     recentEnrichedQ,
-    communityQ,
-    trafficQ,
-    errorsQ,
   } = useCatalogQueries({
     enabled: gateResolved && isAdmin,
     domain,
-    metric,
-    page,
-    pubFilter,
-    heroQuery,
     historyLimit,
     ambiguousLimit,
-    trafficDays,
   });
 
   const drainJob = cronQ.data?.find((j) => j.jobname === DRAIN_CRON);
@@ -165,19 +161,6 @@ export default function AdminHealthScreen() {
     onRefresh,
   } = useCatalogActions({ batchSize, cronOn, flash });
 
-  const pickPublisher = (publisher: string) => {
-    setPubFilter(publisher);
-    setPage(0);
-    setDomain('catalog');
-  };
-  // Deep-link from the home glance / coverage into a backfill worklist.
-  const goToBackfill = (m: CoverageMetric = 'portrait') => {
-    setMetric(m);
-    setPage(0);
-    setPubFilter(null);
-    setDomain('catalog');
-  };
-
   const h = healthQ.data;
   // The three dashboard tabs are gated on the catalog_health snapshot (`h`). Drive
   // their skeleton off a phased transition so a fast load (now ~80ms) never flashes
@@ -200,78 +183,23 @@ export default function AdminHealthScreen() {
     Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: false }).start();
   }, [h, anim]);
 
-  // Stream run state changes into the activity log. The first batch only primes
-  // the seen-map (so existing history doesn't flood the log on mount); after that
-  // every transition — started, done, error, stopped — is logged with detail.
-  const seenRuns = useRef<Map<number, string>>(new Map());
-  const runLogPrimed = useRef(false);
-  useEffect(() => {
-    const data = runsQ.data?.runs;
-    if (!data) return;
-    if (!runLogPrimed.current) {
-      for (const r of data) seenRuns.current.set(r.id, r.status);
-      runLogPrimed.current = true;
-      return;
-    }
-    for (const r of data) {
-      const prev = seenRuns.current.get(r.id);
-      if (prev === r.status) continue;
-      seenRuns.current.set(r.id, r.status);
-      const took = r.duration_ms != null ? ` in ${(r.duration_ms / 1000).toFixed(1)}s` : '';
-      if (r.status === 'running' && prev == null) {
-        logEvent('pending', `Run #${r.id} started · ${r.triggered_by}`);
-      } else if (r.status === 'done') {
-        logEvent(
-          'success',
-          `Run #${r.id} finished · ${r.done} enriched${r.failed ? `, ${r.failed} failed` : ''}${
-            r.retry ? `, ${r.retry} retry` : ''
-          }${took}`,
-        );
-      } else if (r.status === 'error') {
-        logEvent(
-          'error',
-          `Run #${r.id} errored${r.done ? ` after ${r.done} enriched` : ''}${took}`,
-        );
-      } else if (r.status === 'stopped') {
-        logEvent('info', `Run #${r.id} stopped · ${r.done} enriched${took}`);
-      }
-    }
-  }, [runsQ.data, logEvent]);
+  // Run-log streaming (extracted hook).
+  useRunLogStream(runsQ.data?.runs, logEvent);
 
   // Alerts surface problems without hunting. Memoised so the auto-collapse effect
   // can re-fold the mobile banner once they drop back to ≤1.
-  const alerts = useMemo<Alert[]>(() => {
-    const usage = usageQ.data ?? 0;
-    const recent = runsQ.data?.runs ?? [];
-    const a: Alert[] = [];
-    if (pingQ.data === 'limited')
-      a.push({
-        tone: 'gold',
-        text: 'ComicVine is rate-limited right now — drains will mostly retry.',
-      });
-    else if (usage >= CV_HOURLY_CAP * 0.8)
-      a.push({
-        tone: 'gold',
-        text: `ComicVine usage high — ${usage}/${CV_HOURLY_CAP} calls this hour.`,
-      });
-    if ((h?.cvStatus.failed ?? 0) > 0)
-      a.push({
-        tone: 'red',
-        text: `${h!.cvStatus.failed} hero(es) marked failed — use "Retry failed" on the Build tab.`,
-      });
-    if (recent[0]?.status === 'error')
-      a.push({ tone: 'red', text: 'The last run errored — see the Build tab.' });
-    const unbranded = unbrandedQ.data?.length ?? 0;
-    if (unbranded > 0)
-      a.push({
-        tone: 'gold',
-        text: `${unbranded} character${unbranded === 1 ? '' : 's'} need a universe — see Catalog › Hygiene.`,
-      });
-    const openReports = openReportsQ.data?.length ?? 0;
-    if (openReports > 0)
-      a.push({ tone: 'red', text: `${openReports} open report${openReports === 1 ? '' : 's'}` });
-    return a;
-  }, [pingQ.data, usageQ.data, runsQ.data, h, unbrandedQ.data, openReportsQ.data]);
+  const alerts = useMemo<Alert[]>(
+    () =>
+      buildAlerts({
+        cvPing: pingQ.data,
+        cvUsage: usageQ.data ?? 0,
+        cvFailed: h?.cvStatus.failed ?? 0,
+        lastRunStatus: runsQ.data?.runs[0]?.status,
+        unbrandedCount: unbrandedQ.data?.length ?? 0,
+        openReports: openReportsQ.data?.length ?? 0,
+      }),
+    [pingQ.data, usageQ.data, h, runsQ.data, unbrandedQ.data, openReportsQ.data],
+  );
 
   // Publish alerts to the global TopBar's bell (mobile has no command band).
   // Cleared on unmount so the bell never lingers off the command center.
@@ -297,33 +225,16 @@ export default function AdminHealthScreen() {
         : COLORS.green;
   const runs = runsQ.data?.runs ?? [];
   const activeRun = runs.find((r) => r.status === 'running');
-  // Backlog ETA at the observed drain rate (heroes enriched per minute of run time).
-  const drainedRuns = runs.filter((r) => r.duration_ms && r.done > 0);
-  const drainMs = drainedRuns.reduce((a, r) => a + (r.duration_ms ?? 0), 0);
-  const drainDone = drainedRuns.reduce((a, r) => a + r.done, 0);
-  const perMin = drainMs > 0 ? drainDone / (drainMs / 60000) : 0;
+  // Backlog vitals (pure helpers from Task 1).
   const pendingNow = h?.cvStatus.pending ?? 0;
-  // The real enrichment backlog: every hero still needing an actionable step —
-  // not yet fully enriched, and not terminally failed / awaiting review / unresolvable.
-  const ep = enrichProgressQ.data;
-  const actionable = ep
-    ? Math.max(
-        0,
-        ep.heroesTotal -
-          ep.enriched -
-          (h?.cvStatus.failed ?? 0) -
-          ep.comicvineUnmatched -
-          ep.ambiguous -
-          ep.unresolved,
-      )
-    : pendingNow;
-  const etaMin = perMin > 0 ? actionable / perMin : 0;
-  const etaLabel =
-    perMin > 0 && actionable > 0
-      ? etaMin >= 60
-        ? `~${(etaMin / 60).toFixed(1)}h to clear`
-        : `~${Math.ceil(etaMin)}m to clear`
-      : null;
+  const actionable = actionableBacklog(enrichProgressQ.data, h?.cvStatus.failed ?? 0, pendingNow);
+  const etaLabel = backlogEtaLabel(runsQ.data?.runs ?? [], actionable);
+
+  // Rail/tab badges from the registry's badge keys.
+  const badges: Partial<Record<DomainKey, number>> = {
+    catalog: pendingNow,
+    inbox: (openReportsQ.data?.length ?? 0) + (reviewQ.data?.length ?? 0),
+  };
 
   const ribbon = h ? (
     <VitalsBar
@@ -344,10 +255,6 @@ export default function AdminHealthScreen() {
       spend={spendQ.data}
     />
   ) : null;
-
-  // The ops vitals ribbon (ComicVine rate-limit, run status) only shows on the
-  // Build tab; alerts live in the header notification bell (no banner real estate).
-  const onlyOnBuild = domain === 'pipelines';
 
   return (
     <View style={styles.root}>
@@ -372,17 +279,11 @@ export default function AdminHealthScreen() {
           domain={domain}
           onDomain={setDomain}
           overall={overall}
-          pending={pendingNow}
+          badges={badges}
           refreshing={refreshing}
           onRefresh={onRefresh}
           narrow={narrow}
-          fill={
-            domain === 'command' ||
-            domain === 'sources' ||
-            domain === 'pipelines' ||
-            domain === 'catalog'
-          }
-          ribbon={onlyOnBuild ? ribbon : null}
+          ribbon={domain === 'pipelines' ? ribbon : null}
           alerts={alerts}
         >
           {domain === 'command' &&
@@ -395,8 +296,8 @@ export default function AdminHealthScreen() {
                 spend={spendQ.data}
                 progress={enrichProgressQ.data}
                 narrow={narrow}
-                onJump={goToBackfill}
-                onOpenSpend={() => setDomain('spend')}
+                onJump={(m) => jumpCatalog({ sub: 'coverage', metric: m })}
+                onOpenSpend={() => jumpBuild('spend')}
                 onOpenBuild={() => setDomain('pipelines')}
                 onSnapshot={onSnapshot}
                 snapshotting={busy === 'snapshot'}
@@ -407,79 +308,17 @@ export default function AdminHealthScreen() {
           {domain === 'catalog' &&
             (h ? (
               <Bento fill={!narrow}>
-                <SubTabs
-                  tabs={[
-                    { key: 'coverage', label: 'Coverage', icon: 'stats-chart-outline' },
-                    { key: 'distributions', label: 'Distributions', icon: 'pie-chart-outline' },
-                    { key: 'hygiene', label: 'Hygiene', icon: 'git-merge-outline' },
-                    { key: 'review', label: 'Review', icon: 'shield-checkmark-outline' },
-                  ]}
-                  active={catSub}
-                  onChange={setCatSub}
+                <CatalogLane
+                  h={h}
+                  narrow={narrow}
+                  anim={anim}
+                  unbranded={unbrandedQ.data ?? []}
+                  unbrandedLoading={unbrandedQ.isLoading}
+                  busy={busy}
+                  onReenrich={onReenrich}
+                  flash={flash}
+                  jump={catalogJump}
                 />
-                {catSub === 'coverage' || catSub === 'distributions' ? (
-                  <CatalogDomain
-                    h={h}
-                    gaps={gapsQ.data}
-                    gapsLoading={gapsQ.isLoading}
-                    dist={distQ.data}
-                    metric={metric}
-                    setMetric={setMetric}
-                    page={page}
-                    setPage={setPage}
-                    pubFilter={pubFilter}
-                    setPubFilter={setPubFilter}
-                    pickPublisher={pickPublisher}
-                    anim={anim}
-                    narrow={narrow}
-                    sub={catSub}
-                    fill={!narrow}
-                  />
-                ) : null}
-                {catSub === 'hygiene' ? (
-                  <ScrollView
-                    style={!narrow ? { flex: 1, minHeight: 0 } : undefined}
-                    nestedScrollEnabled
-                  >
-                    <HeroConsole
-                      heroQuery={heroQuery}
-                      setHeroQuery={setHeroQuery}
-                      heroResults={heroSearchQ.data ?? []}
-                      heroSearchLoading={heroSearchQ.isLoading}
-                      busy={busy}
-                      onReenrich={onReenrich}
-                    />
-                    <View style={{ marginTop: 14 }}>
-                      <DuplicatesPanel
-                        flash={flash}
-                        onChanged={() => {
-                          queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
-                          queryClient.invalidateQueries({ queryKey: ['catalogDistributions'] });
-                          queryClient.invalidateQueries({ queryKey: ['backfillGaps'] });
-                        }}
-                      />
-                    </View>
-                    <View style={{ marginTop: 14 }}>
-                      <UniverseGapsPanel
-                        heroes={unbrandedQ.data ?? []}
-                        loading={unbrandedQ.isLoading}
-                        flash={flash}
-                        onChanged={() => {
-                          queryClient.invalidateQueries({ queryKey: ['unbrandedHeroes'] });
-                          queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
-                        }}
-                      />
-                    </View>
-                  </ScrollView>
-                ) : null}
-                {catSub === 'review' ? (
-                  <ScrollView
-                    style={!narrow ? { flex: 1, minHeight: 0 } : undefined}
-                    nestedScrollEnabled
-                  >
-                    <ReviewDomain />
-                  </ScrollView>
-                ) : null}
               </Bento>
             ) : showHealthSkeleton ? (
               <CatalogSkeleton narrow={narrow} />
@@ -527,40 +366,16 @@ export default function AdminHealthScreen() {
                   },
                 }}
                 controls={{ buildIds, setBuildIds, busy, batchSize, setBatchSize, narrow }}
+                jump={buildJump}
               />
             ) : showHealthSkeleton ? (
               <PipelinesSkeleton narrow={narrow} />
             ) : null)}
-          {domain === 'sources' && (
-            <SourcesDomain cov={sourceCovQ.data} loading={sourceCovQ.isLoading} narrow={narrow} />
+          {domain === 'inbox' && <InboxLane jump={inboxJump} />}
+          {domain === 'audience' && (
+            <AudienceLane narrow={narrow} onOpenReview={() => jumpInbox('review')} />
           )}
-          {domain === 'campaigns' && <CampaignsDomain />}
-          {domain === 'social' && <SocialDomain />}
-          {domain === 'spend' && <SpendDomain spend={spendQ.data} loading={spendQ.isLoading} />}
-          {domain === 'community' && (
-            <CommunityDomain
-              data={communityQ.data ?? null}
-              loading={communityQ.isLoading}
-              narrow={narrow}
-              onOpenReview={() => {
-                setCatSub('review');
-                setDomain('catalog');
-              }}
-            />
-          )}
-          {domain === 'traffic' && (
-            <TrafficDomain
-              data={trafficQ.data ?? null}
-              loading={trafficQ.isLoading}
-              narrow={narrow}
-              days={trafficDays}
-              onDaysChange={setTrafficDays}
-            />
-          )}
-          {domain === 'errors' && (
-            <ErrorsDomain data={errorsQ.data ?? null} loading={errorsQ.isLoading} narrow={narrow} />
-          )}
-          {domain === 'reports' && <ReportsDomain />}
+          {domain === 'publish' && <PublishLane />}
         </CommandShell>
       </SkeletonProvider>
       {/* Foreground Build board lives at page level so the top-strip Stop can halt it. */}

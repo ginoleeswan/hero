@@ -9,10 +9,8 @@ import {
   getRunHistory,
   getCronStatus,
   getComicvineUsageLastHour,
-  searchHeroesAdmin,
   pingComicvine,
   getHealthSnapshots,
-  getCatalogDistributions,
   runDrain,
   retryFailed,
   stopRun,
@@ -29,14 +27,10 @@ import {
   getEnrichmentProgress,
   getRecentlyEnriched,
   toggleCron,
-  type CoverageMetric,
   type RunHistoryPage,
 } from '../../../lib/db/catalogHealth';
 import { getPendingStatsCount } from '../../../lib/db/stats';
 import { getPendingPortraitCount } from '../../../lib/db/portraits';
-import { fetchCommunityOverview } from '../../../lib/db/community';
-import { fetchTrafficOverview } from '../../../lib/db/traffic';
-import { fetchClientErrorOverview } from '../../../lib/db/clientErrors';
 import type { LogTone, LogEntry, DomainKey } from './format';
 
 type Flash = (msg: string, tone?: LogTone) => void;
@@ -49,35 +43,20 @@ type Flash = (msg: string, tone?: LogTone) => void;
 export function useCatalogQueries({
   enabled,
   domain,
-  metric,
-  page,
-  pubFilter,
-  heroQuery,
   historyLimit,
   ambiguousLimit,
-  trafficDays,
 }: {
   enabled: boolean;
   domain: DomainKey;
-  metric: CoverageMetric;
-  page: number;
-  pubFilter: string | null;
-  heroQuery: string;
   historyLimit: number;
   ambiguousLimit: number;
-  trafficDays: number;
 }) {
   const queryClient = useQueryClient();
   // Only run/poll a query on the tab(s) that actually render its data — avoids
   // continuous ComicVine pings + DB polling on tabs that never show them. The
   // overall gauge (healthQ) is the one thing every tab needs.
   const onHome = domain === 'command';
-  const onCatalog = domain === 'catalog';
   const onBuild = domain === 'pipelines';
-  const onSpend = domain === 'spend';
-  const onCommunity = domain === 'community';
-  const onTraffic = domain === 'traffic';
-  const onErrors = domain === 'errors';
 
   const healthQ = useQuery({
     queryKey: ['catalogHealth'],
@@ -85,10 +64,12 @@ export function useCatalogQueries({
     enabled,
     staleTime: 60_000,
   });
+  // Overview glance's fixed default — cache key matches CatalogLane's own
+  // Coverage-tab default, so both share one fetch instead of double-fetching.
   const gapsQ = useQuery({
-    queryKey: ['coverageGaps', metric, page, pubFilter],
-    queryFn: () => getCoverageGaps(metric, { page, publisher: pubFilter }),
-    enabled: enabled && (onHome || onCatalog),
+    queryKey: ['coverageGaps', 'portrait', 0, null],
+    queryFn: () => getCoverageGaps('portrait', { page: 0, publisher: null }),
+    enabled: enabled && onHome,
     staleTime: 60_000,
   });
   const runsQ = useQuery({
@@ -107,12 +88,6 @@ export function useCatalogQueries({
     queryFn: getCronStatus,
     enabled: enabled && onBuild,
   });
-  const heroSearchQ = useQuery({
-    queryKey: ['adminHeroSearch', heroQuery],
-    queryFn: () => searchHeroesAdmin(heroQuery),
-    enabled: enabled && heroQuery.trim().length >= 2,
-    staleTime: 30_000,
-  });
   const pingQ = useQuery({
     queryKey: ['cvPing'],
     queryFn: pingComicvine,
@@ -125,12 +100,6 @@ export function useCatalogQueries({
     enabled: enabled && onBuild,
     refetchInterval: 30_000,
   });
-  const distQ = useQuery({
-    queryKey: ['distributions'],
-    queryFn: getCatalogDistributions,
-    enabled: enabled && onCatalog,
-    staleTime: 60_000,
-  });
   const snapsQ = useQuery({
     queryKey: ['healthSnapshots'],
     queryFn: () => getHealthSnapshots(60),
@@ -140,7 +109,7 @@ export function useCatalogQueries({
   const spendQ = useQuery({
     queryKey: ['geminiSpend'],
     queryFn: getGeminiSpend,
-    enabled: enabled && (onHome || onSpend || onBuild),
+    enabled: enabled && (onHome || onBuild),
     staleTime: 5 * 60_000,
   });
   const ambiguousQ = useQuery({
@@ -174,26 +143,6 @@ export function useCatalogQueries({
     enabled: enabled && onBuild,
     staleTime: 15_000,
   });
-  const communityQ = useQuery({
-    queryKey: ['communityOverview'],
-    queryFn: fetchCommunityOverview,
-    enabled: enabled && onCommunity,
-    staleTime: 60_000,
-  });
-  const trafficQ = useQuery({
-    queryKey: ['trafficOverview', trafficDays],
-    queryFn: () => fetchTrafficOverview(trafficDays),
-    enabled: enabled && onTraffic,
-    staleTime: 5 * 60_000,
-    placeholderData: (prev) => prev, // keep the chart up while switching ranges
-  });
-  const errorsQ = useQuery({
-    queryKey: ['clientErrorOverview'],
-    queryFn: () => fetchClientErrorOverview(7),
-    enabled: enabled && onErrors,
-    staleTime: 60_000,
-  });
-
   // While a run is in flight, poll backlog + usage so the live numbers tick down.
   const runsData = runsQ.data;
   useEffect(() => {
@@ -228,10 +177,8 @@ export function useCatalogQueries({
     gapsQ,
     runsQ,
     cronQ,
-    heroSearchQ,
     pingQ,
     usageQ,
-    distQ,
     snapsQ,
     spendQ,
     ambiguousQ,
@@ -239,10 +186,51 @@ export function useCatalogQueries({
     statsPendingQ,
     portraitsPendingQ,
     recentEnrichedQ,
-    communityQ,
-    trafficQ,
-    errorsQ,
   };
+}
+
+/**
+ * Stream run state changes into the activity log. The first batch only primes
+ * the seen-map (so existing history doesn't flood the log on mount); after that
+ * every transition — started, done, error, stopped — is logged with detail.
+ */
+export function useRunLogStream(
+  runs: RunHistoryPage['runs'] | undefined,
+  logEvent: (tone: LogTone, text: string) => void,
+) {
+  const seen = useRef<Map<number, string>>(new Map());
+  const primed = useRef(false);
+  useEffect(() => {
+    if (!runs) return;
+    if (!primed.current) {
+      for (const r of runs) seen.current.set(r.id, r.status);
+      primed.current = true;
+      return;
+    }
+    for (const r of runs) {
+      const prev = seen.current.get(r.id);
+      if (prev === r.status) continue;
+      seen.current.set(r.id, r.status);
+      const took = r.duration_ms != null ? ` in ${(r.duration_ms / 1000).toFixed(1)}s` : '';
+      if (r.status === 'running' && prev == null) {
+        logEvent('pending', `Run #${r.id} started · ${r.triggered_by}`);
+      } else if (r.status === 'done') {
+        logEvent(
+          'success',
+          `Run #${r.id} finished · ${r.done} enriched${r.failed ? `, ${r.failed} failed` : ''}${
+            r.retry ? `, ${r.retry} retry` : ''
+          }${took}`,
+        );
+      } else if (r.status === 'error') {
+        logEvent(
+          'error',
+          `Run #${r.id} errored${r.done ? ` after ${r.done} enriched` : ''}${took}`,
+        );
+      } else if (r.status === 'stopped') {
+        logEvent('info', `Run #${r.id} stopped · ${r.done} enriched${took}`);
+      }
+    }
+  }, [runs, logEvent]);
 }
 
 /**

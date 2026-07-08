@@ -1,28 +1,15 @@
-import {
-  DOMAINS,
-  primaryDomainKeys,
-  DENSITY,
-} from '../../../../src/components/admin/health/format';
+import { DOMAINS, DENSITY } from '../../../../src/components/admin/health/format';
 
 describe('DOMAINS', () => {
-  it('lists every domain in rail order', () => {
+  it('lists every lane in rail order', () => {
     expect(DOMAINS.map((d) => d.key)).toEqual([
       'command',
       'catalog',
-      'sources',
       'pipelines',
-      'campaigns',
-      'spend',
-      'community',
-      'traffic',
-      'errors',
-      'reports',
+      'inbox',
+      'audience',
+      'publish',
     ]);
-  });
-
-  it('has no remaining placeholder domains (all are live)', () => {
-    const placeholders = DOMAINS.filter((d) => d.placeholder).map((d) => d.key);
-    expect(placeholders).toEqual([]);
   });
 
   it('every domain has a label and an Ionicons name', () => {
@@ -33,19 +20,17 @@ describe('DOMAINS', () => {
     }
   });
 
-  it('primaryDomainKeys excludes placeholders (mobile bottom bar set)', () => {
-    expect(primaryDomainKeys()).toEqual([
-      'command',
-      'catalog',
-      'sources',
-      'pipelines',
-      'campaigns',
-      'spend',
-      'community',
-      'traffic',
-      'errors',
-      'reports',
-    ]);
+  it('badge keys are only pending or inbox', () => {
+    for (const d of DOMAINS) {
+      if (d.badge != null) {
+        expect(['pending', 'inbox']).toContain(d.badge);
+      }
+    }
+  });
+
+  it('fill flags only command, catalog, and pipelines', () => {
+    const filled = DOMAINS.filter((d) => d.fill).map((d) => d.key);
+    expect(filled).toEqual(['command', 'catalog', 'pipelines']);
   });
 });
 

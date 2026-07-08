@@ -9,20 +9,17 @@ import {
   StyleSheet,
   useWindowDimensions,
 } from 'react-native';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { TOPBAR_HEIGHT } from '../../web/TopBar';
-import { DOMAINS, type DomainKey } from './format';
+import { DOMAINS, type DomainDef, type DomainKey } from './format';
 import { Gauge } from './charts';
 import { type Alert } from './AlertStack';
 import { NotificationBell } from './NotificationBell';
 
 export const CHROME_TOP = '#10242e'; // matches the retired Masthead gradient start
-
-// The 4 fixed mobile tabs (most-used). Everything else lives in the "More" sheet.
-const MOBILE_TABS: DomainKey[] = ['command', 'catalog', 'pipelines', 'traffic'];
 
 function RailItem({
   def,
@@ -38,7 +35,7 @@ function RailItem({
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.railItem, on && styles.railItemOn, def.placeholder && styles.railItemDim]}
+      style={[styles.railItem, on && styles.railItemOn]}
       accessibilityLabel={def.label}
     >
       <Ionicons name={def.icon} size={20} color={on ? '#fff' : 'rgba(255,255,255,0.6)'} />
@@ -58,20 +55,18 @@ export function CommandShell({
   domain,
   onDomain,
   overall,
-  pending,
+  badges,
   refreshing,
   onRefresh,
   narrow,
-  fill,
   ribbon,
   alerts = [],
   children,
 }: {
   domain: DomainKey;
   onDomain: (k: DomainKey) => void;
-  fill?: boolean;
   overall: number;
-  pending: number;
+  badges: Partial<Record<DomainKey, number>>;
   refreshing: boolean;
   onRefresh: () => void;
   narrow: boolean;
@@ -79,16 +74,9 @@ export function CommandShell({
   alerts?: Alert[];
   children: ReactNode;
 }) {
-  const primary = DOMAINS.filter((d) => !d.placeholder);
-  const future = DOMAINS.filter((d) => d.placeholder);
-  // Mobile bottom bar caps at 5 slots: 4 fixed tabs + a "More" sheet for the rest.
-  // (Desktop keeps the full rail above.)
-  const mobilePrimary = MOBILE_TABS.map((k) => DOMAINS.find((d) => d.key === k)).filter(
-    (d): d is (typeof DOMAINS)[number] => !!d,
-  );
-  const mobileOverflow = primary.filter((d) => !MOBILE_TABS.includes(d.key));
-  const overflowActive = mobileOverflow.some((d) => d.key === domain);
-  const [moreOpen, setMoreOpen] = useState(false);
+  const def = DOMAINS.find((d) => d.key === domain);
+  const fill = !!def?.fill;
+  const badgeFor = (d: DomainDef) => (d.badge ? badges[d.key] : undefined);
   // Lock the shell to a real pixel viewport height (RN-web drops '100dvh'), so the
   // content area can divide that height instead of growing the page.
   const { height: winH } = useWindowDimensions();
@@ -134,21 +122,12 @@ export function CommandShell({
         <View style={[styles.body, narrow && styles.bodyNarrow, !narrow && styles.bodyFill]}>
           {!narrow && (
             <View style={styles.rail}>
-              {primary.map((d) => (
+              {DOMAINS.map((d) => (
                 <RailItem
                   key={d.key}
                   def={d}
                   on={domain === d.key}
-                  badge={d.badge === 'pending' ? pending : undefined}
-                  onPress={() => onDomain(d.key)}
-                />
-              ))}
-              <View style={styles.railDivider} />
-              {future.map((d) => (
-                <RailItem
-                  key={d.key}
-                  def={d}
-                  on={domain === d.key}
+                  badge={badgeFor(d)}
                   onPress={() => onDomain(d.key)}
                 />
               ))}
@@ -169,46 +148,14 @@ export function CommandShell({
         </View>
       </LinearGradient>
 
-      {/* Mobile: tap-away scrim + "More" sheet (sits above the bottom bar) */}
-      {narrow && moreOpen && (
-        <Pressable style={styles.moreScrim} onPress={() => setMoreOpen(false)}>
-          <Pressable style={styles.moreSheet} onPress={() => {}}>
-            <Text style={styles.moreTitle}>More</Text>
-            {mobileOverflow.map((d) => {
-              const on = domain === d.key;
-              return (
-                <Pressable
-                  key={d.key}
-                  onPress={() => {
-                    onDomain(d.key);
-                    setMoreOpen(false);
-                  }}
-                  style={[styles.moreRow, on && styles.moreRowOn]}
-                >
-                  <Ionicons name={d.icon} size={20} color={on ? COLORS.orange : '#fff'} />
-                  <Text style={[styles.moreRowText, on && styles.moreRowTextOn]}>{d.label}</Text>
-                </Pressable>
-              );
-            })}
-          </Pressable>
-        </Pressable>
-      )}
-
-      {/* Mobile bottom tab bar — 4 fixed tabs + More */}
+      {/* Mobile bottom tab bar — all 6 lanes */}
       {narrow && (
         <View style={styles.btab}>
-          {mobilePrimary.map((d) => {
+          {DOMAINS.map((d) => {
             const on = domain === d.key;
-            const badge = d.badge === 'pending' ? pending : undefined;
+            const badge = badgeFor(d);
             return (
-              <Pressable
-                key={d.key}
-                onPress={() => {
-                  setMoreOpen(false);
-                  onDomain(d.key);
-                }}
-                style={styles.btabItem}
-              >
+              <Pressable key={d.key} onPress={() => onDomain(d.key)} style={styles.btabItem}>
                 <View style={[styles.btabIconWrap, on && styles.btabIconWrapOn]}>
                   <Ionicons name={d.icon} size={22} color={on ? COLORS.orange : '#fff'} />
                   {badge != null && badge > 0 && (
@@ -219,30 +166,12 @@ export function CommandShell({
                     </View>
                   )}
                 </View>
-                <Text style={[styles.btabLabel, on && styles.btabLabelOn]}>{d.label}</Text>
-              </Pressable>
-            );
-          })}
-          {/* More — highlighted when the sheet is open or an overflow domain is active.
-              Shows the active overflow domain's name so the bar reflects location. */}
-          {(() => {
-            const lit = moreOpen || overflowActive;
-            const activeDef = overflowActive ? DOMAINS.find((d) => d.key === domain) : undefined;
-            return (
-              <Pressable onPress={() => setMoreOpen((v) => !v)} style={styles.btabItem}>
-                <View style={[styles.btabIconWrap, lit && styles.btabIconWrapOn]}>
-                  <Ionicons
-                    name={activeDef?.icon ?? 'ellipsis-horizontal'}
-                    size={22}
-                    color={lit ? COLORS.orange : '#fff'}
-                  />
-                </View>
-                <Text style={[styles.btabLabel, lit && styles.btabLabelOn]}>
-                  {activeDef?.label ?? 'More'}
+                <Text style={[styles.btabLabel, on && styles.btabLabelOn]} numberOfLines={1}>
+                  {d.label}
                 </Text>
               </Pressable>
             );
-          })()}
+          })}
         </View>
       )}
     </View>
@@ -325,15 +254,8 @@ const styles = StyleSheet.create({
     borderRadius: 11,
   },
   railItemOn: { backgroundColor: COLORS.orange },
-  railItemDim: { opacity: 0.4 },
   railLabel: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: 'rgba(255,255,255,0.6)' },
   railLabelOn: { color: '#fff' },
-  railDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    marginVertical: 6,
-    marginHorizontal: 14,
-  },
   railBadge: {
     position: 'absolute',
     top: 4,
@@ -382,53 +304,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   btabBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 9, color: '#fff' },
-
-  // "More" overflow sheet (mobile)
-  moreScrim: {
-    position: 'fixed',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    zIndex: 60,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
-  } as object,
-  moreSheet: {
-    marginHorizontal: 10,
-    // Clear the fixed bottom bar (icon + label + safe-area).
-    marginBottom: `calc(env(safe-area-inset-bottom) + 76px)` as unknown as number,
-    backgroundColor: CHROME_TOP,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    padding: 8,
-    gap: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: -6 },
-  },
-  moreTitle: {
-    fontFamily: 'Nunito_700Bold',
-    // 11px + 0.6α: the tracked-uppercase size floor and text-on-ink contrast floor.
-    fontSize: 11,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.6)',
-    paddingHorizontal: 12,
-    paddingTop: 6,
-    paddingBottom: 4,
-  },
-  moreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 11,
-  },
-  moreRowOn: { backgroundColor: COLORS.orange + '22' },
-  moreRowText: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: '#fff' },
-  moreRowTextOn: { color: COLORS.orange },
 });
