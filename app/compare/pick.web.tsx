@@ -90,10 +90,7 @@ export default function BattleBuilderWeb() {
   const searchQ = useHeroSearchInfinite(debounced, publisher, alignment);
   // Keep placed heroes IN the pool (marked "added") so tapping never removes a
   // card and reflows the grid — the pick just gets a ring + check in place.
-  const heroes = useMemo(
-    () => (searchQ.data?.pages ?? []).flat().slice(0, 120),
-    [searchQ.data],
-  );
+  const heroes = useMemo(() => (searchQ.data?.pages ?? []).flat().slice(0, 120), [searchQ.data]);
 
   const add = (hero: PickedHero) => b.addToActive(hero);
   // One tap toggles: an un-picked hero joins the active side; a picked one leaves.
@@ -135,10 +132,7 @@ export default function BattleBuilderWeb() {
     else if (!query) curated.teammates.forEach((h) => ids.add(h.id));
     return ids;
   }, [act, query, curated.rivals, curated.teammates]);
-  const poolHeroes = useMemo(
-    () => heroes.filter((h) => !hiddenIds.has(h.id)),
-    [heroes, hiddenIds],
-  );
+  const poolHeroes = useMemo(() => heroes.filter((h) => !hiddenIds.has(h.id)), [heroes, hiddenIds]);
 
   const activeTint = b.active === 'A' ? FACTION_A : FACTION_B;
   const cardW = isWide ? 104 : (width - contentPad * 2 - 2 * gridGap) / 3;
