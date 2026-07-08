@@ -14,7 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../constants/colors';
 import { TOPBAR_HEIGHT } from '../../web/TopBar';
-import { DOMAINS, type DomainDef, type DomainKey } from './format';
+import { CC, DOMAINS, type DomainDef, type DomainKey } from './format';
 import { Gauge } from './charts';
 import { type Alert } from './AlertStack';
 import { NotificationBell } from './NotificationBell';
@@ -94,6 +94,9 @@ export function CommandShell({
           end={{ x: 1, y: 1 }}
           style={styles.top}
         >
+          {/* The warm seam — a single hairline where the band meets the work,
+              brightest at the title, fading right. */}
+          <View style={styles.bandSeam} />
           <View style={styles.topInner}>
             <View style={styles.brandCol}>
               <Text style={styles.kicker}>MYTHIQUE · COMMAND CENTER</Text>
@@ -114,11 +117,8 @@ export function CommandShell({
         </LinearGradient>
       )}
 
-      {/* Body: rail (desktop) + content */}
-      <LinearGradient
-        colors={[COLORS.deepNavy, '#081218']}
-        style={[styles.bodyBg, !narrow && styles.minH0]}
-      >
+      {/* Body: rail (desktop) + content, on the warm ink stage. */}
+      <View style={[styles.bodyBg, !narrow && styles.minH0]}>
         <View style={[styles.body, narrow && styles.bodyNarrow, !narrow && styles.bodyFill]}>
           {!narrow && (
             <View style={styles.rail}>
@@ -132,6 +132,8 @@ export function CommandShell({
                 />
               ))}
               <View style={{ flex: 1 }} />
+              {/* Seam on the rail's work-facing edge. */}
+              <View style={styles.railSeam} />
             </View>
           )}
 
@@ -146,7 +148,7 @@ export function CommandShell({
             {children}
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Mobile bottom tab bar — all 6 lanes */}
       {narrow && (
@@ -218,7 +220,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.08)',
   },
-  bodyBg: { flex: 1, width: '100%' },
+  // The warm ink stage (deep ink + faint warm vignette) — web-only CSS string.
+  bodyBg: { flex: 1, width: '100%', backgroundColor: COLORS.deepNavy, backgroundImage: CC.stage } as object,
+  bandSeam: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 1,
+    backgroundImage: CC.seamH,
+  } as object,
+  railSeam: {
+    position: 'absolute',
+    top: '10%' as unknown as number,
+    bottom: '10%' as unknown as number,
+    right: -1,
+    width: 1,
+    backgroundImage: CC.seamV,
+  } as object,
   body: {
     width: '100%',
     alignSelf: 'center',
@@ -253,7 +272,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
     borderRadius: 11,
   },
-  railItemOn: { backgroundColor: COLORS.orange },
+  // Jewel state for the active lane: warm gradient + bevel + bloom.
+  railItemOn: {
+    backgroundColor: COLORS.orange,
+    backgroundImage: CC.railOn,
+    boxShadow: CC.railOnShadow,
+  } as object,
   railLabel: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: 'rgba(255,255,255,0.6)' },
   railLabelOn: { color: '#fff' },
   railBadge: {
@@ -282,8 +306,9 @@ const styles = StyleSheet.create({
     zIndex: 50,
     flexDirection: 'row',
     backgroundColor: CHROME_TOP,
+    // The seam carries to mobile: warm hairline where the bar meets the work.
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
+    borderTopColor: 'rgba(231,115,51,0.3)',
     paddingTop: 9,
     paddingBottom: `calc(env(safe-area-inset-bottom) + 9px)`,
     transform: 'translateZ(0)',
