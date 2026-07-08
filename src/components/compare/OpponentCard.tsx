@@ -34,6 +34,9 @@ interface OpponentCardProps {
   compact?: boolean;
   /** Gold ring — marks marquee picks (Classic Rivals). */
   accent?: boolean;
+  /** Already on a side — shows a gold ring + check and reads as "picked" (tap
+   *  again to remove). Keeps the card in the pool so the grid never reflows. */
+  added?: boolean;
   /** Web hover in/out — lets the picker preview this hero in the VS slot. */
   onHoverIn?: () => void;
   onHoverOut?: () => void;
@@ -58,6 +61,7 @@ function OpponentCardBase({
   fill,
   compact,
   accent,
+  added,
   onHoverIn,
   onHoverOut,
   vtName,
@@ -139,6 +143,16 @@ function OpponentCardBase({
             onLoad={() => setLoaded(true)}
           />
           <View style={styles.scrim as object} />
+          {added ? (
+            <>
+              {/* Gold ring + check so a picked hero stays visible in the pool and
+                  reads as "on your team" — tapping again removes it. No reflow. */}
+              <View style={styles.addedRing as object} pointerEvents="none" />
+              <View style={styles.addedBadge} pointerEvents="none">
+                <Ionicons name="checkmark" size={14} color="#1a130a" />
+              </View>
+            </>
+          ) : null}
           <Text style={[styles.name, compact && styles.nameCompact]} numberOfLines={2}>
             {item.name}
           </Text>
@@ -178,6 +192,7 @@ export const OpponentCard = memo(
     a.fill === b.fill &&
     a.compact === b.compact &&
     a.accent === b.accent &&
+    a.added === b.added &&
     a.vtName === b.vtName,
 );
 
@@ -205,6 +220,27 @@ const styles = StyleSheet.create({
     }),
   } as object,
   accent: { boxShadow: '0 0 0 2px rgba(206,155,51,0.7)' } as object,
+  addedRing: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: 14,
+    borderWidth: 2.5,
+    borderColor: COLORS.goldAccent,
+  } as object,
+  addedBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.goldAccent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      web: { boxShadow: '0 2px 6px rgba(0,0,0,0.4)' } as object,
+      default: {},
+    }),
+  } as object,
   hovered: {
     transform: [{ translateY: -4 }],
     boxShadow: '0 18px 40px rgba(29,45,51,0.32)',

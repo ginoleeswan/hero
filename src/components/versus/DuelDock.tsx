@@ -92,7 +92,7 @@ export function DuelDock({ b, act, expanded, onToggle, onPrimary, onBack, onRand
         <Pressable onPress={onToggle} style={s.summary} hitSlop={6}>
           {isSquad ? (
             <>
-              <DeckStack roster={b.aHeroes} tint={FACTION_A} active />
+              <DeckStack roster={b.aHeroes} tint={FACTION_A} active spread />
               <Text style={s.tag}>Your squad · {b.aHeroes.length}</Text>
             </>
           ) : (
@@ -157,15 +157,19 @@ function DeckStack({
   tint,
   active,
   flip = false,
+  spread = false,
 }: {
   roster: PickedHero[];
   tint: string;
   active: boolean;
   flip?: boolean;
+  /** Wider fan so each face is legible — used in the squad act, which has the
+   *  horizontal room the two-sided challenger act doesn't. */
+  spread?: boolean;
 }) {
-  const CARD = 26;
-  const H = 34;
-  const OFFSET = 12;
+  const CARD = 28;
+  const H = 38;
+  const OFFSET = spread ? 21 : 13;
   const cards = roster.slice(0, MAX_SIDE);
   const n = Math.max(cards.length, 1);
   const w = CARD + (n - 1) * OFFSET;

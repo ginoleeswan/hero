@@ -88,17 +88,16 @@ export default function BattleBuilderWeb() {
   }, []);
 
   const searchQ = useHeroSearchInfinite(debounced, publisher, alignment);
+  // Keep placed heroes IN the pool (marked "added") so tapping never removes a
+  // card and reflows the grid — the pick just gets a ring + check in place.
   const heroes = useMemo(
-    () =>
-      (searchQ.data?.pages ?? [])
-        .flat()
-        .filter((h) => !b.isPlaced(h.id))
-        .slice(0, 120),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- granular inputs, not the unstable `b`
-    [searchQ.data, b.aHeroes, b.bHeroes, b.isPlaced],
+    () => (searchQ.data?.pages ?? []).flat().slice(0, 120),
+    [searchQ.data],
   );
 
   const add = (hero: PickedHero) => b.addToActive(hero);
+  // One tap toggles: an un-picked hero joins the active side; a picked one leaves.
+  const toggle = (hero: PickedHero) => (b.isPlaced(hero.id) ? b.removeHero(hero.id) : add(hero));
   const pickPreset = async (teamId: string) => {
     const roster = (await getTeamRoster(teamId, 5)) as PickedHero[];
     b.fillActive(roster);
@@ -126,6 +125,20 @@ export default function BattleBuilderWeb() {
   };
   const squadLead = b.aHeroes[0] ?? null;
   const curated = useCuratedRows(squadLead?.id, b.isPlaced);
+
+  // The grid drops whatever heroes are already surfaced in the contextual row
+  // above it (teammates in the squad act, rivals in the challenger act) so the
+  // same face never appears twice in one scroll.
+  const hiddenIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (act === 'challenger') curated.rivals.forEach((h) => ids.add(h.id));
+    else if (!query) curated.teammates.forEach((h) => ids.add(h.id));
+    return ids;
+  }, [act, query, curated.rivals, curated.teammates]);
+  const poolHeroes = useMemo(
+    () => heroes.filter((h) => !hiddenIds.has(h.id)),
+    [heroes, hiddenIds],
+  );
 
   const activeTint = b.active === 'A' ? FACTION_A : FACTION_B;
   const cardW = isWide ? 104 : (width - contentPad * 2 - 2 * gridGap) / 3;
@@ -200,15 +213,16 @@ export default function BattleBuilderWeb() {
   );
 
   const grid =
-    heroes.length === 0 && !searchQ.isPending ? (
+    poolHeroes.length === 0 && !searchQ.isPending ? (
       <Text style={s.empty}>No fighters match these filters.</Text>
     ) : (
       <View style={s.grid}>
-        {heroes.map((item) => (
+        {poolHeroes.map((item) => (
           <OpponentCard
             key={item.id}
             item={item}
-            onPress={() => add(item)}
+            added={b.isPlaced(item.id)}
+            onPress={() => toggle(item)}
             width={cardW}
             height={Math.round(cardW * 1.32)}
           />

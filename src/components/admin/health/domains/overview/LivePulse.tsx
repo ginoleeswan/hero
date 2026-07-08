@@ -2,6 +2,7 @@
 // Overview. Shows who's on the app right now (pulsing), today's audience with a
 // day-over-day delta, and a synthesized system-status line. This is the single
 // element that makes Overview read as a live bridge, not a static report.
+import { useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../../../../constants/colors';
@@ -42,6 +43,13 @@ export function LivePulse({
   narrow: boolean;
 }) {
   ensurePulseKeyframes();
+  // Apply the CSS animation straight to the DOM node (house pattern, see
+  // PulseTicker). Putting `animation` in a StyleSheet trips RNW's style
+  // validation ("Invalid style property of animation") at module load.
+  const applyPulseAnim = useCallback((node: View | null) => {
+    const el = node as unknown as HTMLElement | null;
+    if (el) el.style.animation = 'ccLivePulse 1.8s ease-out infinite';
+  }, []);
   const delta =
     yesterdayViews > 0 ? Math.round(((todayViews - yesterdayViews) / yesterdayViews) * 100) : null;
   const up = (delta ?? 0) >= 0;
@@ -53,7 +61,7 @@ export function LivePulse({
       <View style={styles.live}>
         <View style={styles.dotWrap}>
           <View style={[styles.dot, activeNow === 0 && styles.dotIdle]} />
-          {activeNow > 0 ? <View style={styles.pulse} /> : null}
+          {activeNow > 0 ? <View ref={applyPulseAnim} style={styles.pulse} /> : null}
         </View>
         <Text style={styles.liveNum}>{activeNow}</Text>
         <Text style={styles.liveLabel}>
@@ -137,7 +145,6 @@ const styles = StyleSheet.create({
     height: 9,
     borderRadius: 999,
     backgroundColor: COLORS.green,
-    animation: 'ccLivePulse 1.8s ease-out infinite',
   } as object,
   liveNum: { fontFamily: 'Flame-Regular', fontSize: 22, color: '#fff', lineHeight: 24 },
   liveLabel: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: 'rgba(255,255,255,0.72)' },
