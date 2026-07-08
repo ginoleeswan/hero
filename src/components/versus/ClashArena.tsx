@@ -16,7 +16,6 @@ const STOPWORDS = new Set(['of', 'the', 'and', 'a', '&']);
 
 // Desktop stage geometry.
 const CONTAINER_W = 1280;
-const CENTER_W = 360; // the headline column
 
 // Fast, subtle entrance (ms): everything is on screen within ~450ms so the
 // vote CTA is never hidden behind a cinematic beat timeline.
@@ -66,6 +65,15 @@ export function ClashArena({
       <Atmosphere />
 
       <View style={styles.container}>
+        <ClashHeadline
+          sideA={sideA}
+          sideB={sideB}
+          result={result}
+          nameA={nameA}
+          nameB={nameB}
+          wide={isWide}
+          animate={animate}
+        />
         {isWide ? (
           <DesktopDuel
             sideA={sideA}
@@ -80,8 +88,6 @@ export function ClashArena({
           />
         ) : (
           <>
-            <FactionBar nameA={nameA} nameB={nameB} animate={animate} />
-            <ClashHeadline sideA={sideA} sideB={sideB} result={result} animate={animate} />
             <MobileDuel sideA={sideA} sideB={sideB} animate={animate} />
             <VerdictVotes
               result={result}
@@ -161,8 +167,8 @@ function DesktopDuel({
 
   return (
     <>
-      <View style={styles.ddHeader}>
-        <View style={styles.ddHeadSideL}>
+      <View style={styles.ddRow}>
+        <View style={styles.ddRowSide}>
           <FactionCrest
             name={nameA}
             tint={TINT_A}
@@ -170,23 +176,6 @@ function DesktopDuel({
             align="A"
             animate={animate}
           />
-        </View>
-        <View style={styles.ddHeadCenter}>
-          <ClashHeadline sideA={sideA} sideB={sideB} result={result} animate={animate} />
-        </View>
-        <View style={styles.ddHeadSideR}>
-          <FactionCrest
-            name={nameB}
-            tint={TINT_B}
-            count={sideB.roster.length}
-            align="B"
-            animate={animate}
-          />
-        </View>
-      </View>
-
-      <View style={styles.ddRow}>
-        <View style={styles.ddRowSideL}>
           <RosterColumn
             side={sideA}
             tint={TINT_A}
@@ -235,7 +224,14 @@ function DesktopDuel({
           />
         </View>
 
-        <View style={styles.ddRowSideR}>
+        <View style={styles.ddRowSide}>
+          <FactionCrest
+            name={nameB}
+            tint={TINT_B}
+            count={sideB.roster.length}
+            align="B"
+            animate={animate}
+          />
           <RosterColumn
             side={sideB}
             tint={TINT_B}
@@ -291,7 +287,8 @@ function RosterColumn({
         return (
           <View
             key={h.id}
-            style={{ marginTop: i === 0 ? 0 : -overlap, zIndex: isSel ? 50 : i, transform }}
+            // Upper cards stack over lower ones so every name plate stays legible.
+            style={{ marginTop: i === 0 ? 0 : -overlap, zIndex: isSel ? 50 : n - i, transform }}
           >
             <HeroBattleCard
               hero={h}
@@ -352,27 +349,6 @@ function DuelSpot({
   );
 }
 
-/* ── Mobile faceoff bar: two crested coins meeting at a gold "vs" ──────────── */
-function FactionBar({ nameA, nameB, animate }: { nameA: string; nameB: string; animate: boolean }) {
-  return (
-    <Animated.View entering={animate ? FadeIn.duration(240) : undefined} style={styles.faceoff}>
-      <LinearGradient colors={[TINT_A, COLORS.deepNavy]} style={styles.coinSm}>
-        <Text style={styles.coinSmTxt}>{crestInitials(nameA)}</Text>
-      </LinearGradient>
-      <Text style={[styles.faceName, { color: TINT_A }]} numberOfLines={1}>
-        {nameA}
-      </Text>
-      <Text style={styles.faceVs}>vs</Text>
-      <Text style={[styles.faceName, styles.right, { color: TINT_B }]} numberOfLines={1}>
-        {nameB}
-      </Text>
-      <LinearGradient colors={[TINT_B, COLORS.deepNavy]} style={styles.coinSm}>
-        <Text style={styles.coinSmTxt}>{crestInitials(nameB)}</Text>
-      </LinearGradient>
-    </Animated.View>
-  );
-}
-
 /* ── Desktop faction crest (coin + name + member count) ───────────────────── */
 function FactionCrest({
   name,
@@ -412,27 +388,37 @@ function FactionCrest({
   );
 }
 
-/* ── The result: house eyebrow, score numerals, front-line meter, synergy ── */
+/* ── The header: house eyebrow + Flame title (same voice as the Arena hub),
+ *    then the score numerals, the front-line meter and the synergy pips. ── */
 function ClashHeadline({
   sideA,
   sideB,
   result,
+  nameA,
+  nameB,
+  wide,
   animate,
 }: {
   sideA: TeamSide;
   sideB: TeamSide;
   result: TeamBattleResult;
+  nameA: string;
+  nameB: string;
+  wide: boolean;
   animate: boolean;
 }) {
   const synA = Math.round(sideA.synergy.total_pct * 100);
   const synB = Math.round(sideB.synergy.total_pct * 100);
   return (
     <View style={styles.headline}>
-      <Animated.Text
-        entering={animate ? FadeIn.duration(200) : undefined}
-        style={styles.eyebrow}
-      >
+      <Animated.Text entering={animate ? FadeIn.duration(200) : undefined} style={styles.eyebrow}>
         {'★ Team Battle ★'}
+      </Animated.Text>
+      <Animated.Text
+        entering={animate ? FadeIn.duration(240) : undefined}
+        style={[styles.title, !wide ? styles.titleMobile : null]}
+      >
+        {nameA} vs {nameB}
       </Animated.Text>
       <View style={styles.scoreRow}>
         <Text style={[styles.score, { color: TINT_A }]}>{result.splitA}</Text>
@@ -544,17 +530,10 @@ const styles = StyleSheet.create({
   container: { width: '100%', maxWidth: CONTAINER_W, alignSelf: 'center', zIndex: 1 },
 
   /* ── desktop grand duel ── symmetric flex-1 / fixed-centre / flex-1 so the
-   * centre column is page-centred regardless of crest or roster widths. */
-  ddHeader: { flexDirection: 'row', alignItems: 'flex-start', width: '100%' },
-  ddHeadSideL: { flex: 1, alignItems: 'flex-start' },
-  ddHeadSideR: { flex: 1, alignItems: 'flex-end' },
-  ddHeadCenter: { width: CENTER_W },
-  ddRow: { flexDirection: 'row', alignItems: 'flex-start', width: '100%', marginTop: 18 },
-  // Rosters sit at the outer edges, directly under their crests, so the two
-  // squads bookend the stage and the duel commands the centre.
-  // Lift the squads up so they flank the score/meter header, not just the duel.
-  ddRowSideL: { flex: 1, alignItems: 'flex-end', paddingRight: 44, marginTop: -150 },
-  ddRowSideR: { flex: 1, alignItems: 'flex-start', paddingLeft: 44, marginTop: -150 },
+   * centre column is page-centred regardless of crest or roster widths. Each
+   * side is a self-contained squad: crest on top, fanned roster below. */
+  ddRow: { flexDirection: 'row', alignItems: 'flex-start', width: '100%', marginTop: 30 },
+  ddRowSide: { flex: 1, alignItems: 'center', gap: 20 },
   ddCol: { alignItems: 'center' },
   ddCenter: { width: 520, alignItems: 'center' },
   ddSpots: { flexDirection: 'row', gap: 16, marginBottom: 22, justifyContent: 'center' },
@@ -573,27 +552,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 0 },
-  },
-
-  /* mobile faceoff bar */
-  faceoff: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 18 },
-  coinSm: {
-    width: 38,
-    height: 38,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(206,155,51,0.85)',
-  },
-  coinSmTxt: { fontFamily: 'Flame-Regular', fontSize: 12, color: COLORS.beige },
-  faceName: { flex: 1, fontFamily: 'Flame-Regular', fontSize: 15 },
-  faceVs: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: 'rgba(245,235,220,0.45)',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
   },
 
   /* desktop crest */
@@ -624,23 +582,32 @@ const styles = StyleSheet.create({
 
   /* clash headline */
   headline: { alignItems: 'center', width: '100%' },
-  // The house eyebrow — same voice as the hub's "Today's Showdown" kicker.
+  // The house eyebrow + Flame title — same voice as the hub's header.
   eyebrow: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 11.5,
     letterSpacing: 4,
     textTransform: 'uppercase',
     color: GOLD,
+    marginBottom: 8,
   },
+  title: {
+    fontFamily: 'Flame-Regular',
+    fontSize: 34,
+    lineHeight: 42,
+    color: COLORS.beige,
+    textAlign: 'center',
+  },
+  titleMobile: { fontSize: 24, lineHeight: 30 },
   scoreRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'center',
     gap: 16,
-    marginTop: 8,
+    marginTop: 14,
     marginBottom: 14,
   },
-  score: { fontFamily: 'Flame-Regular', fontSize: 48, lineHeight: 52 },
+  score: { fontFamily: 'Flame-Regular', fontSize: 38, lineHeight: 42 },
   scoreVs: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 12,

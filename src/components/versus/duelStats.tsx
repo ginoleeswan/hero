@@ -96,6 +96,7 @@ export function HeroVsHero({
 
   return (
     <View style={styles.compare}>
+      <Text style={styles.kicker}>Head to head</Text>
       <View style={styles.compareHead}>
         <Text style={[styles.cName, { color: TINT_A }]} numberOfLines={1}>
           {a.name}
@@ -123,7 +124,27 @@ export function HeroVsHero({
 }
 
 const styles = StyleSheet.create({
-  compare: { width: '100%', maxWidth: 460, alignSelf: 'center' },
+  // Ringside glass panel — same grammar as the hub's head-to-head card.
+  compare: {
+    width: '100%',
+    maxWidth: 460,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,235,220,0.1)',
+    borderRadius: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+  },
+  kicker: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    color: 'rgba(206,155,51,0.9)',
+    marginBottom: 12,
+  },
   compareHead: {
     flexDirection: 'row',
     alignItems: 'center',
