@@ -23,33 +23,36 @@ function SkPills({ n = 4 }: { n?: number }) {
 }
 
 // ── Overview ──────────────────────────────────────────────────────────────────
+// Mirrors the command-center Overview: live pulse band, a 6-tile instrument
+// cluster, then the activity feed beside the needs-you + traffic-pulse column.
 export function CommandHomeSkeleton({ narrow }: { narrow: boolean }) {
   const fill = !narrow;
   return (
     <Bento fill={fill}>
+      {/* Live pulse band */}
+      <View style={s.pulseBand}>
+        <SkLine w={140} h={22} r={7} />
+        <View style={s.pulseGrow} />
+        <SkLine w={120} h={26} r={999} />
+      </View>
+      {/* Instrument cluster — 6 vitals */}
+      <SkTiles n={6} />
+      {/* Ops floor: activity feed | needs-you + traffic pulse */}
       <Bento.Row narrow={narrow} fill>
-        {/* Catalogue health — big % + trend chart */}
-        <SkPanel fill={fill} style={s.flex15}>
-          <SkLine w={96} h={40} r={8} />
-          <SkLine w={130} h={9} style={s.gapAbove} />
-          <SkBars n={12} height={92} />
+        <SkPanel fill={fill} style={s.flex13}>
+          <SkRows n={narrow ? 5 : 8} thumb thumbRadius={7} />
         </SkPanel>
-        {/* Needs attention — actionable rows */}
-        <SkPanel fill={fill} style={s.flex1}>
-          <SkRows n={3} thumb thumbRadius={8} />
-        </SkPanel>
-      </Bento.Row>
-      <Bento.Row narrow={narrow} fill>
-        {/* Backfill queue — hero rows */}
-        <SkPanel fill={fill} style={s.flex15}>
-          <SkRows n={4} thumb />
-        </SkPanel>
-        {/* Spend — big number + mini bars */}
-        <SkPanel fill={fill} style={s.flex1}>
-          <SkLine w={80} h={26} r={6} />
-          <SkLine w={92} h={9} style={s.gapAbove} />
-          <SkBars n={14} height={44} />
-        </SkPanel>
+        <View style={[s.rightCol, fill && s.rightColFill]}>
+          {/* Needs attention — content-sized, mirrors the live panel. */}
+          <SkPanel>
+            <SkRows n={3} thumb thumbRadius={8} />
+          </SkPanel>
+          {/* Traffic pulse — absorbs the remaining height. */}
+          <SkPanel fill={fill} style={s.stack}>
+            <SkBars n={14} height={48} />
+            <SkLine w={160} h={9} style={s.gapAbove} />
+          </SkPanel>
+        </View>
       </Bento.Row>
     </Bento>
   );
@@ -252,8 +255,23 @@ export function ErrorsSkeleton({ narrow }: { narrow: boolean }) {
 
 const s = StyleSheet.create({
   flex1: { flex: 1 },
+  flex13: { flex: 1.3 },
   flex14: { flex: 1.4 },
   flex15: { flex: 1.5 },
+  rightCol: { gap: 10 },
+  rightColFill: { flex: 1, minHeight: 0 },
+  stack: { flex: 1 },
+  pulseBand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.22)',
+    borderWidth: 1,
+    borderColor: 'rgba(231,115,51,0.16)',
+  },
+  pulseGrow: { flex: 1 },
   pills: { flexDirection: 'row', gap: 8, marginBottom: 4 },
   chipRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
   gapAbove: { marginTop: 6, marginBottom: 12 },

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  ScrollView,
   Pressable,
   StyleSheet,
   useWindowDimensions,
@@ -283,9 +282,12 @@ export default function BattleBuilderWeb() {
 
   return (
     <View style={s.root}>
-      <ScrollView
-        style={s.scroll}
-        contentContainerStyle={[
+      {/* Document-flow (not a nested ScrollView): the whole app scrolls the
+          document so iOS Safari's toolbar collapses and content bleeds
+          edge-to-edge under it. The safe-area-inset-bottom padding keeps the
+          last row clear of the DuelDock + home indicator. */}
+      <View
+        style={[
           s.content,
           {
             paddingHorizontal: contentPad,
@@ -357,7 +359,7 @@ export default function BattleBuilderWeb() {
             {grid}
           </>
         )}
-      </ScrollView>
+      </View>
 
       {!isWide ? (
         <DuelDock
@@ -508,10 +510,16 @@ function Flank({
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.deepNavy },
   scroll: { flex: 1 },
+  // Document-flow content: it must size to its content height (NOT be capped at
+  // the viewport by flex-grow), otherwise the sticky header's parent box is only
+  // one screen tall and the header releases after ~1 screen of scroll. minHeight
+  // 100dvh keeps the immersive backdrop filling the viewport when results are few.
   content: {
-    flexGrow: 1,
     ...Platform.select({
-      web: { backgroundImage: SURFACE_GRADIENT.stageImmersive } as object,
+      web: {
+        backgroundImage: SURFACE_GRADIENT.stageImmersive,
+        minHeight: '100dvh',
+      } as object,
       default: {},
     }),
     paddingTop: TOPBAR_HEIGHT + 22,
@@ -732,13 +740,19 @@ const mh = StyleSheet.create({
   // the bg + blur + hairline ease in together on scroll (no instant pop).
   frost: {
     position: 'absolute',
-    // Reach up under the TopBar (height 64, its scrim fades ~40px down) so the
-    // two frosted surfaces meet with no un-frosted seam.
-    top: -28,
+    // Reach ALL the way to the top of the viewport (past the fixed TopBar + the
+    // status-bar inset), so once the header sticks, the scrolling grid can never
+    // peek into the top band above the search bar — whether the mobile TopBar is
+    // shown (transparent, renders on top at a higher z-index) or hidden on
+    // scroll-down (this opaque backdrop fills the gap it leaves).
+    top: `calc(-${TOPBAR_HEIGHT}px - env(safe-area-inset-top) - 2px)` as unknown as number,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(11,24,32,0.55)',
+    // Opaque navy for the top ~80% (covers the nav band + stepper + search),
+    // easing to a soft edge at the very bottom so it still melts into content.
+    backgroundImage:
+      'linear-gradient(to bottom, #0b1820 0%, #0b1820 80%, rgba(11,24,32,0.55) 100%)',
     backdropFilter: 'blur(16px) saturate(140%)',
     WebkitBackdropFilter: 'blur(16px) saturate(140%)',
     borderBottomWidth: 1,

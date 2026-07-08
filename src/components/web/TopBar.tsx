@@ -90,6 +90,10 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
   // threshold ignores jitter; at the very top the bar is always shown + transparent.
   useEffect(() => {
     if (!isMobile || typeof window === 'undefined') return undefined;
+    // Builder screens (e.g. /compare) carry their own sticky sub-header pinned
+    // right under the bar; letting the bar hide there would leave an awkward gap
+    // above that sub-header, so keep it pinned (still frosts on scroll).
+    const keepPinned = pathname.startsWith('/compare');
     let lastY = window.scrollY;
     let ticking = false;
     const apply = () => {
@@ -98,7 +102,7 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
       setMobAtTop(atTop);
       if (atTop) {
         setMobHidden(false);
-      } else {
+      } else if (!keepPinned) {
         const delta = y - lastY;
         if (delta > 6)
           setMobHidden(true); // scrolling down → hide
@@ -117,7 +121,7 @@ export function TopBar({ logoOnly = false }: { logoOnly?: boolean }) {
     };
     window.addEventListener('scroll', onScroll, true);
     return () => window.removeEventListener('scroll', onScroll, true);
-  }, [isMobile]);
+  }, [isMobile, pathname]);
 
   // New routes start at the top — reset the scroll-derived bar state on
   // navigation, then the scroll listener above takes over.

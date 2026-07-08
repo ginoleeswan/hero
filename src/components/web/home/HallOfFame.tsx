@@ -258,8 +258,10 @@ const s = StyleSheet.create({
     maxWidth: 400,
   } as object,
 
-  // Ranked list — two columns on desktop fill the width beside the lead card
-  list: { flex: 1, gap: 2 },
+  // Ranked list — two columns on desktop fill the width beside the lead card.
+  // minWidth:0 lets the list shrink to the mobile gutter instead of stretching to
+  // its rows' content width (long names would otherwise push the page sideways).
+  list: { flex: 1, gap: 2, minWidth: 0 },
   listGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
@@ -279,6 +281,9 @@ const s = StyleSheet.create({
     transition: 'background-color 150ms ease',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(41,60,67,0.08)',
+    // minWidth:0 so the row shrinks to the list width and its name truncates,
+    // rather than sizing to content and overflowing the mobile gutter.
+    minWidth: 0,
   } as object,
   rowHover: {
     backgroundColor: 'rgba(41,60,67,0.06)',

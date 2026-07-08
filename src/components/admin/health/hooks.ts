@@ -5,12 +5,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../../lib/supabase';
 import {
   getCatalogHealth,
-  getCoverageGaps,
   getRunHistory,
   getCronStatus,
   getComicvineUsageLastHour,
   pingComicvine,
-  getHealthSnapshots,
   runDrain,
   retryFailed,
   stopRun,
@@ -64,18 +62,11 @@ export function useCatalogQueries({
     enabled,
     staleTime: 60_000,
   });
-  // Overview glance's fixed default — cache key matches CatalogLane's own
-  // Coverage-tab default, so both share one fetch instead of double-fetching.
-  const gapsQ = useQuery({
-    queryKey: ['coverageGaps', 'portrait', 0, null],
-    queryFn: () => getCoverageGaps('portrait', { page: 0, publisher: null }),
-    enabled: enabled && onHome,
-    staleTime: 60_000,
-  });
   const runsQ = useQuery({
     queryKey: ['enrichmentRuns', historyLimit],
     queryFn: () => getRunHistory(historyLimit),
-    enabled: enabled && onBuild,
+    // Overview's live activity feed + Build's run history both read this.
+    enabled: enabled && (onBuild || onHome),
     placeholderData: (prev) => prev, // keep history visible while "load more" fetches
     // Poll fast while a run is in flight, slow otherwise.
     refetchInterval: (q) =>
@@ -99,12 +90,6 @@ export function useCatalogQueries({
     queryFn: getComicvineUsageLastHour,
     enabled: enabled && onBuild,
     refetchInterval: 30_000,
-  });
-  const snapsQ = useQuery({
-    queryKey: ['healthSnapshots'],
-    queryFn: () => getHealthSnapshots(60),
-    enabled: enabled && onHome,
-    staleTime: 60_000,
   });
   const spendQ = useQuery({
     queryKey: ['geminiSpend'],
@@ -174,12 +159,10 @@ export function useCatalogQueries({
 
   return {
     healthQ,
-    gapsQ,
     runsQ,
     cronQ,
     pingQ,
     usageQ,
-    snapsQ,
     spendQ,
     ambiguousQ,
     enrichProgressQ,

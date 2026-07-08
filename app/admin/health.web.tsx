@@ -41,6 +41,8 @@ import { AudienceLane } from '../../src/components/admin/health/domains/Audience
 import { PublishLane } from '../../src/components/admin/health/domains/PublishLane';
 import { fetchReportsQueue } from '../../src/lib/db/reports';
 import { getReviewQueue } from '../../src/lib/db/contributions';
+import { fetchTrafficOverview } from '../../src/lib/db/traffic';
+import { fetchCommunityOverview } from '../../src/lib/db/community';
 import { SkeletonProvider } from '../../src/components/ui/SkeletonProvider';
 import { useSkeletonTransition } from '../../src/hooks/useSkeletonTransition';
 import {
@@ -118,14 +120,30 @@ export default function AdminHealthScreen() {
     staleTime: 30_000,
   });
 
+  // Overview's live pulse — traffic + community, polled for the heartbeat. Share
+  // cache keys with AudienceLane (28d default) so switching lanes is instant.
+  const onHome = domain === 'command';
+  const trafficQ = useQuery({
+    queryKey: ['trafficOverview', 28],
+    queryFn: () => fetchTrafficOverview(28),
+    enabled: gateResolved && isAdmin && onHome,
+    refetchInterval: 20_000, // the "now" tick
+    staleTime: 15_000,
+  });
+  const communityQ = useQuery({
+    queryKey: ['communityOverview'],
+    queryFn: fetchCommunityOverview,
+    enabled: gateResolved && isAdmin && onHome,
+    refetchInterval: 30_000,
+    staleTime: 20_000,
+  });
+
   const {
     healthQ,
-    gapsQ,
     runsQ,
     cronQ,
     pingQ,
     usageQ,
-    snapsQ,
     spendQ,
     ambiguousQ,
     enrichProgressQ,
@@ -291,15 +309,17 @@ export default function AdminHealthScreen() {
               <CommandHome
                 h={h}
                 overall={overall}
-                snaps={snapsQ.data ?? []}
-                gaps={gapsQ.data}
                 spend={spendQ.data}
                 progress={enrichProgressQ.data}
+                traffic={trafficQ.data ?? null}
+                community={communityQ.data ?? null}
+                runs={runsQ.data?.runs ?? []}
                 narrow={narrow}
                 onJump={(m) => jumpCatalog({ sub: 'coverage', metric: m })}
                 onOpenSpend={() => jumpBuild('spend')}
                 onOpenBuild={() => setDomain('pipelines')}
                 onOpenInbox={() => jumpInbox('reports')}
+                onOpenAudience={() => setDomain('audience')}
                 onSnapshot={onSnapshot}
                 snapshotting={busy === 'snapshot'}
                 inboxCount={(openReportsQ.data?.length ?? 0) + (reviewQ.data?.length ?? 0)}

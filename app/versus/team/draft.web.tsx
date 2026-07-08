@@ -1,4 +1,4 @@
-import { ScrollView, View, ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { COLORS, SURFACE } from '../../../src/constants/colors';
 import { useDraftBattle } from '../../../src/hooks/useDraftBattle';
@@ -30,8 +30,10 @@ export default function DraftClashWeb() {
     );
   }
 
+  // Document-flow (not a nested ScrollView): the whole app scrolls the document
+  // so iOS Safari's toolbar collapses and content bleeds edge-to-edge under it.
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <View style={[styles.root, styles.content]}>
       <ClashArena
         sideA={sideA}
         sideB={sideB}
@@ -42,7 +44,7 @@ export default function DraftClashWeb() {
         topInset={TOPBAR_HEIGHT}
         bottomInset={40}
       />
-    </ScrollView>
+    </View>
   );
 }
 
