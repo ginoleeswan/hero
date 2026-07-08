@@ -147,7 +147,7 @@ export function CatalogLane({
               flash={flash}
               onChanged={() => {
                 queryClient.invalidateQueries({ queryKey: ['catalogHealth'] });
-                queryClient.invalidateQueries({ queryKey: ['catalogDistributions'] });
+                queryClient.invalidateQueries({ queryKey: ['distributions'] });
                 queryClient.invalidateQueries({ queryKey: ['backfillGaps'] });
               }}
             />

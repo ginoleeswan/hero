@@ -59,8 +59,10 @@ export function CommandHome({
   onJump,
   onOpenSpend,
   onOpenBuild,
+  onOpenInbox,
   onSnapshot,
   snapshotting,
+  inboxCount,
 }: {
   h: CatalogHealth;
   overall: number;
@@ -72,8 +74,10 @@ export function CommandHome({
   onJump: (metric?: CoverageMetric) => void;
   onOpenSpend: () => void;
   onOpenBuild: () => void;
+  onOpenInbox: () => void;
   onSnapshot: () => void;
   snapshotting: boolean;
+  inboxCount: number;
 }) {
   const router = useRouter();
   const queue = gaps?.heroes.slice(0, 4) ?? [];
@@ -91,7 +95,8 @@ export function CommandHome({
     : 0;
   const spendMtd = spend?.available ? (spend.monthToDate ?? 0) : null;
   const overBudget = spendMtd != null && spendMtd >= GEMINI_MONTHLY_BUDGET;
-  const allClear = needsYou === 0 && failed === 0 && toEnrich === 0 && !overBudget;
+  const allClear =
+    needsYou === 0 && failed === 0 && toEnrich === 0 && !overBudget && inboxCount === 0;
 
   return (
     <Bento fill={!narrow}>
@@ -145,6 +150,15 @@ export function CommandHome({
             </View>
           ) : (
             <View style={s.atList}>
+              {inboxCount > 0 ? (
+                <AttentionRow
+                  icon="mail-unread-outline"
+                  tint={COLORS.yellow}
+                  count={inboxCount.toLocaleString()}
+                  label="in the inbox"
+                  onPress={onOpenInbox}
+                />
+              ) : null}
               {needsYou > 0 ? (
                 <AttentionRow
                   icon="git-pull-request-outline"

@@ -299,8 +299,10 @@ export default function AdminHealthScreen() {
                 onJump={(m) => jumpCatalog({ sub: 'coverage', metric: m })}
                 onOpenSpend={() => jumpBuild('spend')}
                 onOpenBuild={() => setDomain('pipelines')}
+                onOpenInbox={() => jumpInbox('reports')}
                 onSnapshot={onSnapshot}
                 snapshotting={busy === 'snapshot'}
+                inboxCount={(openReportsQ.data?.length ?? 0) + (reviewQ.data?.length ?? 0)}
               />
             ) : showHealthSkeleton ? (
               <CommandHomeSkeleton narrow={narrow} />

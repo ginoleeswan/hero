@@ -91,7 +91,9 @@ export function PipelinesDomain({
   const [loadingPortraits, setLoadingPortraits] = useState(false);
 
   // Deep-link from another lane (e.g. Overview's spend card): land on the given
-  // sub-tab. `n` is bumped on every jump so repeat jumps to the same sub re-fire.
+  // sub-tab. Each jump creates a fresh object (the bumped `n` guarantees it
+  // differs from the last), so the effect re-fires even for repeat jumps to
+  // the same sub.
   useEffect(() => {
     if (jump) setSub(jump.sub);
   }, [jump]);
@@ -459,7 +461,15 @@ export function PipelinesDomain({
       ) : null}
 
       {/* Spend — Gemini/GCP billing panel (moved from its own standalone tab). */}
-      {sub === 'spend' ? <SpendDomain spend={spend} loading={!spend} /> : null}
+      {sub === 'spend' ? (
+        fill ? (
+          <ScrollView style={styles.subFill} nestedScrollEnabled>
+            <SpendDomain spend={spend} loading={!spend} />
+          </ScrollView>
+        ) : (
+          <SpendDomain spend={spend} loading={!spend} />
+        )
+      ) : null}
 
       {statsIds ? (
         <StatsBoard
