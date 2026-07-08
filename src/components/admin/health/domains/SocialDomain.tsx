@@ -10,11 +10,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Panel } from '../Panel';
 import { SkRows } from '../skeletons';
 import { COLORS } from '../../../../constants/colors';
-import {
-  listSocialPosts,
-  setSocialPosted,
-  type SocialPost,
-} from '../../../../lib/db/socialPosts';
+import { listSocialPosts, setSocialPosted, type SocialPost } from '../../../../lib/db/socialPosts';
 
 const GOLD = '#e0a83e';
 
