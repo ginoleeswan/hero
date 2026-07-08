@@ -42,7 +42,7 @@ export default function DraftClashWeb() {
         onVote={() => {}}
         votable={false}
         topInset={TOPBAR_HEIGHT}
-        bottomInset={40}
+        bottomInset={24}
       />
     </View>
   );

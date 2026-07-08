@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, useWindowDimensions, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
-import { COLORS } from '../../constants/colors';
+import { COLORS, SURFACE_GRADIENT } from '../../constants/colors';
 import type { TeamSide, TeamBattleResult, RosterHero } from '../../lib/teamBattle';
 import { HeroBattleCard } from './HeroBattleCard';
 import { MobileDuel } from './MobileDuel';
@@ -61,7 +61,7 @@ export function ClashArena({
   const nameB = sideB.team?.name ?? 'Team B';
 
   return (
-    <View style={[styles.stage, { paddingTop: topInset + 18, paddingBottom: bottomInset + 28 }]}>
+    <View style={[styles.stage, { paddingTop: topInset + 14, paddingBottom: bottomInset + 16 }]}>
       <Atmosphere />
 
       <View style={styles.container}>
@@ -87,48 +87,57 @@ export function ClashArena({
             votable={votable}
           />
         ) : (
-          <>
-            <MobileDuel sideA={sideA} sideB={sideB} animate={animate} />
-            <VerdictVotes
-              result={result}
-              sideA={sideA}
-              sideB={sideB}
-              nameA={nameA}
-              nameB={nameB}
-              tally={tally}
-              onVote={onVote}
-              animate={animate}
-              votable={votable}
-            />
-          </>
+          <MobileDuel
+            sideA={sideA}
+            sideB={sideB}
+            animate={animate}
+            footer={
+              <VerdictVotes
+                result={result}
+                sideA={sideA}
+                sideB={sideB}
+                nameA={nameA}
+                nameB={nameB}
+                tally={tally}
+                onVote={onVote}
+                animate={animate}
+                votable={votable}
+              />
+            }
+          />
         )}
       </View>
     </View>
   );
 }
 
-/* ── Arena light: the hub's game-lobby stage — a navy lift toward the crown,
- *    corner blooms that take sides (orange A / blue B), a deepening floor. ─ */
+/* ── Arena light: the hub's game-lobby stage, verbatim — the stageImmersive
+ *    radial spotlight over deep ink, plus the two blurred corner blooms that
+ *    take sides (orange A / blue B). Native falls back to gradient washes. ─ */
 function Atmosphere() {
+  if (Platform.OS === 'web') {
+    return (
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <View
+          style={
+            [
+              StyleSheet.absoluteFill,
+              { backgroundColor: COLORS.deepNavy, backgroundImage: SURFACE_GRADIENT.stageImmersive },
+            ] as object
+          }
+        />
+        <View style={styles.glowA as object} />
+        <View style={styles.glowB as object} />
+      </View>
+    );
+  }
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <LinearGradient
         colors={[COLORS.navy, COLORS.deepNavy]}
         start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 0.85 }}
+        end={{ x: 0.5, y: 0.55 }}
         style={StyleSheet.absoluteFill}
-      />
-      <LinearGradient
-        colors={['rgba(231,115,51,0.13)', 'transparent']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.9, y: 0.9 }}
-        style={styles.bloomA}
-      />
-      <LinearGradient
-        colors={['rgba(21,161,171,0.13)', 'transparent']}
-        start={{ x: 1, y: 0 }}
-        end={{ x: 0.1, y: 0.9 }}
-        style={styles.bloomB}
       />
       <LinearGradient colors={['transparent', 'rgba(0,0,0,0.45)']} style={styles.vignette} />
     </View>
@@ -181,7 +190,7 @@ function DesktopDuel({
             tint={TINT_A}
             sel={selA}
             setSel={setSelA}
-            size={104}
+            size={96}
             animate={animate}
           />
         </View>
@@ -192,7 +201,7 @@ function DesktopDuel({
               hero={a}
               tint={TINT_A}
               slot={selA}
-              size={184}
+              size={150}
               leads={aWins > bWins}
               animate={animate}
             />
@@ -200,7 +209,7 @@ function DesktopDuel({
               hero={b}
               tint={TINT_B}
               slot={selB}
-              size={184}
+              size={150}
               leads={bWins > aWins}
               flip
               animate={animate}
@@ -208,20 +217,28 @@ function DesktopDuel({
           </View>
           {a && b ? (
             <View style={styles.ddCompare}>
-              <HeroVsHero a={a} b={b} aWins={aWins} bWins={bWins} animate={animate} />
+              <HeroVsHero
+                a={a}
+                b={b}
+                aWins={aWins}
+                bWins={bWins}
+                animate={animate}
+                footer={
+                  <VerdictVotes
+                    result={result}
+                    sideA={sideA}
+                    sideB={sideB}
+                    nameA={nameA}
+                    nameB={nameB}
+                    tally={tally}
+                    onVote={onVote}
+                    animate={animate}
+                    votable={votable}
+                  />
+                }
+              />
             </View>
           ) : null}
-          <VerdictVotes
-            result={result}
-            sideA={sideA}
-            sideB={sideB}
-            nameA={nameA}
-            nameB={nameB}
-            tally={tally}
-            onVote={onVote}
-            animate={animate}
-            votable={votable}
-          />
         </View>
 
         <View style={styles.ddRowSide}>
@@ -237,7 +254,7 @@ function DesktopDuel({
             tint={TINT_B}
             sel={selB}
             setSel={setSelB}
-            size={104}
+            size={96}
             flip
             animate={animate}
           />
@@ -271,7 +288,8 @@ function RosterColumn({
   const mid = (n - 1) / 2;
   const dir = flip ? -1 : 1;
   const cardH = Math.round((size * 9) / 7);
-  const overlap = Math.round(cardH * 0.16); // light overlap — a spread fan, each card visible
+  // Tighter overlap for bigger squads so the fan never outgrows the centre stack.
+  const overlap = Math.round(cardH * (n >= 5 ? 0.3 : 0.2));
   return (
     <View style={styles.ddCol}>
       {side.roster.map((h, i) => {
@@ -420,18 +438,19 @@ function ClashHeadline({
       >
         {nameA} vs {nameB}
       </Animated.Text>
-      <View style={styles.scoreRow}>
+      <View style={styles.meterRow}>
         <Text style={[styles.score, { color: TINT_A }]}>{result.splitA}</Text>
-        <Text style={styles.scoreVs}>vs</Text>
-        <Text style={[styles.score, { color: TINT_B }]}>{result.splitB}</Text>
+        <View style={styles.meterFlex}>
+          <ClashMeter
+            splitA={result.splitA}
+            tintA={TINT_A}
+            tintB={TINT_B}
+            animate={animate}
+            delay={T_METER}
+          />
+        </View>
+        <Text style={[styles.score, styles.right, { color: TINT_B }]}>{result.splitB}</Text>
       </View>
-      <ClashMeter
-        splitA={result.splitA}
-        tintA={TINT_A}
-        tintB={TINT_B}
-        animate={animate}
-        delay={T_METER}
-      />
       <Animated.View entering={animate ? FadeIn.delay(T_SYNERGY) : undefined} style={styles.synRow}>
         <Text style={[styles.synPip, { color: TINT_A }]}>SYNERGY +{synA}%</Text>
         <Text style={[styles.synPip, { color: TINT_B }]}>+{synB}% SYNERGY</Text>
@@ -524,19 +543,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
-  bloomA: { position: 'absolute', left: 0, top: 0, width: '55%', height: '42%' },
-  bloomB: { position: 'absolute', right: 0, top: 0, width: '55%', height: '42%' },
+  // The hub's corner colour blooms — orange (A) vs blue (B). Web-only (blur).
+  glowA: {
+    position: 'absolute',
+    width: 340,
+    height: 340,
+    borderRadius: 170,
+    top: 60,
+    left: '8%',
+    backgroundColor: 'rgba(231,115,51,0.10)',
+    filter: 'blur(90px)',
+  } as object,
+  glowB: {
+    position: 'absolute',
+    width: 340,
+    height: 340,
+    borderRadius: 170,
+    top: 60,
+    right: '8%',
+    backgroundColor: 'rgba(21,161,171,0.10)',
+    filter: 'blur(90px)',
+  } as object,
   vignette: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%' },
   container: { width: '100%', maxWidth: CONTAINER_W, alignSelf: 'center', zIndex: 1 },
 
   /* ── desktop grand duel ── symmetric flex-1 / fixed-centre / flex-1 so the
    * centre column is page-centred regardless of crest or roster widths. Each
    * side is a self-contained squad: crest on top, fanned roster below. */
-  ddRow: { flexDirection: 'row', alignItems: 'flex-start', width: '100%', marginTop: 30 },
-  ddRowSide: { flex: 1, alignItems: 'center', gap: 20 },
+  ddRow: { flexDirection: 'row', alignItems: 'flex-start', width: '100%', marginTop: 20 },
+  ddRowSide: { flex: 1, alignItems: 'center', gap: 14 },
   ddCol: { alignItems: 'center' },
   ddCenter: { width: 520, alignItems: 'center' },
-  ddSpots: { flexDirection: 'row', gap: 16, marginBottom: 22, justifyContent: 'center' },
+  ddSpots: { flexDirection: 'row', gap: 16, marginBottom: 14, justifyContent: 'center' },
   ddCompare: { width: '100%', marginBottom: 4 },
   crown: {
     position: 'absolute',
@@ -599,34 +637,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   titleMobile: { fontSize: 24, lineHeight: 30 },
-  scoreRow: {
+  // Scores flank the meter — one compact row instead of a tall numeral block.
+  meterRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    gap: 16,
-    marginTop: 14,
-    marginBottom: 14,
+    alignItems: 'center',
+    gap: 14,
+    width: '100%',
+    maxWidth: 460,
+    marginTop: 12,
   },
-  score: { fontFamily: 'Flame-Regular', fontSize: 38, lineHeight: 42 },
-  scoreVs: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 12,
-    color: 'rgba(245,235,220,0.45)',
-    marginBottom: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
+  meterFlex: { flex: 1 },
+  score: { fontFamily: 'Flame-Regular', fontSize: 30, lineHeight: 36, minWidth: 44 },
   synRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    maxWidth: 360,
-    marginTop: 12,
+    maxWidth: 400,
+    marginTop: 10,
   },
   synPip: { fontFamily: 'Nunito_700Bold', fontSize: 11, letterSpacing: 0.4 },
 
-  /* verdict + votes */
-  verdictWrap: { width: '100%', maxWidth: 380, alignSelf: 'center', marginTop: 24 },
+  /* verdict + votes — rendered inside the ringside panel's footer slot */
+  verdictWrap: { width: '100%', marginTop: 6 },
   verdictBlock: { alignItems: 'center' },
   verdictEyebrow: {
     fontFamily: 'Nunito_700Bold',
@@ -634,17 +666,17 @@ const styles = StyleSheet.create({
     letterSpacing: 2.4,
     color: 'rgba(206,155,51,0.7)',
     textTransform: 'uppercase',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   verdict: {
     fontFamily: 'Nunito_700Bold',
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.beige,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 18,
   },
-  votes: { flexDirection: 'row', gap: 12, marginTop: 18 },
-  voteBtn: { flex: 1, borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
+  votes: { flexDirection: 'row', gap: 12, marginTop: 12 },
+  voteBtn: { flex: 1, borderRadius: 14, paddingVertical: 10, alignItems: 'center' },
   votePressed: { opacity: 0.82 },
   voteTop: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: '#fff', letterSpacing: 1.5 },
   voteName: {
@@ -657,7 +689,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 12,
     color: 'rgba(245,235,220,0.6)',
-    marginTop: 14,
+    marginTop: 10,
     textAlign: 'center',
   },
 });

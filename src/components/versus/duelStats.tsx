@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -70,19 +70,23 @@ function CompareRow({
   );
 }
 
-/** Head-to-head stat sheet for the two spotlighted heroes; re-animates on swap. */
+/** Head-to-head stat sheet for the two spotlighted heroes; re-animates on swap.
+ *  `footer` (verdict + vote CTA) renders inside the panel under a hairline rule,
+ *  matching the hub's ringside card. */
 export function HeroVsHero({
   a,
   b,
   aWins,
   bWins,
   animate,
+  footer,
 }: {
   a: RosterHero;
   b: RosterHero;
   aWins: number;
   bWins: number;
   animate: boolean;
+  footer?: ReactNode;
 }) {
   const p = useSharedValue(animate ? 0 : 1);
   useEffect(() => {
@@ -119,6 +123,12 @@ export function HeroVsHero({
           p={p}
         />
       ))}
+      {footer ? (
+        <>
+          <View style={styles.rule} />
+          {footer}
+        </>
+      ) : null}
     </View>
   );
 }
@@ -133,7 +143,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(245,235,220,0.1)',
     borderRadius: 18,
-    paddingVertical: 18,
+    paddingVertical: 14,
     paddingHorizontal: 20,
   },
   kicker: {
@@ -143,13 +153,13 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     textAlign: 'center',
     color: 'rgba(206,155,51,0.9)',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   compareHead: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: 10,
     gap: 10,
   },
   cName: { flex: 1, fontFamily: 'Flame-Regular', fontSize: 15 },
@@ -157,7 +167,14 @@ const styles = StyleSheet.create({
   tallyN: { fontFamily: 'Flame-Regular', fontSize: 18, color: 'rgba(245,235,220,0.5)' },
   tallyDash: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: 'rgba(245,235,220,0.35)' },
   right: { textAlign: 'right' },
-  cRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  rule: {
+    alignSelf: 'stretch',
+    height: 1,
+    backgroundColor: 'rgba(245,235,220,0.08)',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  cRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   cVal: { width: 24, fontFamily: 'Nunito_700Bold', fontSize: 11, color: 'rgba(245,235,220,0.55)' },
   cTrack: {
     flex: 1,

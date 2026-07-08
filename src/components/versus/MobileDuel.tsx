@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -69,10 +69,13 @@ export function MobileDuel({
   sideA,
   sideB,
   animate,
+  footer,
 }: {
   sideA: TeamSide;
   sideB: TeamSide;
   animate: boolean;
+  /** Verdict + vote CTA, rendered inside the head-to-head panel. */
+  footer?: ReactNode;
 }) {
   const { width } = useWindowDimensions();
   const [selA, setSelA] = useState(0);
@@ -114,7 +117,7 @@ export function MobileDuel({
       </View>
       {a && b ? (
         <View style={styles.compareWrap}>
-          <HeroVsHero a={a} b={b} aWins={aWins} bWins={bWins} animate={animate} />
+          <HeroVsHero a={a} b={b} aWins={aWins} bWins={bWins} animate={animate} footer={footer} />
         </View>
       ) : null}
     </View>

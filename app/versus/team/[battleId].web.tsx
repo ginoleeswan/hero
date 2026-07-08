@@ -41,7 +41,7 @@ export default function TeamClashWeb() {
         tally={tally}
         onVote={onVote}
         topInset={TOPBAR_HEIGHT}
-        bottomInset={40}
+        bottomInset={24}
       />
     </View>
   );
