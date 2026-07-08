@@ -1342,6 +1342,7 @@ export type Database = {
       social_posts: {
         Row: {
           ad_safety: string
+          angle: string | null
           batch: string
           caption: string
           created_at: string
@@ -1352,13 +1353,16 @@ export type Database = {
           id: string
           image_url: string
           kind: string
+          media_type: string
           ord: number
           posted_at: string | null
           slide_urls: string[]
           title: string
+          video_url: string | null
         }
         Insert: {
           ad_safety?: string
+          angle?: string | null
           batch: string
           caption?: string
           created_at?: string
@@ -1369,13 +1373,16 @@ export type Database = {
           id?: string
           image_url: string
           kind?: string
+          media_type?: string
           ord: number
           posted_at?: string | null
           slide_urls?: string[]
           title: string
+          video_url?: string | null
         }
         Update: {
           ad_safety?: string
+          angle?: string | null
           batch?: string
           caption?: string
           created_at?: string
@@ -1386,10 +1393,12 @@ export type Database = {
           id?: string
           image_url?: string
           kind?: string
+          media_type?: string
           ord?: number
           posted_at?: string | null
           slide_urls?: string[]
           title?: string
+          video_url?: string | null
         }
         Relationships: []
       }
