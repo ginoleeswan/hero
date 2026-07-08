@@ -3,11 +3,12 @@
 // render FAILS instead of producing an unsafe creative. Data: URIs (fonts,
 // grain, inline SVG) are always fine — only remote imagery is banned.
 const RULES = [
-  [/<img[^>]+src=["']https?:/i, 'remote image tag'],
+  [/<img[^>]+src=["'](?:(?:https?:)?\/\/|https?:)/i, 'remote image tag'],
+  [/srcset=["'](?:(?:https?:)?\/\/|https?:)/i, 'remote srcset attribute'],
   [/res\.cloudinary\.com/i, 'cloudinary image reference'],
   [/comicvine\.gamespot\.com/i, 'comicvine image reference'],
-  [/portrait_url|image_md_url/i, 'portrait field reference'],
-  [/url\((["']?)https?:/i, 'remote css image'],
+  [/portrait_url|image_md_url|["']image_url["']/i, 'portrait field reference'],
+  [/url\(\s*(?:["'])?(?:https?:)?\/\/|url\(\s*(?:["'])?https?:/i, 'remote css image'],
 ];
 
 export function assertNoPortrait(html, label = 'ad asset') {
