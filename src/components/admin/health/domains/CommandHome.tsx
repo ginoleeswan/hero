@@ -255,7 +255,10 @@ export function CommandHome({
                 {/* Headline stats lead; the trend fills the rest of the cell. */}
                 <View style={s.pulseStats}>
                   <PulseStat value={`${traffic?.activeNow ?? 0}`} label="active now" live />
-                  <PulseStat value={(traffic?.today.visitors ?? 0).toLocaleString()} label="today" />
+                  <PulseStat
+                    value={(traffic?.today.visitors ?? 0).toLocaleString()}
+                    label="today"
+                  />
                   <PulseStat
                     value={(traffic?.totals.visitors ?? 0).toLocaleString()}
                     label={`${traffic?.rangeDays ?? 0}d total`}
