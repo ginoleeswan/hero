@@ -9,11 +9,15 @@ export function Sparkline({
   width = 240,
   height = 48,
   color,
+  grow = false,
 }: {
   values: number[];
   width?: number;
+  /** Logical viewBox height (path math). Also the rendered height unless `grow`. */
   height?: number;
   color: string;
+  /** Fill the parent's height (stretched via preserveAspectRatio="none"). */
+  grow?: boolean;
 }) {
   if (values.length < 2) return <View style={{ width: '100%', height }} />;
   const max = Math.max(1, ...values);
@@ -33,7 +37,12 @@ export function Sparkline({
   const area = `${line} L${pts[pts.length - 1][0].toFixed(1)} ${height} L${pts[0][0].toFixed(1)} ${height} Z`;
   const [ex, ey] = pts[pts.length - 1];
   return (
-    <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+    <Svg
+      width="100%"
+      height={grow ? '100%' : height}
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+    >
       <Defs>
         <LinearGradient id="spark" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={color} stopOpacity={0.28} />

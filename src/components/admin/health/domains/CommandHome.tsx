@@ -251,20 +251,25 @@ export function CommandHome({
             scroll={false}
           >
             {series.length >= 2 ? (
-              <>
-                <Sparkline values={series.map((pt) => pt.visitors)} color={COLORS.blue} />
+              <View style={[s.pulseWrap, !narrow && s.pulseWrapFill]}>
+                {/* Headline stats lead; the trend fills the rest of the cell. */}
                 <View style={s.pulseStats}>
                   <PulseStat value={`${traffic?.activeNow ?? 0}`} label="active now" live />
-                  <PulseStat
-                    value={(traffic?.today.visitors ?? 0).toLocaleString()}
-                    label="today"
-                  />
+                  <PulseStat value={(traffic?.today.visitors ?? 0).toLocaleString()} label="today" />
                   <PulseStat
                     value={(traffic?.totals.visitors ?? 0).toLocaleString()}
                     label={`${traffic?.rangeDays ?? 0}d total`}
                   />
                 </View>
-              </>
+                <View style={!narrow ? s.sparkFill : s.sparkFixed}>
+                  <Sparkline
+                    values={series.map((pt) => pt.visitors)}
+                    color={COLORS.blue}
+                    grow={!narrow}
+                    height={narrow ? 88 : 120}
+                  />
+                </View>
+              </View>
             ) : (
               <View style={s.empty}>
                 <Ionicons name="pulse-outline" size={18} color={COLORS.grey} />
@@ -307,7 +312,12 @@ const s = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 220,
   },
-  pulseStats: { flexDirection: 'row', gap: 18, marginTop: 12 },
+  // Traffic pulse: headline stats up top, trend fills the remaining cell height.
+  pulseWrap: { gap: 10 },
+  pulseWrapFill: { flex: 1, minHeight: 0 },
+  sparkFill: { flex: 1, minHeight: 48 },
+  sparkFixed: { height: 88 },
+  pulseStats: { flexDirection: 'row', gap: 20 },
   pulseStat: { gap: 1 },
   pulseValRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   liveDot: { width: 7, height: 7, borderRadius: 999, backgroundColor: COLORS.green },

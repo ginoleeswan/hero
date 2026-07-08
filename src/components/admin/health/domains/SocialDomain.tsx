@@ -19,6 +19,7 @@ const GOLD = '#e0a83e';
 
 function batchLabel(batch: string): string {
   if (batch === 'launch') return 'Launch plan — first three posts';
+  if (batch === 'ad-toolkit') return 'Ad toolkit — evergreen, safe to boost';
   const m = batch.match(/^week-(\d{4}-\d{2}-\d{2})$/);
   return m ? `Content week · ${m[1]}` : batch;
 }

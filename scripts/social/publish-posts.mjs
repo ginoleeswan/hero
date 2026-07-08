@@ -40,6 +40,9 @@ const slides = (dir) => {
 const readCap = (dir) => { try { return readFileSync(join(dir, 'caption.txt'), 'utf8').trim(); } catch { return ''; } };
 
 // ---- collect posts ----
+// The launch pack is the organic studio carousels (they show character art →
+// organic-only, never boost). Everything from the ads pipeline (weeks + the
+// evergreen brand toolkit) is franchise-free → boostable ('ad_safe').
 const LAUNCH = [
   { ord: 1, day: 'day 1', kind: 'ranking', title: 'Top 10 Most Famous Villains', dir: 'ranking-top-10-most-famous-villains', where: 'IG feed', when: '12:00–14:00' },
   { ord: 2, day: 'day 2', kind: 'bio', title: 'Character File: Batman', dir: 'bio-batman', where: 'IG feed', when: '12:00–14:00' },
@@ -47,12 +50,19 @@ const LAUNCH = [
 ];
 const WEEK_GUIDE = { brand: ['IG feed · X', '11:00–13:00'], matchup: ['IG feed → story + poll', '18:00–20:00'], ranking: ['IG feed', '12:00–14:00'] };
 
+// The six evergreen brand looks (scripts/social/ads/ad-brand.mjs) + the web
+// hero. Each brand look ships all ad ratios; we carry them as "slides" so the
+// posting UI can grab any ratio (4x5 cover first, then 1x1/9x16/16x9).
+const BRAND_STYLES = ['constellation', 'powerstats', 'dossier', 'scale', 'versus', 'leaderboard'];
+const RATIOS = ['4x5', '1x1', '9x16', '16x9'];
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
 function collect() {
   const posts = [];
   for (const s of LAUNCH) {
     const dir = join(OUT, s.dir);
     const ss = slides(dir);
-    if (ss.length) posts.push({ batch: 'launch', ord: s.ord, day: s.day, kind: s.kind, title: s.title, dir, files: ss, caption: readCap(dir), where: s.where, when: s.when });
+    if (ss.length) posts.push({ batch: 'launch', ord: s.ord, day: s.day, kind: s.kind, title: s.title, dir, files: ss, caption: readCap(dir), where: s.where, when: s.when, adSafety: 'organic' });
   }
   const weeks = readdirSync(OUT).filter((d) => /^week-\d{4}-\d{2}-\d{2}$/.test(d)).sort();
   const wk = weeks[weeks.length - 1];
@@ -65,8 +75,28 @@ function collect() {
       const g = WEEK_GUIDE[kind] || ['', ''];
       let caption = '';
       try { caption = readFileSync(join(dir, f.replace(/\.png$/, '.caption.txt')), 'utf8').trim(); } catch { /* none */ }
-      posts.push({ batch: wk, ord: Number(ord), day, kind, title: rest.replace(/-/g, ' '), dir, files: [f], caption, where: g[0], when: g[1] });
+      posts.push({ batch: wk, ord: Number(ord), day, kind, title: rest.replace(/-/g, ' '), dir, files: [f], caption, where: g[0], when: g[1], adSafety: 'ad_safe' });
     }
+  }
+  posts.push(...collectAdToolkit());
+  return posts;
+}
+
+// The always-available boostable set — the brand looks + web hero, franchise-free.
+function collectAdToolkit() {
+  const posts = [];
+  let ord = 1;
+  const brandDir = join(OUT, 'ad-brand');
+  for (const style of BRAND_STYLES) {
+    const files = RATIOS.map((r) => `${style}-${r}.png`).filter((f) => existsSync(join(brandDir, f)));
+    if (!files.length) continue;
+    posts.push({ batch: 'ad-toolkit', ord: ord++, day: null, kind: 'brand', title: `Brand — ${cap(style)}`, dir: brandDir, files, caption: readCap(brandDir), where: 'IG feed · X', when: '11:00–13:00', adSafety: 'ad_safe' });
+  }
+  const heroDir = join(OUT, 'ad-web-hero');
+  const heroFiles = slides(heroDir);
+  if (heroFiles.length) {
+    const ordered = heroFiles.slice().sort((a, b) => (b.includes('og') ? 1 : 0) - (a.includes('og') ? 1 : 0));
+    posts.push({ batch: 'ad-toolkit', ord: ord++, day: null, kind: 'brand', title: 'Website hero + OG card', dir: heroDir, files: ordered, caption: readCap(heroDir), where: 'Landing · share card', when: '', adSafety: 'ad_safe' });
   }
   return posts;
 }
@@ -95,9 +125,9 @@ async function main() {
       image_url: urls[0], slide_urls: urls, caption: p.caption,
       guide_where: p.where, guide_when: p.when,
       guide_music: suggestMusic(p.kind, p.title),
-      // Everything from the organic studio is organic-only (never boost as a
-      // paid ad) — the tier-checked ads pipeline publishes 'ad_safe' rows.
-      ad_safety: 'organic',
+      // Set at collection time: organic studio carousels are 'organic'; the
+      // ads pipeline (weeks + brand toolkit) is franchise-free 'ad_safe'.
+      ad_safety: p.adSafety ?? 'organic',
     });
   }
   console.log('\nImages uploaded. Upserting rows…');
