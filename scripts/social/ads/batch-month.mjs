@@ -6,7 +6,7 @@
 //   node scripts/social/ads/batch-month.mjs --n 12 --seed 9
 //   node scripts/social/ads/batch-month.mjs --dry-run          # plan only
 //   node scripts/social/ads/batch-month.mjs --exclude-tier-s
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadEnv, makeSb, fonts, OUT_DIR } from '../lib.mjs';
 import { fetchPools } from './data.mjs';
@@ -44,6 +44,8 @@ async function main() {
   const stamp = new Date().toISOString().slice(0, 7); // YYYY-MM
   const batch = `ad-library-${stamp}`;
   const outDir = join(OUT_DIR, batch);
+  // Batch is regenerated whole; remove stale entries from a previous run for the same month.
+  rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
   const F = fonts();
   const manifest = { batch, seed, entries: [] };
