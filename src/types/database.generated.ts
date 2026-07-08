@@ -1339,6 +1339,54 @@ export type Database = {
           },
         ]
       }
+      social_posts: {
+        Row: {
+          batch: string
+          caption: string
+          created_at: string
+          day: string | null
+          guide_when: string | null
+          guide_where: string | null
+          id: string
+          image_url: string
+          kind: string
+          ord: number
+          posted_at: string | null
+          slide_urls: string[]
+          title: string
+        }
+        Insert: {
+          batch: string
+          caption?: string
+          created_at?: string
+          day?: string | null
+          guide_when?: string | null
+          guide_where?: string | null
+          id?: string
+          image_url: string
+          kind?: string
+          ord: number
+          posted_at?: string | null
+          slide_urls?: string[]
+          title: string
+        }
+        Update: {
+          batch?: string
+          caption?: string
+          created_at?: string
+          day?: string | null
+          guide_when?: string | null
+          guide_where?: string | null
+          id?: string
+          image_url?: string
+          kind?: string
+          ord?: number
+          posted_at?: string | null
+          slide_urls?: string[]
+          title?: string
+        }
+        Relationships: []
+      }
       team_battle_votes: {
         Row: {
           created_at: string
