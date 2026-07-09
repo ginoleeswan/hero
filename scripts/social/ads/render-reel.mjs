@@ -149,7 +149,7 @@ function reelShell(F, scenes, { still = false, seed = 11, guide = false } = {}) 
 .hcopy{position:absolute;left:${SAFE.side}px;right:400px;top:372px;text-align:left;z-index:4}
 .hcopy .in1{font-size:108px;line-height:1.04;color:${CREAM};-webkit-text-stroke:7px ${NAVY};paint-order:stroke fill}
 .hcopy .mut{margin-top:22px;text-align:left}
-.mwrap{position:absolute;right:-110px;bottom:${SAFE.contentBottom}px;z-index:2}
+.mwrap{position:absolute;right:-110px;bottom:0;z-index:2}
 .scene.on .mwrap{animation:mIn .9s cubic-bezier(.2,1.2,.3,1) both}
 .mascot{position:relative;z-index:2;filter:drop-shadow(0 0 60px rgba(232,130,58,.35)) drop-shadow(0 24px 50px rgba(0,0,0,.6));animation:mPush 3.2s ease-out both}
 .visor{position:absolute;left:34%;top:33%;width:34%;height:9%;z-index:3;background:radial-gradient(50% 50% at 50% 50%, rgba(240,160,90,.55), transparent 70%);mix-blend-mode:screen;animation:visorPulse 2.4s ease-in-out infinite alternate}
