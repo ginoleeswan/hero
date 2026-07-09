@@ -260,12 +260,22 @@ export async function renderPng(html, outPath, width, height) {
 export async function renderVideo(html, outMp4, workDir, waitMs = 13300) {
   const { execFileSync } = await import('node:child_process');
   const browser = await launchChrome();
-  const ctx = await browser.newContext({ viewport: { width: 1080, height: 1920 }, recordVideo: { dir: workDir, size: { width: 1080, height: 1920 } } });
+  // Playwright's recorder is a capped-bitrate VP8 test tool — recorded 1:1 it
+  // smears fine text (~2Mbps). Supersample: CSS-zoom the page 2x so the layout
+  // genuinely fills a 2160x3840 viewport (the recorder captures CSS pixels —
+  // deviceScaleFactor is ignored), record at that size, then downscale to
+  // 1080x1920 with lanczos at crf 18. The downscale averages 4 source pixels
+  // per output pixel, recovering the edges the recorder blurred.
+  const ctx = await browser.newContext({
+    viewport: { width: 2160, height: 3840 },
+    recordVideo: { dir: workDir, size: { width: 2160, height: 3840 } },
+  });
   const page = await ctx.newPage();
-  await page.setContent(html, { waitUntil: 'networkidle' });
+  const zoomed = html.replace('</head>', '<style>html{zoom:2}</style></head>');
+  await page.setContent(zoomed, { waitUntil: 'networkidle' });
   await page.waitForTimeout(waitMs);
   await page.close(); await ctx.close(); await browser.close();
   const webm = join(workDir, readdirSync(workDir).find((f) => f.endsWith('.webm')));
   const ffmpeg = process.env.FFMPEG || 'ffmpeg';
-  execFileSync(ffmpeg, ['-y', '-i', webm, '-vf', 'fps=30,format=yuv420p', '-c:v', 'libx264', '-preset', 'medium', '-crf', '20', '-movflags', '+faststart', outMp4], { stdio: 'ignore' });
+  execFileSync(ffmpeg, ['-y', '-i', webm, '-vf', 'fps=30,scale=1080:1920:flags=lanczos,format=yuv420p', '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-movflags', '+faststart', outMp4], { stdio: 'ignore' });
 }

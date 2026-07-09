@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 // One command → a month of ad-safe content. Plan (seeded) → render every
 // entry (carousels + reels) → manifest.json + a visual gallery for triage.
+// The manifest + gallery are rewritten after EVERY entry, so the batch is
+// checkable (gallery) and publishable (publish-posts.mjs) while it renders —
+// stop it any time and what's done is usable.
 //
 //   node scripts/social/ads/batch-month.mjs                    # ~30 pieces
 //   node scripts/social/ads/batch-month.mjs --n 12 --seed 9
 //   node scripts/social/ads/batch-month.mjs --dry-run          # plan only
 //   node scripts/social/ads/batch-month.mjs --exclude-tier-s
-import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
+//   node scripts/social/ads/batch-month.mjs --resume           # keep finished entries, render the rest
+import { mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadEnv, makeSb, fonts, OUT_DIR } from '../lib.mjs';
 import { fetchPools } from './data.mjs';
@@ -29,6 +33,7 @@ async function main() {
   const n = Number(get('--n', 30));
   const seed = Number(get('--seed', Math.floor(Date.now() / 2_592_000_000))); // month-derived default
   const dry = args.includes('--dry-run');
+  const resume = args.includes('--resume');
   const excludeTierS = args.includes('--exclude-tier-s');
   const mix = { carousel: Number(get('--carousels', 18)), reel: Number(get('--reels', 12)) };
 
@@ -44,12 +49,33 @@ async function main() {
   const stamp = new Date().toISOString().slice(0, 7); // YYYY-MM
   const batch = `ad-library-${stamp}`;
   const outDir = join(OUT_DIR, batch);
-  // Batch is regenerated whole; remove stale entries from a previous run for the same month.
-  rmSync(outDir, { recursive: true, force: true });
+  // Fresh runs regenerate the batch whole (no stale orphans); --resume keeps
+  // finished entries (same seed ⇒ same plan) and renders only what's missing.
+  if (!resume) rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
   const F = fonts();
+  const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
   const manifest = { batch, seed, entries: [] };
+  // Rewritten after every entry so a partial batch is immediately usable.
+  const flush = () => {
+    writeFileSync(join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+    writeFileSync(join(outDir, 'gallery.html'), gallery(batch, manifest.entries));
+  };
   for (const e of plan) {
+    const entryDir = join(outDir, `${String(e.ord).padStart(2, '0')}-${slugify(e.title)}`);
+    const doneMarker = e.format === 'carousel' ? join(entryDir, 'slide-1.png') : join(entryDir, 'reel.mp4');
+    if (resume && existsSync(doneMarker)) {
+      console.log(`\n[${e.ord}/${plan.length}] ↷ cached · ${e.title}`);
+      if (e.format === 'carousel') {
+        const { readdirSync } = await import('node:fs');
+        const slides = readdirSync(entryDir).filter((f) => /^slide-\d+\.png$/.test(f)).sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
+        manifest.entries.push({ ord: e.ord, angle: e.angle, format: e.format, title: e.title, caption: e.caption, music: e.music, dir: relative(outDir, entryDir), slides });
+      } else {
+        manifest.entries.push({ ord: e.ord, angle: e.angle, format: e.format, title: e.title, caption: e.caption, music: e.music, dir: relative(outDir, entryDir), mp4: 'reel.mp4', poster: 'poster.png' });
+      }
+      flush();
+      continue;
+    }
     console.log(`\n[${e.ord}/${plan.length}] ${e.format} · ${e.title}`);
     if (e.format === 'carousel') {
       const { dir, slides } = await renderCarousel(e, { outDir, F });
@@ -58,9 +84,8 @@ async function main() {
       const { dir, mp4, poster } = await renderReel(e, { outDir, F });
       manifest.entries.push({ ord: e.ord, angle: e.angle, format: e.format, title: e.title, caption: e.caption, music: e.music, dir: relative(outDir, dir), mp4: relative(dir, mp4), poster: relative(dir, poster) });
     }
+    flush();
   }
-  writeFileSync(join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
-  writeFileSync(join(outDir, 'gallery.html'), gallery(batch, manifest.entries));
   console.log(`\nLibrary ready → ${outDir}\nOpen the gallery: open "${join(outDir, 'gallery.html')}"\nPublish it:       node scripts/social/publish-posts.mjs`);
 }
 
