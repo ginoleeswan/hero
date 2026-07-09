@@ -151,10 +151,10 @@ function reelShell(F, scenes, { still = false, seed = 11, guide = false } = {}) 
 .hcopy .mut{margin-top:22px;text-align:left}
 .mwrap{position:absolute;right:-110px;bottom:0;z-index:2}
 .scene.on .mwrap{animation:mIn .9s cubic-bezier(.2,1.2,.3,1) both}
-.mascot{position:relative;z-index:2;filter:drop-shadow(0 0 60px rgba(232,130,58,.35)) drop-shadow(0 24px 50px rgba(0,0,0,.6));animation:mPush 3.2s ease-out both}
+.mascot{position:relative;z-index:2;filter:drop-shadow(0 0 60px rgba(232,130,58,.35)) drop-shadow(0 24px 50px rgba(0,0,0,.6));animation:mPush 3.2s ease-out both;-webkit-mask-image:linear-gradient(180deg, #000 66%, rgba(0,0,0,.55) 82%, transparent 97%);mask-image:linear-gradient(180deg, #000 66%, rgba(0,0,0,.55) 82%, transparent 97%)}
 .visor{position:absolute;left:34%;top:33%;width:34%;height:9%;z-index:3;background:radial-gradient(50% 50% at 50% 50%, rgba(240,160,90,.55), transparent 70%);mix-blend-mode:screen;animation:visorPulse 2.4s ease-in-out infinite alternate}
 .mglow{position:absolute;left:50%;top:52%;width:1000px;height:1000px;transform:translate(-50%,-50%);background:radial-gradient(circle, rgba(232,130,58,.30), rgba(224,168,62,.10) 45%, transparent 65%);z-index:1}
-.mfade{position:absolute;left:-80px;right:-80px;bottom:-6px;height:220px;background:linear-gradient(180deg, transparent, ${NAVY} 80%);z-index:3}
+.mfade{display:none}
 /* Equal fixed-width columns: the VS coin stays dead-center no matter how the
    two names differ in length (a name-width pcol shifts the coin off axis). */
 .plates{display:flex;align-items:flex-start;justify-content:center;gap:36px;margin-bottom:52px;width:100%}
