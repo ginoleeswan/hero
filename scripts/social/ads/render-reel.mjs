@@ -20,6 +20,11 @@ import { silhouette, SILHOUETTE_KINDS } from './silhouettes.mjs';
 const { O, T, GOLD, CREAM, NAVY } = COLORS;
 const MUT = '#9db4c4';
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+// Platform safe zones (1080x1920) — the union of TikTok / Reels / Shorts UI
+// overlays. Nothing legible may sit in the top band (status bar + Dynamic
+// Island + platform tabs) or the bottom band (caption + handle + music +
+// progress + nav). Every critical element lives between these.
+const SAFE = { top: 210, bottom: 470, side: 76, markTop: 226, contentBottom: 576, footBottom: 490 };
 // Beat grid — all scene durations snap to musical beats (130 BPM) so cuts land
 // on the beat of whatever trending audio gets added in-app.
 const BEAT = 60000 / 130; // ≈ 461.5ms
@@ -110,7 +115,7 @@ const sparks = `<div class="sparks">${Array.from({ length: 10 }, (_, i) => `<spa
 // scenes: [{ id, html, ms, bloom? }] — the driver crossfades scenes (fade out
 // old, 180ms breath on the living stage, slide-fade the next in) and runs
 // count-ups (.cnt[data-to]) + bar fills (.fill/.fa/.fb[data-w]) per scene.
-function reelShell(F, scenes, { still = false, seed = 11 } = {}) {
+function reelShell(F, scenes, { still = false, seed = 11, guide = false } = {}) {
   const grain = grainUri();
   const amb1 = svgUri(ambientSvg(seed));
   const amb2 = svgUri(ambientSvg(seed + 5));
@@ -129,8 +134,8 @@ function reelShell(F, scenes, { still = false, seed = 11 } = {}) {
 .amb2{position:absolute;inset:-190px;background-image:url("${amb2}");background-size:1400px 2300px;animation:drift2 34s linear infinite alternate;opacity:.55}
 .bloom{position:absolute;left:50%;top:30%;width:1400px;height:1400px;transform:translate(-50%,-50%);background:radial-gradient(circle, rgba(224,168,62,.16), transparent 60%);animation:breathe 7s ease-in-out infinite alternate}
 .grain{position:absolute;inset:0;background-image:url("${grain}");background-size:340px;opacity:.05;mix-blend-mode:overlay}
-.mark{position:absolute;top:88px;left:50%;transform:translateX(-50%);width:200px;opacity:.95;z-index:6;filter:drop-shadow(0 4px 18px rgba(0,0,0,.5))}
-.scene{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 90px;opacity:0;transform:translateY(26px);transition:opacity .42s ease,transform .6s cubic-bezier(.16,1,.3,1);pointer-events:none}
+.mark{position:absolute;top:${SAFE.markTop}px;left:${SAFE.side}px;width:150px;opacity:.92;z-index:6;filter:drop-shadow(0 4px 18px rgba(0,0,0,.55))}
+.scene{position:absolute;top:${SAFE.top}px;bottom:${SAFE.contentBottom}px;left:0;right:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 ${SAFE.side}px;opacity:0;transform:translateY(26px);transition:opacity .42s ease,transform .6s cubic-bezier(.16,1,.3,1);pointer-events:none}
 .scene.on{opacity:1;transform:none}
 .eyebrow{font-family:'S';font-size:35px;letter-spacing:.26em;color:${GOLD};margin-bottom:36px}
 .big{font-size:118px;line-height:1.04;color:${CREAM};-webkit-text-stroke:7px ${NAVY};paint-order:stroke fill}
@@ -141,10 +146,10 @@ function reelShell(F, scenes, { still = false, seed = 11 } = {}) {
 .scene.on .in3{animation:upIn .55s .28s cubic-bezier(.16,1,.3,1) both}.scene.on .in4{animation:upIn .55s .42s cubic-bezier(.16,1,.3,1) both}
 .scene.on .rise{animation:rise .7s cubic-bezier(.2,1.4,.35,1) both}
 .hook{position:absolute;inset:0}
-.hcopy{position:absolute;left:80px;right:420px;top:420px;text-align:left;z-index:4}
+.hcopy{position:absolute;left:${SAFE.side}px;right:400px;top:372px;text-align:left;z-index:4}
 .hcopy .in1{font-size:108px;line-height:1.04;color:${CREAM};-webkit-text-stroke:7px ${NAVY};paint-order:stroke fill}
 .hcopy .mut{margin-top:22px;text-align:left}
-.mwrap{position:absolute;right:-130px;bottom:150px;z-index:2}
+.mwrap{position:absolute;right:-110px;bottom:${SAFE.contentBottom}px;z-index:2}
 .scene.on .mwrap{animation:mIn .9s cubic-bezier(.2,1.2,.3,1) both}
 .mascot{position:relative;z-index:2;filter:drop-shadow(0 0 60px rgba(232,130,58,.35)) drop-shadow(0 24px 50px rgba(0,0,0,.6));animation:mPush 3.2s ease-out both}
 .visor{position:absolute;left:34%;top:33%;width:34%;height:9%;z-index:3;background:radial-gradient(50% 50% at 50% 50%, rgba(240,160,90,.55), transparent 70%);mix-blend-mode:screen;animation:visorPulse 2.4s ease-in-out infinite alternate}
@@ -189,13 +194,13 @@ ${sparkCss}
    (a wider ellipse clips flat against the edge). */
 .sideglow.a{background:radial-gradient(30% 26% at 26% 36%, rgba(232,130,58,.30), transparent 70%)}
 .sideglow.b{background:radial-gradient(30% 26% at 74% 36%, rgba(79,179,208,.30), transparent 70%)}
-.foot{position:absolute;bottom:52px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:12px;opacity:.92;z-index:5}
+.foot{position:absolute;bottom:${SAFE.footBottom}px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:10px;opacity:.9;z-index:5}
 .foot .wmimg{height:52px}
 .foot .disc{font-family:-apple-system,Arial,sans-serif;font-size:24px;color:rgba(245,235,220,.5)}
 .esc1,.esc2,.esc3{display:flex;flex-direction:column;align-items:center;width:100%}
 .esc1{transform:scale(1)}.esc2{transform:scale(1.04)}.esc3{transform:scale(1.08)}
 .scene.on .shake{animation:shake .5s .9s cubic-bezier(.36,.07,.19,.97) both}
-.ghosts{position:absolute;left:84px;top:400px;text-align:left;z-index:1;opacity:.5}
+.ghosts{position:absolute;left:${SAFE.side}px;top:236px;text-align:left;z-index:1;opacity:.5}
 .ghosts div{font-family:'S';font-size:34px;color:${MUT};margin-bottom:10px}
 .ghosts b{color:${GOLD};font-family:'FR';margin-right:14px}
 @keyframes shake{10%,90%{transform:translateX(-6px)}20%,80%{transform:translateX(8px)}30%,50%,70%{transform:translateX(-12px)}40%,60%{transform:translateX(12px)}}
@@ -213,7 +218,13 @@ ${sparkCss}
 @keyframes drift1{from{transform:translate(0,0) scale(1)}to{transform:translate(-120px,-90px) scale(1.06)}}
 @keyframes drift2{from{transform:translate(0,0)}to{transform:translate(90px,-130px)}}
 @keyframes breathe{from{opacity:.7;transform:translate(-50%,-50%) scale(1)}to{opacity:1;transform:translate(-50%,-50%) scale(1.12)}}
-${stillCss}`;
+${stillCss}
+.safeguide{position:absolute;inset:0;z-index:99;pointer-events:none}
+.safeguide .z{position:absolute;left:0;right:0;background:rgba(230,60,60,.28);border:2px dashed rgba(255,120,120,.8)}
+.safeguide .zt{top:0;height:${SAFE.top}px}
+.safeguide .zb{bottom:0;height:${SAFE.bottom}px}
+.safeguide .zr{position:absolute;right:0;bottom:${SAFE.bottom}px;width:150px;height:760px;background:rgba(230,60,60,.20);border:2px dashed rgba(255,120,120,.6)}
+.safeguide .lbl{position:absolute;left:20px;color:#fff;font-family:-apple-system,Arial,sans-serif;font-size:26px;font-weight:800;text-shadow:0 1px 3px #000}`;
   const body = scenes
     .map((s, i) => `<div class="scene${still && i === 0 ? ' on' : ''}" id="${s.id}">${s.bloom ? `${rays}${sparks}<div class="bloomhit"></div>` : ''}${s.html}</div>`)
     .join('');
@@ -239,7 +250,7 @@ sc.querySelectorAll('.fb').forEach(el=>{requestAnimationFrame(()=>{el.style.widt
 }, i===0?0:180);
 },t);t+=T[i];});`;
   }
-  return `<!doctype html><html><head><meta charset="utf-8"><style>${css}</style></head><body><div class="root"><div class="amb"></div><div class="amb2"></div><div class="bloom"></div><div class="grain"></div><img class="mark" src="${BRAND.logo}">${body}<div class="foot"><img class="wmimg" src="${BRAND.wordmark}"><div class="disc">${DISCLAIMER}</div></div><script>${script}</script></div></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><style>${css}</style></head><body><div class="root"><div class="amb"></div><div class="amb2"></div><div class="bloom"></div><div class="grain"></div><img class="mark" src="${BRAND.logo}">${guide ? `<div class="safeguide"><div class="z zt"></div><span class="lbl" style="top:16px">TOP UI</span><div class="z zb"></div><span class="lbl" style="bottom:16px">CAPTION / NAV</span><div class="zr"></div></div>` : ''}${body}<div class="foot"><img class="wmimg" src="${BRAND.wordmark}"><div class="disc">${DISCLAIMER}</div></div><script>${script}</script></div></body></html>`;
 }
 
 const SCENES = {
