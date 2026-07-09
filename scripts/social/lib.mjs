@@ -1,7 +1,8 @@
 // Shared data + asset layer for the Mythique social pipelines (reels + carousels).
 //
-// Everything reads off the PUBLIC (publishable/anon) Supabase key — the same
-// read path the app uses. No secret key. See ./README.md.
+// Reads use the service-role key when present in .env.local (local-only batch
+// scripts; the anon role's 3s statement_timeout starves heavy reads) and fall
+// back to the public key. Same read paths as the app either way.
 
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -36,7 +37,12 @@ export function loadEnv() {
     }
   }
   const url = process.env.EXPO_PUBLIC_SUPABASE_URL || out.EXPO_PUBLIC_SUPABASE_URL;
-  const key = process.env.EXPO_PUBLIC_SUPABASE_KEY || out.EXPO_PUBLIC_SUPABASE_KEY;
+  // Prefer the service-role key when available (local-only scripts): the anon
+  // role carries the app's 3s statement_timeout, and the batch generators'
+  // heavier reads (13-column fame-ordered selects) dice-roll against that
+  // cliff (57014) — minutes of retries for no reason. Reads are identical.
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || out.SUPABASE_SERVICE_ROLE_KEY
+    || process.env.EXPO_PUBLIC_SUPABASE_KEY || out.EXPO_PUBLIC_SUPABASE_KEY;
   if (!url || !key) {
     console.error('Missing EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_KEY (checked .env.local and env).');
     process.exit(1);
@@ -99,7 +105,7 @@ export async function heroFullByName(sb, name) {
 }
 // Random popular characters for bio showcases.
 export async function popularHeroes(sb, n) {
-  return sb.rest(`heroes?select=${HERO_FULL}&order=fame_score.desc&limit=${n}`);
+  return sb.rest(`heroes?select=${HERO_FULL}&order=fame_score.desc.nullslast&limit=${n}`);
 }
 
 // Relationship graph (enemies / allies), family, and key/value enrichment facts.
@@ -115,7 +121,7 @@ export async function getFact(sb, id, key) {
   try { const r = await sb.rest(`hero_facts?hero_id=eq.${id}&key=eq.${q(key)}&select=value&limit=1`); return r[0]?.value ?? null; }
   catch { return null; }
 }
-export const famousPool = (sb) => sb.rest(`heroes?select=${HERO_SELECT}&order=fame_score.desc&limit=${FAME_POOL}`);
+export const famousPool = (sb) => sb.rest(`heroes?select=${HERO_SELECT}&order=fame_score.desc.nullslast&limit=${FAME_POOL}`);
 
 // A matchup is postable if it has a real, close-ish vote split.
 export async function evaluate(sb, a, b) {
