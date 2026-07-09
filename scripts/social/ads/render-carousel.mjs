@@ -3,7 +3,7 @@
 // from ad-brand.mjs; assertNoPortrait gates every slide.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { renderPng, COLORS } from '../lib.mjs';
+import { renderPng } from '../lib.mjs';
 import { adShell } from './shell.mjs';
 import { assertNoPortrait } from './safe-assert.mjs';
 

@@ -89,7 +89,6 @@ const hookLayout = (title, sub, { mascotH = 900 } = {}) => `
       <div class="mglow"></div>
       <img class="mascot" src="${BRAND.mascot}" style="height:${mascotH}px">
       <div class="visor"></div>
-      <div class="mfade"></div>
     </div>
     <div class="hcopy">
       <div class="in1">${title}</div>
@@ -154,7 +153,6 @@ function reelShell(F, scenes, { still = false, seed = 11, guide = false } = {}) 
 .mascot{position:relative;z-index:2;filter:drop-shadow(0 0 60px rgba(232,130,58,.35)) drop-shadow(0 24px 50px rgba(0,0,0,.6));animation:mPush 3.2s ease-out both;-webkit-mask-image:linear-gradient(180deg, #000 66%, rgba(0,0,0,.55) 82%, transparent 97%);mask-image:linear-gradient(180deg, #000 66%, rgba(0,0,0,.55) 82%, transparent 97%)}
 .visor{position:absolute;left:34%;top:33%;width:34%;height:9%;z-index:3;background:radial-gradient(50% 50% at 50% 50%, rgba(240,160,90,.55), transparent 70%);mix-blend-mode:screen;animation:visorPulse 2.4s ease-in-out infinite alternate}
 .mglow{position:absolute;left:50%;top:52%;width:1000px;height:1000px;transform:translate(-50%,-50%);background:radial-gradient(circle, rgba(232,130,58,.30), rgba(224,168,62,.10) 45%, transparent 65%);z-index:1}
-.mfade{display:none}
 /* Equal fixed-width columns: the VS coin stays dead-center no matter how the
    two names differ in length (a name-width pcol shifts the coin off axis). */
 .plates{display:flex;align-items:flex-start;justify-content:center;gap:36px;margin-bottom:52px;width:100%}

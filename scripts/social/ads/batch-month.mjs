@@ -63,7 +63,10 @@ async function main() {
   };
   for (const e of plan) {
     const entryDir = join(outDir, `${String(e.ord).padStart(2, '0')}-${slugify(e.title)}`);
-    const doneMarker = e.format === 'carousel' ? join(entryDir, 'slide-1.png') : join(entryDir, 'reel.mp4');
+    // Written ONLY after the entry fully rendered + manifest flushed for it —
+    // a mid-entry kill leaves no .done, so resume re-renders the whole entry
+    // instead of trusting a partial slide-1.png/reel.mp4.
+    const doneMarker = join(entryDir, '.done');
     if (resume && existsSync(doneMarker)) {
       console.log(`\n[${e.ord}/${plan.length}] ↷ cached · ${e.title}`);
       if (e.format === 'carousel') {
@@ -85,6 +88,9 @@ async function main() {
       manifest.entries.push({ ord: e.ord, angle: e.angle, format: e.format, title: e.title, caption: e.caption, music: e.music, dir: relative(outDir, dir), mp4: relative(dir, mp4), poster: relative(dir, poster) });
     }
     flush();
+    // dir returned by the renderer equals the precomputed entryDir — mark
+    // done only now, after manifest.entries.push + flush() succeeded.
+    writeFileSync(doneMarker, '');
   }
   console.log(`\nLibrary ready → ${outDir}\nOpen the gallery: open "${join(outDir, 'gallery.html')}"\nPublish it:       node scripts/social/publish-posts.mjs`);
 }

@@ -43,7 +43,9 @@ export async function fetchPools(sb, rand, { excludeTierS = false } = {}) {
     const rounds = buildRounds(a, b);
     if (rounds.length >= 3) matchups.push({ a, b, rounds });
   }
-  while (matchups.length < 10 && pool.length > 4) {
+  let attempts = 0;
+  while (matchups.length < 10 && pool.length > 4 && attempts < 400) {
+    attempts++;
     const a = pool[Math.floor(rand() * Math.min(40, pool.length))];
     const b = pool[Math.floor(rand() * Math.min(40, pool.length))];
     if (a === b || matchups.some((m) => m.a.name === a.name && m.b.name === b.name)) continue;
