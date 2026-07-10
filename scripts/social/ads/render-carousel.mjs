@@ -1,9 +1,9 @@
 // Carousel renderer — every angle becomes a 3-5 slide, franchise-free story.
 // Slides share the adShell (disclaimer baked in) and the balanced stage math
 // from ad-brand.mjs; assertNoPortrait gates every slide.
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { renderPng } from '../lib.mjs';
+import { renderPng, ROOT } from '../lib.mjs';
 import { adShell } from './shell.mjs';
 import { assertNoPortrait } from './safe-assert.mjs';
 import { silhouette, pickSilhouettePair } from './silhouettes.mjs';
@@ -12,6 +12,14 @@ const relForCopy = (r) => relationPhrase(r); // "the parent of" etc.
 
 const GOLD = '#e0a83e', ORANGE = '#e8823a', TEAL = '#4fb3d0', CREAM = '#f6eddd', MUTED = '#9db4c4';
 const SIZES = { '4x5': [1080, 1350], '1x1': [1080, 1080] };
+// Painted venue per angle (scripts/social/plates masters, data-URI'd once).
+const ANGLE_PLATE = { matchup: 'arena', ranking: 'sky', guess: 'vault', fact: 'sky', lore: 'throne' };
+const LORE_PLATE = { family: 'throne', rivalry: 'arena', connected: 'sky' };
+const plateCache = new Map();
+const plateUri = (k) => {
+  if (!plateCache.has(k)) plateCache.set(k, `data:image/png;base64,${readFileSync(join(ROOT, `scripts/social/plates/${k}.png`)).toString('base64')}`);
+  return plateCache.get(k);
+};
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
 
 const stage = (w, h, inner) =>
@@ -20,7 +28,7 @@ const eyebrow = (h, t, color = GOLD) => `<div style="font-size:${Math.round(h * 
 const head = (h, t, size = 0.07) => `<div class="pop" style="font-size:${Math.round(h * size)}px;line-height:1;color:${CREAM}">${t}</div>`;
 const sub = (h, t) => `<div style="font-size:${Math.round(h * 0.032)}px;color:${MUTED};margin-top:${Math.round(h * 0.02)}px">${t}</div>`;
 const bar = (w, h, pct, color, hh = 0.04) =>
-  `<div style="width:100%;height:${Math.round(h * hh)}px;border-radius:999px;background:rgba(255,255,255,.04);box-shadow:inset 0 1px 3px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.07)"><div style="width:${pct}%;height:100%;border-radius:999px;background:linear-gradient(90deg, ${ORANGE}, ${GOLD})"></div></div>`;
+  `<div style="width:100%;height:${Math.round(h * hh)}px;border-radius:999px;background:rgba(255,255,255,.04);box-shadow:inset 0 1px 3px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.07)"><div style="width:${pct}%;height:100%;border-radius:999px;background:linear-gradient(90deg, ${color}, ${GOLD})"></div></div>`;
 const plate = (w, c) => { const p = Math.round(w * 0.26); return `<div style="width:${p}px;height:${p}px;border-radius:26%;background:rgba(255,255,255,.035);border:${Math.max(2, Math.round(p * 0.011))}px solid ${c};display:flex;align-items:center;justify-content:center"><span class="pop" style="font-size:${Math.round(p * 0.5)}px;color:${c}">?</span></div>`; };
 
 const SLIDES = {
@@ -111,9 +119,10 @@ export async function renderCarousel(entry, { outDir, F, size = '4x5' }) {
   const dir = join(outDir, `${String(entry.ord).padStart(2, '0')}-${slug(entry.title)}`);
   mkdirSync(dir, { recursive: true });
   const inners = SLIDES[entry.angle](entry, w, h);
+  const plateKey = entry.angle === 'lore' ? LORE_PLATE[entry.data?.sub] ?? 'throne' : ANGLE_PLATE[entry.angle] ?? null;
   const slides = [];
   for (let i = 0; i < inners.length; i++) {
-    const html = adShell(F, { w, h }, inners[i]);
+    const html = adShell(F, { w, h }, inners[i], '', { plate: plateKey ? plateUri(plateKey) : null });
     assertNoPortrait(html, `carousel:${entry.angle}:${entry.title}`);
     const out = join(dir, `slide-${i + 1}.png`);
     await renderPng(html, out, w, h);
