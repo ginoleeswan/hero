@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toSafeHero, distinctive, buildRounds } from './data.mjs';
+import { toSafeHero, distinctive, buildRounds, factFromRow } from './data.mjs';
 
 const row = { id: 'h_1', name: 'Goku', publisher: 'Shueisha', fame_score: 97,
   portrait_url: 'https://res.cloudinary.com/x.png', image_url: 'https://x/y.jpg', image_md_url: null,
@@ -29,4 +29,20 @@ test('buildRounds returns 3-4 contrasting stat rounds with real values', () => {
     assert.equal(typeof label, 'string');
     assert.ok(av > 0 && bv > 0);
   }
+});
+
+test('factFromRow builds a punchy headline + full detail, no stat', () => {
+  const f = factFromRow({ name: 'Solomon Grundy', subject: 'origin',
+    content: 'He began as Cyrus Gold, a wealthy merchant murdered and dumped in Slaughter Swamp in the 19th century.' });
+  assert.equal(f.stat, null);
+  assert.ok(f.headline.length > 0 && f.headline.length <= 60);
+  assert.match(f.detail, /Cyrus Gold/);
+  // headline must NOT be a truncated mid-sentence fragment ending in a bare word+ellipsis
+  assert.ok(!/\w…$/.test(f.headline) || f.headline.includes(' '));
+});
+
+test('factFromRow carries the hero name into the headline or detail', () => {
+  const f = factFromRow({ name: 'Snake Eyes', subject: null,
+    content: 'Snake Eyes is a G.I. Joe commando who stayed with a burning wreck to save a wolf pup.' });
+  assert.ok(f.headline.includes('Snake Eyes') || f.detail.includes('Snake Eyes'));
 });

@@ -29,6 +29,14 @@ export function buildRounds(a, b) {
 
 const RANK_LABELS = { intelligence: 'smartest', strength: 'strongest', speed: 'fastest', durability: 'toughest', power: 'most powerful', combat: 'best fighters', fame_score: 'most famous' };
 
+/** A narrative-fact row → the render shape. Headline = the hero name as the
+ *  hook line; detail = the fact body. No number (stat null) → the renderers
+ *  show the fact card, not the odometer. */
+export function factFromRow(row) {
+  const name = row.name;
+  return { headline: name, detail: row.content.trim(), stat: null };
+}
+
 export async function fetchPools(sb, rand, { excludeTierS = false } = {}) {
   const pool = (await famousPool(sb)).map(toSafeHero).filter((h) => !excludeTierS || h.tier !== 'S');
 
@@ -67,18 +75,23 @@ export async function fetchPools(sb, rand, { excludeTierS = false } = {}) {
   // guesses: distinctive famous heroes (recognizable = guessable)
   const guesses = pool.filter(distinctive).slice(0, 12);
 
-  // facts: computed superlatives from the pools already in hand
-  const facts = [];
-  const byStat = (k) => [...pool].sort((x, y) => y.stats[k] - x.stats[k])[0];
-  const fastest = byStat('speed'), smartest = byStat('intelligence'), strongest = byStat('strength');
-  if (fastest) facts.push({ headline: `The fastest character we've ever rated`, detail: `${fastest.name} — speed ${fastest.stats.speed}/100`, stat: `${fastest.stats.speed}` });
-  if (smartest) facts.push({ headline: `The highest intelligence on record`, detail: `${smartest.name} — intelligence ${smartest.stats.intelligence}/100`, stat: `${smartest.stats.intelligence}` });
-  if (strongest) facts.push({ headline: `Pure strength, ranked`, detail: `${strongest.name} sits at ${strongest.stats.strength}/100`, stat: `${strongest.stats.strength}` });
-  const perfect = pool.filter((h) => Object.values(h.stats).some((v) => v >= 100));
-  facts.push({ headline: `Only ${perfect.length} characters have a perfect 100 stat`, detail: `Out of 35,000+ rated files`, stat: `${perfect.length}` });
-  const famous = [...pool].sort((x, y) => y.fame_score - x.fame_score)[0];
-  if (famous) facts.push({ headline: `The most famous character on Mythique`, detail: `${famous.name} — fame ${famous.fame_score}/100`, stat: `${famous.fame_score}` });
-  facts.push({ headline: `35,000+ heroes & villains, every one rated`, detail: `powers · matchups · rankings · lore`, stat: '35k+' });
+  // facts: real narrative lore (self-contained, punchy), computed superlatives
+  // only as a thin-catalog fallback.
+  const factRows = await sb.rest(
+    `hero_narrative_facts?select=content,subject,hero_id,heroes!inner(name,fame_score)` +
+    `&kind=in.(did_you_know,era_summary,power_explainer)&needs_review=eq.false` +
+    `&heroes.fame_score=gte.25&limit=400`,
+  ).catch(() => []);
+  const facts = factRows
+    .filter((r) => r.heroes && r.content && r.content.length > 40)
+    .map((r) => factFromRow({ name: r.heroes.name, subject: r.subject, content: r.content }));
+  if (facts.length < 6) {
+    const byStat = (k) => [...pool].sort((x, y) => y.stats[k] - x.stats[k])[0];
+    const fastest = byStat('speed'), strongest = byStat('strength');
+    if (fastest) facts.push({ headline: `The fastest character we've ever rated`, detail: `${fastest.name} — speed ${fastest.stats.speed}/100`, stat: `${fastest.stats.speed}` });
+    if (strongest) facts.push({ headline: `Pure strength, ranked`, detail: `${strongest.name} sits at ${strongest.stats.strength}/100`, stat: `${strongest.stats.strength}` });
+    facts.push({ headline: `35,000+ heroes & villains, every one rated`, detail: `powers · matchups · rankings · lore`, stat: '35k+' });
+  }
 
   return { matchups, rankings, guesses, facts };
 }

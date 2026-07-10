@@ -63,9 +63,14 @@ const SLIDES = {
   },
   fact: (e, w, h) => {
     const f = e.data;
+    const statNum = f.stat && /^\d/.test(f.stat);
+    // Real narrative facts run much longer than the old computed one-liners —
+    // shrink the body text so long lore stays inside the stage box.
+    const len = f.detail.length;
+    const detailSize = len > 260 ? 0.024 : len > 180 ? 0.027 : 0.032;
     return [
       stage(w, h, `${eyebrow(h, 'DID YOU KNOW')}${head(h, f.headline, 0.062)}
-        <div class="pop" style="font-size:${Math.round(h * 0.14)}px;color:${GOLD};margin:${Math.round(h * 0.04)}px 0">${f.stat}</div>${sub(h, f.detail)}`),
+        ${statNum ? `<div class="pop" style="font-size:${Math.round(h * 0.14)}px;color:${GOLD};margin:${Math.round(h * 0.04)}px 0">${f.stat}</div>` : ''}<div style="font-size:${Math.round(h * detailSize)}px;color:${MUTED};margin-top:${Math.round(h * 0.02)}px">${f.detail}</div>`),
       stage(w, h, `${head(h, 'There’s a file on everyone.', 0.065)}${sub(h, '35,000+ heroes & villains — powers, matchups, rankings & lore')}
         <div class="g pop" style="font-size:${Math.round(h * 0.04)}px;margin-top:${Math.round(h * 0.05)}px">mythique.app&thinsp;→</div>`),
     ];

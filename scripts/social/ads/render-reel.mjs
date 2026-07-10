@@ -323,10 +323,17 @@ const SCENES = {
   // Mascot delivers the hook; big odometer stat under rays; dossier close.
   fact: (e) => {
     const f = e.data;
-    const statNum = /^\d+$/.test(f.stat);
+    const statNum = f.stat && /^\d/.test(f.stat);
+    // Real narrative facts run much longer than the old computed one-liners —
+    // shrink the body so long lore still lands inside the safe band instead
+    // of colliding with the top-left brand mark or bleeding past the footer.
+    const len = f.detail.length;
+    const bodySize = len > 260 ? 40 : len > 180 ? 46 : len > 110 ? 54 : 64;
     return [
       { id: 'hook', ms: beats(5), html: hookLayout(`<span class="eyebrow" style="display:block;margin-bottom:26px">DID YOU KNOW</span>${f.headline}`, null) },
-      { id: 'stat', ms: beats(9), bloom: true, html: `<div class="huge rise">${statNum ? `<span class="cnt" data-to="${f.stat}">0</span>` : f.stat}</div><div class="mut in2" style="font-size:46px">${f.detail}</div>` },
+      statNum
+        ? { id: 'stat', ms: beats(9), bloom: true, html: `<div class="huge rise"><span class="cnt" data-to="${f.stat}">0</span></div><div class="mut in2" style="font-size:46px">${f.detail}</div>` }
+        : { id: 'stat', ms: beats(10), bloom: true, html: `<div class="big rise" style="font-size:${bodySize}px;line-height:1.3">${f.detail}</div>` },
       { id: 'cta', ms: beats(8), html: `<div class="big rise" style="font-size:92px">There’s a file<br>on everyone.</div><div class="mut in2">35,000+ heroes &amp; villains — rated &amp; ranked</div><div class="mut in3 gold" style="font-size:46px;margin-top:40px">mythique.app</div>` },
     ];
   },
