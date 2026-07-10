@@ -50,7 +50,7 @@ function stage(key, w, h, { pos = 0.5, dim = 0, topScrim = 0.8, bottomScrim = 0.
 }
 const masthead = (w, folioText, wmH = 32) => `
   <div style="position:absolute;top:56px;left:84px;right:84px;display:flex;justify-content:space-between;align-items:center;z-index:5">
-    <img src="${BRAND.wordmark}" style="height:${wmH}px">
+    <div style="display:flex;align-items:center;gap:18px"><img src="${BRAND.logo}" style="height:${Math.round(wmH * 0.92)}px"><img src="${BRAND.wordmark}" style="height:${wmH}px"></div>
     <div class="s" style="font-size:19px;letter-spacing:.3em;color:${INKMUT}">${folioText}</div>
   </div>`;
 const footer = (main, sub = null) => `
@@ -76,7 +76,7 @@ async function profile() {
       <img src="${plate('vault')}" style="position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);width:${Math.max(w, Math.round(h * 2.2))}px;opacity:.85">
       <div style="position:absolute;inset:0;background:radial-gradient(60% 90% at 50% 50%, rgba(11,24,32,.55), rgba(11,24,32,.82))"></div>
       <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${Math.round(tagPx * 0.9)}px">
-        <img src="${BRAND.wordmark}" style="height:${wmH}px;filter:drop-shadow(0 6px 30px rgba(0,0,0,.6))">
+        <div style="display:flex;align-items:center;gap:${Math.round(wmH * 0.5)}px;filter:drop-shadow(0 6px 30px rgba(0,0,0,.6))"><img src="${BRAND.logo}" style="height:${Math.round(wmH * 0.94)}px"><img src="${BRAND.wordmark}" style="height:${wmH}px"></div>
         <div class="s" style="font-size:${tagPx}px;letter-spacing:.24em;color:${INKMUT}">${TAGLINE.toUpperCase()}</div>
       </div>
       ${grain()}
@@ -165,7 +165,7 @@ async function overview() {
       <img src="${plate('vault')}" style="position:absolute;right:-160px;top:50%;transform:translateY(-50%);width:700px;opacity:.9;-webkit-mask-image:linear-gradient(90deg,transparent,#000 30%)">
       <div style="position:absolute;inset:0;background:linear-gradient(90deg, rgba(11,24,32,.96) 42%, rgba(11,24,32,.2))"></div>
       <div style="position:absolute;left:90px;top:0;bottom:0;width:560px;display:flex;flex-direction:column;justify-content:center;gap:24px">
-        <img src="${BRAND.wordmark}" style="height:34px;align-self:flex-start">
+        <div style="display:flex;align-items:center;gap:18px;align-self:flex-start"><img src="${BRAND.logo}" style="height:32px"><img src="${BRAND.wordmark}" style="height:34px"></div>
         <div style="font-size:66px;line-height:1.08;margin-top:8px">Every hero.<br>Every villain.<br>One archive.</div>
         <div class="s" style="font-size:23px;color:${INKMUT}">35,000 legends · battles · lore &nbsp;·&nbsp; <span style="color:${GOLD}">mythique.app</span></div>
       </div>
@@ -175,7 +175,7 @@ async function overview() {
   await render(`${css(1080, 1920)}
     <div style="position:relative;width:1080px;height:1920px;background:${INK};color:${CREAM};overflow:hidden">
       ${stage('vault', 1080, 1920, { pos: 0.5, dim: 0.1, bottomScrim: 0.94 })}
-      <div style="position:absolute;left:0;right:0;top:150px;display:flex;justify-content:center"><img src="${BRAND.wordmark}" style="height:42px"></div>
+      <div style="position:absolute;left:0;right:0;top:150px;display:flex;justify-content:center;align-items:center;gap:22px"><img src="${BRAND.logo}" style="height:40px"><img src="${BRAND.wordmark}" style="height:42px"></div>
       <div style="position:absolute;left:0;right:0;top:1180px;text-align:center;z-index:5">
         <div class="s" style="font-size:26px;letter-spacing:.4em;color:${GOLD};margin-bottom:34px">MEET MYTHIQUE</div>
         <div style="font-size:108px;line-height:1.06">Every hero.<br>Every villain.<br>One archive.</div>
