@@ -27,7 +27,7 @@ function batchLabel(batch: string): string {
   return batch;
 }
 
-type Filter = 'all' | 'matchup' | 'ranking' | 'guess' | 'fact' | 'reel' | 'carousel';
+type Filter = 'all' | 'matchup' | 'ranking' | 'guess' | 'fact' | 'lore' | 'reel' | 'carousel';
 
 const FILTER_OPTIONS: { label: string; value: Filter }[] = [
   { label: 'All', value: 'all' },
@@ -35,6 +35,7 @@ const FILTER_OPTIONS: { label: string; value: Filter }[] = [
   { label: 'Ranking', value: 'ranking' },
   { label: 'Guess', value: 'guess' },
   { label: 'Fact', value: 'fact' },
+  { label: 'Lore', value: 'lore' },
   { label: 'Reels', value: 'reel' },
   { label: 'Carousels', value: 'carousel' },
 ];
