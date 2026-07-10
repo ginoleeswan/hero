@@ -53,6 +53,72 @@ export function factFromRow(row) {
   return { headline, detail: content, stat: null, hook: hookFor(content) };
 }
 
+const RELATION_PHRASE = { parent: 'the parent of', child: 'the child of', sibling: 'the sibling of', aunt_uncle: 'the aunt/uncle of', other: 'family to' };
+export const relationPhrase = (r) => RELATION_PHRASE[r] ?? 'family to';
+
+const yearOf = (s) => { const m = /(\d{4})/.exec(s ?? ''); return m ? m[1] : null; };
+
+/** Lore pools — family feud (lead), rivalry, most-connected. Names + numbers
+ *  only (no ids/portraits). Each entry carries `sub`; family entries come
+ *  first (priority order) in fetchPools' returned array.
+ *
+ *  Embed hints: `heroes!hero_id(...)` / `heroes!related_hero_id(...)` (and the
+ *  hero_relationships equivalents `heroes!hero_id` / `heroes!related_id`) are
+ *  verified against the live schema — PostgREST accepts the bare FK-column
+ *  hint, no need to spell out the full constraint name.
+ *
+ *  Connected-pool note: hero_relationships is stored directionally (a hero's
+ *  edges show up as either hero_id OR related_id, not symmetrically — e.g.
+ *  Batman has 163 rows as hero_id but 1000+ as related_id), and the table is
+ *  646k rows so a naive `select=hero_id,kind` full-table fetch both exceeds
+ *  PostgREST's 1000-row default cap and would undercount degree even if it
+ *  didn't. Instead: take the top ~15 heroes by fame_score, and for each run
+ *  two bounded per-hero queries (as hero_id, as related_id) and merge kind
+ *  tallies — ≤30 cheap indexed queries total. */
+export async function fetchLore(sb, rand, { excludeTierS = false } = {}) {
+  const out = [];
+  // FAMILY: relatives whose related_hero_id is a hero AND an enemy edge exists.
+  const fam = await sb.rest(
+    `hero_relatives?select=relation,heroes!hero_id(name,fame_score),related:heroes!related_hero_id(name,fame_score)` +
+    `&related_hero_id=not.is.null&limit=600`,
+  ).catch(() => []);
+  for (const r of fam) {
+    const a = r.heroes, b = r.related;
+    if (!a || !b || (a.fame_score ?? 0) < 30) continue;
+    out.push({ sub: 'family', a: a.name, b: b.name, relation: r.relation });
+  }
+  // RIVALRY: famous enemy pairs, best-effort year from first_appearance.
+  const riv = await sb.rest(
+    `hero_relationships?select=kind,a:heroes!hero_id(name,fame_score,first_appearance),b:heroes!related_id(name,fame_score,first_appearance)` +
+    `&kind=eq.enemy&limit=800`,
+  ).catch(() => []);
+  const rivPairs = [];
+  for (const r of riv) {
+    const a = r.a, b = r.b;
+    if (!a || !b || (a.fame_score ?? 0) < 30 || (b.fame_score ?? 0) < 30) continue;
+    rivPairs.push({ sub: 'rivalry', a: a.name, b: b.name, year: yearOf(a.first_appearance) || yearOf(b.first_appearance) });
+  }
+  // CONNECTED: degree leaderboard, top famous heroes, both edge directions.
+  const famousIds = await sb.rest(`heroes?select=id,name,fame_score&order=fame_score.desc.nullslast&limit=60`).catch(() => []);
+  const connected = [];
+  for (const h of famousIds.slice(0, 15)) {
+    if ((h.fame_score ?? 0) < 40) continue;
+    const [asHero, asRelated] = await Promise.all([
+      sb.rest(`hero_relationships?select=kind&hero_id=eq.${h.id}&limit=1000`).catch(() => []),
+      sb.rest(`hero_relationships?select=kind&related_id=eq.${h.id}&limit=1000`).catch(() => []),
+    ]);
+    const m = { ally: 0, enemy: 0, teammate: 0 };
+    for (const r of [...asHero, ...asRelated]) m[r.kind] = (m[r.kind] ?? 0) + 1;
+    connected.push({ sub: 'connected', a: h.name, allies: m.ally, enemies: m.enemy, teams: m.teammate });
+    if (connected.length >= 4) break;
+  }
+  // interleave: family (all, priority) then a capped shuffled rivalry set then connected.
+  const rivShuffled = [...rivPairs];
+  for (let i = rivShuffled.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [rivShuffled[i], rivShuffled[j]] = [rivShuffled[j], rivShuffled[i]]; }
+  const family = out.filter((e) => e.sub === 'family');
+  return [...family, ...rivShuffled.slice(0, 20), ...connected];
+}
+
 export async function fetchPools(sb, rand, { excludeTierS = false } = {}) {
   const pool = (await famousPool(sb)).map(toSafeHero).filter((h) => !excludeTierS || h.tier !== 'S');
 
@@ -109,5 +175,7 @@ export async function fetchPools(sb, rand, { excludeTierS = false } = {}) {
     facts.push({ headline: `35,000+ heroes & villains, every one rated`, detail: `powers · matchups · rankings · lore`, stat: '35k+', hook: 'DID YOU KNOW' });
   }
 
-  return { matchups, rankings, guesses, facts };
+  const lore = await fetchLore(sb, rand, { excludeTierS });
+
+  return { matchups, rankings, guesses, facts, lore };
 }

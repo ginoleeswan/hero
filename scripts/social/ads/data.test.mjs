@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toSafeHero, distinctive, buildRounds, factFromRow } from './data.mjs';
+import { toSafeHero, distinctive, buildRounds, factFromRow, relationPhrase } from './data.mjs';
 
 const row = { id: 'h_1', name: 'Goku', publisher: 'Shueisha', fame_score: 97,
   portrait_url: 'https://res.cloudinary.com/x.png', image_url: 'https://x/y.jpg', image_md_url: null,
@@ -65,4 +65,9 @@ test('factFromRow rotates hooks deterministically across a set of contents', () 
   // determinism: same content always yields the same hook
   const again = factFromRow({ name: 'Test Hero', subject: null, content: contents[0] }).hook;
   assert.equal(again, hooks[0]);
+});
+
+test('relationPhrase maps every relation enum to human copy', () => {
+  for (const [k, re] of [['parent',/parent/],['child',/child/],['sibling',/sibling/],['aunt_uncle',/aunt/],['other',/family/]])
+    assert.match(relationPhrase(k), re);
 });
