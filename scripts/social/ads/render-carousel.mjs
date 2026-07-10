@@ -6,6 +6,9 @@ import { join } from 'node:path';
 import { renderPng } from '../lib.mjs';
 import { adShell } from './shell.mjs';
 import { assertNoPortrait } from './safe-assert.mjs';
+import { silhouette } from './silhouettes.mjs';
+import { relationPhrase } from './data.mjs';
+const relForCopy = (r) => relationPhrase(r); // "the parent of" etc.
 
 const GOLD = '#e0a83e', ORANGE = '#e8823a', TEAL = '#4fb3d0', CREAM = '#f6eddd', MUTED = '#9db4c4';
 const SIZES = { '4x5': [1080, 1350], '1x1': [1080, 1080] };
@@ -73,6 +76,29 @@ const SLIDES = {
         ${statNum ? `<div class="pop" style="font-size:${Math.round(h * 0.14)}px;color:${GOLD};margin:${Math.round(h * 0.04)}px 0">${f.stat}</div>` : ''}<div style="font-size:${Math.round(h * detailSize)}px;color:${MUTED};margin-top:${Math.round(h * 0.02)}px">${f.detail}</div>`),
       stage(w, h, `${head(h, 'There’s a file on everyone.', 0.065)}${sub(h, '35,000+ heroes & villains — powers, matchups, rankings & lore')}
         <div class="g pop" style="font-size:${Math.round(h * 0.04)}px;margin-top:${Math.round(h * 0.05)}px">mythique.app&thinsp;→</div>`),
+    ];
+  },
+  lore: (e, w, h) => {
+    const d = e.data;
+    const twoBusts = (an, bn) => `<div style="display:flex;align-items:flex-end;justify-content:center;gap:${Math.round(w * 0.06)}px;margin-bottom:${Math.round(h * 0.04)}px">
+      <div style="text-align:center">${silhouette('cowl', { size: Math.round(w * 0.24), rim: ORANGE })}<div class="pop" style="font-size:${Math.round(h * 0.036)}px;color:${ORANGE};margin-top:8px">${an}</div></div>
+      <div style="text-align:center">${silhouette('spikes', { size: Math.round(w * 0.24), rim: TEAL })}<div class="pop" style="font-size:${Math.round(h * 0.036)}px;color:${TEAL};margin-top:8px">${bn}</div></div></div>`;
+    if (d.sub === 'family') return [
+      stage(w, h, `${eyebrow(h, 'SAME BLOOD')}${head(h, 'Opposite<br>sides.', 0.085)}${sub(h, 'Swipe for the twist →')}`),
+      stage(w, h, `${twoBusts(d.a, d.b)}${head(h, `${d.a} is<br>${relForCopy(d.relation)} ${d.b}.`, 0.055)}`),
+      stage(w, h, `${head(h, 'Nature or<br>nurture?', 0.08)}${sub(h, 'The family tree tells the whole story.')}<div class="g pop" style="font-size:${Math.round(h * 0.04)}px;margin-top:${Math.round(h * 0.05)}px">mythique.app&thinsp;→</div>`),
+    ];
+    if (d.sub === 'rivalry') return [
+      stage(w, h, `${eyebrow(h, 'SOME FIGHTS NEVER END')}${twoBusts(d.a, d.b)}${head(h, `${d.a}<br><span style="color:${GOLD}">vs</span> ${d.b}`, 0.06)}${d.year ? sub(h, `Enemies since ${d.year}.`) : ''}`),
+      stage(w, h, `${head(h, 'The best rivalry<br>in comics?', 0.07)}${sub(h, 'Fight about it in the comments 👇')}<div class="g pop" style="font-size:${Math.round(h * 0.04)}px;margin-top:${Math.round(h * 0.05)}px">mythique.app&thinsp;→</div>`),
+    ];
+    return [ // connected
+      stage(w, h, `${eyebrow(h, 'THE SOCIAL WEB')}${head(h, `The most connected<br>character in fiction?`, 0.055)}${head(h, d.a, 0.09)}`),
+      stage(w, h, `<div style="display:flex;gap:${Math.round(w * 0.06)}px;justify-content:center;margin-bottom:${Math.round(h * 0.04)}px">
+        <div><div class="pop" style="font-size:${Math.round(h * 0.09)}px;color:${ORANGE}">${d.allies}</div><div style="font-size:${Math.round(h * 0.028)}px;color:${MUTED}">ALLIES</div></div>
+        <div><div class="pop" style="font-size:${Math.round(h * 0.09)}px;color:${TEAL}">${d.enemies}</div><div style="font-size:${Math.round(h * 0.028)}px;color:${MUTED}">ENEMIES</div></div>
+        <div><div class="pop" style="font-size:${Math.round(h * 0.09)}px;color:${GOLD}">${d.teams}</div><div style="font-size:${Math.round(h * 0.028)}px;color:${MUTED}">TEAMS</div></div></div>
+        <div class="g pop" style="font-size:${Math.round(h * 0.04)}px;margin-top:${Math.round(h * 0.05)}px">Explore the web · mythique.app&thinsp;→</div>`),
     ];
   },
 };
