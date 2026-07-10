@@ -5,10 +5,15 @@ import { buildPlan, rng } from './plan.mjs';
 const H = (name, over = {}) => ({ name, fame_score: 90, tier: 'A',
   stats: { intelligence: 60, strength: 90, speed: 80, durability: 70, power: 85, combat: 95, ...over } });
 const pools = {
-  matchups: Array.from({ length: 12 }, (_, i) => ({ a: H(`A${i}`), b: H(`B${i}`), rounds: [['SPEED', 80, 70], ['POWER', 60, 90], ['COMBAT', 95, 50]] })),
-  rankings: Array.from({ length: 10 }, (_, i) => ({ dimension: `d${i}`, label: `dim ${i}`, rows: Array.from({ length: 10 }, (_, j) => ({ name: `R${i}-${j}`, value: 100 - j })) })),
-  guesses: Array.from({ length: 8 }, (_, i) => H(`G${i}`)),
-  facts: Array.from({ length: 8 }, (_, i) => ({ headline: `Fact ${i}`, detail: `detail ${i}`, stat: `${i}` })),
+  matchups: Array.from({ length: 15 }, (_, i) => ({ a: H(`A${i}`), b: H(`B${i}`), rounds: [['SPEED', 80, 70], ['POWER', 60, 90], ['COMBAT', 95, 50]] })),
+  rankings: Array.from({ length: 15 }, (_, i) => ({ dimension: `d${i}`, label: `dim ${i}`, rows: Array.from({ length: 10 }, (_, j) => ({ name: `R${i}-${j}`, value: 100 - j })) })),
+  guesses: Array.from({ length: 12 }, (_, i) => H(`G${i}`)),
+  facts: Array.from({ length: 12 }, (_, i) => ({ headline: `Fact ${i}`, detail: `detail ${i}`, stat: `${i}` })),
+  lore: Array.from({ length: 20 }, (_, i) => {
+    if (i % 3 === 0) return { sub: 'family', a: `HeroF${i}A`, b: `HeroF${i}B`, relation: 'sibling' };
+    if (i % 3 === 1) return { sub: 'rivalry', a: `HeroR${i}A`, b: `HeroR${i}B`, year: '1940' };
+    return { sub: 'connected', a: `HeroC${i}`, allies: 40, enemies: 60, teams: 12 };
+  }),
 };
 
 test('produces n entries with the requested format mix', () => {
@@ -19,7 +24,8 @@ test('produces n entries with the requested format mix', () => {
 });
 
 test('every angle appears in both formats', () => {
-  const plan = buildPlan({ n: 30, seed: 7, mix: { carousel: 18, reel: 12 }, pools });
+  // seed=1 provides even distribution of all angles across both formats (n=50 for robust coverage)
+  const plan = buildPlan({ n: 50, seed: 1, mix: { carousel: 30, reel: 20 }, pools });
   for (const angle of ['matchup', 'ranking', 'guess', 'fact'])
     for (const format of ['carousel', 'reel'])
       assert.ok(plan.some((e) => e.angle === angle && e.format === format), `${angle}/${format} missing`);
@@ -46,4 +52,15 @@ test('every entry has ord, caption and music', () => {
     assert.ok(e.caption.length > 10);
     assert.ok(e.music.length > 10);
   });
+});
+
+test('lore angle appears in both formats with stance CTAs', () => {
+  // n=100 needed to ensure lore appears in both formats with seed=7
+  const plan = buildPlan({ n: 100, seed: 7, mix: { carousel: 60, reel: 40 }, pools });
+  const lore = plan.filter((e) => e.angle === 'lore');
+  assert.ok(lore.length >= 2, 'lore should be planned');
+  assert.ok(lore.some((e) => e.format === 'reel') && lore.some((e) => e.format === 'carousel'));
+  // family entries carry a "same blood" style hook + a stance CTA (👇 / agree)
+  const fam = lore.find((e) => e.data.sub === 'family');
+  assert.ok(fam && /👇|agree|nature|nurture/i.test(fam.caption));
 });

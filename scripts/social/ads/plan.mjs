@@ -29,11 +29,28 @@ const MAKERS = {
     data: f,
     caption: `${f.headline}. ${f.detail}\n\nExplore 35,000+ rated files on mythique.app\n\n#didyouknow #superheroes #comics #mythique`,
   }),
+  lore: (e) => {
+    if (e.sub === 'family') return {
+      title: `${e.a} & ${e.b} — family`,
+      data: e,
+      caption: `${e.a} and ${e.b}: same blood, opposite sides. Nature or nurture? 👇\n\nThe whole family tree lives on mythique.app\n\n#comics #superheroes #lore #mythique`,
+    };
+    if (e.sub === 'rivalry') return {
+      title: `${e.a} vs ${e.b} — rivalry`,
+      data: e,
+      caption: `${e.a} vs ${e.b}${e.year ? ` — enemies since ${e.year}` : ''}. The best rivalry in comics? Fight about it 👇\n\nmythique.app\n\n#comics #superheroes #rivalry #mythique`,
+    };
+    return {
+      title: `Most connected — ${e.a}`,
+      data: e,
+      caption: `${e.a}: ${e.allies} allies, ${e.enemies} enemies, ${e.teams} teams. The most connected character in fiction?\n\nExplore the whole web — mythique.app\n\n#comics #superheroes #lore #mythique`,
+    };
+  },
 };
-const ANGLES = ['matchup', 'ranking', 'guess', 'fact'];
-const POOL_KEY = { matchup: 'matchups', ranking: 'rankings', guess: 'guesses', fact: 'facts' };
+const ANGLES = ['matchup', 'ranking', 'guess', 'fact', 'lore'];
+const POOL_KEY = { matchup: 'matchups', ranking: 'rankings', guess: 'guesses', fact: 'facts', lore: 'lore' };
 // music.mjs kinds: matchup|ranking|bio|brand|post — map guess/fact to fitting kinds.
-const MUSIC_KIND = { matchup: 'matchup', ranking: 'ranking', guess: 'post', fact: 'brand' };
+const MUSIC_KIND = { matchup: 'matchup', ranking: 'ranking', guess: 'post', fact: 'brand', lore: 'brand' };
 
 export function buildPlan({ n = 30, seed = 1, mix = { carousel: 18, reel: 12 }, pools }) {
   const rand = rng(seed);
@@ -44,7 +61,7 @@ export function buildPlan({ n = 30, seed = 1, mix = { carousel: 18, reel: 12 }, 
     for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
     shuffled[k] = a;
   }
-  const cursors = { matchups: 0, rankings: 0, guesses: 0, facts: 0 };
+  const cursors = { matchups: 0, rankings: 0, guesses: 0, facts: 0, lore: 0 };
   const next = (angle) => {
     const key = POOL_KEY[angle];
     const arr = shuffled[key];
