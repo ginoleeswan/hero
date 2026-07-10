@@ -119,7 +119,7 @@ const plates = (a, b, { glow = null, coin = 'vs' } = {}) => {
 };
 const pips = (total, lit) => `<div class="pips">${Array.from({ length: total }, (_, i) => `<span class="pip ${i < lit ? 'lit' : ''}"></span>`).join('')}</div>`;
 // Family-reel reveal wants a short middle-line form of the relation.
-const relLabel = (r) => ({ parent: 'the parent of', child: 'the child of', sibling: 'the sibling of', aunt_uncle: 'the aunt/uncle of', other: 'family to' }[r] ?? 'family to');
+const relLabel = (r) => ({ parent: 'the parent of', child: 'the child of', sibling: 'the sibling of', aunt_uncle: 'the aunt/uncle of', grandparent: 'the grandparent of', cousin: 'the cousin of', clone: 'a clone of', ancestor: 'an ancestor of', other: 'family to' }[r] ?? 'family to');
 const ring = (n) => `
   <div class="ringwrap"><svg width="420" height="420" viewBox="0 0 420 420">
     <circle cx="210" cy="210" r="180" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="14"/>

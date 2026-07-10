@@ -53,7 +53,7 @@ export function factFromRow(row) {
   return { headline, detail: content, stat: null, hook: hookFor(content) };
 }
 
-const RELATION_PHRASE = { parent: 'the parent of', child: 'the child of', sibling: 'the sibling of', aunt_uncle: 'the aunt/uncle of', other: 'family to' };
+const RELATION_PHRASE = { parent: 'the parent of', child: 'the child of', sibling: 'the sibling of', aunt_uncle: 'the aunt/uncle of', grandparent: 'the grandparent of', cousin: 'the cousin of', clone: 'a clone of', ancestor: 'an ancestor of', other: 'family to' };
 export const relationPhrase = (r) => RELATION_PHRASE[r] ?? 'family to';
 
 const yearOf = (s) => { const m = /(\d{4})/.exec(s ?? ''); return m ? m[1] : null; };
@@ -77,15 +77,35 @@ const yearOf = (s) => { const m = /(\d{4})/.exec(s ?? ''); return m ? m[1] : nul
  *  tallies — ≤30 cheap indexed queries total. */
 export async function fetchLore(sb, rand, { excludeTierS = false } = {}) {
   const out = [];
-  // FAMILY: relatives whose related_hero_id is a hero AND an enemy edge exists.
+  // FAMILY: relatives whose related_hero_id is a famous hero AND an enemy edge
+  // exists between the pair — the templates frame conflict ("Same blood.
+  // Opposite sides."), so allied/teammate family is off-message. `relation`
+  // describes the RELATIVE'S role toward the hero (hero=Luke, related=Vader,
+  // relation='parent' ⇒ Vader is Luke's parent), so the relative takes the `a`
+  // slot: the copy renders "<a> is the <relation> of <b>". spouse is excluded
+  // (not same blood).
   const fam = await sb.rest(
-    `hero_relatives?select=relation,heroes!hero_id(name,fame_score,gender,alignment),related:heroes!related_hero_id(name,fame_score,gender,alignment)` +
+    `hero_relatives?select=relation,heroes!hero_id(id,name,fame_score,gender,alignment),related:heroes!related_hero_id(id,name,fame_score,gender,alignment)` +
     `&related_hero_id=not.is.null&limit=600`,
   ).catch(() => []);
+  const famCandidates = [];
   for (const r of fam) {
-    const a = r.heroes, b = r.related;
-    if (!a || !b || (a.fame_score ?? 0) < 30) continue;
-    out.push({ sub: 'family', a: a.name, b: b.name, relation: r.relation, aHint: { gender: a.gender, alignment: a.alignment }, bHint: { gender: b.gender, alignment: b.alignment } });
+    const hero = r.heroes, rel = r.related;
+    if (!hero || !rel || r.relation === 'spouse' || r.relation === 'in_law') continue; // not same blood
+    if ((hero.fame_score ?? 0) < 30 || (rel.fame_score ?? 0) < 30) continue;
+    famCandidates.push({ hero, rel, relation: r.relation });
+  }
+  // One bounded query: enemy edges among the candidates' ids (both directions
+  // — hero_relationships is directional).
+  const famIds = [...new Set(famCandidates.flatMap((c) => [c.hero.id, c.rel.id]))];
+  const idList = famIds.map((id) => `"${id}"`).join(',');
+  const enemyEdges = famIds.length === 0 ? [] : await sb.rest(
+    `hero_relationships?select=hero_id,related_id&kind=eq.enemy&hero_id=in.(${idList})&related_id=in.(${idList})&limit=1000`,
+  ).catch(() => []);
+  const enemySet = new Set(enemyEdges.flatMap((e) => [`${e.hero_id}|${e.related_id}`, `${e.related_id}|${e.hero_id}`]));
+  for (const { hero, rel, relation } of famCandidates) {
+    if (!enemySet.has(`${hero.id}|${rel.id}`)) continue;
+    out.push({ sub: 'family', a: rel.name, b: hero.name, relation, aHint: { gender: rel.gender, alignment: rel.alignment }, bHint: { gender: hero.gender, alignment: hero.alignment } });
   }
   // RIVALRY: famous enemy pairs, best-effort year from first_appearance.
   const riv = await sb.rest(

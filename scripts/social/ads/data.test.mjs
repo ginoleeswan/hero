@@ -71,3 +71,33 @@ test('relationPhrase maps every relation enum to human copy', () => {
   for (const [k, re] of [['parent',/parent/],['child',/child/],['sibling',/sibling/],['aunt_uncle',/aunt/],['other',/family/]])
     assert.match(relationPhrase(k), re);
 });
+
+test('fetchLore family: relative owns the relation slot, both-famous + enemy-edge gated, spouse excluded, no image fields', async () => {
+  const { fetchLore } = await import('./data.mjs');
+  const H = (id, name, fame, gender = 'Male', alignment = 'good') => ({ id, name, fame_score: fame, gender, alignment });
+  const handlers = {
+    hero_relatives: [
+      // hero=Luke, related=Vader, relation='parent' ⇒ VADER is Luke's parent.
+      { relation: 'parent', heroes: H('h1', 'Luke', 80), related: H('h2', 'Vader', 85, 'Male', 'bad') },
+      { relation: 'spouse', heroes: H('h3', 'Reed', 60), related: H('h4', 'Sue', 62, 'Female') }, // spouse: excluded
+      { relation: 'sibling', heroes: H('h5', 'Thor', 90), related: H('h6', 'NobodyBro', 5) }, // b-side not famous
+      { relation: 'sibling', heroes: H('h7', 'Ally', 70), related: H('h8', 'AllySis', 70, 'Female') }, // famous but NO enemy edge
+    ],
+    hero_relationships: (q) => q.includes('kind=eq.enemy')
+      ? [{ hero_id: 'h1', related_id: 'h2' }] // Luke↔Vader are enemies; h7/h8 are not
+      : [],
+    heroes: [],
+    hero_narrative_facts: [],
+  };
+  const sb = { rest: async (q) => { const k = q.split('?')[0]; const h = handlers[k]; return typeof h === 'function' ? h(q) : (h ?? []); } };
+  const lore = await fetchLore(sb, () => 0.5);
+  const family = lore.filter((e) => e.sub === 'family');
+  assert.equal(family.length, 1, 'only the famous enemy-linked blood pair survives');
+  const f = family[0];
+  // Direction: copy renders "<a> is the <relation> of <b>" — Vader is the parent of Luke.
+  assert.equal(f.a, 'Vader');
+  assert.equal(f.b, 'Luke');
+  assert.equal(f.relation, 'parent');
+  assert.deepEqual(f.aHint, { gender: 'Male', alignment: 'bad' });
+  for (const key of Object.keys(f)) assert.ok(!/url|image|portrait/i.test(key), `no image-ish field: ${key}`);
+});
