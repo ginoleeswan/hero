@@ -146,8 +146,11 @@ function collectAdToolkit() {
 
 async function main() {
   const dry = process.argv.includes('--dry-run');
+  // --batch <name>: publish only one batch (e.g. brand-kit) without re-uploading the rest.
+  const onlyBatch = process.argv.includes('--batch') ? process.argv[process.argv.indexOf('--batch') + 1] : null;
   const E = env();
-  const posts = collect();
+  let posts = collect();
+  if (onlyBatch) posts = posts.filter((p) => p.batch === onlyBatch);
   if (!posts.length) { console.error('Nothing to publish — generate the launch pack / a week first.'); process.exit(1); }
   console.log(`Publishing ${posts.length} posts (${[...new Set(posts.map((p) => p.batch))].join(', ')})`);
   if (dry) { for (const p of posts) console.log(`  ${p.batch} #${p.ord} ${p.title} — ${p.files.length} slide(s)`); return; }
