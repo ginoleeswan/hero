@@ -38,6 +38,12 @@ const BRAND = {
   wordmark: pngUri(join(ROOT, 'public/brand/wordmark-cream.png')),
   mascot: pngUri(join(ROOT, 'public/brand/mascot-bust.png')),
 };
+// Painted environment plates (scripts/social/plates, 9:16 masters) — the
+// venue behind every reel. Per-angle so the room matches the content; a slow
+// Ken Burns drift keeps it alive without stealing attention from the type.
+const plateUri = (k) => pngUri(join(ROOT, `scripts/social/plates/${k}.png`));
+const ANGLE_PLATE = { matchup: 'arena', ranking: 'sky', guess: 'vault', fact: 'sky', lore: 'throne' };
+const LORE_PLATE = { family: 'throne', rivalry: 'arena', connected: 'sky' };
 
 // ── Ambient constellation (two parallax layers, slow drift) ──────────────────
 function ambientSvg(seed, w = 1400, h = 2300) {
@@ -132,12 +138,12 @@ const sparks = `<div class="sparks">${Array.from({ length: 10 }, (_, i) => `<spa
 // scenes: [{ id, html, ms, bloom? }] — the driver crossfades scenes (fade out
 // old, 180ms breath on the living stage, slide-fade the next in) and runs
 // count-ups (.cnt[data-to]) + bar fills (.fill/.fa/.fb[data-w]) per scene.
-function reelShell(F, scenes, { still = false, seed = 11, guide = false } = {}) {
+function reelShell(F, scenes, { still = false, seed = 11, guide = false, plate = null } = {}) {
   const grain = grainUri();
   const amb1 = svgUri(ambientSvg(seed));
   const amb2 = svgUri(ambientSvg(seed + 5));
   const stillCss = still
-    ? `.in1,.in2,.in3,.in4,.rise,.sweep,.plate,.vscoin,.mwrap{animation:none!important;opacity:1!important;transform:none!important}
+    ? `.in1,.in2,.in3,.in4,.rise,.sweep,.plate,.bgplate,.vscoin,.mwrap{animation:none!important;opacity:1!important;transform:none!important}
 .scene{transition:none!important}.fill{transition:none!important}`
     : '';
   const sparkCss = Array.from({ length: 10 }, (_, i) => {
@@ -147,6 +153,9 @@ function reelShell(F, scenes, { still = false, seed = 11, guide = false } = {}) 
   const css = `${fontFace(F)}
 *{margin:0;padding:0;box-sizing:border-box}html,body{width:1080px;height:1920px;overflow:hidden;background:${NAVY};font-family:'FR'}
 .root{position:relative;width:1080px;height:1920px;overflow:hidden;background:radial-gradient(120% 90% at 50% 8%, #12242f, ${NAVY} 72%)}
+.bgplate{position:absolute;left:-60px;top:-60px;width:1200px;height:2040px;object-fit:cover;animation:plateDrift 40s ease-in-out infinite alternate}
+.veil{position:absolute;inset:0;background:linear-gradient(180deg, rgba(6,18,26,.72) 0%, rgba(6,18,26,.34) 30%, rgba(6,18,26,.4) 62%, rgba(6,18,26,.82) 88%)}
+@keyframes plateDrift{from{transform:scale(1) translateY(0)}to{transform:scale(1.07) translateY(-26px)}}
 .amb{position:absolute;inset:-190px;background-image:url("${amb1}");background-size:1400px 2300px;animation:drift1 46s linear infinite alternate;opacity:.9}
 .amb2{position:absolute;inset:-190px;background-image:url("${amb2}");background-size:1400px 2300px;animation:drift2 34s linear infinite alternate;opacity:.55}
 .bloom{position:absolute;left:50%;top:30%;width:1400px;height:1400px;transform:translate(-50%,-50%);background:radial-gradient(circle, rgba(224,168,62,.16), transparent 60%);animation:breathe 7s ease-in-out infinite alternate}
@@ -266,7 +275,7 @@ sc.querySelectorAll('.fb').forEach(el=>{requestAnimationFrame(()=>{el.style.widt
 }, i===0?0:180);
 },t);t+=T[i];});`;
   }
-  return `<!doctype html><html><head><meta charset="utf-8"><style>${css}</style></head><body><div class="root"><div class="amb"></div><div class="amb2"></div><div class="bloom"></div><div class="grain"></div><img class="mark" src="${BRAND.logo}">${guide ? `<div class="safeguide"><div class="z zt"></div><span class="lbl" style="top:16px">TOP UI</span><div class="z zb"></div><span class="lbl" style="bottom:16px">CAPTION / NAV</span><div class="zr"></div></div>` : ''}${body}<div class="foot"><img class="wmimg" src="${BRAND.wordmark}"><div class="disc">${DISCLAIMER}</div></div><script>${script}</script></div></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><style>${css}</style></head><body><div class="root">${plate ? `<img class="bgplate" src="${plateUri(plate)}"><div class="veil"></div>` : ''}<div class="amb"></div><div class="amb2"></div><div class="bloom"></div><div class="grain"></div><img class="mark" src="${BRAND.logo}">${guide ? `<div class="safeguide"><div class="z zt"></div><span class="lbl" style="top:16px">TOP UI</span><div class="z zb"></div><span class="lbl" style="bottom:16px">CAPTION / NAV</span><div class="zr"></div></div>` : ''}${body}<div class="foot"><img class="wmimg" src="${BRAND.wordmark}"><div class="disc">${DISCLAIMER}</div></div><script>${script}</script></div></body></html>`;
 }
 
 const SCENES = {
@@ -393,12 +402,13 @@ export async function renderReel(entry, { outDir, F }) {
   // recordings from previous runs or a re-render silently ships the old video.
   for (const f of readdirSync(dir)) if (f.endsWith('.webm')) rmSync(join(dir, f));
   const scenes = SCENES[entry.angle](entry);
-  const html = reelShell(F, scenes, { seed: 11 + entry.ord });
+  const plate = entry.angle === 'lore' ? LORE_PLATE[entry.data?.sub] ?? 'throne' : ANGLE_PLATE[entry.angle] ?? null;
+  const html = reelShell(F, scenes, { seed: 11 + entry.ord, plate });
   assertNoPortrait(html, `reel:${entry.angle}:${entry.title}`);
   const mp4 = join(dir, 'reel.mp4');
   await renderVideo(html, mp4, dir);
   // Poster = the hook scene as a still (for the Publish tab thumbnail).
-  const posterHtml = reelShell(F, [scenes[0]], { still: true, seed: 11 + entry.ord });
+  const posterHtml = reelShell(F, [scenes[0]], { still: true, seed: 11 + entry.ord, plate });
   assertNoPortrait(posterHtml, `poster:${entry.angle}`);
   const poster = join(dir, 'poster.png');
   await renderPng(posterHtml, poster, 1080, 1920);
@@ -410,9 +420,10 @@ export async function renderReel(entry, { outDir, F }) {
 export async function renderReelStills(entry, { outDir, F }) {
   mkdirSync(outDir, { recursive: true });
   const scenes = SCENES[entry.angle](entry);
+  const plate = entry.angle === 'lore' ? LORE_PLATE[entry.data?.sub] ?? 'throne' : ANGLE_PLATE[entry.angle] ?? null;
   const files = [];
   for (const scene of scenes) {
-    const html = reelShell(F, [scene], { still: true, seed: 11 + (entry.ord ?? 0) });
+    const html = reelShell(F, [scene], { still: true, seed: 11 + (entry.ord ?? 0), plate });
     const file = join(outDir, `${entry.angle}-${scene.id}.png`);
     await renderPng(html, file, 1080, 1920);
     files.push(file);
