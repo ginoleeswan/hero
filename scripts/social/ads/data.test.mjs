@@ -46,3 +46,23 @@ test('factFromRow carries the hero name into the headline or detail', () => {
     content: 'Snake Eyes is a G.I. Joe commando who stayed with a burning wreck to save a wolf pup.' });
   assert.ok(f.headline.includes('Snake Eyes') || f.detail.includes('Snake Eyes'));
 });
+
+test('factFromRow rotates hooks deterministically across a set of contents', () => {
+  const contents = [
+    'Alpha origin story about a hero who once fell from the sky.',
+    'Bravo tale of a villain who never sleeps and always wins.',
+    'Charlie legend of a sidekick who saved the day twice.',
+    'Delta myth about a warrior forged in starlight and iron.',
+    'Echo chronicle of a trickster who rewired an entire timeline.',
+    'Foxtrot saga of a knight who traded his shadow for power.',
+    'Golf report on a scientist who split the atom by accident.',
+    'Hotel record of a pilot who crash-landed on a moon of Saturn.',
+  ];
+  const hooks = contents.map((content) => factFromRow({ name: 'Test Hero', subject: null, content }).hook);
+  const allowed = ['WAIT — WHAT?', "MOST PEOPLE DON'T KNOW THIS", 'DID YOU KNOW', null];
+  for (const h of hooks) assert.ok(allowed.includes(h), `unexpected hook: ${h}`);
+  assert.ok(new Set(hooks).size >= 2, 'expected at least 2 distinct hooks across varied contents');
+  // determinism: same content always yields the same hook
+  const again = factFromRow({ name: 'Test Hero', subject: null, content: contents[0] }).hook;
+  assert.equal(again, hooks[0]);
+});

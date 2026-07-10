@@ -29,12 +29,28 @@ export function buildRounds(a, b) {
 
 const RANK_LABELS = { intelligence: 'smartest', strength: 'strongest', speed: 'fastest', durability: 'toughest', power: 'most powerful', combat: 'best fighters', fame_score: 'most famous' };
 
-/** A narrative-fact row → the render shape. Headline = the hero name as the
- *  hook line; detail = the fact body. No number (stat null) → the renderers
- *  show the fact card, not the odometer. */
+const HOOKS = ['WAIT — WHAT?', "MOST PEOPLE DON'T KNOW THIS", 'DID YOU KNOW', null];
+
+/** Deterministic hook pick so the same fact content always renders the same
+ *  eyebrow (or none) across re-runs/batches — no per-render randomness. */
+function hookFor(content) {
+  let sum = 0;
+  for (let i = 0; i < content.length; i++) sum += content.charCodeAt(i);
+  return HOOKS[sum % HOOKS.length];
+}
+
+/** A narrative-fact row → the render shape. Headline = the fact's first
+ *  sentence when it's short enough to punch as a standalone line; otherwise
+ *  falls back to the hero name. detail always carries the FULL fact body.
+ *  No number (stat null) → the renderers show the fact card, not the
+ *  odometer. hook rotates the eyebrow line (null = bare claim, no eyebrow) —
+ *  provoke, not inform. */
 export function factFromRow(row) {
   const name = row.name;
-  return { headline: name, detail: row.content.trim(), stat: null };
+  const content = row.content.trim();
+  const first = content.split(/(?<=[.!?])\s/)[0];
+  const headline = first.length <= 70 ? first : name;
+  return { headline, detail: content, stat: null, hook: hookFor(content) };
 }
 
 export async function fetchPools(sb, rand, { excludeTierS = false } = {}) {
@@ -88,9 +104,9 @@ export async function fetchPools(sb, rand, { excludeTierS = false } = {}) {
   if (facts.length < 6) {
     const byStat = (k) => [...pool].sort((x, y) => y.stats[k] - x.stats[k])[0];
     const fastest = byStat('speed'), strongest = byStat('strength');
-    if (fastest) facts.push({ headline: `The fastest character we've ever rated`, detail: `${fastest.name} — speed ${fastest.stats.speed}/100`, stat: `${fastest.stats.speed}` });
-    if (strongest) facts.push({ headline: `Pure strength, ranked`, detail: `${strongest.name} sits at ${strongest.stats.strength}/100`, stat: `${strongest.stats.strength}` });
-    facts.push({ headline: `35,000+ heroes & villains, every one rated`, detail: `powers · matchups · rankings · lore`, stat: '35k+' });
+    if (fastest) facts.push({ headline: `The fastest character we've ever rated`, detail: `${fastest.name} — speed ${fastest.stats.speed}/100`, stat: `${fastest.stats.speed}`, hook: 'DID YOU KNOW' });
+    if (strongest) facts.push({ headline: `Pure strength, ranked`, detail: `${strongest.name} sits at ${strongest.stats.strength}/100`, stat: `${strongest.stats.strength}`, hook: 'DID YOU KNOW' });
+    facts.push({ headline: `35,000+ heroes & villains, every one rated`, detail: `powers · matchups · rankings · lore`, stat: '35k+', hook: 'DID YOU KNOW' });
   }
 
   return { matchups, rankings, guesses, facts };

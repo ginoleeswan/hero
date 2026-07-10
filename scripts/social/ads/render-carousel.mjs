@@ -69,7 +69,7 @@ const SLIDES = {
     const len = f.detail.length;
     const detailSize = len > 260 ? 0.024 : len > 180 ? 0.027 : 0.032;
     return [
-      stage(w, h, `${eyebrow(h, 'DID YOU KNOW')}${head(h, f.headline, 0.062)}
+      stage(w, h, `${f.hook ? eyebrow(h, f.hook) : ''}${head(h, f.headline, 0.062)}
         ${statNum ? `<div class="pop" style="font-size:${Math.round(h * 0.14)}px;color:${GOLD};margin:${Math.round(h * 0.04)}px 0">${f.stat}</div>` : ''}<div style="font-size:${Math.round(h * detailSize)}px;color:${MUTED};margin-top:${Math.round(h * 0.02)}px">${f.detail}</div>`),
       stage(w, h, `${head(h, 'There’s a file on everyone.', 0.065)}${sub(h, '35,000+ heroes & villains — powers, matchups, rankings & lore')}
         <div class="g pop" style="font-size:${Math.round(h * 0.04)}px;margin-top:${Math.round(h * 0.05)}px">mythique.app&thinsp;→</div>`),

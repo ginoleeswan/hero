@@ -330,7 +330,7 @@ const SCENES = {
     const len = f.detail.length;
     const bodySize = len > 260 ? 40 : len > 180 ? 46 : len > 110 ? 54 : 64;
     return [
-      { id: 'hook', ms: beats(5), html: hookLayout(`<span class="eyebrow" style="display:block;margin-bottom:26px">DID YOU KNOW</span>${f.headline}`, null) },
+      { id: 'hook', ms: beats(5), html: hookLayout(`${f.hook ? `<span class="eyebrow" style="display:block;margin-bottom:26px">${f.hook}</span>` : ''}${f.headline}`, null) },
       statNum
         ? { id: 'stat', ms: beats(9), bloom: true, html: `<div class="huge rise"><span class="cnt" data-to="${f.stat}">0</span></div><div class="mut in2" style="font-size:46px">${f.detail}</div>` }
         : { id: 'stat', ms: beats(10), bloom: true, html: `<div class="big rise" style="font-size:${bodySize}px;line-height:1.3">${f.detail}</div>` },
