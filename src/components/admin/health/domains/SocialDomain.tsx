@@ -20,6 +20,7 @@ const GOLD = '#e0a83e';
 function batchLabel(batch: string): string {
   if (batch === 'launch') return 'Launch plan — first three posts';
   if (batch === 'ad-toolkit') return 'Ad toolkit — evergreen, safe to boost';
+  if (batch === 'brand-kit') return 'Brand kit — profiles, overview & announcements';
   const week = batch.match(/^week-(\d{4}-\d{2}-\d{2})$/);
   if (week) return `Content week · ${week[1]}`;
   const adLibrary = batch.match(/^ad-library-(\d{4}-\d{2})$/);
@@ -27,7 +28,7 @@ function batchLabel(batch: string): string {
   return batch;
 }
 
-type Filter = 'all' | 'matchup' | 'ranking' | 'guess' | 'fact' | 'lore' | 'reel' | 'carousel';
+type Filter = 'all' | 'matchup' | 'ranking' | 'guess' | 'fact' | 'lore' | 'brand' | 'reel' | 'carousel';
 
 const FILTER_OPTIONS: { label: string; value: Filter }[] = [
   { label: 'All', value: 'all' },
@@ -36,6 +37,7 @@ const FILTER_OPTIONS: { label: string; value: Filter }[] = [
   { label: 'Guess', value: 'guess' },
   { label: 'Fact', value: 'fact' },
   { label: 'Lore', value: 'lore' },
+  { label: 'Brand', value: 'brand' },
   { label: 'Reels', value: 'reel' },
   { label: 'Carousels', value: 'carousel' },
 ];

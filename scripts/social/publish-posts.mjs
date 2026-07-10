@@ -80,6 +80,30 @@ function collect() {
   }
   posts.push(...collectAdToolkit());
   posts.push(...collectAdLibrary());
+  posts.push(...collectBrandKit());
+  return posts;
+}
+
+// The brand asset kit (brand-pack.mjs output) — profile dressing, the
+// "what is Mythique" overview set, and announcement templates. Franchise-free
+// by construction (logo/wordmark/mascot + generated silhouettes only).
+function collectBrandKit() {
+  const kit = join(OUT, 'brand-kit');
+  if (!existsSync(kit)) return [];
+  const groups = [
+    { sub: '01-profile', title: 'Profile kit — avatar + banners', where: 'X · LinkedIn · YouTube · IG', order: ['avatar-1080.png', 'banner-x-1500x500.png', 'banner-linkedin-1584x396.png', 'banner-youtube-2560x1440.png'] },
+    { sub: '02-overview', title: 'Overview — what is Mythique (pin this)', where: 'IG carousel · LinkedIn card · story', order: ['slide-1-1080.png', 'slide-2-1080.png', 'slide-3-1080.png', 'slide-4-1080.png', 'slide-5-1080.png', 'overview-card-1200x627.png', 'overview-story-1080x1920.png'] },
+    { sub: '03-announce', title: 'Announcement templates', where: 'Any channel', order: ['launch-1080.png', 'milestone-1080.png', 'feature-1080.png'] },
+    { sub: '04-marks', title: 'Logo & wordmark exports', where: 'Anywhere', order: ['wordmark-cream.png', 'wordmark-navy.png', 'mascot-bust.png'] },
+  ];
+  const posts = [];
+  let ord = 1;
+  for (const g of groups) {
+    const dir = join(kit, g.sub);
+    const files = g.order.filter((f) => existsSync(join(dir, f)));
+    if (!files.length) continue;
+    posts.push({ batch: 'brand-kit', ord: ord++, day: null, kind: 'brand', title: g.title, dir, files, caption: readCap(dir), where: g.where, when: '', adSafety: 'ad_safe', angle: 'brand' });
+  }
   return posts;
 }
 
