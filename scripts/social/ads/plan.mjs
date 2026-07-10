@@ -81,16 +81,25 @@ export function buildPlan({ n = 30, seed = 1, mix = { carousel: 18, reel: 12 }, 
   }
 
   const entries = [];
-  let ai = Math.floor(rand() * ANGLES.length);
+  // Separate round-robin angle cursors per format stream: each stream cycles
+  // through ALL angles independently, so any stream with >= ANGLES.length
+  // entries and live pools structurally covers every angle in that format —
+  // no reliance on the interleaved global order lining up by luck.
+  const streamAngleCursor = {
+    carousel: Math.floor(rand() * ANGLES.length),
+    reel: Math.floor(rand() * ANGLES.length),
+  };
   for (let i = 0; i < n; i++) {
-    // round-robin angles, skipping exhausted pools
+    const format = formats[i];
+    const ai = streamAngleCursor[format];
+    // round-robin angles within this format's stream, skipping exhausted pools
     let item = null, angle = null;
     for (let tries = 0; tries < ANGLES.length && !item; tries++) {
       angle = ANGLES[(ai + tries) % ANGLES.length];
       item = next(angle);
     }
     if (!item) break; // all pools exhausted
-    ai = (ANGLES.indexOf(angle) + 1) % ANGLES.length;
+    streamAngleCursor[format] = (ANGLES.indexOf(angle) + 1) % ANGLES.length;
     const made = MAKERS[angle](item);
     entries.push({
       ord: entries.length + 1,
