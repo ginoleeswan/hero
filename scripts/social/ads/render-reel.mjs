@@ -102,6 +102,8 @@ const plates = (aName, bName, glow = null) => `
     <div class="pcol"><div class="plate pt ${glow === 'b' ? 'lit' : ''}">${silhouette('cowl', { size: 230, rim: T })}</div><div class="pname" style="color:${T}">${bName}</div></div>
   </div>`;
 const pips = (total, lit) => `<div class="pips">${Array.from({ length: total }, (_, i) => `<span class="pip ${i < lit ? 'lit' : ''}"></span>`).join('')}</div>`;
+// Family-reel reveal wants a short middle-line form of the relation.
+const relLabel = (r) => ({ parent: 'the parent of', child: 'the child of', sibling: 'the sibling of', aunt_uncle: 'the aunt/uncle of', other: 'family to' }[r] ?? 'family to');
 const ring = (n) => `
   <div class="ringwrap"><svg width="420" height="420" viewBox="0 0 420 420">
     <circle cx="210" cy="210" r="180" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="14"/>
@@ -335,6 +337,35 @@ const SCENES = {
         ? { id: 'stat', ms: beats(9), bloom: true, html: `<div class="huge rise"><span class="cnt" data-to="${f.stat}">0</span></div><div class="mut in2" style="font-size:46px">${f.detail}</div>` }
         : { id: 'stat', ms: beats(10), bloom: true, html: `<div class="big rise" style="font-size:${bodySize}px;line-height:1.3">${f.detail}</div>` },
       { id: 'cta', ms: beats(8), html: `<div class="big rise" style="font-size:92px">There’s a file<br>on everyone.</div><div class="mut in2">35,000+ heroes &amp; villains — rated &amp; ranked</div><div class="mut in3 gold" style="font-size:46px;margin-top:40px">mythique.app</div>` },
+    ];
+  },
+  // Family = the hero template: withhold the relation through the hook + pair
+  // beats, pay it off under bloom, then pose the nature/nurture stance.
+  lore: (e) => {
+    const d = e.data;
+    if (d.sub === 'family') {
+      return [
+        { id: 'hook', ms: beats(4), html: `<div class="eyebrow in1">SAME BLOOD</div><div class="big rise" style="font-size:120px">Opposite<br>sides.</div>` },
+        { id: 'pair', ms: beats(5), html: `${plates(d.a, d.b)}<div class="mut in3" style="margin-top:8px">They’re connected.</div>` },
+        { id: 'reveal', ms: beats(7), bloom: true, html: `${plates(d.a, d.b)}<div class="big rise" style="font-size:72px;margin-top:20px">${d.a} is<br>${relLabel(d.relation)}<br><span class="gold">${d.b}</span>.</div>` },
+        { id: 'cta', ms: beats(6), html: `<div class="big rise" style="font-size:104px">Nature or<br>nurture?</div><div class="mut in2 gold" style="font-size:46px;margin-top:40px">The family tree · mythique.app</div>` },
+      ];
+    }
+    if (d.sub === 'rivalry') {
+      return [
+        { id: 'hook', ms: beats(4), html: hookLayout(`Some fights<br><span class="gold">never end.</span>`, d.year ? `Since ${d.year}.` : null) },
+        { id: 'pair', ms: beats(6), bloom: true, html: `${plates(d.a, d.b)}<div class="big rise" style="font-size:88px;margin-top:16px">${d.a} <span class="gold">vs</span> ${d.b}</div>${d.year ? `<div class="mut in3">Enemies since ${d.year}.</div>` : ''}` },
+        { id: 'cta', ms: beats(6), html: `<div class="big rise" style="font-size:92px">Best rivalry<br>in comics?</div><div class="mut in2">Fight about it 👇</div><div class="mut in3 gold" style="font-size:46px;margin-top:36px">mythique.app</div>` },
+      ];
+    }
+    return [ // connected
+      { id: 'hook', ms: beats(5), html: hookLayout(`The most<br>connected<br><span class="gold">character?</span>`, null) },
+      { id: 'reveal', ms: beats(5), bloom: true, html: `<div class="big rise" style="font-size:128px">${d.a}</div>` },
+      { id: 'stats', ms: beats(6), html: `<div style="display:flex;gap:56px;justify-content:center">
+        <div class="in1"><div class="huge" style="font-size:120px;color:${O}"><span class="cnt" data-to="${d.allies}">0</span></div><div class="mut">allies</div></div>
+        <div class="in2"><div class="huge" style="font-size:120px;color:${T}"><span class="cnt" data-to="${d.enemies}">0</span></div><div class="mut">enemies</div></div>
+        <div class="in3"><div class="huge" style="font-size:120px;color:${GOLD}"><span class="cnt" data-to="${d.teams}">0</span></div><div class="mut">teams</div></div></div>` },
+      { id: 'cta', ms: beats(5), html: `<div class="big rise" style="font-size:88px">Explore the web.</div><div class="mut in2 gold" style="font-size:46px;margin-top:36px">mythique.app</div>` },
     ];
   },
 };
